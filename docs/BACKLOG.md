@@ -8631,3 +8631,181 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Problem and evidence: Council batch 6 marks BL-471 NEEDS-EVIDENCE: Erase now stays hidden in a build that syncs until the reach of the server erase is known to be complete.
 - Scope: read F17 section 8.4 against `entry.erase` and its server half, run the erase tests, and record whether the reach is complete; with a yes, BL-471 passes `serverErase: true`. If the answer touches supabase, it needs the counted security-lens review.
 - Done when: the answer and the test output are recorded on BL-471, and its status follows.
+
+## Follow-ups from the merged PRs #1511 and #1569 to #1582 (BL-1643 to BL-1664; filed by the product agent, docs only)
+
+#### BL-1643 J24 capture loop: nine tests record under three step ids
+- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: Refines BL-480 point 1 (PR #1580).
+- Problem and evidence: `apps/mobile/e2e-web/j24-capture-loop.flow.ts` runs three scale tests and six language tests, and all nine start the journey at J24 with the same three step ids, so their records overwrite each other in `steps/J24-0N.json`. The recorder now refuses a repeat id (#1580), so the nine collide on one run.
+- Scope: give each test a distinct journey id or file suffix; keep it in step with the capture matrix and `build-index.mjs` work (PR #1399).
+- Done when: each of the nine tests writes its own records and a run of all nine leaves no overwritten step.
+
+#### BL-1644 BL-480 points 2 and 5: run-day dates in a flow note and the index title period
+- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: Refines BL-480 points 2 and 5.
+- Problem and evidence: Point 1 (duplicate ids) merged in #1580. Still open: the J10 flow note hard-codes a date while the seed is relative to the run day, `docs/release/journey/README.md` does not say the record carries the run day's dates, and `build-index.mjs` prints a stray period after a title ending in a question mark.
+- Scope: drop the date from the flow note, add the README sentence, print the title as written. Note changes rewrite `steps/*.json`, which only the journey-record PR commits.
+- Done when: the note has no date, the README says it, and no index title reads 'x?.'.
+
+#### BL-1645 BL-480 point 3: retired words in flow titles and notes
+- Status: proposed (needs content row first). Mode: agent. Owner: content. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: Refines BL-480 point 3.
+- Problem and evidence: Flow-authored titles and notes carry words the glossary retired (the J09, J06 and J03 steps named in BL-480 point 3) and `rules.test.ts` does not scan flow text.
+- Scope: needs content row for the replacement words; then change the three flow lines and decide whether the rules test should scan flow titles and notes.
+- Done when: the three lines use words content approved and the scan decision is recorded.
+
+#### BL-1646 BL-480 point 4: the saved moment is missing from three recorded steps
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: Refines BL-480 point 4.
+- Problem and evidence: The captured text of J06-09, J06-11 and J07-07 lacks the chip or toast line that the flow asserts; probable cause is a node at opacity 0 at the settle time (unverified).
+- Scope: wait for the chip and toast to be opaque (or a longer settle that ends before the screen leaves) in those three steps; no parent-facing string changes.
+- Done when: the three records show the saved moment and the PNGs match.
+
+#### BL-1647 Children quiet guard: repoint HELP_NEEDS to the real files and fail loudly on a wrong path
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: Refines BL-985 (PR #1577).
+- Problem and evidence: `apps/mobile/test/children-quiet-control.test.ts` HELP_NEEDS names paths that are not the real ones, so the guard can pass on files that do not exist.
+- Scope: point it at `draft-card.logic.ts` (book.quiet), `(tabs)/index.tsx` and `app/read-together.tsx`, and assert `existsSync` on each. The behaviours the help line describes (Home prompt skip, Save a copy slip, Read together ignoring `Child.quiet`) are what unlock `children.quiet.help`; no new words here.
+- Done when: a wrong path in HELP_NEEDS fails the test and the three real files pass.
+
+#### BL-1648 lastOwnSaveAt gets the same fix as lastMadeLetter
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: Refines BL-1016 (PR #1576), NS-48-R27.
+- Problem and evidence: NS-48-R27 says `lastOwnSaveAt` should get the same fix as `lastMadeLetter`.
+- Scope: apply the same fix and tests to `lastOwnSaveAt`. Add a captured_at index only after the FR-REL-32 1,200-letter device timing (CR-174 ruling: no index migration now).
+- Done when: `lastOwnSaveAt` passes the same tests as `lastMadeLetter`.
+
+#### BL-1649 lastMadeLetter tests that cannot fail: deleted row, statement count, null owner
+- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: Refines BL-1016 (PR #1576).
+- Problem and evidence: The deleted-row test inserts no deleted row (dropping `deleted_at IS NULL` still passes); the 1,200-letter test counts statements only; a null owner with authored rows is untested.
+- Scope: insert a real deleted row and assert it is skipped; assert the result on the 1,200-letter test; add the null owner case; one mutant each.
+- Done when: each of the three tests fails when its guard is removed.
+
+#### BL-1650 BL-1016 layers still to wire: the planner and the held words
+- Status: blocked (layeredSelector not in the planner; R4, R29, R30 wait for G3 BL-965; R5 first and small kinds wait for the NS-06 flag). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: BL-965.
+- Priority: Low. Gate: none.
+- Satisfies: Refines BL-1016 (PR #1576).
+- Problem and evidence: `layeredSelector` is not wired into the planner yet. NS-48-R4, R29 and R30 words wait for G3 (BL-965); the R5 first and small kinds wait for the NS-06 flag.
+- Scope: wire the selector into the planner when the flag lands; the words come from content (needs content row).
+- Done when: the planner uses the layers and the held rows are ready, deferred or built.
+
+#### BL-1651 Notification no-we guard: its pattern is wider than the ruling and its scope waits for new keys
+- Status: ready. Mode: agent. Owner: content. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: Refines BL-474 (PR #1579).
+- Problem and evidence: `packages/content/test/reminder-copy-no-we.test.ts` also bans us and ours, wider than the CMO-18 ruling, and its scope file marks the Moments, days and photos.suggestions notification keys as pending.
+- Scope: content confirms or narrows the pattern to the ruling; extend NOTIFICATION_PATH when those keys land.
+- Done when: the pattern matches the ruling and the new keys are scanned.
+
+#### BL-1652 Read the year back: interruption and keep-awake wait on BL-987
+- Status: blocked (BL-987). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: BL-987.
+- Priority: Low. Gate: none.
+- Satisfies: Refines BL-947 (PR #1569), NS-24-R8, R9.
+- Problem and evidence: R8 (an interruption keeps the page) and R9 (keep-awake) wait on the engineering facts in BL-987.
+- Scope: build R8 and R9 once BL-987 settles them; sealed and hidden letter skips have no fields yet, so file the fields with it.
+- Done when: R8 and R9 have tests and sealed and hidden letters are skipped.
+
+#### BL-1653 Read the year back: year row order, label check, and the missing render test
+- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: Refines BL-947 (PR #1569).
+- Problem and evidence: The year row order (newest first) is not set by the design, which is silent: ask design systems with a req-question. The y2 to y4 labels were never checked. There is no render or VoiceOver test. The mutant run after the test rewrite was by reasoning, not run.
+- Scope: get the order answer, check the y2 to y4 labels, add a render test, and run the mutants for real.
+- Done when: the order is recorded, labels are checked and the mutants fail as claimed.
+
+#### BL-1654 Undo windows: the Switch Control signal for holdOpen (native)
+- Status: proposed (follow-up of PR #1581, still open). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: Refines BL-954.
+- Problem and evidence: React Native has no Switch Control signal, so `holdOpen` cannot be told when it is on.
+- Scope: a small native module or a documented decision that the longer window stands in; native work needs the expo-native-module skill.
+- Done when: holdOpen reacts to Switch Control on a device, or the decision is recorded.
+
+#### BL-1655 Undo windows: the other undos still run on their own timers
+- Status: proposed (follow-up of PR #1581, still open). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: Refines BL-954.
+- Problem and evidence: `components/book/undo-toast.tsx`, `settings/children/delete-book.tsx`, `tonight/quiet-day-inline.tsx` and the review letter undos keep their own timers. `pending.ts` has its own `until` (BL-955 area).
+- Scope: move each onto the shared undo-window helper; keep `pending.ts` with BL-955.
+- Done when: every undo in the app uses the helper.
+
+#### BL-1656 Undo windows: the toast timer and announcementFinished wiring are untested
+- Status: proposed (follow-up of PR #1581, still open). Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: Refines BL-954.
+- Problem and evidence: There is no component harness, so the toast timer and the announcementFinished wiring have no test.
+- Scope: add a harness or a source and logic test that fails when either wire is removed.
+- Done when: one test per wire, each with a mutant.
+
+#### BL-1657 Add child: the calm retry card for a failing addChild
+- Status: proposed (needs content row first). Mode: agent. Owner: content. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: Refines BL-378 (PR #1582).
+- Problem and evidence: A failing `addChild` has no calm retry card because the string does not exist.
+- Scope: needs content row for the card words; then the mobile engineer builds the card.
+- Done when: the words are approved and the card shows on a failing addChild.
+
+#### BL-1658 Add child twins: a retry remakes the first book, and the wiring test is a source regex
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: Refines BL-378 (PR #1582).
+- Problem and evidence: If the second `addChild` throws for twins, a retry remakes the first book. The wiring test is a source regex plus a mirrored helper, not the real path.
+- Scope: make the retry skip a book already made; test the real function.
+- Done when: a retry after a second failure makes one first book and the test calls the real code.
+
+#### BL-1659 Sync no-media walk: v.lazy getters and a path-scoped exemption
+- Status: ready. Mode: agent. Owner: sync owner. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: Refines BL-852 (PR #1578).
+- Problem and evidence: The schema walk does not follow `v.lazy` getters, and the exemption `prompt_library_version` is an exact key, not scoped to its path.
+- Scope: walk lazy schemas and scope the exemption to its path; one mutant each.
+- Done when: a banned key inside a lazy schema and a same-named key off the path both fail.
+
+#### BL-1660 BL-852 second half: the second phone's photo line
+- Status: proposed (needs content row first). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: Refines BL-852 (second half of its Scope).
+- Problem and evidence: The first half merged in #1578. Left: the second phone's "The photo is on the other phone." line.
+- Scope: needs content row to confirm the words; then show the line where the photo is missing.
+- Done when: the second phone shows the approved line and a test covers it.
+
+#### BL-1661 Born-early row: pin what the screen passes, and check letters across the new birthday
+- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M4. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: Refines BL-472 (PR #1511).
+- Problem and evidence: Review notes on #1511: the call in `[id].tsx` that decides the row (hiddenFor, today) is pinned by a regex on the line only, so one mutant survived; no test shows `isBeforeBirth` for a letter dated before and one after the new birthday; the row hint after a question label needs a read-aloud check; a contributor's change stays on the phone (hand to sync, unverified that Settings is reachable).
+- Scope: add the two tests, check the hint, and ask sync owner about contributors.
+- Done when: the surviving mutant fails and the before and after letters are pinned.
+
+#### BL-1662 Harness lesson: a base-side fix needs update-branch, not a CI re-run
+- Status: proposed (process, ops). Mode: agent. Owner: platform. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: Process.
+- Problem and evidence: A CI re-run reuses the old merge commit, so a fix that landed on the base never reaches it.
+- Scope: name it in the merge runbook as: update the branch, do not re-run. Docs under `docs/agents` are founder-merge, so Karma lands the text.
+- Done when: the runbook says it.
+
+#### BL-1663 Harness lesson: the compliance-fence 'expected' block
+- Status: proposed (process, ops). Mode: agent. Owner: platform. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: Process.
+- Problem and evidence: The merge shows the compliance-fence check as 'expected' when the highest-id fence run for a head is a cancelled sibling.
+- Scope: write the fix as: rerun that run. Docs under `docs/agents` are founder-merge, so Karma lands the text.
+- Done when: the runbook says it.
+
+#### BL-1664 Harness lesson: never queue an app PR before its tests job is green at head
+- Status: proposed (process, ops). Mode: agent. Owner: platform. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: Process.
+- Problem and evidence: Reviewers cannot see pins in a PR whose tests job is not green at its head.
+- Scope: check `docs/agents` for a place that covers queueing; if one does, add the rule there (docs only, no edit to scripts/agents); otherwise ask Karma.
+- Done when: the rule is written where queueing is described or Karma records that none exists.
