@@ -92,7 +92,7 @@ export const en = {
       // First run only: backup cannot be on yet, so "on this phone" is true here (lawyer-2 H4).
       recordingBody: "The recording is kept on this phone, so one day {child} can hear you say it.",
       privateNote: "Private by default. You choose what goes in the book.",
-      cta: "That sounds right",
+      cta: "Continue",
     },
 
     child: {
@@ -472,7 +472,7 @@ export const en = {
       },
       grammarSlip: {
         label: "One word fixed",
-        explain: "A slip of the tongue, like \"a apple\". Only that word changed.",
+        explain: "A small slip, like \"a apple\". Only that word changed.",
       },
       paragraph: {
         label: "New paragraph",
@@ -586,16 +586,16 @@ export const en = {
       private: "Private",
     },
     empty: {
-      bookTitle: "The first page is waiting.",
+      bookTitle: "Your first letter will show up here.",
       bookBody: "Tell {child} one thing about today.",
       bookCta: "Write a letter",
       // v1.1: family members beyond the co-parent.
-      familyTitle: "Family letters will gather here.",
+      familyTitle: "Letters from family will show up here.",
       familyBody: "Invite a grandparent, aunt or uncle to add their words.",
       familyCta: "Invite family",
       privateTitle: "Nothing private yet.",
-      privateBody: "Letters you keep for yourself will rest here.",
-      searchTitle: "No letters with that word yet.",
+      privateBody: "Letters you keep private will show up here.",
+      searchTitle: "No letters match that word.",
     },
     entryMenu: {
       moveToBook: "Add to book",
@@ -649,7 +649,7 @@ export const en = {
     empty: "Letters you add to the book will be here to read together.",
     // The app adds no sentiment of its own; the letters carry the love (VOICE, the app's own words).
     endOfMonth: "That was Month {month}.",
-    endOfBook: "That is every letter so far. More are still being written.",
+    endOfBook: "That's every letter so far.",
     againButton: "Read it again",
     nextMonthButton: "On to Month {month}",
     finishButton: "Close the book",
@@ -761,11 +761,11 @@ export const en = {
     },
     letters10: {
       title: "10 letters.",
-      body: "Ten pieces of {child}'s story, told by you.",
+      body: "Ten letters for {child}.",
     },
     letters50: {
       title: "50 letters.",
-      body: "Fifty letters, kept in your words.",
+      body: "Fifty letters for {child}.",
     },
     letters100: {
       title: "100 letters.",
@@ -899,7 +899,7 @@ export const en = {
       erasedToast: "Letter erased.",
       // Erase now when the recording's file could not be removed: the letter was not erased, the row stays for another try
       // (D-085, file first). What did not happen, then what is true; it makes no claim about the recording's file.
-      eraseFailedToast: "The letter was not erased. It is still in Recently deleted.",
+      eraseFailedToast: "That letter wasn't erased. It's still in Recently deleted.",
       bookTitle: "Delete the whole book?",
       bookBody: "Every letter in {child}'s book will be removed from this phone and from our servers. Every recording will be removed from this phone.",
       bookBodyCoParent: "{child}'s book stays with your co-parent. Your own letters and recordings in it will be removed.",
@@ -924,7 +924,7 @@ export const en = {
       bookEraseNowBody: "Every letter and recording in it is erased for good.",
       bookErasedToast: "Book erased.",
       // A file would not go: the erase is already begun, so the book leaves Recently deleted and the next launch finishes it.
-      bookEraseFailedToast: "The book was not erased yet. The app finishes the next time it opens.",
+      bookEraseFailedToast: "The book wasn't erased yet. The erase will finish the next time the app opens.",
       accountTitle: "Delete your account",
       accountConfirm: "Delete account",
       // Shown while a deletion request is in its 30-day grace period. The date is shown beside it.
@@ -1145,7 +1145,7 @@ export const en = {
     sharing: {
       pickerTitle: "Which books?",
       oneBookNote: "This invite is for {child}'s book only.",
-      separateNote: "Each child's book has its own family list. Inviting someone to one book does not open the others.",
+      separateNote: "Each child's book has its own family list. Inviting someone to one book doesn't open the others.",
     },
   },
 
@@ -1177,7 +1177,7 @@ export const en = {
   errors: {
     saveFailed: {
       title: "Not saved to the book yet",
-      body: "Your words are safe on this phone. We will try again on our own.",
+      body: "Your words are still on this phone.",
       button: "Try again now",
     },
     // Three causes, three screens (S13): permission off, the microphone held by a call or another app, a full phone.
@@ -1212,14 +1212,14 @@ export const en = {
       body: "Ask {inviter} to send a new one.",
     },
     generic: {
-      title: "Something went wrong",
-      body: "Please try again. Nothing you saved has changed.",
+      title: "That didn't work",
+      body: "Try again. Nothing you saved has changed.",
     },
     // A screen could not draw (root error boundary). Calm, no codes, no stack.
     // Error and state titles carry no full stop.
     crash: {
-      title: "This page did not open",
-      body: "Your letters and recordings are safe on this phone.",
+      title: "This page didn't open",
+      body: "Your letters and recordings are still on this phone.",
       tryAgainButton: "Try again",
       tonightButton: "Go to Home",
     },
@@ -1235,17 +1235,17 @@ export const en = {
     // say the letters are safe. `readme` is the line written inside the ZIP, and row E8 holds it as unverified ("Nothing here was
     // changed or removed"). Its wording is the spec's (S51, KEEP) and is not changed here.
     launch: {
-      title: "The book could not open",
+      title: "The book couldn't open",
       body: "Export saves a copy of the recordings and book files it can read, exactly as they are.",
       hint: "Try again, or restart the phone.",
       tryAgainButton: "Try again",
       // The Try again button's words while it opens the book again, and the line after an open that did not work.
       tryingAgainButton: "Trying again",
-      stillClosed: "It did not open this time either.",
+      stillClosed: "It didn't open this time either.",
       exportButton: "Export what's readable",
       exportingTitle: "Gathering your files",
-      exportNothing: "Export has nothing to put in a file right now.",
-      exportFailed: "That export did not work. Your files are still on this phone.",
+      exportNothing: "There's nothing to export right now.",
+      exportFailed: "The export didn't finish. Your files are still on this phone.",
       readme:
         "These are the files found on this phone when the book could not be opened.\nThe recordings folder holds your voice recordings; they play in any audio app.\nThe database folder holds the book itself, exactly as it was. Nothing here was changed or removed.\nKeep this export somewhere safe, and write to us if you would like help getting it back into the book.",
     },
@@ -1263,9 +1263,9 @@ export const en = {
     },
     // Appearance with no letter yet: the glyph specimen at each size.
     previewEmpty: "Aa",
-    notFoundTitle: "This letter is not in the book",
+    notFoundTitle: "This letter isn't in the book",
     // Shown only when a deleted copy of this letter is on the shelf (S37).
-    notFoundDeleted: "It is in Recently deleted.",
+    notFoundDeleted: "It's in Recently deleted.",
     openShelfButton: "Open Recently deleted",
     notFoundCta: "Back to the book",
     openHint: "Opens the letter.",
@@ -1292,7 +1292,7 @@ export const en = {
       birthdayFuture: "Choose today or an earlier day.",
       birthdayMissing: "Choose a date to save.",
       dueDateRange: "Choose a due date from today up to ten months ahead.",
-      dateInvalid: "That date does not look right. Try again.",
+      dateInvalid: "That date doesn't look right. Try again.",
       // The due-date card once the due date has passed (S46). It never presumes a birth and never celebrates:
       // no count of days, never a notification, never on Tonight. "Hide" hides it until the Due date row is opened.
       born: {
@@ -1459,7 +1459,7 @@ export const en = {
     },
     footer: "Either way, we never rewrite your words.",
     // PROPOSED (spec 09, YW-1, 21 Nov 2026): the choice could not be written. One quiet line; the radio stays where it was.
-    saveFailed: "That choice did not save. It is as it was.",
+    saveFailed: "That choice didn't save. It is as it was.",
   },
 
   // If you are struggling (D-034): v1.0 has no on-device safety classifier; this is a static page, never behind a
@@ -1508,7 +1508,7 @@ export const en = {
     numberCopied: "Number copied",
     // When Mail cannot open: our address to copy.
     noMailTitle: "Write to us",
-    noMailBody: "Mail did not open on this device. Copy our address and write from any email app.",
+    noMailBody: "Mail didn't open on this device. Copy our address and write from any email app.",
     copyAddress: "Copy address",
     addressCopied: "Address copied",
   },

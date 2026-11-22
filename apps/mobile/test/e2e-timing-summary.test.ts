@@ -33,6 +33,14 @@ describe('[BL-1403] timing summary', () => {
     expect(parseTimings(log)).toEqual({ cold_start_ms: [1200, 1500], record_start_ms: [310] });
   });
 
+  it('[BL-1482] the line is anchored at the end: a value with anything after the digits is ignored, not read as its leading number', () => {
+    // `TIMING cold_start_ms=12abc` must not count as 12. A trailing space alone is trimmed on purpose (the parser trims
+    // each line, so a CRLF log still reads), so the space cases put text after it.
+    const log = ['TIMING cold_start_ms=12abc', 'TIMING cold_start_ms=12 ms', 'TIMING cold_start_ms=12 x', 'TIMING cold_start_ms=12.5', 'TIMING cold_start_ms=7'].join('\n');
+    expect(parseTimings(log)).toEqual({ cold_start_ms: [7] });
+    expect(parseTimings('TIMING cold_start_ms=12abc\nTIMING cold_start_ms=12 ')).toEqual({ cold_start_ms: [12] });
+  });
+
   it('[BL-1403] summarises with the sample count and renders a table with no other text', () => {
     const s = summarise({ cold_start_ms: ms });
     expect(s).toEqual([{ name: 'cold_start_ms', samples: 200, p50: 1000, p95: 1900 }]);
