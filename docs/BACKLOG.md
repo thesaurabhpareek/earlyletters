@@ -127,7 +127,7 @@ Exact steps, time, cost and deadlines are in `docs/FOUNDER_TASKS.md`. This secti
 - Status: needs-founder (FT-26). Coverage (D-045, updated for D-055): two or more co-parent pairs, at least one Hindi and one Spanish speaker, one other non-English language, one VoiceOver or large-text user, one set of twins. Grandparents are not in v1.0.
 
 #### BL-005 Founder setup for the workflow
-- Status: ready (RULED by council (batch 6): branch protection is done; remaining: create the labels S0 to S3 and beta and set ADR 0011 to Accepted with a superseded-in-part note; if the token cannot create labels the founder runs the five gh label create commands; see RULINGS batch 6). Mode: agent. Owner: platform.
+- Status: needs-founder (FT-20; RULED by council (batch 6): branch protection is already on, the five labels S0 to S3 and beta are missing and ADR 0011 is still Proposed; settings stay the founder's, so the founder runs the five gh label create commands if the repo token cannot, and the ADR status is a docs PR by Karma; see RULINGS batch 6). CI exists (BL-004). Remaining: labels `S0` to `S3` and `beta`; accept ADR 0011.
 
 #### BL-053 Sign-in providers and email setup [Critical]
 - Status: needs-founder (FT-07 Apple, FT-12 Supabase Auth, FT-13 Resend, FT-14 DNS, FT-15 Google), after BL-101.
@@ -371,7 +371,7 @@ All database files below are **written and tested but not applied** to any remot
 - Why: D-113 hides Leave in build 2 until this ships (PR #184).
 
 #### BL-445 Typed invite codes: a code-registration route, the S04 client and #306's fix list (D-120) [Critical]
-- Status: ready (RULED by council (batch 6): the alpha is over so the D-120 condition is met; PR #306 merged so item 2 is done; BL-524 words first; the hosted deploy and INVITE_CODE_PEPPER check are founder hands; see RULINGS batch 6). Mode: agent. Owner: data architect (S02, the route, #306 and the alert), family owner (S04, the client).
+- Status: ready (RULED by council (batch 6): the alpha is over so the D-120 condition is met; PR #306 merged so item 2 is done; BL-524 words first; the hosted deploy and INVITE_CODE_PEPPER check are founder hands; see RULINGS batch 6). Mode: agent. Owner: data architect (S02, the route, #306 and the alert), family owner (S04, the client). Depends on: BL-524.
 - Satisfies: F11-REQ-001 (Show code), F11-REQ-002, F11-REQ-007 (with its alert), A-REQ-029 (the code field).
 - Scope: (1) a code-registration route: the device makes the 8-character code (`packages/core/src/invite.ts` has the helpers; the app does not use them yet) and the server stores its HMAC under `INVITE_CODE_PEPPER`, which only the Edge Functions hold, so `create_child_invite` stops getting `p_code_hash` null (`CreateInviteArgs` in `packages/api/src/server/family.ts`, `apps/mobile/src/lib/family/invites.ts`). (2) PR #306 (`invite_redeem_by_code`) resumes with the fix list on the PR (issuecomment-6460527733) worked through before any merge. (3) The S04 client: Show code on the invite sheet and a code field on the join sheet that redeems through `invite-redeem` (`INVITE_REDEEM_PATH`), with the words in `packages/content`. (4) The F11-REQ-007 alert: when code redemption reaches the global limit (1,001 failed codes in an hour across devices) and answers `SCRAT` for everyone, an alert fires within 15 minutes, and links keep working.
 - Why: D-120. Until this ships those four P0 lines are unmet on the phone, and the F11-REQ-007 alert is not built (#306's hold comment).
@@ -2909,7 +2909,7 @@ Source: CCO-6 in `docs/agents/exec/RULINGS.md` (merged with PR #520), CR-60 in `
 - Extends: PR #520, BL-387, CCO-6, D-144.
 
 #### BL-776 A person with one book can reach Recently deleted after a cold start (CPO-10: onboarding shows the existing row)
-- Status: ready (RULED by council (batch 6): CDesO placement ruled: first screen of first run, below the primary action; existing key only; see RULINGS batch 6). Mode: agent. Owner: mobile engineer. Milestone: M-JR. Size: S. Depends on: none. Severity: S2. Area: front. Mode is pair because the CDesO places the row on the onboarding screen before mobile builds it (CPO-10: "The CDesO places it", and when it is built is not decided there); PR #520 (BL-387) is merged.
+- Status: ready (RULED by council (batch 6): CDesO placement ruled: first screen of first run, below the primary action; existing key only; see RULINGS batch 6). Mode: agent. Owner: mobile engineer. Milestone: M-JR. Size: S. Depends on: none. Severity: S2. Area: front. PR #520 (BL-387) is merged.
 - Satisfies: DATA-REQ-014 and F17-REQ-080 (a sole parent's deleted book can be restored for 30 days), F17 6.2 D (Delete a book; 6.2 C step 8 still says its sole-parent shelf is not built, which #520 made stale: Restore the book exists), LEGAL-REQ-031 (the 30-day undo window). Also cited: D-085, CCO-6, CPO-10. Who must rule: nobody on the choice (CPO-10 rules option (a): onboarding shows the existing Recently deleted row while a deleted book waits, with no new line). Open: the CDesO places the row; if the placement needs a word that does not exist, that word goes to the founder before it is built (CPO-10, D-132, D-144).
 - Who: the CDesO places the row; `mobile` builds; review `design-systems`.
 - Problem: CCO-6 says a sole-book person cannot reach Recently deleted after a cold start until a new book exists. Read in code on `develop` (re-checked at d4b8f5f1, 9 Nov 2026), not run on a phone: `(tabs)/book.tsx:318` and `(tabs)/index.tsx:203` redirect to `/onboarding` when the phone has no visible book, and `onboarding.tsx` does not route to Settings. Recently deleted is reached from Settings (`settings/index.tsx:148`, `settings/privacy.tsx:138`) or from a letter (`letter/[id].tsx:549`). In #520, Delete this book on the only book leaves a book waiting for 30 days that the person has no way to Restore after the next cold start, unless they add a book first.
@@ -4073,7 +4073,7 @@ Written by `product` for Step 0.2 of `docs/product/prd/24-engineering-handoff.md
 - Refines: BL-045 and BL-046 (NS-51, NS-52). Drop: C (the reversals NS-51 and NS-52 need).
 - Satisfies: none. It records the reversal of the no-photo-permission and level 3 closed rows NS-49-R6 and NS-49-R25 (`24-engineering-handoff.md` section 1.13); those rows are changed by the ruling, not satisfied here.
 - Scope: the ruling that records the reversals of the closed level 3 and the one-picture rule, and amends the CR-66 precedence, so that a card that reverses another is not a conflict. Docs only; product drafts the D-### entry as Proposed in its PR body and the founder decides.
-- Done when: the ruling is in `docs/DECISIONS.md` (or the CR file the founder names) with its number, and BL-1018 to BL-1020 cite it.
+- Done when: the ruling is recorded as a CR entry in `docs/agents/cto/RULINGS.md` (RULINGS batch 6; no `docs/DECISIONS.md` entry is needed, the D-### stays PROPOSED in the PR body), and BL-1018 to BL-1020 cite it.
 - Source: `24-engineering-handoff.md` section 4 step 0.1; `22-final-holistic-spec.md` section 4 (Drop C).
 
 #### BL-1002 File the ADRs A1, A2, A3, B, C, D and E as Proposed (step 0.3)
