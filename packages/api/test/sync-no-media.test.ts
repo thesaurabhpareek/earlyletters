@@ -39,8 +39,9 @@ function keysOf(node: Node | undefined, path: string, out: string[], seen: Set<N
     // valibot v.lazy: the schema is built on demand. `seen` stops a schema that returns itself.
     try {
       keysOf(node.getter(undefined), path, out, seen);
-    } catch {
-      /* a getter that needs real input cannot be walked; the real schemas are checked below */
+    } catch (e) {
+      // A getter that needs real input cannot be walked. A stack overflow is a broken walk, never "no keys".
+      if (e instanceof RangeError) throw e;
     }
   }
   for (const list of [node.options, node.items, node.pipe]) for (const n of list ?? []) keysOf(n, path, out, seen);
@@ -85,7 +86,9 @@ describe('[NX-39-R33] the sync payload carries no media and no derived field', (
 
     it('survives a lazy schema that returns itself', () => {
       const self: v.GenericSchema = v.object({ name: v.string(), next: v.optional(v.lazy(() => self)) });
-      expect(offenders('AshaSelf', self as unknown as Node)).toEqual([]);
+      const keys: string[] = [];
+      keysOf(self as unknown as Node, 'AshaSelf', keys, new Set());
+      expect(keys).toEqual(['AshaSelf.name', 'AshaSelf.next']);
     });
 
     it('skips a lazy getter that throws and still walks the rest', () => {
