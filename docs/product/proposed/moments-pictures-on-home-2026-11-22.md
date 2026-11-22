@@ -32,7 +32,7 @@ New in this proposal: one Home surface, one new selector (`homeDay`), one new co
 
 ### 2.1 What the parent sees
 
-Mira (a fictional parent of Asha, the fixture family) opened Moments one evening and tapped "Show days". She read the one sentence, tapped Continue, and allowed her pictures. She did not think about it again.
+A parent of Asha (the fixture family) opened Moments one evening and tapped "Show days". She read the one sentence, tapped Continue, and allowed her pictures. She did not think about it again.
 
 Two days later she opens Home to say something to Asha. Greeting, the day's prompt, Speak and Type, as always. Below them, under any waiting letters, is one flat paper card. It holds one picture from her own phone: Asha on a blanket, taken on this date a year ago. Under the picture, small: "Pictures from this day in 2025". Then the date: "Friday 21 November". Then one quiet line: "Tell Asha about this day." Two buttons of the same size: "Tell it" and "Not now". A small menu button holds "Not this one".
 
