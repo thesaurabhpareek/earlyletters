@@ -739,7 +739,7 @@ Built in the design wave (9be06db) and the integration wave (a66376a); mobile-po
 | BL-265 | Uncapped letter text with script runs [High] | ready (verify no `maxFontSizeMultiplier` on letter text, D-027) |
 | BL-266 | AX5 stacking pass on every P0 screen [High] | in-progress (mobile-polish), then device check FT-39 |
 | BL-267 | Motion rules | done (`src/lib/motion.ts`) |
-| BL-268 | Accessibility lint rules | ready |
+| BL-268 | Accessibility lint rules | in-progress (rules R1 to R6 as `apps/mobile/test/a11y-lint.test.ts`; touchable role and label, `numberOfLines` on letter text and layout-animation imports (M2) still need a syntax-aware rule) |
 | BL-269 | Component tests at default size and AX5 | blocked (BL-278) |
 | BL-270 | Native tabs | ready (cut first if late) |
 | BL-271 | Increase Contrast and Reduce Transparency variants | deferred (v1.1 or later; T5-20) |
