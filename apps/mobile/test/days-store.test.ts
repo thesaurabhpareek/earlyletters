@@ -454,7 +454,7 @@ describe('[NS-47-R28] a day id that is an Object.prototype name is not ticked un
   });
   it('constructor ticked on a roomy file stores an empty tick, not the inherited function', () => {
     const next = tickDay({ v: 1, owner: A, ticked: {} }, 'constructor');
-    expect(next && Object.hasOwn(next.ticked, 'constructor')).toBe(true);
+    expect(next && Object.prototype.hasOwnProperty.call(next.ticked, 'constructor')).toBe(true);
     expect(next?.ticked.constructor).toEqual({});
     expect(JSON.parse(JSON.stringify(next)).ticked).toEqual({ constructor: {} });
   });
