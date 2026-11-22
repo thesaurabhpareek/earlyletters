@@ -250,7 +250,7 @@ describe('order independence and hearts', () => {
     for (let s = 1; s <= 50; s++) {
       const size = 1 + (s % 12);
       const cs = Array.from({ length: size }, (_, i) =>
-        pic(`x${i}`, ((i * 7 + s) % 23) / 2, (i * 3 + s) % 4, { heart: (i + s) % 5 === 0 }),
+        pic(`x${i}`, ((i * 7 + s) % 23) / 2, (i * 3 + s) % 4, { favourite: (i + s) % 5 === 0 }),
       );
       const c = chooseTiles(cs, OPTS);
       expect(new Set(c.tiles).size).toBe(c.tiles.length);
