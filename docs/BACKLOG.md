@@ -8234,3 +8234,133 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Problem and evidence: PR #1523 adds a boot sweep of stale takeover keys.
 - Scope: when it merges, file each review note as a line here; check that the sweep has a mutant and that a cold start with a stale key is covered by a test.
 - Done when: each review note is done or recorded as left; the cold-start test exists.
+
+## Review follow-ups from PRs #1504, #1495, #1487, #1515, #1529, #1532 and #1533 (BL-1591 to BL-1607)
+
+#### BL-1591 supabase-env-https test: pass-through checks read raw source
+- Status: proposed (review of PR #1504). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: none new (review follow-up, not re-read here).
+- Problem and evidence: Review B notes on PR #1504: the pass-through regex checks in supabase-env-https.test.ts run on raw source, so a comment holding the spread would satisfy them; account-deletion-switch.test.ts strips comments first.
+- Scope: strip comments with code() in supabase-env-https.test.ts before the regex checks.
+- Done when: a comment containing the spread no longer satisfies the test, shown by a mutant.
+
+#### BL-1592 Stale 'three builds' wording in e2e-web docs and comment
+- Status: proposed (review of PR #1504). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: none new (review follow-up, not re-read here).
+- Problem and evidence: Review B notes on PR #1504: BUILDS has four entries; apps/mobile/e2e-web/support/build-index.mjs and the text it generates in docs/release/journey/INDEX.md say three builds.
+- Scope: change both to four, or to wording that does not count; regenerate INDEX.md from the script.
+- Done when: grep for 'three builds' in e2e-web and docs/release/journey finds nothing.
+
+#### BL-1594 Launch gate proves the tip of develop, not the tagged commit
+- Status: proposed (review of PR #1495). Mode: agent. Owner: platform. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: none new (review follow-up, not re-read here).
+- Problem and evidence: Review A and B notes on PR #1495; docs/ops/RELEASE.md 3.4 now says the gate proves the develop tip, not the tagged commit.
+- Scope: design a check that the tagged commit is the commit the gate verified (compare the tag sha with the checked sha), as a proposal under docs/ops/proposed/; no workflow file edited.
+- Done when: a proposal with the check, its failure modes and a test table is in docs/ops/proposed/.
+
+#### BL-1595 Verify the ios-v* tag ruleset and app-store approval exist in repo settings
+- Status: proposed (review of PR #1495). Mode: agent. Owner: founder. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: none new (review follow-up, not re-read here).
+- Problem and evidence: Review B note 1 on PR #1495: RELEASE.md 3.4 names the ios-v* tag ruleset and app-store approval as the real controls, and nothing in the repo proves they are set. Only the founder can change repo settings.
+- Scope: founder checks that the ios-v* tag ruleset and the app-store environment approval exist, and records the result in docs/ops/RELEASE.md or the journal.
+- Done when: the check result is recorded, or a founder task is filed to set them.
+
+#### BL-1596 Moments companion docs and spec G3-x row still show old counts
+- Status: proposed (review of PR #1487). Mode: agent. Owner: product. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: none new (review follow-up, not re-read here).
+- Problem and evidence: Review A (N2) and Review B on PR #1487: HARNESS-REPLAN-HYBRID.md (lines 14 and 60), FREEZE-CHECKLIST.md (line 297) and ARCHITECTURE-BRIEF.md (lines 497 and 593) say 41 items and about 10,130 lines; docs/product/prd/28-moments-tab.md G3-x row (about line 1067) says 'not one of the 43 PRs'. Spec 19.4 now says 44 items and about 10,880 lines.
+- Scope: update the four places to the spec 19.4 counts, or point them at 19.4; no other change.
+- Done when: grep for '41 items', '10,130' and '43 PRs' in docs/product finds only history quotes.
+
+#### BL-1597 Renumber BL-1580 in PR #1515
+- Status: proposed (id collision). Mode: agent. Owner: product. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: none new (review follow-up, not re-read here).
+- Problem and evidence: PR #1515 files its own BL-1580 (words typed during a commit) while develop already has BL-1580 (Moments PR 3c buildMoments, from #1498).
+- Scope: in PR #1515, give its row the next free id (not below BL-1602 and not any id on develop or in open PRs), and update the links from BL-1535.
+- Done when: id-collisions.mjs reports no shared id for #1515 and BL-1535 points at the new id.
+
+#### BL-1598 Partial adopt then sign-out can drop one store's rows
+- Status: proposed (Review B on PR #1529). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: none new (review follow-up, not re-read here).
+- Problem and evidence: Review B at c8935ddb on PR #1529 (scenario 5, note N1): if one store adopted and the other failed, the adopted store's file (owner key) is deleted at sign-out while the other stays local, so that store's rows are lost (rare; nothing leaks to the next user).
+- Scope: decide whether that outcome is the ruled one or needs a retry or keep rule; at least add a one-line test or comment stating it.
+- Done when: the outcome is stated in a test or comment, or a rule is written and built with a test.
+
+#### BL-1599 Stale sha256Hex comment in lib/auth/local-claim.ts
+- Status: proposed (Review B on PR #1529). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: none new (review follow-up, not re-read here).
+- Problem and evidence: Review B at c8935ddb on PR #1529: the sha256Hex comment in apps/mobile/src/lib/auth/local-claim.ts is stale.
+- Scope: correct the comment to match what the function does; no behaviour change.
+- Done when: the comment matches the code.
+
+#### BL-1600 Failed-adopt test: 'claim not confirmed' half is only a source regex
+- Status: proposed (Review A on PR #1529). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: none new (review follow-up, not re-read here).
+- Problem and evidence: Review A on PR #1529: the 'claim not confirmed' half of the failed-adopt test checks source text with a regex, not behaviour.
+- Scope: add a behavioural test that runs a failed adoption and asserts the claim is not confirmed, with a mutant.
+- Done when: the behavioural test fails when the claim is confirmed after a failed adopt.
+
+#### BL-1601 useForYou hook has no unit test; 'no new import' rests on a source scan
+- Status: proposed (review of PR #1532 (Moments 9b)). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: none new (review follow-up, not re-read here).
+- Problem and evidence: PR #1532 (Moments 9b): the useForYou hook has no unit test because the harness has no React Native renderer, and 'no new import' rests on a source-scan test.
+- Scope: add a bundle check that the new import is absent, and a hook test once the harness can render; both before the Moments flag goes on.
+- Done when: the bundle check runs in CI and is done before EXPO_PUBLIC_MOMENTS_TAB is turned on.
+
+#### BL-1602 useForYou: subscribe race, unguarded folder import, unmemoised input
+- Status: proposed (review of PR #1532 (Moments 9b)). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: none new (review follow-up, not re-read here).
+- Problem and evidence: Review notes on PR #1532: a store change between the first render and the subscribe is missed; the folder guard exempts all of lib/moments/, so library/*.ts could import the new files unseen; the screen must memoise the hook input. (The missing hook unit test and the bundle check are BL-1601.)
+- Scope: re-read the store after subscribing; narrow the folder guard so library/*.ts cannot import the new files; memoise input in the screen; a test for each.
+- Done when: each of the three has a test that fails without the fix.
+
+#### BL-1603 Spec 28 section 18 event names: amend to the catalog names
+- Status: proposed (review of PR #1533). Mode: agent. Owner: product. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: none new (review follow-up, not re-read here).
+- Problem and evidence: Review notes on PR #1533: keep snake_case; spec 28 section 18 uses dotted names while the catalog has moments_card_impressed and moments_card_tapped with one property, slot (look_back or question). The review asks product to amend section 18 and R251 to the catalog names.
+- Scope: amend spec 28 section 18 and R251 to the catalog names and property; no other change.
+- Done when: spec 28 section 18 and R251 show no dotted moments event name.
+
+#### BL-1604 P0 test: at most one Moments impression per slot per local day
+- Status: proposed (review of PR #1533). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: carried by the wiring PR.
+- Satisfies: none new (review follow-up, not re-read here).
+- Problem and evidence: The wiring PR must carry a P0 test that moments_card_impressed fires at most once per slot per local day.
+- Scope: write the test named for its row, with a mutant that removes the once-per-day guard.
+- Done when: the test exists and its mutant is killed.
+
+#### BL-1605 Registry test: only the two exact moments_ event names; fate of moment_shown
+- Status: proposed (review of PR #1533). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: none new (review follow-up, not re-read here).
+- Problem and evidence: Review B on PR #1533: the forbidden ^moment_ pattern does not match moments_card_*; the intent (only the celebration family, or all Moments events) cannot be told from the code. The fate of moment_shown is already BL-1496.
+- Scope: add a registry test that allows only moments_card_impressed and moments_card_tapped among moments_ names; the moment_shown question stays with BL-1496.
+- Done when: the registry test exists and fails when a third moments_ event name is added.
+
+#### BL-1606 Add ids.ts and registry.ts rows for the two Moments events with the wiring PR
+- Status: proposed (review of PR #1533). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: carried by the wiring PR.
+- Satisfies: none new (review follow-up, not re-read here).
+- Problem and evidence: The ids.ts and registry.ts rows for moments_card_impressed and moments_card_tapped land with the wiring PR, not before.
+- Scope: add both rows in the wiring PR with their tests.
+- Done when: both events are in ids.ts and registry.ts and the registry test passes.
+
+#### BL-1607 Open questions for CDO and CPrivO before Moments analytics are wired
+- Status: proposed (review of PR #1533). Mode: agent. Owner: founder. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: founder and counsel must confirm before the flag goes on (what users are promised stays his, CR-73).
+- Satisfies: none new (review follow-up, not re-read here).
+- Problem and evidence: Review B (privacy lens) on PR #1533: child_count_bucket (none, one, two, three_plus) rides on every event including the two Moments events, so that a child exists is inferable from any opted-in stream; the reviewer judged it acceptable for awareness, not a block. The same review says the App Store label stays correct for 1.0 because no analytics ships, and that the label and policy wording must be revisited when analytics ships.
+- Scope: proposed: CDO and CPrivO decide whether Moments impressions should carry child_count_bucket; counsel confirms the App Store label and policy wording when analytics ships.
+- Done when: proposed: the answers are recorded (for example in docs/agents/exec/RULINGS.md) before analytics ships.
