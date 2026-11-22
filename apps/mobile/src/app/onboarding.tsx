@@ -69,7 +69,7 @@ import { useAuth } from '@/lib/auth/session-provider';
 import { useAnotherBusy } from '@/lib/first-run/account-books.logic';
 import { SignedInNote } from '@/components/onboarding/signed-in-note';
 import { capabilities, serverFeaturesEnabled } from '@/lib/capabilities';
-import { backShown, childNameFieldWords, dateBlockShown, finishMayMakeBook, firstRunStartStep, hasSessionState, reportsPastWelcome, welcomeHandoffStep } from '@/lib/first-run/handoff.logic';
+import { backShown, childNameFieldWords, dateBlockShown, finishMayMakeBook, firstRunStartStep, hasSessionState, reportsPastWelcome, runFinishOnce, welcomeHandoffStep } from '@/lib/first-run/handoff.logic';
 import { continueMayShow, continueTapIsLocalStart } from '@/lib/first-run/route.logic';
 import { useFirstRunRoute } from '@/lib/first-run/use-first-run-route';
 import { ARRIVAL_SETTING, arrivalToWrite, methodLine } from '@/lib/first-run/new-phone.logic';
@@ -130,6 +130,7 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
   const nameFields = useRef<(TextInput | null)[]>([]);
   const signsAsField = useRef<TextInput>(null);
   const dateField = useRef<DateFieldHandle>(null);
+  const booksMade = useRef(false);
   // Account first (NX-31 R17, behind the server switch): a person who is signed in, or on the local start, is past the
   // Welcome. They open on the promise step (signed in) or the child step (local start); everyone else, and every build
   // with the switch off, opens on the Welcome as before (lib/first-run/handoff.logic.ts).
@@ -293,11 +294,14 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
         signsAs: signsAs.trim(),
       }),
     );
+    booksMade.current = true;
     if (created[0] && getActiveChildId() !== created[0].id) setActiveChildId(created[0].id);
     // Dropped unless analytics is already a yes (it never is in first run; K-01). Kept for a reinstall that kept consent.
     for (const c of created) track('child_added', { has_date: true, child_ordinal: ordinalOf(c.id), in_first_run: true, added_together: created.length > 1 });
     router.replace('/');
   };
+
+  const finishOnce = () => runFinishOnce(booksMade, finish);
 
   // The account-first name field says the name is optional (NX-36 S7); other builds keep "Name" and no help line.
   const nameWords = (index: number, value: string) =>
@@ -346,7 +350,7 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
       ) : null}
       {showContinue ? (
         <View>
-          <Button size="lg" fullWidth disabled={disabled} label={cta} accessibilityHint={block ?? undefined} onPress={step === 'finish' ? finish : next} testID="onboarding.continue" />
+          <Button size="lg" fullWidth disabled={disabled} label={cta} accessibilityHint={block ?? undefined} onPress={step === 'finish' ? finishOnce : next} testID="onboarding.continue" />
           {/* A tap on the waiting Continue lands on this clear layer (a disabled button takes no tap) and raises the
               reason. Touch only: VoiceOver reads the button itself, "dimmed", with the reason as its hint. */}
           {disabled ? <Pressable onPress={nudge} accessible={false} importantForAccessibility="no" style={StyleSheet.absoluteFill} testID="onboarding.continue.waiting" /> : null}
