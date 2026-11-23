@@ -436,7 +436,7 @@ export default function Book() {
       importantForAccessibility={barUp ? 'auto' : 'no-hide-descendants'}>
       <BlurSurface edge="bottom" style={{ paddingTop: insets.top, paddingBottom: tokens.space[2], paddingHorizontal: tokens.space[5] }}>
         <View className="flex-row items-center gap-2" style={{ minHeight: BAR_HEIGHT }}>
-          <Text variant="headline" className="flex-1" maxFontSizeMultiplier={1.3}>
+          <Text variant="headline" className="flex-1">
             {title}
           </Text>
           {months ? <Button variant="quiet" size="sm" label={months.label} accessibilityHint={months.hint} onPress={months.onPress} testID="book.bar.months" /> : null}
