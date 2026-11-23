@@ -1330,6 +1330,34 @@ One row per journey J-N1 to J-N27 that needs a phone, P0 rows first. Row ids are
 
 **Record:** a line per row id in the evidence file: phone, iOS version, build and profile, pass or fail, and for each fail a GitHub issue with a severity (S0 for any loss, leak, name or words on a lock screen). Rows not run say why. UNVERIFIED until the founder runs them: nothing here has run on a phone.
 
+### DJ-A1 The Book bar at the largest text size (BL-1861 slice; NS-33-R4 slice d; code change BL-1860)
+
+One row, planned and not run. It is the part of the NS-33-R4 walk that `apps/mobile/test/a11y-ax5.test.ts` cannot prove: that test reads the bar's source (no line limit, no fixed type, no cap on the headline, every control built at 44 pt or more) and cannot see wrapping or reach on a phone. BL-1860 removed the 1.3 times cap on the headline in `apps/mobile/src/app/(tabs)/book.tsx` (the bar, `const topBar`), so the headline now grows with the system size and `flex-1` lets it wrap beside two controls. The letter page dateline and Me title rotor checks and the other AX5 screens of BL-1861 are not in this row.
+
+- **Phone:** iPhone SE 3 (`se3`), the newest iOS it takes. A second pass on a current large iPhone is welcome and optional.
+- **Needs:** any build with the Book tab and an Asha book holding enough fictional letters that the list scrolls past one screen (about 12 letters across at least two months, so the Months button shows and a month heading is under the bar). No server features, no profile switch. Fictional family only: Asha.
+- **Steps:**
+  1. On the phone: Settings > Accessibility > Display & Text Size > Larger Text. Turn on Larger Accessibility Sizes and drag the slider to the largest size (AX5). Turn Bold Text off for this pass.
+  2. Open the app, then the Book tab. At the top you see the cover band with the book's title large. Note what you see.
+  3. Drag the list up slowly with one finger until the cover band has scrolled away and a bar holds at the top of the screen. Keep the list a little way down so a month heading shows under the bar.
+  4. Look at the bar: the book's title, the Months button and the gear. Read the title all the way to its last letter. Count its lines.
+  5. Tap Months. A sheet opens. Close it again.
+  6. Tap the gear. Settings opens. Go back to the Book.
+  7. Turn Bold Text on, then repeat steps 3 and 4. Turn it off again.
+  8. Optional: with VoiceOver on, swipe right from the top of the bar. Note the order it reads the title, Months, the gear and the month heading.
+  9. Set Larger Text back to the size it was.
+- **Expected (what you see):**
+  - Step 3: the bar appears as you scroll and the cover band's buttons are no longer what you touch; the bar's controls are the live ones.
+  - Step 4: the whole title shows. If it does not fit on one line it goes onto a second or third line inside the bar's row; no letter is cut off, no three dots, and no part of it sits behind the Months button or the gear. The title is clearly larger than at the default size; the old cap held it at 1.3 times the default size, so it should now be as large as the other text on the bar.
+  - The month heading under the bar also wraps instead of being cut.
+  - Step 5 and 6: the Months button and the gear each open on one tap. Each is a comfortable touch target (a thumb lands on it first time, you do not have to aim), not squeezed by the title. A finger at the right screen edge still reaches the gear.
+  - Step 7: the same, with bolder letters.
+  - Step 8: the title, then Months, then the gear, then the month heading as a heading.
+  - Nothing in the bar overlaps the status bar clock or the notch area.
+- **Record:** phone, iOS version, build number and profile; a screenshot of the bar at AX5 with Asha's book (title visible in full); how many lines the title took at AX5; yes or no for each of: title cut, three dots, title under a control, Months reachable, gear reachable, month heading cut; for any control that was hard to hit, which control and what happened; with Bold Text on, the same yes or no list; what VoiceOver said and in what order (step 8), or not run. The 44 pt number is read from the code, not measured on the phone: if you want it measured, hold the screenshot against the pixel size of the phone and write it down, otherwise mark it not measured. Rows not run say why.
+- **Update:** if the bar cuts the title or a control is hard to reach, file a GitHub issue with severity S2 and link BL-1860; do not change `docs/product/prd/11-foundations.md`.
+- **Not verified:** nothing here has run on a phone. The bar's exact height at AX5 and where the title breaks are not stated, because they are not in the code. That the gear and Months are at least 44 pt tall at AX5 on the phone is read from the sizes in `apps/mobile/src/components/ui/button.tsx` (the `sm` Button is 44 pt, the IconButton is 44 pt by default), not measured. Whether the title wraps at AX5 for a long name such as "Asha's book" is unknown: for the name Asha it may fit on two lines; use a longer fictional name (for example "Anjali Asha") on a second pass if the first fits on one line. VoiceOver order in step 8 is the reading order the code suggests, not a heard one.
+
 ## Facts and assumptions this plan rests on
 
 | Item | Status |
