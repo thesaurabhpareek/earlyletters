@@ -9,8 +9,8 @@
  * Prints `lines 312 / 400, files 11 / 20` on every run. Exit 0 pass, 1 over the limit with no proof, 2 could not run.
  * Counting: `git diff --numstat -M base...head`; binary files count 0; docs text counts (only doc IMAGES are excluded).
  * Excluded, by exact rule (EXCLUDE below): the lockfile, `__fixtures__` folders, the golden corpora listed in
- * GOLDEN_DIRS, `generated` folders and images under docs/. Excluded lines are printed. They are capped at 2,000 (the lockfile
- * alone at 10,000, a tool's output): above its cap a kind counts again, so a folder cannot hide code.
+ * GOLDEN_DIRS, `generated` folders, images under docs/ and the two content map files (CONTENT_MAP_FILES). Excluded lines are printed.
+ * They are capped at 2,000 (the lockfile alone at 10,000, the content map alone at 6,000: a tool's output): above its cap a kind counts again, so a folder cannot hide code.
  * Exception: the label `size:accepted` applied by the repository owner (read from the issue events; a label by
  * anyone else is ignored and printed) AND a body line `Size exception: <reason>`.
  */
@@ -21,6 +21,10 @@ export const MAX_LINES = 400;
 export const MAX_FILES = 20;
 export const MAX_EXCLUDED_LINES = 2000;
 export const MAX_LOCK_LINES = 10000;
+/** The content map output (a tool's output, 3,200 lines for one regeneration), capped on its own. */
+export const MAX_MAP_LINES = 6000;
+/** The two committed files the generator writes (scripts/content/export-content-map.mjs). Exact paths, so the folder's README or any other file counts. */
+export const CONTENT_MAP_FILES = ['docs/content/map/content-map.json', 'docs/content/map/content-map.csv'];
 export const LABEL = 'size:accepted';
 /** Golden corpora, by directory prefix. A new corpus is a reviewed edit to this list. */
 export const GOLDEN_DIRS = ['apps/mobile/test/__golden__/', 'packages/core/test/golden/'];
@@ -31,6 +35,7 @@ export const EXCLUDE = [
   ['a listed golden corpus', (p) => GOLDEN_DIRS.some((d) => p.startsWith(d))],
   ['a generated folder', (p) => p.split('/').includes('generated')],
   ['an image under docs', (p) => p.startsWith('docs/') && /\.(?:png|jpe?g|gif|webp|svg)$/i.test(p)],
+  ['the content map output', (p) => CONTENT_MAP_FILES.includes(p)],
 ];
 
 /** `git diff --numstat -M` text to rows. Binary (`-`) is 0. A rename `a => b` or `d/{a => b}/f` is read as its new path. */
@@ -47,23 +52,28 @@ export function parseNumstat(text) {
 }
 
 export function measure(rows) {
-  let lines = 0, files = 0, excluded = 0, lock = 0, other = 0;
+  let lines = 0, files = 0, excluded = 0;
   const why = new Map();
+  // Three caps, each on its own: the lockfile, the content map output, and every other kind together.
+  const MAP = EXCLUDE.find(([n]) => n === 'the content map output');
+  const groupOf = (rule) => (rule === EXCLUDE[0] ? 'lock' : rule === MAP ? 'map' : 'other');
+  const cap = { lock: MAX_LOCK_LINES, map: MAX_MAP_LINES, other: MAX_EXCLUDED_LINES };
+  const sum = { lock: 0, map: 0, other: 0 };
   const kindOf = (path) => EXCLUDE.find(([, f]) => f(path));
   for (const r of rows) {
     const rule = kindOf(r.path);
     if (!rule) { lines += r.lines; files += 1; continue; }
     excluded += r.lines;
-    if (rule === EXCLUDE[0]) lock += r.lines; else other += r.lines;
+    sum[groupOf(rule)] += r.lines;
     why.set(rule[0], (why.get(rule[0]) ?? 0) + r.lines);
   }
   // Above its cap a kind counts again (with its files), so nothing can be hidden by a name.
-  const lockOver = lock > MAX_LOCK_LINES, otherOver = other > MAX_EXCLUDED_LINES;
+  const over = (g) => sum[g] > cap[g];
   for (const r of rows) {
     const rule = kindOf(r.path);
-    if (rule && ((rule === EXCLUDE[0] && lockOver) || (rule !== EXCLUDE[0] && otherOver))) { lines += r.lines; files += 1; }
+    if (rule && over(groupOf(rule))) { lines += r.lines; files += 1; }
   }
-  return { lines, files, excluded, capped: lockOver || otherOver, why };
+  return { lines, files, excluded, capped: over('lock') || over('map') || over('other'), why };
 }
 
 /** True when the newest `size:accepted` event is a `labeled` by `owner`. Events are oldest first, as GitHub returns them. */

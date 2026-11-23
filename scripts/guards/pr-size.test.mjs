@@ -1,7 +1,7 @@
 // node --test scripts/guards/pr-size.test.mjs (wired into the root `npm test` list). Fixtures are inline numstat text.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { EXCLUDE, GOLDEN_DIRS, MAX_EXCLUDED_LINES, MAX_FILES, MAX_LOCK_LINES, MAX_LINES, evaluate, main, measure, parseNumstat } from './pr-size.mjs';
+import { EXCLUDE, GOLDEN_DIRS, MAX_EXCLUDED_LINES, MAX_FILES, MAX_LOCK_LINES, MAX_MAP_LINES, MAX_LINES, evaluate, main, measure, parseNumstat } from './pr-size.mjs';
 
 const rows = (...r) => r.map(([path, lines]) => ({ path, lines }));
 const many = (n, each = 1, dir = 'src') => Array.from({ length: n }, (_, i) => ({ path: `${dir}/f${i}.ts`, lines: each }));
@@ -60,14 +60,37 @@ test('[CODE-R02] 3,000 lines under a fixtures-named folder that is not on the li
   assert.equal(measure(rows(['apps/mobile/test/__fixtures__/big.json', 2500])).lines, 2500);
 });
 test('[CODE-R02] each exclusion entry excludes its own path and nothing near it', () => {
-  const hit = { 'the lockfile': 'apps/web/package-lock.json', 'a __fixtures__ folder': 'x/__fixtures__/a.json', 'a listed golden corpus': `${GOLDEN_DIRS[0]}a.json`, 'a generated folder': 'src/generated/types.ts', 'an image under docs': 'docs/design/shot.png' };
-  const miss = { 'the lockfile': 'package-lock.json.md', 'a __fixtures__ folder': 'x/fixtures/a.json', 'a listed golden corpus': 'apps/mobile/test/golden-notes.ts', 'a generated folder': 'src/generate/types.ts', 'an image under docs': 'docs/design/notes.md' };
+  const hit = { 'the lockfile': 'apps/web/package-lock.json', 'a __fixtures__ folder': 'x/__fixtures__/a.json', 'a listed golden corpus': `${GOLDEN_DIRS[0]}a.json`, 'a generated folder': 'src/generated/types.ts', 'an image under docs': 'docs/design/shot.png', 'the content map output': 'docs/content/map/content-map.csv' };
+  const miss = { 'the lockfile': 'package-lock.json.md', 'a __fixtures__ folder': 'x/fixtures/a.json', 'a listed golden corpus': 'apps/mobile/test/golden-notes.ts', 'a generated folder': 'src/generate/types.ts', 'an image under docs': 'docs/design/notes.md', 'the content map output': 'docs/content/map/README.md' };
   assert.equal(EXCLUDE.length, Object.keys(hit).length);
   for (const [name, f] of EXCLUDE) {
     assert.equal(f(hit[name]), true, name);
     assert.equal(f(miss[name]), false, `${name} (near miss)`);
   }
   assert.equal(EXCLUDE.find(([n]) => n === 'an image under docs')[1]('apps/mobile/assets/a.png'), false);
+});
+test('[CODE-R02] the content map output matches its two files only, in that folder only', () => {
+  const f = EXCLUDE.find(([n]) => n === 'the content map output')[1];
+  for (const p of ['docs/content/map/content-map.json', 'docs/content/map/content-map.csv']) assert.equal(f(p), true, p);
+  for (const p of ['docs/content/map/extra.json', 'docs/content/map/sub/content-map.csv', 'scripts/content/map/content-map.json', 'docs/content/content-map.json', 'docs/content/map/content-map.json.ts', 'x/docs/content/map/content-map.csv']) assert.equal(f(p), false, p);
+});
+test('[CODE-R02] a content map regeneration of 3,200 lines passes, with its own cap of 6,000 above which it counts again', () => {
+  const r = evaluate({ rows: rows(['docs/content/map/content-map.json', 2900], ['docs/content/map/content-map.csv', 300], ['scripts/content/export-content-map.mjs', 20]) });
+  assert.equal(r.ok, true);
+  assert.match(r.lines[0], /^lines 20 \/ 400, files 1 \/ 20$/);
+  assert.match(r.lines[1], /the content map output: 3200/);
+  assert.equal(MAX_MAP_LINES, 6000);
+  const over = measure(rows(['docs/content/map/content-map.json', MAX_MAP_LINES + 1]));
+  assert.deepEqual([over.lines, over.files, over.capped], [MAX_MAP_LINES + 1, 1, true]);
+  assert.equal(evaluate({ rows: rows(['docs/content/map/content-map.json', MAX_MAP_LINES + 1]) }).ok, false);
+});
+test('[CODE-R02] the content map cap is separate: it neither borrows from nor drags in the 2,000 cap of the other kinds', () => {
+  const both = measure(rows(['docs/content/map/content-map.json', 3200], ['x/__fixtures__/a.json', 1500]));
+  assert.deepEqual([both.lines, both.files, both.capped], [0, 0, false]);
+  const fx = measure(rows(['docs/content/map/content-map.json', 3200], ['x/__fixtures__/a.json', 2500]));
+  assert.deepEqual([fx.lines, fx.files], [2500, 1]);
+  const mp = measure(rows(['package-lock.json', 3000], ['docs/content/map/content-map.json', 6001]));
+  assert.deepEqual([mp.lines, mp.files], [6001, 1]);
 });
 test('[CODE-R02] docs text counts and binary files count 0 lines', () => {
   assert.equal(measure(rows(['docs/a.md', 450])).lines, 450);
