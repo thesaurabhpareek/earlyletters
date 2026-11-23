@@ -56,11 +56,11 @@ tags:
     id: "write.input"
 - inputText: "Asha, a short line at the largest size."
 - assertVisible:
-    id: "write.save"
+    id: "write.keep.book"
     enabled: true
 - takeScreenshot: a11y/04-write-ax5-light
 - tapOn:
-    id: "write.save"
+    id: "write.keep.book"
 - tapOn:
     id: "review.save.book"
 - extendedWaitUntil:

@@ -35,7 +35,7 @@ env:
     id: "write.input"
 - inputText: ${LETTER_ONE}
 - tapOn:
-    id: "write.save"
+    id: "write.keep.book"
     enabled: true
 - assertVisible:
     id: "review.screen"
@@ -68,7 +68,7 @@ env:
     id: "write.input"
 - inputText: ${LETTER_TWO}
 - tapOn:
-    id: "write.save"
+    id: "write.keep.book"
     enabled: true
 - tapOn:
     id: "review.save.book"
@@ -87,7 +87,7 @@ env:
       - tapOn:
           id: "tonight.waiting"
       - tapOn:
-          id: "write.save"
+          id: "write.keep.book"
           enabled: true
       - tapOn:
           id: "review.save.book"

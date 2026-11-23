@@ -95,7 +95,8 @@ Set `tabBarButtonTestID` per screen: `tab.tonight` (labelled Home), `tab.book`, 
 | `review.saveFailed` | the save-failed line | *(optional)* |
 
 ### Write (`app/write.tsx`)
-`write.screen`, `write.input`, `write.save`, `write.close`, `write.status`. Flows: 04.
+`write.screen`, `write.input`, `write.close`, `write.status`. Flows: 04, 15, 21.
+The screen already sets `write.keep.book` (Add to {child}'s book) and `write.keep.private` (Keep it private); both go to Review, so the flows tap `write.keep.book` and then `review.save.book`. There is no `write.save`: BL-1965 removed it from the flows. `write.screen` and `write.input` are still requested.
 
 ### Sign-in and consent (`app/(auth)/sign-in/*`)
 | testID | Element | Flows |

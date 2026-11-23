@@ -119,10 +119,13 @@ for (const id of P0_FLOWS) {
   else if (!p0Seen.has(id)) problems.push(`${id} has no flow tagged ${P0_TAG}`);
 }
 
-// Report only: which ids the flows use that the app does not set yet (template
-// ids such as `language.row.${code}` match any value). Never fails the lint:
-// the request list leads the app. Run with --app to print the list.
-if (process.argv.includes('--app')) {
+// Which ids the flows use that the app does not set (template ids such as
+// `language.row.${code}` match any value). The request list leads the app, so
+// ids still waiting for their screen are listed in not-in-app.txt; that list
+// only shrinks (BL-1965): a flow naming an id that no source sets and that is
+// not on it fails the lint, and so does a listed id the app now sets. Run with
+// --app to print the full list.
+{
   const SRC = resolve(E2E, '../src');
   const files = [];
   const walkDir = (d) => {
@@ -150,8 +153,22 @@ if (process.argv.includes('--app')) {
     if (/[()|*+?[\]]/.test(id)) return false; // regex ids are checked through their parts
     return !appRes.some((r) => r.test(id));
   }).sort();
-  console.log(`app check: ${used.size} ids used by flows; ${missing.length} not found in apps/mobile/src:`);
-  for (const id of missing) console.log(`  ${id}`);
+  if (process.argv.includes('--app')) {
+    console.log(`app check: ${used.size} ids used by flows; ${missing.length} not found in apps/mobile/src:`);
+    for (const id of missing) console.log(`  ${id}`);
+  }
+  const baselinePath = join(E2E, 'not-in-app.txt');
+  const baseline = new Set(
+    (existsSync(baselinePath) ? readFileSync(baselinePath, 'utf8') : '').split('\n').map((l) => l.trim()).filter((l) => l && !l.startsWith('#')),
+  );
+  for (const id of missing) {
+    if (!baseline.has(id))
+      problems.push(`a flow taps id "${id}" that no file in apps/mobile/src sets: tap an id the screen has, or request it in TESTID_REQUESTS.md and add it to not-in-app.txt`);
+  }
+  for (const id of baseline) {
+    if (!missing.includes(id))
+      problems.push(`not-in-app.txt lists "${id}", which the app now sets or no flow uses: remove the line`);
+  }
 }
 
 if (problems.length) {
