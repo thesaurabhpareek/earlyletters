@@ -241,4 +241,16 @@ describe('CR-175: the launch-alert job and the triggers in ios-compile.yml', () 
     expect(WORKFLOW).toMatch(/cancel-in-progress: \$\{\{ github\.event_name == 'pull_request' \}\}/);
     expect(WORKFLOW).toMatch(/\n {2}push:\n {4}branches: \[develop\]\n/);
   });
+
+  it('the changes job runs the Debug compile for every build path of merge-queue.mjs (a gating PR is not left with a skipped compile)', async () => {
+    const { NATIVE_PATHS } = (await import('../../../scripts/agents/merge-queue.mjs')) as { NATIVE_PATHS: RegExp[] };
+    const grep = /grep -qE '(\^\(.*\))'/.exec(WORKFLOW)?.[1] ?? '';
+    expect(grep).not.toBe('');
+    const re = new RegExp(grep.replace(/^\^\(/, '^(?:'));
+    const samples = ['apps/mobile/ios/App/x.swift', 'apps/mobile/modules/m/y.swift', 'apps/mobile/app.config.ts', 'apps/mobile/eas.json', 'package-lock.json', 'apps/mobile/metro.config.js', 'apps/mobile/store.config.json', 'apps/mobile/version.json', 'apps/mobile/src/lib/privacy-manifest.ts', 'apps/mobile/src/lib/permission-copy.ts', 'apps/mobile/patches/p.patch'];
+    for (const f of samples) {
+      expect(NATIVE_PATHS.some((n) => n.test(f)), `${f} is a NATIVE_PATHS file`).toBe(true);
+      expect(re.test(f), `${f} runs the Debug compile`).toBe(true);
+    }
+  });
 });
