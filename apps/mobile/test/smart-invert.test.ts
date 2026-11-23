@@ -62,10 +62,14 @@ export function imageNames(source: string): Set<string> {
       }
     }
   }
+  // BL-1877: `styled.Image`, `styled.Image\`...\``, `styled('Image')` and `styled(\"ImageBackground\")` name the image by string or member.
+  const STYLED_IMAGE = /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*styled(?:\.|\(\s*['"])(?:Image|ImageBackground)\b/g;
+  for (const m of code.matchAll(STYLED_IMAGE)) names.add(m[1]);
   for (let grew = true; grew; ) {
     grew = false;
+    // BL-1877: `withUniwind(Image)` is the wrapper idiom src really uses (ui/safe-area-view.tsx); it wraps an image the same way.
     // BL-1841: `const Pic = styled(Image)` and `styled(Image, opts)` wrap an image and are still a picture.
-    for (const m of code.matchAll(/\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*styled\(\s*([A-Za-z_$][\w$.]*)\s*[,)]/g)) {
+    for (const m of code.matchAll(/\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:styled|withUniwind)\(\s*([A-Za-z_$][\w$.]*)\s*[,)]/g)) {
       if (names.has(m[2]) && !names.has(m[1])) {
         names.add(m[1]);
         grew = true;
@@ -140,7 +144,12 @@ export function forwardProblems(source: string): string[] {
   const bad = tags.filter((t) => !setsProp(t.text)).map((t) => t.tag);
   return [...(tags.length ? [] : ['draws no image']), ...bad];
 }
-const DEFINES_CUSTOM = /\bexport\s+(?:default\s+)?(?:function|const)\s+(PictureCard|Avatar)\b/;
+/**
+ * A file that defines a custom Avatar or PictureCard: `export function`, `export const`, `export default function`,
+ * `export default Avatar;` and `export { Avatar }` (also `as` forms). BL-1877: a list that ends in `from` re-exports
+ * a component defined in another file, so it is not a definition here.
+ */
+const DEFINES_CUSTOM = /\bexport\s+(?:default\s+)?(?:function|const)\s+(?:PictureCard|Avatar)\b|\bexport\s+default\s+(?:PictureCard|Avatar)\b|\bexport\s*\{[^}]*\b(?:PictureCard|Avatar)\b[^}]*\}(?!\s*from\b)/;
 
 function files(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
@@ -283,5 +292,36 @@ describe('[NS-33-R11] Smart Invert ignores pictures', () => {
     expect([...imageNames(svg)]).toEqual(['SvgPic']);
     expect(offenders(svg)).toEqual(['SvgPic']);
     expect(offenders(svg.replace('<SvgPic ', `<SvgPic ${PROP} `))).toEqual([]);
+  });
+  // BL-1877: the guard gaps the reviews of #1656 named.
+  it('[NS-33-R11] an image wrapped with withUniwind (the idiom src uses) is a picture, so it needs the prop', () => {
+    const wrapped = FIX('wrapper-image-without-prop.fixture.txt');
+    expect([...imageNames(wrapped)].sort()).toEqual(['ExpoImage', 'Image', 'Photo2', 'Pic', 'Wide']);
+    expect(offenders(wrapped)).toEqual(['Pic', 'Wide', 'Photo2']);
+    expect(offenders(wrapped.replace(/<(Pic|Wide|Photo2) /g, `<$1 ${PROP} `))).toEqual([]);
+    // the real wrapper in src wraps a layout view, not an image: it stays clean
+    const safe = readFileSync(join(SRC, 'components', 'ui', 'safe-area-view.tsx'), 'utf8');
+    expect(imageNames(safe).size).toBe(0);
+    expect(offenders(safe + '\n<SafeAreaView />')).toEqual([]);
+  });
+
+  it('[NS-33-R11] styled.Image and styled(\'Image\') are pictures, so they need the prop', () => {
+    const member = FIX('styled-member-image-without-prop.fixture.txt');
+    expect([...imageNames(member)].sort()).toEqual(['Called', 'Double', 'Member', 'Tagged']);
+    expect(offenders(member)).toEqual(['Member', 'Called', 'Double', 'Tagged']);
+    expect(offenders(member.replace(/<(Member|Called|Double|Tagged) /g, `<$1 ${PROP} `))).toEqual([]);
+    expect([...imageNames("const Box = styled.View;\nconst Row = styled('View');")]).toEqual([]); // not images
+  });
+
+  it('[NS-33-R11] DEFINES_CUSTOM sees export { Avatar } and export default Avatar, and a plain re-export is not a definition', () => {
+    for (const n of ['avatar-export-list.fixture.txt', 'avatar-export-default.fixture.txt']) {
+      expect(DEFINES_CUSTOM.test(FIX(n)), n).toBe(true);
+      expect(forwardProblems(FIX(n)), n).toEqual(['Image']); // and the scan then finds the dropped prop
+    }
+    expect(DEFINES_CUSTOM.test('export { Foo as PictureCard };')).toBe(true);
+    expect(DEFINES_CUSTOM.test('export { Other, Avatar as Face };')).toBe(true);
+    expect(DEFINES_CUSTOM.test("export { Avatar } from './avatar';")).toBe(false); // the definition is in the other file
+    expect(DEFINES_CUSTOM.test('export default AvatarList;')).toBe(false);
+    expect(DEFINES_CUSTOM.test('export { AvatarList };')).toBe(false);
   });
 });

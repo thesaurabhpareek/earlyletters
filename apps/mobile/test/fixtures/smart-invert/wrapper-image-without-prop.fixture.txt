@@ -1,0 +1,16 @@
+// Positive control for [NS-33-R11] (BL-1877): images wrapped with withUniwind (the app's real wrapper idiom), none with the prop.
+import { Image } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
+import { withUniwind } from 'uniwind';
+const Pic = withUniwind(Image);
+const Wide = withUniwind(ExpoImage, { source: 'src' });
+const Photo2 = withUniwind(Pic);
+export function Bad({ uri }: { uri: string }) {
+  return (
+    <>
+      <Pic source={{ uri }} />
+      <Wide source={{ uri }} />
+      <Photo2 source={{ uri }} />
+    </>
+  );
+}
