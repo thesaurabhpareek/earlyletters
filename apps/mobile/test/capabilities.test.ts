@@ -48,7 +48,7 @@ describe('server features switch: off unless a build says on', () => {
   it('is off in this process (no EXPO_PUBLIC_SERVER_FEATURES), and every capability follows it', () => {
     expect(process.env.EXPO_PUBLIC_SERVER_FEATURES ?? '').not.toBe('on');
     expect(serverFeaturesEnabled()).toBe(false);
-    expect(capabilities).toEqual({ signIn: false, sync: false, coParent: false, backup: false, statusReport: false, accountDeletion: false, analytics: false, englishOnly: false });
+    expect(capabilities).toEqual({ signIn: false, sync: false, serverErase: false, coParent: false, backup: false, statusReport: false, accountDeletion: false, analytics: false, englishOnly: false });
   });
 
   it('is on only where flipped: the preview alpha (D-106), production (build 12, founder 8 Nov 2026), and testflight after the R-17 flip; development is off (eas.json)', () => {
@@ -87,7 +87,7 @@ describe('server features switch: off unless a build says on', () => {
   it('the override is for tests only, and goes back to the build value', () => {
     setServerFeaturesForTests(true);
     // Analytics, English only and the two build flags have their own switches: server features on does not turn them on.
-    expect(capabilities).toEqual({ signIn: true, sync: true, coParent: true, backup: false, statusReport: false, accountDeletion: false, analytics: false, englishOnly: false });
+    expect(capabilities).toEqual({ signIn: true, sync: true, serverErase: false, coParent: true, backup: false, statusReport: false, accountDeletion: false, analytics: false, englishOnly: false });
     setServerFeaturesForTests(null);
     expect(serverFeaturesEnabled()).toBe(false);
     const saved = process.env.VITEST;
@@ -105,7 +105,7 @@ describe('[F19-REQ-025] build flags backup and statusReport: off unless the buil
   const FLAGS: BuildFlag[] = ['backup', 'statusReport'];
   // accountDeletion is a build flag too but not one of these two: it is written `on` (not `off`) where it is wanted, and left out
   // of the alpha profiles. Its own file pins it (account-deletion-switch.test.ts).
-  const VARIABLE: Record<BuildFlag, string> = { backup: 'EXPO_PUBLIC_BACKUP', statusReport: 'EXPO_PUBLIC_STATUS_REPORT', accountDeletion: 'EXPO_PUBLIC_ACCOUNT_DELETION' };
+  const VARIABLE: Record<BuildFlag, string> = { backup: 'EXPO_PUBLIC_BACKUP', statusReport: 'EXPO_PUBLIC_STATUS_REPORT', accountDeletion: 'EXPO_PUBLIC_ACCOUNT_DELETION', serverErase: 'EXPO_PUBLIC_SERVER_ERASE' };
   afterEach(() => {
     setServerFeaturesForTests(null);
     for (const f of FLAGS) setBuildFlagForTests(f, null);
@@ -215,7 +215,7 @@ describe('[D-111 item 4, D-121] English only: on in the alpha profiles and the s
     // And turning it on changes no other capability.
     setServerFeaturesForTests(null);
     setEnglishOnlyForTests(true);
-    expect(capabilities).toEqual({ signIn: false, sync: false, coParent: false, backup: false, statusReport: false, accountDeletion: false, analytics: false, englishOnly: true });
+    expect(capabilities).toEqual({ signIn: false, sync: false, serverErase: false, coParent: false, backup: false, statusReport: false, accountDeletion: false, analytics: false, englishOnly: true });
   });
 
   it('the override is for tests only, and goes back to the build value', () => {
@@ -240,7 +240,7 @@ describe('[D-111 item 4, D-121] English only: on in the alpha profiles and the s
     expect(code).not.toMatch(/process\.env\s*\[/);
     expect(code).not.toMatch(/\{[^}]*\}\s*=\s*process\.env\b/);
     const reads = [...code.matchAll(/process\.env\.([A-Za-z0-9_]+)/g)].map((m) => m[1]);
-    expect(reads.sort()).toEqual(['EXPO_PUBLIC_ACCOUNT_DELETION', 'EXPO_PUBLIC_ANALYTICS', 'EXPO_PUBLIC_BACKUP', 'EXPO_PUBLIC_ENGLISH_ONLY', 'EXPO_PUBLIC_SERVER_FEATURES', 'EXPO_PUBLIC_SPOKEN_LANGUAGES', 'EXPO_PUBLIC_STATUS_REPORT']);
+    expect(reads.sort()).toEqual(['EXPO_PUBLIC_ACCOUNT_DELETION', 'EXPO_PUBLIC_ANALYTICS', 'EXPO_PUBLIC_BACKUP', 'EXPO_PUBLIC_ENGLISH_ONLY', 'EXPO_PUBLIC_SERVER_ERASE', 'EXPO_PUBLIC_SERVER_FEATURES', 'EXPO_PUBLIC_SPOKEN_LANGUAGES', 'EXPO_PUBLIC_STATUS_REPORT']);
     expect(code).toMatch(/const SPOKEN_LANGUAGES_BUILD_VALUE: readonly string\[\] \| null = parseLanguageList\(process\.env\.EXPO_PUBLIC_SPOKEN_LANGUAGES\);/);
     expect(code.match(/process\.env\.EXPO_PUBLIC_SPOKEN_LANGUAGES/g)?.length).toBe(1);
     expect(code).toMatch(/const ENGLISH_ONLY_BUILD_VALUE: boolean = parseServerFeatures\(process\.env\.EXPO_PUBLIC_ENGLISH_ONLY\);/);

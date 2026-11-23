@@ -22,6 +22,10 @@ export const STORE_FLAGS = Object.freeze([
   Object.freeze({ env: 'EXPO_PUBLIC_BOOK_SEARCH', card: 'NS-02', allowedOn: Object.freeze([]) }),
   Object.freeze({ env: 'EXPO_PUBLIC_NEW_DEVICE_EMAIL', card: 'NS-08', allowedOn: Object.freeze([]) }),
   Object.freeze({ env: 'EXPO_PUBLIC_BACKUP_LINE', card: 'NS-10', allowedOn: Object.freeze([]) }),
+  // Release hold, not a card flag (BL-1854): the letter Erase now on a signed-in phone (capabilities.serverErase). Held out
+  // of every store profile until BL-1805 clears its wording (counsel Q51 and the founder's words; CLO-22). The row that
+  // flips it is BL-1805: the eas.json PR it names adds the profiles to allowedOn here in the same diff, as for any flag.
+  Object.freeze({ env: 'EXPO_PUBLIC_SERVER_ERASE', card: 'BL-1854', allowedOn: Object.freeze([]) }),
 ]);
 
 /**

@@ -301,7 +301,23 @@ describe('the 30 day purge', () => {
     const rows = db.all<{ type: string; entity_id: string; payload: string }>('SELECT type, entity_id, payload FROM sync_outbox');
     expect(rows.map((r) => r.type)).toEqual(['entry.erase']);
     expect(rows[0]!.entity_id).toBe(id1);
-    expect(Object.keys(JSON.parse(rows[0]!.payload)).sort()).not.toContain('text');
+    const payload = JSON.parse(rows[0]!.payload) as { type: string; id: string; data: unknown };
+    expect(payload.data).toEqual({});
+  });
+
+  it('[BL-1854][F16-REQ-024] only the author erases: another account\'s letter stays, with its file, and nothing is queued', () => {
+    const db = store.localSqlDb();
+    const owner = '11111111-1111-1111-1111-111111111111';
+    db.run("INSERT INTO settings (key, value) VALUES ('sync.ownerId', ?)", owner);
+    save(id1);
+    db.run("UPDATE entries SET server_version = '100', author_id = '22222222-2222-2222-2222-222222222222' WHERE id = ?", id1);
+    store.deleteEntry(id1);
+    setServerFeaturesForTests(true);
+    const d = disk([`file:///Documents/${id1}.m4a`]);
+    expect(store.eraseEntry(id1, d.eraser)).toBe(false);
+    expect(d.log).toEqual([]);
+    expect(store.listDeleted().map((e) => e.id)).toEqual([id1]);
+    expect(db.all('SELECT 1 FROM sync_outbox WHERE type = \'entry.erase\'')).toEqual([]);
   });
 
   it('a purged letter never comes back: no row, no file, nothing for the sweep to re-attach', () => {
@@ -315,3 +331,39 @@ describe('the 30 day purge', () => {
     expect(planLaunchSweep({ files, ...rows, reported: [], activeChildId: asha, skipDraftIds: [] })).toEqual([]);
   });
 });
+
+describe('a deleted book on a phone with a sync owner (BL-1854, review of #1727)', () => {
+  const owner = '11111111-1111-1111-1111-111111111111';
+  const ago = (days: number) => T0 + days * DAY;
+
+  it('[F17-REQ-026] eraseBook refuses: nothing is lost, the letters and pending uploads stay, no file goes', () => {
+    save(id1);
+    expect(store.deleteBook(asha)).toBe(true); // signed out: allowed
+    const db = store.localSqlDb();
+    db.run("INSERT INTO settings (key, value) VALUES ('sync.ownerId', ?)", owner);
+    db.run("UPDATE entries SET server_version = '100', author_id = ? WHERE id = ?", owner, id1);
+    db.run("INSERT INTO sync_outbox (op_id, lane, type, entity_id, payload, created_at) VALUES ('op-y', 1, 'entry.save', ?, '{}', ?)", id1, new Date(clock).toISOString());
+    const d = disk([`file:///Documents/${id1}.m4a`]);
+    expect(store.eraseBook(asha, d.eraser)).toBe(false);
+    expect(d.log).toEqual([]);
+    expect(db.all<{ n: number }>('SELECT COUNT(*) AS n FROM entries WHERE id = ?', id1)[0]!.n).toBe(1);
+    expect(db.all<{ n: number }>("SELECT COUNT(*) AS n FROM sync_outbox WHERE op_id = 'op-y'")[0]!.n).toBe(1);
+    expect(store.listDeletedBooks().map((b) => b.id)).toEqual([asha]);
+  });
+
+  it('the day-30 purge skips a book on an owner phone, and still erases it on an owner-less phone', () => {
+    save(id1);
+    store.deleteBook(asha);
+    const db = store.localSqlDb();
+    db.run("INSERT INTO settings (key, value) VALUES ('sync.ownerId', ?)", owner);
+    const d = disk([`file:///Documents/${id1}.m4a`]);
+    purgeSeen(ago(31), d.eraser);
+    expect(store.listDeletedBooks().map((b) => b.id)).toEqual([asha]);
+    expect(d.log).toEqual([]);
+    db.run("DELETE FROM settings WHERE key = 'sync.ownerId'");
+    purgeSeen(ago(32), d.eraser);
+    expect(store.listDeletedBooks()).toEqual([]);
+    expect(d.log).toEqual([`file:file:///Documents/${id1}.m4a`]);
+  });
+});
+

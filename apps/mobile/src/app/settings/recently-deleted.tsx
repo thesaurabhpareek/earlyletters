@@ -115,7 +115,7 @@ function Shelf() {
       </View>
       <View className="flex-row flex-wrap items-center gap-2">
         <Button variant="secondary" size="md" label={d.restoreBookButton} onPress={() => restoreTheBook(b)} testID="shelf.restoreBook" />
-        {actions.eraseNow ? <Button variant="destructive" size="md" icon={TrashIcon} label={d.eraseNow} onPress={() => setErasingBook(b)} testID="shelf.eraseBook" /> : null}
+        {actions.eraseBookNow ? <Button variant="destructive" size="md" icon={TrashIcon} label={d.eraseNow} onPress={() => setErasingBook(b)} testID="shelf.eraseBook" /> : null}
       </View>
     </Card>
   ));

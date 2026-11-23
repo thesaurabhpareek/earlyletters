@@ -5,10 +5,10 @@
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { en } from '@scribe/content';
 import { monthDay, shelfActions, shelfDateLine, shelfRow } from '../src/components/book/shelf.logic';
-import { capabilities, setServerFeaturesForTests } from '../src/lib/capabilities';
+import { capabilities, setBuildFlagForTests, setServerFeaturesForTests } from '../src/lib/capabilities';
 import type { Entry } from '../src/lib/store';
 
 const src = (f: string) => readFileSync(join(__dirname, '../src', f), 'utf8');
@@ -52,11 +52,11 @@ describe('the shelf card date line (S38)', () => {
 
 describe('Erase now (S39, S63)', () => {
   it('is offered on a phone that does not sync', () => {
-    expect(shelfActions({ sync: false })).toEqual({ restore: true, eraseNow: true });
+    expect(shelfActions({ sync: false })).toEqual({ restore: true, eraseNow: true, eraseBookNow: true });
   });
 
   it('is not offered in a sync build without the server erase, and comes back only once it exists', () => {
-    expect(shelfActions({ sync: true })).toEqual({ restore: true, eraseNow: false });
+    expect(shelfActions({ sync: true })).toEqual({ restore: true, eraseNow: false, eraseBookNow: false });
     expect(shelfActions({ sync: true, serverErase: false }).eraseNow).toBe(false);
     expect(shelfActions({ sync: true, serverErase: true }).eraseNow).toBe(true);
   });
@@ -69,17 +69,45 @@ describe('Erase now (S39, S63)', () => {
 });
 
 describe('Erase now on a signed-in phone (BL-1854, F16-REQ-024)', () => {
-  it('a sync build with the server switch on offers Erase now; with it off, no sync and so the local erase', () => {
-    setServerFeaturesForTests(true);
-    expect(shelfActions({ sync: capabilities.sync, serverErase: capabilities.serverErase }).eraseNow).toBe(true);
-    setServerFeaturesForTests(false);
-    expect(shelfActions({ sync: capabilities.sync, serverErase: capabilities.serverErase }).eraseNow).toBe(true);
-    expect(capabilities.serverErase).toBe(false);
+  const read = () => shelfActions({ sync: capabilities.sync, serverErase: capabilities.serverErase });
+  afterEach(() => {
     setServerFeaturesForTests(null);
+    setBuildFlagForTests('serverErase', null);
+  });
+
+  it('a signed-in phone with the server erase flag shows the letter Erase now and hides the book one', () => {
+    setServerFeaturesForTests(true);
+    setBuildFlagForTests('serverErase', true);
+    expect(read()).toEqual({ restore: true, eraseNow: true, eraseBookNow: false });
+  });
+
+  it('a signed-in phone without the server erase flag hides both (the store builds)', () => {
+    setServerFeaturesForTests(true);
+    expect(capabilities.serverErase).toBe(false);
+    expect(read()).toEqual({ restore: true, eraseNow: false, eraseBookNow: false });
+  });
+
+  it('a phone that does not sync shows both, and the flag alone does not turn the server on', () => {
+    setServerFeaturesForTests(false);
+    setBuildFlagForTests('serverErase', true);
+    expect(capabilities.serverErase).toBe(false);
+    expect(read()).toEqual({ restore: true, eraseNow: true, eraseBookNow: true });
+  });
+
+  it('the book never reads serverErase: a sync build hides it whatever serverErase says', () => {
+    expect(shelfActions({ sync: true, serverErase: true }).eraseBookNow).toBe(false);
+    expect(shelfActions({ sync: false }).eraseBookNow).toBe(true);
   });
 
   it('the screen never calls shelfActions with sync alone (that hid Erase now for every signed-in phone)', () => {
     expect(src('app/settings/recently-deleted.tsx')).not.toMatch(/shelfActions\(\{ sync: capabilities\.sync \}\)/);
+  });
+
+  it('the screen gates the book button on eraseBookNow and the letter card on eraseNow (source)', () => {
+    const screen = src('app/settings/recently-deleted.tsx');
+    expect(screen).toMatch(/\{actions\.eraseBookNow \? <Button.*testID="shelf\.eraseBook"/);
+    expect(screen).toMatch(/eraseNow=\{actions\.eraseNow\}/);
+    expect(screen).not.toMatch(/\{actions\.eraseNow \? <Button.*shelf\.eraseBook/);
   });
 });
 

@@ -1182,13 +1182,18 @@ export function listDeletedBooks(): wipe.DeletedBook[] {
 /**
  * Erase a deleted book for good: "Erase now" on the shelf, or the purge at day 30. The mark that the erase began is
  * written first, then every recording file of the book goes (its letters, deleted ones too, and its drafts), then
- * the rows in one transaction. A kill part way leaves the mark and rows whose files are gone; the next launch purge
+ * the rows in one transaction. Refused (false) on a phone with a sync owner. A kill part way leaves the mark and rows whose files are gone; the next launch purge
  * finishes it (purgeExpired). The sweep never sees a file without its row, so nothing comes back as a draft. A file
  * that will not go stops the erase with the book still marked, for the next try. True when the book is gone.
  */
 export function eraseBook(id: string, eraseAudio: AudioEraser): boolean {
   const c = ctx();
   if (!wipe.isDeleted(c, id)) return false;
+  // A phone with a sync owner holds a server copy this erase cannot reach: wipe.removeBook queues no server op and deletes
+  // the book's sync_outbox rows, so pending uploads would be lost and the server copy would stay (BL-1854, review of #1727).
+  // Refuse before anything is marked or removed; the book waits in Recently deleted until a server book erase exists. The
+  // day-30 purge and the shelf both come through here, so both skip it. A phone that never signed in is unchanged.
+  if (syncOwner(c.db) !== null) return false;
   wipe.markErasing(c, id);
   for (const r of wipe.bookAudioRows(c, id)) {
     try {

@@ -109,9 +109,14 @@ export function shelfDateLine(v: Pick<ShelfRowView, 'deletedDay' | 'keptUntilDay
  * is: always on a phone that does not sync; in a sync build only with the server erase (`serverErase`, from
  * `capabilities.serverErase`: `eraseEntry` queues one id-only `entry.erase`, WP-F16-13). A sync build that passes no
  * `serverErase` still hides it.
+ *
+ * `eraseNow` is for one letter. `eraseBookNow` is for a deleted book and is on only when the phone does not sync: the
+ * book erase (`eraseDeletedBook`, store.eraseBook, wipe.removeBook) queues no server op and deletes the book's
+ * sync_outbox rows, so on a syncing phone the server copy would stay and pending uploads would be lost. It stays off
+ * there until a server book erase exists.
  */
-export function shelfActions(build: { sync: boolean; serverErase?: boolean }): { restore: true; eraseNow: boolean } {
-  return { restore: true, eraseNow: !build.sync || build.serverErase === true };
+export function shelfActions(build: { sync: boolean; serverErase?: boolean }): { restore: true; eraseNow: boolean; eraseBookNow: boolean } {
+  return { restore: true, eraseNow: !build.sync || build.serverErase === true, eraseBookNow: !build.sync };
 }
 
 /**

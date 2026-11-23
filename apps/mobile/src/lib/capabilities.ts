@@ -151,9 +151,11 @@ const BACKUP_BUILD_VALUE: boolean = parseServerFeatures(process.env.EXPO_PUBLIC_
 const STATUS_REPORT_BUILD_VALUE: boolean = parseServerFeatures(process.env.EXPO_PUBLIC_STATUS_REPORT);
 /** Delete account (founder, 30 Oct 2026). Same rule: only `on` is on, so a build with the variable unset hides the row. */
 const ACCOUNT_DELETION_BUILD_VALUE: boolean = parseServerFeatures(process.env.EXPO_PUBLIC_ACCOUNT_DELETION);
+/** Letter Erase now on a signed-in phone (BL-1854). Held out of every store profile by STORE_FLAGS until BL-1805 clears. */
+const SERVER_ERASE_BUILD_VALUE: boolean = parseServerFeatures(process.env.EXPO_PUBLIC_SERVER_ERASE);
 
 /** The build flags that sit on top of the server switch. */
-export type BuildFlag = 'backup' | 'statusReport' | 'accountDeletion';
+export type BuildFlag = 'backup' | 'statusReport' | 'accountDeletion' | 'serverErase';
 
 let buildFlagTestOverride: Partial<Record<BuildFlag, boolean>> = {};
 
@@ -189,6 +191,7 @@ export function buildFlagEnabled(flag: BuildFlag): boolean {
     backup: BACKUP_BUILD_VALUE,
     statusReport: STATUS_REPORT_BUILD_VALUE,
     accountDeletion: ACCOUNT_DELETION_BUILD_VALUE,
+    serverErase: SERVER_ERASE_BUILD_VALUE,
   };
   return buildFlagTestOverride[flag] ?? built[flag];
 }
@@ -207,12 +210,14 @@ export const capabilities = {
     return serverFeaturesEnabled();
   },
   /**
-   * Erase now works for a signed-in phone (WP-F16-13, F16-REQ-024): `eraseEntry` queues one id-only `entry.erase` and the
-   * server erases its copy. It follows the same switch as sync, because the queue is the sync queue. The shelf reads this,
-   * so a sync build no longer hides Erase now (BL-1854).
+   * Erase now for one letter works on a signed-in phone (WP-F16-13, F16-REQ-024): `eraseEntry` queues one id-only
+   * `entry.erase` and the server erases its copy. Needs the server switch and its own build flag
+   * `EXPO_PUBLIC_SERVER_ERASE=on`, which no store profile may set until BL-1805 clears the wording (STORE_FLAGS in
+   * scripts/release/store-flags.mjs, allowedOn empty). It covers letters only: erasing a whole book queues nothing for the
+   * server, so the book button never reads this (shelfActions `eraseBookNow`).
    */
   get serverErase(): boolean {
-    return serverFeaturesEnabled();
+    return buildFlagEnabled('serverErase');
   },
   /** Invite and join a co-parent. Off: the coming-soon presentation. */
   get coParent(): boolean {
