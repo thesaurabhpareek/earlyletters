@@ -48,7 +48,9 @@ import { PinnedActionLayout } from '@/components/ui/pinned-action';
 import { useToast } from '@/components/ui/toast';
 import { childIndexOf, track, trackBookOpened } from '@/lib/analytics/track';
 import { authCopy } from '@/lib/auth/copy';
-import { ARRIVAL_SETTING, ARRIVAL_SHOWN, arrivalLineOwed } from '@/lib/first-run/new-phone.logic';
+import { ARRIVAL_SETTING, ARRIVAL_SHOWN, BACKUP_LINE_DONE, BACKUP_LINE_SETTING, arrivalLineOwed, backupLineOwed } from '@/lib/first-run/new-phone.logic';
+import { backupInBuild } from '@/lib/backup/gate';
+import { backupLineEnabled } from '@/lib/first-run/backup-line-flag';
 import { copy, fill } from '@/lib/copy';
 import { speechSettingsCopy } from '@/lib/models/copy';
 import { downloadingLine } from '@/lib/models/speech-download.logic';
@@ -140,6 +142,16 @@ export default function Book() {
       };
     }, []),
   );
+
+  // NS-10-R13 (BL-1865): one Book-level line while recordings are on the other phone and backup is off; no per-letter
+  // warning. It stays until dismissed (phone-local, no name, date or text). Behind EXPO_PUBLIC_BACKUP_LINE (off), and
+  // drawn only while this build has no backup, so it never says the recordings stay on the phone beside a backup.
+  // The two keys are PROPOSED (docs/content/words-packet-20nov.md): counsel has not read the recording sentence.
+  const [backupLine, setBackupLine] = useState(() => backupLineOwed(getSetting(BACKUP_LINE_SETTING), backupInBuild(), backupLineEnabled()));
+  const dismissBackupLine = useCallback(() => {
+    setSetting(BACKUP_LINE_SETTING, BACKUP_LINE_DONE);
+    setBackupLine(false);
+  }, []);
 
   useEffect(() => {
     if (!active) return;
@@ -408,6 +420,14 @@ export default function Book() {
             {authCopy.newPhone.arrivedPlain}
           </Text>
         ) : null}
+        {backupLine ? (
+          <View className="flex-row items-center gap-3" style={{ marginBottom: tokens.space[3] }} testID="book.backupLine">
+            <Text variant="callout" tone="muted" style={{ flex: 1 }}>
+              {authCopy.newPhone.recordingsElsewhere}
+            </Text>
+            <Button label={authCopy.newPhone.recordingsElsewhereDismiss} variant="quiet" size="sm" onPress={dismissBackupLine} />
+          </View>
+        ) : null}
         {/* The lens switch (design spec 01 section 5.1): under the cover band and above the chapters, Months and Photos,
             shown only while a kept, open letter has a picture (NS-01-R10). */}
         {lensOn ? (
@@ -436,7 +456,7 @@ export default function Book() {
       importantForAccessibility={barUp ? 'auto' : 'no-hide-descendants'}>
       <BlurSurface edge="bottom" style={{ paddingTop: insets.top, paddingBottom: tokens.space[2], paddingHorizontal: tokens.space[5] }}>
         <View className="flex-row items-center gap-2" style={{ minHeight: BAR_HEIGHT }}>
-          <Text variant="headline" className="flex-1" maxFontSizeMultiplier={1.3}>
+          <Text variant="headline" className="flex-1">
             {title}
           </Text>
           {months ? <Button variant="quiet" size="sm" label={months.label} accessibilityHint={months.hint} onPress={months.onPress} testID="book.bar.months" /> : null}

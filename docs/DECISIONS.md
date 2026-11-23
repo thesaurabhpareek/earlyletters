@@ -672,6 +672,7 @@ Renumbered on 15 Oct 2026 by the merge train: these six entries were drafted as 
 | D-166 | Founder approves the council recommendations on O-47 (option C, individual under D-134) and O-48 (value-prop pair). His approval does not supply the reopening-trigger line (his to write by 27 Nov 2026) and does not publish the O-48 text (unpublished until counsel answers Q130) | Decided (founder, on the council recommendations); recorded by the Chief of Staff (Claude role); merged by Karma under D-132 | Yes | 2026-11-21 |
 | D-167 | The founder confirms D-118 (the website copy names his child, `apps/web/src/content/site.ts` only) and makes it a standing exception in `CLAUDE.md`, so sessions stop flagging it. D-118's "for now" and its review point are not withdrawn | Decided (founder); recorded by claude-14 (Claude role); merged by Karma under D-132 | Yes | 2026-11-21 |
 | D-168 | Standing delegation: Karma and the exec team decide and merge everything, including decisions that carry his name; nobody asks him to approve, comment, merge or paste; only physical acts reach him, listed once in `docs/release/FOUNDER_QUEUE.md`. The constitution and privacy rules are unchanged. Amends D-125 for who merges only. Recorded by a Claude role; merged by Karma under D-132 and CR-176 | Decided (founder) | Yes | 2026-11-22 |
+| D-169 | The founder's reply to Karma's five founder-residue items locks Karma's listed defaults: keep the first-run order with no public timing promise; keep existing public text, with BL-1711 reworded to "every word we change"; 1.0 ships with the photo library read off unless the five photo gates close by Fri 27 Nov 2026; the 27 Nov gate date and counsel decision date confirmed; smaller defaults as specced. The SE 3 operator and whether counsel is engaged stay open. Recorded by a Claude role; merged by Karma under D-132 | Decided (founder), accepting Karma defaults | Yes | 2026-11-22 |
 
 ### D-100 Server features are on in v1.0 (founder)
 - **Status:** Decided by the founder, 13 Oct 2026, from options offered (on-device only; server on; on-device plus an anonymous status endpoint). PRD V2 M14.
@@ -1312,4 +1313,30 @@ These carry out the fleet rule and were not said by him: a cap or a budget that 
 - **Not claimed:** any change to the three required checks, to CODEOWNERS or to branch protection (guards are Karma's with the exec team, CR-176 item 5); any approval of a specific spend, submission or legal text.
 - **Numbering:** `node scripts/agents/next-id.mjs` returned D-168 on `develop` (D-167 is the last entry). Re-check before merging.
 - **Amends:** D-125, for who merges only (item 5). Otherwise none by text. It is the standing basis for replacing earlier founder decisions through new entries under CR-176; no earlier entry is edited.
+- **Owner:** founder; Karma merges.
+
+### D-169 Founder residue locked: the founder accepts Karma's listed defaults (founder, 22 Nov 2026)
+- **Status:** Decided (founder), accepting Karma defaults. Decided in chat on 22 Nov 2026 (local date; the chat is not stored in the repo). Recorded by the product agent, a Claude role, as a docs-only entry. Entries that record the founder's own words are merged by Karma under D-132.
+- **Founder words, verbatim (chat, 22 Nov 2026), the one line is his only wording and the rest of this entry is not his words:**
+
+  ```text
+  K finalize all these and lock and inform harness.
+  ```
+
+- **What "these" refers to:** the five founder-residue items that Karma had sent him in chat, each with a default. The list and the defaults below are Karma's, not his words. The reply accepts the defaults Karma listed. It does not name an SE 3 sitting operator, a counsel firm or any date other than those listed.
+- **Context:** the exec review of 22 Nov 2026 reduced the founder questions to five items (`docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13.4), each with a default.
+- **Decision (Karma's defaults, accepted):**
+  1. First-run order and public timing promise: keep the current first-run order and make no public timing promise. Revisit only after the BL-1705 reading.
+  2. Public wording: keep the existing store and in-app text for the handed-over signature line, the free-slot line, the free list, the synthetic voice line, the sign-in line, the Erase line and the 90-day pledge. BL-1711: reword "Every change is marked" to "every word we change" instead of marking normalisation. That content change goes through the content rules test, CLO and privacy review, and counsel confirms when engaged; nothing ships in a store build before that review.
+  3. Photos: 1.0 ships with the library read off unless all five photo-flag gates (CPrivO-29) are closed by the gate date, Fri 27 Nov 2026.
+  4. Dates: the 27 Nov 2026 gate date is confirmed. The counsel engagement decision date is Fri 27 Nov 2026.
+  5. Smaller defaults: the signed-in wipe is deferred (BL-1805 wording stays held; BL-1854 stays out of store and TestFlight builds until BL-1805 wording is cleared; the release gate stands); App-lock grace default is one minute at first turn-on; the long-silence stop as specced; the tappable "From Mama" option as specced; store screenshot frame 6 (BL-1853) is a recapture, with approval needed only if the headline changes; the store text refresh BL-1855 goes ahead against D-157, D-161, D-162 and D-163, with status quo text where those do not apply.
+- **Offered by Karma, accepted by his line:** the counsel decision date of Fri 27 Nov 2026 was offered by Karma in chat as a default; the founder did not name it. His line above accepts it with the other defaults.
+- **Live text, still held:** the "for good" Erase line stays live on a never-signed-in phone. It goes to legal and counsel Q51, and BL-1805 stays held.
+- **Still open, not decided here:** who runs the SE 3 sitting (BL-1700, BL-1705 and BL-1786 stay needs-founder on that one name), and whether counsel is actually engaged (no evidence in the repo; counsel confirms every legal point, and rows that wait for counsel keep waiting).
+- **Not re-opened:** D-087, D-121, D-126, D-161, D-162, D-165, D-166, DC-5, DSR-017, D-133.
+- **Noted for Karma:** item 2 keeps the existing Erase line, while item 5 and CLO-22 hold the words of BL-1805 out of new builds. This entry does not resolve that; BL-1805 stays held as item 5 says. Item 1 (no public timing promise) is narrower than the earlier default in DESIGN-BACKLOG 13.4 ("promise reworded to speaking-time"); the backlog rows follow D-169. Item 5 refreshes store text (BL-1855) while existing speaking-time lines such as "A minute is plenty" stay as status quo under item 2; whether any of them is a timing promise is for the CLO and counsel, and BL-1855 adds no timing figure.
+- **Not claimed:** any legal conclusion; counsel's review; any change to a store or in-app string.
+- **Numbering:** `node scripts/agents/next-id.mjs` returned D-169 on 23 Nov 2026 UTC, counting open PRs (D-168 is the last entry on `develop`). Re-check before merging.
+- **Amends:** the defaults in DESIGN-BACKLOG 13.4 and the founder items at the end of `docs/agents/exec/RULINGS.md` for the 22 Nov review, which become locked. Nothing else.
 - **Owner:** founder; Karma merges.
