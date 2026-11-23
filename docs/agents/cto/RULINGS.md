@@ -1140,3 +1140,17 @@ Founder standing approval and hard limits are quoted in the Batch 6 section of `
 - Door: two-way. Way back: a new migration, never an edit of the applied one.
 - Founder-only: no.
 - Signed: Karma
+
+### CR-180 When Google sign-in ships (23 Nov 2026, CTO (Karma), CPO, CCO and CLO as challengers (Claude roles, not counsel))
+- Verdict: RULED.
+- Question: D-054 says Google sign-in is in v1.0; the locked card (NS-41-R1, NS-41-R20) and IAM-R05 still follow D-044 (Google at v1.1). Which build carries Google? Options and the id table are in E98 and D-171.
+- Positions (each a Claude role reading the repo; none is counsel, none is a licensed professional):
+  - CPO (scope and sequencing): Apple is the launch door and its code exists, so it stays P0. Google is small to build but long to unblock (cloud project, consent screen, one iOS client id, device test, public text), and without linking it makes a second, empty book for a person who used Hide My Email and later taps Google (card 29 section 2.3). Apple plus email already meets the sign-in duty. Recommends option 1: Google in the first build after submission. Option 2 moves submission by the length of those long-lead steps; no dates or counts for them are sourced, so that cost is UNVERIFIED.
+  - CCO (challenger, Terms, policy, Apple rules): Apple Guideline 4.8 applies once a third-party login is offered, and Sign in with Apple is the usual way to meet it (card 29 section 4, read there from Apple's page; not re-read in this session, UNVERIFIED today). Guideline 5.1.1(v) as quoted in card 29 asks for an in-app way to revoke a social credential and no tokens stored off the device (NS-54-R38). Terms 3.1 and the privacy policy and subprocessor list must name Google before the button exists (BL-1908), and counsel sees them first. Objection: shipping the button before that text makes a claim the build does not match. Answered by the gate below.
+  - CLO (challenger, LEGAL-REQ-012): the allowlist names no Google token or picture; NS-54-R7 keeps it that way. The phone-number line is a separate change that waits for counsel and BL-1909 and is not decided here. Whether Google needs its own brand verification is UNVERIFIED (AUTH_SETUP 3.1 "Assumption").
+- Ruling: option 1. Google ships in the first build after the first submission build, and only when (a) linking is merged (BL-1893, BL-1894), (b) its public text is published (BL-1908, counsel has seen it), and (c) its deletion path and drill hold under D-170 item 4 and CR-178 item 5, including revoking any provider token on deletion (NS-54-R9, NS-54-R38; BL-1892 holds the read-back). This amends the timing in D-054 only. NS-41-R1, NS-41-R20 and IAM-R05 change by E98 when those gates hold, not before. The NS-41 never-SMS line is not part of this ruling.
+- If Google lands dark: it needs a named gate row (BL-1908 and BL-1893 are the gates) and an `allowedOn` entry for its flag in `scripts/release/store-flags.mjs`, empty until the gates clear and never `production` before then (CR-178 item 1).
+- Evidence: D-044; D-054; D-170; CR-178; `docs/product/prd/29-sign-in-methods-and-phone-verification.md` sections 2, 4, 5 and 6; `docs/engineering/05-identity-and-access.md` IAM-R05; `docs/product/prd/19-from-download-to-first-letter.md` NS-41-R1, NS-41-R20 and section 14.
+- Door: two-way. Way back: a later D-entry moving Google earlier or retiring it.
+- Founder-only: no.
+- Signed: Karma
