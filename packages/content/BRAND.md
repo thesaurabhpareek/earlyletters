@@ -37,7 +37,7 @@ Read it, and hear it.
 
 ### 3. Made by the whole family, at your pace
 Love from everyone, pressure from no one.
-- At v1.0 the book is shared with your co-parent, each letter signed, like "From Papa". Grandparents and close family join in a later update.
+- Each letter carries who it is from, like "From Mama". Sharing a book with a co-parent is not in the first release, so no public line says it is.
 - Private by default. Never sold, never used for ads, never used to train models (D-061).
 - "Not much today" in one tap. No counters or badges, ever.
 - Organised by month of age.

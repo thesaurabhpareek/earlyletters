@@ -117,6 +117,7 @@ export default function PrivacySettings() {
 
         <ListSection title={p.whoTitle} footer={p.notificationsLine}>
           <ListRow title={lockOn ? appLockCopy.privacy.whoLockOn[method] : p.whoLockOff} testID="privacy.who" />
+          <ListRow title={p.staffAccess} testID="privacy.staffAccess" />
           <ListRow
             title={appLockCopy.settingsHome.appLock}
             value={lockOn ? appLockCopy.settingsHome.appLockOn : appLockCopy.settingsHome.appLockOff}

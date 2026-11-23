@@ -7,9 +7,9 @@ D-106 (founder, 15 Oct 2026): option B ships as an alpha, a TestFlight build wit
 | | Alpha build 1 | Alpha build 2 |
 |---|---|---|
 | `eas.json` profile | `testflight` | `preview` |
-| Server features | **off**: no accounts, nothing leaves the phone | **on**: sign-in, sync and co-parent sharing against **staging** |
+| Server features | **off** today: no accounts, nothing leaves the phone. BL-1867 turns them on after the tester notice (BL-1887, D-170); until then this build's text says it has no account | **on**: sign-in, sync and co-parent sharing against **staging** |
 | Recording backup, status report | off (build flags `EXPO_PUBLIC_BACKUP`, `EXPO_PUBLIC_STATUS_REPORT`) | off (same) |
-| Analytics | off (`EXPO_PUBLIC_ANALYTICS`) | off |
+| Analytics | off today (`EXPO_PUBLIC_ANALYTICS`) | off today. D-170: on in both only once the SDK and adapter exist (BL-1235 P5 to P8), the tester notice in `docs/legal/TESTFLIGHT_TESTERS.md` 5.1 item 9 and 5.4 is in that build's What to Test, and BL-1867 has changed `eas.json`. A tester is asked in the app, nothing is shared unless they say yes, and Settings, Privacy turns it off. Production stays off (BL-1886) |
 | Delete account row | no accounts, so none | **hidden** unless `EXPO_PUBLIC_ACCOUNT_DELETION` is `on` in the EAS `preview` environment (founder, 30 Oct 2026; step 9) |
 | App id | `com.earlyletters.scribe.preview` | `com.earlyletters.scribe.preview` (same App Store Connect record) |
 | Who | anyone you invite | **the family only** until the R-17 gate passes (D-100, see "Who may have which build") |
@@ -215,7 +215,7 @@ If a build goes out without step 4, add `whatToTest.withoutSpeech`. That can hap
 - **Submit:** a WARN until the submit profile names `ios.ascAppId` (step 2.4); only the GitHub workflow needs it.
 - **Project id:** a WARN until step 3's PR adds `extra.eas.projectId`; no `eas build` can start before that.
 - **Delete account row:** a PASS line, `Delete account row: hidden (EXPO_PUBLIC_ACCOUNT_DELETION is not on)`, when `eas.json` and your shell do not set it to `on`; a WARN, `Delete account row: shown`, when they do in build 2; an UNVERIFIED line in build 2 because the EAS `preview` environment on expo.dev cannot be read from here; and a WARN if an alpha profile writes the variable in `eas.json` (it belongs in the EAS environment). The state line is never a FAIL; the `.env*` check is: any `.env*` file in `apps/mobile` that names the variable, with any value, FAILs.
-- **Google and analytics:** a FAIL if a Google client id is in the profile or the shell (neither alpha build offers Google sign-in), and a FAIL unless the profile sets `EXPO_PUBLIC_ANALYTICS=off`.
+- **Google and analytics:** a FAIL if a Google client id is in the profile or the shell (neither alpha build offers Google sign-in), and a FAIL unless the profile sets `EXPO_PUBLIC_ANALYTICS=off`. That FAIL, the server-features line and the build notes change when BL-1867 lands: the list is in `docs/ops/proposed/bl-1887-tester-notice-analytics-servers.md` section 4, and the preflight is not changed by BL-1887.
 - **Build 2 only:** the invite link check, which PASSes on `develop` since #165 (`/j#t=<token>`, the token in the fragment, B-NFR-002) and would FAIL only if the app wrote `/i/<token>` again. Step 6 is a CHECK: confirm staging has every migration on `develop` (step 6 item 3); if you export `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in the shell, their shape; the email code length to match in Supabase; the privacy manifest PASSes: it declares the five types this build keeps on our servers (Name, EmailAddress, SensitiveInfo, OtherUserContent, UserID; BL-349), the generated `PrivacyInfo.xcprivacy` equals the config, and App Store Connect's App Privacy answers must say the same.
 - **Packs:** the docs base, the signing key and a published manifest (step 4); a FAIL in both builds without the key or the manifest (D-115).
 - **No real family data** in the tree; the native project generates in a temporary copy, and its entitlements have data protection and no `aps-environment` (no remote push).

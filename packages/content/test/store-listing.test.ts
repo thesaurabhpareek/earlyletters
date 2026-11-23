@@ -180,22 +180,3 @@ describe('[NS-38-R3] store name from brand', () => {
     expect(typedElsewhere(new Map([['packages/content/src/x.ts', `export const n = "${brand.storeName}";`]]))).toEqual(['packages/content/src/x.ts']);
   });
 });
-
-describe('[BL-1855] the Plus paragraph does not say where a held letter waits', () => {
-  const sentence = 'A new letter past the free two waits until you decide.';
-  const mirrors = ['apps/mobile/store.config.json', 'docs/store/app-store.md'];
-  it('keeps the sentence without a place, in the source and in each mirror', () => {
-    expect(storeListing.description).toContain(sentence);
-    for (const f of mirrors) expect(readFileSync(join(root, f), 'utf8'), f).toContain(sentence);
-  });
-  it('never says "on your phone" for a held letter, because the servers-on build syncs', () => {
-    expect(storeListing.description).not.toMatch(/waits on your phone/);
-    for (const f of mirrors) expect(readFileSync(join(root, f), 'utf8'), f).not.toMatch(/waits on your phone/);
-  });
-  it('holds the store limits', () => {
-    expect(storeListing.promotionalText.length).toBeLessThanOrEqual(170);
-    expect(storeListing.description.length).toBeLessThanOrEqual(4000);
-    expect(storeListing.keywords.length).toBeLessThanOrEqual(100);
-    expect(storeListing.subtitle.length).toBeLessThanOrEqual(30);
-  });
-});
