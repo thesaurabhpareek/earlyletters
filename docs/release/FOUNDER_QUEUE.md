@@ -4,7 +4,12 @@
 
 > **Standing delegation (CR-176, D-168, 22 Nov 2026).** This file is the one place a physical act for the founder is written down. Anything not on this list is not his: Karma and the exec team decide it and merge it, and nobody asks him to approve, comment on, merge, review or paste anything. A physical act is something only the account holder's hands can do: type a secret into a vendor console, sign in to Apple, Expo, Vercel, Supabase or a domain host, pay, apply a migration to a hosted project, submit a store build, test on his phones, or make a GitHub settings write the session proxy refuses. Karma prepares each one fully first. One row per act: the exact step, why only his hands can do it, what is already prepared, and the check line from the CTO skill section 3. Never a chat question, never a PR request. A secret is never written in a row.
 >
-> **Open rows added under CR-176:** none yet. Karma adds a row here when an act arrives, and the older sections below stay as history.
+> **Open rows added under CR-176:** Karma adds a row here when an act arrives, and the older sections below stay as history. One line each, a physical act only.
+>
+> - Apply the BL-525 migration (PR #1638) to the hosted project through the CI tag run (D-041).
+> - Approve the staging deploy at the Environment reviewer step in GitHub.
+> - Republish the signed content pack with the signing key, so `supabase/functions/content/published.ts` serves the reworded privacy lines (PR #1644).
+> - Only if PR #1086 is revived: create the PostHog account and put its project key and region in the vendor console.
 
 **Run `npm run release:ready` before asking the founder anything.** It reads every setup step in [`setup-steps.json`](setup-steps.json) live (DNS, the site, the pack host, GitHub REST) and changes nothing.
 - `npm run release:ready -- --brief` prints at most 25 lines: what is FAIL or UNKNOWN, and the next three founder steps. Paste it into any ask or subagent prompt.
