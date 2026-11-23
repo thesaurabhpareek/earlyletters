@@ -474,12 +474,12 @@ export default function Review() {
 
   /** The count line under the letter for `n` fixes in force (shown, and spoken after Put back). */
   const countTextFor = (n: number) => {
-    const line = countLine({ view, applied: n, proposed, hasFixRules: spokenEditLevel(language) === 'clean' });
-    return line === 'count'
+    const kind = countLine({ view, applied: n, proposed, hasFixRules: spokenEditLevel(language) === 'clean' });
+    return kind === 'count'
       ? plural(n, pendingCopy.review.changesLabelOne, fill(r.changesLabel, { count: n }))
-      : line === 'afterUndo'
+      : kind === 'afterUndo'
         ? r.noChangesAfterUndo
-        : line === 'none'
+        : kind === 'none'
           ? r.noChanges
           : r.noChangesNoRules;
   };
