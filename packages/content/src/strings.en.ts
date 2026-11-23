@@ -376,8 +376,10 @@ export const en = {
     headerTo: "To {child} · Month {month}",
     headerToNewborn: "To {child} · The first weeks",
     headerToBefore: "To {child} · Before You",
-    // Writing down a long take (S14): after 8 s, then a quiet way out after 15 s with no progress.
-    waitingLong: "Long recordings take a little more time.",
+    // Writing down a take (BL-399, J05-03): the waiting card says it is working, that the voice is kept and that
+    // Review can be closed. After 15 s with no progress it says so plainly and offers Keep or Type.
+    waitingBody: "Listening back to what you said. Your voice is kept. You can close this, it will be waiting on Tonight.",
+    waitingSlow: "This is taking longer than usual. Your voice is kept, and you can close this.",
     laterButton: "Read it back later",
     // Keep the recording tapped while the save is still running (the hung-save case, #618): nothing is kept yet, so say so.
     keepStillSaving: "This recording is still being saved. Give it a moment, then tap Keep again.",
