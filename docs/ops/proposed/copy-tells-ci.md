@@ -1,15 +1,15 @@
 # Proposal: run the copy-tells lint and the content map in CI
 
 Status: proposal, text only. Nothing here edits `.github/**` or the root `package.json`; both are founder/ops-listed (CR-73).
-Pairs with #1244 (copy tells lint) and #1245 (content map generator). Neither is merged yet, so everything below describes
-those branches as they stand on 21 Nov 2026.
+Pairs with #1244 (copy tells lint) and #1245 (content map generator). Both have since merged into `develop` (#1244 on 21 Nov 2026,
+#1245 on 22 Nov 2026); this text was re-read against `develop` on 23 Nov 2026. It is still a proposal: no `.github/**` or root `package.json` edit is made here.
 
 ## What the PRs contain
 
-- #1244, head `chore/copy-tells-lint-clean`, base `docs/content-guide` (not develop). Files: `scripts/content/copy-tells.mjs`,
+- #1244, merged into `develop`. Files: `scripts/content/copy-tells.mjs`,
   `scripts/content/copy-tells.test.mjs`, `packages/content/copy-tells-baseline.txt`. The script is not under `packages/content/scripts`.
   It scans `packages/content/src` and the `copy.ts` files under `apps/mobile/src`, with ten rules (uncontracted, softener, oops-voice, and so on).
-- #1245, head `chore/content-map-generator`, base `develop`. Files: `scripts/content/export-content-map.mjs` (+ test), `docs/content/map/README.md`.
+- #1245, merged into `develop`. Files: `scripts/content/export-content-map.mjs` (+ test), `docs/content/map/README.md`.
   It writes `content-map.json` and `.csv`; `--check` fails if the committed map is stale.
 
 ## How the lint behaves
@@ -22,8 +22,8 @@ proves nothing. The variable is what makes the shrink-only rule real.
 
 ## Proposed workflow step (text only)
 
-In `.github/workflows/ci.yml`, job `unit`, after "Content rules (VOICE.md, BRAND.md)". The checkout must contain the base commit, so that job's
-`actions/checkout@v4` needs `fetch-depth: 0` (or an explicit fetch of the base, as below).
+In `.github/workflows/ci.yml`, job `unit`, after "Content rules (VOICE.md, BRAND.md)" (the `content` job is the other place; it runs on the inert-docs lane too).
+The checkout must contain the base commit, so that job's `actions/checkout` needs `fetch-depth: 0` (it has none today; the `seam-guard` job already uses it) or an explicit fetch of the base, as below.
 
 ```yaml
       - name: Copy tells (shrink-only baseline)
@@ -38,15 +38,15 @@ In `.github/workflows/ci.yml`, job `unit`, after "Content rules (VOICE.md, BRAND
 ```
 
 Notes:
-- `COPY_TELLS_BASE_REF` points at the PR's base (`origin/develop` for most PRs, `origin/docs/content-guide` for #1244 itself). On a push
+- `COPY_TELLS_BASE_REF` points at the PR's base (`origin/develop` for most PRs, `origin/release/<major>.<minor>` for a release-branch PR). On a push
   event `HEAD^` needs `fetch-depth: 2`; if that is not wanted, drop the env on push and let the `HEAD` check stand.
-- If `git show <ref>:packages/content/copy-tells-baseline.txt` fails (no file at the base, as for #1244's first merge), the script treats the base as
+- If `git show <ref>:packages/content/copy-tells-baseline.txt` fails (no file at the base), the script treats the base as
   absent and skips that comparison. No special case is needed for the first PR.
 - Runtime: one TypeScript parse of the content files, not measured here, expected to fit the `unit` job's 5 minute budget.
 - Not `continue-on-error`. A red step means a line got worse; the fix is to fix the line, never to raise the baseline (CLAUDE.md content rules).
 - Lock the gain: when the count falls, `--check` prints "Under baseline". The author runs `npm run lint:copy -- --update-baseline` and commits the lower file.
 
-Optional second step for #1245, once it is merged:
+Optional second step for #1245 (merged):
 
 ```yaml
       - name: Content map is current
@@ -62,14 +62,20 @@ Add to `scripts`:
     "content:map": "node scripts/content/export-content-map.mjs",
 ```
 
-CLAUDE.md already names `npm run lint:copy`, so this makes the document true. Tests: add `scripts/content/copy-tells.test.mjs` and
-`scripts/content/export-content-map.test.mjs` to the root `test` script's `node --test` list (that list is explicit, not a glob).
+CLAUDE.md already names `npm run lint:copy`, and neither script exists in `package.json` today, so this makes the document true. Tests: the root `test`
+list already holds `scripts/content/export-content-map.test.mjs`; add `scripts/content/copy-tells.test.mjs` to it (that list is explicit, not a glob).
+
+## Precondition found on 23 Nov 2026
+
+`node scripts/content/copy-tells.mjs --check` exits 1 on `develop` at 863d10b: three pairs are above the baseline (`billing.en.ts` uncontracted 9 to 10,
+`new-device.en.ts` 0 to 1, `apps/mobile/src/lib/security/copy.ts` 0 to 1). Turning the step on now would turn the unit job red. Those lines need fixing
+(content owner, not this proposal) before the step is applied.
 
 ## Order of work
 
-1. #1244 merges into `docs/content-guide`, then that branch into `develop` (or #1244 is retargeted).
-2. Founder/ops applies the workflow step and the two script lines in one PR.
-3. Content map step only after #1245 merges and a first `content:map` regeneration is committed.
+1. The three lines above are fixed so `--check` is green.
+2. Founder/ops applies the workflow step and the two script lines in one PR (the scripts and baseline are already on `develop`).
+3. Content map step after a first `content:map` regeneration is confirmed current (`node scripts/content/export-content-map.mjs --check` passes on `develop` today).
 
 ## Rollback
 
