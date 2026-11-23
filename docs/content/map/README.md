@@ -12,6 +12,7 @@ empty) with `hold_reason`, `tone`, `day_id`, `layer` (filled only where the sour
 - `protected`: D-133 promise line, the D-061 privacy promise (`en.trust.promise` and every line that carries its last sentence), helpline names, numbers and instructions. Never reword without the owner.
 - `held`: D-144 erase lines, consent text, App Review notes, counsel-header emails, Supabase templates (D-041), prompt keys,
   OS permission strings, price and trial.
+- The `hold` column is a convenience for readers, not the lock list. `docs/reviews/2026-10-31/COUNSEL_LOCKED.md` stays authoritative for counsel-locked rows (including `story.private.v1`), and an empty `hold` here never means a line is free to edit: check that file first.
 - `build-dependent` marks a line that is true only for one build: `servers off`
   (nothing leaves the phone) or `servers on` (letters sync); `hold_reason` says which. A row that is also protected or held keeps
   that hold and gains the same note in `hold_reason`. Named keys sit in `BUILD_KEYS`; any other line that says "our servers",

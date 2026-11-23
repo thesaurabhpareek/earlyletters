@@ -49,7 +49,9 @@ describe('[NS-23-R8] quiet book never resurfaces', () => {
   it('Home reads the open book\'s quiet with its room and hands it to "A month ago" (source)', () => {
     const screen = code('app/(tabs)/index.tsx');
     expect(screen).toMatch(/quiet: getActiveChild\(\)\?\.quiet === true/);
-    expect(screen).toContain('resurfaced(room?.window ?? [], today, cards.length, { quiet: !!room?.quiet })');
+    // BL-963: the registry's past-letter rule makes the call; Home hands it the book's quiet.
+    expect(screen).toContain('quiet: !!room?.quiet');
+    expect(code('components/tonight/slip-registry.ts')).toContain('resurfaced(s.window, s.today, s.cards.length, { quiet: s.quiet })');
   });
 });
 
