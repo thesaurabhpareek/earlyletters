@@ -5,7 +5,8 @@
  * queued). A file of another owner is never read, adopted or overwritten: a writer writes nothing and reports
  * unavailable (DAYS-4, REFUSE). A `local` file (made before any sign-in) is adopted only by `adoptLocal`, which the
  * claim screen's "Keep in this account" calls (NS-47-R7, E73; CPO-30); a first sign-in that is not a claim deletes it,
- * and sign-out keeps it ("Not my account" leaves the phone as it was). Owner key: lib/auth/local-claim.ts.
+ * and sign-out keeps only a `local` file; a file adopted into an account is removed, so "Not my account" leaves the phone as
+ * it was only for what was never claimed (ruled, BL-1598). Owner key: lib/auth/local-claim.ts.
  */
 import { type DaysPort, type DaysRead, expoDaysPort, readDays, removeDays, sweepDaysTemp, writeDays } from './store-file';
 import { type DaysFile, LOCAL_OWNER, tickDay as tick, untickDay as untick } from './store.logic';
@@ -109,7 +110,9 @@ export function createDaysStore(getPort: () => DaysPort | null, initialOwner = L
     },
     /**
      * Deletes the file and temp now, drops queued writes, tells listeners. False when a file would not go.
-     * `keepLocal` (sign-out only): a `local` file stays, because "Not my account" leaves the phone as it was.
+     * `keepLocal` (sign-out only): only a `local` file stays (made before any sign-in, never claimed); a file adopted into an
+     * account (owner key) is deleted, so nothing reaches the next person on a shared phone (NS-47-R15). "Not my account"
+     * leaves the phone as it was only for what was never claimed.
      */
     clearNow(keepLocal = false): boolean {
       generation += 1;

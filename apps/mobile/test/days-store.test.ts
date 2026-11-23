@@ -352,6 +352,23 @@ describe('[CPO-30] the claim step adopts a local file only on an explicit confir
     expect(names()).toEqual([]);
   });
 
+  it('[BL-1598] after a partial adopt, sign-out removes the adopted file and keeps the file that stayed local', async () => {
+    // days adopted into account A; the other store (same rule, own file) stayed local: sign-out must clear only the adopted one
+    seed(JSON.stringify(file('local')));
+    const s = fresh('local');
+    expect(await s.adoptLocal(A)).toBe('adopted');
+    s.setOwner(A);
+    expect(s.clearNow(true)).toBe(true);
+    expect(names()).toEqual([]); // adopted (owner-keyed) file gone: nothing reaches the next person
+    seed(JSON.stringify(file('local')));
+    h.mode = 'ignore'; // this store's adopt fails, so its file stays local
+    const t = fresh('local');
+    expect(await t.adoptLocal(A)).toBe('failed');
+    h.mode = 'stick';
+    expect(t.clearNow(true)).toBe(true);
+    expect(JSON.parse(text())).toEqual(file('local')); // kept byte for byte, still offered at the next claim
+  });
+
   it('a failed adopt write says failed, leaves the local file byte for byte, and a retry then adopts it', async () => {
     seed(JSON.stringify(file('local')));
     const before = text();
