@@ -15,6 +15,7 @@
 import { tokens, type ColorToken } from '@scribe/design-tokens';
 import { artHeight, LINE_ART, penWidth } from '@/components/ui/line-art.data';
 import { STATE_LAYOUT } from '@/components/ui/state-screen.logic';
+import { isAccessibilitySize } from '@/lib/a11y.logic';
 
 type Ramp = (typeof tokens.type)[keyof typeof tokens.type];
 
@@ -52,6 +53,14 @@ export const PLAIN_LAYOUT = {
   quietHeight: tokens.target.min,
   radius: tokens.radius.pill,
 } as const;
+
+/**
+ * From AX1 the buttons follow the words inside the scroll instead of sitting under it (BL-495 point 4): at AX5 on an SE 3 the
+ * pinned buttons leave about 297 pt for 1019 pt of words. The same threshold as StateScreen (pinned-action.logic.ts).
+ */
+export function plainActionsInline(fontScale: number): boolean {
+  return isAccessibilitySize(fontScale);
+}
 
 export const PLAIN_ART = 'page' as const;
 

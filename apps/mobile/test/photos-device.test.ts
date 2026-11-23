@@ -22,7 +22,8 @@ import { PendingPhoto } from '../src/lib/photos/pending';
 import { createPhotoPicker } from '../src/lib/photos/picker';
 import { commitPhoto, PhotoSession } from '../src/lib/photos/session';
 import { pictureCovered, PHOTO_BLANK_WITHOUT_APP_LOCK } from '../src/lib/photos/surface';
-import { CODE_POINTS_PER_CHARACTER, normalizePhotoPlace, normalizePhotoText } from '../src/lib/photos/text';
+import { CODE_POINTS_PER_GRAPHEME as CODE_POINTS_PER_CHARACTER } from '@scribe/core';
+import { normalizePhotoPlace, normalizePhotoText } from '../src/lib/photos/text';
 import type { PickedFiles, StoredPhoto } from '../src/lib/photos/types';
 import { androidContainer, createDisk, iosContainer, layOutApp, namesIn, put, recorderDir, type Disk } from './helpers/expo-fs-standin';
 import { nodeDb } from './helpers/node-db';
@@ -128,7 +129,7 @@ describe('[NX-39-R50][C6] the picker port keeps only the uri', () => {
     await new Promise((r) => setTimeout(r, 0));
     expect(gone).toEqual([DEST]); // the copy that landed after the cancel is removed
   });
-  it('[NS-01-R17][C6] one pick at a time, and Cancel ends the wait at once: a copy that lands later is removed', async () => {
+  it('[NS-01-R17a][C6] one pick at a time, and Cancel ends the wait at once: a copy that lands later is removed', async () => {
     let land!: (uri: string | null) => void;
     const calls: string[] = [];
     const gone: string[] = [];
@@ -390,20 +391,20 @@ const ctx = { now: '2026-11-11T00:00:00.000Z', newId: () => 'id' };
 const row = (entryId: string, mediaId: string, over: Partial<StoredPhoto> = {}): StoredPhoto => ({
   entryId, mediaId, ext: 'jpg', bytes: 10, sha256: 'ab', width: 4, height: 4, text: null, place: null, addedAt: '2026-11-11T00:00:00Z', deletedAt: null, ...over,
 });
-const letter = (db: ReturnType<typeof nodeDb>['db'], id: string, deleted: string | null = null) =>
+const letter = (db: ReturnType<typeof nodeDb>['db'], id: string, deleted: string | null = null, raw = 'x') =>
   db.run(
     `INSERT INTO entries (id, kind, occurred_on, captured_at, capture_mode, edit_level, engine_version, raw_transcript, machine_edits, final_text, in_book, updated_at, deleted_at)
-     VALUES (?, 'letter', '2026-06-12', '2026-06-12T09:00:00Z', 'typed', 'clean', 1, 'x', '[]', 'She laughed.', 1, '2026-06-12T09:00:00Z', ?)`,
-    id, deleted,
+     VALUES (?, 'letter', '2026-06-12', '2026-06-12T09:00:00Z', 'typed', 'clean', 1, ?, '[]', 'She laughed.', 1, '2026-06-12T09:00:00Z', ?)`,
+    id, raw, deleted,
   );
 
 describe('[NS-01-R8] picture changes never touch words or recording', () => {
   it('[NS-01-R8] add, replace, Undo, remove and editing the words about the picture leave the letter\'s entries row as it was, against the real store', async () => {
     const { db } = nodeDb();
     migrate(db, ctx);
-    letter(db, 'e1');
+    letter(db, 'e1', null, 'she laughed um'); // raw seeded at insert: it is set once (BL-412)
     db.run(
-      "UPDATE entries SET capture_mode = 'spoken', raw_transcript = 'she laughed um', machine_edits = '[]', audio_uri = 'file:///c/Documents/ExpoAudio/recording-e1.m4a', audio_sha256 = 'abc', audio_bytes = 24000, audio_duration_ms = 4000 WHERE id = 'e1'",
+      "UPDATE entries SET capture_mode = 'spoken', machine_edits = '[]', audio_uri = 'file:///c/Documents/ExpoAudio/recording-e1.m4a', audio_sha256 = 'abc', audio_bytes = 24000, audio_duration_ms = 4000 WHERE id = 'e1'",
     );
     const row = () => db.get<Record<string, unknown>>('SELECT * FROM entries WHERE id = ?', 'e1');
     const before = row();
@@ -421,11 +422,12 @@ describe('[NS-01-R8] picture changes never touch words or recording', () => {
 });
 
 describe('[ADR 0028 D1] entry_media: local migration 11', () => {
-  it('[D1] the migration adds the table and its three indexes only, and the newest version is 11', () => {
+  it('[D1] the migration adds the table and its three indexes only, and migration 11 is entry_media and the newest version is at least 11', () => {
     const { db } = nodeDb();
     migrate(db, ctx);
-    expect(LATEST_VERSION).toBe(11);
-    expect(MIGRATIONS.map((m) => m.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+    expect(LATEST_VERSION).toBeGreaterThanOrEqual(11);
+    expect(MIGRATIONS.map((m) => m.version).slice(0, 11)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+    expect(MIGRATIONS[10].name).toMatch(/^entry_media/);
     const cols = db.all<{ name: string }>('PRAGMA table_info(entry_media)').map((c) => c.name);
     expect(cols).toEqual(['id', 'entry_id', 'draft_id', 'kind', 'ext', 'bytes', 'sha256', 'width', 'height', 'photo_text', 'place', 'added_at']);
     expect(cols).not.toContain('deleted_at');
@@ -440,7 +442,7 @@ describe('[ADR 0028 D1] entry_media: local migration 11', () => {
     const outboxBefore = db.all<{ name: string }>("SELECT name FROM sqlite_master WHERE name LIKE '%outbox%'").length;
     const countOutbox = () => (outboxBefore ? db.get<{ n: number }>('SELECT COUNT(*) AS n FROM sync_outbox')?.n ?? 0 : 0);
     const before = countOutbox();
-    expect(migrate(db, ctx)).toMatchObject({ from: 10, to: 11 });
+    expect(migrate(db, ctx, MIGRATIONS.slice(0, 11))).toMatchObject({ from: 10, to: 11 });
     expect(countOutbox()).toBe(before);
     expect(db.get<{ final_text: string }>("SELECT final_text FROM entries WHERE id='e1'")?.final_text).toBe('She laughed.');
   });
@@ -456,7 +458,7 @@ describe('[ADR 0028 D1] entry_media: local migration 11', () => {
     db.run("UPDATE entries SET occurred_on = '2026-03-03', captured_at = '2026-03-04T08:15:00Z', capture_mode = 'spoken', raw_transcript = 'um da da' WHERE id = 'e1'");
     const before = db.all<Record<string, unknown>>('SELECT * FROM entries ORDER BY id');
     expect(before.length).toBe(3);
-    expect(migrate(db, ctx)).toMatchObject({ from: 10, to: 11 });
+    expect(migrate(db, ctx, MIGRATIONS.slice(0, 11))).toMatchObject({ from: 10, to: 11 });
     expect(db.all<Record<string, unknown>>('SELECT * FROM entries ORDER BY id')).toEqual(before);
   });
   it('[D1] the checks hold: photo only, jpg only, 140 and 60 characters, an owner that is either a letter or a draft, one picture per owner', () => {
@@ -496,7 +498,7 @@ describe('[ADR 0028 D1] entry_media: local migration 11', () => {
     store.remove('e1');
     expect(store.get('e1')).toBeNull();
   });
-  it('[NS-01-R54] caps count graphemes and the database agrees: [NS-01-R21][BL-957] the caps count characters a person sees: at the limit all is kept, one more is cut, whole characters only, with or without Intl.Segmenter, and every kept value passes the column CHECK through the real store', async () => {
+  it('[NS-01-R54] caps count graphemes and the database agrees: [NS-01-R21a][BL-957] the caps count characters a person sees: at the limit all is kept, one more is cut, whole characters only, with or without Intl.Segmenter, and every kept value passes the column CHECK through the real store', async () => {
     const { db } = nodeDb();
     migrate(db, ctx);
     letter(db, 'e1');
@@ -549,7 +551,7 @@ describe('[ADR 0028 D1] entry_media: local migration 11', () => {
     expect(CODE_POINTS_PER_CHARACTER * 140).toBe(2240);
     expect(CODE_POINTS_PER_CHARACTER * 60).toBe(960);
   });
-  it('[NS-01-R17a] a failed picture leaves nothing and keeps the letter: [NS-01-R17] a failed commit never throws, even when taking its row back fails, and keeps the earlier picture (#836 review A N5)', async () => {
+  it('[NS-01-R17a] a failed picture leaves nothing and keeps the letter: a failed commit never throws, even when taking its row back fails, and keeps the earlier picture (#836 review A N5)', async () => {
     const { db } = nodeDb();
     migrate(db, ctx);
     letter(db, 'e1');
@@ -567,7 +569,7 @@ describe('[ADR 0028 D1] entry_media: local migration 11', () => {
     await expect(commitPhoto(racing, { entryId: 'd1', finalText: '', bytes: makeJpeg({ seed: 3 }), text: null, requireWords: false })).resolves.toEqual({ status: 'failed' });
     expect([...files.disk.keys()]).toEqual(['m1.jpg']);
   });
-  it('[NS-01-R17] a row committed and then failed after is taken back: the earlier picture comes back, or none stays, and the commit never throws (#836 review B)', async () => {
+  it('[NS-01-R17a] a row committed and then failed after is taken back: the earlier picture comes back, or none stays, and the commit never throws (#836 review B)', async () => {
     const { db } = nodeDb();
     migrate(db, ctx);
     letter(db, 'e1');
@@ -663,8 +665,8 @@ describe('[ADR 0028 D1][D5] the sweep keeps files and rows in step and is safe t
   });
 });
 
-describe('[NS-01-R13][NX-39-R36][C10] the switcher snapshot is blank (Karma ruling: with or without App lock)', () => {
-  it('[NS-01-R13][C10] a photo on screen is covered whenever the app is not in front, App lock on or off', () => {
+describe('[NS-01-R13a][NX-39-R36][C10] the switcher snapshot is blank (Karma ruling: with or without App lock)', () => {
+  it('[NS-01-R13a][C10] a photo on screen is covered whenever the app is not in front, App lock on or off', () => {
     expect(PHOTO_BLANK_WITHOUT_APP_LOCK).toBe(true);
     for (const lockOn of [true, false]) {
       expect(pictureCovered('inactive', lockOn)).toBe(true);
@@ -673,7 +675,7 @@ describe('[NS-01-R13][NX-39-R36][C10] the switcher snapshot is blank (Karma ruli
     }
     expect(pictureCovered('active', true, false)).toBe(true); // locked cold open
   });
-  it('[NS-01-R13][C10] every component that draws a stored or pending picture goes through PhotoFrame, which asks the cover', () => {
+  it('[NS-01-R13a][C10] every component that draws a stored or pending picture goes through PhotoFrame, which asks the cover', () => {
     const dir = join(SRC, 'components', 'photos');
     const drawsImage = walk(dir).filter((f) => /<Image\b/.test(readFileSync(f, 'utf8'))).map((f) => relative(dir, f));
     expect(drawsImage).toEqual(['photo-frame.tsx']);
@@ -1164,8 +1166,8 @@ describe('[ADR 0028 D1] a draft owns its picture until Keep', () => {
   });
 });
 
-describe('[NS-01-R21] the parent edits the words and the place of a kept picture', () => {
-  it('[NS-01-R21] only what is typed is stored, trimmed and cut to 140 and 60; empty clears; the other field is left alone', async () => {
+describe('[NS-01-R21a] the parent edits the words and the place of a kept picture', () => {
+  it('[NS-01-R21a] only what is typed is stored, trimmed and cut to 140 and 60; empty clears; the other field is left alone', async () => {
     const { d, store } = deps();
     await commitPhoto(d, { entryId: 'e1', finalText: 'Words.', bytes: makeJpeg(), text: 'first', place: 'the park' });
     expect(editPhotoWords(d, 'e1', { text: `  ${'x'.repeat(200)}  ` })).toBe(true);
@@ -1177,7 +1179,7 @@ describe('[NS-01-R21] the parent edits the words and the place of a kept picture
     expect(store.get('e1')).toMatchObject({ text: null, place: null });
     expect(editPhotoWords(d, 'nobody', { text: 'x' })).toBe(false);
   });
-  it('[NS-01-R21] the sqlite store keeps an edit across put (same media id, same file)', () => {
+  it('[NS-01-R21a] the sqlite store keeps an edit across put (same media id, same file)', () => {
     const { db } = nodeDb();
     migrate(db, ctx);
     letter(db, 'e1');
@@ -1188,12 +1190,12 @@ describe('[NS-01-R21] the parent edits the words and the place of a kept picture
   });
 });
 
-describe('[NS-01-R17] a picture that cannot be stored never un-keeps the letter, and the letter page says so once', () => {
+describe('[NS-01-R17a][NS-01-R58] a picture that cannot be stored never un-keeps the letter, and the letter page says so once', () => {
   const WORDS = 'Asha and the rain boots.';
   beforeEach(() => {
     clearPhotoNotSaved('e1');
   });
-  it('[NS-01-R17] a failing disk marks the letter; a later success clears it; a picture with no words marks nothing', async () => {
+  it('[NS-01-R58] a failing disk marks the letter; a later success clears it; a picture with no words marks nothing', async () => {
     const URI = 'file:///c/ImagePicker/a.jpg';
     const run = async (opts: { failWrite?: boolean; text?: string }) => {
       const picked = pickedMemory({ [URI]: makeJpeg({ exif: true }) });
@@ -1211,14 +1213,14 @@ describe('[NS-01-R17] a picture that cannot be stored never un-keeps the letter,
     expect(await run({ text: '' })).toEqual([URI]); // needs words: still pending, nothing marked
     expect(photoNotSaved('e1')).toBe(false);
   });
-  it('[NS-01-R17] a throwing store is caught and marked, never rethrown', async () => {
+  it('[NS-01-R17a][NS-01-R58] a throwing store is caught and marked, never rethrown', async () => {
     const picked = pickedMemory({ 'file:///c/ImagePicker/a.jpg': makeJpeg() });
     const p = new PendingPhoto(picked);
     await p.set({ uri: 'file:///c/ImagePicker/a.jpg' });
     await expect(adoptPending(p, () => { throw new Error('db'); }, 'e1', WORDS, true)).resolves.toBeUndefined();
     expect(photoNotSaved('e1')).toBe(true);
   });
-  it('[NS-01-R17] the letter page draws the line from the content slot, above Add again, for the author only', () => {
+  it('[NS-01-R58] the letter page draws the line from the content slot, above Add again, for the author only', () => {
     const src = readFileSync(join(SRC, 'components', 'photos', 'letter-photo.tsx'), 'utf8');
     expect(src).toMatch(/usePhotoNotSaved\(entryId\)/);
     expect(src).toMatch(/\{notSaved \? <SpokenLine text=\{draft \? photos\.review\.notStored : photos\.book\.letter\.notSaved\} testID="letter\.photo\.notSaved" \/> : null\}/);
@@ -1227,7 +1229,7 @@ describe('[NS-01-R17] a picture that cannot be stored never un-keeps the letter,
     expect(src).toMatch(/clearPhotoNotSaved\(entryId\)/);
     expect(photos.book.letter.notSaved).toMatch(/words are kept/);
   });
-  it('[NS-01-R17] Review stores a Home pick with the draft and the letter page and Review share the same controls', () => {
+  it('Review stores a Home pick with the draft and the letter page and Review share the same controls', () => {
     const rv = readFileSync(join(SRC, 'components', 'photos', 'review-photo.tsx'), 'utf8');
     expect(rv).toMatch(/adoptPendingPhoto\(draftId, finalText, false\)/);
     expect(rv).toMatch(/<LetterPhoto entryId=\{draftId\} finalText=\{finalText\} own draft \/>/);

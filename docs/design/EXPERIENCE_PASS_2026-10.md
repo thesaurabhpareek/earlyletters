@@ -620,7 +620,7 @@ Copy:
 | `review.edits.repeat.explain` | A word said twice in a row. One is kept. | CHG |
 | `review.edits.misheardName.explain` | A misheard name, spelled your way. | CHG |
 | `review.edits.punctuation.explain` | Commas and periods, where you paused. | CHG (US) |
-| `review.edits.grammarSlip.explain` | A slip of the tongue, like "a apple". Only that word changed. | CHG |
+| `review.edits.grammarSlip.explain` | A small slip, like "a apple". Only that word changed. | CHG |
 | `review.edits.paragraph.explain` | A long pause. A new paragraph starts here. | CHG |
 | `review.edits.script.explain` | The same word, in the script you chose. | CHG |
 | `review.edits.*.label` | Took out a sound / a restart / a repeat, Spelled your way, Punctuation, One word fixed, New paragraph, Your script | KEEP |
@@ -687,7 +687,7 @@ Copy:
 | `review.destination.filedChip` | Kept in Month {month} | NEW (as #181: "Kept" is the word the person just tapped; the website's "Filed in Month 9" card stays the motion benchmark) |
 | `review.destination.filedChipNewborn` | Kept in the first weeks | NEW |
 | `review.destination.filedChipBefore` | Kept in Before You | NEW |
-| `review.destination.privateToast` | Kept just for you. | KEEP (chip with LockSimple) |
+| `review.destination.privateToast` | Kept private. | KEEP (chip with LockSimple) |
 | `review.destination.voiceOnlyToast` | Recording kept on this phone. | KEEP (true at this moment: a backup upload, when backup is on, comes after the save) |
 | `billingCopy.keepGate.secondFreeNote` | That was your second free letter. | KEEP, once: on the second kept letter it shows as the Book's toast after the landing (no action, 4 s), not under the chip, where the hand-off leaves no time to read it (D-082) |
 
@@ -1366,6 +1366,7 @@ Acceptance:
 - [ ] "Keep on this phone" is the same size as "Agree and sync" and leaves the person signed in.
 - [ ] The age step shows only the question, Yes, No and Continue.
 - [ ] P8 changes no registered sentence.
+- [ ] BL-487 (ruled by the council, batch 6, option a: keep as built): a No at the age step closes the app for 24 hours for every account, including an older account that already has a book on this phone, with no second confirm. Why: the age step shows only for an older account whose Terms are current without the age line (`consentSteps`, `apps/mobile/src/lib/auth/machine.logic.ts`), and that account has never said it is 18 or older. LEGAL-REQ-002 closes the app for 24 hours after any under-18 answer (anti-retry), and the answer is kept on the phone, not on an account or a book (`ageGate.stoppedAt`, `apps/mobile/src/lib/age-gate.logic.ts`). So the step is treated like the entry question on a new install. A No also removes `ageGate.passed` (`answerAgeGate`, `apps/mobile/src/lib/age-gate.ts`), so a phone that passed the entry question earlier is closed too, and the root layout renders no route until the gate passes. The only guard against a mistaken No is the confirming Continue (the rule at line 91), and after the 24 hours "I answered by mistake" leads back to the question. A confirm before the No is recorded (option b) was not chosen: it would add a registered line for counsel and change "no explanatory line" above. What stays reachable during the closure is recorded in `docs/qa/run-sheets/BL-487-age-no-closure-reachability.md`.
 
 #### S56 Account
 Steps J22-30, J22-33 (the sign-out wait and "Stay signed in" have no step: no web flow reaches them). Package P8a. Logic: **S01** (session, passkeys, sign out of other devices), **S03** (the sync state and the outbox drain before sign-out, `lib/sync/**`).

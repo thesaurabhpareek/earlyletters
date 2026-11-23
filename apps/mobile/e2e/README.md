@@ -34,6 +34,8 @@ TDD 07 planned 15 flows on 3 Oct morning; the founder's decisions that day chang
 | E2E-14 | `E2E-14-restore-purchases.yaml` | Apple's store view with the StoreKit file, a test purchase, Restore purchases | app run from Xcode |
 | E2E-15 | `E2E-15-voiceover-smoke.yaml` | AX5 in light and dark: every P0 control reachable and enabled, screenshots for a human look; the VoiceOver walk is manual (DEVICE_TEST_PLAN S1-23) | offline |
 | E2E-17 | `E2E-17a-export-listening-copy.yaml`, `E2E-17b-export-original-only.yaml` + `bin/inspect-export.sh --originals` | Added 15 Oct (PRD V2 07 section 2.6). With a listening copy on the phone, export carries only the originals, byte for byte (F15-REQ-001, F15-REQ-002); 17b switches the player to the original and exports again: the same originals with the same hashes. The inspector fails if a listening copy's bytes are in the ZIP, if an original's hash differs from its capture hash, or if the seed made no recordings | offline, seed `asha-recordings` |
+| E2E-20 | `E2E-20-providers-build12.yaml` | NX-40 H5, NX-40-R7 (BL-894). The sign-in sheet shows email and no Google button and no passkey link in a profile with no Google ids and no passkey switch. Which NX-40 row has which proof, and who runs the device-only ones, is `NX-40-ROWS.md` | backend |
+| E2E-21 | `E2E-21-keep-and-leave.yaml` | LEGAL-REQ-050 (BL-221). Free phone past the 2 free letters: a new letter at Keep waits whole; reading, playing, Read together and export show no Plus sheet. BLOCKED (not in `run-suite.sh`): the launch seam, the `asha-recordings` seed and 13 testIDs; the list is in the flow header | offline, seed `asha-recordings` |
 
 ### The P0 nightly set
 
@@ -198,7 +200,7 @@ cat ~/cold.log ~/record.log > ~/timing.log
 node apps/mobile/e2e/bin/timing-summary.mjs ~/timing.log
 ```
 
-The summary prints a table of p50 and p95 with the sample count (it says "need 200" when a run is short). File the table in `docs/qa/evidence` under the release candidate's name. Output is content-free: the only lines read are `TIMING <name>_ms=<n>`, and the helper `scripts/timing.js` prints nothing else; keep the raw Maestro log out of the repo, as it can hold screen text.
+The summary prints a table of p50 and p95 with the sample count (it says "need 200" when a run is short). File the table in `docs/qa/evidence` under the release candidate's name. Output is content-free: the only lines read are `TIMING <name>_ms=<n>`, and the helper `scripts/timing.js` prints nothing else; keep the raw Maestro log out of the repo, as it can hold screen text. Once the table is filed under BL-044, delete the raw Maestro log.
 
 ## Sources (opened 3 Oct 2026)
 

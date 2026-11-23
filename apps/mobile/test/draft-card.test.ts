@@ -339,13 +339,16 @@ describe('[S33] not much today, and the light', () => {
     // The mark is kept by the one capture entry (lib/capture/start-capture.ts); Home asks for it and shows the line.
     expect(screen).toContain("startCapture({ source: 'notMuchToday' })");
     const oneEntry = code('lib/capture/start-capture.ts');
-    expect(oneEntry).toContain('newQuietMark(');
-    expect(oneEntry).toContain('markOn(listEntries(), day)');
+    expect(oneEntry).toContain('keepQuietDay(');
+    // The rule lives in the helper (BL-1723): one mark a day, no words.
+    const helper = code('lib/capture/quiet-day-save.logic.ts');
+    expect(helper).toContain('newQuietMark(');
+    expect(helper).toContain('markOn(input.entries(), input.day)');
     const inline = code('components/tonight/quiet-day-inline.tsx');
     expect(inline).toContain('<MoonIcon size={20} color={c.textMuted}');
     expect(inline).toContain('<Text variant="callout">{copy.notMuch.savedToast}</Text>');
     expect(inline).toContain('label={copy.notMuch.undo}');
-    expect(en.notMuch.savedToast).toBe('A quiet day, kept.');
+    expect(en.notMuch.savedToast).toBe('Marked as a quiet day.');
     for (const f of ['app/(tabs)/index.tsx', 'components/tonight/quiet-day-inline.tsx', 'components/tonight/draft-card.tsx', 'components/tonight/resurfaced-card.tsx']) {
       expect(code(f), f).not.toMatch(/\bsuccess\b|\bcaution\b|\bdestructive\b|tone="recording"|c\.recording/);
     }
@@ -354,7 +357,7 @@ describe('[S33] not much today, and the light', () => {
   it('Undo restores the link and the lamp: it removes the mark, the line goes, and the light follows the mark (source)', () => {
     const screen = code('app/(tabs)/index.tsx');
     expect(screen).toMatch(/const undoNotMuch = \(\) => \{\s*if \(keptMark\) deleteEntry\(keptMark\);\s*setKeptMark\(null\);/);
-    expect(screen).toContain('tonightLampIntensity(daypart, !!markOn(room.entries, today))');
+    expect(screen).toContain('tonightLampIntensity(daypart, room.markToday)');
     // The line stays until Undo or until the person leaves Tonight (blur), never moving content on a return.
     expect(screen).toMatch(/return \(\) => \{\s*focused\.current = false;\s*setKeptMark\(null\);\s*\};/);
   });
@@ -376,10 +379,12 @@ describe('[S09] Tonight renders every draft, one question and the daypart light 
     expect(screen).toContain('listDrafts(childId)');
     expect(screen).not.toMatch(/listDrafts\([^)]*\)\s*\[\s*0\s*\]/);
     expect(screen).toContain('draftCards(room?.drafts ?? [], room?.at)');
-    // F14-REQ-041 (SR-C-08): every draft is still drawn, through tonightRows, which folds two or more held letters into
-    // one row that opens their list (test/tonight-plus.test.ts); every other draft keeps its own card.
-    expect(screen).toContain('tonightRows(cards)');
-    expect(screen).toMatch(/rows\.map\(\(row, i\) =>/);
+    // F14-REQ-041 (SR-C-08): every draft is still drawn, now as the waiting slip (BL-963), whose rows come from
+    // tonightRows (slip-registry.ts), which folds two or more held letters into one row that opens their list
+    // (test/tonight-plus.test.ts); every other draft keeps its own card.
+    expect(screen).toContain('chooseSlip({ cards,');
+    expect(code('components/tonight/slip-registry.ts')).toContain('tonightRows(s.cards)');
+    expect(screen).toMatch(/slip\.rows\.map\(\(row, i\) =>/);
   });
 
   it('one question on screen: the prompt, no subtitle, and its old caps label only as the prompt\'s hint', () => {
@@ -401,7 +406,7 @@ describe('[S09] Tonight renders every draft, one question and the daypart light 
   it('under a card\'s page Tonight hides from screen readers, and the month-old card names its place', () => {
     expect(screen).toContain('const behind = useHiddenBehindCardPage();');
     expect(screen).toContain('{...behind}');
-    expect(screen).toContain('<CardSource id={monthAgo.id}>');
+    expect(screen).toContain('<CardSource id={slip.card.id}>');
   });
 
   it('no count, days-since or streak anywhere on Tonight', () => {
@@ -535,7 +540,7 @@ describe('Tonight comes back from the background up to date (review note 3 on #2
     expect(screen).toContain("const sub = AppState.addEventListener('change', (next) => {");
     expect(screen).toContain('if (resumed(last, next) && focused.current) refresh();');
     expect(screen).toContain('return () => sub.remove();');
-    expect(screen).toContain('at: new Date()');
+    expect(screen).toMatch(/const at = new Date\(\);[\s\S]*\bat,\n\s*\};/);
     expect(screen).toContain('const clock = roomClock(room?.at ?? new Date());');
     // Nothing in the render reads the clock on its own: the day, the daypart and the cards' "now" are the room's.
     const render = screen.slice(screen.indexOf('const today = clock.today'), screen.indexOf('const keepNotMuch'));
@@ -728,7 +733,7 @@ describe('[S1] at accessibility text sizes Speak, Type and "Not much today" ride
     };
     const question = at('label={t.newPromptButton}');
     const inline = at('{inlineActions ? actions : null}');
-    const cardsAt = at('{cards.length > 0 ? (');
+    const cardsAt = at("{slip?.type === 'waiting' ? (");
     const scrollEnds = at('</ScrollView>');
     const pinned = at('{inlineActions ? null : actions}');
     expect(question).toBeLessThan(inline);

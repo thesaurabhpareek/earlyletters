@@ -10,8 +10,10 @@
 import { test as base, expect, type Page } from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
+import { parseAriaSnapshot, unnamedControls } from './a11y-tree';
 import { BOOT_DIAG_PREFIX, installBootDiagnostics } from './boot-diagnostics';
 import { findLeaks, runtimeFixture } from './log-canary';
+import { waitForNeeds, type Need } from './saved-moment';
 
 export const OUT = path.resolve(__dirname, '../../../../docs/release/journey');
 const SHOTS = process.env.JOURNEY_SHOTS === '1';
@@ -65,8 +67,35 @@ export function allowConsoleError(page: Page, re: RegExp): void {
   ALLOWED.set(page, [...(ALLOWED.get(page) ?? []), re]);
 }
 
-/** `settle`: ms to wait before capturing (default 500, for entering animations). A screen that leaves on its own needs less. */
-export type Recorder = (meta: StepMeta, opts?: { settle?: number }) => Promise<void>;
+/**
+ * `settle`: ms to wait before capturing (default 500, for entering animations). A screen that leaves on its own needs less.
+ * `needs` (BL-1646): lines that must be on screen, opaque, before the text and the shot are taken, such as the saved
+ * moment's chip; the step fails if they do not show within 3 s.
+ */
+export type Recorder = (meta: StepMeta, opts?: { settle?: number; needs?: Need[] }) => Promise<void>;
+
+/** The lines a person can see now: not hidden, not transparent, not behind another screen. Runs in the page. */
+function visibleLines(): string[] {
+  const out: string[] = [];
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+    const t = (n.textContent ?? '').replace(/\s+/g, ' ').trim();
+    const el = n.parentElement;
+    if (!t || !el || ['SCRIPT', 'STYLE', 'NOSCRIPT'].includes(el.tagName)) continue;
+    if (!el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })) continue;
+    const r = el.getBoundingClientRect();
+    if (r.width === 0 || r.height === 0 || r.right <= 0 || r.left >= window.innerWidth) continue;
+    // Text covered by another screen (an inactive tab is kept mounted behind the active one) is not on screen.
+    const cx = r.left + r.width / 2;
+    const cy = r.top + Math.min(r.height / 2, 12);
+    if (cx >= 0 && cx < window.innerWidth && cy >= 0 && cy < window.innerHeight) {
+      const hit = document.elementFromPoint(cx, cy);
+      if (hit && !el.contains(hit) && !hit.contains(el)) continue;
+    }
+    out.push(t);
+  }
+  return out;
+}
 
 export const test = base.extend<{ record: Recorder; app: Page }>({
   // Every test opens the app fresh: a clean browser profile means a clean on-device database.
@@ -120,28 +149,14 @@ export const test = base.extend<{ record: Recorder; app: Page }>({
       const dir = path.join(OUT, 'steps');
       fs.mkdirSync(dir, { recursive: true });
       await page.waitForTimeout(opts?.settle ?? 500); // let the entering animation settle
-      // Only text a person can see: not display:none, not transparent, not a hidden tab behind this one.
-      const lines = await page.evaluate(() => {
-        const out: string[] = [];
-        const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-        for (let n = walker.nextNode(); n; n = walker.nextNode()) {
-          const t = (n.textContent ?? '').replace(/\s+/g, ' ').trim();
-          const el = n.parentElement;
-          if (!t || !el || ['SCRIPT', 'STYLE', 'NOSCRIPT'].includes(el.tagName)) continue;
-          if (!el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })) continue;
-          const r = el.getBoundingClientRect();
-          if (r.width === 0 || r.height === 0 || r.right <= 0 || r.left >= window.innerWidth) continue;
-          // Text covered by another screen (an inactive tab is kept mounted behind the active one) is not on screen.
-          const cx = r.left + r.width / 2;
-          const cy = r.top + Math.min(r.height / 2, 12);
-          if (cx >= 0 && cx < window.innerWidth && cy >= 0 && cy < window.innerHeight) {
-            const hit = document.elementFromPoint(cx, cy);
-            if (hit && !el.contains(hit) && !hit.contains(el)) continue;
-          }
-          out.push(t);
-        }
-        return out;
+      // Only text a person can see (visibleLines). Needed lines (BL-1646) are waited for first, so a chip still fading in is in.
+      await waitForNeeds(() => page.evaluate(visibleLines), opts?.needs ?? [], {
+        now: Date.now,
+        sleep: (ms) => page.waitForTimeout(ms),
+        timeoutMs: 3000,
+        everyMs: 50,
       });
+      const lines = await page.evaluate(visibleLines);
       const text = lines.join(' ').slice(0, 6000);
       // Safe-area insets the app applies (CSS env(); 0 in a desktop browser) next to the iPhone 17 Pro nominal values.
       const measured = await page.evaluate(() => {
@@ -177,8 +192,13 @@ export const test = base.extend<{ record: Recorder; app: Page }>({
           await page.waitForTimeout(300);
         }
       }
+      // BL-409: what a screen reader is given (role, name, order), from the browser's accessibility tree. An unnamed
+      // control is always recorded; it fails the step only when A11Y_STRICT=1 (the proposed AX5 evidence job).
+      const tree = parseAriaSnapshot(await page.locator('body').ariaSnapshot().catch(() => ''));
+      const unnamed = unnamedControls(tree);
       const json = {
         ...meta,
+        a11y: { tree, unnamed },
         shot,
         full,
         route: new URL(page.url()).pathname.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g, ':id'),
@@ -190,6 +210,7 @@ export const test = base.extend<{ record: Recorder; app: Page }>({
         lines,
       };
       fs.writeFileSync(path.join(dir, `${meta.id}.json`), JSON.stringify(json, null, 2) + '\n');
+      if (process.env.A11Y_STRICT === '1') expect(unnamed, `${meta.id}: a control with no accessible name (BL-409); give it an accessibilityLabel`).toEqual([]);
     });
   },
 });

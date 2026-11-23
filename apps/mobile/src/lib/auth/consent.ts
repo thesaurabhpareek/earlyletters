@@ -155,12 +155,6 @@ export function isConsentMissing(e: unknown): boolean {
   return errorCode(e) === 'SCCON';
 }
 
-/** Writes the name Apple shared at first sign-in, once Terms are accepted. */
-export async function saveDisplayName(sb: SupabaseClient, userId: string, name: string): Promise<void> {
-  const { error } = await sb.from('profiles').update({ display_name: name.slice(0, 60) }).eq('id', userId);
-  if (error) throw error;
-}
-
 /** "No book here yet" (PRD A F4): the account belongs to no book on the server. */
 export async function accountHasBooks(sb: SupabaseClient, userId: string): Promise<boolean> {
   const { count, error } = await sb.from('child_members').select('child_id', { count: 'exact', head: true }).eq('profile_id', userId);

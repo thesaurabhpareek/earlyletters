@@ -58,6 +58,18 @@ function daysInMonth(y: number, m: number): number {
   return new Date(Date.UTC(y, m, 0)).getUTCDate();
 }
 
+/**
+ * The calendar date a child turns `months` months old (ADR E: the one place this arithmetic lives). Clamped for short
+ * months: born 31 Jan, 1 month old is 28 Feb. The inverse of the month part of `ageOn`.
+ */
+export function dateOfAge(birthISO: string, months: number): string {
+  const b = parse(birthISO);
+  const y = b.y + Math.floor((b.m - 1 + months) / 12);
+  const m = (((b.m - 1 + months) % 12) + 12) % 12 + 1;
+  const d = Math.min(b.d, daysInMonth(y, m));
+  return `${String(y).padStart(4, '0')}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+}
+
 /** Calendar-month age, the way parents count it ("16 months and 1 week"). */
 export function ageOn(birthISO: string, onISO: string): Age {
   const b = parse(birthISO);
@@ -70,9 +82,7 @@ export function ageOn(birthISO: string, onISO: string): Age {
   const anniversaryDay = (y: number, m: number) => Math.min(b.d, daysInMonth(y, m));
   if (o.d < anniversaryDay(o.y, o.m)) months -= 1;
 
-  const annY = b.y + Math.floor((b.m - 1 + months) / 12);
-  const annM = ((b.m - 1 + months) % 12) + 1;
-  const annISO = `${annY}-${String(annM).padStart(2, '0')}-${String(anniversaryDay(annY, annM)).padStart(2, '0')}`;
+  const annISO = dateOfAge(birthISO, months);
   const weeks = Math.floor((dayNumber(onISO) - dayNumber(annISO)) / 7);
   return { months, weeks, days };
 }

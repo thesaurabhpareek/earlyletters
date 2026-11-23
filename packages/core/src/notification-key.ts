@@ -13,7 +13,7 @@
  * this floor; they fall back to it.
  *
  * Day part (NS-48-R12): a variant whose words name the evening ("tonight",
- * "The house is quiet", "Before you sleep") is only eligible from 17:00. The
+ * "A letter tonight?", "Before you sleep") is only eligible from 17:00. The
  * test in apps/mobile/test/reminders-key.test.ts checks these flags against
  * the real words, so the list cannot drift from the copy.
  */
@@ -27,6 +27,10 @@ const EVENING_WORDED: readonly number[] = [1, 3, 6];
 export const FLOOR_KEYS: readonly string[] = Array.from({ length: 8 }, (_, i) => `floor.${i}`);
 
 export interface KeyInput {
+  /** Recency band of the fire date, computed at plan time (NS-48-R3). Absent: the floor runs. */
+  recency?: 'r1' | 'r2' | 'r3' | 'r4' | null;
+  /** Kind of the newest made letter (NS-48-R27). Absent or null: the grid runs. */
+  lastKind?: 'spoke' | 'typed' | null;
   /** `slotOrdinal(date, weekdays)` of the planner: consecutive nudges get consecutive numbers. */
   slotOrdinal: number;
   /** The reminder time as local minutes of the day. */
@@ -57,3 +61,4 @@ export const selectFloorOnly: KeySelector = ({ slotOrdinal, minutesOfDay }) => {
 
 /** The key for a note the planner has decided to send. Phase 1 is the floor; later layers fall back to it. */
 export const selectNotificationKey: KeySelector = (input) => selectFloorOnly(input);
+// The layered selector (notification-layers.ts) is what the planner will be given once a catalogue exists.

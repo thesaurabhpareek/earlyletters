@@ -1,12 +1,15 @@
 #!/usr/bin/env node
 // Checks that the agent team is consistent: every roster agent has a charter
-// and a memory file, charters match the roster, and every backlog owner role
-// maps to an agent. Runs in CI (.github/workflows/agents-check.yml).
+// and a memory file, charters match the roster, every backlog owner role maps
+// to an agent, charters cite decisions instead of restating them, and harness
+// docs cite only scripts that exist (charter-lint.mjs). Runs in CI
+// (.github/workflows/agents-check.yml).
 //
 //   node scripts/agents/check.mjs
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { ROOT, loadRoster, ownerMap, externalOwners, parseBacklog, readText } from "./lib.mjs";
+import { lintCharters, missingScriptCitations } from "./charter-lint.mjs";
 
 const CLAUDE_MODELS = new Set(["claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-4-5-20251001"]);
 const OPENCODE_MODEL = /^openrouter\/[a-z0-9~-]+\/[a-z0-9.:-]+$/;
@@ -85,6 +88,13 @@ export function check(root = ROOT) {
     for (const o of t.owners ?? []) if (o !== "founder" && !owners.has(o) && !external.has(o)) unknown.add(o);
   }
   for (const o of unknown) warnings.push(`backlog owner "${o}" maps to no agent; add it to an agent's backlog_owner_names`);
+
+  // Charters point at docs/DECISIONS.md; they never restate prices, dates or decision text.
+  const lint = lintCharters(root);
+  errors.push(...lint.errors);
+  warnings.push(...lint.warnings);
+  // A harness doc that cites scripts/agents/<name>.mjs must cite a file on this branch.
+  errors.push(...missingScriptCitations(root));
 
   const daily = roster.agents.reduce((s, a) => s + a.daily_runs, 0);
   const cap = roster.limits.max_runs_per_day_total;

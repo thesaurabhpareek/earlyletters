@@ -22,4 +22,5 @@ export {
   type ListenSource,
   type RecordingAvailability,
 } from './player.logic';
+export { scrubA11y, type ScrubA11y } from './scrub-a11y.logic';
 export { availabilityOf, useLetterPlayer, type LetterPlayer } from './use-letter-player';

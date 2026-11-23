@@ -776,7 +776,7 @@ Never in these lines: "private", "secure", "invisible", "nobody can tell", "unde
 | Key | Status | Title | Body | Shown when |
 |---|---|---|---|---|
 | `days.lock.title.neutral` | PROPOSED | Something for the book today | | `libraryDay-neutral`, `twoDays`, every day with the switch off or App lock on |
-| `days.lock.body.neutral` | PROPOSED | | A day you chose to mark. A few words, if you like. | RULED 20 Nov (ruling 3, NS-47-R38 reading B): one fixed string, no `{child}` and no child word in any switch state; the P0 test stays (G-D26 closed). Words PROPOSED, founder approves |
+| `days.lock.body.neutral` | PROPOSED | | Whenever you have a minute. | Words changed by F-08d (#1391, reminders.en.ts `lockBody`); RULED 20 Nov (ruling 3, NS-47-R38 reading B): one fixed string, no `{child}` and no child word in any switch state; the P0 test stays (G-D26 closed). Words PROPOSED, founder approves |
 | `days.lock.body.quiet` | PROPOSED | | The book is open if you want it. | `libraryDay-quiet`; no question mark (NS-46-R37) |
 | `days.name.<id>` | PROPOSED | the day's own name | the neutral body | `libraryDay-public` (allowlist only), `libraryDay-named` (switch on, App lock off) |
 | `notifications.placeholder.libraryDay` | PROPOSED | | Something for the book, whenever you have a minute. | `libraryDay-hidden` |

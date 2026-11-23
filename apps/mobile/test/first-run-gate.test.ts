@@ -163,9 +163,11 @@ describe('[NX-31-R17] the sign-in-first gate', () => {
     expect(src).toMatch(/if \(continueTapIsLocalStart\(\{ onWelcome: step === 'welcome', authState \}\)\) setLocalStartChosen\(true\);/);
     // No second copy of the composition, and the switch is not read in the screen.
     expect(src).not.toMatch(/gateInputsFromAuth|beginTheBookAllowed/);
-    // The one other read of the switch is the opening step (handoff.logic firstRunStartStep, #728), never the gate's composition.
+    // The other reads of the switch are the opening step (handoff.logic firstRunStartStep, #728) and the resumed step
+    // (draft.logic resumeStep, BL-1816: a relaunch never skips sign-in first), never the gate's composition.
     const reads = src.match(/serverFeaturesEnabled\(\)/g) ?? [];
-    expect(reads.length).toBe((src.match(/firstRunStartStep\(\{ serverFeatures: serverFeaturesEnabled\(\)/g) ?? []).length);
+    const opening = (src.match(/(?:firstRunStartStep|resumeStep)\(\{ (?:draft: saved, start, )?serverFeatures: serverFeaturesEnabled\(\)/g) ?? []).length;
+    expect(reads.length).toBe(opening);
   });
   it('[NX-31-R17] while the session is being read the book cannot begin (no flash of a child step)', () => {
     const inputs = gateInputsFromAuth({ serverFeatures: true, authState: { status: 'restoring' }, hasLocalBook: false });
@@ -197,6 +199,8 @@ const KINDS_AS_OUTAGE: Record<AuthErrorKind, boolean> = {
   cancelled: false, expired: false, wrong_code: false, code_paused: false, invalid_email: false, provider: false,
   session_expired: false, under_18: false, consent_unavailable: false, other_phone: false, other_phone_spent: false,
   already_signed_in: false,
+  // BL-452: Account's own failures and a passkey's timed-out challenge: inline, never the outage screen.
+  passkey_expired: false, passkey_not_added: false, passkey_unavailable: false, sign_out_others_failed: false,
   // FP-6 (NS-40-R9): a refusal is its own screen, never the outage screen.
   region_refused: false,
 };

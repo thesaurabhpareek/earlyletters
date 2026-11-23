@@ -558,3 +558,47 @@ Ruling (proposed; Karma ruled R23 over R20 on 20 Nov): the shipped rotation stay
 Evidence, as far as it can be checked from the repo (21 Nov, develop `ccac54d08`). Read: `namedSlotIndex` and its comment at `planner.ts:260-276`; the call at `planner.ts:437`; the #1032 diff (7 files) and its description. Ran: `npx vitest run test/reminders-key.test.ts` in `apps/mobile` (12 passed) and `npx vitest run test/notification-key.test.ts` in `packages/core` (7 passed). Ran a throwaway test, not committed, that calls `namedSlotIndex` for ordinals 0 to 799 with the pool `eligibleFloorIndexes` returns at 20:30: that pool is all eight variants and the result equals the no-pool default (the pre-#1032 formula, read from `git show 32fc2f52^:apps/mobile/src/lib/reminders/planner.ts`) for all 800 ordinals; against ordinal modulo books, it differs for 400 of 800 ordinals with two books and 534 of 800 with three. Not reproduced: the #1032 description's old-versus-new grid (6156 cells, 180006 planned notes, zero differences); it is the author's statement and is not relied on here.
 
 Edited in place: none (PROPOSED). Plan delta: no new backlog row, no re-size, no code change; card 21 NS-48-R20 is read as above once the founder or Karma confirms; the `[NS-48-R20]` test keeps its name and claims alternation only; a later change to the rotation needs its own erratum and a re-plan note under NS-48-R23; `mobile`, `qa`. No founder line.
+
+## Seventh round, E97 (21 Nov, content, PROPOSED; the number is the next free on develop at the time of writing and is assigned again at merge)
+
+### E97: PROPOSED, the humour policy lives in the writing guide, not in the locked notification catalogue (21 Nov, content; extends Q-FD-27; Q-NTC-14)
+
+Question: may wit appear in notifications and the saved-letter line, and where? Q-FD-27 (CL-032, closed 20 Nov) says a little playfulness on Friday and Saturday notes, Monday and Sunday small and slow. The founder chose a wider scope on 21 Nov from a set of options (a selection, not words he typed; Project doc `infra/exec-rulings-2026-11-21-witty-tone-scope.md`, not in this repo).
+
+Proposed ruling (the founder approves the words key by key before anything turns on, BL-965; every witty line keeps a plain fallback; nothing here changes a shipped or locked line):
+
+- Wit may live in three places: a Friday or Saturday note (Q-FD-27; Monday and Sunday none; a push, so one neutral string and zero exclamation marks, Q-FD-18, NS-47-R12), one dry line when a letter is saved (never fanfare, never fixed, rotated; in the app), and the five public days (seasons, New Year's Day, Thanksgiving, Independence Day, Labor Day; in the app only, after the phone is open).
+- Lock-screen text stays the neutral frame until Q-FD-18 is answered; a Friday or Saturday note may be playful inside that frame. Every witty line keeps a plain fallback.
+- Never on first-run consent screens, errors, money, deletion, safety, grief or hard seasons.
+- Never tied to a day the parent ticked, a festival, a tradition, a country or a region; the five public days above are the only dated exception (Q-FD-5: the app stores none of them; NS-47-R20: no line chosen from language, locale, time zone or a name).
+- No puns or wordplay, none on the child's name. No exclamation marks in a push (Q-NTC-7). Never at the parent's expense.
+- The full policy is `packages/content/WRITING-GUIDE.md` section 4. The shape rule in `notification-catalogue.md` section 7 (no same shape three times in a row) already covers rotation.
+
+New question for the register: Q-NTC-14 (Q-NTC-10 is already the moment-nudge class on develop), humour in the catalogue and the saved-letter line, PROPOSED as written above; extends Q-FD-27; the founder's selection of 21 Nov is the basis, and approval of the words is separate.
+
+Edited in place: none. The first draft of this text sat in `notification-catalogue.md` as section 7.1 and a Q-NTC-10 row (that id was taken on develop; see Q-NTC-14) (PR #1183); it was moved here because the catalogue is CURRENT (LOCKED rev 2) and this repo changes locked cards through this file. Plan delta: none (no re-size); content, design-systems.
+
+## Eighth round, E98 (23 Nov, product, PROPOSED; the number is the next free on develop at the time of writing and is assigned again at merge)
+
+### E98: sign-in policy, D-054 against the locked card and the identity chapter (23 Nov, product; NS-41-R1, NS-41-R20, NS-41 section 14, IAM-R05; NS-54 section 2 and section 10; BL-1888; PROPOSED)
+
+Question: D-044 said Google sign-in moves to v1.1. D-054, decided by the founder, supersedes it: "Sign-in: Apple, Google and email magic link". Two documents still follow D-044: the locked card NS-41 (R1 offers exactly Apple and email; R20 says no Google button renders) and `docs/engineering/05-identity-and-access.md` IAM-R05 ("Google sign-in is v1.1"). Google is built but off (`apps/mobile/src/lib/auth/google.ts`; `[auth.external.google] enabled = false` in `supabase/config.toml`). Separately, NS-41 section 14 says "Never a password, a reset flow, SMS or a phone number", and LEGAL-REQ-012 lists "phone number" as never collected. Card 29 (NS-54) proposes phone verification in phases that would reverse that line.
+
+Ruling (proposed): the ids below change only when the gates in CR-180 hold (the ruling is recorded as CR-180 and D-171), and only in the order shown. Until then every row reads as locked, and the app offers Apple and email only.
+
+Changed ids, each with its trigger:
+
+| Id | Today (locked text, short) | Proposed change | Trigger |
+|---|---|---|---|
+| NS-41-R1 | The Welcome offers exactly Sign in with Apple and Sign in with email, at equal size | Apple first at Apple's size, then email, and Google beside them only in a build where NS-54-R6 holds (both client ids present and the hosted provider on). "No password, name or phone field" and the ban on "sign up", "log in", "create account" stay | CR-180 recorded, BL-1908 text published, BL-1893 and BL-1894 merged |
+| NS-41-R20 | No Google button and no passkey control renders; `auth.noEmailHelp` names only the ways the build offers | The Google half is dropped for a build that meets NS-54-R6. The passkey half and the "names only what shows" half stay | Same as NS-41-R1 |
+| IAM-R05 | v1.0 methods are Apple and email; Google is v1.1 | Reads "Apple, email link plus code, and Google where NS-54-R6 holds (D-054); no other provider without a decision". Its why-line keeps the Guideline 4.8 point: offering Google is allowed because Apple is offered | Same as NS-41-R1; the identity steward edits IAM-R05 in the same change |
+| NS-41 section 14, "Never ... SMS or a phone number" | Never SMS or a phone number | Narrowed to "Never SMS or a phone number as a way in; a verified number only as an optional factor after the first letter, on the rules of NS-54 section 7". Held | Counsel has read (BL-1897) AND the LEGAL-REQ-012 change in BL-1909 has merged. Never ahead of either |
+| NS-41 section 14, "never automatic merging ... beyond Supabase's same-verified-email link" | As written | Unchanged. NS-54-R16 names a likely duplicate and merges nothing | None |
+| CG13 in the card's decision list (`auth.noEmailHelp` names Google) | Drop Google while it is off | Reads "name Google only where the button shows" | Same as NS-41-R20 |
+
+Not changed by this erratum: IAM-R06 (no passwords; passkeys only after sign-in), NS-41-R2 to R19 and R21 to R25, LEGAL-REQ-012 itself (BL-1909 changes it, with counsel), the privacy label and policy text (BL-1900, counsel sees them first), and the store build's Review Notes line for Guideline 4.8 (regulatory lead, `docs/regulatory/signup-geo-checks.md`).
+
+Why this order: Google without linking makes a second, empty book for a person who used Apple's Hide My Email and later taps Google (card 29, 2.3), so the linking rows come first. Google without its public text (Terms 3.1, policy, subprocessor list, BL-1908) would be a claim the build does not match. The phone line is last because counsel has not read the SMS rules and LEGAL-REQ-012 is the stricter document (LEGAL-REQ wins over the PRD on conflict).
+
+Edited in place: none (PROPOSED). NS-41-R1, NS-41-R20, NS-41 section 14, IAM-R05 and CG13 are not edited here; no test title changes. Plan delta: none to the sizes in BL-1889 to BL-1910; BL-1890 and BL-1908 depend on BL-1888 and now wait on BL-1908, BL-1893 and BL-1894 (BL-1892 is done; BL-1894 depends on BL-1893 and BL-1895). BL-1890 does not list BL-1894 as a dependency; gating the button on it is intended and is the ruling's trigger, so BL-1890 reads it from CR-180. The card 29 section 10 proposals 1 and 3 point here. Roles: `product` (this text), `security-architect` (IAM-R05), `content` (the help line), `legal` and counsel (the section 14 line), `mobile` (the button).

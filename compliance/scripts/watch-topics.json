@@ -1,0 +1,10 @@
+{
+  "$comment": "What compliance/scripts/regulatory-watch.mjs asks the Federal Register API for. Federal only; state law is checked by hand (checked-facts.md). Owner: regulatory-affairs. Edit terms here, not in the script.",
+  "lookback_days": 14,
+  "topics": [
+    { "id": "coppa", "why": "Children's Online Privacy Protection Rule and FTC guidance", "agencies": ["federal-trade-commission"], "terms": ["Children's Online Privacy Protection", "COPPA"] },
+    { "id": "ftc-privacy", "why": "FTC rules on data security, health breach notification, negative option and auto-renewal", "agencies": ["federal-trade-commission"], "terms": ["Health Breach Notification", "negative option", "data security", "age verification"] },
+    { "id": "ofac-programs", "why": "Changes to comprehensive sanctions programs or internet-communication general licenses", "agencies": ["foreign-assets-control-office"], "terms": ["Iranian Transactions and Sanctions", "Cuban Assets Control", "North Korea Sanctions", "Ukraine-/Russia-Related", "general license"] },
+    { "id": "export-encryption", "why": "Encryption export rules that affect the App Store export answer (register CR-121)", "agencies": ["industry-and-security-bureau"], "terms": ["encryption", "License Exception ENC"] }
+  ]
+}

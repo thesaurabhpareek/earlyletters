@@ -183,6 +183,88 @@ export function listForChild({ db }: RepoContext, childId: string): Entry[] {
 }
 
 /**
+ * The columns a screen that only shows letters needs: everything except the edit list (BL-434). `machine_edits` can be
+ * the largest column of a row and only Review and export read it, so Tonight and the Book leave it in the file.
+ */
+const SHOWN_COLS = COLS.replace('machine_edits,', "'[]' AS machine_edits,");
+
+/** Live letters of one book, newest first, without their edit lists (BL-434: the Book renders words, never edits). */
+export function listForBook({ db }: RepoContext, childId: string): Entry[] {
+  return db
+    .all<EntryRow>(
+      `SELECT ${SHOWN_COLS} FROM entries WHERE deleted_at IS NULL AND child_id = ? ORDER BY occurred_on DESC, captured_at DESC, id DESC`,
+      childId,
+    )
+    .map(fromRow);
+}
+
+/** How many live letters a book holds (quiet-day marks are not letters), counted in SQL and never loaded (BL-434). */
+export function countLetters({ db }: RepoContext, childId: string): number {
+  return (
+    db.get<{ n: number }>("SELECT count(*) AS n FROM entries WHERE deleted_at IS NULL AND child_id = ? AND kind <> 'not_much'", childId)?.n ?? 0
+  );
+}
+
+/** What a reminder may know of the newest made letter: a date and two enums. */
+export interface MadeLetter {
+  capturedAt: string;
+  captureMode: CaptureMode;
+  kind: EntryKind;
+}
+
+/**
+ * The newest letter made by this phone's user across the given visible books, in one query (NS-48-R27): by
+ * `captured_at`, own author (the ledger's rule: with no account yet only rows with no author), quiet-day marks are not
+ * letters. Returns only the date and the two enums a reminder may know, never words.
+ */
+export function newestMadeLetter(
+  { db }: RepoContext,
+  childIds: readonly string[],
+  owner: string | null,
+): MadeLetter | null {
+  if (childIds.length === 0) return null;
+  const r = db.get<{ captured_at: string; capture_mode: CaptureMode; kind: EntryKind }>(
+    `SELECT captured_at, capture_mode, kind FROM entries
+     WHERE deleted_at IS NULL AND kind <> 'not_much' AND child_id IN (${childIds.map(() => '?').join(',')})
+       AND (author_id IS NULL OR author_id = ?)
+     ORDER BY captured_at DESC, id DESC LIMIT 1`,
+    ...childIds,
+    owner ?? '',
+  );
+  return r ? { capturedAt: r.captured_at, captureMode: r.capture_mode, kind: r.kind } : null;
+}
+
+/** The prompt keys of the newest `limit` letters that came from a prompt, newest first (BL-434: Tonight's draw). */
+export function recentPromptKeys({ db }: RepoContext, childId: string, limit: number): string[] {
+  return db
+    .all<{ prompt_key: string }>(
+      `SELECT prompt_key FROM entries WHERE deleted_at IS NULL AND child_id = ? AND prompt_key IS NOT NULL
+       ORDER BY occurred_on DESC, captured_at DESC, id DESC LIMIT ?`,
+      childId,
+      limit,
+    )
+    .map((r) => r.prompt_key);
+}
+
+/** The newest `occurred_on` of a book's live entries, or null for an empty book (BL-434: Tonight's days-since). */
+export function latestOccurredOn({ db }: RepoContext, childId: string): string | null {
+  return db.get<{ d: string | null }>('SELECT max(occurred_on) AS d FROM entries WHERE deleted_at IS NULL AND child_id = ?', childId)?.d ?? null;
+}
+
+/** Live letters dated from `from` to `to` (both included, YYYY-MM-DD), newest first, without edit lists (BL-434: "A month ago"). */
+export function listOccurredBetween({ db }: RepoContext, childId: string, from: string, to: string): Entry[] {
+  return db
+    .all<EntryRow>(
+      `SELECT ${SHOWN_COLS} FROM entries WHERE deleted_at IS NULL AND child_id = ? AND occurred_on >= ? AND occurred_on <= ?
+       ORDER BY occurred_on DESC, captured_at DESC, id DESC`,
+      childId,
+      from,
+      to,
+    )
+    .map(fromRow);
+}
+
+/**
  * Tombstoned letters of one book (Recently deleted), newest first. Export reads these while an account-deletion
  * request is open (DATA-REQ-053, BL-446). Letters erased for good on the server are not on the phone to read.
  */

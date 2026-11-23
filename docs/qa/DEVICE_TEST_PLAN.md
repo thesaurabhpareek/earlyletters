@@ -8,6 +8,11 @@ Labels: **V** verified on a vendor page on 3 Oct 2026; **A** assumption to confi
 ## How to use this plan
 
 - Names: Tonight reads Home and You reads Me since 11 Nov 2026 (three tabs, Home | Book | Me); Family is not a tab. Older rows below still say Tonight, You or "the Family tab": read Tonight as Home, You as Me, and the Family tab as the family page (`/family`), a pushed page opened from the book's "Write this book together" row in Me once an invite is pending or a co-parent has joined.
+- Scope notes, 23 Nov 2026 (read before any row below; they change how rows read, not what they check):
+  - **SE 3 rows (D-172, which amends D-169 item 4).** The iPhone SE 3 sitting (BL-1700, BL-1705, BL-1786) is a simulation: agents run the iOS Simulator with the iPhone SE 3rd generation profile, no named operator and no real person. Every row below that says "the SE 3", "on an SE 3" or "Not run: needs the founder's iPhone SE 3" reads as a simulator pass labelled "simulated" until a real sitting is named. A simulator result is not evidence for the SE 3 gate: timing, memory, thermal and speech-model speed read from it count for nothing, and no document may say "tested on iPhone SE 3" or "passed on device". The five-parent check (BL-1714) is a different thing and is unchanged. Rows that name a 120 Hz Pro, a Face ID phone, a Mac or a second phone are not simulated by this note and still need that hardware.
+  - **First run, photos and the free two (D-169 items 1 to 3).** The first-run order is kept and no timing promise is made (BL-1706 and BL-1707 are deferred; BL-1705 only counts steps, simulated). The photo library reads off in 1.0 unless the five photo gates close by Fri 27 Nov 2026, so no photo row here is a 1.0 requirement. BL-1806 is deferred: the existing free-slot text stays and no new Delete-confirm line ships in 1.0, so a Delete case for a kept letter that is one of the free two checks the existing text only (S1-65, RT-PLN rows).
+  - **Backlog status (read on `develop`, 23 Nov).** BL-485 is superseded here: S1-26 (k) tests its option (b) and option (a) is not built. BL-534 (S1-74, RT-HIST-01 to RT-HIST-04) is not in 1.0; it is a 1.0.1 item.
+  - **Scope confirmation.** The founder asked on 21 Nov for this scope to be re-confirmed. Nothing is recorded yet; under D-168 the decision is Karma's with the exec team, and it is not recorded here as made.
 - Work top to bottom. The order follows dependencies: a build that installs, then capture, then models, then accounts, then money, then the beta.
 - Every item has **Steps**, **Expected**, **Record** (where the result goes) and **Update** (the document that holds the fact this item proves or measures). If the result differs from that document, fix the document in the same pull request.
 - Results go in one evidence file per device session: `docs/qa/evidence/<date>-<build>-<device>.md` (template in `docs/qa/evidence/README.md`). One row per item ID.
@@ -148,7 +153,7 @@ Borrowing is fine for `ip12` and `ip15`: the founder needs only the SE 3 and one
 - **Record:** S1-13 row: counts kept, lost, duplicated.
 - **Update:** PRD 7.4 ("zero data loss in a kill-during-save test, 500 iterations, gate": note the device count and that the 500 run is still owed).
 
-### DL-01 Kill mid-record, 500 runs (D-085, DATA-REQ-048, BL-Q30). Not run: needs the founder's iPhone SE 3
+### DL-01 Kill mid-record, 500 runs (D-085, DATA-REQ-048, BL-Q30). Not run: the SE 3 pass is simulated (D-172); the 500 runs need a build
 - **Steps:** Start a recording, kill the app at a random 10 to 120 s (07 "Kill while recording"; this row said 2 to 60 s before 16 Oct), relaunch. 500 runs. Per run record: a draft exists, the file exists, its duration is within 1 s of the elapsed time, a hash is set, it plays (tap play on Tonight or in Settings, Recordings).
 - **Expected:** zero lost. Every take that does not play is kept and listed in Settings, Recordings as "This recording may not play. Export keeps the file." and is not shown on Tonight as ready (the launch sweep probes a killed take before it marks it ready, `capture/probe.ts`).
 - **Record:** DL-01 row: runs, kept, lost, unplayable rate. An unplayable rate above 0 starts the container work (record to a container that survives a kill, convert on stop); 0 keeps the probe (it is cheap) and drops that work. Also note that the probe waits up to 4 s for a file to open and treats "never loaded" as unplayable: report any playable take it wrongly listed.
@@ -179,7 +184,7 @@ Borrowing is fine for `ip12` and `ip15`: the founder needs only the SE 3 and one
 - **Expected:** every step as named; VoiceOver reads each shelf row as one item and the sheet title first; with Dynamic Type at the largest size nothing is cut off; Erase now removes the recording at once (storage shrinks) and the letter does not return after a relaunch; Export shows "Not exported yet", then "Last export: {date}" after the share sheet opens.
 - **Record:** DL-05 row with screenshots (fictional letters only). **Update:** journey flows J10, J15 (`docs/release/journey`).
 
-### DL-06 ADTS on the device: V1's speech half, V3's Mac half and V4 playback (ADR 0027). Not run: needs the first device build cut after the flip on the founder's iPhone SE 3, and a Mac
+### DL-06 ADTS on the device: V1's speech half, V3's Mac half and V4 playback (ADR 0027). Not run: needs the first device build cut after the flip (the SE 3 pass is simulated under D-172), and a Mac
 Due before the build 2 freeze (Tue 3 Nov 13:00 UTC). Every iOS build cut from develop from the flip on records ADTS (`.aac`), build 1 included; run this on the first one on a device, whichever it is. If V1, V3 or V4 fails, the coordinator sets `RECORDING_CONTAINERS.ios` back to `'m4a'` before the freeze: that one line and nothing else. Takes already recorded as `.aac` stay `.aac` and keep playing.
 - **Steps, V1 (speech):** on that build, record two finished takes in your own voice in a quiet room: one of about a minute, and one of 10 minutes or more (it is also V4's take). End each with a few seconds of talking, not a pause. Export them (Settings > Export), AirDrop the archive to the Mac, and put the two `.aac` files in `experiments/recordings/` (git-ignored; they stay on the Mac). For each take, from the repo root:
   - `afinfo experiments/recordings/<take>.aac`
@@ -390,6 +395,7 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 ### S1-28 The family page, the invite and joining a book (P8b; EXPERIENCE_PASS_2026-10 S57 to S59, 5.8 rows 10 and 12)
 - **Note (11 Nov 2026):** "the Family tab" in this row means the family page (`/family`): a pushed page, not a tab (the bar is Home, Book and Me). It opens from the book's Settings row "Write this book together" (Me, Asha's book) once an invite is pending or a co-parent has joined; with one parent and no invite, that row opens the invite sheet itself. Steps (a), (f) and (j) start from the row.
 - **Needs:** a switch-on build on two phones and two Apple Accounts (Mama on A with Asha's book; Papa on B), as S1-22, plus an iPhone SE for (i), VoiceOver for (h), and airplane mode (Control Center) for (g). An invite link works once, so every run of (b), (d), (e), (g), (h) and (k) needs a new invite from A and a fresh install on B (delete the app, then install it again).
+  - **Reinstall caveat (BL-460 point 4):** the iOS Keychain can survive deleting the app, so a reinstalled phone may still hold the earlier sign-in and skip steps (b) and (k): the age question or the sign-in may not show. For a true fresh joiner, use a phone or Apple Account that never had the app, or sign out in Settings and clear the sign-in before deleting. Record on the S1-28 row if a step was skipped for this reason.
 - **Steps:**
   - (a) On A, Me, Asha's book, "Write this book together": the invite sheet opens (one parent, no invite yet). Type "Papa" and Share invite link through Messages to B. Back on Asha's book settings, open the row again: it now opens the family page with the pending invite. Look at that page at the default size and at AX5, in light and dark, and with Increase Contrast, then tap Close.
   - (b) On B, fresh install: open the link, pass the age question, sign in, read the ask, tap Join the book, and wait on the joined sheet until the book is on the phone.
@@ -621,7 +627,7 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - (c) The switch stays on; the Notifications are off card with Open Settings shows; Next reads "Not sending yet."; the choices stay editable. Off and on again shows no second alert.
   - (d) The card collapses, the toast says "Reminders are on. Next: ..." once, and the Next line appears.
   - (e) A line says "iPhone delivers these quietly, to Notification Center only." [unverified until this row is run: Deliver Quietly detection reads allowsDisplayOnLockScreen false, alertStyle none, Notification Center not off and sound not on]. With Notification Center also off, or sounds on, no line shows.
-  - (f) "Could not set reminders just now." with Try again; Try again clears it and the Next line holds.
+  - (f) "Couldn't set your reminders." with Try again; Try again clears it and the Next line holds.
   - (g) The row reads "Starts once a birth date is added."; the preview is neutral.
   - (h) VoiceOver: after the alert, focus is on the Reminders switch, and "Reminders are on. Next: ..." or "Notifications are off" is spoken; the next swipe lands on the denied card. After each change in (b), "Saved. Next: ..." is spoken once, about half a second after the last change, never as a modal. The preview is one element. Reduce Motion: the choices fade in with no slide and the Next line swaps with no fade. AX5: the preview, the Next line and every help line wrap and never truncate; the time label and the time stack; the evening chips wrap; every target is at least 44 pt.
   - (i) "Yes, evenings" then Allow: the toast "Reminders are on. Next: ..." with Change, which opens Settings, Reminders. Don't Allow: "Notifications are off" with Open Settings.
@@ -699,7 +705,7 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - (c) 30 s: no lock. 70 s: the cover and the system sheet once. Immediately: locks after 2 s.
   - (d) Cancel leaves the cover and Unlock and nothing else; no second sheet appears on its own. Unlock opens the sheet; success fades the cover (a fade under Reduce Motion too), no haptic, content within 1 s. At the end of the fade no frame of the cover comes back (no flash), with Reduce Motion on and off. VoiceOver reads the app name, focus lands on Unlock with its hint.
   - (e) The take is kept in full (plays to the second you left); the lock appears only after the take has ended, never during it.
-  - (f) "Confirm it is you to export your book" before packing; Cancel leaves the page as it was. No lock while the share sheet is open.
+  - (f) "Confirm it's you to export your book" before packing; Cancel leaves the page as it was. No lock while the share sheet is open.
   - (g) Names in notifications is off and dimmed, with "Names stay hidden while App lock is on."; a reminder that fires shows no name.
   - (h) The switch reads "Lock with passcode", the line "Face ID is off for <app> in iPhone Settings, so your passcode opens the book." and Open Settings; Unlock asks for the passcode.
   - (i) The book opens with no lock, one toast "The lock is off because this iPhone has no passcode. Set one to turn the lock on again."; the App lock switch is dimmed with the no-passcode line.
@@ -725,7 +731,7 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 
 ### S1-191 A book made without a name reads well on every screen a person sees (NX-31-R3, NX-36 S13 and S14; branch feat/mobile-nameless-surfaces)
 - **Needs:** a build of this branch on an iPhone SE 3 (or the smallest phone to hand), fresh install, servers off is enough. Larger Text at AX5, VoiceOver and dark mode for the rows named below. Fictional family only: Asha, typed in step (g) and nowhere before it.
-- **Steps:** (a) First run: leave the name empty, choose the same date two months back (for example 10 Jan if today is 10 Mar; not older: the name questions are only drawn for a baby under four months, so a seven-month-old book would pass step (e) without testing anything), finish. On Tonight, read the line above the greeting; with VoiceOver, swipe to it. (b) Tonight: Type, to open Write; read the line above the page; with VoiceOver, swipe to it. Close Write. (c) Settings, Children: read the row, then at AX5, then with VoiceOver. (d) Book tab: look at the cover, closed and open, in light and dark. (e) Tonight: press "Another thought" twenty times, then again twenty times on Write (on the two-month-old book from step (a)). (f) Settings, Children, the book, Name: look at the page as it opens, type a letter, delete it, type spaces only. (g) Type Asha, Save, then look at Tonight, Write and the Children row again. (h) In a second fresh install (delete the app and install the same build again on the same phone), leave the name empty and choose "expecting" with a due date; read Tonight and Write, then press "Another thought" twenty times on Tonight and twenty times on Write. (i) Still in the book from step (h), with no name: open the Book tab and read its title; then Settings, Children, the book, and read the title at the top of that page; then "Delete this book", delete it as asked and read the line that appears; then Settings, Recently deleted, read the card, and restore the book and read the line that appears. Do not quit the app between deleting the book and restoring it: it is the only book on this phone, and a cold start after deleting the only book opens first run with no way to Recently deleted (the delete step in S1-153 (a) says the same).
+- **Steps:** (a) First run: leave the name empty, choose the same date two months back (for example 10 Jan if today is 10 Mar; not older: the name questions are only drawn for a baby under four months, so a seven-month-old book would pass step (e) without testing anything), finish. On Tonight, read the line above the greeting; with VoiceOver, swipe to it. (b) Tonight: Type, to open Write; read the line above the page; with VoiceOver, swipe to it. Close Write. (c) Settings, Children: read the row, then at AX5, then with VoiceOver. (d) Book tab: look at the cover, closed and open, in light and dark. (e) Tonight: press "Another thought" twenty times, then again twenty times on Write (on the two-month-old book from step (a)). (f) Settings, Children, the book, Name: look at the page as it opens, type a letter, delete it, type spaces only. (g) Type Asha, Save, then look at Tonight, Write and the Children row again. (h) In a second fresh install (delete the app and install the same build again on the same phone), leave the name empty and choose "expecting" with a due date; read Tonight and Write, then press "Another thought" twenty times on Tonight and twenty times on Write. (i) Still in the book from step (h), with no name: open the Book tab and read its title; then Settings, Children, the book, and read the title at the top of that page; then "Delete this book", delete it as asked and read the line that appears; then Settings, Recently deleted, read the card, and restore the book and read the line that appears. Do not quit the app between deleting the book and restoring it: it is the only book on this phone, and a cold start after deleting the only book opens first run, which since BL-776 (PR #1584) shows the existing Recently deleted row while the book waits (the delete step in S1-153 (a) says the same).
 - **Expected:**
   - (a) The line is the age alone, "2 MONTHS" (capitals are the screen's own; the date in step (a) makes it exactly this): no dot before it, no "YOUR CHILD" and no blank where a name would be. VoiceOver reads the same words in lower case, not "dot 2 months".
   - (b) Write's line reads exactly as Tonight's did, with no leading dot and no "YOUR CHILD"; VoiceOver reads the same words.
@@ -801,7 +807,7 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 
 ### S1-204 A returning account on a new phone: Opening your book, the slow and offline states, Try another way, the arrival line once, the true card label, and the line again after a fresh install (NX-36-S17 Tier 0; spec `docs/design/specs/S17-NEW-PHONE-SPEC-10nov.md`; PR #764)
 - **Needs:** a build with server features ON and the staging sign-in (the `preview` alpha), on an iPhone SE 3 (`se3`). Drill accounts: one that already holds Asha's book in staging with at least one spoken letter whose recording was made on another phone (call it H; S1-203 (f) and (g) leave one), one that never made a book (N1), and one that once had a book which is now deleted (R; ask the staging operator to make it). A phone with no book: a fresh install each time the steps say so. For (k) only: a new Terms version published by the staging operator before the row, or H's acceptance known to predate the current one (the consent gate is per account, so H is otherwise shown no Terms sheet). Airplane mode. A way to slow the first pull to about 15 seconds or block it (ask the engineer for the staging `sync_pull` call to delay or block on a Mac proxy); if there is none, mark (c) and (e) not run and say why. VoiceOver, Larger Text at AX5 and Reduce Motion for the rows named below. Fictional family only: Asha.
-- **Steps:** (a) Fresh install, VoiceOver on, accept Before you begin, sign in with email as H, accept Terms and Agree on the sensitive-data step. Watch every screen until Tonight shows; record the seconds from Agree to Tonight. (b) Open the Book tab and read the top of the list. Go to Tonight and back to the Book. Kill the app, relaunch, open the Book again. (c) Fresh install; sign in as H with the first pull slowed to about 15 seconds; watch the screen from Agree; after it changes, double-tap Try again; when the book shows, open the Book tab. (d) Fresh install; sign in as H and turn airplane mode on right after Agree, before the book shows; wait 5 seconds; turn airplane mode off and touch nothing. (e) Fresh install; sign in as H with the pull blocked; on the screen that follows the 10 seconds double-tap Try another way; record where you land; sign in as N1 and accept the steps. (f) Fresh install; sign in as R; accept the steps. (g) On the phone from (a), open one of Asha's spoken letters in the Book and read the line under its words with VoiceOver; go back and swipe through that letter's card on the Book. Then record one letter on this phone and read its card and its page the same way. (h) On that phone, delete the app and install the build again (a fresh install: Erase everything is not offered on a phone that has signed in, so it cannot clear the line; the store function behind it is covered by `apps/mobile/test/use-new-phone-hook.test.ts`, and on a device only a fresh install empties the phone; the recording made in (g) is kept only on this phone, so deleting the app takes it with it, while its words stay in the account); accept Before you begin; sign in as H again from the Welcome; when the book arrives, open the Book. (i) Repeat (a) and (b) with Larger Text at AX5 and Reduce Motion on; look at the opening screen and the arrival line. (j) Repeat (a) and kill the app from the app switcher while the opening screen shows; relaunch. Then kill it again while the opening screen shows, turn airplane mode on, and relaunch; look for a Continue button on every screen you see and tap it if there is one; after 15 seconds turn airplane mode off; if the screen has not moved on by itself within 10 seconds, double-tap Try again. (k) Precondition first: the consent gate (`my_sync_gate()`) is per account, so H, whose acceptance is current from (a), is shown no Terms sheet on a new phone and this row cannot start. Before it, ask the staging operator to publish a new Terms version (or to confirm that H's acceptance predates the current one); if neither is done, mark (k) not run and say why. Then: fresh install; sign in with email as H and, on the Terms sheet, double-tap Not now; record the screen you land on and whether a Continue button is there. Double-tap Continue, make Asha's book with a date on the child step, and open Tonight. Then Settings > Account > Finish setup; accept the Terms (and Agree on the sensitive-data step if it is shown). The claim screen "Keep your letters in this account?" follows: read its body with VoiceOver before and after its words change, then double-tap Keep in this account (Not my account may be left unrun; it ends the session and leaves the phone as it was). Wait one minute; open the Book tab and ask the staging operator how many books H holds. Finish with Settings, the row of the book made on this phone, Hide this book (Delete this book is not offered on a phone that has signed in), and ask the operator to remove that extra book from H; until the operator does, H holds two books in staging.
+- **Steps:** (a) Fresh install, VoiceOver on, accept Before you begin, sign in with email as H, accept Terms and Agree on the sensitive-data step. Watch every screen until Tonight shows; record the seconds from Agree to Tonight. (b) Open the Book tab and read the top of the list. Go to Tonight and back to the Book. Kill the app, relaunch, open the Book again. (c) Fresh install; sign in as H with the first pull slowed to about 15 seconds; watch the screen from Agree; after it changes, double-tap Try again; when the book shows, open the Book tab. (d) Fresh install; sign in as H and turn airplane mode on right after Agree, before the book shows; wait 5 seconds; turn airplane mode off and touch nothing. (e) Fresh install; sign in as H with the pull blocked; on the screen that follows the 10 seconds double-tap Try another way; record where you land; sign in as N1 and accept the steps. (f) Fresh install; sign in as R; accept the steps. (g) On the phone from (a), open one of Asha's spoken letters in the Book and read the line under its words with VoiceOver; go back and swipe through that letter's card on the Book. Then record one letter on this phone and read its card and its page the same way. (h) On that phone, delete the app and install the build again (a fresh install: Erase everything is not offered on a phone that has signed in, so it cannot clear the line; the store function behind it is covered by `apps/mobile/test/use-new-phone-hook.test.ts`, and on a device only a fresh install empties the phone; the recording made in (g) is kept only on this phone, so deleting the app takes it with it, while its words stay in the account); accept Before you begin; sign in as H again from the Welcome; when the book arrives, open the Book. (i) Repeat (a) and (b) with Larger Text at AX5 and Reduce Motion on; look at the opening screen and the arrival line. (j) Repeat (a) and kill the app from the app switcher while the opening screen shows; relaunch. Then kill it again while the opening screen shows, turn airplane mode on, and relaunch; look for a Continue button on every screen you see and tap it if there is one; after 15 seconds turn airplane mode off; if the screen has not moved on by itself within 10 seconds, double-tap Try again. (k) Precondition first: the consent gate (`my_sync_gate()`) is per account, so H, whose acceptance is current from (a), is shown no Terms sheet on a new phone and this row cannot start. Before it, ask the staging operator to publish a new Terms version (or to confirm that H's acceptance predates the current one); if neither is done, mark (k) not run and say why. Then: fresh install; sign in with email as H and, on the Terms sheet, double-tap Not now; record the screen you land on, its title and body, every button on it, and whether a Continue button is there. Do not wait for anything to move: nothing should. Double-tap Try another way and record where you land (the Welcome), then sign in as H again and double-tap Not now again. From the held screen, open the quiet Export your book link and go back (and Delete account if it is shown; do not delete). Then double-tap Finish setting up; accept the Terms (and Agree on the sensitive-data step if it is shown). Watch every screen from the last Agree until Tonight shows and record the seconds; then open the Book tab and ask the staging operator how many books H holds. Then run it once more with VoiceOver on, from the sign-in to the held screen, and swipe through the held screen from the top to the last button; double-tap Export your book once on it and read what VoiceOver says there.
 - **Expected:**
   - (a) After Agree the screen reads "Opening your book." with the moon drawing; "Your letters are coming across." appears under it once the account has answered (a moment later on a good connection), and not before: no button, no spinner, no count, no percentage. VoiceOver says the heading once and focus is on it. "Who is this book for?" never shows, not for a frame. Tonight shows within 10 seconds (record the seconds). The staging operator sees one book under H, not two.
   - (b) The first Book shows "Your book is here." in plain muted text above the first month, with no card, icon, button or dismiss; VoiceOver reaches it after the cover band (the title, Read together if shown, Months and Settings) and before the first month. On the next Book view it is gone, and it does not come back after the relaunch. Tonight never shows it.
@@ -813,8 +819,8 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - (h) After the fresh install first run starts as on a new phone. After signing in again as H the opening screen shows, then Tonight, and the first Book shows "Your book is here." once more (the setting went with the app's data).
   - (i) At AX5 every word of the opening screen and the arrival line wraps and nothing is cut off; the buttons on the slow screen are whole and at least 44 pt. With Reduce Motion the moon does not breathe and the line has no entrance.
   - (j) After the relaunch the opening screen shows again (the account is asked again, nothing was remembered), then Tonight. After the relaunch with airplane mode on: "Opening your book." on its own while the session is checked, then "Opening your book needs a connection." with "Connect to the internet, then tap Try again.", Try again and Try another way. "Who is this book for?" and the promise step never show, and there is no Continue to tap. When the connection returns the screen may read "Your book is taking a while." with Try again until the account is checked again (by itself or on the tap); then the opening screen, then Tonight. The staging operator still sees one book under H after both relaunches.
-  - (k) What the code does today, accepted for build 13 by CR-61 (`docs/agents/cto/RULINGS.md`, amended 17 Nov) and held as BL-922: Not now closes the sheet and the promise step shows with Continue live; "Opening your book." and "Your letters are coming across." never show, because consent is not yet answered and nothing is pulled (no book of H's lands). Continue reaches "Who is this book for?" and Asha's book is made on this phone with sync off. Finish setup runs the consent steps; after the last Agree the claim screen shows before anything moves: "Keep your letters in this account?" over a body that names the account ("Your letters on this phone will be kept in the account" and H's masked address) until the account has answered, then the line "Signed in as" with that address, "This account already has a book. The book on this phone will be added to it as a second book. Nothing is deleted." and "Recordings are kept on the phone that made them."; Keep in this account waits for the answer (its hint: "Adds the book on this phone to this account as a second book. Nothing is deleted."), Not my account does not. H's book does not arrive and nothing is sent while the screen is up. After Keep in this account the engine brings H's book and sends the new one up, so the Book tab shows two books and the staging operator sees two under H. No letter is lost. The row of the book made here offers Hide this book and no Delete this book (the phone has signed in, so local deletion is refused; server-side deletion, F17-REQ-026, is not built): Hide this book takes that book out of the Book list on this phone and deletes nothing, and the operator still sees two under H until the extra one is removed on request. If the promise step does not show after Not now, if H's book arrives before Finish setup, or if the claim screen does not show after Agree, the code has changed: mark the row and say what showed. Record the screen after Not now, whether Continue was there, the words of the claim screen before and after they changed, the seconds from Keep in this account to the second book, both counts from the operator, and whether the operator has removed the extra book.
-- **Record:** S1-204 rows (a) to (k): phone, iOS version, build number and profile; screenshots of the opening, slow and offline screens and of the first Book with the line (default size and AX5), Asha only; the seconds in (a), (c) and (k); what VoiceOver said on arrival at each screen; how many books H holds after (a), (c), (h), (j) and (k); that H holds two books in staging after (k) until the operator removes the extra one, when the operator did so, and whether (a), (c), (h) or (j) was run after (k) and before that (its count is then two, not one); which rows were not run and why (for (k), whether the Terms precondition was met).
+  - (k) You see and hear this (read from the code, not yet from a run: `heldNewPhoneView`, `apps/mobile/src/lib/first-run/gate.logic.ts:212-219`, `needsConsent` answers `consent`; `gate.logic.ts:138`, `consent` with no book on the phone gives `finishSetup`; `apps/mobile/src/app/onboarding.tsx:723` draws `HeldScreen`, `apps/mobile/src/components/onboarding/new-phone-screens.tsx:119-139`; NS-10-R0, BL-922a). Precondition met: after sign-in the Terms sheet shows for H. Not now closes the sheet and records nothing (`apps/mobile/src/app/(auth)/sign-in/consent.tsx:286`, the Not now button, which calls `close`, defined at `:89` and passed to `TermsStep` at `:256`), and the held screen appears at once, online or not, with a soft fade and a drawing: the title "Opening your book.", the body "Finish setting up to open your book here. There is nothing on this phone to copy yet. Your letters are in your account, and recordings are on the phone that made them.", the large button "Finish setting up", and under it the quiet buttons "Try another way", "Delete account" (only on a build where account deletion is on; the condition is `apps/mobile/src/lib/first-run/held-screen.logic.ts:34`, and `:33` is the `finishSetup` line) and "Export your book" (always). The words are PROPOSED keys (`auth.newPhone.consentBody` and `.nothingToCopy`, `packages/content/src/features/auth.en.ts:162-163`; pinned at `apps/mobile/test/new-phone-route.test.ts:302-303`). You see no Continue, no promise step and no "Who is this book for?", and you never see "Your letters are coming across."; nothing moves by itself, and no book of H's lands (nothing is pulled or sent). The title is the same words as the opening screen's, but this screen has buttons and stays. Try another way signs you out and shows the Welcome. Signing in as H again shows the Terms sheet again, as the first time, because Not now recorded nothing and the sheet opens on the first outstanding step (`consent.tsx:251`, `s.steps[0]`; `apps/mobile/src/components/onboarding/welcome-sign-in.tsx:99` pushes the sheet after sign-in; the same-account second showing has not been read in a test); Not now takes you to the held screen again. Export your book opens the export page, which shows its title, the line "You can export once the book has a letter." above a greyed-out Export button, because this phone has no letter (`apps/mobile/src/app/settings/export.tsx:165-195`, `exportEmpty`; `packages/content/src/features/export.en.ts:22`); Back returns to the held screen. The page reads no consent state (nothing in `export.tsx` asks for Terms; `apps/mobile/test/held-screen-routes.test.ts:111` pins it). Delete account, where it is shown, opens the delete page and also reads no consent state (`apps/mobile/src/app/settings/delete-account.tsx:58` only checks the build switch; pinned at `held-screen-routes.test.ts:80`); do not delete. Finish setting up opens the Terms sheet (and the sensitive-data step if it is outstanding). With no book on this phone the claim screen "Keep your letters in this account?" does not show (`consent.tsx:103-127`: it shows only for letters on the phone, and the sheet closes when the answer is in); you see the opening screen and then Tonight, with H's book arriving as in (a) (one book under H in staging, not two). Nothing says "Keep in this account" or "second book" in this row. With VoiceOver on, the held screen arrives with the heading "Opening your book." taking focus and said once (`apps/mobile/src/lib/first-run/use-arrival.ts:10-16`, called by `Arrives` at `new-phone-screens.tsx:39-47` with the held screen's title); `new-phone-screens.tsx` sets no accessibility labels of its own, so a swipe then reads the heading, the body as one paragraph, then each button by its visible words, in this order: "Finish setting up", "Try another way", "Delete account" (if shown), "Export your book" (`StateScreenView` in `apps/mobile/src/components/ui/state-screen.tsx:136` makes the title a heading, `:82-84` draw the buttons, and each `Button` gets its visible label as its name, `button.tsx:146`). The drawing is not read. Double-tapping Export your book moves VoiceOver to the export page; what it says there is not set by this screen, so record it and do not argue it. If Continue or the promise step shows after Not now, if the held screen is missing a button named here, if H's book arrives before Finish setting up, or if the claim screen shows, the code has changed: mark the row and say what showed. Not verified: the exact wording VoiceOver speaks on a phone (the lines above come from the code, not from a run); the exact wording of the Delete account button on a build with deletion on; the claim screen not showing after Finish setting up; that the export and delete pages open from the held screen on a phone without being sent back by the first-run route (their source asks for no Terms, but a phone has not been tried).
+- **Record:** S1-204 rows (a) to (k): phone, iOS version, build number and profile; screenshots of the opening, slow and offline screens and of the first Book with the line (default size and AX5), Asha only; the seconds in (a), (c) and (k); what VoiceOver said on arrival at each screen; how many books H holds after (a), (c), (h), (j) and (k) (one each); for (k), a screenshot of the held screen, its title, body and every button as shown (and whether Delete account was there), whether Continue was there, where Try another way landed, whether the claim screen showed after the last Agree, and the seconds from that Agree to Tonight; whether the Terms sheet came back on the second sign-in as H; what the Export your book page showed (the empty line and a greyed-out button, or something else) and whether Delete account opened; what VoiceOver said on the held screen (heading, body, each button in order) and on the export page; which rows were not run and why (for (k), whether the Terms precondition was met).
 - **Update:** `docs/design/specs/S17-NEW-PHONE-SPEC-10nov.md` section 9 (UNVERIFIED) with what the run showed; the founder's word list for the six `authCopy.newPhone` rows; the tests in `apps/mobile/test/new-phone-route.test.ts`, `apps/mobile/test/use-new-phone-hook.test.ts`, `apps/mobile/test/card-recording-label.test.ts` and `apps/mobile/test/use-first-run-route.test.ts` if a rule changes.
 
 ### S1-205 Find in the Book: speed with 1,000 letters, memory and index size, VoiceOver and AX5, FTS5 on a real build, the nameless placeholder, Back keeps the query, a tab switch clears it, the rebuild in batches, and the failed view (NS-02-R2, R12, R14, R19, R20, R21, R22, R35, R37, R38, O-1; card `docs/product/prd/02-find.md` sections 7, 8 and 10; spec `docs/design/specs/02-FIND-11nov.md` sections 6 and 8; BL-952 stack #881 onward, split from PR #798)
@@ -910,12 +916,13 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 - **Why a device row:** each row below depends on what iOS does with focus, the keyboard, ordering or text size, which no Node test runs. The rows record what a build does without the change, beside what the spec asks for. A row that differs is a finding for the spec's owner, not a failed build, until `mobile` ships the change; then re-run the row and replace its Expected lines with the spec's. Write at large text is not here: it is S1-165 (PR #717).
 - **Needs:** the iPhone SE 3 and the founder's iPhone; a TestFlight build of the `testflight` profile (Asha's book, Mama, letters in at least four months, and for the Months-sheet scroll in (c) a book with about 60 months of letters or the 400-letter book of S1-151 Needs; otherwise mark that step NOT RUN; and for the VoiceOver walk in (c) a second fictional book, because the switcher shows only with two); VoiceOver for (b), (c), (d); Voice Control and a throttled link for (e) (Network Link Conditioner "3G" or a 1 Mbps profile on the router, as in S1-97b); light and dark for (d). Fictional family only (Asha, Papa). **Run (a) last, or on its own install:** it moves the only book (fictional, Asha) to Recently deleted, and Restore the book brings it back (S1-133 (b)). Do not run it on a phone that holds real letters unless a copy was exported first. If (c) used a second book, delete that book and use Erase now on its card (or use a separate install) before (a), so that (a) has one book and one card in Recently deleted.
 - **Steps and expected:**
-  - (a) **Delete this book, the only book.** On a phone that has never signed in and has one book: Settings > Asha > Delete this book > Continue > type "delete" > **Delete the book**. Write down what is on screen when the toast goes (Settings home, or first run). Go back to the Book and Tonight tabs if you can and note what they show. Force quit and reopen: write down the first screen. Try to reach Settings > Recently deleted. Make a new book on first run, then open Settings > Recently deleted and tap **Restore the book**. Expected without the BL-776 change (read from the code, not seen): in the same session Settings can still be opened; after a cold start the app opens on first run, which has no way to Recently deleted until a new book exists. The CPO ruled option (a) of BL-776 (CPO-10, PR #723): once that is built, a cold start shows the existing Recently deleted row on first run while the book waits, Restore there brings the book back, and nothing on first run is new for an install with no deleted book (DELETE_THIS_BOOK.md section 4). Where the row sits is the CDesO's call.
+  - (a) **Delete this book, the only book.** On a phone that has never signed in and has one book: Settings > Asha > Delete this book > Continue > type "delete" > **Delete the book**. Write down what is on screen when the toast goes (Settings home, or first run). Go back to the Book and Tonight tabs if you can and note what they show. Force quit and reopen: write down the first screen. Try to reach Settings > Recently deleted. Make a new book on first run, then open Settings > Recently deleted and tap **Restore the book**. Expected: in the same session Settings can still be opened; after a cold start the app opens on first run, and since BL-776 (PR #1584, CPO-10, PR #723) that first screen shows the existing Recently deleted row while the book waits, which opens the shelf; step (f) walks it (DELETE_THIS_BOOK.md section 4).
   - (b) **Delete this book, step 2, with VoiceOver and the keyboard.** VoiceOver on. Settings > Asha > Delete this book > Continue. Write down where focus lands and what is read. Swipe to **Delete the book** (dimmed) and write down its hint. Type "delete" and write down what changes. Repeat at AX5 with the keyboard up: is **Delete the book** on screen, or does it need the Done key first? Expected without PR #714: no focus move and no announcement on Continue; the dimmed button has no hint. With #714, and the spec: the step heading takes focus; the hint is "Type delete to confirm". At AX5 the button may sit under the keyboard until Done either way; #714 does not address it.
   - (c) **The Book's inline bar at AX5, the cover band's VoiceOver walk, and the Months list.** AX5 on the SE 3. Open Asha's Book (letters in four months or more) and scroll until the bar is in. Take a screenshot and write down how much of the screen the bar covers and how the title wraps. VoiceOver on, with two books: from the top, write down the order of the band's items (S1-151 (e) has the order expected). Reduce Motion on: scroll the band out slowly and note whether a tap where the bar will appear does anything before the bar is visible. Then, in the long book, open Months and scroll the list: does the list scroll inside the sheet, or does the sheet move? Expected (read from the code, not seen): the bar is the same at every size and, by the CDesO's and the design-systems arithmetic, covers about half an SE 3 screen at AX5. Spec (PROPOSED, CDesO to confirm): title row only from AX1, or no bar (BOOK_PAGE.md section 6).
   - (d) **If you are struggling: Call and Text, in light and dark, and the rotor.** Region United States. Open the page. Look at each line's **Call** and **Text**: can you see each button's shape, in light and in dark? Take a screenshot of each. VoiceOver on: the rotor's Headings. Do not complete a call or a text. Expected without PR #713: the labels read, the button is a pale tint almost the colour of its card (1.08 : 1 light, 1.33 : 1 dark by arithmetic); the rotor lists the emergency heading and each line's name in order with no levels. With #713, and the spec: each button has a visible edge (STRUGGLING.md section 6).
   - (e) **The speech row with Voice Control.** Fresh install without the speech model, a throttled link so the download is still running (S1-97b Needs). Voice Control on, say "Show names". Settings > Storage, English downloading: say "Tap Stop". At AX5 look at the English row. Expected without PR #712: the row's name is "English, Getting ready, n%" with no "Stop" in it, so "Tap Stop" finds nothing; at AX5 the ring and the word stay beside "English" and may break mid-word. With #712, and the spec: the name ends with the action word, and at AX sizes the ring and word sit under the title (COMPONENTS.md, SpeechRow row).
-- **Record:** S1-153 rows (a) to (e): phone, iOS version, build number and profile, text size, light or dark; for each row what was seen, in a sentence; screenshots with Asha only.
+  - (f) **Recently deleted on first run, then Restore (BL-776, BL-1666; CPO-10).** On a phone with one book (Asha, fictional) that has never signed in, do (a)'s delete, then force quit and start the app cold. On first run's welcome step, find the Recently deleted row below the primary action: write down its words and place. Tap it and check the shelf lists Asha's book with **Restore the book**. Restore it and write down which screen you land on. Then delete it again and use **Erase now** on its card, force quit and start cold once more, and write down whether the row is there. Repeat the first cold start with VoiceOver on and read the row. Expected: after the cold start the row is on the welcome step, it opens the shelf, Restore lands on the Book with Asha's book, its letters and its choices as they were; after Erase now (or on an install that never deleted a book) the row is not there and nothing else on first run changed.
+- **Record:** S1-153 rows (a) to (f): phone, iOS version, build number and profile, text size, light or dark; for each row what was seen, in a sentence; screenshots with Asha only.
 - **Update:** `docs/design/screens/DELETE_THIS_BOOK.md` section 4, `BOOK_PAGE.md` section 6, `STRUGGLING.md` section 6 and `docs/design/COMPONENTS.md` (SpeechRow) where a result differs.
 
 ### S1-111 Plus lines, F5 (founder decision F5, 1 Nov 2026; PL-3, PL-4, PL-5, PL-8; branch feat/billing-f5-lines)
@@ -1148,6 +1155,509 @@ PENDING: not merged. Wording from the pull request: "Your words are kept as you 
 
 ---
 
+## Part 1b. 1 Dec and 1.0.1: account and experience items (S1-50 to S1-74)
+
+Written 1 to 8 Nov 2026 by `qa` from the founder's decisions F1 to F11 and PL-1 (`infra/exec-rulings-2026-11-01-account-security.md`; the two council files of 1 Nov, account and experience) and the release map in the experience council's Part 3. Nothing here is built yet: every item is **planned** and runs on the first build that carries the change. The ids start at S1-50 so they cannot meet the S1-38 to S1-4x numbers other branches are adding at the same time.
+
+Every item lists its **Owner** (the agent that builds the change and fixes a failure) and its **Basis** (the decision codes and requirement ids it proves). Automatable halves of the same items are rows in `docs/qa/release-test-catalog.csv` (areas Lock, Before you begin, Where letters live, Your words, Erase, Settings 1 Dec, Reminders 1 Dec, Privacy page, Helplines, Held letters, Plus lines, Memory card, Motion, Prompts, and the rows whose area ends in 1.0.1); each item below names its rows.
+
+Shared setup for every item: the fictional family only (Asha, Mama, Papa); a production-profile build unless the item says otherwise; run on the SE 3 and one current phone (REF), plus the SE 2 (Touch ID, D1 in RELEASE_TEST_PLAN section 3) where an item says Touch ID. "The matrix" means: VoiceOver on (the S1-23 rules: focus, labels, escape), text size AX5, Reduce Motion on, Dark appearance, and Increase Contrast once. "Low storage" means the phone filled as in S1-14 (under 1 GB, then under 50 MB). "Offline" means airplane mode with Wi-Fi off.
+
+### 1 Dec: account items (F1)
+
+If counsel has not approved the Face ID purpose string by Fri 20 Nov, the lock moves to the first 1.0.x and S1-50 to S1-55 run on that build instead (F1 default). S1-56 to S1-61 ship on 1 Dec either way.
+
+### S1-50 App lock: the offer, the page, and when it locks (1 Dec; F1, CPO-2, CISO-1, CDesO-1; F17-REQ-008, F17-REQ-010, F17-REQ-011)
+- **Owner:** mobile (lock), security (policy), content (lines).
+- **Needs:** a build with the lock module; a phone with Face ID and a passcode; the SE 2 or SE 3 for Touch ID; a third phone, or the same phone later, with no passcode set.
+- **Steps:**
+  - (a) Fresh install. Pass Before you begin, set up Asha's book, reach "The book is open". Read the lock offer. Tap Not now. Open Settings: read the App lock row on home and in Privacy.
+  - (b) Fresh install again; at the offer tap Turn on Face ID. Answer the system Face ID permission alert with Allow. Repeat on another install with Don't Allow.
+  - (c) Settings, App lock: turn the switch off, then on. Choose each "Ask again after" value.
+  - (d) Grace, lock on, value "After 1 minute": send the app to the background for 50 s and return; then for 70 s and return. Value "Immediately": background for 2 s and return. Value "After 5 minutes": 4 min 50 s, then 5 min 10 s. Force-quit and cold start under each value.
+  - (e) Inactive never locks, value Immediately: pull down Control Centre and the notification shade; take a screenshot; let a call banner come in and decline it; open the share sheet from Export and leave it open for 2 minutes.
+  - (f) No passcode set: run (a) on the phone with no passcode. Then open Settings, App lock.
+  - (g) Touch ID (SE): run (a) and (b).
+  - (h) The matrix, on the offer card and the App lock page.
+- **Expected:**
+  - (a) The offer shows once, after "The book is open", never before the first letter path. Turn on and Not now have equal weight (same size and style). After Not now nothing is stored as a refusal, the lock is off, and the App lock row reads Off in both places. One setting: changing it in one place changes the other (CDesO-1, tie-break 6).
+  - (b) Allow: success haptic, the toast "Face ID lock is on." and the lock is on. Don't Allow: the lock is on with the passcode, and the line "Face ID is off for {app} in iPhone Settings, so your passcode opens the book." shows ({app} is the name from `packages/brand`). No error haptic.
+  - (c) Turning on and turning off each ask the device first (system sheet with "Confirm it is you to turn on the lock" or "Confirm it is you to turn off the lock"). Cancel leaves the switch where it was. The choices show only while the lock is on; "After 1 minute" is the default.
+  - (d) 50 s: no cover. 70 s: cover. Immediately: cover on any return from the background. 4 min 50 s: no cover; 5 min 10 s: cover. Cold start: cover under every value. No letter, name or child row is drawn before the device says yes (F17-REQ-008).
+  - (e) None of these locks the app; the share sheet stays usable for the whole 2 minutes.
+  - (f) No offer card at all. The App lock switch is disabled with "This iPhone has no passcode. Set one in iPhone Settings, then turn on the lock here."
+  - (g) Every line says Touch ID, not Face ID.
+  - (h) Nothing truncated at AX5 (buttons stack, value under title). VoiceOver reads the offer title first, both buttons as buttons, the switch with its state and the hint "Asks you to confirm it is you first."; each grace choice reads selected or not. Reduce Motion: the card arrives by fade. Dark: every control edge visible.
+- **Record:** S1-50 rows (a) to (h): phone, iOS, text size, VoiceOver yes or no, the measured seconds in (d), pass or fail.
+- **Catalog:** RT-LOCK-01 to 06, RT-LOCK-10, RT-LOCK-13.
+
+### S1-51 Lock screen and the app switcher cover (1 Dec; F1, CISO-1; F17-REQ-008, F17-REQ-009)
+- **Owner:** mobile, design-systems.
+- **Needs:** S1-50 done with the lock on, value Immediately; at least 3 kept letters, one private letter, one draft typed on Write.
+- **Steps:**
+  - (a) On each of Tonight, an open letter, Review with words, Write with typed words, the Book, Read together and Settings: swipe up to the app switcher and hold. Take a screenshot of the switcher each time.
+  - (b) Return from the switcher. Watch the Face ID sheet. Succeed. Time from success to the screen (screen recording at 60 fps).
+  - (c) Return and Cancel the system sheet. Then tap Unlock. Then cancel again and wait 30 s.
+  - (d) The matrix on the lock screen. With VoiceOver, swipe through every element of the cover.
+  - (e) Search Spotlight for "Asha" and for a word from a letter while the app is locked.
+- **Expected:**
+  - (a) Every switcher card shows the cover: the background and the mark only, no letter words, no child name, no age line. It is drawn at once (no fade a snapshot could catch). F17-REQ-009.
+  - (b) The system sheet appears once on its own. Content within 1 s of success; the cover fades out over `fadeMs`; no haptic.
+  - (c) After Cancel only Unlock and the cover remain; the system sheet never reopens by itself, never loops. Unlock opens it again.
+  - (d) VoiceOver: focus on Unlock; hint "Opens the book with Face ID."; the cover reads only the app name. AX5: Unlock fully visible. Reduce Motion: no movement, the fade only. Dark and light: the mark readable, Unlock contrast passes.
+  - (e) Nothing from the app (F17-REQ-007).
+- **Record:** S1-51 rows (a) to (e) with the switcher screenshots (Asha only) and the measured time in (b).
+- **Catalog:** RT-LOCK-02, RT-LOCK-11, RT-LOCK-13.
+
+### S1-52 Face ID fallbacks: lockout, biometrics changed, passcode removed (1 Dec; F1, CISO-1; F17-REQ-008)
+- **Owner:** mobile, security.
+- **Needs:** S1-50 with the lock on; a second face (Alternate Appearance) or a second finger available to enrol; permission to remove the passcode for a few minutes on a test phone.
+- **Steps:**
+  - (a) Fail Face ID on purpose (cover the camera, or another face) until iOS asks for the passcode. Enter it.
+  - (b) Lockout: keep failing until biometrics are locked out (iOS then needs the passcode for Face ID in general).
+  - (c) Biometrics changed: in iOS Settings set up an Alternate Appearance (or add a finger on Touch ID). Return to the app.
+  - (d) Face ID permission turned off for the app in iOS Settings, Face ID and Passcode, Other Apps, after the lock is on. Return.
+  - (e) Passcode removed: iOS Settings, Turn Passcode Off. Return to the app. Then set a passcode again and return.
+  - (f) VoiceOver on during (a) and (e).
+- **Expected:**
+  - (a) The system passcode screen appears; the app never shows a PIN of its own. Entering it opens the book.
+  - (b) The same: passcode, then the book. No app error line, no error haptic.
+  - (c) Record what happens. Expected for 1 Dec: the passcode policy still opens the book; the app shows the "Face ID changed" line only if the native check shipped (CISO-1); without it, no line. Either way the book is never wiped and no letter is lost.
+  - (d) The passcode opens the book and the "Face ID is off for {app}" line shows once.
+  - (e) The lock turns itself off and says once: "The lock is off because this iPhone has no passcode. Set one to turn the lock on again." (F17-U21). Setting a passcode again does not turn the lock back on by itself; the App lock page offers it. Reminders' names row is enabled again only because the lock is off.
+  - (f) The passcode screen and the one-time line are each read once.
+- **Record:** S1-52 rows (a) to (f); for (c) write down exactly what showed.
+- **Catalog:** RT-LOCK-05, RT-LOCK-06.
+
+### S1-53 Never during recording (1 Dec; F1; security.md 2; F17-U23, F17-REQ-008)
+- **Owner:** mobile.
+- **Needs:** lock on, value Immediately; English words on the phone.
+- **Steps:**
+  - (a) Speak, talk for 20 s, press the side button to lock the iPhone for 60 s, unlock the phone, carry on talking, Finish.
+  - (b) Speak, go to the Home Screen for 2 minutes, come back, Finish.
+  - (c) Speak, then receive a phone call (second phone) and answer it; hang up after 30 s; return.
+  - (d) Speak, then pause and resume twice, then Finish; feel for haptics.
+  - (e) Speak for 2 minutes with Low Power Mode on and the lock on; Finish; keep the letter.
+  - (f) Type on Write, send the app to the background for 2 minutes mid-sentence, return.
+- **Expected:**
+  - (a), (b) No cover appears while capture runs; the recording keeps going and the clock is right; after Finish the lock applies at the next return from the background (or at once if the grace has passed, per the policy row in RT-LOCK-03). The take is whole.
+  - (c) The take is kept (LEGAL-REQ-011 behaviour unchanged); the cover is drawn while inactive; after unlock the app is on Review with the saved take (F17-U23).
+  - (d) No haptic of the lock lands between start and stop, and no pause or resume tick (motion step 2).
+  - (e) The letter keeps with its words.
+  - (f) The cover shows on return; after unlock Write has every word typed and the caret at the end (S1-36 (h) still holds).
+- **Record:** S1-53 rows (a) to (f): take length against the clock, pass or fail.
+- **Catalog:** RT-LOCK-03.
+
+### S1-54 Export asks again (1 Dec; F1; security backlog 2; LEGAL-REQ-034)
+- **Owner:** mobile, security.
+- **Needs:** lock on; 5 letters with recordings.
+- **Steps:**
+  - (a) Settings, Export your book. Succeed at the system sheet. Save to Files.
+  - (b) Export again and Cancel the system sheet.
+  - (c) Export with the share sheet left open for 3 minutes (value Immediately), then save.
+  - (d) Turn the lock off; Export.
+  - (e) Low storage: export with under 50 MB free, after the device says yes.
+  - (f) Offline: export.
+  - (g) The matrix on the reason sheet and the Export screen.
+- **Expected:**
+  - (a) The system sheet reads "Confirm it is you to export your book" before any ZIP is built; then the share sheet. The ZIP opens on a Mac (S1-21).
+  - (b) Cancel builds no ZIP, leaves nothing in the cache, shows no error.
+  - (c) No lock while the share sheet is open; the save works.
+  - (d) No system sheet; Export works as today.
+  - (e) The existing low-space failure names its cause and offers Export again; nothing half-written is left.
+  - (f) Export needs no network and works.
+  - (g) VoiceOver reads the reason; nothing truncated at AX5.
+- **Record:** S1-54 rows (a) to (g).
+- **Catalog:** RT-LOCK-07.
+
+### S1-55 Lock and reminders: names hidden, opening from a notification (1 Dec; F1; F17-REQ-015, LEGAL-REQ-054; F17-U22)
+- **Owner:** mobile.
+- **Needs:** reminders on with "Names in notifications" on; a reminder time 2 minutes ahead; then lock on.
+- **Steps:**
+  - (a) Turn the lock on. Open Settings, Reminders.
+  - (b) Wait for the reminder on the Lock Screen and in Notification Centre. Read it.
+  - (c) Tap it with the app killed, then with the app in the background.
+  - (d) Turn the lock off and wait for the next reminder.
+- **Expected:**
+  - (a) "Names in notifications" reads off and cannot be changed, with "Names stay hidden while App lock is on." The App lock page footer reads "When the lock is on, reminders never show a name."
+  - (b) No child name and no letter words in title or body (F17-REQ-015, LEGAL-REQ-054).
+  - (c) Cover first; after unlock the app opens where the reminder points (F17-U22).
+  - (d) The parent's earlier choice (names on) returns; the reminder may carry the name.
+- **Record:** S1-55 rows (a) to (d), a Lock Screen screenshot (Asha fixture).
+- **Catalog:** RT-LOCK-08, RT-RMD-07.
+
+### S1-56 Before you begin: the age question, the unticked box, the No path (1 Dec; F2, CCO-6, CLO-4, CPrivO-3; LEGAL-REQ-002, LEGAL-REQ-001; D-026)
+- **Owner:** mobile, content; legal reads the result (counsel Q-A to Q-C).
+- **D-169 keeps:** the first-run order as built and no public timing promise (BL-1706 and BL-1707 deferred); this row checks the gate as built, not a reordered path.
+- **Needs:** fresh installs; a second phone or reinstall for the No path; a TestFlight build 1 install that already passed the old gate, for (h).
+- **Steps:**
+  - (a) Fresh install, open. Read the screen without touching it.
+  - (b) Tap Continue with nothing chosen.
+  - (c) Tap Yes, leave the box unticked, tap Continue.
+  - (d) Tick the box, tap Continue.
+  - (e) Fresh install: tap No, tick the box, Continue. Relaunch. Move the clock 23 h, then 25 h, relaunch each time.
+  - (f) Fresh install: tap No with the box unticked, Continue.
+  - (g) Fresh install: tap the Terms link, come back; tap the Privacy link, come back. Then offline, tap each link.
+  - (h) Update the build 1 install that passed the old gate to this build.
+  - (i) The matrix. VoiceOver: swipe the whole screen in order.
+- **Expected:**
+  - (a) "Are you 18 or older?", Yes and No with neither selected, the box unticked, both links, Continue enabled.
+  - (b) "Choose Yes or No." above Continue, announced; nothing stored.
+  - (c) "Check the box to continue." above Continue; focus moves to the box; nothing stored (no `ageGate.passed`, no Terms row).
+  - (d) Welcome follows. Stored: `ageGate.passed` as a boolean with no time, and one local Terms row (version, time, surface, app version, text hash) that is never logged (RT-BYB-03 proves the record).
+  - (e) The stop screen (`ageGate.stopTitle`, "{app} is currently for adults 18 and over") whatever the box said; at 23 h still stopped; at 25 h "I answered by mistake" shows (D-026). Nothing but the stop time is stored.
+  - (f) Same as (e).
+  - (g) Each link opens the in-app browser and returns to the screen with the answer and the box as they were. Offline, the browser shows its own error; the screen state is kept; Continue still works without a network.
+  - (h) The one-time agreement screen (title "Before you continue") with only the box and Continue; the age is not asked again. If counsel Q-C has not answered by the build, record that this screen is absent and file it.
+  - (i) VoiceOver order: question (heading), Yes, No, the box ("checkbox, not checked", then "checked"), Terms link, Privacy link, the reason line when shown (read as it appears), Continue. Each link has the hint "Opens in a browser inside the app." The box row is at least 44 pt tall. AX5: nothing truncated, Continue reachable by scroll. Reduce Motion: the reason line fades only. Dark: the box edge visible (3:1).
+- **Record:** S1-56 rows (a) to (i), with screenshots of (a), (c), (e).
+- **Catalog:** RT-BYB-01 to RT-BYB-07.
+
+### S1-57 Where your letters live (1 Dec; F1, F4, CPrivO-4, CCO-8, CLO-5; LEGAL-REQ-044; D-033, D-126)
+- **Owner:** mobile, content, privacy.
+- **Needs:** a book with 5 letters, one recording without a letter and one recording that may not play (S1-31's seed), no export yet; the DL-03 restore drill result.
+- **Steps:**
+  - (a) Settings, Where your letters live. Read every line.
+  - (b) Tap How to check.
+  - (c) Tap Export your book, finish an export, come back.
+  - (d) Remove the orphan and the unplayable recording (or use a book with none) and come back.
+  - (e) Offline: open the page and tap How to check.
+  - (f) The matrix.
+- **Expected:**
+  - (a) "On this phone": "Your letters and recordings are kept on this iPhone." The iPhone backup row reads "Includes your letters and recordings, if iCloud Backup is on." only if DL-03 passed; if DL-03 failed or did not run, it reads "Includes your recordings, if iCloud Backup is on." (CCO-8). The export row reads "Save a copy any time." and the nudge shows. "Encrypted backup: Not in this version". The footer: "Your iPhone backup brings the book to a new iPhone. An export is a copy to open and keep. We hold no copy." No "lost", "stolen", "coming" or "coming soon" anywhere. No On or Off is shown for iCloud Backup (the app cannot read it). Erase everything on this phone is the last row and is not the large button.
+  - (b) Apple's help page opens in the in-app browser.
+  - (c) "Last export: {date}" with today's date; the nudge is gone.
+  - (d) The two rows are gone when their counts are 0.
+  - (e) The page renders fully; How to check shows the browser's own error.
+  - (f) VoiceOver reads each row with its value; How to check has the hint "Opens Apple's help page."; AX5 stacks value under title, nothing truncated; Dark readable.
+- **Record:** S1-57 rows (a) to (f) and which backup line showed, with the DL-03 result.
+- **Catalog:** RT-WLL-01 to RT-WLL-04.
+
+### S1-58 Your words: two choices, one meaning (1 Dec; F1, CDesO-1; D-086)
+- **Owner:** mobile, content.
+- **Needs:** English words on the phone; a phone upgraded from a build that had the "Word for word" switch Off, and one with it On.
+- **Steps:**
+  - (a) Settings, Your words. Read the page.
+  - (b) Choose "Exactly as said". Speak a letter with an um and a repeat ("Asha, um, you you held the spoon").
+  - (c) Choose "Small fixes, marked". Speak the same letter.
+  - (d) Open a letter kept before the change.
+  - (e) On each upgraded phone, open Your words first.
+  - (f) The matrix.
+- **Expected:**
+  - (a) Two choices, each with one line; the example sentence in letter type with one marked fix; the footer "Either way, we never rewrite your words."
+  - (b) Review shows every um and repeat, no marks.
+  - (c) Review shows the fixes marked, each with Put it back.
+  - (d) Unchanged: the setting never touches kept letters or `raw_transcript`.
+  - (e) The old switch's value is the selected choice (On is "Small fixes, marked", Off is "Exactly as said").
+  - (f) VoiceOver reads each choice as selected or not and announces the change; tap haptic once; AX5 nothing truncated; Dark readable.
+- **Record:** S1-58 rows (a) to (f).
+- **Catalog:** RT-YWD-01, RT-YWD-02.
+
+### S1-59 Erase everything on this phone, two steps (1 Dec; F1, CPrivO-1, NAQ-2; WP-F17-15; F17-REQ-012 pattern)
+- **Owner:** mobile, data-architect, content.
+- **Needs:** a build with PR #520 (or its successor); a book with 2 children, 10 letters with recordings, 1 draft, reminders on, the lock on, Appearance Dark, an export done; a second install with no passcode for (g).
+- **Steps:**
+  - (a) Where your letters live, Erase everything on this phone. Read step 1. Tap Export your book, then come back.
+  - (b) Tap Erase everything; at the dialog tap Cancel.
+  - (c) Again; at the dialog tap Erase; at the device sheet Cancel.
+  - (d) Again; Erase; succeed at the device sheet. Watch the screen to the end.
+  - (e) After (d): check Settings (it should be first run), iOS Settings, General, iPhone Storage for the app's size, Notification Centre for scheduled reminders the next evening, and Files for the export.
+  - (f) Kill the app during "Erasing" (second run of (d)); relaunch.
+  - (g) No passcode on the phone: run (d).
+  - (h) Low storage: run (d) under 50 MB free.
+  - (i) The matrix on both steps and the Erasing screen.
+- **Expected:**
+  - (a) "This removes every book, letter and recording from this iPhone, and your settings. We hold no copy." "Save a copy first?" with Export your book; Export opens and returns here.
+  - (b), (c) Nothing is erased; every letter, setting and reminder is still there.
+  - (d) The dialog "Erase everything on this phone?" with "This cannot be undone.", Erase second and never the default, warning haptic; then the device sheet "Confirm it is you to erase everything on this phone"; then "Erasing" with no way out; then Before you begin, with "Everything on this phone is erased." announced.
+  - (e) No letters, children, drafts or recordings; the app's Documents size is back to the install size plus any kept speech model (record whether models are kept); no reminder arrives; the lock is off; Appearance is back to System; the export in Files is untouched.
+  - (f) On relaunch the erase finishes or "Erasing did not finish. Try again." shows; never a half book with letters missing their recordings.
+  - (g) Record what the device step does with no passcode (security 2 has no rule for it). Expected and to confirm with security: the two in-app steps still guard it; the erase never runs without both.
+  - (h) The erase completes (erasing frees space).
+  - (i) VoiceOver: the step 1 title is a heading; the dialog's buttons read in order with Erase last; AX5: Export your book comes first and nothing truncates; Reduce Motion: no slide; Dark: the destructive colour has words and an icon, not colour alone.
+- **Record:** S1-59 rows (a) to (i), the app size before and after.
+- **Catalog:** RT-ERS-01 to RT-ERS-05.
+
+### S1-60 Settings, regrouped (1 Dec; F1, CDesO-1, CDesO-2, CCO-9, CLO-5; LEGAL-REQ-062)
+- **Owner:** mobile, content.
+- **Needs:** one child; then two children; Plus off, then Plus on (sandbox) for the header value.
+- **Steps:**
+  - (a) Open Settings. Count the rows. Read the header card and each group heading.
+  - (b) Tap the header card.
+  - (c) Open Legal; open each of Terms of Service, Privacy Policy and Licenses.
+  - (d) Read the About group and the last line.
+  - (e) Add a second child; read Children.
+  - (f) Storage: read the page with one language; start a second language download; go offline mid-download; remove a language.
+  - (g) Look for Delete account and the old Recordings row.
+  - (h) The matrix, and from each way in to Settings (the Book gear, a content link, Add a child), the back chevron (S1-23 V-10 still holds).
+- **Expected:**
+  - (a) Header card: "Mama", "On this phone", trailing "Free". Groups: Children; Writing (Spoken language, Your words, Reminders, Appearance); Your letters (Where your letters live, Export your book, Recently deleted, Storage); Privacy and security (App lock, Privacy); Help and legal (Help, If you are struggling, Legal); About. 13 rows with one child in build 1.
+  - (b) Plan opens in one tap (CCO-9: "Settings, Plan" stays true).
+  - (c) Each opens its page; Licenses scrolls (S1-30).
+  - (d) Version reads `{version} ({build})` with the build from the binary; "early" appears once, in the registered note (CLO-5); the last line is "Made with care in California" with the heart icon hidden from VoiceOver (CDesO-2).
+  - (e) Both children listed with Add a child.
+  - (f) "Space used" with one row per language and its size; no row reads "All languages, Speech model"; the shared detector is in the language's size and, with two languages, the footer "Includes {size} shared by all languages."; the download shows its progress in place of the size; offline shows "Downloads need a connection. Try again once you are online."; Remove asks "Remove English from this phone?" and letters stay. Language download is offered only here.
+  - (g) Neither appears in build 1.
+  - (h) VoiceOver: the header card is one element ("Mama. On this phone. Plan, Free", hint "Opens Plan."); group headings are headings; AX5 values stack under titles, nothing truncates; Dark readable.
+- **Record:** S1-60 rows (a) to (h), the row count, a screenshot of home at default size and at AX5.
+- **Catalog:** RT-SIA-01 to RT-SIA-05.
+
+### S1-61 Reminders without the pre-sheet: all 11 states (1 Dec; CDesO-3, CCO-10, CPO-3; LEGAL-REQ-007, LEGAL-REQ-054; M13 rules 1 to 3)
+- **Owner:** mobile, content.
+- **Needs:** one install that has never asked for notifications (state 1), reset between runs by deleting and reinstalling; a book with a birth date and one without; a second phone where Deliver Quietly can be set.
+- **Steps and expected, one per state** (the table in `reminders-settings.md` 2):
+  - (1) **Never asked.** Open Settings, Reminders. Expected: switch off; the footer lines visible before touching anything ("Notifications never show what you write." among them, CCO-10). Tap the switch: the iOS alert comes straight away, no sheet of ours.
+  - (2) **Allowed.** Allow. Expected: the switch stays on; choices appear under it; "Changes save as you go."; the preview card with real words and no name; "Next: {day} at {time}". Change the time: the Next line changes (cross-fade) and VoiceOver says "Saved. Next: {day} at {time}." once, after the last change.
+  - (3) **Denied now.** Reinstall, tap the switch, Don't Allow. Expected: the switch stays on; the card "Notifications are off" with Open Settings; "Not sending yet."; the choices still editable.
+  - (4) **Denied before.** Leave and come back. Expected: the same, and no alert.
+  - (5) **Back from iPhone Settings.** Tap Open Settings, allow, return. Expected: "Reminders are on." once; the card collapses; the Next line appears and is announced.
+  - (6) **Provisional or Deliver Quietly.** In iOS Settings set the app to Deliver Quietly. Expected: counted as allowed; a note that they skip the Lock Screen (record whether it matches what iOS does).
+  - (7) **Scheduling failure.** Not reachable by hand on a healthy phone; proved by RT-RMD-05. On the phone, record that no failure line shows when scheduling works.
+  - (8) **No name or birth date.** On the book without a birth date. Expected: the preview is neutral; the month row reads "Starts once a birth date is added."
+  - (9) **Reduce Motion.** Change the time and the cadence. Expected: fades only, no layout slide.
+  - (10) **AX5.** Expected: preview, Next and help wrap, never truncate; the time row stacks; the evening chips wrap; every target at least 44 pt.
+  - (11) **VoiceOver after the alert.** With VoiceOver, run (1) to (3). Expected: focus stays on the switch after the alert; the result is announced; the denied card is next in swipe order.
+  - Also: (12) Dark mode on every state above; (13) the card after the first letter: "Yes, evenings" raises the alert then the toast "Reminders are on. Next: {day} at {time}." with Change; "Pick a time" opens this page with the switch on; denied shows "Notifications are off" with Open Settings; (14) offline: every state works (local only, M13 rule 1); (15) lock on: names off and disabled (S1-55).
+- **Record:** S1-61 rows (1) to (15): pass or fail, the Next line text, a screenshot of (2) and (3).
+- **Catalog:** RT-RMD-01 to RT-RMD-08.
+
+### S1-62 Privacy page: three sections, every claim true (1 Dec; CPrivO-5, CPrivO-1, NAQ-2; LEGAL-REQ-044; D-061, D-095)
+- **Owner:** privacy, mobile, content.
+- **Needs:** the lock off, then on; the App Privacy Report on (iOS Settings, Privacy and Security).
+- **Steps:**
+  - (a) Settings, Privacy, lock off. Read every line top to bottom.
+  - (b) Turn the lock on; read "Who can see it" again.
+  - (c) Tap each row: Names in notifications, App lock, Export your book, Recently deleted, Erase everything, Privacy Policy, Terms of Service.
+  - (d) After a session with first run, a letter and an export, open the App Privacy Report for the app.
+  - (e) The matrix.
+- **Expected:**
+  - (a) The promise word for word at the top (D-061), plain text, no lock or shield icons. "Where your book is kept": "Your letters and recordings are kept on this phone and in your iPhone's own backup, if you use one. They are not sent to us."; "Your speech is written down on this phone."; "This version collects no usage or crash reports." "Who can see it" with the lock off: "Anyone who can unlock this iPhone can open the book." Never "Only you". "Notifications never show the words of a letter." "What you can do": Export, Recently deleted, Erase everything. No "yet" anywhere. Footer "Private by default. Never sold, never used for ads."
+  - (b) "You, after Face ID or your passcode." (Touch ID variant on the SE).
+  - (c) Each opens its page; Names in notifications opens Reminders.
+  - (d) No network contact by the app except the in-app browser pages opened in (c) and the speech model host (RT-PRV-01).
+  - (e) VoiceOver reads section headings as headings; AX5 nothing truncated; Dark readable.
+- **Record:** S1-62 rows (a) to (e) and the App Privacy Report screenshot.
+- **Catalog:** RT-PRP-01 to RT-PRP-05.
+
+### S1-63 If you are struggling: lines for the phone's region (1 Dec; CCO-11; F20-REQ-001, F20-REQ-002, F20-REQ-003, F20-REQ-005; struggling-page.md 2 and 3)
+- **Owner:** mobile, content, support; the founder ticks FT-36.
+- **Needs:** a phone with a SIM; an iPad or a phone with no SIM (D10); iOS Settings, General, Language and Region to change the region. Do not complete a call or text: cancel at the Phone or Messages screen.
+- **Steps:**
+  - (a) Region United States. Open the page.
+  - (b) Tap Call on each line; cancel. Tap Text on each line that has one; cancel.
+  - (c) Change the region to Canada, United Kingdom, Ireland, Australia, New Zealand and India in turn; open the page each time.
+  - (d) Change the region to Germany.
+  - (e) Tap "Lines in other countries".
+  - (f) On the iPad, tap Call.
+  - (g) Offline, open the page.
+  - (h) The matrix.
+- **Expected:**
+  - (a) The emergency line first ("In danger right now?" with Call 911), then NMMH, 988 and PSI, each with Call and Text, then "Lines in other countries", then "Nothing on this page is recorded or sent."
+  - (b) Each opens Phone or Messages with the number filled in and never dials or sends by itself.
+  - (c) Each region shows its own emergency number and only the lines whose source and `verifiedOn` exist in the table; a line that was not verified is not shown (CCO-11 holds unread lines: PANDA, Canada's cost).
+  - (d) "Call your local emergency number." and "Find a free helpline near you", which opens findahelpline.com in the in-app browser.
+  - (e) The regions listed, each with its lines.
+  - (f) "Number copied" shows and the number is on the clipboard (F20-REQ-005).
+  - (g) The page renders; the phone and copy actions work; only the directory link needs a network.
+  - (h) VoiceOver reads each line's name and how (call, text, hours); the emergency line first; AX5 the buttons stack; Dark readable.
+- **Record:** S1-63 rows (a) to (h), the region list checked, and the release date for F20-REQ-003.
+- **Catalog:** RT-HLP-01 to RT-HLP-05.
+
+### 1 Dec: experience items (F5, F6, F11)
+
+### S1-64 Held letters readable, playable, exportable (1 Dec, P0; PL-2, F5, CCO-12; F14-REQ-039 device half)
+- **Owner:** payments, mobile; qa signs the hash check.
+- **Needs:** a production-profile TestFlight build (Plus on, sandbox tester with no Plus; S1-37 (b)); a Mac with `shasum`.
+- **Steps:**
+  - (a) Keep 2 letters. Speak a third, keep: at the Keep sheet tap Keep it here for now. Type a fourth and hold it the same way.
+  - (b) Open each held letter from Tonight.
+  - (c) Play the held spoken letter to the end; scrub; play again offline.
+  - (d) Export your book. AirDrop the ZIP to the Mac. Unzip. Compare `shasum -a 256` of each held recording and text file with the manifest.
+  - (e) Offline: export again.
+  - (f) Buy Plus in the sandbox; let it lapse (sandbox renewal times); after the lapse open, play and export the held letters again.
+  - (g) Low storage: export with the held letters.
+  - (h) Read the held note on the Keep sheet.
+  - (i) The matrix on the held letter page.
+- **Expected:**
+  - (a) Both held letters stay on Tonight; nothing is lost.
+  - (b) A read-only page with the words and, for the spoken letter, the player. No edit, no way to keep it into the book without Plus.
+  - (c) Plays fully online and offline.
+  - (d) The ZIP has a `waiting/` folder with 2 text files and 1 recording (the typed letter has none); every hash equals the manifest and the originals (F14-REQ-039).
+  - (e) Same ZIP contents offline.
+  - (f) After the lapse every held and kept letter still opens, plays and exports.
+  - (g) The low-space failure names its cause; nothing is half-written.
+  - (h) "This letter is safe on this phone. You can read it, play it and export it, and keep it whenever you like." Only if (d) passed; if PL-2 slips, the note does not say "export" (F5 default, CCO-12).
+  - (i) VoiceOver reads the held page title, the words in full and the player state; AX5 never truncates letter text (D-027); Reduce Motion fade only; Dark readable.
+- **Record:** S1-64 rows (a) to (i), the hash list (file names and hashes only, no letter text).
+- **Catalog:** RT-HELD-01 to RT-HELD-05.
+
+### S1-65 Plus lines and status, and the Tonight line after the allowance (1 Dec; F5, CDesO-6, CBO-1, CLO-6; PL-3, PL-4, PL-5, PL-8; F14-REQ-040, F14-REQ-018)
+- **Owner:** payments, content, mobile.
+- **D-169 keeps:** the existing free-slot text; BL-1806 is deferred, so no new Delete-confirm line is expected in 1.0 and none is a failure to find.
+- **Needs:** production-profile build; sandbox testers: one with no Plus, one subscribing, one in a Family Sharing group with Plus.
+- **Steps:**
+  - (a) Fresh install: read Welcome.
+  - (b) Keep letter 1; open Settings. Keep letter 2; watch the Book.
+  - (c) Before letter 3: open Tonight and Write.
+  - (d) Open Settings, Plan, without tapping anything else.
+  - (e) Subscribe (sandbox); open Tonight, Write, Settings, Plan.
+  - (f) Let the subscription lapse; open Plan and Tonight.
+  - (g) Family Sharing tester: Settings header and Plan.
+  - (h) The matrix on Plan and on the Tonight line.
+- **Expected:**
+  - (a) "Your first two letters are free. After that, Plus keeps the book growing. Reading, listening and your copy stay free." No price, no trial length.
+  - (b) Header trailing value "Free"; Plan help "Two letters free, then Plus to keep adding." After letter 2, once: "That was your second free letter. Whenever you are ready, Plus keeps the book growing." Not on letter 1, not again.
+  - (c) One standing line on Tonight (above Speak) and on Write: "Adding new letters to the book needs Plus. Recording, reading and export are always free." No number, no button, no "{count} letters waiting". Before letter 2 is kept the line is absent.
+  - (d) "What Plus includes" readable before Apple's sheet opens; Manage, Restore, Redeem, Refund, Save a copy; no countdown, no save offer, no "Are you sure?".
+  - (e) Header "Plus"; the Tonight and Write line gone; Plan shows the plan name and "Free until {date}" or "Renews on {date}".
+  - (f) Plan: "Plus ended on {date}. Every letter you kept is still yours." and no sales sentence; header "Free"; the Tonight line back.
+  - (g) Header "Plus, shared"; "Shared with you through Apple Family Sharing"; no Manage or Refund.
+  - (h) No digit in any header value; VoiceOver reads the header value; AX5 nothing truncated; Dark readable.
+- **Record:** S1-65 rows (a) to (h), screenshots of (c), (d), (f).
+- **Catalog:** RT-PLN-01 to RT-PLN-06.
+
+### S1-66 The memory card: Not today and the Settings switch (1 Dec; F6, CDesO-5, CR-43 as ruled in the experience council)
+- **Owner:** mobile, design-systems.
+- **Needs:** a book with a kept letter dated 30 days ago (letter date set on the phone, or the phone's date moved forward 30 days with automatic time off); one recording on that letter.
+- **Steps:**
+  - (a) Cold launch. Read Tonight.
+  - (b) Tap Not today on the card.
+  - (c) Send to the background, return; force-quit and cold launch the same day.
+  - (d) Move the date one day on; cold launch.
+  - (e) Settings: turn "Memories on Tonight" off; go back to Tonight; cold launch. Turn it on again.
+  - (f) Open the card; play the recording.
+  - (g) Leave the app open across midnight into a day when a memory qualifies; return without a cold launch; then cold launch.
+  - (h) The matrix on the card.
+- **Expected:**
+  - (a) The card "A month ago" with the letter's first lines (fade on a whole word, no ellipsis), and a 44 pt Not today.
+  - (b) The card leaves; nothing replaces it; soft haptic; VoiceOver announces it once.
+  - (c) The card stays gone all that day (a local per-date flag).
+  - (d) The card may show again if a letter qualifies.
+  - (e) Off: no card on any day. On: cards return. The switch is on by default.
+  - (f) The letter opens; Listen never starts on its own (CDesO-5); no music, no Ken Burns, no drawing.
+  - (g) Without a cold launch nothing pops in; the card enters only in the cold-launch stagger.
+  - (h) VoiceOver: the card is one element with the kicker, author and date, hint "Opens the memory", and a custom action Not today; the x is also its own button. AX5: Not today becomes a text row; nothing truncates. Reduce Motion: fade only, the space closes at once. Dark: the kicker passes 4.5:1.
+- **Record:** S1-66 rows (a) to (h).
+- **Catalog:** RT-MEM-01 to RT-MEM-05.
+
+### S1-67 Motion fixes, the late November checklist (1 Dec; CDesO-8, F11; motion.md 3 and 4)
+- **Owner:** design-systems, mobile.
+- **Needs:** the SE 3 (simulated, D-172; Instruments readings from it are labelled "simulated" and are not SE 3 evidence) and a 120 Hz Pro (a real phone); both themes; Xcode Instruments on a Mac.
+- **Steps:**
+  - (a) Book: open a letter, then Back, ten times.
+  - (b) Tonight: tap Speak; feel for haptics until the clock runs. In Listen, pause and resume twice in a 2-minute take; Finish.
+  - (c) Instruments, Energy Log and Time Profiler: a 10-minute take on the SE 3.
+  - (d) Force-quit; cold launch; watch the splash become Tonight (screen recording).
+  - (e) Watch every `ProgressLine` (download, export, Review's words) in light and dark.
+  - (f) Press Another thought 10 times quickly.
+  - (g) Instruments, Animation Hitches: the five moments (launch, start listening, keeping, opening a letter, a memory).
+  - (h) Repeat (a), (b), (d), (f) with Reduce Motion, Reduce Transparency, AX5, VoiceOver and Low Power Mode, one at a time.
+  - (i) If `PressableFeedback` merged by 20 Nov: press every control on Tonight, Book, Settings; with Reduce Motion.
+- **Expected:**
+  - (a) The paper grows from the card (`cardToPage`); never a slide and a grow together; the card's words travel whole; VoiceOver lands on the dateline.
+  - (b) One light tick at start, one at Finish, none between (no pause or resume tick).
+  - (c) Listen does not re-render at 20 Hz (record renders per second before and after); energy impact no worse than before the fix.
+  - (d) The splash fades into Tonight; no cut, no flash; dark and light.
+  - (e) The track is visible (3:1 both themes); no number or percent on the line; the line never says "still" while work is moving.
+  - (f) The prompt stays legible; never two prompts at once; one tap haptic each.
+  - (g) No hitch over one frame; hitch ratio under 5 ms/s.
+  - (h) Reduce Motion: the hand-off fade, no travel; Low Power Mode: motion coherent, haptics muted by iOS; AX5 and VoiceOver: nothing lost.
+  - (i) Every press answers within one frame; Reduce Motion an opacity dip only.
+- **Record:** S1-67 rows (a) to (i), Instruments numbers, the two screen recordings.
+- **Catalog:** RT-MOT-01 to RT-MOT-07.
+
+### S1-68 Pregnancy prompts, the wait lines, drawings and what is gone (1 Dec; CPO-7, CDesO-7, CMO-1; F13-REQ-008; BL-535)
+- **Owner:** content, mobile.
+- **Needs:** a book set up before the birth (due date only); a fresh install on a phone with no speech model; a book with 10 kept letters.
+- **Steps:**
+  - (a) Pre-birth book: open Tonight on 14 evenings (move the date), and press Another thought 5 times each evening. Write down the keys or the lines shown.
+  - (b) Fresh install: speak a first letter while the speech model downloads; read the wait and Review state lines.
+  - (c) Keep letter 10 and letter 11.
+  - (d) Look at each screen with a drawing (the reuses `envelopeOpen` and `readingLamp`, if merged by 20 Nov).
+  - (e) The matrix on (a) and (b).
+- **Expected:**
+  - (a) Only `before` prompts; at least 12 different ones over the fortnight; none mentions a due date, weeks, labour or a countdown (F13-REQ-008).
+  - (b) Only the lines in `wait-content.md` 1 and 2; no time estimate; nothing that says it works offline or in the background (both unverified).
+  - (c) No count moment ("10 letters.") anywhere: no toast, no screen, no badge (CPO-7).
+  - (d) One drawing per screen at most; never on a control, Plus, the letter page or a notification.
+  - (e) VoiceOver reads each line once; AX5 nothing truncated; Dark readable.
+- **Record:** S1-68 rows (a) to (e) with the list of prompt keys seen.
+- **Catalog:** RT-PRM-01, RT-PRM-02, RT-CNT-01, RT-WAIT-01, RT-DRW-01.
+
+### 1.0.1 items (release map, F11)
+
+### S1-69 Tonight 1.0.1: one question, one card or nothing, the closure line, dayparts (1.0.1; CDesO-4, F6, CPO-8; CR-43)
+- **Owner:** mobile, content, product.
+- **Needs:** books for each state: first day; a waiting draft and a second draft; a month-day; a memory-eligible letter; none of these (thought or empty); after 5 days away. Phone clock moved for 9 AM, 7 PM and 10 PM.
+- **Steps:**
+  - (a) Open Tonight in each state at 7 PM.
+  - (b) Keep a letter; return to Tonight.
+  - (c) The normal book at 9 AM, 7 PM and 10 PM.
+  - (d) Over 7 evenings, count the evenings with a small thought.
+  - (e) Count the tappable things above the tab bar in each state; read every number on screen.
+  - (f) The matrix in (a) and (b).
+- **Expected:**
+  - (a) Dateline, greeting, one question with Another thought, then at most one card in the ladder order: the newest draft with a quiet "Also waiting" (no number), else an occasion, else a memory, else a small thought, else nothing. No fact ever (F7). After a break: the gap prompt and no card.
+  - (b) The closure line ("Today is in Asha's book." or content's final line) replaces the question; the card shows today's letter; never "come back tomorrow"; no haptic.
+  - (c) 9 AM: no "tonight" or "today" line that does not fit the morning; 10 PM: no card except a waiting draft.
+  - (d) At most 3 in 7; none on the first evening back.
+  - (e) At most six tappable things; no number but the child's age.
+  - (f) VoiceOver announces the closure line once and focus stays; the card never announces itself; AX5 actions inline under the prompt; Reduce Motion one fade.
+- **Record:** S1-69 rows (a) to (f).
+- **Catalog:** RT-SLB-01 to RT-SLB-05.
+
+### S1-70 Memories 1.0.1: Keep out of memories, the hard filter, opening the card (1.0.1; CDesO-5, CPrivO-7, Karma tie-break 1)
+- **Owner:** mobile, data-architect, design-systems.
+- **Needs:** memory-eligible letters: one written to a hard prompt, one private, one quiet day, one by Papa who has left the book (build 2 only, skip in build 1), one before the birth.
+- **Steps:**
+  - (a) On a day the card shows, open its VoiceOver actions and choose Keep out of memories; then undo from the toast. Choose it again.
+  - (b) Open the letter in the Book: find Keep out of memories in its menu; turn it off.
+  - (c) Move the date through the eligible windows for each special letter.
+  - (d) Tap Not today three days running; then watch 30 days.
+  - (e) Open the card (the paper grows from it, with its column).
+  - (f) The matrix.
+- **Expected:**
+  - (a) The card leaves; the undo toast stays until dismissed; undo brings it back; tap haptic.
+  - (b) Reversible; the Book never changes.
+  - (c) The hard, private, quiet and departed-author letters never resurface; the pre-birth letter only with its switch on (off by default).
+  - (d) Memories drop to weekly for 30 days; never the same letter twice in 7 days.
+  - (e) `cardToPage` from the card; its lines carry; no slide.
+  - (f) As S1-66 (h).
+- **Record:** S1-70 rows (a) to (f).
+- **Catalog:** RT-MEM-06 to RT-MEM-09.
+
+### S1-71 Another thought on Write and Listen; the question on the letter page (1.0.1; CDesO-9, CAIO-1)
+- **Owner:** mobile, design-systems, content.
+- **Steps:** (a) Open Write and Listen from Tonight; press Another thought on each. (b) Keep the letter; open it in the Book; then Read together; then Export and open the ZIP; then the PDF. (c) The matrix.
+- **Expected:** (a) The question changes in place; focus stays on the button; the take or the typed words are untouched. (b) The question shows above the words on the letter page as an unsigned app note; it is absent from Read together, the export prose and the PDF. (c) VoiceOver reads the note as the app's, not the parent's; AX5 nothing truncated.
+- **Record:** S1-71 rows (a) to (c).
+- **Catalog:** RT-ANT-01, RT-ANT-02.
+
+### S1-72 Waiting letters after a purchase (1.0.1; PL-6; F14-REQ-041)
+- **Owner:** payments.
+- **Needs:** production-profile build; 3 held letters; sandbox tester with no Plus.
+- **Steps:** (a) Subscribe from the Keep sheet. (b) Read the offer; keep one letter from it. (c) Force-quit; relaunch. (d) Offline relaunch.
+- **Expected:** (a) The purchase confirmation, then one offer "Keep the letters that are waiting". (b) Each letter still needs its own Keep; after one, 2 remain held. (c) No second offer, no duplicates. (d) Same, offline.
+- **Record:** S1-72 rows (a) to (d).
+- **Catalog:** RT-WTL-01.
+
+### S1-73 Book page 1.0.1: cover band, chapters, Months sheet, glyphs (1.0.1; book-page.md 2 and 4; F09-U02 fixture)
+- **Owner:** design-systems, mobile.
+- **Needs:** the 1,200-letter perf fixture build; a small book of 5 letters.
+- **Steps:** (a) Open the Book on the SE 3; scroll from top to end; open the Months sheet and jump to month 3. (b) Read a letter card: excerpt end, voice marker. (c) The matrix.
+- **Expected:** (a) No hitch over one frame; sticky headers; the Months sheet jumps without a blank. (b) The excerpt ends on a whole word; the voice marker is a glyph plus a word ("Voice 1:06"), never a play button. (c) AX5: the cover band stacks; VoiceOver reads chapter title and authors; Dark readable.
+- **Record:** S1-73 rows (a) to (c), Instruments hitch numbers.
+- **Catalog:** RT-BKP-01, RT-BKP-02.
+
+### S1-74 Questions over a year: no repeats, weak ones gone (1.0.1; CPO-6, CPO-9; F13-REQ-004; BL-534)
+- **Owner:** content, mobile.
+- **Steps:** (a) With the phone's date moved forward a day at a time for 30 evenings, open Tonight and press Another thought twice each evening; write down the keys. (b) Read for the retired weak prompts (motor milestones, first words).
+- **Expected:** (a) No key twice in the 30 evenings for the same child and author. (b) None of the retired keys shows. The full year is proved in RT-HIST-01; this item checks that the phone reads the same history.
+- **Record:** S1-74 rows (a) and (b), the key list.
+- **Catalog:** RT-HIST-01 to RT-HIST-03.
+
+---
+
 ## Part 2. Money, account and notifications (session 2, can follow on the next days)
 
 ### S2-01 to S2-12 StoreKit and Apple's sheets
@@ -1294,6 +1804,116 @@ New block: ids are `RT-B9-01` to `RT-B9-13` in `docs/qa/release-test-catalog.csv
 | RT-B9-11 | Delete a book, Erase everything (#520) | Check lines 29 to 32 | Matches DL-01 |
 | RT-B9-12 | Plus offline and grace (#517) | Check lines 33 to 36 | Offline line; held letter; 7-day grace in AL-09 |
 | RT-B9-13 | Notes count (#510) | Check line 19 | Keep sheet on the third item |
+
+## Part 5. New-scope device journeys (BL-948; `docs/product/prd/14-test-plan.md` sections 4 and 5)
+
+One row per journey J-N1 to J-N27 that needs a phone, P0 rows first. Row ids are `DJ-N<number>` (the journey number), so they cannot collide with S1, DL or RT ids; `DJ-A<number>` rows are accessibility passes that belong to no journey (DJ-A1 is the Book bar at the largest text size, DJ-A2 the failed Let it go line), and `DJ-X<number>` rows are cross-cutting checks (DJ-X1 is a second account on one phone). J-N6, J-N7, J-N17, J-N18, J-N22, J-N25 and J-N26 need no phone and are not here (they run as unit, source or journey tests). Every row is planned and has not run. J-N28 onward is out of this row's scope.
+
+**Rows expected, in order:** DJ-N19, DJ-N21, DJ-N23, DJ-N24, DJ-N27 (the P0 device journeys the row names), then the other P0 rows DJ-N1, DJ-N2, DJ-N4, DJ-N9, DJ-N10, DJ-N11, DJ-N14, DJ-N16, then the P1 rows DJ-N3, DJ-N5, DJ-N8, DJ-N12, DJ-N13, DJ-N15, DJ-N20. That is 20 journey rows, and with DJ-A1, DJ-A2 and DJ-X1 below Part 5 holds 23.
+
+**Settings on every row (section 5):** a separate install signed in to a test account that holds only the fictional Asha book; the phones listed in the Phone column (the SE 3 on the newest iOS, a current large iPhone on the latest iOS, a second phone on the same account where the row says two phones); and, as a walk, the largest accessibility text size with Bold Text, VoiceOver, Voice Control, Switch Control, Reduce Motion, Increase Contrast, Smart Invert, dark mode and Low Power Mode, with airplane mode where the row says so. No real name, letter, picture or voice appears in any note, screenshot or log. Results go in `docs/qa/evidence/<date>-<build>-<phone>.md`, one line per row id, with the Priority and Card below. A waiver is never allowed for a P0 row marked (loss) or (leak) or for a name or words on a lock screen or a guilt or count line (section 6).
+
+| Row | Priority | Card | Phone | Journey and what to check (Given/When/Then in short) | Extra settings |
+|---|---|---|---|---|---|
+| DJ-N19 | P0 (loss) | NS-13, NS-11, NS-23 | SE 3 | Quiet a book. Then no reminder, no Save a copy slip and no past letter shows for it; unquiet it and all three return. | Dark mode; VoiceOver on the quiet toggle |
+| DJ-N21 | P0 (loss) | NS-08 | SE 3 | Sign out with backup off. The sheet says recordings stay on this phone; after sign out, count every recording: all still on the phone. | Airplane mode for the second pass; VoiceOver; AX5 text |
+| DJ-N23 | P0 (loss) | NS-17 | SE 3 | English-only build, a take spoken in another language. Review marks it in one tap, the words leave view, the audio stays, nothing is lost. | VoiceOver; Reduce Motion |
+| DJ-N24 | P0 (leak) | NS-13 | SE 3 | Default settings, reminders on, one week with the real clock or the moved date: no notification shows the child's name or any letter words on the lock screen. | Show Previews on and Never; Focus summary; Low Power Mode |
+| DJ-N27 | P0 | NS-32 | SE 3 | A trial ends and a reminder is due the same day: the plan notice arrives on time. | Sandbox account; moved date; Low Power Mode |
+| DJ-N1 | P0 (loss) | NS-09 | SE 3 | Let go of a take, kill the app midway, reopen: the take is gone and its audio file is gone. | Kill by app switcher; airplane mode |
+| DJ-N2 | P0 | NS-10 | SE 3 plus a second phone | New phone: sign in, consent outstanding, reach the book; no page claims a recording is here. | VoiceOver; AX5 text |
+| DJ-N4 | P0 (guilt line) | NS-13, NS-32 | SE 3 | A week of silence (moved date): reminders slow then stop; no line counts the gap. Spot check that the first scheduled notes appear; the rest runs as a planner unit test. | Show Previews on; dark mode |
+| DJ-N9 | P0 | NS-01, NS-36 | SE 3 | Add a picture to a letter, delete the letter, restore it: the picture follows each step; the export holds it. | Reduce Motion; AX5 text |
+| DJ-N10 | P0 (leak) | NS-02, NS-36 | SE 3 | Find a word, open the letter, Back keeps the search; hide the letter, it is no longer found; no network call in the whole run. | Airplane mode throughout; VoiceOver; AX5 text |
+| DJ-N11 | P0 | NS-05 | SE 3 | Share one letter: the text sent equals the kept words byte for byte, nothing added. Compare against the app's stored text on a Mac. | Share sheet to Notes and Messages |
+| DJ-N14 | P0 | NS-06, NS-36 | SE 3 plus a second phone | Seal a letter for a day; from two time zones check it opens at the same instant. | Set each phone's zone by hand |
+| DJ-N16 | P0 (loss) | NS-17 | SE 3 | A recording in a language that is not offered: kept, no invented words, the letter says its words are waiting. | VoiceOver |
+| DJ-N3 | P1 | NS-13 | SE 3 | Reminder at the chosen hour, tap, land on the prompt, speak, keep; tomorrow the words differ. | Low Power Mode; Focus on |
+| DJ-N5 | P1 | NS-13 | SE 3 | Fly across time zones (change the zone by hand): no reminder in the night. | Automatic time zone off then on |
+| DJ-N8 | P1 | NS-11 | SE 3 | Birthday week: the slip appears once, save a copy to Files, it does not return; the copy equals Take the book with you. | Share sheet; Files |
+| DJ-N12 | P1 | NS-21, NS-33 | SE 3 | Open a letter at the largest text size with VoiceOver: heading, list, Share, Delete in order; nothing truncated. | AX5 text; Bold Text; Voice Control |
+| DJ-N13 | P1 | NS-37, NS-34 | SE 3 | 1,000 Asha letters and 300 pictures: scroll the Book with no frame over 16.7 ms. | Low Power Mode off, then on |
+| DJ-N15 | P1 | NS-33, NS-34 | SE 3 | Every screen with Reduce Motion on: no moving loop. | Reduce Motion; Increase Contrast; Smart Invert |
+| DJ-N20 | P1 | NS-33 | SE 3 | VoiceOver only: start, stop, review, undo a fix and Keep a letter with no sighted help. | VoiceOver; Switch Control pass |
+
+**Record:** a line per row id in the evidence file: phone, iOS version, build and profile, pass or fail, and for each fail a GitHub issue with a severity (S0 for any loss, leak, name or words on a lock screen). Rows not run say why. UNVERIFIED until the founder runs them: nothing here has run on a phone.
+
+### DJ-A1 The Book bar at the largest text size (BL-1861 slice; NS-33-R4 slice d; code change BL-1860)
+
+One row, planned and not run. It is the part of the NS-33-R4 walk that `apps/mobile/test/a11y-ax5.test.ts` cannot prove: that test reads the bar's source (no line limit, no fixed type, no cap on the headline, every control built at 44 pt or more) and cannot see wrapping or reach on a phone. BL-1860 removed the 1.3 times cap on the headline in `apps/mobile/src/app/(tabs)/book.tsx` (the bar, `const topBar`), so the headline now grows with the system size and `flex-1` lets it wrap beside two controls. The letter page dateline and Me title rotor checks and the other AX5 screens of BL-1861 are not in this row.
+
+- **Phone:** iPhone SE 3 (`se3`), the newest iOS it takes. A second pass on a current large iPhone is welcome and optional.
+- **Needs:** any build with the Book tab and an Asha book holding enough fictional letters that the list scrolls past one screen (about 12 letters across at least two months, so the Months button shows and a month heading is under the bar). To seed it, use the same route as rows S1-205 and S1-151 of this file: the development seed `apps/mobile/src/dev/asha-seed.ts` (six fictional Asha letters over several months, one of them kept out of the book, so a tester gets five; it is wired to the web preview, so for a phone ask the engineer for a build that runs it), or write a few Asha letters and change the date, as row S1-151 says. If the book holds fewer letters than the list needs to scroll, record how many it held. No server features, no profile switch. Fictional family only: Asha.
+- **Steps:**
+  1. On the phone: Settings > Accessibility > Display & Text Size > Larger Text. Note the current size and whether Larger Accessibility Sizes is on, so you can put it back. Turn on Larger Accessibility Sizes and drag the slider to the largest size (AX5). In the same screen, Display & Text Size > Bold Text: note whether it is on, then turn it off for this pass. (These iOS menu paths are not checked in this repo; iOS versions move them. If one is missing, search Settings for "Larger Text" or "Bold Text" and write down where it was.)
+  2. Open the app, then the Book tab. At the top you see the cover band with the book's title large. Note what you see.
+  3. Drag the list up slowly with one finger until the cover band has scrolled away and a bar holds at the top of the screen. Keep the list a little way down so a month heading shows under the bar.
+  4. Look at the bar: the book's title, the Months button and the gear. Read the title all the way to its last letter. Count its lines.
+  5. Tap Months. A sheet opens. Close it again.
+  6. Tap the gear. Settings opens. Go back to the Book.
+  7. Turn Bold Text on (Settings > Accessibility > Display & Text Size > Bold Text; the phone may restart the app's text, so reopen the Book tab if it does), then repeat steps 3 and 4. Put Bold Text back to how you found it in step 1.
+  8. Optional: turn VoiceOver on (Settings > Accessibility > VoiceOver, or say "Hey Siri, turn on VoiceOver"; not checked in this repo). The bar is hidden from VoiceOver until the screen has been scrolled up far enough for the bar to show (in `apps/mobile/src/app/(tabs)/book.tsx` the bar has `pointerEvents` off and its elements hidden while `barUp` is false), so first scroll as in step 3, then swipe right from the top of the bar. Note the order it reads the title, Months, the gear and the month heading. At the top of the list, with the cover band showing, the bar is not read: that is expected.
+  9. Set Larger Text, Bold Text and VoiceOver back to how they were in step 1.
+- **Expected (what you see):**
+  - Step 3: a bar appears at the top of the screen as you scroll, with the book's title, the Months button and the gear, and the cover band has gone out of view.
+  - Step 4: the whole title shows, to its last letter. If it does not fit on one line it takes two or more lines and no line is cut off; no three dots, and no part of it sits behind the Months button or the gear. The title is as large as the other text on the bar, not smaller than it.
+  - The month heading under the bar also wraps instead of being cut.
+  - Step 5 and 6: the Months button and the gear each open on one tap. The Months button reads "Months"; if the Book shows a row of two choices under the cover band (Months and Photos, which appears only in a build with the Photos switch on, `EXPO_PUBLIC_PHOTOS=on`), the button reads "Go to a month" instead, so the two do not share a name (`apps/mobile/src/app/(tabs)/book.tsx:399`, `packages/content/src/features/photos.en.ts:47`). Either label is right; write down which one you saw. While the Photos choice is selected the button is not shown at all. Each is a comfortable touch target (a thumb lands on it first time, you do not have to aim), not squeezed by the title. A finger at the right screen edge still reaches the gear.
+  - Step 7: the same, with bolder letters.
+  - Step 8: the title, then Months (or Go to a month), then the gear, then the month heading as a heading; with the cover band showing and the bar not yet up, VoiceOver does not read the bar.
+  - Nothing in the bar overlaps the status bar clock or the notch area.
+- **Record:** phone, iOS version, build number and profile; a screenshot of the bar at AX5 with Asha's book (title visible in full); how many lines the title took at AX5; yes or no for each of: title cut, three dots, title broken inside a word (a word split across two lines, for example "Ash" on one line and "a" on the next), title under a control, Months reachable, gear reachable, month heading cut; which label the Months button showed; for any control that was hard to hit, which control and what happened; with Bold Text on, the same yes or no list; what VoiceOver said and in what order (step 8), or not run. The 44 pt number is read from the code, not measured on the phone: if you want it measured, hold the screenshot against the pixel size of the phone and write it down, otherwise mark it not measured. Rows not run say why.
+- **Update:** if the bar cuts the title or a control is hard to reach, file a GitHub issue with severity S2 and link BL-1860; do not change `docs/product/prd/11-foundations.md`.
+- **Not verified:** nothing here has run on a phone. The bar's exact height at AX5 and where the title breaks are not stated, because they are not in the code; whether a long title breaks inside a word is only answered by the yes or no in Record. The iOS Settings paths in steps 1, 7 and 8 (Larger Text, Bold Text, VoiceOver, Hey Siri) are not checked in this repo and may differ by iOS version. That the gear and Months are at least 44 pt tall at AX5 on the phone is read from the sizes in `apps/mobile/src/components/ui/button.tsx` (the `sm` Button is 44 pt, the IconButton is 44 pt by default), not measured. Whether the title wraps at AX5 for a long name such as "Asha's book" is unknown: for the name Asha it may fit on two lines; use a longer fictional name (for example "Anjali Asha") on a second pass if the first fits on one line. VoiceOver order in step 8 is the reading order the code suggests, not a heard one.
+
+### DJ-X1 A second account on one phone, and what sign-out says (BL-1863; X4-R1, NS-10-R3; test `[X4-R1]`)
+
+One row, planned and not run. It is the part of `[X4-R1]` that the tests in `apps/mobile/test/account-surfaces-x4.test.ts` cannot show: that a person who signs in as Papa on the phone Mama just signed out of sees nothing of Mama's, and that Mama gets all of it back. Those tests run the account reader, the Find index, the planner input, the outbox and the uploads in Node; they do not see a screen. The row has no journey number: J-N28 to J-N36 (second account among them) are out of scope of the table above. Checks marked ADDED below are not required by `[X4-R1]` or NS-10-R3 and are not covered by those tests; they are read on the phone only.
+
+- **Phone:** iPhone SE 3 (`se3`), the newest iOS it takes.
+- **Needs:** a switch-on build (server features ON, staging sign-in) and two drill accounts, A (Mama) and B (Papa); B is not a member of A's book and has no book. Sign in to each the way the build offers on staging (Apple or the email code; use the same way for both and record it). Fresh install, signed in as A. Fictional family only: Asha. There is no native seed: `apps/mobile/src/dev/asha-seed.ts` is wired only to the web preview (`store-ready.web.ts:29`), so do not wait for a build that runs it. Write about 5 Asha letters by hand as A, with a picture on one (needs `EXPO_PUBLIC_PHOTOS=on`), and Find on (`EXPO_PUBLIC_BOOK_SEARCH=on`, a build made for S1-205), and set a reminder time in Settings. B's reminder time, set in step 3, must differ from A's so the two can be told apart. If a thing could not be set up (no picture, no Find build), write which and skip its check. Record how many letters the book held. No second phone.
+- **Steps:**
+  1. As A, open the Book. Count the letters, note the one with a picture and the book's title, and note the Home screen's recent letter. Tap the magnifier and Find a word that is in one Asha letter (write the word down). Note the reminder time in Settings and whether a Book-level backup line shows.
+  2. Wait until A's letters have been sent (online, a minute). Settings, Account, Sign out. If instead the page shows the waiting line (`signOutWaiting` in `packages/content/src/features/auth.en.ts`, "newest letters are still on their way") the sign-out is waiting for the queue: note it, wait, and let it finish. Read the sheet in full before you confirm (`signOutTitle` and `signOutBody`, shown by `apps/mobile/src/app/settings/account.tsx`). The line about recordings and about anyone who opens the app on this phone is a PROPOSED key from BL-965 (the D1 line) and is not in the code yet: record what the sheet said word for word and do not expect it. Confirm.
+  3. ADDED: press the home indicator and look at the app switcher card for the app: note whether it still shows A's Book. Open the app and sign in as B. B has no book, so go through the first steps: enter a fictional name for B's child that is not Asha, write one short letter of B's own (for example "The ducks were loud today."), and set a reminder time different from A's.
+  4. As B, look for A's letters in the Book, month by month and in Read together; look at the Home screen, the book's title, the Settings pages (the account shown is B's, the child and theme are not A's), any Book-level backup line, and the Photos library of the phone (a picture A added must not be there or shown). Use the magnifier: Find A's word from step 1, then Find a word from B's own letter. Read the reminder time in Settings. ADDED: leave the phone locked past A's time and look for a notification.
+  5. If the app offers B a choice about the letters on the phone, write down what it said and take the choice that leaves A's letters alone; do not tap anything that merges or claims them.
+  6. Sign out as B (the same sheet, and the waiting line if it shows). Sign in as A.
+  7. Look at A's Book: the letters, the picture, the title, Find for A's word, the reminder time, the backup line.
+- **Expected (what you see):**
+  - Step 2: the sheet names signing out on this phone and offers Cancel and Sign out; today's body says the letters stay on this phone. Nothing is removed by confirming. If the waiting line shows, the phone stays signed in until the queue is empty.
+  - Step 4: as B, the Book shows none of A's letters, pictures, title or child; Home shows nothing of A's; Find for A's word finds nothing and Find for B's word finds B's letter (so an empty result is not an empty index); B's reminder time is B's own; no backup line names anything of A; the Photos library holds nothing from A.
+  - Step 4, ADDED: no notification at A's time, and none shows A's name or words.
+  - Step 3, ADDED: the app switcher card of a signed-out app is not required to be blank by any card; record what it showed.
+  - Step 6 and 7: A's Book has every letter counted in step 1, the picture is there, Find returns the same letter, and the reminder time is as set in step 1.
+- **Record:** phone, iOS version, build number and profile; the sign-in way; letters counted in step 1 and in step 7; yes or no for each of, as B: letters seen, picture seen, title seen, Home showed A's, Find for A's word, Find for B's word, A's reminder time seen, reminder arrived, backup line naming A, A's picture in Photos; whether the waiting line showed; what the sheet said, word for word; what B was asked in step 5; what the switcher card showed. A screenshot of B's Book and of A's Book after step 7 (Asha only). Rows not run say why.
+- **Update:** if B sees any of A's letters, pictures, Find results or reminders, or A comes back with fewer, file a GitHub issue with severity S0 (a leak or a loss) and link BL-961; do not change the `docs/product/prd` cards.
+- **Not verified:** nothing here has run on a phone. The sign-out sheet line about recordings or anyone who opens the app is not in the code (BL-965). What the app shows B on the first launch after A (an empty Book, a prompt, or a claim step) is read from tests, not seen; step 5 records it. The reminder and notification checks depend on notification permission and the phone's clock and are not run in Node. The ADDED checks (notification content, switcher card, Photos, Home, backup line, Settings state) go beyond the tests and the cards. Settings, Account is read from `account.tsx`, not walked.
+
+### DJ-A2 The failed Let it go line at the largest text size (BL-1864 slice; NS-09-R4a, NS-09-R4b, NS-33-R4; code BL-926)
+
+One row, planned and not run. BL-926 made Review say a line once when Let it go was confirmed but the phone would not remove the recording file (`apps/mobile/src/app/review.tsx`: the confirm at lines 410 to 433, the one-time announcement near line 750, the muted line near line 1050, `testID="review.letGoPending"`). `apps/mobile/test/review-let-it-go-failed.test.ts` reads that source and runs the rule that `letItGo` returns false when the file will not delete; it cannot see wrapping at AX5 or hear VoiceOver. The words are PROPOSED (BL-925), so this row quotes the key name `review.letGoPending` in `packages/content/src/strings.en.ts` and not the words: read the line on the phone and record what it said.
+
+- **Phone:** iPhone SE 3 (`se3`), the newest iOS it takes.
+- **Needs:** a way to make the removal fail, and to make it succeed again. Nothing in the repo does it: there is no test hook in `apps/mobile/src` and an installed app's file cannot be locked from the phone. Ask the engineer for a development build in which the file delete in the Let it go confirm (the `deleteFile` step passed to `letItGo`) throws, and a second build, or the same build with the switch off, in which it does not; or run a Simulator build and make the recording file undeletable from a Mac (for example the immutable flag on the file inside the app's data folder), and make it deletable again with the clear flag (not checked in this repo). If neither is available the row is NOT RUN. Plus a fresh fictional Asha recording of a few seconds for each pass: speak, stop, and stay on Review. No server features. Fictional family only: Asha.
+- **Steps:**
+  1. Settings > Accessibility > Display & Text Size > Larger Text: note the current size, Bold Text and Reduce Motion, so you can put them back; keep the default size for the first pass. (Not checked in this repo; if a path is missing, search Settings for "Larger Text".)
+  2. Record an Asha line, stop, and wait on Review with the words showing. Make the removal fail as above.
+  3. Tap Let it go, then Remove it in the confirm. Look under the words and read the line. Note what else is on screen.
+  4. On the same recording tap Let it go and Remove it again. Note whether the line shows twice or once.
+  5. Turn Larger Accessibility Sizes on (Settings > Accessibility > Display & Text Size > Larger Text) and drag to the last notch (AX5). Reopen Review, or relaunch the app, if the text did not change. Repeat 2 to 4 with a new recording. Note how many lines the line takes and whether any part is cut or behind a button.
+  6. Turn on VoiceOver (Settings > Accessibility > VoiceOver, or say "Hey Siri, turn on VoiceOver"; not checked in this repo) and, to count what it says, turn on the Caption Panel (Settings > Accessibility > VoiceOver > Caption Panel; not checked). With VoiceOver on, swipe right to move to the next item, swipe left to go back, and double-tap to press the item in focus. Repeat 2 and 3 with a new recording, using swipes and double-taps. Count the lines the Caption Panel shows for the failure. Then repeat step 4 with VoiceOver on and count again. Separately, swipe to the line and note that it can be reached and is read as text. Turn VoiceOver off again ("Hey Siri, turn off VoiceOver", or the side-button triple-click if you set it up; not checked), and the Caption Panel if you turned it on.
+  7. Make the file deletable again (switch the build's failing step off, or clear the flag on the Mac), then quit and reopen the app. Note whether the recording is gone from the Book and from Review's entry (it was off every list after the failure, so there is nothing to open); if you can, check from the Mac that the file is gone. Put Larger Text, Bold Text, Reduce Motion and VoiceOver back as in step 1.
+- **Expected (what you see):**
+  - Step 3: Review stays on screen, with the words and the buttons still showing; one muted, centred line shows under the words. No alert and no red text.
+  - Step 4: the same one line, not two.
+  - Step 5: the whole line shows at AX5, wrapped over as many lines as it needs, no three dots, nothing behind a control, not smaller than the text around it.
+  - Step 6: VoiceOver speaks the line once for that recording, when the removal fails: the Caption Panel shows one spoken line. A second Let it go on the same recording adds no second spoken line (the guard in `review.tsx` is once per recording); a new recording may speak again. Reaching the line by swiping reads it as text, which is a separate read from that spoken line.
+  - Step 7: with the file deletable again, the recording is gone after the app's next start (the launch sweep finishes it, `apps/mobile/src/lib/capture/sweep.ts`).
+  - The line carries no fear, blame or "failed" word; record if it does (a content bug, not a layout one).
+- **Record:** phone, iOS version, build number and profile; how the removal was made to fail and made to work; the line word for word; lines taken at the default size and at AX5; Bold Text and Reduce Motion state; yes or no for each of: line cut, three dots, line under a control, shown twice, Review's buttons still showing; what the Caption Panel showed and how many spoken lines; whether the recording was gone after step 7; a screenshot at AX5 (Asha only). Rows not run say why.
+- **Update:** if the line is cut, behind a control, or not announced, file a GitHub issue with severity S2 and link BL-926; if a recording is lost, S1. Do not change the `docs/product/prd` cards.
+- **Not verified:** nothing here has run on a phone. How to make the removal fail on a phone is not settled: there is no hook in the repo and the Simulator route is not checked. The iOS Settings paths in steps 1, 5 and 6 are not checked in this repo. That VoiceOver speaks once is read from the guard in `review.tsx`, not heard. That Review's Keep, edit and listen still work on a recording that is already marked as being let go is not shown by any test and is not claimed here. The exact words are PROPOSED and may change; the row does not depend on them. The launch sweep in step 7 is read from the code, not run.
 
 ## Facts and assumptions this plan rests on
 
