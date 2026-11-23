@@ -62,6 +62,7 @@ FLOWS=(
   E2E-11-analytics-consent
   E2E-12-sign-in-email
   E2E-15-voiceover-smoke
+  E2E-21-keep-and-leave
 )
 
 declare -a RESULTS=()

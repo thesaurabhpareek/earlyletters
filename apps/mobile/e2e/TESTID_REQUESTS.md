@@ -159,6 +159,9 @@ Set `tabBarButtonTestID` per screen: `tab.tonight` (labelled Home), `tab.book`, 
 - The **reminder priming card** after the first letter (C-REQ-001) is only reachable from Settings > Reminders; Tonight never shows it.
 - **Recently deleted** now exists (D-085, `settings/recently-deleted.tsx`) and so does the delete confirm sheet. E2E-08 selects them by visible text. Ids to add when the components take a `testID`: `shelf.screen`, `shelf.row`, `shelf.restore`, `shelf.erase`, `shelf.empty`, `letter.delete.confirm`, `letter.delete.keep`, `settings.recentlyDeleted`.
 
+### Keep and leave (E2E-21)
+The Keep sheet and the Write footer set these ids today (`components/child/plus-gate.tsx`, `app/write.tsx`): `plusGate.hold` ("Keep it here for now"), `plusGate.held` (the held letter card), `plusGate.heldNote` (where it waits), `plusGate.seePlus`, `plusGate.actions`, `write.keep.book`, `write.keep.private`. E2E-21 also relies on `tonight.screen`, `tonight.type` and `tonight.waiting` (requested above, not yet set in `src`: the flow is blocked on them) and on `player.play` and `export.*` (set). The sheet root has no `plusGate.screen`; flows that assert no Plus sheet use `plusGate.hold`, the one control every Keep sheet shows.
+
 ## 3. E2E seams (mobile owner; one new file, for example `src/lib/e2e.ts`)
 
 The flows pass these as Maestro `launchApp.arguments`. On iOS they arrive in `NSUserDefaults` (Maestro docs: "arguments arrive as strings via `UserDefaults.standard.dictionaryRepresentation()`"); React Native's `Settings.get(key)` reads exactly that dictionary (verified in `react-native@0.86.3`, `Libraries/Settings/RCTSettingsManager.mm`). Launch arguments live in the argument domain only, so a relaunch without them is a normal launch.

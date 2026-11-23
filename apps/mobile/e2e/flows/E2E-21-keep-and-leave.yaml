@@ -1,0 +1,118 @@
+# Blocked until testIDs land: tonight.screen, tonight.type, tonight.waiting
+# (requested in TESTID_REQUESTS.md, not yet set in apps/mobile/src; no app code
+# was invented here). Also not set, and only asserted absent: plusGate.screen.
+# E2E-21  Keep and leave: on a Free phone past the 2 free letters, only the Keep
+# step of a NEW letter asks for Plus. That letter waits, whole; everything that
+# already exists stays readable, playable and exportable, with no Plus sheet.
+# Proves: LEGAL-REQ-050 (P0), F14-REQ-029, D-082 and D-083. The code-level pins
+# are billing-keep-gate-m17.test.ts and billing-keep-gate-plan-read.test.ts; the
+# row-by-row pin of this file is e2e-21-keep-and-leave.test.ts.
+# Fixture: seed `asha-recordings` is a Free phone (no cached entitlement) with 3
+# spoken letters, already past the 2 free ones (src/dev/asha-seed.ts), offline.
+# Delete and restore from Recently deleted is the same promise and is stated by
+# E2E-08 (steps 1 to 3); this flow does not repeat it.
+# Assumption: on the first simulator run, check that the Keep sheet opens with no
+# StoreKit configuration attached. RT-PLS-10 holds the letter with no sheet when
+# StoreKit has not answered and nothing is cached; if so, step 1 fails on
+# plusGate.hold and the run is an Xcode run as in E2E-14. Not run on a device or
+# a simulator when this file was written.
+# Not automated here: that the held letter stays after a relaunch and after a
+# plan lapse (DEVICE_TEST_PLAN S1-17; apps/mobile/test/review-keep-m17.test.ts),
+# and that no StoreKit call is made on the reading paths (device check D-3).
+# Ids used that the app does not set yet are listed by
+#   node apps/mobile/e2e/bin/lint-flows.mjs --app
+# (see TESTID_REQUESTS.md, section "Keep and leave (E2E-21)").
+appId: ${APP_ID}
+name: E2E-21 Keep and leave
+tags:
+  - e2e
+  - E2E-21
+  - LEGAL-REQ-050
+  - F14-REQ-029
+  - D-082
+  - D-083
+env:
+  LETTER: "Asha, today you waved at the dog next door."
+---
+- runFlow:
+    file: ../subflows/launch-fresh.yaml
+    env:
+      E2E_SEED: "asha-recordings"
+      E2E_OFFLINE: "1"
+- assertVisible:
+    id: "tonight.screen"
+# 1. A new letter at the Keep step: the one place Plus is asked. The letter waits.
+- tapOn:
+    id: "tonight.type"
+- assertVisible:
+    id: "write.screen"
+- tapOn:
+    id: "write.input"
+- inputText: ${LETTER}
+- tapOn:
+    id: "write.keep.book"
+    enabled: true
+- extendedWaitUntil:
+    visible:
+      id: "plusGate.hold"
+    timeout: 10000
+# What is held is shown back with its words, and the sheet says where it waits.
+- assertVisible:
+    id: "plusGate.held"
+- assertVisible:
+    id: "plusGate.heldNote"
+- assertVisible:
+    text: ".*waved at the dog.*"
+- tapOn:
+    id: "plusGate.hold"
+# 2. Back on Tonight the letter is waiting to be kept, not discarded or hidden.
+- extendedWaitUntil:
+    visible:
+      id: "tonight.waiting"
+    timeout: 5000
+- assertNotVisible:
+    id: "plusGate.hold"
+# 3. Reading: the book and a letter open, no Plus sheet.
+- tapOn:
+    id: "tab.book"
+- assertVisible:
+    id: "book.screen"
+- tapOn:
+    id: "book.letter"
+    index: 0
+- assertVisible:
+    id: "letter.screen"
+- assertNotVisible:
+    id: "plusGate.hold"
+# 4. Playing a recording: the player starts and no Plus sheet follows.
+- assertVisible:
+    id: "player.play"
+- tapOn:
+    id: "player.play"
+- assertNotVisible:
+    id: "plusGate.hold"
+- runFlow: ../subflows/go-back.yaml
+# 5. Read together opens, no Plus sheet.
+- runFlow: ../subflows/read-together-once.yaml
+- assertNotVisible:
+    id: "plusGate.hold"
+# 6. Export works and offers the files, no Plus sheet.
+- runFlow: ../subflows/open-settings.yaml
+- tapOn:
+    id: "settings.export"
+- assertVisible:
+    id: "export.screen"
+- assertNotVisible:
+    id: "plusGate.hold"
+- tapOn:
+    id: "export.start"
+    enabled: true
+- extendedWaitUntil:
+    visible:
+      id: "export.ready"
+    timeout: 120000
+- assertNotVisible:
+    id: "export.error"
+- assertNotVisible:
+    id: "plusGate.hold"
+- stopApp
