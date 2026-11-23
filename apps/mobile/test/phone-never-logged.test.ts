@@ -29,9 +29,32 @@ describe('[NS-54-R26] the log canary sees a phone number', () => {
     expect(findLeaks(['number ends 1470', 'id 20147x'], [], [REGISTERED])).toEqual([]);
   });
 
-  it('[NS-54-R26] does not flag dates, times, offsets, epoch times, versions or addresses', () => {
-    const calm = ['2026-11-23 10:20:30', 'at +00:00', 'tz +0530', '1763890000000', 'v1.2.3 build 5', 'host 192.168.100.100:8081', '[e2e-boot] Error: database is locked'];
-    expect(findLeaks(calm)).toEqual([]);
+  it('[NS-54-R26] does not flag ordinary console lines (false-positive regression, no allow-list exists)', () => {
+    const calm = [
+      'retry +1 200ms', 'diff +2 1000 lines', 'diff +1 1000 lines', '+1 2026-11-23', 'offset +1 0530', 'duration 100 200 3000', 'serial 123-456-7890',
+      '2026-11-23 10:20:30', '2026-11-23T10:20:30.123Z', '2026-11-23T10:20:30+01:00', '2026-11-23T10:20:30+0530', 'at +00:00', 'tz +0530', 'utc offset +1',
+      '23/11/2026', '11.23.2026 build', 'started 10:20:30.456', 'Mon Nov 23 2026 10:20:30 GMT+0100',
+      'v1.2.3', 'expo 57.0.1', 'version 12.34.56-rc.1', 'build 5', 'build number 1234567', 'runtime 1.0.0 (build 321)',
+      'host 192.168.100.100:8081', 'ip 10.0.0.12', 'listening on 127.0.0.1:19006', '[::1]:8081',
+      '1763890000000', 'epoch 1763890000', 'ts=1763890000123 level=info', 'time 1763890000.123',
+      '0190a000-0000-7000-8000-000000000000', 'id 7b1f2c3d-0000-4000-8000-00000000aaaa', 'job 00000000-0000-4000-8000-0000000000aa done',
+      'took 1200 ms', 'took 100 200 ms', 'sync 3 of 12', 'retry 2 of 5 in 400ms', 'counter 100 200 300', 'queue length 1024',
+      'size 1048576 bytes', 'file 2.4 MB', 'rss 123 456 KB', 'heap 12 345 678', 'frames 60 fps, dropped 0 of 3600',
+      'GET /api/v1/items?limit=100&offset=200 200 OK', 'status 200 in 1.5s', 'HTTP 503', 'SQLSTATE 23505', 'code P0002',
+      '%s: 1 2 3 4 5 6 7', 'rect 0 0 390 844', 'layout 20 40 100 200', 'pad 8 16 8 16', 'score +3 2000', 'delta +12 -34',
+      '[e2e-boot] Error: database is locked', 'Warning: Each child in a list should have a unique key', 'sha 3a7bd3e2360a3d29eea436fcfb7e44c735d117c42d1c1835420b6b9942dd4f1b',
+    ];
+    expect(calm.length).toBeGreaterThanOrEqual(50);
+    expect(findLeaks(calm).map((l) => calm[l.line])).toEqual([]);
+  });
+
+  it('[NS-54-R26] still flags the fictional numbers in a sentence and at the end of a line', () => {
+    const planted = ['sent to +12025550147', 'sent to +1 (202) 555-0147 ok', 'call (202) 555-0147.', 'call 202-555-0147', 'call 07700 900123', 'to +44 7700', 'to +1 202', 'to +1 202.', 'to "+44 7700"'];
+    expect(findLeaks(planted).map((l) => l.line)).toEqual(planted.map((_, i) => i));
+  });
+
+  it('[NS-54-R26] positive control: with the shapes in place, a number inside an ordinary line fails the run', () => {
+    expect(findLeaks(['retry +1 200ms', 'diff +2 1000 lines', 'retry to +447700900123 in 400ms']).map((l) => l.line)).toEqual([2]);
   });
 
   it('[NS-54-R26] reports a label and a position, never the number', () => {

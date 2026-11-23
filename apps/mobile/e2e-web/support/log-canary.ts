@@ -32,16 +32,25 @@ export const SEED_TEXT_FRAGMENTS: readonly string[] = [
 ];
 
 /**
- * Phone shapes: a plus and a country code followed by more digits, grouped national numbers (US, UK), and a bare
- * country-code prefix before a group. Plain dates, times, ids and epoch times do not match. Known gap: a bare
- * run of digits with no plus and no grouping is not seen (an epoch time looks the same); register the number
- * as a phone fixture instead.
+ * Phone shapes. Tight on purpose: this canary has no allow-list, so one ordinary console line that looks like a
+ * number would fail a whole journey. Flagged: a plus and 6 to 15 digits (+12025550147); a plus, country code and
+ * grouped digits (+1 202 555 0147, +44 7700 900123, with or without brackets); a bracketed US number
+ * ((202) 555-0147); the reserved fictional US exchange (555-01XX); a UK national number starting 01, 02, 03
+ * or 07 (07700 900123); and a partial, a real-looking country code plus a first group that starts 1 to 9, at
+ * the end of the line or before punctuation, never before a word, digit group, date, time or unit (+44 7700,
+ * +1 202; "+44 7700 failed" is a known miss, the full-number shapes and the fixture check cover it).
+ * Not flagged: dates, times, offsets, semver, IPs, epoch times, UUIDs, durations, sizes, counters, serials.
+ * Known gaps, on purpose: a bare run of digits with no plus and no grouping, and a dashed 3-3-4 number outside
+ * the 555-01XX exchange (a serial looks the same). Register such a number as a phone fixture instead: that
+ * check (below) fails closed. journey.ts passes no phones list until BL-1902 registers a fixture.
  */
 const PHONE_SHAPES: readonly RegExp[] = [
-  /(?<![\w+])\+\d{1,3}(?:[ .()-]?\d){6,}/, // +12025550147, +44 7700 900123
-  /(?<![\w+])\+\d{1,3}[ .-]\(?\d{2,4}\)?(?![\d:])/, // partial: +44 7700, +1 202
-  /(?<![\d.])\(?\d{3}\)?[ .-]\d{3}[ .-]\d{4}(?![\d.])/, // (202) 555-0147
-  /(?<![\d.])0\d{3,4}[ ]\d{3}[ ]?\d{3,4}(?![\d.])/, // 07700 900123
+  /(?<![\w+])\+\d{6,15}(?![\w])/, // +12025550147
+  /(?<![\w+])\+\d{1,3}[ .-]\(?\d{2,4}\)?[ .-]\d{3}[ .-]?\d{3,4}(?![\w-]|\.\w)/, // +1 202 555 0147, +44 7700 900123
+  /(?<![\w+])\+(?:1|7|[2-9]\d{1,2})[ ]\(?[1-9]\d{2,3}\)?(?![\w:/-]|\.\w|[ ]\w)/, // partial: +44 7700, +1 202
+  /(?<![\w.-])\(\d{3}\)[ ]?\d{3}[ -]\d{4}(?![\w-]|\.\w)/, // (202) 555-0147
+  /(?<![\w.-])\d{3}[ .-]555[ .-]01\d{2}(?![\w-]|\.\w)/, // 202-555-0147 (reserved fictional exchange)
+  /(?<![\w.-])0[1237]\d{2,3}[ ]\d{3}[ ]?\d{3,4}(?![\w-]|\.\w)/, // 07700 900123
 ];
 
 /** A fixture's own digits, so a registered number is found whole or by its last four (the part a mask shows). */
@@ -52,7 +61,7 @@ const norm = (s: string) => s.replace(/\s+/g, ' ').trim().toLowerCase();
 /**
  * A finding names WHAT was found and WHERE, never the text: a failed run prints this value into the Playwright
  * message, the report and the CI log, so it must not carry the line or the fixture (LEGAL-REQ-014).
- * `label` is `child-name`, `seed:<index>` or `typed:<index>`; `line` is the 0-based index of the captured line.
+ * `label` is `child-name`, `seed:<index>`, `typed:<index>`, `phone-shape` or `phone:<index>` (a registered phone fixture); `line` is the 0-based index of the captured line.
  */
 export interface Leak {
   label: string;
