@@ -625,10 +625,12 @@ export function saveEntry(e: Entry): boolean {
  * draft, never both and never neither. The audio must already be closed and
  * hashed (`e.audioSha256`, see capture/recorder.ts `ensureAudioHash`); a
  * spoken letter whose file is gone is refused rather than saved pointing at
- * nothing (`audioExists` is checked by the caller just before).
+ * nothing (`audioExists` is checked by the caller just before). False, with nothing written and the draft intact,
+ * when the letter is aimed at a left book (BL-1959): the caller must say the save did not work.
  */
-export function saveLetterFromDraft(draftId: string, e: Entry, audioExists = true): void {
+export function saveLetterFromDraft(draftId: string, e: Entry, audioExists = true): boolean {
   const c = ctx();
+  if (e.childId != null && bookLeft(c, e.childId)) return false;
   // A held draft (v8): its Keep names the held row's last version this phone knew ('0' when none came back),
   // so the server compares the Keep with held words this phone never saw (review K blocking 1).
   const held = drafts.isHeld(c, draftId) ? (getDraftRow(c.db, draftId)?.held_v ?? '0') : null;
@@ -648,6 +650,7 @@ export function saveLetterFromDraft(draftId: string, e: Entry, audioExists = tru
   });
   bus.emit('entries', 'drafts');
   signalOutbox();
+  return true;
 }
 
 /**
@@ -678,7 +681,7 @@ export function saveVoiceOnlyFromDraft(
 ): Entry {
   if (opts.audioExists === false) throw new letters.AudioMissingError();
   const entry = letters.voiceOnlyEntry(draft, { ...opts, occurredOn: todayISO(new Date(draft.createdAt)) });
-  saveLetterFromDraft(draft.id, entry);
+  if (!saveLetterFromDraft(draft.id, entry)) throw new Error('book_left'); // BL-1959: the draft stays, Review says it did not save
   return entry;
 }
 
@@ -987,8 +990,9 @@ export function deleteEntry(id: string): boolean {
  * Restore from Recently deleted: live here at once; on the server through
  * restore_entry() (never by clearing deleted_at, which the server refuses).
  */
-export function undeleteEntry(id: string): void {
+export function undeleteEntry(id: string): boolean {
   const c = ctx();
+  if (entryBookLeft(c, id)) return false; // BL-1959: a restore is a write too (entry.restore)
   let done = false;
   c.db.transaction(() => {
     done = entries.undelete(c, id);
@@ -998,6 +1002,7 @@ export function undeleteEntry(id: string): void {
     bus.emit('entries');
     signalOutbox();
   }
+  return done;
 }
 
 // ── Recently deleted (D-085) ─────────────────────────────────────────────

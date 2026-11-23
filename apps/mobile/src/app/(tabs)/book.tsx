@@ -381,7 +381,7 @@ export default function Book() {
   const open = (id: string) => router.push({ pathname: '/letter/[id]', params: { id } });
   // Remove a quiet-day mark: reversible, with Undo (COMPONENTS 2.14).
   const removeMark = (id: string) => {
-    deleteEntry(id);
+    if (!deleteEntry(id)) return; // nothing was removed (a left book, BL-1959): no "removed" line, no Undo
     toast.show({ message: copy.book.quietDay.removedToast, action: { label: copy.notMuch.undo, onPress: () => undeleteEntry(id) } });
   };
 

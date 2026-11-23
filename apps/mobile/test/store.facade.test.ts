@@ -214,6 +214,7 @@ describe('a left book refuses writes at the store (BL-1959, F11-REQ-011, DATA-RE
     store.setTypedWordsForWaitingEntry(id, 'typed'),
     store.keepReviewedWords(id, true),
     store.saveEntry(letter({ childId, finalText: 'changed' })),
+    store.undeleteEntry(id),
   ];
 
   it('isBookLeft answers from server_state alone', () => {
@@ -229,7 +230,7 @@ describe('a left book refuses writes at the store (BL-1959, F11-REQ-011, DATA-RE
     leave(asha.id);
     store.localSqlDb().run("UPDATE children SET hidden_at = '2026-11-01T00:00:00.000Z' WHERE id = ?", asha.id);
     expect(store.isBookLeft(asha.id)).toBe(true);
-    expect(everyWrite(e.id, asha.id)).toEqual([false, false, false, false, false, false, false]);
+    expect(everyWrite(e.id, asha.id)).toEqual([false, false, false, false, false, false, false, false]);
     expect(outbox()).toEqual([]);
     expect(store.getEntry(e.id)).toMatchObject({ finalText: 'You laughed at the rain.' });
   });
@@ -243,11 +244,33 @@ describe('a left book refuses writes at the store (BL-1959, F11-REQ-011, DATA-RE
     try {
       expect(store.listLeftBooks()).toEqual([]);
       expect(store.isBookLeft(asha.id)).toBe(true);
-      expect(everyWrite(e.id, asha.id)).toEqual([false, false, false, false, false, false, false]);
+      expect(everyWrite(e.id, asha.id)).toEqual([false, false, false, false, false, false, false, false]);
       expect(outbox()).toEqual([]);
     } finally {
       auth.publishAuth(before);
     }
+  });
+
+  it('a letter in a left book that was already deleted is not restored, and no entry.restore is queued', () => {
+    const { asha, e } = setup();
+    expect(store.deleteEntry(e.id)).toBe(true);
+    store.localSqlDb().run('DELETE FROM sync_outbox');
+    leave(asha.id);
+    expect(store.undeleteEntry(e.id)).toBe(false);
+    expect(outbox()).toEqual([]);
+    expect(store.getEntry(e.id)).toBeNull();
+  });
+
+  it('a draft aimed at a left book is not saved as a letter: false, the draft intact, nothing queued', () => {
+    const { asha } = setup();
+    const d = store.createDraft({ childId: asha.id, captureMode: 'spoken', promptKey: null, audioUri: 'file:///Documents/asha.m4a', audioDurationMs: 9000 });
+    leave(asha.id);
+    expect(store.saveLetterFromDraft(d.id, letter({ id: d.id, childId: asha.id, finalText: 'Kept late.' }))).toBe(false);
+    expect(store.getEntry(d.id)).toBeNull();
+    expect(store.getDraft(d.id)).not.toBeNull();
+    expect(outbox()).toEqual([]);
+    expect(() => store.saveVoiceOnlyFromDraft({ ...d, audioSha256: 'a'.repeat(64), audioBytes: 10 }, { childId: asha.id, authorSignsAs: 'Mama', inBook: false, engineVersion: 1 })).toThrow('book_left');
+    expect(store.getDraft(d.id)).not.toBeNull();
   });
 
   it('a book that is not left still writes and queues', () => {
@@ -255,6 +278,7 @@ describe('a left book refuses writes at the store (BL-1959, F11-REQ-011, DATA-RE
     expect(store.setEntryInBook(e.id, false)).toBe(true);
     expect(outbox().length).toBeGreaterThan(0);
     expect(store.deleteEntry(e.id)).toBe(true);
+    expect(store.undeleteEntry(e.id)).toBe(true);
   });
 });
 

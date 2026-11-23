@@ -186,7 +186,8 @@ const EDIT_COPY: Record<EditKind, keyof typeof copy.review.edits> = {
 /**
  * Keep a letter whose words arrived later, after the gate allowed it: the review mark, the count and the place the
  * person chose, in one transaction (store keepReviewedWords). Then the letter page's card goes. Throws when the
- * letter no longer has words waiting (deleted, or kept on another screen), so Review says the save did not work.
+ * letter no longer has words waiting (deleted, or kept on another screen) or sits in a left book (BL-1959: the store
+ * refuses the write), so Review says the save did not work. Both read as `later_words_not_waiting`.
  */
 function keepLaterLetter(id: string, inBook: boolean): void {
   if (!keepReviewedWords(id, inBook)) throw new Error('later_words_not_waiting');
@@ -615,7 +616,7 @@ export default function Review() {
       const firstLetter = !hasAnyLetter();
       // A letter whose words arrived later is already saved: its words count now, at this Keep (later-words.logic).
       if (later) keepLaterLetter(draft.id, inBook);
-      else saveLetterFromDraft(
+      else if (!saveLetterFromDraft(
         draft.id,
         {
           id: draft.id,
@@ -639,7 +640,7 @@ export default function Review() {
           audioBytes: audio.bytes,
         },
         audio.exists,
-      );
+      )) throw new Error('book_left'); // BL-1959: nothing was written and the draft is intact, so Review says the save did not work
       // letter_saved went when the recording was kept; keeping its words later is not a second letter.
       if (!later) trackLetterSaved({
         mode: typed ? 'typed' : 'spoken',
