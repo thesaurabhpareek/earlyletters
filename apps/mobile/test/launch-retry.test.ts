@@ -435,7 +435,7 @@ describe('[S51] wiring: the screen and the hook use the functions above (a sourc
     expect(screen).toMatch(/runExport: runRecoveryExport,/);
     expect(screen).toMatch(/isLive: \(\) => live\.current,/);
     expect(screen).toMatch(/update: setView,/);
-    expect(screen).toMatch(/\(\) => \(\) => \{\s*live\.current = false;\s*\},\s*\[\]/);
+    expect(screen).toMatch(/\(\) => \{\s*live\.current = true;\s*return \(\) => \{\s*live\.current = false;\s*\};\s*\}, \[\]\);/); // BL-494 point 6e: set on mount too
   });
 
   it('the buttons show the view and hand the tap to the actions; the line is the view\'s one line, every kind of it worded', () => {
