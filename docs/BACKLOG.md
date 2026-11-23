@@ -9571,7 +9571,7 @@ Source: `docs/product/prd/29-sign-in-methods-and-phone-verification.md` (card NS
 #### BL-1890 Google in the store build: profiles, button, help line and the NS-41-R20 flip
 - Status: proposed (NS-54; waits on the founder's Google timing call and BL-1888). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Priority: P1. Depends on: BL-1888, BL-1891, BL-1893, BL-1908.
 - Satisfies: NS-54-R1, R6, R10, R11, R13; NS-41-R20; A-REQ-017.
-- Scope: Set the Google client ids in the profiles the founder names (ids are public, no secret), keep the no-ids-no-button rule, update `auth.noEmailHelp` so it names only what shows (words PROPOSED by `content`), and update the NS-41-R20 test to the new truth. Google must not render before linking (BL-1893) is merged and the public texts for Google (BL-1908) are published: the legal-docs test fails if a published document names Google while the build does not offer it.
+- Scope: Set the Google client ids in the profiles the founder names (ids are public, no secret), keep the no-ids-no-button rule, update `auth.noEmailHelp` so it names only what shows (words PROPOSED by `content`), and update the NS-41-R20 test to the new truth. In this same pull request, publish the counsel-read Google text (Terms 3.1, privacy policy, subprocessor list) and remove Google from NOT_USED in `packages/content/test/legal-docs.test.ts`, since the test fails if a published document names Google while the build does not offer it. Google must not render before linking (BL-1893) is merged.
 - Done when: a build with both ids shows Google beside Apple and email, one without shows none, and the tests for both pass.
 
 #### BL-1891 Google Cloud project, consent screen, iOS clients and the Supabase Google provider
@@ -9607,7 +9607,7 @@ Source: `docs/product/prd/29-sign-in-methods-and-phone-verification.md` (card NS
 #### BL-1896 Phone verification: SMS provider and Supabase phone-auth spike (cost, fraud limits, countries)
 - Status: ready. Mode: agent. Owner: security engineer. Milestone: M15. Size: M. Priority: P1. Depends on: none.
 - Satisfies: NS-54-R23, R24, R28, R29; Q1 of the card.
-- Scope: A written comparison of two or three providers and Supabase's phone sending options [UNVERIFIED, none read]: price per message by our target countries, delivery, SMS-pumping and rate controls, spend cap, whether a voice code exists, what the vendor keeps, region. Recommend one; the founder decides spend. No account is made and no real text is sent.
+- Scope: A written comparison of two or three providers and Supabase's phone sending options [UNVERIFIED, none read]: price per message by our target countries, delivery, SMS-pumping and rate controls, spend cap, whether a voice code exists, what the SMS vendor and Supabase Auth keep in logs and in `auth.users`, and for how long, region. Recommend one; the founder decides spend. No account is made and no real text is sent.
 - Done when: the comparison and a recommendation are in `docs/research/`, with every price marked as read from a named page.
 
 #### BL-1897 Counsel reading for SMS: consent, carrier registration, TCPA, state rules, opt-out words
@@ -9622,11 +9622,11 @@ Source: `docs/product/prd/29-sign-in-methods-and-phone-verification.md` (card NS
 - Scope: Create the vendor account, register the sender as counsel requires and set a hard monthly cap in the vendor console. Keys go in the vendor console and Supabase secrets only. Listed in `docs/release/FOUNDER_QUEUE.md` once Karma adds the row.
 - Done when: a staging send of one code to a test number arrives and the cap is on.
 
-#### BL-1899 Phone number in the data classification, data map, subprocessor list and deletion spec
-- Status: ready. Mode: agent. Owner: privacy engineer. Milestone: M15. Size: S. Priority: P1. Depends on: none.
-- Satisfies: NS-54-R25, R35; LEGAL-REQ-012 (the data-map row can only be added after the allowlist change, BL-1909); `docs/legal/DATA_CLASSIFICATION.md`; DATA-REQ.
-- Scope: Add the rows: phone number (direct identifier, retention, deletion with the account), the SMS vendor as a subprocessor (marked draft until BL-1898), and the deletion-receipt line. No policy text is written here.
-- Done when: the rows exist and the data-map checker passes.
+#### BL-1899 Phone number in the data classification, data map and subprocessor draft
+- Status: blocked (BL-1909 moves LEGAL-REQ-012 first). Mode: agent. Owner: privacy engineer. Milestone: M15. Size: S. Priority: P1. Depends on: BL-1909.
+- Satisfies: NS-54-R25, R35; LEGAL-REQ-012 (no phone row before BL-1909 changes it, with counsel); `docs/legal/DATA_CLASSIFICATION.md`; DATA-REQ.
+- Scope: Add the phone number (direct identifier, retention, deletion with the account) to `docs/legal/DATA_CLASSIFICATION.md` (line 563 says "phone never collected") and, if it exists by then, the data map. Write the SMS vendor subprocessor line as a draft in `docs/legal/proposed/`, not in `docs/legal/subprocessors.md`, until BL-1898 and the build use the vendor (LEGAL-REQ-064 test). The deletion spec belongs to BL-1909; no policy text is written here.
+- Done when: the rows exist; `docs/legal/data-map.yaml` does not exist yet (LEGAL-REQ-012 says "to be created"), so if still missing the row lists the fields for the data architect; and `npm test -w packages/content` (legal-docs) passes with the vendor absent from published files.
 
 #### BL-1900 Privacy label and privacy policy updates for the phone number
 - Status: blocked (BL-1897; counsel sees the text before publish). Mode: human. Owner: legal. Milestone: M15. Size: S. Priority: P1. Depends on: BL-1897, BL-1899.
@@ -9733,8 +9733,8 @@ Source: `docs/product/prd/29-sign-in-methods-and-phone-verification.md` (card NS
 #### BL-1908 Public texts for Google: Terms 3.1, privacy policy and subprocessor list (precedes the Google button)
 - Status: needs-founder (counsel; legal text counsel must see before publish). Mode: human. Owner: legal. Milestone: M15. Size: S. Priority: P1. Depends on: BL-1888.
 - Satisfies: NS-54-R6, R38; `docs/legal/terms-of-service.md` 3.1 (lists only Apple and email today); `docs/legal/privacy-policy.md`; `docs/legal/subprocessors.md`; `packages/content/test/legal-docs.test.ts`.
-- Scope: hand counsel a draft that names Sign in with Google in Terms 3.1, the privacy policy and the subprocessor list, and the privacy label check. Publish in step with the build that offers the button: the legal-docs test fails if a published document names Google while the build does not.
-- Done when: counsel has read the draft, the texts are published with the build, and BL-1890 can start.
+- Scope: hand counsel a draft that names Sign in with Google in Terms 3.1, the privacy policy and the subprocessor list, and the privacy label check. Keep the draft out of the published files: the legal-docs test (`legal-docs.test.ts:158-163`, LEGAL-REQ-064) fails if a published document names Google while the build does not offer it.
+- Done when: counsel has recorded the reading of the draft (Terms 3.1, privacy policy, subprocessor list, label check). The text itself, and the removal of "Google" from the NOT_USED list in the legal-docs test, land in the BL-1890 pull request with the button, never before it.
 
 #### BL-1909 Legal text changes for a phone number: LEGAL-REQ-012 allowlist, export and deletion spec
 - Status: needs-founder (counsel; handoff to legal). Mode: human. Owner: legal. Milestone: M15. Size: S. Priority: P1. Depends on: BL-1897.
