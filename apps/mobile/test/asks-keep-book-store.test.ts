@@ -82,3 +82,38 @@ describe('[BL-1463] the Keep the book offer marks the re-offer only on the secon
     expect(h.settings.get(REOFFERED)).toBe('on');
   });
 });
+
+describe('[BL-1562] the sheet trigger follows which Keep the book offer this is', () => {
+  let keepBookTrigger: typeof import('../src/lib/asks').keepBookTrigger;
+  beforeEach(async () => {
+    keepBookTrigger = (await import('../src/lib/asks')).keepBookTrigger;
+  });
+
+  it('the first offer opens the sheet with first_letter', () => {
+    h.letters = 2;
+    expect(askAfterSave({ firstLetter: false, signInOffered: true }, T0)).toBe('keep_book');
+    expect(keepBookTrigger()).toBe('first_letter');
+  });
+
+  it('the re-offer after the third letter opens it with third_letter, and the first offer still does not', () => {
+    h.letters = 2;
+    let now = T0;
+    expect(askAfterSave({ firstLetter: false, signInOffered: true }, now)).toBe('keep_book');
+    expect(keepBookTrigger()).toBe('first_letter');
+    now = nextVisit(now);
+    h.letters = 3;
+    expect(askAfterSave({ firstLetter: false, signInOffered: true }, now)).toBe('keep_book');
+    expect(keepBookTrigger()).toBe('third_letter');
+  });
+
+  it('an unreadable store falls back to first_letter, the sheet that always worked', () => {
+    const spy = vi.spyOn(h.settings, 'get').mockImplementation(() => {
+      throw new Error('store closed');
+    });
+    try {
+      expect(keepBookTrigger()).toBe('first_letter');
+    } finally {
+      spy.mockRestore();
+    }
+  });
+});

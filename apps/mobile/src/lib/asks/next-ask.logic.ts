@@ -121,6 +121,15 @@ export function reminderPrimeSource(primesShownBefore: number): 'first_letter' |
   return primesShownBefore === 0 ? 'first_letter' : 'first_month';
 }
 
+/**
+ * Which sign-in trigger the Keep the book sheet opens with: the first offer is `first_letter`; the one re-offer after the
+ * third letter is `third_letter` (same words, a different analytics value; BL-1562). `reoffered` is the stored mark that
+ * `askAfterSave` sets at the moment of the second offer, and never at the first.
+ */
+export function keepBookTrigger(reoffered: boolean): 'first_letter' | 'third_letter' {
+  return reoffered ? 'third_letter' : 'first_letter';
+}
+
 /** The one ask due right after this save, or null. */
 export function nextAsk(f: AskFacts): NextAsk {
   const ask = pickAsk(f);
