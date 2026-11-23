@@ -6,7 +6,7 @@ Owner: security engineer. Satisfies NS-54-R23, R24, R28, R29 and Q1 of `docs/pro
 
 The SMS provider and the spend are the founder's. This page gives options, a recommendation and a default. It does not choose a vendor.
 
-Phone is a factor on an account, never a way in (card section 7, Q7). Phase A is optional and comes after the first letter.
+Phone as a factor on an account and never a way in is PROPOSED (card section 7; Q7 says the founder confirms). Phase A is optional and comes after the first letter.
 
 ## 2. How facts were read (read this before trusting a number)
 
@@ -19,7 +19,7 @@ Phone is a factor on an account, never a way in (card section 7, Q7). Phase A is
 1. Providers. phone-login.mdx: "Supported providers include MessageBird, Twilio, Vonage, and TextLocal (community-supported)." cli_v1_config.yaml `auth.sms.provider.enabled` lists `twilio`, `twilio_verify`, `messagebird`, `textlocal`, `vonage`.
 2. Channels. phone-login.mdx: the code is sent "via a channel (SMS or WhatsApp)", and "`WhatsApp` is only supported as a channel for the Twilio and Twilio Verify Providers." No voice-call channel is listed anywhere on the pages read, so a voice code is NOT available natively. send-sms-hook.mdx says the hook can "Use a regional SMS Provider", use "alternate messaging channels such as WhatsApp" and "Fall back to another provider if your primary one fails"; whether a voice call can be sent through it depends on the vendor [UNVERIFIED].
 3. Send SMS hook. send-sms-hook.mdx: "The Send SMS Hook replaces Supabase's built-in SMS sending." Inputs are `user` ("The user attempting to sign in") and `sms` ("Metadata specific to the SMS sending process. Includes the OTP."). The `user` object carries `phone` and the code is in the payload, so a hook function sees both: its logs must stay content-free (NS-54-R26).
-4. Phone as a factor, not a door. phone-login.mdx "Updating a phone number": a signed-in user calls `updateUser({ phone })`, receives a 6-digit code and verifies with type `phone_change`. This is the path for NS-54. The page's main flow, `signInWithOtp({ phone })`, creates a phone sign-in and so a separate account: it must not be reachable (see section 7, item 1).
+4. Phone as a factor, not a door. phone-login.mdx "Updating a phone number": a signed-in user calls `updateUser({ phone })`, receives a 6-digit code and verifies with type `phone_change`. This is the path for NS-54. The page's main flow, `signInWithOtp({ phone })`, is a phone sign-in. That it creates a separate account is our inference from `auth.sms.enable_signup` defaulting to `true`; no page read says so outright. It must not be reachable (section 7, item 1).
 5. Test numbers. testing-auth-flows.mdx: "Auth doesn't send an SMS to a test number, and it accepts the fixed code as many times as you need"; a provider must still be configured ("placeholder values work" locally); config key `auth.sms.test_otp`. This is how BL-1898's tests and the access tests run with no real text. Test numbers "don't apply to phone multi-factor authentication".
 6. Same provider config serves phone MFA (mfaphone.mdx). We have no MFA in v1.0.
 
@@ -33,7 +33,7 @@ Phone is a factor on an account, never a way in (card section 7, Q7). Phase A is
 | Per-IP verify | `token_verifications` 30 per 5 minutes | Per IP | Five wrong tries (R24) is not a Supabase setting that was read: [UNVERIFIED]; likely an app-side or hook-side count. |
 | Code lifetime | shared-data `otp.validity` = 1 hour | "How long before an OTP expires." | R24 needs at most 10 minutes. The CLI config reference read has no per-SMS expiry key (only `auth.email.otp_expiry`), and phone-login.mdx also says "verify within 60 seconds", which conflicts with the 1 hour value. Treat the real behaviour as [UNVERIFIED] and test it against the hosted project (BL-1898). |
 | CAPTCHA | auth-captcha.mdx: "hCaptcha and Cloudflare Turnstile" on "sign-in, sign-up, and password reset forms"; cost_warning.mdx: "make sure you adjust your project's rate limits and configure CAPTCHA" | Page is written for web forms; its native iOS support was not read: [UNVERIFIED] | A captcha in an app is a screen a parent sees: needs design before it counts as a control. |
-| Regional rules | cost_warning.mdx: "Some countries have special regulations for services that send SMS messages ... (e.g India's TRAI DLT regulations)" | Our own duty | US rules are BL-1897 (counsel). |
+| Regional rules | cost_warning.mdx (`apps/docs/content/_partials/`; `auth_rate_limits.mdx` is in the same folder): "Some countries have special regulations for services that send SMS messages ... (e.g India's TRAI DLT regulations)" | Our own duty | US rules are BL-1897 (counsel). |
 | Pre-send country check | `before user created` hook (`phone` is in its user schema, buc page) runs at account creation, not at each send. The Send SMS hook runs at each send. | Hook payloads read above | A blocked calling code can be refused in the Send SMS hook so no fee is paid (signup-geo-checks.md section 6, point 3). NS-54-R29 says a code never refuses alone, so use it as a signal only. |
 | Vendor fraud tools (SMS-pumping detection, geo permissions, spend alerts) | vendor consoles | [UNVERIFIED] not readable | Must be read before choosing (section 8). |
 
@@ -46,12 +46,12 @@ Our `supabase/config.toml` today: no `[auth.sms]` section, no `[auth.rate_limit]
 | `auth.users` | `phone` and `phone_confirmed_at` (users.mdx: "The user's phone number."; "The timestamp that the user's phone was confirmed."). Phone identities also sit in `identities.identity_data` (send-sms-hook.mdx sample) | While the account exists. Removed when the user is deleted: that deletion removes the row is the normal behaviour but the page read states no schedule: [UNVERIFIED] | users.mdx, send-sms-hook.mdx |
 | Auth audit log | Events such as `user_confirmation_requested` ("Email/phone confirmation requested"). Stored in external log storage, plus optionally `auth.audit_log_entries` ("Write audit logs to the database"). `ip_address` "is recorded only for some events, such as MFA, passkeys, identity linking, and recovery codes". | Retention period NOT stated on the page: [UNVERIFIED]. Whether the phone appears in an entry's metadata was not stated: [UNVERIFIED] | audit-logs.mdx |
 | `auth.sessions` | An `ip` column: "To see the IP address for a session, check the `ip` column in `auth.sessions`." | Life of the session row, schedule [UNVERIFIED] | audit-logs.mdx |
-| One-time code | Held by Auth until used or expired; storage form (hashed or not) and table were not read: [UNVERIFIED] | 1 hour by default (shared-data); R24 needs 10 minutes | shared-data, example.env |
+| One-time code | Held by Auth until used or expired; storage form (hashed or not) and table were not read: [UNVERIFIED] | 1 hour by default (shared-data); R24 needs 10 minutes | shared-data says 1 hour; example.env says `GOTRUE_SMS_OTP_EXP="6000"` (seconds) and a 5 s `GOTRUE_SMS_MAX_FREQUENCY`; the sources disagree, so the real value is [UNVERIFIED] | shared-data, example.env |
 | Send SMS hook function | Phone and code pass through memory and any platform log of the function | Our own: log nothing from the payload (R26) | send-sms-hook.mdx |
 | SMS vendor | Message record, destination, delivery status, possibly body and sender metadata, with a retention period and a region | [UNVERIFIED] for every vendor | none read |
 | Supabase region | Project region is chosen at project creation | Not read here: [UNVERIFIED] | none read |
 
-Two follow-ups from this table. First, the sign-up IP can live in `auth.sessions.ip`, which bears on GEO-4 (the policy says "We do not keep the IP address", `docs/legal/privacy-policy.md:153`): that gate is still open and phone does not change it. Second, BL-1899 must record the vendor copy of the number in the deletion spec (BL-1909) once the vendor's retention is read.
+Two follow-ups from this table. First, the sign-up IP can live in `auth.sessions.ip`, which bears on GEO-4, whose IP read must include `auth.sessions.ip` (the policy says "We do not keep the IP address", `docs/legal/privacy-policy.md:153`): that gate is still open and phone does not change it. Second, BL-1899 must record the vendor copy of the number in the deletion spec (BL-1909) once the vendor's retention is read.
 
 ## 6. Cost model (assumptions, not vendor prices)
 
@@ -77,13 +77,18 @@ The founder can read the monthly cost for any vendor by multiplying the right co
 
 These are values to carry into `supabase/config.toml` and the hosted dashboard. This page changes neither.
 
-1. `[auth.sms] enable_signup = false`. The spec default is `true`, which lets a phone alone create an account (against Q7). With it false, a signed-in user adding a number through `updateUser` must still work: [UNVERIFIED], test locally first with `auth.sms.test_otp`, no real send.
-2. `[auth.rate_limit] sms_sent`: start at 10 per hour and raise only on measured need. Pin it in `auth_config.test.mjs`.
+1. `[auth.sms] enable_signup = false`. The spec default is `true`. This key blocks creating an account from a phone. No page read shows it blocks a phone sign-in to an EXISTING account that has a verified number (phone-login.mdx is silent). [UNVERIFIED]. If sign-in is not blocked, a SIM swap or a recycled number can take over an account and anyone can make us text a registered number. Required before any build: a local test with `auth.sms.test_otp` (no real send) that (a) `signInWithOtp` for a verified number is refused or yields no session, and (b) `updateUser({phone})` plus `phone_change` still works while signed in. Fallback if (a) fails: a Send SMS hook that refuses any send not tied to a `phone_change` of a signed-in user; if that is not possible, the phone step stays off (R37).
+2. `[auth.rate_limit] sms_sent`: a trade-off, not a safe default. At 10 per hour the cap is 240 texts a day, below the 260 a day of the 500-accounts case in section 6, so real people get blocked, and an attacker can burn the hour on purpose. Choose `C` from the expected peak hour with headroom, alert at 50 percent of the vendor monthly cap, and show the R27 fallback when it trips. Pin it in `auth_config.test.mjs`.
+   R24 asks per-number, per-IP and daily project caps. Supabase gives an hourly project cap, a per-user 60 s wait and a per-IP limit of 30 per 5 minutes (loose). The missing caps (per number across accounts, per account per day, a daily project cap) are built by us in a Send SMS hook or a server function that counts; the data architect and platform own it. Until they exist the phone step stays off.
+   The five-wrong-tries pause must be counted on the server (hook or database); a count on the phone is not a control. If a 10-minute code lifetime cannot be set natively (section 4), R24 fails natively and needs the hook or the step stays off.
 3. Keep `sign_in_sign_ups = 30` and `token_verifications = 30`.
 4. Code lifetime at 10 minutes or less on the hosted project (hosted field name [UNVERIFIED]); local CLI has no key for it.
 5. Turn `phone_changed` notice on when the build collects a number (config.toml line 129 sets it off today).
 6. A Send SMS hook function only if a pre-send country signal or a second provider is wanted; otherwise use the native provider (fewer places that see the number).
-7. Test numbers only in staging, with an end date.
+7. Test numbers (`auth.sms.test_otp`) in local config only, never in hosted staging or production; a pin on the production config that the key is absent. Provider secrets only as `env()` references.
+8. A Send SMS hook never logs its payload, not even on error (phone and code are in it).
+9. Verified phone is never used for recovery, step-up or sign-in (SIM swap and number recycling make it a weak proof). A person who inherits a recycled number that is on another account has a release path through support (identity checked by email, then the number is removed from the old account); it is a support-led act, never automatic.
+10. NS-54-R23 versus R18: R23 wants the same screen whether or not a number has an account; a database uniqueness rule on `phone` answers "already registered" on `updateUser` unless the app maps it to the same neutral screen. R18 (a method already linked to another account is refused with words) pulls the other way: refusing with words at Send reveals the number is registered. That a uniqueness rule answers this way is our inference [UNVERIFIED]. Default: neutral screen for the number, and the duplicate hint only after the person is signed in to the account that holds it. Product decides; test with test numbers.
 
 ## 8. Providers: options, recommendation, default
 
@@ -97,7 +102,7 @@ Native to Supabase (so no hook code that sees the number): Twilio, Twilio Verify
 | D. Any vendor through the Send SMS hook | Hook "replaces Supabase's built-in SMS sending"; we write and own the code; the number and code pass through our function | [UNVERIFIED] |
 | MessageBird | Native | [UNVERIFIED]; not shortlisted because nothing could be read to tell it apart |
 
-Recommendation: A, Twilio Verify through the native provider, with Vonage (C) as the second provider to price, because both are native and A also brings WhatsApp as a later fallback for people abroad (R30, 7.4) without writing hook code. This rests only on the Supabase pages read. It is a conditional recommendation: it stands only if the vendor's own pages, read at BL-1898, show a per-verification price the cap model in section 6 accepts, a hard spend cap or alerts, SMS-pumping controls we can switch on, US sender registration that counsel (BL-1897) is content with, and a retention period that fits the deletion window (R25).
+Recommendation: A, Twilio Verify through the native provider as the first to price, with Vonage (C) as the second, because both are native and A also brings WhatsApp as a later fallback for people abroad (R30, 7.4) without writing hook code. This rests only on the Supabase pages read. It is a conditional recommendation: it stands only if the vendor's own pages, read at BL-1898, show a per-verification price the cap model in section 6 accepts, a hard spend cap or alerts, SMS-pumping controls we can switch on, US sender registration that counsel (BL-1897) is content with, and a retention period that fits the deletion window (R25).
 
 Default if the founder does not choose: do not spend. Phase A stays a design and a plan, the code path stays off (pause by R37), and nothing in `supabase/config.toml` enables SMS.
 
