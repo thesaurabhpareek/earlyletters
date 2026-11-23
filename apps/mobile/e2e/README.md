@@ -10,7 +10,7 @@ Labels: **V** verified on a vendor page or in installed source on 3 Oct 2026 (so
 2. **An `e2e` EAS build profile** (simulator `.app`, release JavaScript, `EXPO_PUBLIC_E2E=1`): request B-1 in `TESTID_REQUESTS.md`.
 3. **An e2e backend** for the flows tagged `needs-backend` (E2E-09, 12, 13): a separate Supabase project, section 5 of `TESTID_REQUESTS.md`. Flows without that tag run fully offline on the simulator.
 
-`node apps/mobile/e2e/bin/lint-flows.mjs` runs anywhere and checks the YAML, the file references and that every id a flow uses is on the request list.
+`node apps/mobile/e2e/bin/lint-flows.mjs` runs anywhere and checks the YAML, the file references and that every id a flow uses is on the request list. It also checks every id (regex ids too) against real `testID` declarations in `apps/mobile/src`; ids still missing are on `not-in-app.txt` (shrink-only), a flow tapping one carries a `# BLOCKED` header, and `run-suite.sh` and `run-p0-nightly.sh` skip it and print the ids (`bin/blocked-ids.mjs`).
 
 ## 2. The flows
 

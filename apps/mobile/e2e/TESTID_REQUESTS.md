@@ -88,15 +88,15 @@ Set `tabBarButtonTestID` per screen: `tab.tonight` (labelled Home), `tab.book`, 
 | `whoseBook.option` | each book in the Whose book sheet (repeated) | *(optional)* |
 | `review.play` | play the recording | *(optional)* |
 | `review.edit` (repeated), `review.edit.putBack` | an underlined machine edit; Put it back | *(optional)* |
-| `review.save.book`, `review.save.private` | Add to {child}'s book; Keep it private | 04 |
+| `review.save.book`, `review.save.private` | Add to {child}'s book; Keep it private (a draft opened from Tonight, not after Write) | 04 (recovery branch) |
 | `review.keepVoice` | keep the recording as a letter waiting for its words | 03 |
 | `review.type`, `review.retry` | type instead; try again | *(optional)* |
-| `review.saved` | the saved card (tap to leave) | 03 |
+| `review.saved` | the saved card (tap to leave) | 03, 04, 15 |
 | `review.saveFailed` | the save-failed line | *(optional)* |
 
 ### Write (`app/write.tsx`)
 `write.screen`, `write.input`, `write.close`, `write.status`. Flows: 04, 15, 21.
-The screen already sets `write.keep.book` (Add to {child}'s book) and `write.keep.private` (Keep it private); both go to Review, so the flows tap `write.keep.book` and then `review.save.book`. There is no `write.save`: BL-1965 removed it from the flows. `write.screen` and `write.input` are still requested.
+The screen already sets `write.keep.book` (Add to {child}'s book) and `write.keep.private` (Keep it private); both go to Review, which keeps the typed letter on mount and shows the saved moment (`review.saved`) before landing on the Book, so the flows tap `write.keep.book`, wait on `review.saved` and then on the Book. `review.save.book` is on screen only for a draft opened without a keep intent (Tonight's waiting card), not after Write. There is no `write.save`: BL-1965 removed it from the flows. `write.screen` and `write.input` are still requested.
 
 ### Sign-in and consent (`app/(auth)/sign-in/*`)
 | testID | Element | Flows |

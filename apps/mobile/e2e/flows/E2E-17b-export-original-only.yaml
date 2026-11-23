@@ -1,3 +1,4 @@
+# BLOCKED (ids the app does not set yet): red by design until they land. `node apps/mobile/e2e/bin/blocked-ids.mjs <this file>` lists them (not-in-app.txt); run-suite.sh and run-p0-nightly.sh skip it and print that list.
 # E2E-17b  Same install as E2E-17a (no clearState). Switch the player to the
 # original recording, export again: the ZIP's audio is the same set of
 # originals with the same hashes. "Export on and off copies" in PRD V2 07

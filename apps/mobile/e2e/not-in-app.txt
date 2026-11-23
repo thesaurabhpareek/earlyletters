@@ -9,6 +9,7 @@ book.childSwitcher
 book.letter
 book.letter.waitingForWords
 book.screen
+consent.(terms|age|sensitive).*
 consent.age.yes
 consent.failed
 consent.sensitive
@@ -27,6 +28,7 @@ language.row.en.status.bundled
 language.row.hi
 language.row.hi.retry
 language.row.hi.status.installed
+language.row.hi.status.waiting-(offline|no_manifest)
 language.row.hi.status.waiting-downloads_paused
 language.screen
 languagePicker.option.hi
@@ -35,6 +37,7 @@ letter.delete
 letter.deleted
 letter.screen
 letter.text
+letter.undo
 letter.waitingForWords
 listen.finish
 listen.screen
@@ -55,6 +58,7 @@ plan.message
 plan.screen
 plan.status.free
 plan.status.plus
+player.original
 player.source.listening
 player.source.original
 plusGate.screen
@@ -83,9 +87,11 @@ signInCode.screen
 signInCode.verify
 signInEmail.input
 signInEmail.send
+storage.pack.text-rules.(es|zh|fr|ar|pt)
 storage.pack.text-rules.hi
 switcher.addChild
 switcher.child
+switcher.close
 switcher.sheet
 tab.book
 tab.tonight

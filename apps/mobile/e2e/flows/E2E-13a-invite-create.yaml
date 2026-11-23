@@ -1,3 +1,4 @@
+# BLOCKED (ids the app does not set yet): red by design until they land. `node apps/mobile/e2e/bin/blocked-ids.mjs <this file>` lists them (not-in-app.txt); run-suite.sh and run-p0-nightly.sh skip it and print that list.
 # E2E-13a  Co-parent invite round trip, simulator A (Mama): make the invite.
 # Run by bin/run-coparent.sh, which then reads the link from simulator A's
 # pasteboard (`xcrun simctl pbpaste`) and hands it to E2E-13b on simulator B.
