@@ -65,7 +65,9 @@ const NEGATION = new RegExp(String.raw`\b(?:(?<q>none|nobody|no\s+one|nothing|ne
 const RULE_REF = /\b(?:CR-176|D-168)\b/;
 const SENTENCE_END = /[.;:!?]\s/;
 // Between a negation and the ask it governs there is no clause break: no comma, bracket, dash or turning word.
-const CLAUSE_BREAK = /[,()[\]{}]|--|\s[-\u2013\u2014]\s|(?<![\"'])\b(?:and|or)\b|\b(?:so|but|then|instead|however|yet|except|though|although|while|please)\b/i;
+const CLAUSE_BREAK = /[,()[\]{}]|--|[/|&]|\s[-\u2013\u2014]\s|(?<![\"'])\b(?:and|or)\b|\b(?:so|but|then|instead|however|yet|except|though|although|while|please|plus|whereas)\b/i;
+const REPEAT = /\b(?:not|never|ever|no|none|nobody|nothing|neither|nor|always|also)\b/i;
+const CONDITION = /\b(?:until|when|whenever|if|after|once|because|unless|before|where|than|till|since)\b/i;
 /** How far back from an ask a negation may sit (also bounds the work per ask, so a long line cannot make it slow). */
 const WINDOW = 200;
 
@@ -93,8 +95,17 @@ function negatedBy(t, at) {
   let last = null;
   for (const m of sentence.matchAll(NEGATION)) last = m;
   if (last === null || CLAUSE_BREAK.test(sentence.slice(last.index + last[0].length))) return '';
+  const after = sentence.slice(last.index + last[0].length);
+  // Another negation or a filler right after the negation ("do not not ask", "never ever ask") does not govern the ask.
+  if (REPEAT.test(after.split(/\s/).slice(0, 3).join(' '))) return '';
   if (!last.groups.q) return 'verbal';
-  return /\bask\b/i.test(`${sentence.slice(last.index)} ${t.slice(at, at + 4)}`) ? '' : 'quantifier';
+  // A quantifier governs a third-person verb within three words ("None asks", "No row asks"), with no condition between
+  // ("No work starts until Karma asks ...") and no bare "ask".
+  const span = `${after} ${t.slice(at, at + 5)}`;
+  const verb = /\bask(s?)\b/i.exec(span);
+  if (!verb || verb[1] !== 's') return '';
+  const before = span.slice(0, verb.index).trim();
+  return before === '' || (before.split(/\s+/).length <= 3 && !CONDITION.test(before)) ? 'quantifier' : '';
 }
 
 /** Rule 4: with the BL-1851 phrase in backticks, and nothing else asking. `named` is true when BL-1851 is on the line. */
@@ -155,7 +166,7 @@ export function addedLines(diff) {
 
 /** "b/docs/my notes.md" (git adds a tab after a path with spaces) or a quoted "b/..." path, to the path. */
 function headerPath(h) {
-  let p = h.replace(/\t.*$/, '').trim();
+  let p = h.replace(/\t$/, '');
   if (p.startsWith('"') && p.endsWith('"') && p.length > 1) p = p.slice(1, -1);
   return p === '/dev/null' ? '' : p.replace(/^b\//, '');
 }
@@ -186,7 +197,7 @@ export function main(argv = process.argv.slice(2), env = process.env, exec = run
   const opt = (k, d) => (argv.includes(k) ? argv[argv.indexOf(k) + 1] : d);
   try {
     // execFileSync, no shell: the refs are arguments, the PR text is only ever read from env.
-    const diff = exec('git', ['diff', '-U0', '--no-color', '-M', `${opt('--base', 'origin/develop')}...${opt('--head', 'HEAD')}`]);
+    const diff = exec('git', ['diff', '-U0', '--no-color', '-M', '--src-prefix=a/', '--dst-prefix=b/', `${opt('--base', 'origin/develop')}...${opt('--head', 'HEAD')}`]);
     const r = evaluate({ title: env.PR_TITLE ?? '', body: env.PR_BODY ?? '', diff });
     process.stdout.write(`${r.lines.join('\n')}\n`);
     return r.ok ? 0 : 1;

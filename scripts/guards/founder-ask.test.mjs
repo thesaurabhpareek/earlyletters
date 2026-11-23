@@ -354,3 +354,54 @@ test('[BL-1882] an auxiliary plus not (must not, should not) negates; a bare "no
   assert.equal(evaluate({ body: 'D-168 says a row should not ask the founder to review' }).ok, true);
   assert.equal(evaluate({ body: 'CR-176 not ask the founder to approve' }).ok, false);
 });
+
+// BL-1882 follow-up 2: a trailing-space file name, pinned prefixes, more breaks, conditional quantifiers.
+import { ALLOWED_PATHS } from './founder-ask.mjs';
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, writeFileSync, mkdirSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+test('[BL-1882] a file named like an allowed path plus a trailing space is not the allowed path', () => {
+  for (const p of ALLOWED_PATHS) {
+    // git writes "+++ b/<path with space>\t" for a name with a space: exactly one trailing tab is removed, nothing else.
+    const d = `diff --git a/${p} b/${p} \nnew file mode 100644\n--- /dev/null\n+++ b/${p} \t\n@@ -0,0 +1,1 @@\n+ask the founder to approve\n`;
+    assert.deepEqual(addedLines(d).map((l) => l.path), [`${p} `], p);
+    assert.equal(evaluate({ diff: d }).ok, false, p);
+    assert.equal(evaluate({ diff: d.replaceAll(`${p} `, p).replace(`${p}\t`, `${p}`) }).ok, true, `${p} itself`);
+  }
+});
+test('[BL-1882] real git: a trailing-space copy of an allowed path fails, the allowed path passes', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'fa-'));
+  const git = (...a) => execFileSync('git', ['-C', dir, '-c', 'user.name=t', '-c', 'user.email=t@t', ...a], { encoding: 'utf8' });
+  git('init', '-q', '-b', 'main'); writeFileSync(join(dir, 'a'), 'x\n'); git('add', '.'); git('commit', '-qm', 'a');
+  mkdirSync(join(dir, 'docs/release'), { recursive: true });
+  writeFileSync(join(dir, 'docs/release/FOUNDER_QUEUE.md '), 'ask the founder to approve\n');
+  git('add', '.'); git('commit', '-qm', 'b');
+  const run = (extra) => main(['--base', 'HEAD~1', '--head', 'HEAD'], { PR_TITLE: 't', PR_BODY: '' }, (c, args) => execFileSync(c, ['-C', dir, ...args.slice(0, 1), ...extra, ...args.slice(1)], { encoding: 'utf8' }));
+  assert.equal(run([]), 1);
+});
+test('[BL-1882] main pins the diff prefixes so diff.noprefix cannot make a b/ directory pass', () => {
+  const calls = [];
+  main([], {}, (c, a) => { calls.push(a); return ''; });
+  assert.ok(calls[0].includes('--src-prefix=a/') && calls[0].includes('--dst-prefix=b/'));
+  const dir = mkdtempSync(join(tmpdir(), 'fb-'));
+  const g = (...a) => execFileSync('git', ['-C', dir, '-c', 'user.name=t', '-c', 'user.email=t@t', ...a], { encoding: 'utf8' });
+  g('init', '-q', '-b', 'main'); writeFileSync(join(dir, 'a'), 'x\n'); g('add', '.'); g('commit', '-qm', 'a');
+  mkdirSync(join(dir, 'b/docs/release'), { recursive: true });
+  writeFileSync(join(dir, 'b/docs/release/FOUNDER_QUEUE.md'), 'ask the founder to approve\n');
+  g('add', '.'); g('commit', '-qm', 'b');
+  const code = main(['--base', 'HEAD~1', '--head', 'HEAD'], {}, (c, a) => execFileSync(c, ['-C', dir, '-c', 'diff.noprefix=true', ...a], { encoding: 'utf8' }));
+  assert.equal(code, 1);
+});
+test('[BL-1882] / | & plus whereas break a negation; "do not not ask", "never ever ask" are not governed', () => {
+  for (const h of [
+    'CR-176 never worry / ask the founder to approve', 'CR-176 do not worry | ask the founder to approve', 'CR-176 do not worry & ask the founder to approve',
+    'CR-176 do not worry plus ask the founder to approve', 'CR-176 never mind whereas ask the founder to approve',
+    'CR-176 do not not ask the founder to approve', 'CR-176 never ever ask the founder to approve', 'D-168 never always ask the founder to approve',
+  ]) assert.equal(evaluate({ body: h }).ok, false, h);
+  for (const h of ['CR-176: we never ask the founder to approve', 'CR-176: do not ask the founder to approve, review, merge or paste']) assert.equal(evaluate({ body: h }).ok, true, h);
+});
+test('[BL-1882] a conditional after a quantifier is an ask: "No work starts until Karma asks the founder to approve"', () => {
+  for (const h of ['No work starts until Karma asks the founder to approve.', 'Nothing ships until the agent asks the founder to review it.', 'None merges when Karma asks the founder to approve', 'No row ships if it asks the founder to approve', 'Nothing happens unless someone asks the founder to review']) assert.equal(evaluate({ body: h }).ok, false, h);
+  for (const h of ['None asks the founder to approve, review, merge or paste.', 'No row asks the founder to approve, review, merge or paste.']) assert.equal(evaluate({ body: h }).ok, true, h);
+});
