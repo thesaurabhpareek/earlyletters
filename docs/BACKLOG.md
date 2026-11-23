@@ -9051,7 +9051,7 @@ Queue order (the dispatcher takes the first `ready` row an agent owns, in file o
 ### Held: needs a device, a spec, counsel or a founder decision first
 
 #### BL-1700 Device sitting one: SE 3 at the largest text, with VoiceOver, Bold Text and Voice Control
-- Status: needs-founder (the founder names the operator and confirms the 27 Nov gate date, exec review founder residue item 4; no operator is named today). Mode: human. Owner: qa engineer. Milestone: M15. Size: M. Depends on: none.
+- Status: needs-founder (the 27 Nov gate date is confirmed, D-169, 22 Nov 2026; the one open name is the SE 3 sitting operator, which D-169 does not supply, and none is named today). Mode: human. Owner: qa engineer. Milestone: M15. Size: M. Depends on: none.
 - Priority: P1 (becomes P0 if no pass exists by the gate date, DESIGN-BACKLOG section 9). Gate: before the store build. Lane: design-systems writes the pass; qa runs devices.
 - Satisfies: DSR-024, NEU-031, CDO-B-059, CDO-A-018 (device check only).
 - Problem and evidence: no device accessibility pass exists. Exec review tiering: Listen, Review and Keep gate the build; Settings routes and the remaining screens may trail (BL-1704). The 44 pt measurement can start in the simulator accessibility inspector.
@@ -9067,7 +9067,7 @@ Queue order (the dispatcher takes the first `ready` row an agent owns, in file o
 - Done when: the step-by-step times are filed and product has read them.
 
 #### BL-1706 First-run order and the public timing promise
-- Status: needs-founder (CR-73, scope and what users are promised; after BL-1705). Mode: human. Owner: founder. Milestone: M15. Size: S. Depends on: BL-1705.
+- Status: deferred (decided in D-169, 22 Nov 2026: keep the current first-run order and make no public timing promise; revisit only after the BL-1705 reading, which waits on the SE 3 operator). Mode: human. Owner: founder. Milestone: M15. Size: S. Depends on: BL-1705.
 - Priority: P0. Gate: BL-1705. Lane: founder; product prepares.
 - Satisfies: NEU-001 (P0), NEU-005 (P1), NEU-025 (P2).
 - Problem and evidence: the exec review's plan of record is a wording change to speaking time, with the build (BL-1707) optional. Default if unanswered: steps stay, the promise is reworded to speaking-time wording, and store text keeps speaking-time wording.
@@ -9075,7 +9075,7 @@ Queue order (the dispatcher takes the first `ready` row an agent owns, in file o
 - Done when: the ruling is recorded in `docs/DECISIONS.md` by the founder, and BL-1707 is set `ready` or `deferred`.
 
 #### BL-1707 First-letter path built as decided
-- Status: blocked (BL-1706). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: L. Depends on: BL-1706.
+- Status: deferred (D-169 keeps the current first-run order, so there is no path to build; revisit with BL-1706 after the BL-1705 reading). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: L. Depends on: BL-1706.
 - Priority: P0 only if BL-1706 says build. Gate: BL-1706, a decision. Lane: mobile.
 - Satisfies: NEU-001, NEU-005, NEU-025; BL-1816 rides in this change if built.
 - Problem and evidence: the exec review's plan of record is a wording change; the build is optional. Lands before 1 Dec only if the stopwatch shows it is small.
@@ -9191,15 +9191,15 @@ Queue order (the dispatcher takes the first `ready` row an agent owns, in file o
 - Done when: a test shows the floor and no cap on letter text, and the Aa sheet opens in Read together.
 
 #### BL-1805 Erase now: drop "for good"
-- Status: needs-decision (the founder's wording with counsel Q51; the server copy is now traced, see below; BL-1854 builds the gating first; the CLO rules the hold, CLO-22). Mode: human. Owner: founder, content. Milestone: M15. Size: S. Depends on: BL-1854.
+- Status: needs-decision (the wording stays held: D-169 item 5 keeps this row held and its Erase line is not cleared; counsel Q51 to confirm; the server copy is now traced, see below; BL-1854 builds the gating first; the CLO rules the hold, CLO-22). Mode: human. Owner: founder, content. Milestone: M15. Size: S. Depends on: BL-1854.
 - Priority: P1. Gate: BL-1854 (code), counsel Q51, the founder's wording. Lane: content.
 - Satisfies: PER5-004 (P1).
 - Problem and evidence: ruled: drop "for good"; use the Erase everything line, "Erased from this phone. Backups and exports you already saved are not changed." A wait-for-counsel default must cover live text; "for good" is live text today. Silence on 27 Nov leaves the status quo text, so name the date.
-- Scope: the founder merges the wording; content applies it once BL-1854 lands. Evidence from the 23 Nov code trace (UNVERIFIED on a device): on a signed-in phone Erase now is hidden (`apps/mobile/src/app/settings/recently-deleted.tsx` line 64, `apps/mobile/src/components/book/shelf.logic.ts` lines 112 to 114), so "for good" is reachable only on a never-signed-in phone, where the code erases this phone's copy only and backups and saved exports are outside what the line can claim (counsel Q51); the server erase path exists (`apps/mobile/src/lib/store.ts` lines 986 to 1026, enqueue at line 1020) and a signed-in deleted letter waits for the 30 day purge. Once BL-1854 shows the button on a signed-in phone, the "for good" line needs the Erase everything wording. Release hold (Karma ruling, 23 Nov 2026, this PR; it rests on CLO-22 in `docs/agents/exec/RULINGS.md`; this is a release hold, not a build dependency, so the dependency above runs one way only: this row waits for BL-1854's code): BL-1854 may merge to `develop`, but no store candidate or TestFlight build carries it until the founder clears this row's wording. Detail: `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13.5a items 1 and 2. BL-1804 (a signed-in wipe) stays in the design backlog; its code facts are in the same section.
+- Scope: the founder merges the wording; content applies it once BL-1854 lands. Evidence from the 23 Nov code trace (UNVERIFIED on a device): on a signed-in phone Erase now is hidden (`apps/mobile/src/app/settings/recently-deleted.tsx` line 64, `apps/mobile/src/components/book/shelf.logic.ts` lines 112 to 114), so "for good" is reachable only on a never-signed-in phone, where the code erases this phone's copy only and backups and saved exports are outside what the line can claim, for counsel Q51 to confirm; the server erase path exists (`apps/mobile/src/lib/store.ts` lines 986 to 1026, enqueue at line 1020) and a signed-in deleted letter waits for the 30 day purge. Once BL-1854 shows the button on a signed-in phone, the "for good" line needs the Erase everything wording. Release hold (Karma ruling, 23 Nov 2026, this PR; it rests on CLO-22 in `docs/agents/exec/RULINGS.md`; this is a release hold, not a build dependency, so the dependency above runs one way only: this row waits for BL-1854's code): BL-1854 may merge to `develop`, but no store candidate or TestFlight build carries it until the founder clears this row's wording. Detail: `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13.5a items 1 and 2. BL-1804 (a signed-in wipe) stays in the design backlog; its code facts are in the same section.
 - Done when: the live string is changed and the wording is recorded.
 
 #### BL-1806 One quiet factual line on the Delete confirm for a kept letter that is one of the free two
-- Status: needs-founder (wording is the founder's, counsel Q40; the rule is confirmed as intended first). Mode: human. Owner: founder, content. Milestone: M15. Size: S. Depends on: none.
+- Status: deferred (D-169, 22 Nov 2026: keep the existing free-slot text, so no new Delete-confirm line ships in 1.0; reopen if counsel Q40 asks for a line). Mode: human. Owner: founder, content. Milestone: M15. Size: S. Depends on: none.
 - Priority: P1. Gate: founder wording. Lane: content, mobile.
 - Satisfies: PER5-005 (P1); not NEU-033 (BL-1713).
 - Problem and evidence: deleting a kept letter does not give the free slot back (the count takes the largest of three sources). The exec review amended the default from "no line" to one quiet factual line; the CPO, CBO and CLO disagreed with "no line".
@@ -9215,7 +9215,7 @@ Queue order (the dispatcher takes the first `ready` row an agent owns, in file o
 - Done when: a test shows swipe-down writes no decline and shows no alert, and "Not now" writes one.
 
 #### BL-1830 Photo flag: five gates (Export fails closed)
-- Status: needs-decision (founder and counsel: the flag date, and the retention words). Mode: human. Owner: founder, mobile engineer. Milestone: M15. Size: M. Depends on: none.
+- Status: needs-decision (the flag date is locked, D-169: Fri 27 Nov 2026, and 1.0 ships with the library read off unless all five gates are closed by then; still open: counsel and the retention words). Mode: human. Owner: founder, mobile engineer. Milestone: M15. Size: M. Depends on: none.
 - Priority: P2 (gate before the flag; not before 1 Dec). Gate: all five. Lane: mobile, content after.
 - Satisfies: PER5-007, PER5-008, PER5-018 (all P2); BL-1838.
 - Problem and evidence: the CPrivO's five gates for the photo flag: counsel-cleared primer lines; a network-egress test (no library data leaves the phone); photos out of sync and our backup; Export includes pictures or says it does not; device rows. Export writes photos as null today, so no photo flag while Export says "everything". Default if the gate date passes: the flag stays off and 1.0 ships with the library read off.
@@ -9223,7 +9223,7 @@ Queue order (the dispatcher takes the first `ready` row an agent owns, in file o
 - Done when: all five gates are met and recorded, or the flag stays off by the founder's record.
 
 #### BL-1838 Photo words: the Never line and where-kept line, in counsel-cleared words
-- Status: needs-decision (founder and counsel; the flag date is the founder's). Mode: human. Owner: founder, content. Milestone: M15. Size: S. Depends on: none.
+- Status: needs-decision (counsel and the retention words; the flag date is locked at Fri 27 Nov 2026, D-169). Mode: human. Owner: founder, content. Milestone: M15. Size: S. Depends on: none.
 - Priority: P2 (gate before the flag). Gate: counsel. Lane: content.
 - Satisfies: PER5-014, PER5-015, PER5-016, PER5-017 (all P2); PRIV-R21; NS-53-R192.
 - Problem and evidence: the primer needs the "never" side. No sentence may say "nothing leaves the phone" (the exec review asks whether reverse geocoding sends coordinates to Apple); say "we do not receive". The place word stays.
@@ -9374,12 +9374,12 @@ Sources: the review notes on PRs #1635, #1634, #1637, #1638, #1643, #1644, #1642
 Source: the read-only code and legal evidence traces taken at `origin/develop` commit `aeb752bc`, written up in `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` sections 13.5 and 13.5a. They are engineering readings: counsel confirms every legal point, and items marked UNVERIFIED there were not proven. Rule for this block: no `ready` row waits on a founder or counsel answer; each held row names its unblocker and owner. The `marketing` agent has no backlog owner name in `agents/roster.json`, and the backlog test rejects an unknown owner, so the marketing and store-text rows are owned by `content`, `legal` or the `web lane` and name marketing in the Scope. Adding a backlog owner name for marketing is a roster change for Karma.
 
 #### BL-1853 Store blocker: screenshot frame 6 names photos
-- Status: needs-founder (the founder approves the new headline wording only; unblocker: that approval, or a Karma default to match `captions.json`; the recapture itself needs no decision). Mode: human. Owner: content, legal. Milestone: M15. Size: S. Depends on: none.
+- Status: ready (D-169, 22 Nov 2026: a recapture; approval is needed only if the headline changes from the `captions.json` wording; the recapture needs a simulator or device run, so Mode stays human). Mode: human. Owner: content, legal. Milestone: M15. Size: S. Depends on: none.
 - Priority: P1 (the one blocker `docs/store/SCREENSHOT-COPY-AUDIT.md` names). Gate: founder wording; counsel sees public promise text (D-125 item 9). Lane: marketing, content.
 - Satisfies: PRIV-R21; NS-53-R192; D-125 item 9; D-126.
 - Problem and evidence: `docs/store/SCREENSHOT-COPY-AUDIT.md` lines 20 and 41 say the committed PNG for frame 6 shows a "What we never do" list whose third line names photos, which 1.0 does not have; the same audit says the image headline "Your book stays on your phone" is not true of a servers-on build, and that the list was retired on 8 Nov. The binary asks for no photo permission, so this is a store text claim about a feature that is off.
 - Scope: two parts. (1) Recapture, no decision needed: frame 6 from current `develop` with no photo line and no padlock list; the audit says no new words are needed for the list. It needs a simulator or device run, so it is `human`. (2) Founder approval needed only for the headline: "Your book stays on your phone" is not true of a servers-on build, so the frame needs new headline wording, which is public promise text (D-125 item 9); counsel reads the final frame. If the founder leaves the headline to Karma's default (match `captions.json`, "Your book is private."), only the recapture remains.
-- Done when: the committed PNG and `captions.json` agree, neither mentions photos, and the founder's approval is recorded in this row.
+- Done when: the committed PNG and `captions.json` agree, neither mentions photos, and, only if the headline changed, the approval is recorded in this row.
 
 #### BL-1854 A signed-in phone cannot Erase now or Erase everything: trace and fix the gating, words held
 - Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: none.
@@ -9392,12 +9392,12 @@ Source: the read-only code and legal evidence traces taken at `origin/develop` c
 - Done when: this row carries the held-from-store-build marker until BL-1805 is cleared; a test shows `shelfActions` returns `eraseNow: true` on a sync build with the server capability and queues one id-only `entry.erase`, and a build with sync and no server erase still hides it; this row holds the sign-out trace with file and line; and the Erase everything gating is unchanged and covered by an existing or new test.
 
 #### BL-1855 Store text predates D-157, D-161 and D-162 and contradicts itself: refresh `docs/store/app-store.md` and the staged proposal
-- Status: needs-founder (the founder's wording; counsel confirms every claim; unblocker: the founder's wording on the lines listed in the scope). Mode: human. Owner: content, legal. Milestone: M15. Size: M. Depends on: none.
+- Status: ready (D-169, 22 Nov 2026: goes ahead against D-157, D-161, D-162 and D-163, with status quo text where those do not apply and no public timing promise; counsel still confirms every claim). Mode: agent. Owner: content, legal. Milestone: M15. Size: M. Depends on: none.
 - Priority: P1. Gate: founder wording; legal review (D-125 item 9); counsel Q57 and Q130 context. Lane: marketing, content.
 - Satisfies: D-125 item 9; D-157; D-161; D-162; BL-888; BL-1799 (the "each one signed" phrase).
 - Problem and evidence: `docs/store/app-store.md` line 5 says no sign-in, sync or co-parent sharing in the first store build, yet lines 115 to 136 carry a full servers-on co-parent review script (steps 1 to 7, "as the second parent", "each one signed" at line 136, a phrase that appears only there). `docs/store/app-store-staged-1.0-proposal.md` (applied 31 Oct, "still not approved by counsel") predates D-157 (servers on, 10 Nov), D-161 and D-162 (11 Nov) and says analytics, sign-in and sync are all off at build time (line 119); D-163 governs analytics for the production build, with the flag gate still open. "90 second" is NOT FOUND in either file; "A minute" appears in both.
 - Scope: marketing drafts one PR to the text sources that generate these files, listing every line that changes and why, so the founder can approve line by line: remove the co-parent script (no co-parent entry point in any store build, D-126, D-162); say what the servers-on build does and does not do; keep speaking-time wording and no timing figure (exec review, BL-1707); keep "each one signed" out; align the analytics line to D-163's gate. Any line that edits legal-adjacent text needs the founder's merge (D-125 item 5).
-- Done when: the two files agree with each other and with D-157, D-161, D-162 and D-163, no co-parent review script remains, the founder's approval of the changed lines is recorded in this row, and counsel's review is noted as pending or done.
+- Done when: the two files agree with each other and with D-157, D-161, D-162 and D-163, no co-parent review script remains, no timing figure is added, the PR lists every changed line with its reason for Karma's review, and counsel's review is noted as pending or done.
 
 #### BL-1856 Website phone mock shows a Family tab (`apps/web/src/content/site.ts` line 138), against D-161
 - Status: needs-decision (unblocker owner: Karma (CTO), because marketing has no backlog owner name; Karma records whether earlyletters.com is live and whether `SITE_MODE=film` is set in the Vercel dashboard, which has no repo record; if the site is unlaunched this is a fail-closed hold, if live it is a fix; then product sets it ready or closes it; the web lane acts after). Mode: human. Owner: web lane, legal. Milestone: M15. Size: S. Depends on: none.
@@ -9417,7 +9417,7 @@ Source: the read-only code and legal evidence traces taken at `origin/develop` c
 - Done when: the intro states the kept rows, `packages/content/test/rules.test.ts` passes, and counsel's answer to Q51 is cited in this row.
 
 #### BL-1858 Stale-text hygiene for the dormant photo words and the photo store docs
-- Status: blocked (the photo flag decision: the founder sets the flag date, with the five gates in `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13.1; unblocker: that decision, then content and privacy sweep). Mode: agent. Owner: content, privacy engineer. Milestone: M15. Size: S. Depends on: BL-1830, BL-1838.
+- Status: blocked (BL-1830 and BL-1838; the flag date is locked, D-169: Fri 27 Nov 2026, library read off unless the five gates in `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13.1 are closed; unblocker: those two rows, then content and privacy sweep). Mode: agent. Owner: content, privacy engineer. Milestone: M15. Size: S. Depends on: BL-1830, BL-1838.
 - Priority: P2. Gate: the photo flag decision. Lane: content, privacy.
 - Satisfies: PRIV-R21; NS-53-R192; BL-1838; BL-1830.
 - Problem and evidence: with the flag off, photo words and a dormant module still ship: `packages/content/src/strings.en.ts` line 525 (`photoButton`, no use found), lines 1034 and 1107 ("Never your letters, recordings, photos or anyone's names"; whether production shows these screens is UNVERIFIED), `packages/content/src/features/photos.en.ts`, and the autolinked `apps/mobile/modules/scribe-photo` (`ScribePhotoModule.swift` lines 30 to 35). Store docs carry stale or conditional photo lines: `docs/store/compliance/privacy-labels-apple.md` lines 56 and 103, `docs/store/compliance/permissions.md` line 40, `docs/store/compliance/README.md` line 91, `docs/store/compliance/data-safety-google-play.md` lines 41 and 52, `docs/store/readiness.md` lines 204 and 394. Public text (`packages/content/src/pages.en.ts` lines 73, 104 and 240; `docs/legal/privacy-policy.md` line 45) is true only while the flag is off.
