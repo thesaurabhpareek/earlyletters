@@ -11,4 +11,4 @@ Verification: a row is added only after the PR is read as open by REST. The chec
 | id | owner session | branch | PR | globs | claimed UTC | expires UTC | note |
 |---|---|---|---|---|---|---|---|
 | letter-page-l1 | mobile | fix/letter-back-top-bar-large-text | 1717 | `apps/mobile/src/app/letter/[id].tsx`, `apps/mobile/src/lib/letter-top-bar.logic.ts`, `apps/mobile/test/letter-top-bar.test.ts` | 2026-11-23T16:05Z | 2026-11-26T16:05Z | BL-1790; then BL-1789, BL-1791, BL-1823 in the same file, one PR each |
-
+| moments-tab-privacy | privacy | docs/privacy-moments-tab-21nov | 1267 | `docs/product/MOMENTS-TAB-PRIVACY-AND-CONSTITUTION-21nov.md` | 2026-11-21T07:55Z | 2026-11-24T07:55Z | docs only; REST open check 2026-11-21T07:55Z |
