@@ -258,9 +258,16 @@ describe('design tokens: motion and targets', () => {
       { name: 'large', w: 430, h: 932 },
     ];
     for (const p of phones) {
-      // A 44 pt tray tile in the sheet's lower left, to a 160 pt lead slot in the upper part of capture.
-      const from = { x: 16, y: p.h - 120, size: 44 };
-      const to = { x: 16, y: 120, size: 160 };
+      // BL-1842: the geometry comes from the real layout tokens, not from numbers made up here. The tray tile is the
+      // 44 pt thumbnail (moments tab spec 07, = target.min); the lead slot spans the content width between the screen
+      // gutters, which are 16 on a window under compactBelowWidth and 20 above (tokens.layout). The vertical places
+      // (a tile near the bottom of the sheet, a slot near the top of capture) are not tokens anywhere yet.
+      const gutter = p.w < tokens.layout.compactBelowWidth ? tokens.layout.gutter.compact : tokens.layout.gutter.regular;
+      const slot = p.w - 2 * gutter;
+      const from = { x: gutter, y: p.h - 120, size: tokens.target.min };
+      const to = { x: gutter, y: 120, size: slot };
+      expect(to.size, `${p.name} the lead slot is larger than the tray tile (spec 3.4)`).toBeGreaterThan(from.size);
+      expect(to.x + to.size, `${p.name} the slot sits inside the right gutter`).toBe(p.w - gutter);
       let prev = -1;
       for (let t = 0; t <= m.carry.ms + 20; t++) {
         const pr = progress(t);
