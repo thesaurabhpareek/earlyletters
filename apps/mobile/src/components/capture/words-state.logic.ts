@@ -7,7 +7,7 @@
  * letter waiting for its words (review.tsx keepRecordingOnly, where the Keep step decides).
  *
  *   state        when                                      title                         primary            quiet
- *   writing      queued or being written down (S14)        Writing down what you said.   none               Read it back later, after 15 s with no progress
+ *   writing      queued or being written down (S14)        Writing down what you said.   none               after 15 s with no progress: Keep the recording, Type it instead
  *   ask          language not on this phone, no yes yet    Get your words ready          Download on Wi-Fi  Keep the recording
  *   downloading  language on its way, yes given (S15)      Your voice is kept            Keep the recording Use {size} of cellular on a Wi-Fi wait, else Type it instead
  *   language     a language this build does not hear (#260) the waiting-for-language line Keep the recording Type it instead
@@ -36,9 +36,9 @@ import { downloadingLine } from '@/lib/models/speech-download.logic';
 import { waitingForLanguageNote } from '@/lib/transcription-queue/language-hold';
 import type { Job } from '@/lib/transcription-queue/machine';
 
-/** S14: after this long the waiting card adds "Long recordings take a little more time." */
+/** S14: after this long the waiting hint `long` is set (the card's body no longer changes with it, BL-399). */
 export const WAITING_LONG_MS = 8_000;
-/** S14: after this long with no progress the waiting card offers "Read it back later". */
+/** S14, BL-399: after this long with no progress the waiting card says it is taking longer and offers Keep or Type. */
 export const LATER_AFTER_MS = 15_000;
 
 export type WordsStateName = 'writing' | 'ask' | 'downloading' | 'language' | 'failed' | 'unsupported' | 'unreadable' | 'fileMissing' | 'emptyTake' | 'shortTake' | 'noWords';
@@ -130,14 +130,16 @@ function writing(i: WordsInput): WordsCard {
     art: 'moon',
     still: i.playing,
     title: total > 1 ? fill(wordsCopy.listening, { n: part, count: total }) : wordsCopy.preparing,
-    body: i.hints.long ? copy.review.waitingLong : undefined,
+    // BL-399: always the reassurance (working, voice kept, can close); after the "no progress" threshold, the plain
+    // longer-than-usual line with Keep the recording and Type it instead.
+    body: i.hints.later ? copy.review.waitingSlow : copy.review.waitingBody,
     // The recogniser's own progress within each part when it reports it (whisper.rn), else a step per part; no bar
     // before the first part starts (preparing: reading the recording, finding speech, opening the model).
     // If the recogniser never reports (no callback), the first part shows its words and no bar, never an empty bar
     // that looks stuck; later parts step per part.
     bar: progress?.fraction !== undefined && total > 0 ? progress.fraction : total > 1 && done > 0 ? done / total : undefined,
-    primary: null,
-    quiet: i.hints.later ? 'later' : null,
+    primary: i.hints.later ? 'keep' : null,
+    quiet: i.hints.later ? 'type' : null,
   };
 }
 

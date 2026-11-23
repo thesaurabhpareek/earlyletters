@@ -117,6 +117,7 @@ export function AgeGateScreen({ decision, refresh }: Props) {
   };
 
   const answeredByMistake = () => {
+    if (!windowPassed) return;
     haptic('tap');
     reopenAgeGate();
     setAdult(null);
