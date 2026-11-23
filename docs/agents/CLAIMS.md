@@ -10,3 +10,5 @@ Verification: a row is added only after the PR is read as open by REST. The chec
 
 | id | owner session | branch | PR | globs | claimed UTC | expires UTC | note |
 |---|---|---|---|---|---|---|---|
+| letter-page-l1 | mobile | fix/letter-back-top-bar-large-text | 1717 | `apps/mobile/src/app/letter/[id].tsx`, `apps/mobile/src/lib/letter-top-bar.logic.ts`, `apps/mobile/test/letter-top-bar.test.ts` | 2026-11-23T16:05Z | 2026-11-26T16:05Z | BL-1790; then BL-1789, BL-1791, BL-1823 in the same file, one PR each |
+
