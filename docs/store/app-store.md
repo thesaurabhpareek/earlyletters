@@ -18,7 +18,7 @@ What the store build does and does not do, as this file reads it:
 |---|---|---|
 | Name | Early Letters: Baby Journal | 27 / 30 |
 | Subtitle | For parents who'd rather talk | 29 / 30 |
-| Promotional text | Tell your child about today in a minute. It stays in your words. Every change is marked, and your original recording is kept unchanged. | 135 / 170 |
+| Promotional text | Tell your child about today. A minute is plenty. It stays in your words. Every word we change is marked, and your original recording is kept unchanged. | 151 / 170 |
 | Keywords | `diary,keepsake,memory,book,voice,newborn,toddler,child,parenting,audio,recorder,bedtime,mom,dad,mama` | 100 / 100 |
 | Primary category | Lifestyle | |
 | Support URL | https://earlyletters.com/support | |
@@ -28,7 +28,7 @@ What the store build does and does not do, as this file reads it:
 
 Keywords repeat no word from the name or subtitle (Apple already indexes those), use no spaces, and name no competitor or other platform.
 
-## Description (3454 / 4000)
+## Description (3603 / 4000)
 
 ```text
 Early Letters: letters to your child, in your own words and voice.
@@ -38,13 +38,13 @@ Tell your child one thing about today. The first laugh, the long night, the song
 Years from now, your child can read it, and hear how you sounded when you said it.
 
 IT STAYS IN YOUR WORDS
-Your words are written down on your phone, and the app only fixes small slips, like an um, a repeat or a name spelled your way. It never adds a word. Every change is marked, and you can put any of them back. We never rewrite your words, shorten them or write for you. A word can be misheard, so have a quick read before you keep a letter. Letters you type stay as you typed them.
+Your words are written down on your phone, and the app only fixes small slips, like an um, a repeat or a name spelled your way. It never adds a word. Every word we change is marked, and you can put any of them back. We never rewrite your words, shorten them or write for you. A word can be misheard, so have a quick read before you keep a letter. Letters you type stay as you typed them.
 
 YOUR VOICE, KEPT
 Every letter you speak keeps its recording, on your phone and in your iPhone's own backup if you use one. We never imitate your voice. Your original recording is always kept exactly as you made it.
 
 READ TOGETHER AT BEDTIME
-Open Read together and go through the book one letter at a time, oldest first. Listen to the letters you spoke, with the words on the screen. Typed letters are there too, ready to read aloud.
+Open Read together and go through the book one letter at a time, oldest first. Listen to the letters you spoke, with the words on the screen. Typed letters are there too, for you to read aloud.
 
 A MINUTE IS PLENTY
 Some nights it's a sentence, some nights a long letter. Stuck for words? There's a question to start with. If today was quiet, tap "Not much today" and that's enough. Nothing keeps score.
@@ -56,7 +56,7 @@ NAMES SPELLED YOUR WAY
 Add the names and home words you use, like a nickname or the name of a stuffed rabbit, so we spell them your way.
 
 PRIVATE BY DEFAULT
-Your letters and recordings are private. We never sell them, never use them for ads and never use them to train machine learning models. Without an account, your book stays on your phone. Keep any letter just for you, out of the book. Delete one and it waits in Recently deleted for 30 days, or erase it at once.
+Your letters and recordings are private. We never sell them, never use them for ads and never use them to train machine learning models. You sign in to keep your book. If you agree to sync, the words of your letters and your child's name and dates are kept on our servers so they reach a new phone. Recordings stay on the phone that made them. Keep any letter just for you, out of the book. Delete one and it waits in Recently deleted for 30 days.
 
 REMINDERS, ONLY IF YOU WANT THEM
 Reminders are off until you turn them on. You pick the days and the time, and none comes after 9:30 at night.
@@ -74,7 +74,7 @@ Payment is charged to your Apple Account. Plus renews automatically unless you t
 
 For parents of babies and young children, from the first weeks to the first years.
 
-Terms of Use: https://earlyletters.com/terms
+Terms of Service: https://earlyletters.com/terms
 Privacy Policy: https://earlyletters.com/privacy
 ```
 
@@ -91,15 +91,17 @@ Eight frames: 1 to 6 are the set, 7 and 8 are optional. Captured from the real a
 | # | Caption | Subline | Screen | Appearance |
 |---|---|---|---|---|
 | 1 | Tell your child about today. | A minute is plenty. It becomes a letter. | Tonight at bedtime: greeting, a question to begin with, Speak and Type | dark |
-| 2 | Every change is marked. | We only fix small slips. Tap one to put it back. | Read it back: "Took out a sound" with Put it back | light |
-| 3 | Your voice stays with each letter. | The original recording is kept unchanged. | A letter from Mama with "Hear Mama" | light |
+| 2 | Every word we change is marked. | We only fix small slips. Tap one to put it back. | Read it back: "Took out a sound" with Put it back | light |
+| 3 | A spoken letter keeps your voice. | The original recording is kept unchanged. | A letter from Mama with "Hear Mama" | light |
 | 4 | A book that grows by month. | Each letter goes into your child's month of age. | Asha's book after Add to the book: this month and the month before | light |
 | 5 | Read together at bedtime. | One letter at a time, oldest first. | Read together, dark: one letter, Back one and Next letter | dark |
-| 6 | Your book is private. | Private by default. Never sold, never used for ads. | Settings, Privacy: "What we never do" | light |
+| 6 | Your book is private. | Private by default. Never sold, never used for ads. | Settings, Privacy, as it opens now (the promise first): no "What we never do" list, no photo line | light |
 | 7 | Quiet days are fine. | Tap Not much today. That is enough. | "A quiet day, kept." after Not much today | dark |
 | 8 | Pause, laugh, start again. | Take your time. Say it however it comes. | Listening: no words on screen while you talk | dark |
 
-The first three show in search results when there is no preview, so they carry the core promise: talk, every change marked, your voice. Frame 5 is dark, as bedtime is (CREATIVE section 4). Frame 6 is the privacy promise, shown as the real Settings screen rather than a badge.
+Recapture before submission (a founder or device step, not done in this change; exec rulings 23 Nov 2026, item 8e): frames 2 and 3 carry new headlines in `captions.json`, so their images must be composed again from the current build. Frame 3 must not show the "Exactly as said" link inside the picture (D-133: it names the raw machine view). Frame 6 is recaptured from current `develop` with its caption unchanged, and shows no "What we never do" list, no lock icons and no photo line (BL-1853). Details: `SCREENSHOT-COPY-AUDIT.md`.
+
+The first three show in search results when there is no preview, so they carry the core promise: talk, every word we change marked, your voice. Frame 5 is dark, as bedtime is (CREATIVE section 4). Frame 6 is the privacy promise, shown as the real Settings screen rather than a badge.
 
 ## Privacy, said calmly
 

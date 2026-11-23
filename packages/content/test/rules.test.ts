@@ -735,8 +735,8 @@ describe('brand name and v1.0 claims', () => {
     }
   });
 
-  it('promises no co-parent sharing, sign-in or invitation in the first store build (D-121, D-126)', () => {
-    const SHARING = /\b(co-parent|invite[sd]?|sign[- ]in|sync(s|ed)?|write it together|write together)\b/i;
+  it('promises no co-parent sharing or invitation in the first store build (D-121, D-126); sign-in and sync are named as they are (exec rulings 23 Nov 2026, item 8a)', () => {
+    const SHARING = /\b(co-parent|invite[sd]?|write it together|write together)\b/i;
     expect(offenders(leaves(storeListing, 'store'), SHARING)).toEqual([]);
   });
 
@@ -758,7 +758,7 @@ describe('brand name and v1.0 claims', () => {
   }
 
   it('store pack text never says the words are kept exactly as said (D-133, council Q6)', () => {
-    expect(offenders(storePackText(), /exactly as (you|they|i|it was) (said|spoke|told)|kept as (you )?said|every (single )?word|word for word/i)).toEqual([]);
+    expect(offenders(storePackText(), /exactly as (you|they|i|it was) (said|spoke|told)|kept as (you )?said|every (single )?word(?! we change)|word for word/i)).toEqual([]);
   });
 
   it('store pack text promises only what build 1 does: no invites, family, sync, backup of our own, other languages, coming soon or beta (D-121, D-126, D-060)', () => {
@@ -1339,9 +1339,9 @@ describe.each(SURFACES.map((s) => [`[${s.tag}] rules over ${s.name}`, s] as cons
 // #485 onto develop's keys. Each rule names the ruling it enforces. If one fails, fix the copy, not the test.
 describe('claims that must be true of what the first build does', () => {
   it('store text carries the D-133 line and never says words are kept exactly as said or promises any misheard word (#495, D-133)', () => {
-    expect(storeListing.promotionalText).toMatch(/It stays in your words\. Every change is marked, and your original recording is kept unchanged\./);
-    expect(storeListing.description).toMatch(/It never adds a word\. Every change is marked, and you can put any of them back\./);
-    expect(offenders(STORE, /exactly as (you|they|i|it was) (said|spoke|told)|kept as (you )?said|every (single )?word|misheard word|grammar/i)).toEqual([]);
+    expect(storeListing.promotionalText).toMatch(/It stays in your words\. Every word we change is marked, and your original recording is kept unchanged\./);
+    expect(storeListing.description).toMatch(/It never adds a word\. Every word we change is marked, and you can put any of them back\./);
+    expect(offenders(STORE, /exactly as (you|they|i|it was) (said|spoke|told)|kept as (you )?said|every (single )?word(?! we change)|misheard word|grammar/i)).toEqual([]);
   });
 
   it('never calls the fixes tidying (D-086, Q2)', () => {
