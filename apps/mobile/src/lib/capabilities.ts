@@ -206,6 +206,14 @@ export const capabilities = {
   get sync(): boolean {
     return serverFeaturesEnabled();
   },
+  /**
+   * Erase now works for a signed-in phone (WP-F16-13, F16-REQ-024): `eraseEntry` queues one id-only `entry.erase` and the
+   * server erases its copy. It follows the same switch as sync, because the queue is the sync queue. The shelf reads this,
+   * so a sync build no longer hides Erase now (BL-1854).
+   */
+  get serverErase(): boolean {
+    return serverFeaturesEnabled();
+  },
   /** Invite and join a co-parent. Off: the coming-soon presentation. */
   get coParent(): boolean {
     return serverFeaturesEnabled();

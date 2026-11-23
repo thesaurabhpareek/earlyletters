@@ -289,6 +289,21 @@ describe('the 30 day purge', () => {
     expect(db.all<{ type: string }>('SELECT type FROM sync_outbox').map((r) => r.type)).toEqual(['entry.erase']);
   });
 
+  it('[BL-1854] a signed-in phone on a sync build erases from the shelf and queues exactly one id-only entry.erase', () => {
+    const db = store.localSqlDb();
+    const owner = '11111111-1111-1111-1111-111111111111';
+    db.run("INSERT INTO settings (key, value) VALUES ('sync.ownerId', ?)", owner);
+    save(id1);
+    db.run("UPDATE entries SET server_version = '100', author_id = ? WHERE id = ?", owner, id1);
+    store.deleteEntry(id1);
+    setServerFeaturesForTests(true);
+    expect(store.eraseEntry(id1, disk([`file:///Documents/${id1}.m4a`]).eraser)).toBe(true);
+    const rows = db.all<{ type: string; entity_id: string; payload: string }>('SELECT type, entity_id, payload FROM sync_outbox');
+    expect(rows.map((r) => r.type)).toEqual(['entry.erase']);
+    expect(rows[0]!.entity_id).toBe(id1);
+    expect(Object.keys(JSON.parse(rows[0]!.payload)).sort()).not.toContain('text');
+  });
+
   it('a purged letter never comes back: no row, no file, nothing for the sweep to re-attach', () => {
     save(id1);
     store.deleteEntry(id1);

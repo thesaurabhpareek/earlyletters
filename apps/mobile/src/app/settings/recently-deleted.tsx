@@ -61,7 +61,7 @@ function Shelf() {
   const [erasingBook, setErasingBook] = useState<DeletedBook | null>(null);
   useEffect(() => subscribeTo('entries', () => setRows(read())), [read]);
   useEffect(() => subscribeTo(['children', 'settings'], () => setBooks(listDeletedBooks())), []);
-  const actions = shelfActions({ sync: capabilities.sync });
+  const actions = shelfActions({ sync: capabilities.sync, serverErase: capabilities.serverErase });
 
   const restore = (e: DeletedEntry) => {
     haptic('tap');

@@ -8,6 +8,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { en } from '@scribe/content';
 import { monthDay, shelfActions, shelfDateLine, shelfRow } from '../src/components/book/shelf.logic';
+import { capabilities, setServerFeaturesForTests } from '../src/lib/capabilities';
 import type { Entry } from '../src/lib/store';
 
 const src = (f: string) => readFileSync(join(__dirname, '../src', f), 'utf8');
@@ -62,8 +63,23 @@ describe('Erase now (S39, S63)', () => {
 
   it('the shelf reads the build capability and hides the button with it (source)', () => {
     const screen = src('app/settings/recently-deleted.tsx');
-    expect(screen).toMatch(/shelfActions\(\{ sync: capabilities\.sync \}\)/);
+    expect(screen).toMatch(/shelfActions\(\{ sync: capabilities\.sync, serverErase: capabilities\.serverErase \}\)/);
     expect(screen).toMatch(/\{eraseNow \? <Button variant="destructive"/);
+  });
+});
+
+describe('Erase now on a signed-in phone (BL-1854, F16-REQ-024)', () => {
+  it('a sync build with the server switch on offers Erase now; with it off, no sync and so the local erase', () => {
+    setServerFeaturesForTests(true);
+    expect(shelfActions({ sync: capabilities.sync, serverErase: capabilities.serverErase }).eraseNow).toBe(true);
+    setServerFeaturesForTests(false);
+    expect(shelfActions({ sync: capabilities.sync, serverErase: capabilities.serverErase }).eraseNow).toBe(true);
+    expect(capabilities.serverErase).toBe(false);
+    setServerFeaturesForTests(null);
+  });
+
+  it('the screen never calls shelfActions with sync alone (that hid Erase now for every signed-in phone)', () => {
+    expect(src('app/settings/recently-deleted.tsx')).not.toMatch(/shelfActions\(\{ sync: capabilities\.sync \}\)/);
   });
 });
 

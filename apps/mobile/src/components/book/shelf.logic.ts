@@ -106,8 +106,9 @@ export function shelfDateLine(v: Pick<ShelfRowView, 'deletedDay' | 'keptUntilDay
 
 /**
  * What a shelf card offers. Restore always. Erase now only when this build can erase for good everywhere the letter
- * is: always on a phone that does not sync; in a sync build only once the server erase exists (`serverErase`, from
- * the sync stream when WP-F16-13 lands; until then nothing passes it, so a sync build shows no Erase now).
+ * is: always on a phone that does not sync; in a sync build only with the server erase (`serverErase`, from
+ * `capabilities.serverErase`: `eraseEntry` queues one id-only `entry.erase`, WP-F16-13). A sync build that passes no
+ * `serverErase` still hides it.
  */
 export function shelfActions(build: { sync: boolean; serverErase?: boolean }): { restore: true; eraseNow: boolean } {
   return { restore: true, eraseNow: !build.sync || build.serverErase === true };
