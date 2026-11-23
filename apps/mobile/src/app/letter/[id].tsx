@@ -375,7 +375,7 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
 
   const toggleInBook = () => {
     const next = !entry.inBook;
-    setEntryInBook(entry.id, next);
+    if (!setEntryInBook(entry.id, next)) return toast.show({ message: copy.errors.generic.title });
     haptic('tap');
     onEntry({ ...entry, inBook: next });
     toast.show({ message: next ? fill(copy.review.destination.addedToast, { child: child.name }) : copy.review.destination.privateToast });
@@ -397,7 +397,7 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
   const remove = () => {
     setConfirmOpen(false);
     const gone = entry;
-    deleteEntry(gone.id); // tombstone; waits 30 days on the Recently deleted shelf
+    if (!deleteEntry(gone.id)) return toast.show({ message: copy.errors.generic.title }); // tombstone; waits 30 days on the Recently deleted shelf; false for a left book (BL-1959)
     haptic('warning');
     track('letter_deleted', { action: 'deleted', destination: gone.inBook ? 'book' : 'private' });
     if (belowIsBook(navigation.getState() as NavState)) bookHandoff.deleted(gone);

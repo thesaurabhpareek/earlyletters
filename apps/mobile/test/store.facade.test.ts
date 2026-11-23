@@ -194,6 +194,70 @@ describe('sync hooks through the facade (D-023)', () => {
   });
 });
 
+describe('a left book refuses writes at the store (BL-1959, F11-REQ-011, DATA-REQ-016)', () => {
+  const outbox = () => store.localSqlDb().all<{ type: string; entity_id: string }>('SELECT type, entity_id FROM sync_outbox ORDER BY seq');
+  const setup = () => {
+    openMemory();
+    const asha = store.addChild({ name: 'Asha', birthday: null, dueDate: null, signsAs: 'Mama' });
+    store.setSetting('sync.ownerId', 'user-asha-1');
+    const e = letter({ childId: asha.id, finalText: 'You laughed at the rain.' });
+    store.saveEntry(e);
+    store.localSqlDb().run('DELETE FROM sync_outbox');
+    return { asha, e };
+  };
+  const leave = (id: string) => store.localSqlDb().run("UPDATE children SET server_state = 'left' WHERE id = ?", id);
+  const everyWrite = (id: string, childId: string) => [
+    store.setEntryInBook(id, false),
+    store.setEntryDate(id, '2026-05-01', 'day'),
+    store.deleteEntry(id),
+    store.setWordsForWaitingEntry(id, { rawTranscript: 'x', machineEdits: [], finalText: 'x', editLevel: 'light', engineVersion: 1 } as never),
+    store.setTypedWordsForWaitingEntry(id, 'typed'),
+    store.keepReviewedWords(id, true),
+    store.saveEntry(letter({ childId, finalText: 'changed' })),
+  ];
+
+  it('isBookLeft answers from server_state alone', () => {
+    const { asha } = setup();
+    expect(store.isBookLeft(asha.id)).toBe(false);
+    leave(asha.id);
+    expect(store.isBookLeft(asha.id)).toBe(true);
+    expect(store.isBookLeft('no-such-book')).toBe(false);
+  });
+
+  it('a book support hid still reads as left, though listLeftBooks leaves it out, and no write queues an op', () => {
+    const { asha, e } = setup();
+    leave(asha.id);
+    store.localSqlDb().run("UPDATE children SET hidden_at = '2026-11-01T00:00:00.000Z' WHERE id = ?", asha.id);
+    expect(store.isBookLeft(asha.id)).toBe(true);
+    expect(everyWrite(e.id, asha.id)).toEqual([false, false, false, false, false, false, false]);
+    expect(outbox()).toEqual([]);
+    expect(store.getEntry(e.id)).toMatchObject({ finalText: 'You laughed at the rain.' });
+  });
+
+  it('with a second account signed in, listLeftBooks is empty, isBookLeft is still true and no write queues an op', async () => {
+    const { asha, e } = setup();
+    leave(asha.id);
+    const auth = await import('../src/lib/auth/auth-store');
+    const before = auth.getAuthSnapshot();
+    auth.publishAuth({ status: 'ready', userId: 'user-bea-2', sync: 'on' });
+    try {
+      expect(store.listLeftBooks()).toEqual([]);
+      expect(store.isBookLeft(asha.id)).toBe(true);
+      expect(everyWrite(e.id, asha.id)).toEqual([false, false, false, false, false, false, false]);
+      expect(outbox()).toEqual([]);
+    } finally {
+      auth.publishAuth(before);
+    }
+  });
+
+  it('a book that is not left still writes and queues', () => {
+    const { e } = setup();
+    expect(store.setEntryInBook(e.id, false)).toBe(true);
+    expect(outbox().length).toBeGreaterThan(0);
+    expect(store.deleteEntry(e.id)).toBe(true);
+  });
+});
+
 describe('boundaries (MOB-04)', () => {
   const src = (p: string) => readFileSync(join(__dirname, '..', 'src', 'lib', p), 'utf8');
 
