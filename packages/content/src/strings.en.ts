@@ -240,6 +240,8 @@ export const en = {
       listeningHint: "Say it however it comes.",
       stillHere: "Still here. Take your time.",
       paused: "Paused.",
+      // Under "Paused." only (BL-1787): auto-lock ends a take that is paused, because only a live take keeps the screen awake (D-087). Says what happens and promises nothing about what is kept.
+      pausedLock: "If the phone locks while paused, the recording ends.",
       resumeButton: "Keep talking",
       stopButton: "Finish",
       saving: "Saving your words.",

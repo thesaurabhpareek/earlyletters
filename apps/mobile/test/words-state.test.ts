@@ -121,7 +121,7 @@ describe('S14: while the words are being written down', () => {
 
 describe('S14: why a take stopped, one line above the card or the letter', () => {
   it('leaving the app, a call or an alert, and the app closing each have their own line', () => {
-    expect(stopLine({ stopped: 'background', recoveredAt: null, spoken: true, kept: true })).toBe(wordsCopy.pack.stoppedInBackground);
+    expect(stopLine({ stopped: 'background', recoveredAt: null, spoken: true, kept: true })).toBe(wordsCopy.pack.stoppedLeftOrLocked);
     expect(stopLine({ stopped: 'interruption', recoveredAt: null, spoken: true, kept: true })).toBe(wordsCopy.pack.stoppedInterruption);
     expect(stopLine({ stopped: undefined, recoveredAt: '2026-10-20T19:42:00Z', spoken: true, kept: true })).toBe(wordsCopy.pack.stoppedClosed);
   });
@@ -145,10 +145,18 @@ describe('S14: why a take stopped, one line above the card or the letter', () =>
     expect(recordingKept(null)).toBe(true); // the letter itself, once its words are there
   });
 
-  it('every line says everything before the stop is kept', () => {
-    for (const t of [wordsCopy.pack.stoppedInBackground, wordsCopy.pack.stoppedInterruption, wordsCopy.pack.stoppedClosed]) {
+  it('the call and app-closed lines say everything before the stop is kept', () => {
+    for (const t of [wordsCopy.pack.stoppedInterruption, wordsCopy.pack.stoppedClosed]) {
       expect(t).toMatch(/Everything before that is kept\.$/);
     }
+  });
+
+  it('BL-1787: a lock arrives as background, so that case says "left the app or the phone locked" and promises nothing', () => {
+    const t = stopLine({ stopped: 'background', recoveredAt: null, spoken: true, kept: true });
+    expect(t).toBe('The recording stopped when you left the app or the phone locked.');
+    expect(t).not.toMatch(/kept/i);
+    // The live key is untouched (the row: replacing it is a copy change on a live promise).
+    expect(wordsCopy.pack.stoppedInBackground).toBe('The recording stopped when you left the app. Everything before that is kept.');
   });
 });
 

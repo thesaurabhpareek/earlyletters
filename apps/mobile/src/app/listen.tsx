@@ -517,6 +517,11 @@ export default function Listen() {
           </Text>
         ) : null}
       </View>
+      {room.lockNote ? (
+        <Text variant="footnote" tone="muted" className="mt-2 text-center" testID="listen.lockNote">
+          {t.pausedLock}
+        </Text>
+      ) : null}
     </View>
   );
 

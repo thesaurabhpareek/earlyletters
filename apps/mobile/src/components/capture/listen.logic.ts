@@ -220,6 +220,8 @@ export function listenRoom(phase: RoomPhase): {
   clock: boolean;
   /** The line under the circle. */
   line: 'readyHint' | 'listening' | 'paused' | 'none';
+  /** Paused only: the note that a lock ends the take (BL-1787; the screen stays awake only while recording, D-087). */
+  lockNote: boolean;
   /** Pause and Finish can be pressed (they are on screen in every moment, disabled before a take). */
   controls: boolean;
   /** "Let it go" is offered (its slot is kept either way). */
@@ -232,6 +234,7 @@ export function listenRoom(phase: RoomPhase): {
     aura: before ? 'ready' : phase === 'recording' ? 'listening' : phase === 'paused' ? 'paused' : 'processing',
     clock: !before,
     line: phase === 'ready' ? 'readyHint' : phase === 'asking' ? 'none' : phase === 'paused' ? 'paused' : 'listening',
+    lockNote: phase === 'paused',
     controls: phase === 'recording' || phase === 'paused',
     // Never while finishing (BL-563): the take is being kept, and the only control left must not be the one that
     // deletes it.
