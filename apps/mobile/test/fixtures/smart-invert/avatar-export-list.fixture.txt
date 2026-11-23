@@ -1,0 +1,6 @@
+// Positive control for [NS-33-R11] (BL-1877): Avatar is exported in a list, and it drops the prop.
+import { Image } from 'react-native';
+function Avatar({ uri }: { uri: string }) {
+  return <Image source={{ uri }} />;
+}
+export { Avatar };

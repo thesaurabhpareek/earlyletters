@@ -12,7 +12,7 @@ export const act3Copy = {
     honeypotLabel: 'Company',
     /** site.notify.errors: site.notify.error stays the message for an invalid address. */
     rateLimited: 'Give it a minute and try again.',
-    server: 'Something went wrong on our side. Try again in a moment.',
+    server: "That didn't go through. Try again in a moment.",
   },
   /** Shown only while the official App Store badge artwork is missing from public/brand/. */
   badgePlaceholder: 'App Store badge (placeholder)',

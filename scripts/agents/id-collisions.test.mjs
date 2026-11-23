@@ -2,9 +2,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readFileSync, mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { addedIds, developIds, findCollisions, nextApplyFile, selectPrs, definesIds, report } from "./id-collisions.mjs";
+import { addedIds, definedIds, developIds, findCollisions, nextApplyFile, selectPrs, definesIds, report } from "./id-collisions.mjs";
 
 const here = (f) => fileURLToPath(new URL(f, import.meta.url));
 const SCRIPT = here("./id-collisions.mjs");
@@ -121,4 +123,76 @@ test("a stacked PR does not clash with its own parent: ids an ancestor adds belo
   const r = findCollisions({ develop, prs });
   assert.deepEqual(r.collisions, [{ kind: "D", id: "D-131", prs: [167, 200], onDevelop: false }]);
   assert.deepEqual(r.added.map((a) => [a.pr, a.ids]), [[164, ["D-130"]], [167, ["D-131"]], [168, ["D-132"]], [200, ["D-131"]]]);
+});
+
+const RULINGS = "docs/agents/cto/RULINGS.md";
+const PLAN = "docs/qa/DEVICE_TEST_PLAN.md";
+const addTo = (filename, ...lines) => ({ filename, status: "modified", patch: `@@ -1 +1,${lines.length + 1} @@\n${lines.map((l) => `+${l}`).join("\n")}` });
+const develop2 = () => developIds({ [RULINGS]: "### CR-47 Audit (1 Nov 2026)\n### CR-16 to CR-18 (31 Oct 2026)\n", [PLAN]: "### S1-131 App lock\n" }, []);
+
+test("CR: two PRs adding CR-48 collide (8 Nov: #591 and #592); a third adding CR-49 twice-over does not collide with itself", () => {
+  const prs = [
+    { number: 591, files: [addTo(RULINGS, "### CR-48 Merge path (8 Nov 2026)")] },
+    { number: 592, files: [addTo(RULINGS, "### CR-48 Merge path again"), addTo(RULINGS, "### CR-49 Other")] },
+  ];
+  const r = findCollisions({ develop: develop2(), prs });
+  assert.deepEqual(r.collisions, [{ kind: "CR", id: "CR-48", prs: [591, 592], onDevelop: false }]);
+  assert.deepEqual(r.added.map((a) => a.ids), [["CR-48"], ["CR-48", "CR-49"]]);
+});
+
+test("CR: a PR reusing a develop CR id, including one inside a range heading, collides with develop", () => {
+  const prs = [{ number: 7, files: [addTo(RULINGS, "### CR-47 Reused", "### CR-17 Inside the range", "| CR-50 | table form | x |")] }];
+  const r = findCollisions({ develop: develop2(), prs });
+  assert.deepEqual(r.collisions.map((c) => [c.id, c.onDevelop]), [["CR-17", true], ["CR-47", true]]);
+});
+
+test("CR: mentions and the register's three-digit CR-001 rows are not definitions", () => {
+  const lines = ["The CR-48 ruling says so.", "- **CR-48** and CR-49 apply", "| CR-001 | COPPA |", "### CR-001 heading", "text ### CR-48"];
+  assert.equal(definedIds("CR", RULINGS, lines).size, 0);
+  assert.equal(definedIds("CR", "docs/legal/compliance-register.md", ["### CR-48 x"]).size, 0);
+});
+
+test("S1: two PRs adding device row S1-132 collide (heading and table form); catalog mentions do not count", () => {
+  const prs = [
+    { number: 665, files: [addTo(PLAN, "### S1-132 StoreKit robustness")] },
+    { number: 699, files: [addTo(PLAN, "| S1-132 | row |")] },
+    { number: 700, files: [addTo("docs/qa/release-test-catalog.csv", "RT-PAY-17,Purchase,x,error,P0,both,device,local,REF,S1-132,planned,a,b"), addTo(PLAN, "Covered by S1-132 and | S1-133 mention")] },
+  ];
+  const r = findCollisions({ develop: develop2(), prs });
+  assert.deepEqual(r.collisions, [{ kind: "S1", id: "S1-132", prs: [665, 699], onDevelop: false }]);
+  assert.match(report(r), /COLLISION device row S1-132: added by #665, #699\./);
+});
+
+test("--pr N: exit 1 only when PR N is in a collision; default output is unchanged", () => {
+  const dir = mkdtempSync(join(tmpdir(), "idc-"));
+  try {
+    const fx = join(dir, "fx.json");
+    writeFileSync(fx, JSON.stringify({
+      develop: { files: { [RULINGS]: "### CR-47 x\n" }, adrFiles: [] },
+      prs: [
+        { number: 1, files: [addTo(RULINGS, "### CR-48 a")] },
+        { number: 2, files: [addTo(RULINGS, "### CR-48 b")] },
+        { number: 3, files: [addTo(RULINGS, "### CR-49 c")] },
+      ],
+    }));
+    const run = (...a) => {
+      try {
+        return { code: 0, out: execFileSync(process.execPath, [SCRIPT, "--fixture", fx, ...a], { encoding: "utf8" }) };
+      } catch (e) {
+        return { code: e.status, out: e.stdout };
+      }
+    };
+    const bad = run("--pr", "2");
+    assert.equal(bad.code, 1);
+    assert.match(bad.out, /COLLISION CTO ruling CR-48: added by #1, #2\./);
+    const ok = run("--pr", "3");
+    assert.equal(ok.code, 0);
+    assert.match(ok.out, /PR #3 adds no id/);
+    assert.equal(run("--pr", "99").code, 2);
+    const all = run();
+    assert.equal(all.code, 1);
+    assert.match(all.out, /Ids added by open PRs:/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });

@@ -9,6 +9,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { reminderCopy } from '@scribe/content';
 import { nodeDb } from './helpers/node-db';
 
+vi.mock('../src/lib/days', () => ({ endDaysSession: () => true })); // reminders/session clears the days store (NS-47-R15): test/days-store.test.ts
+vi.mock('../src/lib/moments', () => ({ endMomentsSession: () => true })); // reminders/session clears the moments file too: test/moments-hooks.test.ts
 vi.mock('expo-crypto', () => ({ getRandomBytes: (n: number) => new Uint8Array(n).fill(7) }));
 vi.mock('../src/lib/db/repos/open-native', () => ({
   openNativeDb: () => {
@@ -30,7 +32,6 @@ vi.mock('expo-notifications', () => ({
   setNotificationHandler: () => {},
   addNotificationResponseReceivedListener: () => ({ remove: () => {} }),
 }));
-vi.mock('../src/lib/reminders/priming-sheet', () => ({ ReminderPrimingSheet: () => null }));
 
 const store = await import('../src/lib/store');
 const reminders = await import('../src/lib/reminders');

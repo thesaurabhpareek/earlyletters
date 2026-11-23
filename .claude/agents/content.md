@@ -14,11 +14,14 @@ Every word in the app, the App Store, the website and the printed book sounds li
 
 ## You own
 - `packages/content/**`: in-app strings, prompts, App Store, website and book copy; `VOICE.md`, `BRAND.md` and the rules test.
-- `packages/brand/**` values are founder decisions: propose changes, do not make them.
+- `packages/brand/**` values are decided by Karma with the CMO and CLO (CR-176): propose changes, do not make them.
 
 ## You read first
+- `packages/content/WRITING-GUIDE.md`: how every customer-facing line should sound. Read it before writing or changing any string, email, push or store copy; run `npm run lint:copy`.
+- `docs/agents/COORDINATION.md` section 10: how every requirement is written (human voice, Given/When/Then, and the Shown, Records, Never and Decline lines for anything a person agrees to, per PRIV-R21).
 - `packages/content/VOICE.md`, `BRAND.md`, `test/rules.test.ts`.
 - `docs/legal/in-app-disclosures.md` and `docs/legal/compliance-register.md`: what we may and may not claim.
+- New scope (on `develop` since #829): `docs/product/prd/README.md` (ground rules, appendix A string scans), `docs/product/prd/00-product-frame.md` section 6, and the cards whose words you write (NS-05, NS-09, NS-11, NS-13, NS-16, NS-17, NS-18, NS-23; `13-engineering-plan.md` section 3). Words are PROPOSED keys; engineers build behind a flag and the founder approves the words before it turns on (`13-engineering-plan.md` section 4). Your row: BL-925. Decisions that bind this work: your `MEMORY.md`, "New scope (20 Nov 2026)".
 
 ## Backlog
 You take tasks whose Owner is `content`.

@@ -19,6 +19,17 @@ export type AuthMethod = 'apple' | 'google' | 'email' | 'passkey';
 /** The sheets shown after sign-in, in order. 'age' only when Terms are current but the attestation is missing. */
 export type ConsentStep = 'terms' | 'age' | 'sensitive';
 
+/**
+ * How many letters, books and settings are still to upload (BL-1425): a count, or unknown when the queue could not
+ * be read. Unknown is never read as 0: sign-out treats it as unsynced and waits.
+ */
+export type PendingUploads = { kind: 'count'; n: number } | { kind: 'unknown' };
+
+/** True only for a counted zero (a plain number is a count too). Unknown is not nothing. */
+export function nothingPending(p: PendingUploads | number): boolean {
+  return typeof p === 'number' ? p <= 0 : p.kind === 'count' && p.n <= 0;
+}
+
 /** What `my_sync_gate()` returns, camel-cased. */
 export interface SyncGate {
   termsCurrent: boolean;
@@ -40,9 +51,19 @@ export type AuthErrorKind =
   | 'invalid_email'
   | 'not_available'
   | 'provider'
+  /** BL-452: a passkey's challenge timed out. Not an email link, so not `expired`. */
+  | 'passkey_expired'
+  /** BL-452: Add a passkey on Account did not finish. A signed-in action, so not the sign-in `provider` words. */
+  | 'passkey_not_added'
+  /** BL-452: Sign out other devices on Account did not finish. */
+  /** BL-452: this phone (or the project) cannot make a passkey: no support, no setup, or passkeys switched off. */
+  | 'passkey_unavailable'
+  | 'sign_out_others_failed'
   | 'session_expired'
   | 'under_18'
   | 'consent_unavailable'
+  /** FP-6 (NS-40-R9): the sign-up hook refused this place. Not an outage, and a failed lookup is never this. */
+  | 'region_refused'
   /** An email link this phone did not ask for (BL-347, security review H1): never verified here. */
   | 'other_phone'
   /** SIGN-06: the same refusal, after GET /verify already ran, so the email's code may be spent too: send a new email. */
@@ -51,9 +72,12 @@ export type AuthErrorKind =
   | 'already_signed_in'
   | 'unknown';
 
-export type SignOutReason = 'user' | 'apple_revoked' | 'switch_account';
+export type SignOutReason = 'user' | 'apple_revoked' | 'switch_account' | 'force_reauth';
 
-/** 'on': sync may run. 'off': signed in, letters stay on this phone. 'unknown': not checked yet (offline at launch). */
+/**
+ * 'on': sync may run. 'off': signed in, letters stay on this phone. 'unknown': the gate is not read yet (still checking at
+ * launch, or offline); a wait that starts here, such as an Apple revocation at launch (BL-450), reads the gate before it decides.
+ */
 export type SyncMode = 'on' | 'off' | 'unknown';
 
 export type AuthState =
@@ -62,7 +86,11 @@ export type AuthState =
   | { status: 'signingIn'; method: AuthMethod }
   | { status: 'awaitingCode'; sentAt: number; error?: AuthErrorKind }
   | { status: 'checkingConsent'; userId: string; method: AuthMethod | null }
-  | { status: 'needsConsent'; userId: string; method: AuthMethod | null; steps: ConsentStep[]; error?: AuthErrorKind }
+  | {
+      status: 'needsConsent'; userId: string; method: AuthMethod | null; steps: ConsentStep[]; error?: AuthErrorKind;
+      /** Set (true) when the person's recorded answer to the sensitive-data step is a decline: answering Terms or the age line must not undo it (BL-503). */
+      sensitiveDeclined?: true;
+    }
   | { status: 'ready'; userId: string; sync: SyncMode }
   | { status: 'signingOut'; userId: string; reason: SignOutReason; waitingForUploads: boolean; sync: SyncMode };
 
@@ -80,7 +108,7 @@ export type AuthEvent =
   | { type: 'GATE_UNAVAILABLE' }
   | { type: 'CONSENT_RECORDED'; step: ConsentStep; accepted: boolean }
   | { type: 'CONSENT_FAILED'; error: AuthErrorKind }
-  | { type: 'SIGN_OUT_REQUESTED'; reason: SignOutReason; pendingUploads: number }
+  | { type: 'SIGN_OUT_REQUESTED'; reason: SignOutReason; pendingUploads: PendingUploads | number }
   | { type: 'UPLOADS_DRAINED' }
   /** "Stay signed in" while a sign-out waits for uploads (S01): back to signed in; nothing deleted, nothing sent. */
   | { type: 'SIGN_OUT_WAIT_CANCELLED' }
@@ -106,7 +134,7 @@ export function consentSteps(gate: SyncGate, sensitiveDeclined: boolean): Consen
 
 function afterGate(s: { userId: string; method: AuthMethod | null }, gate: SyncGate, declined: boolean): AuthState {
   const steps = consentSteps(gate, declined);
-  if (steps.length > 0) return { status: 'needsConsent', userId: s.userId, method: s.method, steps };
+  if (steps.length > 0) return { status: 'needsConsent', userId: s.userId, method: s.method, steps, ...(declined && !gate.sensitiveData ? { sensitiveDeclined: true as const } : {}) };
   return { status: 'ready', userId: s.userId, sync: gate.contentAllowed ? 'on' : 'off' };
 }
 
@@ -173,7 +201,10 @@ export function authReducer(state: AuthState, event: AuthEvent): AuthState {
       if (event.step === 'terms' && !event.accepted) return state;
       const steps = state.steps.filter((s) => s !== event.step);
       if (steps.length > 0) return { ...state, steps, error: undefined };
-      const sync: SyncMode = event.step === 'sensitive' && !event.accepted ? 'off' : 'on';
+      // A decline stands until the person turns it on from Settings: one answered in this pass (`event`), or one the
+      // gate read before this pass remembers (`state.sensitiveDeclined`). Answering Terms or the age line again is not a yes (BL-503).
+      const declined = (event.step === 'sensitive' && !event.accepted) || state.sensitiveDeclined === true;
+      const sync: SyncMode = declined ? 'off' : 'on';
       return { status: 'ready', userId: state.userId, sync };
     }
 
@@ -183,9 +214,15 @@ export function authReducer(state: AuthState, event: AuthEvent): AuthState {
 
     case 'SIGN_OUT_REQUESTED': {
       if (state.status !== 'ready' && state.status !== 'needsConsent' && state.status !== 'checkingConsent') return state;
-      const sync: SyncMode = state.status === 'ready' ? state.sync : 'off';
+      // BL-450: an Apple revocation noticed at launch meets `checkingConsent`, where the gate is not read yet. Sync may be
+      // allowed, so it is not 'off' but 'unknown': the wait starts and the provider reads the gate (GATE_LOADED then lets
+      // the letters upload, or ends the wait if sync can never run). A sign-out the person asked for keeps 'off' there.
+      const sync: SyncMode = state.status === 'ready' ? state.sync
+        : state.status === 'checkingConsent' && event.reason === 'apple_revoked' ? 'unknown'
+        : 'off';
       // Never discard unsynced letters (PRD A F6.4, A-REQ-033): wait while uploads are queued and sync can run.
-      const waiting = event.pendingUploads > 0 && sync !== 'off';
+      // BL-1425: a queue that could not be read is unsynced too: it waits as a non-zero count does.
+      const waiting = !nothingPending(event.pendingUploads) && sync !== 'off';
       return { status: 'signingOut', userId: state.userId, reason: event.reason, waitingForUploads: waiting, sync };
     }
 
@@ -264,7 +301,7 @@ export async function readGateInOrder(
 }
 
 /** Whether Sign out now waits for queued letters: the machine's own SIGN_OUT_REQUESTED rule, not canSync (S01). */
-export function signOutWouldWait(s: AuthState, pendingUploads: number): boolean {
+export function signOutWouldWait(s: AuthState, pendingUploads: PendingUploads | number): boolean {
   const next = authReducer(s, { type: 'SIGN_OUT_REQUESTED', reason: 'user', pendingUploads });
   return next.status === 'signingOut' && next.waitingForUploads;
 }

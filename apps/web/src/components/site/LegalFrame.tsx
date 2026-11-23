@@ -1,4 +1,4 @@
-/** Owner: E1 (web platform). Paper-tone frame for the legal pages: a back link home, the page, then the footer. */
+/** Owner: E1 (web platform). Legal reading frame (paper in light, night in dark): a back link home, the page, then the footer. */
 import Link from 'next/link';
 import { legalCopy } from '@/lib/legal/legal-copy';
 import { Footer } from './Footer';

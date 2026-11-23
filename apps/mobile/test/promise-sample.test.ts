@@ -143,6 +143,6 @@ describe('[S04] the screen draws the engine, in the UI face, unsigned', () => {
     expect(onboarding).toMatch(/<PromiseSample \/>/);
     expect(onboarding).not.toMatch(/help\.mistakes|mishearTitle|promise\.body\b|recordingTitle/);
     expect(read('app/review.tsx')).toMatch(/r\.firstNote\.body/);
-    expect(read('app/settings/recordings.tsx')).toMatch(/copy\.settings\.help\.mistakes/);
+    expect(read('app/settings/your-words.tsx')).toMatch(/copy\.settings\.help\.mistakes/);
   });
 });

@@ -166,7 +166,7 @@ These exist in the iOS app and could not be shown by the web build. Where a clos
 - **Native pickers**: birthday and due date (including the 305-day limit and no future birthday) and the reminder time are iOS pickers; web shows a date pill or nothing. Future-date and very-old-date validation could not be driven.
 - **StoreKit**: buying, the Apple store view, Manage subscription, restore success, trial, grace and an active Plus state. Web shows Plus as not available on this device (J03-08, J11-05, J12).
 - **Add a child form** (empty name error, long name): it sits behind the Plus gate for a second book, which cannot be passed without StoreKit. The empty-name and long-name rules are shown in first run instead (J01-05, J01-06).
-- **Notifications**: the priming sheet, the schedule, delivery and tapping a reminder. Web lands on the "notifications are off" state (J13-02).
+- **Notifications**: the iOS alert straight from the switch, the schedule, delivery and tapping a reminder. Web lands on the "notifications are off" state (J13-02).
 - **Export success**: building the ZIP and the iOS share sheet need the file system; web shows the failure card (J15-02).
 - **Spoken language and Storage settings screens, language pack downloads**: these use \`expo-file-system\`, which throws on web (\`this.validatePath is not a function\`) and leaves a blank page, so they are not captured. The language picker sheet in first run (J01-12) and the Recordings screen (J14-01) are.
 - **Sharing sheets and external links**: Terms, Privacy Policy and the Help mail open Safari or Mail.

@@ -1,14 +1,14 @@
 /**
- * The Book's chapters: one per month of age, newest first, each opened by a month opener (EXPERIENCE_PASS S26).
- * Pure and tested (test/book-chapters.test.ts, test/quiet-day-book.test.ts).
+ * The Book's chapters: one per month of age, newest first, each opened by a month heading (EXPERIENCE_PASS S26,
+ * book-page.md 2). Pure and tested (test/book-chapters.test.ts, test/book-page.test.ts, test/quiet-day-book.test.ts).
  *
- * An opener reads, top to bottom: the kicker ("MONTH", or "THIS MONTH" for the current one, caps by style), the
- * numeral ("7") or the chapter's name ("The first weeks", "Before You"), the line "2 letters · From Mama", and the
- * month's date range ("September 13 to October 12"). The current month is lit, and stands alone with no sentence
- * when it has no letters yet. Nothing here counts what is missing: a quiet day is never counted (D-084), and an
- * empty month says nothing about being empty.
+ * A heading reads, top to bottom: the kicker "THIS MONTH" for the current month only (caps by style), the month in
+ * words ("18 months", "The first weeks", "Before You") and its date range ("October 12 to November 11"). No count
+ * and no box: the light is the cover band's now, and the count line ("3 letters, from Mama and Papa") lives in the
+ * Months sheet. Nothing here counts what is missing: a quiet day is never counted (D-084), and an empty month says
+ * nothing about being empty.
  *
- * VoiceOver never hears the "·" separator: every opener has a spoken label ("2 letters, from Mama").
+ * VoiceOver never hears the "·" separator: the sheet's line is spoken ("2 letters, from Mama").
  */
 import { ageOn, chapterOf } from '@scribe/core';
 import { copy, fill, pendingCopy } from '@/lib/copy';
@@ -16,6 +16,7 @@ import { ageText, dayDate } from '@/lib/dates';
 import { provenanceKey, type Provenance } from '@/lib/provenance';
 import type { Child, Entry } from '@/lib/store';
 import { authorOf } from '@/components/child/child-store';
+import { bookCopy } from './copy';
 import { isQuietMark, visibleInBook } from './quiet-day.logic';
 import { monthDay } from './shelf.logic';
 
@@ -118,24 +119,25 @@ export function bookChapters(entries: BookEntry[], child: Child, todayISO: strin
 }
 
 /* ------------------------------------------------------------------ */
-/* Month openers                                                       */
+/* Month openers: chapters as typographic headings (book-page.md 2)    */
 /* ------------------------------------------------------------------ */
 
 export interface Opener {
-  /** "This month" for the current month, "Month" above a numeral, or null (shown in caps by style). */
+  /** "This month" above the current month's heading only (shown in caps by style); null for every other month. */
   kicker: string | null;
-  /** "7" in the numeral face, or null for the first weeks and Before You. */
-  numeral: string | null;
-  /** "The first weeks" or "Before You" in title1, in place of the numeral. */
-  name: string | null;
-  /** "2 letters · From Mama" as shown, or '' when the month has no letters. */
-  line: string;
-  /** The same line spoken, never with the separator: "2 letters, from Mama". */
-  lineSpoken: string;
+  /** The month in words: "18 months", "1 month", "The first weeks" or "Before You" (title1). */
+  heading: string;
+  /** "October 12 to November 11", muted; null for Before You. */
   range: string | null;
-  /** The whole opener as one VoiceOver header: "This month, Month 7. 2 letters, from Mama. September 13 to October 12". */
+  /** The whole heading as one level-2 VoiceOver header: "This month, 18 months, October 12 to November 11". */
   a11yLabel: string;
-  lit: boolean;
+  /** The month the child is in today. */
+  current: boolean;
+  /**
+   * The month's count and who wrote it, as the Months sheet says it ("3 letters, from Mama and Papa"); '' for a month
+   * with no letters. Not shown in the heading any more (book-page.md 2: the count line lives in the month list).
+   */
+  lineSpoken: string;
 }
 
 /** A separator line as VoiceOver should hear it: "Month 4 · From Mama" becomes "Month 4, from Mama". */
@@ -143,22 +145,25 @@ export function spokenLine(text: string): string {
   return text.replace(/\s+·\s+(\S)/g, (_m, first: string) => `, ${first.toLowerCase()}`);
 }
 
+/** A month's heading in the Book, in words (book.chapterAge): "18 months", "1 month"; the first weeks and Before You by name. */
+export function chapterHeading(month: number | null): string {
+  if (month === null || month === 0) return chapterTitle(month);
+  return month === 1 ? bookCopy.chapterAgeOne : fill(bookCopy.chapterAge, { n: month });
+}
+
 export function openerOf(ch: Chapter): Opener {
-  const named = ch.month === null || ch.month === 0;
-  const kicker = ch.current ? copy.book.thisMonthLabel : named ? null : copy.book.monthKicker;
-  const line = [ch.countLine, ch.fromLine].filter(Boolean).join(' · ');
-  const lineSpoken = spokenLine(line);
+  const current = !!ch.current;
+  const heading = chapterHeading(ch.month);
   const range = ch.range ?? null;
-  const heading = ch.current ? `${copy.book.thisMonthLabel}, ${ch.title}` : ch.title;
+  const kicker = current ? copy.book.thisMonthLabel : null;
+  const lineSpoken = spokenLine([ch.countLine, ch.fromLine].filter(Boolean).join(' · '));
   return {
     kicker,
-    numeral: named ? null : String(ch.month),
-    name: named ? ch.title : null,
-    line,
-    lineSpoken,
+    heading,
     range,
-    a11yLabel: [heading, lineSpoken, range].filter(Boolean).join('. '),
-    lit: !!ch.current,
+    a11yLabel: [kicker, heading, range].filter(Boolean).join(', '),
+    current,
+    lineSpoken,
   };
 }
 

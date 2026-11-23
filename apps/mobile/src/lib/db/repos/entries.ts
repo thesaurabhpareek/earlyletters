@@ -25,6 +25,7 @@
  */
 import type { Edit, EditLevel } from '@scribe/core';
 import { changes, type RepoContext } from './context';
+import { reindexLetter } from '../../find/lifecycle';
 import type { EntrySyncState } from '../../sync/types';
 import type { BaseDirection, CaptureMode, Entry, EntryKind, OccurredPrecision } from './types';
 
@@ -152,6 +153,17 @@ export function upsert(ctx: RepoContext, e: Entry, defaults: InsertDefaults): vo
     childForUpdate, childForUpdate,
   );
   if (changes(ctx.db) === 0) throw new EntryTombstonedError();
+  reindexLetter(ctx.db, e.id);
+}
+
+/**
+ * Whether the last statement changed this letter's row; when it did, the Find index follows in the same transaction
+ * (find/lifecycle.ts reindexLetter: a no-op until the index exists).
+ */
+function moved(ctx: RepoContext, id: string): boolean {
+  const done = changes(ctx.db) === 1;
+  if (done) reindexLetter(ctx.db, id);
+  return done;
 }
 
 /** A live entry, or null (missing or tombstoned). */
@@ -165,6 +177,101 @@ export function listForChild({ db }: RepoContext, childId: string): Entry[] {
   return db
     .all<EntryRow>(
       `SELECT ${COLS} FROM entries WHERE deleted_at IS NULL AND child_id = ? ORDER BY occurred_on DESC, captured_at DESC, id DESC`,
+      childId,
+    )
+    .map(fromRow);
+}
+
+/**
+ * The columns a screen that only shows letters needs: everything except the edit list (BL-434). `machine_edits` can be
+ * the largest column of a row and only Review and export read it, so Tonight and the Book leave it in the file.
+ */
+const SHOWN_COLS = COLS.replace('machine_edits,', "'[]' AS machine_edits,");
+
+/** Live letters of one book, newest first, without their edit lists (BL-434: the Book renders words, never edits). */
+export function listForBook({ db }: RepoContext, childId: string): Entry[] {
+  return db
+    .all<EntryRow>(
+      `SELECT ${SHOWN_COLS} FROM entries WHERE deleted_at IS NULL AND child_id = ? ORDER BY occurred_on DESC, captured_at DESC, id DESC`,
+      childId,
+    )
+    .map(fromRow);
+}
+
+/** How many live letters a book holds (quiet-day marks are not letters), counted in SQL and never loaded (BL-434). */
+export function countLetters({ db }: RepoContext, childId: string): number {
+  return (
+    db.get<{ n: number }>("SELECT count(*) AS n FROM entries WHERE deleted_at IS NULL AND child_id = ? AND kind <> 'not_much'", childId)?.n ?? 0
+  );
+}
+
+/** What a reminder may know of the newest made letter: a date and two enums. */
+export interface MadeLetter {
+  capturedAt: string;
+  captureMode: CaptureMode;
+  kind: EntryKind;
+}
+
+/**
+ * The newest letter made by this phone's user across the given visible books, in one query (NS-48-R27): by
+ * `captured_at`, own author (the ledger's rule: with no account yet only rows with no author), quiet-day marks are not
+ * letters. Returns only the date and the two enums a reminder may know, never words.
+ */
+export function newestMadeLetter(
+  { db }: RepoContext,
+  childIds: readonly string[],
+  owner: string | null,
+): MadeLetter | null {
+  if (childIds.length === 0) return null;
+  const r = db.get<{ captured_at: string; capture_mode: CaptureMode; kind: EntryKind }>(
+    `SELECT captured_at, capture_mode, kind FROM entries
+     WHERE deleted_at IS NULL AND kind <> 'not_much' AND child_id IN (${childIds.map(() => '?').join(',')})
+       AND (author_id IS NULL OR author_id = ?)
+     ORDER BY captured_at DESC, id DESC LIMIT 1`,
+    ...childIds,
+    owner ?? '',
+  );
+  return r ? { capturedAt: r.captured_at, captureMode: r.capture_mode, kind: r.kind } : null;
+}
+
+/** The prompt keys of the newest `limit` letters that came from a prompt, newest first (BL-434: Tonight's draw). */
+export function recentPromptKeys({ db }: RepoContext, childId: string, limit: number): string[] {
+  return db
+    .all<{ prompt_key: string }>(
+      `SELECT prompt_key FROM entries WHERE deleted_at IS NULL AND child_id = ? AND prompt_key IS NOT NULL
+       ORDER BY occurred_on DESC, captured_at DESC, id DESC LIMIT ?`,
+      childId,
+      limit,
+    )
+    .map((r) => r.prompt_key);
+}
+
+/** The newest `occurred_on` of a book's live entries, or null for an empty book (BL-434: Tonight's days-since). */
+export function latestOccurredOn({ db }: RepoContext, childId: string): string | null {
+  return db.get<{ d: string | null }>('SELECT max(occurred_on) AS d FROM entries WHERE deleted_at IS NULL AND child_id = ?', childId)?.d ?? null;
+}
+
+/** Live letters dated from `from` to `to` (both included, YYYY-MM-DD), newest first, without edit lists (BL-434: "A month ago"). */
+export function listOccurredBetween({ db }: RepoContext, childId: string, from: string, to: string): Entry[] {
+  return db
+    .all<EntryRow>(
+      `SELECT ${SHOWN_COLS} FROM entries WHERE deleted_at IS NULL AND child_id = ? AND occurred_on >= ? AND occurred_on <= ?
+       ORDER BY occurred_on DESC, captured_at DESC, id DESC`,
+      childId,
+      from,
+      to,
+    )
+    .map(fromRow);
+}
+
+/**
+ * Tombstoned letters of one book (Recently deleted), newest first. Export reads these while an account-deletion
+ * request is open (DATA-REQ-053, BL-446). Letters erased for good on the server are not on the phone to read.
+ */
+export function listDeletedForChild({ db }: RepoContext, childId: string): Entry[] {
+  return db
+    .all<EntryRow>(
+      `SELECT ${COLS} FROM entries WHERE deleted_at IS NOT NULL AND sync_state <> 'erased' AND child_id = ? ORDER BY occurred_on DESC, captured_at DESC, id DESC`,
       childId,
     )
     .map(fromRow);
@@ -185,6 +292,24 @@ export function listWaiting({ db }: RepoContext, childId: string): Entry[] {
 export function setInBook(ctx: RepoContext, id: string, inBook: boolean): boolean {
   // A quiet-day mark is never in the book (D-084), whatever a screen asks for.
   ctx.db.run("UPDATE entries SET in_book = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL AND kind <> 'not_much'", inBook ? 1 : 0, ctx.now(), id);
+  return moved(ctx, id);
+}
+
+/**
+ * Change the date (F09-REQ-004, F04-REQ-015): the day the moment happened and whether the author named a day or only a
+ * month. Only `occurred_on` and `occurred_precision` change; the words, raw_transcript, captured_at, the book and the
+ * author never do. Refused (false) for a missing or tombstoned row, a quiet-day mark (one per day, D-084, and no page
+ * of its own), a malformed date, and a letter another author wrote (`owner` is this phone's account, or null before
+ * the first sign-in; then only a row with no author is this phone's user's, the ledger's rule).
+ */
+export function setOccurred(ctx: RepoContext, id: string, occurredOn: string, precision: OccurredPrecision, owner: string | null): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(occurredOn)) return false;
+  ctx.db.run(
+    `UPDATE entries SET occurred_on = ?, occurred_precision = ?, updated_at = ?
+     WHERE id = ? AND deleted_at IS NULL AND kind <> 'not_much' AND (author_id IS NULL OR author_id = ?)`,
+    // As ledger.ts: with no account yet, only rows with no author are this phone's user's.
+    occurredOn, precision === 'month' ? 'month' : 'day', ctx.now(), id, owner ?? '',
+  );
   return changes(ctx.db) === 1;
 }
 
@@ -205,7 +330,7 @@ export function setWordsOnce(
      WHERE id = ? AND transcript_status = 'waiting' AND raw_transcript = '' AND deleted_at IS NULL`,
     w.rawTranscript, JSON.stringify(w.machineEdits), w.finalText, w.editLevel, w.engineVersion, ctx.now(), id,
   );
-  return changes(ctx.db) === 1;
+  return moved(ctx, id);
 }
 
 /**
@@ -218,7 +343,7 @@ export function markWordsReviewed(ctx: RepoContext, id: string): boolean {
     `UPDATE entries SET transcript_status = NULL, updated_at = ? WHERE id = ? AND transcript_status = '${WORDS_UNREVIEWED}' AND deleted_at IS NULL`,
     ctx.now(), id,
   );
-  return changes(ctx.db) === 1;
+  return moved(ctx, id); // kept now, so findable now (NS-02-R33)
 }
 
 /** Letters whose machine-written words wait for the author's review, oldest first (S11's Review step reads this). */
@@ -246,7 +371,7 @@ export function replaceWords(
     'UPDATE entries SET final_text = ?, machine_edits = ?, edit_level = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL',
     w.final_text, JSON.stringify(w.machine_edits ?? []), w.edit_level, ctx.now(), id,
   );
-  return changes(ctx.db) === 1;
+  return moved(ctx, id);
 }
 
 /** A quiet-day mark already exists for this book on this day (F04 11.3; D-084 keeps one per day). */
@@ -282,7 +407,7 @@ export function setTypedWordsOnce(ctx: RepoContext, id: string, text: string): b
      WHERE id = ? AND ${TYPED_WORDS_ALLOWED}`,
     words, words, ctx.now(), id,
   );
-  return changes(ctx.db) === 1;
+  return moved(ctx, id);
 }
 
 /**
@@ -298,7 +423,7 @@ export function canTypeWords({ db }: RepoContext, id: string): boolean {
 export function tombstone(ctx: RepoContext, id: string): boolean {
   const now = ctx.now();
   ctx.db.run('UPDATE entries SET deleted_at = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL', now, now, id);
-  return changes(ctx.db) === 1;
+  return moved(ctx, id);
 }
 
 /**
@@ -307,7 +432,7 @@ export function tombstone(ctx: RepoContext, id: string): boolean {
  */
 export function undelete(ctx: RepoContext, id: string): boolean {
   ctx.db.run('UPDATE entries SET deleted_at = NULL, updated_at = ? WHERE id = ? AND deleted_at IS NOT NULL', ctx.now(), id);
-  return changes(ctx.db) === 1;
+  return moved(ctx, id);
 }
 
 /** A letter on the Recently deleted shelf: the letter plus when it was deleted (ISO). */
@@ -360,6 +485,7 @@ export function eraseRow({ db }: RepoContext, id: string): boolean {
   db.run('DELETE FROM entries WHERE id = ? AND deleted_at IS NOT NULL', id);
   const done = changes(db) === 1;
   if (done) {
+    reindexLetter(db, id); // the row is gone, so its words leave the index with it
     // Erase means every copy of its words on this phone: refused uploads and conflict copies go too.
     db.run('DELETE FROM sync_outbox WHERE entity_id = ?', id);
     db.run('DELETE FROM rejected_writes WHERE entity_id = ?', id);

@@ -23,7 +23,7 @@ vi.mock('../src/lib/db/repos/open-native', () => ({
     throw new Error('native open must not be used in tests');
   },
 }));
-vi.mock('../src/lib/billing/plan-store', () => ({ getPlan: () => ({ view: h.view, details: {}, checkedAt: null }) }));
+vi.mock('../src/lib/billing/plan-store', () => ({ getPlan: () => ({ view: h.view, details: {}, checkedAt: null }), planReadiness: async () => 'read' }));
 vi.mock('../src/lib/analytics/track', () => ({ track: (name: string, props: unknown) => void h.events.push({ name, props }) }));
 
 const store = await import('../src/lib/store');
@@ -269,7 +269,7 @@ describe('[#53] the letter page and Review are wired this way', () => {
     const gate = read('components/child/plus-gate.tsx');
     expect(gate).toMatch(/heldOn = 'tonight'/);
     // The words are chosen in plus-gate.logic.ts (P6, S22), which the sheet draws: signed in or out, online or off.
-    expect(gate).toMatch(/keepSheetView\(\{ lapsed, heldOn, synced, offline, storeSupport: plan\.storeSupport \}\)/);
+    expect(gate).toMatch(/keepSheetView\(\{ lapsed, heldOn, synced, offline, codeFailed, storeSupport: plan\.storeSupport, alpha: PLUS_ALPHA \}\)/);
     const { keepSheetView } = await import('../src/components/child/plus-gate.logic');
     for (const synced of [false, true]) {
       const base = { lapsed: false, heldOn: 'letter' as const, synced, storeSupport: 'available' as const };
@@ -287,5 +287,19 @@ describe('[#53] the letter page and Review are wired this way', () => {
     expect(review).toMatch(/if \(listChildren\(\)\.length < 2 \|\| !draft \|\| later\) return;/);
     expect(review).toMatch(/onChangeBook=\{many && !later \? pickChild : undefined\}/); // no dead control for VoiceOver
     expect(between(review, 'const save = async', 'const keepRecordingOnly = async')).toMatch(/if \(!later\) trackLetterSaved\(\{/);
+  });
+});
+
+describe('[D-133] a note whose words arrived later is kept from Review and counts like a letter', () => {
+  it('Review opens for the note, and its Keep counts it', async () => {
+    const d = store.createDraft({ childId: asha, captureMode: 'spoken', promptKey: null, audioUri: `file:///Documents/${newId()}.m4a`, audioDurationMs: 9000 });
+    expect(store.setDraftKind(d.id, 'note')).toBe(true);
+    store.saveVoiceOnlyFromDraft({ ...d, audioSha256: 'a'.repeat(64), audioBytes: 12000 }, { childId: asha, authorSignsAs: 'Mama', inBook: false, engineVersion: 5 });
+    expect(store.getEntry(d.id)?.kind).toBe('note');
+    expect(counted()).toBe(0);
+    wordsArrive(d.id, 'Asha, you found the moon.');
+    expect(laterWordsDraft(store.getEntry(d.id), own)).not.toBeNull();
+    expect((await reviewKeep(d.id, true)).outcome).toBe('kept');
+    expect(counted()).toBe(1);
   });
 });

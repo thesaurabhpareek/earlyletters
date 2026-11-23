@@ -20,7 +20,7 @@ vi.mock('../src/lib/db/repos/open-native', () => ({
 }));
 
 const store = await import('../src/lib/store');
-const { heldCardLabel, heldCardTilt, heldWords, holdOnce, keepSheetLayout, keepSheetView, storedWords, SYNCED_HELD_NOTE_CLEARED } = await import('../src/components/child/plus-gate.logic');
+const { heldCardLabel, heldCardTilt, heldWords, holdOnce, keepSheetLayout, keepSheetView, sheetTap, storedWords, SYNCED_HELD_NOTE_CLEARED } = await import('../src/components/child/plus-gate.logic');
 const { draftCard } = await import('../src/components/tonight/draft-card.logic');
 const { letterHeader } = await import('../src/components/capture/review-view.logic');
 
@@ -98,22 +98,74 @@ describe('[S22] what the Keep sheet says', () => {
   });
 });
 
-describe('[S22] the way on is always on screen (P6a critics\' S1; lens A and B on #370)', () => {
-  it('at accessibility sizes the footer holds the two buttons and nothing else; every line of text is in the scroll', () => {
+describe('[RT-PAY-09, RT-OFC-06] See Plus and Redeem a code offline, or when the code sheet fails', () => {
+  const online = async () => false;
+  const offline = async () => true;
+
+  it('offline: Apple\'s sheet is not opened, and our offline line shows (See Plus and Redeem a code)', async () => {
+    for (const tap of ['seePlus', 'redeem'] as const) {
+      const open = vi.fn(async () => 'dismissed' as const);
+      expect(await sheetTap(tap, { offline, open })).toEqual({ outcome: 'offline', note: 'offline' });
+      expect(open).not.toHaveBeenCalled();
+    }
+    expect(keepSheetView({ ...base, offline: true }).note).toBe(k.offline);
+    expect(k.offline).toMatch(/needs a connection to start/);
+  });
+
+  it('online: Apple\'s sheet opens, and only `unavailable` (offline line) or a failed code sheet (a calm line) say anything', async () => {
+    expect(await sheetTap('seePlus', { offline: online, open: async () => 'purchased' as const })).toEqual({ outcome: 'purchased', note: null });
+    expect(await sheetTap('seePlus', { offline: online, open: async () => 'dismissed' as const })).toEqual({ outcome: 'dismissed', note: null });
+    expect(await sheetTap('seePlus', { offline: online, open: async () => 'unavailable' as const })).toEqual({ outcome: 'unavailable', note: 'offline' });
+    expect(await sheetTap('redeem', { offline: online, open: async () => 'presented' as const })).toEqual({ outcome: 'presented', note: null });
+    expect(await sheetTap('redeem', { offline: online, open: async () => 'unavailable' as const })).toEqual({ outcome: 'unavailable', note: 'offline' });
+    // Before this fix a failed code sheet showed nothing at all (RT-OFC-06).
+    expect(await sheetTap('redeem', { offline: online, open: async () => 'failed' as const })).toEqual({ outcome: 'failed', note: 'codeFailed' });
+  });
+
+  it('a network check that cannot answer counts as online; a sheet that throws reads as unavailable or failed', async () => {
+    const unsure = async (): Promise<boolean> => {
+      throw new Error('no network module');
+    };
+    expect(await sheetTap('seePlus', { offline: unsure, open: async () => 'dismissed' as const })).toEqual({ outcome: 'dismissed', note: null });
+    const boom = async (): Promise<'presented'> => {
+      throw new Error('sheet');
+    };
+    expect(await sheetTap('redeem', { offline: online, open: boom })).toEqual({ outcome: 'failed', note: 'codeFailed' });
+  });
+
+  it('the failed-code line is calm, from packages/content, and the offline line still wins over it', () => {
+    const note = keepSheetView({ ...base, codeFailed: true }).note;
+    expect(note).toBe(en.errors.generic.body);
+    expect(note).not.toMatch(/fail|error|lost|wrong/i);
+    expect(keepSheetView({ ...base, offline: true, codeFailed: true }).note).toBe(k.offline);
+    expect(keepSheetView({ ...base, codeFailed: true, storeSupport: 'needs_ios_17' }).note).toBe(billingCopy.gate.needsNewerIos);
+  });
+
+  it('the sheet runs both taps through sheetTap with the app\'s own network check', () => {
+    const gate = code('components/child/plus-gate.tsx');
+    expect(gate).toMatch(/import \{ expoNetwork \} from '@\/lib\/packs\/expo-adapter'/);
+    expect(gate).toMatch(/\(await expoNetwork\.connection\(\)\) === 'none'/);
+    expect(gate).toMatch(/sheetTap\('seePlus', \{ offline: offlineNow, open: presentPlusStore \}\)/);
+    expect(gate).toMatch(/sheetTap\('redeem', \{ offline: offlineNow, open: redeemOfferCode \}\)/);
+    expect(gate).not.toMatch(/await presentPlusStore\(\)|await redeemOfferCode\(\)/);
+  });
+});
+
+describe('[S22][BL-418] the way on: pinned below AX1, last in the scroll from AX1 (E3, rule 3)', () => {
+  it('at accessibility sizes nothing is pinned: the two buttons are the last of the scroll, so large type never covers the sheet', () => {
     const ax = keepSheetLayout(true);
-    // Exactly the two buttons: no text in the footer, so it can never grow taller than the sheet (the 96-character
-    // offline note at AX5 on an SE made it about 865 pt in a 667 pt screen).
-    expect(ax.pinned).toEqual(['seePlus', 'hold']);
-    expect(ax.scroll).toEqual(['words', 'card', 'redeem']);
+    expect(ax.pinned).toEqual([]);
+    expect(ax.scroll).toEqual(['words', 'card', 'redeem', 'seePlus', 'hold']);
+    // The primary and the way out are the last things, in this order.
+    expect(ax.scroll.slice(-2)).toEqual(['seePlus', 'hold']);
     // The line that says the letter is safe comes right after the title, before the offer's note and the body.
     expect(ax.words).toEqual(['title', 'heldNote', 'note', 'body']);
     // At the default size: the card on top, then the title, the body and the held note; every button and its note
     // in the footer, as before.
     expect(keepSheetLayout(false)).toEqual({ scroll: ['card', 'words'], words: ['title', 'body', 'heldNote'], pinned: ['seePlus', 'note', 'hold', 'redeem'] });
     for (const l of [keepSheetLayout(true), keepSheetLayout(false)]) {
-      // "Keep it here for now" is in the footer at every size, so it is on the first screen at AX3 and AX5.
-      expect(l.pinned).toContain('hold');
-      expect(l.scroll).not.toContain('hold');
+      // "Keep it here for now" is on the sheet at every size: pinned below AX1, the last of the scroll from AX1.
+      expect([...l.pinned, ...l.scroll]).toContain('hold');
       // Every part once, the note either a line of the words or in the footer, never both.
       const parts = [...l.scroll.filter((b) => b !== 'words'), ...l.words, ...l.pinned];
       expect([...parts].sort()).toEqual(['body', 'card', 'heldNote', 'hold', 'note', 'redeem', 'seePlus', 'title']);
@@ -121,6 +173,7 @@ describe('[S22] the way on is always on screen (P6a critics\' S1; lens A and B o
       expect(l.scroll).toContain('words');
       expect(l.words).toContain('heldNote');
     }
+    expect(keepSheetLayout(false).scroll).not.toContain('hold');
     // At accessibility sizes the words come before the card, so the card no longer pushes them down.
     expect(ax.scroll.indexOf('words')).toBeLessThan(ax.scroll.indexOf('card'));
   });
@@ -130,7 +183,7 @@ describe('[S22] the way on is always on screen (P6a critics\' S1; lens A and B o
     expect(gate).toMatch(/const layout = keepSheetLayout\(ax\);/);
     expect(gate).toMatch(/<View key="words" [^\n]*style=\{\{ gap: tokens\.space\[3\] \}\}>\s*\{layout\.words\.map\(\(w\) => line\[w\]\)\}/);
     expect(gate).toMatch(/<ScrollView[^>]*>\s*\{layout\.scroll\.map\(\(b\) => part\[b\]\)\}\s*<\/ScrollView>/);
-    expect(gate).toMatch(/<\/ScrollView>\s*(?:\{\s*\}\s*)?<View className="gap-1" testID="plusGate\.actions"[^>]*>\s*\{layout\.pinned\.map\(\(b\) => part\[b\]\)\}/);
+    expect(gate).toMatch(/<\/ScrollView>\s*(?:\{\s*\}\s*)?\{layout\.pinned\.length > 0 \? \(\s*<View className="gap-1" testID="plusGate\.actions"[^>]*>\s*\{layout\.pinned\.map\(\(b\) => part\[b\]\)\}/);
     // The footer's note is drawn only where the layout puts it, so it is never in the footer and the words at once.
     expect(gate).toMatch(/note: layout\.pinned\.includes\('note'\) \? line\.note : null,/);
     expect(gate).not.toMatch(/footerPlacement/);
@@ -138,12 +191,23 @@ describe('[S22] the way on is always on screen (P6a critics\' S1; lens A and B o
 
   it('a note that arrives after See Plus is scrolled into view and announced, its static words only (#370 delta)', () => {
     const gate = code('components/child/plus-gate.tsx');
-    const effect = gate.slice(gate.indexOf('const openingNote = React.useRef(view.note);'), gate.indexOf('}, [view.note]);'));
+    const from = gate.indexOf('const openingNote = React.useRef(view.note);');
+    const to = gate.indexOf('}, [view.note]);');
+    // A missing anchor makes indexOf return -1, which would slice to almost the whole file and let every match pass (BL-457).
+    expect(from).toBeGreaterThanOrEqual(0);
+    expect(to).toBeGreaterThan(from);
+    const effect = gate.slice(from, to);
     expect(effect.length).toBeGreaterThan(0);
+    // The effect re-runs on a new note only: the dependency array is exactly [view.note].
+    expect(gate).toMatch(/\}, \[view\.note\]\);/);
+    expect(gate.match(/\}, \[view\.note\]\);/g)).toHaveLength(1);
+    // The note goes through the repo's announce(), not AccessibilityInfo directly (a no-op on Android, where the live region reads it).
+    expect(gate).toMatch(/import \{ announce, [^}]*\} from '@\/lib\/a11y';/);
+    expect(gate).not.toMatch(/AccessibilityInfo/);
     // A new note only (one already there when the sheet opens is read in order), after layout, with no animation.
     expect(effect).toMatch(/if \(!note \|\| note === openingNote\.current\) return;/);
     expect(effect).toMatch(
-      /setTimeout\(\(\) => \{\s*try \{\s*if \(layout\.words\.includes\('note'\)\) scroll\.current\?\.scrollTo\(\{ y: Math\.max\(0, wordsY\.current \+ noteY\.current - tokens\.space\[4\]\), animated: false \}\);\s*AccessibilityInfo\.announceForAccessibility\(note\);\s*\} catch/,
+      /setTimeout\(\(\) => \{\s*try \{\s*if \(layout\.words\.includes\('note'\)\) scroll\.current\?\.scrollTo\(\{ y: Math\.max\(0, wordsY\.current \+ noteY\.current - tokens\.space\[4\]\), animated: false \}\);\s*announce\(note\);\s*\} catch/,
     );
     expect(effect).toMatch(/return \(\) => clearTimeout\(id\);/);
     expect(gate).toMatch(/<ScrollView ref=\{scroll\}/);

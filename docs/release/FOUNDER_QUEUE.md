@@ -1,11 +1,103 @@
 # Founder queue: every step only you can do, in one order
 
-Status at Wed 28 Oct 2026, 06:30 UTC (11:30 PM PT Tue 27 Oct). Written for retro package R1-01. Read against `origin/develop` at 6bfb94a9 and GitHub REST.
+> SUPERSEDED-BY docs/product/prd/23-dependency-map-and-plan.md (parts only, see its section 8: the 28 Oct queue and the Build 12 section are history; open founder items are in 23 section 4) | 20 Nov 2026 | Rest of this file is unchanged | Registry: docs/product/prd/REGISTRY.md
 
-- **Wave 0: 10 of 15 open, 3 partly done, 2 done** (counts of 30 Oct; W0-14 moved from open to partly done). Done: items 2 and 3 (the agent lane and the daily PRD update are off). Partly done: item 4 (#309 closed; the Vercel setting is still on), item 6 (secret scanning and push protection are on; Dependabot alerts could not be read) and item 14 (build 1 prerequisites: a, Apple enrolment, is done on 29 Oct; b to f are open).
-- **What the repo can see today** (`node scripts/founder/check.mjs`, 28 Oct): default branch `main`; no branch protection on `develop` or `main` (`main` has only a ruleset: deletion, non-fast-forward, Copilot review); `nightly.yml`, `testflight.yml` and `agents.yml` not registered; `TRUSTED_SIGNING_KEYS` empty; 2 of 26 migration files recorded as applied.
-- **Update, Fri 30 Oct 2026:** W0-14a (Apple Developer Program enrolment) is done: Active as of 29 Oct, from the founder's own confirmation emails. Nothing else in this file was re-read on 30 Oct; every other status above and below stands as written on 28 Oct. The shortest path to build 1 from here is the last section of [`docs/release/TESTFLIGHT.md`](TESTFLIGHT.md).
-- **1 of 57 boxes** in `docs/FOUNDER_TASKS.md` is ticked (FT-01, Apple enrolment, 30 Oct). Steps done outside the repo (Apple, Expo, Supabase) are marked "unverified": tell the coordinator and the line changes.
+> **Standing delegation (CR-176, D-168, 22 Nov 2026).** This file is the one place a physical act for the founder is written down. Anything not on this list is not his: Karma and the exec team decide it and merge it, and nobody asks him to approve, comment on, merge, review or paste anything. A physical act is something only the account holder's hands can do: type a secret into a vendor console, sign in to Apple, Expo, Vercel, Supabase or a domain host, pay, apply a migration to a hosted project, submit a store build, test on his phones, or make a GitHub settings write the session proxy refuses. Karma prepares each one fully first. One row per act: the exact step, why only his hands can do it, what is already prepared, and the check line from the CTO skill section 3. Never a chat question, never a PR request. A secret is never written in a row.
+>
+> **Open rows added under CR-176:** Karma adds a row here when an act arrives, and the older sections below stay as history. One line each, a physical act only.
+>
+> - Apply the BL-525 migration (PR #1638) to the hosted project through the CI tag run (D-041).
+> - Click Review deployments and Approve on the staging deployment in the Environment (GitHub, Actions, Deploy database run).
+> - Republish the signed content pack with the signing key, so `supabase/functions/content/published.ts` serves the reworded onboarding story lines from `packages/content/src/stories.en.ts` (PR #1644). Only that file of the PR is signed into the pack; its other changed files (`strings.en.ts`, `pages.en.ts`, tests, docs) ship with the app build and the website, not with the pack.
+> - Click Review deployments and Approve on the `app-store` deployment of the `ios-v1.0.0-rc.1` run in Actions, Release iOS, so the TestFlight build starts (row 7).
+> - The four rows above are rows 5, 1, 2 and 7 of "Founder session sheet" below; do them in the sheet's order, with the checks there.
+> - Only if PR #1086 is revived: create the PostHog account and put its project key and region in the vendor console.
+
+## Founder session sheet: the critical path in one sitting
+
+Written under CR-176 item 4. Work top to bottom; each row is one physical act. Nothing here asks you to approve, merge, comment on or send anything for a pull request: the only clicks are the GitHub Environment deployment buttons and the vendor consoles, because only the account holder's hands can reach them. A secret is never written in this file; you type each one into its own console field and nowhere else. Every path below was checked on `origin/develop`; anything that could not be read from the repo is marked [UNVERIFIED].
+
+**How the session runs.** Karma stages each row no more than 10 minutes before you reach its page (rule 3 of `docs/agents/WALLS.md`), so no page times out under you. Stop at any row boundary. Rows 1 to 4, 7 and 8 are undoable or repeatable (row 4 is a secret you can set again). Rows 5 and 6 are one-way for the production database, and row 9 is one-way for the store. Row 9 goes last and alone. Rows 5 and 6 cannot go after 7 to 9 without making the build you test a build of a database that is about to change: row 6 follows row 5 because `policy_versions` exists in production only once row 5 has applied, and both come before the candidate build so that the phones in row 9 run against the final production database. Do row 5, read its check, stop; then do row 6 as its own step. If G6 rules servers off, rows 4 to 6 are skipped and row 9 is the only one-way act.
+
+**Before you sit down (agents and Karma; none of this is yours).** The session starts only when these hold. Each has a check that anyone can run.
+
+| Gate | Check | State when this was written |
+|---|---|---|
+| G1 Content pack words merged | PR #1644 is merged (`gh api repos/thesaurabhpareek/earlyletters/pulls/1644 --jq .merged`) | merged; of its changed files only `packages/content/src/stories.en.ts` (`onboardingStories`) is signed into the content bundle by `scripts/packs/publish.ts`; `strings.en.ts` and `pages.en.ts` ship with the app and the website |
+| G2 Release PR from `develop` into `main` merged | `git diff --stat origin/main origin/develop -- supabase/migrations` prints nothing | not met: 12 migration files are on `develop` and not on `main` (31 on `main`, 43 on `develop`), including `supabase/migrations/20261122300000_invite_redeem_retry_after_success.sql` (BL-525, #1638). The production job refuses a tag that is not on `main` (`.github/workflows/deploy-db.yml`, step "Tag must point at a commit on main") |
+| G3 `release/1.0` cut and a green launch run | newest `iOS compile` run on `develop` is green at or after the merge base (`scripts/release/launch-gate.mjs`, first job of `.github/workflows/release-ios.yml`) | no `release/*` branch and no `ios-v*` tag exist; the cut mechanics are GitHub writes Karma does under CR-176 item 5, and become a row here only if the session proxy refuses them [UNVERIFIED] |
+| G4 Dry run of the RC checks | Actions, Release iOS, job `checks` on `develop` (`.github/workflows/release-ios.yml`, manual run) is green | [UNVERIFIED] not read for the current head |
+| G5 Setup record read | `npm run release:ready -- --brief` (`scripts/release/setup-state.mjs`, steps in `docs/release/setup-steps.json`) | PASS rows are not asked again; the record is [UNVERIFIED] for today because its DNS and host probes cannot run from an agent session |
+| G6 Launch definition | servers on or off for the first store build | open between `apps/mobile/eas.json` (production profile has `EXPO_PUBLIC_SERVER_FEATURES` on) and `docs/product/prd/17-engineering-project-plan.md` section 5.5 (off). Rows 4 to 6 are on the path only if on. Karma and the exec team rule it; it is not a question for you |
+| G7 The 0.9.0 test texts may go to production | A decision line in `docs/DECISIONS.md` that names publishing the 0.9.0 `terms` and `privacy` rows in the production project (`grep -n "0.9.0" docs/DECISIONS.md`) | not met: D-138 and D-144 cover the TestFlight beta addresses only; no line rules on production, and no 1.0.0 counsel text exists (see "What is missing for row 6"). Row 6 does not start until this holds. Karma and the exec team rule it; it is not a question for you |
+
+### The rows
+
+| # | The exact step | Why only your hands | Already prepared | Check line |
+|---|---|---|---|---|
+| 1 | **Staging database apply.** Open the run for the push of #1638 (Actions, Deploy database, run 45077319481, commit `c9c12c828`). Its job `deploy to staging` is waiting for the `staging` Environment. Use the run's deployment-approval button and let it run: dry run, push, then the content-free smoke. If a newer waiting run exists, use that one (the job applies the tip of `develop`, so the newest run applies everything) | The `staging` Environment's required reviewer is a GitHub setting held by the account holder; the deployment button shows only for that account. The Environments endpoint is refused to agent sessions, so who is listed is [UNVERIFIED] | `deploy-db.yml` job `staging` (`environment: staging`) does `supabase db push --dry-run` then `--yes`, then `scripts/ops/staging-smoke.ts --db-only`; steps in `docs/ops/DEPLOY.md` "Tagging flow" steps 2 to 4; undo for a bad file is `docs/ops/DEPLOY.md` and `supabase/APPLY.md` rollback sections; Karma records the printed file names in `.github/migrations-applied.txt` by pull request afterwards | Job `deploy to staging` is green and the run summary lists the files to record; the smoke step is green (it reads `policy_versions` anonymously, so a red smoke on a new project means grants or policy rows are missing, `supabase/APPLY.md` file 25) |
+| 2 | **Republish the signed content pack.** On your Mac, signing key from your password manager (never in the repo), upload credentials in `~/.config/early-letters/r2.env`: `npx tsx scripts/packs/publish.ts release --key-file ~/.config/early-letters/signing.env --models upstream`, then `set -a; . ~/.config/early-letters/r2.env; set +a; npx tsx scripts/packs/publish.ts upload`. Skip the printed kill-switch commands (they are not part of this release). The release rewrites `supabase/functions/content/published.ts` (content bundle version 1 becomes 2). Then `node scripts/packs/secret-scan.mjs --staged` must say it found no key, and `git push` the branch `chore/packs-signed-release-2` | The signing key and the R2 upload token live only with you; the signature is the trust root the phones check (`packages/api/src/keys.ts` lists key `el-2026-11` and its backup) | `docs/ops/PACKS_HOSTING.md` sections 6 to 9 (exact commands, what each guarantees, rollback by roll-forward); `scripts/packs/publish.ts` (`release`, `upload`, `verify`); `supabase/functions/content/published.ts` currently holds bundle version 1 from the first signed release (#527), so the reworded story lines from #1644 are not served until this row; the pull request that carries `published.ts` is merged by Karma before the RC cut, as PACKS_HOSTING step 8 requires | `npx tsx scripts/packs/publish.ts verify` prints every line ok, including each live version against the committed `published.ts`; `curl -s https://packs.earlyletters.app/functions/v1/content/v1/bundle` answers a document with `"kind":"content-bundle"` and the new version. Whether the bucket, domain and token (setup steps S-06, S-07, S-11) are in place is [UNVERIFIED] |
+| 3 | **Apple consoles, one sitting.** In App Store Connect on the production record (`ascAppId` is in `apps/mobile/eas.json`): age rating questionnaire (S-34), EU DSA trader answer (S-33), Small Business Program status (S-31), privacy answers from `docs/legal/app-store-privacy-labels.md`, App Review notes and the reviewer sign-in path (BL-341; the account details go only in the console field), and the Plus products and their terms line (BL-103, `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md`) | Apple sign-in, account holder identity and the legal answers are yours | Listing text is generated from `packages/content` into `apps/mobile/store.config.json` (`scripts/release/store-config.ts`); text to enter is in `docs/store/app-store-connect-1.0.md` and `docs/store/notes-for-review-1.0.txt`; the screenshot step waits for row 8 | `npm run release:ready -- --step S-34` (and S-33, S-31) reads PASS or ATTESTED. Which of these Apple pages are already done is [UNVERIFIED] (the setup record is out of date) |
+| 4 | **Production connection secret.** In GitHub, Settings, Environments, `db-production`, set the secret `SUPABASE_DB_URL_PROD` to the project-scoped Postgres connection string of the production project, copied from the Supabase console. Type or copy it into that field only | A database credential is a secret: it goes from the vendor console to the GitHub Environment by your hands, never through an agent or a file | `deploy-db.yml` step "Check the secret exists" fails fast when it is empty; the earlier run on tag `db-v0.1.0` (run 42973935354, failed on the dry run with a parse error, `docs/product/prd/17-engineering-project-plan.md` section 3a) shows the value was malformed. The string must be a full `postgresql://` URL for the production project, with any special character in the password percent-encoded | The next run's `Check the secret exists` and `Dry run` steps are green. Whether the secret is set today is [UNVERIFIED] (Environments endpoint refused) |
+| 5 | **Production database apply (one-way, alone).** Karma pushes a new annotated tag `db-v<year>.<month>.<day>.<n>` on the `main` commit that carries the BL-525 file (gate G2). Open that tag's run in Actions, Deploy database. Read the dry run printed by job `deploy to production`, then use the deployment-approval button for the `db-production` Environment | One-way: it changes the production database, and the Environment's required reviewer is you (`docs/ops/DEPLOY.md` "Tagging flow" step 7) | The tag `db-v0.1.0` exists and points at `6863f996e` (an ancestor of `main`); a re-run of it would apply only the 31 files on `main` at that commit, so BL-525's file needs the new tag (tags never move, `CLAUDE.md`). The same tag also carries `supabase/migrations/20261123000000_invite_redeem_retry_live_role.sql` (BL-1844, `supabase/APPLY.md` File 45; check: `select pg_get_functiondef('public.invite_redeem_by_code(uuid,text,bytea,text[],text[],text[])'::regprocedure) like '%BL-1844%';` is true); it must reach `main` with File 44 (`20261122300000`) first. Dry run before push is in the job; Karma records the printed files in `.github/migrations-applied.txt` by pull request afterwards (`docs/ops/DEPLOY.md` "After a deploy") | Job `deploy to production` green; the summary lists files not yet recorded; `select version from supabase_migrations.schema_migrations order by 1 desc limit 3` in the SQL editor ends at `20261123000000`. Settings steps that follow a first apply (pepper, purge cron, housekeeping cron: `supabase/APPLY.md` steps 6, 7, 15) are [UNVERIFIED] as done |
+| 6 | **Publish the policy versions (`supabase/APPLY.md` step 8, item 2).** In the production SQL editor, as the project owner, run the block under "Row 6 SQL" below, then the check. Only if row 5 ran and G7 holds | `policy_versions` rows are inserted by the owner in the SQL editor: the service key and the app hold no insert right (`supabase/tests/access_matrix.test.mjs`, "Publishing is a SQL Editor insert as the owner") | The sha256 list and the SQL are below, built from files in the repo. Missing, so the sheet is incomplete for a store release: gate G7 and "What is missing for row 6" | The check query returns the rows you inserted; then `npx tsx scripts/ops/staging-smoke.ts --project-ref <production project ref> --db-only` (it reads `policy_versions` anonymously; Karma runs it) and the query `select document, version from public.policy_versions order by 1, 2;` agree |
+| 7 | **`app-store` Environment.** Karma pushes `ios-v1.0.0-rc.1` (version from `apps/mobile/version.json`, which reads 1.0.0). In Actions, Release iOS, the run for that tag waits at job `EAS build to TestFlight (internal)`. Use the deployment-approval button. If Karma has also dispatched the `metadata` job, approve that waiting deployment in the same visit | The `app-store` Environment's only required reviewer is the approver account, with self-review prevented and admin bypass off (header of `.github/workflows/release-ios.yml`, ADR 0026); only that account's hands can use the button. Which account holds it today is [UNVERIFIED] | Jobs before the button run without secrets: launch gate, classify tag, checks (G2) in `.github/workflows/release-ios.yml`; local pre-checks `npm run preflight:production -w @scribe/mobile` and `npm run licences:verify -w @scribe/mobile` (`docs/ops/RELEASE.md` 3.4). | Job `EAS build to TestFlight (internal)` is green; the build shows in App Store Connect, TestFlight, internal group (processing takes minutes) |
+| 8 | **Screenshots and the build on the record.** In App Store Connect upload the screenshots taken from the RC build (Asha book only; BL-340, `docs/store/screenshots/`, `docs/store/SCREENSHOT-COPY-AUDIT.md`) and attach the processed build to the 1.0.0 version. Install the RC on your phones from TestFlight | Apple sign-in; screenshots are captured on a real device | Captions: `docs/store/screenshots/captions.json`; art and capture guide under `docs/store/art/` and `docs/store/preview/CAPTURE_GUIDE.md` | App Store Connect shows the version with a build, screenshots for every size, and no yellow warning on the version page |
+| 9 | **Device run sheet on the candidate, then submit.** Run the Build 13 sheet in `docs/product/prd/17-engineering-project-plan.md` section 6.1, P0 rows first, on the phones you name (phones are not recorded in the repo, so which you hold is [UNVERIFIED]); one install per row signed in to a test account holding only Asha (`docs/qa/run-sheets/README.md` "Drill identities"); results in `docs/qa/evidence/<build>-<phone>.md` from `docs/qa/evidence/TEMPLATE.md`; row detail in `docs/qa/DEVICE_TEST_PLAN.md`. When every P0 row has a result and Karma's store-build gate reads clear, press Submit for Review in App Store Connect. D-158 releases on approval, so nothing follows | Real phones, a real Apple sign-in, and the submit button are yours; a submission cannot be withdrawn without losing the review slot | Evidence template and rows exist; `docs/release/go-no-go/TEMPLATE.md` with `node scripts/release/go-no-go-check.mjs`; `docs/release/BUILD_CHECKLIST.md` with `scripts/release/checklist-check.mjs`. **Missing:** BL-929, the small-phone run sheet, is not written (no file under `docs/qa/run-sheets/` carries it); the sheet's SE 3 baseline row has no script until it is | Every P0 row has a result file; the checker prints no error; App Store Connect shows status Waiting for Review |
+| C1 | **Size check workflow (BL-1881).** On the base ref (`develop`), copy `docs/ops/proposed/workflows/pr-size.yml` to `.github/workflows/pr-size.yml` and commit it with your own hand. Nothing else changes | The app token cannot write `.github/workflows`; CODE-R02 (400 lines, 20 files) is enforced by no workflow until this file exists | The file and `scripts/guards/pr-size.mjs` are in the repo; no secret | Open any throwaway diff over 20 files: the check is red; a small diff is green |
+| C2 | **Founder-ask check workflow (BL-1881).** On the base ref, copy `docs/ops/proposed/workflows/founder-ask.yml` to `.github/workflows/founder-ask.yml` and commit it with your own hand | Same reason as C1 | The file and `scripts/guards/founder-ask.mjs` are in the repo; no secret | A throwaway diff that asks for a founder sign-off is red; a clean one is green |
+
+### Row 6 SQL
+
+Inputs that exist in the repo: the two 0.9.0 test texts for family testers, `docs/legal/beta/terms-0.9.0.md` and `docs/legal/beta/privacy-0.9.0.md`, whose hashes are pinned in `packages/content/test/legal-beta.test.ts` (checked: `sha256sum` of each file matches the pin).
+
+| Document | Version | File | sha256 |
+|---|---|---|---|
+| terms | 0.9.0 | `docs/legal/beta/terms-0.9.0.md` | `dfa303a731edd0fe5a68e05157587e260b00ea55b286cd57512156d0da0e6af1` |
+| privacy | 0.9.0 | `docs/legal/beta/privacy-0.9.0.md` | `4ec16856b2527cfdc7987f7cb8018fd1ab095b4ecf6093d0fcfcecf4f990cfe4` |
+
+```sql
+-- supabase/APPLY.md step 8, item 2. Owner, SQL editor, production project. Re-run `sha256sum` on the two files first.
+insert into public.policy_versions
+  (document, version, change_class, requires_reconsent, published_at, new_users_from, effective_at, content_sha256, url, summary)
+values
+  ('terms',   '0.9.0', 'initial', false, now(), now(), now(),
+   decode('dfa303a731edd0fe5a68e05157587e260b00ea55b286cd57512156d0da0e6af1', 'hex'),
+   'https://earlyletters.com/legal/terms/0.9.0',
+   'First published version: a test version for family testers of the TestFlight builds.'),
+  ('privacy', '0.9.0', 'initial', false, now(), now(), now(),
+   decode('4ec16856b2527cfdc7987f7cb8018fd1ab095b4ecf6093d0fcfcecf4f990cfe4', 'hex'),
+   'https://earlyletters.com/legal/privacy/0.9.0',
+   'First published version: a test version for family testers of the TestFlight builds.');
+select document, version, encode(content_sha256, 'hex') as sha256 from public.policy_versions order by 1, 2;
+```
+
+The columns and constraints match `supabase/migrations/20261002020000_data_governance.sql` (`policy_versions`: change class `initial`, immutable rows, `summary` up to 600 characters). The url and summary are the files' own frontmatter and changelog row, not new words. Rows are immutable once inserted, so a wrong row is fixed only by a new version.
+
+**What is missing for row 6 (so the sheet is not complete for a store release).**
+- The store release needs the counsel-approved 1.0.0 `terms` and `privacy` text. No 1.0.0 file exists (`docs/legal/POLICY_VERSIONING.md` section 2.4 says `packages/content/legal/` does not exist yet), and counsel's answer is not in the repo. The 0.9.0 rows above are the test texts, "marked for counsel", and are not a store-release answer unless the exec team rules so. Whether to publish them in production is [UNVERIFIED].
+- The consent gate also needs a `sensitive-data` version (`supabase/APPLY.md` step 8 item 2, and `docs/ops/AUTH_SETUP.md` item 4). No text or hash for it is in the repo, so no SQL is drafted for it. The same holds for `contributor-notice`.
+- Whether the production project already holds `policy_versions` rows is unknown until row 5 has run and the check query is read.
+- Step 8 item 3 (your own acceptances, `supabase/APPLY.md`) is not needed when you accept the sheets in the app.
+
+### Paths checked on `origin/develop`
+
+All present: `.github/workflows/deploy-db.yml`, `.github/workflows/release-ios.yml`, `.github/workflows/testflight.yml`, `.github/workflows/ios-compile.yml`, `.github/workflows/deploy-functions.yml`, `scripts/packs/publish.ts`, `scripts/packs/secret-scan.mjs`, `scripts/release/launch-gate.mjs`, `scripts/release/setup-state.mjs`, `scripts/release/go-no-go-check.mjs`, `scripts/release/checklist-check.mjs`, `scripts/release/store-config.ts`, `scripts/ops/staging-smoke.ts`, `supabase/functions/content/published.ts`, `supabase/APPLY.md`, `docs/ops/DEPLOY.md`, `docs/ops/PACKS_HOSTING.md`, `docs/ops/RELEASE.md`, `docs/qa/DEVICE_TEST_PLAN.md`, `docs/qa/evidence/TEMPLATE.md`, `docs/qa/run-sheets/README.md`, `docs/release/BUILD_CHECKLIST.md`, `docs/release/go-no-go/TEMPLATE.md`, `docs/store/app-store-connect-1.0.md`, `docs/store/notes-for-review-1.0.txt`, `docs/legal/beta/terms-0.9.0.md`, `docs/legal/beta/privacy-0.9.0.md`. Not present: a BL-929 run sheet.
+
+
+**Run `npm run release:ready` before asking the founder anything.** It reads every setup step in [`setup-steps.json`](setup-steps.json) live (DNS, the site, the pack host, GitHub REST) and changes nothing.
+- `npm run release:ready -- --brief` prints at most 25 lines: what is FAIL or UNKNOWN, and the next three founder steps. Paste it into any ask or subagent prompt.
+- `npm run release:ready -- --step S-04b` shows one step; `--json` is the machine copy. PASS was seen live; ATTESTED is the setup record's word with its date; UNKNOWN is never done.
+- If a step is PASS or ATTESTED, do not ask for it again. The rest of this file is the 28 Oct queue, kept for history.
+
+**This file is a list of steps, not a live status.** For where things stand now, run `npm run release:ready` (it reads the setup steps live and changes nothing; see the top of `docs/release/FOUNDER_QUEUE.md`). If this file and the output of `release:ready` disagree, `release:ready` wins.
+
+Last verified: 28 Oct 2026, 06:30 UTC (11:30 PM PT Tue 27 Oct), read against `origin/develop` at 6bfb94a9 and GitHub REST. The only later re-read was on 30 Oct and covered one item (W0-14a). Nothing below has been re-verified since. Build state has moved on since 30 Oct (see `docs/release/BUILD_GATE_2026-11-08.md` and merged #697); this file does not say where the builds stand.
+
+- **Counts as of 30 Oct, not today:** Wave 0 had 10 of 15 open, 3 partly done, 2 done. Done: items 2 and 3 (the agent lane and the daily PRD update are off). Partly done: item 4 (#309 closed; the Vercel setting was still on), item 6 (secret scanning and push protection on; Dependabot alerts could not be read) and item 14 (build 1 prerequisites: a, Apple enrolment, done on 29 Oct; b to f open).
+- **What the repo could see on 28 Oct** (`node scripts/founder/check.mjs`): default branch `main`; no branch protection on `develop` or `main` (`main` had only a ruleset: deletion, non-fast-forward, Copilot review); `nightly.yml`, `testflight.yml` and `agents.yml` not registered; `TRUSTED_SIGNING_KEYS` empty; 2 of 26 migration files recorded as applied. Run the checker again for today's answer.
+- **W0-14a (Apple Developer Program enrolment)** was recorded done on 30 Oct: Active as of 29 Oct, from the founder's own confirmation emails. The shortest path to build 1 is the last section of [`docs/release/TESTFLIGHT.md`](TESTFLIGHT.md), also dated 30 Oct.
+- **Boxes in `docs/FOUNDER_TASKS.md`:** 2 of 57 were ticked when this branch was cut (FT-01 and FT-48); that file carries its own date. Steps done outside the repo (Apple, Expo, Supabase) are marked "unverified": tell the coordinator and the line changes.
 
 How to use it: work top to bottom. Each item gives the steps (or the exact section that holds them), your hands-on time, what it unblocks, and how its status can be checked. "Same as" lists the ids in older lists that this item replaces; the index at the end maps every old id. Older lists stay as they are: `docs/FOUNDER_TASKS.md` (FT), `docs/release/AUTOMATION.md` section 4 (AF), [`docs/release/TESTFLIGHT.md`](TESTFLIGHT.md) (steps 1 to 12), the 15 Oct alpha plan on commit 1ae1ace6 (F01 to F27, see `docs/release/ALPHA_PLAN.md`), and `docs/agents/BOARD.md` line 85. Where they disagree on dates, the dates in this file are not authoritative either: dates come from the dates file the coordinator names.
 
@@ -14,6 +106,80 @@ How to use it: work top to bottom. Each item gives the steps (or the exact secti
 Never paste a secret into a chat, an issue, the repo or an email (`docs/FOUNDER_TASKS.md:9`).
 
 ---
+
+## Build 12 founder actions (Tue 10 Nov 2026, newest first, read before everything below)
+
+Written by the release and operations engineer from the founder's 10 Nov answers to Karma's list and Karma's resulting rulings. Heads were read through GitHub REST on 10 Nov 2026 (UTC); a head moves when a branch is pushed, so re-read before you type a sha. One entry per action. "Words" is the exact sentence that unblocks it; a merge always names the PR and the full 40-character sha, so nobody merges a head you did not see.
+
+### What the rulings are (so every other document can be checked against them)
+
+- Sign-in is REQUIRED in Build 12 and signup must work (founder, 10 Nov, in his own words). Co-parent surfaces may show "coming soon" in Build 12; this replaces the earlier "hidden". Anything that says sign-in is optional, or that the reviewer joins the Asha sample book with an invite link, is stale. **Update, Thu 19 Nov 2026:** the "coming soon" half is superseded by D-161 (founder, 11 Nov; shipped by #720): no co-parent surface says "coming soon" in any build, and a co-parent surface shows only with server features on in an alpha build (D-162, shipped by #737 and #720). Sign-in required stands.
+- Your answers of 10 Nov, as Karma recorded them: item 1 "Sure." (settled by Karma on 10 Nov as the ruling above; see F1); item 2 "Decide. I approve." (the words are approved); item 3 "You decide." (Karma set the two-phone test, F5); item 4 "Approved" (Memory Library F1 to F15 as Karma recommended).
+- Decision-day fallback rule for Build 12, in plain words (from `product`'s Build 12 plan of 9 Nov, gates G1 to G8): on the decision day, which is two working days before the submit date, ask one question per gate G1 to G8: is its dated evidence file in the release record, yes or no. Every answer yes: submit the account-first Build 12. Any answer no: submit the staged on-device binary (server features off) and ship account-first as 1.0.1. There is no partial account-first. The submit date itself is UNVERIFIED (the programme document was not read), so the decision day has no calendar date yet; F2 asks you to name it. The gate table is in the pull request that carries this change.
+- Two-phone test slide rule: the test is Thu 12 Nov only if you do F2 and F3 by the end of Wed 11 Nov (time zone not stated; I assume Pacific). If you do not, the test moves one day for every day F2 or F3 is late, and so does everything that waits for it.
+
+### Heads read through REST on 10 Nov 2026 (all open, all draft, none merged)
+
+| PR | Base | Head (40 characters) |
+|---|---|---|
+| #700 child name optional on the server (migration) | develop | `4bf5c449ed0485c7f3853c003d4f7500d999726e` |
+| #701 first book name may be empty, date required | develop | `dc7bf25fbdba580eb87167ec3b0a1b4d1d97658d` |
+| #722 sign-in-first gate, outage and local-start logic | develop | `df703307135f7102cb80a2d3b3f8abe54a7159f9` |
+| #724 account-first Welcome and sign in, outage and offline screens | develop | `d4a9983b22fcd121fcf0bd43736d91246a643d11` |
+| #728 account-first code screen, consent hand-off | develop | `3da02d5fb920cd57f03eb5f99d528de581b9a69b` |
+| #738 the You tab as signed in, signed out and local start | develop | `0cd8e1f176ab6bbd50404a401e8fd0d4dc96db57` |
+| #764 S17 tier 0, Opening your book on a new phone | `feat/mobile-you-tab-states` (a stack branch, not develop) | `6787af24a525ede3e257d80c6a92162f4a9356de` |
+| #760 counsel packet addendum (Q78 to Q91, Q103) | develop | `f6e08de98407960f8293c542410254b5e433410f` |
+| #761 founder-device run sheet, Memory Library spikes | develop | `1a3f8cce1fde008ffd7787840bbdc5ea325b3d31` |
+| #763 Memory Library parent study plan | develop | `a510bb61ddc3d97c5c8fd31e955e29afeb0baf03` |
+| #768 store, microphone, site and reminder lines true whether or not servers are on | develop | `67fd7c3ac7970b05e825feb4ddf93ca59f393e97` |
+| #769 store and site lines for sign-in and sync | `fix/content-store-copy-true-either-way-10nov` (stacked on #768) | read it fresh; it changes (last read `c55cc73247c98ebe39e23a83403201daed57198b`) |
+| #766 | develop | superseded by #768 and #769; do not merge (last read `3767bcaf86246fb650fd997cb9cfa2ab3ae3bb9a`) |
+| #767 groom co-parent work (BL-882 to BL-889) | develop | `046fcd3ec730ce7cadfe051bfa2e2dfae7620142` |
+
+The #760, #761 and #763 heads match the ones you were given. #700 is stamped `20261109000000`; as of `origin/develop` at `526c9b8b3` it is not in `.github/migrations-applied.txt`.
+
+### The actions
+
+| # | By | Who | What | How long | Blocks | Words to unblock |
+|---|---|---|---|---|---|---|
+| F1 | Settled 10 Nov | Founder | Nothing to do. Item 1 is settled: sign-in is required in Build 12 and signup must work. Co-parent surfaces may show "coming soon" (superseded by D-161 on 11 Nov: nothing says "coming soon" in any build; see the update above). Kept so the numbering holds | 0 | Nothing | None |
+| F2 | Wed 11 Nov | Founder | Name each stack merge: the PR and the 40-character head, for #700, #701, #722, #724, #728, #738 and, when its base has merged, #764. Merge #700 first (its migration must be applied before any servers-on build that contains #701; see F4). Re-read each head right before you type it | 10 minutes to read, plus the merge clicks | The two-phone test (F5); Build 12 itself | "merge #700 at 4bf5c449ed0485c7f3853c003d4f7500d999726e", then one such line per PR with the head you see that day |
+| F3 | Wed 11 Nov | Founder | Say "build": the go to cut the Build 12 candidate from the merged stack | 1 minute | The two-phone test (F5); the release candidate | "build" |
+| F4 | After #700 merges | Founder (production database access) | Apply the #700 migration to production, then record it in `supabase/APPLY.md` and `.github/migrations-applied.txt` (gate G8). Applying production changes is yours; the ops role does not touch it | 15 minutes (my estimate, not measured) | Any servers-on build that contains #701 reaching a person | "applied 20261109000000 on production" |
+| F5 | Thu 12 Nov, one block | Founder with two phones, and a second runner if you name one | The two-phone test, gate G9 (the S17 Tier 0 screen, #764, on a new phone). One block of about 2.5 hours | 150 minutes | G9; the Build 12 decision | "start the two-phone test" on the day, after F2 and F3 are done |
+| F6 | Wed 11 Nov | Founder | Send the counsel packet yourself (#760: Q78 to Q91 plus Q103). Only you merge `docs/legal`, so nobody else sends or merges it | 15 minutes to send (my estimate) | Counsel's read of Q78 to Q91 and Q103; gate G7 counts counsel's answers or your written risk acceptance | "sent the counsel packet" and then "merge #760 at f6e08de98407960f8293c542410254b5e433410f" |
+| F7 | Before the NX-05 step below | Founder | Sign off the reviewer sign-in path (NX-05). It stays a founder step: you make the path a reviewer can use to sign in, and the Notes for Review must describe exactly that path. Today's committed notes still describe the retired path (see the stale list in the pull request) | Not measured | Gate G6 (Notes for Review) and G4 (a reviewer path run by someone who is not you) | "NX-05 reviewer path is <the path>" |
+| F8 | Before the spikes | Founder | Give the explicit build go for the Memory Library spike harness. Not given yet | 1 minute | Everything in F9 | "build the spike harness" |
+| F9 | Over 16 days after F8 | Founder with three phones | Run the Memory Library device spikes from the run sheet in #761: about 8 hours 40 minutes in total over 16 days | 520 minutes in all | The Memory Library decision | "spike run <n> done" per sheet, and "merge #761 at 1a3f8cce1fde008ffd7787840bbdc5ea325b3d31" |
+| F10 | Before the study opens | Founder | Parent study (#763): sign the bars | Not measured | The study starting | "I sign the bars in #763 at a510bb61ddc3d97c5c8fd31e955e29afeb0baf03" |
+| F11 | Before the study opens | Founder | Set the incentive figure | 2 minutes | Recruiting | "the incentive is <amount>" |
+| F12 | Before the study opens | Founder | Set the participant count | 2 minutes | Recruiting | "the study has <n> parents" |
+| F13 | Before the study opens | Founder | Choose the recruiting routes | Not measured | Recruiting | "recruit through <routes>" |
+| F14 | Before the study opens | Founder | Name a second runner | 2 minutes | Running sessions when you cannot | "second runner is <name>" |
+| F15 | Before the study opens | Founder | Verify the support lines (the addresses and numbers participants are given) work | Not measured | Starting the study | "support lines checked" |
+| F16 | Before the Build 12 cut | Founder | Merge #768 (store, microphone, site and reminder lines true either way). The microphone string is compiled into the app, so it must be in before the cut; it holds counsel-read lines, so read them first. #766 is superseded by #768 and #769: do not merge #766 | 10 minutes to read (my estimate) | The Build 12 cut | "merge #768 at 67fd7c3ac7970b05e825feb4ddf93ca59f393e97" |
+| F17 | After the decision day, with the servers-on flip | Founder | Merge #769 only together with the `eas.json` servers-on flip, and only if account-first ships. If the fallback ships (staged on-device binary), do not merge it. Its head moves, so read it fresh | 5 minutes (my estimate) | The store and site lines for sign-in and sync | "merge #769 at <40-char sha read that day>" |
+| F18 | After the Build 12 screenshots are final | Founder (by hand) | Re-render `docs/store/screenshots/ios-6.9in/06-privacy.png` from `captions.json`, then upload it in App Store Connect by hand. Nobody else touches the store account | Not measured | The privacy screenshot matching the new lines | "06-privacy.png uploaded" |
+
+None of F8 and F10 to F15 has been given. #676 (drop dormant sign-in capabilities) is merged and resolved: Karma confirms it keeps the Apple sign-in entitlement and associated domains when servers are on, so it does not conflict with required sign-in (not re-read by me). F7 and F8 to F15 have no date from the founder; "before" means ahead of the thing it blocks.
+
+### Co-parent decisions (from the #767 body, BL-882 to BL-889; none blocks Build 12)
+
+#767 is an open draft at `046fcd3ec730ce7cadfe051bfa2e2dfae7620142`. Each line is the question and the recommendation written in that PR; none is decided. Say the number and "yes" or your change.
+
+1. Who may be invited first: a second parent only (two-parent cap, D-099, D-124)? Recommended: yes; grandparents later (D-055).
+2. Must the invitee have their own account and confirm 18+ before seeing anything? Recommended: yes, with Decline leaving no row.
+3. Is Leave offered in the first sharing release? Recommended: no, until left books are listed with read, export and delete (D-113); BL-885 does that first.
+4. When a parent deletes their account, what happens to the shared book? Recommended: the other parent keeps it; the leaver's letters are deleted or exported per the spec; counsel confirms.
+5. Ship the separated-households safety floor (FAM-11) with first sharing? Recommended: yes.
+6. Counsel: invitee consent wording and second-parent consent for a child's data (D-050 is Washington-specific). Recommended: send the BL-883 spec to counsel before BL-884 is built.
+7. Should the coming-soon page name a date or offer "tell me"? Recommended: neither (SET-08).
+8. Fold BL-882 (the one coming-soon state) into #720, or a separate PR? Recommended: fold in.
+9. Which release carries real sharing (a 1.0.x under D-121)? Recommended: decide after BL-883 sizes it.
+
+Open and unverified in that PR: whether Apple accepts a visible "coming soon" placeholder (guideline 2.1). The Notes for Review must say it is a placeholder and what Build 12 includes, and hiding the surfaces stays the fallback. D-126 ("no coming soon surface") needs a D-### entry from you to be amended for Build 12; none is written. **Update, Thu 19 Nov 2026:** written. D-161 (founder, 11 Nov) rules out a "coming soon" co-parent surface in every build, so D-126 is extended rather than amended and the placeholder question falls away; D-162 records the one join-door rule (server features on AND an alpha build). Item 8 above is moot: #720 merged with no coming-soon state, so BL-882 as drafted in #767 needs re-scoping.
+
 
 ## 0. Dated steps from the CTO run (Fri 30 Oct 2026)
 
@@ -47,7 +213,7 @@ Each row carries Karma's recommendation. Nothing here is settled until you answe
 | T3 | Before the 1.0 release | Agree to one real-money purchase and cancel after release (RT-PAY-14), and one production offer code with a small limit (RT-OFC-08). Karma recommends yes: about one month of Plus, and the only proof that production products and codes work | 10 | The day 0 to 7 checks |
 | T4 | Before testers move to the store app | Wording for TestFlight testers: the store app is a separate app, so export first; nothing suggests the letters carry over (RT-LCH-05). Karma recommends one line in What to Test and the release notes | 5 | Testers keep their letters |
 | T5 | With counsel | Portrait lock against WCAG 1.3.4 while LEGAL-REQ-051 claims 2.2 AA (RT-A11Y-17). Karma recommends listing it as a known gap in the accessibility statement for 1.0 | 10 | An accessibility claim that is true |
-| T6 | Before the go/no-go | A payer whose renewal falls while offline keeps Plus for at most 1 day in code, against 7 days in the PRD (RT-SUB-13, C-NFR-004). This is technical, so Karma rules on it after reading the PRD line; it is listed here only so you see it | 0 | RT-SUB-13 |
+| T6 | Settled, nothing for you to do | Settled by CR-46 (1 Nov): a payer whose renewal falls while offline keeps Plus for 7 days past the last verified expiry, as C-NFR-004 says; after that the letter is held, never lost (RT-SUB-13). The code change is PR #517 | 0 | RT-SUB-13 |
 
 ## 1. Wave 0: this week, smallest first
 
@@ -118,6 +284,10 @@ Source: retro synthesis section 4, Wave 0 (28 Oct). Agents can prepare text for 
 **W0-15 Decide /support and its mailbox, and start a content-free data-request log** before anyone outside the founding family installs. Open. 20 minutes.
 
 ---
+
+**W0-16 Four calls from the build 1 audit (CR-47).** Answered 1 Nov 15:40 UTC (D-138): publish beta texts; no paid backup, free path; agree line above the buttons; 5% battery per 30 minutes.
+
+**W0-17 Set up the free staging backup.** Open. About 20 minutes, once, before the first build 2 sign-in. Steps 1 to 5 in `docs/ops/runbooks/staging-backup-free.md`: make an `age` key on the Mac, create the private repository `earlyletters-backups`, create the read-only backup role in staging, add two secrets, run it once. Then the monthly restore drill (15 minutes).
 
 ## 2. Next: build 2 and the alpha
 

@@ -3,7 +3,7 @@
  * in Node; plus-gate.tsx draws it.
  *
  * What the sheet says follows where the held letter waits and how it is kept:
- *   heldOn 'tonight'  a draft: it waits on Tonight, and the line names this phone (`keepGate.heldNote`). Signed in
+ *   heldOn 'tonight'  a draft: it waits on Home (the first tab, once Tonight), and the line names this phone (`keepGate.heldNote`). Signed in
  *                     with sync on it also syncs as an author-only held row (store.holdDraft queues it in the same
  *                     transaction), which `keepGate.heldNoteSynced` says; that sentence is a data-handling claim held
  *                     for counsel (C10), so it shows only once SYNCED_HELD_NOTE_CLEARED is switched on, and until then
@@ -21,8 +21,8 @@
  * "Keep it here for now" runs once (`holdOnce`): a second tap in the same moment does nothing, and a hold that fails
  * still closes the sheet but is not counted as held.
  */
-import type { StoreViewSupport } from '../../../modules/scribe-store/types';
-import { billingCopy } from '@scribe/content';
+import type { OfferCodeOutcome, StoreSheetOutcome, StoreViewSupport } from '../../../modules/scribe-store/types';
+import { billingCopy, en } from '@scribe/content';
 import { draftWords, spoken } from '@/components/tonight/draft-card.logic';
 
 export type HeldOn = 'tonight' | 'letter';
@@ -46,7 +46,15 @@ export type KeepSheetInput = {
   synced: boolean;
   /** "See Plus" answered that the store could not be reached. */
   offline: boolean;
+  /** "Redeem a code": Apple's code sheet answered `failed` (RT-OFC-06). */
+  codeFailed?: boolean;
   storeSupport: StoreViewSupport;
+  /**
+   * An alpha build (billing/alpha.ts PLUS_ALPHA, from the bundle's APP_ENV): Plus products cannot load there, so the
+   * sheet offers no store and its body is the note that Plus is not part of this test (`alpha.note`), with no Plus
+   * wording (no body, no lapsed line, no store note). Reached only past MAX_FREE_LETTERS (100). Defaults to false.
+   */
+  alpha?: boolean;
 };
 
 export type KeepSheetView = {
@@ -68,17 +76,61 @@ export const SYNCED_HELD_NOTE_CLEARED = false;
 const k = billingCopy.keepGate;
 const g = billingCopy.gate;
 
-export function keepSheetView({ lapsed, heldOn, synced, offline, storeSupport }: KeepSheetInput): KeepSheetView {
+export function keepSheetView({ lapsed, heldOn, synced, offline, codeFailed = false, storeSupport, alpha = false }: KeepSheetInput): KeepSheetView {
   const onLetter = heldOn === 'letter';
+  const heldNote = onLetter ? k.heldNoteLetter : synced && SYNCED_HELD_NOTE_CLEARED ? k.heldNoteSynced : k.heldNote;
+  // Alpha: no store, no Plus wording; the body is the alpha note and nothing sits under the buttons.
+  if (alpha) return { body: billingCopy.alpha.note, heldNote, note: null, canOpenStore: false };
   const canOpenStore = storeSupport === 'available';
   const note =
-    storeSupport === 'needs_ios_17' ? g.needsNewerIos : storeSupport === 'unsupported' ? g.unavailable : offline ? (onLetter ? k.offlineLetter : k.offline) : null;
+    storeSupport === 'needs_ios_17'
+      ? g.needsNewerIos
+      : storeSupport === 'unsupported'
+        ? g.unavailable
+        : offline
+          ? onLetter
+            ? k.offlineLetter
+            : k.offline
+          : codeFailed
+            ? en.errors.generic.body
+            : null;
   return {
     body: lapsed ? k.lapsedBody : k.body,
-    heldNote: onLetter ? k.heldNoteLetter : synced && SYNCED_HELD_NOTE_CLEARED ? k.heldNoteSynced : k.heldNote,
+    heldNote,
     note,
     canOpenStore,
   };
+}
+
+/** What a tap on "See Plus" or "Redeem a code" leaves under the button. */
+export type SheetTapNote = 'offline' | 'codeFailed' | null;
+
+/**
+ * One tap on "See Plus" or "Redeem a code" (RT-PAY-09, RT-OFC-06). Offline, Apple's sheet would open with
+ * its own error (the store view) or answer `failed` (the code sheet), and the sheet would say nothing. So reachability
+ * is checked first, with the app's own network check: known offline, Apple's sheet is not opened and our offline line
+ * shows. Unknown counts as online (Apple's sheet then says what it knows). After the sheet: `unavailable` is the
+ * offline line, as before; a `failed` code sheet is a calm try-again line. Never throws.
+ */
+export async function sheetTap<O extends StoreSheetOutcome | OfferCodeOutcome>(
+  tap: 'seePlus' | 'redeem',
+  deps: { offline: () => Promise<boolean>; open: () => Promise<O> },
+): Promise<{ outcome: O | 'offline'; note: SheetTapNote }> {
+  let offline = false;
+  try {
+    offline = await deps.offline();
+  } catch {
+    offline = false;
+  }
+  if (offline) return { outcome: 'offline', note: 'offline' };
+  let outcome: O;
+  try {
+    outcome = await deps.open();
+  } catch {
+    outcome = (tap === 'redeem' ? 'failed' : 'unavailable') as O;
+  }
+  const note: SheetTapNote = outcome === 'unavailable' ? 'offline' : tap === 'redeem' && outcome === 'failed' ? 'codeFailed' : null;
+  return { outcome, note };
 }
 
 /** The letter's words on one line: runs of white space become one space, so two lines show its first words. */
@@ -122,6 +174,20 @@ export function holdOnce(guard: { current: boolean }, hold: () => boolean): Hold
 }
 
 /**
+ * The Keep step's `hold` (RT-PLS-10: Plus not known yet on this phone, so no Keep sheet): hold the letter once, then say
+ * the held line and leave Review, once. A second Keep tap in the same moment does nothing: one hold, one line, one
+ * navigation (`holdOnce`'s 'again'). A hold that does not take still says the line and leaves, as "Keep it here for now"
+ * does, because the draft is still where it was. Never throws past `holdOnce`.
+ */
+export function holdWithoutSheet(guard: { current: boolean }, steps: { hold: () => boolean; say: () => void; leave: () => void }): HoldOutcome {
+  const outcome = holdOnce(guard, steps.hold);
+  if (outcome === 'again') return outcome;
+  steps.say();
+  steps.leave();
+  return outcome;
+}
+
+/**
  * The card's tilt (S22 Visual: "rotated -2 degrees"). Held still at accessibility text sizes, where a tilted block of
  * large type is harder to read and its corners would crowd the screen edge.
  */
@@ -146,16 +212,16 @@ export type KeepSheetLayout = {
  * Where each part of the sheet sits (P6a critics' pass S1, and both lenses on #370). At the default size the held card is
  * at the top, then the title, the body and the held note, and every button with its note is in the footer.
  *
- * At accessibility text sizes the words alone fill the first screen (at AX3 the title, body and held note reach about
- * 780 pt), so the footer holds the two buttons and nothing else: "See Plus" and "Keep it here for now", always on
- * screen. Every line of text is in the scroll, because uncapped text in a footer can grow taller than the sheet (the
- * 96-character offline note at AX5 on an SE made the footer about 865 pt in a 667 pt screen). The held note, the line
+ * From AX1 up nothing is pinned (A11Y-AND-TYPE-AUDIT-20nov rule 3, ruling E3): the words alone fill the first screen
+ * (at AX3 the title, body and held note reach about 780 pt), and a pinned two-button footer would take over a quarter
+ * of the sheet. So every line of text and both buttons are in the scroll, the two buttons last: "See Plus", then
+ * "Keep it here for now". A big size costs a scroll, not a lost control. The held note, the line
  * that says the letter is safe, comes right after the title (F14-REQ-028: said before any offer), then the note about
  * See Plus, then the body; the held card and "Redeem a code" follow. The scroll comes first in reading order, so the
  * held note is read before any button at every size.
  */
 export function keepSheetLayout(accessibilitySize: boolean): KeepSheetLayout {
   return accessibilitySize
-    ? { scroll: ['words', 'card', 'redeem'], words: ['title', 'heldNote', 'note', 'body'], pinned: ['seePlus', 'hold'] }
+    ? { scroll: ['words', 'card', 'redeem', 'seePlus', 'hold'], words: ['title', 'heldNote', 'note', 'body'], pinned: [] }
     : { scroll: ['card', 'words'], words: ['title', 'body', 'heldNote'], pinned: ['seePlus', 'note', 'hold', 'redeem'] };
 }

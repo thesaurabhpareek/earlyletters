@@ -53,6 +53,13 @@ export interface SelectInput {
   role: 'parent' | 'contributor';
   /** The child is with the author right now (Read together / write together). */
   together: boolean;
+  /**
+   * The `child-input` flag (PRIV-R20, BL-119): prompts that ask a child to speak or type are offered only when this is
+   * true AND `together` is true. Absent means false, which is the production setting until counsel's written opinion
+   * is linked. With it off, a `together` prompt is never chosen, by any path, even from a library that has nothing else
+   * to offer.
+   */
+  childInput?: boolean;
   /** Prompt keys used recently by this author, most recent first. */
   recentKeys: string[];
   /** Stable per night, e.g. the ISO date, so a reopened app shows the same prompt. */
@@ -62,6 +69,24 @@ export interface SelectInput {
    * different one. Unlike `recentKeys` this is not a preference: it holds unless nothing else exists.
    */
   excludeKeys?: readonly string[];
+  /**
+   * The book's child has no name (NX-31-R3: the first book may be made with the name left empty). Prompts that are
+   * about the name itself ("Tell {child} how the name was chosen") are not offered. Absent means false. If skipping
+   * them would leave nothing, they are offered after all, so selection never throws for this.
+   */
+  childNameBlank?: boolean;
+}
+
+/**
+ * The last part of a prompt key that marks a prompt as being about the child's name, as in `opening.0-3.name` and
+ * `opening.before.name-story`. Matched on the last segment only: `together.13-18.name-things` is about naming
+ * objects in the room and stays.
+ */
+export const NAME_THEMED_SEGMENTS: readonly string[] = ['name', 'name-story'];
+
+/** True for a prompt whose question is the child's name, and so cannot be asked of a child who has none. */
+export function isNameThemed(key: string): boolean {
+  return NAME_THEMED_SEGMENTS.includes(key.slice(key.lastIndexOf('.') + 1));
 }
 
 export const GAP_DAYS = 5;
@@ -83,16 +108,16 @@ function hash(s: string): number {
 }
 
 /** Which kind of prompt tonight calls for. Order matters: the most specific need wins. */
-export function kindFor(input: Pick<SelectInput, 'hardStretch' | 'together' | 'role' | 'daysSinceLastEntry'>): PromptKind {
+export function kindFor(input: Pick<SelectInput, 'hardStretch' | 'together' | 'role' | 'daysSinceLastEntry'> & { childInput?: boolean }): PromptKind {
   if (input.hardStretch) return 'hard';
-  if (input.together) return 'together';
+  if (input.together && input.childInput === true) return 'together';
   if (input.role === 'contributor') return 'family';
   if (input.daysSinceLastEntry !== null && input.daysSinceLastEntry >= GAP_DAYS) return 'gap';
   return 'opening';
 }
 
 /**
- * Deterministic: same inputs, same prompt. Throws only if the library is empty.
+ * Deterministic: same inputs, same prompt. Throws only if the library is empty (leaving out `together` prompts while `child-input` is off).
  *
  * Who sees what: a book before the birth is offered the `before` set and nothing else; a born child is never offered
  * it. Then the usual order, kind first, then the openings that fit, then any opening.
@@ -102,7 +127,10 @@ export function kindFor(input: Pick<SelectInput, 'hardStretch' | 'together' | 'r
  * fit this child. Without exclusions nothing is widened, so a night's first prompt does not depend on this.
  */
 export function selectPrompt(input: SelectInput, library: readonly Prompt[]): Prompt {
-  const live = library.filter((p) => !p.retired);
+  const childInputOn = input.childInput === true && input.together;
+  const alive = library.filter((p) => !p.retired && (childInputOn || p.kind !== 'together'));
+  const unnamed = input.childNameBlank === true ? alive.filter((p) => !isNameThemed(p.key)) : alive;
+  const live = unnamed.length > 0 ? unnamed : alive;
   if (live.length === 0) throw new Error('selectPrompt: empty prompt library');
   const kind = kindFor(input);
   const preBirth = input.beforeBirth === true && live.some((p) => p.band === 'before');

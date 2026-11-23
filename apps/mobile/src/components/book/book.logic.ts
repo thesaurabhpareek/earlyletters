@@ -246,3 +246,38 @@ export function firstBookViewThisSession(): boolean {
   settledThisSession = true;
   return true;
 }
+
+/* ------------------------------------------------------------------ */
+/* Watching the store (BL-1428, BL-458 part 3)                          */
+/* ------------------------------------------------------------------ */
+
+/** The letters the Book has read, and whose book they are (`null` before there is a book). */
+export type BookRead = { childId: string | null; entries: Entry[] };
+
+/** Whether two reads of one book are the same letters. Every field is compared, so an edit to a letter counts as a difference. */
+export function sameLetters(a: readonly Entry[], b: readonly Entry[]): boolean {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
+/** The read to keep after a fresh read: the one already held when it is the same book and the same letters (no re-render), else the fresh one. */
+export function caughtUp(held: BookRead, childId: string, fresh: Entry[]): BookRead {
+  return held.childId === childId && sameLetters(held.entries, fresh) ? held : { childId, entries: fresh };
+}
+
+/**
+ * Follows one book's letters. It subscribes first, then reads once more and keeps that read only when it differs from
+ * what the Book already holds, so a change that landed between the Book's first read and this subscribe is picked up at
+ * once and not at the next change. Every later change rereads. Returns the unsubscribe.
+ */
+export function watchBook(o: {
+  childId: string;
+  read: (childId: string) => Entry[];
+  subscribe: (listener: () => void) => () => void;
+  set: (next: (held: BookRead) => BookRead) => void;
+}): () => void {
+  const off = o.subscribe(() => o.set(() => ({ childId: o.childId, entries: o.read(o.childId) })));
+  o.set((held) => caughtUp(held, o.childId, o.read(o.childId)));
+  return off;
+}

@@ -35,6 +35,13 @@ describe('visibleInBook', () => {
   });
 });
 
+describe('visibleInBook: two phones of one author', () => {
+  it('shows one quiet-day row for one day, and keeps rows for other days apart', () => {
+    const entries = [oldMark('q1', '2026-10-03'), newQuietMark({ id: 'q2', occurredOn: '2026-10-03', capturedAt: base.capturedAt }), oldMark('q3', '2026-10-02')];
+    expect(visibleInBook(entries).map((e) => e.id)).toEqual(['q1', 'q3']);
+  });
+});
+
 describe('what may be read, printed or moved', () => {
   it('a mark is never letter-like, whatever its text or inBook says', () => {
     expect(isQuietMark(oldMark('q1', '2026-10-02'))).toBe(true);

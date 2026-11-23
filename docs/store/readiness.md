@@ -407,4 +407,4 @@ Every PNG under `docs/store/art` and `docs/store/screenshots` was viewed before 
 | Empty space inside cards | `04-book` (all sizes) | Month cards have blank space under the count line, where a cover or first line would sit. |
 | One-word last line | `promo-story-1080x1920-night.png` | The subline wraps so "talking." sits alone. |
 | Fixed fictional data | all screenshots | "Papa", "Mama" and Asha, month 9, letter counts 12, 11, 9. These are mock data and must match the build that is submitted. |
-| Screenshots show an app that is not built | all screenshots | They come from `screenshots/src/entry.tsx`, not from the running app. Replace with real captures before submission (see 10.3). |
+| Screenshots show an app that is not built | all screenshots | Superseded 1 Nov 2026: the frames are now captured from the real app (`docs/store/screenshots/README.md`). |

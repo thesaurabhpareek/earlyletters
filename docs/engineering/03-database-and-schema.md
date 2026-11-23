@@ -50,7 +50,7 @@ The database holds the letters families keep for their children. This chapter ma
 
 **DB-R10 (MUST NOT)** A migration file contains `begin;` or `commit;`. *Why:* the Supabase CLI wraps each file in a transaction (DB-16). *Enforced by:* pending PR #32 (`[DB-16]` check in `supabase/tests/hardening.test.mjs`).
 
-**DB-R11 (MUST)** A PR that adds a migration also updates `supabase/APPLY.md` while it exists, adds tests under `supabase/tests/`, passes `npm run test:db`, and carries the founder's `approve-migration` label before merge. *Why:* D-041 fence. *Enforced by:* `npm run test:db` in `.github/workflows/ci.yml`; label gate not yet (CI-01, CI-11, pending PR #30 `fence.yml`).
+**DB-R11 (MUST)** A PR that adds a migration also updates `supabase/APPLY.md` while it exists, adds tests under `supabase/tests/`, passes `npm run test:db`, and is merged by Karma (CR-73); the `approve-migration` label is not a merge step (D-117), and applying the migration to a hosted project stays the founder's. *Why:* D-041 fence. *Enforced by:* `npm run test:db` in `.github/workflows/ci.yml`; label gate not yet (CI-01, CI-11, pending PR #30 `fence.yml`).
 
 ### Access: RLS, views, grants, functions
 
@@ -116,7 +116,7 @@ Review prompts for a `supabase/**` PR: does any grant widen? does any cascade cr
 
 ## Exceptions
 
-Only the founder grants an exception, recorded as a `D-###` in `docs/DECISIONS.md` (standing) or in the PR body with the founder's approval comment (one-off). Exceptions to DB-R13, DB-R15, DB-R17 and DB-R19 are not grantable for content tables.
+Only Karma, with the owning executive, grants an exception (CR-176), recorded as a ruling or a `D-###` in `docs/DECISIONS.md` (standing) or in the PR body naming the ruling (one-off). Exceptions to DB-R13, DB-R15, DB-R17 and DB-R19 are not grantable for content tables.
 
 ## Open questions
 
