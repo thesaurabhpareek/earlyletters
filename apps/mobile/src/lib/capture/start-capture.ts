@@ -11,16 +11,17 @@
  * rules themselves are pure in ./start-capture.logic.ts.
  */
 import { router } from 'expo-router';
-import { markOn, newQuietMark } from '@/components/book/quiet-day.logic';
 import { childIndexOf, promptKindOf, trackCaptureStarted } from '@/lib/analytics/track';
 import { armListenStart } from '@/lib/resilience/start-intent';
 import { getActiveChildId, listEntries, saveEntry, todayISO, uuidv7 } from '@/lib/store';
+import { keepQuietDay } from './quiet-day-save.logic';
 import { planCapture, type CaptureRequest, type CaptureRoute, type CaptureSource } from './start-capture.logic';
 
 export type CaptureStarted =
   | { kind: 'route'; pathname: CaptureRoute }
   | { kind: 'photo'; pathname: '/listen' }
   | { kind: 'quietDay'; markId: string }
+  | { kind: 'quietDayNotSaved' }
   | { kind: 'reserved'; source: CaptureSource };
 
 export function startCapture(req: CaptureRequest): CaptureStarted {
@@ -45,11 +46,8 @@ export function startCapture(req: CaptureRequest): CaptureStarted {
     case 'quietDay': {
       // One mark a day: a second tap adds nothing. The words are never written by the app (D-084).
       // Today by the clock at the tap, not the room's last read.
-      const day = todayISO();
-      const existing = markOn(listEntries(), day);
-      const mark = existing ?? newQuietMark({ id: uuidv7(), occurredOn: day, capturedAt: new Date().toISOString() });
-      if (!existing) saveEntry(mark);
-      return { kind: 'quietDay', markId: mark.id };
+      // A mark that cannot be saved still answers: Home shows a calm line (BL-1723).
+      return keepQuietDay({ day: todayISO(), now: new Date().toISOString(), id: uuidv7, entries: listEntries, save: saveEntry });
     }
     case 'reserved':
       return plan;
