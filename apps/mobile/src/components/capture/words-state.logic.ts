@@ -293,12 +293,13 @@ export function recordingKept(card: Pick<WordsCard, 'state'> | null): boolean {
 
 /**
  * Why a take stopped early, one line above the card or the letter (S14): leaving the app, a call or an alert (Listen's
- * `stopped` param), or the app closing (the launch sweep found the take: `recoveredAt`). Finish needs no line. Every
- * line ends "Everything before that is kept.", so none shows when no recording was kept (S16: `kept` false).
+ * `stopped` param), or the app closing (the launch sweep found the take: `recoveredAt`). Finish needs no line. The
+ * lines that say so end "Everything before that is kept."; none shows when no recording was kept (S16: `kept` false). Leaving the
+ * app or a lock (BL-1787) says only what happened: no keep promise until BL-1786 or a trace of the background path shows it.
  */
 export function stopLine(s: { stopped?: string | null; recoveredAt: string | null; spoken: boolean; kept: boolean }): string | null {
   if (!s.spoken || !s.kept) return null;
-  if (s.stopped === 'background') return wordsCopy.pack.stoppedInBackground;
+  if (s.stopped === 'background') return wordsCopy.pack.stoppedLeftOrLocked;
   if (s.stopped === 'interruption') return wordsCopy.pack.stoppedInterruption;
   if (s.recoveredAt) return wordsCopy.pack.stoppedClosed;
   return null;
