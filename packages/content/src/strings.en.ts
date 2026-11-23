@@ -1056,8 +1056,6 @@ export const en = {
       namesValueOn: "On",
       namesValueOff: "Off",
       promiseTitle: "Our promise",
-      // Shown above the switches. The promise itself is `trust.promise`.
-      controlsHelp: "These switches are yours. Export your book, stop sharing or delete everything, any time.",
       // The Privacy page as ruled (CPrivO-5; privacy-settings.md 3 and 4; SETTINGS_AND_ACCOUNT.md 11): the promise
       // (`trust.promise`) at the top, then facts, then controls, then the documents. Every line below is a privacy
       // statement for the claims registry (LEGAL-REQ-044) once it exists; `legal` reviews them before release.
@@ -1081,6 +1079,9 @@ export const en = {
       // content.md 4.10 privacy.whoLockOff: the plain fact while there is no app lock (CPrivO-5 replaces P6's
       // "Only you, on this phone.", false for anyone who knows the passcode).
       whoLockOff: "Anyone who can unlock this iPhone can open the book.",
+      // Exec ruling 23 Nov 2026 (item 2c): a present-tense practice claim, true while no one looks; Privacy Policy 3 names the cases.
+      // Never add "every access is logged" (F17 8.2 conditions not met).
+      staffAccess: "We don't look at your letters. The few times we could are written in the Privacy Policy.",
       // P8: reminders fill names and months only (planner.ts), never letter text (M13 rule 3, Privacy Policy 5).
       notificationsLine: "Notifications never show the words of a letter.",
       canDoTitle: "What you can do",
@@ -1098,15 +1099,15 @@ export const en = {
   // (PRD.md K-15, PRD-REQ-002; text from consumer-health-data-notice.md HN-4, counsel to approve).
   sensitiveConsent: {
     title: "Before your book syncs",
-    body: "Letters can hold private things, like health details about you or {child}. To sync your book and share it with the family you choose, we store what you write on our servers.",
-    use: "We use it only to keep and show your book. We never sell it, use it for ads or use it to train machine learning models.",
+    body: "Letters can hold private things, like health details about you or {child}. To sync your book across your phones, we store what you write on our servers.",
+    use: "We use it to keep and show your book. We never sell it, use it for ads or use it to train machine learning models.",
     // Names only controls that exist (in-app-disclosures.md row "Sensitive-data agreement": no withdrawal control yet,
     // D-128, BL-485, so the sheet promises none). Settings, Account shows "Agree and sync" after a no (account-view.logic.ts
     // `offerSync`) in every servers-on build. It says nothing about deleting: Delete account is hidden in the preview
     // profile (no EXPO_PUBLIC_ACCOUNT_DELETION), and the erasure clocks (30, 31, 38, 45 days) are not a sheet sentence.
-    changeLater: "You can turn them on later in Settings, Account.",
+    changeLater: "You can turn syncing on later in Settings, Account.",
     // v1.0 has no backup (D-059); counsel to re-approve this line with the HN-4 text.
-    declineHelp: "If you keep it on this phone, syncing and sharing stay off.",
+    declineHelp: "If you keep it on this phone, syncing stays off.",
     agreeButton: "Agree and sync",
     declineButton: "Keep on this phone",
   },
@@ -1571,8 +1572,8 @@ export const en = {
     voice: "We never imitate your voice. Your original recording is always kept exactly as you made it.",
     // Sign-in screen, under the buttons (Apple, Google, email link).
     signIn: {
-      why: "An account keeps your book safe when you change phones.",
-      privacy: "You choose who else can read your letters. We never sell them and never use them for ads.",
+      why: "An account keeps the words of your letters with you when you change phones.",
+      privacy: "Your letters are yours. We never sell them and never use them for ads.",
       email: "We use your email only to sign you in and to write to you about your account.",
     },
     // Once, the first time someone records (a quiet line on Listening or under the first Review).
