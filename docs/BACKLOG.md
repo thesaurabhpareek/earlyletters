@@ -9110,7 +9110,7 @@ Queue order (the dispatcher takes the first `ready` row an agent owns, in file o
 
 #### BL-1792 "Read from here": start Read together at a month or the letter in view
 - Status: ready. Mode: agent. Owner: mobile engineer, content. Milestone: M15. Size: M. Depends on: BL-1735 (the dispatcher picks it only once BL-1735 is `done`, which follows the merge of the spec).
-- Priority: P1. Gate: BL-1735 `done`. The list order is checked: see section 3 of the spec. Lane: mobile.
+- Priority: P1. Gate: BL-1735 `done`. The list order is checked: see section 3 of the spec. Lane: mobile. File order with the other letter-page and Read together rows: after BL-1790, BL-1789, BL-1791 and BL-1823 (last). BL-1798 builds after BL-1791; the two do not collide (spec section 5).
 - Spec: `docs/design/specs/13-READ-A-YEAR-TOGETHER-23nov.md`, section 5 (entry points, `from` param, whole-book list) and requirements RYT-06 to RYT-11. The build stays behind `EXPO_PUBLIC_READ_THE_YEAR` until the founder answers question 1 in the spec.
 - Satisfies: PER3-007 (P1).
 - Problem and evidence: a later letter is eight taps away. The review assumed the list ends oldest first and did not read the list order.
@@ -9147,7 +9147,7 @@ Queue order (the dispatcher takes the first `ready` row an agent owns, in file o
 #### BL-1788 One line under Add to the book and Keep private that says what each changes
 - Status: ready. Mode: agent. Owner: content. Milestone: M15. Size: S. Depends on: BL-1710 (the dispatcher picks it only once BL-1710 is `done`, which follows the merge of the spec).
 - Priority: P1. Gate: written with BL-1710 so Review is touched once. Lane: content (product checks it against the PRD privacy rows).
-- Spec: `docs/design/specs/14-REVIEW-QUIET-DEFAULT-23nov.md`, section 5 (facts, limits and placement) and QD-08, QD-09. Correction to this row: no printed-book clause, because D-010 says digital only in v1.
+- Spec: `docs/design/specs/14-REVIEW-QUIET-DEFAULT-23nov.md`, section 5 (facts, limits and placement) and QD-08, QD-09. Correction to this row: no printed-book clause, because D-010 says digital only in v1. Review is touched twice unless one mobile row builds the fold and these lines together: the fold has no build row yet (spec 14 section 8), so the gate "touched once" holds only if Karma has product file that row.
 - Satisfies: PER1-004 (P1).
 - Problem and evidence: she cannot tell what each button changes (who can read it, whether it is in the printed book; the printed-book half is dropped, D-010).
 - Scope: one plain line per button. The two-parent audience line is BL-1819.

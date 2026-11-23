@@ -27,7 +27,7 @@ Not built, and what this spec settles: the end-of-year behaviour for a year stil
 
 PER3-007 assumed the list "ends oldest first" and said it did not read the order. I read it.
 
-- `listEntriesForChild` returns letters newest first: `ORDER BY occurred_on DESC, captured_at DESC, id DESC` (`apps/mobile/src/lib/db/repos/entries.ts` line 179).
+- `listEntriesForChild` (`apps/mobile/src/lib/store.ts`) calls `listForChild`, which returns letters newest first: `ORDER BY occurred_on DESC, captured_at DESC, id DESC` (`apps/mobile/src/lib/db/repos/entries.ts` line 179, in `listForChild`).
 - Read together reverses that list (`read-together.tsx` line 67, `.reverse()`), so it plays oldest first. The assumption holds.
 - The Months sheet lists months newest first and the year rows newest first (`read-year.logic.ts` `yearRows`, sorted by year number descending). The Book is newest first.
 - So a later letter in a long book is up to N minus 1 "Next letter" taps from the start, which is the finding.
@@ -53,7 +53,7 @@ A parent can start Read together at a letter or at a month, so a later letter is
 Two entry points, both shared with the year rows through one change to Read together: it accepts a letter id, `from`, next to `childId` and `year`.
 
 1. Letter page (B-S08). A first row in the "This letter" list, "Read from here" (words by `content`), with the book glyph used by the year rows, at least 56 pt, one line at default size. Shown on a letter Read together can play: in the book, with words, not waiting, not private (the same filter as `readableInBook`, `quiet-day.logic.ts` line 53). Shown to the other parent on their letters too, since reading is not an editing control. Absent on a private or waiting letter. It starts at that letter.
-2. Months sheet (B-S07). Each month row keeps its single tap, which goes to the month as built. Each row gains a second control at its trailing edge, "Read from here", a 44 pt minimum target. At accessibility text sizes the control moves under the row text, full width. For VoiceOver the row also exposes "Read from here" as an action. It starts at the first playable letter of that month, by about-day then capture time. A month with no playable letter shows no second control.
+2. Months sheet (B-S07). Each month row keeps its single tap, which goes to the month as built. Each row gains a visible second control at its trailing edge, "Read from here", a 44 pt minimum target, for sighted touch. At accessibility text sizes the control moves under the row text, full width. For VoiceOver the row stays one element and "Read from here" is an accessibility action on that row, not a separate element; the visible control is hidden from VoiceOver so it is not read twice. A control nested inside a row that is one VoiceOver element would be unreachable, so the action is the VoiceOver path. Voice Control reaches the visible control by its label. It starts at the first playable letter of that month, by about-day then capture time. A month with no playable letter shows no second control.
 
 How it plays:
 
@@ -61,6 +61,8 @@ How it plays:
 - If `year` and `from` are both present, `year` wins and `from` is ignored. The interface never sends both.
 - If the letter id is no longer playable when the screen opens (deleted, made private, words waiting), Read together opens at the first letter and says nothing.
 - The closing page is the end-of-book page.
+
+Place in the build order. The letter-page and Read together rows share files, and their file order is BL-1790, BL-1789, BL-1791, BL-1823 (`docs/BACKLOG.md`). BL-1792 goes after BL-1823, last, because it adds a row to the letter page's "This letter" list and a `from` param to Read together, and it must start from the layout those four settle. BL-1798 (the Large print floor, CDesO ruled) builds after BL-1791 and BL-1786. It does not collide with this spec: it changes the reading size of letter text and offers the Aa sheet in Read together; this spec adds a start letter, a row and a control. If both are in flight the only shared file is `read-together.tsx`, so they merge in order, not together.
 
 ## 6. Requirements
 
@@ -77,7 +79,7 @@ One behaviour per id. Device column: the check that is run today is a unit or so
 | RYT-07 | Given a private or waiting letter, When its letter page opens, Then there is no "Read from here" row | PER3-007, NS-24-R3 | `[RYT-07] no start on an unplayable letter` |
 | RYT-08 | Given a month row in the Months sheet, When "Read from here" is tapped, Then Read together opens on that month's first playable letter, and tapping the row body still goes to the month | PER3-007 | `[RYT-08] read from a month` |
 | RYT-09 | Given `from` names a letter that is no longer playable, When Read together opens, Then it opens on the first letter with no message | PER3-007 | `[RYT-09] stale start falls back to the first letter` |
-| RYT-10 | Given accessibility text sizes and VoiceOver, When the Months sheet opens, Then each month's "Read from here" is at least 44 pt, reachable, and also available as a row action | PER3-007 | `[RYT-10] second control reachable at large text` |
+| RYT-10 | Given accessibility text sizes, When the Months sheet opens, Then each month's visible "Read from here" is at least 44 pt, and the row is one VoiceOver element whose actions include "Read from here" with the visible control hidden from VoiceOver | PER3-007 | `[RYT-10] action only for VoiceOver, 44 pt control for touch` |
 | RYT-11 | Given a lapsed plan, When any of the above runs, Then it reads in full | D-082, NS-24-R10 | `[RYT-11] free with a lapsed plan` |
 
 Existing requirements this reuses without change: NS-24-R1 to R10 (year boundaries, due-date-only book shows Before You only, year decided by `occurred_on`, call mid-page keeps the page, screen awake while reading).
@@ -96,8 +98,8 @@ One conflict between two design documents, settled here as a default: `WORDS.md`
 |---|---|---|---|---|
 | 1 | Which build turns `EXPO_PUBLIC_READ_THE_YEAR` on? It is a scope and dates call (CR-73), so it is the founder's, on Karma's recommendation | founder | Off in the store build submitted for the 1 Dec cut. On in the first 1.0.x after BL-1792 merges and its tests pass | Fri 27 Nov 2026 (the gate date in D-169) |
 | 2 | Placement of "Read from here" in the Months sheet (second control per row) and on the letter page (first row of "This letter") | Chief Design Officer | The placement in section 5 stands and BL-1792 starts from it | before BL-1792 is picked up, and no later than Fri 27 Nov 2026 |
-| 3 | Closing line for a year still running, and the `endOfBook` reword (gap G5) | `content` | `endOfBook` as built | with BL-1792 |
-| 4 | Date range as the year row's second line (section 7) | Chief Design Officer | Keep the range | with question 2 |
+| 3 | Closing line for a year still running, and the `endOfBook` reword (gap G5) | `content` | `endOfBook` as built | Fri 27 Nov 2026 |
+| 4 | Date range as the year row's second line (section 7) | Chief Design Officer | Keep the range | Fri 27 Nov 2026 |
 
 No question here is reserved for the founder except question 1.
 

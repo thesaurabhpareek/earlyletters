@@ -39,7 +39,9 @@ Rules for the fold:
 
 - The count row exists whenever the machine proposed at least one fix, because the view control is only shown then (`showViewControl`). So after a parent chooses "Exactly as said", or puts every fix back, the row is still there and she can get back.
 - When the machine proposed no fix (a short clean letter, a language with no fix rules, a typed letter), there is nothing to fold. "Change words" stays visible where it is today, as one quiet button.
-- The marks in the words are never folded. VoiceOver still reaches each fix by its row and by the mark.
+- The marks in the words are never folded.
+- With a screen reader on (`useScreenReader` in `apps/mobile/src/lib/a11y.ts` line 96), Review opens unfolded: the fix rows, the view control and "Change words" are all present, and the count row still toggles them. The fix rows are the VoiceOver path to the marks (`review.tsx`, COMPONENTS 2.19), so hiding them would remove what BL-1794 ("N small fixes, listed below", focus to a fix's card) and BL-1793 ("Put back." spoken with the new count) build on. The quiet default is therefore for sighted parents; a VoiceOver parent gets the full list as today, and BL-1794 and BL-1793 are written against that unfolded state. Whether a VoiceOver parent would also want the fold is a Chief Design Officer question (section 7, question 5); the default is unfolded.
+- Undo from an open fix card behaves as today in both states. BL-1793's announcement does not depend on the fold, because it is spoken.
 - The fold does not remember its state across Reviews. A new Review opens folded. If a parent opens it, it stays open until she leaves that Review.
 - Keep does not read the fold. Keep, Keep private and the Plus gate behave exactly as now (D-082, D-083; `review.tsx` header comment).
 - "One Keep" means one primary button. There is no third destination button and no merged button, because Keep private is a separate choice (PER1-004).
@@ -89,7 +91,7 @@ One behaviour per id. Given the evidence limit, each has a unit or source-text t
 
 | Id | Given, When, Then | Satisfies | Test title |
 |---|---|---|---|
-| QD-01 | Given a spoken letter with words ready and at least one proposed fix, When Review opens, Then the view control, the fix rows and "Change words" are not visible and the count row is | NEU-010 | `[QD-01] opens folded` |
+| QD-01 | Given a spoken letter with words ready, at least one proposed fix and no screen reader, When Review opens, Then the view control, the fix rows and "Change words" are not visible and the count row is | NEU-010 | `[QD-01] opens folded` |
 | QD-02 | Given QD-01, When the count row is tapped, Then the view control, the fix rows and "Change words" are visible and the count row is announced as expanded | NEU-010 | `[QD-02] one tap opens every control` |
 | QD-03 | Given the parent chose "Exactly as said", When Review shows, Then the count row is still present | NEU-010 | `[QD-03] way back stays` |
 | QD-04 | Given a letter with no proposed fix, When Review opens, Then "Change words" is visible and there is no fold | NEU-010 | `[QD-04] nothing to fold` |
@@ -98,6 +100,7 @@ One behaviour per id. Given the evidence limit, each has a unit or source-text t
 | QD-07 | Given Keep and Keep private, When either is tapped in the folded or open state, Then the result is the same as before this change, including the Plus gate | D-082, D-083 | `[QD-07] keep unchanged` |
 | QD-08 | Given the primary and quiet buttons, When Review shows, Then each has one line saying what it changes, and neither mentions a printed book | PER1-004, D-010 | `[QD-08] one line each` |
 | QD-09 | Given the save-failed state, When Review shows, Then the lines under the buttons are not shown and the caution line is | PER1-004 | `[QD-09] failed state unchanged` |
+| QD-11 | Given a screen reader is on and at least one proposed fix, When Review opens, Then the fix rows, the view control and "Change words" are present without a tap | NEU-010, PER4-008 | `[QD-11] unfolded for a screen reader` |
 | QD-10 | Given a new Review after one where the fold was opened, When it opens, Then it opens folded | NEU-010 | `[QD-10] fold does not persist` |
 
 Door lines (COORDINATION section 10): not needed. Add to the book and Keep private choose where a letter sits; they are not a consent, sign-in, share or deletion, and Review writes no consent row. Never: no entry text, transcript, audio or child name goes to analytics or logs; the existing `review_action` events carry an action name only.
@@ -109,15 +112,16 @@ Door lines (COORDINATION section 10): not needed. Add to the book and Keep priva
 | 1 | Is folding the view control and "Change words" quiet enough, and does the count row read as a control at the largest text size | Chief Design Officer, then the five-parent check | The fold in section 3 stands | Fri 27 Nov 2026 (the gate date, D-169) |
 | 2 | The first-time note is the heaviest thing on a first Review and is also an in-app disclosure (K-14; same words as the web contribution note). Should it get lighter | CLO and `privacy` (it is disclosure text), with the Chief Design Officer | Unchanged. This spec does not touch it | Fri 27 Nov 2026 |
 | 3 | Build before or after the SE 3 sitting | Karma | Build after this spec merges, and change it if the sitting disagrees. The sitting has no operator (D-169, item 4), so waiting has no date | Fri 27 Nov 2026 |
-| 4 | Wider "every" line | founder and counsel through BL-1711 | Not shipped. Section 4 limits apply | the founder's own 27 Nov counsel date |
+| 4 | Wider "every" line | founder and counsel through BL-1711 | Not shipped. Section 4 limits apply | Fri 27 Nov 2026 (the counsel engagement decision date, D-169 item 4) |
+| 5 | Should a VoiceOver parent also get the fold | Chief Design Officer, with the VoiceOver findings of BL-1786 | Unfolded, as section 3 says | Fri 27 Nov 2026 |
 
 No decision reserved for the founder is made here. Question 4 is already the founder's under BL-1711.
 
 ## 8. What this does for other rows
 
 - BL-1788 can start from section 5 once this spec is merged and BL-1710 is done. The row's printed-book clause is removed (D-010).
-- A mobile build row for sections 3 and 6 is not filed in `docs/BACKLOG.md`. BL-1710 says "product, then mobile". Karma decides whether product files it now or after the sitting.
-- BL-1711 is not touched. BL-1793 and BL-1794 (VoiceOver on Review) are not touched; the fold has to keep their order, which is why QD-02 says the row is announced as expanded.
+- Review is touched twice, not once. BL-1788 (content) adds the two lines under the buttons. The fold (sections 3 and 6, QD-01 to QD-04, QD-10, QD-11) has no build row in `docs/BACKLOG.md`: BL-1710 says "product, then mobile" and ends at the spec. The "touched once" gate on BL-1788 therefore does not hold unless one mobile row builds both. Karma decides whether product files that mobile row now, with BL-1788's lines as a dependency, or after the sitting. Until then nothing builds the fold. The default I recommend is one row filed now.
+- BL-1711 is not touched. BL-1793 and BL-1794 (VoiceOver on Review) are not touched; the screen-reader rule in section 3 keeps the fix rows present for them, and QD-02 says the row is announced as expanded.
 
 ## 9. Not verified
 
