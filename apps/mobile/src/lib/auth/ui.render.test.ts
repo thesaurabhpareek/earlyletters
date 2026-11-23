@@ -26,15 +26,28 @@ vi.mock('./session-provider', () => ({ useAuth: () => ({}) }));
 vi.mock('./revocation-wait-line', () => ({ RevocationWaitLine: 'RevocationWaitLine' }));
 vi.mock('react', async (orig) => ({ ...(await orig<typeof import('react')>()), useRef: () => ({ current: null }), useCallback: (f: unknown) => f }));
 
-import { ProviderButton, SheetFrame, SheetTitle } from './ui';
+import { ProviderButton, SheetFrame, SheetTitle, escapeHandler } from './ui';
 
 type El = ReactElement<Record<string, unknown> & { children?: ReactNode }>;
 
 describe('[BL-1720] sign-in sheet frame, title and provider buttons', () => {
   it('the frame is modal for VoiceOver and closes on the escape gesture', () => {
-    const frame = SheetFrame({ children: 'x' }) as El;
+    const frame = SheetFrame({ children: 'x', closeLabel: 'Close' }) as El;
     expect(frame.props.accessibilityViewIsModal).toBe(true);
     expect(typeof frame.props.onAccessibilityEscape).toBe('function');
+  });
+
+  it('escape closes where Close is offered and enabled, and does nothing when it is disabled or there is no Close', () => {
+    const close = vi.fn();
+    escapeHandler({ closeLabel: 'Not now', close })?.();
+    expect(close).toHaveBeenCalledTimes(1);
+    expect(escapeHandler({ closeLabel: 'Not now', closeDisabled: true, close })).toBeUndefined();
+    expect(escapeHandler({ close })).toBeUndefined();
+    const busy = SheetFrame({ children: 'x', closeLabel: 'Not now', closeDisabled: true }) as El;
+    expect(busy.props.onAccessibilityEscape).toBeUndefined();
+    const noClose = SheetFrame({ children: 'x' }) as El;
+    expect(noClose.props.onAccessibilityEscape).toBeUndefined();
+    expect(noClose.props.accessibilityViewIsModal).toBe(true);
   });
 
   it('the title is a heading', () => {
