@@ -275,6 +275,32 @@ Changing a Google id needs a new build (it changes a native URL scheme); the oth
 4. Nothing syncs before step 3 is accepted (and 3a, when shown): the app checks, and the server refuses content writes with `SCCON` anyway.
 5. Sign-out waits until queued letters have uploaded, then ends the session on this phone only. Local letters are never deleted by signing out.
 
+### 9.1 How long a session lasts, and what the parent sees at the end (BL-897; NX-40-R14, R15)
+
+Read on 23 Nov 2026 by `security`, from the repo and the installed library only. **No hosted project was read; every "hosted" value is unverified (U).** Nothing was changed. The founder's read-back is the register in [AUTH_SETTINGS.md](AUTH_SETTINGS.md) (rows 8 to 10); until it has a date and a name, treat the hosted column as not known.
+
+| Setting | Repo value (`supabase/config.toml`) | Hosted now | Source of the meaning |
+|---|---|---|---|
+| Access token (JWT) life | 900 s, 15 minutes (`:42`; pinned by `supabase/tests/auth_config.test.mjs:87`) | U | TDD 04 3.1 |
+| Refresh token rotation | on (`:43`; pinned by `auth_config.test.mjs:90`) | U | Supabase Auth |
+| Refresh token reuse interval | 10 s (`:44`; the repo does not pin it) | U | Supabase's default, which it says not to change |
+| Refresh token life | not a setting in `config.toml` | U | Supabase's sessions guide: a refresh token "never expires but can only be used once" (read 23 Nov 2026, https://supabase.com/docs/guides/auth/sessions). So there is no 30-day or 60-day cut-off to state |
+| Time-box and inactivity timeout | absent from `config.toml` | U (AUTH_SETUP section 1 item 3 says leave both off) | The same guide lists them as Pro plan settings. Off means a session ends only by one of the causes below |
+
+What that means in plain words: while the phone keeps refreshing (the app refreshes in the foreground, `apps/mobile/src/lib/supabase/client.ts:106`, and `startAutoRefreshWhileActive`), a parent stays signed in with no fixed end date. A phone left unopened for months still holds its session in the Keychain, and the next launch tries to refresh it. If the project's plan or a dashboard setting adds a time-box or an inactivity timeout, that is the only way "N days" becomes true; today no file says so.
+
+What ends a session, and what the parent sees:
+
+| Cause | What the phone does | What the parent sees |
+|---|---|---|
+| The parent taps Sign out | Waits for queued letters to upload, then a local sign-out (`session-provider.tsx`, the sign-out effects). Letters on the phone stay | The wait line on Settings > Account, then the signed-out page. No error line |
+| The server ends the session (revoked elsewhere, refresh token not found or already used, user removed) | `onAuthStateChange` fires SIGNED_OUT and the machine answers `signedOut` with `session_expired` (`machine.logic.ts:241-246`; `errors.logic.ts:91-95`) | On Settings > Account: "You were signed out. Sign in again to carry on." (`packages/content/src/features/auth.en.ts:240`, shown at `apps/mobile/src/app/settings/account.tsx:115-120`). Letters stay on the phone |
+| The phone is offline when the token needs refreshing | Not a sign-out: the session stays in the Keychain and the next refresh retries (`session-provider.tsx`, the comment above `onAuthStateChange`) | Nothing; sync waits |
+| Sign in with Apple is revoked on the Apple ID | Signs out once queued letters are up (A-REQ-033; `apple-revocation.logic.ts`) | The signed-out page. A revocation noticed during a sign-out wait the parent asked for is dropped until the next launch (open: BL-478 point 3, BL-450) |
+| The founder raises the force-reauth number | Signs out once, after queued letters are up (BL-597) | The signed-out page |
+
+Two things this section does not settle, so nobody reads more into it than is there. First, the 10 s reuse interval is a repo value that no test pins, and the hosted value is unverified; TDD 04 section 4 lists refresh-token reuse detection logging a parent out on a flaky network as a risk, so the read-back should check it. Second, only the Account page was read for where the signed-out line appears (`welcome.logic.ts:31` also treats `session_expired` as an inline error on the first-run screens, and what those screens print was not checked). Neither is a founder action beyond the read-back already in AUTH_SETTINGS.md. No number here is needed to ship build 13, so nothing is added to `docs/release/FOUNDER_QUEUE.md`.
+
 ## 10. Keys and owners
 
 | Secret | Where it lives | Rotation |

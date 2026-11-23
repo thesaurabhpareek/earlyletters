@@ -379,10 +379,12 @@ describe('[S09] Tonight renders every draft, one question and the daypart light 
     expect(screen).toContain('listDrafts(childId)');
     expect(screen).not.toMatch(/listDrafts\([^)]*\)\s*\[\s*0\s*\]/);
     expect(screen).toContain('draftCards(room?.drafts ?? [], room?.at)');
-    // F14-REQ-041 (SR-C-08): every draft is still drawn, through tonightRows, which folds two or more held letters into
-    // one row that opens their list (test/tonight-plus.test.ts); every other draft keeps its own card.
-    expect(screen).toContain('tonightRows(cards)');
-    expect(screen).toMatch(/rows\.map\(\(row, i\) =>/);
+    // F14-REQ-041 (SR-C-08): every draft is still drawn, now as the waiting slip (BL-963), whose rows come from
+    // tonightRows (slip-registry.ts), which folds two or more held letters into one row that opens their list
+    // (test/tonight-plus.test.ts); every other draft keeps its own card.
+    expect(screen).toContain('chooseSlip({ cards,');
+    expect(code('components/tonight/slip-registry.ts')).toContain('tonightRows(s.cards)');
+    expect(screen).toMatch(/slip\.rows\.map\(\(row, i\) =>/);
   });
 
   it('one question on screen: the prompt, no subtitle, and its old caps label only as the prompt\'s hint', () => {
@@ -404,7 +406,7 @@ describe('[S09] Tonight renders every draft, one question and the daypart light 
   it('under a card\'s page Tonight hides from screen readers, and the month-old card names its place', () => {
     expect(screen).toContain('const behind = useHiddenBehindCardPage();');
     expect(screen).toContain('{...behind}');
-    expect(screen).toContain('<CardSource id={monthAgo.id}>');
+    expect(screen).toContain('<CardSource id={slip.card.id}>');
   });
 
   it('no count, days-since or streak anywhere on Tonight', () => {
@@ -731,7 +733,7 @@ describe('[S1] at accessibility text sizes Speak, Type and "Not much today" ride
     };
     const question = at('label={t.newPromptButton}');
     const inline = at('{inlineActions ? actions : null}');
-    const cardsAt = at('{cards.length > 0 ? (');
+    const cardsAt = at("{slip?.type === 'waiting' ? (");
     const scrollEnds = at('</ScrollView>');
     const pinned = at('{inlineActions ? null : actions}');
     expect(question).toBeLessThan(inline);

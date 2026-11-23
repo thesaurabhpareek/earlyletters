@@ -142,7 +142,8 @@ export function ErrorBoundary(props: ErrorBoundaryProps) {
 /**
  * Native: the store is always ready to open. Web preview only: waits for the SQLite worker (src/dev/store-ready.web.ts).
  * The database is opened once here; if opening or updating it throws, the recovery screen replaces the app
- * (Try again, Export what is readable) and nothing is deleted.
+ * (Try again, Export what is readable). The screen itself offers no delete, reset or rebuild.
+ * Try again opens the database again, which runs the update steps, and two of them delete settings keys (db/migrations.ts, claims row E8).
  */
 export default function RootLayout() {
   const launch = useLaunch(useStoreReady());

@@ -343,17 +343,20 @@ describe('[D-111 item 4] the line itself', () => {
     expect(features.language.waitingForLanguage).toBe(LINE);
   });
 
-  it('is two short plain sentences: the recording waits for its language, and other languages come in a later update', () => {
+  it('is two short plain sentences: the recording is kept, and this version writes down English (exec ruling 23 Nov 2026, L12)', () => {
     expect(LINE.trim()).toBe(LINE);
     const sentences = LINE.split(/(?<=\.)\s+/);
     expect(sentences).toHaveLength(2);
     for (const s of sentences) expect(s).toMatch(/^[A-Z][^.!?]*\.$/);
-    expect(sentences[0]).toMatch(/\bwaiting for its language\b/);
-    expect(sentences[1]).toBe(languageCopy.picker.englishOnly);
+    expect(sentences[0]).toBe('This recording is kept.');
+    expect(sentences[1]).toBe('This version writes down English.');
+    // The picker note says the same thing about the spoken side; neither line promises a later update.
+    expect(languageCopy.picker.englishOnly).toBe('This version writes down letters spoken in English.');
+    expect(LINE).not.toMatch(/later update|coming/i);
   });
 
-  it('names no language, promises no date, and uses no loss, gap, machine-writing or gendered words', () => {
-    expect(LINE).not.toMatch(/\b(English|Hindi|Spanish|Chinese|Mandarin|French|Arabic|Portuguese)\b/);
+  it('names no language but English (the build\'s own), promises no date, and uses no loss, gap, machine-writing or gendered words', () => {
+    expect(LINE).not.toMatch(/\b(Hindi|Spanish|Chinese|Mandarin|French|Arabic|Portuguese)\b/);
     expect(LINE).not.toMatch(/\d/);
     expect(LINE).not.toMatch(/\b(soon|shortly|tomorrow|next (week|month|year)|this (week|month|year))\b/i);
     expect(LINE).not.toMatch(/\b(lose|lost|miss|missing|sorry|unfortunately|can'?t|cannot|only|wrong|error|failed|yet)\b/i);
