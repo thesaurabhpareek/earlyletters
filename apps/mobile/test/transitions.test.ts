@@ -7,7 +7,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { tokens } from '@scribe/design-tokens';
 import { describe, expect, it } from 'vitest';
-import { FADE_FRACTION, fadeBox, isRtl, lineHeightFor, overflows } from '../src/components/motion/excerpt-fade.logic';
+import { endsOnWholeWord, FADE_FRACTION, fadeBox, isRtl, lineHeightFor, overflows, visiblePrefix, wordFadeSpan } from '../src/components/motion/excerpt-fade.logic';
 import { LINE_ART, LINE_ART_NAMES, artHeight, penWidth, strokeProgress } from '../src/components/ui/line-art.data';
 import { ROOT_ROUTE_CONTEXT } from '../src/lib/navigation.logic';
 import {
@@ -362,6 +362,32 @@ describe('card to page (MOTION 5f)', () => {
     expect(canCarry({ ...cardText, lineHeight: lineHeightFor('letterBody', 1.2) }, { ...pageText, lineHeight: lineHeightFor('letterBody', 1.2) })).toBe(true);
   });
 
+  it("a word-boundary excerpt is a prefix of the letter, so the page's opening wraps exactly like the card and the carry holds (BL-659, book-page.md 3)", () => {
+    // The card draws the whole letter clipped to its lines (never a cut copy of it), so its lines are the page's first
+    // lines: the same words in the same column and type break in the same places.
+    const letter = 'You found the spoon today and would not let it go, even in the bath, laughing at the bubbles the whole time.';
+    const breakAt = (text: string, per: number) => (text.match(new RegExp(`.{1,${per}}(\\s+|$)`, 'gu')) ?? []).map((t) => ({ text: t, x: 0, width: t.trimEnd().length * 10 }));
+    const card = breakAt(letter, 33);
+    const page = breakAt(letter, 33);
+    for (const n of [2, 3]) {
+      const shown = visiblePrefix(card, n);
+      expect(letter.startsWith(shown)).toBe(true);
+      expect(endsOnWholeWord(letter, shown)).toBe(true);
+      expect(visiblePrefix(page, n)).toBe(shown);
+    }
+    // The fade over the last word sits inside the carried column, at the end of its last line.
+    const last = card[2]!;
+    const span = wordFadeSpan(last, 40, false);
+    expect(span.left).toBeGreaterThanOrEqual(0);
+    expect(span.left + span.width).toBeCloseTo(last.x + last.width);
+    expect(span.left + span.width).toBeLessThanOrEqual(cardText.width);
+    // Three lines in the same column and type still carry.
+    expect(canCarry({ ...cardText, height: 18 + 10 + 3 * 32 }, pageText)).toBe(true);
+    // And the card hands the excerpt the whole letter, not a prefix it cut itself.
+    expect(read('components/book/letter-card.tsx')).toMatch(/<ExcerptFade text=\{text\} lines=\{lines\}/);
+    expect(read('components/motion/excerpt-fade.tsx')).toMatch(/onTextLayout=\{onTextLayout\} onLayout=\{[^}]*\}>\s*\{text\}/);
+  });
+
   /** The standard spring the paper grows on, stepped finely (Reanimated solves the same equation): progress by ms. */
   const springAt = (() => {
     const s = M.standard;
@@ -548,19 +574,19 @@ describe('card to page (MOTION 5f)', () => {
     expect(src).toContain('<FadeEdge color={c.bg} side={rtl ? \'left\' : \'right\'} style={StyleSheet.absoluteFill} />');
     expect(src).toContain('const cardFadeDip = useAnimatedStyle(() => ({ opacity: carrying.value ? holdDip(veil.value) : 0 }));');
     // To the page: the veil on the lamp's leaving line, the card holding, then the spring.
-    expect(src).toContain('veil.value = withTiming(1, { duration: CARD_TO_PAGE.veilInMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never });');
+    expect(src).toContain('veil.value = withTiming(1, { duration: CARD_TO_PAGE.veilInMs, easing: VEIL, reduceMotion: ReduceMotion.Never });');
     expect(src).toContain("p.value = withDelay(CARD_TO_PAGE.holdMs, withSpring(1, springConfig('standard')");
     // Back: the veil lifts once the paper is within clearPt of the card, and the route leaves when both are done.
     expect(src).toContain('liftFrom.value = clearProgress(r.card, screen);');
     expect(src).toContain('() => lifting.value === 1 && p.value <= liftFrom.value,');
-    expect(src).toContain('veil.value = withTiming(0, { duration: CARD_TO_PAGE.veilOutMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never }');
+    expect(src).toContain('veil.value = withTiming(0, { duration: CARD_TO_PAGE.veilOutMs, easing: VEIL, reduceMotion: ReduceMotion.Never }');
     expect(src).toContain('closeLeft.current = 2;');
     // The plain fade, both ways: the hand-off on straight lines.
     expect(src.match(/const h = CARD_TO_PAGE\.handOff;/g)).toHaveLength(2);
-    expect(src).toContain('veil.value = withTiming(1, { duration: h.leaveMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never });');
-    expect(src).toMatch(/fade\.value = withDelay\(\s*h\.arriveFromMs,\s*withTiming\(1, \{ duration: h\.arriveMs, easing: Easing\.linear/);
-    expect(src).toContain('fade.value = withTiming(0, { duration: h.leaveMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never });');
-    expect(src).toMatch(/veil\.value = withDelay\(\s*h\.arriveFromMs,\s*withTiming\(0, \{ duration: h\.arriveMs, easing: Easing\.linear/);
+    expect(src).toContain('veil.value = withTiming(1, { duration: h.leaveMs, easing: VEIL, reduceMotion: ReduceMotion.Never });');
+    expect(src).toMatch(/fade\.value = withDelay\(\s*h\.arriveFromMs,\s*withTiming\(1, \{ duration: h\.arriveMs, easing: VEIL/);
+    expect(src).toContain('fade.value = withTiming(0, { duration: h.leaveMs, easing: VEIL, reduceMotion: ReduceMotion.Never });');
+    expect(src).toMatch(/veil\.value = withDelay\(\s*h\.arriveFromMs,\s*withTiming\(0, \{ duration: h\.arriveMs, easing: VEIL/);
     expect(src).not.toContain('STANDARD_EASING');
   });
 

@@ -1,0 +1,24 @@
+/*
+ * Owner: E1 (web platform). What a versioned legal text adds to the reading page in Legal.module.css (.prose): its
+ * tables, the providers list and the changelog. They scroll sideways on a narrow phone. Colours are the --legal-* roles
+ * that .frame sets for each theme; nothing here hardcodes a colour.
+ */
+.text table {
+  display: block;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-size: 0.95em;
+}
+
+.text th,
+.text td {
+  padding: 0.5em 0.9em 0.5em 0;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--legal-muted);
+}
+
+.text th {
+  color: var(--legal-ink);
+  font-weight: 600;
+}

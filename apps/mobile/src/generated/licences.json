@@ -1,6 +1,6 @@
 {
   "$comment": "GENERATED FILE, do not edit. Made by scripts/licences/generate.mjs from package-lock.json and scripts/licences/components.mjs (what ships in the iOS app, by theme), packages/design-tokens/fonts, apps/mobile/modules, packs and apps/mobile/shims. After any dependency change run: npm run licences:generate -w @scribe/mobile",
-  "dependencyHash": "85258e43ddf346ed81eff991c0d70e350d052d7a7dcd955c017083d87a1a0524",
+  "dependencyHash": "2229e887e25ff7c8b798ae5c09f44af83406fb99dcd8ec8fe8f88c8cb74a461f",
   "themes": [
     {
       "id": "speech",
@@ -904,6 +904,15 @@
         {
           "name": "expo-file-system",
           "version": "57.0.7",
+          "kind": "library",
+          "licence": "MIT",
+          "licenceName": "MIT License",
+          "copyright": "Copyright (c) 2015-present 650 Industries, Inc. (aka Expo)",
+          "text": 5
+        },
+        {
+          "name": "expo-local-authentication",
+          "version": "57.0.3",
           "kind": "library",
           "licence": "MIT",
           "licenceName": "MIT License",

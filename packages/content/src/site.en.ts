@@ -25,7 +25,7 @@ export const site = {
   hero: {
     headline: "Letters to your child, in your own words and voice",
     subhead:
-      `${brand.name} is a book you fill by talking. It stays in your words, and your letters stay on your iPhone.`,
+      `${brand.name} is a book you fill by talking. It stays in your words, and it is private by default.`,
   },
   primaryCta: "Join the waitlist",
   price,
@@ -36,8 +36,8 @@ export const site = {
       body: "Word for word: transcription happens on your phone. It takes out the ums and accidental repeats, spells your names your way, and marks each fix. You can undo any fix. We never rewrite your words.",
     },
     {
-      title: "Your voice, kept",
-      body: "The original recording stays with each letter, on your phone. One day {child} can hear how you sounded, laughing at the same joke for the tenth time.",
+      title: "A spoken letter keeps its recording",
+      body: "The original recording stays with each spoken letter, on your phone. One day {child} can hear how you sounded, laughing at the same joke for the tenth time.",
     },
     {
       title: "A minute is plenty",
@@ -73,10 +73,10 @@ export const site = {
     title: "Our promise, in plain words",
     lead: en.trust.promise,
     points: [
-      "Your letters and recordings stay on your iPhone. They are not sent to us.",
+      "Your letters and recordings are private by default.",
       "We never rewrite your words. Transcription happens on your phone.",
       // D-085 (amends D-073): no backup of our own in v1.0.
-      "Your recordings stay on your phone, and in your iPhone's own backup if you use one.",
+      "Your recordings are kept on the phone that made them, and in your iPhone's own backup if you use one.",
       "No ads. We never sell your data or share it with advertisers.",
       "You can export your book, free, at any time.",
       "You can delete your own letters and recordings whenever you like.",
@@ -85,15 +85,15 @@ export const site = {
   faq: [
     {
       q: "Who can see my letters?",
-      a: "Only you, on your phone. Letters and recordings stay on your iPhone and are not sent to us. If you use your iPhone's own backup, it holds them too.",
+      a: "Only you. Recordings are kept on the phone that made them, and your iPhone's own backup holds them too if you use one.",
     },
     {
       q: "Do you rewrite my words?",
-      a: "No. Transcription happens on your phone. Word for word takes out the ums and accidental repeats, spells your names your way, and marks each fix. It never adds a word. You can undo any fix, or choose Exactly as said to keep every word as it came. Every sentence in your book is one you actually said.",
+      a: "No. Transcription happens on your phone. Word for word takes out the ums and accidental repeats, spells your names your way, and marks each fix. It never adds a word. It stays in your words. Every change is marked, and your original recording is kept unchanged. You can undo any fix, or choose Exactly as said to keep every word as it came.",
     },
     {
       q: "What if I skip a few days, or a few weeks?",
-      a: "That is fine. Nothing is counting. Tap \"Not much today\" on a quiet day, or come back when you have something to say. Your book is still there.",
+      a: "That's fine. Nothing is counting. Tap \"Not much today\" on a quiet day, or come back when you have something to say. Your book is still there.",
     },
     {
       q: "Which languages can I use?",
@@ -110,14 +110,14 @@ export const site = {
     },
     {
       q: "What happens to my recordings?",
-      a: "Each recording stays on your phone by default, attached to its letter, and is part of your iPhone's own backup if you use one. Export them any time to keep a copy of your own, and delete your recordings and letters whenever you like.",
+      a: "Each recording is kept on the phone that made it, attached to its letter, and is part of your iPhone's own backup if you use one. Export them any time to keep a copy of your own, and delete your recordings and letters whenever you like.",
     },
   ],
   waitlist: {
     label: "Your email",
     button: "Join the waitlist",
-    success: `Thank you. We will write when ${brand.name} is ready for you.`,
-    error: "That did not go through. Please check your email address and try again.",
+    success: `Thank you. We'll write when ${brand.name} is ready for you.`,
+    error: "That didn't go through. Check your email address and try again.",
   },
 } as const;
 
@@ -127,7 +127,7 @@ export const site = {
  */
 const v1_1 = {
   familyBenefit: {
-    title: "The whole family, signed",
+    title: "Letters from the whole family",
     body: "Invite grandparents and close family to add letters of their own. Each one is signed, From Papa, From Nani, and you approve what goes in the book.",
   },
   family: {

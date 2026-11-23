@@ -15,7 +15,7 @@
  */
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { en } from '@scribe/content';
 import { showsChevron } from '../src/components/ui/list-row.logic';
 import { sensitiveStatusWords, setSensitiveDataSource, useSensitiveDataStatus, type SensitiveDataStatus } from '../src/lib/analytics/privacy-sources';
@@ -23,8 +23,15 @@ import { authCopy } from '../src/lib/auth/copy';
 import { publishAuth, resetAuthStoreForTests } from '../src/lib/auth/auth-store';
 import { authReducer, initialAuthState, type AuthEvent, type AuthState, type SyncGate } from '../src/lib/auth/machine.logic';
 import { registerSensitiveDataRow, sensitiveRowStatus } from '../src/lib/auth/sensitive-row';
+import { useRegisterSensitiveDataRow } from '../src/lib/auth/sensitive-row-hook';
 import { renderHook } from './helpers/mini-react';
 
+// Counts how often the real auth store is subscribed to: every registration makes the row re-attach, so this counts them.
+const subscribeCalls = vi.hoisted(() => ({ n: 0 }));
+vi.mock('../src/lib/auth/auth-store', async (orig) => {
+  const real = await orig<typeof import('../src/lib/auth/auth-store')>();
+  return { ...real, subscribeAuth: (l: () => void) => ((subscribeCalls.n += 1), real.subscribeAuth(l)) };
+});
 vi.mock('react', async () => (await import('./helpers/mini-react')).reactStandIn);
 
 const ASHA_PARENT = '11111111-1111-4111-8111-111111111111';
@@ -252,10 +259,39 @@ describe('[BL-485] source pins: who registers the row, and that it stays read-on
       return /\.(ts|tsx)$/.test(e.name) ? [p] : [];
     });
 
-  it('the session provider registers the source once, from an effect that runs on mount', () => {
+  it('mounting the registration hook registers a source whose read follows the auth snapshot (BL-508)', () => {
+    setSensitiveDataSource({ read: () => 'signed_out' });
+    publishAuth(STATES.on);
+    const mounted = renderHook(() => useRegisterSensitiveDataRow());
+    const row = renderHook(() => useSensitiveDataStatus());
+    expect(row.result.current.status).toBe('on');
+    publishAuth(STATES.declined);
+    expect(row.result.current.status).toBe('off');
+    publishAuth(STATES.signedOut);
+    expect(row.result.current.status).toBe('signed_out');
+    row.unmount();
+    mounted.unmount();
+  });
+
+  it('the hook registers once on mount, not on every render (BL-508)', () => {
+    const mounted = renderHook(() => {
+      useRegisterSensitiveDataRow();
+      return useSensitiveDataStatus();
+    });
+    const afterMount = subscribeCalls.n;
+    for (const s of [STATES.on, STATES.declined, STATES.signedOut]) publishAuth(s);
+    // A re-registration makes the row subscribe again; an effect with no deps list would do it on every render.
+    expect(subscribeCalls.n).toBe(afterMount);
+    mounted.unmount();
+  });
+
+  it('the session provider calls that hook in its body, formatting aside (BL-508)', () => {
     const provider = code('lib/auth/session-provider.tsx');
-    expect(provider).toMatch(/import \{ registerSensitiveDataRow \} from '\.\/sensitive-row';/);
-    expect(provider).toMatch(/useEffect\(\(\) => \{\s*registerSensitiveDataRow\(\);\s*\}, \[\]\);/);
+    // Any import layout: one line or many, trailing comma, other names beside it.
+    expect(provider).toMatch(/import\s*\{[^}]*\buseRegisterSensitiveDataRow\b[^}]*\}\s*from\s*'\.\/sensitive-row-hook'/);
+    expect(provider).toMatch(/^\s*useRegisterSensitiveDataRow\(\s*\);/m);
+    // Not also registered by hand beside it: one path, the hook.
+    expect(provider).not.toMatch(/\bregisterSensitiveDataRow\b/);
   });
 
   it('it is the only caller of setSensitiveDataSource in the app', () => {
@@ -288,5 +324,35 @@ describe('[BL-485] source pins: who registers the row, and that it stays read-on
     expect(showsChevron({ pressable: false, disabled: false, destructive: false, hasTrailingNode: false, android: false })).toBe(false);
     // components/ui/list-row.tsx (design-systems): no `onPress` returns a View, with no Pressable and no pressed colour.
     expect(code('components/ui/list-row.tsx')).toMatch(/if \(!onPress\) \{\s*return \(\s*<View/);
+  });
+});
+
+// BL-504: the row follows a source that registers an `open` later with the same status. The hook used to keep only the
+// status in state and read `source.open` at render, so a mounted row never saw the new `open`.
+describe('[BL-504] the row follows a later open', () => {
+  afterEach(() => setSensitiveDataSource({ read: () => 'signed_out' }));
+
+  it('re-renders with the new open when the status is unchanged', () => {
+    setSensitiveDataSource({ read: () => 'on' });
+    const row = renderHook(() => useSensitiveDataStatus());
+    expect(row.result.current.open).toBeUndefined();
+    const open = vi.fn();
+    setSensitiveDataSource({ read: () => 'on', open });
+    expect(row.result.current.status).toBe('on');
+    expect(row.result.current.open).toBe(open);
+    row.unmount();
+  });
+
+  it('follows a source that notifies through its own subscribe', () => {
+    let status: 'on' | 'off' = 'on';
+    let notify = () => {};
+    const open = vi.fn();
+    setSensitiveDataSource({ read: () => status, subscribe: (l) => ((notify = l), () => {}), open });
+    const row = renderHook(() => useSensitiveDataStatus());
+    expect(row.result.current.open).toBe(open);
+    status = 'off';
+    notify();
+    expect(row.result.current.status).toBe('off');
+    row.unmount();
   });
 });

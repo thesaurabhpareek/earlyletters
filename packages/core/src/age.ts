@@ -10,11 +10,44 @@ export interface Age {
   days: number; // total days since birth
 }
 
-function parse(iso: string): { y: number; m: number; d: number } {
-  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
-  if (!match) throw new Error(`Invalid ISO date: ${iso}`);
-  return { y: Number(match[1]), m: Number(match[2]), d: Number(match[3]) };
+/**
+ * A date that does not parse. The message is a fixed code on purpose: a birthday is
+ * personal, and error text reaches crash tools and logs. Never put the value in it.
+ */
+export class InvalidIsoDateError extends Error {
+  readonly code = 'invalid_iso_date';
+  constructor() {
+    super('invalid_iso_date');
+    this.name = 'InvalidIsoDateError';
+  }
 }
+
+const ISO_DAY = /^(\d{4})-(\d{2})-(\d{2})$/;
+// A full timestamp is accepted as its calendar day (the date part is read; the time never changes a day).
+const ISO_STAMP = /^(\d{4})-(\d{2})-(\d{2})T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?$/;
+
+function isLeap(y: number): boolean {
+  return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+}
+
+/**
+ * The one date validator: age.ts, child.ts and everything that reads a calendar day use it.
+ * Anchored at both ends and range-checked, so "2025-13-45", "2026-02-30" and "2026-04-12 junk" all throw.
+ * With `stamp`, a full timestamp ("2026-04-12T23:59:59Z") is read as its day. The error is an InvalidIsoDateError: a fixed
+ * code, never the value (a birthday is personal and error text reaches logs and crash reports).
+ */
+export function parseIsoDate(iso: string, stamp = false): { y: number; m: number; d: number } {
+  const match = typeof iso === 'string' ? (ISO_DAY.exec(iso) ?? (stamp ? ISO_STAMP.exec(iso) : null)) : null;
+  if (!match) throw new InvalidIsoDateError();
+  const y = Number(match[1]);
+  const m = Number(match[2]);
+  const d = Number(match[3]);
+  const days = m === 2 ? (isLeap(y) ? 29 : 28) : [4, 6, 9, 11].includes(m) ? 30 : 31;
+  if (m < 1 || m > 12 || d < 1 || d > days) throw new InvalidIsoDateError();
+  return { y, m, d };
+}
+
+const parse = (iso: string) => parseIsoDate(iso, true);
 
 function dayNumber(iso: string): number {
   const { y, m, d } = parse(iso);
@@ -23,6 +56,18 @@ function dayNumber(iso: string): number {
 
 function daysInMonth(y: number, m: number): number {
   return new Date(Date.UTC(y, m, 0)).getUTCDate();
+}
+
+/**
+ * The calendar date a child turns `months` months old (ADR E: the one place this arithmetic lives). Clamped for short
+ * months: born 31 Jan, 1 month old is 28 Feb. The inverse of the month part of `ageOn`.
+ */
+export function dateOfAge(birthISO: string, months: number): string {
+  const b = parse(birthISO);
+  const y = b.y + Math.floor((b.m - 1 + months) / 12);
+  const m = (((b.m - 1 + months) % 12) + 12) % 12 + 1;
+  const d = Math.min(b.d, daysInMonth(y, m));
+  return `${String(y).padStart(4, '0')}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 }
 
 /** Calendar-month age, the way parents count it ("16 months and 1 week"). */
@@ -37,9 +82,7 @@ export function ageOn(birthISO: string, onISO: string): Age {
   const anniversaryDay = (y: number, m: number) => Math.min(b.d, daysInMonth(y, m));
   if (o.d < anniversaryDay(o.y, o.m)) months -= 1;
 
-  const annY = b.y + Math.floor((b.m - 1 + months) / 12);
-  const annM = ((b.m - 1 + months) % 12) + 1;
-  const annISO = `${annY}-${String(annM).padStart(2, '0')}-${String(anniversaryDay(annY, annM)).padStart(2, '0')}`;
+  const annISO = dateOfAge(birthISO, months);
   const weeks = Math.floor((dayNumber(onISO) - dayNumber(annISO)) / 7);
   return { months, weeks, days };
 }

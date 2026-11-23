@@ -70,7 +70,7 @@ describe('the first-run card line', () => {
 
   it('queued and checking are said in words', () => {
     expect(consentLine({ ...idle, stage: 'queued' }, 575).text).toBe(packsCopy.phases.queued);
-    expect(consentLine({ ...idle, stage: 'verifying' }, 575).text).toBe(packsCopy.phases.verifying);
+    expect(consentLine({ ...idle, stage: 'verifying' }, 575).text).toBe(speechConsentCopy.checking);
     expect(consentLine({ ...idle, stage: 'queued' }, 575).bar).toBeNull();
   });
 

@@ -18,6 +18,8 @@ export const speechSettingsCopy = {
   absent: 'Not on this phone, {n} MB',
   removeHint: 'Removes this language from the phone to free space',
   downloadHint: 'Gets this language ready now',
+  // The language row's hint while it downloads or waits for Wi-Fi: its trailing word is Stop (packsCopy.stopButton).
+  stopHint: 'Stops getting this language ready for now',
   confirmTitle: 'Remove {name}?',
   confirmBody: 'Your recordings and letters stay. New {name} recordings will wait for their words until you add it again.',
   confirmButton: 'Remove',
@@ -28,13 +30,13 @@ export const speechSettingsCopy = {
    * so a line never asks for a tap that cannot help; where a tap can help it says so.
    */
   downloadFailures: {
-    no_manifest: 'Not ready yet. It tries again by itself.',
-    not_in_manifest: 'Not ready yet. It tries again by itself.',
-    downloads_paused: 'Downloads are paused for now. It tries again by itself.',
-    offline: 'It carries on when you are back online.',
-    download_failed: 'The download stopped. It tries again by itself, or tap Try again.',
-    storage_error: 'The download could not be saved. It tries again by itself, or tap Try again.',
-    hash_mismatch: 'The download did not check out. It tries again on Wi-Fi, or tap Try again.',
+    no_manifest: 'Not ready yet. It tries again on its own.',
+    not_in_manifest: 'Not ready yet. It tries again on its own.',
+    downloads_paused: 'Downloads are paused for now. It tries again on its own.',
+    offline: "It carries on when you're back online.",
+    download_failed: 'The download stopped. It tries again on its own, or tap Try again.',
+    storage_error: "The download couldn't be saved. It tries again on its own, or tap Try again.",
+    hash_mismatch: "The download didn't finish properly. It tries again on Wi-Fi, or tap Try again.",
     needs_app_update: 'Needs the latest version of the app.',
     // After several automatic tries on a link that kept stopping (download-retry.ts MAX_STOPPED_RUNS): it waits for a tap.
     download_stopped: 'The download stopped. Tap Try again when the Wi-Fi is steady.',
@@ -55,4 +57,11 @@ export const speechConsentCopy = {
   lowSpace: 'This phone needs {size} of free space first.',
   chosenYes: 'Getting ready. It waits for Wi-Fi.',
   chosenLater: 'Your voice is kept either way.',
+  // Under the progress after a yes, while the download is on its way (not after a failure, not when space is short):
+  // a recording made now is kept and waits for its words (transcription queue `waiting_for_pack`, F04-REQ-044).
+  startNow: 'You can start now. Your voice is kept, and the words follow.',
+  // The download is here and its SHA-256 is being checked (pack engine `verifying`).
+  checking: 'Almost ready. Checking the download.',
+  // Said first when a download that was moving stopped and a tap can help; the reason follows on its own line.
+  stopped: 'The download stopped.',
 };

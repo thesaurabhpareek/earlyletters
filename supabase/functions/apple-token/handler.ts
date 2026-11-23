@@ -52,6 +52,7 @@ import { failure, HEADER_REQUEST_ID, httpStatusFor, type ApiErrorCode } from '..
 import { bundleId } from '../../../packages/brand/index.ts';
 // The shared health route (S07, RA-07-06; on develop since #202, fbae767). Imported, never copied.
 import { healthResponse, isHealthRequest } from '../_shared/health/health.ts';
+import { publishableKeyOf, secretKeyOf, serviceHeaders } from '../_shared/keys/keys.ts';
 import { createLogger, type ErrorCode, type FunctionName, type LogSink, type Provider } from '../_shared/log/log.ts';
 import { APPLE_AUDIENCE, makeClientSecret, wrapAppleToken, type AppleKeyConfig } from '../purge-worker/lib/apple.ts';
 
@@ -100,7 +101,7 @@ export interface AppleTokenConfig {
 export function readAppleTokenConfig(get: EnvGetter): AppleTokenConfig | null {
   const v = (n: string) => (get(n) ?? '').trim();
   const supabaseUrl = v('SUPABASE_URL').replace(/\/+$/, '');
-  const serviceKey = v('SUPABASE_SERVICE_ROLE_KEY');
+  const serviceKey = secretKeyOf(get) ?? '';
   const teamId = v('APPLE_TEAM_ID');
   const keyId = v('APPLE_SIGNIN_KEY_ID');
   const privateKeyPem = get('APPLE_SIGNIN_PRIVATE_KEY') ?? '';
@@ -118,7 +119,7 @@ export function readAppleTokenConfig(get: EnvGetter): AppleTokenConfig | null {
   if (!supabaseUrl || !serviceKey || !teamId || !keyId || !privateKeyPem.trim() || !kek) return null;
   // The purge worker's list, no more (a test compares the two).
   const services = v('APPLE_SERVICES_ID');
-  const anonKey = v('SUPABASE_ANON_KEY') || null;
+  const anonKey = publishableKeyOf(get);
   const clientIds = [...new Set([bundleId(), ...(CLIENT_RE.test(services) ? [services] : [])])];
   return { supabaseUrl, serviceKey, anonKey, apple: { teamId, keyId, privateKeyPem }, clientIds, kek, kekVersion };
 }
@@ -352,7 +353,7 @@ export function makeAppleTokenHandler(env: EnvGetter, opts: AppleTokenOptions = 
     }
     const put = await timed(fetchFn, `${cfg.supabaseUrl}/rest/v1/rpc/ops_apple_token_put`, {
       method: 'POST',
-      headers: { apikey: cfg.serviceKey, Authorization: `Bearer ${cfg.serviceKey}`, 'Content-Type': 'application/json' },
+      headers: { ...serviceHeaders(cfg.serviceKey), 'Content-Type': 'application/json' },
       body: JSON.stringify({ p_profile: profileId, p_ciphertext: wrapped.ciphertext, p_key_version: wrapped.keyVersion, p_client_id: clientId }),
     }, timeoutMs);
     if (!put || !put.ok) {

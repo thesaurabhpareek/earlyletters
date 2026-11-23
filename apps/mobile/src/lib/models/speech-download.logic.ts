@@ -7,7 +7,11 @@
  * in the engine's `downloading` phase. A pack that is queued, waiting for Wi-Fi, being checked or being moved into
  * place is not moving, so it has a stage and no percent. Before this rule a queued or Wi-Fi-waiting pack counted as
  * "in flight" with 0 bytes, and the first-run card read "Getting ready, 0%" for something that was not moving.
+ *
+ * The same holds for every line that says a download's percent (the Book and Review wait lines, the letter page, the
+ * Settings language rows): they all go through `downloadingLine`, so none of them can print "0%".
  */
+import { packsCopy } from '../packs/copy';
 
 export interface PackEvent {
   phase: string;
@@ -61,4 +65,14 @@ export function shownPercent(progress: number | null): number | null {
   if (progress === null || !Number.isFinite(progress)) return null;
   const n = Math.floor(progress * 100);
   return n < 1 ? null : Math.min(99, n);
+}
+
+/**
+ * The words for bytes that are moving: `line(n)` once there is a whole percent (the copy's own "Getting ready, n%"
+ * or "Downloading, n%", filled by the caller), and below 1% the phase word "Downloading" with no number, so a
+ * download that has just begun never reads "0%". Clamped by shownPercent: never above 99% before it is done.
+ */
+export function downloadingLine(progress: number | null, line: (n: number) => string): string {
+  const n = shownPercent(progress);
+  return n === null ? packsCopy.phases.downloading : line(n);
 }

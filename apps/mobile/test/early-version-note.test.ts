@@ -51,6 +51,36 @@ describe('About shows the early-version note (F17-REQ-019, F20-REQ-009)', () => 
   });
 });
 
+describe('the store build shows the note too (BL-607; D-060 decided, answering D-030)', () => {
+  // D-060 (founder, 3 Oct 2026): "the in-app 'early version, can make mistakes' note stays". D-030 keeps the in-app
+  // About body and moves only the beta line out of the store listing. No ruling since hides or rewords it for the
+  // production build (BL-624 and compliance G10 are open founder questions), so the store build draws the same note
+  // as the alpha. If the founder amends D-060, this is the test to change.
+  const src = readFileSync(join(APP, 'src/app/settings/index.tsx'), 'utf8');
+  const eas = JSON.parse(readFileSync(join(APP, 'eas.json'), 'utf8')) as { build: Record<string, { env?: Record<string, string> }> };
+
+  it('the production profile is the store build, and the alpha profiles are not', () => {
+    expect(eas.build.production?.env?.EXPO_PUBLIC_APP_ENV).toBe('production');
+    expect(eas.build.testflight?.env?.EXPO_PUBLIC_APP_ENV).toBe('preview');
+  });
+
+  it('no build switch reaches the note: the build env is read only for the Plan row', () => {
+    const uses = [...src.matchAll(/\b(PLUS_ALPHA|APP_ENV|isAlphaBuild|capabilities\.\w+|serverFeaturesEnabled\(\))/g)].map((m) => m.index ?? 0);
+    const about = src.indexOf('<ListSection title={copy.settings.about.title}>');
+    const noteEnd = src.indexOf('{copy.settings.about.beta.body}');
+    expect(about).toBeGreaterThan(-1);
+    // Nothing between the About section and the note's body reads a build switch.
+    expect(uses.filter((i) => i > about && i < noteEnd)).toEqual([]);
+    expect(src).toMatch(/const planRowView = planRowFor\(plan, new Date\(\)\.toISOString\(\), PLUS_ALPHA\);/);
+    expect([...src.matchAll(/\bPLUS_ALPHA\b/g)].length).toBe(2); // the import and the Plan row
+  });
+
+  it('one body for every build: no store or alpha variant of the note in the copy', () => {
+    expect(Object.keys(note).sort()).toEqual(['body', 'exportCta', 'label']);
+    // The words themselves are pinned in settings-home.test.ts.
+  });
+});
+
 describe('About: the build number and the sign-off (founder, 8 Nov 2026)', () => {
   const src = () => readFileSync(join(APP, 'src/app/settings/index.tsx'), 'utf8');
 

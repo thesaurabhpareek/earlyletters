@@ -75,7 +75,19 @@ import { brand } from '@scribe/brand';
  * one-way rule applies: the 1.4.0 schema closes entries, so it rejects a
  * 1.5.0 entries.json; read each export with the schema it carries.
  */
-export const EXPORT_SCHEMA_VERSION = '1.5.0';
+/**
+ * 1.6.0 (PL-2, F14-REQ-039, F15-REQ-018; founder decision F5 of 1 Nov; data design
+ * docs/data/account-experience-schema.md section 5, E-1): letters that are waiting go
+ * in the export too. `waiting/<id>.txt` holds each one's own words (typed, or exactly
+ * as heard; never a machine-tidied version, since nothing was kept yet) and
+ * `waiting/<id>.m4a` or `.aac` its original recording, byte for byte.
+ * `data/waiting.json` lists them, present only when there is at least one. A waiting
+ * letter is one held at the Keep step, one waiting to be read back, or a typed one not
+ * kept yet; a take being let go or still recording is not. A new optional file, so every
+ * earlier v1 export still validates; the 1.5.0 schema has no `waitingFile`, so read each
+ * export with the schema it carries.
+ */
+export const EXPORT_SCHEMA_VERSION = '1.6.0';
 
 /** "early-letters-export", from packages/brand (the name lives only there). */
 export const EXPORT_FORMAT = `${brand.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}-export`;
@@ -292,6 +304,43 @@ export interface OtherVersionsFile {
   versions: ExportOtherVersion[];
 }
 
+/** Why a letter is waiting (1.6.0). */
+export type WaitingReason = 'held_at_keep' | 'waiting_for_words' | 'not_read_back' | 'typed_draft' | 'unrecoverable';
+
+/** A waiting letter's recording; the same as `ExportAudio` but under `waiting/`. */
+export type ExportWaitingAudio = ExportAudio;
+
+/** One waiting letter in `data/waiting.json` (1.6.0). The person's own words only. */
+export interface ExportWaitingLetter {
+  id: string;
+  child_id: string;
+  reason: WaitingReason;
+  kind: 'letter' | 'note';
+  created_at: string;
+  /** The date the parent chose; null means the day it was made (`created_at`). */
+  occurred_on: string | null;
+  occurred_precision: 'day' | 'month';
+  capture_mode: 'spoken' | 'typed' | 'mixed';
+  language: string | null;
+  /** Words the person typed. */
+  typed_text: string | null;
+  /** Exactly as heard, when the words have been written down. */
+  raw_transcript: string | null;
+  /** The person's own words from Review's Change words, when they changed any (v9 local draft, #522); else null. */
+  changed_words: string | null;
+  text_file: string;
+  audio: ExportWaitingAudio | null;
+  /** `empty`: the take's file held no sound (an unrecoverable take). */
+  audio_missing: { reason: 'not_on_this_device' | 'empty' } | null;
+}
+
+/** `data/waiting.json`, present only when at least one letter is waiting (1.6.0). */
+export interface WaitingFile {
+  schema_version: string;
+  format: string;
+  waiting: ExportWaitingLetter[];
+}
+
 export interface ManifestFile {
   path: string;
   bytes: number;
@@ -325,7 +374,8 @@ export const exportJsonSchema = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
   $id: `${brand.web.origin}/export-format/v1.schema.json`,
   title: `${brand.name} export, format 1`,
-  description: 'Schema for data/entries.json, data/children.json, data/account.json, data/other-versions.json (when present) and manifest.json in an export.',
+  description:
+    'Schema for data/entries.json, data/children.json, data/account.json, data/other-versions.json and data/waiting.json (each when present) and manifest.json in an export.',
   $defs: {
     audio: {
       type: 'object',
@@ -345,6 +395,72 @@ export const exportJsonSchema = {
       if: { type: 'object', properties: { media_type: { const: 'audio/aac' } } },
       then: { type: 'object', properties: { path: { type: 'string', pattern: '\\.aac$' } } },
       else: { type: 'object', properties: { path: { type: 'string', pattern: '\\.m4a$' } } },
+    },
+    // Since 1.6.0: a waiting letter's recording, under waiting/ (otherwise as `audio`).
+    waitingAudio: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['path', 'sha256', 'bytes', 'duration_ms', 'codec', 'media_type', 'integrity', 'recorded_sha256'],
+      properties: {
+        path: { type: 'string', pattern: '^waiting/[^/]+\\.(m4a|aac)$' },
+        sha256,
+        bytes: { type: 'integer', minimum: 0 },
+        duration_ms: { type: ['integer', 'null'], minimum: 0 },
+        codec: { const: 'aac-lc' },
+        media_type: { enum: ['audio/mp4', 'audio/aac'] },
+        integrity: { enum: ['ok', 'mismatch', 'unchecked'] },
+        recorded_sha256: { anyOf: [sha256, { type: 'null' }] },
+      },
+      if: { type: 'object', properties: { media_type: { const: 'audio/aac' } } },
+      then: { type: 'object', properties: { path: { type: 'string', pattern: '\\.aac$' } } },
+      else: { type: 'object', properties: { path: { type: 'string', pattern: '\\.m4a$' } } },
+    },
+    // Since 1.6.0: data/waiting.json.
+    waitingFile: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['schema_version', 'format', 'waiting'],
+      properties: {
+        ...header,
+        waiting: {
+          type: 'array',
+          items: {
+            type: 'object',
+            additionalProperties: false,
+            required: [
+              'id', 'child_id', 'reason', 'kind', 'created_at', 'occurred_on', 'occurred_precision', 'capture_mode', 'language',
+              'typed_text', 'raw_transcript', 'changed_words', 'text_file', 'audio', 'audio_missing',
+            ],
+            properties: {
+              id: { type: 'string', minLength: 1 },
+              child_id: { type: 'string', minLength: 1 },
+              reason: { enum: ['held_at_keep', 'waiting_for_words', 'not_read_back', 'typed_draft', 'unrecoverable'] },
+              kind: { enum: ['letter', 'note'] },
+              created_at: { type: 'string', minLength: 10 },
+              occurred_on: isoDateOrNull,
+              occurred_precision: { enum: ['day', 'month'] },
+              capture_mode: { enum: ['spoken', 'typed', 'mixed'] },
+              language: { type: ['string', 'null'] },
+              typed_text: { type: ['string', 'null'] },
+              raw_transcript: { type: ['string', 'null'] },
+              changed_words: { type: ['string', 'null'] },
+              text_file: { type: 'string', pattern: '^waiting/[^/]+\\.txt$' },
+              audio: { anyOf: [{ $ref: '#/$defs/waitingAudio' }, { type: 'null' }] },
+              audio_missing: {
+                anyOf: [
+                  {
+                    type: 'object',
+                    additionalProperties: false,
+                    required: ['reason'],
+                    properties: { reason: { enum: ['not_on_this_device', 'empty'] } },
+                  },
+                  { type: 'null' },
+                ],
+              },
+            },
+          },
+        },
+      },
     },
     edit: {
       type: 'object',
@@ -640,6 +756,7 @@ export const exportJsonSchema = {
     { $ref: '#/$defs/entriesFile' },
     { $ref: '#/$defs/childrenFile' },
     { $ref: '#/$defs/accountFile' },
+    { $ref: '#/$defs/waitingFile' },
     { $ref: '#/$defs/manifest' },
   ],
 } as const;

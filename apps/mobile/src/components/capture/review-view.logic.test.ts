@@ -1,5 +1,5 @@
 import { tokens } from '@scribe/design-tokens';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   BUTTON_MAX_CHARS,
   SCREEN_READER_HOLD_MS,
@@ -27,6 +27,9 @@ import {
   pageEmptinessChanged,
   sheetKeyboardOffset,
   followCaretToEnd,
+  pageEndOffset,
+  putBackSpeech,
+  speakOnceAfterSettle,
 } from './review-view.logic';
 
 describe('review view (D-086)', () => {
@@ -170,6 +173,25 @@ describe('a typed letter (S19, S20)', () => {
     expect(followCaretToEnd({ selectionEnd: 4, length: 12 })).toBe(false);
   });
 
+  it('with the buttons at the end of the scroll (large text) the page rests with its bottom edge at the top of the buttons, not at their end (S1-165)', () => {
+    // The footer starts 620 pt into the content and the room above the keyboard is 300 pt: the top of the view is 320,
+    // so the view's bottom edge is at 620, the field's end plus the gap above the footer. The footer's own layout y
+    // already counts the scroll's top padding and the gap, so no spacing is added here.
+    expect(pageEndOffset({ footerTop: 620, viewportHeight: 300 })).toBe(320);
+    // Scrolling to the very end would put the view's bottom edge at the end of the buttons, hiding the words above them.
+    expect(pageEndOffset({ footerTop: 620, viewportHeight: 300 })).toBeLessThan(620);
+    // A page that fits in the view does not scroll; the offset is never negative, and it is whole points.
+    expect(pageEndOffset({ footerTop: 200, viewportHeight: 600 })).toBe(0);
+    expect(pageEndOffset({ footerTop: 620.4, viewportHeight: 300.1 })).toBe(320);
+  });
+
+  it('the page is left where it is until the footer and the viewport are both measured (it never jumps while opening)', () => {
+    expect(pageEndOffset({ footerTop: 0, viewportHeight: 300 })).toBeNull();
+    expect(pageEndOffset({ footerTop: 620, viewportHeight: 0 })).toBeNull();
+    expect(pageEndOffset({ footerTop: Number.NaN, viewportHeight: 300 })).toBeNull();
+    expect(pageEndOffset({ footerTop: 620, viewportHeight: Number.NaN })).toBeNull();
+  });
+
   it('back in Review it keeps Write\'s heading, "Your letter"; a letter with a recording reads "Read it back"', () => {
     expect(reviewHeading({ typedOnly: true })).toBe('Your letter');
     expect(reviewHeading({ typedOnly: false })).toBe('Read it back');
@@ -183,13 +205,13 @@ describe('the saved moment (S21)', () => {
     expect(savedMoment({ kind: 'book', childName: 'Asha', month: null }).chip).toBe('Kept in Before You');
   });
 
-  it('kept private: the lock chip "Kept just for you.", no line', () => {
-    expect(savedMoment({ kind: 'private', childName: 'Asha', month: 7 })).toEqual({ chip: 'Kept just for you.', lock: true, line: null });
+  it('kept private: the lock chip "Kept private.", no line', () => {
+    expect(savedMoment({ kind: 'private', childName: 'Asha', month: 7 })).toEqual({ chip: 'Kept private.', lock: true, line: null });
   });
 
   it('a recording kept before its words: the lock chip, true at this moment', () => {
     expect(savedMoment({ kind: 'voice', childName: 'Asha', month: 7 })).toEqual({ chip: 'Recording kept on this phone.', lock: true, line: null });
-    expect(savedMoment({ kind: 'voice', childName: 'Asha', month: 7, keptForWords: true }).chip).toBe('Your voice is kept. The words will follow.');
+    expect(savedMoment({ kind: 'voice', childName: 'Asha', month: 7, keptForWords: true }).chip).toBe('Recording kept. The words will follow.');
   });
 
   it('never counts anything: no number but the month in any chip or line', () => {
@@ -201,7 +223,7 @@ describe('the saved moment (S21)', () => {
 
   it('VoiceOver hears the chip, then the line, as one announcement; the lock chip alone when there is no line', () => {
     expect(momentAnnouncement('Kept in Month 7', "Added to Asha's book.")).toBe("Kept in Month 7. Added to Asha's book.");
-    expect(momentAnnouncement('Kept just for you.', null)).toBe('Kept just for you.');
+    expect(momentAnnouncement('Kept private.', null)).toBe('Kept private.');
   });
 
   it('with a screen reader on, the moment holds about 3 s so the announcement is heard before the Book', () => {
@@ -227,5 +249,46 @@ describe('the saved moment (S21)', () => {
     expect(SIGN_IN_AFTER_BOOK_MS).toBe(600);
     expect(signInAfterLandingMs(false)).toBe(tokens.motion.route.dissolveMs + 600);
     expect(signInAfterLandingMs(true)).toBe(tokens.motion.fadeMs + 600);
+  });
+});
+
+describe('Review speaks what iOS VoiceOver ignores in a live region (BL-1793)', () => {
+  const deps = () => {
+    const said = new Set<string>();
+    const speak = vi.fn();
+    return { said, speak, settleMs: 280, later: (fn: () => void, ms: number) => setTimeout(fn, ms), cancel: (h: unknown) => clearTimeout(h as ReturnType<typeof setTimeout>) };
+  };
+
+  it('says the early-stop line once, only after the screen has settled', () => {
+    vi.useFakeTimers();
+    const d = deps();
+    speakOnceAfterSettle('Everything before that is kept.', d);
+    vi.advanceTimersByTime(279);
+    expect(d.speak).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1);
+    expect(d.speak).toHaveBeenCalledTimes(1);
+    expect(d.speak).toHaveBeenCalledWith('Everything before that is kept.');
+    // A re-render or a remount with the same line says nothing more.
+    speakOnceAfterSettle('Everything before that is kept.', d);
+    vi.advanceTimersByTime(1000);
+    expect(d.speak).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
+  });
+
+  it('says nothing for no line, and nothing when the screen goes away before it settles', () => {
+    vi.useFakeTimers();
+    const d = deps();
+    speakOnceAfterSettle(null, d);
+    const cancel = speakOnceAfterSettle('Everything before that is kept.', d);
+    cancel();
+    vi.advanceTimersByTime(1000);
+    expect(d.speak).not.toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+
+  it('says "Put back." with Undo and the new count of small fixes', () => {
+    expect(putBackSpeech({ putBack: 'Put back.', undo: 'Undo', countText: '2 small fixes' })).toBe('Put back. Undo. 2 small fixes.');
+    expect(putBackSpeech({ putBack: 'Put back.', undo: 'Undo', countText: '1 small fix' })).toBe('Put back. Undo. 1 small fix.');
+    expect(putBackSpeech({ putBack: 'Put back.', undo: 'Undo', countText: 'Every fix put back.' })).toBe('Put back. Undo. Every fix put back.');
   });
 });

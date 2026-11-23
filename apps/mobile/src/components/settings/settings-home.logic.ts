@@ -41,3 +41,82 @@ export function planRow(input: { alpha: boolean; plusOn: boolean; familyShared: 
 export function planRowFor(plan: PlanState, now: string, alpha: boolean): ReturnType<typeof planRow> {
   return planRow({ alpha, plusOn: plusOn(plan, now), familyShared: plan.details.ownership === 'familyShared' });
 }
+
+/**
+ * The header card at the top of Settings home (settings-ia.md 3, design.md 2.6, SETTINGS_AND_ACCOUNT.md 6).
+ * Title: the name the person signs as, when there is one, else "On this phone" alone (or "Account" with sign-in).
+ * Second line: "On this phone" in a build without sign-in, else the sign-in line.
+ *
+ * The Plan row is drawn directly under the card in every build (CCO-9 and settings-ia.md 3 [F] read literally, CTO
+ * ruling 8 Nov 2026): the Terms, the Subscription Terms and the plan reminder send people to "Settings, Plan" to
+ * cancel or ask for a refund (California auto-renewal, CR-050 (h)), so a row labelled Plan must be there as written.
+ * So the card carries no plan words. With sign-in it opens Account (design.md 2.6). Without sign-in it opens nothing:
+ * a second tap target to Plan right above the Plan row would say the same thing twice (design to confirm; design.md
+ * 2.6 had the card open Plan only because there was no Plan row then).
+ */
+export type HeaderCard = {
+  title: string;
+  subtitle: string | undefined;
+  /** Where a tap goes; null: the card is not a button. */
+  route: 'account' | null;
+  hint: string | undefined;
+};
+
+export function headerCard(input: { signIn: boolean; status: AuthState['status']; provider: SignInProvider; signsAs: string | null | undefined }): HeaderCard {
+  const h = copy.settingsHome;
+  const name = input.signsAs?.trim();
+  if (!input.signIn) {
+    return name ? { title: name, subtitle: h.cardOnPhone, route: null, hint: undefined } : { title: h.cardOnPhone, subtitle: undefined, route: null, hint: undefined };
+  }
+  return {
+    title: name || h.accountLabel,
+    subtitle: SIGNED_IN.has(input.status) ? authCopy.account.signedInWith[input.provider ?? 'other'] : authCopy.account.signedOutTitle,
+    route: 'account',
+    hint: h.cardHint.account,
+  };
+}
+
+/**
+ * The You tab as named states (YOU-TAB-STATES-9nov, section 2; BL-801). One predicate, so the top card and the Delete
+ * account row cannot disagree about whether this phone has an account (GAP 2).
+ *
+ *   account     A: the phone has a session (a user id): the Account card.
+ *   signedOut   B: sign-in is on, no session, and the phone has been claimed by an account before.
+ *   localStart  C: sign-in is on, no session, and no account has ever claimed this phone's letters.
+ *   noSignIn    0: a build without sign-in: today's card, "On this phone", opens nothing.
+ *
+ * B versus C reads the sync owner (`syncOwner`, via `currentUserId()` in the store). The owner is written by
+ * `takeOwnership`, which runs when the sync engine starts, that is after sign-in, consent and the claim screen's
+ * "Keep in this account" (not at the sign-in itself). A phone with a session is A before and after that moment, since
+ * A is decided by the session first; the owner only separates the two phones that have no session.
+ */
+export type YouTabState = 'account' | 'signedOut' | 'localStart' | 'noSignIn';
+
+export interface YouTabView {
+  state: YouTabState;
+  /** The card is the Sign in card (B or C), not the Account card. */
+  signedOutCard: boolean;
+  /** C only: the second paragraph. */
+  localStartLine: boolean;
+  /** Delete account may be drawn (still needs the build's deletion flag): a settled session, not mid-consent or mid-sign-out. */
+  accountReady: boolean;
+}
+
+/** While consent is being checked or asked, or a sign-out is under way, the person is neither settled in nor out: no deletion entry (Karma ruling on #738). */
+const SETTLED: ReadonlySet<AuthState['status']> = new Set(['ready']);
+
+export function youTabView(input: { signIn: boolean; status: AuthState['status']; owner: string | null }): YouTabView {
+  if (!input.signIn) return { state: 'noSignIn', signedOutCard: false, localStartLine: false, accountReady: false };
+  if (SIGNED_IN.has(input.status)) return { state: 'account', signedOutCard: false, localStartLine: false, accountReady: SETTLED.has(input.status) };
+  const claimed = input.owner !== null;
+  return { state: claimed ? 'signedOut' : 'localStart', signedOutCard: true, localStartLine: !claimed, accountReady: false };
+}
+
+/**
+ * Whether this phone may erase its letters locally: the same rule as `localDeletionAllowed()` in the store, which reads the
+ * sync owner. A phone an account has claimed has the account's copy too, so local erase is hidden (A and B); a phone that
+ * never signed in may (C, and 0). Pure copy of that one-line rule so the states table is testable in Node.
+ */
+export function localDeletionAllowedFor(owner: string | null): boolean {
+  return owner === null;
+}

@@ -1,7 +1,10 @@
 /**
  * Drafts: captures in progress. Written when recording starts, so a crash
  * or a closed sheet loses nothing (TDD 01 3.4). Rows only: audio files are
- * deleted by the explicit Discard in Listen, never here.
+ * deleted by a confirmed Let it go (Review, Listen), the launch sweep
+ * finishing one (capture/let-it-go.logic.ts, sweep.ts), erasing a deleted
+ * book (store.ts eraseBook) and Erase everything (eraseEverythingLocal),
+ * never here.
  */
 import { changes, type RepoContext } from './context';
 import type { BaseDirection, CaptureMode, Draft, DraftKind, DraftState, OccurredPrecision } from './types';
@@ -95,6 +98,21 @@ export function listForChild({ db }: RepoContext, childId: string): Draft[] {
     .map(fromRow);
 }
 
+/**
+ * When the newest draft waiting across the given books was made (`created_at`), in one query (BL-1648, NS-48-R27). A
+ * take still recording, or being let go, is not one. Null when none waits. Returns a date, never words.
+ */
+export function newestWaitingAt({ db }: RepoContext, childIds: readonly string[]): string | null {
+  if (childIds.length === 0) return null;
+  return (
+    db.get<{ created_at: string }>(
+      `SELECT created_at FROM drafts WHERE child_id IN (${childIds.map(() => '?').join(',')}) AND state NOT IN ('recording', 'discarding')
+       ORDER BY created_at DESC, id DESC LIMIT 1`,
+      ...childIds,
+    )?.created_at ?? null
+  );
+}
+
 // ── Review's choices (WP-F04-03; F04 section 11.3) ─────────────────────────
 const ISO_DAY = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
 /** A BCP-47 language tag as the speech and pack code writes them (`en`, `en-GB`, `zh-Hant`). */
@@ -159,6 +177,16 @@ export function markHeld({ db }: RepoContext, id: string, inBookChoice: boolean 
     inBookChoice === null ? null : inBookChoice ? 1 : 0, id,
   );
   return changes(db) === 1;
+}
+
+/**
+ * Every letter waiting on this phone for the export (PL-2, schema 1.6.0): every draft, in every book, that is not
+ * still recording and not being let go. Oldest first, the way the export lists them.
+ */
+export function listForExport({ db }: RepoContext): Draft[] {
+  return db
+    .all<DraftRow>(`SELECT ${COLS} FROM drafts WHERE state NOT IN ('recording', 'discarding') ORDER BY created_at, id`)
+    .map(fromRow);
 }
 
 /** Held drafts, newest first; for one book when `childId` is given (Tonight's one held row, F14-REQ-041). */

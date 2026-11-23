@@ -198,6 +198,18 @@ export function isMicProblem(phase: ListenPhase): phase is MicProblem {
   return phase === 'denied' || phase === 'busy' || phase === 'full';
 }
 
+/**
+ * BL-432: the length at which Listen says, calmly, that this is a long take. Nothing stops and nothing is cut: the take
+ * keeps recording, and the line only says Finish is there when they want it. (Whole-file VAD is fine to 30 minutes;
+ * past it the planner windows the audio, docs/tdd/03-audio-transcription.md.)
+ */
+export const LONG_TAKE_MS = 30 * 60 * 1000;
+
+/** True once a take has run 30 minutes, while it is recording or paused. Never in any other room, never on a bad clock. */
+export function longTakeNotice(phase: ListenPhase, ms: number): boolean {
+  return (phase === 'recording' || phase === 'paused') && Number.isFinite(ms) && ms >= LONG_TAKE_MS;
+}
+
 /** "1:05": the running clock while recording. Whole seconds, rounded down, so it never runs ahead of the take. */
 export function elapsedClock(ms: number): string {
   const s = Math.max(0, Math.floor((Number.isFinite(ms) ? ms : 0) / 1000));
@@ -220,6 +232,8 @@ export function listenRoom(phase: RoomPhase): {
   clock: boolean;
   /** The line under the circle. */
   line: 'readyHint' | 'listening' | 'paused' | 'none';
+  /** Paused only: the note that a lock ends the take (BL-1787; the screen stays awake only while recording, D-087). */
+  lockNote: boolean;
   /** Pause and Finish can be pressed (they are on screen in every moment, disabled before a take). */
   controls: boolean;
   /** "Let it go" is offered (its slot is kept either way). */
@@ -232,6 +246,7 @@ export function listenRoom(phase: RoomPhase): {
     aura: before ? 'ready' : phase === 'recording' ? 'listening' : phase === 'paused' ? 'paused' : 'processing',
     clock: !before,
     line: phase === 'ready' ? 'readyHint' : phase === 'asking' ? 'none' : phase === 'paused' ? 'paused' : 'listening',
+    lockNote: phase === 'paused',
     controls: phase === 'recording' || phase === 'paused',
     // Never while finishing (BL-563): the take is being kept, and the only control left must not be the one that
     // deletes it.
@@ -290,6 +305,25 @@ export function reviewParams(draftId: string, reason: StopReason): { draftId: st
 export function promptLine(promptKey: string | null | undefined, prompts: readonly { key: string; text: string }[]): string | null {
   if (!promptKey) return null;
   return prompts.find((p) => p.key === promptKey)?.text ?? null;
+}
+
+/**
+ * Where Listen goes once the wait for the save ends (BL-563). The draft id is known before the wait, so a slow save
+ * still opens Review on that draft; only a save that threw leaves early, because nothing was kept to open.
+ */
+export type AfterFinish =
+  | { to: 'review'; params: { draftId: string; stopped?: StoppedParam } }
+  | { to: 'leave' };
+
+export function afterFinish(
+  draftId: string,
+  reason: StopReason,
+  outcome: { ok: true; value: unknown } | { ok: false; why: 'failed' | 'timeout' },
+): AfterFinish {
+  if (!outcome.ok && outcome.why === 'failed') return { to: 'leave' };
+  // The save finished with no row: the take was let go meanwhile, so there is nothing for Review to open.
+  if (outcome.ok && outcome.value === null) return { to: 'leave' };
+  return { to: 'review', params: reviewParams(draftId, reason) };
 }
 
 /** How long Listen waits for a take to be kept before it leaves anyway (BL-563). The take stays either way. */

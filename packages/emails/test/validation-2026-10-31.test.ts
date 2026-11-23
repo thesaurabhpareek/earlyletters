@@ -50,7 +50,7 @@ describe('TPL-06: every link points at a page that exists, or at one listed as s
   it('classifies routes', () => {
     expect(linkStatus('https://earlyletters.com/privacy')).toBe('built');
     expect(linkStatus('https://earlyletters.com/auth/callback#token_hash=x&type=email')).toBe('built');
-    expect(linkStatus('https://earlyletters.com/open')).toBe('needed');
+    expect(linkStatus('https://earlyletters.com/open')).toBe('built');
     expect(linkStatus('https://earlyletters.com/open/export/abc')).toBe('needed');
     expect(neededRoute('https://earlyletters.com/open/export/abc')).toBe('/open/export');
     expect(linkStatus('https://earlyletters.com/contact')).toBe('unknown');

@@ -123,7 +123,7 @@ const age = (u, interval) => sys(`update children set created_at = now() - $2::i
   const V = '99999999-9999-9999-9999-999999999999'; // signed in, no consent recorded yet
   await sys(`insert into auth.users (id) values ($1)`, [V]);
   const r = (await one(V, `select public.peek_invite($1) r`, [tok])).r;
-  check(`[G-13] before consent: inviter's sign-off and role only (${JSON.stringify(r)})`,
+  check(`[NS-25-R2][G-13] before consent: inviter's sign-off and role only (${JSON.stringify(r)})`,
     JSON.stringify(Object.keys(r).sort()) === '["inviter","role"]' && r.inviter === 'Mama' && r.role === 'parent');
   check('[G-13] never the child\'s name or any id', !/Asha|[0-9a-f]{8}-[0-9a-f]{4}/i.test(JSON.stringify(r)));
   check('peeking does not join or use the invite', (await sys(`select count(*)::int n from child_members where profile_id = $1`, [V])).rows[0].n === 0

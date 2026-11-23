@@ -25,6 +25,7 @@ import { Text } from '@/components/ui/text';
 import { useToast } from '@/components/ui/toast';
 import { noteAskShown } from '@/lib/analytics/ask';
 import { track } from '@/lib/analytics/track';
+import { useAppLock } from '@/lib/app-lock/controller';
 import { copy } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
 import {
@@ -51,9 +52,6 @@ import { useMotion } from '@/lib/motion';
 
 type OnCadence = Exclude<Cadence, 'off'>;
 
-/** App lock is not on develop yet (account-security design 2.10). The lock lane replaces this with its state. */
-const APP_LOCK_ON = false;
-
 /**
  * Reminders (PRD C F1, C-REQ-001 to -003, -007, -009, -011; EXPERIENCE_PASS_2026-10 S34; reminders-settings.md as
  * ruled: CDesO-3, CCO-10, CPO-3). Local notifications only.
@@ -77,6 +75,7 @@ export default function Reminders() {
   const [lateNote, setLateNote] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const toast = useToast();
+  const lockOn = useAppLock().enabled;
   const motion = useMotion();
   const ax = useIsAccessibilitySize();
   // The permission last seen, to tell "allowed in iOS Settings just now" from any other read.
@@ -194,7 +193,7 @@ export default function Reminders() {
     update({ days: has ? prefs.days.filter((d) => d !== day) : [...prefs.days, day] });
   };
   const selectedDays = cadence === 'weekly' ? [prefs.weeklyDay] : cadence === 'everyEvening' ? [0, 1, 2, 3, 4, 5, 6] : prefs.days;
-  const names = namesRow(prefs.namesOnLockScreen, APP_LOCK_ON);
+  const names = namesRow(prefs.namesOnLockScreen, lockOn);
   const monthNote = useMemo(() => monthRowNote(plannerChildren()), [prefs]); // eslint-disable-line react-hooks/exhaustive-deps
   const failed = on && permission === 'granted' && !scheduleOk;
   // The rows below the card move up as it collapses (S34); under Reduce Motion they jump, and the choices only fade in.
@@ -317,11 +316,13 @@ export default function Reminders() {
 
           <ListSection>
             <ToggleRow title={s.monthNotesLabel} description={monthNote} value={prefs.monthNotes} onValueChange={(v) => update({ monthNotes: v })} />
+            {/* With the app lock on, names are off and the switch cannot turn them on (F17-REQ-015; lib/reminders/prefs.ts
+                forces it in the data too). namesRow gives the lock line, reminderCopy.settings.lockNames. */}
             <ToggleRow
               title={copy.settings.privacy.lockScreenLabel}
               description={names.help}
               value={names.value}
-              disabled={names.disabled}
+              disabled={lockOn}
               onValueChange={(v) => {
                 update({ namesOnLockScreen: v });
                 track('settings_changed', { key: 'lock_screen_names' });

@@ -447,8 +447,11 @@ export class PackManager {
 
   /** Stops a download. The partial file is kept so the next attempt resumes. */
   cancel(id: string): void {
-    this.waitingForWifi.delete(id);
-    this.jobs.get(id)?.controller.abort();
+    const wasWaiting = this.waitingForWifi.delete(id);
+    const job = this.jobs.get(id);
+    if (job) job.controller.abort();
+    // A pack held for Wi-Fi has no running job to report the stop: say it here, or its row keeps saying it waits.
+    else if (wasWaiting) this.emit({ id, version: null, phase: 'cancelled', bytesDone: 0, bytesTotal: 0, failure: 'cancelled' }, true);
   }
 
   /** Deletes a pack and any partial download of it (Settings > Storage). */

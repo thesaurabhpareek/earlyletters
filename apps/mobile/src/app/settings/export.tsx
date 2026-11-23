@@ -8,14 +8,16 @@ import { LockSimpleIcon } from 'phosphor-react-native/src/icons/LockSimple';
 import { MicrophoneIcon } from 'phosphor-react-native/src/icons/Microphone';
 import { WarningCircleIcon } from 'phosphor-react-native/src/icons/WarningCircle';
 import { useEffect, useRef, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 import { BookCover } from '@/components/book/book-cover';
 import { exportEmpty, exportFailure, INSIDE } from '@/components/settings/export.logic';
 import { useHelpLink } from '@/components/settings/help-fallback';
 import { mailTarget } from '@/components/settings/help-links.logic';
 import { ListRow, ListSection } from '@/components/ui/list-row';
 import { Button } from '@/components/ui/button';
+import { PinnedActionLayout } from '@/components/ui/pinned-action';
 import { Text } from '@/components/ui/text';
+import { confirmForExport, whileSharing } from '@/lib/app-lock/controller';
 import { trackExportCompleted, trackExportFailed, trackExportStarted } from '@/lib/analytics/track';
 import { copy, fill } from '@/lib/copy';
 import {
@@ -103,6 +105,9 @@ export default function ExportScreen() {
   }, []);
 
   const start = async () => {
+    // App lock on: the device confirms it is them before the whole book is packed (security backlog 2,
+    // `appLock.exportReason`). Cancel leaves the page as it was, silently.
+    if (!(await confirmForExport())) return;
     haptic('press');
     const startedAt = Date.now();
     trackExportStarted({ letters: summary?.letters ?? 0 });
@@ -148,7 +153,8 @@ export default function ExportScreen() {
       } catch {
         // the date is a courtesy; the export goes ahead
       }
-      await shareExport(result, e.title);
+      // The lock never falls due while the share sheet is open (security.md section 2).
+      await whileSharing(() => shareExport(result, e.title));
     } finally {
       pending.current = null;
       setState({ kind: 'shared' });
@@ -160,8 +166,40 @@ export default function ExportScreen() {
   const percent = running ? Math.round(state.progress.fraction * 100) : 0;
   const phaseText = running ? (state.progress.phase === 'checking' ? s.checking : state.progress.fraction < 0.02 ? e.preparing : s.packing) : '';
 
+  // The waiting line stays in the content, above the pinned button that answers it (S43).
+  const emptyNote = empty ? (
+    <Text variant="subhead" testID="export.empty">
+      {s.emptyNote}
+    </Text>
+  ) : null;
+
+  // The one primary, pinned at the bottom (BL-418); the running state's Cancel is a secondary and stays in the content.
+  const tooBig = state.kind === 'failed' && exportFailure(state.reason).action === 'writeToUs';
+  const primary =
+    state.kind === 'ready' ? (
+      // The not-encrypted notice is in the footer with the Share button, so it is seen where the person decides (BL-1518).
+      <View className="gap-3">
+        <View className="flex-row gap-2" testID="export.privacyNotice">
+          <LockSimpleIcon size={18} color={c.textMuted} />
+          <Text className="flex-1 text-sm leading-5 text-muted-foreground">{s.privacyNotice}</Text>
+        </View>
+        <Button size="lg" fullWidth onPress={() => void share(state.result)}>
+          <Text>{s.shareButton}</Text>
+        </Button>
+      </View>
+    ) : state.kind === 'idle' || state.kind === 'cancelled' || state.kind === 'shared' || state.kind === 'failed' ? (
+      tooBig ? (
+        // Too big: exporting again would fail the same way, so the way on is to write to us (S43).
+        <Button size="lg" fullWidth label={copy.settingsHome.helpValue} onPress={() => help.open(mailTarget(copy.settingsHome.helpSubject))} testID="export.writeToUs" />
+      ) : (
+        <Button size="lg" fullWidth onPress={() => void start()} disabled={empty} testID="export.start">
+          <Text>{state.kind === 'idle' ? e.button : s.againButton}</Text>
+        </Button>
+      )
+    ) : null;
+
   return (
-    <ScrollView contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
+    <PinnedActionLayout contentContainerClassName="gap-7 px-5 pb-6 pt-4" action={primary}>
       <Stack.Screen options={{ title: e.title }} />
 
       {cover ? (
@@ -197,19 +235,7 @@ export default function ExportScreen() {
             </Text>
           )}
           {state.kind === 'failed' && <FailureCard reason={state.reason} />}
-          {empty ? (
-            <Text variant="subhead" className="text-center" testID="export.empty">
-              {s.emptyNote}
-            </Text>
-          ) : null}
-          {state.kind === 'failed' && exportFailure(state.reason).action === 'writeToUs' ? (
-            // Too big: exporting again would fail the same way, so the way on is to write to us (S43).
-            <Button size="lg" label={copy.settingsHome.helpValue} onPress={() => help.open(mailTarget(copy.settingsHome.helpSubject))} testID="export.writeToUs" />
-          ) : (
-            <Button size="lg" onPress={() => void start()} disabled={empty} testID="export.start">
-              <Text>{state.kind === 'idle' ? e.button : s.againButton}</Text>
-            </Button>
-          )}
+          {emptyNote}
         </View>
       )}
 
@@ -243,17 +269,10 @@ export default function ExportScreen() {
             </Text>
           </View>
           {state.result.mismatched > 0 && <Text className="text-sm leading-5 text-muted-foreground">{s.integrityNote}</Text>}
-          <View className="flex-row gap-2">
-            <LockSimpleIcon size={18} color={c.textMuted} />
-            <Text className="flex-1 text-sm leading-5 text-muted-foreground">{s.privacyNotice}</Text>
-          </View>
-          <Button size="lg" onPress={() => void share(state.result)}>
-            <Text>{s.shareButton}</Text>
-          </Button>
         </View>
       )}
       {help.sheet}
-    </ScrollView>
+    </PinnedActionLayout>
   );
 }
 

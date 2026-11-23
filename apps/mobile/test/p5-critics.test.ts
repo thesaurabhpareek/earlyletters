@@ -16,7 +16,7 @@ import { arrivalToastDelayMs, createArrivalGate } from '../src/components/book/b
 import { cardLabel } from '../src/components/book/letter-card.logic';
 import { readableInBook } from '../src/components/book/quiet-day.logic';
 import { eraseOutcome, restoredLine } from '../src/components/book/shelf.logic';
-import { turnControls } from '../src/components/book/turn-controls.logic';
+import { pageButtonsClass, turnControls } from '../src/components/book/turn-controls.logic';
 import { wordsCardKind, wordsCardState } from '../src/components/book/words-card.logic';
 import { exactViewAvailable, pageProvenanceKey, provenanceLine } from '../src/lib/provenance';
 import type { Entry } from '../src/lib/store';
@@ -125,7 +125,7 @@ describe('[S1] the arrival wash survives a Book that mounts with `arrived`', () 
     const screen = code(src('app/(tabs)/book.tsx'));
 
     it('reads the letters in the state initialiser, so the first frame is the book and not the empty-book state', () => {
-      expect(screen).toMatch(/useState\(\(\) => \(\{ childId: active\?\.id \?\? null, entries: active \? listEntriesForChild\(active\.id\) : \[\] \}\)\)/);
+      expect(screen).toMatch(/useState\(\(\) => \(\{ childId: active\?\.id \?\? null, entries: active \? listBookEntries\(active\.id\) : \[\] \}\)\)/);
       expect(screen).not.toMatch(/useState<Entry\[\]>\(\[\]\)/);
       expect(screen).toMatch(/const loaded = read\.childId === \(active\?\.id \?\? null\);/);
     });
@@ -161,8 +161,8 @@ describe('[S1] the arrival wash survives a Book that mounts with `arrived`', () 
       expect(screen).toMatch(/arrivalTimer\.current = setTimeout\(\(\) => \{\s*arrivalTimer\.current = null;\s*arrivalGate\.finish\(\);/);
     });
 
-    it('reads the letters once at mount: the effect rereads only for another book, then on every store change', () => {
-      expect(screen).toMatch(/if \(read\.childId !== active\.id\) reread\(\);\s*return subscribe\(reread\);/);
+    it('follows the store through watchBook: subscribe, then one catch-up read, then a reread on every change (BL-1428)', () => {
+      expect(screen).toMatch(/return watchBook\(\{ childId: active\.id, read: listBookEntries, subscribe, set: setRead \}\);/);
       expect(screen).not.toMatch(/\n\s*reread\(\);\n/);
     });
   });
@@ -229,7 +229,7 @@ describe('[S3] "Write the words" on a recording with no words', () => {
     expect(sheet).not.toMatch(/setText\(''\)|setText\(""\)/);
     expect(sheet.slice(0, close)).not.toMatch(/onClose\(\)/);
     expect(sheet).toMatch(/\{refused \? \([\s\S]*?copy\.review\.saveFailed/);
-    expect(en.review.saveFailed).toBe('That did not save. Your words are still here.');
+    expect(en.review.saveFailed).toBe("That didn't save. Your words are still here.");
   });
 
   it('the journey asserts it: j10e sees "Write the words" and neither retry nor "Get words ready", and the save goes to Review', () => {
@@ -264,8 +264,10 @@ describe('[S4] Read together\'s page buttons at accessibility sizes', () => {
 
   it('the screen reads the size, stacks full width and gives no button a half-width shape when stacked (source)', () => {
     const rt = code(src('app/read-together.tsx'));
-    expect(rt).toMatch(/const turn = turnControls\(useIsAccessibilitySize\(\)\);/);
-    expect(rt).toMatch(/className=\{turn\.stacked \? 'gap-3 px-5 pb-2 pt-3' : 'flex-row gap-3 px-5 pb-2 pt-3'\}/);
+    expect(rt).toMatch(/const accessibilitySize = useIsAccessibilitySize\(\);\s*const turn = turnControls\(accessibilitySize\);/);
+    expect(rt).toMatch(/className=\{pageButtonsClass\(turn\.stacked, placement\)\}/);
+    expect(pageButtonsClass(true, 'pinned')).toBe('gap-3 px-5 pb-2 pt-3');
+    expect(pageButtonsClass(false, 'pinned')).toBe('flex-row gap-3 px-5 pb-2 pt-3');
     expect(rt.match(/className=\{turn\.stacked \? 'px-4' : 'flex-1 px-4'\}/g)).toHaveLength(2);
     expect(rt.match(/fullWidth=\{turn\.stacked\}/g)).toHaveLength(2);
     expect(rt).toMatch(/turn\.order\.map\(/);
@@ -286,7 +288,7 @@ describe('[S6] Erase now fails with a word', () => {
   });
 
   it('the line says what did not happen, then what is true, and claims nothing about the recording', () => {
-    expect(d.eraseFailedToast).toBe('The letter was not erased. It is still in Recently deleted.');
+    expect(d.eraseFailedToast).toBe("That letter wasn't erased. It's still in Recently deleted.");
     expect(d.eraseFailedToast).not.toMatch(/recording|file|try again|sorry|error|fail/i);
     expect(d.eraseFailedToast).not.toBe(d.erasedToast);
   });
@@ -298,29 +300,28 @@ describe('[S6] Erase now fails with a word', () => {
   });
 });
 
-describe('[S7] a Book card says where the recording is only for the reader\'s own letters', () => {
-  const base = { signature: 'From Mama', dateline: 'Tuesday, October 14, 2026, Asha is 7 months old', text: 'Asha laughed at the dog', inBook: true, privateLabel: 'Private', spoken: true, own: true, recordingOnPhone: en.book.recordingOnPhone };
+describe('[S7] a Book card says where the recording is only when this phone holds it', () => {
+  // Rewritten for NX-36-S17 G3: the clause reads audioUri alone (test/card-recording-label.test.ts has the full table).
+  const base = { signature: 'From Mama', dateline: 'Tuesday, October 14, 2026, Asha is 7 months old', text: 'Asha laughed at the dog', inBook: true, privateLabel: 'Private', audioUri: 'file:///rec/1.m4a', recordingOnPhone: en.book.recordingOnPhone };
 
-  it('names the recording\'s place on the reader\'s own spoken letter, word for word', () => {
+  it('names the recording\'s place when the phone holds it, word for word', () => {
     expect(cardLabel(base)).toBe('From Mama. Tuesday, October 14, 2026, Asha is 7 months old. Asha laughed at the dog. Recording kept on this phone');
   });
 
-  it('leaves it out for the other parent\'s letter, and for a typed one', () => {
-    expect(cardLabel({ ...base, own: false })).not.toMatch(/Recording kept on this phone/);
-    expect(cardLabel({ ...base, own: true, spoken: false })).not.toMatch(/Recording kept on this phone/);
-    // Everything else the card says is unchanged.
-    expect(cardLabel({ ...base, own: false })).toBe('From Mama. Tuesday, October 14, 2026, Asha is 7 months old. Asha laughed at the dog');
+  it('leaves it out when the phone holds no recording (the other parent\'s letter, a typed one, a pulled one)', () => {
+    expect(cardLabel({ ...base, audioUri: null })).not.toMatch(/Recording kept on this phone/);
+    expect(cardLabel({ ...base, audioUri: null })).toBe('From Mama. Tuesday, October 14, 2026, Asha is 7 months old. Asha laughed at the dog');
   });
 
   it('still carries the private mark and the waiting reason, in their places', () => {
     expect(cardLabel({ ...base, inBook: false, reason: 'Getting ready, 40%' })).toMatch(/Asha laughed at the dog\. Private\. Getting ready, 40%\. Recording kept on this phone$/);
-    expect(cardLabel({ ...base, own: false, inBook: false, reason: 'Ready to read back' })).toMatch(/Private\. Ready to read back$/);
+    expect(cardLabel({ ...base, audioUri: null, inBook: false, reason: 'Ready to read back' })).toMatch(/Private\. Ready to read back$/);
   });
 
-  it('the held words are untouched, and the card asks isOwnEntry (source)', () => {
+  it('the held words are untouched, and the card passes audioUri (source)', () => {
     expect(en.book.recordingOnPhone).toBe('Recording kept on this phone');
     const card = code(src('components/book/letter-card.tsx'));
-    expect(card).toMatch(/own: isOwnEntry\(entry\),/);
+    expect(card).toMatch(/audioUri: entry\.audioUri,/);
     expect(card).toMatch(/recordingOnPhone: copy\.book\.recordingOnPhone,/);
     expect(card).not.toMatch(/spoken \? copy\.book\.recordingOnPhone/);
   });
@@ -328,7 +329,7 @@ describe('[S7] a Book card says where the recording is only for the reader\'s ow
 
 describe('[S8] the letter page claims no fixes it cannot know', () => {
   const words = en.book.provenance;
-  const line = (entry: { captureMode: string; finalText: string; rawTranscript: string }, own: boolean) => provenanceLine(entry, { own, words, recordingOnPhone: en.book.recordingOnPhone });
+  const line = (entry: { captureMode: string; finalText: string; rawTranscript: string }, own: boolean) => provenanceLine(entry, { own, audioUri: 'file:///rec/1.m4a', words, recordingOnPhone: en.book.recordingOnPhone });
   const fixed = { captureMode: 'spoken', rawTranscript: 'Asha um laughed', finalText: 'Asha laughed' };
   const exact = { captureMode: 'spoken', rawTranscript: 'Asha laughed', finalText: 'Asha laughed' };
   // The other parent's phone never holds the author's working material (book_entries leaves it out).
@@ -380,7 +381,7 @@ describe('[S8] the letter page claims no fixes it cannot know', () => {
 
   it('the page composes the line from lib/provenance (source)', () => {
     const page = code(src('app/letter/[id].tsx'));
-    expect(page).toMatch(/provenanceLineOf\(entry, \{ own, words: copy\.book\.provenance, recordingOnPhone: copy\.book\.recordingOnPhone \}\)/);
+    expect(page).toMatch(/provenanceLineOf\(entry, \{ own, audioUri: entry\.audioUri, words: copy\.book\.provenance, recordingOnPhone: copy\.book\.recordingOnPhone \}\)/);
     expect(page).not.toMatch(/copy\.book\.provenance\[/);
   });
 });
@@ -396,7 +397,8 @@ describe('[L4] Read together shows on the Book for what it can read', () => {
 
   it('the Book asks the same question as the screen (source)', () => {
     const book = code(src('app/(tabs)/book.tsx'));
-    expect(book).toMatch(/\{readableInBook\(entries\)\.length > 0 && \(/);
+    expect(book).toMatch(/const canRead = readableInBook\(entries\)\.length > 0;/);
+    expect(book).toMatch(/readTogether=\{canRead \? \{/);
     expect(book).not.toMatch(/entries\.some\(\(e\) => e\.inBook && !isQuietMark\(e\)\)/);
     expect(code(src('app/read-together.tsx'))).toMatch(/readableInBook\(listEntriesForChild\(child\.id\)\)/);
   });

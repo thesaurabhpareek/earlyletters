@@ -1,9 +1,10 @@
 /**
  * Sign in with Apple, native (PRD A-REQ-016, TDD 04 3.1.1) through
  * expo-apple-authentication and Supabase signInWithIdToken, with a hashed
- * nonce. Apple shares the name only on the first sign-in, so it is kept in
- * the Keychain until Terms are accepted and then written to
- * profiles.display_name (consent.ts), never logged.
+ * nonce. Only the email scope is requested (O-8, NX-31-R9, FP-9): no screen
+ * uses Apple's name, so it is never asked for and never kept. A name left by
+ * an older build is dropped at the next sign-in. O-8 DEFAULT, reversible:
+ * add FULL_NAME back here if privacy rules otherwise.
  *
  * The Apple user identifier is kept in the Keychain so launch can ask Apple
  * whether the credential was revoked (A-REQ-033).
@@ -26,8 +27,8 @@ import { secureStorage } from '../supabase/secure-storage';
 import { appleCaptureBody, APPLE_TOKEN_FUNCTION, captureVerdict, CAPTURE_ATTEMPTS, CAPTURE_RETRY_MS, type CaptureResult } from './apple-token.logic';
 import { makeNonce } from './nonce';
 
-const APPLE_USER_KEY = 'scribe.auth.appleUser';
-const PENDING_NAME_KEY = 'scribe.auth.pendingName';
+export const APPLE_USER_KEY = 'scribe.auth.appleUser';
+export const PENDING_NAME_KEY = 'scribe.auth.pendingName';
 
 export async function appleSignInAvailable(): Promise<boolean> {
   if (Platform.OS !== 'ios') return false;
@@ -38,17 +39,11 @@ export async function appleSignInAvailable(): Promise<boolean> {
   }
 }
 
-function fullName(n: AppleAuthentication.AppleAuthenticationFullName | null): string | null {
-  if (!n) return null;
-  const s = [n.givenName, n.middleName, n.familyName].filter((p): p is string => !!p && p.trim().length > 0).join(' ').trim();
-  return s ? s.slice(0, 60) : null; // profiles.display_name is at most 60 characters
-}
-
 /** Resolves with the Supabase user id. Rejects with the provider or Supabase error (errors.logic maps it). */
 export async function signInWithApple(sb: SupabaseClient): Promise<string> {
   const { raw, hashed } = await makeNonce();
   const credential = await AppleAuthentication.signInAsync({
-    requestedScopes: [AppleAuthentication.AppleAuthenticationScope.FULL_NAME, AppleAuthentication.AppleAuthenticationScope.EMAIL],
+    requestedScopes: [AppleAuthentication.AppleAuthenticationScope.EMAIL],
     nonce: hashed,
   });
   if (!credential.identityToken) throw Object.assign(new Error('apple_no_identity_token'), { code: 'bad_oauth_callback' });
@@ -58,16 +53,30 @@ export async function signInWithApple(sb: SupabaseClient): Promise<string> {
   if (!userId) throw Object.assign(new Error('apple_no_user'), { code: 'bad_oauth_callback' });
   // BL-330: in the background; sign-in is already done whatever this returns.
   if (credential.authorizationCode) void captureAppleToken(sb, credential.authorizationCode).catch(() => 'failed');
-  await secureStorage.setItem(APPLE_USER_KEY, credential.user).catch(() => {});
-  const name = fullName(credential.fullName);
-  if (name) await secureStorage.setItem(PENDING_NAME_KEY, name).catch(() => {});
+  await keepAppleUser(credential.user);
+  await clearPendingAppleName(); // O-8: no name is kept; drop one an older build left
   return userId;
 }
 
-/** The name Apple shared at first sign-in, if not yet written to the profile. */
-export async function takePendingAppleName(): Promise<string | null> {
-  const name = await secureStorage.getItem(PENDING_NAME_KEY).catch(() => null);
-  return name && name.trim() ? name : null;
+/**
+ * BL-1505, fail quiet (handled here, visible to the revocation watch only). A failed write must not leave the previous person's id to be read as this one's: drop it,
+ * and if it cannot be dropped, mark the id unknown so the revocation watch skips (false) instead of asking Apple
+ * about the wrong person. Never signs anyone out, never logs the id. The mark is memory only.
+ */
+let appleIdUnknown = false;
+
+async function keepAppleUser(user: string): Promise<void> {
+  try {
+    await secureStorage.setItem(APPLE_USER_KEY, user);
+    appleIdUnknown = false;
+  } catch {
+    try {
+      await secureStorage.removeItem(APPLE_USER_KEY);
+      appleIdUnknown = false;
+    } catch {
+      appleIdUnknown = true;
+    }
+  }
 }
 
 export async function clearPendingAppleName(): Promise<void> {
@@ -75,11 +84,14 @@ export async function clearPendingAppleName(): Promise<void> {
 }
 
 /**
- * A-REQ-033: true when Apple says this phone's Apple sign-in was revoked or
- * no longer exists. False when not an Apple user, not iOS, or unknown.
+ * A-REQ-033: true only when Apple says this phone's Apple sign-in was REVOKED.
+ * False for AUTHORIZED, TRANSFERRED and NOT_FOUND (pinned by test, open
+ * question for the CTO in PR 1125), when not an Apple user, not iOS, or when
+ * the read fails: a network error must never sign a person out.
  */
 export async function appleCredentialRevoked(): Promise<boolean> {
   if (Platform.OS !== 'ios') return false;
+  if (appleIdUnknown) return false;
   const user = await secureStorage.getItem(APPLE_USER_KEY).catch(() => null);
   if (!user) return false;
   try {
@@ -90,8 +102,23 @@ export async function appleCredentialRevoked(): Promise<boolean> {
   }
 }
 
+/**
+ * NS-45-R4, O-18: Apple's own revocation notification (JS only, expo-apple-authentication
+ * addRevokeListener). Returns the function that removes it; call it at sign-out.
+ */
+export function watchAppleRevocation(onRevoked: () => void): () => void {
+  if (Platform.OS !== 'ios') return () => {};
+  const sub = AppleAuthentication.addRevokeListener(() => onRevoked());
+  return () => sub.remove();
+}
+
 export async function forgetAppleUser(): Promise<void> {
-  await secureStorage.removeItem(APPLE_USER_KEY).catch(() => {});
+  try {
+    await secureStorage.removeItem(APPLE_USER_KEY);
+    appleIdUnknown = false;
+  } catch {
+    // keeps the mark: the id may still be there
+  }
 }
 
 /** The bundle id Apple issued the code to (production, preview or dev build); the function checks it against its list. */

@@ -12,7 +12,7 @@
  * recording in such a language waits for its language and says so (lib/transcription-queue/language-hold.ts).
  */
 import { languageCopy } from '@scribe/content';
-import { LANGUAGES, type LanguageInfo } from '@scribe/core';
+import { LANGUAGES, type LanguageCode, type LanguageInfo } from '@scribe/core';
 
 export interface LanguagePickerView {
   /** The languages the sheet lists; search filters within these. */
@@ -32,16 +32,37 @@ const ENGLISH_ONLY: LanguagePickerView = {
   note: languageCopy.picker.englishOnly,
 };
 
-/** The sheet's contents for this build. Referentially stable, so the picker can memo on it. */
-export function languagePickerView(englishOnly: boolean): LanguagePickerView {
-  return englishOnly ? ENGLISH_ONLY : EVERY_LANGUAGE;
+const SOME: Map<string, LanguagePickerView> = new Map();
+
+/**
+ * The sheet's contents for this build. Referentially stable, so the picker can memo on it.
+ * `heard` is what the build hears (lib/language/heard-languages.ts), or the English-only switch alone as a boolean.
+ * English alone: as above. Every language: as before. Some (D-125 item 2): those, in the usual order, with search
+ * and the same line under the list, since the others are still to come.
+ */
+export function languagePickerView(heard: boolean | readonly LanguageCode[]): LanguagePickerView {
+  if (typeof heard === 'boolean') return heard ? ENGLISH_ONLY : EVERY_LANGUAGE;
+  const languages = LANGUAGES.filter((l) => l.code === 'en' || heard.includes(l.code));
+  if (languages.length === 1) return ENGLISH_ONLY;
+  if (languages.length === LANGUAGES.length) return EVERY_LANGUAGE;
+  const key = languages.map((l) => l.code).join(',');
+  let view = SOME.get(key);
+  if (!view) {
+    view = { languages, search: true, note: languageCopy.picker.englishOnly };
+    SOME.set(key, view);
+  }
+  return view;
 }
+
+const onlyEnglish = (heard: boolean | readonly LanguageCode[]): boolean =>
+  typeof heard === 'boolean' ? heard : !heard.some((c) => c !== 'en');
 
 /**
  * Settings, Spoken language, "Also spoken". English only: no Add row and no "Add up to two more" line, since
  * nothing could be added (VOICE.md: promise only what the build does). Languages already listed there stay,
  * each with Remove; with none, the section is not shown.
  */
-export function alsoSpokenView(englishOnly: boolean, listed: number): { section: boolean; add: boolean; footer: boolean } {
+export function alsoSpokenView(heard: boolean | readonly LanguageCode[], listed: number): { section: boolean; add: boolean; footer: boolean } {
+  const englishOnly = onlyEnglish(heard);
   return { section: !englishOnly || listed > 0, add: !englishOnly, footer: !englishOnly };
 }

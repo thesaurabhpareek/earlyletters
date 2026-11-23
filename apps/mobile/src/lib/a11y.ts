@@ -15,6 +15,7 @@ import { useEffect, useRef, useState, type RefObject } from 'react';
 import { AccessibilityInfo, Platform, useWindowDimensions } from 'react-native';
 import { useUniwind } from 'uniwind';
 import { tokens, type ColorScheme, type Colors } from '@scribe/design-tokens';
+import { e2eWebSeam } from '@/dev/e2e-web-seam-load';
 import { getAudioMode } from '@/lib/audio-mode';
 import { createGatedAnnounce } from '@/lib/speech-gate';
 
@@ -23,7 +24,9 @@ import { isAccessibilitySize, isLargeText } from './a11y.logic';
 export { FONT_SCALE, isAccessibilitySize, isLargeText } from './a11y.logic';
 
 export function useFontScale(): number {
-  return useWindowDimensions().fontScale || 1;
+  const real = useWindowDimensions().fontScale || 1;
+  // Web e2e preview only: null in every other build (dev/e2e-web-seam-load.ts).
+  return e2eWebSeam?.fontScaleOverride() ?? real;
 }
 
 export function useIsAccessibilitySize(): boolean {

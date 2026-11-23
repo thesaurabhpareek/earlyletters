@@ -1,0 +1,55 @@
+/**
+ * startCapture({ source }): the one function that begins a new letter or take (design spec 06 step 0 and N3; PRD 01
+ * section 3; NS-01-R1's prerequisite). Home's cluster calls it for Speak, Type, Not much today and, behind
+ * EXPO_PUBLIC_PHOTOS, the photo start once a picture is chosen (NS-01-R1); a doorway handler
+ * (widget, Control Center control, Action button, Siri) will call it with its own source when one is built. Nothing
+ * else starts a capture: test/navigation-one-entry.test.ts fails on any other push of /listen or /write.
+ *
+ * It does exactly what Home did before the consolidation, in the same order: the opt-in analytics event (its catalog
+ * `source` is the screen, `tonight`, never the control), Speak's arming tap for Listen, then the push with the prompt
+ * as route params. Not much today keeps one mark with no words for the day (D-084); the Undo line stays on Home. The
+ * rules themselves are pure in ./start-capture.logic.ts.
+ */
+import { router } from 'expo-router';
+import { childIndexOf, promptKindOf, trackCaptureStarted } from '@/lib/analytics/track';
+import { armListenStart } from '@/lib/resilience/start-intent';
+import { getActiveChildId, listEntries, saveEntry, todayISO, uuidv7 } from '@/lib/store';
+import { keepQuietDay } from './quiet-day-save.logic';
+import { planCapture, type CaptureRequest, type CaptureRoute, type CaptureSource } from './start-capture.logic';
+
+export type CaptureStarted =
+  | { kind: 'route'; pathname: CaptureRoute }
+  | { kind: 'photo'; pathname: '/listen' }
+  | { kind: 'quietDay'; markId: string }
+  | { kind: 'quietDayNotSaved' }
+  | { kind: 'reserved'; source: CaptureSource };
+
+export function startCapture(req: CaptureRequest): CaptureStarted {
+  const plan = planCapture(req);
+  switch (plan.kind) {
+    case 'route': {
+      trackCaptureStarted({
+        mode: plan.mode,
+        source: 'tonight',
+        promptKind: promptKindOf(req.prompt?.key),
+        childIndex: childIndexOf(getActiveChildId()),
+        role: 'parent',
+      });
+      if (plan.armListen) armListenStart(); // the tap that lets Listen start the microphone
+      router.push({ pathname: plan.pathname, params: plan.params });
+      return { kind: 'route', pathname: plan.pathname };
+    }
+    case 'photo':
+      // The picture is held in memory (lib/photos/pending.ts); Listen shows it at Ready. Nothing is armed or tracked.
+      router.push({ pathname: plan.pathname, params: plan.params });
+      return { kind: 'photo', pathname: plan.pathname };
+    case 'quietDay': {
+      // One mark a day: a second tap adds nothing. The words are never written by the app (D-084).
+      // Today by the clock at the tap, not the room's last read.
+      // A mark that cannot be saved still answers: Home shows a calm line (BL-1723).
+      return keepQuietDay({ day: todayISO(), now: new Date().toISOString(), id: uuidv7, entries: listEntries, save: saveEntry });
+    }
+    case 'reserved':
+      return plan;
+  }
+}

@@ -1,0 +1,5 @@
+// Positive control for [NS-33-R11]: an Image with no accessibilityIgnoresInvertColors. The scan must flag it.
+import { Image } from 'react-native';
+export function Bad({ uri }: { uri: string }) {
+  return <Image source={{ uri }} style={{ width: 8, height: 8 }} onLoad={() => undefined} />;
+}

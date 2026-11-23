@@ -1,0 +1,6 @@
+{
+  "imports": {
+    "@scribe/brand": "../../../packages/brand/index.ts"
+  },
+  "unstable": ["sloppy-imports"]
+}

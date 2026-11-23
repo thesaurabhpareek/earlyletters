@@ -131,6 +131,11 @@ export function createTrackers(analytics: Pick<Analytics, 'track'>) {
       });
     },
 
+    /** NS-53 R251. Only the slot leaves the phone; wiring and the once-per-slot-per-day rule belong to the Moments flag PR. */
+    trackMomentsCard(i: { action: 'impressed' | 'tapped'; slot: V<'moments_card_tapped', 'slot'> }): TrackResult {
+      return track(i.action === 'tapped' ? 'moments_card_tapped' : 'moments_card_impressed', { slot: i.slot });
+    },
+
     trackCaptureDiscarded(i: { mode: 'spoken' | 'typed'; stage: 'listening' | 'review'; audioMs?: number | null }): TrackResult {
       return track('capture_discarded', {
         mode: i.mode,

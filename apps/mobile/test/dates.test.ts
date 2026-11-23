@@ -35,7 +35,8 @@ describe('dates and plurals (TDD 09 L1, L4)', () => {
     const expecting = { name: 'Asha', birthday: null, dueDate: '2026-11-11' };
     expect(letterDateline(expecting, '2026-11-23', 'en-US')).toBe('Monday, November 23, 2026. Before Asha was born.');
     expect(letterDateline(expecting, '2026-11-01', 'en-US')).toBe('Sunday, November 1, 2026. Before Asha was born.');
-    expect(letterDateline({ name: 'Asha', birthday: null, dueDate: null }, '2026-09-29', 'en-US')).toBe('Tuesday, September 29, 2026. Before Asha was born.');
+    const neither = { name: 'Asha', birthday: null, dueDate: null }; // a child with neither date
+    expect(letterDateline(neither, '2026-09-29', 'en-US')).toBe('Tuesday, September 29, 2026. Before Asha was born.');
     expect(entryLetterDateline(expecting, { occurredOn: '2026-11-23', occurredPrecision: 'day' }, 'en-US')).not.toMatch(/old/);
   });
 

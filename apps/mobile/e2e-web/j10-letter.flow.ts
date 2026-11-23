@@ -37,11 +37,11 @@ test('[J10] a letter: the page, the original words, reading size, make private, 
   await app.getByRole('button', { name: 'Close' }).first().click({ force: true });
 
   await app.getByText('Make private', { exact: true }).click();
-  await expect(app.getByText(/Kept just for you/)).toBeVisible();
+  await expect(app.getByText(/Kept private/)).toBeVisible();
   await step('happy', 'Make private', 'The letter leaves the book; a "Private" mark and a toast confirm it. Moving it back is one tap.');
 
-  await app.getByText(/Kept just for you/).locator('xpath=ancestor::*[.//button][1]').getByRole('button').last().click();
-  await expect(app.getByText(/Kept just for you/)).toBeHidden();
+  await app.getByText(/Kept private/).locator('xpath=ancestor::*[.//button][1]').getByRole('button').last().click();
+  await expect(app.getByText(/Kept private/)).toBeHidden();
   await app.getByText(/^Delete$/).last().click();
   await expect(app.getByText('Delete this letter?')).toBeVisible();
   await expect(app.getByText('It waits in Recently deleted for 30 days.')).toBeVisible();
@@ -76,7 +76,7 @@ test('[J10f] Recently deleted: restore, and erase now', async ({ app, record }) 
   await expect(app.getByText(/^Deleted \w+ \d+\. Kept here until \w+ \d+\.$|^Deleted \d+ \w+\. Kept here until \d+ \w+\.$/).first()).toBeVisible();
   await expect(app.getByText(/Erased on/)).toHaveCount(0);
   await expect(app.getByText('Letters you delete wait here for 30 days.').last()).toBeVisible();
-  await step('happy', 'Recently deleted', 'Settings, Recently deleted lists the letter as a card: its first words in the letter face, ending in a fade, "From Mama", and one line: "Deleted October 13. Kept here until November 12." Then Restore and Erase now. No countdown and no count. (Seeded fictional family Asha.)');
+  await step('happy', 'Recently deleted', 'Settings, Recently deleted lists the letter as a card: its first words in the letter face, ending in a fade, "From Mama", and one line that says when it was deleted and when it stays until (the seed is relative to the run day, so the dates change with it). Then Restore and Erase now. No countdown and no count. (Seeded fictional family Asha.)');
 
   await app.getByRole('button', { name: 'Restore' }).first().click();
   await expect(app.getByText("Back in Asha's book.")).toBeVisible();
@@ -91,8 +91,8 @@ test('[J10f] Recently deleted: restore, and erase now', async ({ app, record }) 
   await toShelf(app);
   await app.getByRole('button', { name: 'Erase now' }).first().click();
   await expect(app.getByText('Erase this letter now?')).toBeVisible();
-  await expect(app.getByText('The letter and its recording are erased for good.')).toBeVisible();
-  await step('unhappy', 'Erase now asks first', 'Erase now ends the wait, after one question: "The letter and its recording are erased for good." "Keep it" is the default.');
+  await expect(app.getByText('The letter and its recording are erased from this phone. Backups and exports you already saved are not changed.')).toBeVisible();
+  await step('unhappy', 'Erase now asks first', 'Erase now ends the wait, after one question: "The letter and its recording are erased from this phone. Backups and exports you already saved are not changed." "Keep it" is the default.');
   await app.getByRole('button', { name: 'Erase now' }).last().click();
   await expect(app.getByText('Letter erased.')).toBeVisible();
   await expect(app.getByText("Back in Asha's book.")).toHaveCount(0);
@@ -148,8 +148,8 @@ test('[J10e] a recording with no words', async ({ app, record }) => {
 test('[J10d] a letter that does not exist', async ({ app, record }) => {
   const step = journey(record, 'J10', 'letter-detail', 11, 'J10-01');
   await seeded(app, 'asha', '/letter/does-not-exist');
-  await expect(app.getByText('This letter is not in the book')).toBeVisible();
+  await expect(app.getByText("This letter isn't in the book")).toBeVisible();
   await expect(btn(app, 'Back to the book')).toBeVisible();
   await expect(app.getByText(/does-not-exist/)).toHaveCount(0);
-  await step('unhappy', 'Letter not found', 'A letter that is not on this phone (a stale link) shows "This letter is not in the book" and one way back. Never the id or the route. If it is on the Recently deleted shelf, the page says so and opens the shelf.');
+  await step('unhappy', 'Letter not found', 'A letter that is not on this phone (a stale link) shows "This letter isn\'t in the book" and one way back. Never the id or the route. If it is on the Recently deleted shelf, the page says so and opens the shelf.');
 });

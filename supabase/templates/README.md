@@ -56,9 +56,9 @@ plain-text part unless Supabase's mailer adds one (UNVERIFIED, TPL-10). Only
 email sent by our own functions through the Resend API can carry the inline
 logo (`renderForResend`).
 
-`email_change.html` links carry `type=email_change`, which the app does not
-accept yet (TPL-04, SIGN-10). Harmless while the app has no change-email screen;
-the app must accept that type before one ships.
+`email_change.html` links carry `type=email_change`, which the app accepts
+(TPL-04, SIGN-10): signed in on this phone it verifies the new address, otherwise
+it says to open the link on the phone that asked for the change.
 
 ## Variables
 
