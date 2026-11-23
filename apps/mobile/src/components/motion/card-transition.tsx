@@ -54,7 +54,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode, type RefObject } from 'react';
 import { StyleSheet, View, useWindowDimensions, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, {
-  Easing,
   ReduceMotion,
   interpolateColor,
   runOnJS,
@@ -66,7 +65,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useFocusOnMount, useTheme } from '@/lib/a11y';
-import { springConfig, useReducedMotion } from '@/lib/motion';
+import { curve, springConfig, useReducedMotion } from '@/lib/motion';
 import {
   CARD_TO_PAGE,
   canCarry,
@@ -88,6 +87,9 @@ import {
 import { ExcerptFadeSpanContext, FadeEdge } from './excerpt-fade';
 import { FADE_FRACTION, type FadeSpan } from './excerpt-fade.logic';
 import { PressHoldContext, type PressHold } from './press';
+
+/** The paper veil's curve (tokens.motion.curve.veil). */
+const VEIL = curve('veil');
 
 /** `fade`: where the card's excerpt fade sat on its last line (BL-659's word ending), for the carry to draw it there. */
 type Remembered = { card: Rect; text?: CarryText; rtl?: boolean; fade?: FadeSpan };
@@ -389,7 +391,7 @@ export function CardToPage({ id, opening, onClosed, children }: { id: string; op
     (ready, was) => {
       if (!ready || was) return;
       lifting.value = 0;
-      veil.value = withTiming(0, { duration: CARD_TO_PAGE.veilOutMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never }, (finished) => {
+      veil.value = withTiming(0, { duration: CARD_TO_PAGE.veilOutMs, easing: VEIL, reduceMotion: ReduceMotion.Never }, (finished) => {
         if (finished) runOnJS(oneDone)();
       });
     },
@@ -405,16 +407,16 @@ export function CardToPage({ id, opening, onClosed, children }: { id: string; op
     if (carry) {
       // The Book goes under the veil the way its lamp leaves a lit room; the card holds, then grows.
       fade.value = 1;
-      veil.value = withTiming(1, { duration: CARD_TO_PAGE.veilInMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never });
+      veil.value = withTiming(1, { duration: CARD_TO_PAGE.veilInMs, easing: VEIL, reduceMotion: ReduceMotion.Never });
       p.value = withDelay(CARD_TO_PAGE.holdMs, withSpring(1, springConfig('standard'), (done) => runOnJS(settle)(done)), ReduceMotion.Never);
     } else {
       // Nothing moves: a hand-off inside one fadeMs. The Book goes under the veil, the whole page fades in after it.
       const h = CARD_TO_PAGE.handOff;
       p.value = 1;
-      veil.value = withTiming(1, { duration: h.leaveMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never });
+      veil.value = withTiming(1, { duration: h.leaveMs, easing: VEIL, reduceMotion: ReduceMotion.Never });
       fade.value = withDelay(
         h.arriveFromMs,
-        withTiming(1, { duration: h.arriveMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never }, (done) => runOnJS(settle)(done)),
+        withTiming(1, { duration: h.arriveMs, easing: VEIL, reduceMotion: ReduceMotion.Never }, (done) => runOnJS(settle)(done)),
         ReduceMotion.Never,
       );
     }
@@ -432,10 +434,10 @@ export function CardToPage({ id, opening, onClosed, children }: { id: string; op
       if (carrying.value) fade.value = Math.min(fade.value, veil.value);
       carrying.value = 0;
       setCarry(false);
-      fade.value = withTiming(0, { duration: h.leaveMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never });
+      fade.value = withTiming(0, { duration: h.leaveMs, easing: VEIL, reduceMotion: ReduceMotion.Never });
       veil.value = withDelay(
         h.arriveFromMs,
-        withTiming(0, { duration: h.arriveMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never }, (finished) => {
+        withTiming(0, { duration: h.arriveMs, easing: VEIL, reduceMotion: ReduceMotion.Never }, (finished) => {
           if (finished) runOnJS(done)();
         }),
         ReduceMotion.Never,
