@@ -216,7 +216,7 @@ Every row is a statement that exists today in the repo. "Fix" is a suggestion fo
 | 11 | `store.en.ts` "Early Letters is for parents of children from birth to five, and for the grandparents..." | Fine as written. | Keep the audience adult. | No change. |
 | 12 | `brand.company.privacyUrl` | `https://example.com/privacy` | Placeholder; store submission would fail 5.1.1(i) or link to a wrong policy. | Set real domain before first build (PRD A Q3). |
 
-**Status, 2 Oct 2026 (Lawyer 2, against the current files).** Rows 1 to 6 and 8 to 10 were rewritten in `packages/content` per PRD section 8; row 7's notice is PRD K-16; row 12 is open. The rewritten copy still has the claims below. Owner: `packages/content` (content lead), with counsel approval through the claims registry (LEGAL-REQ-044). Detail and proposed wording in `memos/lawyer-2.md` finding H4.
+**Status, 2 Oct 2026 (Lawyer 2, against the current files).** Rows 1 to 6 and 8 to 10 were rewritten in `packages/content` per PRD section 8; row 7's notice is PRD K-16; row 12 is open. The rewritten copy still has the claims below. Owner: `packages/content` (content lead), with exec-team review (D-172) through the claims registry (LEGAL-REQ-044). Detail and proposed wording in `memos/lawyer-2.md` finding H4.
 
 | # | Where | Current claim | Why it is inaccurate or risky | Suggested direction |
 |---|---|---|---|---|
