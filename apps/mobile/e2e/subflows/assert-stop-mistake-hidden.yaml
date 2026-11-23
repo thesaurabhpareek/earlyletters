@@ -1,0 +1,15 @@
+# The 24-hour stop screen before the day has passed: "I answered by mistake" must not be seen and must do nothing
+# when tapped. Whether the build leaves it unmounted or mounted at opacity 0 with touches off (BL-420), both pass.
+# The tap is optional (Maestro may not find the node); the checks after it must hold. gate.continue exists only on
+# the question screen, so it appears if a tap restarted the gate. (gate.screen is the root and is always there.)
+appId: ${APP_ID}
+---
+- assertNotVisible:
+    id: "gate.stop.mistake"
+- tapOn:
+    id: "gate.stop.mistake"
+    optional: true
+- assertVisible:
+    id: "gate.stop"
+- assertNotVisible:
+    id: "gate.continue"

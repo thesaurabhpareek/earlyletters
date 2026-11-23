@@ -574,19 +574,19 @@ describe('card to page (MOTION 5f)', () => {
     expect(src).toContain('<FadeEdge color={c.bg} side={rtl ? \'left\' : \'right\'} style={StyleSheet.absoluteFill} />');
     expect(src).toContain('const cardFadeDip = useAnimatedStyle(() => ({ opacity: carrying.value ? holdDip(veil.value) : 0 }));');
     // To the page: the veil on the lamp's leaving line, the card holding, then the spring.
-    expect(src).toContain('veil.value = withTiming(1, { duration: CARD_TO_PAGE.veilInMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never });');
+    expect(src).toContain('veil.value = withTiming(1, { duration: CARD_TO_PAGE.veilInMs, easing: VEIL, reduceMotion: ReduceMotion.Never });');
     expect(src).toContain("p.value = withDelay(CARD_TO_PAGE.holdMs, withSpring(1, springConfig('standard')");
     // Back: the veil lifts once the paper is within clearPt of the card, and the route leaves when both are done.
     expect(src).toContain('liftFrom.value = clearProgress(r.card, screen);');
     expect(src).toContain('() => lifting.value === 1 && p.value <= liftFrom.value,');
-    expect(src).toContain('veil.value = withTiming(0, { duration: CARD_TO_PAGE.veilOutMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never }');
+    expect(src).toContain('veil.value = withTiming(0, { duration: CARD_TO_PAGE.veilOutMs, easing: VEIL, reduceMotion: ReduceMotion.Never }');
     expect(src).toContain('closeLeft.current = 2;');
     // The plain fade, both ways: the hand-off on straight lines.
     expect(src.match(/const h = CARD_TO_PAGE\.handOff;/g)).toHaveLength(2);
-    expect(src).toContain('veil.value = withTiming(1, { duration: h.leaveMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never });');
-    expect(src).toMatch(/fade\.value = withDelay\(\s*h\.arriveFromMs,\s*withTiming\(1, \{ duration: h\.arriveMs, easing: Easing\.linear/);
-    expect(src).toContain('fade.value = withTiming(0, { duration: h.leaveMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never });');
-    expect(src).toMatch(/veil\.value = withDelay\(\s*h\.arriveFromMs,\s*withTiming\(0, \{ duration: h\.arriveMs, easing: Easing\.linear/);
+    expect(src).toContain('veil.value = withTiming(1, { duration: h.leaveMs, easing: VEIL, reduceMotion: ReduceMotion.Never });');
+    expect(src).toMatch(/fade\.value = withDelay\(\s*h\.arriveFromMs,\s*withTiming\(1, \{ duration: h\.arriveMs, easing: VEIL/);
+    expect(src).toContain('fade.value = withTiming(0, { duration: h.leaveMs, easing: VEIL, reduceMotion: ReduceMotion.Never });');
+    expect(src).toMatch(/veil\.value = withDelay\(\s*h\.arriveFromMs,\s*withTiming\(0, \{ duration: h\.arriveMs, easing: VEIL/);
     expect(src).not.toContain('STANDARD_EASING');
   });
 

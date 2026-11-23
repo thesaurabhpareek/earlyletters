@@ -1,0 +1,17 @@
+// Positive control for [NS-33-R11] (BL-1877): styled.Image and styled('Image') draw a picture, none with the prop.
+const Member = styled.Image;
+const Called = styled('Image');
+const Double = styled("ImageBackground");
+const Tagged = styled.Image`
+  width: 40px;
+`;
+export function Bad({ uri }: { uri: string }) {
+  return (
+    <>
+      <Member source={{ uri }} />
+      <Called source={{ uri }} />
+      <Double source={{ uri }} />
+      <Tagged source={{ uri }} />
+    </>
+  );
+}

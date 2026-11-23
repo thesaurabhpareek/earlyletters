@@ -51,6 +51,8 @@ export function tonightPromptInput(a: {
   shownKeys?: readonly string[];
   /** Keeps Write's draws apart from Tonight's for the same day and press count. */
   seedTag?: string;
+  /** The child's name as stored; blank (NX-31-R3) leaves out the prompts that ask about the name. Absent: a name is known. */
+  childName?: string;
 }): SelectInput {
   const stage = tonightStage(a.birthday, a.today);
   return {
@@ -63,6 +65,7 @@ export function tonightPromptInput(a: {
     recentKeys: a.recentKeys,
     seed: a.seedTag ? `${a.today}:${a.seedTag}:${a.shuffle}` : `${a.today}:${a.shuffle}`,
     excludeKeys: [...new Set([...(a.leftKey ? [a.leftKey] : []), ...(a.shownKeys ?? [])])],
+    ...(a.childName !== undefined && !a.childName.trim() ? { childNameBlank: true } : {}),
   };
 }
 
@@ -76,11 +79,11 @@ export function tonightPromptInput(a: {
  * the one on screen last; the result's `shown` is the list to keep for the next press.
  */
 export function anotherThought(
-  a: { birthday: string | null; today: string; daysSinceLastEntry: number | null; recentKeys: string[]; shown: readonly string[]; press: number },
+  a: { birthday: string | null; today: string; daysSinceLastEntry: number | null; recentKeys: string[]; shown: readonly string[]; press: number; childName?: string },
   library: readonly Prompt[],
 ): { prompt: Prompt; shown: string[] } {
   const onScreen = a.shown.length ? a.shown[a.shown.length - 1] : null;
-  const base = { birthday: a.birthday, today: a.today, daysSinceLastEntry: a.daysSinceLastEntry, recentKeys: a.recentKeys, shuffle: a.press, leftKey: onScreen, seedTag: 'write' };
+  const base = { birthday: a.birthday, today: a.today, daysSinceLastEntry: a.daysSinceLastEntry, recentKeys: a.recentKeys, shuffle: a.press, leftKey: onScreen, seedTag: 'write', childName: a.childName };
   const next = selectPrompt(tonightPromptInput({ ...base, shownKeys: a.shown }), library);
   if (!a.shown.includes(next.key)) return { prompt: next, shown: [...a.shown, next.key] };
   // Every prompt that fits has been shown: start over, leaving out only the one on screen.

@@ -615,7 +615,7 @@ describe('[A2] decideGate remembers the deletion screen only until something els
 describe('the wiring that is read off the source (the behaviour is run in account-deletion-gate-hook.test.ts and open-deletion-press.test.ts)', () => {
   it('[S-2] the gate hook passes the stored note, the session user and the route to decideGate, and acts on its answer', () => {
     const s = read('lib', 'account-deletion', 'use-first-run-gate.ts');
-    expect(s).toMatch(/decideGate\(\{\s*hasBook, hasDeletedBook, note, nowMs: Date\.now\(\), signedIn: auth\.signedIn, userId, checked, confirmed,\s*wasDeletion: wasDeletion\.current, pathname,\s*\}\)/);
+    expect(s).toMatch(/decideGate\(\{\s*hasBook, hasDeletedBook, note, nowMs: Date\.now\(\), signedIn: auth\.signedIn, restoring: auth\.state\.status === 'restoring', userId, checked, confirmed,\s*wasDeletion: wasDeletion\.current, pathname,\s*\}\)/);
     expect(s).toContain('const userId = authUserId(auth.state);');
     expect(s).toContain('const note = useMemo(() => parseOpenRequest(raw), [raw]);');
     expect(s).toContain('wasDeletion.current = gate.wasDeletion;');
@@ -624,13 +624,14 @@ describe('the wiring that is read off the source (the behaviour is run in accoun
     expect(s).toMatch(/const leave = gate\.leave;\s*useEffect\(\(\) => \{\s*if \(leave\) router\.replace\('\/book'\);\s*\}, \[leave\]\);/);
     expect(s.match(/router\.replace\(/g)).toHaveLength(1);
     // Writes are in effects, not in render: the dead note is removed there, with the value that was judged.
-    expect(s).toMatch(/useEffect\(\(\) => \{\s*if \(clear\) clearDeadNote\(raw\);\s*\}, \[clear, raw\]\);/);
+    // BL-961: never for another account signed in on the owner's phone (test/account-note.test.ts).
+    expect(s).toMatch(/useEffect\(\(\) => \{\s*if \(clear && ownersNote\) clearDeadNote\(raw\);\s*\}, \[clear, raw, ownersNote\]\);/);
     // A read is asked as the account signed in at render time, and the answer counts for that account only.
     expect(s).toContain('if (s.ok) recordStatus(s.value, askedAs);');
     expect(s).toContain('const checked = answer.for === userId && answer.checked;');
     expect(s).toContain('const confirmed = answer.for === userId && answer.confirmed;');
-    expect(s).toContain('}, [client, hasBook, userId]);');
-    expect(s).toContain('}, [client, refreshWithBook, userId]);');
+    expect(s).toContain('}, [client, hasBook, userId, ownersNote]);');
+    expect(s).toContain('}, [client, refreshWithBook, userId, ownersNote]);');
   });
 
   it('[S-C] decideGate reuses the welcome\'s own allow-list for the replace', () => {
@@ -674,7 +675,7 @@ describe('the routes use the gate', () => {
   });
 
   it('every tab that has no book still sends the person to that one route', () => {
-    for (const f of [['(tabs)', 'index.tsx'], ['(tabs)', 'book.tsx'], ['(tabs)', 'family.tsx']]) expect(read('app', ...f), f.join('/')).toMatch(/<Redirect href="\/onboarding" \/>/);
+    for (const f of [['(tabs)', 'index.tsx'], ['(tabs)', 'book.tsx'], ['family.tsx']]) expect(read('app', ...f), f.join('/')).toMatch(/<Redirect href="\/onboarding" \/>/);
   });
 
   it('the deletion screen offers only Cancel deletion, a confirmed sign out, Sign in and Try again: no book, no Settings', () => {
@@ -688,10 +689,26 @@ describe('the routes use the gate', () => {
 
   it('the gate hook is quiet at launch: one read of the open request, only signed in with no book, never awaited by a screen', () => {
     const s = read('lib', 'account-deletion', 'use-first-run-gate.ts');
-    expect(s).toContain('if (!client || hasBook || !userId) return;');
+    expect(s).toContain('if (!client || hasBook || !userId || !ownersNote) return;'); // BL-961: not as another account
     expect(s).toContain('const refreshWithBook = gate.refreshWithBook;');
     expect(s.match(/loadStatus\(/g)).toHaveLength(1);
     expect(s).toContain('void loadStatus(client)');
     expect(s).not.toMatch(/\bawait\b/);
+  });
+});
+
+describe('[BL-493 point 5] decideGate while the saved session is being read', () => {
+  const base = {
+    hasBook: false, hasDeletedBook: true, note: null, nowMs: Date.parse('2026-10-30T09:00:00.000Z'), signedIn: false,
+    userId: null, checked: false, confirmed: false, wasDeletion: false, pathname: '/onboarding',
+  };
+  it('restoring is paper for a closed book, and signed out (restoring false) is the welcome', () => {
+    expect(decideGate({ ...base, restoring: true }).screen).toBe('checking');
+    expect(decideGate({ ...base, restoring: false }).screen).toBe('welcome');
+  });
+  it('restoring never clears a stale note; signed out does', () => {
+    const note = { state: 'held' as const, requestId: 'r', scheduledFor: '2026-10-20T09:00:00.000Z', userId: 'u' };
+    expect(decideGate({ ...base, note, restoring: true }).clear).toBe(false);
+    expect(decideGate({ ...base, note, restoring: false }).clear).toBe(true);
   });
 });

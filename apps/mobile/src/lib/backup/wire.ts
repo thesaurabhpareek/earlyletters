@@ -10,6 +10,8 @@ import { b64, bytesToBase64, bytesToHex, hexToBytes, isUuid } from './bytes';
 import {
   BackupServerError,
   SEAL_SUITE,
+  safeErrorCode,
+  safeErrorDetail,
   objectPathFor,
   type BeginInput,
   type BlobRow,
@@ -204,7 +206,8 @@ export function createEscrowClient(d: EscrowClientDeps): EscrowClient {
     return { status: res.status, data: null, error: json?.error ?? null };
   }
   const fail = (status: number, e: Envelope<unknown>['error'] | null): BackupServerError =>
-    new BackupServerError(e?.code ?? `HTTP${status}`, e?.retryable ?? status >= 500, null, e?.detail ?? null);
+    // Only the contract's closed words are kept: a server `detail` (or a stray `code`) is never stored or logged as sent.
+    new BackupServerError(e?.code === undefined ? `HTTP${status}` : safeErrorCode(e.code), e?.retryable ?? status >= 500, null, safeErrorDetail(e?.detail));
 
   return {
     async request(deviceId): Promise<RestoreRequest> {

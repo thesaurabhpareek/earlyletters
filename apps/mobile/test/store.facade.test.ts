@@ -110,6 +110,7 @@ describe('facade behaviour', () => {
     store.addChild({ name: 'Asha', birthday: null, dueDate: null, signsAs: 'Mama' });
     store.saveEntry(letter({ childId: undefined }));
     expect(onEntries).toHaveBeenCalledTimes(1);
+    expect(onEntries).toHaveBeenCalledWith(['entries']); // the letter's write names its table, and only that one
     off();
   });
 
@@ -179,6 +180,17 @@ describe('sync hooks through the facade (D-023)', () => {
     expect(store.getChild(asha.id)).toMatchObject({ role: 'contributor', createdByMe: false });
     store.localSqlDb().run("UPDATE children SET server_state = 'left' WHERE id = ?", asha.id);
     expect(store.listChildren()).toEqual([]);
+  });
+
+  it('[BL-444] a left book is read through listLeftBooks, and listLeftBookEntries reads no book that is not left', () => {
+    openMemory();
+    const asha = store.addChild({ name: 'Asha', birthday: null, dueDate: null, signsAs: 'Mama' });
+    store.saveEntry(letter({ childId: asha.id, finalText: 'You laughed at the rain.' }));
+    expect(store.listLeftBooks()).toEqual([]);
+    expect(store.listLeftBookEntries(asha.id)).toEqual([]); // a listed book is not read by id through this door
+    store.localSqlDb().run("UPDATE children SET server_state = 'left' WHERE id = ?", asha.id);
+    expect(store.listLeftBooks().map((c) => c.id)).toEqual([asha.id]);
+    expect(store.listLeftBookEntries(asha.id).map((e) => e.finalText)).toEqual(['You laughed at the rain.']);
   });
 });
 

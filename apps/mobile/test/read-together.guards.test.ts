@@ -60,10 +60,15 @@ describe('readableInBook: what Read together may play and read', () => {
 });
 
 describe('visibleInBook and markOn', () => {
-  it('two marks on one day with no letter are both listed; one letter on that day hides both', () => {
+  it('[NS-07-C5-10] two marks on one day with no letter list one row; one letter on that day hides both', () => {
     const marks = [oldMark('q1', '2026-10-02'), newQuietMark({ id: 'q2', occurredOn: '2026-10-02', capturedAt: base.capturedAt })];
-    expect(visibleInBook(marks).map((e) => e.id)).toEqual(['q1', 'q2']);
+    expect(visibleInBook(marks).map((e) => e.id)).toEqual(['q1']);
     expect(visibleInBook([...marks, letter('l', '2026-10-02')]).map((e) => e.id)).toEqual(['l']);
+  });
+
+  it('[NS-07-C5-10] marks on different days each keep their own row', () => {
+    const marks = [oldMark('q1', '2026-10-02'), oldMark('q2', '2026-10-03')];
+    expect(visibleInBook(marks).map((e) => e.id)).toEqual(['q1', 'q2']);
   });
 
   it('a note counts as words on its day; a waiting letter and a private letter do too (the day has an entry)', () => {

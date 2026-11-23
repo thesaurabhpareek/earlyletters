@@ -5,16 +5,28 @@
  * (A-NFR-008). Never in route params, logs or analytics.
  */
 import { secureStorage } from '../supabase/secure-storage';
-import { decodePendingInvite, encodePendingInvite, isInviteToken, shouldClearPendingInvite, type PendingInvite } from './invite-link.logic';
+import { decodePendingInvite, encodePendingInvite, isInviteToken, isPendingInviteRead, shouldClearPendingInvite, type PendingInvite } from './invite-link.logic';
 
 const KEY = 'scribe.family.pendingInvite';
 
+/** A signed-in read could not be marked (Keychain error): the next clear then drops the item, marked or not. */
+let markWriteFailed = false;
+
 export async function savePendingInvite(token: string, now = Date.now()): Promise<void> {
   if (!isInviteToken(token)) return;
+  markWriteFailed = false; // a newer link replaces the item, so nothing is left to drop for the old reader
   await secureStorage.setItem(KEY, encodePendingInvite({ token, receivedAt: now }));
 }
 
-export async function readPendingInvite(now = Date.now()): Promise<PendingInvite | null> {
+/**
+ * `userId`: the signed-in account reading, or null. A signed-in read marks the item with that id in the same Keychain
+ * item (CISO-2). A marked item goes only to its reader: another signed-in account, or a settled signed-out read
+ * (the reader is gone: the app died before the clear, or the session ended while it was closed), removes it and
+ * returns null. Signed out and unmarked: nothing is written, the token waits for sign-in. `settled` is false while the
+ * session is still restoring: then signed out is not yet known, so nothing is written or removed, and a marked item
+ * is not handed out.
+ */
+export async function readPendingInvite(now = Date.now(), userId: string | null = null, settled = true): Promise<PendingInvite | null> {
   let raw: string | null = null;
   try {
     raw = await secureStorage.getItem(KEY);
@@ -23,6 +35,22 @@ export async function readPendingInvite(now = Date.now()): Promise<PendingInvite
   }
   const p = decodePendingInvite(raw, now);
   if (raw && !p) await clearPendingInvite();
+  if (!p) return null;
+  if (p.readBy) {
+    if (p.readBy === userId) return p;
+    if (!userId && !settled) return null; // session still restoring: leave it
+    await secureStorage.removeItem(KEY).catch(() => {}); // fail-open
+    return null;
+  }
+  if (userId) {
+    try {
+      // Only if no newer link landed since the read; a failed write leaves the item as it was.
+      if ((await secureStorage.getItem(KEY)) === raw) await secureStorage.setItem(KEY, encodePendingInvite({ ...p, readBy: userId }));
+    } catch {
+      // Keep the token for this account, but remember it is unmarked so the next clear drops it.
+      markWriteFailed = true;
+    }
+  }
   return p;
 }
 
@@ -42,4 +70,19 @@ export async function clearPendingInvite(token?: string): Promise<void> {
     return;
   }
   await secureStorage.removeItem(KEY).catch(() => {});
+}
+
+/**
+ * Sign-out and user change (auth-store): drops the item only when a signed-in account had read it. A token
+ * that arrived while signed out stays for the next sign-in. Fail-open: a Keychain error is swallowed.
+ */
+export async function clearReadPendingInvite(): Promise<void> {
+  try {
+    if (markWriteFailed || isPendingInviteRead(await secureStorage.getItem(KEY))) {
+      await secureStorage.removeItem(KEY);
+      markWriteFailed = false;
+    }
+  } catch {
+    /* fail-open: the 14-day cap still applies */
+  }
 }

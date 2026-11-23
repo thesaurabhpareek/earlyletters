@@ -45,7 +45,7 @@ Column "Flows" names the flow files that use the id (E2E-nn). Ids marked *(optio
 | `gate.stop.mistake` | "I answered by mistake" button (only after 24 h) | 01 |
 
 ### Tabs (`app/(tabs)/_layout.tsx`)
-Set `tabBarButtonTestID` per screen: `tab.tonight`, `tab.book`, `tab.family`. The custom iOS `tabBarButton` spreads its props onto the `Pressable`, so the id should arrive; check once. Flows: almost all.
+Set `tabBarButtonTestID` per screen: `tab.tonight` (labelled Home), `tab.book`, `tab.you` (labelled Me). There is no Family tab; the family page (`/family`) is a pushed page. The custom iOS `tabBarButton` spreads its props onto the `Pressable`, so the id should arrive; check once. Flows: almost all.
 
 ### First run (`app/onboarding.tsx`)
 | testID | Element | Flows |
@@ -130,10 +130,11 @@ Set `tabBarButtonTestID` per screen: `tab.tonight`, `tab.book`, `tab.family`. Th
 ### Add a child (`components/child/add-child-form.tsx`)
 `addChild.screen`, `addChild.name`, `addChild.when` (ChoiceGroup), `addChild.bornToday` (the Born today chip), `addChild.add` (the primary; the app's id, first requested as `addChild.save`). Flows: 07.
 
-### Family and invites (`app/(tabs)/family.tsx`, `app/invite/*`)
+### Family and invites (`app/family.tsx`, `app/invite/*`)
 | testID | Element | Flows |
 |---|---|---|
 | `family.screen`, `family.member` (repeated), `family.invite`, `family.pending` (repeated), `family.pending.shareAgain`, `family.pending.cancel`, `family.finishSetup`, `family.leave` (not rendered in build 2, D-113), `family.leftNote` | Family tab | 13 |
+| `child.bookRow` | the "Write this book together" row in a child's settings (`settings/children/[id].tsx`); only in a build with the co-parent flow; opens the invite, or the family page once a co-parent has joined | 13 |
 | `inviteNew.screen`, `inviteNew.signsAs`, `inviteNew.share`, `inviteNew.close` | invite a co-parent | 13 |
 | `invite.screen`, `invite.paste.input`, `invite.paste.continue`, `invite.ask`, `invite.join`, `invite.joining`, `invite.joined`, `invite.signsAs`, `invite.open`, `invite.error`, `invite.close` | I was invited (asks before it joins, BL-322) | 13 |
 | `leave.screen`, `leave.choice.keep`, `leave.choice.take_out`, `leave.confirm`, `leave.close` | leave a shared book (`app/invite/leave.tsx`; shows coming soon in build 2, D-113) | 13 |
@@ -157,6 +158,11 @@ Set `tabBarButtonTestID` per screen: `tab.tonight`, `tab.book`, `tab.family`. Th
 - The **analytics consent sheet** (`components/consent/analytics-consent-sheet.tsx`) is not rendered by any route, and no ask sequencer exists (PRD-REQ-001: Keep the book, then reminders, then analytics, one per session). E2E-11 tests the Settings switch and keeps the sheet steps as a marked pending block. When the sheet is mounted: `consentSheet.screen`, `consentSheet.yes`, `consentSheet.no`.
 - The **reminder priming card** after the first letter (C-REQ-001) is only reachable from Settings > Reminders; Tonight never shows it.
 - **Recently deleted** now exists (D-085, `settings/recently-deleted.tsx`) and so does the delete confirm sheet. E2E-08 selects them by visible text. Ids to add when the components take a `testID`: `shelf.screen`, `shelf.row`, `shelf.restore`, `shelf.erase`, `shelf.empty`, `letter.delete.confirm`, `letter.delete.keep`, `settings.recentlyDeleted`.
+
+### Keep and leave (E2E-21)
+Set in `src` today: `plusGate.hold` ("Keep it here for now"), `plusGate.held`, `plusGate.heldNote`, `plusGate.seePlus`, `plusGate.actions`, `write.keep.book`, `write.keep.private`, `player.play`, `export.start`, `book.readTogether`, `book.settings`, and the ids the flow uses in place of older requests: `book.card` (the Book's `LetterCard`; same as `book.letter`), `export.failed` (same as `export.error`), `settings.whereLive` then `whereLive.export` (the export row sits under Where letters live; there is no `settings.export` yet).
+Not set in `src`, so E2E-21 is blocked on them: `book.screen`, `export.ready`, `export.screen`, `letter.screen`, `readTogether.close`, `readTogether.screen`, `settings.screen`, `tab.book`, `tonight.screen`, `tonight.type`, `tonight.waiting`, `write.input`, `write.screen`. `tonight.waiting` is still the request for one held letter (`tonight.heldRow` renders only for two or more). The sheet root has no `plusGate.screen`; flows that assert no Plus sheet use `plusGate.hold`, the one control every Keep sheet shows.
+E2E-21 is also blocked on the launch seam and the `asha-recordings` seed, which `src/dev/e2e-seams.ts` does not have (it reads neither `e2eSeed` nor `e2eOffline`).
 
 ## 3. E2E seams (mobile owner; one new file, for example `src/lib/e2e.ts`)
 

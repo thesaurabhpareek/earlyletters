@@ -40,7 +40,6 @@
  * language is still downloading, the voice can be kept now and its words
  * follow when the phone is ready (ADR 0015).
  */
-import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { router, useLocalSearchParams } from 'expo-router';
 import { CaretDownIcon } from 'phosphor-react-native/src/icons/CaretDown';
 import { CaretRightIcon } from 'phosphor-react-native/src/icons/CaretRight';
@@ -48,8 +47,9 @@ import { CheckIcon } from 'phosphor-react-native/src/icons/Check';
 import { PauseIcon } from 'phosphor-react-native/src/icons/Pause';
 import { PlayIcon } from 'phosphor-react-native/src/icons/Play';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { AppState, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import { File } from 'expo-file-system';
+import { Alert, AppState, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
+import Animated, { FadeIn, FadeOut, ReduceMotion } from 'react-native-reanimated';
 import {
   ENGINE_VERSION,
   describeEdit,
@@ -63,6 +63,9 @@ import {
   type RejectedEdit,
 } from '@scribe/core';
 import { tokens } from '@scribe/design-tokens';
+import { deleteIfPresent, letItGo } from '@/lib/capture/let-it-go.logic';
+import { ReviewScrub } from '@/components/capture/review-scrub';
+import { EarlyStopLine } from '@/components/capture/early-stop-line';
 import { laterWordsDraft } from '@/components/capture/later-words.logic';
 import { settleDraft, settleForKeep } from '@/components/capture/review-settle.logic';
 import { LetterSheet } from '@/components/capture/letter-sheet';
@@ -76,6 +79,7 @@ import {
   letterHeader,
   primaryDestination,
   putBackNoteShows,
+  putBackSpeech,
   reviewHasOwnChanges,
   reviewHeading,
   savePrimaryLabel,
@@ -91,6 +95,7 @@ import {
 } from '@/components/capture/review-view.logic';
 import { clockOf } from '@/components/tonight/draft-card.logic';
 import {
+  isShortTake,
   lengthA11y,
   progressClock,
   recordingKept,
@@ -102,7 +107,6 @@ import {
   type WordsAction,
   type WordsCard,
 } from '@/components/capture/words-state.logic';
-import { isPreviewAudioPresent } from '@/dev/preview-audio';
 import { isOwnEntry } from '@/components/child/child-store';
 import { PlusGate } from '@/components/child/plus-gate';
 import { holdOnce, holdWithoutSheet, storedWords } from '@/components/child/plus-gate.logic';
@@ -121,9 +125,13 @@ import { setAudioMode } from '@/lib/audio-mode';
 import { consumeKeep, peekKeep } from '@/lib/capture/keep-intent';
 import { mountReview, restoreApplied, reviewWriter, withoutPutBack, wordsBase } from '@/lib/capture/review-persist.logic';
 import { ensureAudioHash, finishingTake, isFinishing } from '@/lib/capture/recorder';
+import { brand } from '@scribe/brand';
 import { copy, fill, pendingCopy, plural } from '@/lib/copy';
+import { useLetterPlayer } from '@/lib/player';
 import { devShortcutsAllowed } from '@/lib/build-env';
 import { haptic } from '@/lib/haptics';
+import { ReviewPhoto } from '@/components/photos/review-photo';
+import { commitPendingPhoto } from '@/lib/photos/hooks';
 import { languageCleanOptions, rulesForLanguage } from '@/lib/language';
 import { clearReadItBack } from '@/lib/read-it-back';
 import { askAfterSave, requestReminderPrime, type NextAsk } from '@/lib/asks';
@@ -138,6 +146,8 @@ import {
   getDraftReview,
   getEntry,
   getSetting,
+  beginDiscard,
+  finishDiscard,
   holdDraft,
   keepReviewedWords,
   listChildren,
@@ -220,6 +230,8 @@ export default function Review() {
   const job = useWordsJob(phase === 'transcribing' ? draft?.id : null);
   const download = useSpeechDownload(phase === 'transcribing' && job?.phase === 'waiting_for_pack' ? language : null);
   const [saveFailed, setSaveFailed] = useState(false);
+  const [letGoPending, setLetGoPending] = useState(false);
+  const letGoTold = useRef<string | null>(null);
   // Set when the Keep step needs Plus: the letter is held, not saved (see the header).
   const [gate, setGate] = useState<KeepGate | null>(null);
   const toast = useToast();
@@ -395,25 +407,48 @@ export default function Review() {
     router.replace({ pathname: '/listen', params: draft?.promptKey ? { promptKey: draft.promptKey } : {} });
   };
 
+  // "Let it go" (BL-379): asks first; the row and the audio file go only after the confirm. Nothing else deletes audio here.
+  const letGo = () => {
+    if (!draft) return;
+    const id = draft.id;
+    const uri = draft.audioUri;
+    Alert.alert(copy.listen.discardTitle, copy.listen.discardBody, [
+      { text: copy.listen.keepButton, style: 'cancel' },
+      {
+        text: copy.listen.discardConfirm,
+        style: 'destructive',
+        onPress: () => {
+          haptic('warning');
+          let gone = false;
+          try {
+            gone = letItGo(id, uri, { beginDiscard, deleteFile: (u) => deleteIfPresent(new File(u)), finishDiscard });
+          } catch {
+            gone = false; // any throw is the same as not removed yet
+          }
+          // Not removed yet (BL-926): stay on Review, say so once; the launch sweep tries again.
+          if (!gone) {
+            setLetGoPending(true);
+            return;
+          }
+          setLetGoPending(false);
+          if (router.canGoBack()) router.back();
+          else router.replace('/');
+        },
+      },
+    ]);
+  };
+
   // Mini player for the recording ("Hear it").
-  // The web design preview's seeded recordings cannot load in a browser (always false on a phone).
-  const player = useAudioPlayer(draft?.audioUri && !isPreviewAudioPresent(draft.audioUri) ? draft.audioUri : null);
-  const playStatus = useAudioPlayerStatus(player);
-  const togglePlay = async () => {
-    if (playStatus.playing) {
-      player.pause();
-      await setAudioMode('idle');
-    } else {
+  // The same player as the letter page (lib/player): it keeps the audio session, stops on leaving the app, and has the
+  // position VoiceOver moves within (BL-1825). The web design preview's seeded recordings are handled inside it.
+  const player = useLetterPlayer(draft?.audioUri ?? null, { fallbackDurationMs: draft?.audioDurationMs });
+  const togglePlay = () => {
+    if (!player.playing) {
       track('review_action', { action: 'play_back' });
       track('playback_started', { surface: 'review', author_relation: 'self', version: 'original' });
-      await setAudioMode('playback');
-      if (playStatus.didJustFinish || playStatus.currentTime >= playStatus.duration) player.seekTo(0);
-      player.play();
     }
+    player.toggle();
   };
-  useEffect(() => {
-    if (playStatus.didJustFinish) setAudioMode('idle').catch(() => {});
-  }, [playStatus.didJustFinish]);
   useEffect(() => () => void setAudioMode('idle').catch(() => {}), []);
 
   // Display: the person's words plus edits; a just-restored span is marked as an identity edit.
@@ -429,6 +464,18 @@ export default function Review() {
   const cleanedText = useMemo(() => (typed ? typedFinalText(raw) : languageFinalText(raw, inForce, rules)), [raw, inForce, typed, rules]);
   const finalText = userText ?? cleanedText;
 
+  /** The count line under the letter for `n` fixes in force (shown, and spoken after Put back). */
+  const countTextFor = (n: number) => {
+    const kind = countLine({ view, applied: n, proposed, hasFixRules: spokenEditLevel(language) === 'clean' });
+    return kind === 'count'
+      ? plural(n, pendingCopy.review.changesLabelOne, fill(r.changesLabel, { count: n }))
+      : kind === 'afterUndo'
+        ? r.noChangesAfterUndo
+        : kind === 'none'
+          ? r.noChanges
+          : r.noChangesNoRules;
+  };
+
   const putBack = (index: number) => {
     const edit = applied[index];
     const next = withoutEdit(raw, applied, index, rules);
@@ -439,6 +486,8 @@ export default function Review() {
     writer.putBack(putBacks.current);
     setApplied(next.applied);
     setRestored({ edit, index });
+    // iOS VoiceOver ignores the live region on the note below the letter, so this is said (BL-1793).
+    announce(putBackSpeech({ putBack: pendingCopy.review.putBack, undo: copy.common.undoButton, countText: countTextFor(next.applied.length) }));
     setOpenEdit(null);
     setWash(true);
     setTimeout(() => setWash(false), 1600);
@@ -607,6 +656,9 @@ export default function Review() {
         fromNotificationWithin2h: fromReminderWithin2h(),
       });
       if (!typed && rejected.current.length > 0) trackMachineEditsRejected(rejected.current);
+      // The picture chosen with this letter (NS-01), stored now that the letter exists. A picture that cannot be stored
+      // never un-keeps the letter (NS-01-R17); with the photos switch off nothing is pending.
+      await commitPendingPhoto(draft.id, finalText);
       // The count goes to the Keychain; marks only ("...") never count (M17), so only words can note the allowance.
       if (await countAfterSave(finalText)) setSecondFree(true);
       finishSave(inBook, firstLetter);
@@ -695,6 +747,19 @@ export default function Review() {
     if (saveFailed) announce(r.saveFailed);
   }, [saveFailed, r.saveFailed]);
 
+  // BL-926: the line belongs to one recording; another recording on this Review starts clean.
+  useEffect(() => {
+    setLetGoPending(false);
+    letGoTold.current = null;
+  }, [draft?.id]);
+
+  // BL-926: a Let it go the phone would not finish is said aloud once for this recording (iOS VoiceOver ignores live regions).
+  useEffect(() => {
+    if (!letGoPending || letGoTold.current === draft?.id) return;
+    letGoTold.current = draft?.id ?? null;
+    announce(fill(r.letGoPending, { app: brand.name }));
+  }, [letGoPending, draft?.id, r.letGoPending]);
+
   const dismissFirstNote = () => {
     setSetting('review.firstNoteSeen', '1');
     setFirstNote(false);
@@ -714,14 +779,7 @@ export default function Review() {
   }
 
   const line = countLine({ view, applied: applied.length, proposed, hasFixRules: spokenEditLevel(language) === 'clean' });
-  const countText =
-    line === 'count'
-      ? plural(applied.length, pendingCopy.review.changesLabelOne, fill(r.changesLabel, { count: applied.length }))
-      : line === 'afterUndo'
-        ? r.noChangesAfterUndo
-        : line === 'none'
-          ? r.noChanges
-          : r.noChangesNoRules; // 'noRules', and 'exact' (Exactly as said: the words are untouched)
+  const countText = countTextFor(applied.length);
 
   // The letter sheet's header (S17): the month it files into, from the day it was said.
   const occurredOn = draft.createdAt ? todayISO(new Date(draft.createdAt)) : todayISO();
@@ -742,6 +800,7 @@ export default function Review() {
       ? wordsCard({
           emptyFile: file === 'empty',
           unreadable: file === 'unreadable',
+          shortTake: isShortTake(draft.audioDurationMs),
           job,
           download: {
             ask: showReviewAsk({ choice: speechDownloadChoice(), progress: download.progress, hold: download.hold }),
@@ -754,7 +813,7 @@ export default function Review() {
             neededSize: ask ? formatBytes(ask.neededBytes) : '',
           },
           hints,
-          playing: playStatus.playing,
+          playing: player.playing,
         })
       : null;
   // No sound to hear: the file is empty or missing (S16), so "Hear it" is not offered.
@@ -768,6 +827,7 @@ export default function Review() {
     // The person writes the words for this recording; the app never fills them in (S16).
     write: () => router.replace({ pathname: '/write', params: { draftId: draft.id } }),
     recordAgain,
+    letGo,
     download: () => void startSpeechDownload(language),
     // Cellular data for this download only, on this tap only; the Wi-Fi default stays (D-087).
     cellular: () => void startSpeechDownload(language, { allowCellularOnce: true }),
@@ -921,13 +981,14 @@ export default function Review() {
             // Done sits in the header while editing (S18), and above the keyboard on iOS.
             <Button variant="quiet" size="sm" className="-ml-4" label={copy.common.doneButton} onPress={() => setEditing(false)} testID="review.edit.doneHeader" />
           ) : hasSound ? (
-            <Button variant="quiet" size="sm" className="-ml-4" onPress={togglePlay} accessibilityLabel={playStatus.playing ? copy.common.pauseButton : r.playButton}>
-              {playStatus.playing ? <PauseIcon color={c.accent} size={20} weight="fill" /> : <PlayIcon color={c.accent} size={20} />}
-              <Text>{playStatus.playing ? copy.common.pauseButton : r.playButton}</Text>
+            <Button variant="quiet" size="sm" className="-ml-4" onPress={togglePlay} accessibilityLabel={player.playing ? copy.common.pauseButton : r.playButton}>
+              {player.playing ? <PauseIcon color={c.accent} size={20} weight="fill" /> : <PlayIcon color={c.accent} size={20} />}
+              <Text>{player.playing ? copy.common.pauseButton : r.playButton}</Text>
             </Button>
           ) : null
         }
       />
+      {hasSound && !editing && player.duration > 0 ? <ReviewScrub position={player.position} duration={player.duration} onSeek={player.seek} /> : null}
 
       {/* While words are changed the footer's Done rides above the keyboard (S18), and the letter scrolls clear of it. */}
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
@@ -936,7 +997,6 @@ export default function Review() {
           <Text variant="title1" asHeading>
             {reviewHeading({ typedOnly: typed && !spoken })}
           </Text>
-
           {isSample && (
             <View className="rounded-2xl border border-caution p-3">
               <Text variant="subhead" tone="caution">
@@ -949,7 +1009,10 @@ export default function Review() {
           )}
 
           {firstNote && phase === 'ready' && (
-            <Animated.View entering={motion.enter()} layout={motion.layout()}>
+            <Animated.View
+              entering={motion.enter()}
+              exiting={FadeOut.duration(motion.reduced ? tokens.motion.fadeMs : tokens.motion.exitMs).reduceMotion(ReduceMotion.Never)}
+              layout={motion.layout()}>
               {/* Compact first-time note; "Got it" collapses it for good (review.firstNoteSeen). */}
               <View className="gap-1 bg-secondary py-3 pl-4 pr-2" style={{ borderRadius: tokens.radius.lg }} testID="review.firstNote">
                 <View className="flex-row items-center justify-between gap-2">
@@ -967,9 +1030,7 @@ export default function Review() {
 
           {/* Why the take stopped early (S14): leaving the app, a call or an alert, or the app closing. One honest line. */}
           {stopNote && (
-            <Text variant="footnote" tone="muted" accessibilityLiveRegion="polite" testID="review.stopLine">
-              {stopNote}
-            </Text>
+            <EarlyStopLine note={stopNote} />
           )}
 
           {card && (
@@ -983,6 +1044,12 @@ export default function Review() {
           {saveFailed && phase !== 'ready' && (
             <Text variant="subhead" tone="caution" accessibilityLiveRegion="assertive">
               {r.saveFailed}
+            </Text>
+          )}
+
+          {letGoPending && (
+            <Text variant="subhead" tone="muted" className="text-center" testID="review.letGoPending">
+              {fill(r.letGoPending, { app: brand.name })}
             </Text>
           )}
 
@@ -1107,10 +1174,16 @@ export default function Review() {
                 </Button>
               )}
 
-              {/* Dynamic Type at accessibility sizes: the actions scroll with the letter instead of pinning over it. */}
-              {inlineFooter ? footer : null}
             </>
           )}
+          {/* The picture chosen with this letter (NS-01-R7): add, change, take off, with Undo. It comes after the parent's
+              words and their small fixes and before Let it go and Keep (spec 01 section 4), so it never leads the words, and
+              when it is stored after Review opens nothing above it moves. Absent when off. */}
+          {draft && !isSample ? <ReviewPhoto draftId={draft.id} finalText={finalText} /> : null}
+
+          {/* Dynamic Type at accessibility sizes: the actions scroll with the letter instead of pinning over it. The footer is
+              null until the words are ready. */}
+          {inlineFooter ? footer : null}
           {inlineFooter ? keepFooter : null}
         </ScrollView>
 
@@ -1176,11 +1249,27 @@ function ViewControl({ view, onChange }: { view: ReviewView; onChange: (v: Revie
   );
 }
 
-/** One fix as a row: what happened, then what it was. 48 pt tall, a chevron, the VoiceOver path to the marks. */
+/**
+ * One fix as a row: what happened, then what it was. 48 pt tall, a chevron, the VoiceOver path to the marks. Below
+ * accessibility sizes the detail is a one-line preview (the whole of it is in the row's label). At accessibility sizes
+ * the row stacks: the label and the chevron, then the detail in full with no line limit, so the parent's words are
+ * never cut (NS-33-R4). The button, its label, hint and expanded state are the same at every size.
+ */
 function FixRow({ label, shows, open, onPress }: { label: string; shows: ReturnType<typeof rowShows>; open: boolean; onPress: () => void }) {
   const { c } = useTheme();
+  const stacked = useIsAccessibilitySize();
   const detail =
     shows.kind === 'change' ? fill(copy.review.rowChange, { a: shows.from, b: shows.to }) : shows.kind === 'mark' ? '' : shows.text;
+  const chevron = <CaretRightIcon size={16} color={c.textMuted} weight="bold" />;
+  const words = (
+    <Text
+      variant="footnote"
+      className={stacked ? undefined : 'flex-1'}
+      numberOfLines={stacked ? undefined : 1}
+      style={shows.kind === 'struck' ? { textDecorationLine: 'line-through' } : undefined}>
+      {detail}
+    </Text>
+  );
   return (
     <Pressable
       onPress={onPress}
@@ -1189,16 +1278,24 @@ function FixRow({ label, shows, open, onPress }: { label: string; shows: ReturnT
       accessibilityHint={pendingCopy.review.editA11yHint}
       accessibilityState={{ expanded: open }}
       testID="review.fixRow"
-      className="min-h-12 flex-row items-center gap-3 py-1">
-      <Text variant="labelSmall">{label}</Text>
-      <Text
-        variant="footnote"
-        className="flex-1"
-        numberOfLines={1}
-        style={shows.kind === 'struck' ? { textDecorationLine: 'line-through' } : undefined}>
-        {detail}
-      </Text>
-      <CaretRightIcon size={16} color={c.textMuted} weight="bold" />
+      className={stacked ? 'min-h-12 justify-center gap-1 py-1' : 'min-h-12 flex-row items-center gap-3 py-1'}>
+      {stacked ? (
+        <>
+          <View className="flex-row items-center gap-3">
+            <Text variant="labelSmall" className="flex-1">
+              {label}
+            </Text>
+            {chevron}
+          </View>
+          {detail ? words : null}
+        </>
+      ) : (
+        <>
+          <Text variant="labelSmall">{label}</Text>
+          {words}
+          {chevron}
+        </>
+      )}
     </Pressable>
   );
 }
@@ -1210,6 +1307,7 @@ const WORDS_TEST_ID: Record<WordsAction, string> = {
   type: 'review.type',
   write: 'review.write',
   recordAgain: 'review.recordAgain',
+  letGo: 'review.letGo',
   download: 'review.getReady',
   cellular: 'review.mobileData',
   later: 'review.later',
@@ -1223,7 +1321,7 @@ const WORDS_TEST_ID: Record<WordsAction, string> = {
 function WordsStatus({ card, size, lengthMs, run }: { card: WordsCard; size: string; lengthMs: number | null; run: Record<WordsAction, () => void> }) {
   // VoiceOver ignores live regions on iOS, so the state is said aloud: the card's own title (never the letter's words)
   // once Review has dissolved in (VoiceOver's focus lands on "Hear it", not on the card), again on each change of state,
-  // and "Read it back later" when it appears (TDD 09 V1).
+  // and the longer-than-usual line when it appears (TDD 09 V1, BL-399).
   const said = useRef<{ state: string; later: boolean } | null>(null);
   const title = useRef(card.title);
   title.current = card.title;
@@ -1235,7 +1333,7 @@ function WordsStatus({ card, size, lengthMs, run }: { card: WordsCard; size: str
     [],
   );
   useEffect(() => {
-    const now = { state: card.state, later: card.quiet === 'later' };
+    const now = { state: card.state, later: card.state === 'writing' && card.primary === 'keep' };
     const before = said.current;
     said.current = now;
     if (!before) {
@@ -1249,8 +1347,8 @@ function WordsStatus({ card, size, lengthMs, run }: { card: WordsCard; size: str
       if (first.current) clearTimeout(first.current);
       first.current = null;
       announce(card.title);
-    } else if (!before.later && now.later) announce(wordsActionLabel('later'));
-  }, [card.state, card.quiet, card.title]);
+    } else if (!before.later && now.later) announce(card.body ?? card.title);
+  }, [card.state, card.primary, card.quiet, card.title]);
   const action = (a: WordsAction | null) => (a ? { label: wordsActionLabel(a, size), onPress: run[a], testID: WORDS_TEST_ID[a] } : undefined);
   const primary = action(card.primary);
   const quiet = action(card.quiet);

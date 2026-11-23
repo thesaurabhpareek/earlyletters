@@ -127,7 +127,7 @@ test("board state round-trips through the hidden comment", () => {
 test("the real backlog parses completely and every owner role maps to an agent", () => {
   const text = readFileSync(join(ROOT, "docs", "BACKLOG.md"), "utf8");
   const real = parseBacklog(text);
-  const headings = (text.match(/^#### BL-\d{3}/gm) ?? []).length;
+  const headings = (text.match(/^#### BL-\d{3,4}/gm) ?? []).length;
   assert.equal(real.length, headings);
   assert.ok(real.every((t) => t.status), "every task has a status");
   const roster = loadRoster();
@@ -354,4 +354,35 @@ test("ledger keeps workflow receipts but never trusts github-actions for message
   assert.equal(ledgerRow(fakeReview, TRUST, "comment"), undefined);
   assert.equal(ledgerRow(fakeReview, TRUST, "comment", true).trusted, false);
   assert.equal(ledgerRow({ body: "<!-- receipt run:1 agent:qa cost:9 -->", created_at: at(1), user: stranger }, TRUST, "comment"), undefined);
+});
+
+// ---------- four-digit backlog ids (BL-1000 and above) ----------
+
+const FOUR = [
+  "## Ready",
+  "#### BL-999 Last three digit task",
+  "- Status: ready. Mode: agent. Owner: qa. Size: S.",
+  "#### BL-1000 First four digit task",
+  "- Status: ready. Mode: agent. Owner: qa. Depends on: BL-999.",
+  "#### BL-1001 Blocked on four digits",
+  "- Status: blocked (BL-1000, BL-12345). Mode: agent. Owner: qa.",
+].join("\n");
+
+test("four-digit backlog headings are parsed, with depends-on and blockers, in file order", () => {
+  const tasks = parseBacklog(FOUR);
+  assert.deepEqual(tasks.map((t) => t.id), ["BL-999", "BL-1000", "BL-1001"]);
+  assert.deepEqual(tasks[1].dependsOn, ["BL-999"]);
+  assert.equal(tasks[2].blockers, null, "BL-12345 is not a backlog id, so the blocker is not purely ids");
+  const owners = ownerMap({ agents: [{ handle: "qa", backlog_owner_names: ["qa"] }] });
+  const q = queueFor("qa", tasks, owners, new Set());
+  assert.deepEqual(q.map((t) => t.id), ["BL-999"], "BL-1000 waits on BL-999 until it is done");
+  const done = parseBacklog(FOUR.replace("Status: ready. Mode: agent. Owner: qa. Size: S.", "Status: done. Mode: agent. Owner: qa. Size: S."));
+  assert.deepEqual(queueFor("qa", done, owners, new Set()).map((t) => t.id), ["BL-1000"]);
+});
+
+test("taken ids read four digits and never cut BL-1000 down to BL-100", () => {
+  const taken = takenIds([{ head: { ref: "feat/bl-1000-thing" }, title: "BL-1001 (1/2): x" }, { head: { ref: "fix/bl-952-y" }, title: "z" }]);
+  assert.deepEqual([...taken].sort(), ["BL-1000", "BL-1001", "BL-952"]);
+  assert.equal(taken.has("BL-100"), false);
+  assert.equal(takenIds([{ head: { ref: "x/bl-12345-y" }, title: "" }]).size, 0);
 });

@@ -101,7 +101,7 @@ function build2Text(withDeleteRow: boolean): string {
       'Please try:',
       '- Signing in with Apple, or with your email and a sign-in link or code.',
       '- Keeping a few letters, then signing out and back in on this phone. Every letter should still be there.',
-      '- If you are two parents: invite the other parent from the Family tab, then each write a letter and look for both in the Book.',
+      '- If you are two parents: open Me, choose your book, then Write this book together to invite the other parent. Each write a letter and look for both in the Book.',
       '- Anything from the first build, if you have time.',
     ].join('\n'),
     'The other parent sees your words. Your recordings are not shared with them in this test.',

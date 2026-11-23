@@ -31,12 +31,14 @@ export function LaunchRecovery({ onTryAgain }: { onTryAgain: () => LaunchStatus 
       update: setView,
     }),
   );
-  useEffect(
-    () => () => {
+  // Set on mount as well as cleared on unmount: development runs mount, cleanup, mount, and a flag only ever cleared would leave
+  // Try again and Export drawing nothing (BL-494 point 6e).
+  useEffect(() => {
+    live.current = true;
+    return () => {
       live.current = false;
-    },
-    [],
-  );
+    };
+  }, []);
 
   const words: Record<RecoveryLine, string | undefined> = { none: undefined, stillClosed: e.stillClosed, exportNothing: e.exportNothing, exportFailed: e.exportFailed };
 

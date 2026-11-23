@@ -6,6 +6,17 @@ Seeded 2026-10-03 during the compendium drafting run (develop plus open PR branc
 
 ## Current focus
 - Chapters 01 (CODE), 02 (API), 10 (OBS) drafted. Most MUST rules are `not yet`; the gaps (CODE-G*, API-G*, OBS-G*) are listed in `docs/engineering/ENFORCEMENT.md`.
+- (20 Nov) Your review paths match every photo slice and #798 (`packages/**`, `apps/mobile/src/lib/**`); a slice over CODE-R02 needs a `Size exception:` line (BL-931 Done when).
+
+## New scope (20 Nov 2026)
+Decisions and facts that bind Build 13 work; re-check each against `develop` before you act on it.
+- The new-scope pack is on `develop` at 697233d3 (#829): `docs/product/VISION.md`, `docs/product/prd/` 00 to 15 (cards NS-01 to NS-37), plan 13, test plan 14, the rank (`docs/roadmap/next/20-final-stack-rank-and-sizing-19nov.md`), rows BL-923 to BL-949; rows from wave 2 on wait under a founder hold until the founder approves the requirements, and Karma releases them by one status-change PR (`docs/product/prd/13-engineering-plan.md` section 6) (verified 2026-11-20).
+- No autonomous lane runs: `agents.yml` is `disabled_manually` with 0 runs (Actions API) and every run is an interactive Claude session using the charter as a subagent (`docs/agents/HARNESS.md` lines 11 and 17); `AGENTS_ENABLED` not verified (verified 2026-11-20).
+- Only `startCapture({source})` starts a letter (`apps/mobile/src/lib/capture/start-capture.ts:24`; #828, 5f5dfaf4; NS-35); `apps/mobile/test/navigation-one-entry.test.ts` fails on any other push of `/listen` or `/write` (verified 2026-11-20).
+- ADR 0028 is accepted under CR-62 (`docs/agents/cto/RULINGS.md:570`): D1 a picture is `Library/Application Support/photos/<media_id>.jpg` with an `entry_media` row (local migration 11); D3a the seal clock is `seal_opens_at` plus `seal_opens_on`, written once, and `seal_cleared_at`, all L4; D4 Find reads the instant. The ADR file is on `develop` (`docs/adr/0028-photo-seal-find-on-device-data.md`, #797 merged as e9dca86c); its status line still says Proposed and CR-62 is the acceptance record (verified 2026-11-20).
+- BL-931 is the nine-PR photo stack: #834 (merged), #841 (merged, 1513b265), #842, #835 to #840 (verified 2026-11-20).
+- The picker is Apple's `PHPickerViewController` in our `scribe-photo` module, never `expo-image-picker`, which calls `AVCaptureDevice.requestAccess` and `PHPhotoLibrary.requestAuthorization` in every build; with no purpose strings App Store processing can return ITMS-90683 (CR-65 (#852); #833 comment 7026600796) (verified 2026-11-20).
+- A counted review has line 1 `## Review A|B at <40-hex head sha>: PASS`, or `: PASS WITH NOTES` with `Must fix: none` in the body; CHANGES, FAIL and BLOCKED do not count (CR-63). Karma merges (D-132); `review-gate` skill (verified 2026-11-20).
 
 ## Facts about this codebase (with paths)
 - (15 Oct) Workspaces: `apps/*`, `packages/*`, `experiments` (root `package.json`). Packages: analytics, api (21 files), brand, content, core, design-tokens, emails. No `packages/db-types`. `supabase/functions/` has `purge-worker`, `analytics-forget`, `config`, `content` and `_shared`.
