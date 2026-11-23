@@ -73,7 +73,9 @@ import { backShown, childNameFieldWords, dateBlockShown, finishMayMakeBook, firs
 import { RECENTLY_DELETED_HREF, recentlyDeletedRowShown } from '@/lib/first-run/recently-deleted-row.logic';
 import { continueMayShow, continueTapIsLocalStart } from '@/lib/first-run/route.logic';
 import { useFirstRunRoute } from '@/lib/first-run/use-first-run-route';
-import { ARRIVAL_SETTING, arrivalToWrite, methodLine } from '@/lib/first-run/new-phone.logic';
+import { backupInBuild } from '@/lib/backup/gate';
+import { backupLineEnabled } from '@/lib/first-run/backup-line-flag';
+import { ARRIVAL_SETTING, BACKUP_LINE_SETTING, arrivalToWrite, backupLineToWrite, methodLine } from '@/lib/first-run/new-phone.logic';
 import { HeldScreen, NoBookHereScreen, OfflineBookScreen, OpeningBookScreen, SlowBookScreen } from '@/components/onboarding/new-phone-screens';
 import { OutageScreen } from '@/components/onboarding/outage-screen';
 import { WelcomeSignIn } from '@/components/onboarding/welcome-sign-in';
@@ -710,6 +712,9 @@ function FirstRun() {
     if (!route.arrivedFromAccount) return;
     const next = arrivalToWrite(getSetting(ARRIVAL_SETTING));
     if (next) setSetting(ARRIVAL_SETTING, next);
+    // NS-10-R13 (BL-1865): backup off on a phone the book has just reached owes the Book one line, once decided.
+    const line = backupLineToWrite(getSetting(BACKUP_LINE_SETTING), backupInBuild(), backupLineEnabled());
+    if (line) setSetting(BACKUP_LINE_SETTING, line);
     router.replace('/');
   }, [route.arrivedFromAccount]);
   // "Try another way" signs out; the session ending puts the route back on the Welcome (use-first-run-route.ts). A sign-out

@@ -1102,3 +1102,15 @@ Founder standing approval and hard limits are quoted in the Batch 6 section of `
 - Door: two-way. Way back: one line from the founder narrows or revokes this, and `git revert` undoes the edits (not a migration, a secret or a store submission already done).
 - Revisit when: a physical act is missed because it sat in a place other than the queue file; or the machine account (CR-20) exists and the fence can check identity.
 - Founder-only: no. Physical acts only, per item 6.
+
+### CR-177 BL-1854 may merge to develop but stays out of every store candidate and TestFlight build until BL-1805 wording is cleared (23 Nov 2026, Karma)
+- Question: BL-1854 shows Erase now on a signed-in phone, which makes the "for good" line reachable there. May it ship in a build before BL-1805 clears that wording?
+- Tier and type: T1; clear.
+- Options considered: (a) hold BL-1854 from `develop` until BL-1805 clears; (b) merge it to `develop` and hold it from builds; (c) ship both together.
+- Ruling: (b). BL-1854 may be built and merged to `develop`. No store candidate or TestFlight build carries it until BL-1805's wording is cleared. This is a release hold, not a dependency: BL-1805 depends on BL-1854, never the reverse. The row carries the held-from-store-build marker (no such label exists yet) until the product agent removes it. D-169 item 5 (22 Nov 2026) confirms the hold.
+- Why: CLO-22 holds "for good" out of new builds, and once Erase now shows on a signed-in phone that line is reachable there. Counsel Q51 confirms.
+- Evidence: PR #1659 (BL-1853 to BL-1858 filed with the evidence findings); `docs/BACKLOG.md` BL-1854 and BL-1805; `docs/agents/exec/RULINGS.md` CLO-22.
+- Door: two-way. Way back: lift the marker in BL-1854 once BL-1805 is cleared.
+- Revisit when: BL-1805 wording is cleared or counsel answers Q51.
+- Founder-only: no.
+- Signed: Karma
