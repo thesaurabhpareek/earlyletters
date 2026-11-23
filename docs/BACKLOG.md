@@ -9224,8 +9224,9 @@ Queue order (the dispatcher takes the first `ready` row an agent owns, in file o
 - Done when: each failing control reaches 44 pt and has a role, shown by a test.
 
 #### BL-1735 Spec: what "Read a year together" is (year rows in the Months sheet, end-of-year state)
-- Status: proposed (DESIGN-BACKLOG section 3; product writes the spec, then BL-1792 and BL-1736 unblock). Mode: agent. Owner: product manager. Milestone: M15. Size: M. Depends on: none.
-- Set ready by: product manager, now: the spec is product's own work; when it is in `docs/design/` product marks this `done` and sets BL-1736 and BL-1792 ready.
+- Status: in-review (PR #1714). Mode: agent. Owner: product manager. Milestone: M15. Size: M. Depends on: none.
+- Set ready by: product manager, now: the spec is product's own work; when it is merged product marks this `done`. BL-1792 is already `ready` (it waits on this row being `done`); BL-1736 is not filed in this file, so it has no row to set.
+- Spec: `docs/design/specs/13-READ-A-YEAR-TOGETHER-23nov.md`. Written from a read of source at `29ea7945e`, not a device run. It finds the year rows and the closing line already built behind `EXPO_PUBLIC_READ_THE_YEAR`, and it records the list order (SQL newest first, Read together reverses to oldest first). Open: the flag date (founder, default off in the 1 Dec build, by Fri 27 Nov 2026) and the placement (Chief Design Officer).
 - Priority: P1. Gate: none. Lane: product.
 - Satisfies: CDO-B-045 (P1).
 - Problem and evidence: a grandparent cannot read the first year as one sitting; the Months sheet has no year rows or end-of-year state specified.
@@ -9233,8 +9234,9 @@ Queue order (the dispatcher takes the first `ready` row an agent owns, in file o
 - Done when: the spec is in `docs/design/` and BL-1736 and BL-1792 cite it.
 
 #### BL-1792 "Read from here": start Read together at a month or the letter in view
-- Status: blocked (BL-1735). Mode: agent. Owner: mobile engineer, content. Milestone: M15. Size: M. Depends on: BL-1735.
-- Priority: P1. Gate: BL-1735 and a look at the list order. Lane: mobile.
+- Status: ready. Mode: agent. Owner: mobile engineer, content. Milestone: M15. Size: M. Depends on: BL-1735 (the dispatcher picks it only once BL-1735 is `done`, which follows the merge of the spec).
+- Priority: P1. Gate: BL-1735 `done`. The list order is checked: see section 3 of the spec. Lane: mobile. File order with the other letter-page and Read together rows: after BL-1790, BL-1789, BL-1791 and BL-1823 (last). BL-1798 builds after BL-1791; the two do not collide (spec section 5).
+- Spec: `docs/design/specs/13-READ-A-YEAR-TOGETHER-23nov.md`, section 5 (entry points, `from` param, whole-book list) and requirements RYT-06 to RYT-11. The build stays behind `EXPO_PUBLIC_READ_THE_YEAR` until the founder answers question 1 in the spec.
 - Satisfies: PER3-007 (P1).
 - Problem and evidence: a later letter is eight taps away. The review assumed the list ends oldest first and did not read the list order.
 - Scope: "Read from here" from the Months sheet and from a letter page, per the BL-1735 spec; check the list order first.
@@ -9258,8 +9260,9 @@ Queue order (the dispatcher takes the first `ready` row an agent owns, in file o
 - Done when: the token test covers them and no screen types them.
 
 #### BL-1710 Spec: Review opens on a quiet default
-- Status: proposed (DESIGN-BACKLOG section 2; product writes the default, not pickable until then). Mode: agent. Owner: product manager. Milestone: M15. Size: M. Depends on: none.
-- Set ready by: product manager, when BL-1705 is read (or the BL-1700 sitting has run) and the default is written; BL-1788 follows.
+- Status: in-review (PR #1714). Mode: agent. Owner: product manager. Milestone: M15. Size: M. Depends on: none.
+- Set ready by: product manager, when BL-1705 is read (or the BL-1700 sitting has run) and the default is written; BL-1788 follows. The default is written, from a read of source and not from the sitting, which has no named operator (D-169). The sitting amends the spec if it disagrees.
+- Spec: `docs/design/specs/14-REVIEW-QUIET-DEFAULT-23nov.md`. Its section 4 is the evidence for "every": true for the edits `verifyEdits` passes, false for character normalisation and stripped tags, so no line may say "every" until BL-1711 clears (D-169 item 2). A mobile build row for it is not filed; Karma decides when.
 - Priority: P1. Gate: spec. Lane: product, then mobile.
 - Satisfies: NEU-010 (P1).
 - Problem and evidence: Review opens loud; the exec review's NEEDS EVIDENCE asks whether every `verifyEdits` change is visibly marked in Review, and the spec must settle that before any line says "every".
@@ -9267,10 +9270,11 @@ Queue order (the dispatcher takes the first `ready` row an agent owns, in file o
 - Done when: the spec is in `docs/design/` and names the evidence for "every".
 
 #### BL-1788 One line under Add to the book and Keep private that says what each changes
-- Status: blocked (BL-1710). Mode: agent. Owner: content. Milestone: M15. Size: S. Depends on: BL-1710.
+- Status: ready. Mode: agent. Owner: content. Milestone: M15. Size: S. Depends on: BL-1710 (the dispatcher picks it only once BL-1710 is `done`, which follows the merge of the spec).
 - Priority: P1. Gate: written with BL-1710 so Review is touched once. Lane: content (product checks it against the PRD privacy rows).
+- Spec: `docs/design/specs/14-REVIEW-QUIET-DEFAULT-23nov.md`, section 5 (facts, limits and placement) and QD-08, QD-09. Correction to this row: no printed-book clause, because D-010 says digital only in v1. Review is touched twice unless one mobile row builds the fold and these lines together: the fold has no build row yet (spec 14 section 8), so the gate "touched once" holds only if Karma has product file that row.
 - Satisfies: PER1-004 (P1).
-- Problem and evidence: she cannot tell what each button changes (who can read it, whether it is in the printed book).
+- Problem and evidence: she cannot tell what each button changes (who can read it, whether it is in the printed book; the printed-book half is dropped, D-010).
 - Scope: one plain line per button. The two-parent audience line is BL-1819.
 - Done when: the lines pass the rules test and match the PRD privacy rows.
 
