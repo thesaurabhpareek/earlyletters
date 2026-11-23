@@ -2597,7 +2597,7 @@ strings.en.ts#en.review.date.dayLabel,app screen,in-app,packages/content/src/str
 strings.en.ts#en.review.headerTo,app screen,in-app,packages/content/src/strings.en.ts,376,en,To {child} · Month {month},26,,,,,,content,live on develop,content
 strings.en.ts#en.review.headerToNewborn,app screen,in-app,packages/content/src/strings.en.ts,377,en,To {child} · The first weeks,28,,,,,,content,live on develop,content
 strings.en.ts#en.review.headerToBefore,app screen,in-app,packages/content/src/strings.en.ts,378,en,To {child} · Before You,23,,,,,,content,live on develop,content
-strings.en.ts#en.review.waitingBody,app screen,in-app,packages/content/src/strings.en.ts,381,en,"Listening back to what you said. Your voice is kept. You can close this, it will be waiting on Tonight.",103,,,,,,content,live on develop,content
+strings.en.ts#en.review.waitingBody,app screen,in-app,packages/content/src/strings.en.ts,381,en,Listening back to what you said. Your voice is kept. You can close this and come back to it from Tonight.,105,,,,,,content,live on develop,content
 strings.en.ts#en.review.waitingSlow,app screen,in-app,packages/content/src/strings.en.ts,382,en,"This is taking longer than usual. Your voice is kept, and you can close this.",77,,,,,,content,live on develop,content
 strings.en.ts#en.review.laterButton,app screen,in-app,packages/content/src/strings.en.ts,383,en,Read it back later,18,,,,,,content,live on develop,content
 strings.en.ts#en.review.keepStillSaving,app screen,in-app,packages/content/src/strings.en.ts,385,en,"This recording is still being saved. Give it a moment, then tap Keep again.",75,,,,,,content,live on develop,content
