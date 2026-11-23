@@ -830,6 +830,11 @@ export function newestMadeLetter(childIds: readonly string[], owner: string | nu
   return bookVisibleNow() ? entries.newestMadeLetter(ctx(), childIds, owner) : null;
 }
 
+/** When the newest draft waiting across the given visible books was made: a date only (BL-1648, reminders). */
+export function newestWaitingDraftAt(childIds: readonly string[]): string | null {
+  return bookVisibleNow() ? drafts.newestWaitingAt(ctx(), childIds) : null;
+}
+
 /** The Book's read: one book's letters newest first, without their edit lists (BL-434). */
 export function listBookEntries(childId: string): Entry[] {
   return shown(() => entries.listForBook(ctx(), childId));
