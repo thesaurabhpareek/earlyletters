@@ -356,6 +356,19 @@ export function getSetting(key: string): string | null {
   return settings.getSetting(ctx(), key);
 }
 
+/**
+ * A saved setting only if the store is already open; null otherwise. Never opens it and never throws, so a screen that
+ * draws after a failed open (the launch recovery screen) can read the appearance without running the update steps again.
+ */
+export function getSettingIfOpen(key: string): string | null {
+  if (!conn) return null;
+  try {
+    return settings.getSetting(conn.ctx, key);
+  } catch {
+    return null;
+  }
+}
+
 export function setSetting(key: string, value: string): void {
   settings.setSetting(ctx(), key, value);
   bus.emit('settings');
