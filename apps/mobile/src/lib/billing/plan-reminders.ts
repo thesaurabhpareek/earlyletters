@@ -91,9 +91,10 @@ async function apply(): Promise<void> {
       trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: p.fireAt, ...(Platform.OS === 'android' ? { channelId: 'reminders' } : {}) },
     });
   }
-  lastSignature = signature;
   // The re-plan hook (CR-69 A1): plan notices were scheduled or cancelled, so the evening reminders re-plan and the total stays at 60 or fewer.
   await rescheduleReminders();
+  // Only after the re-plan finished: if it threw, the next call plans again (BL-1190).
+  lastSignature = signature;
 }
 
 /** Re-plan now (serialised). Never throws. */

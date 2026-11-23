@@ -1,0 +1,38 @@
+# Proposed: copy to .github/workflows/founder-ask.yml (BL-1851, CR-176, D-168; docs/ops/proposed/founder-ask.md).
+# Fails a pull request whose title, body or added lines ask the founder to approve, review, merge, comment or paste.
+# The title and body reach the script only through environment variables, never through a shell string. The script
+# is the one on develop, not the PR's copy, so a PR cannot loosen the check that reads it. Same-repo PRs only.
+name: Founder ask
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+concurrency:
+  group: founder-ask-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  founder-ask:
+    name: founder ask
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      - name: The check as it is on develop
+        run: git worktree add --detach "$RUNNER_TEMP/dev" origin/develop
+      - name: No ask of the founder
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          BASE_REF: ${{ github.base_ref }}
+        run: node "$RUNNER_TEMP/dev/scripts/guards/founder-ask.mjs" --base "origin/$BASE_REF" --head HEAD

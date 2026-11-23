@@ -414,6 +414,11 @@ export interface SyncReport {
   /** Word conflicts found (a conflict copy was kept for each). */
   conflicts: number;
   pulled: number;
+  /**
+   * Pulled rows a local column guard refused (raw_transcript, BL-412; captured_at, engine_version, author_id,
+   * child_id, BL-1497): undone and skipped, a count only. Never part of `rejected`, which is refused uploads (BL-1498).
+   */
+  pulledRefused: number;
   reset: boolean;
   phase: SyncPhase;
 }

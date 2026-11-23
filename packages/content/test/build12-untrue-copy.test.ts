@@ -68,16 +68,14 @@ const ALL = SURFACES.flatMap(([root, value]) => leaves(value, root));
  * pull request that adds this file. `claim` is what the rule matches today.
  */
 const HELD_FOR_COUNSEL: readonly { key: string; rule: Rule['id']; claim: string }[] = [
-  { key: 'features.auth.sheet.privacy', rule: 'coParent', claim: 'invite' },
   { key: 'features.auth.sheet.why', rule: 'safe', claim: 'keeps your book safe' },
   { key: 'features.auth.consent.terms.body', rule: 'coParent', claim: 'family you' },
   { key: 'features.auth.consent.terms.body', rule: 'coParent', claim: 'invite' },
-  { key: 'en.trust.signIn.privacy', rule: 'coParent', claim: 'invite' },
   { key: 'en.trust.signIn.why', rule: 'safe', claim: 'keeps your book safe' },
   { key: 'en.sensitiveConsent.body', rule: 'coParent', claim: 'share it with' },
   { key: 'en.sensitiveConsent.body', rule: 'coParent', claim: 'family you' },
 ];
-const HELD_CAP = 8;
+const HELD_CAP = 6;
 
 /** Shown only when a book already has a second parent or family writer, which Build 12 cannot create. */
 const ONLY_WITH_A_CO_PARENT = new Set([
@@ -151,7 +149,7 @@ describe('Build 12 account, sign-in and deletion copy claims only what the build
     // on a fresh install or a restored phone too, so none may say the letters are on this phone.
     expect(authCopy.code.lettersSafe).toBe('Your letters are still on this phone.');
     for (const l of leaves(authCopy.errors, 'errors')) expect(l.text, l.path).not.toMatch(/\bletters?\b.*\bon this phone\b|\bon this phone\b.*\bletters?\b/i);
-    expect(authCopy.errors.network).toBe('Nothing has changed. Sign in once you are back online.');
+    expect(authCopy.errors.network).toBe("Nothing has changed. Sign in once you're back online.");
     expect(authCopy.errors.session_expired).toBe('You were signed out. Sign in again to carry on.');
   });
 

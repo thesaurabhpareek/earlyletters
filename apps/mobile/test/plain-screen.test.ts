@@ -228,14 +228,14 @@ describe('launch recovery offers no way to delete (S51, D-085)', () => {
 
   it('the words are the S51 table with the 30 Oct rulings (S1, S2), and no title ends with a full stop', () => {
     const l = en.errors.launch;
-    expect(l.title).toBe('The book could not open');
+    expect(l.title).toBe("The book couldn't open");
     expect(l.body).toBe('Export saves a copy of the recordings and book files it can read, exactly as they are.');
     expect(l.hint).toBe('Try again, or restart the phone.');
     expect(l.tryingAgainButton).toBe('Trying again');
-    expect(l.stillClosed).toBe('It did not open this time either.');
+    expect(l.stillClosed).toBe("It didn't open this time either.");
     expect(l.exportButton).toBe("Export what's readable");
     expect(l.exportButton.length).toBeLessThanOrEqual(22);
-    expect(en.errors.crash.title).toBe('This page did not open');
+    expect(en.errors.crash.title).toBe("This page didn't open");
     expect(en.errors.notFoundPage.title).toBe('Nothing at this link');
     for (const t of [l.title, en.errors.crash.title, en.errors.notFoundPage.title]) expect(t).not.toMatch(/\.$/);
     // Nothing a person can tap or is told to do here names deleting, resetting or erasing (D-085).

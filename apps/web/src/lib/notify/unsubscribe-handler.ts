@@ -23,7 +23,7 @@ const NO_STORE = { 'Cache-Control': 'no-store' };
 
 export async function handleUnsubscribe(request: Request): Promise<Response> {
   try {
-    if (!perClient.hit(clientKey(request.headers)).allowed) return new Response('Too many requests', { status: 429, headers: NO_STORE });
+    if (!perClient.hit(clientKey(request.headers)).allowed) return new Response('Too many tries. Wait 10 minutes, then try again.', { status: 429, headers: NO_STORE });
     if (!isSameOrigin(request)) return new Response('Bad request', { status: 400, headers: NO_STORE });
 
     const url = new URL(request.url);
@@ -37,20 +37,20 @@ export async function handleUnsubscribe(request: Request): Promise<Response> {
     const back = (query: string) => new Response(null, { status: 303, headers: { ...NO_STORE, Location: `/unsubscribe?${query}` } });
 
     const contactId = readUnsubscribeToken(token, process.env.UNSUBSCRIBE_SECRET);
-    if (!contactId) return isForm ? back('invalid=1') : new Response('Invalid link', { status: 400, headers: NO_STORE });
+    if (!contactId) return isForm ? back('invalid=1') : new Response("That link didn't work.", { status: 400, headers: NO_STORE });
 
     const apiKey = (process.env.RESEND_API_KEY ?? '').replace(/["'\s]/g, '');
     if (!apiKey) {
       logNotify('config_error');
-      return isForm ? back(`t=${encodeURIComponent(token ?? '')}&error=1`) : new Response('Server error', { status: 500, headers: NO_STORE });
+      return isForm ? back(`t=${encodeURIComponent(token ?? '')}&error=1`) : new Response("That didn't go through. Try again.", { status: 500, headers: NO_STORE });
     }
 
     const result = await unsubscribeContact(contactId, apiKey);
-    if (result === 'ok') return isForm ? back('done=1') : new Response('Unsubscribed', { status: 200, headers: NO_STORE });
-    return isForm ? back(`t=${encodeURIComponent(token ?? '')}&error=1`) : new Response('Server error', { status: 500, headers: NO_STORE });
+    if (result === 'ok') return isForm ? back('done=1') : new Response("You're unsubscribed.", { status: 200, headers: NO_STORE });
+    return isForm ? back(`t=${encodeURIComponent(token ?? '')}&error=1`) : new Response("That didn't go through. Try again.", { status: 500, headers: NO_STORE });
   } catch {
     logNotify('unsubscribe_error');
-    return new Response('Server error', { status: 500, headers: NO_STORE });
+    return new Response("That didn't go through. Try again.", { status: 500, headers: NO_STORE });
   }
 }
 

@@ -21,7 +21,7 @@
  * API for other screens: src/lib/README.md.
  */
 import * as Crypto from 'expo-crypto';
-import type { DictionaryTerm, Edit, EditLevel } from '@scribe/core';
+import { AVOID_RECENT, type DictionaryTerm, type Edit, type EditLevel } from '@scribe/core';
 import { keychainFloor, type LedgerDb } from './billing/letter-ledger';
 import { decideGate } from './age-gate.logic';
 import { bookVisibleTo } from './auth/account-scope.logic';
@@ -29,7 +29,7 @@ import { getAuthSnapshot } from './auth/auth-store';
 import { authUserId } from './auth/machine.logic';
 import { parsePutBack, parseView, type ReviewPatch, type ReviewSaved } from './capture/review-persist.logic';
 import type { SweepDraft, SweepEntry } from './capture/sweep.logic';
-import { MigrationError, migrate, userVersion, type MigrationResult } from './db/migrations';
+import { MigrationError, migrate, sweepTakeoverKeys, userVersion, type MigrationResult } from './db/migrations';
 import type { SqlDb } from './db/sql';
 import type { AgreementDocument, AgreementRow } from './agreements.logic';
 import { AGE_GATE_PASSED_KEY, AGE_GATE_STOPPED_KEY } from './age-gate.logic';
@@ -188,6 +188,8 @@ export function openStore(options: OpenStoreOptions = {}): OpenStoreResult {
     return { ok: false, newer: false, error: e instanceof MigrationError ? e : new StoreOpenError(), migration: null };
   }
   const result: OpenStoreResult = { ok: !migration.newer, newer: migration.newer, error: null, migration };
+  // Stale guard-window keys (BL-412, BL-1497) are cleared here: after migrations, before any pull can run. A newer file is left untouched.
+  if (!migration.newer) sweepTakeoverKeys(opened.db);
   conn = { opened, ctx: { db: opened.db, now, newId }, result };
   // The account seam of Find's index (NS-02-R24, [X4-R1]): another account's book on this phone is never indexed.
   setIndexableBooks(() => (bookVisibleNow() ? null : []));
@@ -352,6 +354,19 @@ export function todayISO(d = new Date()): string {
 // ── Device settings ──────────────────────────────────────────────────────
 export function getSetting(key: string): string | null {
   return settings.getSetting(ctx(), key);
+}
+
+/**
+ * A saved setting only if the store is already open; null otherwise. Never opens it and never throws, so a screen that
+ * draws after a failed open (the launch recovery screen) can read the appearance without running the update steps again.
+ */
+export function getSettingIfOpen(key: string): string | null {
+  if (!conn) return null;
+  try {
+    return settings.getSetting(conn.ctx, key);
+  } catch {
+    return null;
+  }
 }
 
 export function setSetting(key: string, value: string): void {
@@ -810,9 +825,61 @@ export function listEntriesForChild(childId: string): Entry[] {
   return shown(() => entries.listForChild(ctx(), childId));
 }
 
+/** The newest letter this phone's user made across the visible books: date and enums only (NS-48-R27, reminders). */
+export function newestMadeLetter(childIds: readonly string[], owner: string | null): entries.MadeLetter | null {
+  return bookVisibleNow() ? entries.newestMadeLetter(ctx(), childIds, owner) : null;
+}
+
+/** The Book's read: one book's letters newest first, without their edit lists (BL-434). */
+export function listBookEntries(childId: string): Entry[] {
+  return shown(() => entries.listForBook(ctx(), childId));
+}
+
+/** How many letters one book holds (quiet-day marks not counted), counted in SQL (BL-434). */
+export function countBookLetters(childId: string): number {
+  return bookVisibleNow() ? entries.countLetters(ctx(), childId) : 0;
+}
+
+/** What Tonight reads from the entries, and nothing more (BL-434). */
+export interface TonightRead {
+  /** The prompt keys of the newest letters that came from a prompt, newest first (at most `AVOID_RECENT`). */
+  recentKeys: string[];
+  /** The newest `occurred_on` in the book, or null when it is empty. */
+  lastOccurredOn: string | null;
+  /** Letters dated in the "A month ago" window around today (a day wider each side; the card still decides). */
+  window: Entry[];
+  /** Whether a quiet-day mark is already kept for today. */
+  markToday: boolean;
+}
+
+const dayShift = (iso: string, days: number): string => {
+  const [y, m, d] = iso.slice(0, 10).split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
+};
+
+export function readTonight(childId: string | null, today: string): TonightRead {
+  if (!childId || !bookVisibleNow()) return { recentKeys: [], lastOccurredOn: null, window: [], markToday: false };
+  const c = ctx();
+  return {
+    recentKeys: entries.recentPromptKeys(c, childId, AVOID_RECENT),
+    lastOccurredOn: entries.latestOccurredOn(c, childId),
+    // "A month ago" looks 28 to 35 days back; one day more each side covers a day-boundary rounding.
+    window: entries.listOccurredBetween(c, childId, dayShift(today, -36), dayShift(today, -27)),
+    markToday: entries.hasNotMuchOn(c, childId, today),
+  };
+}
+
 /** Export while an account-deletion request is open: books the server closed, and letters in Recently deleted (BL-446). */
 export function listClosedBooks(): Child[] {
   return shown(() => children.listClosedByServer(ctx()));
+}
+/** Books this person left, with their own letters still here (D-113, BL-444). Read-only; the screen is a later slice. */
+export function listLeftBooks(): Child[] {
+  return shown(() => children.listLeft(ctx()));
+}
+/** The live letters of a book this person left. Empty for any book that is not left, so it cannot read a listed book by id. */
+export function listLeftBookEntries(childId: string): Entry[] {
+  return shown(() => (children.listLeft(ctx()).some((c) => c.id === childId) ? entries.listForBook(ctx(), childId) : []));
 }
 export function listDeletedEntriesForChild(childId: string): Entry[] {
   return shown(() => entries.listDeletedForChild(ctx(), childId));
@@ -1147,8 +1214,22 @@ export function eraseBook(id: string, eraseAudio: AudioEraser): boolean {
     wipe.removeBook(c, id);
   });
   compactAfterErase(c);
+  for (const hook of bookErasedHooks) {
+    try {
+      hook(id);
+    } catch {
+      // a device-file cleanup must never undo an erase that has happened
+    }
+  }
   bus.emit('children', 'entries', 'drafts', 'settings');
   return true;
+}
+
+const bookErasedHooks = new Set<(bookId: string) => void>();
+/** Device files keyed by book (the moments file, NS-53-R249) remove their rows when a book is erased for good. Never throws into the erase. */
+export function onBookErased(hook: (bookId: string) => void): () => void {
+  bookErasedHooks.add(hook);
+  return () => void bookErasedHooks.delete(hook);
 }
 
 // ── Erase everything on this phone (BL-387; F17 6.2 F; DATA-REQ-024) ─────

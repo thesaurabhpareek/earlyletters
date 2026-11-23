@@ -47,7 +47,6 @@ import Animated, { FadeIn, FadeInDown, FadeOut, ReduceMotion } from 'react-nativ
 import { selectPrompt } from '@scribe/core';
 import { PROMPT_LIBRARY_VERSION, PROMPTS } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
-import { markOn } from '@/components/book/quiet-day.logic';
 import { CardSource, useHiddenBehindCardPage } from '@/components/motion/card-transition';
 import { DraftCard } from '@/components/tonight/draft-card';
 import { HeldRow } from '@/components/tonight/held-row';
@@ -86,7 +85,7 @@ import {
   getActiveChildId,
   getFamily,
   listDrafts,
-  listEntries,
+  readTonight,
   subscribe,
   todayISO,
   type Draft,
@@ -98,20 +97,24 @@ const M = tokens.motion;
 
 /**
  * What Tonight shows: the book, whether this person quieted it, every waiting draft (listDrafts, all of them), the
- * book's entries, and the moment they were read. The day, the greeting's daypart, the lamp's tone and each card's
+ * the few letters "A month ago" may pick from, whether today holds a quiet-day mark, and the moment they were read
+ * (never the whole book: BL-434). The day, the greeting's daypart, the lamp's tone and each card's
  * dateline all come from `at`, so a room read again (on focus, on a change in the store, on coming back from the
  * background) is never stale.
  */
-type Room = { family: Family | null; quiet: boolean; drafts: Draft[]; entries: Entry[]; at: Date };
+type Room = { family: Family | null; quiet: boolean; drafts: Draft[]; window: Entry[]; markToday: boolean; at: Date };
 
 function readRoom(): Room {
   const childId = getActiveChildId();
+  const at = new Date();
+  const read = readTonight(childId, todayISO(at));
   return {
     family: getFamily(),
     quiet: getActiveChild()?.quiet === true,
     drafts: childId ? listDrafts(childId) : [],
-    entries: listEntries(),
-    at: new Date(),
+    window: read.window,
+    markToday: read.markToday,
+    at,
   };
 }
 
@@ -132,6 +135,8 @@ export default function Tonight() {
   const inlineActions = footerPlacement(useIsAccessibilitySize()) === 'inline';
   // The mark kept for today while its line is showing (so Undo knows what to remove).
   const [keptMark, setKeptMark] = useState<string | null>(null);
+  // The tap could not save the mark: one calm line shows until the next tap (BL-1723).
+  const [notSaved, setNotSaved] = useState(false);
   // Tonight's lines enter once per cold launch, on the first render that shows them; a later mount, and a card that
   // appears later (a typed draft when Write closes), is already in place.
   const [arriving, setArriving] = useState(() => tonightArrival.pending());
@@ -154,9 +159,9 @@ export default function Tonight() {
   const refresh = useCallback(() => {
     load();
     void lettersKeptNow().then(setLettersKept);
-    const entries = listEntries();
-    setRecent(entries.map((e) => e.promptKey).filter((k): k is string => !!k));
-    setDaysSince(entries[0] ? Math.floor((Date.parse(todayISO()) - Date.parse(entries[0].occurredOn)) / 864e5) : null);
+    const read = readTonight(getActiveChildId(), todayISO());
+    setRecent(read.recentKeys);
+    setDaysSince(read.lastOccurredOn ? Math.floor((Date.parse(todayISO()) - Date.parse(read.lastOccurredOn)) / 864e5) : null);
   }, [load]);
 
   useFocusEffect(
@@ -209,8 +214,8 @@ export default function Tonight() {
   const showPlusLine = plusLineShows({ plan: plan.view, now: new Date().toISOString(), lettersKept, allowance: freeLettersAllowance(), alpha: PLUS_ALPHA });
   // A quieted book brings nothing back (NS-23-R8, J-N19).
   const monthAgo = useMemo(
-    () => resurfaced(room?.entries ?? [], today, cards.length, { quiet: !!room?.quiet }),
-    [room?.entries, room?.quiet, today, cards.length],
+    () => resurfaced(room?.window ?? [], today, cards.length, { quiet: !!room?.quiet }),
+    [room?.window, room?.quiet, today, cards.length],
   );
 
   // Photo-first (NS-01, behind EXPO_PUBLIC_PHOTOS): the one place a photo can start a letter, through the one capture
@@ -229,7 +234,7 @@ export default function Tonight() {
   // other caller, the Family tab.
   const dateline = tonightDateline(child, tonightStageLabel(book.childBirthday, today), dayDate(today));
   // S33: lights down for the evening once today is kept as a quiet day; Undo brings the light back.
-  const lampLevel = tonightLampIntensity(daypart, !!markOn(room.entries, today));
+  const lampLevel = tonightLampIntensity(daypart, room.markToday);
   const enter = (i: number) => (arriving ? motion.enter(i) : undefined);
 
   // "Another thought": the old prompt leaves (exit), the new one rises in from when it is half gone. Reduce Motion: one fade.
@@ -244,7 +249,14 @@ export default function Tonight() {
   const keepNotMuch = () => {
     // One mark a day, no words (D-084): the one capture entry keeps it; the line and its Undo stay here.
     const kept = startCapture({ source: 'notMuchToday' });
+    if (kept.kind === 'quietDayNotSaved') {
+      // Never silent (BL-1723): one calm line, said aloud too. The link stays, so the next tap tries again.
+      setNotSaved(true);
+      announce(copy.errors.generic.body);
+      return;
+    }
     if (kept.kind !== 'quietDay') return;
+    setNotSaved(false);
     haptic('soft');
     announce(copy.notMuch.savedToast);
     setKeptMark(kept.markId);
@@ -268,6 +280,11 @@ export default function Tonight() {
         <Button size="capture" icon={PencilSimpleIcon} label={t.typeButton} haptic="press" onPress={() => startCapture({ source: 'type', prompt: promptParam })} />
       </ButtonRow>
       {photoStart.show ? <PhotoStartButton child={child} onPress={photoStart.start} failed={photoStart.failed} /> : null}
+      {notSaved && !keptMark ? (
+        <Text variant="callout" tone="muted" className="text-center" accessibilityLiveRegion="polite" testID="home.notMuch.notSaved">
+          {copy.errors.generic.body}
+        </Text>
+      ) : null}
       {keptMark ? (
         <QuietDayInline onUndo={undoNotMuch} entering={lineIn} />
       ) : (

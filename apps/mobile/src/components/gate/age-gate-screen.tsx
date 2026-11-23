@@ -117,6 +117,7 @@ export function AgeGateScreen({ decision, refresh }: Props) {
   };
 
   const answeredByMistake = () => {
+    if (!windowPassed) return;
     haptic('tap');
     reopenAgeGate();
     setAdult(null);
@@ -128,6 +129,11 @@ export function AgeGateScreen({ decision, refresh }: Props) {
 
   // The window has passed while this screen was open (or on a relaunch): only then is a way back offered.
   const windowPassed = decision === 'ask';
+  const wayBack = useSharedValue(windowPassed ? 1 : 0);
+  useEffect(() => {
+    wayBack.value = motion.fade(windowPassed ? 1 : 0);
+  }, [windowPassed, motion, wayBack]);
+  const wayBackStyle = useAnimatedStyle(() => ({ opacity: wayBack.value }));
 
   return (
     <View className="flex-1 bg-background" testID="gate.screen">
@@ -173,12 +179,15 @@ export function AgeGateScreen({ decision, refresh }: Props) {
                   {g.stopTitle}
                 </Text>
               </View>
-              {windowPassed ? (
-                <Animated.View entering={SWAP_IN} style={{ marginTop: ROOM.answersGap, alignSelf: largeText ? 'stretch' : 'center' }}>
-                  {/* Full width at accessibility sizes, so the words wrap in a wide pill, not a round one. */}
-                  <Button size="lg" variant="secondary" fullWidth={largeText} label={g.mistakeButton} onPress={answeredByMistake} testID="gate.stop.mistake" />
-                </Animated.View>
-              ) : null}
+              {/* The slot is always laid out and only fades in when the day has passed, so the heading never moves (BL-420). */}
+              <Animated.View
+                style={[{ marginTop: ROOM.answersGap, alignSelf: largeText ? 'stretch' : 'center' }, wayBackStyle]}
+                pointerEvents={windowPassed ? 'auto' : 'none'}
+                accessibilityElementsHidden={!windowPassed}
+                importantForAccessibility={windowPassed ? 'auto' : 'no-hide-descendants'}>
+                {/* Full width at accessibility sizes, so the words wrap in a wide pill, not a round one. */}
+                <Button size="lg" variant="secondary" fullWidth={largeText} label={g.mistakeButton} onPress={answeredByMistake} testID="gate.stop.mistake" />
+              </Animated.View>
             </Animated.View>
           )}
         </ScrollView>

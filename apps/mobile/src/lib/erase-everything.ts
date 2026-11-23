@@ -40,6 +40,7 @@ import { eraseAudioFile } from './capture/erase';
 import { listRecordingFiles } from './capture/recordings';
 import { BAKED_CACHE_FOLDER, PICKER_CACHE_FOLDER, photosDirectory } from './photos/files';
 import { eraseDaysFile } from './days';
+import { eraseMomentsFile } from './moments';
 import { clearPendingInvite } from './family/pending-invite';
 import { discardPendingPhotoOnLeaving } from './photos/leaving';
 import { forgetReminders } from './reminders/scheduler';
@@ -56,7 +57,8 @@ export type EraseEverythingResult = 'erased' | 'incomplete' | 'signed_in';
 const CACHE_COPIES = ['exports', 'recovery-export', 'Print', PICKER_CACHE_FOLDER, BAKED_CACHE_FOLDER] as const; // the photo picker's originals and the re-encode's JPEGs
 
 /**
- * Every recording file, listening copy, temporary copy and export left on the phone after each row's own erase.
+ * Every recording file, listening copy, temporary copy and export left on the phone after each row's own erase, and the
+ * device-only days and moments files (each held and thrown at the end, so the mark stays).
  * A recording that will not go throws, so the rows stay for the next try (the sweep would otherwise find the file
  * with no row and bring it back as a draft).
  */
@@ -69,6 +71,13 @@ export function eraseDeviceFiles(): void {
     eraseDaysFile();
   } catch (e) {
     daysLeft = e;
+  }
+  // The moments file (CDO-23): the same rule, held and thrown at the end so the mark stays.
+  let momentsLeft: unknown = null;
+  try {
+    eraseMomentsFile();
+  } catch (e) {
+    momentsLeft = e;
   }
   // B5-4: the backup state file (it holds a token, an upload URL and a wrapped key) goes next, so a recording that will
   // not delete cannot leave it waiting for the retry. Synchronous, so no await can come before it. A failure is held
@@ -100,6 +109,7 @@ export function eraseDeviceFiles(): void {
     }
   }
   if (daysLeft) throw daysLeft;
+  if (momentsLeft) throw momentsLeft;
 }
 
 /**

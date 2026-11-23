@@ -27,12 +27,13 @@ import { AppState, Platform } from 'react-native';
 import { getSetting, setSetting, subscribe } from '../store';
 import { reminderCopy } from './copy';
 import { ID_PREFIX, planReminders, planSignature, type Cadence, type PlannedNotification } from './planner';
-import { anchorAt, lastOwnSaveAt, plannerChildren, readOnSince, readPrefs, writeOnSince, writePrefs } from './prefs';
+import { anchorAt, lastMadeLetter, lastOwnSaveAt, plannerChildren, readOnSince, readPrefs, writeOnSince, writePrefs } from './prefs';
 import { REMINDER_SOURCE, reminderContent, routeForReminder } from './payload';
 import { registerReminderCategory } from './categories';
 import { LAST_PLANNED_VERSION_KEY, replanAfterUpdate } from './update';
 import { PLAN_ID_PREFIX } from '../billing/plan-reminders.logic';
 import { PLAN_MAX } from './budget';
+import { daysBuildEnabled, libraryDaysAllowed, remoteConfigReader, watchLibraryDaysPause, withoutLibraryNotes, type RemoteConfigReader } from './library-days';
 
 /** Marks our notifications in `content.data`, so we never cancel anyone else's (defined in payload.ts). */
 export { REMINDER_SOURCE };
@@ -55,6 +56,21 @@ let timer: ReturnType<typeof setTimeout> | null = null;
 let chain: Promise<ScheduleResult> = Promise.resolve(OK);
 let lastResult: ScheduleResult = OK;
 const resultListeners = new Set<(r: ScheduleResult) => void>();
+
+/**
+ * The signed config reader for the library days pause (BL-1008). Built on first use and only when the build switch is
+ * on, so a build without `EXPO_PUBLIC_DAYS` loads nothing extra. Tests inject their own.
+ */
+let configReader: RemoteConfigReader | null | undefined;
+function reader(): RemoteConfigReader | null {
+  if (configReader === undefined) configReader = daysBuildEnabled() ? remoteConfigReader() : null;
+  return configReader;
+}
+
+/** Tests only: the reader of the signed config (null: none), or undefined to build the default again. */
+export function setLibraryDaysReaderForTest(r: RemoteConfigReader | null | undefined): void {
+  configReader = r;
+}
 
 /** The running app version. Read late so boot and tests that never need it do not load expo-constants. */
 function currentAppVersion(): string {
@@ -142,6 +158,7 @@ export function intendedPlan(now = Date.now(), planPending: number = PLAN_MAX): 
     lastSaveAt: lastOwnSaveAt(),
     lastForegroundAt,
     anchorAt: anchorAt(),
+    lastLetter: lastMadeLetter(),
   });
 }
 
@@ -166,8 +183,15 @@ function pendingPlanNotices(scheduled: readonly { identifier: string }[]): numbe
 async function apply(): Promise<void> {
   // A phone that turned reminders on before the anchor existed starts its count now (once), never stops at once.
   if (readPrefs().enabled && readOnSince() === null) writeOnSince(Date.now());
+  // Reminders off: nothing to plan and nothing to read. An empty plan already applied (`lastSignature` is '') means
+  // none of ours is pending, so no read. The first apply after the switch goes off (or after a launch, or a failure)
+  // still reads once, to cancel what was scheduled earlier (BL-1189).
+  const off = !readPrefs().enabled;
+  if (off && lastSignature === '') return;
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-  const plan = await currentPlan(Date.now(), pendingPlanNotices(scheduled));
+  // A pause drops library notes from the plan, so the signature changes and the pending ones are cancelled below.
+  // Typed days and every other kind stay (NS-46-R33).
+  const plan = off ? [] : withoutLibraryNotes(await currentPlan(Date.now(), pendingPlanNotices(scheduled)), libraryDaysAllowed(reader()));
   const signature = planSignature(plan);
   if (signature === lastSignature) return;
   for (const s of scheduled) {
@@ -264,6 +288,8 @@ export function startReminders(): () => void {
   }
 
   const unsubscribeStore = subscribe(() => rescheduleSoon());
+  // A pause (or its end) arriving mid-session re-plans within the same debounce as a store write (NS-46-R42).
+  const unsubscribePause = watchLibraryDaysPause(reader(), () => rescheduleSoon());
   const appState = AppState.addEventListener('change', (state) => {
     if (state !== 'active') return;
     lastForegroundAt = Date.now();
@@ -314,6 +340,7 @@ export function startReminders(): () => void {
 
   return () => {
     unsubscribeStore();
+    unsubscribePause();
     appState.remove();
     responses.remove();
     if (timer) clearTimeout(timer);
