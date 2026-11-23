@@ -86,7 +86,7 @@ describe('S14: while the words are being written down', () => {
     }
     expect(en.review.waitingBody).toMatch(/Listening back to what you said/);
     expect(en.review.waitingBody).toMatch(/Your voice is kept/);
-    expect(en.review.waitingBody).toMatch(/You can close this, it will be waiting on Tonight/);
+    expect(en.review.waitingBody).toMatch(/You can close this and come back to it from Tonight/);
     const slow = card({ hints: { long: true, later: true } });
     expect(slow.body).toBe(en.review.waitingSlow);
     expect(slow.body).toMatch(/taking longer than usual/);
@@ -335,7 +335,7 @@ describe('Review uses the card (source)', () => {
   });
 
   it('the stop line sits in footnote, textMuted', () => {
-    expect(review).toMatch(/<Text variant="footnote" tone="muted" accessibilityLiveRegion="polite" testID="review\.stopLine">/);
+    expect(src('components/capture/early-stop-line.tsx')).toMatch(/<Text variant="footnote" tone="muted" accessibilityLiveRegion="polite" testID="review\.stopLine">/);
   });
 
   it('InlineState draws a still drawing for any kind, and holds loading still on request (P1 component, S14 to S16)', () => {
