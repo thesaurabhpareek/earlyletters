@@ -1293,3 +1293,148 @@ The standing approval does not reach secrets and credentials, account actions (A
 - Status the row takes: `Status: blocked (BL-972 spike, which waits on BL-935, which is ready). Mode: agent. Depends on: BL-972.`
 - Founder-only: no.
 
+
+
+**Design backlog exec review, 22 Nov 2026**
+
+Source: Karma's exec review of the design backlog recommendations, recorded in `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13 (PR #1631, once merged; #1621 and persona fold-in #1628 are the inputs). Every legal judgment below is a role's view, not advice: counsel must confirm. In every entry below the Door, Way back and Revisit when lines are derived by Karma, because the review did not state them (copy text and gates are two-way before release). Why lines are Karma's reasoning from the review unless they cite a source. Any default that says "derived by Karma" is Karma's, not the review's. Founder items are listed as FOUNDER and are not rulings. Latest spec: `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13 and the design ticket section of `docs/BACKLOG.md`. Cross-cutting rule from the review: defaults that edit legal-adjacent text need a founder merge (D-125 item 5), and silence means the status quo text ships.
+
+Source items not recorded here (see DESIGN-BACKLOG.md section 13): BL-1801, BL-1767, BL-1787, the BL-1730, BL-1731 and BL-1829 defaults, BL-1807 routing, device gate tiering (BL-1700), and the NEEDS EVIDENCE rows.
+
+### CPO-64 BL-1724 Home Plus line: the plain version (22 Nov 2026, CPO and CBO via the exec review session)
+- Verdict: RULED.
+- Ruling: BL-1724 uses the shortest line already true: the letter waits, nothing is lost. No price, no link, no urgency. This replaces the earlier default "content rewords to a quiet pointer". Counsel must confirm that "nothing is lost" is true; no question number is assigned for BL-1724 (Q40 belongs to BL-1806, the free-slot Delete line). The evidence is UNVERIFIED here.
+- Why: the CPO and CBO ruled the plain version (review). That a pointer naming Plus or linking is a different line is Karma's summary.
+- Evidence: `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13 (PR #1631, once merged). Source for "nothing is lost": UNVERIFIED.
+- Door: two-way (derived by Karma)
+- Way back: restore the earlier default line (derived by Karma).
+- Revisit when: the 27 Nov 2026 gate passes or counsel answers (derived by Karma).
+- Founder-only: the amended wording ships only after a founder merge (D-125 item 5). On silence, the status quo text ships. FOUNDER: a pointer that names Plus or links to it. Default: the plain line, after his merge.
+
+### CPO-65 Drop order for the pre-1 Dec cut (22 Nov 2026, CPO and CDesO via the exec review session)
+- Verdict: RULED.
+- Ruling: BL-1716 (offline) is dropped first. BL-1717 (interruptions) stays, as a short device script in the SE 3 sitting. BL-1790 (Back at AX5) moves out of the drop order. BL-1709 stays ahead of BL-1723 and BL-1720.
+- Why: ordering is the CPO's and CDesO's call (review). That Back is a way out of a screen is Karma's reasoning.
+- Evidence: `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13 (PR #1631, once merged).
+- Door: two-way (derived by Karma)
+- Way back: reorder the rows in `docs/BACKLOG.md` (derived by Karma).
+- Revisit when: the 27 Nov 2026 gate passes (derived by Karma).
+- Founder-only: no. NEEDS EVIDENCE: who runs the SE 3 sitting (no operator is named; CTO and qa). FOUNDER: the SE 3 operator and the 27 Nov gate date. No default stated by the review.
+
+### CDesO-23 BL-1798 Large print floor in Read together (22 Nov 2026, CDesO via the exec review session)
+- Verdict: RULED.
+- Ruling: Build a floor in Read together now. A floor raises readable size and caps nothing, so D-027 is untouched. Build after BL-1791, size it at the sitting, and offer the Aa sheet in Read together. Off the founder list.
+- Why: the CDesO rules it (review); a floor is not a cap.
+- Evidence: `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13 (PR #1631, once merged); D-027.
+- Door: two-way (derived by Karma)
+- Way back: remove the floor, one PR (derived by Karma).
+- Revisit when: the sitting shows the size is wrong (derived by Karma).
+- Founder-only: no.
+
+### CDesO-24 BL-1796 Take-start cue (22 Nov 2026, CDesO and CPO via the exec review session)
+- Verdict: RULED.
+- Ruling: A VoiceOver announcement "Listening" that finishes before the mic opens, plus the existing haptic. No sound while the mic is live. Tone stays a Paper sounds option. First 1.0.x.
+- Why: CDesO and CPO ruled it (review). The reason a live-mic sound would be recorded is Karma's inference.
+- Evidence: `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13 (PR #1631, once merged).
+- Door: two-way (derived by Karma)
+- Way back: remove the announcement, one PR (derived by Karma).
+- Revisit when: a device test shows the announcement is late or clipped (derived by Karma).
+- Founder-only: no.
+
+### CDesO-25 BL-1836 Magic Tap and the safe stop (22 Nov 2026, CDesO via the exec review session)
+- Verdict: RULED.
+- Ruling: Magic Tap pauses and resumes, which resolves the conflict with BL-1796. Finish stays a visible button. No Voice Control claim until tested.
+- Why: the CDesO rules it (review).
+- Evidence: `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13 (PR #1631, once merged).
+- Door: two-way (derived by Karma)
+- Way back: remove the Magic Tap handler, one PR (derived by Karma).
+- Revisit when: Voice Control is tested on a device (derived by Karma).
+- Founder-only: "Long silence ends the take" is a new capture feature, not a ruling. FOUNDER with CAIO and CPO. No default stated by the review.
+
+### CLO-22 BL-1805 "For good" held out of new builds (22 Nov 2026, CLO via the exec review session; not counsel)
+- Verdict: RULED.
+- Ruling: hold "for good" on Erase now out of new builds. The replacement is the Erase everything line "Erased from this phone. Backups and exports you already saved are not changed." The wording is the founder's, and the trace of the server copy is open (NEEDS EVIDENCE: mobile and data; does Erase now remove the server copy on a signed-in phone). Counsel Q51 must confirm.
+- Why: the CLO rules the hold (review). That "for good" may overpromise is Karma's reasoning.
+- Evidence: `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13 (PR #1631, once merged).
+- Door: two-way (derived by Karma)
+- Way back: restore the old words (derived by Karma).
+- Revisit when: counsel answers Q51 or the server-copy trace returns (derived by Karma).
+- Founder-only: the wording. The amended line ships only after a founder merge (D-125 item 5); on silence, the status quo text ships.
+
+### CLO-23 BL-1799 "Each letter signed" held out of the listing (22 Nov 2026, CLO via the exec review session; not counsel)
+- Verdict: RULED.
+- Ruling: fail-closed hold on the phrase "each one signed" in store text about the first build. The line at `docs/store/app-store.md:136` ("Both parents read every letter in the book, each one signed.", under WHAT A CO-PARENT SEES) must not ship. Correct `packages/content/BRAND.md` line 40, which also says co-parent "at v1.0", false for the first build; counsel must confirm that it is false for the first build.
+- Why: the CLO rules the hold (review). That the first build has no sharing is D-121 and D-126.
+- Evidence: `docs/store/app-store.md:136`; `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13 (PR #1631, once merged).
+- Door: two-way (derived by Karma)
+- Way back: lift the hold in one line here (derived by Karma).
+- Revisit when: counsel answers or the 27 Nov 2026 gate passes (derived by Karma).
+- Founder-only: the wording. The amended text and the BRAND.md fix ship only after a founder merge (D-125 item 5); on silence, the status quo text ships.
+
+### CLO-24 Invite residue: fail closed if the site is unlaunched (22 Nov 2026, CLO via the exec review session; not counsel)
+- Verdict: RULED.
+- Ruling: for the whole invite residue (the /j page, the share message, the website film and the "in an update" text): if the site is unlaunched, fail-closed hold. If it is live, qualify or remove the line. CMO and CLO share it. BL-1821 and BL-1832 to 1834 leave the pre-1 Dec list (alpha only). Counsel must confirm.
+- Why: invites in a mixed build are mostly settled by D-126, D-161 and D-162 (review).
+- Evidence: `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13 (PR #1631, once merged).
+- Door: two-way (derived by Karma)
+- Way back: lift the hold or restore the line (derived by Karma).
+- Revisit when: the site's launch state is confirmed (derived by Karma).
+- Founder-only: no. NEEDS EVIDENCE: whether the site is live.
+
+### CPrivO-28 BL-1742 Photos primer swipe-down (22 Nov 2026, CPO and CPrivO via the exec review session)
+- Verdict: RULED, pending founder confirmation.
+- Ruling: swipe-down persists nothing, never triggers Apple's alert, and never returns unprompted. Re-entry is a tap on the door row. Only "Not now" records a decline. Counsel must confirm.
+- Why: CPO and CPrivO ruled it (review). It edits NS-53-G05 and NS-53-R73, so the founder confirms.
+- Evidence: `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13 (PR #1631, once merged).
+- Door: two-way (derived by Karma)
+- Way back: restore the previous swipe behaviour (derived by Karma).
+- Revisit when: counsel clears the primer lines (derived by Karma).
+- Founder-only: FOUNDER: confirm the edit to NS-53-G05 and NS-53-R73. No default stated by the review.
+
+### CPrivO-29 Photo flag: five gates (22 Nov 2026, CPrivO via the exec review session)
+- Verdict: RULED.
+- Ruling: the photo flag turns on only when all five hold: (1) counsel-cleared primer lines; (2) a network-egress test showing no library data leaves the phone; (3) photos out of sync and out of our backup; (4) Export includes pictures or says it does not (BL-1830); (5) device rows. This replaces the earlier gate "words cleared".
+- Why: the CPrivO rules the gate list (review).
+- Evidence: `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13 (PR #1631, once merged).
+- Door: two-way (derived by Karma)
+- Way back: change the gate list in one line here (derived by Karma).
+- Revisit when: the 27 Nov 2026 gate passes or counsel answers (derived by Karma).
+- Founder-only: the flag date. FOUNDER: the date, with one explicit line that if the gates are not closed by then, 1.0 ships with the library read off (this shrinks 1.0 against CPO-17 and D-165). Default: the flag stays off.
+
+### CPrivO-30 BL-1830 Export writes photos as null: fail closed (22 Nov 2026, CPrivO via the exec review session)
+- Verdict: RULED.
+- Ruling: no photo flag while Export says "everything" and writes photos as null. Counsel must confirm.
+- Why: the CPrivO's rule (review); it is also gate 4 of CPrivO-29.
+- Evidence: `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13 (PR #1631, once merged).
+- Door: two-way (derived by Karma)
+- Way back: lift the hold once Export includes pictures or says it does not (derived by Karma).
+- Revisit when: BL-1830 merges (derived by Karma).
+- Founder-only: no.
+
+### CPrivO-31 Label wording: "we do not receive" (22 Nov 2026, CPrivO via the exec review session)
+- Verdict: RULED, conditional.
+- Ruling: no sentence says "nothing leaves the phone". The wording "we do not receive" is allowed only if the network-egress test (CPrivO-29 gate 2) and the geocoder check pass. NEEDS EVIDENCE: whether reverse geocoding for Moments places sends coordinates to Apple (CISO, mobile). Counsel must confirm.
+- Why: the CPrivO's wording rule (review); the CISO and mobile check on the geocoder is named in the review. Any other seat is proposed. The host also sees the IP address (Q12).
+- Evidence: `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13 (PR #1631, once merged).
+- Door: two-way (derived by Karma)
+- Way back: revert the wording (derived by Karma).
+- Revisit when: the egress test and geocoder check return, or counsel answers (derived by Karma).
+- Founder-only: no.
+
+### CCO-18 BL-1835 Age gate left as is (22 Nov 2026, CPrivO and CLO via the exec review session, CCO seat proposed; not counsel)
+- Verdict: RULED.
+- Ruling: leave the age gate as built. No "Are you sure?" after No. The 24-hour stop stays (D-026; LEGAL-REQ-002, as in CCO-17). Fact about the build (D-026): the age stop is local only, so reinstalling the app clears it. This goes into the register, and counsel Q45 and Q46 decide whether that is acceptable; this is not a ruling. Counsel must confirm the ruling.
+- Why: the review names CPrivO, CLO and counsel for this item; the CCO seat is proposed, as is any other seat not in the source. Consistent with CCO-17 (Karma's note).
+- Evidence: `docs/legal/ENGINEERING_REQUIREMENTS.md` (LEGAL-REQ-002); `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13 (PR #1631, once merged).
+- Door: two-way (derived by Karma)
+- Way back: counsel can add a confirm later (derived by Karma).
+- Revisit when: counsel answers Q45 and Q46 (derived by Karma).
+- Founder-only: no.
+
+### FOUNDER items from this review (not rulings; his under CR-73)
+Silence on 27 Nov 2026 means the status quo text (D-125 item 5). The review dates only that silence rule; the gate date itself is a founder item.
+1. First-run order and the public timing promise, after the BL-1705 reading. Default: steps stay, promise reworded to speaking-time.
+2. Public wording: handed-over signature line and BRAND fix, free-slot line (BL-1806), free list (BL-1767), synthetic voice line (with counsel; a true line ships, not silence), sign-in line (BL-1803), Erase line, 90-day pledge. Default: the amended defaults, each only after his merge.
+3. Photo flag date (see CPrivO-29). Default: the flag stays off.
+4. The SE 3 operator, the 27 Nov gate date, the counsel engagement date. If counsel is not engaged, every "wait for counsel" default is open-ended until a date is named.
+5. Signed-in wipe (BL-1804, deferred; an L build, not for 1 Dec), long-silence stop, tappable "From Mama" option (default to owner, typed name, fixed after Keep; as an option, not a default). App-lock grace: offer on first turn-on, default one minute (CISO check).
