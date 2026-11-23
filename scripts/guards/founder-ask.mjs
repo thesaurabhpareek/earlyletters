@@ -57,11 +57,15 @@ export const PATTERNS = [
 export const EXEMPT_PHRASES = ['founder review needed'];
 
 // A negation. "never mind", "do not hesitate", "don't forget" are not negations of the ask that follows.
-const NEGATION = /\b(?:never|not|nobody|no\s+one|do\s+not|don't|doesn't|without)\b(?!\s+(?:mind|hesitate|forget|fail|neglect|bother))/gi;
+// Verbal: never, do/does/did not, don't, doesn't, and a "not" after an auxiliary (must not, should not). A bare "not ask" is not one.
+// Quantifier: none, no, no one, nobody, nothing, neither, nor. These govern only a third-person verb ("None asks", "No row asks"):
+// "no one ask the founder to approve" has a bare verb, reads as an instruction, and is not negated.
+const NOT_FOLLOWERS = String.raw`(?!\s+(?:mind|hesitate|forget|fail|neglect|bother))`;
+const NEGATION = new RegExp(String.raw`\b(?:(?<q>none|nobody|no\s+one|nothing|neither|nor|no)|(?:never|do\s+not|does\s+not|did\s+not|don't|doesn't|(?:must|should|shall|will|would|can|could|may|might|is|are|was|were|has|have|had)\s+not))\b${NOT_FOLLOWERS}`, 'gi');
 const RULE_REF = /\b(?:CR-176|D-168)\b/;
 const SENTENCE_END = /[.;:!?]\s/;
 // Between a negation and the ask it governs there is no clause break: no comma, bracket, dash or turning word.
-const CLAUSE_BREAK = /[,()[\]{}]|--|\b(?:so|but|then|instead|however|yet|except|though|although|while|and\s+then)\b/i;
+const CLAUSE_BREAK = /[,()[\]{}]|--|\s[-\u2013\u2014]\s|(?<![\"'])\b(?:and|or)\b|\b(?:so|but|then|instead|however|yet|except|though|although|while|please)\b/i;
 /** How far back from an ask a negation may sit (also bounds the work per ask, so a long line cannot make it slow). */
 const WINDOW = 200;
 
@@ -81,12 +85,16 @@ function askStarts(t) {
   return out;
 }
 
-/** True when a negation sits earlier in the same sentence as the ask at `at`, with no clause break between them. */
-function negated(t, at) {
+/** How the ask at `at` is negated: 'verbal' (never, do not, must not), 'quantifier' (None asks, No row asks), or '' when it is not.
+ *  A negation sits earlier in the same sentence, with no clause break between. A quantifier needs a third-person verb: a bare
+ *  "ask" anywhere between it and the ask ("no one ask the founder to approve") reads as an instruction and is not negated. */
+function negatedBy(t, at) {
   const sentence = t.slice(Math.max(0, at - WINDOW), at).split(SENTENCE_END).pop();
   let last = null;
   for (const m of sentence.matchAll(NEGATION)) last = m;
-  return last !== null && !CLAUSE_BREAK.test(sentence.slice(last.index + last[0].length));
+  if (last === null || CLAUSE_BREAK.test(sentence.slice(last.index + last[0].length))) return '';
+  if (!last.groups.q) return 'verbal';
+  return /\bask\b/i.test(`${sentence.slice(last.index)} ${t.slice(at, at + 4)}`) ? '' : 'quantifier';
 }
 
 /** Rule 4: with the BL-1851 phrase in backticks, and nothing else asking. `named` is true when BL-1851 is on the line. */
@@ -109,7 +117,10 @@ export function allowedBecause(line) {
   const ref = any(RULE_REF);
   const named = any(/\bBL-1851\b/);
   const whys = rs.map((t) => {
-    if (ref && askStarts(t).every((at) => negated(t, at))) return 'quotes the rule (CR-176 or D-168 with a negation)';
+    const how = askStarts(t).map((at) => negatedBy(t, at));
+    if (ref && how.every(Boolean)) return 'quotes the rule (CR-176 or D-168 with a negation)';
+    // A plain statement of fact ("None asks the founder to approve"): a quantifier negation needs no rule id.
+    if (how.length && how.every((h) => h === 'quantifier')) return 'states that none asks (a quantifier negation)';
     if (exemptPhrase(t, named)) return 'quotes the BL-1851 phrase in backticks (BL-1851)';
     return '';
   });
@@ -123,16 +134,30 @@ export function asksIn(line) {
   return PATTERNS.map(([id]) => id).filter((id) => ids.has(id));
 }
 
-/** Added lines of `git diff -U0` text, as { path, text }. Removed and context lines are dropped. */
+/** Added lines of `git diff -U0` text, as { path, text }. Removed and context lines are dropped.
+ *  A file header ("+++ b/path") is read only between a "diff " line and its first "@@" hunk header; inside a hunk every line
+ *  that starts with "+" is an added line, including one whose text starts with "++" or "+++" (an author cannot switch the path). */
 export function addedLines(diff) {
   const out = [];
   let path = '';
+  let inHunk = false;
   for (const raw of String(diff ?? '').split('\n')) {
-    if (raw.startsWith('+++ ')) { path = raw.slice(4).replace(/^b\//, '').trim(); continue; }
-    if (raw.startsWith('--- ') || raw.startsWith('@@') || raw.startsWith('diff ')) continue;
+    if (raw.startsWith('diff ')) { inHunk = false; path = ''; continue; }
+    if (!inHunk) {
+      if (raw.startsWith('+++ ')) path = headerPath(raw.slice(4));
+      else if (raw.startsWith('@@')) inHunk = true;
+      continue;
+    }
     if (raw.startsWith('+')) out.push({ path, text: raw.slice(1) });
   }
   return out;
+}
+
+/** "b/docs/my notes.md" (git adds a tab after a path with spaces) or a quoted "b/..." path, to the path. */
+function headerPath(h) {
+  let p = h.replace(/\t.*$/, '').trim();
+  if (p.startsWith('"') && p.endsWith('"') && p.length > 1) p = p.slice(1, -1);
+  return p === '/dev/null' ? '' : p.replace(/^b\//, '');
 }
 
 /** The verdict: { ok, lines } of printable lines. Nothing from the PR text is echoed. */
