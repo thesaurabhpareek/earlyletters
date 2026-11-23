@@ -10,6 +10,7 @@ import {
   GLOBAL_PROPS,
   recordingProvider,
   sanitizeEvent,
+  sanitizeWith,
   SCHEMA_FINGERPRINTS,
   SCHEMA_VERSION,
   type PropSpec,
@@ -96,12 +97,13 @@ describe('child_added never says which kind of date was entered (PPRIV-02)', () 
   });
 });
 
+// These events are typed in the catalogue but held off the send path (ER-A00 P4), so they are checked with sanitizeWith.
 describe('reminder_prime_shown.source names each showing (BL-1429, C-REQ-001 Rev)', () => {
   it('allows first_month beside first_letter, and still rejects anything else', () => {
     const source = EVENTS.reminder_prime_shown.props.source as unknown as { values: string[] };
     expect(source.values).toEqual(expect.arrayContaining(['first_letter', 'first_month']));
-    expect(sanitizeEvent('reminder_prime_shown', { source: 'first_month', schema_version: SCHEMA_VERSION }).props).toEqual({ source: 'first_month', schema_version: SCHEMA_VERSION });
-    const bad = sanitizeEvent('reminder_prime_shown', { source: 'second_prime', schema_version: SCHEMA_VERSION });
+    expect(sanitizeWith(EVENTS, 'reminder_prime_shown', { source: 'first_month', schema_version: SCHEMA_VERSION }).props).toEqual({ source: 'first_month', schema_version: SCHEMA_VERSION });
+    const bad = sanitizeWith(EVENTS, 'reminder_prime_shown', { source: 'second_prime', schema_version: SCHEMA_VERSION });
     expect(bad.props).toBeNull();
     expect(bad.violations.length).toBeGreaterThan(0);
   });
@@ -116,11 +118,11 @@ describe('the sign-in trigger names the Keep the book re-offer (BL-1464)', () =>
   it.each(['auth_sheet_shown', 'auth_deferred'] as const)('%s allows third_letter beside first_letter, and still rejects any other value', (event) => {
     const trigger = EVENTS[event].props.trigger as unknown as { values: string[] };
     expect(trigger.values).toEqual(expect.arrayContaining(['first_letter', 'third_letter']));
-    const ok = sanitizeEvent(event, { trigger: 'third_letter', schema_version: SCHEMA_VERSION });
+    const ok = sanitizeWith(EVENTS, event, { trigger: 'third_letter', schema_version: SCHEMA_VERSION });
     expect(ok.violations).toEqual([]);
     expect(ok.props).toEqual({ trigger: 'third_letter', schema_version: SCHEMA_VERSION });
     for (const value of ['second_letter', 'fourth_letter', 'third-letter', 'Third_Letter', 'reoffer', '']) {
-      const bad = sanitizeEvent(event, { trigger: value, schema_version: SCHEMA_VERSION });
+      const bad = sanitizeWith(EVENTS, event, { trigger: value, schema_version: SCHEMA_VERSION });
       expect(bad.props, value).toBeNull();
       expect(bad.violations.length, value).toBeGreaterThan(0);
     }
