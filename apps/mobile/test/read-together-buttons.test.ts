@@ -4,6 +4,7 @@
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { tokens } from '@scribe/design-tokens';
 import { describe, expect, it } from 'vitest';
 import { FONT_SCALE, isAccessibilitySize } from '../src/lib/a11y.logic';
 import { PINNED_BAR_PT, buttonPlacement, letterAreaHeight, pageButtonsClass, pinnedHeight } from '../src/components/book/turn-controls.logic';
@@ -25,16 +26,24 @@ describe('Read together page buttons by text size', () => {
     expect(pageButtonsClass(true, 'inline')).not.toContain('px-5'); // the scroll pads its own sides
   });
 
-  it('at AX5 the letter area is the viewport less the header', () => {
+  it('at AX5 the letter area is the viewport less the header: nothing is pinned under it', () => {
     expect(letterAreaHeight(VIEWPORT, HEADER, isAccessibilitySize(FONT_SCALE.ax5))).toBe(VIEWPORT - HEADER);
+    // The screen draws no pinned bar at accessibility sizes: the pinned render is guarded by placement === 'pinned'.
+    expect(SRC).toContain("!done && placement === 'pinned' ? <PageButtons");
+    expect(SRC).not.toMatch(/\{!done \? <PageButtons/);
   });
 
-  it('the old pinned stack would have taken more than a quarter of the viewport at AX5 (audit rule 3)', () => {
-    // Two stacked 56 pt buttons with a 12 pt gap and the bar's padding: the arithmetic the row replaces.
-    const stacked = 12 + 56 + 12 + 56 + 8;
-    expect(stacked / VIEWPORT).toBeGreaterThan(0.2) // about a third at five buttons' worth of padding; a quarter is the audit's limit for one primary;
-    // Pinned, the letter would have had this much less; inline it has none of it taken.
-    expect(VIEWPORT - HEADER - stacked).toBeLessThan(letterAreaHeight(VIEWPORT, HEADER, true));
+  it('a pinned stack of two lg buttons takes over a quarter of the viewport from AX3 (audit rule 3), so from AX1 they are in the scroll', () => {
+    // lg button: 56 pt minimum, label line (token line height times font scale) plus 12 pt padding top and bottom; gap 12, bar padding 12 and 8.
+    const pinnedShare = (scale: number) => (12 + 2 * Math.max(tokens.target.primary, tokens.type.label.lineHeight * scale + 24) + 12 + 8) / VIEWPORT;
+    expect(pinnedShare(FONT_SCALE.large)).toBeLessThan(0.25);
+    expect(pinnedShare(FONT_SCALE.ax1)).toBeGreaterThan(0.2); // about 0.24: just under, and the letter is left one or two lines
+    expect(pinnedShare(FONT_SCALE.ax3)).toBeGreaterThan(0.25);
+    expect(pinnedShare(FONT_SCALE.ax5)).toBeGreaterThan(0.3);
+    // The buttons are rendered by the LetterPage's ScrollView, after its last element, only on the page showing.
+    const scroll = SRC.slice(SRC.indexOf('<ScrollView className="flex-1"'), SRC.indexOf('</ScrollView>'));
+    expect(scroll).toContain('{current ? buttons : null}');
+    expect(scroll.indexOf('<KeepPlayingChip')).toBeLessThan(scroll.indexOf('{current ? buttons : null}'));
   });
 
   it('is unchanged at the usual sizes: pinned under the letter, side by side, Back one first', () => {

@@ -8,6 +8,8 @@
  * "Next letter" first: it is the control that turns the page, and it is the one a large-print reader needs whole.
  * Neither button has a fixed width or shape then: each grows with its label.
  */
+import { tokens } from '@scribe/design-tokens';
+
 export type TurnButton = 'back' | 'next';
 
 export function turnControls(accessibilitySize: boolean): { stacked: boolean; order: readonly TurnButton[] } {
@@ -24,7 +26,7 @@ export function turnControls(accessibilitySize: boolean): { stacked: boolean; or
 export type ButtonPlacement = 'pinned' | 'inline';
 
 /** Pinned bar: 12 pt above, one 56 pt button, 8 pt below (side by side at the usual sizes). */
-export const PINNED_BAR_PT = 12 + 56 + 8;
+export const PINNED_BAR_PT = 12 + tokens.target.primary + 8;
 
 export function buttonPlacement(accessibilitySize: boolean): ButtonPlacement {
   return accessibilitySize ? 'inline' : 'pinned';
