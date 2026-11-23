@@ -61,7 +61,7 @@ describe('[S60] nothing is preselected, and Leave stays disabled until a choice'
     expect(sheet).toMatch(/<Button testID="leave\.stay" size="lg" label=\{l\.cancel\} onPress=\{close\}/);
     expect(sheet).toMatch(/haptic\('warning'\);/);
     expect(sheet.match(/haptic\(/g)).toHaveLength(1);
-    expect(sheet).toMatch(/familyNotice\.leave\(fill\(l\.done, \{ child \}\)\);\s*close\(\);/);
+    expect(sheet).toMatch(/familyNotice\.leave\(fill\(l\.done, \{ child \}\), owner\);\s*close\(\);/);
   });
 });
 

@@ -136,6 +136,8 @@ The door requirement (COORDINATION section 10):
 
 Quoted from code (EVIDENCE): `machine.ts` header: "Off until the parent turns it on (CPO-2). Off, it never covers, never locks and never asks." and "Locks on a cold start, and on coming back after longer in the background than the grace". `controller.ts`: `LocalAuthentication.authenticateAsync({ promptMessage, disableDeviceFallback: false })`, so the default policy is Face ID or Touch ID, falling back to the device passcode.
 
+Correction, 22 Nov 2026 (BL-1565): since #1442 (BL-1407) the privacy cover draws whenever the app is not active, App lock on or off (`machine.ts` header, lines 13 to 14), so "Off, it never covers" no longer holds; the quote above stays as it was written on 10 Nov.
+
 ### 3.2 What Face ID failing or being unavailable does
 
 | Case | Behaviour | Evidence |

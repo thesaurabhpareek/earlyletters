@@ -5,6 +5,7 @@
  */
 import { commitPhoto, type CommitResult } from './session';
 import { normalizePhotoPlace, normalizePhotoText } from './text';
+import { windowOpen } from './undo-window';
 import { photoPath, UNDO_WINDOW_MS, type PhotoDeps, type StoredPhoto } from './types';
 
 /** What Undo needs for 10 seconds after a replace or a remove. The earlier picture's file stays until the ticket settles. */
@@ -13,7 +14,12 @@ export interface UndoTicket {
   previous: StoredPhoto;
   /** Set when a replace put a new picture in its place; Undo removes it. */
   replacement: StoredPhoto | null;
-  expiresAt: number;
+  /** When the window opened (epoch ms). The window itself is undo-window.ts. */
+  openedAt: number;
+  /** Set by the screen when the screen reader finished speaking the undo line: the window then runs from there. */
+  speechDoneAt?: number;
+  /** Set while Switch Control is on: no expiry until the parent moves on. */
+  holdOpen?: boolean;
 }
 
 export type AttachResult =
@@ -38,7 +44,7 @@ export async function addPhotoToLetter(
   return {
     status: 'replaced',
     result,
-    ticket: { entryId: input.entryId, previous: existing, replacement: result.photo, expiresAt: deps.now().getTime() + UNDO_WINDOW_MS },
+    ticket: { entryId: input.entryId, previous: existing, replacement: result.photo, openedAt: deps.now().getTime() },
   };
 }
 
@@ -47,12 +53,12 @@ export function removePhotoFromLetter(deps: PhotoDeps, entryId: string): UndoTic
   const previous = deps.store.get(entryId);
   if (!previous) return null;
   deps.store.remove(entryId);
-  return { entryId, previous, replacement: null, expiresAt: deps.now().getTime() + UNDO_WINDOW_MS };
+  return { entryId, previous, replacement: null, openedAt: deps.now().getTime() };
 }
 
 /** Undo inside the window. Returns false once the window has passed. */
 export async function undoPhotoChange(deps: PhotoDeps, ticket: UndoTicket): Promise<boolean> {
-  if (deps.now().getTime() > ticket.expiresAt) return false;
+  if (!windowOpen(deps.now().getTime(), ticket.openedAt, UNDO_WINDOW_MS / 1000, ticket.speechDoneAt, ticket.holdOpen)) return false;
   if (ticket.replacement) await deps.files.remove(photoPath(ticket.replacement)).catch(() => {});
   deps.store.put(ticket.previous);
   return true;

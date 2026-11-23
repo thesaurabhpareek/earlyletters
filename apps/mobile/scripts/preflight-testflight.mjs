@@ -26,7 +26,7 @@ import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, sta
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { envFileProblems } from './env-file-guard.mjs';
+import { envFileProblemsAt } from './env-file-guard.mjs';
 import { createReport, expo as expoIn, extraPermissions, forbiddenNativeProblems, packManifestPublished, parseJsonOut, plistUsageProblems, privacyManifestDeclared, purposeStringProblem, REQUIRED_PLIST_USAGE, secretKind, signingKeys } from './preflight-lib.mjs';
 import { STORE_FLAGS, storeFlagMessage, storeFlagProblems, storeProfiles } from '../../../scripts/release/store-flags.mjs';
 
@@ -366,7 +366,7 @@ try {
 {
   const envFiles = readdirSync(MOBILE).filter((f) => f.startsWith('.env'));
   // scripts/env-file-guard.mjs: only values that are harmless if baked into any build; EXPO_PUBLIC_ACCOUNT_DELETION never, in any file.
-  const bad = envFiles.flatMap((f) => envFileProblems(f, read(join(MOBILE, f))));
+  const bad = envFiles.flatMap((f) => envFileProblemsAt(MOBILE, f));
   check(bad.length === 0, `apps/mobile/.env* files hold only APP_ENV, SERVER_FEATURES=off and ANALYTICS=off (${envFiles.join(', ') || 'none'})`, `apps/mobile/.env* holds other values (${bad.join(', ')}). They would be baked into the bundle.${bad.some((b) => b.endsWith('EXPO_PUBLIC_ACCOUNT_DELETION')) ? ' EXPO_PUBLIC_ACCOUNT_DELETION is never set in a .env file: the alpha profiles leave it unset so the EAS "preview" environment decides (TESTFLIGHT.md step 9); a drill passes it to Metro in the shell.' : ''}`);
   const supa = ['EXPO_PUBLIC_SUPABASE_URL', 'EXPO_PUBLIC_SUPABASE_ANON_KEY', 'EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY', 'EXPO_PUBLIC_POSTHOG_KEY'].filter((k) => profEnv[k] !== undefined);
   check(supa.length === 0, `${PROFILE} profile names no Supabase or analytics key in eas.json (project values come from the EAS environment)`, `${PROFILE} profile sets ${supa.join(', ')} in eas.json. Remove them: they belong in EAS environment variables (TESTFLIGHT.md step 9).`);

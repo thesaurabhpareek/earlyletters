@@ -87,7 +87,7 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 ### 3.1 Events by area
 
 <!-- catalogue:begin (generated from packages/analytics/src/catalog.ts by `npm run plan -w @scribe/analytics`; do not edit by hand) -->
-68 events. Every event also carries the global properties in 3.2. `?` marks an optional property. Every event and property is L2.
+70 events. Every event also carries the global properties in 3.2. `?` marks an optional property. Every event and property is L2.
 
 #### app
 
@@ -190,6 +190,13 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 | `resurface_shown` | An "On this day" card is shown | `kind` (enum: one_month \| one_year) | C-REQ-034, C-REQ-014 |
 | `resurface_opened` | An "On this day" card is opened | `kind` (enum: one_month \| one_year) | C-REQ-034 |
 
+#### moments
+
+| Event | Fires when | Properties (type: allowed values) | Serves |
+|---|---|---|---|
+| `moments_card_impressed` | A card in the question or look-back slot is drawn on the Moments tab (at most once per slot per local day). Cards dated by the child, a typed day, a tick or the library never send | `slot` (enum: look_back \| question) | PRD-REQ-016 |
+| `moments_card_tapped` | A card in the question or look-back slot is tapped. Says nothing about where the letter that follows began | `slot` (enum: look_back \| question) | PRD-REQ-016 |
+
 #### settings
 
 | Event | Fires when | Properties (type: allowed values) | Serves |
@@ -284,7 +291,7 @@ Migration `supabase/migrations/20261004300000_insights_aggregates.sql`, tested b
 |---|---|---|
 | `weekly_keeping_families` | ISO week (UTC) | families, families_with_book_letter, letters, spoken_letters, typed_letters, complete |
 | `letters_per_active_family` | week | active_families, letters_per_family_mean, p50, p90, families_two_plus_voices |
-| `first_letter_conversion` | sign-up week | new_accounts, first_letter_d1, d7, d30, matured flags |
+| `first_letter_conversion` | sign-up week | new_accounts, first_letter_d1, d7, d30, increments first_letter_d2_7 and first_letter_d8_30, matured flags. Nested counts are published only while every pair differs by 0 or at least k (BL-326, review L12) |
 | `family_invites` | week x role (co_parent, contributor) | sent, accepted, accepted_within_7d |
 | `retention_cohorts` | first-letter week x week offset (0 to 12, 26) | cohort_writers, active_writers (completed weeks only) |
 | `language_mix` | week x language (seven codes or other) | families. Reports `available: false` until `public.entries.language` exists (owner: language/sync; the column must be L4) |
@@ -418,6 +425,7 @@ Crash reports (Sentry) follow the same switch (LEGAL-REQ-003): the Sentry bootst
 | `free_allowance_reached`, `keep_gate_shown`, `letter_held`, `plus_started_from_gate`, `offer_code_redeemed` | `app/review.tsx` (after a Keep), `components/child/plus-gate.tsx`, `app/settings/plus.tsx` (D-082, D-083; numbers only) | payments | wired |
 | `settings_changed` | appearance, reading size, names in notifications, packs on mobile data, listening copy | settings owners | to wire |
 | `moment_shown`, `resurface_*` | celebrate cards | book | to wire |
+| `moments_card_impressed`, `moments_card_tapped` | Moments tab, question and look-back slots only: `trackMomentsCard({ action, slot })` (NS-53 section 18, R251) | mobile | not wired: waits for the Moments flag |
 | `error_shown`, `sync_failed` | `components/ui` toast and errors; `lib/sync/engine.ts` after retries | design, sync | to wire |
 | Consent sheet | ask sequencer: show `<AnalyticsConsentSheet>` when `analyticsAskDue(...)`; call `recordAnalyticsOffer()` | coordinator (BL-023) | to wire |
 
