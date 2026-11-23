@@ -10233,7 +10233,7 @@ Sources: the Chief Product Officer rulings CPO-66 to CPO-71, the Chief Design Of
 - Test: `apps/mobile/test/next-ask.test.ts` (extend) and `apps/mobile/test/ask-surface.test.ts` (new).
 
 #### BL-1986 Release check: no store candidate or TestFlight build carries Erase now on a signed-in phone until BL-1805 is cleared
-- Status: ready. Mode: agent. Owner: platform. Milestone: M12. Size: XS. Depends on: none.
+- Status: done (the RELEASE.md edits merged in #1787; the BL-1987 wording, exit codes, BL-1805 end condition and G2 question in this PR). Mode: agent. Owner: platform. Milestone: M12. Size: XS. Depends on: none.
 - Priority: P1. Gate: none. Lane: ops. Files the lines for the hold in CR-177; the hold itself is built in BL-1987.
 - Satisfies: CR-177; CLO-22; D-169 item 5; BL-1854 (release gate acceptance line).
 - Problem and evidence: CR-177 and BL-1854 say no store candidate or TestFlight build carries BL-1854 until BL-1805's wording is cleared, and only a row line enforces it. `docs/ops/RELEASE.md` has no such check: section 12 and the G3 and G4 rows of section 1.3 do not mention it. PR #1728 merged BL-1854 to develop as merge commit ecf3ac1123416a0b4347d91e647f5ae54b8a6a10 (two parents), and `capabilities.serverErase` follows the server switch, which is on in `production` (D-170), so a build cut from develop today would show Erase now on a signed-in phone. A check that asks whether that commit is an ancestor of the build commit cannot pass once the release PR from develop into main is cut, because that PR carries every merged commit; it passes only for a build from a commit before the merge, or one that reverts it. The check therefore needs the structural hold in BL-1987 as its main test (CPO-70).
