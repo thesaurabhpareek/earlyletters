@@ -47,7 +47,7 @@ test('[J06] review: the small fixes, put back, word for word, save to the book',
   await btn(app, /^Add to .*book/).click();
   await expect(app.getByTestId('review.saved.chip')).toHaveText(/^Kept in /);
   await expect(app.getByText("Added to Asha's book.")).toBeVisible();
-  await step('happy', 'Saved: kept in its month', 'The save commits first, then the sheet files into its month: "Kept in Month N" under it and "Added to Asha\'s book." with a check, never ghosted words (S21).', undefined, { settle: 120 });
+  await step('happy', 'Saved: kept in its month', 'The save commits first, then the sheet files into its month: "Kept in Month N" under it and "Added to Asha\'s book." with a check, never ghosted words (S21).', undefined, { settle: 120, needs: [/^Kept in /, "Added to Asha's book."] });
   await expect(selectedTab(app, 'Book')).toBeVisible({ timeout: 6000 });
   await expect(app.getByText('Read it back', { exact: true })).toHaveCount(0);
   await step('happy', 'On the Book, on the new letter', 'Review dissolves onto the Book, which is already on the new letter under its month, with the arrival wash. Tonight is never seen in between (5.8 row 5).', undefined, { settle: 400 });
@@ -59,7 +59,7 @@ test('[J06b] keep the letter private', async ({ app, record }) => {
   await btn(app, 'Got it').click();
   await btn(app, 'Keep private').click();
   await expect(app.getByText(/Kept private/)).toBeVisible();
-  await step('happy', 'Kept private', 'The letter is saved outside the book, with the lock chip "Kept private.", then lands on the Book with its Private chip, as a kept letter does (S21).', undefined, { settle: 120 });
+  await step('happy', 'Kept private', 'The letter is saved outside the book, with the lock chip "Kept private.", then lands on the Book with its Private chip, as a kept letter does (S21).', undefined, { settle: 120, needs: ['Kept private.'] });
 });
 
 test('[J06c] close Review without saving: the recording is kept as a draft', async ({ app, record }) => {

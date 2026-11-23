@@ -668,3 +668,38 @@ describe('[BL-493 point 6] a timer longer than 24.8 days is armed again when the
     run.unmount();
   });
 });
+
+// BL-493 points 1 and 2, as they are on develop. Neither is changed here (see the PR): these pin the present behaviour so
+// that a change to it is a decision, not an accident. Point 1 waits for a ruling on the choice the row names; point 2 is
+// bounded by CHECK_CAP_MS and only meets a signed-in phone that holds a closed book.
+describe('[BL-493 point 1] a fresh install signed in to an account whose request is open', () => {
+  it('shows the welcome at once, whatever the read is doing, and the deletion screen as soon as the read says a request is open', async () => {
+    signIn(MAMA);
+    const run = renderHook(() => useFirstRunGate());
+    expect(run.result.current.screen).toBe('welcome'); // no note, no closed book: nothing is waited for (no cost on a fresh install)
+    expect(h.loadStatus).toHaveBeenCalledTimes(1); // the read starts when a client exists
+    await vi.advanceTimersByTimeAsync(CHECK_CAP_MS + 1);
+    expect(run.result.current.screen).toBe('welcome'); // offline: the welcome stays, and "Begin the book" with it
+    await answer(0, open);
+    expect(run.result.current.screen).toBe('deletion');
+    expect(note()).toMatchObject({ state: 'scheduled', userId: MAMA });
+    run.unmount();
+  });
+});
+
+describe('[BL-493 point 2] the paper on a phone that holds a closed book', () => {
+  it('stands again on every mount until the server has answered that mount, and never longer than CHECK_CAP_MS', async () => {
+    h.closedBook = true;
+    signIn(MAMA);
+    const first = renderHook(() => useFirstRunGate());
+    expect(first.result.current.screen).toBe('checking');
+    await answer(0, none);
+    expect(first.result.current.screen).toBe('welcome');
+    first.unmount();
+    const second = renderHook(() => useFirstRunGate());
+    expect(second.result.current.screen).toBe('checking'); // asked again: the answer is not kept between mounts
+    await vi.advanceTimersByTimeAsync(CHECK_CAP_MS);
+    expect(second.result.current.screen).toBe('welcome'); // offline, the cap ends it
+    second.unmount();
+  });
+});

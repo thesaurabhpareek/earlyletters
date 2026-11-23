@@ -177,14 +177,14 @@ const REGISTERED: Record<string, Text> = {
   'en.plus.legal.agree': 'By continuing, you agree to the Subscription terms and Terms of Service.',
   // Section 3a: sign-in acceptance
   'features.auth.consent.terms.agreeLine': 'By continuing, you confirm you are 18 or older and agree to the Terms of Service and Privacy Policy.',
-  'en.trust.signIn.privacy': 'You choose who else can read your letters. We never sell them and never use them for ads.',
+  'en.trust.signIn.privacy': 'Your letters are yours. We never sell them and never use them for ads.',
   'en.trust.signIn.email': 'We use your email only to sign you in and to write to you about your account.',
   // Section 3b: trust lines and the microphone string
   'en.trust.promise':
     'Your letters and recordings are private. We never sell them, never use them for ads and never use them to train machine learning models.',
   'en.trust.short': 'Private by default. Never sold, never used for ads.',
   'en.trust.voice': 'We never imitate your voice. Your original recording is always kept exactly as you made it.',
-  'en.trust.signIn.why': 'An account keeps your book safe when you change phones.',
+  'en.trust.signIn.why': 'An account keeps the words of your letters with you when you change phones.',
   'en.trust.firstRecording.title': 'Your voice stays here',
   'en.trust.firstRecording.body':
     'Your words are written down on this phone, and the recording stays with your letter. We never imitate your voice or use it to train machine learning models.',
@@ -197,10 +197,10 @@ const REGISTERED: Record<string, Text> = {
   // Also registered (P0 rule 3): the sensitive-data consent (consumer-health-data-notice.md HN-4; counsel approves).
   'en.sensitiveConsent.title': 'Before your book syncs',
   'en.sensitiveConsent.body':
-    'Letters can hold private things, like health details about you or {child}. To sync your book and share it with the family you choose, we store what you write on our servers.',
-  'en.sensitiveConsent.use': 'We use it only to keep and show your book. We never sell it, use it for ads or use it to train machine learning models.',
-  'en.sensitiveConsent.changeLater': 'You can turn them on later in Settings, Account.',
-  'en.sensitiveConsent.declineHelp': 'If you keep it on this phone, syncing and sharing stay off.',
+    'Letters can hold private things, like health details about you or {child}. To sync your book across your phones, we store what you write on our servers.',
+  'en.sensitiveConsent.use': 'We use it to keep and show your book. We never sell it, use it for ads or use it to train machine learning models.',
+  'en.sensitiveConsent.changeLater': 'You can turn syncing on later in Settings, Account.',
+  'en.sensitiveConsent.declineHelp': 'If you keep it on this phone, syncing stays off.',
   'en.sensitiveConsent.agreeButton': 'Agree and sync',
   'en.sensitiveConsent.declineButton': 'Keep on this phone',
 };
