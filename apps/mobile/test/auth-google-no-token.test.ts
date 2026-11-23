@@ -18,7 +18,7 @@ const MODULE = '@react-native-google-signin/google-signin';
 const STORE_RE = /setItem|AsyncStorage|SecureStore|secure-storage|file-system|FileSystem|writeFile|MMKV|expo-sqlite/;
 const CRED_COLUMN_A = /(google|idp|oauth|provider|social)[a-z_ ]{0,12}(access|refresh|token|cred|secret|auth_?code|blob|payload|jwt|grant|assertion|json|raw|bearer)/i;
 const CRED_COLUMN_B = /(access|refresh|token|cred|secret|blob|payload|jwt|grant|assertion|bearer)[a-z_ ]{0,12}(google|idp|oauth|social)/i;
-const NET_RE = /\bfetch\(|XMLHttpRequest|WebSocket|sendBeacon|console\.(log|info|warn|error|debug)/;
+const NET_RE = /\bfetch\s*\(|XMLHttpRequest|WebSocket|sendBeacon|console\s*\.\s*(log|info|warn|error|debug|dir|dirxml|trace|table|group|assert)/;
 // import() or require() whose argument is not one plain string literal: a built-up module name hides a storage module.
 const NON_LITERAL_LOAD = /\b(import|require)\s*\(\s*(?!['"][^'"+]+['"]\s*\))/;
 const tokenFile = (src: string) => /idToken|GoogleSignin/.test(src);
@@ -165,6 +165,7 @@ describe('[NS-54-R7] the scans bite on planted cases (BL-1946; limits in the fin
   it('a bare fetch or console call in a token-handling file is caught, and the scan is silent on a file with no token', () => {
     expect(NET_RE.test("const idToken = x; fetch('https://example.invalid', { body: idToken });")).toBe(true);
     expect(NET_RE.test("console.log(idToken)")).toBe(true);
+    for (const c of ['console.dir(idToken)', 'console.trace(idToken)', 'console.table({ idToken })', "fetch ('https://example.invalid', { body: idToken })"]) expect(NET_RE.test(c), c).toBe(true);
     // The limit, stated in the finding: the same call in a file with no idToken or GoogleSignin is not seen,
     // and globalThis['fet' + 'ch'](...) is seen by no text scan. The runtime test above catches only the real path.
     expect(tokenFile("fetch('https://example.invalid')")).toBe(false);
