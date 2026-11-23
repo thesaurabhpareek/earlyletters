@@ -69,6 +69,7 @@ import { useAuth } from '@/lib/auth/session-provider';
 import { useAnotherBusy } from '@/lib/first-run/account-books.logic';
 import { SignedInNote } from '@/components/onboarding/signed-in-note';
 import { capabilities, serverFeaturesEnabled } from '@/lib/capabilities';
+import { FIRST_RUN_DRAFT_SETTING, draftIsEmpty, parseDraft, resumeStep, serializeDraft } from '@/lib/first-run/draft.logic';
 import { backShown, childNameFieldWords, dateBlockShown, finishMayMakeBook, firstRunStartStep, hasSessionState, reportsPastWelcome, resumeBooks, runFinishOnce, sameBookInput, welcomeHandoffStep } from '@/lib/first-run/handoff.logic';
 import { RECENTLY_DELETED_HREF, recentlyDeletedRowShown } from '@/lib/first-run/recently-deleted-row.logic';
 import { continueMayShow, continueTapIsLocalStart } from '@/lib/first-run/route.logic';
@@ -87,7 +88,7 @@ import { haptic } from '@/lib/haptics';
 import { useMotion } from '@/lib/motion';
 import { ensureTextRules } from '@/lib/language/packs';
 import { useSpokenLanguage } from '@/lib/language/spoken-language';
-import { addChild as addChildToStore, getActiveChildId, getSetting, listChildren, listDeletedBooks, setActiveChildId, setSetting, subscribe, subscribeTo, todayISO } from '@/lib/store';
+import { addChild as addChildToStore, deleteSetting, getActiveChildId, getSetting, listChildren, listDeletedBooks, setActiveChildId, setSetting, subscribe, subscribeTo, todayISO } from '@/lib/store';
 import { firstRunWelcome, welcomeMayLeave } from '@/components/family/welcome-handoff.logic';
 import { CheckingScreen, OpenDeletionScreen } from '@/components/settings/open-deletion';
 import { useFirstRunGate } from '@/lib/account-deletion';
@@ -105,6 +106,22 @@ const COVER_PAUSE_MS = 300;
 const BACK_ROW = 48;
 /** The welcome's layout under the lockup (S03): the hero 32 pt below it, the body 16 below that, the free line 12. */
 const WELCOME = { heroGap: 32, bodyGap: 16, freeGap: 12, doorGap: 24 } as const;
+
+function readDraft() {
+  try {
+    return parseDraft(getSetting(FIRST_RUN_DRAFT_SETTING));
+  } catch {
+    return null;
+  }
+}
+
+function clearDraft(): void {
+  try {
+    if (getSetting(FIRST_RUN_DRAFT_SETTING) !== null) deleteSetting(FIRST_RUN_DRAFT_SETTING);
+  } catch {
+    // Nothing to clear.
+  }
+}
 
 /** "Asha", "Asha and Dev", "Asha, Dev and Nina". */
 function joinNames(names: string[], fallback: string): string {
@@ -148,7 +165,10 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
       // Signed out: the route forgets that the steps were past the welcome, so the person lands on the Welcome (D-160).
       // A sign-out that is still waiting on uploads, or that failed, leaves the session and the steps as they are.
       .then((outcome) => {
-        if (outcome === 'done') onSignedOut?.();
+        if (outcome === 'done') {
+          clearDraft(); // the answers belonged to the account that left (BL-1816)
+          onSignedOut?.();
+        }
       })
       .catch(() => undefined)
       .finally(() => setLeaving(false));
@@ -157,13 +177,15 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
     firstRunStartStep({ serverFeatures: serverFeaturesEnabled() && configured, hasSession: hasSessionState(authState), localStartChosen: chosenOnOutage }),
   );
   const accountFirst = start !== 'welcome';
-  const [step, setStep] = useState<Step>(start);
-  const [names, setNames] = useState<string[]>(['']);
-  const [expecting, setExpecting] = useState(false);
-  // No date is chosen for the person: an untouched default would file a seven-month-old under "0 days".
-  const [birthday, setBirthday] = useState<string | null>(null);
-  const [dueDate, setDueDate] = useState<string | null>(null);
-  const [signsAs, setSignsAs] = useState('');
+  // BL-1816: the answers kept as she went, read once. A relaunch resumes the step with them (lib/first-run/draft.logic.ts).
+  const [saved] = useState(() => readDraft());
+  const [step, setStep] = useState<Step>(() => resumeStep({ draft: saved, start, serverFeatures: serverFeaturesEnabled() && configured, hasSession: hasSessionState(authState) }));
+  const [names, setNames] = useState<string[]>(saved?.names ?? ['']);
+  const [expecting, setExpecting] = useState(saved?.expecting ?? false);
+  // No date is chosen for the person: an untouched default would file a seven-month-old under "0 days". Only a date she picked is kept (D-087).
+  const [birthday, setBirthday] = useState<string | null>(saved?.birthday ?? null);
+  const [dueDate, setDueDate] = useState<string | null>(saved?.dueDate ?? null);
+  const [signsAs, setSignsAs] = useState(saved?.signsAs ?? '');
   // The date block arrives once the first letter of the name is in (S05), and stays. Account first the name is optional,
   // so the block is there from the start (handoff.logic.ts dateBlockShown) and this only matters to the old flow.
   const [dateShown, setDateShown] = useState(false);
@@ -237,6 +259,18 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
     if (names[0]?.trim()) setDateShown(true);
   }, [names]);
 
+  // Each answer is kept when it is given, on this phone only; the draft goes once the book is made (BL-1816).
+  useEffect(() => {
+    if (booksMade.current) return;
+    const draft = { step, names, expecting, birthday, dueDate, signsAs };
+    try {
+      if (draftIsEmpty(draft)) clearDraft();
+      else setSetting(FIRST_RUN_DRAFT_SETTING, serializeDraft(draft));
+    } catch {
+      // A draft that cannot be kept never blocks first run.
+    }
+  }, [step, names, expecting, birthday, dueDate, signsAs]);
+
   // The book is open: one success, when the step is reached (MOTION 6).
   useEffect(() => {
     if (step === 'finish') haptic('success');
@@ -305,6 +339,7 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
       }),
     );
     booksMade.current = true;
+    clearDraft();
     if (created[0] && getActiveChildId() !== created[0].id) setActiveChildId(created[0].id);
     // Dropped unless analytics is already a yes (it never is in first run; K-01). Kept for a reinstall that kept consent.
     for (const c of created) track('child_added', { has_date: true, child_ordinal: ordinalOf(c.id), in_first_run: true, added_together: created.length > 1 });
