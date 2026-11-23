@@ -19,6 +19,8 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { CheckIcon } from 'phosphor-react-native/src/icons/Check';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { runOnJS } from 'react-native-reanimated';
 import { tokens } from '@scribe/design-tokens';
 import { AudioPlayer } from '@/components/player/audio-player';
 import { authorOf } from '@/components/child/child-store';
@@ -37,6 +39,7 @@ import { copy, fill, pendingCopy } from '@/lib/copy';
 import { childIndexOf, trackReadTogetherEnded, trackReadTogetherStarted } from '@/lib/analytics/track';
 import { hasPlus } from '@/lib/billing';
 import { useReducedMotion } from '@/lib/motion';
+import { READ_TOGETHER_HEADER_SWIPE, swipeLeaves } from '@/lib/reader-words.logic';
 import { AppNote } from '@/components/book/app-note';
 import { bookCopy } from '@/components/book/copy';
 import { letterWords } from '@/components/book/letter-words.logic';
@@ -134,7 +137,11 @@ export default function ReadTogether() {
       {/* Night only (the scene resolves to nothing by day): one still dusk pool, low behind the controls. */}
       <Lamp scene="readTogether" arrive intensity={done ? 0.5 : 1} />
       <SafeAreaView className="flex-1">
-        <ModalHeader onClose={close} />
+        <SwipeDownToLeave onLeave={close}>
+          <View>
+            <ModalHeader onClose={close} />
+          </View>
+        </SwipeDownToLeave>
         <Progress fraction={done ? 1 : (index + 1) / letters.length} label={position} />
         <PageTurn
           pageKey={pageKey}
@@ -168,6 +175,25 @@ export default function ReadTogether() {
       </SafeAreaView>
     </View>
   );
+}
+
+/** A swipe down on the top bar leaves Read together when READ_TOGETHER_HEADER_SWIPE is on (off until a device check); Close stays the button for it (BL-1823). */
+function SwipeDownToLeave({ onLeave, children }: { onLeave: () => void; children: ReactNode }) {
+  // One path out: the first leave wins, so the gesture can never pop twice.
+  const left = useRef(false);
+  const leaveOnce = () => {
+    if (left.current) return;
+    left.current = true;
+    onLeave();
+  };
+  const swipe = Gesture.Pan()
+    .enabled(READ_TOGETHER_HEADER_SWIPE)
+    .activeOffsetY(16)
+    .failOffsetX([-16, 16])
+    .onEnd((e) => {
+      if (swipeLeaves(e.translationY, e.velocityY)) runOnJS(leaveOnce)();
+    });
+  return <GestureDetector gesture={swipe}>{children}</GestureDetector>;
 }
 
 /** "Back one" and "Next letter": pinned under the letter at the usual sizes, the end of the scroll from AX1 up (BL-1791). */

@@ -3,7 +3,7 @@
  * nothing truncates silently, and buttons grow taller instead of clipping"; P5 critics' pass S4). Pure and tested
  * (test/p5-critics.test.ts).
  *
- * Side by side, "Back one" then "Next letter", two equal halves. At an accessibility text size two halves are too
+ * Side by side, "Earlier letter" then "Next letter", two equal halves. At an accessibility text size two halves are too
  * narrow for the labels (they became tall circles with "letter" past the edge), so the buttons stack, full width,
  * "Next letter" first: it is the control that turns the page, and it is the one a large-print reader needs whole.
  * Neither button has a fixed width or shape then: each grows with its label.
