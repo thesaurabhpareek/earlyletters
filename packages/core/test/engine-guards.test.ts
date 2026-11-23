@@ -92,6 +92,18 @@ export function callersOf(files: readonly { path: string; text: string }[], name
   return code.filter((f) => call.test(f.text)).map((f) => f.path);
 }
 
+/**
+ * What the allow-list checks use: everything `callersOf` finds plus everything the old plain-text scan (`name(` anywhere in
+ * the raw text, comments and strings included) finds. The comment stripper can be fooled (a `//` inside a string hides the
+ * rest of the line), so this scan may only ever see more callers than the old one, never fewer.
+ */
+export function guardCallers(files: readonly { path: string; text: string }[], name: string): string[] {
+  const plain = new RegExp(`\\b${esc(name)}\\(`);
+  const found = new Set<string>(callersOf(files, name));
+  for (const f of files) if (plain.test(f.text)) found.add(f.path);
+  return [...found];
+}
+
 function at(raw: string, type: Edit['type'], original: string, replacement: string, nth = 0, source: Edit['source'] = 'model'): Edit {
   let start = -1;
   for (let i = 0; i <= nth; i++) start = raw.indexOf(original, start + 1);
@@ -143,9 +155,9 @@ describe('[FR-AIS-02] every machine edit goes through the verifier, with no bypa
 
   it('only verify.ts and pipeline.ts apply edits to words; only pipeline.ts and the model provider call the verifier', () => {
     const texts = files.map((f) => ({ path: rel(f), text: read(f) }));
-    const applying = callersOf(texts, 'applyEdits').sort();
+    const applying = guardCallers(texts, 'applyEdits').sort();
     expect(applying).toEqual(['packages/core/src/pipeline.ts', 'packages/core/src/verify.ts']);
-    const verifying = callersOf(texts, 'verifyEdits').filter((p) => p !== 'packages/core/src/verify.ts').sort();
+    const verifying = guardCallers(texts, 'verifyEdits').filter((p) => p !== 'packages/core/src/verify.ts').sort();
     expect(verifying).toEqual(['packages/core/src/model-edits.ts', 'packages/core/src/pipeline.ts']);
   });
 
@@ -175,11 +187,23 @@ describe('[FR-AIS-02] every machine edit goes through the verifier, with no bypa
 
   it('[BL-1843] a planted aliased writer beside the real tree breaks the allow-list, and the real tree alone passes', () => {
     const real = files.map((f) => ({ path: rel(f), text: read(f) }));
-    expect(callersOf(real, 'applyEdits').sort()).toEqual(REAL_ONLY);
-    const withPlanted = callersOf([...real, plantedFiles[0]], 'applyEdits').sort();
+    expect(guardCallers(real, 'applyEdits').sort()).toEqual(REAL_ONLY);
+    const withPlanted = guardCallers([...real, plantedFiles[0]], 'applyEdits').sort();
     expect(withPlanted).toEqual([plantedFiles[0].path, ...REAL_ONLY].sort());
     const verifyAlias = { path: 'planted/verify-alias.ts', text: "import { verifyEdits as check } from '@scribe/core';\nexport const ok = (a: never) => check(a);" };
-    expect(callersOf([...real, verifyAlias], 'verifyEdits')).toContain('planted/verify-alias.ts');
+    expect(guardCallers([...real, verifyAlias], 'verifyEdits')).toContain('planted/verify-alias.ts');
+  });
+
+  it('[BL-1843] a // inside a string cannot hide a call: the guard never finds fewer callers than the old plain scan', () => {
+    const sneaky = { path: 'planted/string-slashes.ts', text: "const s = ' // '; applyEdits(a, b)" };
+    expect(/\bapplyEdits\(/.test(sneaky.text)).toBe(true); // the old scan sees it
+    expect(guardCallers([sneaky], 'applyEdits')).toEqual([sneaky.path]);
+    const real = files.map((f) => ({ path: rel(f), text: read(f) }));
+    expect(guardCallers([...real, sneaky], 'applyEdits').sort()).toEqual([sneaky.path, ...REAL_ONLY].sort());
+    // for every planted and real file, the guard is a superset of the old scan
+    for (const f of [...plantedFiles, sneaky, ...real]) {
+      if (/\bapplyEdits\(/.test(f.text)) expect(guardCallers([f], 'applyEdits'), f.path).toContain(f.path);
+    }
   });
 
   it('faithfulClean applies only what the verifier accepted', () => {
