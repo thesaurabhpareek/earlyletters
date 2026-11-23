@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const OUT_DIR = 'docs/content/map';
-export const COLUMNS = ['id', 'surface', 'channel', 'file', 'line', 'locale', 'text', 'chars', 'hold', 'hold_reason', 'tone', 'day_id', 'layer', 'owner', 'status', 'source'];
+export const COLUMNS = ['id', 'surface', 'channel', 'file', 'line', 'locale', 'text', 'chars', 'hold', 'hold_reason', 'build_dependent', 'tone', 'day_id', 'layer', 'owner', 'status', 'source'];
 const SKIP_KEYS = new Set(['key', 'id', 'band', 'kind', 'tone', 'layer', 'dayId', 'day', 'tradition', 'href', 'url', 'icon', 'testID', 'screen', 'bg', 'locale', 'type', 'variant', 'route', 'slug', 'sku', 'productId', 'currency', 'code', '_comment', 'visual', 'confidence']);
 const ts = createRequire(join(ROOT, 'packages/content/package.json'))('typescript');
 
@@ -48,7 +48,7 @@ function classify(file, path, text) {
     if (/^(errors?)$/i.test(top) || /(^|\.)errors?(\.|$)/i.test(seg)) { surface = 'error'; channel = 'in-app error'; }
     if (/^(notifications|neutral|named|together|priming)$/i.test(top) || /(^|\.)(neutral|named|together)\./.test(seg) && /reminders/.test(file)) { surface = 'push'; channel = /priming/.test(seg) ? 'in-app' : 'push notification'; }
     if (/^(struggling|helpLinks)$/.test(top)) { surface = 'safety'; channel = 'support links'; owner = 'cco'; }
-    if (/^(sensitiveConsent|analyticsConsent|ageGate)$/.test(top) || /consent/i.test(file)) { surface = 'legal'; channel = 'consent'; owner = 'privacy'; }
+    if (/^(sensitiveConsent|analyticsConsent|ageGate)$/.test(top) || /consent/i.test(file) || /(^|\.)consent(\.|$)/.test(seg)) { surface = 'legal'; channel = 'consent'; owner = 'privacy'; }
     if (/(^|\.)(a11y|accessib\w*|aria\w*|voiceover\w*)(\.|$)/i.test(seg)) { surface = 'a11y'; channel = 'screen reader label'; }
     if (file.startsWith('apps/mobile/')) source = 'mobile-copy';
   }
@@ -58,6 +58,7 @@ function classify(file, path, text) {
   return { surface, channel, owner, source };
 }
 const HELD = [
+  [(r) => /(^|\.)trust\.promise$/.test(r.path.join('.')) || /never use them to train machine learning models/.test(r.text), 'protected', 'D-061 privacy promise line, word for word on every surface'],
   [(r) => /It stays in your words\. Every change is marked/.test(r.text), 'protected', 'D-133 public promise line'],
   [(r) => r.file.endsWith('helplines.ts') || /^(struggling|helpLinks)$/.test(r.path[1] ?? ''), 'protected', 'helplines and safety instructions'],
   [(r) => /(^|\.)erase(\.|$)/.test(r.path.join('.')) || /Your free letters start again\./.test(r.text), 'held', 'D-144 erase-everything lines'],
@@ -69,6 +70,23 @@ const HELD = [
   [(r) => r.channel === 'os permission string', 'held', 'OS permission string, registered disclosure'],
   [(r) => r.channel === 'price and trial', 'held', 'price and trial must match StoreKit and pricing.ts'],
 ];
+
+// Lines whose truth depends on the build (servers off or on). Not a hold: a row can be held and build-dependent.
+// Named keys come from BL-1883; the pattern finds others by what the text says about our servers.
+const BUILD_KEYS = [
+  [/^en\.settings\.privacy\.keptOnPhone$/, 'servers off'], [/^en\.settings\.privacy\.keptSynced$/, 'servers on'],
+  [/^en\.whereLive\.onPhone$/, 'servers off'], [/^en\.whereLive\.onPhoneSynced$/, 'servers on'],
+  [/^en\.settings\.erase\.onThisPhone$/, 'servers off'], [/^accountDeletionCopy\.what\.intro$/, 'servers on'],
+  [/^storeListing\.reviewNotes$/, 'servers off'], [/^notesServersOn$/, 'servers on'],
+];
+function buildDependent(r) {
+  const key = r.path.join('.');
+  const k = BUILD_KEYS.find(([re]) => re.test(key));
+  if (k) return k[1];
+  if (/servers[- ]off/i.test(r.text)) return 'servers off';
+  if (/servers[- ]on\b|\b(from|on|to) our servers\b|\bnot sent to us\b|\bnothing is sent anywhere\b/i.test(r.text)) return /not sent to us|nothing is sent anywhere/i.test(r.text) ? 'servers off' : 'servers on';
+  return '';
+}
 
 // ---- extraction -----------------------------------------------------------------------------------------------
 function candidate(text, key) {
@@ -159,12 +177,12 @@ export function buildMap(root = ROOT) {
     const h = HELD.find(([f]) => f({ ...r, ...c }));
     const owner = h && h[1] === 'protected' && /helpline|safety/.test(h[2]) ? 'cco' : c.owner;
     return { id: n > 1 ? `${base}~${n}` : base, surface: c.surface, channel: c.channel, file: r.file, line: r.line,
-      locale: 'en', text: r.text, chars: [...r.text].length, hold: h ? h[1] : '', hold_reason: h ? h[2] : '',
+      locale: 'en', text: r.text, chars: [...r.text].length, hold: h ? h[1] : '', hold_reason: h ? h[2] : '', build_dependent: buildDependent({ ...r, path: r.path }),
       tone: r.tone, day_id: r.day_id, layer: r.layer, owner, status: 'live on develop', source: c.source };
   });
   rows.sort((a, b) => a.file < b.file ? -1 : a.file > b.file ? 1 : a.line - b.line || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
   const count = (k) => Object.fromEntries([...new Set(rows.map((r) => r[k]))].sort().map((v) => [v, rows.filter((r) => r[k] === v).length]));
-  return { meta: { columns: COLUMNS, rowCount: rows.length, bySurface: count('surface'), byOwner: count('owner'), byHold: count('hold'), note: 'Generated by scripts/content/export-content-map.mjs; do not edit by hand.' }, rows };
+  return { meta: { columns: COLUMNS, rowCount: rows.length, bySurface: count('surface'), byOwner: count('owner'), byHold: count('hold'), byBuildDependent: count('build_dependent'), note: 'Generated by scripts/content/export-content-map.mjs; do not edit by hand.' }, rows };
 }
 const q = (v) => { const s = String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
 export function render(map) {
