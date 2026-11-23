@@ -407,8 +407,9 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
         action: {
           label: copy.common.undoButton,
           onPress: () => {
+            // BL-1959: a left book refuses the restore; no event, and the toast says so.
+            if (!undeleteEntry(gone.id)) return toast.show({ message: copy.settings.delete.restoreRefusedToast });
             track('letter_deleted', { action: 'restored', destination: gone.inBook ? 'book' : 'private' });
-            undeleteEntry(gone.id);
           },
         },
       });

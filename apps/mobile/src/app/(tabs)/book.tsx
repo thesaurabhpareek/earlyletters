@@ -253,8 +253,9 @@ export default function Book() {
             testID: 'book.undo',
             onPress: () => {
               deleteToastUp.current = false;
+              // BL-1959: Undo is a restore; a left book refuses it, so no event and no wash, and the toast says so.
+              if (!undeleteEntry(gone.id)) return toast.show({ message: copy.settings.delete.restoreRefusedToast });
               track('letter_deleted', { action: 'restored', destination: gone.inBook ? 'book' : 'private' });
-              undeleteEntry(gone.id);
               wash([gone.id]);
             },
           },

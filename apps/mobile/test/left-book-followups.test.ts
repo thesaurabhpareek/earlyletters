@@ -96,3 +96,25 @@ describe('screens act on the store refusing (BL-1959)', () => {
     expect(src('review.tsx')).toContain("throw new Error('book_left')");
   });
 });
+
+describe('a refused restore says so (BL-1959, entry.restore)', () => {
+  const read = (p: string) => readFileSync(join(__dirname, '..', 'src', p), 'utf8');
+
+  it('[BL-1959] the store refuses to restore a deleted letter of a left book, and queues nothing', () => {
+    const { id, childId } = waitingLetter();
+    expect(store.deleteEntry(id)).toBe(true);
+    store.localSqlDb().run("UPDATE children SET server_state = 'left' WHERE id = ?", childId);
+    expect(store.undeleteEntry(id)).toBe(false);
+    expect(store.listDeleted().some((e) => e.id === id)).toBe(true);
+  });
+
+  it('[BL-1959] Recently deleted fires no restored event and no restored toast on a refusal, and hides Restore for a left book', () => {
+    const s = read('app/settings/recently-deleted.tsx');
+    expect(s).toMatch(/const restored = undeleteEntry\(e\.id\);[\s\S]*?if \(!restored\) return toast\.show\(\{ message: d\.restoreRefusedToast \}\);\s*track\('letter_deleted', \{ action: 'restored'/);
+    expect(s).toMatch(/canRestore=\{!\(e\.childId && isBookLeft\(e\.childId\)\)\}/);
+  });
+
+  it.each(['app/(tabs)/book.tsx', 'app/letter/[id].tsx'])('[BL-1959] Undo in %s reads the result before it tracks', (p) => {
+    expect(read(p)).toMatch(/if \(!undeleteEntry\(gone\.id\)\) return toast\.show\(\{ message: copy\.settings\.delete\.restoreRefusedToast \}\);\s*track\('letter_deleted', \{ action: 'restored'/);
+  });
+});

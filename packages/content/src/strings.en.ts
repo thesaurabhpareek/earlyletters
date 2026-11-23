@@ -920,6 +920,8 @@ export const en = {
       // Restore when no book can be named (the letter's book is gone and none is open): the same line without a name,
       // so the toast never reads "Back in 's book." (P5 critics' pass, L9).
       restoredToastNoName: "Back in the book.",
+      // Restore refused because the letter's book is one this person left (BL-1959). What did not happen, then what is true.
+      restoreRefusedToast: "That letter wasn't restored. Its book is one you left.",
       // The toast action after Restore (S38).
       openButton: "Open",
       // After Erase now. It carries no action, so it may time out.
