@@ -1373,3 +1373,17 @@ These carry out the fleet rule and were not said by him: a cap or a budget that 
 - **Numbering:** `node scripts/agents/next-id.mjs` returned D-170 (D-169 is the last entry on `develop`, since #1673 merged, and D-170 is next). Re-check before merging.
 - **Amends:** none by text. It replaces the 20 Nov default named above and narrows nothing in D-157, D-160, D-161 or D-163.
 - **Owner:** founder; Karma merges.
+
+### D-171 Google sign-in: when it ships, and what waits on it (PROPOSED, product, 23 Nov 2026)
+- **Status:** Proposed. Not decided, not built, nothing applied. It records one choice for the founder; no pull request needs anyone's approval for it, and until he records an option below the default applies.
+- **Why now:** D-054 (founder-decided) says sign-in is Apple, Google and email, and supersedes D-044 ("Google sign-in moves to v1.1"). The locked store card (NS-41-R1, NS-41-R20) and the identity chapter (IAM-R05) still follow D-044, so the documents disagree about the build. E98 in `docs/product/prd/18-errata-after-lock.md` lists every id that would change. Google itself is built but off.
+- **Options:**
+  1. After the first submission build, behind two gates: linking first (a person adds a method to their own account, so Apple's Hide My Email plus Google does not make two empty books), and Google's public text published (Terms 3.1, privacy policy, subprocessor list, BL-1908). Apple stays P0 and ships as is. Offering Apple and email already meets the sign-in duty, and Guideline 4.8 only applies once Google is offered.
+  2. In the first submission build. D-054 read at its word. Adds a Google Cloud project, consent screen and possible brand check, one iOS client id, the linking work, the public text and a device test to the path to submission, and none of those exists yet.
+  3. Keep Google at v1.1 as D-044 said, and retire D-054's Google half. Smallest first build; the founder's own D-054 direction is set aside.
+- **Recommendation:** option 1. It keeps the first build small, it never creates the duplicate-account trap, and it keeps D-054 true in order rather than reversing it. Moving Google into the first build (option 2) is the founder's scope and date call and costs submission time.
+- **Default if he records nothing:** option 1 as the plan of record for the backlog rows (BL-1891 to BL-1894 and BL-1908 proceed; the Google button is not in the submission build). No locked row changes until an option is recorded; NS-41-R1, NS-41-R20 and IAM-R05 stay as written and the app offers Apple and email only.
+- **What it does not decide:** a phone number. The NS-41 line "never SMS or a phone number" changes only after counsel has read (BL-1897) and only after the LEGAL-REQ-012 change in BL-1909, never ahead of either. The SMS vendor and its spend are separate (BL-1898). No change to the constitution, the privacy rules or the age and region checks (D-170 item 4).
+- **Amends if option 1 is recorded:** the timing in D-054 (Google after submission, not at it); D-044 stays superseded.
+- **Numbering:** D-170 is the last entry on `develop` at the time of writing, so this is D-171. Re-check with `node scripts/agents/next-id.mjs` before merging; it is assigned again at merge.
+- **Owner:** founder; Karma merges once the option is recorded.
