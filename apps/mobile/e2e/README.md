@@ -34,6 +34,7 @@ TDD 07 planned 15 flows on 3 Oct morning; the founder's decisions that day chang
 | E2E-14 | `E2E-14-restore-purchases.yaml` | Apple's store view with the StoreKit file, a test purchase, Restore purchases | app run from Xcode |
 | E2E-15 | `E2E-15-voiceover-smoke.yaml` | AX5 in light and dark: every P0 control reachable and enabled, screenshots for a human look; the VoiceOver walk is manual (DEVICE_TEST_PLAN S1-23) | offline |
 | E2E-17 | `E2E-17a-export-listening-copy.yaml`, `E2E-17b-export-original-only.yaml` + `bin/inspect-export.sh --originals` | Added 15 Oct (PRD V2 07 section 2.6). With a listening copy on the phone, export carries only the originals, byte for byte (F15-REQ-001, F15-REQ-002); 17b switches the player to the original and exports again: the same originals with the same hashes. The inspector fails if a listening copy's bytes are in the ZIP, if an original's hash differs from its capture hash, or if the seed made no recordings | offline, seed `asha-recordings` |
+| E2E-20 | `E2E-20-providers-build12.yaml` | NX-40 H5, NX-40-R7 (BL-894). The sign-in sheet shows email and no Google button and no passkey link in a profile with no Google ids and no passkey switch. Which NX-40 row has which proof, and who runs the device-only ones, is `NX-40-ROWS.md` | backend |
 
 ### The P0 nightly set
 

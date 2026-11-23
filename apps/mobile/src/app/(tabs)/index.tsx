@@ -135,6 +135,8 @@ export default function Tonight() {
   const inlineActions = footerPlacement(useIsAccessibilitySize()) === 'inline';
   // The mark kept for today while its line is showing (so Undo knows what to remove).
   const [keptMark, setKeptMark] = useState<string | null>(null);
+  // The tap could not save the mark: one calm line shows until the next tap (BL-1723).
+  const [notSaved, setNotSaved] = useState(false);
   // Tonight's lines enter once per cold launch, on the first render that shows them; a later mount, and a card that
   // appears later (a typed draft when Write closes), is already in place.
   const [arriving, setArriving] = useState(() => tonightArrival.pending());
@@ -247,7 +249,14 @@ export default function Tonight() {
   const keepNotMuch = () => {
     // One mark a day, no words (D-084): the one capture entry keeps it; the line and its Undo stay here.
     const kept = startCapture({ source: 'notMuchToday' });
+    if (kept.kind === 'quietDayNotSaved') {
+      // Never silent (BL-1723): one calm line, said aloud too. The link stays, so the next tap tries again.
+      setNotSaved(true);
+      announce(copy.errors.generic.body);
+      return;
+    }
     if (kept.kind !== 'quietDay') return;
+    setNotSaved(false);
     haptic('soft');
     announce(copy.notMuch.savedToast);
     setKeptMark(kept.markId);
@@ -271,6 +280,11 @@ export default function Tonight() {
         <Button size="capture" icon={PencilSimpleIcon} label={t.typeButton} haptic="press" onPress={() => startCapture({ source: 'type', prompt: promptParam })} />
       </ButtonRow>
       {photoStart.show ? <PhotoStartButton child={child} onPress={photoStart.start} failed={photoStart.failed} /> : null}
+      {notSaved && !keptMark ? (
+        <Text variant="callout" tone="muted" className="text-center" accessibilityLiveRegion="polite" testID="home.notMuch.notSaved">
+          {copy.errors.generic.body}
+        </Text>
+      ) : null}
       {keptMark ? (
         <QuietDayInline onUndo={undoNotMuch} entering={lineIn} />
       ) : (

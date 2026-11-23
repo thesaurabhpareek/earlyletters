@@ -1446,3 +1446,33 @@ Silence on 27 Nov 2026 means the status quo text (D-125 item 5). The review date
 3. Photo flag date (see CPrivO-29). Default: the flag stays off.
 4. The SE 3 operator, the 27 Nov gate date, the counsel engagement date. If counsel is not engaged, every "wait for counsel" default is open-ended until a date is named.
 5. Signed-in wipe (BL-1804, deferred; an L build, not for 1 Dec), long-silence stop, tappable "From Mama" option (default to owner, typed name, fixed after Keep; as an option, not a default). App-lock grace: offer on first turn-on, default one minute (CISO check).
+
+### CLO-2 Terms 4.0.0, clauses 13.1 and 14.6: founder approval recorded, conditions before publication (31 Oct 2026, CLO via the platform session; not legal advice)
+- Question: the founder approved Terms 13.1 (co-parent writing leaves the free-for-as-long-as-we-operate list) and 14.6 (app reminders name no price; future reminder emails described as "not sent yet") on 31 Oct and asked the CLO and CCO to align. Does anything have to change before merge?
+- Tier and type: T1; clear. Consulted: CCO (CCO-3 below). CPrivO not needed: no data terms changed.
+- Options considered: revert both clauses; merge as drafted; merge as drafted with conditions before publication
+- Ruling: aligned. Merged in #447 as `draft-for-counsel` on the founder's approval (D-125 item 5). Before any of this text is published or binds a user: (1) the sentence "Apple's receipt shows the amount you were charged" (Terms 14.6 and the Subscription Terms) is checked on the TestFlight sandbox pass, or cut; (2) counsel reads 13.1 under COUNSEL_PACKET Q14, because 13.3 makes whatever 13.1 lists permanent for existing users; (3) the reminder emails in 14.6 never start until 14.6 is rewritten, as the clause itself says.
+- Why: the narrower 13.1 list is less open-ended exposure in the founder's own name than the old "unlimited free writing" promise, which D-082 already ended. 14.6 had promised a price in app reminders that D-083 keeps out, so the old text was untrue. An unpublished draft is a two-way door; publication is not.
+- Door: two-way until published
+- Way back: restore the co-parent line in 13.1, or cut 14.6's email paragraph to "We do not email you about Plus yet" (`docs/legal/CHANGES-2026-10-31.md`)
+- Counsel needed: yes, Q14 and Q8, before publication
+- Revisit when: counsel answers Q14 or Q8, or the sandbox pass runs.
+
+### CCO-3 Approving Terms 14.6 does not close the California renewal-notice gap for build 1 (31 Oct 2026, CCO via the platform session; not counsel)
+- Question: with 14.6 approved, does the first store build meet California's automatic renewal law?
+- Tier and type: T1 for the record; the fix is FOUNDER (it changes what the release shows), and he has approved route (i)
+- Rule: Cal. Bus. & Prof. Code 17602 (2025 code, last amended Stats. 2024 ch. 515, read 31 Oct 2026 via https://law.justia.com/codes/california/code-bpc/division-7/part-3/chapter-1/article-9/section-17602/; leginfo did not load). (b)(1) covers a free trial "lasting for more than 31 days"; (b)(2) an initial term "of one year or longer"; (h)(1) an annual reminder; (a)(3) an acknowledgment with the offer terms. Applies: Unknown, counsel must confirm, chiefly whether the duty falls on us while Apple is merchant of record.
+- Facts: D-121 ships Plus in build 1; `plus.annual` has a 2-month free offer and a one-year term (StoreKit file). No notice from us names the amount (D-083; no email under D-121). Whether Apple's messages carry it in the windows is Unverified.
+- Evidence: none that we comply. Status: Gap.
+- Ruling: register row stays Gap; the submission gate (1 Dec) holds until route (i) is built and checked. The founder approved this PR on 21 Nov 2026 (his words in the Claude chat: "Approve #454, #1387, #1408, #1410 and #1416.", recorded by Karma on the PR), and Karma reads that as approval as written, so route (i) is chosen, not defaulted: a narrow D-083 exception so the long-trial reminder, the annual reminder, the in-app note and the purchase confirmation show StoreKit's `Product.displayPrice` and period (the amount comes from Apple, never typed), then Terms 14.6 changes once more. Route (ii), counsel's written view that Apple's messages are enough, was the alternative and is not taken. If he meant route (ii), he says so and this ruling changes. Counsel still confirms whether the duty falls on us (Q8).
+- Debate: CLO objected that D-083 kept prices out of app copy so a typed price can never drift. Answer: `displayPrice` is Apple's localized string for that buyer, so nothing is typed and nothing can drift. Route (ii) waits on counsel, who is not yet engaged (W0-13).
+- Door: two-way
+- Revisit when: counsel answers Q8, or the founder says he meant route (ii).
+
+### CCO-20 PR #1463 age gate way back holds outside the 24h window: passes the compliance fence (CCO-review tier) for merge into develop (23 Nov 2026, CCO via Karma's session; not counsel)
+- Verdict: RULED.
+- Ruling: `answeredByMistake` returns at once unless the 24 hours have passed (`windowPassed`). It only narrows when the way back works. It cannot clear a stop or pass the gate. The 18+ gate, the 24-hour closure (D-026; LEGAL-REQ-002; CCO-17, CCO-18) and the stored data are unchanged. No new data, no copy, no promise changes.
+- Evidence: `apps/mobile/src/components/gate/age-gate-screen.tsx:119-131`; `apps/mobile/src/lib/age-gate.logic.ts:35-42`; `apps/mobile/src/lib/age-gate.ts:59`; `apps/mobile/test/age-gate-screen.test.ts:106-120` (source-regex pins: they prove the guard text and order, not runtime behaviour). CCO review at f09bd3e6869751cdc25eeca07591302d1ea11b3a; approval line posted on PR #1463.
+- Way back: revert one line and its two tests.
+- Founder-only: no. Counsel must confirm the 24-hour way back itself (packet Q5, Q45, Q46); not decided here. Exec-team counsel has not read this call; it is a delegated default until counsel confirms.
+- Signed: Chief Compliance Officer (Claude role, not counsel)
