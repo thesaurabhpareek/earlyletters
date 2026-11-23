@@ -863,6 +863,17 @@ describe('store listing document (docs/store/app-store.md)', () => {
     for (const c of storeListing.screenshotCaptions) expect(doc).toContain(c);
   });
 
+  it('carries no co-parent review script or "each one signed" line (BL-1855; D-126, D-161, D-162)', () => {
+    for (const phrase of ['as the second parent', 'each one signed', '{inviteLink}', '{inviteExpiry}', 'I was invited', 'WHAT A CO-PARENT SEES', 'Coming soon', 'coming soon']) {
+      expect(doc, phrase).not.toContain(phrase);
+    }
+  });
+
+  it('adds no timing figure of its own to the listing document (BL-1855; D-169 item 1)', () => {
+    // Existing speaking-time words ("A minute is plenty") are status quo text under D-169 item 2. A new figure is not.
+    expect(doc).not.toMatch(/\b\d+\s*(?:-|\s)?(?:seconds?|secs?)\b/i);
+  });
+
   it('keeps captions short enough for a frame', () => {
     for (const s of storeListing.screenshots) {
       expect(s.caption.length, s.id).toBeLessThanOrEqual(40);

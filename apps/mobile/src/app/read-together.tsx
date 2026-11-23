@@ -17,8 +17,10 @@
  */
 import { router, useLocalSearchParams } from 'expo-router';
 import { CheckIcon } from 'phosphor-react-native/src/icons/Check';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { runOnJS } from 'react-native-reanimated';
 import { tokens } from '@scribe/design-tokens';
 import { AudioPlayer } from '@/components/player/audio-player';
 import { authorOf } from '@/components/child/child-store';
@@ -37,12 +39,13 @@ import { copy, fill, pendingCopy } from '@/lib/copy';
 import { childIndexOf, trackReadTogetherEnded, trackReadTogetherStarted } from '@/lib/analytics/track';
 import { hasPlus } from '@/lib/billing';
 import { useReducedMotion } from '@/lib/motion';
+import { READ_TOGETHER_HEADER_SWIPE, swipeLeaves } from '@/lib/reader-words.logic';
 import { AppNote } from '@/components/book/app-note';
 import { bookCopy } from '@/components/book/copy';
 import { letterWords } from '@/components/book/letter-words.logic';
 import { readableInBook, showsSignature } from '@/components/book/quiet-day.logic';
 import { lettersInYear, endOfYearLine, readTheYearOn } from '@/components/book/read-year.logic';
-import { turnControls } from '@/components/book/turn-controls.logic';
+import { buttonPlacement, pageButtonsClass, turnControls, type TurnButton } from '@/components/book/turn-controls.logic';
 import { getActiveChild, getChild, getSetting, listEntriesForChild, setSetting, type Child, type Entry } from '@/lib/store';
 
 /** "Keep playing" is remembered across sessions (S30). A setting on this phone, never synced. */
@@ -61,7 +64,10 @@ export default function ReadTogether() {
   const [autoNext, setAutoNext] = useState(() => getSetting(KEEP_PLAYING) === '1');
   const [startNext, setStartNext] = useState(false);
   // At accessibility text sizes the two page buttons stack, full width, "Next letter" first (S4).
-  const turn = turnControls(useIsAccessibilitySize());
+  const accessibilitySize = useIsAccessibilitySize();
+  const turn = turnControls(accessibilitySize);
+  // From AX1 up the buttons are the end of the letter's scroll, not pinned (BL-1791).
+  const placement = buttonPlacement(accessibilitySize);
   useUnlitRoom();
 
   const letters = useMemo(() => (child ? (year && readTheYearOn(process.env.EXPO_PUBLIC_READ_THE_YEAR) ? lettersInYear(listEntriesForChild(child.id), child, year) : readableInBook(listEntriesForChild(child.id))).reverse() : []), [child?.id, year]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -131,7 +137,11 @@ export default function ReadTogether() {
       {/* Night only (the scene resolves to nothing by day): one still dusk pool, low behind the controls. */}
       <Lamp scene="readTogether" arrive intensity={done ? 0.5 : 1} />
       <SafeAreaView className="flex-1">
-        <ModalHeader onClose={close} />
+        <SwipeDownToLeave onLeave={close}>
+          <View>
+            <ModalHeader onClose={close} />
+          </View>
+        </SwipeDownToLeave>
         <Progress fraction={done ? 1 : (index + 1) / letters.length} label={position} />
         <PageTurn
           pageKey={pageKey}
@@ -155,33 +165,59 @@ export default function ReadTogether() {
                 }}
                 keepPlaying={autoNext}
                 onKeepPlaying={keepPlaying}
+                buttons={placement === 'inline' ? <PageButtons turn={turn} placement={placement} index={index} go={go} /> : null}
               />
             );
           }}
         />
 
-        {!done && (
-          <View className={turn.stacked ? 'gap-3 px-5 pb-2 pt-3' : 'flex-row gap-3 px-5 pb-2 pt-3'}>
-            {turn.order.map((which) =>
-              which === 'back' ? (
-                <Button
-                  key="back"
-                  variant="secondary"
-                  size="lg"
-                  className={turn.stacked ? 'px-4' : 'flex-1 px-4'}
-                  fullWidth={turn.stacked}
-                  disabled={index === 0}
-                  onPress={() => go(index - 1)}
-                  label={rt.previousButton}
-                  testID="readTogether.back"
-                />
-              ) : (
-                <Button key="next" size="lg" className={turn.stacked ? 'px-4' : 'flex-1 px-4'} fullWidth={turn.stacked} onPress={() => go(index + 1)} label={rt.nextButton} testID="readTogether.next" />
-              ),
-            )}
-          </View>
-        )}
+        {!done && placement === 'pinned' ? <PageButtons turn={turn} placement={placement} index={index} go={go} /> : null}
       </SafeAreaView>
+    </View>
+  );
+}
+
+/** A swipe down on the top bar leaves Read together when READ_TOGETHER_HEADER_SWIPE is on (off until a device check); Close stays the button for it (BL-1823). */
+function SwipeDownToLeave({ onLeave, children }: { onLeave: () => void; children: ReactNode }) {
+  // One path out: the first leave wins, so the gesture can never pop twice.
+  const left = useRef(false);
+  const leaveOnce = () => {
+    if (left.current) return;
+    left.current = true;
+    onLeave();
+  };
+  const swipe = Gesture.Pan()
+    .enabled(READ_TOGETHER_HEADER_SWIPE)
+    .activeOffsetY(16)
+    .failOffsetX([-16, 16])
+    .onEnd((e) => {
+      if (swipeLeaves(e.translationY, e.velocityY)) runOnJS(leaveOnce)();
+    });
+  return <GestureDetector gesture={swipe}>{children}</GestureDetector>;
+}
+
+/** "Back one" and "Next letter": pinned under the letter at the usual sizes, the end of the scroll from AX1 up (BL-1791). */
+function PageButtons({ turn, placement, index, go }: { turn: ReturnType<typeof turnControls>; placement: 'pinned' | 'inline'; index: number; go: (to: number) => void }) {
+  const rt = copy.readTogether;
+  return (
+    <View className={pageButtonsClass(turn.stacked, placement)}>
+      {turn.order.map((which: TurnButton) =>
+        which === 'back' ? (
+          <Button
+            key="back"
+            variant="secondary"
+            size="lg"
+            className={turn.stacked ? 'px-4' : 'flex-1 px-4'}
+            fullWidth={turn.stacked}
+            disabled={index === 0}
+            onPress={() => go(index - 1)}
+            label={rt.previousButton}
+            testID="readTogether.back"
+          />
+        ) : (
+          <Button key="next" size="lg" className={turn.stacked ? 'px-4' : 'flex-1 px-4'} fullWidth={turn.stacked} onPress={() => go(index + 1)} label={rt.nextButton} testID="readTogether.next" />
+        ),
+      )}
     </View>
   );
 }
@@ -204,6 +240,7 @@ function LetterPage({
   onFinish,
   keepPlaying,
   onKeepPlaying,
+  buttons,
 }: {
   entry: Entry;
   child: Child;
@@ -212,6 +249,8 @@ function LetterPage({
   onFinish: () => void;
   keepPlaying: boolean;
   onKeepPlaying: (on: boolean) => void;
+  /** The page buttons, at the end of this scroll (AX1 and up); only on the page that is showing. */
+  buttons?: ReactNode;
 }) {
   const rt = copy.readTogether;
   const signsAs = authorOf(entry, child);
@@ -244,6 +283,7 @@ function LetterPage({
         </Text>
       )}
       <KeepPlayingChip on={keepPlaying} onChange={onKeepPlaying} />
+      {current ? buttons : null}
     </ScrollView>
   );
 }

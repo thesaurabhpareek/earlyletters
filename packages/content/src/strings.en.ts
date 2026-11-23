@@ -242,6 +242,8 @@ export const en = {
       // BL-432: after 30 minutes of one take. Nothing stops and nothing is cut; this only says Finish is there.
       longTake: "This is a long one. Finish whenever you like, or keep talking.",
       paused: "Paused.",
+      // Under "Paused." only (BL-1787): auto-lock ends a take that is paused, because only a live take keeps the screen awake (D-087). Says what happens and promises nothing about what is kept.
+      pausedLock: "If the phone locks while paused, the recording ends.",
       resumeButton: "Keep talking",
       stopButton: "Finish",
       saving: "Saving your words.",
@@ -300,6 +302,8 @@ export const en = {
     ready: {
       // Listening at rest: the red circle is the start control (BRAND.md glossary phrase).
       hint: "Tap the red circle and talk.",
+      // With a screen reader on, the red circle is not seen, so the line names the control instead (BL-1827, PER4-019).
+      hintScreenReader: "Double tap Start recording and talk.",
       startA11y: "Start recording",
     },
     discardButton: "Let it go",
@@ -378,7 +382,7 @@ export const en = {
     headerToBefore: "To {child} · Before You",
     // Writing down a take (BL-399, J05-03): the waiting card says it is working, that the voice is kept and that
     // Review can be closed. After 15 s with no progress it says so plainly and offers Keep or Type.
-    waitingBody: "Listening back to what you said. Your voice is kept. You can close this, it will be waiting on Tonight.",
+    waitingBody: "Listening back to what you said. Your voice is kept. You can close this and come back to it from Tonight.",
     waitingSlow: "This is taking longer than usual. Your voice is kept, and you can close this.",
     laterButton: "Read it back later",
     // Keep the recording tapped while the save is still running (the hung-save case, #618): nothing is kept yet, so say so.
@@ -623,6 +627,8 @@ export const en = {
       showOriginal: "Show exactly what I said",
       shareButton: "Share",
       deleteButton: "Delete",
+      // Spoken hint on the Delete row: says the result, not the label (BL-1827, PER4-014). The 30 days is `delete.entryBody`.
+      deleteHint: "Asks first. It waits in Recently deleted for 30 days.",
       // F09 6.2 step 6: own letters only. Opens the date sheet (`review.date.*`).
       changeDate: "Change the date",
     },
@@ -653,7 +659,7 @@ export const en = {
     playButton: "Play",
     pauseButton: "Pause",
     nextButton: "Next letter",
-    previousButton: "Back one",
+    previousButton: "Earlier letter",
     replayButton: "Hear it again",
     autoplayLabel: "Keep playing",
     // The dateline (S30): the month first, then who signed it, in the same shape for all three chapters. VoiceOver
@@ -674,7 +680,7 @@ export const en = {
     endOfBook: "That's every letter so far.",
     againButton: "Read it again",
     nextMonthButton: "On to Month {month}",
-    finishButton: "Close the book",
+    finishButton: "Done reading",
     makeLetterTogether: {
       title: "Write one together",
       body: "Ask {child} a question and record the answer, together.",
@@ -1291,6 +1297,8 @@ export const en = {
   reader: {
     readingSizeTitle: "Reading size",
     readingSizeButton: "Aa",
+    // BL-1823: at accessibility sizes the word stands beside "Aa", so a reader new to apps knows what it is.
+    readingSizeWord: "Size",
     readingSizeA11y: "Reading size",
     sizes: {
       standard: "Standard",

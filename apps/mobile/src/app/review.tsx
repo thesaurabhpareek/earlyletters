@@ -40,7 +40,6 @@
  * language is still downloading, the voice can be kept now and its words
  * follow when the phone is ready (ADR 0015).
  */
-import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { router, useLocalSearchParams } from 'expo-router';
 import { CaretDownIcon } from 'phosphor-react-native/src/icons/CaretDown';
 import { CaretRightIcon } from 'phosphor-react-native/src/icons/CaretRight';
@@ -65,6 +64,8 @@ import {
 } from '@scribe/core';
 import { tokens } from '@scribe/design-tokens';
 import { deleteIfPresent, letItGo } from '@/lib/capture/let-it-go.logic';
+import { ReviewScrub } from '@/components/capture/review-scrub';
+import { EarlyStopLine } from '@/components/capture/early-stop-line';
 import { laterWordsDraft } from '@/components/capture/later-words.logic';
 import { settleDraft, settleForKeep } from '@/components/capture/review-settle.logic';
 import { LetterSheet } from '@/components/capture/letter-sheet';
@@ -78,6 +79,7 @@ import {
   letterHeader,
   primaryDestination,
   putBackNoteShows,
+  putBackSpeech,
   reviewHasOwnChanges,
   reviewHeading,
   savePrimaryLabel,
@@ -105,7 +107,6 @@ import {
   type WordsAction,
   type WordsCard,
 } from '@/components/capture/words-state.logic';
-import { isPreviewAudioPresent } from '@/dev/preview-audio';
 import { isOwnEntry } from '@/components/child/child-store';
 import { PlusGate } from '@/components/child/plus-gate';
 import { holdOnce, holdWithoutSheet, storedWords } from '@/components/child/plus-gate.logic';
@@ -126,6 +127,7 @@ import { mountReview, restoreApplied, reviewWriter, withoutPutBack, wordsBase } 
 import { ensureAudioHash, finishingTake, isFinishing } from '@/lib/capture/recorder';
 import { brand } from '@scribe/brand';
 import { copy, fill, pendingCopy, plural } from '@/lib/copy';
+import { useLetterPlayer } from '@/lib/player';
 import { devShortcutsAllowed } from '@/lib/build-env';
 import { haptic } from '@/lib/haptics';
 import { ReviewPhoto } from '@/components/photos/review-photo';
@@ -437,24 +439,16 @@ export default function Review() {
   };
 
   // Mini player for the recording ("Hear it").
-  // The web design preview's seeded recordings cannot load in a browser (always false on a phone).
-  const player = useAudioPlayer(draft?.audioUri && !isPreviewAudioPresent(draft.audioUri) ? draft.audioUri : null);
-  const playStatus = useAudioPlayerStatus(player);
-  const togglePlay = async () => {
-    if (playStatus.playing) {
-      player.pause();
-      await setAudioMode('idle');
-    } else {
+  // The same player as the letter page (lib/player): it keeps the audio session, stops on leaving the app, and has the
+  // position VoiceOver moves within (BL-1825). The web design preview's seeded recordings are handled inside it.
+  const player = useLetterPlayer(draft?.audioUri ?? null, { fallbackDurationMs: draft?.audioDurationMs });
+  const togglePlay = () => {
+    if (!player.playing) {
       track('review_action', { action: 'play_back' });
       track('playback_started', { surface: 'review', author_relation: 'self', version: 'original' });
-      await setAudioMode('playback');
-      if (playStatus.didJustFinish || playStatus.currentTime >= playStatus.duration) player.seekTo(0);
-      player.play();
     }
+    player.toggle();
   };
-  useEffect(() => {
-    if (playStatus.didJustFinish) setAudioMode('idle').catch(() => {});
-  }, [playStatus.didJustFinish]);
   useEffect(() => () => void setAudioMode('idle').catch(() => {}), []);
 
   // Display: the person's words plus edits; a just-restored span is marked as an identity edit.
@@ -470,6 +464,18 @@ export default function Review() {
   const cleanedText = useMemo(() => (typed ? typedFinalText(raw) : languageFinalText(raw, inForce, rules)), [raw, inForce, typed, rules]);
   const finalText = userText ?? cleanedText;
 
+  /** The count line under the letter for `n` fixes in force (shown, and spoken after Put back). */
+  const countTextFor = (n: number) => {
+    const kind = countLine({ view, applied: n, proposed, hasFixRules: spokenEditLevel(language) === 'clean' });
+    return kind === 'count'
+      ? plural(n, pendingCopy.review.changesLabelOne, fill(r.changesLabel, { count: n }))
+      : kind === 'afterUndo'
+        ? r.noChangesAfterUndo
+        : kind === 'none'
+          ? r.noChanges
+          : r.noChangesNoRules;
+  };
+
   const putBack = (index: number) => {
     const edit = applied[index];
     const next = withoutEdit(raw, applied, index, rules);
@@ -480,6 +486,8 @@ export default function Review() {
     writer.putBack(putBacks.current);
     setApplied(next.applied);
     setRestored({ edit, index });
+    // iOS VoiceOver ignores the live region on the note below the letter, so this is said (BL-1793).
+    announce(putBackSpeech({ putBack: pendingCopy.review.putBack, undo: copy.common.undoButton, countText: countTextFor(next.applied.length) }));
     setOpenEdit(null);
     setWash(true);
     setTimeout(() => setWash(false), 1600);
@@ -771,14 +779,7 @@ export default function Review() {
   }
 
   const line = countLine({ view, applied: applied.length, proposed, hasFixRules: spokenEditLevel(language) === 'clean' });
-  const countText =
-    line === 'count'
-      ? plural(applied.length, pendingCopy.review.changesLabelOne, fill(r.changesLabel, { count: applied.length }))
-      : line === 'afterUndo'
-        ? r.noChangesAfterUndo
-        : line === 'none'
-          ? r.noChanges
-          : r.noChangesNoRules; // 'noRules', and 'exact' (Exactly as said: the words are untouched)
+  const countText = countTextFor(applied.length);
 
   // The letter sheet's header (S17): the month it files into, from the day it was said.
   const occurredOn = draft.createdAt ? todayISO(new Date(draft.createdAt)) : todayISO();
@@ -812,7 +813,7 @@ export default function Review() {
             neededSize: ask ? formatBytes(ask.neededBytes) : '',
           },
           hints,
-          playing: playStatus.playing,
+          playing: player.playing,
         })
       : null;
   // No sound to hear: the file is empty or missing (S16), so "Hear it" is not offered.
@@ -980,13 +981,14 @@ export default function Review() {
             // Done sits in the header while editing (S18), and above the keyboard on iOS.
             <Button variant="quiet" size="sm" className="-ml-4" label={copy.common.doneButton} onPress={() => setEditing(false)} testID="review.edit.doneHeader" />
           ) : hasSound ? (
-            <Button variant="quiet" size="sm" className="-ml-4" onPress={togglePlay} accessibilityLabel={playStatus.playing ? copy.common.pauseButton : r.playButton}>
-              {playStatus.playing ? <PauseIcon color={c.accent} size={20} weight="fill" /> : <PlayIcon color={c.accent} size={20} />}
-              <Text>{playStatus.playing ? copy.common.pauseButton : r.playButton}</Text>
+            <Button variant="quiet" size="sm" className="-ml-4" onPress={togglePlay} accessibilityLabel={player.playing ? copy.common.pauseButton : r.playButton}>
+              {player.playing ? <PauseIcon color={c.accent} size={20} weight="fill" /> : <PlayIcon color={c.accent} size={20} />}
+              <Text>{player.playing ? copy.common.pauseButton : r.playButton}</Text>
             </Button>
           ) : null
         }
       />
+      {hasSound && !editing && player.duration > 0 ? <ReviewScrub position={player.position} duration={player.duration} onSeek={player.seek} /> : null}
 
       {/* While words are changed the footer's Done rides above the keyboard (S18), and the letter scrolls clear of it. */}
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
@@ -1028,9 +1030,7 @@ export default function Review() {
 
           {/* Why the take stopped early (S14): leaving the app, a call or an alert, or the app closing. One honest line. */}
           {stopNote && (
-            <Text variant="footnote" tone="muted" accessibilityLiveRegion="polite" testID="review.stopLine">
-              {stopNote}
-            </Text>
+            <EarlyStopLine note={stopNote} />
           )}
 
           {card && (

@@ -86,7 +86,7 @@ describe('S14: while the words are being written down', () => {
     }
     expect(en.review.waitingBody).toMatch(/Listening back to what you said/);
     expect(en.review.waitingBody).toMatch(/Your voice is kept/);
-    expect(en.review.waitingBody).toMatch(/You can close this, it will be waiting on Tonight/);
+    expect(en.review.waitingBody).toMatch(/You can close this and come back to it from Tonight/);
     const slow = card({ hints: { long: true, later: true } });
     expect(slow.body).toBe(en.review.waitingSlow);
     expect(slow.body).toMatch(/taking longer than usual/);
@@ -132,7 +132,7 @@ describe('S14: while the words are being written down', () => {
 
 describe('S14: why a take stopped, one line above the card or the letter', () => {
   it('leaving the app, a call or an alert, and the app closing each have their own line', () => {
-    expect(stopLine({ stopped: 'background', recoveredAt: null, spoken: true, kept: true })).toBe(wordsCopy.pack.stoppedInBackground);
+    expect(stopLine({ stopped: 'background', recoveredAt: null, spoken: true, kept: true })).toBe(wordsCopy.pack.stoppedLeftOrLocked);
     expect(stopLine({ stopped: 'interruption', recoveredAt: null, spoken: true, kept: true })).toBe(wordsCopy.pack.stoppedInterruption);
     expect(stopLine({ stopped: undefined, recoveredAt: '2026-10-20T19:42:00Z', spoken: true, kept: true })).toBe(wordsCopy.pack.stoppedClosed);
   });
@@ -156,10 +156,18 @@ describe('S14: why a take stopped, one line above the card or the letter', () =>
     expect(recordingKept(null)).toBe(true); // the letter itself, once its words are there
   });
 
-  it('every line says everything before the stop is kept', () => {
-    for (const t of [wordsCopy.pack.stoppedInBackground, wordsCopy.pack.stoppedInterruption, wordsCopy.pack.stoppedClosed]) {
+  it('the call and app-closed lines say everything before the stop is kept', () => {
+    for (const t of [wordsCopy.pack.stoppedInterruption, wordsCopy.pack.stoppedClosed]) {
       expect(t).toMatch(/Everything before that is kept\.$/);
     }
+  });
+
+  it('BL-1787: a lock arrives as background, so that case says "left the app or the phone locked" and promises nothing', () => {
+    const t = stopLine({ stopped: 'background', recoveredAt: null, spoken: true, kept: true });
+    expect(t).toBe('The recording stopped when you left the app or the phone locked.');
+    expect(t).not.toMatch(/kept/i);
+    // The live key is untouched (the row: replacing it is a copy change on a live promise).
+    expect(wordsCopy.pack.stoppedInBackground).toBe('The recording stopped when you left the app. Everything before that is kept.');
   });
 });
 
@@ -335,7 +343,7 @@ describe('Review uses the card (source)', () => {
   });
 
   it('the stop line sits in footnote, textMuted', () => {
-    expect(review).toMatch(/<Text variant="footnote" tone="muted" accessibilityLiveRegion="polite" testID="review\.stopLine">/);
+    expect(src('components/capture/early-stop-line.tsx')).toMatch(/<Text variant="footnote" tone="muted" accessibilityLiveRegion="polite" testID="review\.stopLine">/);
   });
 
   it('InlineState draws a still drawing for any kind, and holds loading still on request (P1 component, S14 to S16)', () => {
