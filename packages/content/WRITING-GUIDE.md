@@ -268,8 +268,9 @@ One idea, one line, an invitation not a reminder. Limits are in section 2; the h
 | "Dear little one," / "Anything to tell your little one today? A line or two is enough." | "A minute for the book?" / "Say whatever's on your mind. A line is plenty." |
 | "Your voice, kept" / "Talk for a minute. One day it can be heard, just as you sounded." | "Say a few words" / "Talk or type, whichever is easier." |
 | "A page for {weekday}" / "Something from today for the book?" | "Anything from today?" |
+| "Tell us how it went." / "Let us know." | "How did it go?" |
 
-Rotate these. "A minute is plenty" and "A line is plenty" are two lines, not a template for every push. The name variant ("Anything you want {child} to know?") exists only where the parent has turned names on for the lock screen. Final wording is the content agent's job, checked against the rules test and the notification tests.
+"Tell us" and "Let us know" read as a team asking for a report. The guard bans "we" and "our" only (CMO-18), so these two pass it; keep them out of notifications anyway and ask the parent a question about the book. Rotate these. "A minute is plenty" and "A line is plenty" are two lines, not a template for every push. The name variant ("Anything you want {child} to know?") exists only where the parent has turned names on for the lock screen. Final wording is the content agent's job, checked against the rules test and the notification tests.
 
 ### Email
 Subject says what happened or what's asked. Preheader adds one useful next fact. Body: what, why they got it, the one thing to do. A calm line for security ("Didn't ask for this? You can ignore it."). Sign "Warmly," then the brand name (the CMO question in section 1 is open). Contractions, short paragraphs, no filler. No child names, letter text, pixels or tracked links. Transactional only unless the CMO and counsel have classified it as commercial. What we send before a trial ends is a "reminder" (glossary).
