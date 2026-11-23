@@ -87,6 +87,7 @@ export const PACKAGES = {
   expo: 'framework',
   'expo-application': 'framework',
   'expo-asset': 'framework',
+  'expo-clipboard': 'framework',
   'expo-constants': 'framework',
   'expo-dev-client': 'framework',
   'expo-dev-launcher': 'framework',
@@ -119,6 +120,8 @@ export const PACKAGES = {
   'base64-js': 'storage',
   buffer: 'storage',
   'expo-crypto': 'storage',
+  // App lock: Face ID, Touch ID or the iPhone passcode before the book opens (security.md section 2).
+  'expo-local-authentication': 'storage',
   'expo-file-system': 'storage',
   'expo-print': 'storage',
   'expo-secure-store': 'storage',

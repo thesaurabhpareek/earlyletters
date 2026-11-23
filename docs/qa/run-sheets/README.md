@@ -66,3 +66,4 @@ The founder's hours for these are in `docs/release/ALPHA_PLAN.md` section 4 (F19
 ## Other run sheets
 
 - `2026-10-30-T11-session-1.md`: PRD V2 device spikes round 1 (T11) from PR #143. Under D-106 the alpha drills above come first; its speech and backup-spike blocks still feed T11 and T15. It opens with the drill identity rule above and its own check row (T11.0), and its deletion block deletes only Drill E with guarded SQL.
+- `MEMORY-LIBRARY-SPIKES-RUNSHEET-10nov.md`: NX-39 Memory Library device spikes BL-843 (what the picker file carries), BL-871 (new photos under Limited access) and BL-872 (14-day background cadence). Draft; needs the founder's go to build a spike-only app first. About 8 h 40 min of founder time over 16 days [E]. Results go in `docs/qa/evidence/` as `<date>-spike-memlib-<tag>.md`.

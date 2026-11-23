@@ -298,6 +298,12 @@ interface Upload {
 export interface RecordedRequest {
   kind: string;
   body: Buffer;
+  /** [BL-1418] The request URL (tus calls only). */
+  url?: string;
+  /** [BL-1418] The request headers as sent: Tus-Resumable, Upload-Length, Upload-Metadata, Upload-Offset, Authorization. */
+  headers?: Record<string, string>;
+  /** [BL-1418] An RPC's arguments as the client passed them (body is their JSON). */
+  args?: unknown;
 }
 
 export class FakeBackend {
@@ -344,8 +350,9 @@ export class FakeBackend {
     this.rows.set(uid, s);
   }
 
-  private record(kind: string, body: unknown): void {
-    this.requests.push({ kind, body: body instanceof Uint8Array ? Buffer.from(body) : Buffer.from(JSON.stringify(body ?? null)) });
+  private record(kind: string, body: unknown, extra: { url?: string; headers?: Record<string, string> } = {}): void {
+    const isBytes = body instanceof Uint8Array;
+    this.requests.push({ kind, body: isBytes ? Buffer.from(body) : Buffer.from(JSON.stringify(body ?? null)), ...extra, ...(isBytes ? {} : { args: body }) });
   }
 
   private fault(kind: string): void {
@@ -456,7 +463,9 @@ export class FakeBackend {
   readonly http: HttpLike = async (url, init) => {
     const ok = (status: number, headers: Record<string, string> = {}) => ({ status, header: (n: string) => headers[n] ?? headers[n.toLowerCase()] ?? null });
     const uid = (init.headers.Authorization ?? '').replace(/^Bearer /, '');
-    if (init.body) this.record('tus', init.body);
+    // PATCH parts keep kind 'tus' (counted by other tests); the body-less create and offset calls are recorded for their URL and headers.
+    const tusKind = init.body ? 'tus' : init.method === 'POST' ? 'tus.create' : 'tus.head';
+    this.record(tusKind, init.body ?? new Uint8Array(0), { url, headers: { ...init.headers } });
     this.fault('tus');
     if (init.method === 'POST') {
       const metaPairs = Object.fromEntries(

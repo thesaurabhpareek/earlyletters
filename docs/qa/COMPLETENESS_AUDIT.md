@@ -84,6 +84,8 @@ What stands out:
 
 ## 4. BACKLOG M14 (PR #599, BL-621 to BL-726)
 
+**Status, 23 Nov 2026.** PR #599 closed without merging (read by REST on 23 Nov), so BL-621 to BL-726 are not rows in `docs/BACKLOG.md` on `develop`; the ids appear only in this file and in `docs/product/prd/BACKLOG-GAPS.md` and `23-dependency-map-and-plan.md`. Read the list below as the 8 Nov mapping of that proposed range to catalog and device case ids, which still hold, and do not cite a BL-6xx id as a backlog row. The current rows are numbered from BL-1700 (for example BL-1705 to BL-1707, BL-1806); no row has yet been written that re-homes each BL-6xx item, so the traceability of the cases below runs through the case ids (RT-, S1-), not through a backlog id. BL-485 is superseded (S1-26 (k) tests its option (b)), and BL-534 is a 1.0.1 item, not in 1.0 (S1-74, RT-HIST-01 to RT-HIST-04).
+
 From the `docs/backlog-account-experience` branch as of 1 Nov.
 
 - **BL-621 to BL-678 (1 Dec and 1.0.1): 58 items, 54 with a case.** Each maps to the catalog rows and device items in section 3 and in RELEASE_TEST_PLAN sections 21 to 27 (BL-621 to BL-625 to RT-LOCK; BL-626 to BL-628 to RT-BYB; BL-629 RT-WLL; BL-630 DL-03; BL-631 RT-YWD; BL-632 RT-SIA-04; BL-633 RT-SIA-01; BL-634 RT-PRP; BL-635 RT-RMD; BL-636 and BL-637 the content and registry rows; BL-639 RT-LST-01; BL-640 RT-ERS; BL-641 the matrix in S1-50 to S1-63; BL-642 RT-REL-10; BL-643 to BL-648 RT-HELD and RT-PLN; BL-649 RT-TON-03 (#508 open); BL-650 RT-MEM; BL-651 to BL-658 RT-MOT; BL-660 RT-BKP-02; BL-661 RT-CNT-01; BL-662 RT-WAIT-01; BL-663 RT-DRW-01; BL-665 to BL-677 the 1.0.1 rows). The 4 without a case are not testable as cases: BL-638 (counsel packet), BL-659 (a decision), BL-664 (design docs) and BL-678 (a spike). BL-630's drill is itself a case (DL-03).
@@ -126,7 +128,7 @@ Every flagged bug has at least one case. None has run on a phone.
 ## 7. Other drift found
 
 - **RT-BK-05 said "not built"** although #513 (change a letter's date) merged with `book-date-change.test.ts`. This PR moves it to partial and cites both.
-- **TF-04, the smoke list for every TestFlight build, does not fit an alpha.** Item 4 signs in and syncs (servers are off in the `testflight` profile) and item 6 expects a Privacy switch (none since D-124). The checklist for tonight's build replaces it for alphas (`docs/qa/run-sheets/2026-11-08-testflight-alpha-checklist.md`, separate PR). TF-04 itself is left as it is until build 2.
+- **TF-04, the smoke list for every TestFlight build, does not fit an alpha.** Item 4 signs in and syncs (servers are off in the `testflight` profile) and item 6 expects a Privacy switch (none since D-124). The checklist for tonight's build was to replace it for alphas in a separate run sheet; that sheet is not on `develop` (23 Nov), so TF-04 stands as written. TF-04 itself is left as it is until build 2.
 
 ## 8. What to do first (owner, severity)
 

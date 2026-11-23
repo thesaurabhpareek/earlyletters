@@ -127,10 +127,20 @@ export function typedFinalText(raw: string): string {
 }
 
 /**
+ * The "Put back. Undo" line after a fix is put back (QE-02). It speaks only about the letter with its fixes, so it shows
+ * only while that letter is on the sheet: never while the person is changing the words, and never once they have
+ * their own words (`userText`), because Undo there would change the fixes under words that no longer use them and
+ * nothing on screen would move. Change words also clears it (review.tsx), so it does not come back after Done.
+ */
+export function putBackNoteShows(input: { restored: boolean; editing: boolean; userText: string | null }): boolean {
+  return input.restored && !input.editing && input.userText === null;
+}
+
+/**
  * Whether Review holds changes the person made that are not on the phone yet: their own words from Change words, a fix
- * they put back, or the other view ("Exactly as said" when Review opened with the small fixes, or back). All of them live
- * only on this screen until Keep (#274 N1; storing them on the draft is build 3's item), so Close must not say "Saved
- * on this phone" while any is there (P4 critics' pass S1; #289 lens B).
+ * they put back, or the other view ("Exactly as said" when Review opened with the small fixes, or back). A draft now
+ * stores them as they happen (SR-C-06, lib/capture/review-persist.logic.ts); Close still does not say "Saved on this
+ * phone" while any is there (P4 critics' pass S1; #289 lens B) until design and copy decide it should.
  */
 export function reviewHasOwnChanges(input: { userText: string | null; applied: number; proposed: number; view: ReviewView; openedView: ReviewView }): boolean {
   return input.userText !== null || input.applied < input.proposed || input.view !== input.openedView;
@@ -164,9 +174,9 @@ export type SavedKind = 'book' | 'private' | 'voice';
 /**
  * The saved moment's chip and line (S21, MOTION 5e). In the book: the chip names the real month ("Kept in Month 7",
  * "Kept in the first weeks", "Kept in Before You") and the line says "Added to Asha's book." with a check. Kept
- * private: the chip "Kept just for you." with the lock, no line. A recording kept before its words: the lock chip
+ * private: the chip "Kept private." with the lock, no line. A recording kept before its words: the lock chip
  * "Recording kept on this phone." (true at this moment: a backup upload, when backup is on, comes after the save),
- * or, when its words are on their way, "Your voice is kept. The words will follow."
+ * or, when its words are on their way, "Recording kept. The words will follow."
  */
 export function savedMoment(input: { kind: SavedKind; childName: string; month: number | null; keptForWords?: boolean }): {
   chip: string;
@@ -267,6 +277,20 @@ export function followCaretToEnd(input: { selectionEnd: number | null; length: n
   return input.selectionEnd === null || input.selectionEnd >= input.length;
 }
 
+/**
+ * Where Write's scroll rests so the last line typed stays in view, when the two buttons and the Plus line ride at the
+ * end of the scroll (accessibility text sizes, lib/review-layout.logic.ts `footerPlacement` 'inline'). Scrolling to the
+ * very end would show the buttons and push the words being written out of sight, so the end of the page is the top of
+ * the footer, which the footer's own layout reports (its `y` inside the scroll's content, so the scroll's padding and
+ * the gap above the footer are already counted): the view's bottom edge rests there, and the last line typed sits one
+ * gap above it. Null until the footer and the viewport have both been measured: the page is then left where it is, so
+ * it never jumps while it opens. Never negative: a page that fits in the view does not scroll.
+ */
+export function pageEndOffset(input: { footerTop: number; viewportHeight: number }): number | null {
+  if (!(input.footerTop > 0) || !(input.viewportHeight > 0)) return null;
+  return Math.max(0, Math.round(input.footerTop - input.viewportHeight));
+}
+
 /** What one write of Write's words did: the draft it wrote to, and the autosave line to show (null: unchanged). */
 export type WriteResult = { ok: boolean; draftId: string | null; saveState: 'saved' | 'failed' | null };
 
@@ -295,4 +319,32 @@ export const SIGN_IN_AFTER_BOOK_MS = 600;
 /** From the moment Review leaves for the Book: its dissolve (the route's own length), then 600 ms on the Book. */
 export function signInAfterLandingMs(reduced: boolean): number {
   return (reduced ? tokens.motion.fadeMs : tokens.motion.route.dissolveMs) + SIGN_IN_AFTER_BOOK_MS;
+}
+
+/**
+ * What VoiceOver says when a fix is put back (BL-1793): "Put back." with its Undo and the new count of small fixes, as
+ * one sentence run ("Put back. Undo. 2 small fixes."). iOS VoiceOver ignores a live region, so the words are spoken
+ * with `announce()`. Only words the content already holds; `countText` is the line Review shows under the letter.
+ */
+export function putBackSpeech(input: { putBack: string; undo: string; countText: string }): string {
+  const end = (s: string) => (/[.!?]$/.test(s) ? s : `${s}.`);
+  return [input.putBack, input.undo, input.countText].map((s) => s.trim()).filter(Boolean).map(end).join(' ');
+}
+
+/**
+ * The line that says a take stopped early, spoken once after the screen settles (BL-1793). Returns a cancel for the
+ * timer. `said` holds the lines already spoken on this screen, so a re-render, or the line coming back, never says it
+ * twice. Nothing is spoken for a null line.
+ */
+export function speakOnceAfterSettle(
+  line: string | null,
+  deps: { said: Set<string>; settleMs: number; speak: (line: string) => void; later: (fn: () => void, ms: number) => unknown; cancel: (handle: unknown) => void },
+): () => void {
+  if (!line || deps.said.has(line)) return () => {};
+  const handle = deps.later(() => {
+    if (deps.said.has(line)) return;
+    deps.said.add(line);
+    deps.speak(line);
+  }, deps.settleMs);
+  return () => deps.cancel(handle);
 }

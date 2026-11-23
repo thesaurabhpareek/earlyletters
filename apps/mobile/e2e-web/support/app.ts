@@ -1,26 +1,31 @@
 /** Shared moves for the journey flows. Only fictional family data ("Asha"); everything goes through the real screens. */
 import type { Page } from '@playwright/test';
-import { expect, type Recorder } from './journey';
+import { canary, expect, type Recorder } from './journey';
+import { assertUniqueStepId } from './step-id';
 
 export const CHILD = 'Asha';
 export const SIGNS_AS = 'Mama';
 
 export const btn = (page: Page, name: string | RegExp) => page.getByRole('button', { name });
 
-/** Age gate: Yes, Continue. The gate's words leave first (exitMs), then the welcome takes the light. */
+/** The agreement box on Before you begin (F2): a native checkbox named by its sentence. */
+export const agreeBox = (page: Page) => page.getByRole('checkbox', { name: 'I agree to the Terms of Service and Privacy Policy.' });
+
+/** Before you begin: Yes, the agreement box, Continue. The gate's words leave first (exitMs), then the welcome takes the light. */
 export async function passAgeGate(page: Page) {
   await page.getByRole('radio', { name: 'Yes' }).click();
+  await agreeBox(page).click();
   await btn(page, 'Continue').click();
   await expect(btn(page, 'Begin the book')).toBeVisible();
 }
 
 export async function startOnboarding(page: Page) {
   await btn(page, 'Begin the book').click();
-  await expect(btn(page, 'That sounds right')).toBeVisible();
+  await expect(btn(page, 'Continue')).toBeVisible();
 }
 
 export async function toChildStep(page: Page) {
-  await btn(page, 'That sounds right').click();
+  await btn(page, 'Continue').click();
   await expect(page.getByText('Who is this book for?')).toBeVisible();
 }
 
@@ -49,9 +54,13 @@ export async function firstRun(page: Page, name = CHILD) {
 export function journey(record: Recorder, code: string, name: string, start = 1, first?: string) {
   let n = start - 1;
   let last = first;
+  // BL-480: ids used by THIS journey call; the map is per call, so a repeat inside one call throws. The J24 tests do not
+  // rely on that: each has its own start id (AX1 01-03, AX3 04-06, AX5 07-09, hi/es/zh/fr/ar/pt 10-15; BL-1643).
+  const seen = new Map<string, string>();
   return async (kind: 'happy' | 'unhappy', title: string, note: string, from?: string, opts?: { settle?: number }): Promise<string> => {
     n += 1;
     const id = `${code}-${String(n).padStart(2, '0')}`;
+    assertUniqueStepId(seen, id, title);
     await record({ id, journey: name, kind, title, note, from: from ?? last }, opts);
     last = id;
     return id;
@@ -59,16 +68,17 @@ export function journey(record: Recorder, code: string, name: string, start = 1,
 }
 
 // `.first()`: while a modal is leaving, the tab and a hidden label can both match; the tab comes first.
-export const tab = (page: Page, name: 'Tonight' | 'Book' | 'Family') => page.getByRole('tab', { name }).or(page.getByText(name, { exact: true }).last()).first();
+export const tab = (page: Page, name: 'Home' | 'Book' | 'Me') => page.getByRole('tab', { name }).or(page.getByText(name, { exact: true }).last()).first();
 
 /** The tab that is selected now: a landing check that fails if the app shows another tab (EXPERIENCE_PASS 5.8 row 5). */
-export const selectedTab = (page: Page, name: 'Tonight' | 'Book' | 'Family') => page.getByRole('tab', { name, selected: true });
+export const selectedTab = (page: Page, name: 'Home' | 'Book' | 'Me') => page.getByRole('tab', { name, selected: true });
 
 /**
  * Type a letter on the Write screen and keep it with one tap (the honest path to a letter on the web, which has no
  * speech model). Typed letters keep from Write with no Review step and land on the Book (EXPERIENCE_PASS S20, P4b).
  */
 export async function typeLetter(page: Page, text: string, to: 'book' | 'private' = 'book') {
+  canary(page, text);
   await btn(page, /^Type/).click();
   await page.getByRole('textbox').first().fill(text);
   await btn(page, to === 'book' ? /^Add to .*book/ : 'Keep private').click();

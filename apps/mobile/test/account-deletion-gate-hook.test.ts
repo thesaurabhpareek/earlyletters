@@ -602,3 +602,69 @@ describe('the gate does not read the Delete account switch (founder, 30 Oct 2026
     run.unmount();
   });
 });
+
+describe('[BL-493 point 5] the first frame of a cold launch, while the saved session is still being read', () => {
+  const restoring = () => {
+    h.auth = { state: { status: 'restoring' }, signedIn: false, client: null };
+    h.snapshot = h.auth.state as Record<string, unknown>;
+  };
+
+  it('a held request past its date, on a signed-in phone: paper on frame one, the note kept, then the deletion screen once the server confirms it', async () => {
+    h.closedBook = true;
+    const longAgo = new Date(NOW_MS - 3 * DAY).toISOString();
+    put(mine(MAMA, { state: 'held', scheduledFor: longAgo }));
+    restoring();
+    const run = renderHook(() => useFirstRunGate());
+    expect(run.result.current.screen).toBe('checking'); // was: welcome
+    expect(h.clearCalls).toHaveLength(0);
+    expect(note()).not.toBeNull(); // was: cleared on frame one
+    signIn(MAMA);
+    run.rerender();
+    expect(run.result.current.screen).toBe('checking');
+    await answer(0, { state: 'held', requestId: 'req-1', scheduledFor: longAgo });
+    expect(run.result.current.screen).toBe('deletion');
+    run.unmount();
+  });
+
+  it('a closed book and no note: paper, not the welcome, while the session is read', () => {
+    h.closedBook = true;
+    restoring();
+    const run = renderHook(() => useFirstRunGate());
+    expect(run.result.current.screen).toBe('checking'); // was: welcome
+    run.unmount();
+  });
+
+  it('a phone that turns out to be signed out is the welcome, and a stale note is dropped, as before', () => {
+    h.closedBook = true;
+    put(mine(MAMA, { state: 'held', scheduledFor: new Date(NOW_MS - 3 * DAY).toISOString() }));
+    restoring();
+    const run = renderHook(() => useFirstRunGate());
+    signIn(null);
+    run.rerender();
+    expect(run.result.current.screen).toBe('welcome');
+    expect(note()).toBeNull();
+    run.unmount();
+  });
+
+  it('no book, no closed book, no note: the welcome at once (nothing to wait for, no cost on a fresh install)', () => {
+    restoring();
+    const run = renderHook(() => useFirstRunGate());
+    expect(run.result.current.screen).toBe('welcome');
+    run.unmount();
+  });
+});
+
+describe('[BL-493 point 6] a timer longer than 24.8 days is armed again when the clamped one goes off', () => {
+  it('a signed-out note dated 40 days out ends at its grace, not never', async () => {
+    const date = new Date(NOW_MS + 40 * DAY).toISOString();
+    put({ state: 'scheduled', requestId: 'req-1', scheduledFor: date, userId: MAMA });
+    const run = renderHook(() => useFirstRunGate());
+    expect(run.result.current.screen).toBe('deletion');
+    await vi.advanceTimersByTimeAsync(41 * DAY);
+    expect(run.result.current.screen).toBe('deletion'); // still before the date plus the grace (day 42)
+    await vi.advanceTimersByTimeAsync(1.5 * DAY);
+    expect(run.result.current.screen).toBe('welcome'); // was: deletion for good (the clamped timer was never re-armed)
+    expect(note()).toBeNull();
+    run.unmount();
+  });
+});

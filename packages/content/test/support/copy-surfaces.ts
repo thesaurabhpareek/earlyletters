@@ -155,7 +155,8 @@ export const ADDED = [
   'en.errors.micBusy.body',
   'en.errors.phoneFull.title',
   'en.errors.phoneFull.body',
-  'en.review.waitingLong',
+  'en.review.waitingBody',
+  'en.review.waitingSlow',
   'en.review.laterButton',
   'features.words.pack.stoppedInterruption',
   'features.words.pack.stoppedClosed',
@@ -205,7 +206,7 @@ export const ADDED = [
   'en.children.settings.hideShared',
   'en.tabs.tonight',
   'en.tabs.book',
-  'en.tabs.family',
+  'en.tabs.you',
   // P3 (section 6): the signed-in held-letter line P6's Keep sheet shows; counsel C10.
   'features.billing.keepGate.heldNoteSynced',
   // P5 critics' pass (28 Oct, S6, S8, L9): the Erase now failure, another parent's provenance line, Restore without a name.
@@ -296,6 +297,9 @@ const AUTH_BUTTONS = [
   'sheet.email',
   'sheet.passkey',
   'sheet.later',
+  // NX-36 S2 and S3 (placeholders, founder word approval).
+  'outage.retry',
+  'outage.startLocal',
   'email.send',
   'code.verify',
   'code.openMail',
@@ -396,7 +400,7 @@ export const SURFACES: readonly Surface[] = [
     placeholders: ['child', 'signsAs', 'inviter', 'coParent', 'date'],
     // The share message is the parent's own voice, which they see and can change in the share sheet before they send
     // it (S58 KEEP, D-113 item 3): its "we" is the two parents, never the app. `soon.*` is the kill path (S48, S57).
-    we: { re: /\b(?:we|our)\b/i, allowed: ['create.shareMessage', 'create.shareMessageNamed'], allowedPrefixes: ['soon.'] },
+    we: { re: /\b(?:we|our)\b/i, allowed: ['create.shareMessage', 'create.shareMessageNamed', 'create.shareMessageNoName', 'create.shareMessageNamedNoName', 'create.shareTitleNoName'], allowedPrefixes: ['soon.'] },
     banned: [
       PHOTOS,
       E2E_OR_FAMILY_KEYS,
@@ -418,10 +422,10 @@ export const SURFACES: readonly Surface[] = [
     filled: ['confirm.body'],
     // The held deletion disclosure (counsel C8) and `what.deletedFamily` (KEEP; never shown in v1.0: family
     // contributors come in v1.1, D-055).
-    we: { re: WE, allowed: ['what.intro', 'what.introProposed', 'what.deletedFamily'] },
+    we: { re: WE, allowed: ['what.intro', 'what.deletedFamily'] },
     banned: [
-      // Held for counsel (C8): today's intro still says photos until counsel clears S64's words.
-      { ...PHOTOS, allowed: ['what.intro'] },
+      // Build 12: no line names photos (the intro dropped them with the recordings it does not hold on our servers).
+      PHOTOS,
       E2E_OR_FAMILY_KEYS,
       ONLY_YOU,
       // `notConfigured` is the kill path's own sentence. `what.onThisPhone` ("On this phone, your letters stay. ...") says it in a
@@ -441,15 +445,21 @@ export const SURFACES: readonly Surface[] = [
  * with one row above or say here why it does not. Every file below is still read by the global rules through IN_APP.
  */
 export const SURFACE_OPT_OUT: Partial<Record<keyof typeof features, string>> = {
-  backup: 'P8c S61 and S62, off in build 2 (no backup); no per-file rule set written yet',
-  billing: 'registered text, pinned word for word in experience-pass.test.ts; its claims rules (D-082, D-083, D-085) are in rules.test.ts',
+  appLock: 'PROPOSED (PATH-04): the one line above the App lock switch; the rest of the lock words are still in apps/mobile and move later; the global rules read it through features',
+  backup: 'P8c S61 and S62, off in build 2 (no backup); no per-file rule set written yet; its "we" lines, each a recorded promise from F08 6.5: sheetBody, waitingKey, quotaReached, writeToUs, restoreWaiting, restoreUnavailable',
+  billing: 'registered text, pinned in part in experience-pass.test.ts (not every leaf); its claims rules (D-082, D-083, D-085) are in rules.test.ts; its one "we" line is plan.payment ("We never see your card details")',
   contentBlocks: 'labels for server-delivered content blocks, not screen sentences; no per-file rule set written yet',
   export: 'P6b; its screen is pinned in apps/mobile/test/settings-p6b.test.ts; no per-file rule set written yet',
+  find: 'NS-02 Find words, PROPOSED until the founder approves; pinned in test/find-copy.test.ts (R3, R23, R39); no per-file rule set written yet',
   language: 'the language picker; no per-file rule set written yet',
   licences: 'attribution lines and library names; the licences rules in rules.test.ts read it',
+  momentsTab: 'PROPOSED (PR 12a, spec 28-moments-tab.md): the Moments tab plain strings, off behind a flag; its rules are pinned in test/moments-tab-copy.test.ts',
+  newDevicePage: 'PROPOSED (E83, E-S34): the web confirm page for the new-device email; not built yet, so nothing is shown; the global rules read it through features; no per-file rule set until the page exists',
   packs: 'speech pack downloads; no per-file rule set written yet',
+  photos: 'photo with a letter (NS-01); its rules are pinned in test/photos-copy.test.ts',
   player: 'the letter player; no per-file rule set written yet',
   reminders: 'P6b; its screen is pinned in apps/mobile/test/settings-p6b.test.ts; no per-file rule set written yet',
+  screenStates: 'PROPOSED (#1207): words drafted in the area A, B and D WORDS files, nothing reads them yet; the global rules read them through features',
   speech: 'speech settings; no per-file rule set written yet',
   speechConsent: 'the speech consent card; pinned in apps/mobile/test/speech-consent.test.ts; no per-file rule set written yet',
   words: 'transcription state words; no per-file rule set written yet',

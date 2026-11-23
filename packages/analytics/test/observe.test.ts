@@ -10,17 +10,20 @@ import {
   recordingProvider,
   type AuthLike,
 } from '../src';
+import { intentRecorder } from './support';
 
 async function granted() {
   const provider = recordingProvider();
   const analytics = createAnalytics({ provider, randomId: () => '00000000-0000-4000-8000-0000000000aa', flushIntervalMs: 0 });
   await analytics.init();
   await analytics.grant();
+  const rec = intentRecorder(analytics);
   return {
-    analytics,
+    analytics: rec.analytics,
     sent: async () => {
       await analytics.flush();
-      return provider.captured().map((e) => [e.event, Object.fromEntries(Object.entries(e.properties).filter(([k]) => k !== 'schema_version'))]);
+      void provider;
+      return rec.intents;
     },
   };
 }
@@ -63,6 +66,13 @@ describe('auth observer', () => {
       ['signed_out', { reason: 'session_lost' }],
     ]);
     expect(under18).toEqual([]);
+  });
+
+  it('[BL-597] a forced re-sign-in is reported as session_lost, so the allowlist gains no value', async () => {
+    const { analytics, sent } = await granted();
+    const see = createAuthObserver(analytics, { hasLocalLetters: () => true, onUnder18: () => undefined });
+    for (const s of [{ status: 'ready' }, { status: 'signingOut', reason: 'force_reauth' }, { status: 'signedOut' }] as AuthLike[]) see(s);
+    expect((await sent()).filter(([e]) => e === 'signed_out')).toEqual([['signed_out', { reason: 'session_lost' }]]);
   });
 
   it('never sends an under-18 answer, and asks the app to stop analytics', async () => {

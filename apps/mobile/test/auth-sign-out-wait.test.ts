@@ -274,7 +274,7 @@ describe('S01: the session provider wiring', () => {
 
   it('the whole wait effect: drained or polled, the poll re-reads a gate never read, both stop with the wait', () => {
     expect(provider()).toMatch(
-      /const waiting = state\.status === 'signingOut' && state\.waitingForUploads;\s*useEffect\(\(\) => \{\s*if \(!waiting\) return;\s*const done = \(\) => dispatch\(\{ type: 'UPLOADS_DRAINED' \}\);\s*const off = onUploadsDrained\(done\);\s*const poll = setInterval\(\(\) => \{\s*if \(shouldRecheckGate\(stateRef\.current, false\)\) void checkGate\(\);\s*void pendingUploads\(\)\.then\(\(n\) => n === 0 && done\(\)\);\s*\}, 10_000\);\s*return \(\) => \{\s*off\(\);\s*clearInterval\(poll\);\s*\};\s*\}, \[waiting, checkGate\]\);/,
+      /const waiting = state\.status === 'signingOut' && state\.waitingForUploads;\s*useEffect\(\(\) => \{\s*if \(!waiting\) return;\s*const done = \(\) => dispatch\(\{ type: 'UPLOADS_DRAINED' \}\);\s*const off = onUploadsDrained\(done\);\s*const poll = setInterval\(\(\) => \{\s*if \(shouldRecheckGate\(stateRef\.current, false\)\) void checkGate\(\);\s*void pendingUploads\(\)\.then\(\(p\) => nothingPending\(p\) && done\(\)\);\s*\}, 10_000\);\s*return \(\) => \{\s*off\(\);\s*clearInterval\(poll\);\s*\};\s*\}, \[waiting, checkGate\]\);/,
     );
   });
 

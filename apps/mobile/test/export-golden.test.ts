@@ -203,11 +203,12 @@ describe('Asha export (golden)', () => {
   });
 
   it('[F09-REQ-003, RT-BK-05] a month-only letter never states a day: precision in entries.json, month-only datelines everywhere (schema 1.5.0)', async () => {
-    expect(EXPORT_SCHEMA_VERSION).toBe('1.5.0');
+    // Since 1.5.0; 1.6.0 added waiting letters (PL-2). Exact, so the next bump updates this line on purpose.
+    expect(EXPORT_SCHEMA_VERSION).toBe('1.6.0');
     const { zip } = await makeExport();
     const files = unzipSync(zip);
     const entries = JSON.parse(strFromU8(files['data/entries.json'])) as EntriesFile;
-    expect(entries.schema_version).toBe('1.5.0');
+    expect(entries.schema_version).toBe(EXPORT_SCHEMA_VERSION);
     const e11 = entries.entries.find((e) => e.id === 'e11')!;
     expect(e11).toMatchObject({ occurred_on: '2026-07-08', occurred_precision: 'month', text_file: 'letters/Asha/2026-07/2026-07_e11.txt' });
     expect(entries.entries.find((e) => e.id === 'e3')!.occurred_precision).toBe('day');
@@ -259,17 +260,19 @@ describe('Asha export (golden)', () => {
     expect(strFromU8(files['manifest.sha256'])).toBe(`${sha256Hex(files['manifest.json'])}  manifest.json\n`);
     expect(manifest.counts).toEqual({ entries: 14, audio: 5, audio_missing: 2, audio_mismatch: 1, photos: 0, books: 2 });
     const check = await verifyExport(access(zip), result.manifest, result.manifestSha256, async (d) => sha256Hex(d));
-    expect(check).toEqual({ ok: true, problems: [], filesChecked: Object.keys(files).length });
+    expect(check).toEqual({ ok: true, problems: [], problemCounts: {}, filesChecked: Object.keys(files).length });
   });
 
-  it('catches a damaged file when checking, by path only', async () => {
+  it('catches a damaged file when checking, by code and count only (never a path)', async () => {
     const { zip, result } = await makeExport();
     const entry = (await readCentralDirectory(access(zip))).find((e) => e.name === 'audio/e2.m4a')!;
     const damaged = zip.slice();
     damaged[entry.localOffset + 30 + entry.name.length + 1000] ^= 0xff;
     const check = await verifyExport(access(damaged), result.manifest, result.manifestSha256, async (d) => sha256Hex(d));
     expect(check.ok).toBe(false);
-    expect(check.problems).toEqual(['hash:audio/e2.m4a']);
+    expect(check.problems).toEqual(['hash']);
+    expect(check.problemCounts).toEqual({ hash: 1 });
+    expect(JSON.stringify(check)).not.toContain('e2.m4a');
   });
 
   it('is identical when made twice from the same phone state', async () => {

@@ -43,12 +43,35 @@ describe('shelf strings', () => {
 
   it('screens use only strings that exist', () => {
     const used = (file: string, name: string) => [...src(file).matchAll(new RegExp(`\\b${name}\\.(\\w+)`, 'g'))].map((m) => m[1]);
-    for (const k of used('app/settings/recently-deleted.tsx', 'd')) expect(d[k], `recently-deleted d.${k}`).toBeTruthy();
-    for (const k of used('app/settings/export.tsx', 'e')) expect(x[k] ?? (en.settings.export as Record<string, unknown>)[k], `export e.${k}`).toBeTruthy();
-    for (const k of [...src('app/letter/[id].tsx').matchAll(/copy\.settings\.delete\.(\w+)/g)].map((m) => m[1])) expect(d[k], `letter delete.${k}`).toBeTruthy();
+    // BL-442: a name the screens use must resolve to a non-empty string (not 0, a number, an object or a space),
+    // and each screen must use some, or the loops below prove nothing.
+    const nonEmpty = (v: unknown, label: string) => {
+      expect(typeof v, label).toBe('string');
+      expect((v as string).trim().length, label).toBeGreaterThan(0);
+    };
+    const deleted = used('app/settings/recently-deleted.tsx', 'd');
+    const exported = used('app/settings/export.tsx', 'e');
+    const inLetter = [...src('app/letter/[id].tsx').matchAll(/copy\.settings\.delete\.(\w+)/g)].map((m) => m[1]);
+    expect(deleted.length, 'recently-deleted uses d.*').toBeGreaterThan(0);
+    expect(exported.length, 'export uses e.*').toBeGreaterThan(0);
+    expect(inLetter.length, 'letter uses copy.settings.delete.*').toBeGreaterThan(0);
+    for (const k of deleted) nonEmpty(d[k], `recently-deleted d.${k}`);
+    for (const k of exported) nonEmpty(x[k] ?? (en.settings.export as Record<string, unknown>)[k], `export e.${k}`);
+    for (const k of inLetter) nonEmpty(d[k], `letter delete.${k}`);
   });
 
-  it('[D-085] the book export reads no deleted letters', () => {
-    expect(src('lib/export/device.ts')).not.toMatch(/listDeleted/);
+  // D-085: deleting moves a letter to Recently deleted for 30 days, and the ordinary book export does not read it.
+  // BL-446 / DATA-REQ-053: while an account-deletion request is open (and only then) the export also holds the
+  // Recently deleted letters. So device.ts may name the deleted-letter reader in exactly two places: its import and the
+  // `deleted:` slot of the exportScope(...) call, and scope.logic.ts must read it only when requestOpen is true. An
+  // unconditional read anywhere else in device.ts (or an ungated read in scope.logic.ts) still fails here.
+  it('[D-085] the book export reads no deleted letters unless a deletion request is open', () => {
+    const device = src('lib/export/device.ts');
+    const rest = device
+      .replace(/^import[^\n]*\n/gm, '')
+      .replace(/exportScope\(\s*\{[^}]*\},\s*requestOpen,?\s*\)/, '');
+    expect(rest, 'device.ts reads deleted letters outside exportScope(..., requestOpen)').not.toMatch(/listDeleted/);
+    expect(device).toMatch(/exportScope\(\s*\{[^}]*deleted: listDeletedEntriesForChild[^}]*\},\s*requestOpen/);
+    expect(src('lib/export/scope.logic.ts')).toMatch(/requestOpen \? \[\.\.\.r\.live\(b\.book\.id\), \.\.\.r\.deleted\(b\.book\.id\)\] : r\.live\(b\.book\.id\)/);
   });
 });

@@ -31,6 +31,13 @@ let seq = 0;
 let asha = '';
 const id = (n: number) => `0199a5b0-0000-7000-8000-${String(n).padStart(12, '0')}`;
 const uri = (n: number) => `file:///Documents/${id(n)}.m4a`;
+// These older tests are about the 30 day cutoff, not the clock guard: purgeSeen stands for a launch that has already
+// seen this time (the stamp is the time itself), so the cutoff is the time minus the shelf days, as before QE-05.
+const purgeSeen = (ms: number, eraser: AudioEraser) => {
+  store.recordLaunch(ms);
+  return store.purgeExpired(ms, eraser);
+};
+
 
 beforeEach(() => {
   clock = T0;
@@ -76,7 +83,7 @@ describe('the clock guard (a phone clock moved back never purges early)', () => 
     const d = disk([uri(1)]);
     const later = T0 + SHELF_MS;
     store.recordLaunch(later);
-    expect(store.purgeExpired(later, d.eraser)).toBe(1);
+    expect(purgeSeen(later, d.eraser)).toBe(1);
     expect(onShelf()).toEqual([]);
     expect(d.present.has(uri(1))).toBe(false);
   });
@@ -91,25 +98,53 @@ describe('the clock guard (a phone clock moved back never purges early)', () => 
     expect(onShelf()).toEqual([id(1)]);
   });
 
-  it('[D-085] an unreadable launch stamp never blocks the purge (a damaged setting is not a clock moved back)', () => {
+  // QE-05: with no readable earlier launch the clock has not been seen before, so nothing is erased at that launch (a
+  // clock 40 days wrong at the first launch after an upgrade or a damaged setting must not erase a letter at once). The
+  // launch is recorded, so the next launch purges as usual. A damaged setting is still not a clock moved back (D-085).
+  it('[QE-05] an unreadable launch stamp erases nothing at that launch, and the next launch purges as usual', () => {
     save(1);
     del(1);
     store.setSetting(store.LAST_LAUNCH_SETTING, 'not a time');
     const d = disk([uri(1)]);
-    expect(store.purgeExpired(T0 + SHELF_MS, d.eraser)).toBe(1);
+    expect(store.purgeThenRecordLaunch(T0 + 40 * DAY, d.eraser)).toBe(0);
+    expect(d.asked).toEqual([]);
+    expect(onShelf()).toEqual([id(1)]);
+    expect(store.getSetting(store.LAST_LAUNCH_SETTING)).toBe(new Date(T0 + 40 * DAY).toISOString());
+    expect(store.purgeThenRecordLaunch(T0 + 41 * DAY, d.eraser)).toBe(1);
     expect(onShelf()).toEqual([]);
   });
 
-  it('recordLaunch: an equal time is a no-op, a later time moves it, an earlier one is ignored', () => {
+  it('[QE-05] no launch stamp at all (a first launch) erases nothing at that launch', () => {
+    save(1);
+    del(1);
+    const d = disk([uri(1)]);
+    expect(store.getSetting(store.LAST_LAUNCH_SETTING)).toBeNull();
+    expect(store.purgeThenRecordLaunch(T0 + 40 * DAY, d.eraser)).toBe(0);
+    expect(onShelf()).toEqual([id(1)]);
+    expect(store.purgeThenRecordLaunch(T0 + 41 * DAY, d.eraser)).toBe(1);
+  });
+
+  it('[QE-05] the launch is recorded after the purge: the purge reads the previous launch, never this one', () => {
+    save(1);
+    del(1);
+    store.recordLaunch(T0 + DAY);
+    // If this launch were recorded first, the purge would count time by the clock now and erase at once.
+    expect(store.purgeThenRecordLaunch(T0 + 40 * DAY, disk([uri(1)]).eraser)).toBe(0);
+    expect(onShelf()).toEqual([id(1)]);
+    expect(store.getSetting(store.LAST_LAUNCH_SETTING)).toBe(new Date(T0 + 40 * DAY).toISOString());
+  });
+
+  // QE-05: the stamp follows the clock both ways. A stamp that never moved back let a clock that once ran ahead block
+  // every purge until real time passed it; the purge itself still skips the launch whose clock is earlier (above).
+  it('recordLaunch follows the clock: a later time moves it, an earlier one moves it back', () => {
     store.recordLaunch(T0);
-    const stamp = store.getSetting(store.LAST_LAUNCH_SETTING);
-    expect(stamp).toBe(new Date(T0).toISOString());
-    store.recordLaunch(T0);
-    expect(store.getSetting(store.LAST_LAUNCH_SETTING)).toBe(stamp);
-    store.recordLaunch(T0 - DAY);
-    expect(store.getSetting(store.LAST_LAUNCH_SETTING)).toBe(stamp);
+    expect(store.getSetting(store.LAST_LAUNCH_SETTING)).toBe(new Date(T0).toISOString());
     store.recordLaunch(T0 + 1);
     expect(store.getSetting(store.LAST_LAUNCH_SETTING)).toBe(new Date(T0 + 1).toISOString());
+    store.recordLaunch(T0 - DAY);
+    expect(store.getSetting(store.LAST_LAUNCH_SETTING)).toBe(new Date(T0 - DAY).toISOString());
+    store.recordLaunch(Number.NaN);
+    expect(store.getSetting(store.LAST_LAUNCH_SETTING)).toBe(new Date(T0 - DAY).toISOString());
   });
 });
 
@@ -118,9 +153,9 @@ describe('the cutoff', () => {
     save(1);
     del(1); // deleted at T0
     const d = disk([uri(1)]);
-    expect(store.purgeExpired(T0 + SHELF_MS - 1, d.eraser)).toBe(0);
+    expect(purgeSeen(T0 + SHELF_MS - 1, d.eraser)).toBe(0);
     expect(onShelf()).toEqual([id(1)]);
-    expect(store.purgeExpired(T0 + SHELF_MS, d.eraser)).toBe(1);
+    expect(purgeSeen(T0 + SHELF_MS, d.eraser)).toBe(1);
     expect(onShelf()).toEqual([]);
     expect(rows()).toBe(0);
   });
@@ -133,8 +168,8 @@ describe('the cutoff', () => {
     expect(store.erasesAt(deleted.deletedAt)).toBe(new Date(clock + SHELF_MS).toISOString());
     const at = Date.parse(store.erasesAt(deleted.deletedAt));
     const d = disk([uri(1)]);
-    expect(store.purgeExpired(at - 1, d.eraser)).toBe(0);
-    expect(store.purgeExpired(at, d.eraser)).toBe(1);
+    expect(purgeSeen(at - 1, d.eraser)).toBe(0);
+    expect(purgeSeen(at, d.eraser)).toBe(1);
   });
 
   it('with nothing expired the purge returns 0 and asks the disk for nothing', () => {
@@ -155,13 +190,13 @@ describe('a recording that will not erase', () => {
       del(n);
     }
     const stuck = disk([uri(1), uri(2), uri(3)], [uri(2)]);
-    expect(store.purgeExpired(T0 + SHELF_MS, stuck.eraser)).toBe(2);
+    expect(purgeSeen(T0 + SHELF_MS, stuck.eraser)).toBe(2);
     expect(stuck.asked).toEqual([uri(1), uri(2), uri(3)]);
     expect(onShelf()).toEqual([id(2)]);
     expect(stuck.present.has(uri(2))).toBe(true);
     // next launch, the disk cooperates
     const ok = disk([uri(2)]);
-    expect(store.purgeExpired(T0 + SHELF_MS + DAY, ok.eraser)).toBe(1);
+    expect(purgeSeen(T0 + SHELF_MS + DAY, ok.eraser)).toBe(1);
     expect(onShelf()).toEqual([]);
     expect(rows()).toBe(0);
   });
@@ -194,7 +229,7 @@ describe('what an erased letter takes with it', () => {
     expect(ops(id(1))).toBe(2);
     expect(ops(id(2))).toBe(1);
     const d = disk([uri(1), uri(2)]);
-    expect(store.purgeExpired(T0 + SHELF_MS, d.eraser)).toBe(1);
+    expect(purgeSeen(T0 + SHELF_MS, d.eraser)).toBe(1);
     // The server may hold it (its upload left): one entry.erase, so the server's copy goes too (sync final review A-M2).
     const left = db.all<{ type: string; payload: string }>('SELECT type, payload FROM sync_outbox WHERE entity_id = ?', id(1));
     expect(left.map((o) => o.type)).toEqual(['entry.erase']);
@@ -211,7 +246,7 @@ describe('what an erased letter takes with it', () => {
     store.localSqlDb().run("UPDATE entries SET server_version = '100' WHERE id = ?", id(1)); // the server holds it
     setServerFeaturesForTests(true);
     const d = disk([uri(1), uri(2)]);
-    expect(store.purgeExpired(T0 + 2 * SHELF_MS, d.eraser)).toBe(1);
+    expect(purgeSeen(T0 + 2 * SHELF_MS, d.eraser)).toBe(1);
     expect(d.asked).toEqual([uri(2)]);
     expect(onShelf()).toEqual([id(1)]);
   });

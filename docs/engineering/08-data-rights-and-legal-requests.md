@@ -110,7 +110,7 @@ Response templates belong in `docs/support/` (owned by `support`); none exist ye
 
 ## Exceptions
 
-Only the founder grants an exception, with counsel's written note for anything touching a statutory clock, verification, or legal process. Recorded as a `D-###` or in the request log's ticket. Under-13 discovery may skip the 30-day grace when counsel requires it (DATA-REQ-027, spec OQ-12).
+Only Karma, with the owning executive, grants an exception (CR-176), with counsel's written note for anything touching a statutory clock, verification, or legal process. Recorded as a `D-###` or in the request log's ticket. Under-13 discovery may skip the 30-day grace when counsel requires it (DATA-REQ-027, spec OQ-12).
 
 ## Open questions
 

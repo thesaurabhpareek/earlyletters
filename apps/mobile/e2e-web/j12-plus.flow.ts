@@ -4,7 +4,8 @@ import { expect, seeded, test } from './support/journey';
 test('[J12] Plus: the Plan screen on a Free book, restore, manage', async ({ app, record }) => {
   const step = journey(record, 'J12', 'plus', 1, 'J11-05');
   await seeded(app, 'asha', '/settings');
-  await app.getByText('Plan', { exact: true }).click();
+  // The Plan row sits under the header card in every build (CCO-9): one tap opens Plan.
+  await app.getByTestId('settings.plan').click();
   await expect(app.getByText('Restore purchases')).toBeVisible();
   // S41: no status card while Plus is off, and the promise is said once, as the section's footer.
   await expect(app.getByText('Your first two letters are free. Plus lets you keep adding.')).toHaveCount(0);

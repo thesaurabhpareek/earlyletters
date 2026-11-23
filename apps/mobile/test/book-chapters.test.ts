@@ -67,8 +67,8 @@ describe('chapters and the current month (S26)', () => {
     const chapters = bookChapters([letter('l1', '2026-09-20')], ASHA, '2026-10-20', 'en-US');
     expect(chapters[0]).toMatchObject({ key: 'm7', current: true, data: [], countLine: '', fromLine: '' });
     const o = openerOf(chapters[0]);
-    expect(o).toMatchObject({ kicker: en.book.thisMonthLabel, numeral: '7', line: '', lit: true });
-    expect(o.a11yLabel).toBe('This month, Month 7. October 13 to November 12');
+    expect(o).toMatchObject({ kicker: en.book.thisMonthLabel, heading: '7 months', lineSpoken: '', current: true });
+    expect(o.a11yLabel).toBe('This month, 7 months, October 13 to November 12');
     expect(chapters[1].current).toBe(false);
   });
 
@@ -83,27 +83,28 @@ describe('chapters and the current month (S26)', () => {
   });
 });
 
-describe('month openers (S26)', () => {
-  it('a month shows the kicker and the numeral; the line joins the count and who wrote it', () => {
+describe('month headings (S26; book-page.md 2 "Months as chapters")', () => {
+  it('a past month is its age in words and its dates: no kicker, no numeral, no count line in the heading', () => {
     const [, ch] = bookChapters([letter('l3', '2026-10-14'), letter('l2', '2026-09-22'), letter('l1', '2026-09-20')], ASHA, '2026-10-20', 'en-US');
     const o = openerOf(ch);
-    expect(o).toMatchObject({ kicker: en.book.monthKicker, numeral: '6', name: null, line: '2 letters · From Mama', lit: false });
+    expect(o).toMatchObject({ kicker: null, heading: '6 months', current: false });
+    expect(o).not.toHaveProperty('numeral');
     expect(o.range).toBe('September 13 to October 12');
   });
 
-  it('VoiceOver hears "2 letters, from Mama", never the separator', () => {
+  it('VoiceOver hears one level-2 heading per month, and the sheet\'s line "2 letters, from Mama" never has the separator', () => {
     const [, ch] = bookChapters([letter('l3', '2026-10-14'), letter('l2', '2026-09-22'), letter('l1', '2026-09-20')], ASHA, '2026-10-20', 'en-US');
     const o = openerOf(ch);
     expect(o.lineSpoken).toBe('2 letters, from Mama');
-    expect(o.a11yLabel).toBe('Month 6. 2 letters, from Mama. September 13 to October 12');
+    expect(o.a11yLabel).toBe('6 months, September 13 to October 12');
     expect(o.a11yLabel).not.toContain('·');
   });
 
-  it('the first weeks and Before You show their name in place of the numeral, with no "Month" kicker', () => {
+  it('the first weeks and Before You keep their names; only the current month has the "This month" kicker', () => {
     const chapters = bookChapters([letter('n1', '2026-03-20'), letter('b1', '2026-03-01')], ASHA, '2026-03-25', 'en-US');
     const [newborn, before] = chapters.map(openerOf);
-    expect(newborn).toMatchObject({ kicker: en.book.thisMonthLabel, numeral: null, name: en.book.chapterNewborn, lit: true });
-    expect(before).toMatchObject({ kicker: null, numeral: null, name: en.book.beforeYouChapter, range: null, lit: false });
+    expect(newborn).toMatchObject({ kicker: en.book.thisMonthLabel, heading: en.book.chapterNewborn, current: true });
+    expect(before).toMatchObject({ kicker: null, heading: en.book.beforeYouChapter, range: null, current: false });
     expect(chapterTitle(0)).toBe(en.book.chapterNewborn);
   });
 

@@ -22,6 +22,8 @@ import {
   Keyframe,
   LinearTransition,
   ReduceMotion,
+  SlideInDown,
+  SlideOutDown,
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
@@ -33,6 +35,23 @@ const M = tokens.motion;
 export const FADE_MS = M.fadeMs;
 export const EXIT_MS = M.exitMs;
 export const STANDARD_EASING = Easing.bezier(...M.easing);
+/** The pen's curve for a line drawing (tokens.motion.penEasing). */
+export const PEN_EASING = Easing.bezier(...M.penEasing);
+
+/**
+ * A named curve from tokens.motion.curve, as the library's easing. Components ask for a role (`veil`, `sweep`,
+ * `breath`) and never write `Easing.*` themselves (BL-1754).
+ */
+export function curve(role: keyof typeof M.curve) {
+  switch (M.curve[role]) {
+    case 'linear':
+      return Easing.linear;
+    case 'quad':
+      return Easing.inOut(Easing.quad);
+    case 'sine':
+      return Easing.inOut(Easing.sin);
+  }
+}
 
 /** Words leaving a step: up 8 pt (enter.dy) as they fade, over exitMs. */
 const LEAVE = new Keyframe({
@@ -150,6 +169,22 @@ export { routeTransitions, type RootRoute, type RouteOptions } from './transitio
 export function useRouteTransitions(): Record<RootRoute, RouteOptions> {
   const reduced = useReducedMotion();
   return useMemo(() => routeTransitions(reduced), [reduced]);
+}
+
+/**
+ * How a sheet-like card arrives and leaves, from useSheetMotion(): the standard spring up from the bottom, or, under
+ * Reduce Motion, a fade of fadeMs with no travel (EXPERIENCE_PASS 5.8 rule 6). Both are Reduce Motion aware by
+ * construction, so they state `ReduceMotion.Never` themselves.
+ */
+export function sheetEntering(sheet: SheetMotion) {
+  return sheet.kind === 'fade'
+    ? FadeIn.duration(M.fadeMs).reduceMotion(ReduceMotion.Never)
+    : SlideInDown.springify().stiffness(sheet.stiffness).damping(sheet.damping).mass(sheet.mass).reduceMotion(ReduceMotion.Never);
+}
+export function sheetLeaving(sheet: SheetMotion) {
+  return sheet.kind === 'fade'
+    ? FadeOut.duration(M.fadeMs).reduceMotion(ReduceMotion.Never)
+    : SlideOutDown.duration(M.exitMs).easing(STANDARD_EASING).reduceMotion(ReduceMotion.Never);
 }
 
 /** The Sheet's open and close: the standard spring, or, under Reduce Motion, a fade with no travel. */

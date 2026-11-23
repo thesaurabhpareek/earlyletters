@@ -31,11 +31,11 @@ export const exportCopy = {
     privacyNotice: 'This file holds your letters and recordings, unlocked. Keep it somewhere private.',
     afterShare: 'The copy on this phone has been cleared away. Export again any time.', // D-074 glossary
     againButton: 'Export again',
-    failedTitle: 'The export did not finish',
-    failedBody: 'Your letters and recordings are all still here. Please try again.',
+    failedTitle: "The export didn't finish",
+    failedBody: 'Your letters and recordings are all still here. Try again.',
     // Too big: the title, then `settingsHome.helpValue` "Write to us" as the primary (S43).
     tooBigTitle: 'This book is too big for one file',
-    lowSpaceBody: 'This phone needs more free space first.',
+    lowSpaceBody: 'This phone needs more free space. Free some up, then try again.',
     integrityNote: 'A recording changed after it was saved. It is included as it is now, and the data file marks it.',
   },
 
@@ -52,6 +52,23 @@ export const exportCopy = {
     waitingForWords: 'This recording is kept. Its words have not been written down yet.',
     recordingElsewhere: 'Not on this phone',
     exactlyHeard: 'Exactly what you said',
+  },
+
+  /**
+   * Header lines of each waiting/*.txt file (PL-2, F14-REQ-039): a letter that is not in the book yet.
+   * The person's own words follow: typed, or exactly as heard. Nothing is tidied, since nothing was kept.
+   */
+  waitingFile: {
+    status: 'Waiting',
+    reasons: {
+      held_at_keep: 'Not kept yet. It waits on this phone until you keep it.',
+      waiting_for_words: 'Its words have not been written down yet.',
+      not_read_back: 'Not read back yet.',
+      typed_draft: 'Still being written.',
+      unrecoverable: 'This recording has no sound in it.',
+    },
+    typed: 'What you wrote',
+    changed: 'Your words, as you changed them',
   },
 
   /** index.html, the offline reader. */
@@ -83,11 +100,14 @@ export const exportCopy = {
     'letters/    Every letter and note as a plain text file, one folder per child and month.',
     'audio/      Every recording on this phone, exactly as it was made (AAC audio, as .m4a or .aac).',
     '            Open them in any music or video player.',
+    'waiting/    Letters that are waiting to be kept or read back, when you have any:',
+    '            your own words as a plain text file and the original recording.',
     'data/       entries.json: every letter, with your words exactly as heard, every small',
     '            fix, and the final text. children.json: the books on this phone.', // D-074
     '            account.json: your plan, whether you were signed in, the books you belong to,',
     '            the names we always spell your way, your consent choices and, when you are',
     '            signed in, your profile (see below).',
+    '            waiting.json, when you have any: the letters that are waiting.',
     'schema/     A description of the data files, for anyone building a reader.',
     'index.html  Open in any web browser to read every letter and hear every recording.',
     '            It works with no connection and no app.',

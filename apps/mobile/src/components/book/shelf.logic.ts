@@ -7,9 +7,9 @@
  * November 12." The second date is the deletion time plus the shelf days, shown in the phone's own day, never as a
  * countdown (nothing here counts down or counts what is left), and always as a date still to come.
  *
- * Erase now is offered only where it can do what it says. A build that syncs has no Erase now until the server
- * erase exists (WP-F16-13, F17-REQ-025): store.eraseEntry refuses in a sync build today, so the honest shelf shows
- * Restore and the date line, and the letter goes at the server purge.
+ * Erase now is offered only where it can do what it says. A build that syncs has Erase now only with the server erase
+ * (WP-F16-13, F17-REQ-025; BL-1854): store.eraseEntry queues one id-only `entry.erase` for a letter the server may
+ * hold. A sync build without it shows Restore and the date line, and the letter goes at the server purge.
  */
 import { dateLocale, isMonthOnly, isoOf, longDate, monthOnlyDateline } from '../../lib/dates';
 import { SHELF_DAYS } from '../../lib/shelf-days';
@@ -87,6 +87,15 @@ export function shelfRow(e: Entry & { deletedAt: string }, locale?: string, chil
 }
 
 /**
+ * A deleted book on the shelf (BL-387, F17 6.2 D step 5): the same two days as a letter, the book's deletion time plus
+ * the shelf days, in the phone's own day. Never a count of letters or of days left.
+ */
+export function shelfBookDays(deletedAt: string, locale?: string): Pick<ShelfRowView, 'deletedDay' | 'keptUntilDay'> {
+  const erases = new Date(Date.parse(deletedAt) + SHELF_DAYS * 24 * 60 * 60 * 1000);
+  return { deletedDay: monthDay(isoOf(new Date(deletedAt)), locale), keptUntilDay: monthDay(isoOf(erases), locale) };
+}
+
+/**
  * The one date line under a shelf card: "Deleted October 13. Kept here until November 12." Built from the two keys
  * (`deletedOn` "Deleted {date}", `erasesOn` "Kept here until {date}"), each a sentence, so no word is new.
  */
@@ -97,8 +106,8 @@ export function shelfDateLine(v: Pick<ShelfRowView, 'deletedDay' | 'keptUntilDay
 
 /**
  * What a shelf card offers. Restore always. Erase now only when this build can erase for good everywhere the letter
- * is: always on a phone that does not sync; in a sync build only once the server erase exists (`serverErase`, from
- * the sync stream when WP-F16-13 lands; until then nothing passes it, so a sync build shows no Erase now).
+ * is: always on a phone that does not sync; in a sync build only with the server erase (`serverErase`, from
+ * `capabilities.serverErase`; a build that passes nothing shows no Erase now).
  */
 export function shelfActions(build: { sync: boolean; serverErase?: boolean }): { restore: true; eraseNow: boolean } {
   return { restore: true, eraseNow: !build.sync || build.serverErase === true };

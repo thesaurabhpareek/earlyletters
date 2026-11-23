@@ -24,7 +24,8 @@ check('a v7 id with the wrong variant is refused', (await codeOf(() => create(A,
 check('a v7 id from the future is refused', (await codeOf(() => create(A, uuid7(Date.now() + 3 * 86400e3)))) === 'SCCID');
 check('another person\'s book id is refused without saying whose', (await codeOf(() => create(C, first))) === 'SCCID');
 check('[B-REQ-001] a birthday or a due date is required', (await codeOf(() => create(C, uuid7(), 'Asha', null, null))) === '22023');
-check('a name is required', (await codeOf(() => create(C, uuid7(), '  ', '2025-04-12'))) === '22023');
+// A name is optional since 20261109000000 (NX-31 R28); see child_name_optional.test.mjs. A long one is still refused.
+check('a name over 60 characters is refused', (await codeOf(() => create(C, uuid7(), 'a'.repeat(61), '2025-04-12'))) === '22023');
 check('a future birthday is refused', (await codeOf(() => create(C, uuid7(), 'Asha', '2099-01-01'))) === '22023');
 const expecting = await create(C, uuid7(), 'Asha', null, new Date(Date.now() + 90 * 86400e3).toISOString().slice(0, 10));
 check('[B-REQ-005] a book can start from a due date', (await sys(`select due_date is not null and date_of_birth is null ok from children where id=$1`, [expecting])).rows[0].ok);
@@ -52,7 +53,7 @@ const later = JSON.stringify([{ id: uuid7(), name: 'Asha', date_of_birth: '2025-
 check('[ADR 0013] a later batch is not refused by the server either', (await codeOf(() => as(N, `select public.create_first_run_children($1::jsonb)`, [later]))) === 'ok' && (await started(N)) === 4);
 check('the batch is capped at 6', (await codeOf(() => as(S, `select public.create_first_run_children($1::jsonb)`,
   [JSON.stringify(Array.from({ length: 7 }, () => ({ id: uuid7(), name: 'Asha', date_of_birth: '2025-04-12' })))]))) === '22023');
-const bad = JSON.stringify([{ id: uuid7(), name: 'Asha', date_of_birth: '2025-04-12' }, { id: uuid7(), name: '', date_of_birth: '2025-04-12' }]);
+const bad = JSON.stringify([{ id: uuid7(), name: 'Asha', date_of_birth: '2025-04-12' }, { id: uuid7(), name: 'Asha', date_of_birth: '2099-01-01' }]);
 check('a batch is all or nothing', (await codeOf(() => as(S, `select public.create_first_run_children($1::jsonb)`, [bad]))) === '22023' && (await started(S)) === 0
   && (await sys(`select first_run_closed_at is null o from profiles where id=$1`, [S])).rows[0].o);
 check('first run is open before any book', (await one(S, `select (public.sync_books() ->> 'first_run_open')::boolean o`)).o === true);
