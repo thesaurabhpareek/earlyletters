@@ -218,6 +218,8 @@ export const billingCopy = {
     reminders: "As a courtesy, this iPhone also tries to remind you before a free period ends, before an annual plan renews and once a year, if notifications are allowed. A reminder can come late or not at all, so the dates in Settings, Plan and Apple's receipts are the ones to go by.",
     saveCopy: 'Save a copy',
     saveCopyHelp: 'Keep these terms in Mail, Notes or Files.',
+    // BL-1722: the share sheet could not open. Says what happened and where the same terms are; nothing else changes.
+    saveCopyFailed: 'The copy could not be saved just now. The same terms are in Settings, Plan.',
     remindTrialOneMonth: 'Remind me before the free period ends',
     remindTrialMonths: 'Remind me before the free period ends',
     remindRenewal: 'Remind me before Plus renews',
