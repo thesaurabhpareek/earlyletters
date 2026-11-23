@@ -239,6 +239,8 @@ export const en = {
       listening: "Listening.",
       listeningHint: "Say it however it comes.",
       stillHere: "Still here. Take your time.",
+      // BL-432: after 30 minutes of one take. Nothing stops and nothing is cut; this only says Finish is there.
+      longTake: "This is a long one. Finish whenever you like, or keep talking.",
       paused: "Paused.",
       resumeButton: "Keep talking",
       stopButton: "Finish",
