@@ -17,7 +17,7 @@ The code defines nine `asks.*` keys. Five are the ones the row named. `asks.firs
 
 ## Rows
 
-Common to every row, so each row says it once here and the table stays short: store is the local `settings` table in `scribe.db`; sync is none (the settings writer in `lib/sync/outbox.ts:129 to 133` is the sync engine's own state, and no `asks.*` key is written through it); export is no (the recovery export reads the named settings in `lib/export/device.ts`, not these keys); retention is until Erase everything, which empties every row of every table, settings included (`lib/erase-everything.ts:8 to 10`); what sign-out does is nothing, they are kept per phone (`lib/reminders/session.ts:7`); log rule is no value in any log, crash report, analytics event or URL (DATA-REQ-004). They are in the iPhone backup, as the rest of `scribe.db` is.
+Common to every row, so each row says it once here and the table stays short: store is the local `settings` table in `scribe.db`; sync is none (the settings writer in `lib/sync/outbox.ts:129 to 133` is the sync engine's own state, and no `asks.*` key is written through it); export is no for the normal export (it reads only the named settings in `lib/export/device.ts`, not these keys), but the launch recovery export packs `scribe.db` and its `-wal`, `-shm` and `-journal` files as they sit on the phone (`lib/resilience/recovery-export.logic.ts:1-4, 27-33`), so all nine keys travel in that ZIP, which stays with the person; retention is until Erase everything, which empties every row of every table, settings included (`lib/erase-everything.ts:8 to 10`); what sign-out does is nothing, they are kept per phone (`lib/reminders/session.ts:7`); log rule is no value in any log, crash report, analytics event or URL (DATA-REQ-004). They are in the iPhone backup, as the rest of `scribe.db` is.
 
 | Key | Level | Note |
 |---|---|---|
@@ -33,7 +33,7 @@ Common to every row, so each row says it once here and the table stays short: st
 
 ## Points for the founder
 1. Sign-out keeps all nine on purpose (`lib/reminders/session.ts:7`), so a second account on the same phone inherits "already asked". That is the shipped behaviour and it is not a leak (no id, no text), but it is a choice. If the founder wants a new account asked afresh, that is a card for `product`, not a classification change. Exec-team counsel must confirm that keeping these per phone needs no extra wording in the privacy policy.
-2. "Never synced" and "never exported" are read from the code on the day. A test that fails when any `asks.*` key reaches the sync writer or the export would make the row a proof. The data-steward review on #1419 did not ask for one. It is not filed here.
+2. "Never synced" and "never exported" (the second holds for the normal export only; the recovery ZIP carries the database as it sits) are read from the code on the day. A test that fails when any `asks.*` key reaches the sync writer or the export would make the row a proof. The data-steward review on #1419 did not ask for one. It is not filed here.
 3. The header table in `lib/asks/index.ts` lists the keys by hand. A tenth key would be unlisted again. A check that every `asks.` string in `apps/mobile/src/lib` has a row here, or in section 4.5 once applied, would stop the gap coming back. Not filed here; a backlog row is the founder's or `product`'s call.
 
 ## Not done here
