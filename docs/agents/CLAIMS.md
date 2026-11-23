@@ -17,3 +17,5 @@ Verification: a row is added only after the PR is read as open by REST. The chec
 | mobile-moments-tab-feasibility | mobile | docs/mobile-moments-tab-feasibility-21nov | 1269 | `docs/product/MOMENTS-TAB-FEASIBILITY-21nov.md` | 2026-11-21T07:30Z | 2026-11-24T07:30Z | docs only, proposed, not for merge by author; REST open check of 1269 done at PR open |
 | home-wheel | product | docs/product-home-engagement-wheel-21nov | 1264 | `docs/product/HOME-ENGAGEMENT-WHEEL-21nov.md` | 2026-11-21T07:00Z | 2026-11-24T06:00Z | docs only; REST open check done after PR open |
 | moments-xfn | compliance-engineer | docs/moments-xfn | 1279 | `docs/product/moments-tab/**` | 2026-11-21T08:20Z | 2026-11-24T08:00Z | Moments tab X1-X5 docs, PROPOSED; REST open check 08:20Z (open) |
+| letter-page-l1 | mobile | fix/letter-back-top-bar-large-text | none | `apps/mobile/src/app/letter/[id].tsx`, `apps/mobile/src/lib/letter-top-bar.logic.ts`, `apps/mobile/test/letter-top-bar.test.ts` | 2026-11-23T16:05Z | 2026-11-26T16:05Z | BL-1790; then BL-1789, BL-1791, BL-1823 in the same file, one PR each |
+
