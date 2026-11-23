@@ -130,7 +130,7 @@ const crashWith = (n: string) => {
   return {
   event: '$exception',
   properties: {
-    distinct_id: 'anon-phone-id',
+    distinct_id: '00000000-0000-4000-8000-0000000000a1',
     $app_version: '1.0.0',
     $exception_level: 'error',
     $exception_message: `could not send a code to ${n}`,
