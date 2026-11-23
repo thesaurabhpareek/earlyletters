@@ -7,6 +7,10 @@ Load when: you add Google, link two sign-in methods, or add or require a phone n
 
 Conventions: row id `NS-54-R<n>`; Priority P0 (a) a promise, (b) a legal or store duty, (c) the core loop; P1 should ship with the phase; P2 later. Test titles are `[NS-54-Rn] ...`. Claims marked [UNVERIFIED] were not read from a source in this run; each names who confirms. Family in every scenario is the fictional Asha.
 
+## 0. Summary: the "even today" answer
+
+The founder preferred a verified phone number for everyone, even today. What is honestly achievable today is the optional prompt (Phase A) as a design and a plan, not a required number in the submission build, and not any real text sent. Before a required number can ship, all of these must exist: an SMS provider chosen and a founder-approved spend cap (BL-1898); counsel's reading of consent, carrier registration and TCPA with CR-062 re-run (BL-1897); a registered sender; the provider spike (BL-1896); the data classification, data map and subprocessor rows (BL-1899); privacy label and policy text counsel has seen (BL-1900); the phone-number log canary (BL-1901); the design (BL-1895); an erratum reversing "never a phone number" in NS-41 (BL-1888); a fallback for people with no phone (7.4); and the measure in 7.9. The Google and phasing positions below are recommendations; the founder decides scope and dates.
+
 ## 1. Problem, and why now
 
 The founder's directions (verbatim, lightly cleaned from voice, relayed by Karma): (1) "Easiest for us is also to allow Sign in with Apple and sign in with Google. Add for future backlog if we didn't currently. And remember to pick it up in future." (2) "In general we would prefer a verified phone number for everyone in future and even today."
@@ -28,7 +32,7 @@ Why now: D-170 (draft, PR #1675) puts servers and account creation on, so every 
 | Phone number or SMS | Nothing. `phone_changed` notice template exists, unused. Counsel register: TCPA "No (no SMS in v1)", "re-run before adding SMS OTP". Privacy label: Phone Number "Not requested". | `config.toml:129`; `compliance-register.md` CR-062; `app-store-privacy-labels.md:47` |
 | Country check at sign-up | Hook built; applies to every method | NS-40-R9 to R12; D-131, D-136 |
 
-Conflicts found, not resolved here (row BL-1886): D-044 deferred Google, D-054 says Google at v1.0, `05-identity-and-access.md` IAM-R06 says Google is v1.1, and the locked NS-41-R1 and R20 keep Google out of the store build. NS-41 section 14 says "never ... SMS or a phone number", which Phase A to C below would reverse by erratum.
+Conflicts found, not resolved here (row BL-1888): D-044 deferred Google, D-054 says Google at v1.0, `05-identity-and-access.md` IAM-R06 says Google is v1.1, and the locked NS-41-R1 and R20 keep Google out of the store build. NS-41 section 14 says "never ... SMS or a phone number", which Phase A to C below would reverse by erratum.
 
 ### 2.3 Why linking matters: the duplicate account
 
@@ -56,7 +60,7 @@ Method: WSJF as a judgement, not a measurement. Cost of delay is user value plus
 Reasoning.
 1. Apple is not new work. Only its tests, hosted read-back and revocation proof are missing, so it is P0 and cheap.
 2. Google is small to build (the code exists) but its dependencies are long: a Cloud project, consent screen and possible brand verification [UNVERIFIED, from AUTH_SETUP 3.1 "Assumption"], one iOS client per bundle id, a device test and the locked card change. Google must not ship without linking, or it creates the duplicates in 2.3. It does not block submission: Apple plus email already meet the sign-in duty. Recommendation: not in the submission build; first slice after it. Moving it earlier is the founder's scope and date call.
-3. Apple Guideline 4.8: offering Google requires offering an equivalent privacy-preserving option, which Apple is. Do not rely on this: check the regulatory lead's sign-up spec `docs/regulatory/signup-geo-checks.md` when it lands. [UNVERIFIED until read; that file is not on develop.]
+3. Apple Guideline 4.8: offering Google requires offering an equivalent privacy-preserving option, which Apple is. Do not rely on this: check the regulatory lead's sign-up spec `docs/regulatory/signup-geo-checks.md`, which is in PR #1677 (branch `docs/signup-geo-and-social-login`), not yet on develop. [UNVERIFIED: not read for this card.]
 4. Phone "even today": launch is the wrong place for it. It needs a provider, a registered sender, counsel's reading of consent and TCPA, a label change, a policy change and a locked-card erratum, and it adds a step to the activation path the product is built to protect (the first letter). Each of those is long-lead and none exists. Putting it in the submission build delays submission or ships it half-guarded. So the long-lead rows start now, in parallel, and the build waits for them.
 
 Launch dependency: D-170 turns servers and account creation on. Phone Phase A is a server feature and follows D-170; it is not needed for the first submission.
@@ -117,11 +121,11 @@ A verified phone number is a one-time code sent by text to a number the person t
 | NS-54-R22 | Given Phase A, When the first letter is kept, Then one optional prompt may show after Keep and never before the first letter, Not now is as large as Continue, and nothing else is withheld | P1 | `[NS-54-R22] phone is asked after the first letter, never before` |
 | NS-54-R23 | Given a number typed, When Send is tapped, Then one text with a code is sent, the number is normalised to E.164 on the phone, and the screen is the same for a number that has an account and one that has not | P1 | `[NS-54-R23] sending a code reveals nothing about the number` |
 | NS-54-R24 | Given the code, Then it is single use, expires in no more than ten minutes, has a per-number and per-IP send limit with a daily cap for the whole project, and five wrong tries pause entry (as NS-41-R9) | P0 (b) | `[NS-54-R24] code limits and pause` |
-| NS-54-R25 | Given a verified number, Then the account row holds the number and a verified time and nothing else of the carrier or the code; the number is deleted with the account and within the deletion window, and the SMS vendor holds no content beyond what its contract says (DATA-REQ rows added by BL-1897) | P0 (b) | `[NS-54-R25] number deleted with the account` |
+| NS-54-R25 | Given a verified number, Then the account row holds the number and a verified time and nothing else of the carrier or the code; the number is deleted with the account and within the deletion window, and the SMS vendor holds no content beyond what its contract says (DATA-REQ rows added by BL-1899) | P0 (b) | `[NS-54-R25] number deleted with the account` |
 | NS-54-R26 | Given any log, breadcrumb, route param, crash report or analytics event, Then it holds no phone number, partial number or code (log canary, extending NS-41-R16) | P0 (b) | `[NS-54-R26] the phone number never reaches a log` |
 | NS-54-R27 | Given the provider fails, there is no signal, or the code never arrives, Then the screen says so in words, offers resend after a wait, another way (7.4) and Not now (Phase A), and an unfinished check never blocks the book on the phone | P0 (c) | `[NS-54-R27] a failed text never blocks the book` |
 | NS-54-R28 | Given a number from a country the SMS provider cannot reach, or a premium or virtual number the provider flags, Then the person is told this number cannot be used and offered the fallback; the reason shown is never "fraud" | P1 | `[NS-54-R28] unreachable or flagged numbers have a way on` |
-| NS-54-R29 | Given the country code of a verified number, Then it is at most a signal stored as a country code only; it never refuses a person alone (shared codes, travel, roaming, porting, VPN make it weak); the D-131 hook at account creation stays the control. [UNVERIFIED] The regulatory lead decides any use of it in `docs/regulatory/signup-geo-checks.md`. | P1 | `[NS-54-R29] a calling code never refuses alone` |
+| NS-54-R29 | Given the country code of a verified number, Then it is at most a signal stored as a country code only; it never refuses a person alone (shared codes, travel, roaming, porting, VPN make it weak); the D-131 hook at account creation stays the control. [UNVERIFIED] The regulatory lead decides any use of it in `docs/regulatory/signup-geo-checks.md` (in PR #1677). | P1 | `[NS-54-R29] a calling code never refuses alone` |
 | NS-54-R30 | Given a person abroad on a roaming or local SIM, Then a number from any supported country verifies; Given no text arrives, Then the fallback in 7.4 is offered | P1 | `[NS-54-R30] a phone abroad can verify` |
 | NS-54-R31 | Given a person who changes or loses their number, Then they sign in with another method (Apple, Google, email), remove the old number there, and verify a new one; the number is never the only way back in | P0 (c) | `[NS-54-R31] a lost number never locks out the book` |
 | NS-54-R32 | Given a person who signed in with Apple or Google, Then phone verification is asked on the same rules (7.5), because a social login proves an inbox or an Apple ID, not a person | P1 | `[NS-54-R32] social sign-in is not exempt` |
@@ -139,8 +143,8 @@ Open (not decided): in Phase B a person with no mobile number (a Wi-Fi-only devi
 
 | # | Question | Recommendation | Owner |
 |---|---|---|---|
-| Q1 | Which SMS provider, and the per-message cost and cap | Compare two or three in the spike (BL-1894); choose by delivery in our countries, fraud tools and a hard spend cap; the founder decides spend | founder, platform |
-| Q2 | US SMS rules: consent text, carrier sender registration, TCPA, state laws, opt-out and help words [UNVERIFIED, none read] | Counsel reads and answers before any real send (BL-1895); CR-062 is re-run | counsel via legal |
+| Q1 | Which SMS provider, and the per-message cost and cap | Compare two or three in the spike (BL-1896); choose by delivery in our countries, fraud tools and a hard spend cap; the founder decides spend | founder, platform |
+| Q2 | US SMS rules: consent text, carrier sender registration, TCPA, state laws, opt-out and help words [UNVERIFIED, none read] | Counsel reads and answers before any real send (BL-1897); CR-062 is re-run | counsel via legal |
 | Q3 | Where is "required" in Phase B | After the first letter is kept and before anything leaves the phone (the claim step, NS-41-R5): cloud features only (7.4) | product with founder |
 | Q4 | After Apple or Google, is a number asked right away | Same rule as email: after the first letter, not at the door (NS-54-R32) | product |
 | Q5 | Before inviting a co-parent | Yes, for the sender only (NS-54-R33) | product, security |
@@ -191,13 +195,13 @@ Counts per release (small numbers are shown as counts, never percentages below 2
 
 ## 9. Backlog rows
 
-BL-1886 to BL-1905 (section "Sign-in methods and phone verification (NS-54)" at the end of `docs/BACKLOG.md`).
+BL-1888 to BL-1907 (section "Sign-in methods and phone verification (NS-54)" at the end of `docs/BACKLOG.md`).
 
 ## 10. Decision proposals for the founder (drafted, not entered in `DECISIONS.md`)
 
 1. Google sign-in in the store build: after the submission candidate, with linking (recommended); or in it (founder's scope call, extends the work before submission).
 2. Phone verification: Phase A now-ish in build order, B after measurement, C not planned; the founder spends on the SMS vendor and records the choice.
-3. Reverse "never a phone number" in NS-41 section 14 by erratum once counsel has read (BL-1886 drafts it).
+3. Reverse "never a phone number" in NS-41 section 14 by erratum once counsel has read (BL-1888 drafts it).
 
 ## 11. Never
 

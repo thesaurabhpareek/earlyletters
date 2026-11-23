@@ -9542,124 +9542,124 @@ Note, not a ruling, and a scope question. Scope and dates stay with the founder 
 
 ## Sign-in methods and phone verification (NS-54)
 
-Source: `docs/product/prd/29-sign-in-methods-and-phone-verification.md` (card NS-54, PROPOSED). Ids BL-1886 to BL-1905 (next free by `scripts/agents/next-id.mjs` with PR #1669 holding BL-1877 to BL-1885). Founder spend, vendor accounts and counsel readings are `human` rows; no row asks the founder to approve, review, merge or paste.
+Source: `docs/product/prd/29-sign-in-methods-and-phone-verification.md` (card NS-54, PROPOSED). Ids BL-1888 to BL-1907 (PR #1669 holds BL-1877 to BL-1885 and PR #1675 holds BL-1886 and BL-1887). Founder spend, vendor accounts and counsel readings are `human` rows; no row asks the founder to approve, review, merge or paste.
 
-#### BL-1886 Reconcile sign-in policy: erratum for NS-41 R1, R20 and the never-a-phone line, and the D-044, D-054, IAM-R06 conflict
+#### BL-1888 Reconcile sign-in policy: erratum for NS-41 R1, R20 and the never-a-phone line, and the D-044, D-054, IAM-R06 conflict
 - Status: ready. Mode: agent. Owner: product manager. Milestone: M15. Size: S. Priority: P1. Depends on: none.
 - Satisfies: NS-54; D-044, D-054; `docs/engineering/05-identity-and-access.md` IAM-R05, IAM-R06; NS-41-R1, R20, section 14.
 - Scope: Draft the next numbered erratum in `docs/product/prd/18-errata-after-lock.md` listing every changed id (NS-41 R1 and R20 when Google ships; the never-SMS line only after counsel), and a proposed D-### entry for the founder on Google timing. Nothing is applied until the founder records the decision.
 - Done when: the erratum and the proposal are in a PR with each changed id listed; no locked row changes before then.
 
-#### BL-1887 Sign in with Apple: test titles and hosted read-back for what exists (NS-54-R1 to R5)
+#### BL-1889 Sign in with Apple: test titles and hosted read-back for what exists (NS-54-R1 to R5)
 - Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Priority: P0. Depends on: none.
 - Satisfies: NS-54-R1 to R5; NS-41-R13, R18; BL-171, BL-330, BL-896 (only the missing tests).
 - Scope: Find which of R1 to R5 have no `[NS-54-Rn]` test title (`node scripts/trace.mjs --no-write`), add the missing ones in `apps/mobile/test/` and `supabase/tests`, each failing on a planted violation. No code change unless a test finds a real gap, which is filed. The hosted provider read-back is BL-053 and the founder's console; not here.
 - Done when: each of R1 to R5 has a title that goes red under its mutant.
 
-#### BL-1888 Google in the store build: profiles, button, help line and the NS-41-R20 flip
-- Status: proposed (NS-54; waits on the founder's Google timing call and BL-1886). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Priority: P1. Depends on: BL-1886, BL-1889, BL-1891.
+#### BL-1890 Google in the store build: profiles, button, help line and the NS-41-R20 flip
+- Status: proposed (NS-54; waits on the founder's Google timing call and BL-1888). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Priority: P1. Depends on: BL-1888, BL-1891, BL-1893.
 - Satisfies: NS-54-R1, R6, R10, R11, R13; NS-41-R20; A-REQ-017.
-- Scope: Set the Google client ids in the profiles the founder names (ids are public, no secret), keep the no-ids-no-button rule, update `auth.noEmailHelp` so it names only what shows (words PROPOSED by `content`), and update the NS-41-R20 test to the new truth. Google must not render before linking (BL-1891) is merged.
+- Scope: Set the Google client ids in the profiles the founder names (ids are public, no secret), keep the no-ids-no-button rule, update `auth.noEmailHelp` so it names only what shows (words PROPOSED by `content`), and update the NS-41-R20 test to the new truth. Google must not render before linking (BL-1893) is merged.
 - Done when: a build with both ids shows Google beside Apple and email, one without shows none, and the tests for both pass.
 
-#### BL-1889 Google Cloud project, consent screen, iOS clients and the Supabase Google provider
+#### BL-1891 Google Cloud project, consent screen, iOS clients and the Supabase Google provider
 - Status: needs-founder (vendor console; the steps are `docs/ops/AUTH_SETUP.md` section 3; remainder of BL-053 and FT-15). Mode: human. Owner: platform. Milestone: M15. Size: S. Priority: P1. Depends on: none.
 - Satisfies: NS-54-R6, R8; BL-053 (Google part).
 - Scope: Do AUTH_SETUP section 3: consent screen, web client, one iOS client per bundle id, enable the provider with the web client id first, then read each value back into `docs/ops/AUTH_SETTINGS.md`. No secret is written in the repo, an issue or chat. Start early: brand verification may take days [UNVERIFIED]. Listed in `docs/release/FOUNDER_QUEUE.md` once Karma adds the row.
 - Done when: the hosted provider is enabled and a staging Google sign-up reaches consent.
 
-#### BL-1890 Google sign-in and deletion: read what Google requires and prove we hold nothing
+#### BL-1892 Google sign-in and deletion: read what Google requires and prove we hold nothing
 - Status: ready. Mode: agent. Owner: security engineer. Milestone: M15. Size: S. Priority: P1. Depends on: none.
 - Satisfies: NS-54-R7, R9; A-NFR-011; DATA-REQ-019.
 - Scope: Read Google's current rules for apps that delete an account that signed in with Google [UNVERIFIED, not read], then write a test that after `signInWithIdToken` we store no Google token and after deletion no Google data remains, and add a `google: none held` line to the deletion receipt only if the receipt format allows it.
 - Done when: the finding and the test are in the PR, and the receipt line is added or its absence is explained.
 
-#### BL-1891 Linking rules: manual linking on with its screen, same-verified-email test, one method one account
+#### BL-1893 Linking rules: manual linking on with its screen, same-verified-email test, one method one account
 - Status: ready. Mode: agent. Owner: auth owner. Milestone: M15. Size: M. Priority: P1 (P0 gate for Google). Depends on: none.
 - Satisfies: NS-54-R15, R18, R19, R20, R21; A-REQ-019; FUTURE T5-10 (the data and server half).
-- Scope: Read the Supabase linking behaviour of the version we run and pin it in `supabase/tests/auth_config.test.mjs`; write the `linkIdentity` path and its refusal when the identity belongs to another account; set `enable_manual_linking` in the same PR that adds the screen (BL-1892) and not before. Staging test with Apple relay against Google.
+- Scope: Read the Supabase linking behaviour of the version we run and pin it in `supabase/tests/auth_config.test.mjs`; write the `linkIdentity` path and its refusal when the identity belongs to another account; set `enable_manual_linking` in the same PR that adds the screen (BL-1894) and not before. Staging test with Apple relay against Google.
 - Done when: the staging test proves same verified email gives one account, different emails give two and no merge, and a method on another account is refused.
 
-#### BL-1892 Ways to sign in screen, duplicate-account line before consent, last-method guard
-- Status: proposed (NS-54; waits on design and BL-1891). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Priority: P1. Depends on: BL-1891, BL-1893.
+#### BL-1894 Ways to sign in screen, duplicate-account line before consent, last-method guard
+- Status: proposed (NS-54; waits on design and BL-1893). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Priority: P1. Depends on: BL-1893, BL-1895.
 - Satisfies: NS-54-R14, R16, R17; A-REQ-019.
 - Scope: Build the Ways to sign in screen in Me (add and remove, never the full address) and the one line before consent that names a likely duplicate (words PROPOSED by `content`, held for counsel). Split into two PRs if over the size cap.
 - Done when: the screen and the line exist and the tests for R14, R16, R17 pass.
 
-#### BL-1893 Design: Ways to sign in, the duplicate line, and the phone steps
+#### BL-1895 Design: Ways to sign in, the duplicate line, and the phone steps
 - Status: ready. Mode: agent. Owner: design systems. Milestone: M15. Size: M. Priority: P1. Depends on: none.
 - Satisfies: NS-54-R14, R16, R22, R23, R27, R28, R34, R35; NS-33.
 - Scope: Specs and states for Ways to sign in, the duplicate line, the optional phone prompt after the first letter, code entry, failure, resend, fallback and Not now, in `docs/design/specs`, from the latest design docs; no words are written (content owns them).
 - Done when: each screen has states, VoiceOver and AX5 notes and a content-key list.
 
-#### BL-1894 Phone verification: SMS provider and Supabase phone-auth spike (cost, fraud limits, countries)
+#### BL-1896 Phone verification: SMS provider and Supabase phone-auth spike (cost, fraud limits, countries)
 - Status: ready. Mode: agent. Owner: security engineer. Milestone: M15. Size: M. Priority: P1. Depends on: none.
 - Satisfies: NS-54-R23, R24, R28, R29; Q1 of the card.
 - Scope: A written comparison of two or three providers and Supabase's phone sending options [UNVERIFIED, none read]: price per message by our target countries, delivery, SMS-pumping and rate controls, spend cap, whether a voice code exists, what the vendor keeps, region. Recommend one; the founder decides spend. No account is made and no real text is sent.
 - Done when: the comparison and a recommendation are in `docs/research/`, with every price marked as read from a named page.
 
-#### BL-1895 Counsel reading for SMS: consent, carrier registration, TCPA, state rules, opt-out words
-- Status: needs-founder (counsel; `docs/legal/COUNSEL_PACKET.md`). Mode: human. Owner: legal. Milestone: M15. Size: S. Priority: P1. Depends on: BL-1894.
+#### BL-1897 Counsel reading for SMS: consent, carrier registration, TCPA, state rules, opt-out words
+- Status: needs-founder (counsel; `docs/legal/COUNSEL_PACKET.md`). Mode: human. Owner: legal. Milestone: M15. Size: S. Priority: P1. Depends on: BL-1896.
 - Satisfies: NS-54 Q2, R35; `docs/legal/compliance-register.md` CR-062 (re-run before SMS).
 - Scope: Add the SMS questions to the counsel packet and re-run CR-062 with counsel's answer; counsel also reads whether a one-time code needs the consent wording at all. Nothing is published from this row.
 - Done when: counsel's answers are recorded in the register and CR-062 is re-run.
 
-#### BL-1896 SMS vendor account, sender registration and spend cap
-- Status: needs-decision (the founder decides spend; BL-1894, BL-1895). Mode: human. Owner: platform. Milestone: M15. Size: S. Priority: P1. Depends on: BL-1894, BL-1895.
+#### BL-1898 SMS vendor account, sender registration and spend cap
+- Status: needs-decision (the founder decides spend; BL-1896, BL-1897). Mode: human. Owner: platform. Milestone: M15. Size: S. Priority: P1. Depends on: BL-1896, BL-1897.
 - Satisfies: NS-54 Q1, Q2.
 - Scope: Create the vendor account, register the sender as counsel requires and set a hard monthly cap in the vendor console. Keys go in the vendor console and Supabase secrets only. Listed in `docs/release/FOUNDER_QUEUE.md` once Karma adds the row.
 - Done when: a staging send of one code to a test number arrives and the cap is on.
 
-#### BL-1897 Phone number in the data classification, data map, subprocessor list and deletion spec
+#### BL-1899 Phone number in the data classification, data map, subprocessor list and deletion spec
 - Status: ready. Mode: agent. Owner: privacy engineer. Milestone: M15. Size: S. Priority: P1. Depends on: none.
 - Satisfies: NS-54-R25, R35; `docs/legal/DATA_CLASSIFICATION.md`; DATA-REQ.
-- Scope: Add the rows: phone number (direct identifier, retention, deletion with the account), the SMS vendor as a subprocessor (marked draft until BL-1896), and the deletion-receipt line. No policy text is written here.
+- Scope: Add the rows: phone number (direct identifier, retention, deletion with the account), the SMS vendor as a subprocessor (marked draft until BL-1898), and the deletion-receipt line. No policy text is written here.
 - Done when: the rows exist and the data-map checker passes.
 
-#### BL-1898 Privacy label and privacy policy updates for the phone number
-- Status: blocked (BL-1895; counsel sees the text before publish). Mode: human. Owner: legal. Milestone: M15. Size: S. Priority: P1. Depends on: BL-1895, BL-1897.
+#### BL-1900 Privacy label and privacy policy updates for the phone number
+- Status: blocked (BL-1897; counsel sees the text before publish). Mode: human. Owner: legal. Milestone: M15. Size: S. Priority: P1. Depends on: BL-1897, BL-1899.
 - Satisfies: NS-54-R35; `docs/legal/app-store-privacy-labels.md` (Phone Number row), `docs/legal/privacy-policy.md`.
 - Scope: Draft the label change (Contact Info, Phone Number: collected, linked, account and security purpose, not tracking) and the policy lines for counsel; publish and answer in App Store Connect only after counsel has read them and before the first build that collects a number.
 - Done when: counsel has the draft and the label and policy match the build.
 
-#### BL-1899 A phone number never reaches a log, crash report or analytics event
+#### BL-1901 A phone number never reaches a log, crash report or analytics event
 - Status: ready. Mode: agent. Owner: privacy engineer. Milestone: M15. Size: S. Priority: P1. Depends on: none.
 - Satisfies: NS-54-R26; NS-41-R16.
 - Scope: Extend the log canary and the analytics allowlist test with phone-shaped strings (E.164 and partial), planted in a fake send flow, so the rule exists before the first line of phone code does.
 - Done when: the canary fails when a number is planted in a log, event or crash breadcrumb.
 
-#### BL-1900 Phone verification Phase A: optional prompt after the first letter and in Me
-- Status: blocked (BL-1893, BL-1894, BL-1895, BL-1896, BL-1897, BL-1898, BL-1899). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: L. Priority: P1. Depends on: BL-1893, BL-1894, BL-1895, BL-1896, BL-1897, BL-1898, BL-1899.
+#### BL-1902 Phone verification Phase A: optional prompt after the first letter and in Me
+- Status: blocked (BL-1895, BL-1896, BL-1897, BL-1898, BL-1899, BL-1900, BL-1901). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: L. Priority: P1. Depends on: BL-1895, BL-1896, BL-1897, BL-1898, BL-1899, BL-1900, BL-1901.
 - Satisfies: NS-54-R22 to R28, R31, R32, R34, R37.
 - Scope: Add the optional step with its server pieces through `data architect` and `auth owner` reviews, limits per R24, remove-and-reverify in Me, and the pause switch. Split into app and server PRs under the size cap. Words are `content`'s and held for counsel.
 - Done when: a staging account verifies a test number, Not now keeps every feature, and R22 to R28 tests pass.
 
-#### BL-1901 Test rows for NS-54: staging tests for Google, linking and phone, and the unit titles
-- Status: proposed (NS-54; each waits on its feature row). Mode: agent. Owner: qa engineer. Milestone: M15. Size: M. Priority: P1. Depends on: BL-1888, BL-1891, BL-1900.
+#### BL-1903 Test rows for NS-54: staging tests for Google, linking and phone, and the unit titles
+- Status: proposed (NS-54; each waits on its feature row). Mode: agent. Owner: qa engineer. Milestone: M15. Size: M. Priority: P1. Depends on: BL-1890, BL-1893, BL-1902.
 - Satisfies: NS-54-R6 to R21, R23 to R37.
 - Scope: One test per requirement id with its title and a mutant, staging only where the row says (staging); trace shows each id covered.
 - Done when: `node scripts/trace.mjs --no-write` shows every NS-54 row covered.
 
-#### BL-1902 Device rows for NS-54 on the release candidate: Apple relay mail, Google, link, phone, no signal, abroad
-- Status: blocked (BL-1888, BL-1900). Mode: human. Owner: qa engineer. Milestone: M15. Size: M. Priority: P1. Depends on: BL-1888, BL-1900.
+#### BL-1904 Device rows for NS-54 on the release candidate: Apple relay mail, Google, link, phone, no signal, abroad
+- Status: blocked (BL-1890, BL-1902). Mode: human. Owner: qa engineer. Milestone: M15. Size: M. Priority: P1. Depends on: BL-1890, BL-1902.
 - Satisfies: NS-54-R4, R13, R27, R30, R34.
 - Scope: Add the rows to `docs/qa/DEVICE_TEST_PLAN.md` and run them on the phones to hand with the Asha test accounts; record in `docs/qa/evidence/`. Listed in the device sheet in `docs/release/FOUNDER_QUEUE.md`.
 - Done when: every NS-54 device row has a recorded result.
 
-#### BL-1903 Notice email when a sign-in method or a phone number is added or removed
-- Status: proposed (NS-54; waits on BL-1891 and BL-1900). Mode: agent. Owner: content. Milestone: M15. Size: S. Priority: P1. Depends on: BL-1891.
+#### BL-1905 Notice email when a sign-in method or a phone number is added or removed
+- Status: proposed (NS-54; waits on BL-1893 and BL-1902). Mode: agent. Owner: content. Milestone: M15. Size: S. Priority: P1. Depends on: BL-1893.
 - Satisfies: NS-54-R17, R20; `supabase/config.toml` identity and phone notices; `packages/emails`.
 - Scope: Check the identity-linked, identity-unlinked and phone-changed notices and add one plain template for added or removed, with PROPOSED words held for counsel, through the email hook. No account-created email for a social sign-in is added: none is needed.
 - Done when: each notice renders in the email tests and says no provider id or number.
 
-#### BL-1904 Measure the phone step without the number (NS-54-R36)
-- Status: proposed (NS-54; waits on BL-1900 and the analytics allowlist). Mode: agent. Owner: analytics engineer. Milestone: M15. Size: S. Priority: P1. Depends on: BL-1900.
+#### BL-1906 Measure the phone step without the number (NS-54-R36)
+- Status: proposed (NS-54; waits on BL-1902 and the analytics allowlist). Mode: agent. Owner: analytics engineer. Milestone: M15. Size: S. Priority: P1. Depends on: BL-1902.
 - Satisfies: NS-54-R36; section 7.9 of the card.
 - Scope: Add started, finished and not-now events to the allowlist with no number, id or country, and a counts view for the founder.
 - Done when: the events are in the registry and a test fails if a number is added.
 
-#### BL-1905 Country-code signal and the geo-block spec: align when the regulatory sign-up spec lands
-- Status: blocked (waits for `docs/regulatory/signup-geo-checks.md`, not on develop). Mode: agent. Owner: security architect. Milestone: M15. Size: S. Priority: P1. Depends on: none.
+#### BL-1907 Country-code signal and the geo-block spec: align when the regulatory sign-up spec lands
+- Status: blocked (waits for `docs/regulatory/signup-geo-checks.md`, which is in PR #1677 and not yet on develop). Mode: agent. Owner: security architect. Milestone: M15. Size: S. Priority: P1. Depends on: none.
 - Satisfies: NS-54-R8, R29; NS-40-R9 to R12; D-131, D-136.
 - Scope: Read the regulatory lead's spec, then write one paragraph per method on how the hook and the calling code interact, and file any mismatch with NS-54-R29. Mark everything [UNVERIFIED] until the spec is read.
 - Done when: the paragraph is in the card or the spec and any change to R29 is listed.
