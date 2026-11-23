@@ -300,6 +300,20 @@ export async function readGateInOrder(
   }
 }
 
+/**
+ * The wait's poll (BL-478). `UPLOADS_DRAINED` names no wait, so a read begun in wait one and answered after
+ * "Stay signed in" and a second sign-out would end wait two before its own queue emptied. The wait's effect
+ * clears `alive` in its cleanup; a read that finishes after that does nothing.
+ */
+export async function endWaitIfDrained(
+  read: () => Promise<PendingUploads | number>,
+  alive: { current: boolean },
+  done: () => void,
+): Promise<void> {
+  const p = await read();
+  if (alive.current && nothingPending(p)) done();
+}
+
 /** Whether Sign out now waits for queued letters: the machine's own SIGN_OUT_REQUESTED rule, not canSync (S01). */
 export function signOutWouldWait(s: AuthState, pendingUploads: PendingUploads | number): boolean {
   const next = authReducer(s, { type: 'SIGN_OUT_REQUESTED', reason: 'user', pendingUploads });
