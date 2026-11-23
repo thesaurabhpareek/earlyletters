@@ -3,8 +3,9 @@
  * exists before the first line of phone code (BL-1902). Fictional numbers only (US 555-01XX, UK 07700 900XXX).
  * The analytics sink is packages/analytics/test/phone-never-sent.test.ts.
  */
+import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
-import { findLeaks } from '../e2e-web/support/log-canary';
+import { decodeLine, findLeaks } from '../e2e-web/support/log-canary';
 import { authErrorKind } from '../src/lib/auth/errors.logic';
 import { safeErrorCode, storedLastError } from '../src/lib/backup/contract';
 import { createFaultLog, createFaultStore, installGlobalErrorHandlers, type ErrorUtilsLike, type RejectionTrackerLike } from '../src/lib/resilience/global-errors.logic';
@@ -31,7 +32,7 @@ describe('[NS-54-R26] the log canary sees a phone number', () => {
 
   it('[NS-54-R26] does not flag ordinary console lines (false-positive regression, no allow-list exists)', () => {
     const calm = [
-      'retry +1 200ms', 'diff +2 1000 lines', 'diff +1 1000 lines', '+1 2026-11-23', 'offset +1 0530', 'duration 100 200 3000', 'serial 123-456-7890',
+      'retry +1 200', 'delta +1 100,', 'retry +1 300.', 'diff +7 100', 'retry +1 200ms', 'diff +2 1000 lines', 'diff +1 1000 lines', '+1 2026-11-23', 'offset +1 0530', 'duration 100 200 3000', 'serial 123-456-7890',
       '2026-11-23 10:20:30', '2026-11-23T10:20:30.123Z', '2026-11-23T10:20:30+01:00', '2026-11-23T10:20:30+0530', 'at +00:00', 'tz +0530', 'utc offset +1',
       '23/11/2026', '11.23.2026 build', 'started 10:20:30.456', 'Mon Nov 23 2026 10:20:30 GMT+0100',
       'v1.2.3', 'expo 57.0.1', 'version 12.34.56-rc.1', 'build 5', 'build number 1234567', 'runtime 1.0.0 (build 321)',
@@ -49,12 +50,37 @@ describe('[NS-54-R26] the log canary sees a phone number', () => {
   });
 
   it('[NS-54-R26] still flags the fictional numbers in a sentence and at the end of a line', () => {
-    const planted = ['sent to +12025550147', 'sent to +1 (202) 555-0147 ok', 'call (202) 555-0147.', 'call 202-555-0147', 'call 07700 900123', 'to +44 7700', 'to +1 202', 'to +1 202.', 'to "+44 7700"'];
+    const planted = ['sent to +12025550147', 'sent to +1 (202) 555-0147 ok', 'call (202) 555-0147.', 'call 202-555-0147', 'call 07700 900123', 'to +44 7700', 'to +1 202', 'to +1 202.', 'to "+44 7700"', 'to +1 2025', 'to +1 (202)', 'to +7 912'];
     expect(findLeaks(planted).map((l) => l.line)).toEqual(planted.map((_, i) => i));
   });
 
   it('[NS-54-R26] positive control: with the shapes in place, a number inside an ordinary line fails the run', () => {
     expect(findLeaks(['retry +1 200ms', 'diff +2 1000 lines', 'retry to +447700900123 in 400ms']).map((l) => l.line)).toEqual([2]);
+  });
+
+  it('[BL-1947] flags a number with URL-encoded spacing, and never throws on a malformed escape', () => {
+    const enc = ['GET /verify?to=%2B44%207700%20900123', 'q=%2B1%20202%20555%200147&x=1', 'to=%2B12025550147', 'phone=%28202%29%20555-0147', 'to=%2b44%207700'];
+    expect(findLeaks(enc).map((l) => l.line)).toEqual(enc.map((_, i) => i));
+    expect(findLeaks(['bad %zz %2 %E0%A4%A tail %', 'ok %2B1 ok', 'a%20b']).map((l) => l.line)).toEqual([]);
+    expect(decodeLine('%2B44%207700 %zz %')).toBe('+44 7700 %zz %');
+  });
+
+  it('[BL-1947] flags the national form of a registered number by its last 10 digits, without echoing a digit', () => {
+    const us = findLeaks(['sent 2025550147', 'sent 1 2025550147', 'q=%32025550147'], [], ['+12025550147']);
+    expect(us.map((l) => l.label)).toEqual(['phone:0', 'phone:0', 'phone:0']);
+    const uk = findLeaks(['dial 07700900123', 'dial 07700 900123 now', 'id 7700900124'], [], ['+447700900123']);
+    expect(uk.map((l) => `${l.label}@${l.line}`)).toEqual(['phone:0@0', 'phone-shape@1']);
+    expect(findLeaks(['n 20255501'], [], ['+12025550147'])).toEqual([]);
+    expect(hasNumber(JSON.stringify([us, uk]))).toBe(false);
+  });
+
+  it('[BL-1947] names the gaps it does not cover, in the canary doc, and does not claim more than it does', () => {
+    const src = readFileSync(new URL('../e2e-web/support/log-canary.ts', import.meta.url), 'utf8');
+    const gaps = ['+1 202 555', '+91 98765 43210', '+49 151 12345678', '(+44) 7700 900123', '555-0142', '020 7946 0123', '+44 7700 failed', '%2B44+7700+900123', '%252B44%25207700%2520900123'];
+    for (const gap of gaps) expect(src, gap).toContain(gap.slice(0, 7));
+    expect(src).not.toMatch(/fails? closed/i);
+    for (const gap of gaps)
+      expect(findLeaks([`x ${gap}`]).map((l) => l.label), gap).toEqual([]);
   });
 
   it('[NS-54-R26] reports a label and a position, never the number', () => {

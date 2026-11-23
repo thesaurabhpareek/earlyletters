@@ -33,28 +33,43 @@ export const SEED_TEXT_FRAGMENTS: readonly string[] = [
 
 /**
  * Phone shapes. Tight on purpose: this canary has no allow-list, so one ordinary console line that looks like a
- * number would fail a whole journey. Flagged: a plus and 6 to 15 digits (+12025550147); a plus, country code and
+ * number would fail a whole journey. Each line is also percent-decoded before matching (%2B44%207700%20900123),
+ * so URL-encoded spacing is seen; a malformed sequence is left as it is, never thrown on.
+ * Flagged: a plus and 6 to 15 digits (+12025550147); a plus, country code and
  * grouped digits (+1 202 555 0147, +44 7700 900123, with or without brackets); a bracketed US number
  * ((202) 555-0147); the reserved fictional US exchange (555-01XX); a UK national number starting 01, 02, 03
  * or 07 (07700 900123); and a partial, a real-looking country code plus a first group that starts 1 to 9, at
  * the end of the line or before punctuation, never before a word, digit group, date, time or unit (+44 7700,
  * +1 202; "+44 7700 failed" is a known miss, the full-number shapes and the fixture check cover it).
+ * After +1 or +7 the first group must start 2 to 9 and not be a round hundred, so a retry count or a delta at
+ * the end of a line ("retry +1 200", "delta +1 100,") stays quiet; "+1 200" and "+1 800" are misses on purpose.
  * Not flagged: dates, times, offsets, semver, IPs, epoch times, UUIDs, durations, sizes, counters, serials.
- * Known gaps, on purpose: a bare run of digits with no plus and no grouping, and a dashed 3-3-4 number outside
- * the 555-01XX exchange (a serial looks the same). Register such a number as a phone fixture instead: that
- * check (below) fails closed. journey.ts passes no phones list until BL-1902 registers a fixture.
+ * Known gaps, on purpose, each a line this canary does not match (pinned by name in test/phone-never-logged.test.ts):
+ *   a bare run of digits with no plus and no grouping; a dashed 3-3-4 number outside the 555-01XX exchange (a
+ *   serial looks the same) and a bare 555-0142; a number cut after two groups (+1 202 555); an Indian or German
+ *   grouping (+91 98765 43210, +49 151 12345678); a bracketed country code ((+44) 7700 900123); the UK 3-4-4 form
+ *   (020 7946 0123); a partial followed by a word (+44 7700 failed); form-encoded spaces (%2B44+7700+900123) and
+ *   a double-encoded line (%252B44).
+ * Register such a number as a phone fixture instead. That check (below) does not guess: it flags a line that
+ * holds a registered number's digits whole, its last 10 digits (the national form: 2025550147, 07700900123) or
+ * its last four as a whole group (the part a mask shows), and a finding never echoes a digit. It sees only the
+ * fixtures a journey registers; journey.ts passes no phones list until BL-1902 registers a fixture.
  */
 const PHONE_SHAPES: readonly RegExp[] = [
   /(?<![\w+])\+\d{6,15}(?![\w])/, // +12025550147
   /(?<![\w+])\+\d{1,3}[ .-]\(?\d{2,4}\)?[ .-]\d{3}[ .-]?\d{3,4}(?![\w-]|\.\w)/, // +1 202 555 0147, +44 7700 900123
-  /(?<![\w+])\+(?:1|7|[2-9]\d{1,2})[ ]\(?[1-9]\d{2,3}\)?(?![\w:/-]|\.\w|[ ]\w)/, // partial: +44 7700, +1 202
+  /(?<![\w+])\+(?:[17][ ]\(?(?!\d00(?!\d))[2-9]\d{2,3}|[2-9]\d{1,2}[ ]\(?[1-9]\d{2,3})\)?(?![\w:/-]|\.\w|[ ]\w)/, // partial: +44 7700, +1 202 (not +1 200)
   /(?<![\w.-])\(\d{3}\)[ ]?\d{3}[ -]\d{4}(?![\w-]|\.\w)/, // (202) 555-0147
   /(?<![\w.-])\d{3}[ .-]555[ .-]01\d{2}(?![\w-]|\.\w)/, // 202-555-0147 (reserved fictional exchange)
   /(?<![\w.-])0[1237]\d{2,3}[ ]\d{3}[ ]?\d{3,4}(?![\w-]|\.\w)/, // 07700 900123
 ];
 
-/** A fixture's own digits, so a registered number is found whole or by its last four (the part a mask shows). */
+/** A fixture's own digits, so a registered number is found whole, by its last 10 (national form) or by its last four. */
 const digitsOf = (s: string) => s.replace(/\D/g, '');
+
+/** Percent-decode the ASCII escapes (%2B, %20, %28) of one line. A malformed escape stays as written; never throws. */
+export const decodeLine = (line: string) =>
+  line.replace(/%([0-7][0-9a-f])/gi, (_, h: string) => String.fromCharCode(parseInt(h, 16)));
 
 const norm = (s: string) => s.replace(/\s+/g, ' ').trim().toLowerCase();
 
@@ -87,12 +102,13 @@ export function findLeaks(lines: readonly string[], typed: readonly string[] = [
   const name = new RegExp(`(^|[^\\p{L}\\p{N}])${CHILD_NAME}([^\\p{L}\\p{N}]|$)`, 'iu');
   const tails = phones.map((p, i) => ({ label: `phone:${i}`, d: digitsOf(p), re: new RegExp(`(?<!\\d)${digitsOf(p).slice(-4)}(?!\\d)`) })).filter((x) => x.d.length >= 4);
   const leaks: Leak[] = [];
-  lines.forEach((line, at) => {
+  lines.forEach((raw, at) => {
+    const line = decodeLine(raw);
     const n = norm(line);
     const label =
       (name.test(line) ? 'child-name' : phrases.find((x) => n.includes(x.p))?.label) ??
       (PHONE_SHAPES.some((re) => re.test(line)) ? 'phone-shape' : undefined) ??
-      tails.find((x) => digitsOf(line).includes(x.d) || x.re.test(line))?.label;
+      tails.find((x) => digitsOf(line).includes(x.d) || (x.d.length >= 10 && digitsOf(line).includes(x.d.slice(-10))) || x.re.test(line))?.label;
     if (label) leaks.push({ label, line: at });
   });
   return leaks;
