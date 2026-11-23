@@ -11,15 +11,14 @@
  * hidden, so its round cap never shows as a dot.
  */
 import { useEffect } from 'react';
-import Animated, { Easing, ReduceMotion, useAnimatedProps, useSharedValue, withDelay, withTiming, type SharedValue } from 'react-native-reanimated';
+import Animated, { ReduceMotion, useAnimatedProps, useSharedValue, withDelay, withTiming, type SharedValue } from 'react-native-reanimated';
 import { Path, type PathProps } from 'react-native-svg';
 import { tokens } from '@scribe/design-tokens';
 import { strokeProgress, type Stroke } from '@/components/ui/line-art.data';
-import { useReducedMotion } from '@/lib/motion';
+import { PEN_EASING, useReducedMotion } from '@/lib/motion';
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 /** A pen's ease: a slow start and a soft landing. */
-const PEN = Easing.bezier(0.45, 0, 0.2, 1);
 
 type Props = Omit<PathProps, 'strokeDasharray' | 'strokeDashoffset'> & {
   d: string;
@@ -41,7 +40,7 @@ export function DrawOnPath({ d, length, animate = true, delayMs = 0, durationMs 
       return;
     }
     offset.value = length;
-    offset.value = withDelay(delayMs, withTiming(0, { duration: durationMs, easing: PEN, reduceMotion: ReduceMotion.Never }));
+    offset.value = withDelay(delayMs, withTiming(0, { duration: durationMs, easing: PEN_EASING, reduceMotion: ReduceMotion.Never }));
   }, [still, length, delayMs, durationMs, offset]);
 
   const animatedProps = useAnimatedProps(() => ({ strokeDashoffset: offset.value }));
@@ -66,7 +65,7 @@ export function DrawOnStrokes({ strokes, animate = true, delayMs = 0, durationMs
       return;
     }
     t.value = 0;
-    t.value = withDelay(delayMs, withTiming(1, { duration: durationMs, easing: PEN, reduceMotion: ReduceMotion.Never }));
+    t.value = withDelay(delayMs, withTiming(1, { duration: durationMs, easing: PEN_EASING, reduceMotion: ReduceMotion.Never }));
   }, [still, delayMs, durationMs, t]);
 
   return (

@@ -8,29 +8,37 @@ import * as SystemUI from 'expo-system-ui';
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { Uniwind } from 'uniwind';
 import { effectiveFreeLetters } from '@scribe/api';
+import { AccountLayer } from '@/components/account/account-layer';
+import { AppLockLayer } from '@/components/app-lock/app-lock-layer';
 import { AnalyticsConsentAsk } from '@/components/consent/consent-ask';
 import { AgeGateScreen } from '@/components/gate/age-gate-screen';
 import { RootErrorBoundary } from '@/components/resilience/error-boundary';
+import { GlobalFaultScreen } from '@/components/resilience/global-fault-screen';
+import { startGlobalErrorHandlers, useGlobalFault } from '@/lib/resilience/global-errors';
 import { LaunchRecovery } from '@/components/resilience/launch-recovery';
+import { installGlobalErrorHandler } from '@/lib/resilience/global-handler';
 import { UIProvider } from '@/components/ui/provider';
 import { useTheme } from '@/lib/a11y';
 import { answerAgeGate, useAgeGate } from '@/lib/age-gate';
 import { startAnalytics } from '@/lib/analytics';
+import { startAppLock } from '@/lib/app-lock/controller';
 import { startAnalyticsObservers } from '@/lib/analytics/observers';
 import { useScreenViews } from '@/lib/analytics/use-screen-views';
 import { startListeningCopies } from '@/lib/audio-enhance';
 import { SessionProvider } from '@/lib/auth/session-provider';
 import { startBackup } from '@/lib/backup/gate';
+import { resumeEraseAtLaunch } from '@/lib/erase-everything';
 import { allowanceSourceFor, PLUS_ALPHA, PlanNoticeHost, setFreeLettersAllowanceSource, startLetterLedger, startPlus } from '@/lib/billing';
 import { runLaunchSweep } from '@/lib/capture/sweep';
 import { cleanupExports } from '@/lib/export';
 import { PendingInviteWatcher } from '@/lib/family/pending-invite-watcher';
+import { startMomentsCleanup } from '@/lib/moments/launch';
 import { startPacks } from '@/lib/packs';
 import { startReminders } from '@/lib/reminders';
 import { getRemoteConfig, startRemote } from '@/lib/remote';
 import { useLaunch } from '@/lib/resilience/use-launch';
 import { useRouteTransitions } from '@/lib/motion';
-import { getFamily, getSetting, subscribe, subscribeTo } from '@/lib/store';
+import { getFamily, getSetting, startFindCatchUp, subscribe, subscribeTo } from '@/lib/store';
 import { startSync } from '@/lib/sync';
 import { openedAtRoot, tabsInStack } from '@/lib/transitions.logic';
 import { startTranscriptionQueue } from '@/lib/transcription-queue';
@@ -38,6 +46,7 @@ import { useStoreReady } from '@/dev/store-ready';
 import { useE2eSeams } from '@/dev/e2e-seams';
 
 SplashScreen.preventAutoHideAsync();
+startGlobalErrorHandlers(); // BL-568: before the first render; ids and error codes only (lib/resilience/global-errors.ts)
 
 /** Deep links (invites, sign-in) open as sheets over the tabs, never as the only screen. */
 export const unstable_settings = { initialRouteName: '(tabs)' };
@@ -100,6 +109,7 @@ function startServices(launchedAt: number): void {
   setFreeLettersAllowanceSource(allowanceSourceFor(PLUS_ALPHA, () => effectiveFreeLetters(getRemoteConfig())));
   safely(startRemote); // signed config, pack manifest, content bundle
   safely(startPacks); // after remote: installs pack updates when a newer manifest arrives
+  safely(startFindCatchUp); // Find's index caught up in batches (NS-02-R35); nothing with Find off and no index
   // After packs: the queue registers the speech plan as a language resolver on the
   // platform pack facade (models/speech-packs.ts uses it by default; no bind needed).
   safely(() => startTranscriptionQueue());
@@ -109,6 +119,7 @@ function startServices(launchedAt: number): void {
   safely(startPlus); // StoreKit 2 entitlements on this phone
   safely(startLetterLedger); // heals the free-letter count after a reinstall or a backup restore (D-083)
   safely(startReminders);
+  safely(startMomentsCleanup); // NS-53 PR 8 follow-up (BL-1541): flag off returns at once; on, waits for the owner to settle (lib/moments/launch.logic.ts)
   safely(cleanupExports); // ZIPs left in the cache by an export cut off by a kill
   // Opt-in analytics: nothing is sent before a yes (LEGAL-REQ-003).
   safely(() => startAnalytics({ ttfiMs: Date.now() - launchedAt }));
@@ -116,6 +127,9 @@ function startServices(launchedAt: number): void {
 }
 
 const launchedAt = Date.now();
+
+// BL-370: an error outside rendering is never logged and never ends the app unless it is fatal (lib/resilience/global-handler.ts).
+installGlobalErrorHandler((globalThis as { ErrorUtils?: Parameters<typeof installGlobalErrorHandler>[0] }).ErrorUtils, { dev: __DEV__ });
 
 /**
  * A render error anywhere under the root layout lands here instead of a blank screen: calm words, Try again
@@ -128,10 +142,13 @@ export function ErrorBoundary(props: ErrorBoundaryProps) {
 /**
  * Native: the store is always ready to open. Web preview only: waits for the SQLite worker (src/dev/store-ready.web.ts).
  * The database is opened once here; if opening or updating it throws, the recovery screen replaces the app
- * (Try again, Export what is readable) and nothing is deleted.
+ * (Try again, Export what is readable). The screen itself offers no delete, reset or rebuild.
+ * Try again opens the database again, which runs the update steps, and two of them delete settings keys (db/migrations.ts, claims row E8).
  */
 export default function RootLayout() {
   const launch = useLaunch(useStoreReady());
+  const globalFault = useGlobalFault();
+  if (globalFault.fault) return <GlobalFaultScreen onTryAgain={globalFault.clear} />;
   if (launch.status === 'recovery') return <LaunchRecovery onTryAgain={launch.retry} />;
   return launch.status === 'ok' ? <Root /> : null;
 }
@@ -139,6 +156,14 @@ export default function RootLayout() {
 function Root() {
   // E2E seams (RA-20-18): a no-op in every build without EXPO_PUBLIC_E2E=1 and a non-store app env (src/dev/e2e-seams.ts).
   useE2eSeams();
+  // An Erase everything a kill cut short is finished before anything below reads the store (files and rows go
+  // inside this call; lib/erase-everything.ts), so the first frame shows the age question, as on first run.
+  useState(() => void resumeEraseAtLaunch());
+  // App lock (F1, CISO-1): read during this first render, from two settings and nothing awaited, so a locked book is
+  // covered in the very first frame (lib/app-lock/controller.ts; A-NFR-001, A-NFR-002). It comes after the resume
+  // above on purpose: an Erase everything finished at launch removes the lock settings with the rest, so the lock
+  // reads "off" and the phone starts as on first run instead of locking an empty book.
+  useState(startAppLock);
   useAppearance();
   // One scheme for everything: navigation chrome, status bar and every screen read it from useTheme().
   const { c, scheme } = useTheme();
@@ -218,6 +243,12 @@ function Root() {
             <PlanNoticeHost />
             {/* The analytics ask: a later session after the first letter, on a tab root only (TRACKING_PLAN 9). */}
             <AnalyticsConsentAsk />
+            {/* BL-961: another signed-in account on a phone that holds this owner's book sees one screen, Sign out, over
+                every route; it only covers (components/account). Under the app lock, which stays on top. */}
+            <AccountLayer />
+            {/* App lock: the cover and the lock screen over every screen and sheet, last so it is on top. It only
+                covers; nothing under it unmounts, so a take being kept finishes underneath (components/app-lock). */}
+            <AppLockLayer />
           </SessionProvider>
         )}
       </UIProvider>

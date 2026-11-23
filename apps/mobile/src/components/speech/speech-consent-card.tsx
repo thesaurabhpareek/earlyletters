@@ -12,12 +12,15 @@
  * own widths (stacked at accessibility sizes). The screen's one filled button stays "Write the first one". After a choice the card
  * folds to one line on `standard`: "Getting ready, 40%" with a thin determinate line (track `controlBorder`) only
  * while bytes move; a wait (Wi-Fi, space, its turn), a check or a failure (with Try again) is said in words, never
- * as 0% (speech-consent-card.logic.ts). Or "Your voice is kept either way."
+ * as 0% (speech-consent-card.logic.ts). Under it, while the download is on its way, one still footnote: "You can
+ * start now. Your voice is kept, and the words follow." (true: a recording made now waits as `waiting_for_pack` and
+ * is kept). A failure a tap can help with leads with "The download stopped." Or "Your voice is kept either way."
  */
 import { speechConsentCopy } from '@scribe/content';
-import { useEffect, useMemo, useState } from 'react';
+import { tokens } from '@scribe/design-tokens';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { View } from 'react-native';
-import Animated from 'react-native-reanimated';
+import Animated, { ReduceMotion, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { announce, useIsLargeText } from '@/lib/a11y';
@@ -30,7 +33,7 @@ import { useMotion } from '@/lib/motion';
 import { formatBytes, packsCopy } from '@/lib/packs/copy';
 import { startSpeechDownload } from '@/lib/transcription-queue';
 import { useSpeechDownload } from '@/lib/transcription-queue/use-words';
-import { consentLine, doneLine } from './speech-consent-card.logic';
+import { barScale, consentLine, doneLine, showsStartNow, stateAnnouncement, type ConsentLine } from './speech-consent-card.logic';
 
 /** True when this phone already has everything the language needs to write words down. */
 function onThisPhone(language: SpeechLanguage): boolean {
@@ -65,11 +68,17 @@ export function SpeechConsentCard({ language }: { language: SpeechLanguage }) {
   // A percent and the bar only while bytes move; a wait, a check or a failure is said in words (consentLine).
   const mb = Math.round(ask.bytes / 1e6);
   // Once every file is here the line says so, instead of the line said at the tap (re-read on each download tick).
-  const line = choice === 'yes' && onThisPhone(language) ? doneLine(mb) : consentLine(download, mb);
-  // VoiceOver has no live regions on iOS: a failure that offers Try again is announced once, when it appears.
+  const done = choice === 'yes' && onThisPhone(language);
+  const line = done ? doneLine(mb) : consentLine(download, mb);
+  // VoiceOver has no live regions on iOS: each change of state is announced once (a wait, a check, a failure, done),
+  // never a new percent; the percent is the bar's value (stateAnnouncement).
+  const said = useRef<ConsentLine | null>(null);
   useEffect(() => {
-    if (choice === 'yes' && line.retry) announce(line.text);
-  }, [choice, line.retry, line.text]);
+    if (choice !== 'yes') return;
+    const text = stateAnnouncement(said.current, line);
+    said.current = line;
+    if (text) announce(text);
+  }, [choice, line]);
 
   // The words are already on this phone: nothing to ask.
   if (ready) return null;
@@ -102,22 +111,30 @@ export function SpeechConsentCard({ language }: { language: SpeechLanguage }) {
           )}
         </>
       ) : choice === 'yes' ? (
-        <View className="gap-2" accessibilityLiveRegion="polite">
+        <View className="gap-2">
+          {line.lead ? <Text variant="callout">{line.lead}</Text> : null}
           {line.bar === null ? (
-            <Text variant="callout">{line.text}</Text>
+            <Text variant={line.lead ? 'footnote' : 'callout'} tone="default">
+              {line.text}
+            </Text>
           ) : (
             <>
-              {/* VoiceOver hears this once, from the progress line below, with its value. */}
+              {/* VoiceOver hears this from the progress line below: its label, and the percent as its value. */}
               <Text variant="callout" accessibilityElementsHidden importantForAccessibility="no">
                 {line.text}
               </Text>
-              <ProgressLine value={shownPercent(line.bar) ?? 0} label={line.text} />
+              <ProgressLine bar={line.bar} reduced={motion.reduced} />
             </>
           )}
           {line.retry ? (
             <View className="items-start">
               <Button variant="outline" size="sm" label={packsCopy.retryButton} onPress={retry} />
             </View>
+          ) : null}
+          {showsStartNow(download, done) ? (
+            <Text variant="footnote" tone="default" testID="speech.startNow">
+              {t.startNow}
+            </Text>
           ) : null}
         </View>
       ) : (
@@ -129,16 +146,29 @@ export function SpeechConsentCard({ language }: { language: SpeechLanguage }) {
   );
 }
 
-/** A thin determinate line, no count (HIG Progress indicators: determinate, and kept moving by the download). */
-function ProgressLine({ value, label }: { value: number; label: string }) {
+/**
+ * A thin determinate line (HIG Progress indicators), drawn from the true fraction so bytes under 1% still show.
+ * Track `controlBorder` (bg-input, about 3.2:1 on accentSoft), fill `accent` (bg-primary). The fill grows by scaleX
+ * from the leading edge on `snappy`, never by width; under Reduce Motion it steps to each new value. VoiceOver reads
+ * "Downloading" and the whole percent as its value, with no number below 1% (shownPercent).
+ */
+function ProgressLine({ bar, reduced }: { bar: number; reduced: boolean }) {
+  const target = barScale(bar);
+  const scale = useSharedValue(target);
+  useEffect(() => {
+    const s = tokens.motion.snappy;
+    scale.value = reduced ? target : withSpring(target, { stiffness: s.stiffness, damping: s.damping, mass: s.mass, reduceMotion: ReduceMotion.System });
+  }, [target, reduced, scale]);
+  const fillStyle = useAnimatedStyle(() => ({ transform: [{ scaleX: scale.value }] }));
+  const n = shownPercent(bar);
   return (
     <View
       accessible
       accessibilityRole="progressbar"
-      accessibilityLabel={label}
-      accessibilityValue={{ min: 0, max: 100, now: value }}
+      accessibilityLabel={packsCopy.phases.downloading}
+      accessibilityValue={n === null ? undefined : { min: 0, max: 100, now: n }}
       className="h-1 overflow-hidden rounded-full bg-input">
-      <View className="h-1 rounded-full bg-primary" style={{ width: `${value}%` }} />
+      <Animated.View className="h-1 w-full bg-primary" style={[{ transformOrigin: 'left' }, fillStyle]} />
     </View>
   );
 }

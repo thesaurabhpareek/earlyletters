@@ -21,7 +21,7 @@
  */
 import { randomBytes } from 'node:crypto';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { SqlDb } from '../src/lib/db/sql';
+import type { SqlDb, SqlParam } from '../src/lib/db/sql';
 import type { SyncEngine } from '../src/lib/sync/engine';
 import type { SupabaseLike } from '../src/lib/sync/types';
 import { nodeDb } from './helpers/node-db';
@@ -138,6 +138,21 @@ function editWords(p: Phone, id: string, text: string): void {
 }
 
 const ledgerCount = (p: Phone) => p.store.ledgerDb().counts();
+
+/**
+ * Simulates damaged local data (a bug that got past the raw_transcript trigger, BL-412) so the server's SCIMM refusal
+ * can be tested: the row is read, removed and inserted again with the differing raw (every other column as it was).
+ * A plain insert; the trigger and the takeover flag are not touched.
+ */
+function reseedRaw(db: SqlDb, id: string, raw: string): void {
+  const r = db.get<Record<string, unknown>>('SELECT * FROM entries WHERE id = ?', id)!;
+  const cols = Object.keys(r);
+  db.run('DELETE FROM entries WHERE id = ?', id);
+  db.run(
+    `INSERT INTO entries (${cols.join(', ')}) VALUES (${cols.map(() => '?').join(', ')})`,
+    ...cols.map((c) => (c === 'raw_transcript' ? raw : (r[c] as SqlParam))),
+  );
+}
 
 describe('two parents, three phones, one server (protocol v1)', () => {
   let mama: Phone;
@@ -1507,15 +1522,21 @@ describe('the held draft state table, ADR 0025 section 9: two phones of one auth
     try {
       editWords(P, id2, 'You hid the spoon in the plant, and laughed.');
       expect((await P.sync(w.s)).phase).toBe('paused_consent'); // the edit waits; this pull brings the letter's row
-      expect(local(P, id2)).toMatchObject({ final_text: 'You hid the spoon in the plant, and laughed.', raw_transcript: 'You hid the spoon in the plant.' });
-      expect(queued(P, 'entry.upsert', id2)?.op.data).toMatchObject({ raw_transcript: 'You hid the spoon in the plant.' });
+      // FR-PRV-20: during the consent pause the pull brings no content rows, so the letter's raw transcript does
+      // not arrive; nothing local is deleted or rewound, and the edit still waits with this phone's own raw transcript.
+      expect(local(P, id2)).toMatchObject({ final_text: 'You hid the spoon in the plant, and laughed.', raw_transcript: 'You hid the spoon and the fork.' });
+      expect(queued(P, 'entry.upsert', id2)?.op.data).toMatchObject({ raw_transcript: 'You hid the spoon and the fork.' });
     } finally {
       await server.sensitiveConsent(MAMA, 'accept');
     }
+    // Consent is back: the push goes before the pull, so the waiting edit meets the server's raw transcript (SCIMM)
+    // and becomes a conflict copy beside the first one; the pull then brings the letter's row. Nothing is lost.
     await P.sync(w.s);
-    expect(w.answers('entry.upsert', id2).at(-1)).toMatchObject({ ok: true, applied: true });
-    expect(await letter(id2)).toMatchObject({ final_text: 'You hid the spoon in the plant, and laughed.', raw_transcript: 'You hid the spoon in the plant.' });
-    expect(copies(P, id2)).toEqual(['You hid the spoon and the fork.']);
+    expect(w.answers('entry.upsert', id2).at(-1)).toMatchObject({ ok: false, code: 'SCIMM' });
+    expect(await letter(id2)).toMatchObject({ final_text: 'You hid the spoon in the plant.', raw_transcript: 'You hid the spoon in the plant.' });
+    expect(copies(P, id2)).toEqual(expect.arrayContaining(['You hid the spoon in the plant, and laughed.', 'You hid the spoon and the fork.']));
+    expect(local(P, id2)).toMatchObject({ final_text: 'You hid the spoon in the plant.', raw_transcript: 'You hid the spoon in the plant.' });
+    expect(outbox(P)).toEqual([]);
   }, 60_000);
 
   it('[table C, note: an upload refused SCIMM for another reason] its words are a copy and nothing is lost; "Keep the other one" leaves the letter showing this phone\'s words until a newer server row arrives (a lag)', async () => {
@@ -1524,7 +1545,7 @@ describe('the held draft state table, ADR 0025 section 9: two phones of one auth
     await P.sync();
     await Q.sync();
     // A client bug changes this phone's raw transcript of a letter the server holds (not the second-Keep window).
-    P.db.run('UPDATE entries SET raw_transcript = ? WHERE id = ?', 'changed by a bug', id);
+    reseedRaw(P.db, id, 'changed by a bug');
     editWords(P, id, 'You found a snail on the step and named it.');
     const w = watch();
     expect((await P.sync(w.s)).conflicts).toBe(1);
@@ -2109,7 +2130,7 @@ describe('a refused op that runs again after a lost answer and meets SCCON: the 
     const erased = writeLetter(P, BOOK, 'You ate a whole pear.');
     await P.sync();
     await Q.sync();
-    if (scimm) P.db.run('UPDATE entries SET raw_transcript = ? WHERE id = ?', 'changed by a bug', erased);
+    if (scimm) reseedRaw(P.db, erased, 'changed by a bug');
     editWords(P, erased, 'You ate a whole pear, and the core.'); // offline: op B
     const opB = queuedFor(P, erased)[0].op_id;
     queue();
@@ -2294,8 +2315,10 @@ describe('a refused op that runs again after a lost answer and meets SCCON: the 
     });
     expect(await receipt(opH)).toBe(true);
     expect(await heldText(nap)).toBe('You napped in the sling, all the way home.'); // H applied on the first run
+    // FR-PRV-20: the consent pause is on, so Q's pull brings no content rows: Q keeps its copy as it was, and
+    // nothing local is deleted or rewound. It takes H's words once consent returns (checked at the end).
     await Q.sync();
-    expect(draftText(Q, nap)).toBe('You napped in the sling, all the way home.');
+    expect(draftText(Q, nap)).toBe('You napped in the sling.');
 
     // P never heard H's answer, so its let-go names the version from before H: stale only because of P's own upload.
     letGo(P, nap);
@@ -2462,8 +2485,9 @@ describe('a refused op that runs again after a lost answer and meets SCCON: the 
     const { w } = await refusedThenPaused(() => {
       P.store.setDraftTyped(hat, 'You wore the paper hat to bed.'); // op H, behind B
     });
+    // FR-PRV-20: during the pause Q's pull brings no content rows, so Q keeps the words it had.
     await Q.sync();
-    expect(draftText(Q, hat)).toBe('You wore the paper hat to bed.');
+    expect(draftText(Q, hat)).toBe('You wore the paper hat.');
     const theirs = 'You wore the paper hat to bed, and to breakfast.';
     tick(5_000);
     Q.store.setDraftTyped(hat, theirs);

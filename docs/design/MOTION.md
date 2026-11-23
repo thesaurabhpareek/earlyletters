@@ -64,6 +64,20 @@ Android cross-check (M14): `snappy` (damping ratio ~1.0) ≈ M3 fast spatial, `s
 - `useReducedMotion()` returns the value at app start (M15), so also subscribe to `AccessibilityInfo` `reduceMotionChanged` (M16). Android reports true when animator scale is off; RN documents the developer switch, and Accessibility "Remove animations" sets the same scale **(verify on device)**.
 - Reanimated's default `ReduceMotion.System` makes springs and timings **jump** to the end (M15). A jump is not our fallback: movement keeps `System`, plus a paired opacity fade via `withTiming(v, { duration: fadeMs, reduceMotion: ReduceMotion.Never })`.
 - One hook, `useMotion()` → `{ reduced, spring(token), fade() }`. Components never read the setting directly.
+- Target, not yet in the code: a test, added by BL-1753 (PR #1712, `apps/mobile/test/motion-hook.guard.test.ts`), will hold this. A file that starts an animation must either import the hook from `lib/motion` or say in the animation call itself what Reduce Motion does to it (`reduceMotion(ReduceMotion.Never)` for the fade that is the Reduce Motion form); a new animation with neither will fail the build. Until #1712 merges, nothing enforces this. It is a source scan: it proves the position is stated, not that each animation reads `reduced`.
+
+### Reduce Motion forms that were not written down (BL-1753)
+
+- **Breathe** (the empty-state and loading drawing, 5j). Reduce Motion form: it does not run. The drawing rests still at full opacity (1), the same state as a paused one; nothing replaces the breath, because it is decoration and carries no meaning. The setting is read live, so turning Reduce Motion on stops a breath already under way and returns the drawing to full opacity.
+- **The two loops.** Only two things repeat with `withRepeat`: Breathe's slow opacity breath and the invite waiting bar's sweep (today a local `const SWEEP_MS = 1400` in `apps/mobile/src/components/family/join-ask.tsx`; `tokens.motion.sweepMs` does not exist on develop yet, and PR #1731, BL-1754, adds it with the same 1400 ms and moves the bar onto it). What stops each today, from the code:
+
+  | Loop | Stops when | Reduce Motion form |
+  |---|---|---|
+  | Breathe | Reduce Motion is on; the app is not active (background); its caller passes `paused` (every caller pauses it when the screen is not focused, and the loading screen also when it is held still); it unmounts | still at full opacity |
+  | Waiting bar (`WaitingBar`, the invite screen) | Reduce Motion is on; it unmounts when the line above it goes (the book has arrived) | the segment rests still at the start of its track; the line above it still says the book is on its way |
+
+- **Not settled, for a decision.** WCAG 2.2.2 (Pause, Stop, Hide) asks for a way to stop moving content that starts by itself and lasts over 5 seconds. Both loops are decorative or a wait indicator, and the stop today is the phone's Reduce Motion setting plus the stops above, not a control inside the app. Whether that is enough, or the loops should also end after a set time, is not decided here; this file does not set a time cap. The waiting bar also has no stop on the app going to the background; it stops when the screen goes.
+- **Plan screen** (`apps/mobile/src/app/settings/plus.tsx`). Reduce Motion position: nothing on it moves by itself, so it needs no Reduce Motion form of its own. It is a list of `ListRow` and `ListSection` and takes whatever those do (a press is the press feedback in COMPONENTS 0.3, which has its own Reduce Motion form). If movement is ever added to it, it uses `useMotion()`; once the BL-1753 test above lands (PR #1712), it fails until it does.
 
 ## 5. Signature moments
 
@@ -209,7 +223,7 @@ One `haptic(name)` wrapper. Android uses `performAndroidHapticsAsync` (system fe
 | Moment | iOS (`expo-haptics`) | Android (`AndroidHaptics`) |
 |---|---|---|
 | Record start / stop | `impactAsync(Light)` | `Context_Click` |
-| Pause / resume | `selectionAsync()` | `Segment_Tick` |
+| Pause / resume | none: nothing vibrates between record start and stop | none |
 | Save letter | `notificationAsync(Success)` | `Confirm` |
 | Discard (confirmed) | `notificationAsync(Warning)` | `Reject` |
 | Put it back, pick alternative | `selectionAsync()` | `Segment_Tick` |
@@ -218,6 +232,8 @@ One `haptic(name)` wrapper. Android uses `performAndroidHapticsAsync` (system fe
 | Playback, highlight, milestones, tabs | none | none |
 
 iOS mutes the Taptic Engine in Low Power Mode and during dictation (M22): a haptic always accompanies a visible change.
+
+One start tick per take, counting Speak's: Speak plays it and the start it opens plays none, the microphone primer's Continue included; Listen plays it for a tap on its own circle, Continue when the circle opened the primer, or Try again after a blocker (`components/capture/start-tick.logic.ts`). The stop tick plays after the session ends. Nothing plays while the recorder records: iOS mutes it, and the microphone would hear it (`test/recording-haptics.test.ts`).
 
 ## 7. Performance rules
 

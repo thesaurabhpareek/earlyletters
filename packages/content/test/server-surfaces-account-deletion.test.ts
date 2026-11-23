@@ -4,7 +4,7 @@
  *
  * Over the one copy file, `accountDeletionCopy` (src/features/account-deletion.en.ts):
  *  - every CHG of S64, word for word, except `what.intro`, which is held for counsel (chapter 7 and section 7, C8):
- *    it keeps today's words, and S64's words wait beside it as `what.introProposed` until counsel clears them;
+ *    Build 12 words it for what the build holds (letters and books), and `what.introProposed` is gone;
  *  - the KEEP words the spec's Visual quotes;
  *  - failures say that nothing has changed (offline says it first);
  *
@@ -16,6 +16,7 @@
  * The page that shows these words is pinned in apps/mobile/test/delete-account.test.ts.
  */
 import { describe, expect, it } from 'vitest';
+import { brand } from '@scribe/brand';
 import { accountDeletionCopy, accountEmails } from '../src';
 
 type Leaf = { path: string; text: string };
@@ -39,17 +40,20 @@ const CHANGED: Record<string, string> = {
   'what.copies': 'A copy you exported stays wherever you saved it.',
   'exportFirst.body': 'Export everything, free: the book as a PDF, your letters as text and your recordings.',
   'scheduled.emailNote': 'A confirmation is on its way to your email.',
-  notConfigured: 'Accounts are not available right now. Everything stays on this phone, and deleting the app removes it.',
+  // Not S64's words (#672 claim 2): "Everything stays on this phone" was untrue for an account made on another phone.
+  notConfigured: `Accounts are not available on this phone right now, so an account cannot be deleted here. The letters on this phone stay until you delete the app. To delete your account, write to ${brand.support.email}.`,
   'errors.offline': 'Nothing has changed. Deleting an account needs a connection.',
   'errors.failed': 'That did not go through. Nothing has changed.',
 };
 
-/** Held for counsel (C8): today's words stay on the key the page reads; S64's words wait beside them. */
+/**
+ * Held for counsel (C8): what deletion removes, and the 30 days, are retention promises. Build 12 (servers on, recording
+ * backup off) says only what the build holds on our servers: letters and books. S64's proposal named a recording backup,
+ * which Build 12 does not have, so `introProposed` is gone (test/build12-untrue-copy.test.ts).
+ */
 const HELD = {
   key: 'what.intro',
-  today: 'Deleting your account removes your letters, recordings, photos and books from our servers. You have 30 days to change your mind.',
-  proposedKey: 'what.introProposed',
-  proposed: 'Deleting your account removes your letters, recordings, books and recording backup from our servers. You have 30 days to change your mind.',
+  today: 'Deleting your account removes your letters and books from our servers. You have 30 days to change your mind.',
 };
 
 /** KEEP words the S64 Visual and acceptance name. */
@@ -73,13 +77,11 @@ describe('[P8c S64] accountDeletionCopy changes, word for word', () => {
     for (const [key, words] of Object.entries(CHANGED)) expect(at(key), key).toBe(words);
   });
 
-  it('holds what.intro for counsel (C8): today\'s words on the key the page reads, S64\'s words beside it', () => {
+  it('holds what.intro for counsel (C8): only what Build 12 holds on our servers, no photos, no recording backup', () => {
     expect(at(HELD.key)).toBe(HELD.today);
-    expect(at(HELD.proposedKey)).toBe(HELD.proposed);
-    // The proposal is the whole of S64's change: photos out, the recording backup named, nothing else moved.
-    expect(HELD.proposed).not.toMatch(/\bphotos?\b/i);
-    expect(HELD.proposed).toMatch(/\brecording backup\b/);
-    expect(HELD.proposed.split('. ')[1]).toBe(HELD.today.split('. ')[1]);
+    expect(at('what.introProposed')).toBeUndefined();
+    expect(HELD.today).not.toMatch(/\bphotos?\b|\brecordings?\b|\bbackup\b/i);
+    expect(HELD.today.split('. ')[1]).toBe('You have 30 days to change your mind.');
   });
 
   it('keeps the words the Visual and the acceptance boxes quote', () => {

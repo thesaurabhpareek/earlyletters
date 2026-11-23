@@ -5,6 +5,8 @@
  */
 import { ENGINE_VERSION, faithfulClean } from '@scribe/core';
 import { addChild, createDraft, dictionaryFor, hideChild, listChildren, saveEntry, setDraftTranscript, setSetting, todayISO, uuidv7 } from '@/lib/store';
+import { acceptBeforeYouBegin } from '@/lib/age-gate';
+import { copy } from '@/lib/copy';
 import { PLAN_CACHE_KEY } from '@/lib/billing/config';
 import { serializePlanCache } from '@/lib/billing/plan.logic';
 
@@ -76,6 +78,8 @@ export function seedAsha(opts: { waiting?: boolean; quiet?: boolean; marks?: boo
   const child = addChild({ name: 'Asha', birthday: todayISO(new Date(now - 214 * DAY)), dueDate: null, signsAs: 'Mama' });
   const dictionary = dictionaryFor({ childName: child.name, childBirthday: child.birthday, signsAs: child.signsAs });
   setSetting('ageGate.passed', '1'); // the 18+ gate boolean (PRD-REQ-019, DECISIONS D-026)
+  // A seeded dev install has accepted Before you begin, so it opens on the book, not the one-time agreement.
+  acceptBeforeYouBegin(copy.beforeBegin.agree, 'first_run.before_you_begin', true);
   if (opts.plus) {
     setSetting(
       PLAN_CACHE_KEY,

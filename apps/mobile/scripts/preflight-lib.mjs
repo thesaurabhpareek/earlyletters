@@ -115,3 +115,99 @@ export function updateChannelMessage(profile, channel) {
 export function privacyManifestDeclared(pm) {
   return Boolean(pm && pm.NSPrivacyTracking === false && Array.isArray(pm.NSPrivacyAccessedAPITypes) && pm.NSPrivacyAccessedAPITypes.length > 0);
 }
+
+/**
+ * The permissions a build may ask for (LEGAL-REQ-007; ENGINEERING_REQUIREMENTS 1.3.0 "Face ID only if the app lock
+ * ships"): the microphone, notifications (no Info.plist key on iOS; asked at the moment of use) and Face ID for the
+ * app lock (F1, CPO-2, CISO-1). Nothing else: every unused permission is a question App Review will ask.
+ */
+export const ALLOWED_PERMISSION_NAMES = Object.freeze([
+  'microphonePermission',
+  'notificationPermission',
+  'notificationsPermission',
+  'faceIDPermission',
+  'NSMicrophoneUsageDescription',
+  'NSFaceIDUsageDescription',
+]);
+
+/** The Info.plist usage strings a generated native project must hold, exactly: the microphone and Face ID. */
+export const REQUIRED_PLIST_USAGE = Object.freeze(['NSFaceIDUsageDescription', 'NSMicrophoneUsageDescription']);
+
+/** Every permission a config names (plugin options or infoPlist keys), from its JSON text. */
+export function permissionNames(configText) {
+  const re = /(camera|photo|photos|location|contacts|faceID|microphone|bluetooth|calendars|reminders|motion|speechRecognition|userTracking|notifications?)Permission|NS[A-Za-z]+UsageDescription/g;
+  return [...new Set(String(configText).match(re) ?? [])];
+}
+
+/** Names in the config that are not on the allowed list (empty when the build asks only for the three). */
+export function extraPermissions(configText) {
+  return permissionNames(configText).filter((n) => !ALLOWED_PERMISSION_NAMES.includes(n));
+}
+
+/** Usage keys of a generated Info.plist against REQUIRED_PLIST_USAGE: which are missing, which are extra. */
+export function plistUsageProblems(usageKeys) {
+  const keys = [...new Set(usageKeys)];
+  return { missing: REQUIRED_PLIST_USAGE.filter((k) => !keys.includes(k)), extra: keys.filter((k) => !REQUIRED_PLIST_USAGE.includes(k)).sort() };
+}
+
+/** Null when a purpose string is real; otherwise why not (missing, a library default, or a placeholder left in). */
+export function purposeStringProblem(value) {
+  const v = String(value ?? '');
+  if (v.length <= 20) return 'missing or too short';
+  if (/\{app\}|TODO|example\.com|\$\(PRODUCT_NAME\)/.test(v)) return 'holds a placeholder or a library default';
+  return null;
+}
+
+const BG_MODES_KEY = /<key>UIBackgroundModes<\/key>/;
+const EXTENSION_PRODUCT = /productType\s*=\s*"?com\.apple\.product-type\.(?:app-extension|extensionkit-extension|watchkit2?-extension)[^";\s]*|com\.apple\.widgetkit-extension|com\.apple\.usernotifications\.service|com\.apple\.share-services/;
+
+/**
+ * BL-864 (NX-39-R4, R51): what the generated native project must not hold, from the text of its Info.plist,
+ * its entitlements file and its project.pbxproj. Returns one problem per broken rule, `{ id, text }`, empty when
+ * clean. `library` is `{ flagOn, content }`: the photo-library key is allowed only when its flag is on and its
+ * value equals the content string (a null `content` means no string is agreed yet, so the key is never allowed).
+ * Lines 575-576 era rule stays: any UIBackgroundModes, even an empty one, fails (R46: a founder ruling after counsel).
+ *
+ * @param {{ plist?: unknown, entitlements?: unknown, pbxproj?: unknown, library?: { flagOn: unknown, content: string | null } }} [inputs]
+ * @returns {{ id: string, text: string }[]}
+ */
+export function forbiddenNativeProblems({ plist, entitlements, pbxproj, library = { flagOn: false, content: null } } = {}) {
+  const out = [];
+  const add = (id, text) => out.push({ id, text });
+  // Fail closed: an input that is missing, not text, empty or not the file it should be proves nothing.
+  const unreadable = [
+    ['plist', plist, '<dict', 'Info.plist'],
+    ['entitlements', entitlements, '<dict', 'entitlements file'],
+    ['pbxproj', pbxproj, 'PBXProject', 'project.pbxproj'],
+  ].filter(([, v, marker]) => typeof v !== 'string' || !v.includes(marker));
+  for (const [id, , , name] of unreadable) add(`missing-${id}`, `The generated ${name} is missing, unreadable or empty, so the lint proves nothing (BL-864).`);
+  if (typeof plist !== 'string') plist = '';
+  if (typeof entitlements !== 'string') entitlements = '';
+  if (typeof pbxproj !== 'string') pbxproj = '';
+  const keys = [...plist.matchAll(/<key>([^<]+)<\/key>/g)].map((m) => m[1]);
+  if (BG_MODES_KEY.test(plist)) add('background-modes', 'Info.plist declares UIBackgroundModes; LEGAL-REQ-011 says none until a recorded founder ruling.');
+  if (keys.includes('BGTaskSchedulerPermittedIdentifiers')) add('bg-task-identifiers', 'Info.plist declares BGTaskSchedulerPermittedIdentifiers; no background task runs until a recorded founder ruling.');
+  const loc = keys.filter((k) => /^NSLocation/.test(k));
+  if (loc.length) add('location', `Info.plist holds location keys (${loc.join(', ')}); the app never asks for location (NX-39-R4).`);
+  if (keys.includes('NSPhotoLibraryAddUsageDescription')) add('photo-add', 'Info.plist holds NSPhotoLibraryAddUsageDescription; the app never writes to the photo library (NX-39-R4).');
+  if (keys.includes('NSPhotoLibraryUsageDescription')) {
+    const value = new RegExp('<key>NSPhotoLibraryUsageDescription</key>\\s*<string>([\\s\\S]*?)</string>').exec(plist)?.[1];
+    const ok = library.flagOn === true && typeof library.content === 'string' && library.content !== '' && value === library.content;
+    if (!ok) add('photo-library', 'Info.plist holds NSPhotoLibraryUsageDescription, but only a build with its flag on and the content string verbatim may (NX-39-R4).');
+  }
+  const alertKey = 'PHPhotoLibraryPreventAutomaticLimitedAccessAlert';
+  if ((keys.includes(alertKey) || keys.includes('NSPhotoLibraryUsageDescription')) && plistBool(plist, alertKey) !== 'true') add('limited-alert', `${alertKey} must be true whenever it or the library key exists (NX-39-R4).`);
+  // BL-1414 (MEDIA_THREAT_MODEL P8, P9): either key set true shows Documents (the recordings) in the Files app.
+  // Only an explicit false is clean; present with any other value fails closed. The text never echoes the value.
+  for (const [key, id] of [['UIFileSharingEnabled', 'file-sharing'], ['LSSupportsOpeningDocumentsInPlace', 'open-in-place']]) {
+    if (keys.includes(key) && plistBool(plist, key) !== 'false') add(id, `Info.plist sets ${key} to something other than false; that would show recordings in the Files app (MEDIA_THREAT_MODEL P8, P9).`);
+  }
+  if (/com\.apple\.security\.application-groups/.test(entitlements)) add('app-group', 'Entitlements hold com.apple.security.application-groups; no app group exists (NX-39-R51).');
+  if (EXTENSION_PRODUCT.test(pbxproj)) add('extension-target', 'The native project has a widget, share, notification or other app-extension target (NX-39-R51).');
+  if (/CoreLocation/.test(pbxproj)) add('core-location', 'The native project links CoreLocation (NX-39-R4).');
+  return out.filter((p, i) => out.findIndex((q) => q.id === p.id) === i);
+}
+
+function plistBool(text, key) {
+  return new RegExp(`<key>${key}</key>\\s*<(true|false)\\s*/>`).exec(text)?.[1] ?? null;
+}

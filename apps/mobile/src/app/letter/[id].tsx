@@ -42,6 +42,8 @@ import { useUnlitRoom } from '@/components/ui/lamp';
 import { ListRow, ListSection } from '@/components/ui/list-row';
 import { UIProvider } from '@/components/ui/provider';
 import { BackButton, ModalHeader } from '@/components/ui/screen-header';
+import { letterStartY, topBarHeight } from '@/lib/letter-top-bar.logic';
+import { SIZE_WORD_MAX_SCALE, showsSizeWord } from '@/lib/reader-words.logic';
 import { Sheet } from '@/components/ui/sheet';
 import { StateScreen } from '@/components/ui/state-screen';
 import { Text } from '@/components/ui/text';
@@ -52,6 +54,7 @@ import { track } from '@/lib/analytics/track';
 import { copy, fill } from '@/lib/copy';
 import { letterDateline } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
+import { downloadingLine } from '@/lib/models/speech-download.logic';
 import { planFor } from '@/lib/models/speech-packs';
 import { clearReadItBack, isReadItBack } from '@/lib/read-it-back';
 import {
@@ -71,12 +74,16 @@ import {
   type Entry,
   type OccurredPrecision,
 } from '@/lib/store';
-import { useReducedMotion } from '@/lib/motion';
+import { useMotion, useReducedMotion } from '@/lib/motion';
 import { ROUTES, canCarry, type Move } from '@/lib/transitions.logic';
 import { languageFor, retryWords, startSpeechDownload, waitingForLanguageNote } from '@/lib/transcription-queue';
 import { wordsCopy } from '@/lib/transcription-queue/copy';
 import { useSpeechDownload, useWordsJob } from '@/lib/transcription-queue/use-words';
 import { AppNote } from '@/components/book/app-note';
+import { LetterPhoto, LetterPicture } from '@/components/photos/letter-photo';
+import { useLetterPhoto } from '@/lib/photos/hooks';
+import { photoSurfaces, photosBuildEnabled } from '@/lib/photos/flag';
+import { photosPausedNow } from '@/lib/photos/pause';
 import { belowIsBook, bookHandoff, pageRestPlan, type NavState } from '@/components/book/book.logic';
 import { provenanceOf } from '@/components/book/chapters';
 import { entryDateline, movedToast } from '@/components/book/date-change.logic';
@@ -127,6 +134,8 @@ function Letter() {
   const [size, setSize] = useState<ReadingSize>(getReadingSize);
   const [showOriginal, setShowOriginal] = useState(false);
   const fontScale = useFontScale();
+  const screenWidth = useWindowDimensions().width;
+  const storedPhoto = useLetterPhoto(entry?.id);
   useUnlitRoom();
 
   // The page follows the store: words that arrive while it is open appear without leaving and reopening (J10-01).
@@ -160,8 +169,13 @@ function Letter() {
   const monthOnly = entry.occurredPrecision === 'month';
   const dateline = entryDateline(child, entry);
   const spokenDateline = monthOnly ? dateline : letterDateline(child, entry.occurredOn);
+  // The picture sits between the dateline and the words (ruling NS-01-C01-order). A letter with a picture hands off with
+  // the plain 200 ms fade (the carry moves dateline and words as one rigid block); a letter without one carries as before.
+  const hasPicture =
+    !!storedPhoto && words !== 'waiting' && photoSurfaces({ build: photosBuildEnabled(), paused: photosPausedNow() }).addActions;
+  const picture = hasPicture ? <LetterPicture entryId={entry.id} own={isOwnEntry(entry)} columnWidth={screenWidth - 2 * CARD_TEXT_INSET} /> : null;
   const openingFor: Opening = (focus) => (
-    <OpeningBlock focusRef={focus} dateline={dateline} spokenDateline={spokenDateline} text={text} note={shownNote} scale={scale} swapKey={`${size}:${showOriginal}`} />
+    <OpeningBlock focusRef={focus} dateline={dateline} spokenDateline={spokenDateline} text={text} note={shownNote} scale={scale} swapKey={`${size}:${showOriginal}`} picture={picture} />
   );
 
   const page = (
@@ -178,6 +192,7 @@ function Letter() {
         onToggleOriginal={() => setShowOriginal((v) => !v)}
         opening={openingFor}
         openingLineHeight={lineHeightFor(shownNote ? 'footnote' : 'letterBody', fontScale, scale)}
+        hasPicture={hasPicture}
         words={words}
         onEntry={setEntry}
       />
@@ -204,6 +219,7 @@ function OpeningBlock({
   note,
   scale,
   swapKey,
+  picture,
 }: {
   focusRef: RefObject<any> | null;
   dateline: string;
@@ -212,12 +228,16 @@ function OpeningBlock({
   note: boolean;
   scale: number;
   swapKey: string;
+  picture?: ReactNode;
 }) {
   return (
     <View style={{ gap: CARD_TEXT_GAP }}>
-      <Text ref={focusRef ?? undefined} variant="letterDateline" caps accessibilityLabel={spokenDateline} testID={focusRef ? 'letter.dateline' : undefined}>
+      {/* NS-33-R1: the dateline is the page's level 1 heading, and its first. The carried copies stay hidden from VoiceOver. */}
+      <Text ref={focusRef ?? undefined} variant="letterDateline" caps accessibilityLabel={spokenDateline} asHeading={1} testID={focusRef ? 'letter.dateline' : undefined}>
         {dateline}
       </Text>
+      {/* The picture, when the letter has one: second in order, after the one level 1 heading and before the words. */}
+      {picture}
       {/* "Exactly as said" and Reading Size cross-fade the words over 150 ms; the size itself never animates. */}
       <Animated.View key={swapKey} entering={focusRef ? FadeIn.duration(150).reduceMotion(ReduceMotion.Never) : undefined}>
         {note ? (
@@ -241,11 +261,12 @@ type PageProps = {
   onToggleOriginal: () => void;
   opening: Opening;
   openingLineHeight: number;
+  hasPicture: boolean;
   words: ReturnType<typeof letterWords>;
   onEntry: (e: Entry) => void;
 };
 
-function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, opening, openingLineHeight, words, onEntry }: PageProps) {
+function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, opening, openingLineHeight, hasPicture, words, onEntry }: PageProps) {
   const { c } = useTheme();
   const insets = useSafeAreaInsets();
   const toast = useToast();
@@ -253,6 +274,9 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
   const leave = useLeave();
   const reduced = useReducedMotion();
   const screen = useWindowDimensions();
+  const fontScale = useFontScale();
+  // The letter starts below the top bar, which follows its Back button at large text (BL-1790).
+  const pageTop = CARD_MODE ? letterStartY(insets.top, fontScale) : insets.top + 60;
   // In a push the page draws its own opening (no carried copy stands in), so it is the page's: selectable, with an id.
   const ownOpening = useRef(null);
 
@@ -261,10 +285,10 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
   // out first, as the words go back into their card. Without a carry, the rest is part of the page CardToPage fades.
   const [rest] = useState(() => {
     const r = CARD_MODE ? cardRects.get(entry.id) : undefined;
-    const pageY = insets.top + 60;
+    const pageY = pageTop;
     const column = { x: CARD_TEXT_INSET, y: pageY, width: screen.width - 2 * CARD_TEXT_INSET, height: Number.MAX_SAFE_INTEGER, lineHeight: openingLineHeight };
     return pageRestPlan({
-      carried: !!r && !reduced && canCarry(r.text, column),
+      carried: !hasPicture && !!r && !reduced && canCarry(r.text, column),
       holdMs: tokens.motion.cardToPage.holdMs,
       measureMs: MEASURE_MS,
       spring: tokens.motion.standard,
@@ -323,7 +347,7 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
   // One provenance line (S27): "Spoken, with small fixes. Recording kept on this phone." The other parent's
   // recording is on their phone, which the player's place says (D-073), so the line names only how it was made, and
   // only that it was spoken: this phone never holds their raw words, so it cannot know whether any fix was made (S8).
-  const provenanceLine = provenanceLineOf(entry, { own, words: copy.book.provenance, recordingOnPhone: copy.book.recordingOnPhone });
+  const provenanceLine = provenanceLineOf(entry, { own, audioUri: entry.audioUri, words: copy.book.provenance, recordingOnPhone: copy.book.recordingOnPhone });
   // The words card: a recording waiting for its words, or one with no words that the store can still take words for (S3).
   const wordsCard = wordsCardKind({ own, words, canWrite: words === 'nobodySpoke' && canTypeWordsFor(entry.id) });
 
@@ -336,9 +360,16 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
       hitSlop={6}
       testID="letter.readingSize"
       className="mr-1 h-11 min-w-11 items-center justify-center rounded-full px-2 active:bg-secondary">
-      <Text variant="title2" tone="accent" maxFontSizeMultiplier={1.3}>
-        {copy.reader.readingSizeButton}
-      </Text>
+      <View className="flex-row items-center gap-1.5">
+        <Text variant="title2" tone="accent" maxFontSizeMultiplier={1.3}>
+          {copy.reader.readingSizeButton}
+        </Text>
+        {showsSizeWord(fontScale) ? (
+          <Text variant="labelSmall" tone="accent" maxFontSizeMultiplier={SIZE_WORD_MAX_SCALE} testID="letter.readingSize.word">
+            {copy.reader.readingSizeWord}
+          </Text>
+        ) : null}
+      </View>
     </Pressable>
   );
 
@@ -384,13 +415,13 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
     back();
   };
 
-  const topBar = CARD_MODE ? <TopBar onBack={back} trailing={aa} inset={insets.top} /> : null;
+  const topBar = CARD_MODE ? <TopBar onBack={back} trailing={aa} inset={insets.top} fontScale={fontScale} /> : null;
 
   return (
     <View className="flex-1 bg-background">
       {CARD_MODE ? <Stack.Screen options={{ headerShown: false }} /> : <Stack.Screen options={{ headerRight: () => aa }} />}
       <ScrollView
-        contentContainerStyle={{ paddingTop: insets.top + 60, paddingBottom: insets.bottom + 48, paddingHorizontal: CARD_TEXT_INSET, gap: 28 }}
+        contentContainerStyle={{ paddingTop: pageTop, paddingBottom: insets.bottom + 48, paddingHorizontal: CARD_TEXT_INSET, gap: 28 }}
         testID="letter.page">
         <View className="gap-6">
           {showOriginal ? (
@@ -398,7 +429,7 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
               {copy.review.originalLabel}
             </Text>
           ) : null}
-          {CARD_MODE ? <PageOpening lineHeight={openingLineHeight} /> : opening(ownOpening)}
+          {CARD_MODE ? <PageOpening lineHeight={openingLineHeight} carry={!hasPicture} /> : opening(ownOpening)}
           {showsSignature(words) || showOriginal ? (
             <Animated.View style={restSignature} className="self-end">
               <Text variant="signature" scale={tokens.readingScale[size]}>
@@ -410,6 +441,9 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
 
         <Animated.View style={[{ gap: 28 }, restBody]}>
         {spoken && <AudioPlayer entryId={entry.id} />}
+        {/* The picture's controls (add, change, words, remove) stay after the words and Play; the picture itself is drawn by the
+            opening, between the dateline and the words (CL-116 C-01, ruling NS-01-C01-order): absent when photos are off. */}
+        {words !== 'waiting' ? <LetterPhoto entryId={entry.id} finalText={entry.finalText} own={own} /> : null}
 
         {wordsCard && <WaitingCard entry={entry} kind={wordsCard} onWrite={() => setWriting(true)} />}
         {own && words === 'words' && (unread || entry.wordsUnreviewed) && (
@@ -436,11 +470,7 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
                 {provenanceLine}
               </Text>
             </View>
-            {!entry.inBook && (
-              <View className="flex-row pt-1">
-                <PrivateChip color={c.text} />
-              </View>
-            )}
+            <PrivateChipSlot shown={!entry.inBook} color={c.text} />
             {canShowOriginal && (
               <Button
                 variant="quiet"
@@ -507,8 +537,31 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
   );
 }
 
+/**
+ * The Private chip's row, always laid out so Make private and Move to the book push nothing (BL-420, about 20 pt). The
+ * chip fades on `fade`, which is 200 ms and is also the Reduce Motion form; hidden from VoiceOver while it is not shown.
+ */
+function PrivateChipSlot({ shown, color }: { shown: boolean; color: string }) {
+  const motion = useMotion();
+  const opacity = useSharedValue(shown ? 1 : 0);
+  useEffect(() => {
+    opacity.value = motion.fade(shown ? 1 : 0);
+  }, [shown, motion, opacity]);
+  const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
+  return (
+    <Animated.View
+      className="flex-row pt-1"
+      style={style}
+      pointerEvents="none"
+      accessibilityElementsHidden={!shown}
+      importantForAccessibility={shown ? 'auto' : 'no-hide-descendants'}>
+      <PrivateChip color={color} />
+    </Animated.View>
+  );
+}
+
 /** Card to page only: the page's own Back and "Aa" (the native header is hidden). A swipe down on it goes back too. */
-function TopBar({ onBack, trailing, inset }: { onBack: () => void; trailing: ReactNode; inset: number }) {
+function TopBar({ onBack, trailing, inset, fontScale }: { onBack: () => void; trailing: ReactNode; inset: number; fontScale: number }) {
   const { c } = useTheme();
   const swipe = Gesture.Pan()
     .activeOffsetY(16)
@@ -520,7 +573,7 @@ function TopBar({ onBack, trailing, inset }: { onBack: () => void; trailing: Rea
     <GestureDetector gesture={swipe}>
       <View
         className="absolute left-0 right-0 top-0 flex-row items-center justify-between px-5"
-        style={{ paddingTop: inset, height: inset + 52, backgroundColor: c.bg }}>
+        style={{ paddingTop: inset, height: topBarHeight(inset, fontScale), backgroundColor: c.bg }}>
         <BackButton onPress={onBack} className="self-center" />
         {trailing}
       </View>
@@ -584,7 +637,7 @@ function WaitingCard({ entry, kind, onWrite }: { entry: Entry; kind: WordsCardKi
           : download.hold === 'no_space'
             ? wordsCopy.pack.noSpace
             : p !== null
-              ? fill(wordsCopy.pack.progress, { n: Math.floor(p * 100) })
+              ? downloadingLine(p, (n) => fill(wordsCopy.pack.progress, { n }))
               : fill(wordsCopy.pack.sizeLine, { size: Math.round(planFor([language]).bytes / 1e6) })
         : null;
 

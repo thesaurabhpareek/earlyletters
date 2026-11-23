@@ -15,14 +15,18 @@ import { useEffect, useRef, useState, type RefObject } from 'react';
 import { AccessibilityInfo, Platform, useWindowDimensions } from 'react-native';
 import { useUniwind } from 'uniwind';
 import { tokens, type ColorScheme, type Colors } from '@scribe/design-tokens';
+import { e2eWebSeam } from '@/dev/e2e-web-seam-load';
 import { getAudioMode } from '@/lib/audio-mode';
+import { createGatedAnnounce } from '@/lib/speech-gate';
 
 import { isAccessibilitySize, isLargeText } from './a11y.logic';
 
 export { FONT_SCALE, isAccessibilitySize, isLargeText } from './a11y.logic';
 
 export function useFontScale(): number {
-  return useWindowDimensions().fontScale || 1;
+  const real = useWindowDimensions().fontScale || 1;
+  // Web e2e preview only: null in every other build (dev/e2e-web-seam-load.ts).
+  return e2eWebSeam?.fontScaleOverride() ?? real;
 }
 
 export function useIsAccessibilitySize(): boolean {
@@ -37,9 +41,6 @@ export function useIsLargeText(): boolean {
 /* Announcements                                                       */
 /* ------------------------------------------------------------------ */
 
-let queued: string[] = [];
-let timer: ReturnType<typeof setTimeout> | null = null;
-
 /**
  * Speak a short status ("Letter deleted. Undo available.").
  * - iOS and web: AccessibilityInfo.announceForAccessibilityWithOptions, queued behind
@@ -49,15 +50,13 @@ let timer: ReturnType<typeof setTimeout> | null = null;
  *   TextField already do), which TalkBack reads.
  * - Never over a letter (TDD 09 rule S2): while a recording is playing, messages wait
  *   and are spoken when playback stops.
+ * - Never into a take (SR-C-02, B2-21): while the recorder is capturing, every message is
+ *   dropped, not queued, and a waiting one is dropped too (lib/speech-gate.ts). Listen sets
+ *   the flag from the recorder's real state.
  */
 export function announce(message: string, opts: { queue?: boolean } = {}): void {
   if (!message || Platform.OS === 'android') return;
-  if (getAudioMode() === 'playback') {
-    queued.push(message);
-    if (!timer) timer = setTimeout(flushQueued, 1000);
-    return;
-  }
-  speak(message, opts.queue ?? true);
+  gated(message, opts);
 }
 
 /** react-native-web has announceForAccessibility only; never throw from a status message. */
@@ -71,16 +70,8 @@ function speak(message: string, queue: boolean) {
   } catch {}
 }
 
-function flushQueued() {
-  timer = null;
-  if (getAudioMode() === 'playback') {
-    timer = setTimeout(flushQueued, 1000);
-    return;
-  }
-  const all = queued;
-  queued = [];
-  for (const m of all) speak(m, true);
-}
+/** The playback wait and the recording drop live in lib/speech-gate.ts (pure, tested in Node). */
+const gated = createGatedAnnounce({ speak, audioMode: getAudioMode, later: (fn, ms) => setTimeout(fn, ms) });
 
 /**
  * Move VoiceOver / TalkBack focus to `ref` after the first layout (a new onboarding step's

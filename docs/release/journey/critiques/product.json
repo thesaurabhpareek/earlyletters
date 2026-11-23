@@ -306,7 +306,7 @@
    {
     "sev": "minor",
     "text": "'Writing down what you said.' gives no sense of how long it takes and offers no instruction. On the real app, transcription of a long take on an older phone could take a while; I could not verify timing. Also VOICE.md's own example for this moment is 'Listening back to what you said', and 'writing' hints at the app writing.",
-    "fix": "'Listening back to what you said. You can close this, it will be waiting on Tonight.' Add a gentle progress shape for long takes.",
+    "fix": "'Listening back to what you said. Your voice is kept. You can close this and come back to it from Tonight.' Add a gentle progress shape for long takes.",
     "owner": "content"
    }
   ]

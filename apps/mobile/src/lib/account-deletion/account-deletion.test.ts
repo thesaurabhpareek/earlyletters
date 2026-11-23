@@ -162,6 +162,11 @@ describe('server calls', () => {
     for (const data of [false, null, 'true']) expect(await cancelAnswering(data), String(data)).toEqual({ ok: false, reason: 'failed' });
   });
 
+  it('a false answer while the request is held is a failure: only a status of none counts as cancelled (BL-455 point 4)', async () => {
+    const held: Answer = { data: [{ id: 'req-1', status: 'held', scheduled_for: '2026-11-29T09:00:00Z' }], error: null };
+    expect(await cancelAnswering(false, held)).toEqual({ ok: false, reason: 'failed' });
+  });
+
   it('a false answer whose status read fails says why the read failed', async () => {
     expect(await cancelAnswering(false, { data: null, error: { message: 'Network request failed' } })).toEqual({ ok: false, reason: 'offline' });
     expect(await cancelAnswering(false, { data: null, error: { message: 'SCDEL' } })).toEqual({ ok: false, reason: 'failed' });

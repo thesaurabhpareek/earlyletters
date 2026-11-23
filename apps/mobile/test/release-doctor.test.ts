@@ -111,26 +111,23 @@ describe('EAS Update channel without expo-updates (RS-07, D-091, #538)', () => {
     expect(store.filter((x) => x.area === 'store' && x.message === 'channel')).toEqual([]);
   });
 
-  describe('the real repository (eas.json build.production sets "channel": "production", no expo-updates)', () => {
-    // Wanted until REL-06/RS-15 removes the channel after the 9 Nov go/no-go (D-124 item 1): the alpha doctor stays
-    // at 0 FAIL (TESTFLIGHT.md step 5) with this one WARN, and the store lane (--store) FAILs on production. When
-    // RS-15 lands both become a PASS: change these expectations then, never before.
+  describe('the real repository (no build profile sets a channel, no expo-updates)', () => {
+    // REL-06/RS-15 (S-12b) removed the production channel: the alpha doctor stays at 0 FAIL (TESTFLIGHT.md step 5)
+    // and both modes PASS the channel row. A channel on any profile again would turn these back into a WARN or FAIL.
     const root = join(__dirname, '..', '..', '..');
     const read = (p: string) => readFileSync(join(root, p), 'utf8');
     const files = () => ({ appConfig: read('apps/mobile/app.config.ts'), easJson: read('apps/mobile/eas.json'), keysTs: read('packages/api/src/keys.ts'), mobilePackageJson: read('apps/mobile/package.json') });
     const channel = (f: ReturnType<typeof repoFindings>) => f.filter((x) => x.message.includes('EAS Update'));
 
-    it('default (alpha) mode: 0 FAIL, and the production channel is a WARN', () => {
+    it('default (alpha) mode: 0 FAIL, and the channel row is a PASS', () => {
       const f = repoFindings(files(), false, { results: runProductionPreflight(root), store: false });
       expect(f.filter((x) => x.level === 'FAIL'), f.map((x) => `${x.level} ${x.message}`).join('\n')).toEqual([]);
-      expect(channel(f).map((x) => x.level)).toEqual(['WARN']);
-      expect(channel(f)[0].message).toContain('"production"');
+      expect(channel(f).map((x) => x.level)).toEqual(['PASS']);
     }, 120_000);
 
-    it('--store: FAILs on the production channel', () => {
+    it('--store: the channel row is a PASS', () => {
       const f = repoFindings(files(), false, { results: runProductionPreflight(root), store: true });
-      expect(channel(f).map((x) => x.level)).toEqual(['FAIL']);
-      expect(channel(f)[0].message).toContain('"production"');
+      expect(channel(f).map((x) => x.level)).toEqual(['PASS']);
     }, 120_000);
   });
 });

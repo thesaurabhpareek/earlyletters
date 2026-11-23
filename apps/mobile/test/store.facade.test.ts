@@ -110,6 +110,7 @@ describe('facade behaviour', () => {
     store.addChild({ name: 'Asha', birthday: null, dueDate: null, signsAs: 'Mama' });
     store.saveEntry(letter({ childId: undefined }));
     expect(onEntries).toHaveBeenCalledTimes(1);
+    expect(onEntries).toHaveBeenCalledWith(['entries']); // the letter's write names its table, and only that one
     off();
   });
 
@@ -180,6 +181,17 @@ describe('sync hooks through the facade (D-023)', () => {
     store.localSqlDb().run("UPDATE children SET server_state = 'left' WHERE id = ?", asha.id);
     expect(store.listChildren()).toEqual([]);
   });
+
+  it('[BL-444] a left book is read through listLeftBooks, and listLeftBookEntries reads no book that is not left', () => {
+    openMemory();
+    const asha = store.addChild({ name: 'Asha', birthday: null, dueDate: null, signsAs: 'Mama' });
+    store.saveEntry(letter({ childId: asha.id, finalText: 'You laughed at the rain.' }));
+    expect(store.listLeftBooks()).toEqual([]);
+    expect(store.listLeftBookEntries(asha.id)).toEqual([]); // a listed book is not read by id through this door
+    store.localSqlDb().run("UPDATE children SET server_state = 'left' WHERE id = ?", asha.id);
+    expect(store.listLeftBooks().map((c) => c.id)).toEqual([asha.id]);
+    expect(store.listLeftBookEntries(asha.id).map((e) => e.finalText)).toEqual(['You laughed at the rain.']);
+  });
 });
 
 describe('boundaries (MOB-04)', () => {
@@ -195,9 +207,12 @@ describe('boundaries (MOB-04)', () => {
     }
   });
 
-  it('[D-083] saveLetterFromDraft counts a kept letter in the same transaction, and only a letter', () => {
+  it('[D-083, D-133] saveLetterFromDraft counts a kept letter or note in the same transaction, never a quiet-day mark', () => {
     const source = src('store.ts');
-    expect(source).toMatch(/if \(e\.kind === 'letter'\) ledger\.recordKept\(c, draftId, keychainFloor\(\)\)/);
+    // D-133: a kept note counts like a letter. The guard excludes only the quiet-day mark; ledger.recordKept
+    // still applies the full D-103 rule (own author, words present, reviewed, kind letter or note).
+    expect(source).toMatch(/if \(e\.kind !== 'not_much'\) ledger\.recordKept\(c, draftId, keychainFloor\(\)\)/);
+    expect(source).not.toMatch(/if \(e\.kind === 'letter'\) ledger\.recordKept/);
     // The count is written inside the transaction callback, before the upload is queued.
     expect(source.indexOf('ledger.recordKept')).toBeLessThan(source.indexOf('enqueueEntryUpsert(c.db, draftId'));
   });

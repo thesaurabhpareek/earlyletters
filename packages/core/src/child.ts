@@ -8,7 +8,8 @@
  * sits in is worked out from the child's birthday each time it is shown (chapterOf), so
  * changing the birthday re-chapters letters without writing to them.
  */
-import { ageOn } from './age';
+import { ageOn, parseIsoDate } from './age';
+import { clampGraphemes } from './length';
 
 /** Matches children.name check (char_length between 1 and 60) in supabase/migrations. */
 export const CHILD_NAME_MAX = 60;
@@ -21,17 +22,9 @@ export const EARLIEST_BIRTHDAY = '1900-01-01';
 /** Show the soft "limit" hint once a field is this close to its cap. */
 export const LIMIT_HINT_FROM = 10;
 
-const ISO = /^(\d{4})-(\d{2})-(\d{2})$/;
-
 function dayNumber(iso: string): number {
-  const m = ISO.exec(iso);
-  if (!m) throw new Error(`Invalid ISO date: ${iso}`);
-  const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
-  const t = Date.UTC(y, mo - 1, d);
-  // Reject 2026-02-31 style dates, which Date.UTC would roll over.
-  const back = new Date(t);
-  if (back.getUTCFullYear() !== y || back.getUTCMonth() !== mo - 1 || back.getUTCDate() !== d) throw new Error(`Invalid ISO date: ${iso}`);
-  return t / 86_400_000;
+  const { y, m, d } = parseIsoDate(iso);
+  return Date.UTC(y, m - 1, d) / 86_400_000;
 }
 
 /** True for a real calendar day written YYYY-MM-DD. */
@@ -55,12 +48,12 @@ export function daysBetweenISO(fromISO: string, toISO: string): number {
 }
 
 /**
- * Cuts to at most `max` characters a person would count (code points, never half a
- * surrogate pair or an emoji), and normalises to NFC so a name typed two ways is stored one way.
+ * Cuts to at most `max` code points (the server's CHECK on children.name and signs_as counts code points, so nothing
+ * accepted here can be refused there), never in the middle of a character a person sees (BL-957), and normalises to
+ * NFC so a name typed two ways is stored one way.
  */
 export function clampText(raw: string, max: number): string {
-  const chars = Array.from(raw.normalize('NFC'));
-  return chars.length <= max ? chars.join('') : chars.slice(0, max).join('');
+  return clampGraphemes(raw.normalize('NFC'), max, max);
 }
 
 /** Characters a person would count (code points after NFC). */
@@ -74,6 +67,17 @@ export type FieldCheck<R extends string> = { ok: true; value: string } | { ok: f
 export function checkChildName(raw: string): FieldCheck<'empty' | 'tooLong'> {
   const value = raw.normalize('NFC').trim();
   if (!value) return { ok: false, reason: 'empty' };
+  if (textLength(value) > CHILD_NAME_MAX) return { ok: false, reason: 'tooLong' };
+  return { ok: true, value };
+}
+
+/**
+ * The first book's name (NX-31-R3): trimmed, 0 to 60 characters. Empty is accepted and stays empty; the fallback
+ * "your child" is shown by the screens and is never stored. Over the limit is reported, never silently cut.
+ * Later books keep `checkChildName` until the founder says otherwise (NX-31-R28).
+ */
+export function checkFirstRunChildName(raw: string): FieldCheck<'tooLong'> {
+  const value = raw.normalize('NFC').trim();
   if (textLength(value) > CHILD_NAME_MAX) return { ok: false, reason: 'tooLong' };
   return { ok: true, value };
 }

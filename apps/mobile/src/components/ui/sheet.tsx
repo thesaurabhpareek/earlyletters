@@ -128,7 +128,7 @@ export function Sheet({ open, onClose, title, description, children, footer, hid
     () =>
       motion.kind === 'fade'
         ? // No travel: the position lands at once and the veil carries the change.
-          { duration: 1, reduceMotion: ReduceMotion.Never }
+          { duration: tokens.motion.instantMs, reduceMotion: ReduceMotion.Never }
         : { stiffness: motion.stiffness, damping: motion.damping, mass: motion.mass, reduceMotion: ReduceMotion.Never },
     [motion],
   );

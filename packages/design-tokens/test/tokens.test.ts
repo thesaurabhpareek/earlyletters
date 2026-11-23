@@ -28,15 +28,19 @@ const palette = (mode: Mode, hc = false): Record<keyof C, string> => ({ ...token
 
 /** Text pairs: 4.5:1 (WCAG 1.4.3). */
 const TEXT_PAIRS: [keyof C, keyof C][] = [
-  ['text', 'bg'], ['text', 'surface'], ['text', 'surfaceRaised'], ['text', 'accentSoft'],
+  ['text', 'glassFallback'], ['textMuted', 'glassFallback'], ['accent', 'glassFallback'], ['text', 'bg'], ['text', 'surface'], ['text', 'surfaceRaised'], ['text', 'accentSoft'],
   ['textMuted', 'bg'], ['textMuted', 'surface'], ['textMuted', 'surfaceRaised'], ['textMuted', 'accentSoft'],
   ['accent', 'bg'], ['accent', 'surface'], ['accent', 'surfaceRaised'], ['accent', 'accentSoft'],
   ['onAccent', 'accent'], ['onDestructive', 'destructive'], ['bg', 'text'],
   ['destructive', 'bg'], ['destructive', 'surfaceRaised'],
   ['recording', 'bg'], ['success', 'bg'], ['caution', 'bg'], ['focus', 'bg'],
+  // Status words on every surface they can sit on (A11Y audit 20 Nov): a notice on surface, a selected row on accentSoft.
+  ...(['success', 'caution', 'recording', 'destructive', 'focus'] as (keyof C)[]).flatMap((f) =>
+    (['bg', 'surface', 'surfaceRaised', 'accentSoft', 'glassFallback'] as (keyof C)[]).map((b) => [f, b] as [keyof C, keyof C]),
+  ),
 ];
 /** Non-text pairs: 3:1 (WCAG 1.4.11): control boundaries, focus, edit marks, filled controls. */
-const SURFACES: (keyof C)[] = ['bg', 'surface', 'surfaceRaised'];
+const SURFACES: (keyof C)[] = ['bg', 'surface', 'surfaceRaised', 'glassFallback'];
 const NON_TEXT_PAIRS: [keyof C, keyof C][] = [
   ...SURFACES.map((s) => ['controlBorder', s] as [keyof C, keyof C]),
   ['controlBorder', 'accentSoft'],
@@ -44,6 +48,8 @@ const NON_TEXT_PAIRS: [keyof C, keyof C][] = [
   ...SURFACES.map((s) => ['editMark', s] as [keyof C, keyof C]),
   ['accent', 'bg'], ['recording', 'bg'], ['destructive', 'bg'],
 ];
+/** The picture frame (ruling 27, NS-01-R41) on the three page surfaces. In light it keeps `line` (see the mediaFrame tests). */
+const FRAME_PAIRS: [keyof C, keyof C][] = (['bg', 'surface', 'surfaceRaised'] as (keyof C)[]).map((s) => ['mediaFrame', s]);
 
 /**
  * Glyph pairs: every icon colour the app draws (tab bar, header, rows, the lock, the recording disc's
@@ -104,6 +110,13 @@ describe('design tokens: colour', () => {
         }
       });
     }
+    for (const hc of [false, true]) {
+      if (mode === 'light' && !hc) continue;
+      it(`${mode}${hc ? ' + Increase Contrast' : ''}: the picture frame mediaFrame passes 3:1 on bg, surface and surfaceRaised (ruling 27)`, () => {
+        const c = palette(mode, hc);
+        for (const [f, b] of FRAME_PAIRS) expect(ratio(c[f], c[b]), `${f} on ${b}`).toBeGreaterThanOrEqual(3);
+      });
+    }
     it(`${mode} + Increase Contrast: muted text and accent reach 7:1, control edges 4.5:1`, () => {
       const c = palette(mode, true);
       for (const s of SURFACES) {
@@ -133,6 +146,48 @@ describe('design tokens: colour', () => {
   }
 });
 
+describe('design tokens: picture frame and sizes (ruling 27, NS-01-R40 to R42, BL-956)', () => {
+  it('mediaFrame is dark #716A62; light keeps line (1.26:1 by the ruling: the frame there is the page edge, not a boundary)', () => {
+    expect(tokens.dark.mediaFrame).toBe('#716A62');
+    expect(tokens.light.mediaFrame).toBe(tokens.light.line);
+  });
+  it('under Increase Contrast the frame follows the hairline colour in both modes (D-S02 note)', () => {
+    for (const m of MODES) expect(tokens.highContrast[m].mediaFrame).toBe(tokens.highContrast[m].line);
+  });
+  it('mediaFrame reaches native and web CSS as --color-media-frame, in every block', () => {
+    expect(nativeCss()).toContain(`--color-media-frame: ${tokens.dark.mediaFrame};`);
+    expect(webCss()).toContain(`--color-media-frame: ${tokens.light.mediaFrame};`);
+    expect(webCss()).toContain(`--color-media-frame: ${tokens.highContrast.dark.mediaFrame};`);
+  });
+  it('the frame is one control-weight stroke, never the 0.5 pt decorative hairline (R41)', () => {
+    expect(tokens.stroke.control).toBe(1);
+  });
+  const p = tokens.picture;
+  it('the sizes design set are pinned: Ready thumbnail 160 pt, 88 pt from AX3 (A-S06), lens thumbnail 72 pt (B-S04)', () => {
+    expect([p.thumbMaxPt, p.thumbAxMaxPt, p.lensThumbPt]).toEqual([160, 88, 72]);
+  });
+  it('a picture is smaller at large text than at the default size, and no larger than the lens-free Ready thumbnail', () => {
+    expect(p.thumbAxMaxPt).toBeLessThan(p.thumbMaxPt);
+    expect(p.letterAxMaxPt).toBeLessThanOrEqual(p.thumbMaxPt);
+    expect(p.lensThumbPt).toBeLessThan(p.thumbMaxPt);
+  });
+  it('PROPOSED letter-page numbers use the existing 88 pt step, and the ratios are real fractions', () => {
+    expect(p.letterAxMaxPt).toBe(p.thumbAxMaxPt);
+    expect(p.letterColumnRatio).toBeGreaterThan(0);
+    expect(p.letterColumnRatio).toBeLessThan(1);
+    expect(p.letterWindowRatio).toBeGreaterThan(0);
+    expect(p.letterWindowRatio).toBeLessThan(p.letterColumnRatio);
+  });
+  it('Dynamic Type pair: at AX5 on an SE 3 (375 x 667) the letter picture leaves room for the dateline and a first line of words', () => {
+    const se3Height = 667;
+    const dateline = tokens.type.letterDateline.lineHeight * tokens.type.letterDateline.maxScale!;
+    expect(p.letterAxMaxPt + dateline + tokens.space[4]).toBeLessThan(se3Height * 0.4);
+  });
+  it('Dynamic Type pair: on Ready at AX3 and up the thumbnail plus Speak and Type (two 64 pt twins) leave the SE 3 screen to the prompt', () => {
+    expect(p.thumbAxMaxPt + 2 * tokens.target.capture).toBeLessThan(667 / 2);
+  });
+});
+
 describe('design tokens: type', () => {
   it(`no style is smaller than ${tokens.minFontSize} pt at the default size, and line height is at least the size`, () => {
     for (const [name, t] of Object.entries(tokens.type)) {
@@ -155,7 +210,8 @@ describe('design tokens: type', () => {
   });
   it('the two literary lines of the experience pass: Tonight\'s prompt and the month numeral', () => {
     expect(tokens.type.promptHero).toMatchObject({ fontFamily: tokens.fontFamily.serif, fontSize: 28, lineHeight: 36, letterSpacing: 0, dynamicTypeStyle: 'title1', maxScale: 1.8 });
-    expect(tokens.type.numeral).toMatchObject({ fontFamily: tokens.fontFamily.serifMedium, fontSize: 64, lineHeight: 64, letterSpacing: -0.5, dynamicTypeStyle: 'largeTitle', maxScale: 1.4 });
+    expect(tokens.type.numeral).toMatchObject({ fontFamily: tokens.fontFamily.serifMedium, fontSize: 64, lineHeight: 96, letterSpacing: 1, dynamicTypeStyle: 'largeTitle', maxScale: 1.4 });
+    expect(tokens.type.numeral.fontVariant).toEqual(['lining-nums', 'proportional-nums']);
     // Tonight's prompt is larger than the old card prompt, and smaller than the first-run hero.
     expect(tokens.type.promptHero.fontSize).toBeGreaterThan(tokens.type.prompt.fontSize);
     expect(tokens.type.promptHero.fontSize).toBeLessThan(tokens.type.hero.fontSize);
@@ -171,9 +227,75 @@ describe('design tokens: type', () => {
 describe('design tokens: motion and targets', () => {
   const m = tokens.motion;
   it('no timed motion exceeds the 2 s ceiling, and the content sequence fits under 900 ms', () => {
-    for (const ms of [m.fadeMs, m.exitMs, m.enter.durationMs, m.sequenceMaxMs, m.newMarkMs, m.drawMs, m.lamp.arriveMs]) expect(ms).toBeLessThanOrEqual(m.hardCeilingMs);
+    for (const ms of [m.fadeMs, m.exitMs, m.enter.durationMs, m.sequenceMaxMs, m.newMarkMs, m.drawMs, m.lamp.arriveMs, m.carry.ms]) expect(ms).toBeLessThanOrEqual(m.hardCeilingMs);
     expect(m.enter.durationMs + m.staggerMs * (m.staggerMax - 1)).toBeLessThanOrEqual(m.sequenceMaxMs);
     expect(m.reduceMotion.durationMs).toBe(m.fadeMs);
+  });
+  it('the Moments flight carries in 320 ms (O-58): one move, at most 420 ms, and the leave fits inside it', () => {
+    expect(m.carry.ms).toBe(320);
+    expect(m.carry.ms).toBeLessThanOrEqual(420);
+    expect(m.exitMs).toBeLessThanOrEqual(m.carry.ms);
+    expect(m.carry.ms).toBeLessThanOrEqual(m.sequenceMaxMs);
+  });
+  it('[BL-1495] the Moments flight, stepped ms by ms on three phones: starts at the source, lands exactly on the slot at carry.ms, never doubles back, never leaves the screen, never overshoots', () => {
+    // CSS-style cubic bezier through (0,0), (x1,y1), (x2,y2), (1,1), solved for y at time x by bisection.
+    const [x1, y1, x2, y2] = m.easing;
+    const axis = (a: number, b: number, s: number) => 3 * a * s * (1 - s) ** 2 + 3 * b * s ** 2 * (1 - s) + s ** 3;
+    const progress = (t: number): number => {
+      const x = Math.min(1, Math.max(0, t / m.carry.ms));
+      let lo = 0;
+      let hi = 1;
+      for (let i = 0; i < 50; i++) {
+        const mid = (lo + hi) / 2;
+        if (axis(x1, x2, mid) < x) lo = mid;
+        else hi = mid;
+      }
+      return axis(y1, y2, (lo + hi) / 2);
+    };
+    // gutter is the value the layout tokens must give on each phone (16 under compactBelowWidth 390, 20 from it up;
+    // C3, M1, M2), written here as a plain number so a changed token fails instead of moving the expectation with it.
+    const phones = [
+      { name: 'SE 3', w: 375, h: 667, gutter: 16 },
+      { name: 'iPhone 16', w: 393, h: 852, gutter: 20 },
+      { name: 'large', w: 430, h: 932, gutter: 20 },
+    ];
+    for (const p of phones) {
+      // BL-1842: the geometry comes from the real layout tokens. The tray tile is the 44 pt thumbnail
+      // (docs/product/moments-tab/EXPERIENCE-AND-MOTION.md 4.4, = target.min); the flight to the lead tile's place is
+      // section 5.4. ASSUMED: 5.4 names "the picture slot" and gives no width, so the slot is taken to be the content
+      // width between the screen gutters. The vertical places (a tile near the bottom of the sheet, a slot near the
+      // top of capture) are literals: 5.4 gives no offsets and no token holds them.
+      const gutter = p.w < tokens.layout.compactBelowWidth ? tokens.layout.gutter.compact : tokens.layout.gutter.regular;
+      expect(gutter, `${p.name} the screen gutter from the layout tokens`).toBe(p.gutter);
+      expect(tokens.target.min, 'the tray tile is 44 pt (4.4)').toBe(44);
+      const slot = p.w - 2 * gutter;
+      const from = { x: gutter, y: p.h - 120, size: tokens.target.min };
+      const to = { x: gutter, y: 120, size: slot };
+      expect(to.size, `${p.name} the lead slot is larger than the tray tile (5.4 over 4.4)`).toBeGreaterThan(from.size);
+      expect(to.x + to.size, `${p.name} the slot ends one gutter short of the right edge`).toBe(p.w - p.gutter);
+      let prev = -1;
+      for (let t = 0; t <= m.carry.ms + 20; t++) {
+        const pr = progress(t);
+        expect(pr, `${p.name} ${t} ms`).toBeGreaterThanOrEqual(prev);
+        expect(pr, `${p.name} ${t} ms`).toBeLessThanOrEqual(1);
+        prev = pr;
+        const size = from.size + (to.size - from.size) * pr;
+        const x = from.x + (to.x - from.x) * pr;
+        const y = from.y + (to.y - from.y) * pr;
+        expect(x, `${p.name} ${t} ms left`).toBeGreaterThanOrEqual(0);
+        expect(y, `${p.name} ${t} ms top`).toBeGreaterThanOrEqual(0);
+        expect(x + size, `${p.name} ${t} ms right`).toBeLessThanOrEqual(p.w);
+        expect(y + size, `${p.name} ${t} ms bottom`).toBeLessThanOrEqual(p.h);
+      }
+      expect(progress(0)).toBeCloseTo(0, 9);
+      expect(progress(m.carry.ms - 1)).toBeLessThan(1);
+      expect(progress(m.carry.ms)).toBeCloseTo(1, 9);
+      expect(progress(m.carry.ms + 20)).toBeCloseTo(1, 9);
+    }
+    // The 160 ms leave runs inside the flight, not after it; the whole hand-off is the flight and no more.
+    expect(m.exitMs).toBeLessThan(m.carry.ms);
+    // Moving fast early, settling late: at half the time more than half the distance is covered (no linear drift).
+    expect(progress(m.carry.ms / 2)).toBeGreaterThan(0.5);
   });
   it('the saved moment files the letter in order, and inside the 900 ms sequence (MOTION 5e)', () => {
     expect(0).toBeLessThan(m.file.chipAtMs);

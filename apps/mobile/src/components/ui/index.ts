@@ -7,12 +7,15 @@ export { Button, ButtonRow, IconButton, LARGE_CONTENT, type ButtonProps, type Ic
 export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle, type CardProps } from './card';
 export { Chip, ChipGroup, ChoiceGroup, type ChipProps, type ChoiceGroupProps, type ChoiceOption } from './choice-group';
 export { EmptyState, EmptyStateView, type EmptyStateProps } from './empty-state';
+export { ErrorLine } from './error-line';
 export { fontsReady, loadFonts, useFontsReady } from './fonts';
 export { LineArt, LINE_ART, type LineArtName } from './line-art';
 export { ListRow, ListSection, ToggleRow, type ListRowProps } from './list-row';
 export { startDesignSystem, UIProvider } from './provider';
 export { SafeAreaView } from './safe-area-view';
 export { BackButton, ModalHeader, type ModalHeaderProps } from './screen-header';
+export { PinnedActionLayout, type PinnedActionLayoutProps } from './pinned-action';
+export { PINNED_ACTION, isPinned } from './pinned-action.logic';
 export { Separator } from './separator';
 export { Sheet, type SheetProps } from './sheet';
 export { InlineState, StateScreen, StateScreenView, type InlineStateProps, type StateScreenProps } from './state-screen';

@@ -17,7 +17,7 @@ Use this text only if you submit the binary that exists in `apps/mobile` now (OP
 ```
 Hello. This is the first version of Early Letters.
 
-Tell your child about today. Type a letter, or speak one and your voice is kept with it. Letters are filed by month of age in a memory book that stays on your phone. We never rewrite your words.
+Tell your child about today. Type a letter, or speak one and your voice is kept with it. Letters are filed by month of age in a memory book that is private by default. We never rewrite your words.
 
 Choose your child's name, birthday or due date, and what they call you. Then a minute is plenty.
 
