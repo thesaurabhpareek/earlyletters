@@ -1,8 +1,9 @@
 // Fails when the committed content map is stale against the tree. Run: node --test scripts/content/export-content-map.test.mjs
-// Not wired into `npm test` (root package.json is founder-listed); wiring is proposed in docs/content/map/README.md.
+// Wired into the root `npm test` list (BL-1880), so a stale map fails CI.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, mkdirSync, writeFileSync, rmSync, mkdtempSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildMap, render, COLUMNS } from './export-content-map.mjs';
@@ -27,4 +28,51 @@ test('the protected lines are flagged and no text is empty', () => {
   assert.ok(map.rows.some((r) => r.hold === 'protected' && /helpline/.test(r.hold_reason)));
   assert.ok(map.rows.every((r) => r.text.trim() && r.chars > 0));
   assert.ok(map.rows.filter((r) => r.surface === 'prompt').every((r) => /^[a-z0-9.-]+$/.test(r.id)));
+});
+const bdOf = (r) => (/build-dependent: true for (servers o\w+) only/.exec(r.hold_reason) ?? [])[1] ?? '';
+const byId = (id) => map.rows.find((r) => r.id.endsWith(id));
+test('[BL-1883] the privacy promise is protected and the consent terms are held', () => {
+  const promise = byId('strings.en.ts#en.trust.promise');
+  assert.equal(promise.hold, 'protected');
+  assert.match(promise.hold_reason, /D-061/);
+  for (const k of ['title', 'body', 'termsLink', 'privacyLink', 'agree', 'notNow']) {
+    const r = byId(`features/auth.en.ts#authCopy.consent.terms.${k}`);
+    assert.equal(r.hold, 'held', `authCopy.consent.terms.${k}`);
+    assert.equal(r.surface, 'legal');
+    assert.equal(r.channel, 'consent');
+  }
+});
+test('[BL-1883] build-dependent privacy lines name the build they are true for', () => {
+  const want = {
+    'strings.en.ts#en.settings.privacy.keptOnPhone': 'servers off', 'strings.en.ts#en.settings.privacy.keptSynced': 'servers on',
+    'strings.en.ts#en.whereLive.onPhone': 'servers off', 'strings.en.ts#en.whereLive.onPhoneSynced': 'servers on',
+    'strings.en.ts#en.settings.erase.onThisPhone': 'servers off', 'features/account-deletion.en.ts#accountDeletionCopy.what.intro': 'servers on',
+    'store.en.ts#storeListing.reviewNotes': 'servers off', 'release/app-review.en.ts#notesServersOn': 'servers on',
+  };
+  for (const [id, v] of Object.entries(want)) assert.equal(bdOf(byId(id)), v, id);
+  // a flag does not replace a hold: the erase line is both
+  assert.equal(byId('strings.en.ts#en.settings.erase.onThisPhone').hold, 'held');
+  assert.equal(byId('strings.en.ts#en.whereLive.onPhone').hold, 'build-dependent');
+  // found by pattern, not named: any line that says our servers hold it
+  assert.equal(bdOf(byId('strings.en.ts#en.settings.delete.bookBody')), 'servers on');
+  assert.ok(map.rows.every((r) => (r.hold === 'build-dependent') === (r.hold_reason.startsWith('build-dependent:'))));
+});
+
+test('[BL-1880] the root npm test list runs this check', () => {
+  const pkg = JSON.parse(readFileSync(join(dir, '..', '..', '..', 'package.json'), 'utf8'));
+  assert.match(pkg.scripts.test, /scripts\/content\/export-content-map\.test\.mjs/);
+});
+test('[BL-1880] a planted stale map fails --check and a current one passes', () => {
+  const root = join(dir, '..', '..', '..');
+  const tmp = mkdtempSync(join(root, '.map-check-'));
+  const rel = tmp.slice(root.length + 1);
+  const run = () => spawnSync(process.execPath, [join(root, 'scripts/content/export-content-map.mjs'), '--check', '--out', rel], { encoding: 'utf8' });
+  try {
+    const out = render(map);
+    writeFileSync(join(tmp, 'content-map.json'), out.json);
+    writeFileSync(join(tmp, 'content-map.csv'), out.csv);
+    assert.equal(run().status, 0);
+    writeFileSync(join(tmp, 'content-map.json'), out.json.replace('"', '"x', 1));
+    assert.equal(run().status, 1);
+  } finally { rmSync(tmp, { recursive: true, force: true }); }
 });

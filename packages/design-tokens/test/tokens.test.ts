@@ -252,22 +252,27 @@ describe('design tokens: motion and targets', () => {
       }
       return axis(y1, y2, (lo + hi) / 2);
     };
+    // gutter is the value the layout tokens must give on each phone (16 under compactBelowWidth 390, 20 from it up;
+    // C3, M1, M2), written here as a plain number so a changed token fails instead of moving the expectation with it.
     const phones = [
-      { name: 'SE 3', w: 375, h: 667 },
-      { name: 'iPhone 16', w: 393, h: 852 },
-      { name: 'large', w: 430, h: 932 },
+      { name: 'SE 3', w: 375, h: 667, gutter: 16 },
+      { name: 'iPhone 16', w: 393, h: 852, gutter: 20 },
+      { name: 'large', w: 430, h: 932, gutter: 20 },
     ];
     for (const p of phones) {
-      // BL-1842: the geometry comes from the real layout tokens, not from numbers made up here. The tray tile is the
-      // 44 pt thumbnail (moments tab spec 07, = target.min); the lead slot spans the content width between the screen
-      // gutters, which are 16 on a window under compactBelowWidth and 20 above (tokens.layout). The vertical places
-      // (a tile near the bottom of the sheet, a slot near the top of capture) are not tokens anywhere yet.
+      // BL-1842: the geometry comes from the real layout tokens. The tray tile is the 44 pt thumbnail
+      // (docs/product/moments-tab/EXPERIENCE-AND-MOTION.md 4.4, = target.min); the flight to the lead tile's place is
+      // section 5.4. ASSUMED: 5.4 names "the picture slot" and gives no width, so the slot is taken to be the content
+      // width between the screen gutters. The vertical places (a tile near the bottom of the sheet, a slot near the
+      // top of capture) are literals: 5.4 gives no offsets and no token holds them.
       const gutter = p.w < tokens.layout.compactBelowWidth ? tokens.layout.gutter.compact : tokens.layout.gutter.regular;
+      expect(gutter, `${p.name} the screen gutter from the layout tokens`).toBe(p.gutter);
+      expect(tokens.target.min, 'the tray tile is 44 pt (4.4)').toBe(44);
       const slot = p.w - 2 * gutter;
       const from = { x: gutter, y: p.h - 120, size: tokens.target.min };
       const to = { x: gutter, y: 120, size: slot };
-      expect(to.size, `${p.name} the lead slot is larger than the tray tile (spec 3.4)`).toBeGreaterThan(from.size);
-      expect(to.x + to.size, `${p.name} the slot sits inside the right gutter`).toBe(p.w - gutter);
+      expect(to.size, `${p.name} the lead slot is larger than the tray tile (5.4 over 4.4)`).toBeGreaterThan(from.size);
+      expect(to.x + to.size, `${p.name} the slot ends one gutter short of the right edge`).toBe(p.w - p.gutter);
       let prev = -1;
       for (let t = 0; t <= m.carry.ms + 20; t++) {
         const pr = progress(t);

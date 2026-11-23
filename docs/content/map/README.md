@@ -5,13 +5,17 @@ One row per customer-visible string in the checked-out tree, as `content-map.jso
 
 ## Read it
 Columns: `id` (file#key path, or the prompt key), `surface` (app screen, error, push, email, store, site, book, prompt,
-a11y, legal, safety), `channel`, `file`, `line`, `locale`, `text`, `chars` (code points), `hold` (`protected`, `held` or
+a11y, legal, safety), `channel`, `file`, `line`, `locale`, `text`, `chars` (code points), `hold` (`protected`, `held`, `build-dependent` or
 empty) with `hold_reason`, `tone`, `day_id`, `layer` (filled only where the source object carries `tone`, `dayId` or `day`,
 `layer` or `tradition`; none does yet), `owner` (content, cmo, clo, cco, privacy), `status` and `source`.
 
-- `protected`: D-133 promise line, helpline names, numbers and instructions. Never reword without the owner.
+- `protected`: D-133 promise line, the D-061 privacy promise (`en.trust.promise` and every line that carries its last sentence), helpline names, numbers and instructions. Never reword without the owner.
 - `held`: D-144 erase lines, consent text, App Review notes, counsel-header emails, Supabase templates (D-041), prompt keys,
   OS permission strings, price and trial.
+- `build-dependent` marks a line that is true only for one build: `servers off`
+  (nothing leaves the phone) or `servers on` (letters sync); `hold_reason` says which. A row that is also protected or held keeps
+  that hold and gains the same note in `hold_reason`. Named keys sit in `BUILD_KEYS`; any other line that says "our servers",
+  "not sent to us" or "servers on/off" is found by pattern. Check the list when either build's wording changes.
 - `status` is always `live on develop`: the map reads only the tree it runs in, so regenerate on a `develop` checkout. It
   knows nothing about open PRs.
 - Surface, owner and hold are rules in the script (`classify`, `HELD`), not tags in the source. Check them when adding files.
@@ -27,9 +31,8 @@ node --test scripts/content/export-content-map.test.mjs # same check, plus sanit
 Output is sorted and has no timestamps, so a clean regenerate gives an empty diff. Run it after the content waves merge, in
 the same PR as any content change you want mapped.
 
-Wiring (proposal; root `package.json` is founder-listed): add `"content:map": "node scripts/content/export-content-map.mjs"`
-and add `scripts/content/export-content-map.test.mjs` to the root `test` node:test list. Until then the check runs by hand.
-Once wired, every content PR must regenerate the map.
+CI: `scripts/content/export-content-map.test.mjs` is in the root `npm test` list (BL-1880), so a stale map fails the build.
+Every content PR must regenerate the map.
 
 ## Walked
 `packages/content/src/**`, copy files under `apps/mobile/src` (most only re-export content, so they add few rows),
