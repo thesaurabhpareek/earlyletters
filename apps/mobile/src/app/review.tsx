@@ -65,6 +65,7 @@ import {
 } from '@scribe/core';
 import { tokens } from '@scribe/design-tokens';
 import { deleteIfPresent, letItGo } from '@/lib/capture/let-it-go.logic';
+import { EarlyStopLine } from '@/components/capture/early-stop-line';
 import { laterWordsDraft } from '@/components/capture/later-words.logic';
 import { settleDraft, settleForKeep } from '@/components/capture/review-settle.logic';
 import { LetterSheet } from '@/components/capture/letter-sheet';
@@ -78,6 +79,7 @@ import {
   letterHeader,
   primaryDestination,
   putBackNoteShows,
+  putBackSpeech,
   reviewHasOwnChanges,
   reviewHeading,
   savePrimaryLabel,
@@ -470,6 +472,18 @@ export default function Review() {
   const cleanedText = useMemo(() => (typed ? typedFinalText(raw) : languageFinalText(raw, inForce, rules)), [raw, inForce, typed, rules]);
   const finalText = userText ?? cleanedText;
 
+  /** The count line under the letter for `n` fixes in force (shown, and spoken after Put back). */
+  const countTextFor = (n: number) => {
+    const kind = countLine({ view, applied: n, proposed, hasFixRules: spokenEditLevel(language) === 'clean' });
+    return kind === 'count'
+      ? plural(n, pendingCopy.review.changesLabelOne, fill(r.changesLabel, { count: n }))
+      : kind === 'afterUndo'
+        ? r.noChangesAfterUndo
+        : kind === 'none'
+          ? r.noChanges
+          : r.noChangesNoRules;
+  };
+
   const putBack = (index: number) => {
     const edit = applied[index];
     const next = withoutEdit(raw, applied, index, rules);
@@ -480,6 +494,8 @@ export default function Review() {
     writer.putBack(putBacks.current);
     setApplied(next.applied);
     setRestored({ edit, index });
+    // iOS VoiceOver ignores the live region on the note below the letter, so this is said (BL-1793).
+    announce(putBackSpeech({ putBack: pendingCopy.review.putBack, undo: copy.common.undoButton, countText: countTextFor(next.applied.length) }));
     setOpenEdit(null);
     setWash(true);
     setTimeout(() => setWash(false), 1600);
@@ -771,14 +787,7 @@ export default function Review() {
   }
 
   const line = countLine({ view, applied: applied.length, proposed, hasFixRules: spokenEditLevel(language) === 'clean' });
-  const countText =
-    line === 'count'
-      ? plural(applied.length, pendingCopy.review.changesLabelOne, fill(r.changesLabel, { count: applied.length }))
-      : line === 'afterUndo'
-        ? r.noChangesAfterUndo
-        : line === 'none'
-          ? r.noChanges
-          : r.noChangesNoRules; // 'noRules', and 'exact' (Exactly as said: the words are untouched)
+  const countText = countTextFor(applied.length);
 
   // The letter sheet's header (S17): the month it files into, from the day it was said.
   const occurredOn = draft.createdAt ? todayISO(new Date(draft.createdAt)) : todayISO();
@@ -1028,9 +1037,7 @@ export default function Review() {
 
           {/* Why the take stopped early (S14): leaving the app, a call or an alert, or the app closing. One honest line. */}
           {stopNote && (
-            <Text variant="footnote" tone="muted" accessibilityLiveRegion="polite" testID="review.stopLine">
-              {stopNote}
-            </Text>
+            <EarlyStopLine note={stopNote} />
           )}
 
           {card && (
@@ -1321,7 +1328,7 @@ const WORDS_TEST_ID: Record<WordsAction, string> = {
 function WordsStatus({ card, size, lengthMs, run }: { card: WordsCard; size: string; lengthMs: number | null; run: Record<WordsAction, () => void> }) {
   // VoiceOver ignores live regions on iOS, so the state is said aloud: the card's own title (never the letter's words)
   // once Review has dissolved in (VoiceOver's focus lands on "Hear it", not on the card), again on each change of state,
-  // and "Read it back later" when it appears (TDD 09 V1).
+  // and the longer-than-usual line when it appears (TDD 09 V1, BL-399).
   const said = useRef<{ state: string; later: boolean } | null>(null);
   const title = useRef(card.title);
   title.current = card.title;
@@ -1333,7 +1340,7 @@ function WordsStatus({ card, size, lengthMs, run }: { card: WordsCard; size: str
     [],
   );
   useEffect(() => {
-    const now = { state: card.state, later: card.quiet === 'later' };
+    const now = { state: card.state, later: card.state === 'writing' && card.primary === 'keep' };
     const before = said.current;
     said.current = now;
     if (!before) {
@@ -1347,8 +1354,8 @@ function WordsStatus({ card, size, lengthMs, run }: { card: WordsCard; size: str
       if (first.current) clearTimeout(first.current);
       first.current = null;
       announce(card.title);
-    } else if (!before.later && now.later) announce(wordsActionLabel('later'));
-  }, [card.state, card.quiet, card.title]);
+    } else if (!before.later && now.later) announce(card.body ?? card.title);
+  }, [card.state, card.primary, card.quiet, card.title]);
   const action = (a: WordsAction | null) => (a ? { label: wordsActionLabel(a, size), onPress: run[a], testID: WORDS_TEST_ID[a] } : undefined);
   const primary = action(card.primary);
   const quiet = action(card.quiet);

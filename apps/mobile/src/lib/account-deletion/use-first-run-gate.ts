@@ -98,7 +98,7 @@ export function useFirstRunGate(): FirstRunGate {
   const hasDeletedBook = useSyncExternalStore(subscribe, phoneHasDeletedBook, phoneHasDeletedBook);
   const note = useMemo(() => parseOpenRequest(raw), [raw]);
   const [answer, setAnswer] = useState<Answer>(NO_ANSWER);
-  const [, tick] = useReducer((n: number) => n + 1, 0);
+  const [beat, tick] = useReducer((n: number) => n + 1, 0);
   const wasDeletion = useRef(false);
   /** The account for which the with-book read has run in this mount. */
   const refreshedFor = useRef<string | null>(null);
@@ -117,7 +117,7 @@ export function useFirstRunGate(): FirstRunGate {
   const confirmed = answer.for === userId && answer.confirmed;
 
   const gate: GateDecision = decideGate({
-    hasBook, hasDeletedBook, note, nowMs: Date.now(), signedIn: auth.signedIn, userId, checked, confirmed,
+    hasBook, hasDeletedBook, note, nowMs: Date.now(), signedIn: auth.signedIn, restoring: auth.state.status === 'restoring', userId, checked, confirmed,
     wasDeletion: wasDeletion.current, pathname,
   });
   wasDeletion.current = gate.wasDeletion;
@@ -159,7 +159,8 @@ export function useFirstRunGate(): FirstRunGate {
     if (delay <= 0) return;
     const id = setTimeout(tick, Math.min(delay, MAX_TIMER_MS));
     return () => clearTimeout(id);
-  }, [expiresAt]);
+    // `beat` is in the list so a clamped timer (a date more than MAX_TIMER_MS away) arms again when it goes off (BL-493 point 6).
+  }, [expiresAt, beat]);
 
   // The deletion screen was up and the book has come back: to the Book, but only while the welcome, or the sign-in sheet
   // over it, is in front. The invite and join sheet waits for Open or Close, as it does over the welcome (S59, P8b).

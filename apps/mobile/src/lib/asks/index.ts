@@ -14,7 +14,9 @@
  * | `asks.keepBookReoffered` | `on` once the one re-offer of Keep the book was made (after the third letter, BL-519) |
  * | `asks.firstLetterSession` | session key (ms epoch) in which the first letter was saved |
  * | `asks.firstLetterAt` | time (ms epoch) of the first letter, for the second prime after the first month (BL-518) |
- * | `asks.lastAskDay` | local day (YYYY-MM-DD) of the last ask, for one ask per calendar day |
+ * | `asks.lastAskDay` | local day (YYYY-MM-DD) the two counts below belong to; a different day means both are 0 (reset at local midnight) |
+ * | `asks.asksToday` | setup asks shown on that day (cap MAX_ASKS_PER_DAY, BL-1784) |
+ * | `asks.osAsksToday` | OS-alert or consent asks shown on that day (cap MAX_OS_ASKS_PER_DAY, BL-1784) |
  *
  * Sessions are tracked here, not by the analytics lifecycle, because analytics is off in the whole 1.0 line
  * (D-124 item 3) and its lifecycle never starts then. A session is a process start, or a return to the
@@ -24,11 +26,12 @@ import { AppState } from 'react-native';
 import { noteAskShown } from '@/lib/analytics/ask';
 import { getSetting, listChildren, listEntriesForChild, listHiddenChildren, setSetting } from '@/lib/store';
 import { readPrefs } from '@/lib/reminders/prefs';
-import { firstMonthDone, localDay, nextAsk, reminderPrimeSource, sessionAfterForeground, type NextAsk } from './next-ask.logic';
+import { recordDayAsk, todayCounts } from './day-store';
+import { firstMonthDone, nextAsk, reminderPrimeSource, sessionAfterForeground, type AskKind, type NextAsk } from './next-ask.logic';
 
 type ReminderPrimeSource = ReturnType<typeof reminderPrimeSource>;
 
-export { MAX_REMINDER_PRIMES, nextAsk, primeAllowed, type AskFacts, type NextAsk } from './next-ask.logic';
+export { MAX_ASKS_PER_DAY, MAX_OS_ASKS_PER_DAY, MAX_REMINDER_PRIMES, nextAsk, primeAllowed, type AskFacts, type NextAsk } from './next-ask.logic';
 
 const K = {
   primes: 'asks.reminderPrimes',
@@ -37,7 +40,6 @@ const K = {
   keepBookReoffer: 'asks.keepBookReoffered',
   firstLetterSession: 'asks.firstLetterSession',
   firstLetterAt: 'asks.firstLetterAt',
-  lastAskDay: 'asks.lastAskDay',
 } as const;
 
 let session = Date.now();
@@ -65,11 +67,11 @@ function lettersOnPhone(): number {
   return n;
 }
 
-/** Any ask appeared now: no other ask this session or this calendar day. */
-export function noteAsked(now = Date.now()): void {
+/** Any ask appeared now: no other ask this session, and it counts toward the day totals (BL-1784). */
+export function noteAsked(kind: AskKind, now = Date.now()): void {
   askSession = session;
-  setSetting(K.lastAskDay, localDay(now));
-  noteAskShown(); // the analytics consent sequencer reads the same rule
+  recordDayAsk(kind, now);
+  noteAskShown(); // the analytics consent sequencer reads the session rule
 }
 
 /**
@@ -79,7 +81,7 @@ export function noteAsked(now = Date.now()): void {
 export function noteReminderPrimeShown(): ReminderPrimeSource {
   const source = reminderPrimeSource(count(K.primes));
   setSetting(K.primes, String(count(K.primes) + 1));
-  noteAsked();
+  noteAsked('reminder_prime');
   return source;
 }
 
@@ -92,12 +94,13 @@ export function noteReminderPrimeYes(): void {
  * Call once right after a letter is kept, with `firstLetter` true when the phone had no letter before it.
  * Returns the one ask due, and records it as shown when it is the account sheet (the card records itself when it appears).
  */
-export function askAfterSave(input: { firstLetter: boolean; signInOffered: boolean }, now = Date.now()): NextAsk {
+export function askAfterSave(input: { firstLetter: boolean; signInOffered: boolean; surfaceBusy?: boolean }, now = Date.now()): NextAsk {
   try {
     if (input.firstLetter && getSetting(K.firstLetterSession) === null) setSetting(K.firstLetterSession, String(session));
     if (input.firstLetter && getSetting(K.firstLetterAt) === null) setSetting(K.firstLetterAt, String(now));
     const at = Number(getSetting(K.firstLetterAt));
     const stored = Number(getSetting(K.firstLetterSession));
+    const today = todayCounts(now);
     const ask = nextAsk({
       lettersSaved: lettersOnPhone(),
       firstLetter: input.firstLetter,
@@ -110,13 +113,15 @@ export function askAfterSave(input: { firstLetter: boolean; signInOffered: boole
       firstLetterSession: Number.isFinite(stored) && stored > 0 ? stored : null,
       session,
       askShownThisSession: askSession === session,
-      askShownToday: getSetting(K.lastAskDay) === localDay(now),
+      asksShownToday: today.asks,
+      osAsksShownToday: today.osAsks,
+      surfaceBusy: input.surfaceBusy,
       firstMonthDone: firstMonthDone(Number.isFinite(at) && at > 0 ? at : null, now),
     });
     if (ask === 'keep_book') {
       if (getSetting(K.keepBook) === 'on') setSetting(K.keepBookReoffer, 'on');
       setSetting(K.keepBook, 'on');
-      noteAsked(now);
+      noteAsked('keep_book', now);
     }
     return ask;
   } catch {

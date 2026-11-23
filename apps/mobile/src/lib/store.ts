@@ -356,6 +356,19 @@ export function getSetting(key: string): string | null {
   return settings.getSetting(ctx(), key);
 }
 
+/**
+ * A saved setting only if the store is already open; null otherwise. Never opens it and never throws, so a screen that
+ * draws after a failed open (the launch recovery screen) can read the appearance without running the update steps again.
+ */
+export function getSettingIfOpen(key: string): string | null {
+  if (!conn) return null;
+  try {
+    return settings.getSetting(conn.ctx, key);
+  } catch {
+    return null;
+  }
+}
+
 export function setSetting(key: string, value: string): void {
   settings.setSetting(ctx(), key, value);
   bus.emit('settings');
@@ -859,6 +872,14 @@ export function readTonight(childId: string | null, today: string): TonightRead 
 /** Export while an account-deletion request is open: books the server closed, and letters in Recently deleted (BL-446). */
 export function listClosedBooks(): Child[] {
   return shown(() => children.listClosedByServer(ctx()));
+}
+/** Books this person left, with their own letters still here (D-113, BL-444). Read-only; the screen is a later slice. */
+export function listLeftBooks(): Child[] {
+  return shown(() => children.listLeft(ctx()));
+}
+/** The live letters of a book this person left. Empty for any book that is not left, so it cannot read a listed book by id. */
+export function listLeftBookEntries(childId: string): Entry[] {
+  return shown(() => (children.listLeft(ctx()).some((c) => c.id === childId) ? entries.listForBook(ctx(), childId) : []));
 }
 export function listDeletedEntriesForChild(childId: string): Entry[] {
   return shown(() => entries.listDeletedForChild(ctx(), childId));

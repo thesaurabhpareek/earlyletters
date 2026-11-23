@@ -163,9 +163,11 @@ describe('[NX-31-R17] the sign-in-first gate', () => {
     expect(src).toMatch(/if \(continueTapIsLocalStart\(\{ onWelcome: step === 'welcome', authState \}\)\) setLocalStartChosen\(true\);/);
     // No second copy of the composition, and the switch is not read in the screen.
     expect(src).not.toMatch(/gateInputsFromAuth|beginTheBookAllowed/);
-    // The one other read of the switch is the opening step (handoff.logic firstRunStartStep, #728), never the gate's composition.
+    // The other reads of the switch are the opening step (handoff.logic firstRunStartStep, #728) and the resumed step
+    // (draft.logic resumeStep, BL-1816: a relaunch never skips sign-in first), never the gate's composition.
     const reads = src.match(/serverFeaturesEnabled\(\)/g) ?? [];
-    expect(reads.length).toBe((src.match(/firstRunStartStep\(\{ serverFeatures: serverFeaturesEnabled\(\)/g) ?? []).length);
+    const opening = (src.match(/(?:firstRunStartStep|resumeStep)\(\{ (?:draft: saved, start, )?serverFeatures: serverFeaturesEnabled\(\)/g) ?? []).length;
+    expect(reads.length).toBe(opening);
   });
   it('[NX-31-R17] while the session is being read the book cannot begin (no flash of a child step)', () => {
     const inputs = gateInputsFromAuth({ serverFeatures: true, authState: { status: 'restoring' }, hasLocalBook: false });

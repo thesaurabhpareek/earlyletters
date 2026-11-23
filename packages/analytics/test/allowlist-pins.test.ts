@@ -166,12 +166,11 @@ describe('variant_id and age bands (NS-48-R38, A-48-1)', () => {
     }
   });
 
-  it('[NS-48-R38] the validator and the observer refuse a variant_id outside the range', () => {
+  it('[NS-48-R38] variant_id is held: the validator drops both events outright, and the observer still refuses a variant_id outside the range', () => {
     const max = (EVENTS.notification_opened.props.variant_id as { max: number }).max;
-    expect(sanitizeEvent('notification_opened', { type: 'letter_reminder', variant_id: max, schema_version: SCHEMA_VERSION }).props).toEqual({ type: 'letter_reminder', variant_id: max, schema_version: SCHEMA_VERSION });
-    for (const v of [max + 1, 400, 1000, -1, 1.5, '3']) {
-      expect(sanitizeEvent('notification_opened', { type: 'letter_reminder', variant_id: v, schema_version: SCHEMA_VERSION }).props?.variant_id, String(v)).toBeUndefined();
-    }
+    // Neither event is in the registry (registry.ts), so nothing carrying a variant_id can be sent (V11).
+    expect(sanitizeEvent('notification_opened', { type: 'letter_reminder', variant_id: max, schema_version: SCHEMA_VERSION }).props).toBeNull();
+    expect(sanitizeEvent('reminder_sent', { type: 'letter_reminder', variant_id: max, schema_version: SCHEMA_VERSION }).props).toBeNull();
     for (const v of [max + 1, 400, -1, 1.5, '3', null]) {
       expect(notificationOpenedEvent({ kind: 'evening', variant: v }), String(v)).toEqual({ type: 'letter_reminder' });
     }
