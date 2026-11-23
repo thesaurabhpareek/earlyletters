@@ -4,7 +4,7 @@ Use this runbook for two kinds of message:
 - **Part A.** "I lost access to my email" or "I can't sign in any more".
 - **Part B.** "Someone else is in my account", or anything that suggests another person signed in as them.
 
-Today only the `preview` build profile signs anyone in (`EXPO_PUBLIC_SERVER_FEATURES` is `on` only there, `apps/mobile/eas.json`); production and TestFlight builds have no sign-in (D-121). The runbook applies to alpha testers now and to every later build that turns servers on.
+Sign-in exists in every build profile that sets `EXPO_PUBLIC_SERVER_FEATURES` to `on`; in `apps/mobile/eas.json` on 23 Nov 2026 those are `preview` and `production`. The runbook applies to every build that has sign-in.
 
 Owner: `ops` with `support`; `security-architect` reviews changes to this file (IAM chapter, `docs/engineering/05-identity-and-access.md`). It is an engineering reading. A legal question (a court order, a police request, a dispute between two parents over a book) goes to `legal` and the founder, not into this runbook.
 
@@ -27,7 +27,7 @@ Part A changes nothing and looks nothing up, so it writes no audit row (LEGAL-RE
 Send the standard reply. It says, in plain words:
 1. Sign in with any other way you used before: Sign in with Apple, Sign in with Google, or a code sent to your email.
 2. If your email account itself is lost, recover it with your email provider first. We can't do that for you, and we can't move your account to a new address by hand. This protects your book from anyone who pretends to be you.
-3. Letters already on your phone stay there. You can still read them and record new ones, and Settings > Export works on this phone whether you are signed in or not (`apps/mobile/src/lib/export/device.ts:126`).
+3. Letters already on your phone stay there. You can still read them and record new ones, and Settings > Export works on this phone whether you are signed in or not (`apps/mobile/src/lib/export/device.ts`).
 
 The reply's words are a `support` macro that does not exist yet (gaps table). Until it does, the founder sends it; nothing is improvised in a ticket.
 
@@ -62,7 +62,7 @@ Ask them to sign in on their own phone (a code to the account's address, or Appl
 
 ### B3. End the sessions
 **If the owner can sign in on their phone (the only proven path today):**
-1. They open Settings > Account > Devices and tap "Sign out other devices" (`authCopy.account.signOutOthers`). The app calls `signOut({ scope: 'others' })` (`apps/mobile/src/lib/auth/session-provider.tsx:525`).
+1. They open Settings > Account > Devices and tap "Sign out other devices" (`authCopy.account.signOutOthers`). The app calls `signOut({ scope: 'others' })` (`apps/mobile/src/lib/auth/session-provider.tsx:597`).
 2. Supabase destroys the other sessions' refresh tokens, but "Access Tokens of revoked sessions remain valid until their expiry time" (https://supabase.com/docs/guides/auth/signout, read 8 Nov 2026). The other phone keeps access for up to `jwt_expiry` seconds: 900 in `supabase/config.toml` (hosted value not checked here).
 3. No test pins the `others` scope yet (BL-727).
 4. Write `select public.ops_audit_write('<your handle>', 'incident_scope', 'takeover_sessions_ended', '<ticket>', '<profile id>');`
@@ -112,7 +112,7 @@ If the 4-hour target is missed, write down why in the log. Today it will be miss
 - **A takeover:** the account stays suspended until the owner signs in with an address they control; write `takeover_confirmed`, and follow `suspected-data-leak.md`.
 
 ## The person-facing lines (COORDINATION section 10)
-- **Shown:** in the app, Settings > Account: `authCopy.account.devicesTitle`, `signOutOthers`, `signOutOthersHelp`, `signOutOthersDone` (`packages/content/src/features/auth.en.ts:207-210`). By email: the notification subjects in `supabase/config.toml` (`email_changed`, `identity_linked`). Support replies: none written yet (gaps).
+- **Shown:** in the app, Settings > Account: `authCopy.account.devicesTitle`, `signOutOthers`, `signOutOthersHelp`, `signOutOthersDone` (`packages/content/src/features/auth.en.ts:318-321`). By email: the notification subjects in `supabase/config.toml` (`email_changed`, `identity_linked`). Support replies: none written yet (gaps).
 - **Records:** only `ops.audit_log` rows through `public.ops_audit_write` (operator handle, runbook, reason code, ticket reference, profile id, enum-only detail), kept 12 months (`ops_retention`), and a `legal_holds` row when B5 places one. No consent act is recorded, so the PRIV-R21 consent fields do not apply.
 - **Never:** an ID document, birth date, age, photo, postal address, payment detail, the child's name, letter content, an IP address or free text in any row or ticket (PRIV-R02, PRIV-R10, PRIV-R21 never-list). Never an email or id pasted outside the dashboard screen.
 - **Decline and withdraw:** a person who will not sign in to prove control gets the A1 answer and nothing else changes. A suspension is lifted the day the owner signs in with an address they control. Letters on the phone, Settings > Export and recording keep working throughout; account deletion from Settings needs the owner signed in (PRIV-R09).
