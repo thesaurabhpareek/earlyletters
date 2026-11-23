@@ -17,8 +17,10 @@
  */
 import { router, useLocalSearchParams } from 'expo-router';
 import { CheckIcon } from 'phosphor-react-native/src/icons/Check';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { runOnJS } from 'react-native-reanimated';
 import { tokens } from '@scribe/design-tokens';
 import { AudioPlayer } from '@/components/player/audio-player';
 import { authorOf } from '@/components/child/child-store';
@@ -37,6 +39,7 @@ import { copy, fill, pendingCopy } from '@/lib/copy';
 import { childIndexOf, trackReadTogetherEnded, trackReadTogetherStarted } from '@/lib/analytics/track';
 import { hasPlus } from '@/lib/billing';
 import { useReducedMotion } from '@/lib/motion';
+import { swipeLeaves } from '@/lib/reader-words.logic';
 import { AppNote } from '@/components/book/app-note';
 import { bookCopy } from '@/components/book/copy';
 import { letterWords } from '@/components/book/letter-words.logic';
@@ -131,7 +134,11 @@ export default function ReadTogether() {
       {/* Night only (the scene resolves to nothing by day): one still dusk pool, low behind the controls. */}
       <Lamp scene="readTogether" arrive intensity={done ? 0.5 : 1} />
       <SafeAreaView className="flex-1">
-        <ModalHeader onClose={close} />
+        <SwipeDownToLeave onLeave={close}>
+          <View>
+            <ModalHeader onClose={close} />
+          </View>
+        </SwipeDownToLeave>
         <Progress fraction={done ? 1 : (index + 1) / letters.length} label={position} />
         <PageTurn
           pageKey={pageKey}
@@ -184,6 +191,17 @@ export default function ReadTogether() {
       </SafeAreaView>
     </View>
   );
+}
+
+/** A swipe down on the top bar leaves Read together, as it does on the letter page; Close stays the button for it (BL-1823). */
+function SwipeDownToLeave({ onLeave, children }: { onLeave: () => void; children: ReactNode }) {
+  const swipe = Gesture.Pan()
+    .activeOffsetY(16)
+    .failOffsetX([-16, 16])
+    .onEnd((e) => {
+      if (swipeLeaves(e.translationY, e.velocityY)) runOnJS(onLeave)();
+    });
+  return <GestureDetector gesture={swipe}>{children}</GestureDetector>;
 }
 
 /** How far along: a 2 pt hairline under the top bar, accent at 40 percent. Never "1 / 5"; VoiceOver hears "Letter 1 of 5". */

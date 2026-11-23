@@ -649,7 +649,7 @@ export const en = {
     playButton: "Play",
     pauseButton: "Pause",
     nextButton: "Next letter",
-    previousButton: "Back one",
+    previousButton: "Earlier letter",
     replayButton: "Hear it again",
     autoplayLabel: "Keep playing",
     // The dateline (S30): the month first, then who signed it, in the same shape for all three chapters. VoiceOver
@@ -670,7 +670,7 @@ export const en = {
     endOfBook: "That's every letter so far.",
     againButton: "Read it again",
     nextMonthButton: "On to Month {month}",
-    finishButton: "Close the book",
+    finishButton: "Done reading",
     makeLetterTogether: {
       title: "Write one together",
       body: "Ask {child} a question and record the answer, together.",
@@ -1287,6 +1287,8 @@ export const en = {
   reader: {
     readingSizeTitle: "Reading size",
     readingSizeButton: "Aa",
+    // BL-1823: at accessibility sizes the word stands beside "Aa", so a reader new to apps knows what it is.
+    readingSizeWord: "Size",
     readingSizeA11y: "Reading size",
     sizes: {
       standard: "Standard",
