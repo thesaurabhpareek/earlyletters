@@ -1,3 +1,4 @@
+# BLOCKED (ids the app does not set yet): red by design until they land. `node apps/mobile/e2e/bin/blocked-ids.mjs <this file>` lists them (not-in-app.txt); run-suite.sh and run-p0-nightly.sh skip it and print that list.
 # E2E-10  Export everything, offline, free.
 # Proves: C-REQ-017, LEGAL-REQ-034 and DATA-REQ-050 (export works offline with
 # no Plus UI; the ZIP holds the letters, data files, the PDF book and a
