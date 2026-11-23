@@ -18,10 +18,10 @@
    "status",
    "source"
   ],
-  "rowCount": 3294,
+  "rowCount": 3295,
   "bySurface": {
    "a11y": 4,
-   "app screen": 1730,
+   "app screen": 1731,
    "book": 13,
    "email": 635,
    "error": 82,
@@ -36,11 +36,11 @@
    "cco": 70,
    "clo": 14,
    "cmo": 546,
-   "content": 2628,
+   "content": 2629,
    "privacy": 36
   },
   "byHold": {
-   "": 2755,
+   "": 2756,
    "build-dependent": 10,
    "held": 447,
    "protected": 82
