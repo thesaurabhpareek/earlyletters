@@ -48,7 +48,7 @@ function classify(file, path, text) {
     if (/^(errors?)$/i.test(top) || /(^|\.)errors?(\.|$)/i.test(seg)) { surface = 'error'; channel = 'in-app error'; }
     if (/^(notifications|neutral|named|together|priming)$/i.test(top) || /(^|\.)(neutral|named|together)\./.test(seg) && /reminders/.test(file)) { surface = 'push'; channel = /priming/.test(seg) ? 'in-app' : 'push notification'; }
     if (/^(struggling|helpLinks)$/.test(top)) { surface = 'safety'; channel = 'support links'; owner = 'cco'; }
-    if (/^(sensitiveConsent|analyticsConsent|ageGate)$/.test(top) || /consent/i.test(file)) { surface = 'legal'; channel = 'consent'; owner = 'privacy'; }
+    if (/^(sensitiveConsent|analyticsConsent|ageGate)$/.test(top) || /consent/i.test(file) || /(^|\.)consent(\.|$)/.test(seg)) { surface = 'legal'; channel = 'consent'; owner = 'privacy'; }
     if (/(^|\.)(a11y|accessib\w*|aria\w*|voiceover\w*)(\.|$)/i.test(seg)) { surface = 'a11y'; channel = 'screen reader label'; }
     if (file.startsWith('apps/mobile/')) source = 'mobile-copy';
   }
@@ -58,6 +58,7 @@ function classify(file, path, text) {
   return { surface, channel, owner, source };
 }
 const HELD = [
+  [(r) => /(^|\.)trust\.promise$/.test(r.path.join('.')) || /never use them to train machine learning models/.test(r.text), 'protected', 'D-061 privacy promise line, word for word on every surface'],
   [(r) => /It stays in your words\. Every change is marked/.test(r.text), 'protected', 'D-133 public promise line'],
   [(r) => r.file.endsWith('helplines.ts') || /^(struggling|helpLinks)$/.test(r.path[1] ?? ''), 'protected', 'helplines and safety instructions'],
   [(r) => /(^|\.)erase(\.|$)/.test(r.path.join('.')) || /Your free letters start again\./.test(r.text), 'held', 'D-144 erase-everything lines'],
@@ -69,6 +70,24 @@ const HELD = [
   [(r) => r.channel === 'os permission string', 'held', 'OS permission string, registered disclosure'],
   [(r) => r.channel === 'price and trial', 'held', 'price and trial must match StoreKit and pricing.ts'],
 ];
+
+// Lines whose truth depends on the build (servers off or on). A held row keeps its hold and gains the reason; an otherwise
+// unheld row gets hold 'build-dependent'.
+// Named keys come from BL-1883; the pattern finds others by what the text says about our servers.
+const BUILD_KEYS = [
+  [/^en\.settings\.privacy\.keptOnPhone$/, 'servers off'], [/^en\.settings\.privacy\.keptSynced$/, 'servers on'],
+  [/^en\.whereLive\.onPhone$/, 'servers off'], [/^en\.whereLive\.onPhoneSynced$/, 'servers on'],
+  [/^en\.settings\.erase\.onThisPhone$/, 'servers off'], [/^accountDeletionCopy\.what\.intro$/, 'servers on'],
+  [/^storeListing\.reviewNotes$/, 'servers off'], [/^notesServersOn$/, 'servers on'],
+];
+function buildDependent(r) {
+  const key = r.path.join('.');
+  const k = BUILD_KEYS.find(([re]) => re.test(key));
+  if (k) return k[1];
+  if (/servers[- ]off/i.test(r.text)) return 'servers off';
+  if (/servers[- ]on\b|\b(from|on|to) our servers\b|\bnot sent to us\b|\bnothing is sent anywhere\b/i.test(r.text)) return /not sent to us|nothing is sent anywhere/i.test(r.text) ? 'servers off' : 'servers on';
+  return '';
+}
 
 // ---- extraction -----------------------------------------------------------------------------------------------
 function candidate(text, key) {
@@ -157,9 +176,12 @@ export function buildMap(root = ROOT) {
     const base = r.id ?? `${r.file.replace(/^packages\/content\/src\//, '')}#${redact(r.path.join('.')) || 'L' + r.line}`;
     const n = (seen.get(base) ?? 0) + 1; seen.set(base, n);
     const h = HELD.find(([f]) => f({ ...r, ...c }));
+    const bd = buildDependent(r);
+    const hold = h ? h[1] : bd ? 'build-dependent' : '';
+    const hold_reason = [h && h[2], bd && `build-dependent: true for ${bd} only`].filter(Boolean).join('; ');
     const owner = h && h[1] === 'protected' && /helpline|safety/.test(h[2]) ? 'cco' : c.owner;
     return { id: n > 1 ? `${base}~${n}` : base, surface: c.surface, channel: c.channel, file: r.file, line: r.line,
-      locale: 'en', text: r.text, chars: [...r.text].length, hold: h ? h[1] : '', hold_reason: h ? h[2] : '',
+      locale: 'en', text: r.text, chars: [...r.text].length, hold, hold_reason,
       tone: r.tone, day_id: r.day_id, layer: r.layer, owner, status: 'live on develop', source: c.source };
   });
   rows.sort((a, b) => a.file < b.file ? -1 : a.file > b.file ? 1 : a.line - b.line || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
