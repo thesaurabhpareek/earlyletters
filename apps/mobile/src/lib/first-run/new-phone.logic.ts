@@ -116,3 +116,33 @@ export function arrivalLineOwed(current: string | null): boolean {
 
 /** Written when the Book that showed the line is left. */
 export const ARRIVAL_SHOWN = SHOWN;
+
+/**
+ * NS-10-R13 (BL-1865): a new phone with backup off shows one line at the top of the Book until the person dismisses it,
+ * and no per-letter warning. Phone-local like the arrival line; holds no name, date or text.
+ */
+// Global on purpose, not per account: a phone has one owner book, and a second account never sees the Book or its
+// letters ([X4-R1], test/account-surfaces-x4.test.ts; PRD 00-product-frame sign-out ruling), so there is no second
+// account's line to keep apart.
+export const BACKUP_LINE_SETTING = 'newPhone.backupLine';
+const BACKUP_LINE_DISMISSED = 'dismissed';
+
+/**
+ * What to write when state A ends in `arrived`: owed only while the switch is on and backup is off, and never again once
+ * decided. With the switch off nothing is written.
+ */
+export function backupLineToWrite(current: string | null, backupOn: boolean, flagOn: boolean): typeof PENDING | null {
+  return flagOn && current === null && !backupOn ? PENDING : null;
+}
+
+/**
+ * The line is shown on every Book view until it is dismissed, and only while the switch is on and this build carries no
+ * backup: the stored value can outlive a build change, and the sentence is false once backup is on
+ * (docs/legal/in-app-disclosures.md).
+ */
+export function backupLineOwed(current: string | null, backupOn: boolean, flagOn: boolean): boolean {
+  return flagOn && !backupOn && current === PENDING;
+}
+
+/** Written when the person dismisses the line. */
+export const BACKUP_LINE_DONE = BACKUP_LINE_DISMISSED;
