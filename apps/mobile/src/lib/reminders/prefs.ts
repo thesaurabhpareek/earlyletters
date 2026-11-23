@@ -22,7 +22,7 @@
  */
 import { lastLetterKind } from '@scribe/core';
 import { appLockOn } from '../app-lock/prefs';
-import { currentUserId, getSetting, listChildren, listDrafts, listEntriesForChild, newestMadeLetter, setSetting } from '../store';
+import { currentUserId, getSetting, listChildren, newestMadeLetter, newestWaitingDraftAt, setSetting } from '../store';
 import {
   clampReminderTime,
   DEFAULT_DAYS,
@@ -132,20 +132,19 @@ export function plannerChildren(): PlannerChild[] {
 }
 
 /**
- * Newest letter made by this phone's user across visible books: a kept letter's `captured_at`, or a draft waiting at
- * Keep or held (`listDrafts` never lists one being recorded or marked `discarding`), by its `createdAt` (NS-13-R8,
- * R27). Smart quiet and the anchor both read it. Null when nothing is made yet.
+ * Newest letter made by this phone's user across visible books: a kept letter's `captured_at` (a quiet-day mark is not
+ * a letter), or a draft waiting at Keep or held (never one being recorded or marked `discarding`), by its `createdAt`
+ * (NS-13-R8, R27). Smart quiet and the anchor both read it. Two single-row queries, the same as `lastMadeLetter`
+ * (BL-1648, NS-48-R27): no book is loaded. Null when nothing is made yet.
  */
 export function lastOwnSaveAt(): number | null {
-  const me = currentUserId();
+  const books = listChildren().map((c) => c.id);
+  const kept = newestMadeLetter(books, currentUserId());
+  const waiting = newestWaitingDraftAt(books);
   let newest: number | null = null;
-  const see = (iso: string) => {
-    const t = Date.parse(iso);
+  for (const iso of [kept?.capturedAt, waiting]) {
+    const t = iso ? Date.parse(iso) : NaN;
     if (Number.isFinite(t) && (newest === null || t > newest)) newest = t;
-  };
-  for (const child of listChildren()) {
-    for (const e of listEntriesForChild(child.id)) if (!(e.authorId && me && e.authorId !== me)) see(e.capturedAt);
-    for (const d of listDrafts(child.id)) see(d.createdAt);
   }
   return newest;
 }
