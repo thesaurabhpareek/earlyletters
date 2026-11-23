@@ -119,9 +119,13 @@ export function codeEntryPause(wrongAt: readonly number[], now: number): { pause
   return inWindow >= CODE_ATTEMPT_LIMIT && now < until ? { paused: true, until } : { paused: false, until: null };
 }
 
-/** The pause is said once, as a change from paused to not paused (BL-476, LEGAL-REQ-051), never on arrival at the screen. */
-export function shouldAnnouncePauseEnd(wasPaused: boolean, paused: boolean): boolean {
-  return wasPaused && !paused;
+/**
+ * The pause is said once, as a change from paused to not paused (BL-476, LEGAL-REQ-051), never on arrival at the screen.
+ * The pause is keyed to the address, so when the person edits the address (no pending email: the field is editable) and
+ * `paused` flips because the address is now a different one, that is not an end: no announcement, no focus pulled mid-typing.
+ */
+export function shouldAnnouncePauseEnd(wasPaused: boolean, paused: boolean, wasAddress = '', address = ''): boolean {
+  return wasPaused && !paused && wasAddress === address;
 }
 
 /** Accept the code as typed or pasted: digits only, any spaces or dashes removed. */

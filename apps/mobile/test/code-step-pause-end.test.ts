@@ -20,6 +20,11 @@ describe('[BL-476 point 1, LEGAL-REQ-051] the end of the code pause is said and 
     expect(shouldAnnouncePauseEnd(true, true)).toBe(false);
   });
 
+  it('a changed address is not a pause end: typing a different address must not pull focus into the code field', () => {
+    expect(shouldAnnouncePauseEnd(true, false, 'a@example.com', 'b@example.com')).toBe(false);
+    expect(shouldAnnouncePauseEnd(true, false, 'a@example.com', 'a@example.com')).toBe(true);
+  });
+
   it('the rule agrees with the clock: five wrong codes pause, and the render after the end is the change', () => {
     const t0 = 1_000_000;
     const wrong = [t0, t0 + 1, t0 + 2, t0 + 3, t0 + 4];
@@ -37,8 +42,8 @@ describe('[BL-476 point 1, LEGAL-REQ-051] the end of the code pause is said and 
   });
 
   it('the screen announces the line, shows it in a polite live region (Android), and focuses the field', () => {
-    expect(codeStep).toMatch(/shouldAnnouncePauseEnd\(wasPaused\.current, paused\)/);
-    expect(codeStep).toMatch(/announce\(k\.pauseEnded\)/);
+    expect(codeStep).toMatch(/shouldAnnouncePauseEnd\(wasPaused\.current, paused, wasAddress\.current, address\)/);
+    expect(codeStep).toMatch(/announce\(k\.pauseEnded, \{ queue: true \}\)/);
     expect(codeStep).toMatch(/setNote\(k\.pauseEnded\)/);
     expect(codeStep).toMatch(/field\.current\?\.focus\(\)/);
     // The note is drawn in a polite live region (the existing note line), so Android, where announce() does nothing, reads it.

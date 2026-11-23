@@ -141,14 +141,16 @@ export default function CodeStep() {
   // typed again (spoken on iOS, shown in the polite note line for Android, where announce() does nothing) and move focus to
   // the field, which has just become editable. No count, never on arrival.
   const wasPaused = useRef(paused);
+  const wasAddress = useRef(address);
   useEffect(() => {
-    if (shouldAnnouncePauseEnd(wasPaused.current, paused)) {
-      announce(k.pauseEnded);
+    if (shouldAnnouncePauseEnd(wasPaused.current, paused, wasAddress.current, address)) {
+      announce(k.pauseEnded, { queue: true });
       setNote(k.pauseEnded);
       setTimeout(() => field.current?.focus(), 0);
     }
     wasPaused.current = paused;
-  }, [paused, k.pauseEnded]);
+    wasAddress.current = address;
+  }, [paused, address, k.pauseEnded]);
 
   const verify = async (value: string) => {
     if (busy || inFlight.current || value.length !== EMAIL_CODE_LENGTH || !looksLikeEmail(address)) return;
