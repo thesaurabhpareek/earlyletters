@@ -19,7 +19,6 @@ const SRC = join(__dirname, '..', 'src');
 export const BASELINE: readonly string[] = [
   'src/app/family.tsx',
   'src/app/letter/[id].tsx',
-  'src/app/plus/confirmed.tsx',
   'src/app/settings/app-lock.tsx',
   'src/app/settings/backup.tsx',
   'src/app/settings/plus.tsx',

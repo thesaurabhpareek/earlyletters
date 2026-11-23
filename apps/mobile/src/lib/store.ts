@@ -873,6 +873,14 @@ export function readTonight(childId: string | null, today: string): TonightRead 
 export function listClosedBooks(): Child[] {
   return shown(() => children.listClosedByServer(ctx()));
 }
+/** Books this person left, with their own letters still here (D-113, BL-444). Read-only; the screen is a later slice. */
+export function listLeftBooks(): Child[] {
+  return shown(() => children.listLeft(ctx()));
+}
+/** The live letters of a book this person left. Empty for any book that is not left, so it cannot read a listed book by id. */
+export function listLeftBookEntries(childId: string): Entry[] {
+  return shown(() => (children.listLeft(ctx()).some((c) => c.id === childId) ? entries.listForBook(ctx(), childId) : []));
+}
 export function listDeletedEntriesForChild(childId: string): Entry[] {
   return shown(() => entries.listDeletedForChild(ctx(), childId));
 }
