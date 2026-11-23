@@ -48,7 +48,7 @@ import { PinnedActionLayout } from '@/components/ui/pinned-action';
 import { useToast } from '@/components/ui/toast';
 import { childIndexOf, track, trackBookOpened } from '@/lib/analytics/track';
 import { authCopy } from '@/lib/auth/copy';
-import { ARRIVAL_SETTING, ARRIVAL_SHOWN, arrivalLineOwed } from '@/lib/first-run/new-phone.logic';
+import { ARRIVAL_SETTING, ARRIVAL_SHOWN, BACKUP_LINE_DONE, BACKUP_LINE_SETTING, arrivalLineOwed, backupLineOwed } from '@/lib/first-run/new-phone.logic';
 import { copy, fill } from '@/lib/copy';
 import { speechSettingsCopy } from '@/lib/models/copy';
 import { downloadingLine } from '@/lib/models/speech-download.logic';
@@ -140,6 +140,14 @@ export default function Book() {
       };
     }, []),
   );
+
+  // NS-10-R13 (BL-1865): one Book-level line while recordings are on the other phone and backup is off; no per-letter
+  // warning. It stays until dismissed (phone-local, no name, date or text).
+  const [backupLine, setBackupLine] = useState(() => backupLineOwed(getSetting(BACKUP_LINE_SETTING)));
+  const dismissBackupLine = useCallback(() => {
+    setSetting(BACKUP_LINE_SETTING, BACKUP_LINE_DONE);
+    setBackupLine(false);
+  }, []);
 
   useEffect(() => {
     if (!active) return;
@@ -407,6 +415,14 @@ export default function Book() {
           <Text variant="callout" tone="muted" style={{ marginBottom: tokens.space[3] }} testID="book.arrivalLine">
             {authCopy.newPhone.arrivedPlain}
           </Text>
+        ) : null}
+        {backupLine ? (
+          <View className="flex-row items-center gap-3" style={{ marginBottom: tokens.space[3] }} testID="book.backupLine">
+            <Text variant="callout" tone="muted" style={{ flex: 1 }}>
+              {authCopy.newPhone.recordingsElsewhere}
+            </Text>
+            <Button label={authCopy.newPhone.recordingsElsewhereDismiss} variant="quiet" size="sm" onPress={dismissBackupLine} />
+          </View>
         ) : null}
         {/* The lens switch (design spec 01 section 5.1): under the cover band and above the chapters, Months and Photos,
             shown only while a kept, open letter has a picture (NS-01-R10). */}

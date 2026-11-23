@@ -273,7 +273,7 @@ describe('[NX-36-S17] the arrival line: once, on the first Book, nowhere else', 
   });
   it('[NX-36-S17] the route owes the line when the gate answers arrived, before it leaves for Tonight (review of #764, finding 4)', () => {
     const o = read('app', 'onboarding.tsx');
-    expect(o).toMatch(/if \(!route\.arrivedFromAccount\) return;\n\s+const next = arrivalToWrite\(getSetting\(ARRIVAL_SETTING\)\);\n\s+if \(next\) setSetting\(ARRIVAL_SETTING, next\);\n\s+router\.replace\('\/'\);/);
+    expect(o).toMatch(/if \(!route\.arrivedFromAccount\) return;\n\s+const next = arrivalToWrite\(getSetting\(ARRIVAL_SETTING\)\);\n\s+if \(next\) setSetting\(ARRIVAL_SETTING, next\);\n(?:\s+\/\/[^\n]*\n)?\s+const line = backupLineToWrite\(getSetting\(BACKUP_LINE_SETTING\), backupInBuild\(\)\);\n\s+if \(line\) setSetting\(BACKUP_LINE_SETTING, line\);\n\s+router\.replace\('\/'\);/);
     // One write site, in the route; the Book writes only `shown`.
     expect(o.match(/setSetting\(ARRIVAL_SETTING/g)).toHaveLength(1);
   });
@@ -300,6 +300,8 @@ describe('[NX-36-S17] the arrival line: once, on the first Book, nowhere else', 
       offlineTitle: 'Opening your book needs a connection.',
       // BL-922a, PROPOSED (words packet 20 Nov rows 6 and 7): the held screen.
       consentBody: 'Finish setting up to open your book here.',
+      recordingsElsewhere: 'Your recordings are on the phone that made them.',
+      recordingsElsewhereDismiss: 'Got it',
       nothingToCopy: 'There is nothing on this phone to copy yet. Your letters are in your account, and recordings are on the phone that made them.',
     });
     for (const v of Object.values(p)) {
