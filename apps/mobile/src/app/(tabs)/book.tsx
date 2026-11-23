@@ -49,6 +49,8 @@ import { useToast } from '@/components/ui/toast';
 import { childIndexOf, track, trackBookOpened } from '@/lib/analytics/track';
 import { authCopy } from '@/lib/auth/copy';
 import { ARRIVAL_SETTING, ARRIVAL_SHOWN, BACKUP_LINE_DONE, BACKUP_LINE_SETTING, arrivalLineOwed, backupLineOwed } from '@/lib/first-run/new-phone.logic';
+import { backupInBuild } from '@/lib/backup/gate';
+import { backupLineEnabled } from '@/lib/first-run/backup-line-flag';
 import { copy, fill } from '@/lib/copy';
 import { speechSettingsCopy } from '@/lib/models/copy';
 import { downloadingLine } from '@/lib/models/speech-download.logic';
@@ -142,8 +144,10 @@ export default function Book() {
   );
 
   // NS-10-R13 (BL-1865): one Book-level line while recordings are on the other phone and backup is off; no per-letter
-  // warning. It stays until dismissed (phone-local, no name, date or text).
-  const [backupLine, setBackupLine] = useState(() => backupLineOwed(getSetting(BACKUP_LINE_SETTING)));
+  // warning. It stays until dismissed (phone-local, no name, date or text). Behind EXPO_PUBLIC_BACKUP_LINE (off), and
+  // drawn only while this build has no backup, so it never says the recordings stay on the phone beside a backup.
+  // The two keys are PROPOSED (docs/content/words-packet-20nov.md): counsel has not read the recording sentence.
+  const [backupLine, setBackupLine] = useState(() => backupLineOwed(getSetting(BACKUP_LINE_SETTING), backupInBuild(), backupLineEnabled()));
   const dismissBackupLine = useCallback(() => {
     setSetting(BACKUP_LINE_SETTING, BACKUP_LINE_DONE);
     setBackupLine(false);

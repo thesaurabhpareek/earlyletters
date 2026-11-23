@@ -160,7 +160,7 @@ export const authCopy = {
     // 6 and 7, option A of each); the founder has not approved them and `content` owns the final words. Its buttons reuse
     // account.finishSetup, consent.noBook.tryAnother, settingsHome.deleteAccountLabel and settingsHome.exportLabel.
     consentBody: 'Finish setting up to open your book here.',
-    // BL-1865, NS-10-R13: the one Book-level line on a new phone with backup off. PROPOSED, needs word approval; the
+    // BL-1865, NS-10-R13: the one Book-level line on a new phone with backup off. PROPOSED, needs word approval (docs/content/words-packet-20nov.md: counsel has not read the recording sentence; the line is behind EXPO_PUBLIC_BACKUP_LINE, off); the
     // words are the second half of `nothingToCopy`, kept to what that line already says. No per-letter version exists.
     recordingsElsewhere: 'Your recordings are on the phone that made them.',
     recordingsElsewhereDismiss: 'Got it',
