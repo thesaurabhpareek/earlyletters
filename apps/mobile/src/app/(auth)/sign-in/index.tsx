@@ -6,7 +6,8 @@
  * One title, one body sentence, the providers, the registered privacy line and
  * "Not now", which always closes and changes nothing on this phone (the app is local-first).
  *
- * Opened with `/sign-in?trigger=first_letter|invite|invite_create|sign_in|settings`.
+ * Opened with `/sign-in?trigger=first_letter|invite|invite_create|sign_in|settings`; the signed-out deletion screen adds
+ * `&reason=cancel_deletion`, which only changes the body (sheet-body.logic.ts).
  * Terms, the age step and sensitive-data consent come after sign-in, on
  * /sign-in/consent (my_sync_gate decides which).
  *
@@ -34,6 +35,7 @@ import type { AuthErrorKind, AuthMethod } from '@/lib/auth/machine.logic';
 import { authErrorMessage } from '@/lib/auth/messages';
 import { passkeysAvailable } from '@/lib/auth/passkey';
 import { asSignInTrigger, setSignInTrigger, type SignInTrigger } from '@/lib/auth/pending';
+import { signInBody } from '@/lib/auth/sheet-body.logic';
 import { useAuth, type Outcome } from '@/lib/auth/session-provider';
 import { AppleButton, Busy, ErrorLine, PrivacyLine, ProviderButton, QuietButton, SHEET, SheetBody, SheetFrame, SheetTitle, useCloseSheet } from '@/lib/auth/ui';
 import { fill } from '@/lib/copy';
@@ -44,7 +46,7 @@ const ABOUT_THIS_BOOK: readonly SignInTrigger[] = ['first_letter', 'settings', '
 export default function SignInSheet() {
   const auth = useAuth();
   const close = useCloseSheet();
-  const params = useLocalSearchParams<{ trigger?: string }>();
+  const params = useLocalSearchParams<{ trigger?: string; reason?: string }>();
   const trigger = asSignInTrigger(params.trigger);
   const { active } = useChildren();
   const ax = useIsAccessibilitySize();
@@ -115,7 +117,7 @@ export default function SignInSheet() {
       <View className="flex-row items-start" style={{ gap: SHEET.gap }}>
         <View className="flex-1" style={{ gap: SHEET.providerGap }}>
           <SheetTitle>{fill(s.titles[trigger], { child })}</SheetTitle>
-          <SheetBody muted>{fill(s.bodies[trigger], { child })}</SheetBody>
+          <SheetBody muted>{fill(signInBody(s.bodies, trigger, params.reason), { child })}</SheetBody>
         </View>
         {cover ? <BookCover name={cover} size="sm" animate={false} /> : null}
       </View>
