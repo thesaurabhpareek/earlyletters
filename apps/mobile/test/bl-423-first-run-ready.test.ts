@@ -79,13 +79,14 @@ describe('[BL-423] Tonight, empty, shows Speak with no card in front', () => {
   });
 
   it('cards render only from drafts or a month-ago letter, both empty in a new book', () => {
-    expect(tonight).toMatch(/cards\.length > 0 \? \([\s\S]*?\) : monthAgo \? \(/);
+    // BL-963: the one registry picks the slip (waiting drafts, else a past letter); Home renders only those two.
+    expect(tonight).toMatch(/slip\?\.type === 'waiting' \? \([\s\S]*?\) : slip\?\.type === 'pastLetter' \? \(/);
     // Named by shape, not by field: #1541 moved the read from room.entries to room.window.
-    expect(tonight).toMatch(/resurfaced\(room\?\.\w+ \?\? \[\], today, cards\.length/);
+    expect(tonight).toMatch(/chooseSlip\(\{ cards, window: room\?\.\w+ \?\? \[\], today/);
   });
 
   it('nothing between the prompt and Speak: no card sits above the actions', () => {
-    const cardsAt = tonight.indexOf('cards.length > 0 ?');
+    const cardsAt = tonight.indexOf("{slip?.type === 'waiting' ? (");
     const inlineActionsAt = tonight.indexOf('{inlineActions ? actions : null}');
     expect(inlineActionsAt).toBeGreaterThan(0);
     expect(inlineActionsAt).toBeLessThan(cardsAt);
