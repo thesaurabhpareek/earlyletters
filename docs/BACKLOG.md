@@ -9503,7 +9503,7 @@ Note, not a ruling, and a scope question. Scope and dates stay with the founder 
 - Done when: the notes entry is saved and a fresh install signs in with the demo account and reaches Asha's book.
 
 #### BL-1871 Cut the release: the release PR into main, then the release branch
-- Status: blocked (waits on the cut rows of plan 17 section 3a: BL-925, BL-926, BL-977, BL-1446, BL-922, BL-978, BL-958 and the NS-32 and NS-33 rows merged). Mode: human. Owner: platform. Milestone: M12. Size: XS. Depends on: BL-925, BL-926, BL-977, BL-1446, BL-922, BL-978, BL-958, BL-966, BL-1876.
+- Status: blocked (waits on the cut rows of plan 17 section 3a: BL-925, BL-926, BL-977, BL-1446, BL-922, BL-978, BL-958 and the NS-32 and NS-33 rows merged). Mode: human. Owner: platform. Milestone: M12. Size: XS. Depends on: BL-925, BL-926, BL-977, BL-1446, BL-922, BL-978, BL-958, BL-1876.
 - Satisfies: ADR 0022; `docs/product/prd/17-engineering-project-plan.md` section 3a (release path). No row existed for this; PR #830 (the earlier snapshot into main) closed unmerged.
 - Scope: open the release PR from `develop` into `main` and cut `release/1.0` from `main` (`docs/ops/RELEASE.md`); agents never push or merge to `main`. A GitHub write under CR-176 item 5 that Karma makes; it is a queue row only if the session proxy refuses it. It is the step before `docs/release/FOUNDER_QUEUE.md` session sheet rows 5 and 7 (gates G2 and G3 there): see the session sheet rows 5 and 7.
 - Done when: `release/1.0` exists and its head is the commit the RC will be built from.
@@ -9517,7 +9517,7 @@ Note, not a ruling, and a scope question. Scope and dates stay with the founder 
 #### BL-1873 Re-run the hosted deploy and apply the pending migrations
 - Status: ready (physical act; under the servers-off reading it gates the first outside family, not the cut). Mode: human. Owner: platform. Milestone: M12. Size: S. Depends on: none.
 - Satisfies: D-157; D-041 (hosted migrations are a person's act); `docs/product/prd/17-engineering-project-plan.md` section 3a ("F4" and the deploy step).
-- Scope: fix the production database connection secret in the vendor console, re-run the deploy workflow (dry run first); the run then waits at its Environment deployment, and on the account holder's own console the act is Review deployments, then Approve, on the `db-production` deployment. Then apply what `supabase/APPLY.md` lists as pending, including the BL-525 migration (PR #1638) and the signed content pack republish. `docs/release/FOUNDER_QUEUE.md` already lists these: see the session sheet rows 1 (staging apply), 2 (republish), 4 (the connection secret) and 5 (production apply). No secret is written anywhere.
+- Scope: fix the production database connection secret in the vendor console, push a new `db-v<year>.<month>.<day>.<n>` tag on the `main` commit that carries the migration (tags never move, so a re-run of `db-v0.1.0` would not apply it; session sheet row 5), dry run first; the run then waits at its Environment deployment, and on the account holder's own console the act is Review deployments, then Approve, on the `db-production` deployment. Then apply what `supabase/APPLY.md` lists as pending, including the BL-525 migration (PR #1638) and the signed content pack republish. `docs/release/FOUNDER_QUEUE.md` already lists these: see the session sheet rows 1 (staging apply), 2 (republish), 4 (the connection secret) and 5 (production apply). No secret is written anywhere.
 - Done when: `supabase/APPLY.md` and `.github/migrations-applied.txt` match the hosted project.
 
 #### BL-1874 Run the device sheet on the release candidate
@@ -9537,3 +9537,57 @@ Note, not a ruling, and a scope question. Scope and dates stay with the founder 
 - Satisfies: NS-32-R11 (P0), NS-32-R9 (P1). Remainder of BL-966.
 - Scope: `[NS-32-R11]` (a budgeted note's body comes only from a content key, never built in the planner) and `[NS-32-R9]` have no test title in `apps/mobile`; `docs/ops/trace-ns-baseline.txt:198` lists R11 open. Read the two rows in the NS-32 spec, add one test each in `apps/mobile/test/` next to `reminders-budget.test.ts`, each failing on a planted violation. No new words; no code change unless a test finds a real gap, and then the gap is filed, not fixed here.
 - Done when: both titles exist, `node scripts/trace.mjs --no-write` reports NS-32-R11 covered, and the baseline line for R11 is removed in the same diff.
+
+#### BL-1877 Smart-invert guard: the real wrapper idiom, the export forms and styled images are not caught (follow-up to #1656)
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
+- Satisfies: Refines the smart-invert guard of `apps/mobile/test/smart-invert.test.ts` (PR #1656).
+- Scope: in `apps/mobile/test/smart-invert.test.ts`: (1) the wrapper idiom the app really uses is `withUniwind` (`apps/mobile/src/components/ui/safe-area-view.tsx:10`) and the guard does not recognise it; (2) `DEFINES_CUSTOM` (line 143) matches `export function` and `export const` only, so `export { Avatar }` and `export default Avatar` slip past; (3) `styled.Image` and `styled('Image')` are not covered. Add a planted fixture and a test for each, one mutant each.
+- Done when: each of the three shapes fails the guard in a planted fixture and the real tree stays green.
+
+#### BL-1878 Flight timeline test: cite the right section, check the slot and the gutter, stop the tautology (follow-up to #1657)
+- Status: ready. Mode: agent. Owner: design systems. Milestone: M15. Size: S. Depends on: none.
+- Satisfies: Refines the flight timeline test in `packages/design-tokens/test/tokens.test.ts` (near line 263; PR #1657); `docs/product/moments-tab/EXPERIENCE-AND-MOTION.md` section 4.4.
+- Scope: (1) the comment cites "spec 07"; it should cite `docs/product/moments-tab/EXPERIENCE-AND-MOTION.md` section 4.4; (2) the slot equals the content width is ASSUMED, not read from the spec or the layout: read it or say why; (3) the assertion `to.x + to.size === w - gutter` is a tautology of how `to` is built: assert against an independent value; (4) `compactBelowWidth` is copied into the test, not read from `tokens.layout`; (5) the vertical offsets are still literals: take them from the spec section or tokens. One mutant for each.
+- Done when: the comment names the section, no value is copied or assumed without a source, and each mutant turns the test red.
+
+#### BL-1879 Engine guard: computed access and generic calls of applyEdits are not caught (follow-up to #1658)
+- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
+- Satisfies: Constitution (every machine edit goes through `verifyEdits`); refines `packages/core/test/engine-guards.test.ts` (PR #1658).
+- Scope: `guardCallers` misses computed access (`x['applyEdits'](`) and a generic call (`applyEdits<T>(`). Either catch both with a planted fixture each, or, if a shape cannot be caught by a text scan, say so in the test comment next to the existing planted cases (line 167) so the limit is written down.
+- Done when: both shapes are caught, or the comment names them as known limits; `npm test -w packages/core` passes.
+
+#### BL-1880 A stale content map fails CI, and the size check says the real cap (follow-up to #1662 and #1665)
+- Status: ready. Mode: agent. Owner: platform. Milestone: M15. Size: S. Depends on: none.
+- Satisfies: BL-1847 (the content map); CODE-R02 (`scripts/guards/pr-size.mjs`).
+- Scope: (1) no check fails when `docs/content/map/content-map.json` is stale: add `node scripts/content/export-content-map.mjs --check` (or `scripts/content/export-content-map.test.mjs`) to the root `npm test` list in `package.json`, and name it in `docs/content/map/README.md`; (2) the `pr-size` over-cap message always says 2000 (`MAX_EXCLUDED_LINES`, line 22) and must print the cap that was exceeded. A workflow is not edited here; BL-1881 is the physical step.
+- Done when: a planted stale map fails the check and the message in each over-cap case names its own cap, with a test for each.
+
+#### BL-1881 Apply the pr-size and founder-ask workflows from the base ref (the app cannot write .github/workflows)
+- Status: ready (physical act). Mode: human. Owner: platform. Milestone: M15. Size: XS. Depends on: BL-1880, BL-1882.
+- Satisfies: CODE-R02 (400 lines and 20 files) is enforced by no workflow today; BL-1851 (the founder-ask check); CR-176.
+- Scope: copy `docs/ops/proposed/workflows/pr-size.yml` and `docs/ops/proposed/workflows/founder-ask.yml` to `.github/workflows/` on the base ref, by the account holder's hand; the app token cannot write that path. Listed as session sheet rows C1 and C2 in `docs/release/FOUNDER_QUEUE.md`. No secret is involved.
+- Done when: both workflows run on a throwaway pull request: an over-cap diff is red and a clean one is green.
+
+#### BL-1882 Founder-ask guard: doc counts, zero-width characters, three rule evasions and two missed asks (follow-up to #1663)
+- Status: ready. Mode: agent. Owner: platform. Milestone: M15. Size: S. Depends on: none.
+- Satisfies: BL-1851; CR-176; D-168; refines `scripts/guards/founder-ask.mjs` and `docs/ops/proposed/founder-ask.md`.
+- Scope: (1) `docs/ops/proposed/founder-ask.md` counts do not match the code: it says 3 of 30 merged PRs fail, 11 patterns and 34 tests in its own file; recount and state them; (2) zero-width characters hide an ask: strip `\p{Cf}` in `asksIn`; (3) three allow-rule evasions pass: a colon is not a sentence boundary, "Never mind CR-176 -- ask the founder to approve", and "CR-176 (not optional) ask the founder to approve"; (4) "ask Saurabh to take a look" is not caught; (5) the exemption for the BL-1851 phrase should be exact: the phrase in backticks on a line that names BL-1851, not any line naming it. A test and a mutant for each.
+- Done when: each evasion fails in a planted line, the doc counts are what the code prints, and `node --test scripts/guards/founder-ask.test.mjs` passes.
+
+#### BL-1883 Content map generator: hold the promise line and the consent terms, mark build-dependent privacy lines
+- Status: ready. Mode: agent. Owner: content. Milestone: M15. Size: S. Depends on: none.
+- Satisfies: D-133 (the public promise); the consent text is held (`docs/legal/in-app-disclosures.md`); `docs/content/map/README.md`.
+- Scope: in `scripts/content/export-content-map.mjs` (`classify`, `HELD`): `en.trust.promise` and `authCopy.consent.terms.body` carry no hold flag, though the README says the promise is protected and consent text is held; fix the rules and regenerate the map. Privacy lines whose truth depends on the build (servers on or off) are listed as plain live strings: give them a flag or a reason so a reader sees they depend on the build. Words are not changed.
+- Done when: both keys show hold in the map, the build-dependent lines are marked, and `node --test scripts/content/export-content-map.test.mjs` passes with a test for each.
+
+#### BL-1884 Publish the policy versions in production (session sheet row 6)
+- Status: blocked (BL-1873; gate G7 of the session sheet). Mode: human. Owner: legal. Milestone: M15. Size: XS. Depends on: BL-1873.
+- Satisfies: `supabase/APPLY.md` step 8, item 2; D-041.
+- Scope: `docs/release/FOUNDER_QUEUE.md` session sheet row 6 has no row here. The act is the SQL block under "Row 6 SQL" in the production SQL editor as the owner, then its check; only after the production apply and after a decision line covers publishing the test texts in production (G7). Nothing is copied into this row: follow the sheet.
+- Done when: the check query returns the inserted rows and agrees with `scripts/ops/staging-smoke.ts --db-only`.
+
+#### BL-1885 BL-1844 follow-ups: a concurrent-claim test, a role-change test of the inner accept, and the rollback line
+- Status: ready. Mode: agent. Owner: data architect. Milestone: M15. Size: S. Depends on: none.
+- Satisfies: Refines BL-1844 (`supabase/migrations/20261123000000_invite_redeem_retry_live_role.sql`).
+- Scope: (1) a test for a concurrent claim (two callers, one code) with a mutant; (2) the inner `accept_child_invite_by_code` has no role-change test: add one with a mutant; (3) the rollback line of File 45 in `supabase/APPLY.md` says "re-create the function from" the older file: it should say to do so in a new migration, never by editing an applied one.
+- Done when: both tests exist and turn red under their mutants, the APPLY.md line says "in a new migration", and `npm run test:db` passes.
