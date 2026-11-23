@@ -1305,7 +1305,7 @@ Note on D-051: `docs/DECISIONS.md` on `develop` has D-051 "Standard over custom"
 - Status: done (PR #1509, `efdd13b7e`, merged to develop; two scope leftovers are not in it: the flat left-aligned card goes to design systems, and the time estimate waits on BL-043). Mode: agent. Owner: mobile engineer, content. Milestone: M-JR. Size: S.
 - Severity: major. Raised by: product, design (2 findings). Steps: J05-03.
 - Satisfies: D-065; DESIGN_LANGUAGE (calm, honest waiting); MOTION.
-- Scope: The waiting card uses Breathe (static with text under Reduce Motion), left-aligned on a flat `surface` (not a raised white card), and says "Listening back to what you said. You can close this, it will be waiting on Tonight." and that the recording is safe. After a threshold with no progress it says it is taking longer than usual and offers Keep voice or Type instead. A time estimate is added once transcription time is measured on iPhone SE 3 (BL-043).
+- Scope: The waiting card uses Breathe (static with text under Reduce Motion), left-aligned on a flat `surface` (not a raised white card), and says "Listening back to what you said. Your voice is kept. You can close this and come back to it from Tonight." and that the recording is safe. After a threshold with no progress it says it is taking longer than usual and offers Keep voice or Type instead. A time estimate is added once transcription time is measured on iPhone SE 3 (BL-043).
 - Done when: The card animates (or is static with text under Reduce Motion), states the recording is safe and can be closed, and shows the longer-than-usual state after the threshold.
 - Test: Journey J05 (J05-03); timeout case in `apps/mobile/test/transcription-queue.test.ts`.
 
