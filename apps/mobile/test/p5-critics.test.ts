@@ -16,7 +16,7 @@ import { arrivalToastDelayMs, createArrivalGate } from '../src/components/book/b
 import { cardLabel } from '../src/components/book/letter-card.logic';
 import { readableInBook } from '../src/components/book/quiet-day.logic';
 import { eraseOutcome, restoredLine } from '../src/components/book/shelf.logic';
-import { turnControls } from '../src/components/book/turn-controls.logic';
+import { pageButtonsClass, turnControls } from '../src/components/book/turn-controls.logic';
 import { wordsCardKind, wordsCardState } from '../src/components/book/words-card.logic';
 import { exactViewAvailable, pageProvenanceKey, provenanceLine } from '../src/lib/provenance';
 import type { Entry } from '../src/lib/store';
@@ -264,8 +264,10 @@ describe('[S4] Read together\'s page buttons at accessibility sizes', () => {
 
   it('the screen reads the size, stacks full width and gives no button a half-width shape when stacked (source)', () => {
     const rt = code(src('app/read-together.tsx'));
-    expect(rt).toMatch(/const turn = turnControls\(useIsAccessibilitySize\(\)\);/);
-    expect(rt).toMatch(/className=\{turn\.stacked \? 'gap-3 px-5 pb-2 pt-3' : 'flex-row gap-3 px-5 pb-2 pt-3'\}/);
+    expect(rt).toMatch(/const accessibilitySize = useIsAccessibilitySize\(\);\s*const turn = turnControls\(accessibilitySize\);/);
+    expect(rt).toMatch(/className=\{pageButtonsClass\(turn\.stacked, placement\)\}/);
+    expect(pageButtonsClass(true, 'pinned')).toBe('gap-3 px-5 pb-2 pt-3');
+    expect(pageButtonsClass(false, 'pinned')).toBe('flex-row gap-3 px-5 pb-2 pt-3');
     expect(rt.match(/className=\{turn\.stacked \? 'px-4' : 'flex-1 px-4'\}/g)).toHaveLength(2);
     expect(rt.match(/fullWidth=\{turn\.stacked\}/g)).toHaveLength(2);
     expect(rt).toMatch(/turn\.order\.map\(/);
