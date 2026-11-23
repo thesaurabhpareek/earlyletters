@@ -80,11 +80,11 @@ describe('[D-111 item 4] the line under the list', () => {
     expect(features.language.picker.englishOnly).toBe(line);
   });
 
-  it('is one plain sentence that says other languages come later', () => {
+  it('is one plain sentence that says this version writes down English, with no promise of a later update (exec ruling 23 Nov 2026, L12)', () => {
     expect(line.trim()).toBe(line);
     expect(line).toMatch(/^[A-Z][^.!?]*\.$/);
-    expect(line).toMatch(/\bother languages\b/i);
-    expect(line).toMatch(/\blater update\b/i);
+    expect(line).toBe('This version writes down letters spoken in English.');
+    expect(line).not.toMatch(/later update|coming/i);
   });
 
   it('promises no date and uses no fear or loss words', () => {

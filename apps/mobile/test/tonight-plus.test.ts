@@ -197,7 +197,7 @@ describe('[SR-C-08] Tonight wires both', () => {
   });
 
   it('draws rows from tonightRows, with the held row', () => {
-    expect(screen).toMatch(/tonightRows\(cards\)/);
+    expect(code('components/tonight/slip-registry.ts')).toMatch(/tonightRows\(s\.cards\)/);
     expect(screen).toMatch(/<HeldRow /);
     expect(screen).not.toMatch(/cards\.map\(/);
   });

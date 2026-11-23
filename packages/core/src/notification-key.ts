@@ -13,7 +13,7 @@
  * this floor; they fall back to it.
  *
  * Day part (NS-48-R12): a variant whose words name the evening ("tonight",
- * "The house is quiet", "Before you sleep") is only eligible from 17:00. The
+ * "A letter tonight?", "Before you sleep") is only eligible from 17:00. The
  * test in apps/mobile/test/reminders-key.test.ts checks these flags against
  * the real words, so the list cannot drift from the copy.
  */

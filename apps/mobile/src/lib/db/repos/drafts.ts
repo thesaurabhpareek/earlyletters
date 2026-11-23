@@ -98,6 +98,21 @@ export function listForChild({ db }: RepoContext, childId: string): Draft[] {
     .map(fromRow);
 }
 
+/**
+ * When the newest draft waiting across the given books was made (`created_at`), in one query (BL-1648, NS-48-R27). A
+ * take still recording, or being let go, is not one. Null when none waits. Returns a date, never words.
+ */
+export function newestWaitingAt({ db }: RepoContext, childIds: readonly string[]): string | null {
+  if (childIds.length === 0) return null;
+  return (
+    db.get<{ created_at: string }>(
+      `SELECT created_at FROM drafts WHERE child_id IN (${childIds.map(() => '?').join(',')}) AND state NOT IN ('recording', 'discarding')
+       ORDER BY created_at DESC, id DESC LIMIT 1`,
+      ...childIds,
+    )?.created_at ?? null
+  );
+}
+
 // ── Review's choices (WP-F04-03; F04 section 11.3) ─────────────────────────
 const ISO_DAY = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
 /** A BCP-47 language tag as the speech and pack code writes them (`en`, `en-GB`, `zh-Hant`). */

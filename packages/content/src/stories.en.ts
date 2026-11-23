@@ -39,7 +39,7 @@ export const onboardingStories: readonly StoryCard[] = [
     id: 'story.exact.v3',
     order: 2,
     headline: "It stays in your words.",
-    line: "Every change is marked, and your original recording is kept unchanged. We never rewrite your words.",
+    line: "Every word we change is marked, and your original recording is kept unchanged. We never rewrite your words.",
     visual: 'letter-underline',
   },
   {
@@ -54,8 +54,8 @@ export const onboardingStories: readonly StoryCard[] = [
     type: 'story',
     id: 'story.private.v1',
     order: 4,
-    headline: "Private to your family.",
-    line: "Your letters are yours, and you choose who else can read them. We never sell them and never use them for ads.",
+    headline: "Private by default.",
+    line: "Your letters are yours. We never sell them and never use them for ads.",
     visual: 'two-hands',
   },
 ];
@@ -67,6 +67,7 @@ export const onboardingStories: readonly StoryCard[] = [
  *
  * story.private.v2 fits v1.0 with server features on (D-100): sharing reaches the other parent only when they are
  * invited (D-069), so it says who it is shared with and makes no claim about who can read or where letters are stored.
+ * Exec ruling 23 Nov 2026 (item 1c): v1 is the served card. v2 is never served while no store build can invite.
  */
 export const alternateStories: readonly StoryCard[] = [
   {
