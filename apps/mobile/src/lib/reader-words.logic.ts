@@ -17,3 +17,17 @@ export const LEAVE_SWIPE_VELOCITY = 800;
 export function swipeLeaves(translationY: number, velocityY: number): boolean {
   return translationY > LEAVE_SWIPE_PT || velocityY > LEAVE_SWIPE_VELOCITY;
 }
+
+/**
+ * "Size" is a control label, so it stops growing at twice its size (about 32 pt): at AX5 uncapped it is about 57 pt and
+ * overflows a 320 pt bar beside Back and "Aa" (design-systems font-metric calculation: 21 pt slack at 375, 6 at 360, over at
+ * 320). Letter text is never capped (D-027); this is not letter text.
+ */
+export const SIZE_WORD_MAX_SCALE = 2;
+
+/**
+ * A header swipe down to leave Read together stays off until a device shows it is safe: Read together is a native modal
+ * (_layout.tsx) and the native dismiss gesture and this one could both pop, leaving two screens. Close and the end-of-book
+ * button are the ways out. The wrapper and `swipeLeaves` are in place for the BL-1786 device check.
+ */
+export const READ_TOGETHER_HEADER_SWIPE = false;

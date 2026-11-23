@@ -8,7 +8,7 @@ import { join } from 'node:path';
 import { en } from '@scribe/content';
 import { describe, expect, it } from 'vitest';
 import { FONT_SCALE } from '../src/lib/a11y.logic';
-import { LEAVE_SWIPE_PT, showsSizeWord, swipeLeaves } from '../src/lib/reader-words.logic';
+import { LEAVE_SWIPE_PT, READ_TOGETHER_HEADER_SWIPE, SIZE_WORD_MAX_SCALE, showsSizeWord, swipeLeaves } from '../src/lib/reader-words.logic';
 
 const src = (p: string) => readFileSync(join(__dirname, '..', 'src', p), 'utf8');
 const letter = src('app/letter/[id].tsx');
@@ -47,7 +47,18 @@ describe('the three small words', () => {
     for (const w of ['Earlier letter', 'Next letter', 'Done reading', 'Close the book', 'Back one']) expect(together).not.toContain(`"${w}"`);
   });
 
-  it('a swipe down on the top bar leaves Read together; a small or sideways drag does not', () => {
+  it('"Size" is capped so it fits a 320 pt bar at AX5', () => {
+    expect(SIZE_WORD_MAX_SCALE).toBeLessThanOrEqual(2);
+    expect(letter).toContain('maxFontSizeMultiplier={SIZE_WORD_MAX_SCALE}');
+  });
+
+  it('the header swipe is off until a device shows it cannot pop twice on the native modal, and leaves only once', () => {
+    expect(READ_TOGETHER_HEADER_SWIPE).toBe(false);
+    expect(together).toContain('.enabled(READ_TOGETHER_HEADER_SWIPE)');
+    expect(together).toContain('if (left.current) return;');
+  });
+
+  it('the swipe rule, for when it is on: a swipe down on the top bar leaves Read together; a small or sideways drag does not', () => {
     expect(swipeLeaves(LEAVE_SWIPE_PT + 1, 0)).toBe(true);
     expect(swipeLeaves(10, 900)).toBe(true);
     expect(swipeLeaves(LEAVE_SWIPE_PT, 100)).toBe(false);

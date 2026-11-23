@@ -43,7 +43,7 @@ import { ListRow, ListSection } from '@/components/ui/list-row';
 import { UIProvider } from '@/components/ui/provider';
 import { BackButton, ModalHeader } from '@/components/ui/screen-header';
 import { letterStartY, topBarHeight } from '@/lib/letter-top-bar.logic';
-import { showsSizeWord } from '@/lib/reader-words.logic';
+import { SIZE_WORD_MAX_SCALE, showsSizeWord } from '@/lib/reader-words.logic';
 import { Sheet } from '@/components/ui/sheet';
 import { StateScreen } from '@/components/ui/state-screen';
 import { Text } from '@/components/ui/text';
@@ -365,7 +365,7 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
           {copy.reader.readingSizeButton}
         </Text>
         {showsSizeWord(fontScale) ? (
-          <Text variant="labelSmall" tone="accent" testID="letter.readingSize.word">
+          <Text variant="labelSmall" tone="accent" maxFontSizeMultiplier={SIZE_WORD_MAX_SCALE} testID="letter.readingSize.word">
             {copy.reader.readingSizeWord}
           </Text>
         ) : null}
