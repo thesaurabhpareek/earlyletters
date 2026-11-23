@@ -108,6 +108,29 @@ check('a consented person with no book gets an empty page without the withheld m
 const H = await pull(A);
 check('[FR-PRV-20] a parent with consent is unaffected by the other parent\'s withdrawal (it still reads its own and the other parent\'s letters)', ids(H).includes(LA) && ids(H).includes(LG));
 
+
+// ── sync_books: the same gate; closed answers keep only what the claim step and account deletion read ──
+const books = async (uid) => { await sys(`delete from sync_rate_windows where profile_id = $1`, [uid]); return (await one(uid, `select public.sync_books() r`)).r; };
+const DROPPED = ['nickname', 'date_of_birth', 'birthday_md', 'due_date', 'family_can_read', 'created_by_me', 'joined_at', 'auto_add', 'my_signs_as', 'invites'];
+const bk = await books(A);
+check('[FR-PRV-20] sync_books consent current: full book (name, dates, members with profile ids, invites key)',
+  bk.withheld === undefined && bk.books[0].name === 'Asha' && bk.books[0].date_of_birth === '2025-04-12' && bk.books[0].members.length >= 2
+  && 'profile_id' in bk.books[0].members[0] && 'invites' in bk.books[0]);
+for (const [label, u] of [['no terms accepted', F], ['no age attestation', E], ['nothing recorded at all', U]]) {
+  const r = await books(u);
+  const b = r.books[0];
+  check(`[FR-PRV-20] sync_books closed (${label}): withheld = consent, first_run_open kept, one book`, r.withheld === 'consent' && typeof r.first_run_open === 'boolean' && r.books.length === 1);
+  check(`[FR-PRV-20] sync_books closed (${label}): book keeps only id, role, name, members`, JSON.stringify(Object.keys(b).sort()) === JSON.stringify(['id', 'members', 'name', 'role']) && b.id === CHILD);
+  check(`[FR-PRV-20] sync_books closed (${label}): no date of birth, due date, nickname, invites, profile ids`,
+    !DROPPED.some((k) => k in b) && !JSON.stringify(r).includes('2025-04-12') && !JSON.stringify(r).includes('04-12') && b.members.every((m) => !('profile_id' in m) && !('joined_at' in m) && !('auto_add' in m)));
+  check(`[FR-PRV-20] sync_books closed (${label}): members keep role, is_me, signs_as for the deletion lines`,
+    b.members.length >= 2 && b.members.every((m) => 'role' in m && 'is_me' in m && 'signs_as' in m) && b.members.filter((m) => m.is_me).length === 1);
+}
+const bW = await books(G);
+check('[FR-PRV-20] sync_books sensitive-data withdrawn: closed shape, no dates', bW.withheld === 'consent' && !JSON.stringify(bW).includes('2025-04-12') && !('due_date' in bW.books[0]));
+const bN = await sys(`insert into auth.users values ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb') returning id`).then(() => books('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'));
+check('[FR-PRV-20] sync_books closed: a new account with no book is first_run_open = true, books = []', bN.first_run_open === true && bN.books.length === 0 && bN.withheld === 'consent');
+
 // export and deletion are not behind the gate (T7-23)
 const acts = (await as(G, `select document, action from public.policy_acceptances order by accepted_at, id`)).rows;
 check('[T7-23] export: the person still reads their own consent history, withdraw included',

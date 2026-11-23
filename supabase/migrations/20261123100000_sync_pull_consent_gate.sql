@@ -9,7 +9,8 @@
 -- Unchanged on purpose (T7-23): export and request_account_deletion read and write no sync_pull path and
 -- stay open without consent; entries RLS, sync_push (already SCCON on content) and every other function.
 -- Same signature, SECURITY DEFINER, pinned search_path. The body is 20261016000000 section 10 plus the gate.
--- Rollback: re-create sync_pull from 20261016000000 section 10.
+-- sync_books gets the same gate further down (closed: first_run_open, book id, role, name, members' role/is_me/signs_as only).
+-- Rollback: re-create sync_pull from 20261016000000 section 10 and sync_books from 20261015000000 section 5.
 
 create or replace function public.sync_pull(p_since jsonb default '{}'::jsonb, p_limit int default 200)
 returns jsonb language plpgsql volatile security definer set search_path = pg_catalog, public, pg_temp
@@ -393,3 +394,108 @@ comment on function public.sync_pull(jsonb, int) is
 
 revoke execute on function public.sync_pull(jsonb, int) from public, anon;
 grant execute on function public.sync_pull(jsonb, int) to authenticated;
+
+-- ─── sync_books: the same gate (Karma ruling, FR-PRV-20) ─────────────────────
+-- Body is 20261015000000 section 5 plus the closed-gate branch above. Same signature, same grants (authenticated).
+-- Rollback: re-create sync_books from 20261015000000 section 5.
+create or replace function public.sync_books()
+returns jsonb language plpgsql volatile security definer set search_path = pg_catalog, public, pg_temp as $$
+declare v_uid uuid := public.require_user();
+begin
+  perform public.rate_hit('pull');                -- BL-332: 120 per minute per person (SCRAT)
+  -- FR-PRV-20 (Karma ruling): the same gate as sync_pull (terms current, age attested, sensitive-data given).
+  -- While it is closed the answer keeps only what the phone reads before consent or without it:
+  --   first_run_open and the book count (the claim and new-phone steps, account-books.logic.ts classifyAccountBooks),
+  --   and, per book, id, role, the child's name and the members' role, is_me and signs_as (the account-deletion
+  --   "What happens" lines, account-deletion/logic.ts bookImpacts, which stay open without consent, T7-23).
+  -- Dropped while closed: nickname, date of birth, birthday month and day, due date, family_can_read, created_by_me,
+  -- joined_at, auto_add, my_signs_as, invites, and each member's profile_id, joined_at and auto_add.
+  if not coalesce((select g.terms_current and g.age_attested and g.sensitive_data
+                     from public.content_gate_state(v_uid) g), false) then
+    return jsonb_build_object(
+      'epoch', (select max(e.epoch) from sync_epochs e),
+      'first_run_open', coalesce((select p.first_run_closed_at is null from profiles p where p.id = v_uid), true),
+      'withheld', 'consent',
+      'books', coalesce((
+        select jsonb_agg(jsonb_build_object(
+                 'id', c.id,
+                 'role', m.role,
+                 'name', c.name,
+                 'members', coalesce((
+                   select jsonb_agg(jsonb_build_object(
+                            'role', mm.role,
+                            'is_me', mm.profile_id = v_uid,
+                            'signs_as', coalesce(pp.signs_as,
+                                                 (select i.signs_as from child_invites i
+                                                   where i.child_id = c.id and i.accepted_by = mm.profile_id
+                                                   order by i.accepted_at desc limit 1),
+                                                 pr.signs_as))
+                            order by mm.joined_at)
+                     from child_members mm
+                     left join child_member_prefs pp on pp.child_id = mm.child_id and pp.profile_id = mm.profile_id
+                     left join profiles pr on pr.id = mm.profile_id
+                    where mm.child_id = c.id), '[]'::jsonb))
+               order by m.joined_at, c.id)
+          from child_members m
+          join children c on c.id = m.child_id and c.deleted_at is null
+         where m.profile_id = v_uid), '[]'::jsonb));
+  end if;
+  return jsonb_build_object(
+    'epoch', (select max(e.epoch) from sync_epochs e),
+    'first_run_open', coalesce((select p.first_run_closed_at is null from profiles p where p.id = v_uid), true),
+    'books', coalesce((
+      select jsonb_agg(jsonb_build_object(
+               'id', c.id,
+               'role', m.role,
+               'name', c.name,
+               'nickname', c.nickname,
+               'date_of_birth', case when m.role = 'parent' then c.date_of_birth end,
+               'birthday_md', to_char(c.date_of_birth, 'MM-DD'),
+               'due_date', case when m.role = 'parent' then c.due_date end,
+               'family_can_read', c.family_can_read,
+               'created_by_me', c.created_by is not distinct from v_uid,
+               'joined_at', m.joined_at,
+               'auto_add', m.auto_add_letters,
+               'my_signs_as', coalesce(mp.signs_as,
+                                       (select i.signs_as from child_invites i
+                                         where i.child_id = c.id and i.accepted_by = v_uid
+                                         order by i.accepted_at desc limit 1)),
+               'members', (
+                 select jsonb_agg(jsonb_build_object(
+                          'profile_id', mm.profile_id,
+                          'role', mm.role,
+                          'is_me', mm.profile_id = v_uid,
+                          'joined_at', mm.joined_at,
+                          'auto_add', case when m.role = 'parent' then mm.auto_add_letters end,
+                          'signs_as', coalesce(pp.signs_as,
+                                               (select i.signs_as from child_invites i
+                                                 where i.child_id = c.id and i.accepted_by = mm.profile_id
+                                                 order by i.accepted_at desc limit 1),
+                                               pr.signs_as))
+                          order by mm.joined_at)
+                   from child_members mm
+                   left join child_member_prefs pp on pp.child_id = mm.child_id and pp.profile_id = mm.profile_id
+                   left join profiles pr on pr.id = mm.profile_id
+                  where mm.child_id = c.id),
+               'invites', case when m.role = 'parent' then coalesce((
+                 select jsonb_agg(jsonb_build_object(
+                          'id', i.id, 'role', i.role, 'signs_as', i.signs_as,
+                          'created_at', i.created_at, 'expires_at', i.expires_at,
+                          'status', case when i.expires_at < now() then 'expired' else 'open' end)
+                          order by i.created_at desc)
+                   from child_invites i
+                  where i.child_id = c.id and i.accepted_at is null and i.revoked_at is null
+                    and i.expires_at > now() - interval '14 days'), '[]'::jsonb) end)
+             order by m.joined_at, c.id)
+        from child_members m
+        join children c on c.id = m.child_id and c.deleted_at is null
+        left join child_member_prefs mp on mp.child_id = c.id and mp.profile_id = v_uid
+       where m.profile_id = v_uid), '[]'::jsonb));
+end;
+$$;
+
+comment on function public.sync_books() is
+  'Book list for the signed-in person (20261015000000 section 5). FR-PRV-20 (this file): without current consent the answer is first_run_open, withheld = consent and per book only id, role, name and members (role, is_me, signs_as).';
+
+revoke execute on function public.sync_books() from public, anon;
+grant execute on function public.sync_books() to authenticated;
