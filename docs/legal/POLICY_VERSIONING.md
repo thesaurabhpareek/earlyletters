@@ -2,7 +2,7 @@
 
 Version 1.4.0, 8 Nov 2026 (changelog at the end). Status: draft for counsel.
 
-> **AI-drafted for counsel review. Not legal advice.** Drafted 2 Oct 2026. This file defines process and data structures; counsel decides whether any particular change is material. Statements marked **Unverified** were not checked against an opened source.
+> **AI-drafted for counsel review. Not legal advice.** Drafted 2 Oct 2026. This file defines process and data structures; the exec-team review (D-172: CLO, CCO and Chief Privacy Officer, Claude roles, not licensed lawyers) decides whether any particular change is material. Statements marked **Unverified** were not checked against an opened source.
 
 Owner: founder. Approver for every published legal text: counsel. Implements register rows CR-011, CR-019, CR-050, CR-004 and engineering requirements LEGAL-REQ-001, -006, -009, -049 (see `compliance-register.md`, `ENGINEERING_REQUIREMENTS.md`).
 
@@ -65,7 +65,7 @@ Typos, formatting, broken links, contact details formatting, translation fixes t
 
 ### 2.4 Rules
 
-- **When in doubt, it is major.** The classification and its one-paragraph rationale are written in the changelog and approved by counsel.
+- **When in doubt, it is major.** The classification and its one-paragraph rationale are written in the changelog and read by the exec-team review (D-172).
 - A version number is never reused, even for an unpublished draft that leaked.
 - The `version` in the frontmatter of a draft in `docs/legal/` is an internal revision number, not a published version. The published sequence for each document lives in `packages/content/legal/<key>/` and starts at `0.9.0` for the TestFlight beta text (DEBATES Q-009) and `1.0.0` for the first counsel-approved text, which is published as `major` with `requires_reconsent = true` and counsel-approved short notice for beta testers.
 - The 0.9.0 test texts for `terms` and `privacy` are kept in `docs/legal/beta/<key>-0.9.0.md` (BL-565, D-138 item 1), because `packages/content/legal/` does not exist yet. That file is the published source: the website serves it byte for byte at `/legal/<key>/0.9.0.md`, renders it at `/legal/<key>/0.9.0`, and `policy_versions.content_sha256` is its sha256, pinned in `packages/content/test/legal-beta.test.ts`. When `packages/content/legal/` is built, the files move there unchanged (same bytes, same hash).
@@ -82,7 +82,7 @@ Each version carries three timestamps (UTC, shown to users in their local date):
 |---|---|
 | `published_at` | Text is public at its permanent URL. |
 | `new_users_from` | From this moment new sign-ups accept this version. Normally equals `published_at`. |
-| `effective_at` | Moment it binds existing users. For major changes at least **30 days** after `published_at` unless counsel approves a shorter period because the change is legally required or purely protective. Minor and patch: equal to `published_at`. |
+| `effective_at` | Moment it binds existing users. For major changes at least **30 days** after `published_at` unless the exec-team review (D-172) agrees a shorter period because the change is legally required or purely protective. Minor and patch: equal to `published_at`. |
 
 During the gap between `published_at` and `effective_at`, existing users remain on their accepted version. The app and server must handle two current versions at once (old for existing users, new for new users).
 
@@ -180,7 +180,7 @@ create table public.policy_versions (
 );
 
 -- Versions are immutable; a major change to a document that needs an affirmative act
--- must require re-consent; major changes need 30 days' notice unless counsel approves.
+-- must require re-consent; major changes need 30 days' notice unless the exec-team review (D-172) agrees otherwise.
 -- (A trigger, because check constraints cannot query policy_documents.)
 create or replace function public.policy_versions_guard()
 returns trigger language plpgsql set search_path = public, pg_catalog as $$
@@ -195,7 +195,7 @@ begin
   end if;
   if new.change_class = 'major' and new.effective_at < new.published_at + interval '30 days'
      and current_setting('app.allow_short_notice', true) is distinct from 'on' then
-    raise exception 'major change needs 30 days notice unless counsel approves short notice';
+    raise exception 'major change needs 30 days notice unless the exec-team review agrees short notice';
   end if;
   return new;
 end;
@@ -442,7 +442,7 @@ Hashes: en-US sha256 <...>; en-IN sha256 <...>.
 ```
 
 Evidence archive, kept in the repo and backed up:
-- `docs/legal/evidence/<key>/<version>/` with: the approved PDF render, counsel approval note, screenshots of every surface that shows or links the document (per platform, light and dark, largest Dynamic Type), the notice email template as sent.
+- `docs/legal/evidence/<key>/<version>/` with: the approved PDF render, exec-team review note (D-172), screenshots of every surface that shows or links the document (per platform, light and dark, largest Dynamic Type), the notice email template as sent.
 - Screenshots are of fictional data only (the "Asha" family, CLAUDE.md).
 
 ---
@@ -451,7 +451,7 @@ Evidence archive, kept in the repo and backed up:
 
 1. `packages/content/legal/manifest.json` lists `{key, version, published_at, new_users_from, effective_at, sha256 per locale, url}`. Generated by `npm run legal:publish`, never hand-edited.
 2. CI fails if: a published version file's hash differs from the manifest (immutability); a manifest version has no matching row in a migration (`policy_versions` insert); an in-app link to a legal document is not a versioned URL; a consent surface renders text whose hash is not in the manifest.
-3. Publishing a version is a pull request containing: the new markdown, the changelog entry, the manifest change, a migration inserting the `policy_versions` row, updated store-disclosure exports if data practices changed (LEGAL-REQ-042), and counsel approval in the PR description.
+3. Publishing a version is a pull request containing: the new markdown, the changelog entry, the manifest change, a migration inserting the `policy_versions` row, updated store-disclosure exports if data practices changed (LEGAL-REQ-042), and the exec-team review note (D-172) in the PR description.
 4. The app bundles the manifest at build time for offline display, and checks `policy_actions_needed()` on foreground with network so a new version can take effect without an app release.
 
 ---

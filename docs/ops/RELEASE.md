@@ -55,8 +55,8 @@ Who does what:
 | G0 pull request | every PR to `develop` or `main` | `required` (install, `npm test` with content rules, `npm run test:db`, `npm run test:functions`, typecheck incl. `apps/mobile` `tsc`) and `applied migrations unchanged` | built (F) |
 | G1 `main` | merge to `main` | G0 on the merge commit | built (F); branch protection is FT-20 |
 | G2 internal TestFlight | any build to C0 | G1, `node apps/mobile/e2e/bin/lint-flows.mjs`, DEVICE_TEST_PLAN TF-04 smoke on the SE 3 | Maestro suite not runnable yet (seams and some testIDs missing, `apps/mobile/e2e/TESTID_REQUESTS.md`); until then G2 is the manual smoke |
-| G3 external TestFlight | first C1 build, then every C1 build | G2, the C1 column of DEVICE_TEST_PLAN's ordered checklist, in particular TF-10 (privacy manifest) and TF-11 (no analytics host) once #123 merges; **v1.1:** S1-08b (hijack fix; a Line B row, G-01, parked with sign-in) and the staging deletion run (`docs/ops/README.md` step 7) | manual |
-| G4 submission | `ios-v*` tag | G3, every PRD 6 line with evidence on SE 3 and a current iPhone, kill during save 500 times, S1-17 for every listed language, section 6 checklist, no open S0 or S1 | manual |
+| G3 external TestFlight | first C1 build, then every C1 build | G2, the C1 column of DEVICE_TEST_PLAN's ordered checklist, in particular TF-10 (privacy manifest) and TF-11 (no analytics host) once #123 merges; **v1.1:** S1-08b (hijack fix; a Line B row, G-01, parked with sign-in) and the staging deletion run (`docs/ops/README.md` step 7); the BL-1854 release check of section 12 (CR-177) until BL-1805 is cleared | manual |
+| G4 submission | `ios-v*` tag | G3, every PRD 6 line with evidence on SE 3 and a current iPhone, kill during save 500 times, S1-17 for every listed language, section 6 checklist, no open S0 or S1; the BL-1854 release check of section 12 (CR-177) until BL-1805 is cleared | manual |
 | G5 after release | phased release days 1 to 7 | crash-free sessions 99.8% and users 99.5% (App Store Connect metrics), no data-loss report; pause on any S0 | manual |
 
 The macOS E2E job is a sketch (`apps/mobile/e2e/ci/ios-e2e.yml.example`), not enabled; the coordinator moves it to `.github/workflows/` when the seams exist.
@@ -329,6 +329,7 @@ Release ios-vX.Y.Z (RC tag ios-vX.Y.Z-rc.N, build N), commit <sha> on release/X.
 - [ ] Size: largest download under 40 MB (APP_SIZE)
 - [ ] TF-04 smoke on SE 3; TF-10 privacy manifest; TF-03 update over the previous build
 - [ ] DEVICE_TEST_PLAN items for this milestone, including S2-17 (plan reminders, D-094) and TF-11 (no analytics host, D-095) once #123 merges: evidence file <path>
+- [ ] Release check (Karma): no store candidate or TestFlight build (G3, G4) shows Erase now on a signed-in phone until the founder has cleared BL-1805's wording (D-169 item 5, CLO-22, CR-177). Verify that EXPO_PUBLIC_SERVER_ERASE is listed in scripts/release/store-flags.mjs with allowedOn empty for the profile and is not on in eas.json for it; until that flag row merges, verify with git merge-base --is-ancestor ecf3ac1123416a0b4347d91e647f5ae54b8a6a10 <build commit>, which must fail (a build from a commit that does not contain BL-1854, or one that reverts it)
 - [ ] Submission checklist RELEASE 6.1 to 6.8 (first version and any version that changes data collection, age rating, screenshots or subscriptions)
 - [ ] 0.9.0 test pages (CR-60): the founder has released the hold on them, or this release PR does not carry `apps/web/content/legal/*/0.9.0.md` and the versioned routes
 - [ ] Release option: manual (1.0) or phased (updates)
