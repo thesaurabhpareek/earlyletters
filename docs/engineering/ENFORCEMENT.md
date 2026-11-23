@@ -4,7 +4,7 @@ Every MUST rule in the compendium and what enforces it today. Status words: **en
 
 Rules that stay `not yet` are the backlog for the stewards' standing duty 2: turn one into a real check per run, or file it as a backlog proposal for `product`. The owner of each chapter keeps its rows current in the same PR that changes a rule or adds a check.
 
-Totals across 192 rules (2026-10-03, counted from the rows below): 42 enforced, 38 pending in open PRs, 34 partly enforced, review-only or covered by the rule they cite, 78 not yet.
+Totals across 197 rules (2026-10-03 count, adjusted for rules and rows changed since: see the git log of this file): 42 enforced, 38 pending in open PRs, 40 partly enforced, review-only or covered by the rule they cite, 77 not yet.
 
 **Known drift since 2026-10-03** (noted 15 Oct when the compendium landed; the totals above are not recounted): rows that cited PRs #4, #27, #28, #29, #31, #36 and #39 were re-checked against `develop` at `56ec5b5` on 15 Oct and now say `on develop` or `enforced on develop`; `packages/api` (21 files) and `supabase/functions/` (`purge-worker`, `analytics-forget`, `config`, `content`, `_shared`) exist, so API-R01, API-G4, DQ-R12, DQ-R13, DSR-R06, DSR-R07 and DSR-R08 were rewritten on 15 Oct to say what is on `develop` and what is still missing; `packages/brand` sets the support address. Each owner's first standing run should sweep its rows.
 
@@ -29,6 +29,11 @@ Totals across 192 rules (2026-10-03, counted from the rows below): 42 enforced, 
 | CODE-R18 | MUST | review (principal-architect); ADR | enforced on develop (review only) | none |
 | CODE-R19 | MUST | `app_config` table and client | not yet | PDATA-08 (BL-022) |
 | CODE-R20 | MUST | typecheck `strict` in CI; ESLint and Prettier | typecheck enforced on develop; lint not yet (PR #30 job waits for WS-12, WS-16) | MONO-01 |
+| CODE-R21 | MUST | review; PR template hint (a comment, not a check) | review only; 48-hour limit and first line not checked | CODE-G6 |
+| CODE-R22 | MUST | review; PR template `Done when:` line | review only; template line not yet (owner: ops, row to be filed) | CODE-G5 |
+| CODE-R23 | MUST | `scripts/release/go-no-go-check.mjs` (form only); review | partly: per-build page form checked; judgment and one file per gate by review; template wording stale after CR-176 | none |
+| CODE-R24 | SHOULD | review | review only | none |
+| CODE-R25 | SHOULD | review; `timeout-minutes` ceilings in `ci.yml` (4, 5, 10, 15, 5, 5, 15, 1) are not the budget | target only; no measurement; wording in `ci.yml`, `.github/README.md`, TDD 07 not yet changed | CODE-G7 |
 | API-R01 | MUST | `packages/api` (manifests, config, content, envelope); typed RPC wrappers and DB types | partly on develop; wrappers and types not yet | API-G4 (WS-04) |
 | API-R02 | MUST | generated types plus drift test | not yet | WS-04 |
 | API-R03 | MUST | cites DB-R13 for views; RPC or narrow policy writes by review | see DB-R13; review | DB-01 |
@@ -38,7 +43,7 @@ Totals across 192 rules (2026-10-03, counted from the rows below): 42 enforced, 
 | API-R07 | MUST | idempotency key store | not yet | API-G2 |
 | API-R08 | MUST | device outbox with retry classes | not yet | MOB-02 (WS-09) |
 | API-R09 | MUST | split codes; typed registry plus unregistered-errcode test | split pending PR #32; registry test not yet | DB-09, API-G5 |
-| API-R10 | MUST NOT | value-free validation triggers | not yet | BL-244 |
+| API-R10 | MUST NOT | value-free validation triggers | `supabase/tests/value_free_validation.test.mjs` (VF-1 to VF-12); length limits #1453, children NOT NULL and shape CHECKs BL-1499 (the other NOT NULL, foreign key and enum paths are shown unreachable, VF-9 to VF-11) | BL-244, BL-1499 |
 | API-R11 | MUST | review; previous-release contract test | review only; test not yet | API-G3 |
 | API-R12 | MUST | build headers; `min_supported_build` refusal code | not yet | PDATA-08 (BL-022) |
 | API-R14 | MUST | request id header end to end | not yet | OBS-G1 |
@@ -48,12 +53,12 @@ Totals across 192 rules (2026-10-03, counted from the rows below): 42 enforced, 
 | API-R18 | MUST | rate limit in RPC or function, `SCRAT` | invites only on develop; generic not yet | DOC-11 |
 | API-R19 | MUST | CDN plus ETag config client | not yet | PDATA-08 (BL-022) |
 | API-R20 | MUST | on-device schema and SHA-256 manifest validation | not yet | API-G6 |
-| OBS-R01 | MUST | typed `OpsLog` logger | not yet | OBS-G2 (PDATA-06) |
-| OBS-R02 | MUST NOT | logger tests; BL-021 scrubbers | not yet | OBS-G2, BL-021 |
+| OBS-R01 | MUST | typed server logger `supabase/functions/_shared/log/log.ts`; `log.test.ts` | partly: server side on develop; device side not yet | OBS-G2 (PDATA-06) |
+| OBS-R02 | MUST NOT | `log.test.ts`, `canary.test.ts`; BL-021 scrubbers | partly: server side on develop; device side and scrubbers not yet | OBS-G2, BL-021 |
 | OBS-R03 | MUST | request id end to end | not yet | OBS-G1 |
 | OBS-R04 | MUST | review | review only | none |
 | OBS-R05 | MUST | ESLint `no-console`; Babel strip in release | not yet | MONO-01 |
-| OBS-R06 | MUST | Sentry init after consent; `setUser` never-called test | not yet | MOB-15, BL-021 |
+| OBS-R06 | MUST | Sentry init after consent; `setUser` never-called test; precondition: no crash SDK before that test and device-side OBS-R02 tests | not yet; no Sentry dependency today, so nothing to gate | MOB-15, BL-021, OBS-G5 |
 | OBS-R07 | MUST | `audit_events` table and tests; `ops_audit_log` | `audit_events` on develop (pending migration 4); `ops_audit_log` not yet | DOC-11 |
 | OBS-R08 | MUST | analytics validator fails closed | enforced on develop (#31) | PDATA-03 |
 | OBS-R09 | MUST | `ops_health` views and job | not yet | OBS-G3 (PDATA-06) |
@@ -66,7 +71,10 @@ Gap ids defined here:
 - CODE-G1: CI check that fails or labels PRs over 400 lines or 20 files (excluding lockfile, generated, test data).
 - CODE-G2: closed for `packages/core/src/age.ts` (typed `InvalidIsoDateError`, fixed message, #1118 and #1146). Other error sites in `core` are still found by review.
 - CODE-G3: licence allowlist check for production dependencies.
+- CODE-G7: no measurement of required-job run time against the 10-minute target (CODE-R25); proposal for `qa`.
 - CODE-G4: `docs/GLOSSARY.md` (WS-17) not started.
+- CODE-G6: no check that a stacked PR's base is under 48 hours old and that line 1 of its body is `Stacked on #N` (CODE-R21); proposal for `qa`.
+- CODE-G5: `.github/pull_request_template.md` has no `Done when:` line (CODE-R22). Owner: ops, row to be filed.
 - API-G1: scan the built app bundle for `service_role` and `sb_secret` strings.
 - API-G2: idempotency key parameter and store for RPCs not keyed on a row id (`request_account_deletion`, invites, policy acts).
 - API-G3: contract compatibility test against the previous release tag.
@@ -76,6 +84,7 @@ Gap ids defined here:
 - OBS-G1: request id generation on device, header propagation, echo and storage with rejected ops.
 - OBS-G2: typed `OpsLog` logger with Asha canary unit tests.
 - OBS-G3: `ops_health` views and the 5-minute job.
+- OBS-G5: a check that fails a build adding a crash SDK dependency before the `setUser` test and device-side OBS-R02 tests exist (OBS-R06 precondition).
 - OBS-G4: end-to-end log canary over every log stream.
 
 ## data-steward (chapters 03, 04)

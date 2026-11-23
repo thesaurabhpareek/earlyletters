@@ -70,6 +70,9 @@ const NAMED_EVENING = 'en.notifications.evening[';
 const NOT_SHOWN_YET: Record<string, { needle: string; why: string }> = {
   'en.onboarding.nameCheck.title': { needle: 'nameCheck', why: 'the name check card (F07) is not built' },
   'en.settings.plan.familySharingHelp': { needle: 'familySharingHelp', why: 'the Plus screen reads billingCopy.plan, not en.settings.plan' },
+  // PROPOSED (BL-985): "That did not save. {child}'s book..." reads "your child's" mid-sentence for a blank name. Verbatim from the
+  // design; the builder (or design) picks the fix before a screen reads it, and this entry then fails to remind them.
+  'en.children.quiet.saveFailed': { needle: 'quiet.saveFailed', why: 'the Quiet failure toast (BL-985) is not built' },
 };
 
 /** The rows that are skipped: those in NOT_SHOWN_YET whose key no screen mentions. */

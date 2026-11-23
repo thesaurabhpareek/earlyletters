@@ -8,6 +8,7 @@
  */
 import { analyticsConsentDue, CONSENT_OFFERS_KEY, type AnalyticsAskState, type AnalyticsAskVerdict } from '@scribe/analytics';
 import { getSetting, listChildren, listEntriesForChild, listHiddenChildren, setSetting } from '@/lib/store';
+import { recordDayAsk } from '@/lib/asks/day-store';
 import { consentAskVerdict } from './ask-sequencer.logic';
 import { analytics, lifecycle } from './index';
 
@@ -26,6 +27,7 @@ export function analyticsAskDue(input: AnalyticsAskInput): AnalyticsAskVerdict {
 export function recordAnalyticsOffer(): void {
   setSetting(CONSENT_OFFERS_KEY, String(offers() + 1));
   noteAskShown();
+  recordDayAsk('analytics_consent'); // counts toward the day totals (BL-1784)
 }
 
 // ---------------------------------------------------------------------------

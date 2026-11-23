@@ -39,4 +39,4 @@ You take tasks whose Owner is `analytics engineer`.
 - Metric questions from `decision-science`; consent questions to `privacy`; screen wiring to `mobile`.
 
 ## Never
-- Add an analytics, crash or purchase SDK (those tasks are `pair` mode with the founder).
+- Add an analytics, crash or purchase SDK (those tasks are `pair` mode with Karma).

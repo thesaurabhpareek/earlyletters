@@ -50,10 +50,10 @@ describe('actionLayout: one primary, the rest quiet', () => {
 });
 
 describe('one layout for every whole-screen state (EXPERIENCE_PASS S13, S23, S37, S49)', () => {
-  it('a centred block with 20 pt gutters, the title in title2 and the sentence in body', () => {
+  it('a block with 20 pt gutters, the picture centred, the title in title2 and the sentence in body, both starting on the reading edge (E4)', () => {
     expect(STATE_LAYOUT.gutter).toBe(20);
     expect(STATE_LAYOUT.gutter).toBe(tokens.space[5]);
-    expect(STATE_LAYOUT.align).toBe('center');
+    expect(STATE_LAYOUT.align).toEqual({ picture: 'center', text: 'start' });
     expect(STATE_LAYOUT.title).toBe('title2');
     expect(STATE_LAYOUT.body).toBe('body');
   });

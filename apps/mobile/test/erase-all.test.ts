@@ -38,6 +38,9 @@ const h = vi.hoisted(() => ({
   settingNow: (_key: string): string | null => null,
   /** A step of Erase everything after which the process dies (the step's own work is done first), or null. */
   killAt: null as string | null,
+  /** CDO-23: when true the native backup-exclusion stand-in sticks, so the moments file can be written. */
+  exclusionSticks: false,
+  excluded: new Set<string>(),
 }));
 
 vi.mock('expo-file-system', async () => (await import('./helpers/expo-fs-standin')).expoFileSystem(() => h.disk));
@@ -48,7 +51,12 @@ vi.mock('expo-sqlite', () => ({
     return `${h.disk.documents}SQLite`;
   },
 }));
-vi.mock('../modules/scribe-files', () => ({ ScribeFiles: null })); // also: erase-everything reaches the days store (NS-47-R16)
+vi.mock('../modules/scribe-files', () => ({
+  // also: erase-everything reaches the days store (NS-47-R16) and the moments file (CDO-23); null unless a test turns the stand-in on
+  get ScribeFiles() {
+    return h.exclusionSticks ? { setExcludedFromBackup: (u: string) => void h.excluded.add(u), isExcludedFromBackup: (u: string) => h.excluded.has(u) || h.excluded.has(`${u}.tmp`) } : null; // a rename keeps the attribute on iOS: the final name reads as its temp did
+  },
+}));
 vi.mock('expo-crypto', async () => {
   const { createHash: hash } = await import('node:crypto');
   return {
@@ -137,7 +145,8 @@ async function launch() {
   const erase = await import('../src/lib/capture/erase');
   const sweep = await import('../src/lib/capture/sweep');
   const all = await import('../src/lib/erase-everything');
-  return { store, ledger, erase, sweep, all };
+  const moments = await import('../src/lib/moments');
+  return { store, ledger, erase, sweep, all, moments };
 }
 type App = Awaited<ReturnType<typeof launch>>;
 
@@ -182,6 +191,8 @@ beforeEach(() => {
   h.keychain = new Map();
   h.failRemoveKey = null;
   h.killAt = null;
+  h.exclusionSticks = false;
+  h.excluded = new Set();
   h.disk = createDisk(PHONE);
   layOutApp(h.disk);
   const n = nodeDb();
@@ -290,7 +301,7 @@ describe('[DATA-REQ-014][F17-REQ-080] Delete this book, on a phone that never si
     // So the toast must not say the book is still in Recently deleted; it says the app finishes at the next open.
     const toast = en.settings.delete.bookEraseFailedToast;
     expect(toast).not.toMatch(/Recently deleted/);
-    expect(toast).toMatch(/next time it opens/);
+    expect(toast).toMatch(/next time the app opens/);
     expect(readFileSync(join(__dirname, '..', 'src/app/settings/recently-deleted.tsx'), 'utf8')).toMatch(
       /eraseDeletedBook\(b\.id\) \? d\.bookErasedToast : d\.bookEraseFailedToast/,
     );
@@ -328,6 +339,24 @@ describe('[DATA-REQ-014][F17-REQ-080] Delete this book, on a phone that never si
     // A second launch has nothing left to do.
     app = await launch();
     expect(await app.sweep.runLaunchSweep()).toEqual({});
+  });
+
+  it('[CDO-23] Erase now on a deleted book removes that book\'s moments rows and no other book\'s', async () => {
+    h.exclusionSticks = true;
+    const app = await launch();
+    const f = family(app);
+    const m = app.moments.momentsStore;
+    expect(await m.setHomePlace(f.asha, 'ext:place-2')).toEqual({ ok: true });
+    expect(await m.setHomePlace(f.avi, 'ext:place-3')).toEqual({ ok: true });
+    expect(await m.setLabel('2026-10-03', 'Asha at the lake')).toEqual({ ok: true });
+    app.store.deleteBook(f.asha);
+    expect(app.erase.eraseDeletedBook(f.asha)).toBe(true);
+    expect(await m.removeBook('0199a5b0-0000-7000-8000-0000000000ff')).toMatchObject({ ok: false }); // drains the queue
+    const read = m.load();
+    expect(read.state).toBe('ok');
+    const file = (read as { file: { homePlace: object; labels: object } }).file;
+    expect(file.homePlace).toEqual({ [f.avi]: 'ext:place-3' });
+    expect(file.labels).toEqual({ '2026-10-03': 'Asha at the lake' });
   });
 
   it('a phone that has signed in cannot delete a book from here (the server holds it too)', async () => {
@@ -476,6 +505,34 @@ describe('[DATA-REQ-024][F14-REQ-026] Erase everything on this phone, signed out
     expect(db.all<{ key: string }>('SELECT key FROM settings').map((r) => r.key).sort()).toEqual(['db.secureDeleteVacuumAt', 'lastLaunchAt']);
     db.run('DELETE FROM settings');
     expectEmpty();
+  });
+
+  it('[CDO-23] removes the moments file (labels, keys, home place); a launch after it finds none', async () => {
+    h.exclusionSticks = true;
+    const { app } = await filled();
+    expect(await app.moments.momentsStore.setLabel('2026-10-03', 'Asha at the lake')).toEqual({ ok: true });
+    const momentsFiles = () => [...h.disk.files.keys()].filter((u) => u.includes('/moments/'));
+    expect(momentsFiles()).toHaveLength(1); // positive control
+    expect(await app.all.eraseEverything()).toBe('erased');
+    expect(momentsFiles()).toEqual([]);
+    const next = await launch();
+    expect(next.moments.momentsStore.load()).toEqual({ state: 'empty' });
+  });
+
+  it('[CDO-23] a moments.v1.json that will not go leaves Erase everything incomplete with the mark kept, and the next launch finishes it', async () => {
+    h.exclusionSticks = true;
+    const { app } = await filled();
+    expect(await app.moments.momentsStore.setLabel('2026-10-03', 'Asha at the lake')).toEqual({ ok: true });
+    const key = [...h.disk.files.keys()].find((u) => u.endsWith('/moments.v1.json'))!;
+    expect(key).toBeDefined(); // positive control: the file is there
+    h.disk.undeletable.add(key);
+    expect(await app.all.eraseEverything()).toBe('incomplete');
+    expect(h.disk.files.has(key)).toBe(true);
+    expect(app.store.eraseEverythingPending()).toBe(true);
+    h.disk.undeletable.clear();
+    const next = await launch();
+    expect(await next.all.resumeEraseAtLaunch()).toBe('erased');
+    expect(h.disk.files.has(key)).toBe(false);
   });
 
   it('[DATA-REQ-024] a whole-book PDF left in Caches/Print by a kill during an export render is removed by Erase everything (Review A on #520 at 79bc4456, note 3)', async () => {
@@ -1004,7 +1061,7 @@ describe('[DATA-REQ-024] Erase everything page: wording, order and the Plus line
     const d = en.settings.delete;
     expect(d.bookBodyThisPhone).toBe("Every letter and recording in {child}'s book will be removed from this phone.");
     expect(d.bookEraseNowBody).toBe('Every letter and recording in it is erased for good.');
-    expect(d.bookEraseFailedToast).toBe('The book was not erased yet. The app finishes the next time it opens.');
+    expect(d.bookEraseFailedToast).toBe("The book wasn't erased yet. The erase will finish the next time the app opens.");
   });
 
   it('button labels stay at most 22 characters', () => {
@@ -1152,7 +1209,7 @@ describe('[BL-387][F17 6.2 F][DATA-REQ-024] the Erase everything row on Settings
 // ---- a picture goes with its letter, its book and everything (NS-01-R16, ADR 0028 D5) --------------------------------
 // Behavioural, against the real erase, sweep and store: these replace source scans that a commented-out call or a kept
 // folder could pass (#835 reviews A N3 and B note 2).
-describe('[NS-01-R16][ADR 0028 D5] every erase path takes a picture, the file first and then its row', () => {
+describe('[NS-01-R16c][ADR 0028 D5] every erase path takes a picture, the file first and then its row', () => {
   const PHOTOS = () => photosDirectory().uri.replace(/\/$/, '');
   /** A stored picture for an owner, as commitPhoto leaves it: the file in photos/, then its row. */
   const picture = (owner: string, media: string) => {
@@ -1162,7 +1219,7 @@ describe('[NS-01-R16][ADR 0028 D5] every erase path takes a picture, the file fi
   };
   const mediaRows = () => db.all<{ id: string }>('SELECT id FROM entry_media ORDER BY id').map((r) => r.id);
 
-  it('[NS-01-R16] Erase now on a letter, a letter erased on another phone and Erase now on a book take their pictures; the other book keeps its own; the launch sweep empties the picker cache', async () => {
+  it('[NS-01-R16c] Erase now on a letter, a letter erased on another phone and Erase now on a book take their pictures; the other book keeps its own; the launch sweep empties the picker cache', async () => {
     let app = await launch();
     const f = family(app);
     const a2 = picture(f.ids.a2, 'mA2');
@@ -1186,7 +1243,7 @@ describe('[NS-01-R16][ADR 0028 D5] every erase path takes a picture, the file fi
     expect(fetches).toBe(0);
   });
 
-  it('[NS-01-R16] the 30 day purge takes a deleted letter\'s picture, and the day-30 book purge a deleted book\'s, in the purge itself; a live letter keeps its own (#836 reviews)', async () => {
+  it('[NS-01-R16c] the 30 day purge takes a deleted letter\'s picture, and the day-30 book purge a deleted book\'s, in the purge itself; a live letter keeps its own (#836 reviews)', async () => {
     let app = await launch();
     const f = family(app);
     const a2 = picture(f.ids.a2, 'mA2'); // in Recently deleted from T0
@@ -1202,7 +1259,7 @@ describe('[NS-01-R16][ADR 0028 D5] every erase path takes a picture, the file fi
     expect([has(a2), has(avi), has(a1), mediaRows()]).toEqual([false, false, true, ['mA1']]);
   });
 
-  it('[NS-01-R16] the eraser removes the file first and then the row: a picture file that will not go keeps its row and its letter for the next try (#836 review B Q2)', async () => {
+  it('[NS-01-R16c] the eraser removes the file first and then the row: a picture file that will not go keeps its row and its letter for the next try (#836 review B Q2)', async () => {
     const app = await launch();
     const f = family(app);
     const p = picture(f.ids.a2, 'mA2');
@@ -1214,7 +1271,7 @@ describe('[NS-01-R16][ADR 0028 D5] every erase path takes a picture, the file fi
     expect([has(p), mediaRows()]).toEqual([false, []]);
   });
 
-  it('[NS-01-R16][NX-39-R31] Erase everything removes the photos folder itself (strays too) and both caches, even when no row eraser touches a picture', async () => {
+  it('[NS-01-R16c][NX-39-R31] Erase everything removes the photos folder itself (strays too) and both caches, even when no row eraser touches a picture', async () => {
     const app = await launch();
     const f = family(app);
     const files = [picture(f.ids.a1, 'mA1'), picture(f.draftId, 'mD'), put(h.disk, `${PHOTOS()}/stray.jpg`, 10)];
@@ -1242,7 +1299,32 @@ describe('[NS-01-R16][ADR 0028 D5] every erase path takes a picture, the file fi
     expect([has(second), mediaRows()]).toEqual([false, []]);
   });
 
-  it('[NS-01-R16][review B on #839] a picture that will not erase never makes deleteDraft throw into the screen: the draft goes and the launch sweep finishes the picture', async () => {
+  it('[NS-01-R16c][BL-1665] a draft whose picture was stored at recording start (BL-955) takes it along when it is let go: the file first, then its row, and the draft is gone', async () => {
+    const app = await launch();
+    const f = family(app);
+    const { adoptPending } = await import('../src/lib/photos/adopt');
+    const { photoDeps } = await import('../src/lib/photos/device');
+    const { PendingPhoto } = await import('../src/lib/photos/pending');
+    const { makeJpeg } = await import('./photos-helpers');
+    const A = 'file:///c/ImagePicker/asha.jpg';
+    const original = new Map([[A, makeJpeg({ exif: true })]]);
+    const pending = new PendingPhoto({
+      read: async (u) => original.get(u)!,
+      remove: async (u) => void original.delete(u),
+      sweep: async () => void original.clear(),
+    });
+    await pending.set({ uri: A });
+    await adoptPending(pending, photoDeps, f.draftId, '', false); // the call Listen makes when recording starts
+    const stored = db.all<{ id: string }>('SELECT id FROM entry_media WHERE draft_id = ?', f.draftId);
+    expect(stored).toHaveLength(1);
+    const file = `${PHOTOS()}/${stored[0].id}.jpg`;
+    expect(has(file)).toBe(true);
+    const steps = { beginDiscard: app.store.beginDiscard, deleteFile: (u: string) => void h.disk.files.delete(u), finishDiscard: app.store.finishDiscard };
+    expect(letItGo(f.draftId, f.draft, steps)).toBe(true);
+    expect([has(file), mediaRows(), app.store.getDraft(f.draftId)]).toEqual([false, [], null]);
+  });
+
+  it('[NS-01-R16c][review B on #839] a picture that will not erase never makes deleteDraft throw into the screen: the draft goes and the launch sweep finishes the picture', async () => {
     let app = await launch();
     const f = family(app);
     const typed = app.store.createDraft({ childId: f.asha, captureMode: 'typed', promptKey: null, audioUri: null, audioDurationMs: 0, state: 'ready' });

@@ -48,7 +48,7 @@ describe('server features switch: off unless a build says on', () => {
   it('is off in this process (no EXPO_PUBLIC_SERVER_FEATURES), and every capability follows it', () => {
     expect(process.env.EXPO_PUBLIC_SERVER_FEATURES ?? '').not.toBe('on');
     expect(serverFeaturesEnabled()).toBe(false);
-    expect(capabilities).toEqual({ signIn: false, sync: false, coParent: false, backup: false, statusReport: false, accountDeletion: false, analytics: false, englishOnly: false });
+    expect(capabilities).toEqual({ signIn: false, sync: false, serverErase: false, coParent: false, backup: false, statusReport: false, accountDeletion: false, analytics: false, englishOnly: false });
   });
 
   it('is on only where flipped: the preview alpha (D-106), production (build 12, founder 8 Nov 2026), and testflight after the R-17 flip; development is off (eas.json)', () => {
@@ -87,7 +87,7 @@ describe('server features switch: off unless a build says on', () => {
   it('the override is for tests only, and goes back to the build value', () => {
     setServerFeaturesForTests(true);
     // Analytics, English only and the two build flags have their own switches: server features on does not turn them on.
-    expect(capabilities).toEqual({ signIn: true, sync: true, coParent: true, backup: false, statusReport: false, accountDeletion: false, analytics: false, englishOnly: false });
+    expect(capabilities).toEqual({ signIn: true, sync: true, serverErase: true, coParent: true, backup: false, statusReport: false, accountDeletion: false, analytics: false, englishOnly: false });
     setServerFeaturesForTests(null);
     expect(serverFeaturesEnabled()).toBe(false);
     const saved = process.env.VITEST;
@@ -215,7 +215,7 @@ describe('[D-111 item 4, D-121] English only: on in the alpha profiles and the s
     // And turning it on changes no other capability.
     setServerFeaturesForTests(null);
     setEnglishOnlyForTests(true);
-    expect(capabilities).toEqual({ signIn: false, sync: false, coParent: false, backup: false, statusReport: false, accountDeletion: false, analytics: false, englishOnly: true });
+    expect(capabilities).toEqual({ signIn: false, sync: false, serverErase: false, coParent: false, backup: false, statusReport: false, accountDeletion: false, analytics: false, englishOnly: true });
   });
 
   it('the override is for tests only, and goes back to the build value', () => {

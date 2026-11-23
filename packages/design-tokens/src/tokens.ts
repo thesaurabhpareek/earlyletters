@@ -398,6 +398,12 @@ const motion = {
   /** The book cover opening in first run (S08): the front holds `holdMs`, then cross-fades to the flyleaf with a `dx` shift, on `standard`. */
   cover: { holdMs: 300, dx: 8 },
   /**
+   * The Start hand-off flight (docs/design/moments-motion-spec.md section 9): the tray's tiles carry to their day card on
+   * `easing` over `ms`. FOUNDER-APPROVED (O-58, DC-3). Read only behind the flight boolean (default off); off or Reduce
+   * Motion gives the `fadeMs` cross-fade. `ms` stays at or under 420 and at or over `exitMs` so the leave fits inside the flight.
+   */
+  carry: { ms: 320 },
+  /**
    * A letter card growing into its page (MOTION 5f): the page's own content fades in from `contentFrom` of the way.
    * The Book goes under a veil of the page's paper over lamp.leaveMs, and the card holds `holdMs` before it grows, so
    * by the time the paper's edge is `clearPt` past the card (short of the next card's words, 28 pt on) the Book is 95
@@ -406,11 +412,29 @@ const motion = {
    */
   cardToPage: { contentFrom: 0.6, holdMs: 136, clearPt: 24 },
   /** Press feedback (COMPONENTS 0.3): controls scale to 0.97, cards to 0.98, on `snappy`. */
-  press: { scale: 0.97, cardScale: 0.98, opacity: 0.9 },
+  press: { scale: 0.97, cardScale: 0.98, opacity: 0.9, reducedMs: 90 },
   /** Empty-state illustration breath (MOTION 5j, Calm's slowest pace). */
   emptyBreathMs: 8000,
   /** Line drawings draw once (MOTION 5h). */
   drawMs: 1200,
+  /** The pen's curve for a line drawing (MOTION 5h): a cubic bezier, same form as `easing`. */
+  penEasing: [0.45, 0, 0.2, 1] as const,
+  /**
+   * The waiting bar's one slow sweep across its hairline (family join ask): a loop, so it stops under Reduce Motion
+   * and the moment the wait ends (BL-1753). Never a number or a percent.
+   */
+  sweepMs: 1400,
+  /** A sheet that must not travel lands in this many ms and a fade carries the change (Sheet, Reduce Motion; MOTION 5l). */
+  instantMs: 1,
+  /** A toast dragged down and let go leaves this far (pt) over `exitMs`. */
+  dismissDy: 120,
+  /**
+   * Named curves for timed motion that is not the brand `easing` (BL-1754). Roles, not shapes: lib/motion.ts `curve(role)`
+   * turns the name into the library's easing, so a component never writes `Easing.*` itself.
+   * `veil`: the paper veil of a card growing into its page, linear so two veils cross without a dip.
+   * `sweep`: the waiting bar's ease at each end. `breath`: Breathe's slow in and out.
+   */
+  curve: { veil: 'linear', sweep: 'quad', breath: 'sine' } as const,
   /**
    * Lamp light (MOTION 5k). The pool arrives once, slowly, then drifts by a breath of
    * opacity on a very slow loop. Decorative; off under Reduce Motion; never

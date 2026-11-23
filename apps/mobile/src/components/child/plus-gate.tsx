@@ -18,9 +18,9 @@
  * Motion: the sheet rises on `standard` (useSheetMotion) over a scrim that fades in; the held card enters with
  * `motion.enter`; the buttons are there from the first frame (MOTION principle 2). Reduce Motion: everything fades.
  * Accessibility: modal for VoiceOver (the Review behind cannot be reached), focus on the title, the held card read as
- * one element, 44 pt targets. At accessibility text sizes the footer holds only "See Plus" and "Keep it here for now",
- * on the first screen; every line of text is in the scroll, the held note right after the title; the held card and
- * "Redeem a code" follow (keepSheetLayout).
+ * one element, 44 pt targets. Below accessibility text sizes the buttons are pinned in a footer; from AX1 up
+ * there is no footer: every line of text is in the scroll, the held note right after the title, then the held card and
+ * "Redeem a code", and "See Plus" and "Keep it here for now" last (keepSheetLayout, ruling E3).
  */
 import * as React from 'react';
 import { BackHandler, Platform, ScrollView, StyleSheet, View, type Text as RNText } from 'react-native';
@@ -29,6 +29,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tokens } from '@scribe/design-tokens';
 import { ExcerptFade } from '@/components/motion/excerpt-fade';
 import { Button } from '@/components/ui/button';
+import { ModalHeader } from '@/components/ui/screen-header';
 import { Text } from '@/components/ui/text';
 import { track } from '@/lib/analytics/track';
 import { useAuth } from '@/lib/auth/session-provider';
@@ -257,13 +258,17 @@ export function PlusGate({ childName, lapsed = false, lettersKept, heldOn = 'ton
           overflow: 'hidden',
           ...(scheme === 'dark' ? { borderWidth: StyleSheet.hairlineWidth, borderColor: c.line } : null),
         }}>
+        {/* A visible way out in the header (ruling E3): the shared Close, back to the letter with nothing changed. */}
+        {onDismiss ? <ModalHeader onClose={onDismiss} /> : null}
         <ScrollView ref={scroll} contentContainerStyle={{ flexGrow: 1, paddingHorizontal: tokens.space[5], paddingTop: tokens.space[6], paddingBottom: tokens.space[5], gap: tokens.space[4] }}>
           {layout.scroll.map((b) => part[b])}
         </ScrollView>
-        {/* The way on, always on screen: at every text size "Keep it here for now" is in this footer (keepSheetLayout). */}
-        <View className="gap-1" testID="plusGate.actions" style={{ paddingHorizontal: tokens.space[5], paddingTop: tokens.space[2], paddingBottom: Math.max(insets.bottom, tokens.space[3]) }}>
-          {layout.pinned.map((b) => part[b])}
-        </View>
+        {/* Pinned below accessibility sizes; from AX1 up the buttons are the last of the scroll and there is no footer (keepSheetLayout). */}
+        {layout.pinned.length > 0 ? (
+          <View className="gap-1" testID="plusGate.actions" style={{ paddingHorizontal: tokens.space[5], paddingTop: tokens.space[2], paddingBottom: Math.max(insets.bottom, tokens.space[3]) }}>
+            {layout.pinned.map((b) => part[b])}
+          </View>
+        ) : null}
       </Animated.View>
     </View>
   );

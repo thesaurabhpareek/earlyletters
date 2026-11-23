@@ -40,8 +40,8 @@ vi.mock('../modules/scribe-files', () => ({
   },
 }));
 
-const { createDaysStore, DaysStoreError, endDaysSession, eraseDaysFile, loadDays } = await import('../src/lib/days');
-const { parseDays } = await import('../src/lib/days/store.logic');
+const { createDaysStore, daysStore, DaysStoreError, endDaysSession, eraseDaysFile, loadDays } = await import('../src/lib/days');
+const { parseDays, tickDay, DAYS_MAX_BYTES, DAYS_MAX_TICKS } = await import('../src/lib/days/store.logic');
 const { expoDaysPort, readDays, writeDays, DAYS_FILE, DAYS_TMP, removeDays } = await import('../src/lib/days/store-file');
 
 const A = '1a2b3c4d5e6f7a8b';
@@ -317,9 +317,80 @@ describe('[NS-47-R15] an owner change drops writes and retries a stale clear', (
     expect(await s.tickDay(DAY)).toEqual({ ok: true });
     await s.clearNow();
     await writeDays(expoDaysPort()!, file('local'));
-    const local = text();
+    s.setOwner(A); // a FIRST sign-in that is not a claim: the claim step never adopted, so the local file is deleted (E73, CPO-30)
+    expect(names()).toEqual([]);
+  });
+});
+
+describe('[CPO-30] the claim step adopts a local file only on an explicit confirm; sign-out keeps it', () => {
+  it('adoptLocal rewrites a local file to the new owner, keeps the ticks, and the new owner reads it after setOwner', async () => {
+    seed(JSON.stringify(file('local')));
+    const s = fresh('local');
+    expect(await s.adoptLocal(A)).toBe('adopted');
+    expect(JSON.parse(text())).toEqual(file(A));
     s.setOwner(A);
-    expect(text()).toBe(local);
+    expect(names()).toEqual([DAYS_FILE]); // setOwner keeps the file it was adopted into
+    expect(s.load()).toMatchObject({ state: 'ok', file: { owner: A } });
+  });
+
+  it('adoptLocal leaves another owner\'s file alone and says none when there is no local file', async () => {
+    seed(JSON.stringify(file(B)));
+    expect(await fresh('local').adoptLocal(A)).toBe('none');
+    expect(JSON.parse(text()).owner).toBe(B);
+    removeDays(expoDaysPort()!);
+    expect(await fresh('local').adoptLocal(A)).toBe('none');
+  });
+
+  it('sign-out (endDaysSession) keeps a local file, as "Not my account" must; a signed-in owner\'s file still goes; Erase takes both', async () => {
+    seed(JSON.stringify(file('local')));
+    expect(endDaysSession()).toBe(true);
+    expect(JSON.parse(text()).owner).toBe('local');
+    expect(daysStore.clearNow()).toBe(true); // Erase and the other callers keep deleting everything
+    expect(names()).toEqual([]);
+    seed(JSON.stringify(file(A)));
+    expect(endDaysSession()).toBe(true);
+    expect(names()).toEqual([]);
+  });
+
+  it('[BL-1598] after a partial adopt, sign-out removes the adopted file and keeps the file that stayed local', async () => {
+    // days adopted into account A; the other store (same rule, own file) stayed local: sign-out must clear only the adopted one
+    seed(JSON.stringify(file('local')));
+    const s = fresh('local');
+    expect(await s.adoptLocal(A)).toBe('adopted');
+    s.setOwner(A);
+    expect(s.clearNow(true)).toBe(true);
+    expect(names()).toEqual([]); // adopted (owner-keyed) file gone: nothing reaches the next person
+    seed(JSON.stringify(file('local')));
+    h.mode = 'ignore'; // this store's adopt fails, so its file stays local
+    const t = fresh('local');
+    expect(await t.adoptLocal(A)).toBe('failed');
+    h.mode = 'stick';
+    expect(t.clearNow(true)).toBe(true);
+    expect(JSON.parse(text())).toEqual(file('local')); // kept byte for byte, still offered at the next claim
+  });
+
+  it('a failed adopt write says failed, leaves the local file byte for byte, and a retry then adopts it', async () => {
+    seed(JSON.stringify(file('local')));
+    const before = text();
+    const s = fresh('local');
+    h.mode = 'ignore'; // the new temp file cannot be excluded from the backup, so nothing is written
+    expect(await s.adoptLocal(A)).toBe('failed');
+    expect(text()).toBe(before);
+    h.mode = 'stick';
+    expect(await s.adoptLocal(A)).toBe('adopted');
+    expect(JSON.parse(text()).owner).toBe(A);
+  });
+
+  it('a local write still running when sign-out keeps the file is not deleted behind it', async () => {
+    const s = createDaysStore(() => expoDaysPort(), 'local');
+    let release!: () => void;
+    h.hold = new Promise<void>((r) => (release = r));
+    const running = s.tickDay(DAY);
+    await new Promise((r) => setTimeout(r, 0));
+    s.clearNow(true);
+    release();
+    expect(await running).toEqual(DROPPED);
+    expect(JSON.parse(text()).owner).toBe('local');
   });
 });
 
@@ -331,6 +402,85 @@ describe('[NS-47-R6] a failure after the rename deletes the final file too', () 
     expect(names()).toEqual([]);
     const lostThenWriteThrows = { ...real, isExcluded: (n: string) => n !== DAYS_FILE && real.isExcluded(n), write: (n: string, t: string) => { if (n === DAYS_FILE) throw new Error('x'); real.write(n, t); } };
     expect(await writeDays(lostThenWriteThrows, file())).toBe('unavailable');
+    expect(names()).toEqual([]);
+  });
+});
+
+describe('[NS-47-R6] BL-1200: a file that is too big or too crowded reads as unreadable and is kept', () => {
+  const many = (n: number) => Object.fromEntries(Array.from({ length: n }, (_, i) => [`seasonal.synthetic-${i}`, {}]));
+  const text = (ticked: unknown) => JSON.stringify({ v: 1, owner: A, ticked });
+
+  it('a file over the byte cap is unreadable and kept, and its text is never read', () => {
+    const big = JSON.stringify(file()) + ' '.repeat(DAYS_MAX_BYTES);
+    const port = seed(big);
+    const read = vi.fn(port.read);
+    expect(readDays({ ...port, read }, A)).toEqual({ state: 'unreadable' });
+    expect(read).not.toHaveBeenCalled();
+    expect(names()).toEqual([DAYS_FILE]);
+    expect(port.read(DAYS_FILE)).toBe(big);
+  });
+
+  it('text over the cap is corrupt even when a port cannot say a size, and a file at the cap still reads', () => {
+    const pad = (n: number) => JSON.stringify(file()) + ' '.repeat(n - JSON.stringify(file()).length);
+    expect(parseDays(pad(DAYS_MAX_BYTES + 1)).kind).toBe('corrupt');
+    expect(parseDays(pad(DAYS_MAX_BYTES)).kind).toBe('ok');
+  });
+
+  it('more ticks than the limit is corrupt and kept; exactly the limit reads; a tick past it is refused', () => {
+    expect(parseDays(text(many(DAYS_MAX_TICKS))).kind).toBe('ok');
+    const port = seed(text(many(DAYS_MAX_TICKS + 1)));
+    expect(readDays(port, A)).toEqual({ state: 'unreadable' });
+    expect(names()).toEqual([DAYS_FILE]);
+    expect(tickDay({ v: 1, owner: A, ticked: many(DAYS_MAX_TICKS) }, 'seasonal.one-more')).toBeNull();
+    expect(tickDay({ v: 1, owner: A, ticked: many(DAYS_MAX_TICKS) }, 'seasonal.synthetic-0')).not.toBeNull(); // already ticked: no growth
+  });
+
+  it('an id that is not a slug is corrupt, in a current or a newer file', () => {
+    for (const id of ['Asha birthday', 'UPPER', '', '.dot', 'a'.repeat(65), 'seasonal/day', '__proto__x']) {
+      for (const v of [1, 2]) expect(parseDays(JSON.stringify({ v, owner: A, ticked: { [id]: {} } })).kind).toBe('corrupt');
+    }
+  });
+
+  it('a duplicate id in the file text is corrupt, and a repeated off-year is corrupt', () => {
+    expect(parseDays(`{"v":1,"owner":"${A}","ticked":{"${DAY}":{},"${DAY}":{"authority":"src-a"}}}`).kind).toBe('corrupt');
+    expect(parseDays(text({ [DAY]: { offYear: [2027, 2027] } })).kind).toBe('corrupt');
+    expect(parseDays(text({ [DAY]: { offYear: [2027, 2028] } })).kind).toBe('ok');
+  });
+});
+
+describe('[NS-47-R6] BL-1269: a rename that drops the exclusion flag leaves nothing', () => {
+  it('the final file reads not excluded after the rename: unavailable, no file, no temp', async () => {
+    const real = expoDaysPort()!;
+    const dropsOnRename = { ...real, rename: async (a: string, b: string) => { await real.rename(a, b); h.excluded.delete(`${dir()}/${b}`); } };
+    expect(await writeDays(dropsOnRename, file())).toBe('unavailable');
+    expect(names()).toEqual([]);
+  });
+});
+
+describe('[NS-47-R28] a day id that is an Object.prototype name is not ticked unless it is an own key', () => {
+  const full = () => {
+    const ticked: Record<string, object> = {};
+    for (let i = 0; i < DAYS_MAX_TICKS; i++) ticked[`d${i}`] = {};
+    return { v: 1, owner: A, ticked };
+  };
+  it.each(['constructor', 'toString', 'hasOwnProperty'])('%s on a full file is refused, not counted as already ticked', (id) => {
+    const parsed = parseDays(JSON.stringify(full()));
+    if (parsed.kind !== 'ok') throw new Error('arrange');
+    expect(tickDay(parsed.file, id)).toBeNull();
+    expect(tickDay(parsed.file, 'd7')).not.toBeNull(); // a real repeat still passes
+  });
+  it('constructor ticked on a roomy file stores an empty tick, not the inherited function', () => {
+    const next = tickDay({ v: 1, owner: A, ticked: {} }, 'constructor');
+    expect(next && Object.prototype.hasOwnProperty.call(next.ticked, 'constructor')).toBe(true);
+    expect(next?.ticked.constructor).toEqual({});
+    expect(JSON.parse(JSON.stringify(next)).ticked).toEqual({ constructor: {} });
+  });
+});
+
+describe('[NS-47-R15] sign-out with a local file that cannot be read', () => {
+  it('removes it: only an ok or newer local file stays (facts for the PR; no change made)', () => {
+    seed('{not json');
+    expect(createDaysStore(() => expoDaysPort()).clearNow(true)).toBe(true);
     expect(names()).toEqual([]);
   });
 });
