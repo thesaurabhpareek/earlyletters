@@ -9287,7 +9287,7 @@ Sources: the review notes on PRs #1635, #1634, #1637, #1638, #1643, #1644, #1642
 - Test: `packages/design-tokens` tests.
 
 #### BL-1843 Engine guard scans see call text only: an aliased caller is missed
-- Status: proposed (note on PR #1637). Mode: agent. Owner: speech engineer. Milestone: M15. Size: S. Depends on: none.
+- Status: done (the alias-following scan `callersOf` and the allow-list scan `guardCallers` are in `packages/core/test/engine-guards.test.ts`, merged in PR #1658; computed-key and generic calls followed in PR #1682, BL-1879; planted aliased callers, the defect shown against the old text scan, and the real tree passing are tests there). Remainder: a call through a key built at run time is not caught by design, and a named mutant that switches the alias step off is not built. Mode: agent. Owner: speech engineer. Milestone: M15. Size: S. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: Refines BL-1347 (FR-AIS-02).
 - Problem and evidence: the source scans added in PR #1637 (`packages/core/test/engine-guards.test.ts`) match the text of the call, for example `/\bapplyEdits\(/` and `/\bverifyEdits\(/`, so a call reached through an alias (a renamed import or a re-export) would not be seen; that is read from the patterns, not shown by a planted case, so the first step is to plant one.
