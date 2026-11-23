@@ -28,3 +28,31 @@ test('the protected lines are flagged and no text is empty', () => {
   assert.ok(map.rows.every((r) => r.text.trim() && r.chars > 0));
   assert.ok(map.rows.filter((r) => r.surface === 'prompt').every((r) => /^[a-z0-9.-]+$/.test(r.id)));
 });
+const bdOf = (r) => (/build-dependent: true for (servers o\w+) only/.exec(r.hold_reason) ?? [])[1] ?? '';
+const byId = (id) => map.rows.find((r) => r.id.endsWith(id));
+test('[BL-1883] the privacy promise is protected and the consent terms are held', () => {
+  const promise = byId('strings.en.ts#en.trust.promise');
+  assert.equal(promise.hold, 'protected');
+  assert.match(promise.hold_reason, /D-061/);
+  for (const k of ['title', 'body', 'termsLink', 'privacyLink', 'agree', 'notNow']) {
+    const r = byId(`features/auth.en.ts#authCopy.consent.terms.${k}`);
+    assert.equal(r.hold, 'held', `authCopy.consent.terms.${k}`);
+    assert.equal(r.surface, 'legal');
+    assert.equal(r.channel, 'consent');
+  }
+});
+test('[BL-1883] build-dependent privacy lines name the build they are true for', () => {
+  const want = {
+    'strings.en.ts#en.settings.privacy.keptOnPhone': 'servers off', 'strings.en.ts#en.settings.privacy.keptSynced': 'servers on',
+    'strings.en.ts#en.whereLive.onPhone': 'servers off', 'strings.en.ts#en.whereLive.onPhoneSynced': 'servers on',
+    'strings.en.ts#en.settings.erase.onThisPhone': 'servers off', 'features/account-deletion.en.ts#accountDeletionCopy.what.intro': 'servers on',
+    'store.en.ts#storeListing.reviewNotes': 'servers off', 'release/app-review.en.ts#notesServersOn': 'servers on',
+  };
+  for (const [id, v] of Object.entries(want)) assert.equal(bdOf(byId(id)), v, id);
+  // a flag does not replace a hold: the erase line is both
+  assert.equal(byId('strings.en.ts#en.settings.erase.onThisPhone').hold, 'held');
+  assert.equal(byId('strings.en.ts#en.whereLive.onPhone').hold, 'build-dependent');
+  // found by pattern, not named: any line that says our servers hold it
+  assert.equal(bdOf(byId('strings.en.ts#en.settings.delete.bookBody')), 'servers on');
+  assert.ok(map.rows.every((r) => (r.hold === 'build-dependent') === (r.hold_reason.startsWith('build-dependent:'))));
+});
