@@ -4,7 +4,7 @@ Status: proposal, 21 Nov 2026. This pull request adds the script and its tests a
 
 ## What is measured
 
-`git diff --numstat -M <base>...HEAD`: added plus deleted lines, and files. Binary files count 0. Docs text counts; only images under `docs/` are excluded. Excluded by exact rule, and printed: `package-lock.json`, any `__fixtures__` folder, the golden corpora listed in `GOLDEN_DIRS`, any `generated` folder. Excluded lines are capped at 2,000 (the lockfile alone at 10,000); above its cap a kind counts again. Reproduce on any open branch: `node scripts/guards/pr-size.mjs --base origin/<base> --head <head>` (fetch the PR head first). The numbers move as a PR is pushed, so none is quoted here.
+`git diff --numstat -M <base>...HEAD`: added plus deleted lines, and files. Binary files count 0. Docs text counts; only images under `docs/` are excluded. Excluded by exact rule, and printed: `package-lock.json`, any `__fixtures__` folder, the golden corpora listed in `GOLDEN_DIRS`, any `generated` folder, the two content map files `docs/content/map/content-map.json` and `.csv`. Excluded lines are capped at 2,000 (the lockfile alone at 10,000, the content map alone at 6,000); above its cap a kind counts again. Reproduce on any open branch: `node scripts/guards/pr-size.mjs --base origin/<base> --head <head>` (fetch the PR head first). The numbers move as a PR is pushed, so none is quoted here.
 
 ## The proof of an exception (CODE-R02: only the founder accepts one)
 
