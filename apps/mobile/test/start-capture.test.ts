@@ -63,11 +63,15 @@ describe('startCapture runs the plan in the order Home did (source)', () => {
 
   it('a quiet day: one mark a day with no words (D-084), kept only when none exists', () => {
     const quiet = entry.slice(entry.indexOf("case 'quietDay':"), entry.indexOf("case 'reserved':"));
-    expect(quiet).toContain('const existing = markOn(listEntries(), day);');
-    expect(quiet).toContain('const mark = existing ?? newQuietMark({ id: uuidv7(), occurredOn: day, capturedAt: new Date().toISOString() });');
-    expect(quiet).toContain('if (!existing) saveEntry(mark);');
+    expect(quiet).toContain('return keepQuietDay({ day: todayISO(), now: new Date().toISOString(), id: uuidv7, entries: listEntries, save: saveEntry });');
+    // The rule itself is the helper's (BL-1723): one mark a day, kept only when none exists, a failed save answers.
+    const helper = code(readFileSync(join(__dirname, '..', 'src', 'lib', 'capture', 'quiet-day-save.logic.ts'), 'utf8'));
+    expect(helper).toContain('const existing = markOn(input.entries(), input.day);');
+    expect(helper).toContain('const mark = existing ?? newQuietMark({ id: input.id(), occurredOn: input.day, capturedAt: input.now });');
+    expect(helper).toContain('if (!existing) input.save(mark);');
     // No words field is ever set: the mark is a date and nothing else.
     expect(quiet).not.toMatch(/typedText|finalText|rawTranscript|text:/);
+    expect(helper).not.toMatch(/typedText|finalText|rawTranscript/);
   });
 
   it('a reserved source returns the plan and touches nothing', () => {

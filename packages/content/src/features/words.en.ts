@@ -31,6 +31,9 @@ export const wordsCopy = {
     mobileDataButton: 'Use {size} of cellular',
     // Review: why a take stopped early, above the sheet (S14).
     stoppedInBackground: 'The recording stopped when you left the app. Everything before that is kept.',
+    // BL-1787: a lock reaches the app as a background change, so one line covers both. Beside the live key above, which stays as it is.
+    // No keep promise until BL-1786 or a trace of the background path shows words are kept (the row's promise limit).
+    stoppedLeftOrLocked: 'The recording stopped when you left the app or the phone locked.',
     stoppedInterruption: 'The recording stopped for a call or an alert. Everything before that is kept.',
     stoppedClosed: 'The recording stopped when the app closed. Everything before that is kept.',
   },

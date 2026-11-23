@@ -88,8 +88,8 @@ function lintFile(path, { isFlow }) {
     const tags = config.tags ?? [];
     const e2eId = /E2E-(\d\d)/.exec(rel)?.[0];
     if (!e2eId || !tags.includes(e2eId)) problems.push(`${rel}: tags must include ${e2eId ?? 'its E2E id'}`);
-    // PRD V2 requirement ids (F##-REQ-###) count as well as the legacy ones.
-    if (!tags.some((t) => /^(PRD|A|B|C|LEGAL|DATA|F\d\d)-(REQ|NFR)-\d+$|^D-\d+$|^K-\d+$/.test(t)))
+    // PRD V2 requirement ids (F##-REQ-###) count as well as the legacy ones, and the roadmap rows (NX-40-R7, NS-39-R5).
+    if (!tags.some((t) => /^(PRD|A|B|C|LEGAL|DATA|F\d\d)-(REQ|NFR)-\d+$|^D-\d+$|^K-\d+$|^N[XS]-\d+-R\d+$/.test(t)))
       problems.push(`${rel}: tags name no requirement or decision id`);
     if (tags.includes(P0_TAG) && !P0_FLOWS.includes(e2eId))
       problems.push(`${rel}: tagged ${P0_TAG} but ${e2eId} is not one of the P0 nightly flows (${P0_FLOWS.join(', ')})`);
