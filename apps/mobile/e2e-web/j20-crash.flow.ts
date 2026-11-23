@@ -78,7 +78,8 @@ test('[J20] the book cannot be opened at launch (fault injected)', async ({ app,
   const base = process.env.E2E_WEB_SEED_URL;
   // Preview-only switch (src/lib/resilience/launch-fault.web.ts): the first open of the database fails, Try again works.
   await app.goto(`${base}/?seed=asha&fault=launch-once`);
-  await expect(app.getByRole('heading', { name: 'The book couldn\'t open' })).toBeVisible();
+  // The first load of a cold runner is slow (the first run timed out on the 10 s default, #394): wait longer here only.
+  await expect(app.getByRole('heading', { name: 'The book couldn\'t open' })).toBeVisible({ timeout: 30_000 });
   await expect(app.getByText('Export saves a copy of the recordings and book files it can read, exactly as they are.')).toBeVisible();
   await expect(app.getByText('Try again, or restart the phone.')).toBeVisible();
   await expect(app.getByRole('button', { name: 'Try again' })).toBeVisible();
@@ -87,7 +88,7 @@ test('[J20] the book cannot be opened at launch (fault injected)', async ({ app,
   await expect(app.getByRole('button', { name: /delete|reset|erase|start over|remove|rebuild/i })).toHaveCount(0);
   await expect(app.getByRole('button')).toHaveCount(2);
   await expectBrandFaces(app, 'The book couldn\'t open', 'Export saves a copy of the recordings and book files it can read, exactly as they are.', 'Try again');
-  await step('unhappy', 'The book cannot be opened (fault injected)', 'If opening the database or updating it throws, a recovery screen replaces the app, in the same plain block as the crash screen: "The book couldn\'t open", one line on what Export does (it copies the files exactly as they are, and does not say the letters are safe), "Try again, or restart the phone.", and two actions: Try again and Export what\'s readable. No delete, reset or rebuild exists here. Reached only by a preview-only switch (?fault=launch-once); on a phone it follows a failed database open or update.');
+  await step('unhappy', 'The book cannot be opened (fault injected)', 'If opening the database or updating it throws, a recovery screen replaces the app, in the same plain block as the crash screen: "The book couldn\'t open", one line on what Export does (it copies the files exactly as they are), "Try again, or restart the phone.", and two actions: Try again and Export what\'s readable. No delete, reset or rebuild exists here. Reached only by a preview-only switch (?fault=launch-once); on a phone it follows a failed database open or update.');
 
   // At a short height (as at large text sizes) the export's result is still seen: the screen scrolls to it, above the
   // buttons that stay put (lens A on #355). The web has no files to export, so the result is one of the two notes.

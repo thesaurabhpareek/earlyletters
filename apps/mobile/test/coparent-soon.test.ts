@@ -154,29 +154,15 @@ describe('the co-parent coming-soon presentation is gone (founder, 11 Nov 2026)'
   });
 });
 
-describe('the words of familyCopy.soon stay in packages/content for the later family release; nothing draws them now', () => {
-  const s = familyCopy.soon;
+describe('familyCopy.soon keeps only the leave sheet title; the other coming-soon words are deleted (D-161, BL-1834)', () => {
+  const s = familyCopy.soon as Record<string, unknown>;
   it('names the status plainly and promises no date', () => {
     expect(s.status).toBe('Coming soon');
-    const all = JSON.stringify(s);
-    expect(all).not.toMatch(/\b(January|February|March|April|May|June|July|August|September|October|November|December|20\d\d|weeks?|months?|days?|beta)\b/i);
+    expect(JSON.stringify(s)).not.toMatch(/\b(January|February|March|April|May|June|July|August|September|October|November|December|20\d\d|weeks?|months?|days?|beta)\b/i);
   });
 
-  it('personalises with {child} and never genders the child', () => {
-    expect(s.lead).toContain('{child}');
-    expect(JSON.stringify(s)).not.toMatch(/\b(she|he|her|him|his|hers)\b/i);
-  });
-
-  it('rewrite B (founder, 8 Nov 2026): a heading and one line, word for word; the quiet title matches', () => {
-    expect(`${s.title} ${s.lead}`).toBe("For now, this book is yours. In a later update, {child}'s other parent can add letters too, from their own phone.");
-    expect(s.quiet.title).toBe('For now, this book is yours.');
-  });
-
-  it('no badge, points or footer: the footer said letters stay on this phone, and recordings are also in the iPhone backup', () => {
-    const soon = s as Record<string, unknown>;
-    expect(soon.points).toBeUndefined();
-    expect(soon.building).toBeUndefined();
-    expect((s as Record<string, unknown>).storeBuild).toBeUndefined();
+  it('no title, lead, notify, quiet, close, Settings row, badge, points or footer is left', () => {
+    expect(Object.keys(s)).toEqual(['status']);
   });
 });
 

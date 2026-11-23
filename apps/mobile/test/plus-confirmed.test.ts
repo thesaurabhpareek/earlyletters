@@ -41,7 +41,7 @@ describe('[BL-1722] Save a copy that cannot open', () => {
   const words = billingCopy.confirmation;
   it('says one plain line, with no fear or loss in it', () => {
     expect(saveCopyLine('failed', words)).toBe(words.saveCopyFailed);
-    expect(words.saveCopyFailed).toBe('The copy could not be shared just now. The same terms are in Settings, Plan.');
+    expect(words.saveCopyFailed).toBe("The copy couldn't be shared just now. The same terms are in Settings, Plan.");
   });
   it('says nothing when the share sheet opened', () => {
     expect(saveCopyLine('shared', words)).toBeNull();

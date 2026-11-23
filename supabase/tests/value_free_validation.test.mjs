@@ -60,11 +60,11 @@ const dev = (n) => 'आशा'.repeat(Math.ceil(n / 3)).slice(0, n);
 const arr = (s) => JSON.stringify([s]);
 const P = (name, table, sql, value, param = value) => ({ name, table, sql, param, value });
 const probes = [
-  P('children.name', 'children', `insert into children (id, name, date_of_birth, created_by) values (gen_random_uuid(), $1, '2025-04-12', gen_random_uuid())`, dev(61)),
+  P('children.name', 'children', `insert into children (id, name, date_of_birth, created_by) values (gen_random_uuid(), $1, '2025-04-12', gen_random_uuid())`, dev(961)),
   P('children.nickname', 'children', `insert into children (id, nickname, date_of_birth, created_by) values (gen_random_uuid(), $1, '2025-04-12', gen_random_uuid())`, lat(31)),
   P('entries.final_text', 'entries', `insert into entries (id, final_text) values (gen_random_uuid(), $1)`, lat(20001)),
   P('entries.raw_transcript', 'entries', `insert into entries (id, raw_transcript) values (gen_random_uuid(), $1)`, dev(40001)),
-  P('entries.author_signs_as', 'entries', `insert into entries (id, author_signs_as) values (gen_random_uuid(), $1)`, dev(31)),
+  P('entries.author_signs_as', 'entries', `insert into entries (id, author_signs_as) values (gen_random_uuid(), $1)`, dev(481)),
   P('entries.author_edits', 'entries', `insert into entries (id, author_edits) values (gen_random_uuid(), $1::jsonb)`, lat(65533), arr(lat(65533))),
   P('entries.locked_spans', 'entries', `insert into entries (id, locked_spans) values (gen_random_uuid(), $1::jsonb)`, lat(16381), arr(lat(16381))),
   P('held_drafts.raw_transcript', 'held_drafts', `insert into held_drafts (id, raw_transcript) values (gen_random_uuid(), $1)`, dev(100001)),
@@ -79,11 +79,11 @@ const probes = [
 ];
 // At the limit the trigger lets the write through: any later failure (NOT NULL, a foreign key) is not the trigger's.
 const atLimit = [
-  P('children.name', 'children', probes[0].sql, dev(60)),
+  P('children.name', 'children', probes[0].sql, dev(960)),
   P('children.nickname', 'children', probes[1].sql, lat(30)),
   P('entries.final_text', 'entries', probes[2].sql, lat(20000)),
   P('entries.raw_transcript', 'entries', probes[3].sql, dev(40000)),
-  P('entries.author_signs_as', 'entries', probes[4].sql, dev(30)),
+  P('entries.author_signs_as', 'entries', probes[4].sql, dev(480)),
   P('entries.author_edits', 'entries', probes[5].sql, '', arr(lat(65532))),
   P('entries.locked_spans', 'entries', probes[6].sql, '', arr(lat(16380))),
   P('held_drafts.typed_text', 'held_drafts', probes[9].sql, dev(100000)),
@@ -123,9 +123,9 @@ await consent(users.A);
 const kid = await newChild(users.A);
 const upd = (v) => refusal(`update children set name = $1 where id = $2`, [v, kid]);
 await sys('begin');
-const eUp = await upd(dev(61));
-check('VF-6 children: an over-limit UPDATE is refused by the validate trigger, value-free', isTrigger(eUp, 'children') && !eUp.detail && !eUp.hint && !leaks(eUp, dev(61)));
-check('VF-6 children: an at-limit UPDATE is accepted', (await upd(dev(60))) === null);
+const eUp = await upd(dev(961));
+check('VF-6 children: an over-limit UPDATE is refused by the validate trigger, value-free', isTrigger(eUp, 'children') && !eUp.detail && !eUp.hint && !leaks(eUp, dev(961)));
+check('VF-6 children: an at-limit UPDATE is accepted', (await upd(dev(960))) === null);
 await sys('rollback');
 
 // VF-7 the four trigger functions, from the catalog: SECURITY INVOKER, search_path pinned (pg_catalog first, pg_temp last), and

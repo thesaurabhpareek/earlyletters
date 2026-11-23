@@ -21,7 +21,7 @@
  * pull request. Fix the copy, never this test.
  */
 import { describe, expect, it } from 'vitest';
-import { accountDeletionCopy, authCopy, en } from '../src';
+import { accountDeletionCopy, authCopy, en, onboardingStories } from '../src';
 import { leaves } from './support/copy-surfaces';
 
 type Rule = { id: 'coParent' | 'backup' | 'safe'; claim: RegExp; truths?: readonly RegExp[] };
@@ -35,7 +35,7 @@ const RULES: readonly Rule[] = [
     id: 'backup',
     claim: /\bbacked up\b|\bbacks? up\b|\bbacking up\b|\brecovery key\b|\bencrypted backup\b|\brecording backup\b|\bbackups?\b/i,
     // The person's own iPhone backup is true in every build, and the Erase page says exports and phone backups are not changed.
-    truths: [/\biPhone backup\b/gi, /\biCloud Backup\b/gi, /\byour iPhone's own backup\b/gi, /\bbackups of this phone\b/gi],
+    truths: [/\biPhone backup\b/gi, /\biCloud Backup\b/gi, /\byour iPhone's own backup\b/gi, /\bbackups of this phone\b/gi, /\bBackups and exports you already saved are not changed\b/gi],
   },
   { id: 'safe', claim: /\b(?:are|is) safe\b|\bkeeps? your (?:book|letters) safe\b/i },
 ];
@@ -68,14 +68,8 @@ const ALL = SURFACES.flatMap(([root, value]) => leaves(value, root));
  * pull request that adds this file. `claim` is what the rule matches today.
  */
 const HELD_FOR_COUNSEL: readonly { key: string; rule: Rule['id']; claim: string }[] = [
-  { key: 'features.auth.sheet.why', rule: 'safe', claim: 'keeps your book safe' },
-  { key: 'features.auth.consent.terms.body', rule: 'coParent', claim: 'family you' },
-  { key: 'features.auth.consent.terms.body', rule: 'coParent', claim: 'invite' },
-  { key: 'en.trust.signIn.why', rule: 'safe', claim: 'keeps your book safe' },
-  { key: 'en.sensitiveConsent.body', rule: 'coParent', claim: 'share it with' },
-  { key: 'en.sensitiveConsent.body', rule: 'coParent', claim: 'family you' },
 ];
-const HELD_CAP = 6;
+const HELD_CAP = 0; // exec ruling 23 Nov 2026 (D-168, D-172) replaced all six rows
 
 /** Shown only when a book already has a second parent or family writer, which Build 12 cannot create. */
 const ONLY_WITH_A_CO_PARENT = new Set([
@@ -122,6 +116,29 @@ describe('Build 12 account, sign-in and deletion copy claims only what the build
   it('lists only claims that still exist, so the counsel list shrinks', () => {
     expect(beyond(HELD_FOR_COUNSEL, found), 'these are fixed (or the key moved): remove them from HELD_FOR_COUNSEL').toEqual([]);
     expect(HELD_FOR_COUNSEL.length).toBeLessThanOrEqual(HELD_CAP);
+  });
+
+  it('the sign-in, consent and story words are the ones the exec team ruled on 23 Nov 2026 (items 1a, 1a2, 1c, 2a, 2c)', () => {
+    expect(en.trust.signIn.privacy).toBe('Your letters are yours. We never sell them and never use them for ads.');
+    expect(en.trust.signIn.why).toBe('An account keeps the words of your letters with you when you change phones.');
+    expect(authCopy.sheet.privacy).toBe(en.trust.signIn.privacy);
+    expect(authCopy.sheet.why).toBe(en.trust.signIn.why);
+    expect(authCopy.consent.terms.body).toBe('Your letters stay yours. We never sell them, use them for ads or use them to train machine learning models.');
+    const sc = en.sensitiveConsent;
+    expect(sc.body).toBe('Letters can hold private things, like health details about you or {child}. To sync your book across your phones, we store what you write on our servers.');
+    expect(sc.use).toBe('We use it to keep and show your book. We never sell it, use it for ads or use it to train machine learning models.');
+    expect(sc.changeLater).toBe('You can turn syncing on later in Settings, Account.');
+    expect(sc.declineHelp).toBe('If you keep it on this phone, syncing stays off.');
+    expect(en.settings.privacy.staffAccess).toBe("We don't look at your letters. The few times we could are written in the Privacy Policy.");
+    expect(en.settings.privacy.staffAccess).not.toMatch(/logged/i);
+    expect('controlsHelp' in en.settings.privacy, 'dead copy, untrue of the build: do not bring it back').toBe(false);
+  });
+
+  it('the served story card 4 is story.private.v1 in the ruled words', () => {
+    const v1 = onboardingStories.find((c) => c.id === 'story.private.v1');
+    expect(v1?.headline).toBe('Private by default.');
+    expect(v1?.line).toBe('Your letters are yours. We never sell them and never use them for ads.');
+    expect(onboardingStories.map((c) => c.id)).not.toContain('story.private.v2');
   });
 
   it('the Delete account intro names no recording, photo or backup on our servers', () => {

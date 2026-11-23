@@ -13,7 +13,7 @@ import { en } from '@scribe/content';
 import { describe, expect, it } from 'vitest';
 import { LINE_ART, penWidth } from '../src/components/ui/line-art.data';
 import { STATE_LAYOUT } from '../src/components/ui/state-screen.logic';
-import { PLAIN_ART, PLAIN_LAYOUT, PLAIN_TYPE, plainArt, plainButton } from '../src/components/resilience/plain-screen.styles';
+import { PLAIN_ART, PLAIN_LAYOUT, PLAIN_TYPE, plainActionsInline, plainArt, plainButton } from '../src/components/resilience/plain-screen.styles';
 
 const SRC = join(__dirname, '..', 'src');
 const read = (rel: string) => readFileSync(join(SRC, rel), 'utf8');
@@ -162,6 +162,7 @@ describe('nothing that can throw before render (S50)', () => {
     '@/lib/resilience/recovery-export',
     '@/components/ui/line-art.data',
     '@/components/ui/state-screen.logic',
+    '@/lib/a11y.logic', // pure: the font-scale thresholds, no imports
     './plain-screen',
     './plain-screen.styles',
   ]);
@@ -184,6 +185,7 @@ describe('nothing that can throw before render (S50)', () => {
     for (const f of ['components/ui/line-art.data.ts', 'components/ui/state-screen.logic.ts']) {
       for (const m of imports(read(f))) expect(['@scribe/design-tokens', '@/components/ui/line-art.data'], `${f} imports ${m}`).toContain(m);
     }
+    expect(imports(read('lib/a11y.logic.ts'))).toEqual([]);
   });
 
   it('launch.logic.ts, which the launch screen reads for its view and its taps, imports only a type', () => {
@@ -259,5 +261,20 @@ describe('the 404 (S49)', () => {
 
   it('never reads, shows or logs the address', () => {
     expect(src).not.toMatch(/usePathname|useLocalSearchParams|useGlobalSearchParams|useSegments|console\.|track\(/);
+  });
+});
+
+describe('[BL-495 point 4] large text: the buttons follow the words inside the scroll', () => {
+  it('from AX1 the actions are inline after the words, as StateScreen and the sign-in sheet do; below it they stay pinned', () => {
+    expect(plainActionsInline(1)).toBe(false);
+    expect(plainActionsInline(1.353)).toBe(false);
+    expect(plainActionsInline(1.786)).toBe(true);
+    expect(plainActionsInline(3.571)).toBe(true);
+  });
+
+  it('the screen reads the real font scale and draws one set of buttons, in the scroll when inline and under it when pinned', () => {
+    const src = code(read('components/resilience/plain-screen.tsx'));
+    expect(src).toMatch(/plainActionsInline\(useWindowDimensions\(\)\.fontScale \|\| 1\)/);
+    expect(src).toMatch(/\{inline \? buttons : null\}\s*<\/View>\s*<\/ScrollView>\s*\{inline \? null : buttons\}/);
   });
 });
