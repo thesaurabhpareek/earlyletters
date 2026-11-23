@@ -138,29 +138,29 @@ Gap ids defined here:
 
 | Rule id | Level | Enforced by | Status | Gap id |
 |---|---|---|---|---|
-| IAM-R01 | MUST | review; enum parity in `packages/core/src/domain.ts` | enforced on develop (#31) | CORE-02 |
-| IAM-R02 | MUST | review; access matrix personas | enforced on develop | |
-| IAM-R03 | MUST | `require_content_consent()`; `security_family.test.mjs` | enforced on develop (pending files; not live) | DB-03 |
+| IAM-R01 | MUST | `MEMBER_ROLES` parity in `packages/analytics/test/domain.test.ts:69-70`; review | enforced on develop | CORE-02 |
+| IAM-R02 | MUST | review; six access matrix personas | enforced on develop | |
+| IAM-R03 | MUST | `require_content_consent()`; `security_family.test.mjs`; access matrix | enforced on develop (writes, invite acceptance); not yet for "no account before Terms" | BL-581 |
 | IAM-R04 | MUST NOT | `apps/mobile/test/age-gate.test.ts`; `classification.test.mjs` | enforced on develop | |
-| IAM-R05 | MUST | review | not yet | none (no auth code) |
-| IAM-R06 | MUST NOT | review | not yet | |
-| IAM-R07 | MUST NOT | lint ban; server backstop in access matrix | not yet (lint); server backstop enforced on develop | MONO-01, WS-12 |
-| IAM-R08 | MUST | `apple-token` function and tests | not yet | TDD 04 3.1.1 |
-| IAM-R09 | MUST | universal-link handling, intent allowlist | not yet | PSEC-02, WS-11 |
-| IAM-R10 | MUST | storage adapter test | not yet | LEGAL-REQ-026 |
-| IAM-R12 | MUST | app behaviour test | not yet | TDD 04 3.2.3 |
-| IAM-R13 | MUST | `access_matrix.test.mjs` structural checks | enforced on develop | |
-| IAM-R14 | MUST | `access_matrix.test.mjs` lines 268-286 | enforced on develop | |
-| IAM-R15 | MUST | cites DB-R13 | see DB-R13 | DB-01 |
-| IAM-R16 | MUST | review; `book_access` table | not yet | DB-08, D-024 |
+| IAM-R05 | MUST | review (Apple, Google, email per D-054) | not yet | BL-727 |
+| IAM-R06 | MUST NOT | `packages/content/test/emails.test.ts:126` (copy); source ban | partly (copy); not yet (code) | BL-727 |
+| IAM-R07 | MUST NOT | `auth_config.test.mjs` (anonymous sign-ins off); access matrix `:680` (anonymous policy), `:652` (`require_user`) | enforced on develop (server, config); not yet (app source ban) | BL-727, MONO-01 |
+| IAM-R08 | MUST | `apple-token/handler.test.ts`; `purge-worker/test/lib.test.ts`, `worker.test.ts` | enforced on develop (nonce hash: review) | |
+| IAM-R09 | MUST | `auth_config.test.mjs`; `auth-links`, `deep-link.allowlist`, `auth-email-link` tests | enforced on develop (links); not yet (no-reveal) | BL-727 |
+| IAM-R10 | MUST | storage adapter test | not yet | BL-599 |
+| IAM-R12 | MUST | `auth-machine.test.ts:352`; `account-view.test.ts:142` | partly; not yet (scope `others`, outbox kept) | BL-727, BL-597 |
+| IAM-R13 | MUST | `access_matrix.test.mjs:680` and bucket check | enforced on develop | |
+| IAM-R14 | MUST | `access_matrix.test.mjs:643`, `:646`, `:652` | enforced on develop | |
+| IAM-R15 | MUST | `access_matrix.test.mjs:632`; `grants.mjs` | enforced on develop | DB-01 |
+| IAM-R16 | MUST | review; `book_access` table | not yet | BL-175, DB-08, D-024 |
 | IAM-R17 | MUST | `book_children` view; matrix cell | pending PR #32 | DB-05 |
-| IAM-R18 | MUST | `create_child_invite`; `purge_batching.sql:137`; `security_family.test.mjs` | enforced on develop (not live) | DB-03, BL-112 |
-| IAM-R19 | MUST | `security_family.test.mjs` | enforced on develop | |
-| IAM-R20 | MUST | `remove_member`, `set_member_role` RPCs | not yet | PSEC-01, WS-02 |
-| IAM-R21 | MUST | `data_governance.test.mjs` (SCLPG) | enforced on develop | |
-| IAM-R22 | MUST | runbook; review | not yet | DB-17, WS-18 |
-| IAM-R23 | MUST NOT | review; no Supabase credentials in `agents.yml` | review | PINF-01, PINF-05 |
-| IAM-R24 | MUST | access matrix unlisted-function check; review | enforced on develop (functions); review (tables, views) | |
+| IAM-R18 | MUST | `security_family.test.mjs:47-61`; `v1_gate_coparent.test.mjs:48-50`; `purge_batching.test.mjs:69` | enforced on develop | BL-112 |
+| IAM-R19 | MUST | `security_family.test.mjs:65-70` | enforced on develop | |
+| IAM-R20 | MUST | `db_followup_family_cap.test.mjs:139-159`; `v1_gate_coparent.test.mjs:190-195` | enforced on develop | |
+| IAM-R21 | MUST | `data_governance.test.mjs:87`; `db_followup_family_cap.test.mjs:95-97` (SCLPG) | enforced on develop | |
+| IAM-R22 | MUST | review | not yet | BL-728, DB-17 |
+| IAM-R23 | MUST NOT | review; no Supabase secret in `agents.yml` | review; not yet (check) | BL-727, BL-603 |
+| IAM-R24 | MUST | `access_matrix.test.mjs:618` (tables, views), `:643` (functions); review (deny cells, Storage) | enforced on develop | |
 | SEC-R01 | MUST | review; `docs/security/threat-model.md` | not yet | handoff to `security` |
 | SEC-R02 | MUST | `docs/ops/SECRETS.md` | file on develop (#1094); no check that every secret has a row | PINF-05, WS-18 |
 | SEC-R03 | MUST NOT | GitHub secret scanning; gitleaks; bundle scan | secret scanning on; own scanner (known misses, follow-ups in open #1163) scripts/packs/secret-scan.mjs plus apps/mobile/test/secret-scan.test.ts (proposed step: docs/ops/proposed/secret-scan.md, not enforced in CI as its own step until the founder pastes the workflow; the test runs in unit); gitleaks pending PR #30; bundle not yet | LEGAL-REQ-026 |
