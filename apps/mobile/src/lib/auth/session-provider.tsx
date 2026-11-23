@@ -52,7 +52,7 @@ import {
   initialAuthState,
   isSignedIn,
   readGateInOrder,
-  nothingPending,
+  endWaitIfDrained,
   shouldFinishSignOut,
   shouldRecheckGate,
   signOutWouldWait,
@@ -322,14 +322,17 @@ export function SessionProvider({ children, onUnder18 }: Props) {
   const waiting = state.status === 'signingOut' && state.waitingForUploads;
   useEffect(() => {
     if (!waiting) return;
+    // BL-478: cleanup clears `alive`, so a poll read still in flight cannot end the next wait.
+    const alive = { current: true };
     const done = () => dispatch({ type: 'UPLOADS_DRAINED' });
     const off = onUploadsDrained(done);
     const poll = setInterval(() => {
       // S01: a wait whose first gate read failed (still offline) tries again here, not only on foreground.
       if (shouldRecheckGate(stateRef.current, false)) void checkGate();
-      void pendingUploads().then((p) => nothingPending(p) && done());
+      void endWaitIfDrained(pendingUploads, alive, done);
     }, 10_000);
     return () => {
+      alive.current = false;
       off();
       clearInterval(poll);
     };
