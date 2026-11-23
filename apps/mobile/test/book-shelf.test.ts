@@ -60,9 +60,24 @@ describe('Erase now (S39, S63)', () => {
     expect(shelfActions({ sync: true, serverErase: true }).eraseNow).toBe(true);
   });
 
+  it('[BL-1854] a signed-in build passes the server erase capability, so the button shows; a build that syncs without it still hides it', async () => {
+    const { capabilities, setServerFeaturesForTests } = await import('../src/lib/capabilities');
+    try {
+      setServerFeaturesForTests(true);
+      expect(capabilities.serverErase).toBe(true);
+      expect(shelfActions({ sync: capabilities.sync, serverErase: capabilities.serverErase }).eraseNow).toBe(true);
+      setServerFeaturesForTests(false);
+      expect(capabilities.serverErase).toBe(false);
+      expect(shelfActions({ sync: capabilities.sync, serverErase: capabilities.serverErase }).eraseNow).toBe(true); // no sync: local erase
+      expect(shelfActions({ sync: true, serverErase: capabilities.serverErase }).eraseNow).toBe(false); // sync without the server erase
+    } finally {
+      setServerFeaturesForTests(null);
+    }
+  });
+
   it('the shelf reads the build capability and hides the button with it (source)', () => {
     const screen = src('app/settings/recently-deleted.tsx');
-    expect(screen).toMatch(/shelfActions\(\{ sync: capabilities\.sync \}\)/);
+    expect(screen).toMatch(/shelfActions\(\{ sync: capabilities\.sync, serverErase: capabilities\.serverErase \}\)/);
     expect(screen).toMatch(/\{eraseNow \? <Button variant="destructive"/);
   });
 });
