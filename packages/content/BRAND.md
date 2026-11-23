@@ -119,7 +119,7 @@ One term per concept. Banned words must not appear in user-facing copy (app, web
 | Sign-in buttons | Sign in with Apple; Sign in with Google; Sign in with email | Apple login, Google sign-in, log in, "Continue with Google", "Continue with email" | "Sign in with Google is now on your account". The app's buttons and the emails use the same words (LNG-13). Name a provider only where the build offers it. |
 | Sign out elsewhere | Sign out other devices | Sign out of other devices, log out everywhere | Button and Account row (LNG-14). |
 | Action | sign in / sign out | log in, log out, login | |
-| Privacy promise | private by default; "Our staff look only in the rare cases our Privacy Policy describes." | "only the family you invite", secure vault, military-grade, 100% private, end-to-end (letters are encrypted at rest, not end-to-end) | No Vault mode or cloud transcription in v1.0 public copy. |
+| Privacy promise | private by default; "Our staff look only in the rare cases our Privacy Policy describes." | "only the family you invite", secure vault, military-grade, 100% private, end-to-end (letters are encrypted at rest, not end-to-end) | No Vault mode or cloud transcription in v1.0 public copy. Key: `en.trust.promise`. |
 | Release state | early version ("early version, can make mistakes", in the app only) | beta (in app, store and website copy), preview, alpha | TestFlight is the only beta (Brief 10). Legal terms may say beta until counsel changes them. |
 | Email sign-off | "Warmly," then the brand name | The Early Letters Team, Love, Cheers, Best | `emailChrome.signature`. |
 | Footer line | brand name, then the tagline "It stays in your words." | other tagline variants | `emailChrome.footer.nameLine`. |
