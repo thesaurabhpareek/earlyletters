@@ -10,4 +10,5 @@ Verification: a row is added only after the PR is read as open by REST. The chec
 
 | id | owner session | branch | PR | globs | claimed UTC | expires UTC | note |
 |---|---|---|---|---|---|---|---|
-| bl-1787-1722 | mobile | feat/mobile-bl1787-lock-copy | 1718 | `apps/mobile/src/app/listen.tsx`, `apps/mobile/src/components/capture/{listen,words-state}.logic.ts`, `packages/content/src/strings.en.ts`, `packages/content/src/features/words.en.ts`, BL-1722 files (confirmed screen) | 2026-11-23T16:10Z | 2026-11-26T16:00Z | wave 3 lane L4: BL-1787 then BL-1722 |
+| letter-page-l1 | mobile | fix/letter-back-top-bar-large-text | 1717 | `apps/mobile/src/app/letter/[id].tsx`, `apps/mobile/src/lib/letter-top-bar.logic.ts`, `apps/mobile/test/letter-top-bar.test.ts` | 2026-11-23T16:05Z | 2026-11-26T16:05Z | BL-1790; then BL-1789, BL-1791, BL-1823 in the same file, one PR each |
+| moments-tab-privacy | privacy | docs/privacy-moments-tab-21nov | 1267 | `docs/product/MOMENTS-TAB-PRIVACY-AND-CONSTITUTION-21nov.md` | 2026-11-21T07:55Z | 2026-11-24T07:55Z | docs only; REST open check 2026-11-21T07:55Z |
