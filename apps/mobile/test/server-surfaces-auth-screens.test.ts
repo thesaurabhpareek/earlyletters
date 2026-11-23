@@ -253,7 +253,7 @@ describe('[S54] Check your email', () => {
 
   it('[P8a lens B2] S01\'s side: only a wrong code adds to the list and only a code sign-in clears it, per address; a link never reads it', () => {
     const provider = read('lib', 'auth', 'session-provider.tsx');
-    const pending = read('lib', 'auth', 'pending.ts');
+    const pending = read('lib', 'auth', 'pending-memory.ts');
     expect(between(provider, 'async sendEmailLink(email)', 'async verifyEmailCode(')).not.toMatch(/WrongCode|codeEntryPause/);
     const byCode = between(provider, 'async verifyEmailCode(', 'async verifyEmailLink(');
     expect(byCode).toMatch(/const pause = codeEntryPause\(wrongCodeTimes\(email\), Date\.now\(\)\);\s*if \(pause\.paused\) \{/);
@@ -404,7 +404,7 @@ describe('[P8a critics S4] the account gate in the invite, join and leave sheets
     const offlineBranch = gate.slice(gate.lastIndexOf('return ('));
     expect(offlineBranch).toMatch(/<SheetBody muted>\{g\.gateOffline\}<\/SheetBody>/);
     expect(offlineBranch).toMatch(/label=\{tryAgainLabel\}/);
-    // errors.network ends "Sign in once you are back online"; it is not drawn by the gate at all, and the offline branch
+    // errors.network ends "Sign in once you're back online"; it is not drawn by the gate at all, and the offline branch
     // draws no sign-in button and no error line of its own.
     expect(gate).not.toMatch(/errors\.network/);
     expect(offlineBranch).not.toMatch(/g\.signIn|authCopy\.errors|\/sign-in/);

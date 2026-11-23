@@ -1047,7 +1047,7 @@ Rules for all of them: every control is 44 pt or more (rows 52 pt, `size.row`; t
 | C-S27.consent | DoorNote, then the system alert (the system's own reading); "Not now" has equal weight to the allow button | two equal buttons stacked | the two buttons share one style and size |
 | C-S27.limited | heading, value "Selected photos", the choice group with the selected option said as "selected", "Choose more" row | choice group stacks one per line | the selected option has a check glyph as well as colour |
 | C-S27.full | as `.limited` with "All photos" selected | same | same |
-| C-S27.paused | heading, the switch row said as "Paused" or "Moments" with its on or off value | one column | value word, not colour |
+| C-S27.paused | heading, the switch row said as "Paused" or "Pictures" with its on or off value | one column | value word, not colour |
 | C-S27.indexing | one static line, read once when it appears (a polite announcement), no progress read out | wraps | static text, no bar or count |
 | C-S27.albums | heading, one row per album each with its on or off value, then the turn-off row | rows stack | check glyph plus value word per row |
 | C-S27.turnOffConfirm | the F6 sheet takes focus; title, body, the safe button first, then the destructive text button; Close | buttons stack, the sheet scrolls | destructive text uses `destructive` on `surface` (existing pair); wording says what happens, not colour |

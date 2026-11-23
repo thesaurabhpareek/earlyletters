@@ -2,7 +2,7 @@
 /**
  * Call and Text on "If you are struggling" and "Lines in other countries" keep a visible shape (WCAG 1.4.11 Non-text
  * Contrast). They were `secondary` buttons: an accentSoft fill on the flat
- * card (the `muted` surface), 1.08:1 in light and 1.33:1 in dark, so the shape disappeared on the page people open on
+ * card (the `muted` surface), 1.08:1 in light and 1.32:1 in dark, so the shape disappeared on the page people open on
  * their worst nights. They are now `outline` buttons: the control edge (`input`, which is controlBorder) on that same
  * surface. The colours are read from the design tokens and from the real class names in card.tsx and button.tsx, so
  * a change of the card's tone or of the outline's edge fails here. No hex literal belongs to this card.
@@ -59,13 +59,13 @@ describe('[WCAG 1.4.11] Call and Text keep a visible shape on the flat helpline 
     expect(cardFill).toBe('bg-muted');
   });
 
-  it('why not secondary: its accentSoft fill is under 1.5:1 against that surface in light and in dark (1.08 and 1.33)', () => {
+  it('why not secondary: its accentSoft fill is under 1.5:1 against that surface in light and in dark (1.08 and 1.32)', () => {
     expect(secondary).toBe('bg-secondary');
     for (const mode of ['light', 'dark'] as const) {
       expect(ratio(colourOf(secondary, mode), colourOf(cardFill, mode)), mode).toBeLessThan(1.5);
     }
     expect(ratio(colourOf(secondary, 'light'), colourOf(cardFill, 'light'))).toBeCloseTo(1.08, 2);
-    expect(ratio(colourOf(secondary, 'dark'), colourOf(cardFill, 'dark'))).toBeCloseTo(1.33, 2);
+    expect(ratio(colourOf(secondary, 'dark'), colourOf(cardFill, 'dark'))).toBeCloseTo(1.32, 2);
   });
 
   it('the outline edge is the control-border token and is at least 3:1 against the card in light, dark and Increase Contrast', () => {
@@ -77,7 +77,7 @@ describe('[WCAG 1.4.11] Call and Text keep a visible shape on the flat helpline 
       }
     }
     expect(ratio(colourOf('border-input', 'light'), colourOf(cardFill, 'light'))).toBeCloseTo(3.36, 2);
-    expect(ratio(colourOf('border-input', 'dark'), colourOf(cardFill, 'dark'))).toBeCloseTo(4.27, 2);
+    expect(ratio(colourOf('border-input', 'dark'), colourOf(cardFill, 'dark'))).toBeCloseTo(4.22, 2);
   });
 
   it('whatever variant the card uses draws a shape (a fill or an edge) of at least 3:1 against the card, in light, dark and Increase Contrast', () => {

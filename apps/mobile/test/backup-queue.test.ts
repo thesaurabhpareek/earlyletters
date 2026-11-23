@@ -16,7 +16,6 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
-import { hexToBytes } from '../src/lib/backup/bytes';
 import { BackupServerError, type BackupServer } from '../src/lib/backup/contract';
 import { HEADER_LEN, SEGMENT_SIZE, decryptBody, parseHeader, wrapAad } from '../src/lib/backup/format';
 import { createKeyManager } from '../src/lib/backup/keys';
@@ -26,7 +25,7 @@ import type { TokenStore } from '../src/lib/backup/token-vault';
 import { MAX_JOB_ATTEMPTS, createUploadQueue, type BackupSourceItem } from '../src/lib/backup/queue';
 import { TUS_MAX_CREATES, TUS_MAX_OFFSET_ASKS, resolveLocation, tusUpload, type HttpLike } from '../src/lib/backup/tus';
 import { FakeBackend, FakeICloud, fakeM4a, nodeAead, nodeFiles, nodeVault, sha256Hex } from './helpers/backup-node';
-import { firstLeak, leakNote } from './helpers/leak-scan';
+import { scanRequests } from './helpers/leak-scan';
 import { nodeDb } from './helpers/node-db';
 
 const MAMA = '11111111-1111-4111-8111-111111111111';
@@ -117,7 +116,7 @@ function rig() {
   // B5-6: the Keychain stand-in the queue gets, and a token the server can hand out at backup_begin.
   const keychain = new Map<string, string>();
   const tokens: TokenStore = { get: async (id) => keychain.get(id) ?? null, set: async (id, t) => void keychain.set(id, t), remove: async (id) => void keychain.delete(id) };
-  const beginToken = { value: null as string | null, seenByUploadTarget: [] as (string | null)[] };
+  const beginToken = { value: null as string | null, /** Hand the token out once, then none (a later begin returns no token). */ firstOnly: false, seenByUploadTarget: [] as (string | null)[] };
   const killableServer: BackupServer = Object.fromEntries(
     Object.entries(server).map(([name, fn]) => [
       name,
@@ -125,7 +124,10 @@ function rig() {
         point(`before:${name}`);
         if (name === 'uploadTarget') beginToken.seenByUploadTarget.push((a[1] as string | null) ?? null);
         let r = await (fn as (...x: unknown[]) => Promise<unknown>)(...a);
-        if (name === 'begin' && beginToken.value && (r as { state: string }).state === 'pending') r = { ...(r as object), uploadToken: beginToken.value };
+        if (name === 'begin' && beginToken.value && (r as { state: string }).state === 'pending') {
+          r = { ...(r as object), uploadToken: beginToken.value };
+          if (beginToken.firstOnly) beginToken.value = null;
+        }
         point(`after:${name}`);
         return r;
       },
@@ -249,14 +251,12 @@ describe('[F08-REQ-020, F08-REQ-018] upload: encrypted on the phone, confirmed o
     expect(r.db().getMeta('lastBackedUpAt')).not.toBeNull();
     expect(sha256Hex((await r.serverPlaintext(item.entryId))!)).toBe(sha256Hex(plain));
     expect(r.tmpFiles()).toEqual([]);
-    // Every byte that left the phone is ciphertext: no ftyp box, no part of the original, no plaintext hash.
+    // No ftyp box, no part of the original, no plaintext hash left the phone in a form the scan can read. This is a
+    // scan, not a proof: it does not cover every encoding (see "Not covered" in `helpers/leak-scan.ts`, BL-1476).
     // [BL-456] 16-byte shingles of the whole take, each at every offset of every body (`helpers/leak-scan.ts`).
     expect(plain.subarray(4, 8).toString('latin1'), 'the fixture starts with an ftyp box').toBe('ftyp');
-    for (const req of r.backend.requests) {
-      expect(leakNote(req.kind, firstLeak(req.body, plain))).toBe(leakNote(req.kind, null));
-      expect(req.body.includes(Buffer.from(sha256Hex(plain))), req.kind).toBe(false);
-      expect(req.body.includes(Buffer.from(hexToBytes(sha256Hex(plain)))), req.kind).toBe(false);
-    }
+    // [BL-1417 to BL-1419] and as base64, hex or a byte list; in the URL, headers and RPC arguments; across joins of bodies.
+    expect(scanRequests(r.backend.requests, [plain])).toEqual([]);
     expect(r.backend.requests.filter((x) => x.kind === 'tus').length).toBeGreaterThan(5); // 6 MiB parts in the app; 64 KiB here
   });
 
@@ -293,6 +293,94 @@ describe('[F08-REQ-020, F08-REQ-018] upload: encrypted on the phone, confirmed o
     const row = r.db().job(item.entryId)!;
     expect(row.state).not.toBe('begun');
     expect(row.uploadToken).toBeNull();
+  });
+
+  it('[B5-6] an old row that still holds its token in the column (an older build, not yet moved) uploads with that token', async () => {
+    const r = rig();
+    const { item } = await r.addRecording(3 * SEGMENT_SIZE);
+    r.kill.at = 'tus:POST:after'; // begun, the upload made, its URL never saved: the next launch asks the target again
+    r.kill.countdown = 1;
+    await expect(r.make().drain()).rejects.toBeInstanceOf(Killed);
+    r.kill.dead = false;
+    r.reopen();
+    expect(r.keychain.size).toBe(0);
+    r.db().updateJob(item.entryId, { uploadToken: 'asha-old-column-token' });
+    r.beginToken.seenByUploadTarget.length = 0;
+    await r.settle();
+    expect(r.beginToken.seenByUploadTarget[0]).toBe('asha-old-column-token'); // mutant: no fallback to the column sends null
+    expect(r.db().job(item.entryId)!.state).toBe('confirmed');
+  });
+
+  for (const status of [400, 401, 403]) {
+    it(`[B5-6] an upload the server refuses with ${status} drops its token: the retry never sends the old one`, async () => {
+      const r = rig();
+      r.beginToken.value = 'asha-token-refused';
+      r.beginToken.firstOnly = true; // the second backup_begin hands out no token, so a stale one would show
+      const { item } = await r.addRecording(3 * SEGMENT_SIZE);
+      const inner = r.backend.http;
+      let refusals = 1;
+      (r.backend as unknown as { http: HttpLike }).http = async (url, init) => {
+        if (init.method === 'PATCH' && refusals > 0) {
+          refusals -= 1;
+          return { status, header: () => null };
+        }
+        return inner(url, init);
+      };
+      await r.settle();
+      expect(r.beginToken.seenByUploadTarget[0]).toBe('asha-token-refused');
+      expect(r.beginToken.seenByUploadTarget.slice(1)).not.toContain('asha-token-refused'); // mutant: no drop keeps sending it
+      expect(r.db().job(item.entryId)!.state).toBe('confirmed');
+      expect(r.keychain.size).toBe(0);
+    });
+  }
+
+  for (const status of [400, 401, 403]) {
+    it(`[B5-6] an old column token is nulled when the upload is refused with ${status}: the job waits sealed with no token in the file`, async () => {
+      const r = rig();
+      const { item } = await r.addRecording(3 * SEGMENT_SIZE);
+      r.kill.at = 'tus:POST:after'; // begun; an older build's token sits in the column, the Keychain holds none
+      r.kill.countdown = 1;
+      await expect(r.make().drain()).rejects.toBeInstanceOf(Killed);
+      r.kill.dead = false;
+      r.reopen();
+      r.db().updateJob(item.entryId, { uploadToken: 'asha-old-column-token' });
+      const inner = r.backend.http;
+      let refusals = 1;
+      (r.backend as unknown as { http: HttpLike }).http = async (url, init) => {
+        if (init.method === 'PATCH' && refusals > 0) {
+          refusals -= 1;
+          r.backend.faults.set('begin', 1); // the next backup_begin fails, so the job stays `sealed` and the file can be read
+          return { status, header: () => null };
+        }
+        return inner(url, init);
+      };
+      await r.make().drain();
+      const row = r.db().job(item.entryId)!;
+      expect(row.state).toBe('sealed');
+      expect(row.uploadToken).toBeNull(); // mutant: no `uploadToken: null` in the refusal's update leaves the old token in the file
+      expect(row.objectPath).toBeNull();
+      r.beginToken.seenByUploadTarget.length = 0; // what the refused attempt sent is behind us
+      await r.settle(); // and the retry never sends it
+      expect(r.beginToken.seenByUploadTarget).not.toContain('asha-old-column-token');
+      expect(r.db().job(item.entryId)!.state).toBe('confirmed');
+    });
+  }
+
+  it('[B5-6] a job reset because its recording changed drops its Keychain token (reset via ensureTmp)', async () => {
+    const r = rig();
+    r.beginToken.value = 'asha-token-reset';
+    const { item } = await r.addRecording(3 * SEGMENT_SIZE);
+    r.kill.at = 'tus:POST:after';
+    r.kill.countdown = 1;
+    await expect(r.make().drain()).rejects.toBeInstanceOf(Killed);
+    r.kill.dead = false;
+    r.reopen();
+    expect([...r.keychain.values()]).toEqual(['asha-token-reset']);
+    rmSync(join(r.files.tmpDir, `${item.entryId}.enc`)); // the saved ciphertext is gone, so it is rebuilt, which checks the recording
+    writeFileSync(fileURLToPath(item.audioUri), fakeM4a(3 * SEGMENT_SIZE + 9)); // and the recording is not the one that was sealed
+    await r.make().drain();
+    expect(r.db().job(item.entryId)!.state).not.toBe('begun');
+    expect(r.keychain.size).toBe(0); // mutant: no dropToken in reset() leaves the token in the Keychain
   });
 
   it('goes oldest first, one at a time', async () => {
@@ -538,6 +626,23 @@ describe('[F08-REQ-025] backup never gets in the way, and waits for what it need
     r.make().reconcile();
     expect(r.db().job(item.entryId)).toBeNull();
     expect(r.tmpFiles()).toEqual([]);
+  });
+
+  it('[BL-1439] an erased letter dropped by reconcile: its Keychain token goes with the job; another entry\'s token stays', async () => {
+    const r = rig();
+    r.beginToken.value = 'asha-token-erased';
+    const { item } = await r.addRecording(3 * SEGMENT_SIZE);
+    r.kill.at = 'tus:POST:after'; // begun, its token in the Keychain
+    r.kill.countdown = 1;
+    await expect(r.make().drain()).rejects.toBeInstanceOf(Killed);
+    r.kill.dead = false;
+    r.keychain.set('another-entry', 'asha-token-other');
+    expect(r.keychain.get(item.entryId)).toBe('asha-token-erased');
+    r.items.splice(r.items.indexOf(item), 1);
+    r.make().reconcile();
+    await new Promise((res) => setTimeout(res, 0));
+    expect(r.db().job(item.entryId)).toBeNull();
+    expect([...r.keychain.keys()]).toEqual(['another-entry']); // mutant: no dropToken in reconcile's drop loop leaves it
   });
 
   it('moved to another book before the upload finished: starts again under that book\'s key', async () => {
@@ -885,6 +990,20 @@ describe('[review B m3 on #150] an erased letter stops sending at the next segme
     expect(r.db().job(b.entryId)!.state).toBe('confirmed');
     expect(sha256Hex((await r.serverPlaintext(b.entryId))!)).toBe(sha256Hex(bPlain));
     expect(r.tmpFiles()).toEqual([]);
+  });
+
+  it('[BL-1439] erased mid-upload (goneNow): its Keychain token goes with the job; another entry\'s token stays', async () => {
+    const r = rig();
+    r.beginToken.value = 'asha-token-erased';
+    r.keychain.set('another-entry', 'asha-token-other'); // a different entry of the same store
+    const { item: a } = await r.addRecording(5 * PART + 100);
+    r.onHttp((m) => {
+      if (m === 'PATCH' && r.items.some((x) => x.entryId === a.entryId)) erase(r, a.entryId);
+    });
+    await r.make().drain();
+    await new Promise((res) => setTimeout(res, 0)); // the drop is not awaited by the queue
+    expect(r.db().job(a.entryId)).toBeNull();
+    expect([...r.keychain.keys()]).toEqual(['another-entry']); // mutant: no dropToken in goneNow leaves a's token here
   });
 
   it('erased while it is encrypted: it stops at the next segment and nothing is sent for it', async () => {

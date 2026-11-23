@@ -206,6 +206,13 @@ export const capabilities = {
   get sync(): boolean {
     return serverFeaturesEnabled();
   },
+  /**
+   * Erase now reaches the server (BL-1854, WP-F16-13, F16-REQ-024): `store.eraseEntry` queues one id-only `entry.erase`
+   * and the server purges its copy. It exists wherever sync does, so it follows the same server switch.
+   */
+  get serverErase(): boolean {
+    return serverFeaturesEnabled();
+  },
   /** Invite and join a co-parent. Off: the coming-soon presentation. */
   get coParent(): boolean {
     return serverFeaturesEnabled();

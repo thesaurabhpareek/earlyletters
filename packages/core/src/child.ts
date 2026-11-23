@@ -9,6 +9,7 @@
  * changing the birthday re-chapters letters without writing to them.
  */
 import { ageOn, parseIsoDate } from './age';
+import { clampGraphemes } from './length';
 
 /** Matches children.name check (char_length between 1 and 60) in supabase/migrations. */
 export const CHILD_NAME_MAX = 60;
@@ -47,12 +48,12 @@ export function daysBetweenISO(fromISO: string, toISO: string): number {
 }
 
 /**
- * Cuts to at most `max` characters a person would count (code points, never half a
- * surrogate pair or an emoji), and normalises to NFC so a name typed two ways is stored one way.
+ * Cuts to at most `max` code points (the server's CHECK on children.name and signs_as counts code points, so nothing
+ * accepted here can be refused there), never in the middle of a character a person sees (BL-957), and normalises to
+ * NFC so a name typed two ways is stored one way.
  */
 export function clampText(raw: string, max: number): string {
-  const chars = Array.from(raw.normalize('NFC'));
-  return chars.length <= max ? chars.join('') : chars.slice(0, max).join('');
+  return clampGraphemes(raw.normalize('NFC'), max, max);
 }
 
 /** Characters a person would count (code points after NFC). */

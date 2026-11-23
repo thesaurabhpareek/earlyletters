@@ -8,7 +8,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { billingCopy } from '@scribe/content';
-import type { NativeEntitlementSnapshot, StoreSheetOutcome } from '../modules/scribe-store/types';
+import type { NativeEntitlementSnapshot, OfferCodeOutcome, StoreSheetOutcome } from '../modules/scribe-store/types';
 import { EMPTY_PLAN, planFromSnapshot, sanitizeSnapshot, type PlanState } from '../src/lib/billing/plan.logic';
 
 const fake = vi.hoisted(() => ({
@@ -16,6 +16,7 @@ const fake = vi.hoisted(() => ({
   afterSheet: null as unknown as PlanState,
   support: 'available' as 'available' | 'needs_ios_17' | 'unsupported',
   store: {
+    presentOfferCodeRedeemSheet: vi.fn(async (): Promise<OfferCodeOutcome> => 'presented') as unknown as (() => Promise<OfferCodeOutcome>) | undefined,
     presentSubscriptionStore: vi.fn(async (): Promise<{ outcome: StoreSheetOutcome }> => ({ outcome: 'dismissed' })),
   },
   refreshPlan: vi.fn(async () => {
@@ -36,7 +37,7 @@ vi.mock('../src/lib/billing/plan-reminders', () => ({ reschedulePlanReminders: f
 vi.mock('expo-router', () => ({ router: fake.router }));
 vi.mock('react-native', () => ({ Linking: { openURL: fake.openURL } }));
 
-import { CONFIRMATION_ROUTE, presentPlusStore, storeSheetOptions } from '../src/lib/billing/actions';
+import { CONFIRMATION_ROUTE, presentPlusStore, redeemOfferCode, storeSheetOptions } from '../src/lib/billing/actions';
 
 const NOW = Date.parse('2026-12-01T12:00:00.000Z');
 
@@ -55,6 +56,7 @@ beforeEach(() => {
   fake.afterSheet = EMPTY_PLAN;
   fake.support = 'available';
   fake.store.presentSubscriptionStore.mockReset().mockResolvedValue({ outcome: 'dismissed' });
+  fake.store.presentOfferCodeRedeemSheet = vi.fn(async (): Promise<OfferCodeOutcome> => 'presented');
   fake.refreshPlan.mockClear();
   fake.reschedule.mockClear();
   for (const fn of Object.values(fake.router)) fn.mockClear();
@@ -146,5 +148,33 @@ describe('the store sheet options', () => {
     // billingCopy.store.renewal), so it is not held to the Keep gate's "free trial" ban here; counsel owns that sentence.
     expect([o.title, o.subtitle, ...o.features, ...o.notes].join(' ')).not.toMatch(/\$\d|we will email|we'll email/i);
     expect(o.notes).toContain(billingCopy.store.renewal);
+  });
+});
+
+describe('[D-053] redeemOfferCode: Apple\'s offer code sheet and every way it can end', () => {
+  it('no native function: unavailable, and the plan is not refreshed', async () => {
+    fake.store.presentOfferCodeRedeemSheet = undefined;
+    expect(await redeemOfferCode()).toBe('unavailable');
+    expect(fake.refreshPlan).not.toHaveBeenCalled();
+  });
+
+  it('a sheet that throws: failed, and the plan is refreshed', async () => {
+    fake.store.presentOfferCodeRedeemSheet = vi.fn(async (): Promise<OfferCodeOutcome> => {
+      throw new Error('sheet could not open');
+    });
+    expect(await redeemOfferCode()).toBe('failed');
+    expect(fake.refreshPlan).toHaveBeenCalledTimes(1);
+  });
+
+  it('a presented sheet: presented, and the plan is refreshed', async () => {
+    expect(await redeemOfferCode()).toBe('presented');
+    expect(fake.store.presentOfferCodeRedeemSheet).toHaveBeenCalledTimes(1);
+    expect(fake.refreshPlan).toHaveBeenCalledTimes(1);
+  });
+
+  it('the sheet\'s own answer passes through, and the plan is refreshed', async () => {
+    fake.store.presentOfferCodeRedeemSheet = vi.fn(async (): Promise<OfferCodeOutcome> => 'unavailable');
+    expect(await redeemOfferCode()).toBe('unavailable');
+    expect(fake.refreshPlan).toHaveBeenCalledTimes(1);
   });
 });

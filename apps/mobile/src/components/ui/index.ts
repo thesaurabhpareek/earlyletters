@@ -14,6 +14,8 @@ export { ListRow, ListSection, ToggleRow, type ListRowProps } from './list-row';
 export { startDesignSystem, UIProvider } from './provider';
 export { SafeAreaView } from './safe-area-view';
 export { BackButton, ModalHeader, type ModalHeaderProps } from './screen-header';
+export { PinnedActionLayout, type PinnedActionLayoutProps } from './pinned-action';
+export { PINNED_ACTION, isPinned } from './pinned-action.logic';
 export { Separator } from './separator';
 export { Sheet, type SheetProps } from './sheet';
 export { InlineState, StateScreen, StateScreenView, type InlineStateProps, type StateScreenProps } from './state-screen';

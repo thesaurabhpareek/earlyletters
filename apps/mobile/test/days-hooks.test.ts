@@ -32,6 +32,7 @@ vi.mock('../src/lib/supabase/secure-storage', () => ({ secureStorage: { removeIt
 vi.mock('../src/lib/store', () => ({
   eraseEverythingLocal: () => 'erased',
   eraseEverythingPending: () => false,
+  onBookErased: () => () => {},
   finishEraseEverything: () => {},
   ledgerDb: () => ({}),
   getSetting: (k: string) => {

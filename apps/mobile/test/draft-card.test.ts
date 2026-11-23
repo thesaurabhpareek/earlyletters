@@ -249,8 +249,18 @@ describe('[S09] the dateline and what VoiceOver reads', () => {
     const d = tonightDateline('Asha', '7 months', dayDate('2026-10-17'));
     expect(d.text).toBe('Asha · 7 months');
     expect(d.a11y).toBe('Asha, 7 months');
-    // With no age at all (the Family tab, which has no stage) it is still the day's date, as before.
+    // With no age at all (a caller that has no stage) it is still the day's date. Tonight and the Family tab never pass null.
     expect(tonightDateline('Asha', null, dayDate('2026-10-17'))).toEqual({ text: dayDate('2026-10-17'), a11y: dayDate('2026-10-17') });
+  });
+
+  it('the Family tab reads like Tonight: a before-birth book shows its name and "Before You", not the day (BL-473)', () => {
+    const d = tonightDateline('Asha', tonightStageLabel(null, '2026-10-17'), dayDate('2026-10-17'));
+    expect(d).toEqual({ text: 'Asha · Before You', a11y: 'Asha, Before You' });
+    expect(tonightDateline('Asha', tonightStageLabel('2027-01-05', '2026-10-17'), dayDate('2026-10-17')).text).toBe('Asha · Before You');
+    expect(tonightDateline('Asha', tonightStageLabel('2026-03-28', '2026-10-17'), dayDate('2026-10-17')).text).toBe('Asha · 6 months and 2 weeks');
+    const family = code('app/family.tsx');
+    expect(family).toContain('tonightDateline(child, tonightStageLabel(active.birthday, today), dayDate(today))');
+    expect(family).not.toMatch(/ageText\(/);
   });
 
   it('whole calendar days, across a clock change', () => {
@@ -329,13 +339,16 @@ describe('[S33] not much today, and the light', () => {
     // The mark is kept by the one capture entry (lib/capture/start-capture.ts); Home asks for it and shows the line.
     expect(screen).toContain("startCapture({ source: 'notMuchToday' })");
     const oneEntry = code('lib/capture/start-capture.ts');
-    expect(oneEntry).toContain('newQuietMark(');
-    expect(oneEntry).toContain('markOn(listEntries(), day)');
+    expect(oneEntry).toContain('keepQuietDay(');
+    // The rule lives in the helper (BL-1723): one mark a day, no words.
+    const helper = code('lib/capture/quiet-day-save.logic.ts');
+    expect(helper).toContain('newQuietMark(');
+    expect(helper).toContain('markOn(input.entries(), input.day)');
     const inline = code('components/tonight/quiet-day-inline.tsx');
     expect(inline).toContain('<MoonIcon size={20} color={c.textMuted}');
     expect(inline).toContain('<Text variant="callout">{copy.notMuch.savedToast}</Text>');
     expect(inline).toContain('label={copy.notMuch.undo}');
-    expect(en.notMuch.savedToast).toBe('A quiet day, kept.');
+    expect(en.notMuch.savedToast).toBe('Marked as a quiet day.');
     for (const f of ['app/(tabs)/index.tsx', 'components/tonight/quiet-day-inline.tsx', 'components/tonight/draft-card.tsx', 'components/tonight/resurfaced-card.tsx']) {
       expect(code(f), f).not.toMatch(/\bsuccess\b|\bcaution\b|\bdestructive\b|tone="recording"|c\.recording/);
     }
@@ -344,7 +357,7 @@ describe('[S33] not much today, and the light', () => {
   it('Undo restores the link and the lamp: it removes the mark, the line goes, and the light follows the mark (source)', () => {
     const screen = code('app/(tabs)/index.tsx');
     expect(screen).toMatch(/const undoNotMuch = \(\) => \{\s*if \(keptMark\) deleteEntry\(keptMark\);\s*setKeptMark\(null\);/);
-    expect(screen).toContain('tonightLampIntensity(daypart, !!markOn(room.entries, today))');
+    expect(screen).toContain('tonightLampIntensity(daypart, room.markToday)');
     // The line stays until Undo or until the person leaves Tonight (blur), never moving content on a return.
     expect(screen).toMatch(/return \(\) => \{\s*focused\.current = false;\s*setKeptMark\(null\);\s*\};/);
   });
@@ -525,7 +538,7 @@ describe('Tonight comes back from the background up to date (review note 3 on #2
     expect(screen).toContain("const sub = AppState.addEventListener('change', (next) => {");
     expect(screen).toContain('if (resumed(last, next) && focused.current) refresh();');
     expect(screen).toContain('return () => sub.remove();');
-    expect(screen).toContain('at: new Date()');
+    expect(screen).toMatch(/const at = new Date\(\);[\s\S]*\bat,\n\s*\};/);
     expect(screen).toContain('const clock = roomClock(room?.at ?? new Date());');
     // Nothing in the render reads the clock on its own: the day, the daypart and the cards' "now" are the room's.
     const render = screen.slice(screen.indexOf('const today = clock.today'), screen.indexOf('const keepNotMuch'));
@@ -575,7 +588,7 @@ describe('[S2] a book that is not born yet: the dateline names the child, and th
   it('the dateline reads "Asha", the dot, "Before You", with Review\'s words, and "Asha, Before You" aloud: no count of weeks, no gap', () => {
     const stage = tonightStageLabel(preBirthBook.birthday, TODAY);
     const d = tonightDateline(preBirthBook.name, stage, dayDate(TODAY));
-    expect(d.text).toBe(`Asha ${DOT} Before You`);
+    expect(d.text).toBe('Asha · Before You');
     expect(d.a11y).toBe('Asha, Before You');
     expect(d.a11y).not.toContain(DOT);
     expect(d.text).not.toMatch(/\d|week|day|month|due|born/i);

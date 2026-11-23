@@ -17,6 +17,7 @@ const os = vi.hoisted(() => ({
 }));
 
 vi.mock('../src/lib/days', () => ({ endDaysSession: () => true })); // reminders/session clears the days store (NS-47-R15): test/days-store.test.ts
+vi.mock('../src/lib/moments', () => ({ endMomentsSession: () => true })); // reminders/session clears the moments file too: test/moments-hooks.test.ts
 vi.mock('expo-crypto', () => ({ getRandomBytes: (n: number) => new Uint8Array(n).fill(7) }));
 vi.mock('../src/lib/db/repos/open-native', () => ({
   openNativeDb: () => {

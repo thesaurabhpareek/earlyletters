@@ -20,7 +20,7 @@ import { join } from "node:path";
 import {
   ROOT, loadRoster, ownerMap, parseBacklog, eligibility, primaryOwner, takenIds,
   readState, writeState, repoSlug, gh, ghAll, labelNames, agentOfPR, readText, todayUTC,
-  isFounderComment, standingChanged, trustContext, isTrusted, pendingTargets, handoffSettled,
+  isFounderComment, isFounderChangesRequest, standingChanged, trustContext, isTrusted, pendingTargets, handoffSettled,
   matchingPaths, stewardVerdict, startsWithMarker,
 } from "./lib.mjs";
 import { needsIndependentReview, d041Pool, oneLine } from "./hardening.mjs";
@@ -130,7 +130,7 @@ function prFacts(pr) {
     (c) => isFounderComment(c, roster) && new Date(c.submitted_at ?? c.created_at) > headAt,
   );
   const changesRequested = reviews.some(
-    (r) => isFounderComment(r, roster) && r.state === "CHANGES_REQUESTED" && new Date(r.submitted_at) > headAt,
+    (r) => isFounderChangesRequest(r, roster) && new Date(r.submitted_at) > headAt,
   );
   const all = [...reviews, ...comments];
   const redTeam = all.find((c) => isTrusted(c, trust) && startsWithMarker(c.body, `<!-- red-team:${sha} -->`));
@@ -336,7 +336,7 @@ function nextWork(agent, mine, queue) {
 
 function idleReason(agent, mine) {
   if (agent.kind === "digest") return state.lastDigest === today ? "today's digest is done" : "digest not due yet";
-  if (mine.length >= agent.wip_limit) return `waiting for founder review (${mine.length}/${agent.wip_limit} open PRs)`;
+  if (mine.length >= agent.wip_limit) return `waiting for Karma's merge queue (${mine.length}/${agent.wip_limit} open PRs)`;
   if (state.standing[agent.handle]) return "nothing changed since its last standing run";
   return "nothing to do";
 }
