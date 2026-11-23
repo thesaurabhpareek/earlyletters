@@ -1560,6 +1560,11 @@ features/language.en.ts#languageCopy.picker.chosenA11y,app screen,in-app,package
 features/language.en.ts#languageCopy.picker.selectedA11y,app screen,in-app,packages/content/src/features/language.en.ts,66,en,Selected,8,,,,,,content,live on develop,content
 features/language.en.ts#languageCopy.picker.rowHint,app screen,in-app,packages/content/src/features/language.en.ts,67,en,Chooses this language,21,,,,,,content,live on develop,content
 features/language.en.ts#languageCopy.picker.englishOnly,app screen,in-app,packages/content/src/features/language.en.ts,69,en,This version writes down letters spoken in English.,51,,,,,,content,live on develop,content
+features/left-book.en.ts#leftBookCopy.title,book,printed book,packages/content/src/features/left-book.en.ts,11,en,Letters to {child},18,,,,,,content,live on develop,content
+features/left-book.en.ts#leftBookCopy.rowHint,book,printed book,packages/content/src/features/left-book.en.ts,13,en,Opens the letters you wrote in {child}'s book.,46,,,,,,content,live on develop,content
+features/left-book.en.ts#leftBookCopy.lead,book,printed book,packages/content/src/features/left-book.en.ts,15,en,You left {child}'s book. The letters you wrote in it are kept on this phone.,76,,,,,,content,live on develop,content
+features/left-book.en.ts#leftBookCopy.emptyTitle,book,printed book,packages/content/src/features/left-book.en.ts,17,en,Letters,7,,,,,,content,live on develop,content
+features/left-book.en.ts#leftBookCopy.empty,book,printed book,packages/content/src/features/left-book.en.ts,19,en,There are no letters to show here.,34,,,,,,content,live on develop,content
 features/licences.en.ts#licences.title,app screen,in-app,packages/content/src/features/licences.en.ts,12,en,Licenses,8,,,,,,content,live on develop,content
 features/licences.en.ts#licences.rowLabel,app screen,in-app,packages/content/src/features/licences.en.ts,13,en,Licenses,8,,,,,,content,live on develop,content
 features/licences.en.ts#licences.intro,app screen,in-app,packages/content/src/features/licences.en.ts,14,en,This app is built with the help of open work by many people. Thank you.,71,,,,,,content,live on develop,content
