@@ -41,7 +41,7 @@ The spec is freeze-ready in the sense that no BLOCKER is open without either an 
 | O-41 | Store screenshots: hide the tab bar or wait for trademark clearance | Hide the tab bar in every frame | Fri 27 Nov |
 | O-32 | Special occasions: dates we know, or also events recognised from pictures (K-SUG) | Dates we know; K-SUG NOT PLANNED | With G10 |
 | O-30 | Faces and naming people | OUT, not decided here | When the founder chooses |
-| O-44 | Stored picture copies in the iPhone backup | Disclose, plus device row D-3 in G11 (the CLO prefers excluding the folder; counsel Q7 default) | Before G2 |
+| O-44 | Stored picture copies in the iPhone backup | Disclose, plus device row D-3 in G11 (the CLO prefers excluding the folder; spec Q7 = packet Q129 default; the founder chose disclose on 21 Nov 2026) | Before G2 |
 | O-45 | Postal address for the lifecycle email | Decide with O-47; phase 2 only | With O-47 |
 | O-46 | Numbers for the measurable and the stop line (section 20.1) | Founder sets them | Before PR 16 |
 | O-42 | Sign RV-01 to RV-22 as four signatures, with H-10 (the machine-label boundary) in the third | Four signatures | With G10 |
@@ -54,6 +54,14 @@ The spec is freeze-ready in the sense that no BLOCKER is open without either an 
 | RV-23 | The picker door as its own reversal at G10 (a fifth signature) | Sign with G10 | With G10 |
 | Hybrid decisions D1 to D14, KM1 to KM5 | Karma's decisions (spec 3.4) that the founder confirms or overrides, including: picker in a sheet, never the tab body; door only after a No; R56 and R57 dropped; viewer reduced, not deferred; the library read stays in 1.0 | The decisions as written | With G10 |
 | Spend | Any spend at all (counsel, dataset licence, entity, insurance, builds, email allowance) | None unless the founder signs a row of section 21.2 | n/a |
+
+Decided 21 Nov 2026 (decided by the executive council, approved by the founder, who said as relayed: "Decide for all 10 with exec team. I approve their decision. Same for 6 moments questions."; rulings `CPO-17` and `CPrivO-10` in `docs/agents/exec/RULINGS.md`, PR #1377). The table above and the status words in 1.6 are left as written; for these six this note wins:
+1. O-01: Moments is the second of four tabs (Home, Moments, Book, Me); Home stays the landing tab.
+2. O-37, O-39, O-52, RV-13, RV-17: the first release ships with the photo-library read (Route B) in 1.0, places and occasions in, faces and naming people out. The G6 guard (`g6-production-flags-off`, `store-flags.mjs`) is amended in the PR that adds the PHAsset use and its usage strings. Gates G1 to G11 apply before store submission, not before coding. O-37 (which slips if a gate is open) is not answered here.
+3. RV-18, RV-19, O-42 (H-10): only the person's own photo metadata (date, place) is used; no machine-written scene, face or people label is shown or stored as the family's words.
+4. O-44: keep ADR 0028 D1 and disclose it (device row D-3 stays).
+5. O-02, O-03, O-50: no library-timed push and no Moments email in 1.0; both off.
+6. O-48 in part: no whole-app "Data Not Collected" claim (CPrivO-10). The value proposition text stays PROPOSED; O-48 itself stays OPEN.
 
 Items that are not the founder's (owner and default are in section 23): O-04, O-06, O-08, O-09, O-11, O-12, O-15, O-17, O-19, O-22 to O-28, O-34, O-43 (Chief Design Officer: keep the For you and Recent switch), O-51 (CPO: evaluate Apple Journaling Suggestions after the F2a read-out), O-53 (Chief Design Officer: Layout A or B for the host sheet, default B until the picker spike), O-54 (engineering lead with `content`: per-type limit approach, default one total cap).
 
@@ -116,7 +124,7 @@ The spike must not use the D7 prototype for places: that prototype draws venue-l
 
 ### 1.4 Freeze exit checks
 
-- [ ] The founder has answered, or accepted the default for, O-37, O-38, O-39, O-40, O-41, O-42, O-44, O-47, and the v3 items O-48, O-49, O-50, O-52 and the hybrid decisions D1 to D14 (D10 and D11 are founder-visible).
+- [ ] The founder has answered, or accepted the default for, O-37, O-38, O-39, O-40, O-41, O-42, O-47, and the v3 items O-48, O-49, O-50, O-52 and the hybrid decisions D1 to D14 (D10 and D11 are founder-visible). O-44 is decided: the founder decided disclose (21 Nov 2026, O-44); G2 still waits on counsel's wording (packet Q129).
 - [ ] A challenger who is neither the author nor a reviewer has read the freeze copy (the CAIO's conflict-of-interest note: an AI session reviewing an AI-written spec), starting with EXH-ENG-1, EXH-ENG-4 and EXH-ENG-7.
 - [ ] The G1a-P simulator read-out is on file before 18b-1a is filed; the device read-out is on file before 18b-2 and 18c.
 - [ ] The door's legal set (label, policy, Terms, backup line, `docs/legal` lines 54, 117, 127 and policy line 45) is drafted for counsel before any production profile carries the door (R278).
@@ -201,7 +209,7 @@ Evidence goes in `docs/release/<x.y.z>.md` as one dated line with a commit. Ever
 | O-41 | Founder | Store screenshots and the tab bar | Answer, Fri 27 Nov | OPEN |
 | O-42 | Founder | RV-01 to RV-22 as four signatures | Answer with G10 | OPEN |
 | O-43 | Chief Design Officer | For you and Recent switch | Design ruling | OPEN |
-| O-44 | Founder with Privacy | Picture copies in iPhone backup | Answer before G2 | OPEN |
+| O-44 | Founder with Privacy | Picture copies in iPhone backup | Decided: disclose (founder, 21 Nov 2026, O-44). G2 still waits on counsel's wording (packet Q129) | DECIDED, WORDING OPEN |
 | O-45 | Founder | Postal address for lifecycle email | Answer with O-47; phase 2 | OPEN |
 | O-46 | Founder | Numbers of the measurable and the stop line | Answer before PR 16 | OPEN |
 | O-47 | Founder | Entity and individual publisher | Answer, Fri 27 Nov | OPEN |
@@ -286,7 +294,7 @@ Home columns are the PROPOSED homes of spec 26b (not frozen, see section 0). All
 
 ## 2. Harness hand-off summary
 
-Replaced for v3: see `HARNESS-REPLAN-HYBRID.md` (41 items in five waves, about 10,130 changed lines ASSUMED, computed by script; what can start now; what must wait; replacement text for BL-1432 to BL-1438 and one new row for `scribe-picker`). In one line: PR 0, PRs 1 to 4, PR 5 with a synthetic table, PRs 6, 8 and 12, PR 18a and the simulator picker spike can start now; PR 9 waits for G1a-L and G3; 18b-1a waits for the simulator read-out; 18b-2 and 18c wait for the device read-outs; the door ships only with the photo flag's legal set.
+Replaced for v3: see `HARNESS-REPLAN-HYBRID.md` (41 items in five waves, about 10,130 changed lines ASSUMED, computed by script; the design closure fold of 21 Nov added PRs 6b and 19c, so 43 items and about 10,580 by hand, see spec 19.4; what can start now; what must wait; replacement text for BL-1432 to BL-1438 and one new row for `scribe-picker`). In one line: PR 0, PRs 1 to 4, PR 5 with a synthetic table, PRs 6, 8 and 12, PR 18a and the simulator picker spike can start now; PR 9 waits for G1a-L and G3; 18b-1a waits for the simulator read-out; 18b-2 and 18c wait for the device read-outs; the door ships only with the photo flag's legal set.
 
 ## 3. Proposed backlog and claim entries (text only)
 

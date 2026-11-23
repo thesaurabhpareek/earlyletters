@@ -26,20 +26,20 @@ const CHAPTER_7: Record<string, string> = {
   'sheet.bodies.settings': 'The words of your letters come with you to a new phone. Recordings are kept on the phone that made them.',
   'sheet.bodies.invite': 'Sign in on this phone to carry on.',
   'sheet.bodies.invite_create': 'Sign in on this phone to carry on.',
-  'sheet.notConfigured': 'Signing in is not available right now. Nothing on this phone has changed.',
-  'errors.network': 'Nothing has changed. Sign in once you are back online.',
+  'sheet.notConfigured': "Signing in isn't available right now. Nothing on this phone has changed.",
+  'errors.network': "Nothing has changed. Sign in once you're back online.",
   'errors.expired': 'That link has expired. Send a new email for a fresh one.',
   // Led with "Your letters are safe." in the S52 table (amended 28 Oct, #360); Build 12 leads with "Nothing has changed." instead.
   'errors.not_available': "Nothing has changed. This way of signing in isn't available right now. Try another way.",
   'errors.code_paused': 'Nothing has changed. You can try a code again in 15 minutes.',
   // SIGN-01 (comms validation, 31 Oct 2026): no length the app cannot know, no provider the build may not offer.
   'errors.rate_limited': 'Nothing has changed. Too many tries for now. Wait a few minutes, then try again.',
-  'errors.email_wait': "Nothing has changed. Another email can't be sent just yet. Wait a few minutes, then try again.",
+  'errors.email_wait': "Nothing has changed. Another email can't go out yet. Wait a few minutes, then try again.",
   // LNG-05: the stock "That did not work this time" says what did not finish.
-  'errors.provider': 'Nothing has changed. That sign-in did not finish. Try again, or try another way.',
+  'errors.provider': "Nothing has changed. That sign-in didn't finish. Try again, or try another way.",
   'errors.session_expired': 'You were signed out. Sign in again to carry on.',
   'errors.consent_unavailable': 'Setting up your account did not finish. Try again.',
-  'errors.unknown': 'That did not go through. Nothing has changed.',
+  'errors.unknown': "That didn't go through. Nothing has changed.",
   // S53
   'email.help': 'A link and a code arrive by email. No password to remember.',
   // S54
@@ -135,7 +135,7 @@ const BL_451: Record<string, string> = {
  * BL-488 (P8a critics L6 and L7): the claim step's primary names the account, not the phone ("Keep them here" could be read
  * as this phone, and the choice is this account), and AccountGate's branch for a signed-in phone whose gate could not be
  * read (offline, a server error or the 10 second timeout), which names the connection instead of telling a signed-in person
- * to sign in (`errors.network` ends "Sign in once you are back online") or assuming the phone is offline.
+ * to sign in (`errors.network` ends "Sign in once you're back online") or assuming the phone is offline.
  */
 const BL_488: Record<string, string> = {
   'claim.keep': 'Keep in this account',
@@ -148,12 +148,12 @@ const BL_488: Record<string, string> = {
  * /health-privacy page, and the sheet links to the Terms and the Privacy Policy only.
  */
 const REGISTERED: Record<string, string> = {
-  'sheet.privacy': 'Only you and the people you invite can read your letters. We never sell them or use them for ads.',
+  'sheet.privacy': 'Your letters are yours. We never sell them and never use them for ads.',
   'sheet.emailUse': 'We use your email only to sign you in and to write to you about your account.',
-  'sheet.why': 'An account keeps your book safe when you change phones.',
+  'sheet.why': 'An account keeps the words of your letters with you when you change phones.',
   'consent.terms.title': 'Before your book syncs',
   'consent.terms.body':
-    'Your letters stay private to you and the family you invite. We never sell them, use them for ads or use them to train machine learning models.',
+    'Your letters stay yours. We never sell them, use them for ads or use them to train machine learning models.',
   'consent.terms.agreeLine': 'By continuing, you confirm you are 18 or older and agree to the Terms of Service and Privacy Policy.',
   'consent.terms.termsLink': 'Terms of Service',
   'consent.terms.privacyLink': 'Privacy Policy',
@@ -169,7 +169,7 @@ const REGISTERED: Record<string, string> = {
 const FIRST_RUN_APPROVED: Record<string, string> = {
   'sheet.bodies.sign_in_first': 'Sign in to begin your book.',
   'sheet.agreeLine': REGISTERED['consent.terms.agreeLine'],
-  'firstRun.errors.provider': 'That sign-in did not finish. Try again, or try another way.',
+  'firstRun.errors.provider': "That sign-in didn't finish. Try again, or try another way.",
   'outage.title': 'Sign-in cannot be reached right now.',
   'outage.body': 'Try again in a moment.',
   'outage.retry': 'Try again',
@@ -236,7 +236,7 @@ describe('[EXPERIENCE_PASS_2026-10 P8a] chapter 7 words in authCopy', () => {
     // says the phone is offline or that it should come back online.
     expect(authCopy.account.gateOffline).not.toMatch(/offline|back online|\bonline\b/i);
     expect(authCopy.account.gateOffline).not.toBe(authCopy.errors.network);
-    expect(authCopy.errors.network).toMatch(/Sign in once you are back online\.$/);
+    expect(authCopy.errors.network).toMatch(/Sign in once you're back online\.$/);
   });
 
   it('leaves registered disclosure text word for word, and the privacy line is trust.signIn.privacy itself', () => {
@@ -274,7 +274,9 @@ describe('[EXPERIENCE_PASS_2026-10 P8a] chapter 7 words in authCopy', () => {
     const LEADS = ['network', 'provider', 'not_available', 'rate_limited', 'email_wait', 'code_paused'];
     const SECOND = ['unknown'];
     const HAPPENED = Object.keys(SAYS_WHAT_HAPPENED);
-    const INPUT = ['wrong_code', 'expired', 'invalid_email'];
+    // BL-452 (placeholder words, locked under delegation): passkey_expired is fixed by trying the passkey again; the other three
+    // say what did not happen without "Nothing has changed.", which the app cannot know for a passkey or another device.
+    const INPUT = ['wrong_code', 'expired', 'invalid_email', 'passkey_expired', 'passkey_not_added', 'passkey_unavailable', 'sign_out_others_failed'];
     const NOT_A_FAILED_ATTEMPT = ['under_18', 'other_phone', 'other_phone_spent', 'already_signed_in', 'region_refused'];
     const errors = authCopy.errors as Record<string, string>;
     expect(Object.keys(errors).sort()).toEqual([...LEADS, ...HAPPENED, ...SECOND, ...INPUT, ...NOT_A_FAILED_ATTEMPT].sort());
@@ -290,7 +292,7 @@ describe('[EXPERIENCE_PASS_2026-10 P8a] chapter 7 words in authCopy', () => {
     for (const kind of [...INPUT, ...NOT_A_FAILED_ATTEMPT]) expect(errors[kind], kind).not.toMatch(/letters are safe|^Nothing has changed/);
     for (const kind of Object.keys(errors)) expect(errors[kind], kind).not.toMatch(/\bsafe\b/);
     // The four the ruling changed keep their table words after the new first sentence.
-    expect(errors.provider).toBe('Nothing has changed. That sign-in did not finish. Try again, or try another way.');
+    expect(errors.provider).toBe("Nothing has changed. That sign-in didn't finish. Try again, or try another way.");
     expect(authCopy.sheet.notConfigured).toContain('Nothing on this phone has changed.');
   });
 

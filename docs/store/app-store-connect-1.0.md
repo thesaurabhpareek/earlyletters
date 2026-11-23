@@ -190,7 +190,7 @@ Accessibility: built to Dynamic Type, Reduce Motion and dark mode, with VoiceOve
 Privacy: speech-to-text runs entirely on the iPhone; the only network requests are signed settings files, the one-time speech model download (shown with its size, on Wi-Fi, after the parent agrees) and StoreKit.
 Team: made by an independent developer. [FOUNDER: add one line about yourself if you want it; no child's name or family detail.]
 Priority: this is our first and only app; the launch is our highest priority.
-Coming later in 1.0.x updates: writing a book together with a co-parent, and more spoken languages, each when its native reviewer signs off. [FOUNDER: keep or delete. It describes plans, not the build.]
+Coming later in 1.0.x updates: more spoken languages, each when its native reviewer signs off. [FOUNDER: keep or delete. It describes plans, not the build.]
 ```
 
 ## Apple pages (opened by the review lane, 1 Nov 2026)

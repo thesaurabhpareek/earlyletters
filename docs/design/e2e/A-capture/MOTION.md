@@ -148,7 +148,7 @@ Reduce Motion: the ring goes with the 200 ms fade.
 |---|---|
 | tap | Keep's press. The Keep gate decides first (D-082): if Plus is needed, T-GATE (A-S13.gate to E-S10, system sheet, the held card `m.enter`) and nothing is written. If Plus is not known yet, the letter is held (A-S13.held): an F1 toast says so and the room leaves (`m.cover`) |
 | commit | Local transaction (p95 200 ms). Then `H-success`, once. Paper sounds on only: `sealed`, never while the mini-player plays |
-| 0 | The line "Kept in Month 7" (or "Kept just for you.") enters (`m.enter`); the letter card is hidden from VoiceOver and the one sentence is announced |
+| 0 | The line "Kept in Month 7" (or "Kept private.") enters (`m.enter`); the letter card is hidden from VoiceOver and the one sentence is announced |
 | 120 | The card moves down 24 pt and leaves (`m.exit`, 160, `easing.exit`) |
 | 400 | Review leaves (`m.fade`, 200) over the Book, which is already on the new letter (`arrived=<id>`); the Book's lamp, returns over 280 |
 | 600 | On the Book: the letter in its place, no `m.list.insert`; `m.mark` starts (1600, area B draws it). No tab badge |

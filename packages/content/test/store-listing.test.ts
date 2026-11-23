@@ -65,11 +65,20 @@ const NEEDS_SERVERS: RegExp[] = [/\bsign(ed)?[- ]?in\b/i, /\bsync(s|ed|ing)?\b/i
 // Only for a build with server features on, where sign-in is required (D-160): a sentence that makes the account optional.
 const ACCOUNT_IS_OPTIONAL: RegExp[] = [/\bwithout (an )?account\b/i, /\bwith or without (an )?account\b/i];
 /**
- * PENDING req-question:FP-1 (reading A: the sentence stays, it is true of what the phone holds; reading B: it implies the
- * account is optional, so the founder rewords it). Words wait for the founder, so the sentence is held here, not edited.
- * The test below fails when the sentence is gone, so this list cannot go stale.
+ * PENDING words wait for the founder and are held here, not edited. None now: FP-1 ("Without an account, your book stays
+ * on your phone.") was replaced by the servers-on sentences below (exec rulings 23 Nov 2026, item 8a).
  */
-const PENDING_WORDS = ['Without an account, your book stays on your phone.'];
+const PENDING_WORDS: string[] = [];
+/**
+ * The store listing describes the production build, which has servers on and sign-in required (D-160, D-170). These two
+ * sentences name sign-in and sync, so a servers-off build (TestFlight) would refuse them under NEEDS_SERVERS; the
+ * listing is not what a servers-off build ships, so they are exempt from that one rule only. The test below fails when
+ * a sentence is gone, so this list cannot go stale.
+ */
+const SERVERS_ON_SENTENCES = [
+  'You sign in to keep your book.',
+  "If you agree to sync, the words of your letters and your child's name and dates are kept on our servers so they reach a new phone.",
+];
 const LANGUAGE_NAMES: Record<string, string> = { es: 'Spanish', fr: 'French', de: 'German', pt: 'Portuguese', hi: 'Hindi', zh: 'Chinese|Mandarin', en: 'English' };
 
 /** Sentences the rule refuses for this build state. */
@@ -80,7 +89,12 @@ function violations(listing: Listing, profile: Profile): string[] {
   for (const [code, names] of Object.entries(LANGUAGE_NAMES)) {
     if (!profile.spoken.includes(code)) refused.push(new RegExp(`\\b(${names})\\b`, 'i'));
   }
-  return listingText(listing).filter((sentence) => !PENDING_WORDS.includes(sentence) && refused.some((re) => re.test(sentence)));
+  return listingText(listing).filter(
+    (sentence) =>
+      !PENDING_WORDS.includes(sentence) &&
+      !(!profile.serverFeatures && SERVERS_ON_SENTENCES.includes(sentence)) &&
+      refused.some((re) => re.test(sentence)),
+  );
 }
 
 describe('[NS-38-R2] the listing describes the build', () => {
@@ -99,7 +113,7 @@ describe('[NS-38-R2] the listing describes the build', () => {
   }
 
   it('holds each pending sentence only while it is still in the listing', () => {
-    for (const sentence of PENDING_WORDS) expect(listingText(real)).toContain(sentence);
+    for (const sentence of [...PENDING_WORDS, ...SERVERS_ON_SENTENCES]) expect(listingText(real)).toContain(sentence);
   });
 
   const production = profiles.find((p) => p.name === 'production')!;

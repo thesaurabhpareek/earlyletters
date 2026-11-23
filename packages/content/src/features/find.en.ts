@@ -23,7 +23,7 @@ export const findCopy = {
   // Beside the failed view, only while the index is being made (R38).
   notReady: 'Find is getting ready on this phone.',
   // The failed view (R37), announced once.
-  error: 'Find could not look just now.',
+  error: "Find couldn't look just now.",
   retry: 'Try again',
   // One result, read aloud: no count, no score (R41).
   rowA11y: '{date}. {label}. Opens the letter.',

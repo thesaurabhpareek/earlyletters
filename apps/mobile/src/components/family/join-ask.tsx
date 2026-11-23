@@ -19,12 +19,12 @@
  */
 import { useEffect, useState, type ReactNode } from 'react';
 import { View, type LayoutChangeEvent } from 'react-native';
-import Animated, { cancelAnimation, Easing, FadeIn, ReduceMotion, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
+import Animated, { cancelAnimation, FadeIn, ReduceMotion, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import { tokens } from '@scribe/design-tokens';
 import { BookCover } from '@/components/book/book-cover';
 import { Text } from '@/components/ui/text';
 import { useTheme } from '@/lib/a11y';
-import { useReducedMotion } from '@/lib/motion';
+import { curve, useReducedMotion } from '@/lib/motion';
 import { SheetTitle } from '@/lib/auth/ui';
 import { familyCopy } from '@/lib/family/copy';
 import { invitedByLine } from './join-sheet.logic';
@@ -60,8 +60,7 @@ export function JoinedCover({ child, inviter }: { child: string; inviter: string
   );
 }
 
-/** One slow sweep of a short accent segment across a hairline track: no number, no percent. */
-const SWEEP_MS = 1400;
+/** One slow sweep of a short accent segment across a hairline track: no number, no percent (tokens.motion.sweepMs). */
 
 export function WaitingBar() {
   const { c } = useTheme();
@@ -75,7 +74,7 @@ export function WaitingBar() {
       return;
     }
     x.value = 0;
-    x.value = withRepeat(withTiming(1, { duration: SWEEP_MS, easing: Easing.inOut(Easing.quad), reduceMotion: ReduceMotion.Never }), -1, true);
+    x.value = withRepeat(withTiming(1, { duration: tokens.motion.sweepMs, easing: curve('sweep'), reduceMotion: ReduceMotion.Never }), -1, true);
     return () => cancelAnimation(x);
   }, [reduced, width, x]);
   const segment = Math.round(width / 3);

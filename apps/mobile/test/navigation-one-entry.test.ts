@@ -19,7 +19,8 @@ import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { en } from '@scribe/content';
 import { CAPTURE_DOORWAYS, CAPTURE_SOURCES, HOME_CAPTURE_SOURCES, isCaptureDoorway, isCaptureSource } from '../src/lib/capture/start-capture.logic';
-import { TAB_JOBS, type TabJob } from '../src/lib/nav/tab-jobs';
+import { MOMENTS_TAB_ON, momentsTabVisibility, visibleTabIds } from '../src/lib/nav/moments-tab';
+import { MOMENTS_TAB_JOB, TAB_JOBS, tabJobs, type TabJob } from '../src/lib/nav/tab-jobs';
 
 const SRC = process.env.NAVIGATION_TEST_SRC ?? join(__dirname, '..', 'src');
 /** Source without comments. */
@@ -90,9 +91,11 @@ function checkBar(fs: Files, manifest: readonly TabJob[], tabs: Record<string, u
   if (screens.join() !== ids.join()) out.push(`N1 the layout screens are ${screens.join(', ')}, not ${ids.join(', ')}`);
   for (const t of manifest) {
     const title = new RegExp(`<Tabs\\.Screen\\s+name="${t.id}"[\\s\\S]*?\\btitle: (t\\.(\\w+)|[^,\\n]+)`).exec(layout);
+    // Moments' key is PROPOSED content (not in en.tabs yet): its title comes from momentsTabLabel, which reads tabs.moments once it lands.
+    const proposed = t.id === 'moments';
     if (!title) out.push(`N1 ${t.id} has no title`);
-    else if (title[2] !== t.tabsKey) out.push(`N1 ${t.id} is titled ${title[1]}, not copy.tabs.${t.tabsKey}`);
-    if (typeof tabs[t.tabsKey] !== 'string') out.push(`N1 copy.tabs.${t.tabsKey} is not a string`);
+    else if (proposed ? title[1] !== 'momentsLabel' : title[2] !== t.tabsKey) out.push(`N1 ${t.id} is titled ${title[1]}, not copy.tabs.${t.tabsKey}`);
+    if (!proposed && typeof tabs[t.tabsKey] !== 'string') out.push(`N1 copy.tabs.${t.tabsKey} is not a string`);
   }
   return out;
 }
@@ -154,7 +157,10 @@ function checkNoExtraTabs(fs: Files): string[] {
   const layout = fs.get(LAYOUT) ?? '';
   const screens = screensOf(layout);
   for (const s of screens) if (EXTRA_TABS.includes(s)) out.push(`N4 the layout defines a ${s} tab`);
-  if (screens.length > 3) out.push(`N4 the layout defines ${screens.length} tabs`);
+  if (screens.length > 4) out.push(`N4 the layout defines ${screens.length} tabs`);
+  // The fourth is Moments, second, and only ever behind the flag: the screen takes its visibility from momentsTabVisibility.
+  if (screens.length === 4 && screens[1] !== 'moments') out.push(`N4 the fourth tab is ${screens.join(', ')}, not moments second`);
+  if (screens.includes('moments') && !/name="moments"[^\n]*\.\.\.momentsTabVisibility\(MOMENTS_TAB_ON\)/.test(layout)) out.push('N4 the moments tab is not behind the flag');
   if (/Tabs\.Protected/.test(layout)) out.push('N4 the layout hides a tab behind Tabs.Protected');
   return out;
 }
@@ -196,25 +202,36 @@ function checkHomeOffersNoFirstsOrSeal(fs: Files): string[] {
 }
 
 describe('the navigation test (design spec 06 section 10)', () => {
-  it('[IA-N1] the bar is the manifest: index, book, you in that order, each titled from copy.tabs', () => {
-    expect(checkBar(files, TAB_JOBS, en.tabs)).toEqual([]);
+  it('[IA-N1] the bar is the manifest: index, book, you with the flag off; index, moments, book, you with it on (CPO-17)', () => {
+    expect(checkBar(files, tabJobs(true), en.tabs)).toEqual([]);
+    // The flag is off by default: the bar a build draws is the three as before.
+    expect(MOMENTS_TAB_ON).toBe(false);
     expect(TAB_JOBS.map((t) => t.id)).toEqual(['index', 'book', 'you']);
+    expect(tabJobs(false)).toBe(TAB_JOBS);
+    expect(tabJobs(true).map((t) => t.id)).toEqual(['index', 'moments', 'book', 'you']);
+    expect(visibleTabIds(false)).toEqual(TAB_JOBS.map((t) => t.id));
+    expect(visibleTabIds(true)).toEqual(tabJobs(true).map((t) => t.id));
+    // Flag off the route is hidden from the bar and nothing else is added to the options; on, nothing hides it.
+    expect(Object.keys(momentsTabVisibility(false)).sort()).toEqual(['tabBarButton', 'tabBarItemStyle']);
+    expect(momentsTabVisibility(true)).toEqual({});
   });
 
   it('[IA-N2] each tab declares one verb; no two tabs share a verb or its head', () => {
-    expect(checkVerbs(TAB_JOBS)).toEqual([]);
+    expect(checkVerbs(tabJobs(true))).toEqual([]);
     expect(TAB_JOBS.map((t) => t.verb)).toEqual(['say', 'read', 'look after']);
+    expect(MOMENTS_TAB_JOB.verb).toBe('choose');
   });
 
   it('[IA-N3] one capture entry: Home starts through startCapture with a source from the closed list, and nothing else opens /listen or /write', () => {
     expect(checkOneEntry(files, TAB_JOBS)).toEqual([]);
+    expect(checkOneEntry(files, tabJobs(true))).toEqual([]);
     // One list (10.1): Home's entries plus the doorways are every source, and the names are the PRD's.
     expect([...HOME_CAPTURE_SOURCES, ...CAPTURE_DOORWAYS]).toEqual([...CAPTURE_SOURCES]);
     expect([...CAPTURE_SOURCES]).toEqual(['speak', 'type', 'notMuchToday', 'photo', 'widget', 'controlCenterControl', 'actionButton', 'siri']);
     expect(TAB_JOBS[0].captureEntries).toBe(HOME_CAPTURE_SOURCES);
   });
 
-  it('[IA-N4] no fourth tab, and no tab hidden behind Tabs.Protected', () => {
+  it('[IA-N4] no tab beyond Moments second, Moments only behind the flag, and no tab hidden behind Tabs.Protected', () => {
     expect(checkNoExtraTabs(files)).toEqual([]);
   });
 
@@ -223,7 +240,7 @@ describe('the navigation test (design spec 06 section 10)', () => {
   });
 
   it('[IA-N6] tab labels are single words, strings only, under the manifest label keys', () => {
-    expect(checkWords(en.tabs, TAB_JOBS)).toEqual([]);
+    expect(checkWords(en.tabs, tabJobs(true))).toEqual([]);
   });
 
   it('[IA-N10] Home offers no firsts or seal', () => {
@@ -245,12 +262,12 @@ describe('the navigation test proves it can fail (design spec 06 section 10.3)',
   const tabs = { ...en.tabs } as Record<string, unknown>;
 
   it('[IA-N1] N1a screens out of order and N1b a typed title fail N1', () => {
-    const swapped = layout.replace(/(<Tabs\.Screen name="index"[^\n]*\n)(\s*<Tabs\.Screen name="book"[^\n]*\n)/, '$2$1');
+    const swapped = layout.replace('name="index"', 'name="@"').replace('name="moments"', 'name="index"').replace('name="@"', 'name="moments"');
     expect(swapped).not.toBe(layout);
-    expect(codes(checkBar(withFile(LAYOUT, swapped), TAB_JOBS, tabs))).toContain('N1');
+    expect(codes(checkBar(withFile(LAYOUT, swapped), tabJobs(true), tabs))).toContain('N1');
     const typed = layout.replace('title: t.tonight,', "title: 'Tonight',");
     expect(typed).not.toBe(layout);
-    expect(codes(checkBar(withFile(LAYOUT, typed), TAB_JOBS, tabs))).toContain('N1');
+    expect(codes(checkBar(withFile(LAYOUT, typed), tabJobs(true), tabs))).toContain('N1');
   });
 
   it('[IA-N2] N2a a shared verb, N2b a shared head and N2c an empty verb fail N2', () => {
@@ -292,6 +309,12 @@ describe('the navigation test proves it can fail (design spec 06 section 10.3)',
     const share = layout.replace('<Tabs.Screen name="book"', '<Tabs.Screen name="share" options={{ title: t.book }} />\n          <Tabs.Screen name="book"');
     expect(share).not.toBe(layout);
     expect(codes(checkNoExtraTabs(withFile(LAYOUT, share)))).toEqual(['N4']);
+    // Moments without the flag, or in any place but second, fails N4 too.
+    const ungated = layout.replace(', ...momentsTabVisibility(MOMENTS_TAB_ON)', '');
+    expect(ungated).not.toBe(layout);
+    expect(checkNoExtraTabs(withFile(LAYOUT, ungated))).toEqual(['N4 the moments tab is not behind the flag']);
+    const last = layout.replace('name="moments"', 'name="@"').replace('name="you"', 'name="moments"').replace('name="@"', 'name="you"');
+    expect(codes(checkNoExtraTabs(withFile(LAYOUT, last)))).toEqual(['N4']);
     const guarded = layout.replace('</Tabs>', '<Tabs.Protected guard={false}><Tabs.Screen name="family" /></Tabs.Protected></Tabs>');
     expect(guarded).not.toBe(layout);
     expect(codes(checkNoExtraTabs(withFile(LAYOUT, guarded)))).toEqual(['N4']);
