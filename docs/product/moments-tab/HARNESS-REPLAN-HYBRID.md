@@ -11,7 +11,7 @@ Fictional family Asha only. Labels: SOURCE-READ means I read the text this sessi
 
 ## 1. The new PR list, with dependencies and waves
 
-41 items (the 26 numbered PRs 0 to 25, with 11 split into 11a, 11b and 11c and 25 split into 25a and 25b, plus 0b, 3b, 5b, 18a, 18b-0, 18b-1a, 18b-1b, 18b-1c, 18b-2, 18c, 18d and 19b; the seven added after the challenger read are 0b, 3b, the 11 split, 18b-0, 18b-1c and 18d; the 25 split came after the counted reviews, A1). Each stays under CODE-R02 (400 lines, 20 files); the spec table in 19.4 is the source and carries the split plans of the rows at 380 or 400 lines; this is the same list as a dependency graph with a wave column.
+43 items at 21 Nov 2026 after the design closure fold added 6b and 19c (41 at first: the 26 numbered PRs 0 to 25, with 11 split into 11a, 11b and 11c and 25 split into 25a and 25b, plus 0b, 3b, 5b, 18a, 18b-0, 18b-1a, 18b-1b, 18b-1c, 18b-2, 18c, 18d and 19b; the seven added after the challenger read are 0b, 3b, the 11 split, 18b-0, 18b-1c and 18d; the 25 split came after the counted reviews, A1). Each stays under CODE-R02 (400 lines, 20 files); the spec table in 19.4 is the source and carries the split plans of the rows at 380 or 400 lines; this is the same list as a dependency graph with a wave column.
 
 | # | Concern | Owner | Lines (ASSUMED) | Files (ASSUMED) | Depends on | Wave | Can start now |
 |---|---|---|---|---|---|---|---|

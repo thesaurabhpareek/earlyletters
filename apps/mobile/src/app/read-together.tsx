@@ -41,6 +41,7 @@ import { AppNote } from '@/components/book/app-note';
 import { bookCopy } from '@/components/book/copy';
 import { letterWords } from '@/components/book/letter-words.logic';
 import { readableInBook, showsSignature } from '@/components/book/quiet-day.logic';
+import { lettersInYear, endOfYearLine, readTheYearOn } from '@/components/book/read-year.logic';
 import { turnControls } from '@/components/book/turn-controls.logic';
 import { getActiveChild, getChild, getSetting, listEntriesForChild, setSetting, type Child, type Entry } from '@/lib/store';
 
@@ -51,7 +52,7 @@ const END = 'end';
 
 export default function ReadTogether() {
   const rt = copy.readTogether;
-  const { childId } = useLocalSearchParams<{ childId?: string }>();
+  const { childId, year } = useLocalSearchParams<{ childId?: string; year?: string }>();
   const child = (childId ? getChild(childId) : null) ?? getActiveChild();
   const counted = useRef(false);
   const [index, setIndex] = useState(0);
@@ -63,7 +64,7 @@ export default function ReadTogether() {
   const turn = turnControls(useIsAccessibilitySize());
   useUnlitRoom();
 
-  const letters = useMemo(() => (child ? readableInBook(listEntriesForChild(child.id)).reverse() : []), [child?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  const letters = useMemo(() => (child ? (year && readTheYearOn(process.env.EXPO_PUBLIC_READ_THE_YEAR) ? lettersInYear(listEntriesForChild(child.id), child, year) : readableInBook(listEntriesForChild(child.id))).reverse() : []), [child?.id, year]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // One session per opening, counted once (analytics only; nothing limits sessions).
   const session = useRef<{ startedAt: number; furthest: number } | null>(null);
@@ -139,7 +140,7 @@ export default function ReadTogether() {
           canBack={index > 0}
           onSwipe={(d) => go(d === 'next' ? index + 1 : index - 1)}
           renderPage={(key) => {
-            if (key === END) return <EndOfBook onClose={close} onAgain={() => go(0)} />;
+            if (key === END) return <EndOfBook onClose={close} onAgain={() => go(0)} line={year && readTheYearOn(process.env.EXPO_PUBLIC_READ_THE_YEAR) ? endOfYearLine(year, child.name) : undefined} />;
             const i = letters.findIndex((e) => e.id === key);
             const entry = letters[i];
             if (!entry) return null;
@@ -272,8 +273,9 @@ function KeepPlayingChip({ on, onChange }: { on: boolean; onChange: (on: boolean
 }
 
 /** The end of the book (S31): the moon draws on once above the line, then nothing moves. Buttons from the first frame. */
-function EndOfBook({ onClose, onAgain }: { onClose: () => void; onAgain: () => void }) {
-  const rt = copy.readTogether;
+function EndOfBook({ onClose, onAgain, line }: { onClose: () => void; onAgain: () => void; line?: string }) {
+  // A year ends on its own line (BL-947): the same heading, other words.
+  const rt = line ? { ...copy.readTogether, endOfBook: line } : copy.readTogether;
   const reduced = useReducedMotion();
   return (
     <PinnedActionLayout

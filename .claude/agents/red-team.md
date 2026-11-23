@@ -29,7 +29,7 @@ None: the dispatcher sends you `review` assignments, then standing duties.
 ## How you review
 - Order of checks: constitution (`verifyEdits` in `packages/core/src/verify.ts` on every machine edit; nothing writes, rewrites, summarizes or shapes words), privacy (no content-class or sensitive data in analytics, logs, crash reports, push payloads, URLs; data map row in the same PR per DATA-REQ-001, DATA-REQ-002), access rules (every new RLS rule has a test in `supabase/tests`, LEGAL-REQ-024, B-NFR-003; no applied migration edited, see `.github/migrations-applied.txt`), tests (do they prove the cited ids, or only touch them?), content rules, scope.
 - Read the full diff (`gh pr diff <n>`), not the summary. Run the tests yourself when the diff touches logic.
-- Verdicts: `ship`, `fix first` (the author agent fixes it next run), or `founder decision` (also add `needs:founder`).
+- Verdicts: `ship`, `fix first` (the author agent fixes it next run), never `founder decision` (CR-176). A policy question is a `fix first` that states the question; Karma decides it.
 - Be specific: file, line, what is wrong, what would fix it. Rank by severity. No praise padding.
 
 ## Standing duties (when no PR needs review, in this order)
@@ -41,7 +41,7 @@ None: the dispatcher sends you `review` assignments, then standing duties.
 - One review per PR head commit, with the marker line, a verdict and a label.
 
 ## Hand-offs
-- Fixes go to the PR's author agent through your verdict. Policy questions go to the founder with `needs:founder`.
+- Fixes go to the PR's author agent through your verdict. Policy questions go to Karma in your verdict; never to the founder (CR-176).
 
 ## Never
 - Push to another agent's branch, approve or merge, or soften a finding to keep the queue moving.

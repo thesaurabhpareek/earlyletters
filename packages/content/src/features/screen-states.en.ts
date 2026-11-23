@@ -31,7 +31,7 @@ export const screenStates = {
     // Ready if the founder prefers a confirm to the Undo toast (W8).
     confirmTitle: 'Set these words aside?',
     confirmBody:
-      'They will not be shown again or added to the book. Your recording stays with this letter, and you can type the words yourself.',
+      "They won't be shown again or added to the book. Your recording stays with this letter, and you can type the words yourself.",
     confirmButton: 'Set the words aside',
     cancelButton: 'Leave as it is',
   },
@@ -43,7 +43,7 @@ export const screenStates = {
     inBookHelp: "Everyone who reads {child}'s book can read it.",
     onlyYou: 'Only you',
     onlyYouHelp: 'Kept out of the book, for you alone.',
-    saveFailed: 'That change did not save. The letter is as it was.',
+    saveFailed: "That change didn't save. The letter is as it was.",
   },
 
   // D-S19 Undo join confirm and D-S20 the other parent's phone (requirement R4, R13). Nothing preselected but the safe one.
@@ -57,7 +57,7 @@ export const screenStates = {
     working: 'Undoing the join',
     done: "{coParent} is no longer in {child}'s book.",
     closed: 'This can no longer be undone in the app.',
-    failed: 'The undo did not finish. Nothing has changed. Try again.',
+    failed: "The undo didn't finish. Nothing has changed. Try again.",
     undoneNote: 'This book is no longer shared with you. Your own letters stay yours, to read, export or delete.',
   },
 } as const;

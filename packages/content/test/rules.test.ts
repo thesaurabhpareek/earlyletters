@@ -143,6 +143,8 @@ const EVERY: Leaf[] = [...ALL, ...EMAIL, ...APP_COPY];
 const PUBLIC: Leaf[] = [...leaves(storeListing, 'store'), ...leaves(site, 'site'), ...leaves(pages, 'pages')];
 const DOCS = ['VOICE.md', 'BRAND.md'].map((f) => ({ path: f, text: readFileSync(join(__dirname, '..', f), 'utf8') }));
 
+/** The leaf lists the [BRAND-MOMENTS-2] scan reads; its self-check reads this same constant. */
+const BRAND_MOMENTS_SCAN_SOURCES: Leaf[][] = [STORE, SITE, PAGES];
 const offenders = (items: Leaf[], re: RegExp) => items.filter((l) => re.test(l.text)).map((l) => `${l.path}: ${l.text}`);
 
 describe('characters', () => {
@@ -281,8 +283,10 @@ describe('length limits', () => {
 });
 
 describe('save failure reassurance', () => {
-  it('tells people their words are safe on the phone', () => {
-    expect(JSON.stringify(en.errors)).toMatch(/safe on this phone/i);
+  it('tells people their words are still on the phone', () => {
+    // Pinned on the two lines that carry the claim: a match over all of en.errors passes on any other line that says it.
+    expect(en.errors.saveFailed.body).toMatch(/still on this phone/i);
+    expect(en.errors.crash.body).toMatch(/still on this phone/i);
   });
 });
 
@@ -592,6 +596,15 @@ describe('brand name and v1.0 claims', () => {
   // may claim backup until it ships. Themes, covers and vault mode are overclaims too.
   // D-082 and D-083 (4 Oct 2026) replace D-053's rules: the first 2 letters are free, then Plus lets you keep adding;
   // Read together has no limit and starting a book is free, so those are no longer claimed as Plus.
+  // BL-463: case-insensitive, so "read together" and "Free, always" are caught as well as the capitalised forms.
+  const RETIRED_CLAIMS = /Read together|more children|more books|free, always/i;
+
+  it('[BL-463] the retired-claims pattern ignores case', () => {
+    for (const bad of ['Read together', 'read together', 'READ TOGETHER', 'More children', 'more books', 'Free, always'])
+      expect(RETIRED_CLAIMS.test(bad), bad).toBe(true);
+    expect(RETIRED_CLAIMS.test('Keep adding letters')).toBe(false);
+  });
+
   it('promises only what Plus gates in v1.0 (D-085, D-082): keeping more letters, no backup', () => {
     // The Plan row's help line is scanned with the rest: it is where "keep adding letters" is said (settingsHome.planHelp).
     const plus = [
@@ -613,7 +626,7 @@ describe('brand name and v1.0 claims', () => {
     expect(offenders(plus, /encrypted backup|back(s|ed)? (them |it |your recordings )?up\b|backed-up/i)).toEqual([]);
     expect(promise).toMatch(/first two letters are free/);
     expect(en.settingsHome.planHelp).toMatch(/keep adding letters/);
-    for (const line of PROMISES) expect(line, line).not.toMatch(/Read together|more children|more books|free, always/);
+    for (const line of PROMISES) expect(line, line).not.toMatch(RETIRED_CLAIMS);
     // Nothing may still claim a limit that no longer exists (D-083), or an unconditional "free, always".
     expect(offenders(plus, /free, always|first book|more children|books for more|first 3|after the first/i)).toEqual([]);
     // D-083: app copy never types a price, "free trial", "free months" or "we will email you" in the Keep gate or Plan rows.
@@ -1020,6 +1033,39 @@ describe('glossary (BRAND.md)', () => {
     expect(offenders(COPY, /\bmemory book (?:that )?(?:you|parents) fill by talking\b/i)).toEqual([]);
     expect(offenders(COPY, /\bletters to your child,? in your (?:own )?voice\b/i)).toEqual([]);
   });
+
+  // Founder, 21 Nov 2026: "Change brand.md and I approve moments." Moments is the name of the fourth tab, a place. The
+  // glossary ban stays for what a person makes: a short piece is a note, a long one a letter. "In a moment" and "One moment"
+  // are ordinary English and pass. Until counsel clears the name (X1, Q-X1-12) it is in-app only, not in store text.
+  const MOMENT_MADE =
+    /\b(?:your|my|our|their|new|these|those|favou?rite|precious|special|captured|saved|shared|recent|best)\s+moments?\b|\bmoments?\s+(?:from|you|we|with|captured|saved)\b|\b\d+\s+moments\b|\b(?:capture|save|record|share|write|add|make|keep)\s+(?:a|the|this|that|every|each|your)?\s*(?:precious\s+)?moments?\b|\bphoto moments?\b/i;
+
+  it('[BRAND-MOMENTS-1] moment is a place, never a thing a person makes: a short piece stays a note', () => {
+    expect(offenders(COPY, MOMENT_MADE)).toEqual([]);
+  });
+
+  it('[BRAND-MOMENTS-1] the pattern catches the thing a person makes and lets the tab and ordinary English pass', () => {
+    for (const bad of ['Your moments', 'New moments are here', 'Capture every precious moment', 'Save a moment', 'Add a moment', '12 moments', 'Moments from the weekend', 'Photo moments', 'A moment you saved']) expect(MOMENT_MADE.test(bad), bad).toBe(true);
+    for (const ok of ['Moments', 'Open Moments', 'Try again in a moment.', 'One moment.', 'A good moment for a few words to {child}.', 'Give it a moment, then tap Keep again.']) expect(MOMENT_MADE.test(ok), ok).toBe(false);
+  });
+
+  it('[BRAND-MOMENTS-2] store metadata and website copy do not say Moments until counsel clears the name (X1, Q-X1-12)', () => {
+    expect(offenders(BRAND_MOMENTS_SCAN_SOURCES.flat(), /\bmoments\b/i)).toEqual([]);
+  });
+
+  it('[BRAND-MOMENTS-2] the scan reaches the pages leaves: a pages line that says Moments is an offender', () => {
+    expect(PAGES.length).toBeGreaterThan(0);
+    // Derived from the same constant the scan uses: dropping PAGES there turns this red.
+    expect(BRAND_MOMENTS_SCAN_SOURCES).toContain(PAGES);
+    const fixture: Leaf = { path: 'pages.fixture.line', text: 'Moments, a place for your photos.' };
+    expect(offenders([...BRAND_MOMENTS_SCAN_SOURCES.flat(), fixture], /\bmoments\b/i)).toEqual([`pages.fixture.line: ${fixture.text}`]);
+  });
+
+  it('[BRAND-MOMENTS-3] BRAND.md names Moments as a label and a place, and keeps the note row', () => {
+    const brand = DOCS.find((d) => d.path === 'BRAND.md')!.text;
+    expect(brand).toMatch(/\| The fourth tab and its place \| Moments /);
+    expect(brand).toMatch(/\| Short piece someone makes \| note \|[^\n]*moment \(as the name of a note/);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -1325,5 +1371,21 @@ describe('claims that must be true of what the first build does', () => {
   it('the site and pages promise only the fixes the first build makes: ums, repeats and family names, not grammar or any misheard word (Q5 row 1)', () => {
     const overclaim = /grammar|we was|misheard word/i;
     expect(offenders([...SITE, ...PAGES], overclaim)).toEqual([]);
+  });
+});
+
+describe('push and saved-moment wording (wave 2)', () => {
+  it('"plenty" is not the closing word of every push: at most three of the evening and gentle-return lines use it', () => {
+    const lines = [...en.notifications.evening.map((v) => v.body), en.notifications.gentleReturn.body];
+    expect(lines.length).toBe(9);
+    expect(lines.filter((b) => /\bplenty\b/i.test(b)).length).toBeLessThanOrEqual(3);
+  });
+
+  it('the Tonight saved card has no title: a private letter reaches it too, so "the book" would be false for it', () => {
+    expect(Object.keys(en.tonight.afterSave)).not.toContain('title');
+  });
+
+  it('the welcome body names what is kept, so "It" never stands alone', () => {
+    expect(en.onboarding.welcome.body).not.toMatch(/(^|\. )It('s| is)? /);
   });
 });

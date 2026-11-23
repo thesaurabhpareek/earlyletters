@@ -19,11 +19,22 @@ export function bindNoticeOwner(read: () => string | null): void {
   reader = read;
 }
 
+/** Who is signed in right now. A sheet reads it BEFORE its await and passes it to `leave`. */
+export function noticeOwner(): string | null {
+  return reader();
+}
+
 export const familyNotice = {
-  /** Called by a sheet just before it closes. A newer line replaces an older one. */
-  leave(message: string): void {
-    const owner = reader();
-    waiting = owner === null ? null : { message, owner };
+  /**
+   * Called by a sheet just before it closes. A newer line replaces an older one. `owner` is who was signed in when
+   * the sheet started its await (noticeOwner()): when someone else is signed in by the time it resumes, or nobody is,
+   * the line is dropped, so a late continuation can never stamp A's line with B's account. `owner` is required: a
+   * default read at call time would be the owner AFTER the await. A dropped line also leaves a line B already has
+   * waiting as it is: a stale A never clears or replaces it.
+   */
+  leave(message: string, owner: string | null): void {
+    if (owner === null || owner !== reader()) return;
+    waiting = { message, owner };
   },
   /** The line waiting for the tab, once: it is cleared as it is read. */
   take(): string | null {

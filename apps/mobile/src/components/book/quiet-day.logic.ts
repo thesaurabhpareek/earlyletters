@@ -39,11 +39,18 @@ export function markOn(entries: readonly Entry[], occurredOn: string): Entry | n
 
 /**
  * What the Book lists: every entry, except a mark on a day that also has a letter or note
- * (that day already has words, so the mark would only add a gap-shaped line).
+ * (that day already has words, so the mark would only add a gap-shaped line), and except a second
+ * mark for one day (two phones of one author: one row, NS-07-C5-10; a display rule, no data change).
  */
 export function visibleInBook<T extends Pick<Entry, 'kind' | 'occurredOn'>>(entries: readonly T[]): T[] {
   const written = new Set(entries.filter((e) => !isQuietMark(e)).map((e) => e.occurredOn));
-  return entries.filter((e) => !isQuietMark(e) || !written.has(e.occurredOn));
+  const marked = new Set<string>();
+  return entries.filter((e) => {
+    if (!isQuietMark(e)) return true;
+    if (written.has(e.occurredOn) || marked.has(e.occurredOn)) return false;
+    marked.add(e.occurredOn);
+    return true;
+  });
 }
 
 /** Entries that may be read aloud, printed or moved into the book: words a person said or typed. */

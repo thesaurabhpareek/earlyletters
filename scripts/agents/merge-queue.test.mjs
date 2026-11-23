@@ -373,6 +373,22 @@ test("--repo is validated", () => {
   assert.equal(parseArgs(["--base", "main"]).base, "main");
 });
 
+test("[BL-1480] a build path is native: the five build inputs and apps/mobile/patches/ hold a PR on the macOS checks", () => {
+  const added = ["apps/mobile/metro.config.js", "apps/mobile/store.config.json", "apps/mobile/version.json", "apps/mobile/src/lib/privacy-manifest.ts", "apps/mobile/src/lib/permission-copy.ts", "apps/mobile/patches/expo+57.patch"];
+  for (const f of added) {
+    assert.equal(touchesNative([f]), true, f);
+    assert.equal(touchesNative([{ filename: "docs/moved.md", previous_filename: f }]), true, `${f} (rename out)`);
+  }
+  for (const f of ["apps/mobile/ios/Podfile", "apps/mobile/modules/x/y.swift", "apps/mobile/app.config.ts", "apps/mobile/eas.json", "package-lock.json"]) assert.equal(touchesNative([f]), true, f);
+  // Near misses stay out: a sibling file name, another app's file of the same name, a nested copy.
+  for (const f of ["apps/mobile/metro.config.js.md", "apps/mobile/src/lib/privacy-manifest.test.ts", "apps/mobile/src/lib/permission-copy-notes.ts", "apps/web/version.json", "apps/mobile/src/version.json", "apps/mobile/patchesx/a", "docs/apps/mobile/store.config.json", "apps/mobile/src/lib/build-env.ts"]) assert.equal(touchesNative([f]), false, f);
+});
+
+test("[BL-1480] every native path but the generated ios/ folder is also on the security-lens list (the lens list is wider)", () => {
+  const samples = ["apps/mobile/modules/x/y.swift", "apps/mobile/app.config.ts", "apps/mobile/eas.json", "package-lock.json", "apps/mobile/metro.config.js", "apps/mobile/store.config.json", "apps/mobile/version.json", "apps/mobile/src/lib/privacy-manifest.ts", "apps/mobile/src/lib/permission-copy.ts"];
+  for (const f of samples) assert.equal(touchesSecurityLens([f]), true, f);
+});
+
 test("rename out of a native path is caught through previous_filename", async () => {
   assert.equal(touchesNative([{ filename: "docs/moved.m", previous_filename: "apps/mobile/ios/Podfile" }]), true);
   assert.equal(touchesNative([{ filename: "docs/a.md", previous_filename: "docs/b.md" }]), false);

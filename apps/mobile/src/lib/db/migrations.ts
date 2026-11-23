@@ -592,3 +592,20 @@ export function migrate(db: SqlDb, ctx: MigrationContext, migrations: Migration[
   }
   return { from, to, newer: false };
 }
+
+/**
+ * Boot sweep of the two guard-window keys (defence in depth after BL-412 and BL-1497). merge.ts takeProvenance opens
+ * settings('provenance_takeover') and settings('raw_takeover') for one statement each, inside the pull's transaction,
+ * and deletes them in a finally; a rollback removes them too, so a stale row should not exist. If one did (an older
+ * build, a crash), it would hold a guard open for that entry for ever. openStore calls this after migrate and before
+ * any pull can run. Cheap (two keyed deletes), idempotent, never throws, logs nothing. Never call it from a pull.
+ */
+export function sweepTakeoverKeys(db: SqlDb): void {
+  for (const key of ['provenance_takeover', 'raw_takeover']) {
+    try {
+      db.run('DELETE FROM settings WHERE key = ?', key);
+    } catch {
+      // a failed sweep never blocks launch; the next open tries again
+    }
+  }
+}

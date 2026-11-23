@@ -6,13 +6,14 @@
  * keeps 28 Feb in a common year), so the tab and the reminder agree on the day.
  */
 import { ageOn, parseIsoDate } from '../age';
+import type { RegistryId } from './registry';
 import { reasonRank, type Reason } from './reasons';
 import { holidaysOn, type HolidayKey, type HolidayRegion } from './holidays';
 
 /** The occasion reasons this file can give, all members of the shared closed list (reasons.ts, 6.4a). */
 export type OccasionReason = Extract<Reason, 'RSN-MARKED' | 'RSN-FIRST' | 'RSN-BIRTHDAY' | 'RSN-MONTHDAY' | 'RSN-HOLIDAY'>;
 /** S1 typed day, S2 ticked day, S3 birth dates, H the shipped holiday table (no S number in the spec yet). */
-export type OccasionSource = 'S1' | 'S2' | 'S3' | 'H';
+export type OccasionSource = Extract<RegistryId, 'S1' | 'S2' | 'S3' | 'H'>;
 
 export interface MarkedDay {
   /** typed: the parent typed a day (S1). ticked: a chosen Day (S2). first: a first the parent marked (RSN-FIRST). */

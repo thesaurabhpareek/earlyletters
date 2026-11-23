@@ -40,7 +40,7 @@ vi.mock('../modules/scribe-files', () => ({
   },
 }));
 
-const { createMomentsStore, endMomentsSession, eraseMomentsFile, MomentsStoreError } = await import('../src/lib/moments/store');
+const { createMomentsStore, momentsStore, endMomentsSession, eraseMomentsFile, MomentsStoreError, turnOffMoments } = await import('../src/lib/moments/store');
 const { parseMoments, serializeMoments, emptyMoments } = await import('../src/lib/moments/store.logic');
 const { expoMomentsPort, readMoments, writeMoments, removeMoments, MOMENTS_FILE, MOMENTS_TMP } = await import('../src/lib/moments/store-file');
 
@@ -191,18 +191,72 @@ describe('[R221] the owner check fails closed', () => {
     expect(names()).toEqual([MOMENTS_FILE]);
   });
 
-  it('a new sign-in removes another signed-in owner\'s file, keeps a local file, and keeps the same owner\'s own', async () => {
+  it('a new sign-in removes another signed-in owner\'s file and a local file nobody adopted, and keeps the same owner\'s own', async () => {
     seed(JSON.stringify(file(A)));
     fresh(A).setOwner(B);
     expect(names()).toEqual([]);
     seed(JSON.stringify(file('local')));
-    fresh('local').setOwner(B);
-    expect(names()).toEqual([MOMENTS_FILE]);
-    expect(JSON.parse(text()).owner).toBe('local');
+    fresh('local').setOwner(B); // a first sign-in that is not a claim: nothing was adopted, so the local file goes (CPO-30)
+    expect(names()).toEqual([]);
     removeMoments(expoMomentsPort()!);
     seed(JSON.stringify(file(B)));
     fresh(A).setOwner(B);
     expect(names()).toEqual([MOMENTS_FILE]);
+  });
+});
+
+describe('[CDO-24] the claim step adopts a local file only on an explicit confirm; sign-out keeps it', () => {
+  it('adoptLocal rewrites a local file to the new owner with every row, and the new owner reads it after setOwner', async () => {
+    seed(JSON.stringify(file('local')));
+    const s = fresh('local');
+    expect(await s.adoptLocal(A)).toBe('adopted');
+    expect(onDisk()).toEqual(file(A));
+    s.setOwner(A);
+    expect(names()).toEqual([MOMENTS_FILE]);
+    expect(s.load()).toMatchObject({ state: 'ok', file: { owner: A } });
+  });
+
+  it('adoptLocal leaves another owner\'s file alone and says none when there is no local file', async () => {
+    seed(JSON.stringify(file(B)));
+    expect(await fresh('local').adoptLocal(A)).toBe('none');
+    expect(onDisk().owner).toBe(B);
+    removeMoments(expoMomentsPort()!);
+    expect(await fresh('local').adoptLocal(A)).toBe('none');
+  });
+
+  it('sign-out (endMomentsSession) keeps a local file; a signed-in owner\'s file still goes; clearNow() takes both', async () => {
+    seed(JSON.stringify(file('local')));
+    expect(endMomentsSession()).toBe(true);
+    expect(onDisk().owner).toBe('local');
+    expect(momentsStore.clearNow()).toBe(true);
+    expect(names()).toEqual([]);
+    seed(JSON.stringify(file(A)));
+    expect(endMomentsSession()).toBe(true);
+    expect(names()).toEqual([]);
+  });
+
+  it('a failed adopt write says failed, leaves the local file byte for byte, and a retry then adopts it', async () => {
+    seed(JSON.stringify(file('local')));
+    const before = text();
+    const s = fresh('local');
+    h.mode = 'ignore'; // the new temp file cannot be excluded from the backup, so nothing is written
+    expect(await s.adoptLocal(A)).toBe('failed');
+    expect(text()).toBe(before);
+    h.mode = 'stick';
+    expect(await s.adoptLocal(A)).toBe('adopted');
+    expect(JSON.parse(text()).owner).toBe(A);
+  });
+
+  it('a local write still running when sign-out keeps the file is not deleted behind it', async () => {
+    const s = fresh('local');
+    let release!: () => void;
+    h.hold = new Promise<void>((r) => (release = r));
+    const running = s.addDayKey('2026-10-03');
+    await new Promise((r) => setTimeout(r, 0));
+    s.clearNow(true);
+    release();
+    expect(await running).toEqual({ ok: false, code: 'moments_write_dropped' });
+    expect(onDisk().owner).toBe('local');
   });
 });
 
@@ -218,6 +272,34 @@ describe('[CDO-23] launch cleanup removes rows for a book the phone no longer li
     seed(JSON.stringify(file()));
     await fresh().cleanupAtLaunch(null);
     expect(onDisk().homePlace).toEqual({ [BOOK]: 'ext:place-2' });
+  });
+
+  it('[BL-1541] a foreign file that will not go makes the cleanup reject with the typed code, and the file stays for the next launch', async () => {
+    seed(JSON.stringify(file(B)));
+    h.disk.undeletable.add(`${dir()}/${MOMENTS_FILE}`);
+    const s = fresh(A);
+    await expect(s.cleanupAtLaunch([BOOK])).rejects.toThrow(MomentsStoreError);
+    await expect(s.cleanupAtLaunch([BOOK])).rejects.toMatchObject({ code: 'moments_file_not_removed' });
+    expect(names()).toContain(MOMENTS_FILE); // positive control: it is still there
+    h.disk.undeletable.clear();
+    await fresh(A).cleanupAtLaunch([BOOK]); // the next launch removes it
+    expect(names()).toEqual([]);
+  });
+
+  it('[BL-1541] a kept local file that cannot be removed is not an error: it is left alone', async () => {
+    seed(JSON.stringify(file('local')));
+    h.disk.undeletable.add(`${dir()}/${MOMENTS_FILE}`);
+    await expect(fresh(A).cleanupAtLaunch([BOOK])).resolves.toBeUndefined();
+  });
+});
+
+describe('[BL-1541] Turn off wipes the file (R246 item 2)', () => {
+  it('turnOffMoments deletes the file, a local one too, and temp, and says true', () => {
+    for (const o of [A, 'local']) {
+      seed(JSON.stringify(file(o)));
+      expect(turnOffMoments()).toBe(true);
+      expect(names()).toEqual([]);
+    }
   });
 });
 
