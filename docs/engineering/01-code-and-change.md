@@ -36,6 +36,10 @@ Early Letters is built mostly by agents, many on open-weight models with small c
 
 **CODE-R05 (MUST)** Any change to cleaning behaviour bumps `ENGINE_VERSION` in `packages/core/src/pipeline.ts` with a dated comment and updates the golden corpus. *Why:* every stored letter must be re-derivable by the engine that produced it (CORE-08). *Enforced by:* PR template checkbox (develop); golden test `packages/core/test/golden.test.ts` merged in #28.
 
+**CODE-R21 (MUST)** A PR may target another PR's branch (a stack) only when its base is expected to merge within 48 hours. The first line of its body says `Stacked on #N` (the PR template's hint); the `Base:` and `Branch:` lines the `stacked-prs` skill asks for (section 3) follow on the next lines, so a reader and a script find the base on line 1 and the detail below it. If the base has not merged after 48 hours, close the stacked PR and reissue it from `develop` as a smaller change, because retargeting to `develop` while the base is open pulls the base's commits into the diff. When the base merges, retarget to `develop` and merge `origin/develop` in, as the skill's section 4 says. Slices merge only into `develop`, from the bottom up. *Why:* GitHub diffs a stacked head against its base branch, so a stale base makes a small PR look huge and unreviewable: #167 and #168 target `docs/knowledge-leads` (the head of #164, open). The 48-hour limit and the `Stacked on #N` first line are this rule's own requirements; the skill sets neither (it has no age limit and asks for `Base:` and `Branch:` first). `docs/DEVELOPMENT.md` line 15 and the PR template already ask for the base to be named. *Enforced by:* review (principal-architect) and the PR template hint (a comment, not a check). Not yet a check on the 48 hours or the first line: gap CODE-G6.
+
+**CODE-R22 (MUST)** Every PR body has a `Done when:` line that names the observable result and the evidence that shows it (a test name, a CI run id, or a device run). For a change to mobile behaviour, the evidence is a device run: build number, device, iOS version and result. Simulator evidence is labelled "simulator"; it may support a release gate but never closes one. *Why:* green CI and a simulator are not proof that the app works on a phone. ADR 0027 line 3 flipped a default "on the simulator evidence" and left the device half due later. AIE-R12 asks for a `Done when:` line on agent backlog tasks (`docs/engineering/09-ai-assisted-engineering.md` line 69); this rule carries it into the PR body. *Enforced by:* review (principal-architect); the PR template does not have the line yet, so the template line is gap CODE-G5 (owner: ops, row to be filed).
+
 ### Code shape
 
 **CODE-R06 (SHOULD)** New functions stay under about 50 lines and new files under about 300 lines; files already over (`apps/mobile/src/lib/store.ts` 734, `packages/core/src/verify.ts` 498) must not grow, and are split when touched for other reasons. *Why:* a small model must hold the whole unit in context. *Enforced by:* review.
@@ -92,6 +96,8 @@ Import cycles are checked, though no rule number names them yet: `apps/mobile/te
 
 Before opening a PR:
 - [ ] One concern? Under 400 lines and 20 files (CODE-R02)? If not, split by layer: types, then logic plus tests, then wiring.
+- [ ] Stacked? Only on a PR due to merge within 48 hours, with `Stacked on #N` first (CODE-R21).
+- [ ] A `Done when:` line naming its evidence; a device run for mobile behaviour (CODE-R22).
 - [ ] New logic that is not UI lives in `packages/core` (or a `*.logic.ts` beside the screen) with unit tests.
 - [ ] No new enum or domain type outside `packages/core/src/domain.ts`.
 - [ ] Errors you throw have a `code`; messages hold no user data.

@@ -315,8 +315,9 @@ jobs:
           path: ${{ runner.temp }}/xcodebuild.log
           retention-days: 14
 
-  # Which files changed: the Debug compile above keeps its native-only scope; the launch check below runs on every
-  # mobile change. A diff git cannot answer runs the compile (never a reason to skip).
+  # Which files changed: the Debug compile above runs for a build path (the same list as NATIVE_PATHS in
+  # scripts/agents/merge-queue.mjs and docs/ops/RELEASE.md 3.4, so a PR that the merge queue holds on both macOS checks
+  # gets both); the launch check below runs on every mobile change that reaches this workflow. A diff git cannot answer runs the compile (never a reason to skip).
   changes:
     name: native files changed?
     runs-on: ubuntu-24.04
@@ -337,7 +338,7 @@ jobs:
           set -uo pipefail
           native=true
           if { [ "$EVENT" = pull_request ] || [ "$EVENT" = push ]; } && files="$(git diff --name-only "${BASE}...${HEAD}")"; then
-            if ! grep -qE '^(apps/mobile/modules/|apps/mobile/app\.config\.ts$|apps/mobile/package\.json$|apps/mobile/ios/|package-lock\.json$|\.github/workflows/ios-compile\.yml$)' <<< "$files"; then
+            if ! grep -qE '^(apps/mobile/modules/|apps/mobile/app\.config\.|apps/mobile/package\.json$|apps/mobile/ios/|apps/mobile/eas\.json$|apps/mobile/metro\.config\.js$|apps/mobile/store\.config\.json$|apps/mobile/version\.json$|apps/mobile/src/lib/(privacy-manifest|permission-copy)\.ts$|apps/mobile/patches/|package-lock\.json$|\.github/workflows/ios-compile\.yml$)' <<< "$files"; then
               native=false
             fi
           fi
