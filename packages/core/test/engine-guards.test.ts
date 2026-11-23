@@ -54,7 +54,9 @@ const esc = (s: string): string => s.replace(/\$/g, '\\$');
  * uses the name under another name: a renamed import (`import { name as x }`), a const alias (`const x = name`), a
  * renamed destructure (`const { name: x } = mod`), a namespace call (`mod.name(`), or a name another file re-exports
  * under a new one (`export { name as y }`, `export const y = name`), which is followed across files until nothing new
- * turns up. A line that only re-exports is not a call. Files are `{ path, text }` so a planted case can sit beside the
+ * turns up. A call with type arguments (`name<T>(`) and a computed access with a plain string key (`mod['name'](`) are
+ * calls too (BL-1879). Not caught, by design: a key built at run time (`mod['apply' + 'Edits'](`, `mod[key](`), because no
+ * text scan can know what it holds; the plain-text floor in `guardCallers` and code review stay the backstop. A line that only re-exports is not a call. Files are `{ path, text }` so a planted case can sit beside the
  * real tree without being written to disk.
  */
 export function callersOf(files: readonly { path: string; text: string }[], name: string): string[] {
@@ -88,7 +90,12 @@ export function callersOf(files: readonly { path: string; text: string }[], name
       grew = grow(new RegExp(`\\bexport\\s+const\\s+(${ID})\\s*=\\s*(${ID})\\s*;`, 'g'), f.text, 2, 1) || grew;
     }
   }
-  const call = new RegExp(`(?<![\\w$.])(?:${alt()})\\s*\\(|\\b${ID}\\.(?:${alt()})\\s*\\(`);
+  // BL-1879: a generic call `name<T>(` and a computed access with a plain string key `x['name'](` are calls too.
+  // The type arguments may hold no `;`, `{`, `}` or `=`; a stray `name < a > (b)` comparison is only ever an extra flag.
+  const generic = '(?:\\s*<[^;{}=]*?>)?';
+  const call = new RegExp(
+    `(?<![\\w$.])(?:${alt()})${generic}\\s*\\(|\\b${ID}\\.(?:${alt()})${generic}\\s*\\(|\\b${ID}\\s*\\[\\s*(['"\`])(?:${alt()})\\1\\s*\\]${generic}\\s*\\(`,
+  );
   return code.filter((f) => call.test(f.text)).map((f) => f.path);
 }
 
@@ -170,13 +177,43 @@ describe('[FR-AIS-02] every machine edit goes through the verifier, with no bypa
     'planted/destructure.ts': "import * as core from '@scribe/core';\nconst { applyEdits: patch } = core;\nexport const run = (r: string, e: unknown[]) => patch(r, e);",
     'planted/reexport.ts': "export { applyEdits as quietFix } from './verify';",
     'planted/reexport-caller.ts': "import { quietFix } from './reexport';\nexport const run = (r: string, e: unknown[]) => quietFix(r, e);",
+    'planted/computed.ts': "import * as core from '@scribe/core';\nexport const run = (r: string, e: unknown[]) => core['applyEdits'](r, e);",
+    'planted/computed-dq.ts': 'import * as core from "@scribe/core";\nexport const run = (r: string, e: unknown[]) => core[ "applyEdits" ]<string>(r, e);',
+    'planted/generic.ts': "import { applyEdits } from '@scribe/core';\nexport const run = (r: string, e: unknown[]) => applyEdits<string>(r, e);",
+    'planted/generic-ns.ts': "import * as core from '@scribe/core';\nexport const run = (r: string, e: unknown[]) => core.applyEdits<Map<string, number>>(r, e);",
+    'planted/generic-alias.ts': "import { applyEdits as patch } from '@scribe/core';\nexport const run = (r: string, e: unknown[]) => patch<string>(r, e);",
+    'planted/dynamic-key.ts': "import * as core from '@scribe/core';\nexport const run = (r: string, e: unknown[]) => core['apply' + 'Edits'](r, e);",
     'planted/comment-only.ts': "// applyEdits(raw, edits) is only mentioned here\n/* patchWords(raw) too */\nexport const x = 1;",
   };
   const plantedFiles = Object.entries(planted).map(([path, text]) => ({ path, text }));
 
   it('[BL-1843] an aliased, namespaced, destructured or re-exported caller of applyEdits is flagged; a comment is not', () => {
     const hit = callersOf(plantedFiles, 'applyEdits').sort();
-    expect(hit).toEqual(['planted/const-alias.ts', 'planted/destructure.ts', 'planted/namespace.ts', 'planted/reexport-caller.ts', 'planted/renamed-import.ts']);
+    expect(hit).toEqual([
+      'planted/computed-dq.ts',
+      'planted/computed.ts',
+      'planted/const-alias.ts',
+      'planted/destructure.ts',
+      'planted/generic-alias.ts',
+      'planted/generic-ns.ts',
+      'planted/generic.ts',
+      'planted/namespace.ts',
+      'planted/reexport-caller.ts',
+      'planted/renamed-import.ts',
+    ]);
+  });
+
+  it('[BL-1879] computed access and generic calls are flagged; a key built at run time is the one documented limit', () => {
+    const only = (p: string) => plantedFiles.filter((f) => f.path === p);
+    for (const p of ['computed', 'computed-dq', 'generic', 'generic-ns', 'generic-alias']) {
+      expect(callersOf(only(`planted/${p}.ts`), 'applyEdits'), p).toEqual([`planted/${p}.ts`]);
+      expect(guardCallers(only(`planted/${p}.ts`), 'applyEdits'), p).toEqual([`planted/${p}.ts`]);
+    }
+    expect(callersOf(only('planted/dynamic-key.ts'), 'applyEdits')).toEqual([]);
+    const real = files.map((f) => ({ path: rel(f), text: read(f) }));
+    expect(guardCallers([...real, ...only('planted/computed.ts'), ...only('planted/generic.ts')], 'applyEdits').sort()).toEqual(
+      ['planted/computed.ts', 'planted/generic.ts', ...REAL_ONLY].sort(),
+    );
   });
 
   it('[BL-1843] the old text-only scan misses the aliased callers the new scan finds (the defect, shown)', () => {
