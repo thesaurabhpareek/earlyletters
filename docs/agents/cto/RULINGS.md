@@ -1102,3 +1102,17 @@ Founder standing approval and hard limits are quoted in the Batch 6 section of `
 - Door: two-way. Way back: one line from the founder narrows or revokes this, and `git revert` undoes the edits (not a migration, a secret or a store submission already done).
 - Revisit when: a physical act is missed because it sat in a place other than the queue file; or the machine account (CR-20) exists and the fence can check identity.
 - Founder-only: no. Physical acts only, per item 6.
+
+### CR-177 Production ready from now on (23 Nov 2026, Karma, on the founder's words)
+- Status: in effect from the merge of this PR. D-170 records the founder's words: "Server on. We build everything production ready now onwards. Analytics on. Server on. Account creation on. Everything."
+- Question: what does "done" mean for new work now that servers, accounts and analytics are on?
+- Ruling, definition of done for any feature in the launch set:
+  - 1. It ships on. A default-off flag is not the shipping state. A feature is either on in the builds that ship to people, or it is explicitly out of the launch set, with a backlog row that says so and says when it comes back.
+  - 2. Words counsel has not cleared are held by not building the sentence, never by a dark flag. A PR marked HOLD-FOR-COUNSEL stays held, and legal text still publishes only after counsel has seen it.
+  - 3. Tests, trace rows, accessibility and the device rows are part of done, not a follow-up. A kill switch or remote pause that fails open is allowed as an operating tool; it is not the shipping default.
+  - 4. PROPOSED copy keys introduced earlier behind a flag (for example the Book backup line from PR #1672) are reviewed one by one: ship on if the words are cleared, else the key and its use are removed. None stays as a dark key.
+  - 5. Unchanged: the constitution and the privacy rules in `CLAUDE.md` (analytics stay opt-in and content-free); the age and region checks (18 and over, blocked countries, `docs/regulatory`, FILE 28, BL-553) are built and verified before public sign-up; secrets, vendor consoles, hosted migrations and store submission stay physical acts in `docs/release/FOUNDER_QUEUE.md`.
+- What this does not change: CR-176 (nobody is asked to approve, review, merge or paste), the CR-70 gates, CR-27 fences.
+- Door: two-way. Way back: a later founder entry in `docs/DECISIONS.md`.
+- Founder-only: no.
+- Signed: Karma

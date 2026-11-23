@@ -672,6 +672,7 @@ Renumbered on 15 Oct 2026 by the merge train: these six entries were drafted as 
 | D-166 | Founder approves the council recommendations on O-47 (option C, individual under D-134) and O-48 (value-prop pair). His approval does not supply the reopening-trigger line (his to write by 27 Nov 2026) and does not publish the O-48 text (unpublished until counsel answers Q130) | Decided (founder, on the council recommendations); recorded by the Chief of Staff (Claude role); merged by Karma under D-132 | Yes | 2026-11-21 |
 | D-167 | The founder confirms D-118 (the website copy names his child, `apps/web/src/content/site.ts` only) and makes it a standing exception in `CLAUDE.md`, so sessions stop flagging it. D-118's "for now" and its review point are not withdrawn | Decided (founder); recorded by claude-14 (Claude role); merged by Karma under D-132 | Yes | 2026-11-21 |
 | D-168 | Standing delegation: Karma and the exec team decide and merge everything, including decisions that carry his name; nobody asks him to approve, comment, merge or paste; only physical acts reach him, listed once in `docs/release/FOUNDER_QUEUE.md`. The constitution and privacy rules are unchanged. Amends D-125 for who merges only. Recorded by a Claude role; merged by Karma under D-132 and CR-176 | Decided (founder) | Yes | 2026-11-22 |
+| D-170 | Servers, accounts and analytics on; production ready from now on. Servers on in every build profile that ships to people (production, preview, testflight); supersedes the 20 Nov default "Build 13 servers off"; confirms D-157, D-160, D-161. The constitution, the privacy rules, counsel's review of legal text and the age and region checks are unchanged | Decided (founder) | Yes | 2026-11-23 |
 
 ### D-100 Server features are on in v1.0 (founder)
 - **Status:** Decided by the founder, 13 Oct 2026, from options offered (on-device only; server on; on-device plus an anonymous status endpoint). PRD V2 M14.
@@ -1312,4 +1313,36 @@ These carry out the fleet rule and were not said by him: a cap or a budget that 
 - **Not claimed:** any change to the three required checks, to CODEOWNERS or to branch protection (guards are Karma's with the exec team, CR-176 item 5); any approval of a specific spend, submission or legal text.
 - **Numbering:** `node scripts/agents/next-id.mjs` returned D-168 on `develop` (D-167 is the last entry). Re-check before merging.
 - **Amends:** D-125, for who merges only (item 5). Otherwise none by text. It is the standing basis for replacing earlier founder decisions through new entries under CR-176; no earlier entry is edited.
+- **Owner:** founder; Karma merges.
+
+### D-170 Servers, accounts and analytics on; production ready from now on (founder, 23 Nov 2026)
+- **Status:** Decided by the founder in chat on 23 Nov 2026 (UTC). Recorded by a Claude role as a docs-only entry. Entries that record the founder's own words are merged by Karma under D-132 and CR-176. CR-177 in `docs/agents/cto/RULINGS.md` turns the second half into a rule.
+- **Source, the founder's chat message to Karma, verbatim and all his:**
+
+  ```text
+  Server on. We build everything production ready now onwards. Analytics on. Server on. Account creation on. Everything.
+  ```
+
+- **Where the quote comes from:** typed by the founder in a chat with Karma. A session copied it here; nothing was added or reworded. The chat itself is not stored in the repo.
+- **Decision:**
+  1. Server features are on: the servers, account creation and sign-in, and analytics.
+  2. From now on everything is built production ready. No new work ships dark behind a default-off flag as its normal state (CR-177 sets the definition of done).
+- **Effects, build profiles (a list for the config PR; `apps/mobile/eas.json` is not edited here).** Servers on in every profile that ships to people: `production`, `preview`, `testflight`. Read from `apps/mobile/eas.json` on `develop` at the time of writing:
+  - `EXPO_PUBLIC_SERVER_FEATURES`: `testflight` is `off` and changes to `on`; `preview` and `production` are already `on`.
+  - `EXPO_PUBLIC_ANALYTICS`: `off` in `production`, `preview` and `testflight`; changes to `on` in all three. The consent ask, the content-free allowlist and the gate list of D-163 stay built and in force (see "What this does not change").
+  - `EXPO_PUBLIC_ACCOUNT_DELETION`: `on` in `production`; absent in `preview` and `testflight`, so it is added as `on` there, so that a build with accounts can delete one.
+  - Not named by the founder and left to each feature's own row under CR-177 (ship on if cleared, or out of the launch set with a backlog row saying so): `EXPO_PUBLIC_BACKUP` and `EXPO_PUBLIC_STATUS_REPORT` (`off` in all three), and the store-flag table in `scripts/release/store-flags.mjs`.
+  - `development` and `e2e` are not profiles that ship to people; they are unchanged.
+  - The production flag guard test (`apps/mobile/test/g6-production-flags-off.test.ts` and its neighbours) is updated in the same config PR to expect on. That PR is BL-1867, reviewed on its own.
+- **Supersedes:** the 20 Nov default "1 servers off for Build 13" recorded in `docs/engineering/readiness-20nov/DECISIONS-20nov.md` (lines about 68 to 73) and the two lines of `docs/product/prd/17-engineering-project-plan.md` that repeat it (about lines 405 and 654), together with the same reading in `docs/engineering/readiness-20nov/DELIVERY-PLAN.md`, `docs/product/READINESS-20nov.md` and `docs/engineering/readiness-20nov/data-security/council/cpo-design.md`. Those files are not edited by this entry and keep their text as history. They get no banner here: the repo's SUPERSEDED-BY banner convention (see the top of `docs/release/FOUNDER_QUEUE.md`) names a replacing document, and this entry is the replacement, so the pointer is added when those files are next edited. Where a plan line and this entry disagree, this entry wins.
+- **Confirms:** D-157 (server features on in the production backend), D-160 (sign-in required) and D-161 (three tabs; no "coming soon" surface).
+- **What this does NOT change:**
+  1. The constitution in `CLAUDE.md`: the machine may remove and repair, never add meaning; faithful edit only.
+  2. The privacy rules in `CLAUDE.md`: no entry text, transcript, audio or child name in analytics, logs or crash reports. Analytics stay opt-in and content-free, with the typed allowlist in `packages/analytics`. The items D-163 left open (consent wording, the account and region host, counsel's view, the LEGAL-REQ-043 privacy-manifest test, whether crash capture is on) stay open with their owners; this entry decides none of them.
+  3. Counsel must see legal text before it publishes: the privacy policy, terms and consent text. Pull requests marked HOLD-FOR-COUNSEL stay held. A sentence counsel has not cleared is held by not building the sentence (CR-177).
+  4. Account creation on does not remove the age and region checks: 18 and over, blocked countries, `docs/regulatory`, FILE 28 and BL-553. They are built and verified before public sign-up.
+  5. Secrets, vendor and store account consoles, hosted migrations and store submission remain physical acts, listed in `docs/release/FOUNDER_QUEUE.md`. Release rows BL-1871 to BL-1875 stand as written.
+- **Not claimed:** any approval of a specific spend, submission, migration or legal text; any change to the three required checks.
+- **Numbering:** `node scripts/agents/next-id.mjs` returned D-170 (D-169 is taken by an open pull request, #1673). Re-check before merging.
+- **Amends:** none by text. It replaces the 20 Nov default named above and narrows nothing in D-157, D-160, D-161 or D-163.
 - **Owner:** founder; Karma merges.
