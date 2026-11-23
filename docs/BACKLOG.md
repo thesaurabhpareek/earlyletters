@@ -10180,7 +10180,7 @@ Sources: the merged PRs #1654 to #1658, #1664, #1674 and #1681 to #1683, and the
 - Done when: line 193 no longer names a co-parent, nothing else in the file changes, and the PR body says what was removed and why.
 
 #### BL-1956 Sync stale ready rows and retire superseded rows (second status pass, 23 Nov 2026)
-- Status: in-review (PR #PRNUM). Mode: agent. Owner: product manager. Milestone: M15. Size: S. Depends on: none.
+- Status: in-review (PR #1774). Mode: agent. Owner: product manager. Milestone: M15. Size: S. Depends on: none.
 - Priority: Medium. Gate: none.
 - Satisfies: none new (backlog hygiene against the status audit of 23 Nov 2026, develop `863d10b41`).
 - Scope: mark rows done where a merged PR is the evidence, name what is left on partly done rows, retire BL-001, BL-252, BL-395 and BL-406, defer BL-343 and BL-369, rewrite BL-221, BL-411 (scope line) and BL-421, and move BL-389, BL-476, BL-251 and BL-221 to the head of the file as the release-critical open rows. Does BL-1641's work for BL-221.
