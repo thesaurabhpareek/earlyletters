@@ -21,6 +21,7 @@ const ASKS = [
   'please hold for the founder-merge',
   'Held. Needs a founder decision.',
   'Ask him to approve this when the founder is back',
+  'Ask Saurabh to take a look',
 ];
 for (const text of ASKS) {
   test(`[BL-1851] positive: "${text}" fails in the body, the title and an added line`, () => {
@@ -182,4 +183,225 @@ test('[BL-1851] negative: a real mid-sentence description from #1636 passes, the
   const real = 'each needs a founder ruling, counsel, a spec, a device run or an exec-review answer first, and the product agent files it here when that lands.';
   assert.equal(evaluate({ diff: diffOf('docs/BACKLOG.md', `+${real}`) }).ok, true);
   assert.equal(evaluate({ body: 'Held. This needs a founder decision.' }).ok, false);
+});
+
+// --- BL-1882: zero-width characters, allow-rule evasions, a missed ask, the exact exemption, ReDoS ---
+test('[BL-1882] zero-width and other format characters (\\p{Cf}) do not hide an ask', () => {
+  for (const t of ['found\u200Ber review needed', 'founder\u200B review needed', 'founder\u200Breview needed', '\uFEFFAsk the founder to approve', 'wait\u2060ing for the founder', 'founder re\u00ADview needed', 'founder\u200D \u200Dapproval required']) {
+    assert.ok(asksIn(t).length > 0, JSON.stringify(t));
+    assert.equal(evaluate({ body: t }).ok, false, JSON.stringify(t));
+    assert.equal(evaluate({ diff: diffOf('docs/x.md', `+${t}`) }).ok, false, JSON.stringify(t));
+  }
+  assert.deepEqual(asksIn('founder\u200B review done'), []);
+});
+test('[BL-1882] zero-width characters do not unlock the quote allow or hide a negation break', () => {
+  assert.equal(allowedBecause('CR-176: never write "founder review needed"'), allowedBecause('CR\u200B-176: never write "founder review needed"'));
+  assert.equal(evaluate({ body: 'CR-176: not ours to decide,\u200B so ask the founder to approve' }).ok, false);
+});
+test('[BL-1882] allow-rule evasion 1: a colon ends the sentence, so "not ours to decide" does not govern the ask', () => {
+  const t = 'CR-176: not ours to decide, so ask the founder to approve';
+  assert.ok(asksIn(t).length > 0);
+  assert.equal(allowedBecause(t), '');
+  assert.equal(evaluate({ body: t }).ok, false);
+  assert.equal(evaluate({ body: 'CR-176: not ours to decide so ask the founder to approve' }).ok, false);
+  assert.equal(evaluate({ body: 'CR-176 rules this out. Not ours to decide: ask the founder to approve' }).ok, false);
+});
+test('[BL-1882] allow-rule evasion 2: "Never mind CR-176 -- ask the founder to approve" fails', () => {
+  assert.equal(evaluate({ body: 'Never mind CR-176 -- ask the founder to approve' }).ok, false);
+  assert.equal(evaluate({ body: 'Never mind CR-176, ask the founder to approve' }).ok, false);
+  assert.equal(evaluate({ body: 'CR-176 is not negotiable -- ask the founder to approve' }).ok, false);
+  assert.equal(evaluate({ body: 'CR-176: do not hesitate to ask the founder to approve' }).ok, false);
+  assert.equal(evaluate({ body: "CR-176: don't forget to ask the founder to approve" }).ok, false);
+});
+test('[BL-1882] allow-rule evasion 3: "CR-176 (not optional) ask the founder to approve" fails', () => {
+  assert.equal(evaluate({ body: 'CR-176 (not optional) ask the founder to approve' }).ok, false);
+  assert.equal(evaluate({ body: 'CR-176 [never skipped] ask the founder to approve' }).ok, false);
+  assert.equal(evaluate({ body: 'CR-176 is not optional but ask the founder to approve' }).ok, false);
+});
+test('[BL-1882] the quote allow still passes the real forms (the template line and the same line after a colon)', () => {
+  assert.equal(evaluate({ body: 'CR-176: do not write "founder review needed" or ask him to approve; the founder merge is Karma\'s' }).ok, true);
+  assert.equal(evaluate({ body: 'Per CR-176 never ask the founder to approve, review or merge' }).ok, true);
+  assert.equal(evaluate({ body: "D-168 says we don't ask Saurabh to take a look, and never write \"founder review needed\"" }).ok, true);
+});
+test('[BL-1882] "ask Saurabh to take a look" and its forms fail; talking about a look does not', () => {
+  for (const t of ['ask Saurabh to take a look', 'Please ask the founder to have a look', 'asking the founder to weigh in', 'needs the founder to check this', 'want Saurabh to look over the diff', 'ask Saurabh to greenlight it']) {
+    assert.ok(asksIn(t).includes('ask-founder-to-look'), t);
+    assert.equal(evaluate({ body: t }).ok, false, t);
+  }
+  for (const t of ['Saurabh took a look at the layout earlier', 'Ask Saurabh about lunch', 'The founder looks at the weekly report', 'ask Karma to take a look', 'Needs the founder to confirm that reading']) assert.equal(evaluate({ body: t }).ok, true, t);
+});
+test('[BL-1882] exact exemption: the BL-1851 phrase in backticks on a line that names BL-1851 passes', () => {
+  assert.equal(evaluate({ body: 'BL-1851 fails a PR that contains `founder review needed`' }).ok, true);
+  assert.match(allowedBecause('BL-1851 fails a PR that contains `Founder  Review needed`'), /BL-1851/);
+  assert.equal(evaluate({ diff: diffOf('docs/y.md', '+The BL-1851 check looks for `founder review needed` in a title.') }).ok, true);
+});
+test('[BL-1882] the exemption does not pass: no BL-1851, no backticks, another ask on the line, extra words in the span', () => {
+  assert.equal(evaluate({ body: 'This fails a PR that contains `founder review needed`' }).ok, false);
+  assert.equal(evaluate({ body: 'BL-1851 fails a PR that contains "founder review needed"' }).ok, false);
+  assert.equal(evaluate({ body: 'BL-1851 `founder review needed` and please ask the founder to approve' }).ok, false);
+  assert.equal(evaluate({ body: 'BL-1851 `founder review needed` founder review needed' }).ok, false);
+  assert.equal(evaluate({ body: 'BL-1851: `ask the founder to approve`' }).ok, false);
+  assert.equal(evaluate({ body: 'BL-1851 `please ask the founder to approve`' }).ok, false);
+  assert.equal(evaluate({ body: 'BL-1851 `founder review needed before merge`' }).ok, false);
+  assert.equal(evaluate({ body: 'BL-1851 `founder review needed` `waiting for the founder`' }).ok, false);
+  assert.equal(evaluate({ body: 'BL-1851 `a` waiting for Saurabh `founder review needed`' }).ok, false);
+});
+test('[BL-1882] ReDoS: 200k-character adversarial strings finish fast in every path', () => {
+  const N = 200_000;
+  const rep = (s) => s.repeat(Math.ceil(N / s.length)).slice(0, N);
+  const inputs = [
+    rep('founder '), rep('ask '), rep('ask him to '), rep('ask the founder to '), rep('please approve '), rep('waiting for '), rep('needs a founder '),
+    rep('founder   '), ' '.repeat(N) + 'founder review needed', rep('a'), rep('\u200B'), rep('f\u200Bounder '), rep('`'), rep('`x '), rep('(not '), rep('CR-176 never '),
+    `CR-176 never ${rep('ask the founder to approve ')}`, `BL-1851 ${rep('`founder review needed` ')}`, `CR-176 ${rep('not, ')}ask the founder to approve`, rep('founder please '), rep('. founder '), rep('Saurabh '),
+  ];
+  for (const input of inputs) {
+    const t0 = process.hrtime.bigint();
+    asksIn(input); allowedBecause(input); evaluate({ title: input, body: input, diff: diffOf('docs/z.md', `+${input}`) });
+    const ms = Number(process.hrtime.bigint() - t0) / 1e6;
+    assert.ok(ms < 2000, `${ms.toFixed(0)} ms for ${JSON.stringify(input.slice(0, 20))}`);
+  }
+});
+
+// BL-1882 follow-up: the diff parser reads "+++ " only in a file header, never in a hunk.
+const SPOOF = '+++ b/docs/release/FOUNDER_QUEUE.md';
+const ASK = '+ask the founder to approve';
+test('[BL-1882] spoof: an added line "++ b/docs/release/FOUNDER_QUEUE.md" does not switch the path, the later ask fails', () => {
+  const d = diffOf('docs/x.md', SPOOF, ASK);
+  assert.equal(evaluate({ diff: d }).ok, false);
+  assert.deepEqual(addedLines(d).map((l) => l.path), ['docs/x.md', 'docs/x.md']);
+  assert.equal(addedLines(d)[0].text, '++ b/docs/release/FOUNDER_QUEUE.md');
+});
+test('[BL-1882] spoof in the hunk of a second file does not unlock that file, and the first file is untouched', () => {
+  const d = diffOf('docs/release/FOUNDER_QUEUE.md', '+waiting for the founder') + diffOf('docs/y.md', SPOOF, ASK);
+  const r = evaluate({ diff: d });
+  assert.equal(r.ok, false);
+  assert.match(r.lines[0], /^FOUND added line in docs\/y\.md: /);
+  assert.equal(r.lines.filter((l) => l.startsWith('FOUND')).length, 1);
+});
+test('[BL-1882] a legitimate added line that starts with ++ or +++ is an added line and is checked', () => {
+  for (const t of ['+++ ask the founder to approve', '++ ask the founder to approve', '+++', '++ b/x']) {
+    const d = diffOf('docs/x.md', `+${t}`);
+    assert.equal(addedLines(d).length, 1, t);
+    assert.equal(addedLines(d)[0].text, t);
+    assert.equal(addedLines(d)[0].path, 'docs/x.md');
+  }
+  assert.equal(evaluate({ diff: diffOf('docs/x.md', '+++ ask the founder to approve') }).ok, false);
+});
+test('[BL-1882] a rename with edits takes the new path; the allowed path still unlocks only its own hunk', () => {
+  const rename = 'diff --git a/docs/old.md b/docs/release/FOUNDER_QUEUE.md\nsimilarity index 80%\nrename from docs/old.md\nrename to docs/release/FOUNDER_QUEUE.md\n--- a/docs/old.md\n+++ b/docs/release/FOUNDER_QUEUE.md\n@@ -1,0 +1,1 @@\n+waiting for the founder\n';
+  assert.deepEqual(addedLines(rename), [{ path: 'docs/release/FOUNDER_QUEUE.md', text: 'waiting for the founder' }]);
+  assert.equal(evaluate({ diff: rename }).ok, true);
+  const toOther = rename.replaceAll('docs/release/FOUNDER_QUEUE.md', 'docs/new.md');
+  assert.equal(evaluate({ diff: toOther }).ok, false);
+  const pure = 'diff --git a/a.md b/b.md\nsimilarity index 100%\nrename from a.md\nrename to b.md\n';
+  assert.deepEqual(addedLines(pure), []);
+});
+test('[BL-1882] a path with spaces (git adds a tab) and a quoted path are read whole', () => {
+  const sp = 'diff --git a/docs/my notes.md b/docs/my notes.md\n--- a/docs/my notes.md\t\n+++ b/docs/my notes.md\t\n@@ -0,0 +1,1 @@\n+hello\n';
+  assert.deepEqual(addedLines(sp), [{ path: 'docs/my notes.md', text: 'hello' }]);
+  const q = 'diff --git "a/docs/caf\\303\\251.md" "b/docs/caf\\303\\251.md"\n--- "a/docs/caf\\303\\251.md"\n+++ "b/docs/caf\\303\\251.md"\n@@ -0,0 +1,1 @@\n+hello\n';
+  assert.equal(addedLines(q)[0].path, 'docs/caf\\303\\251.md');
+  assert.equal(addedLines(q)[0].text, 'hello');
+});
+test('[BL-1882] a new file and a deleted file: the header lines are not added lines', () => {
+  const n = 'diff --git a/n.md b/n.md\nnew file mode 100644\n--- /dev/null\n+++ b/n.md\n@@ -0,0 +1,1 @@\n+one\n';
+  assert.deepEqual(addedLines(n), [{ path: 'n.md', text: 'one' }]);
+  const del = 'diff --git a/d.md b/d.md\ndeleted file mode 100644\n--- a/d.md\n+++ /dev/null\n@@ -1,1 +0,0 @@\n-gone\n';
+  assert.deepEqual(addedLines(del), []);
+});
+
+// BL-1882 follow-up: rule 1 holes found in review. Each line names CR-176 and still asks.
+test('[BL-1882] rule 1 holes: and, or, please, without, "not ask", "no one ask", "never -" do not unlock an ask', () => {
+  const holes = [
+    'CR-176: do not worry and ask the founder to approve',
+    'CR-176 do not worry or ask the founder to approve',
+    'CR-176 never worry, please ask the founder to approve',
+    'CR-176 without delay ask the founder to approve',
+    'CR-176 not ask the founder to approve',
+    'CR-176 no one ask the founder to approve',
+    'D-168 never - ask the founder to approve',
+    'D-168 never please ask the founder to approve',
+  ];
+  for (const h of holes) {
+    const ok = !asksIn(h).length || allowedBecause(h) !== '';
+    assert.equal(ok && asksIn(h).length > 0, false, h);
+    assert.equal(evaluate({ body: h }).ok, false, h);
+  }
+});
+test('[BL-1882] rule 1 still passes the template line and plain negations', () => {
+  for (const t of [
+    'Karma merges under CR-70 and CR-176, so never write "founder review needed" or ask him to approve, comment, merge or paste',
+    'CR-176: nobody asks the founder to approve',
+    'D-168 says we do not ask the founder to approve',
+    'CR-176 means we never ask the founder to review',
+  ]) assert.equal(evaluate({ body: t }).ok, true, t);
+});
+test('[BL-1882] quantifier negations: "None asks" and "No row asks" (#1678, #1677) pass; a bare instruction after one fails', () => {
+  assert.equal(evaluate({ diff: diffOf('docs/BACKLOG.md', '+None asks the founder to approve, review, merge or paste. (CR-176)') }).ok, true);
+  assert.equal(evaluate({ diff: diffOf('docs/BACKLOG.md', '+No row asks the founder to approve, review, merge or paste. (D-168)') }).ok, true);
+  assert.equal(evaluate({ body: 'CR-176: nothing asks the founder to review it; neither does a row' }).ok, true);
+  assert.equal(evaluate({ body: 'CR-176 no one ask the founder to approve' }).ok, false);
+  assert.equal(evaluate({ body: 'CR-176 none ask the founder to approve' }).ok, false);
+  // The two real lines have no rule id: a quantifier negation with a third-person verb is a statement of fact.
+  assert.equal(evaluate({ body: 'None asks the founder to approve' }).ok, true);
+  assert.equal(evaluate({ body: 'No row asks the founder to approve, review, merge or paste.' }).ok, true);
+  for (const t of ['No, ask the founder to approve', 'No one ask the founder to approve', 'None: ask the founder to approve', 'None asks, so ask the founder to approve', 'Nothing blocks it and asks the founder to approve this, ask the founder to review', 'Not asks the founder to approve']) {
+    assert.equal(evaluate({ body: t }).ok, false, t);
+  }
+});
+test('[BL-1882] an auxiliary plus not (must not, should not) negates; a bare "not" does not', () => {
+  assert.equal(evaluate({ body: 'CR-176: we must not ask the founder to approve' }).ok, true);
+  assert.equal(evaluate({ body: 'D-168 says a row should not ask the founder to review' }).ok, true);
+  assert.equal(evaluate({ body: 'CR-176 not ask the founder to approve' }).ok, false);
+});
+
+// BL-1882 follow-up 2: a trailing-space file name, pinned prefixes, more breaks, conditional quantifiers.
+import { ALLOWED_PATHS } from './founder-ask.mjs';
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, writeFileSync, mkdirSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+test('[BL-1882] a file named like an allowed path plus a trailing space is not the allowed path', () => {
+  for (const p of ALLOWED_PATHS) {
+    // git writes "+++ b/<path with space>\t" for a name with a space: exactly one trailing tab is removed, nothing else.
+    const d = `diff --git a/${p} b/${p} \nnew file mode 100644\n--- /dev/null\n+++ b/${p} \t\n@@ -0,0 +1,1 @@\n+ask the founder to approve\n`;
+    assert.deepEqual(addedLines(d).map((l) => l.path), [`${p} `], p);
+    assert.equal(evaluate({ diff: d }).ok, false, p);
+    assert.equal(evaluate({ diff: d.replaceAll(`${p} `, p).replace(`${p}\t`, `${p}`) }).ok, true, `${p} itself`);
+  }
+});
+test('[BL-1882] real git: a trailing-space copy of an allowed path fails, the allowed path passes', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'fa-'));
+  const git = (...a) => execFileSync('git', ['-C', dir, '-c', 'user.name=t', '-c', 'user.email=t@t', ...a], { encoding: 'utf8' });
+  git('init', '-q', '-b', 'main'); writeFileSync(join(dir, 'a'), 'x\n'); git('add', '.'); git('commit', '-qm', 'a');
+  mkdirSync(join(dir, 'docs/release'), { recursive: true });
+  writeFileSync(join(dir, 'docs/release/FOUNDER_QUEUE.md '), 'ask the founder to approve\n');
+  git('add', '.'); git('commit', '-qm', 'b');
+  const run = (extra) => main(['--base', 'HEAD~1', '--head', 'HEAD'], { PR_TITLE: 't', PR_BODY: '' }, (c, args) => execFileSync(c, ['-C', dir, ...args.slice(0, 1), ...extra, ...args.slice(1)], { encoding: 'utf8' }));
+  assert.equal(run([]), 1);
+});
+test('[BL-1882] main pins the diff prefixes so diff.noprefix cannot make a b/ directory pass', () => {
+  const calls = [];
+  main([], {}, (c, a) => { calls.push(a); return ''; });
+  assert.ok(calls[0].includes('--src-prefix=a/') && calls[0].includes('--dst-prefix=b/'));
+  const dir = mkdtempSync(join(tmpdir(), 'fb-'));
+  const g = (...a) => execFileSync('git', ['-C', dir, '-c', 'user.name=t', '-c', 'user.email=t@t', ...a], { encoding: 'utf8' });
+  g('init', '-q', '-b', 'main'); writeFileSync(join(dir, 'a'), 'x\n'); g('add', '.'); g('commit', '-qm', 'a');
+  mkdirSync(join(dir, 'b/docs/release'), { recursive: true });
+  writeFileSync(join(dir, 'b/docs/release/FOUNDER_QUEUE.md'), 'ask the founder to approve\n');
+  g('add', '.'); g('commit', '-qm', 'b');
+  const code = main(['--base', 'HEAD~1', '--head', 'HEAD'], {}, (c, a) => execFileSync(c, ['-C', dir, '-c', 'diff.noprefix=true', ...a], { encoding: 'utf8' }));
+  assert.equal(code, 1);
+});
+test('[BL-1882] / | & plus whereas break a negation; "do not not ask", "never ever ask" are not governed', () => {
+  for (const h of [
+    'CR-176 never worry / ask the founder to approve', 'CR-176 do not worry | ask the founder to approve', 'CR-176 do not worry & ask the founder to approve',
+    'CR-176 do not worry plus ask the founder to approve', 'CR-176 never mind whereas ask the founder to approve',
+    'CR-176 do not not ask the founder to approve', 'CR-176 never ever ask the founder to approve', 'D-168 never always ask the founder to approve',
+  ]) assert.equal(evaluate({ body: h }).ok, false, h);
+  for (const h of ['CR-176: we never ask the founder to approve', 'CR-176: do not ask the founder to approve, review, merge or paste']) assert.equal(evaluate({ body: h }).ok, true, h);
+});
+test('[BL-1882] a conditional after a quantifier is an ask: "No work starts until Karma asks the founder to approve"', () => {
+  for (const h of ['No work starts until Karma asks the founder to approve.', 'Nothing ships until the agent asks the founder to review it.', 'None merges when Karma asks the founder to approve', 'No row ships if it asks the founder to approve', 'Nothing happens unless someone asks the founder to review']) assert.equal(evaluate({ body: h }).ok, false, h);
+  for (const h of ['None asks the founder to approve, review, merge or paste.', 'No row asks the founder to approve, review, merge or paste.']) assert.equal(evaluate({ body: h }).ok, true, h);
 });
