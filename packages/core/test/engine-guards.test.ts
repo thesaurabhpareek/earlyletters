@@ -45,6 +45,65 @@ function sources(dir: string): string[] {
 const rel = (p: string) => relative(REPO, p).split('\\').join('/');
 const read = (p: string) => readFileSync(p, 'utf8');
 
+const stripComments = (s: string): string => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/[^\n]*/g, '$1');
+const ID = '[A-Za-z_$][\\w$]*';
+const esc = (s: string): string => s.replace(/\$/g, '\\$');
+
+/**
+ * BL-1843: the paths that call `name`, found through aliases and not only by the text `name(`. A caller is seen when it
+ * uses the name under another name: a renamed import (`import { name as x }`), a const alias (`const x = name`), a
+ * renamed destructure (`const { name: x } = mod`), a namespace call (`mod.name(`), or a name another file re-exports
+ * under a new one (`export { name as y }`, `export const y = name`), which is followed across files until nothing new
+ * turns up. A line that only re-exports is not a call. Files are `{ path, text }` so a planted case can sit beside the
+ * real tree without being written to disk.
+ */
+export function callersOf(files: readonly { path: string; text: string }[], name: string): string[] {
+  const code = files.map((f) => ({ path: f.path, text: stripComments(f.text) }));
+  const known = new Set<string>([name]);
+  const alt = () => [...known].map(esc).join('|');
+  const grow = (re: RegExp, text: string, from: number, to: number): boolean => {
+    let grew = false;
+    for (const m of text.matchAll(re)) {
+      if (known.has(m[from]) && !known.has(m[to])) {
+        known.add(m[to]);
+        grew = true;
+      }
+    }
+    return grew;
+  };
+  for (let grew = true; grew; ) {
+    grew = false;
+    for (const f of code) {
+      for (const m of f.text.matchAll(/\b(?:import|export)\s*(?:type\s+)?\{([^}]*)\}/g)) {
+        for (const part of m[1].split(',')) {
+          const [a, b] = part.trim().replace(/^type\s+/, '').split(/\s+as\s+/);
+          if (a && b && known.has(a.trim()) && !known.has(b.trim())) {
+            known.add(b.trim());
+            grew = true;
+          }
+        }
+      }
+      grew = grow(new RegExp(`\\b(?:const|let|var)\\s+(${ID})\\s*=\\s*(${ID})\\s*;`, 'g'), f.text, 2, 1) || grew;
+      grew = grow(new RegExp(`\\b(?:const|let|var)\\s*\\{[^}]*?\\b(${ID})\\s*:\\s*(${ID})\\s*[,}]`, 'g'), f.text, 1, 2) || grew;
+      grew = grow(new RegExp(`\\bexport\\s+const\\s+(${ID})\\s*=\\s*(${ID})\\s*;`, 'g'), f.text, 2, 1) || grew;
+    }
+  }
+  const call = new RegExp(`(?<![\\w$.])(?:${alt()})\\s*\\(|\\b${ID}\\.(?:${alt()})\\s*\\(`);
+  return code.filter((f) => call.test(f.text)).map((f) => f.path);
+}
+
+/**
+ * What the allow-list checks use: everything `callersOf` finds plus everything the old plain-text scan (`name(` anywhere in
+ * the raw text, comments and strings included) finds. The comment stripper can be fooled (a `//` inside a string hides the
+ * rest of the line), so this scan may only ever see more callers than the old one, never fewer.
+ */
+export function guardCallers(files: readonly { path: string; text: string }[], name: string): string[] {
+  const plain = new RegExp(`\\b${esc(name)}\\(`);
+  const found = new Set<string>(callersOf(files, name));
+  for (const f of files) if (plain.test(f.text)) found.add(f.path);
+  return [...found];
+}
+
 function at(raw: string, type: Edit['type'], original: string, replacement: string, nth = 0, source: Edit['source'] = 'model'): Edit {
   let start = -1;
   for (let i = 0; i <= nth; i++) start = raw.indexOf(original, start + 1);
@@ -95,10 +154,56 @@ describe('[FR-AIS-02] every machine edit goes through the verifier, with no bypa
   });
 
   it('only verify.ts and pipeline.ts apply edits to words; only pipeline.ts and the model provider call the verifier', () => {
-    const applying = files.filter((f) => /\bapplyEdits\(/.test(read(f))).map(rel).sort();
+    const texts = files.map((f) => ({ path: rel(f), text: read(f) }));
+    const applying = guardCallers(texts, 'applyEdits').sort();
     expect(applying).toEqual(['packages/core/src/pipeline.ts', 'packages/core/src/verify.ts']);
-    const verifying = files.filter((f) => /\bverifyEdits\(/.test(read(f)) && rel(f) !== 'packages/core/src/verify.ts').map(rel).sort();
+    const verifying = guardCallers(texts, 'verifyEdits').filter((p) => p !== 'packages/core/src/verify.ts').sort();
     expect(verifying).toEqual(['packages/core/src/model-edits.ts', 'packages/core/src/pipeline.ts']);
+  });
+
+  // BL-1843: the scan follows aliases. Planted callers sit beside the real tree and each must be flagged.
+  const REAL_ONLY = ['packages/core/src/pipeline.ts', 'packages/core/src/verify.ts'];
+  const planted: Record<string, string> = {
+    'planted/renamed-import.ts': "import { applyEdits as patchWords } from '@scribe/core';\nexport const run = (r: string, e: unknown[]) => patchWords(r, e);",
+    'planted/const-alias.ts': "import { applyEdits } from '@scribe/core';\nconst tweak = applyEdits;\nexport const run = (r: string, e: unknown[]) => tweak(r, e);",
+    'planted/namespace.ts': "import * as core from '@scribe/core';\nexport const run = (r: string, e: unknown[]) => core.applyEdits(r, e);",
+    'planted/destructure.ts': "import * as core from '@scribe/core';\nconst { applyEdits: patch } = core;\nexport const run = (r: string, e: unknown[]) => patch(r, e);",
+    'planted/reexport.ts': "export { applyEdits as quietFix } from './verify';",
+    'planted/reexport-caller.ts': "import { quietFix } from './reexport';\nexport const run = (r: string, e: unknown[]) => quietFix(r, e);",
+    'planted/comment-only.ts': "// applyEdits(raw, edits) is only mentioned here\n/* patchWords(raw) too */\nexport const x = 1;",
+  };
+  const plantedFiles = Object.entries(planted).map(([path, text]) => ({ path, text }));
+
+  it('[BL-1843] an aliased, namespaced, destructured or re-exported caller of applyEdits is flagged; a comment is not', () => {
+    const hit = callersOf(plantedFiles, 'applyEdits').sort();
+    expect(hit).toEqual(['planted/const-alias.ts', 'planted/destructure.ts', 'planted/namespace.ts', 'planted/reexport-caller.ts', 'planted/renamed-import.ts']);
+  });
+
+  it('[BL-1843] the old text-only scan misses the aliased callers the new scan finds (the defect, shown)', () => {
+    const naive = plantedFiles.filter((f) => /\bapplyEdits\(/.test(f.text)).map((f) => f.path);
+    expect(naive).toEqual(['planted/namespace.ts', 'planted/comment-only.ts']); // and it wrongly counts a comment
+    expect(callersOf(plantedFiles, 'applyEdits').length).toBeGreaterThan(naive.length);
+  });
+
+  it('[BL-1843] a planted aliased writer beside the real tree breaks the allow-list, and the real tree alone passes', () => {
+    const real = files.map((f) => ({ path: rel(f), text: read(f) }));
+    expect(guardCallers(real, 'applyEdits').sort()).toEqual(REAL_ONLY);
+    const withPlanted = guardCallers([...real, plantedFiles[0]], 'applyEdits').sort();
+    expect(withPlanted).toEqual([plantedFiles[0].path, ...REAL_ONLY].sort());
+    const verifyAlias = { path: 'planted/verify-alias.ts', text: "import { verifyEdits as check } from '@scribe/core';\nexport const ok = (a: never) => check(a);" };
+    expect(guardCallers([...real, verifyAlias], 'verifyEdits')).toContain('planted/verify-alias.ts');
+  });
+
+  it('[BL-1843] a // inside a string cannot hide a call: the guard never finds fewer callers than the old plain scan', () => {
+    const sneaky = { path: 'planted/string-slashes.ts', text: "const s = ' // '; applyEdits(a, b)" };
+    expect(/\bapplyEdits\(/.test(sneaky.text)).toBe(true); // the old scan sees it
+    expect(guardCallers([sneaky], 'applyEdits')).toEqual([sneaky.path]);
+    const real = files.map((f) => ({ path: rel(f), text: read(f) }));
+    expect(guardCallers([...real, sneaky], 'applyEdits').sort()).toEqual([sneaky.path, ...REAL_ONLY].sort());
+    // for every planted and real file, the guard is a superset of the old scan
+    for (const f of [...plantedFiles, sneaky, ...real]) {
+      if (/\bapplyEdits\(/.test(f.text)) expect(guardCallers([f], 'applyEdits'), f.path).toContain(f.path);
+    }
   });
 
   it('faithfulClean applies only what the verifier accepted', () => {
