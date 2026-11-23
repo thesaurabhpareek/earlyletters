@@ -43,6 +43,7 @@ describe('[BL-423] the finish step ends on Tonight and never starts capture', ()
     );
     const allowed = new Set([
       'finishMayMakeBook',
+      'clearDraft', // BL-1816: deletes the kept first-run answers; opens nothing
       'hasSessionState',
       'addChild',
       'firstRunBookNames',
