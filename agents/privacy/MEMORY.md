@@ -38,6 +38,6 @@ Decisions and facts that bind Build 13 work; re-check each against `develop` bef
 
 ## Lessons
 - Apple: on-device-only data is not "collected", but anything derived and sent off device is judged separately (App Privacy Details, read 10 Nov). The rule for media code is no derived value leaves the phone.
-- The export spec says photos are "original bytes" while LEGAL-REQ-013 says stripped: conflict to resolve before any photo ships.
+- Export spec "original bytes" versus LEGAL-REQ-013 (10 Nov): fixed on develop (`DELETION_AND_EXPORT_SPEC.md:335,340` now say the stored copy, never the original bytes; checked 23 Nov). The export scan test (BL-933) is still open.
 - The claims test has no rule for photos, location or occasions; add rules so a claim is false until its capability is on.
 - WebFetch needs a URL to appear in a prior search result or fetch; search first, then fetch (Markdown versions of Apple doc pages work, JavaScript pages do not).
