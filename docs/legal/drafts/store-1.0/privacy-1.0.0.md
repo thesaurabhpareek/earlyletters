@@ -53,6 +53,11 @@ Early Letters is published by [legal name] ("we", "us"), the Seller named on the
 
 **What we do not collect.** Your location, contacts, photos, camera, advertising ID or payment details. This version has no photo feature and does not read your photo library. No usage analytics or crash reports from the app. We never create a voiceprint or any other biometric identifier. If you turn on the app lock, Face ID or your passcode is checked by iOS, and the app receives only a yes or no.
 
+**Open questions added 23 Nov after review (all PROPOSED; exec-team counsel must confirm each).**
+
+- [EXEC-TEAM COUNSEL Q P-1: server-side aggregate counts. The server may keep counts of letters, and the language of a letter may sync. This section does not say so yet. It must be settled, and the wording added or the behaviour removed, before migration file 11 applies. Not verified in code by me.]
+- [EXEC-TEAM COUNSEL Q P-2: the new-device sign-in email is not applied. The app sends no email when a new iPhone signs in, and this text must not imply it does. Whether it ships, and when, is open.]
+
 **How speech becomes text.** The app turns your voice into text on your iPhone. No audio or text is sent to any outside service to be turned into text. The app fixes only small slips, such as a stray "um" or a name spelled your way, and you can undo every fix. It never rewrites your words.
 
 ## 3. Without an account
@@ -112,7 +117,7 @@ After your account is deleted, we keep only these, and none holds your letters o
 - security logs, for 12 months;
 - emails you sent us, for 2 years after your last message.
 
-Another keeping period: records that stop a synced change being applied twice are deleted after 30 days. [Engineering reading of the purge functions in `supabase/migrations`. FOUNDER: the 12-month security log period (D-021) and Supabase's own sign-in log period are not shown in the code (DATA_CLASSIFICATION 4.2, "Unverified").]
+Another keeping period: records that stop a synced change being applied twice are deleted after 30 days. [Engineering reading of the purge functions in `supabase/migrations`. FOUNDER: the 12-month security log period (D-021) and Supabase's own sign-in log period are not shown in the code (DATA_CLASSIFICATION 4.2, "Unverified").] [EXEC-TEAM COUNSEL Q P-3: three periods are unverified and must be confirmed before publishing: the 12-month security log, the 30-day record that stops a synced change applying twice, and the 38-day backup. Supabase auth audit log retention and IP storage is also open as OQ-5 in `docs/legal/DELETION_AND_EXPORT_SPEC.md` (a requirement file, not edited here).]
 
 ## 9. Your copies
 

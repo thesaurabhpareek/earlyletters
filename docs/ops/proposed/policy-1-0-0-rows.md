@@ -1,4 +1,4 @@
-# PROPOSED: policy 1.0.0 rows, claims-to-code table and open questions (BL-1956)
+# PROPOSED: policy 1.0.0 rows, claims-to-code table and open questions (BL-1957)
 
 Status: PROPOSED, for exec-team review (D-168, D-172). Not reviewed yet. The exec team is not a lawyer, and nothing here says any text is compliant or legal. Written by the `legal` agent on 23 Nov 2026 against develop at `079cb892d`. It supersedes the drafts of PR #672 (the coordinator closes #672 once this PR has two counted reviews). Nothing under `docs/legal/` outside `docs/legal/drafts/store-1.0/` is touched, and neither are the 0.9.0 files.
 
@@ -13,7 +13,7 @@ The four drafts, all under `docs/legal/drafts/store-1.0/`:
 
 1. *Whether 1.0.0 is `initial` or `major` in the production project.* Section 2.4 describes `major` with re-consent because testers hold 0.9.0. The production project holds no `policy_versions` rows until FOUNDER_QUEUE row 6 runs (not verified; row 5 must run first). The guard trigger (`supabase/migrations/20261002020000_data_governance.sql`, `policy_versions_guard`) only enforces re-consent and 30 days for `change_class = 'major'`. Recommendation: if production has no 0.9.0 rows, publish 1.0.0 as `initial` (Variant A below). If 0.9.0 rows are already there, use Variant B. [EXEC-TEAM COUNSEL Q V-1: confirm.]
 2. *What "counsel-approved" means.* D-172 reads it as the exec team's review. This PR does not say any text is approved. Status stays PROPOSED until that review is recorded in `docs/agents/cto/RULINGS.md`.
-3. *The app's own constants.* `apps/mobile/src/lib/agreements.logic.ts` pins `TERMS_DOC_VERSION = '4.1.0'` and `PRIVACY_DOC_VERSION = '3.0.0'`, and `apps/mobile/test/agreements.test.ts` fails if they differ from the frontmatter of `docs/legal/terms-of-service.md` and `privacy-policy.md`. They are written to local agreement rows when someone ticks the box before first use. `apps/mobile/src/lib/billing/config.ts` pins `SUBSCRIPTION_TERMS_DOC_VERSION = '4.1.0'`. None of these versions will exist in `policy_versions`. I found no code that uploads the local agreement rows (not fully verified; the repo search was narrow), and the server consent path reads the newest published version from `policy_versions` instead (`apps/mobile/src/lib/auth/consent.ts`, `currentVersion`). So the effect is a record that names a version nobody published. Recommendation: `mobile` and `privacy` decide whether the local rows should read 1.0.0 once published; that is a code and test change, not mine. [EXEC-TEAM COUNSEL Q V-2.]
+3. *The app's own constants.* `apps/mobile/src/lib/agreements.logic.ts` pins `TERMS_DOC_VERSION = '4.1.0'` and `PRIVACY_DOC_VERSION = '3.0.0'`, and `apps/mobile/test/agreements.test.ts` fails if they differ from the frontmatter of `docs/legal/terms-of-service.md` and `privacy-policy.md`. They are written to local agreement rows when someone ticks the box before first use. `apps/mobile/src/lib/billing/config.ts` pins `SUBSCRIPTION_TERMS_DOC_VERSION = '4.1.0'`. None of these versions will exist in `policy_versions`. I found no code that uploads the local agreement rows (not fully verified; the repo search was narrow), and the server consent path reads the newest published version from `policy_versions` instead (`apps/mobile/src/lib/auth/consent.ts`, `currentVersion`). So the effect is a record that names a version nobody published. Recommendation: `mobile` and `privacy` decide whether the local rows should read 1.0.0 once published; that is a code and test change, not mine. [EXEC-TEAM COUNSEL Q V-2: the local agreement constants (`TERMS_DOC_VERSION` 4.1.0, `PRIVACY_DOC_VERSION` 3.0.0, `SUBSCRIPTION_TERMS_DOC_VERSION` 4.1.0) name versions that were never published; they must be aligned or explained before submission.]
 4. *The key for the Plus text.* The database key is `auto-renewal-terms`, not `subscription-terms`. No code reads that key today (the status report is off), so no row is proposed for it in the SQL below.
 
 ## 2. The exact `policy_versions` rows and hashes
@@ -23,8 +23,8 @@ Hashes are `sha256sum` of the exact files in this PR, taken after the last edit 
 | Document key | Version | File | sha256 |
 |---|---|---|---|
 | terms | 1.0.0 | `docs/legal/drafts/store-1.0/terms-1.0.0.md` | `d6b9bb37e07e4ea0e1bc1b10462b6d939670d5948a160491b417bc31ebcde200` |
-| privacy | 1.0.0 | `docs/legal/drafts/store-1.0/privacy-1.0.0.md` | `051be317f089e63059a652064b13c93fb7405b9e877c63cdada5609f5476fc2c` |
-| sensitive-data | 1.0.0 | `docs/legal/drafts/store-1.0/sensitive-data-1.0.0.md` | `4d6daec01d95199125099f30cc75dfd3cf41178e69424e9c07c98c36338e4505` |
+| privacy | 1.0.0 | `docs/legal/drafts/store-1.0/privacy-1.0.0.md` | `ae11a9b99ddb1ad37ed249cd754ddcec6430fe9d4b927883e61e385cc0ed35d5` |
+| sensitive-data | 1.0.0 | `docs/legal/drafts/store-1.0/sensitive-data-1.0.0.md` | `b35ff8cb21b6cf0a56bf933b6e9d7af9f0f078f627c2d06b21e69d75bebece66` |
 | (not inserted) auto-renewal-terms | 1.0.0 | `docs/legal/drafts/store-1.0/subscription-terms-1.0.0.md` | `5871becf785bc418147964eb8084bed049d785eaf1fc33fb224336cf23d8dcc0` |
 
 **These hashes are for the drafts as they stand, with the PROPOSED banner and every bracketed mark.** Those come out before publishing, so the published bytes, and the hash that goes into `policy_versions.content_sha256`, will differ. Take the hashes again with `sha256sum` on the exact published file, which the website serves byte for byte (POLICY_VERSIONING 2.4), and replace the four values below. A pin test like `packages/content/test/legal-beta.test.ts` for the 1.0.0 files does not exist yet (not mine to write).
@@ -43,11 +43,11 @@ values
    'https://earlyletters.com/legal/terms/1.0.0',
    'First version for the App Store app.'),
   ('privacy', '1.0.0', 'initial', false, now(), now(), now(),
-   decode('051be317f089e63059a652064b13c93fb7405b9e877c63cdada5609f5476fc2c', 'hex'),
+   decode('ae11a9b99ddb1ad37ed249cd754ddcec6430fe9d4b927883e61e385cc0ed35d5', 'hex'),
    'https://earlyletters.com/legal/privacy/1.0.0',
    'First version for the App Store app.'),
   ('sensitive-data', '1.0.0', 'initial', false, now(), now(), now(),
-   decode('4d6daec01d95199125099f30cc75dfd3cf41178e69424e9c07c98c36338e4505', 'hex'),
+   decode('b35ff8cb21b6cf0a56bf933b6e9d7af9f0f078f627c2d06b21e69d75bebece66', 'hex'),
    'https://earlyletters.com/legal/sensitive-data/1.0.0',
    'First version of the health and sensitive details agreement, asked once before a book first syncs.');
 select document, version, encode(content_sha256, 'hex') as sha256 from public.policy_versions order by 1, 2;
@@ -107,7 +107,7 @@ How to read "Backing": `read` means I opened the file on develop at `079cb892d` 
 ## 4. Mismatches to hand off
 
 1. **To `content`: the sensitive-data sheet.** `sensitiveConsent.body` says "share it with the family you choose" and `declineHelp` says "syncing and sharing stay off". The store build has no sharing (D-162). `in-app-disclosures.md` 3.4.0 lists it as gap G-21. Proposed words are in `sensitive-data-1.0.0.md` (SD-1). Changing them changes the rendered hash.
-2. **To `privacy`: the App Store privacy label.** `docs/legal/app-store-privacy-labels.md` 2.2.0 describes option B (co-parent sharing, backup once it ships). The production build has neither. I did not edit the label (the PR #672 version of it is not carried over, and it was written for the 8 Nov build). Rows to re-check: Audio Data, Device ID, Purchase History, and the "Sensitive Info" row for due date.
+2. **To `privacy`: the App Store privacy label.** `docs/legal/app-store-privacy-labels.md` 2.2.0 describes option B (co-parent sharing, backup once it ships). The production build has neither. I did not edit the label (the PR #672 version of it is not carried over, and it was written for the 8 Nov build). Rows to re-check: Audio Data, Device ID, Purchase History, and the "Sensitive Info" row for due date. Label 2.2.0 also says the first store build requires sign-in (its build-state table, row for Build 12), while the Privacy draft section 3 describes a local start with no account (D-160). Align them or flag it. The option B mismatch must be corrected before submission. [EXEC-TEAM COUNSEL Q L-1.]
 3. **To `content` (BL-1955 already covers one line):** `docs/store/app-store-connect-1.0.md` line 193 promises a co-parent later, against D-161.
 4. **To `mobile` and `privacy`: version constants.** Section 1, point 3.
 5. **To Karma (FOUNDER_QUEUE row 6):** the SQL block is for the two 0.9.0 texts and has no `sensitive-data` row. Variant A above replaces it once the exec team clears the texts.
@@ -120,6 +120,7 @@ These carry over from the PR #672 drafts unless marked new. The packet numbers r
 
 - V-1, V-2, V-3: version questions above (new).
 - SD-1, SD-2, SD-3: the sensitive-data sheet's "family you choose" words, whether a link is needed beside the words, and whether email-only withdrawal is enough for Washington and Connecticut health data rules (packet Q32, Q48; OQ-L1).
+- New (review fixes): SD-1b (changeLater line and the "family you choose" line in one change, then retake the hash); P-1 (server-side aggregate counts and letter language sync, before migration file 11 applies); P-2 (new-device sign-in email unapplied); P-3 (unverified 12-month, 30-day and 38-day periods, and OQ-5 of the deletion spec); L-1 (label 2.2.0 sign-in required against the local start, and option B mismatch before submission).
 - New: whether Privacy and Terms should say nothing about sharing with another parent until BL-882 to BL-889 ship (Privacy 4 and 8, Terms 4). Terms S-25 (packet Q50, custody and safety) is parked with it.
 - New: the D-163 production analytics gate. When analytics turns on, Privacy needs a new major version and the `analytics` consent first (POLICY_VERSIONING 2.1).
 - S-1 (packet Q11, Q12): IP addresses at the host and Hugging Face; written contracts or data processing terms for each provider.
@@ -143,6 +144,6 @@ I did not look up any statute or Apple rule today. Every legal citation in the d
 
 ## 6. What I did not do
 
-- No edit to `docs/legal/` outside `drafts/store-1.0/`, to the 0.9.0 files, to BACKLOG, DECISIONS, CLAIMS, FOUNDER_QUEUE, workflows or the label. BL-1956 comes from `node scripts/agents/next-id.mjs` on 23 Nov and has no BACKLOG row yet; adding it is not mine.
+- No edit to `docs/legal/` outside `drafts/store-1.0/`, to the 0.9.0 files, to BACKLOG, DECISIONS, CLAIMS, FOUNDER_QUEUE, workflows or the label. BL-1957 comes from `node scripts/agents/next-id.mjs` on 23 Nov and has no BACKLOG row yet; adding it is not mine.
 - I could not read `infra/exec-rulings-2026-11-23-founder-blockers.md` (a Project doc, not reachable from this session). The status line "exec-team reviewed" is not used because no review has happened; the files say "draft for exec-team review". The coordinator's relay of ruling 1 is what I followed.
 - No device run, no `tsc`, no test run (docs only).
