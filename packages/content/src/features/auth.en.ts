@@ -107,6 +107,8 @@ export const authCopy = {
     // NX-36 S5, the recovery set after a minute (NX-31-R11). Placeholder words; each needs founder word approval.
     noMailHelp: 'Nothing yet? Look in spam, or send a new email.',
     announceResend: 'You can send another email.',
+    /** BL-476 point 1: said once when the pause after five wrong codes ends. No count, no clock. */
+    pauseEnded: 'You can type a code again.',
   },
 
   /**

@@ -119,6 +119,11 @@ export function codeEntryPause(wrongAt: readonly number[], now: number): { pause
   return inWindow >= CODE_ATTEMPT_LIMIT && now < until ? { paused: true, until } : { paused: false, until: null };
 }
 
+/** The pause is said once, as a change from paused to not paused (BL-476, LEGAL-REQ-051), never on arrival at the screen. */
+export function shouldAnnouncePauseEnd(wasPaused: boolean, paused: boolean): boolean {
+  return wasPaused && !paused;
+}
+
 /** Accept the code as typed or pasted: digits only, any spaces or dashes removed. */
 export function normaliseCode(input: string): string {
   return input.replace(/[\s-]/g, '').replace(/[^0-9]/g, '');
