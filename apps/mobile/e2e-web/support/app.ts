@@ -1,6 +1,7 @@
 /** Shared moves for the journey flows. Only fictional family data ("Asha"); everything goes through the real screens. */
 import type { Page } from '@playwright/test';
 import { canary, expect, type Recorder } from './journey';
+import type { Need } from './saved-moment';
 import { assertUniqueStepId } from './step-id';
 
 export const CHILD = 'Asha';
@@ -57,7 +58,7 @@ export function journey(record: Recorder, code: string, name: string, start = 1,
   // BL-480: ids used by THIS journey call; the map is per call, so a repeat inside one call throws. The J24 tests do not
   // rely on that: each has its own start id (AX1 01-03, AX3 04-06, AX5 07-09, hi/es/zh/fr/ar/pt 10-15; BL-1643).
   const seen = new Map<string, string>();
-  return async (kind: 'happy' | 'unhappy', title: string, note: string, from?: string, opts?: { settle?: number }): Promise<string> => {
+  return async (kind: 'happy' | 'unhappy', title: string, note: string, from?: string, opts?: { settle?: number; needs?: Need[] }): Promise<string> => {
     n += 1;
     const id = `${code}-${String(n).padStart(2, '0')}`;
     assertUniqueStepId(seen, id, title);
