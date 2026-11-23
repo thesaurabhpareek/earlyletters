@@ -96,7 +96,9 @@ export function SheetFrame({
   ) : null;
   const header = closeLabel || onBack;
   return (
-    <SafeAreaView edges={['bottom']} className="flex-1 bg-background">
+    // Modal for VoiceOver, so focus stays inside the sheet and the screen behind is not read; the two-finger scrub
+    // closes it only where the frame offers Close and it is not disabled (BL-1720). One place, so every sign-in, consent and invite step inherits it.
+    <SafeAreaView edges={['bottom']} className="flex-1 bg-background" accessibilityViewIsModal aria-modal onAccessibilityEscape={escapeHandler({ closeLabel, closeDisabled, close })} testID="sheet.frame">
       {closeLabel ? (
         <ModalHeader onClose={close} closeLabel={closeLabel} closeDisabled={closeDisabled} leading={onBack ? <BackButton onPress={onBack} /> : undefined} className="pt-3" />
       ) : onBack ? (
@@ -115,6 +117,15 @@ export function SheetFrame({
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
+}
+
+/**
+ * The two-finger escape closes the sheet only where the frame has a Close and it is enabled. Mid-verification
+ * (`closeDisabled`) and in steps with no Close (verify, consent) it does nothing, so a typed email and code are never
+ * dropped by a gesture (BL-1720).
+ */
+export function escapeHandler(input: { closeLabel?: string; closeDisabled?: boolean; close: () => void }): (() => void) | undefined {
+  return input.closeLabel && !input.closeDisabled ? input.close : undefined;
 }
 
 /** The sheet's title: `title2`, a heading, and where VoiceOver focus lands when the step appears (V-06). */
