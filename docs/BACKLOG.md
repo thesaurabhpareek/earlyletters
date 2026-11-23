@@ -8980,7 +8980,7 @@ Queue order (the dispatcher takes the first `ready` row an agent owns, in file o
 - Priority: P2. Gate: none. Lane: content with a small mobile change.
 - Satisfies: PER3-014, PER3-015, PER3-017 (all P2); BL-1763 (CDO-B-053) caps the same button.
 - Problem and evidence: "Aa" alone means nothing to a first-time reader; "Close the book" does not say it is the end; "Back one" is unclear next to "Next letter".
-- Scope: last in the letter-page file order (after BL-1790, BL-1789, BL-1791). "Size" beside "Aa" at accessibility sizes (or "Text size" in both places); swipe down to leave Read together and "Done reading" at the end; "Earlier letter" beside "Next letter". Words in `packages/content`; rules test applies.
+- Scope: last in the letter-page file order (after BL-1790, BL-1789, BL-1791). "Size" beside "Aa" at accessibility sizes (the word is "Size", decided 23 Nov; not "Text size"); swipe down to leave Read together and "Done reading" at the end; "Earlier letter" beside "Next letter". Words in `packages/content`; rules test applies.
 - Done when: the three changes are in; `packages/content/test/rules.test.ts` passes; and a new test `apps/mobile/test/reader-words.test.ts` asserts that Read together and the letter page render "Size" beside "Aa" at accessibility sizes, "Done reading" at the end and "Earlier letter" beside "Next letter" from the content keys, not literals.
 
 #### BL-1825 Review reuses the letter page's player so VoiceOver can move within the recording
@@ -9009,7 +9009,7 @@ Queue order (the dispatcher takes the first `ready` row an agent owns, in file o
 
 #### BL-1744 Moments link or notification landing: the row and the spec disagree (reconcile first)
 - Status: needs-decision (the CDesO and CPO reconcile this row with the spec; then product rewrites the scope and sets it ready). Mode: human. Owner: product manager, mobile engineer. Milestone: M15. Size: M. Depends on: none.
-- Priority: P1 but dark behind the Moments flag, so it queues behind every live-build row above. Gate: the reconciliation. Lane: mobile after it.
+- Priority: P1 but dark behind the Moments flag, so it is not pre-1 Dec and queues behind every live-build row. Gate: the reconciliation (the G-09 spec check; O-22 and `docs/design/moments-motion-spec.md:100` say the link lands on Moments at scroll 0, not on the day it names, so the design backlog wording is stale). Lane: mobile after it.
 - Satisfies: CDO-B-005 (P1); G-09 and O-22.
 - Problem and evidence: G-09 is the gap row "Arrival by notification or `scribe://moments`" in `docs/design/moments-design-closure.md` (line 109), closed by ruling O-22 (line 75). O-22 and `docs/design/moments-motion-spec.md:100` say: `typedDay`, `birthday` and `monthAge` land on Moments at scroll 0 with For you selected and no card highlighted; `evening` lands on Home; no wash, no scroll-to, no card moves; App lock comes first. The design backlog's wording (the link opens "the day it names, not Home") contradicts that ruling.
 - Scope: product, with the CDesO and CPO, says in this row which holds. If the spec holds, the build is the landing by kind exactly as O-22 says, and this row's title and Done-when are rewritten to match; if the day-opening is wanted, the ruling and both specs change first. No code before then.
@@ -9021,7 +9021,7 @@ Queue order (the dispatcher takes the first `ready` row an agent owns, in file o
 - Satisfies: DSR-013, DSR-014, CDO-A-027 (all P2).
 - Problem and evidence: nothing fails when a component animates without the shared Reduce Motion hook; Breathe has no stated Reduce Motion form, the two loops have no stop, and the Plan screen states no Reduce Motion position.
 - Scope: a test that fails on an animation outside the shared hook; a stated Reduce Motion form for Breathe and a stop for the two loops; one line for the Plan screen's position in `docs/design/MOTION.md`.
-- Done when: (a) the test fails on a planted offender and passes on the tree; (b) separately, `docs/design/MOTION.md` holds the Breathe Reduce Motion form, the stop for the two loops and the Plan screen's position. If (a) alone fills a ten-minute read, (b) ships as a second PR under this id.
+- Done when: (a) the test fails on a planted offender and passes on the tree; (b) separately, `docs/design/MOTION.md` holds the Breathe Reduce Motion form, the stop for the two loops and the Plan screen's position. If (a) alone fills a ten-minute read, (b) ships as a second PR under this id. This row stays open (it is not `done`) until both PRs have landed; the first PR alone sets it `partly done`.
 
 #### BL-1754 No duration, delay, curve or translate typed in a component
 - Status: ready. Mode: agent. Owner: design systems. Milestone: M15. Size: S. Depends on: none.
@@ -9046,6 +9046,7 @@ Queue order (the dispatcher takes the first `ready` row an agent owns, in file o
 - Problem and evidence: "Erase now" says a letter and recording are erased "for good" while backups and saved exports keep a copy. Nobody has traced whether a signed-in phone's server copy goes too. Code reading only; UNVERIFIED on a device.
 - Scope: read the Erase now path from the screen to the database (`apps/mobile`, `supabase/migrations`, the sync rules) and write what it removes, what it leaves and for how long, in this row, with file and line. No code or copy change.
 - Done when: this row holds the trace with file and line for each claim, and BL-1805 is updated to cite it.
+- Trace filed 23 Nov by the evidence-followup PR (code reading only, UNVERIFIED on a device): the Erase now path is `apps/mobile/src/lib/store.ts` lines 972 to 1008 (`eraseEntry` deletes the recording file and the row and queues one id-only `entry.erase`, `apps/mobile/src/lib/sync/outbox.ts` lines 569 to 576); the server handles it at `supabase/migrations/20261016000000_sync_v1_server.sql` lines 869 and 1247 and tombstones letters for 30 days (`supabase/migrations/20261108020000_audit_append_only.sql` lines 125 and 157); but the screen never offers it when sync is on (`recently-deleted.tsx` line 64, `shelf.logic.ts` lines 112 to 114). BL-1805 now cites this. The product agent sets this row `done` after that PR merges, with the merge as evidence.
 
 ### Held: needs a device, a spec, counsel or a founder decision first
 
@@ -9190,11 +9191,11 @@ Queue order (the dispatcher takes the first `ready` row an agent owns, in file o
 - Done when: a test shows the floor and no cap on letter text, and the Aa sheet opens in Read together.
 
 #### BL-1805 Erase now: drop "for good"
-- Status: needs-decision (the founder's wording with counsel Q51; BL-1839 traces the server copy first; the CLO rules the hold). Mode: human. Owner: founder, content. Milestone: M15. Size: S. Depends on: BL-1839.
+- Status: needs-decision (the founder's wording with counsel Q51; the server copy is now traced, see below; BL-1854 fixes the gating first; the CLO rules the hold). Mode: human. Owner: founder, content. Milestone: M15. Size: S. Depends on: BL-1839, BL-1854.
 - Priority: P1. Gate: BL-1839, counsel. Lane: content.
 - Satisfies: PER5-004 (P1).
 - Problem and evidence: ruled: drop "for good"; use the Erase everything line, "Erased from this phone. Backups and exports you already saved are not changed." A wait-for-counsel default must cover live text; "for good" is live text today. Silence on 27 Nov leaves the status quo text, so name the date.
-- Scope: the founder merges the wording; content applies it once BL-1839 shows what the server copy does.
+- Scope: the founder merges the wording; content applies it once BL-1854 lands. Evidence from the 23 Nov code trace (UNVERIFIED on a device): on a signed-in phone Erase now is hidden (`apps/mobile/src/app/settings/recently-deleted.tsx` line 64, `apps/mobile/src/components/book/shelf.logic.ts` lines 112 to 114), so "for good" is reachable only on a never-signed-in phone, where it is true locally; the server erase path exists (`apps/mobile/src/lib/store.ts` lines 972 to 1008) and a signed-in deleted letter waits for the 30 day purge. Once BL-1854 shows the button on a signed-in phone, the "for good" line needs the Erase everything wording. Detail: `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13.5a items 1 and 2. BL-1804 (a signed-in wipe) stays in the design backlog; its code facts are in the same section.
 - Done when: the live string is changed and the wording is recorded.
 
 #### BL-1806 One quiet factual line on the Delete confirm for a kept letter that is one of the free two
@@ -9367,3 +9368,56 @@ Sources: the review notes on PRs #1635, #1634, #1637, #1638, #1643, #1644, #1642
 - Scope: an access-matrix test with the fictional family Asha: the co-parent reads none of those columns and the author reads all; a mutant that widens the policy.
 - Done when: the test fails on the widened policy and passes on develop.
 - Test: `supabase/tests`.
+
+## Follow-ups from the evidence traces of 22 Nov (BL-1853 to BL-1858; filed by the product agent, docs only)
+
+Source: the read-only code and legal evidence traces taken at `origin/develop` commit `aeb752bc`, written up in `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` sections 13.5 and 13.5a. They are engineering readings: counsel confirms every legal point, and items marked UNVERIFIED there were not proven. Rule for this block: no `ready` row waits on a founder or counsel answer; each held row names its unblocker and owner. The `marketing` agent has no backlog owner name in `agents/roster.json`, and the backlog test rejects an unknown owner, so the marketing and store-text rows are owned by `content`, `legal` or the `web lane` and name marketing in the Scope. Adding a backlog owner name for marketing is a roster change for Karma.
+
+#### BL-1853 Store blocker: screenshot frame 6 names photos
+- Status: needs-founder (the founder's wording for the frame; unblocker: the founder approves the replacement text, then marketing and content recapture). Mode: human. Owner: content, legal. Milestone: M15. Size: S. Depends on: none.
+- Priority: P1 (the one blocker `docs/store/SCREENSHOT-COPY-AUDIT.md` names). Gate: founder wording; counsel sees public promise text (D-125 item 9). Lane: marketing, content.
+- Satisfies: PRIV-R21; NS-53-R192; D-125 item 9; D-126.
+- Problem and evidence: `docs/store/SCREENSHOT-COPY-AUDIT.md` lines 20 and 41 say the committed PNG for frame 6 shows a "What we never do" list whose third line names photos, which 1.0 does not have; the same audit says the image headline "Your book stays on your phone" is not true of a servers-on build, and that the list was retired on 8 Nov. The binary asks for no photo permission, so this is a store text claim about a feature that is off.
+- Scope: marketing and content recapture frame 6 from current `develop` so no photo line and no padlock list appear (the audit says no new words are needed for the list), and settle the headline against the servers-on build. The founder approves any wording; counsel reads the final frame.
+- Done when: the committed PNG and `captions.json` agree, neither mentions photos, and the founder's approval is recorded in this row.
+
+#### BL-1854 A signed-in phone cannot Erase now or Erase everything: trace and fix the gating, words held
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: none.
+- Priority: P1. Gate: none for the gating trace and fix; the words stay with BL-1805 (held) and BL-1857. Lane: mobile.
+- Satisfies: PER5-004 (P1); PER5-003 (P1); F17-REQ-026 (named as not built, so the Erase everything part is traced, not built); BL-1839 (the trace this row builds on).
+- Problem and evidence: `apps/mobile/src/app/settings/recently-deleted.tsx` line 64 calls `shelfActions({ sync: capabilities.sync })` with no `serverErase`, and `apps/mobile/src/components/book/shelf.logic.ts` lines 112 to 114 set `eraseNow: !build.sync || build.serverErase === true`, so a signed-in phone has no Erase now although the server path exists (`eraseEntry`, `apps/mobile/src/lib/store.ts` lines 972 to 1008, queues one id-only `entry.erase`; server `supabase/migrations/20261016000000_sync_v1_server.sql` lines 869 and 1247). Erase everything refuses on a signed-in phone (`apps/mobile/src/app/settings/erase.tsx` lines 62 to 69; `apps/mobile/src/lib/store.ts` lines 1131 to 1133 and 1236 to 1239). The shelf comment waiting on WP-F16-13 looks stale. UNVERIFIED: whether `syncOwner` is cleared on sign out (`apps/mobile/src/lib/sync/outbox.ts` line 134 says set once); whether sign-in is on in the store build (`apps/mobile/eas.json` line 61 says on, `apps/mobile/app.config.ts` lines 162 to 173 say off until submission).
+- Scope: (1) trace and write in this row which signed-in states reach Erase everything and whether sign out clears the owner; (2) pass the server-erase capability into the shelf so a signed-in phone shows Erase now and queues one `entry.erase`, with the stale comment corrected; (3) no string changes: the words stay as they are and BL-1805 stays held. The Erase everything signed-in wipe is not built here (an L build, not for 1 Dec, per BL-1804); the page keeps its existing fallback line. State in the PR body that once Erase now shows on a signed-in phone, the existing line is reachable there, so Karma decides the merge order against BL-1805 (a merge call, not a founder question).
+- Done when: a test shows `shelfActions` returns `eraseNow: true` on a sync build with the server capability and queues one id-only `entry.erase`, and a build with sync and no server erase still hides it; this row holds the sign-out trace with file and line; and the Erase everything gating is unchanged and covered by an existing or new test.
+
+#### BL-1855 Store text predates D-157, D-161 and D-162 and contradicts itself: refresh `docs/store/app-store.md` and the staged proposal
+- Status: needs-founder (the founder's wording; counsel confirms every claim; unblocker: the founder's wording on the lines listed in the scope). Mode: human. Owner: content, legal. Milestone: M15. Size: M. Depends on: none.
+- Priority: P1. Gate: founder wording; legal review (D-125 item 9); counsel Q57 and Q130 context. Lane: marketing, content.
+- Satisfies: D-125 item 9; D-157; D-161; D-162; BL-888; BL-1799 (the "each one signed" phrase).
+- Problem and evidence: `docs/store/app-store.md` line 5 says no sign-in, sync or co-parent sharing in the first store build, yet lines 115 to 136 carry a full servers-on co-parent review script (steps 1 to 7, "as the second parent", "each one signed" at line 136, a phrase that appears only there). `docs/store/app-store-staged-1.0-proposal.md` (applied 31 Oct, "still not approved by counsel") predates D-157 (servers on, 10 Nov), D-161 and D-162 (11 Nov) and says analytics, sign-in and sync are all off at build time (line 119); D-163 governs analytics for the production build, with the flag gate still open. "90 second" is NOT FOUND in either file; "A minute" appears in both.
+- Scope: marketing drafts one PR to the text sources that generate these files, listing every line that changes and why, so the founder can approve line by line: remove the co-parent script (no co-parent entry point in any store build, D-126, D-162); say what the servers-on build does and does not do; keep speaking-time wording and no timing figure (exec review, BL-1707); keep "each one signed" out; align the analytics line to D-163's gate. Any line that edits legal-adjacent text needs the founder's merge (D-125 item 5).
+- Done when: the two files agree with each other and with D-157, D-161, D-162 and D-163, no co-parent review script remains, the founder's approval of the changed lines is recorded in this row, and counsel's review is noted as pending or done.
+
+#### BL-1856 Website phone mock shows a Family tab (`apps/web/src/content/site.ts` line 138), against D-161
+- Status: needs-decision (unblocker: marketing or Karma checks whether earlyletters.com is live and whether `SITE_MODE=film` is set in the Vercel dashboard, which has no repo record; if the site is unlaunched this is a fail-closed hold, if live it is a fix; then product sets it ready or closes it). Mode: human. Owner: web lane, legal. Milestone: M15. Size: S. Depends on: none.
+- Set ready by: product manager, after the site live state is recorded here.
+- Priority: P1 if live, P2 if the site is unlaunched. Gate: the live state check. Lane: web.
+- Satisfies: D-161 ("Family is never a tab"; tabs are Home, Book, Me); D-126; D-162; D-125 item 9 (website promise text is a public claim).
+- Problem and evidence: `apps/web/src/content/site.ts` line 138 lists the phone mock tabs 'Tonight', 'Book', 'Family' (same line on `main`). A Production deployment of `main` succeeded on 21 Nov 2026 (commit `702e7df9`), and unset `SITE_MODE` on production returns the coming-soon page, not the film (`apps/web/src/lib/site-mode.ts`). Live content is UNVERIFIED. No "in an update" string exists in `site.ts` or `Landing.tsx`.
+- Scope: marketing or Karma records the live state; then change the mock tabs to match D-161 and the app (Home, Book, Me), or confirm the mock is only in the unlaunched film mode and leave a fail-closed note.
+- Done when: this row records the live state, and `site.ts` shows no Family tab or the row is closed with the reason.
+
+#### BL-1857 Delete account intro should say a former member's letters and the book label stay (D-116)
+- Status: needs-decision (counsel Q29, shared-book deletion, which the packet points to Q49; unblocker: counsel's answer on how the kept rows are described, then content applies). Mode: human. Owner: content, legal. Milestone: M15. Size: S. Depends on: BL-1804.
+- Priority: P1. Gate: counsel; founder merge (D-125 item 5, deletion words). Lane: content.
+- Satisfies: D-116; PER5-003 (P1); BL-1804; BL-1831; BL-1832.
+- Problem and evidence: `packages/content/src/features/account-deletion*.ts` (the `what.intro` line, about line 19) says "Deleting your account removes your letters and books from our servers. You have 30 days to change your mind." It does not say that a former member's letters, and the book row that keeps the child's name and dates to label them, stay (D-116, `docs/DECISIONS.md` lines 639 and 830). `docs/legal/delete-account-page.md` line 57 and `docs/legal/privacy-policy.md` line 116 do say it. The server does this: `prepare_account_purge` calls `purge_book_keep_authors` (`supabase/migrations/20261023020000_purge_legal_holds.sql` line 329). The kept row is readable by no app role until BL-444 (status not checked). UNVERIFIED: whether signed-in rows already on the phone stay readable after sign out.
+- Scope: one added factual sentence to the intro, in the glossary vocabulary, with the founder's merge; and a check that `what.deletedFamily` (co-parents saving a copy) does not imply the kept rows are gone. No claim that "your letters stay yours" until traced (BL-1832).
+- Done when: the intro states the kept rows, `packages/content/test/rules.test.ts` passes, and counsel's answer is cited in this row.
+
+#### BL-1858 Stale-text hygiene for the dormant photo words and the photo store docs
+- Status: blocked (the photo flag decision: the founder sets the flag date, with the five gates in `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13.1; unblocker: that decision, then content and privacy sweep). Mode: agent. Owner: content, privacy engineer. Milestone: M15. Size: S. Depends on: BL-1830, BL-1838.
+- Priority: P2. Gate: the photo flag decision. Lane: content, privacy.
+- Satisfies: PRIV-R21; NS-53-R192; BL-1838; BL-1830.
+- Problem and evidence: with the flag off, photo words and a dormant module still ship: `packages/content/src/strings.en.ts` line 525 (`photoButton`, no use found), lines 1034 and 1107 ("Never your letters, recordings, photos or anyone's names"; whether production shows these screens is UNVERIFIED), `packages/content/src/features/photos.en.ts`, and the autolinked `apps/mobile/modules/scribe-photo` (`ScribePhotoModule.swift` lines 30 to 35). Store docs carry stale or conditional photo lines: `docs/store/compliance/privacy-labels-apple.md` lines 56 and 103, `docs/store/compliance/permissions.md` line 40, `docs/store/compliance/README.md` line 91, `docs/store/compliance/data-safety-google-play.md` lines 41 and 52, `docs/store/readiness.md` lines 204 and 394. Public text (`packages/content/src/pages.en.ts` lines 73, 104 and 240; `docs/legal/privacy-policy.md` line 45) is true only while the flag is off.
+- Scope: after the flag decision, either remove the unused strings and correct the store docs (flag stays off), or re-read each line against the shipped photo behaviour (flag turns on); no new customer words without the founder and counsel.
+- Done when: no unused photo string remains in the bundle or each is tied to a shown screen, and the store docs match the decision.
