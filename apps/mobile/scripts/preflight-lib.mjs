@@ -197,6 +197,11 @@ export function forbiddenNativeProblems({ plist, entitlements, pbxproj, library 
   }
   const alertKey = 'PHPhotoLibraryPreventAutomaticLimitedAccessAlert';
   if ((keys.includes(alertKey) || keys.includes('NSPhotoLibraryUsageDescription')) && plistBool(plist, alertKey) !== 'true') add('limited-alert', `${alertKey} must be true whenever it or the library key exists (NX-39-R4).`);
+  // BL-1414 (MEDIA_THREAT_MODEL P8, P9): either key set true shows Documents (the recordings) in the Files app.
+  // Only an explicit false is clean; present with any other value fails closed. The text never echoes the value.
+  for (const [key, id] of [['UIFileSharingEnabled', 'file-sharing'], ['LSSupportsOpeningDocumentsInPlace', 'open-in-place']]) {
+    if (keys.includes(key) && plistBool(plist, key) !== 'false') add(id, `Info.plist sets ${key} to something other than false; that would show recordings in the Files app (MEDIA_THREAT_MODEL P8, P9).`);
+  }
   if (/com\.apple\.security\.application-groups/.test(entitlements)) add('app-group', 'Entitlements hold com.apple.security.application-groups; no app group exists (NX-39-R51).');
   if (EXTENSION_PRODUCT.test(pbxproj)) add('extension-target', 'The native project has a widget, share, notification or other app-extension target (NX-39-R51).');
   if (/CoreLocation/.test(pbxproj)) add('core-location', 'The native project links CoreLocation (NX-39-R4).');
