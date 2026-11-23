@@ -15,7 +15,9 @@ The founder preferred a verified phone number for everyone, even today. What is 
 
 The founder's directions (verbatim, lightly cleaned from voice, relayed by Karma): (1) "Easiest for us is also to allow Sign in with Apple and sign in with Google. Add for future backlog if we didn't currently. And remember to pick it up in future." (2) "In general we would prefer a verified phone number for everyone in future and even today."
 
-Today a parent has Sign in with Apple and email (link plus code). Google is built but off (`lib/auth/google.ts`, `supabase/config.toml` `[auth.external.google] enabled = false`) and the locked store card says no Google button (NS-41-R1, NS-41-R20). Two people who use two methods become two accounts with two empty books (see 2.3). Nothing verifies a person beyond an inbox, and the locked card says "never SMS or a phone number" (NS-41 section 14).
+Today a parent has Sign in with Apple and email (link plus code). Google is built but off (`lib/auth/google.ts`, `supabase/config.toml` `[auth.external.google] enabled = false`) and the locked store card says no Google button (NS-41-R1, NS-41-R20). Two people who use two methods become two accounts with two empty books (see 2.3). Nothing verifies a person beyond an inbox, the locked card says "never SMS or a phone number" (NS-41 section 14), and LEGAL-REQ-012 lists "phone number" as never collected.
+
+What the numbers below must not undercount: under D-160 a person signs in to use the store build, so the account already exists before the first letter (NS-41 section 2 calls the letter-first order stale). The path to the first letter already carries the age question, the sign-in, consent and the child step. A phone step is a fifth ask on that path; its cost in activation is real, which is why it never sits in front of the first letter.
 
 Why now: D-170 (draft, PR #1675) puts servers and account creation on, so every duplicate account, throwaway address and unverified sign-up now costs a real family or real money. The two directions pull different ways: Google makes sign-up easier; a phone makes it harder. This card sets the order so the first never waits on the second.
 
@@ -32,7 +34,7 @@ Why now: D-170 (draft, PR #1675) puts servers and account creation on, so every 
 | Phone number or SMS | Nothing. `phone_changed` notice template exists, unused. Counsel register: TCPA "No (no SMS in v1)", "re-run before adding SMS OTP". Privacy label: Phone Number "Not requested". | `config.toml:129`; `compliance-register.md` CR-062; `app-store-privacy-labels.md:47` |
 | Country check at sign-up | Hook built; applies to every method | NS-40-R9 to R12; D-131, D-136 |
 
-Conflicts found, not resolved here (row BL-1888): D-044 deferred Google, D-054 says Google at v1.0, `05-identity-and-access.md` IAM-R06 says Google is v1.1, and the locked NS-41-R1 and R20 keep Google out of the store build. NS-41 section 14 says "never ... SMS or a phone number", which Phase A to C below would reverse by erratum.
+Conflicts found, not resolved here (row BL-1888). D-044 ("Google sign-in moves to v1.1") was superseded by D-054, which the founder decided: "Sign-in: Apple, Google and email magic link". The founder-decided D-054 therefore stands against two documents that still follow D-044: the locked card (NS-41-R1: the Welcome offers "exactly Sign in with Apple ... and Sign in with email"; NS-41-R20: "no Google button and no passkey control renders") and `docs/engineering/05-identity-and-access.md` IAM-R05 ("Google sign-in is v1.1"; IAM-R06 is the password rule and is not in conflict). The erratum targets NS-41-R1, NS-41-R20 and IAM-R05. NS-41 section 14 says "Never a password, a reset flow, SMS or a phone number", and `docs/legal/ENGINEERING_REQUIREMENTS.md` LEGAL-REQ-012 lists "phone number" under "Never collected"; Phases A to C would reverse both, so each needs its own change (BL-1888 for the card, BL-1909 for the legal text, which counsel sees).
 
 ### 2.3 Why linking matters: the duplicate account
 
@@ -75,13 +77,14 @@ Launch dependency: D-170 turns servers and account creation on. Phone Phase A is
 | NS-54-R4 | Given a Hide My Email Apple account, When mail is sent to it, Then it arrives (relay domain registered) and the app shows the method, not the relay address (exists as NS-41-R18) | P0 (c) | `[NS-54-R4] relay mail arrives` (device) |
 | NS-54-R5 | Given an account deleted that used Apple, When the purge runs, Then the Apple token is revoked and the receipt says so | P0 (b) | `[NS-54-R5] deletion revokes Apple` |
 | NS-54-R6 | Given the founder has turned Google on for a profile, When both client ids are in that build and the hosted provider is enabled, Then a Google button shows beside Apple and email; Given either is missing, Then no Google control renders and `auth.noEmailHelp` names only what shows | P0 (b) | `[NS-54-R6] Google shows only when it works` |
-| NS-54-R7 | Given Google, When sign-in finishes, Then the ID token audience is our client id, Supabase keeps what it keeps, and we store no Google token, refresh token or profile picture, and read email and name only as Supabase returns them | P0 (b) | `[NS-54-R7] no Google token stored by us` |
+| NS-54-R7 | Given Google, When sign-in finishes, Then the ID token audience is our client id, Supabase keeps what it keeps (read from the version we run and written down, BL-1892), and we store no Google access or refresh token and no profile picture anywhere off the phone, and read email and name only as Supabase returns them | P0 (b) | `[NS-54-R7] no Google token stored by us` |
 | NS-54-R8 | Given a Google sign-up from a refused country, When the hook runs, Then it is refused as NS-40-R10 says, and the screen is the neutral refusal, not an error | P0 (b) | `[NS-54-R8] Google meets the country check` (staging) |
 | NS-54-R9 | Given an account that used Google, When it is deleted, Then no Google data of ours remains, the deletion receipt names `google: none held`, and what Google itself requires at deletion is read and written down before Google ships | P0 (b) | `[NS-54-R9] deletion holds no Google data` |
 | NS-54-R10 | Given sign-in versus creation, When a person taps Apple or Google, Then the same door serves both, the words never say "sign up" or "log in" (NS-41-R1), and consent and the age step follow only for a new account | P0 (c) | `[NS-54-R10] one door for new and returning` |
 | NS-54-R11 | Given a method fails or is cancelled, Then `cancelled` shows nothing and every other kind shows its words line with no provider text (exists: NS-41-R7) | P0 (c) | `[NS-54-R11] provider errors have words` |
 | NS-54-R12 | Given a Google or Apple outage, Then email still works and the reverse; a method is never the only way in | P1 | `[NS-54-R12] no single method is a dead end` |
 | NS-54-R13 | Given VoiceOver and AX5 on iPhone SE 3, Then each provider button reads as a button with its provider, and nothing truncates | P0 (b) | `[NS-54-R13] provider buttons are accessible` |
+| NS-54-R38 | Given Google is a social network credential for Apple's account-sign-in rule, Then the app has an in-app way to revoke it (Ways to sign in, remove Google, R14 and R17) that ends our use of it, and no Google credential or token is stored off the device; Apple's text (guideline 5.1.1(v), read on the Apple page for this card) says an app "must also include a mechanism to revoke social network credentials and disable data access between the app and social network from within the app" and "may not store credentials or tokens to social networks off of the device". Counsel and the regulatory lead confirm how it applies to Sign in with Google, which is not a social-network feed | P0 (b) | `[NS-54-R38] Google can be revoked in the app and no token is kept off the phone` |
 
 ## 6. Requirements: linking and duplicate prevention
 
@@ -121,7 +124,10 @@ A verified phone number is a one-time code sent by text to a number the person t
 | NS-54-R22 | Given Phase A, When the first letter is kept, Then one optional prompt may show after Keep and never before the first letter, Not now is as large as Continue, and nothing else is withheld | P1 | `[NS-54-R22] phone is asked after the first letter, never before` |
 | NS-54-R23 | Given a number typed, When Send is tapped, Then one text with a code is sent, the number is normalised to E.164 on the phone, and the screen is the same for a number that has an account and one that has not | P1 | `[NS-54-R23] sending a code reveals nothing about the number` |
 | NS-54-R24 | Given the code, Then it is single use, expires in no more than ten minutes, has a per-number and per-IP send limit with a daily cap for the whole project, and five wrong tries pause entry (as NS-41-R9) | P0 (b) | `[NS-54-R24] code limits and pause` |
-| NS-54-R25 | Given a verified number, Then the account row holds the number and a verified time and nothing else of the carrier or the code; the number is deleted with the account and within the deletion window, and the SMS vendor holds no content beyond what its contract says (DATA-REQ rows added by BL-1899) | P0 (b) | `[NS-54-R25] number deleted with the account` |
+| NS-54-R25 | Given a verified number, Then the account row holds the number and a verified time and nothing else of the carrier or the code; the number is deleted with the account and within the deletion window, and the SMS vendor holds no content beyond what its contract says (DATA-REQ rows added by BL-1899; access, export and removal are R39 to R41) | P0 (b) | `[NS-54-R25] number deleted with the account` |
+| NS-54-R39 | Given a verified number, When the person opens Me, Account, Then they can see that a number is verified and its last two digits, and when it was verified (access); the full number is never shown | P1 | `[NS-54-R39] a person can see that a number is held` |
+| NS-54-R40 | Given the account export, Then it lists the verified number and its verified time in the account part of the package, and the spec's export section says so (BL-1909) | P0 (b) | `[NS-54-R40] the export includes the phone number` |
+| NS-54-R41 | Given a verified number, When the person removes it in Me, Then it is deleted from the account and from the vendor's side as the contract allows, a notice email goes out, and they can verify a new one; removal never ends the session | P1 | `[NS-54-R41] a person can remove and re-verify the number` |
 | NS-54-R26 | Given any log, breadcrumb, route param, crash report or analytics event, Then it holds no phone number, partial number or code (log canary, extending NS-41-R16) | P0 (b) | `[NS-54-R26] the phone number never reaches a log` |
 | NS-54-R27 | Given the provider fails, there is no signal, or the code never arrives, Then the screen says so in words, offers resend after a wait, another way (7.4) and Not now (Phase A), and an unfinished check never blocks the book on the phone | P0 (c) | `[NS-54-R27] a failed text never blocks the book` |
 | NS-54-R28 | Given a number from a country the SMS provider cannot reach, or a premium or virtual number the provider flags, Then the person is told this number cannot be used and offered the fallback; the reason shown is never "fraud" | P1 | `[NS-54-R28] unreachable or flagged numbers have a way on` |
@@ -137,7 +143,7 @@ A verified phone number is a one-time code sent by text to a number the person t
 
 ### 7.4 Fallback for people without a phone, or abroad (accessibility and inclusion)
 
-Open (not decided): in Phase B a person with no mobile number (a Wi-Fi-only device, a shared family phone, a landline, no coverage, a hearing or speech difference that makes a phone fraught) must still be able to keep a book. Options for the founder with counsel: a voice-call code [UNVERIFIED: provider support]; a support-led check by email; allow "Not now" for a longer grace; or treat Phase B as a limit on cloud features only (sync, backup, co-parent) while the book on the phone stays free. Recommendation: the last one, because it never takes away what is already the person's.
+Open (not decided): D-160 makes sign-in required in the store build, so every person in Phase B already has an account and a book before the phone step, and D-161 rules out a "coming soon" surface: a cloud feature that waits on a number is hidden or absent, never shown disabled with a teaser, and the phone step appears only where a cloud feature works. In Phase B a person with no mobile number (a Wi-Fi-only device, a shared family phone, a landline, no coverage, a hearing or speech difference that makes a phone fraught) must still be able to keep a book. Options for the founder with counsel: a voice-call code [UNVERIFIED: provider support]; a support-led check by email; allow "Not now" for a longer grace; or treat Phase B as a limit on cloud features only (sync, backup, co-parent) while the book on the phone stays free. Recommendation: the last one, because it never takes away what is already the person's; it is also the default if the gate in Q8 does not clear.
 
 ### 7.5 Open questions made explicit (each has an owner; none is decided here)
 
@@ -145,12 +151,12 @@ Open (not decided): in Phase B a person with no mobile number (a Wi-Fi-only devi
 |---|---|---|---|
 | Q1 | Which SMS provider, and the per-message cost and cap | Compare two or three in the spike (BL-1896); choose by delivery in our countries, fraud tools and a hard spend cap; the founder decides spend | founder, platform |
 | Q2 | US SMS rules: consent text, carrier sender registration, TCPA, state laws, opt-out and help words [UNVERIFIED, none read] | Counsel reads and answers before any real send (BL-1897); CR-062 is re-run | counsel via legal |
-| Q3 | Where is "required" in Phase B | After the first letter is kept and before anything leaves the phone (the claim step, NS-41-R5): cloud features only (7.4) | product with founder |
+| Q3 | Where is "required" in Phase B | The account exists from the door (D-160), so "required" cannot mean before the account: it means before the first cloud feature the account would turn on (sync, backup, co-parent invite), shown only where that feature works (D-161); never before the first letter. The NS-41-R5 claim step applies only to the outage local start | product with founder |
 | Q4 | After Apple or Google, is a number asked right away | Same rule as email: after the first letter, not at the door (NS-54-R32) | product |
 | Q5 | Before inviting a co-parent | Yes, for the sender only (NS-54-R33) | product, security |
 | Q6 | Fallback in 7.4 | Cloud features only | founder with counsel |
 | Q7 | Phone as a sign-in door too | No, factor only (non-goal) | founder to confirm |
-| Q8 | Store review: does asking for a number need a stated reason in the review notes, and does it affect the age rating or the 5.1.1 data minimisation duty [UNVERIFIED; do not cite from memory] | Read before Phase B | regulatory lead, compliance |
+| Q8 | HARD GATE for Phase B. Apple guideline 5.1.1(v), read on the Apple page for this card: "Apps may not require users to enter personal information to function, except when directly relevant to the core functionality of the app or required by law." A required phone number is personal information; whether it is "directly relevant to the core functionality" of a baby memory book is not for product to decide | Phase B does not ship until the regulatory lead and counsel say it may; until then the default is "cloud features only" with the book on the phone never gated (7.4) | regulatory lead, compliance, counsel |
 
 ### 7.6 Why: abuse and fraud against friction
 
@@ -161,7 +167,7 @@ For: one inbox is cheap to make, so a verified number raises the cost of throwaw
 | Phase | What | Cost | Risk |
 |---|---|---|---|
 | A | Optional prompt after the first letter; always in Me | Lowest friction; produces the data we need to choose | Few verify, so abuse gain is small |
-| B | Required for new accounts for cloud features, with fallbacks | Some activation loss if placed early | Needs 7.4 fallback, label, counsel |
+| B | Required for new accounts for cloud features, with fallbacks | Some activation loss if placed early | Hard gate Q8 (5.1.1(v)), 7.4 fallback, label, counsel |
 | C | Required for existing accounts after a grace period | Touches people who were promised no number | Highest friction; trust cost |
 
 ### 7.8 Recommendation
@@ -170,7 +176,17 @@ Phase A first, built after the submission candidate, with the long-lead rows (sp
 
 ### 7.9 The measure that would change the mind
 
-Counts per release (small numbers are shown as counts, never percentages below 20 people): people who start the prompt, who finish it, who choose Not now; the share who reach a first letter after seeing it against before it; accounts flagged for abuse or support contact per 100 new accounts, split by verified or not. Move to B if abuse among unverified accounts is clearly higher and the prompt cost less than a small drop in first-letter rate; stay at A, or drop it, if completion is very low or first-letter rate falls with it. The thresholds are set by the founder when the first counts exist; none is set here.
+Design. The prompt is shown to a share of new accounts chosen by install, and the rest see none (a control), so a change in first-letter rate is not confused with a change in the people arriving that week. Compare within the same sign-in method (Apple, Google, email) and the same arrival week.
+
+Minimum sample. No comparison is read until each group holds at least 20 people who reached the prompt point; below that the counts are shown as counts, never percentages, and no decision is made from them.
+
+Counts per release: people who start the prompt, who finish it, who choose Not now; first-letter rate in each group; abuse (below) per 100 new accounts, split by verified or not.
+
+Abuse means: an account we closed or blocked for abusive use, or one reported through Contact us or Report a concern as abusive, counted by hand from the reason code and never from letter content. Nothing else counts.
+
+Pause trigger (named, acts through R37): pause the step if first-letter rate in the prompted group is below the control by more than a margin the founder sets (at 20 or more people in each group), or if SMS spend reaches 80 percent of the cap in any period, or if a phone number is ever found in a log. Pausing never signs anyone out or removes a number.
+
+Move to B only if abuse among unverified accounts is clearly higher than among verified ones at the minimum sample, the gate in Q8 has cleared, and the prompted group's first-letter rate is not meaningfully lower; stay at A, or drop it, if completion is very low. The margin and the thresholds are set by the founder when the first counts exist; none is set here.
 
 ## 8. Scenarios (Asha, in plain language)
 
@@ -187,15 +203,16 @@ Counts per release (small numbers are shown as counts, never percentages below 2
 | S9 | The parent adds a phone number after the first letter and types the code | Verified; only the last two digits show; no number in logs | R22, R23, R26 |
 | S10 | The text never arrives (no signal, provider down) | Words, resend after a wait, another way, Not now; the book is untouched | R27 |
 | S11 | Asha's parent is travelling and has a foreign SIM | A number from a supported country verifies; if not, the fallback shows | R30, R28 |
-| S12 | A new account is made from an embargoed IP | Refused after the code by the neutral screen on every method; the number's country code never refuses alone | R8, R29 |
+| S12 | A new account is made from an embargoed IP | Refused at account creation by the neutral screen on every method: for email after the code is entered (never at Send, NS-40-R9), for Apple and Google as soon as the provider's sheet returns, with no code step; the number's country code never refuses alone | R8, R29 |
 | S13 | The parent loses their phone and number | Signs in on a new phone with Apple, Google or email, removes the old number, verifies a new one; the book comes back | R31 |
 | S14 | The parent deletes the account | Number and Apple or Google links removed with the account; receipt lists each | R5, R9, R25 |
 | S15 | Asha's parent invites a co-parent | Sender's check applies; the co-parent is not asked for a number to read what is shared | R33 |
 | S16 | A bot asks for many texts to many numbers | Per-number, per-IP and project limits stop it; spend cap holds | R24 |
+| S17 | Asha's parent asks what number we hold, then removes it | Sees last two digits and the verified time; export lists it; removal works and a new number can be verified | R39, R40, R41 |
 
 ## 9. Backlog rows
 
-BL-1888 to BL-1907 (section "Sign-in methods and phone verification (NS-54)" at the end of `docs/BACKLOG.md`).
+BL-1888 to BL-1910 (section "Sign-in methods and phone verification (NS-54)" at the end of `docs/BACKLOG.md`).
 
 ## 10. Decision proposals for the founder (drafted, not entered in `DECISIONS.md`)
 

@@ -9542,12 +9542,12 @@ Note, not a ruling, and a scope question. Scope and dates stay with the founder 
 
 ## Sign-in methods and phone verification (NS-54)
 
-Source: `docs/product/prd/29-sign-in-methods-and-phone-verification.md` (card NS-54, PROPOSED). Ids BL-1888 to BL-1907 (PR #1669 holds BL-1877 to BL-1885 and PR #1675 holds BL-1886 and BL-1887). Founder spend, vendor accounts and counsel readings are `human` rows; no row asks the founder to approve, review, merge or paste.
+Source: `docs/product/prd/29-sign-in-methods-and-phone-verification.md` (card NS-54, PROPOSED). Ids BL-1888 to BL-1910 (PR #1669 holds BL-1877 to BL-1885 and PR #1675 holds BL-1886 and BL-1887). Founder spend, vendor accounts and counsel readings are `human` rows; no row asks the founder to approve, review, merge or paste.
 
-#### BL-1888 Reconcile sign-in policy: erratum for NS-41 R1, R20 and the never-a-phone line, and the D-044, D-054, IAM-R06 conflict
+#### BL-1888 Reconcile sign-in policy: erratum for NS-41 R1, R20, IAM-R05 and the never-a-phone line (D-054 against the locked card)
 - Status: ready. Mode: agent. Owner: product manager. Milestone: M15. Size: S. Priority: P1. Depends on: none.
-- Satisfies: NS-54; D-044, D-054; `docs/engineering/05-identity-and-access.md` IAM-R05, IAM-R06; NS-41-R1, R20, section 14.
-- Scope: Draft the next numbered erratum in `docs/product/prd/18-errata-after-lock.md` listing every changed id (NS-41 R1 and R20 when Google ships; the never-SMS line only after counsel), and a proposed D-### entry for the founder on Google timing. Nothing is applied until the founder records the decision.
+- Satisfies: NS-54; D-044 ("Google sign-in moves to v1.1"), D-054 (founder-decided, supersedes D-044); `docs/engineering/05-identity-and-access.md` IAM-R05 ("Google sign-in is v1.1"); NS-41-R1, NS-41-R20, NS-41 section 14; LEGAL-REQ-012 ("phone number" under never collected; the legal change itself is BL-1909).
+- Scope: Draft the next numbered erratum in `docs/product/prd/18-errata-after-lock.md` listing every changed id (NS-41 R1 and R20 and IAM-R05 when Google ships; the NS-41 never-SMS line only after counsel, and never ahead of the LEGAL-REQ-012 change in BL-1909), and a proposed D-### entry for the founder on Google timing. Nothing is applied until the founder records the decision.
 - Done when: the erratum and the proposal are in a PR with each changed id listed; no locked row changes before then.
 
 #### BL-1889 Sign in with Apple: test titles and hosted read-back for what exists (NS-54-R1 to R5)
@@ -9557,9 +9557,9 @@ Source: `docs/product/prd/29-sign-in-methods-and-phone-verification.md` (card NS
 - Done when: each of R1 to R5 has a title that goes red under its mutant.
 
 #### BL-1890 Google in the store build: profiles, button, help line and the NS-41-R20 flip
-- Status: proposed (NS-54; waits on the founder's Google timing call and BL-1888). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Priority: P1. Depends on: BL-1888, BL-1891, BL-1893.
+- Status: proposed (NS-54; waits on the founder's Google timing call and BL-1888). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Priority: P1. Depends on: BL-1888, BL-1891, BL-1893, BL-1908.
 - Satisfies: NS-54-R1, R6, R10, R11, R13; NS-41-R20; A-REQ-017.
-- Scope: Set the Google client ids in the profiles the founder names (ids are public, no secret), keep the no-ids-no-button rule, update `auth.noEmailHelp` so it names only what shows (words PROPOSED by `content`), and update the NS-41-R20 test to the new truth. Google must not render before linking (BL-1893) is merged.
+- Scope: Set the Google client ids in the profiles the founder names (ids are public, no secret), keep the no-ids-no-button rule, update `auth.noEmailHelp` so it names only what shows (words PROPOSED by `content`), and update the NS-41-R20 test to the new truth. Google must not render before linking (BL-1893) is merged and the public texts for Google (BL-1908) are published: the legal-docs test fails if a published document names Google while the build does not offer it.
 - Done when: a build with both ids shows Google beside Apple and email, one without shows none, and the tests for both pass.
 
 #### BL-1891 Google Cloud project, consent screen, iOS clients and the Supabase Google provider
@@ -9571,7 +9571,7 @@ Source: `docs/product/prd/29-sign-in-methods-and-phone-verification.md` (card NS
 #### BL-1892 Google sign-in and deletion: read what Google requires and prove we hold nothing
 - Status: ready. Mode: agent. Owner: security engineer. Milestone: M15. Size: S. Priority: P1. Depends on: none.
 - Satisfies: NS-54-R7, R9; A-NFR-011; DATA-REQ-019.
-- Scope: Read Google's current rules for apps that delete an account that signed in with Google [UNVERIFIED, not read], then write a test that after `signInWithIdToken` we store no Google token and after deletion no Google data remains, and add a `google: none held` line to the deletion receipt only if the receipt format allows it.
+- Scope: Read Google's current rules for apps that delete an account that signed in with Google [UNVERIFIED, not read], then read what Supabase Auth keeps server-side for a Google identity on the version we run and write it down; write a test that after `signInWithIdToken` we store no Google access or refresh token off the phone (Apple guideline 5.1.1(v), read on the Apple page: no credentials or tokens to social networks off the device) and after deletion no Google data remains, and add a `google: none held` line to the deletion receipt only if the receipt format allows it.
 - Done when: the finding and the test are in the PR, and the receipt line is added or its absence is explained.
 
 #### BL-1893 Linking rules: manual linking on with its screen, same-verified-email test, one method one account
@@ -9582,8 +9582,8 @@ Source: `docs/product/prd/29-sign-in-methods-and-phone-verification.md` (card NS
 
 #### BL-1894 Ways to sign in screen, duplicate-account line before consent, last-method guard
 - Status: proposed (NS-54; waits on design and BL-1893). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Priority: P1. Depends on: BL-1893, BL-1895.
-- Satisfies: NS-54-R14, R16, R17; A-REQ-019.
-- Scope: Build the Ways to sign in screen in Me (add and remove, never the full address) and the one line before consent that names a likely duplicate (words PROPOSED by `content`, held for counsel). Split into two PRs if over the size cap.
+- Satisfies: NS-54-R14, R16, R17, R38; A-REQ-019.
+- Scope: Build the Ways to sign in screen in Me (add and remove, never the full address; removing Google is the in-app way to revoke it, NS-54-R38) and the one line before consent that names a likely duplicate (words PROPOSED by `content`, held for counsel). Split into two PRs if over the size cap.
 - Done when: the screen and the line exist and the tests for R14, R16, R17 pass.
 
 #### BL-1895 Design: Ways to sign in, the duplicate line, and the phone steps
@@ -9612,7 +9612,7 @@ Source: `docs/product/prd/29-sign-in-methods-and-phone-verification.md` (card NS
 
 #### BL-1899 Phone number in the data classification, data map, subprocessor list and deletion spec
 - Status: ready. Mode: agent. Owner: privacy engineer. Milestone: M15. Size: S. Priority: P1. Depends on: none.
-- Satisfies: NS-54-R25, R35; `docs/legal/DATA_CLASSIFICATION.md`; DATA-REQ.
+- Satisfies: NS-54-R25, R35; LEGAL-REQ-012 (the data-map row can only be added after the allowlist change, BL-1909); `docs/legal/DATA_CLASSIFICATION.md`; DATA-REQ.
 - Scope: Add the rows: phone number (direct identifier, retention, deletion with the account), the SMS vendor as a subprocessor (marked draft until BL-1898), and the deletion-receipt line. No policy text is written here.
 - Done when: the rows exist and the data-map checker passes.
 
@@ -9629,7 +9629,7 @@ Source: `docs/product/prd/29-sign-in-methods-and-phone-verification.md` (card NS
 - Done when: the canary fails when a number is planted in a log, event or crash breadcrumb.
 
 #### BL-1902 Phone verification Phase A: optional prompt after the first letter and in Me
-- Status: blocked (BL-1895, BL-1896, BL-1897, BL-1898, BL-1899, BL-1900, BL-1901). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: L. Priority: P1. Depends on: BL-1895, BL-1896, BL-1897, BL-1898, BL-1899, BL-1900, BL-1901.
+- Status: blocked (BL-1895 to BL-1901 and BL-1909). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: L. Priority: P1. Depends on: BL-1895, BL-1896, BL-1897, BL-1898, BL-1899, BL-1900, BL-1901, BL-1909.
 - Satisfies: NS-54-R22 to R28, R31, R32, R34, R37.
 - Scope: Add the optional step with its server pieces through `data architect` and `auth owner` reviews, limits per R24, remove-and-reverify in Me, and the pause switch. Split into app and server PRs under the size cap. Words are `content`'s and held for counsel.
 - Done when: a staging account verifies a test number, Not now keeps every feature, and R22 to R28 tests pass.
@@ -9643,7 +9643,7 @@ Source: `docs/product/prd/29-sign-in-methods-and-phone-verification.md` (card NS
 #### BL-1904 Device rows for NS-54 on the release candidate: Apple relay mail, Google, link, phone, no signal, abroad
 - Status: blocked (BL-1890, BL-1902). Mode: human. Owner: qa engineer. Milestone: M15. Size: M. Priority: P1. Depends on: BL-1890, BL-1902.
 - Satisfies: NS-54-R4, R13, R27, R30, R34.
-- Scope: Add the rows to `docs/qa/DEVICE_TEST_PLAN.md` and run them on the phones to hand with the Asha test accounts; record in `docs/qa/evidence/`. Listed in the device sheet in `docs/release/FOUNDER_QUEUE.md`.
+- Scope: Add the rows to `docs/qa/DEVICE_TEST_PLAN.md` and run them on the phones to hand with the Asha test accounts; record in `docs/qa/evidence/`. This is a device run for the QA engineer on the phones to hand; it is not a founder task and nothing in it asks the founder to do anything.
 - Done when: every NS-54 device row has a recorded result.
 
 #### BL-1905 Notice email when a sign-in method or a phone number is added or removed
@@ -9717,3 +9717,21 @@ Source: `docs/product/prd/29-sign-in-methods-and-phone-verification.md` (card NS
 - Satisfies: Refines BL-1844 (`supabase/migrations/20261123000000_invite_redeem_retry_live_role.sql`).
 - Scope: (1) a test for a concurrent claim (two callers, one code) with a mutant; (2) the inner `accept_child_invite_by_code` has no role-change test: add one with a mutant; (3) the rollback line of File 45 in `supabase/APPLY.md` says "re-create the function from" the older file: it should say to do so in a new migration, never by editing an applied one.
 - Done when: both tests exist and turn red under their mutants, the APPLY.md line says "in a new migration", and `npm run test:db` passes.
+
+#### BL-1908 Public texts for Google: Terms 3.1, privacy policy and subprocessor list (precedes the Google button)
+- Status: needs-founder (counsel; legal text counsel must see before publish). Mode: human. Owner: legal. Milestone: M15. Size: S. Priority: P1. Depends on: BL-1888.
+- Satisfies: NS-54-R6, R38; `docs/legal/terms-of-service.md` 3.1 (lists only Apple and email today); `docs/legal/privacy-policy.md`; `docs/legal/subprocessors.md`; `packages/content/test/legal-docs.test.ts`.
+- Scope: hand counsel a draft that names Sign in with Google in Terms 3.1, the privacy policy and the subprocessor list, and the privacy label check. Publish in step with the build that offers the button: the legal-docs test fails if a published document names Google while the build does not.
+- Done when: counsel has read the draft, the texts are published with the build, and BL-1890 can start.
+
+#### BL-1909 Legal text changes for a phone number: LEGAL-REQ-012 allowlist, export and deletion spec
+- Status: needs-founder (counsel; handoff to legal). Mode: human. Owner: legal. Milestone: M15. Size: S. Priority: P1. Depends on: BL-1897.
+- Satisfies: NS-54-R25, R35, R39, R40, R41; LEGAL-REQ-012 (`docs/legal/ENGINEERING_REQUIREMENTS.md:117`, "phone number" under never collected); `docs/legal/DELETION_AND_EXPORT_SPEC.md` sections 2.6 and 4.
+- Scope: product hands counsel the draft changes: move "phone number" off the never-collected list for a verified account number only, and add the number to the export package (4.2), the deletion inventory (2.6) and a remove-and-re-verify path. Nothing here is edited by an agent without counsel's reading.
+- Done when: counsel has recorded the changes and the spec and allowlist match; BL-1910 and BL-1902 can start.
+
+#### BL-1910 Phone number access, export and removal in the account (NS-54-R39 to R41)
+- Status: blocked (BL-1909). Mode: agent. Owner: data architect. Milestone: M15. Size: M. Priority: P1. Depends on: BL-1909.
+- Satisfies: NS-54-R39, R40, R41; DATA-REQ (access and export).
+- Scope: the export includes the verified number and time, Me shows the last two digits and the verified time, and removal deletes the number and allows a new one; tests with a mutant each; grants in the same migration if a function is added. Split into server and app PRs under the size cap.
+- Done when: the three requirement tests pass and `npm run test:db` passes.
