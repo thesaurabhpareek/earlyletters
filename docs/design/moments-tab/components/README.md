@@ -34,11 +34,21 @@ Each entry in `docs/design/COMPONENTS.md` section 2.27 to 2.34 is a short summar
 
 | Gap | Where it bites | Proposal |
 |---|---|---|
-| `motion.carry` { ms: 320 } is approved (DC-3) and not yet in `tokens.ts` (grep at develop `f59e000d`: no `carry`) | The Start hand-off flight; `07-picker-bars.md` refers to it | Land with a stepped timeline test in the Start hand-off PR, as DC-3 says |
+| `motion.carry` { ms: 320 } is approved (DC-3, O-58). CLOSED: it is in `tokens.ts` with its test (the design-tokens PR for the Moments motion spec) | The Start hand-off flight; `07-picker-bars.md` refers to it | Done. The stepped `carryPlan` timeline test stays with `mobile`'s flight PR (motion spec 6.2 item 2) |
 | No 48 pt action height; EXP 2.3 and G-02 ask for 48 with 44 as the floor | Card actions, `06-day-card.md` | `target.action: 48` (web keeps `target.web`), or use `space[10]` and say so; `design-systems` decides at the story screen |
 | `layout.listRowMin` is 52; G-07 and G-08 say 56 | Month rows, Me rows | Use `target.primary` (56) as the AX5 minimum; leave 52 for default size; confirm |
 | `sheetTitle` (title2 at `maxScale` 1.4) is named in EXP 12 and absent from `tokens.ts` | Host sheet heading at AX1 and above | Add as a type role with a test |
 | No named `UndoRow` or enlarge-close metrics | `01`, `03` | None needed: composed from `target.min`, `space`, `layout.gutter`; listed so nobody adds raw values |
+
+## Awaiting a Chief Design Officer ruling (not in `tokens.ts`; nothing below was invented)
+
+Three gaps above are design choices, not decided values, so the tokens PR does not add them. Each needs a CDesO ruling first; `design-systems` then adds the token and its test in one small PR.
+
+| Gap | Ruling needed | Recommendation from `design-systems` |
+|---|---|---|
+| `target.action` (48 pt) | Is there one 48 pt action height, with 44 (`target.min`) as the floor? | Yes: add `target.action: 48` for card actions. It is above the 44 floor, below the 56 primary, and gives the day card actions a named value instead of `space[10]`. Web keeps `target.web`. |
+| `layout.listRowMin` 52 against 56 (G-07, G-08) | Which minimum do month rows and Me rows use? | Keep 52 for default size and use `target.primary` (56) as the minimum from AX1 up, as the table above proposes. If the CDesO prefers 56 everywhere, change `listRowMin` itself and re-run the baselines, because Me rows move too. |
+| `sheetTitle` (title2, `maxScale` 1.4) | Is it a new type role, and at which cap? | Add it as a type role at `maxScale` 1.4 as EXP 12 names it, with a test that the cap is at most the `title2` cap and that it is not truncated at AX5 (D-027). |
 
 ## Conflicts between source texts, and the call this folder makes (each is a one-line row edit for `product` or a decision for the founder)
 

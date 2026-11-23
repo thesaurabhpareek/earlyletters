@@ -30,11 +30,12 @@ describe('photo and Find flags in store profiles (BL-958)', () => {
     expect(storeFlagProblems(realEas())).toEqual([]);
   });
 
-  it('names exactly the three flags, and production is never an allowed profile before G6', () => {
+  it('names exactly the four flags, and production is never an allowed profile before G6', () => {
     expect(STORE_FLAGS.map((f) => [f.env, f.card])).toEqual([
       ['EXPO_PUBLIC_PHOTOS', 'NS-01'],
       ['EXPO_PUBLIC_BOOK_SEARCH', 'NS-02'],
       ['EXPO_PUBLIC_NEW_DEVICE_EMAIL', 'NS-08'],
+      ['EXPO_PUBLIC_BACKUP_LINE', 'NS-10'],
     ]);
     for (const f of STORE_FLAGS) expect(f.allowedOn).not.toContain('production');
   });

@@ -645,7 +645,7 @@ Renumbered on 15 Oct 2026 by the merge train: these six entries were drafted as 
 | D-122 | Repository stance: add an All rights reserved `LICENSE`, no open-source licence, outside pull requests limited to collaborators, new design-level detail goes to a private repository, the repository stays public for now (macOS CI cost and ADR 0022 assume public). Planning documents never ship in the app or the website, and a guard script checks it | Decided (coordinator with the CTO analysis, on the founder's delegation, 28 Oct 2026; founder may reverse) | Yes | 2026-10-28 |
 | D-123 | Requirement rules RR-1 to RR-13 adopted with changes: ratchet instead of blocking checks, no mass demotion of P0 before the go/no-go (Mon 9 Nov, D-130), claim registry and per-language device runs deferred, the support-reply promise held as a question | Decided (coordinator with the CTO analysis, on the founder's delegation, 28 Oct 2026) | Yes | 2026-10-28 |
 | D-124 | Open-question sweep: alpha freeze Tue 3 Nov and go/no-go Mon 9 Nov (D-130) confirmed; the two-parent cap takes effect when co-parent sharing first ships; in-app analytics stays off for the whole 1.0 line; #127 is superseded by D-100 and D-121; D-111 item 6 (backup is free) stands | Decided (coordinator on the founder's delegation, 28 Oct 2026; founder may reverse) | Yes | 2026-10-28 |
-| D-125 | Rulings on the remaining open questions: DR-19 option A; DR-01 unlock order; DR-21 as written with a minimum sample; DR-15 A; the merge-delegation record (DR-20 and 08 section 6.2 superseded); the entity gate for the production App Store record; the counsel questions that gate the first binary; the store listing holds "exactly as you said it" until counsel clears it | Decided (coordinator on the founder's delegation, 28 Oct 2026; founder may reverse). Counsel and Apple sign-off are not delegated | Yes for the plan | 2026-10-28 |
+| D-125 | Rulings on the remaining open questions: DR-19 option A; DR-01 unlock order; DR-21 as written with a minimum sample; DR-15 A; the merge-delegation record (DR-20 and 08 section 6.2 superseded); the entity gate for the production App Store record; the counsel questions that gate the first binary; the store listing holds "exactly as you said it" until counsel clears it | Decided (coordinator on the founder's delegation, 28 Oct 2026; founder may reverse). Counsel and Apple sign-off are not delegated; Amended by D-168 (merge act only) | Yes for the plan | 2026-10-28 |
 | D-126 | The store build shows no "coming soon" co-parent surface while server features are off: the Family tab, the Settings row and the invite screens are hidden by the existing capability switch. Alpha build 2 (`preview`, servers on) keeps the current screens; build 1 (`testflight`, servers off) would hide them too, once the change lands | Decided (coordinator on the founder's delegation, 28 Oct 2026; founder may reverse) | Yes for the plan; the code change waits for the go/no-go (Mon 9 Nov, D-130) | 2026-10-28 |
 | D-127 | The founder's words, the only founder words in this entry: "Use an open source version. Why pay for things that good open source versions exist." The coordinator reads them as: the agent harness gets no paid inference. The coordinator's operating rule under that reading (the GitHub-hosted harness stays off, `AGENTS_ENABLED` unset; agent work continues from the coordinator session; a zero-cost open-weight route is tried only after the go/no-go and only if it needs no payment card) is recorded in the entry and is not the founder's words | Decided (founder, 30 Oct 2026); operating rule by the coordinator (founder may reverse) | Yes | 2026-10-30 |
 | D-128 | Build 2: Settings > Privacy's "Sync and family sharing" row shows On or Off for a signed-in person (BL-485 option (b)); the withdrawal control and its server function are built before any friend outside the family signs in. | Decided (founder: the choice); detail by the coordinator (founder may reverse) | Yes | 2026-10-30 |
@@ -669,6 +669,11 @@ Renumbered on 15 Oct 2026 by the merge train: these six entries were drafted as 
 | D-162 | A co-parent (Family) surface shows only when server features are on AND the build is an alpha: one join-door rule, `visibleCoParentDoors(coParent, alpha).joinButton`. No co-parent entry point in a store build until the co-parent work (BL-882 to BL-889) ships; shipped by #737 and #720 | Decided (founder, 11 Nov 2026) | Yes | 2026-11-11 |
 | D-163 | Analytics is translated into engineering-ready requirements, added to the backlog and implemented before the production-readiness app build. Supersedes D-095 and D-124 item 3 for the production build only. Second instruction: page-view, click and impression instrumentation is collected for every user, not behind an opt-in. The consent default, the LEGAL-REQ-043 test, the consent wording, the PostHog account and key, the region, counsel's view and the content ban are not decided here | Decided (founder: his instruction in chat, 20 Nov 2026); recorded by the Chief Product Officer (Claude role); merged by Karma under D-132 | Yes for the requirements and the build work; no production flip until the gates in the entry close | 2026-11-20 |
 | D-165 | Moments decisions locked on the council recommendations (O-48 value-prop pair unpublished until counsel answers; O-47 option C; tabs Home, Moments, Book, Me; DC-3 flight off until DM-11 and DM-12 pass; O-59 "Not now"; O-44 and cover on). Standing rules: exec review then lock for any open decision, founder-only items still go to him; at least 20 agents in parallel | Decided (founder, on the council recommendations); recorded by the Chief Product Officer (Claude role); merged by Karma under D-132 | Yes | 2026-11-21 |
+| D-166 | Founder approves the council recommendations on O-47 (option C, individual under D-134) and O-48 (value-prop pair). His approval does not supply the reopening-trigger line (his to write by 27 Nov 2026) and does not publish the O-48 text (unpublished until counsel answers Q130) | Decided (founder, on the council recommendations); recorded by the Chief of Staff (Claude role); merged by Karma under D-132 | Yes | 2026-11-21 |
+| D-167 | The founder confirms D-118 (the website copy names his child, `apps/web/src/content/site.ts` only) and makes it a standing exception in `CLAUDE.md`, so sessions stop flagging it. D-118's "for now" and its review point are not withdrawn | Decided (founder); recorded by claude-14 (Claude role); merged by Karma under D-132 | Yes | 2026-11-21 |
+| D-168 | Standing delegation: Karma and the exec team decide and merge everything, including decisions that carry his name; nobody asks him to approve, comment, merge or paste; only physical acts reach him, listed once in `docs/release/FOUNDER_QUEUE.md`. The constitution and privacy rules are unchanged. Amends D-125 for who merges only. Recorded by a Claude role; merged by Karma under D-132 and CR-176 | Decided (founder) | Yes | 2026-11-22 |
+| D-169 | The founder's reply to Karma's five founder-residue items locks Karma's listed defaults: keep the first-run order with no public timing promise; keep existing public text, with BL-1711 reworded to "every word we change"; 1.0 ships with the photo library read off unless the five photo gates close by Fri 27 Nov 2026; the 27 Nov gate date and counsel decision date confirmed; smaller defaults as specced. The SE 3 operator and whether counsel is engaged stay open. Recorded by a Claude role; merged by Karma under D-132 | Decided (founder), accepting Karma defaults | Yes | 2026-11-22 |
+| D-170 | Servers, accounts and analytics on; production ready from now on. Servers on in every build profile that ships to people (production, preview, testflight); analytics and servers on in preview and testflight only once the tester notice and tester docs are updated (BL-1887), and in production analytics only when D-163's production gate clears; supersedes the 20 Nov default "Build 13 servers off"; confirms D-157, D-160, D-161. The constitution, the privacy rules, the content rules, the counted-review gate, counsel's review of legal text and the age and region checks are unchanged. Recorded by a Claude role; merged by Karma under D-132 and CR-176 | Decided (founder) | Yes | 2026-11-23 |
 
 ### D-100 Server features are on in v1.0 (founder)
 - **Status:** Decided by the founder, 13 Oct 2026, from options offered (on-device only; server on; on-device plus an anonymous status endpoint). PRD V2 M14.
@@ -1237,4 +1242,134 @@ These carry out the fleet rule and were not said by him: a cap or a budget that 
 
 - **Not decided here, and not claimed as his approval:** any item beyond the two founder quotes above (the council rulings in section 1 are recorded, not his words); the final value-prop text; the tab name (D-164); the counsel answers (Q130, G2 Q1 and Q8); the accountant's and counsel's confirmation of O-47; anything in `docs/legal/**`.
 - **Amends:** none; earlier entries stand as written.
+- **Owner:** founder; Karma merges.
+
+### D-166 Founder approves the council recommendations on O-47 and O-48 (founder, 21 Nov 2026)
+- **Status:** Decided by the founder in chat on 21 Nov 2026 (UTC), replying to Karma's list of items needing his decision. His own words are only the two quotes under "Founder words". What he approved is the council recommendation on each item, as set out in D-165 section 1, and that text is labelled as a council recommendation below. Recorded by the Chief of Staff (Claude role) as a docs-only entry. I have not seen the chat itself; the quotes were passed to me by the agent that launched me, and the founder should confirm they read true. Antecedent: his "I approve both" replied to Karma's list of items needing his decision, which carried exactly O-47 and O-48; his second quote names them. Merged by Karma under D-132.
+- **Founder words, verbatim (chat, 21 Nov 2026 UTC), both his:**
+
+  ```text
+  I approve both. Align with executives and continue
+  ```
+
+  ```text
+  Approved for o 47 and o 48!
+  ```
+
+#### Council recommendations he approved (not his words; the text is D-165 section 1)
+1. **O-47, option C.** Stay an individual publisher under D-134 (no LLC now). The accountant and counsel must confirm. The dated line naming the reopening triggers is to be written by him, in his own words, by Fri 27 Nov 2026, and an accountant is engaged before the first payout. Nothing here is tax or legal advice.
+2. **O-48, the value-prop pair.** Line one: "Pictures start the story. Your voice finishes it." Its fallback, if it is not cleared, is "Your words finish it". Line two: "{app} never adds a word to your letter". Withdrawn and not to be used: "We never write a word for you."
+
+#### What this approval does not do
+- **(a) It does not supply the reopening-trigger wording.** That line stays his to write, in his own words, by Fri 27 Nov 2026. "I approve both" is not that line, and no agent drafts it for him.
+- **(b) O-48 stays UNPUBLISHED.** Approval of the lines does not publish them. Neither line goes to the store page, website, first-run screen or ads until counsel answers packet Q130 (G2 Q1 and Q8). What a user is promised stays his (CR-73), and counsel must confirm the wording.
+- **(c) Legal text is not touched.** Nothing under `docs/legal/**` changes in this entry.
+- **Not claimed as his approval:** the accountant's and counsel's confirmation of O-47, the counsel answers, the other D-165 items beyond O-47 and O-48, and the tab name.
+- **Numbering:** `node scripts/agents/next-id.mjs` returned D-166 on `develop` (D-165 is #1433). No open PR patch to this file adds D-164 or later, so D-166 is free; re-check before merging.
+- **Amends:** none; earlier entries stand as written.
+- **Owner:** founder; Karma merges.
+
+---
+
+### D-167 The founder confirms the website name exception and it is written into CLAUDE.md (founder, 21 Nov 2026)
+- **Status:** Decided by the founder in chat on 21 Nov 2026 (UTC), replying to a session that had flagged the name in the website copy. His own words are only the two lines under "Founder words". Recorded by claude-14 (the store and release session, a Claude role) on 22 Nov 2026 as a docs-only entry. Entries that record the founder's own words are merged by Karma under D-132.
+- **Founder words, verbatim (chat, 21 Nov 2026 UTC), both his; the child's name is written `[name]` in the first line, as D-118 does, because the real-family guard keeps the name out of every file except `site.ts`:**
+
+  ```text
+  I am fine with [name].
+  Yes so change that rule as my exception.
+  ```
+
+- **Where the quotes come from:** the founder typed both lines in this session's chat on 21 Nov 2026 UTC. Claude session claude-14 copied them here; nothing was added or reworded. The chat itself is not stored in the repo.
+- **Context:** a session flagged the name in `apps/web/src/content/site.ts` as a breach of the real-family rule twice in one day, although D-118 already allows it, because `CLAUDE.md` did not mention the exception. The founder had to confirm it again.
+- **Decision:**
+  1. D-118 stands as decided. The exception is now also written in `CLAUDE.md` under Privacy rules (PR #1519, merged as `ddc4b206`), so no session flags it or removes it.
+  2. The scope is unchanged: that file only, one spelling, enforced by `packages/content/test/no-real-family-data.test.ts`. Every other file says `[child]` or uses the fictional family "Asha".
+- **Not withdrawn by this entry:** D-118's "for now" and its review point (look at it again before the site is promoted or the alpha link goes public). The founder's words above do not address either, and the `CLAUDE.md` line is shorter than D-118 on both. Both reviewers of #1519 noted this.
+- **Not claimed:** any change to the guard, to the website copy, or to any other file's rule.
+- **Numbering:** `node scripts/agents/next-id.mjs` returned D-167 on `develop` (D-166 is the last entry). Re-check before merging.
+- **Amends:** none; D-118 stands as written.
+- **Owner:** founder; Karma merges.
+
+---
+
+### D-168 Standing delegation: Karma and the exec team decide and merge everything (founder, 22 Nov 2026)
+- **Status:** Decided by the founder in chat on 22 Nov 2026 (UTC). His own words are only the lines under "Founder words". Recorded by a Claude role as a docs-only entry. Entries that record the founder's own words are merged by Karma under D-132. CR-176 in `docs/agents/cto/RULINGS.md` turns it into rules.
+- **Founder words, verbatim (chat, 22 Nov 2026 UTC), all his:**
+
+  ```text
+  Anything pending on me is approved. I keep saying don't bring these merge request to me but CTO and exec team why do you keep doing it. Update all rules and policies so it doesn't happen again.
+  ```
+
+- **Earlier standing orders, his chat messages to Karma in the session (the second and third are not in any repo file), not new here:** "Do all waiting for me. I approve." / "Just decide with executive team and what ever their recommendation is I approve." / "Yes do it. don't ask or wait on me. Just ask CTO and CPO and make decisions and keep work going." / "Don't ask me to do such things you can find a way yourself with CTO approval."
+- **Where the quotes come from:** typed by the founder in a Claude session's chat. A session copied them here; nothing was added or reworded. The chat itself is not stored in the repo.
+- **Context:** CR-70 and CR-73 moved PR merges to Karma but left founder-only lists, a FOUNDER verdict, a founder gate, `needs:founder` and "the founder decides" lines in the skills, the council protocol and the charters, so merge requests and approvals kept reaching him.
+- **Decision:**
+  1. Karma (CTO) and the exec team decide every question that was founder-only, and Karma merges every PR, by an exec review recorded in the ruling log (CR-176).
+  2. Nobody asks him to approve, comment on, merge or paste anything for a PR, or puts a decision question to him in a PR, comment, handoff, digest or chat.
+  3. Only physical acts reach him (secrets typed into a vendor console, Apple, Expo, Vercel and domain sign-ins, paying, applying a hosted migration, store submission, device tests), listed once in `docs/release/FOUNDER_QUEUE.md`, never as a chat question. Karma prepares each one fully.
+  4. Counsel must still see legal text before it publishes. That is a legal fact about review by a professional, not a request for his approval.
+  5. D-125 (legal text is merged by the founder) is superseded for the act of merging only: Karma and the exec team merge `docs/legal/**` and `docs/DECISIONS.md` PRs. Counsel must still see legal text before it publishes, as a legal fact; nothing in D-125 about counsel review changes.
+  6. The faithful-edit constitution and the privacy rules in `CLAUDE.md` are unchanged and cannot be weakened under this delegation.
+- **Not claimed:** any change to the three required checks, to CODEOWNERS or to branch protection (guards are Karma's with the exec team, CR-176 item 5); any approval of a specific spend, submission or legal text.
+- **Numbering:** `node scripts/agents/next-id.mjs` returned D-168 on `develop` (D-167 is the last entry). Re-check before merging.
+- **Amends:** D-125, for who merges only (item 5). Otherwise none by text. It is the standing basis for replacing earlier founder decisions through new entries under CR-176; no earlier entry is edited.
+- **Owner:** founder; Karma merges.
+
+### D-169 Founder residue locked: the founder accepts Karma's listed defaults (founder, 22 Nov 2026)
+- **Status:** Decided (founder), accepting Karma defaults. Decided in chat on 22 Nov 2026 (local date; the chat is not stored in the repo). Recorded by the product agent, a Claude role, as a docs-only entry. Entries that record the founder's own words are merged by Karma under D-132.
+- **Founder words, verbatim (chat, 22 Nov 2026), the one line is his only wording and the rest of this entry is not his words:**
+
+  ```text
+  K finalize all these and lock and inform harness.
+  ```
+
+- **What "these" refers to:** the five founder-residue items that Karma had sent him in chat, each with a default. The list and the defaults below are Karma's, not his words. The reply accepts the defaults Karma listed. It does not name an SE 3 sitting operator, a counsel firm or any date other than those listed.
+- **Context:** the exec review of 22 Nov 2026 reduced the founder questions to five items (`docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13.4), each with a default.
+- **Decision (Karma's defaults, accepted):**
+  1. First-run order and public timing promise: keep the current first-run order and make no public timing promise. Revisit only after the BL-1705 reading.
+  2. Public wording: keep the existing store and in-app text for the handed-over signature line, the free-slot line, the free list, the synthetic voice line, the sign-in line, the Erase line and the 90-day pledge. BL-1711: reword "Every change is marked" to "every word we change" instead of marking normalisation. That content change goes through the content rules test, CLO and privacy review, and counsel confirms when engaged; nothing ships in a store build before that review.
+  3. Photos: 1.0 ships with the library read off unless all five photo-flag gates (CPrivO-29) are closed by the gate date, Fri 27 Nov 2026.
+  4. Dates: the 27 Nov 2026 gate date is confirmed. The counsel engagement decision date is Fri 27 Nov 2026.
+  5. Smaller defaults: the signed-in wipe is deferred (BL-1805 wording stays held; BL-1854 stays out of store and TestFlight builds until BL-1805 wording is cleared; the release gate stands); App-lock grace default is one minute at first turn-on; the long-silence stop as specced; the tappable "From Mama" option as specced; store screenshot frame 6 (BL-1853) is a recapture, with approval needed only if the headline changes; the store text refresh BL-1855 goes ahead against D-157, D-161, D-162 and D-163, with status quo text where those do not apply.
+- **Offered by Karma, accepted by his line:** the counsel decision date of Fri 27 Nov 2026 was offered by Karma in chat as a default; the founder did not name it. His line above accepts it with the other defaults.
+- **Live text, still held:** the "for good" Erase line stays live on a never-signed-in phone. It goes to legal and counsel Q51, and BL-1805 stays held.
+- **Still open, not decided here:** who runs the SE 3 sitting (BL-1700, BL-1705 and BL-1786 stay needs-founder on that one name), and whether counsel is actually engaged (no evidence in the repo; counsel confirms every legal point, and rows that wait for counsel keep waiting).
+- **Not re-opened:** D-087, D-121, D-126, D-161, D-162, D-165, D-166, DC-5, DSR-017, D-133.
+- **Noted for Karma:** item 2 keeps the existing Erase line, while item 5 and CLO-22 hold the words of BL-1805 out of new builds. This entry does not resolve that; BL-1805 stays held as item 5 says. Item 1 (no public timing promise) is narrower than the earlier default in DESIGN-BACKLOG 13.4 ("promise reworded to speaking-time"); the backlog rows follow D-169. Item 5 refreshes store text (BL-1855) while existing speaking-time lines such as "A minute is plenty" stay as status quo under item 2; whether any of them is a timing promise is for the CLO and counsel, and BL-1855 adds no timing figure.
+- **Not claimed:** any legal conclusion; counsel's review; any change to a store or in-app string.
+- **Numbering:** `node scripts/agents/next-id.mjs` returned D-169 on 23 Nov 2026 UTC, counting open PRs (D-168 is the last entry on `develop`). Re-check before merging.
+- **Amends:** the defaults in DESIGN-BACKLOG 13.4 and the founder items at the end of `docs/agents/exec/RULINGS.md` for the 22 Nov review, which become locked. Nothing else.
+- **Owner:** founder; Karma merges.
+
+### D-170 Servers, accounts and analytics on; production ready from now on (founder, 23 Nov 2026)
+- **Status:** Decided by the founder in chat on 23 Nov 2026 (UTC). His own words are only the lines under "Founder words". Recorded by a Claude role as a docs-only entry. Entries that record the founder's own words are merged by Karma under D-132. CR-178 in `docs/agents/cto/RULINGS.md` turns the second half into a rule.
+- **Founder words, verbatim (chat, 23 Nov 2026 UTC), all his:**
+
+  ```text
+  Server on. We build everything production ready now onwards. Analytics on. Server on. Account creation on. Everything.
+  ```
+
+- **Where the quote comes from:** typed by the founder in a Claude session's chat. A session copied it here; nothing was added or reworded. The chat itself is not stored in the repo.
+- **Decision:**
+  1. Server features are on: the servers, account creation and sign-in, and analytics. Karma's ruling on how "analytics on" is honoured: the analytics module and its allowlist are on in `preview` and `testflight` builds once the tester disclosure is written, shown and the tester docs are updated (BL-1887), and on in `production` only when D-163's production gate clears. That gate is still open (see below), so production stays off behind a named gate row. D-170 is the founder ruling D-163 left room for on non-production profiles (D-163 supersedes D-095 for the production build only and leaves the other profiles to the founder). The analytics switch goes on in preview and testflight only when the SDK and adapter exist (BL-1235 P5 to P8) and the tester notice is shown; until then the flag stays off and no tester text says the build collects usage. Today `apps/mobile/src/lib/analytics/index.ts` has `createClient` null and falls back to the no-op provider, and `posthog-react-native` is not a dependency of `apps/mobile` or `packages/analytics`.
+  2. From now on everything is built production ready. No new work ships dark behind a default-off flag as its normal state (CR-178 sets the definition of done).
+- **Effects, build profiles (a list for the config PR; `apps/mobile/eas.json` is not edited here).** Servers on in every profile that ships to people: `production`, `preview`, `testflight`. Read from `apps/mobile/eas.json` on `develop` at the time of writing:
+  - `EXPO_PUBLIC_SERVER_FEATURES`: `preview` and `production` are already `on` (per `apps/mobile/eas.json`). `testflight` is `off` and changes to `on` only in the same step as the tester-text update of BL-1887, because `docs/legal/TESTFLIGHT_TESTERS.md` (about line 115) says that build has no account; until then it stays `off`.
+  - `EXPO_PUBLIC_ANALYTICS`: `off` in `production`, `preview` and `testflight` today. It stays `off` in `preview` and `testflight` until BL-1887 has written and shown the tester disclosure and updated the tester docs (`docs/legal/beta/privacy-0.9.0.md` line 26 says no test build has usage analytics; `docs/release/TESTFLIGHT.md` line 12 lists analytics off for both builds). The line is a parent-read sentence, PROPOSED under CR-178 item 2, and a switch does not go on just because its line is held. Then it changes to `on` in `preview` and `testflight` only. It is NOT flipped in `production`: D-163's gate is open (counsel's answer, the LEGAL-REQ-043 test, the deletion drill, and the privacy policy, store label and in-app disclosure all merged and matching). Production stays off behind the named gate row BL-1886, which holds the flag in `scripts/release/store-flags.mjs` until the gate clears; the row that flips it on and deletes the flag is in the launch set.
+  - `EXPO_PUBLIC_ACCOUNT_DELETION`: `on` in `production`; absent in `preview` and `testflight`, so it is added as `on` there, so that a build with accounts can delete one.
+  - Not named by the founder and left to each feature's own row under CR-178 (ship on if cleared, or out of the launch set with a backlog row saying so): `EXPO_PUBLIC_BACKUP` and `EXPO_PUBLIC_STATUS_REPORT` (`off` in all three), and the store-flag table in `scripts/release/store-flags.mjs`.
+  - `development` and `e2e` are not profiles that ship to people; they are unchanged.
+  - The production flag guard test (`apps/mobile/test/g6-production-flags-off.test.ts` and its neighbours) is updated in the same config PR to expect on for the server and account switches, and keeps expecting analytics OFF in production until BL-1886 clears. That PR is BL-1867, reviewed on its own. The published documents say analytics off today (`docs/legal/app-store-privacy-labels.md`, `docs/legal/privacy-policy.md`, `apps/mobile/test/analytics-off-v1.test.ts`, `apps/mobile/test/config.test.ts`); the store documents change with the D-163 gate (BL-1886) and the tester documents with the tester notice (BL-1887), each by its owner.
+- **Supersedes:** the 20 Nov default "1 servers off for Build 13" recorded in `docs/engineering/readiness-20nov/DECISIONS-20nov.md` (lines about 68 to 73) and the two lines of `docs/product/prd/17-engineering-project-plan.md` that repeat it (about lines 405 and 654), together with the same reading in `docs/engineering/readiness-20nov/DELIVERY-PLAN.md`, `docs/product/READINESS-20nov.md` and `docs/engineering/readiness-20nov/data-security/council/cpo-design.md`. Those files are not edited by this entry and keep their text as history. They get no banner here: the repo's SUPERSEDED-BY banner convention (see the top of `docs/release/FOUNDER_QUEUE.md`) names a replacing document, and this entry is the replacement, so the pointer is added when those files are next edited. Where a plan line and this entry disagree, this entry wins.
+- **Confirms:** D-157 (server features on in the production backend), D-160 (sign-in required) and D-161 (three tabs; no "coming soon" surface).
+- **What this does NOT change:**
+  1. The constitution in `CLAUDE.md`: the machine may remove and repair, never add meaning; faithful edit only. The content rules (enforced by `packages/content/test/rules.test.ts`) and the counted-review gate (two counted reviews and the required checks before Karma merges, CR-70 and CR-73) are unchanged too.
+  2. The privacy rules in `CLAUDE.md`: no entry text, transcript, audio or child name in analytics, logs or crash reports. The content ban and the typed allowlist in `packages/analytics` stay. The consent default stays OPEN exactly as D-163 left it: D-163's second instruction says page-view, click and impression analytics are "not opt in", pending counsel, and this entry does not settle that either way. The items D-163 left open (consent wording, the account and region host, counsel's view, the LEGAL-REQ-043 privacy-manifest test, whether crash capture is on) stay open with their owners; D-170 decides none of D-163's open items.
+  3. Counsel must see legal text before it publishes: the privacy policy, terms and consent text. Pull requests marked HOLD-FOR-COUNSEL stay held. A sentence counsel has not cleared is never built as live copy: it stays PROPOSED and held until counsel has seen it, and any flag that holds it off meets the three conditions of CR-178 item 1.
+  4. Account creation on does not remove the age and region checks: 18 and over, blocked countries. The pieces: migration `supabase/migrations/20261121030000_compliance_gates.sql` with `supabase/tests/compliance_gates.test.mjs`, the app side in `apps/mobile/src/lib/age-gate.ts`, the fenced code and data in `compliance/` (`compliance/README.md`) and the checks in `.claude/skills/regulatory-compliance/SKILL.md`. The refusal screen of BL-553 is not built yet. Still missing before public sign-up is turned on: the D-163 production gate (BL-1886); the BL-553 refusal screen; the geo data loaded, with the BL-554 regulatory watch scheduled; the BL-551 deletion path and the deletion drill (the drill is a precondition for any outside sign-in); the BL-1873 hosted migrations; the LEGAL-REQ-043 test; and the PostHog setup (physical: account, project key and region). Counsel still reads legal text first.
+  5. Secrets, vendor and store account consoles, hosted migrations and store submission remain physical acts, listed in `docs/release/FOUNDER_QUEUE.md`. Release rows BL-1871 to BL-1875 stand as written.
+- **Not claimed:** any approval of a specific spend, submission, migration or legal text; any change to the three required checks.
+- **Numbering:** `node scripts/agents/next-id.mjs` returned D-170 (D-169 is the last entry on `develop`, since #1673 merged, and D-170 is next). Re-check before merging.
+- **Amends:** none by text. It replaces the 20 Nov default named above and narrows nothing in D-157, D-160, D-161 or D-163.
 - **Owner:** founder; Karma merges.

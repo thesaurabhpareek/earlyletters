@@ -48,14 +48,16 @@ import { PinnedActionLayout } from '@/components/ui/pinned-action';
 import { useToast } from '@/components/ui/toast';
 import { childIndexOf, track, trackBookOpened } from '@/lib/analytics/track';
 import { authCopy } from '@/lib/auth/copy';
-import { ARRIVAL_SETTING, ARRIVAL_SHOWN, arrivalLineOwed } from '@/lib/first-run/new-phone.logic';
+import { ARRIVAL_SETTING, ARRIVAL_SHOWN, BACKUP_LINE_DONE, BACKUP_LINE_SETTING, arrivalLineOwed, backupLineOwed } from '@/lib/first-run/new-phone.logic';
+import { backupInBuild } from '@/lib/backup/gate';
+import { backupLineEnabled } from '@/lib/first-run/backup-line-flag';
 import { copy, fill } from '@/lib/copy';
 import { speechSettingsCopy } from '@/lib/models/copy';
 import { downloadingLine } from '@/lib/models/speech-download.logic';
 import { planFor } from '@/lib/models/speech-packs';
 import { springConfig, useMotion } from '@/lib/motion';
 import { isReadItBack } from '@/lib/read-it-back';
-import { deleteEntry, getSetting, listEntriesForChild, setSetting, subscribe, todayISO, undeleteEntry, type Entry } from '@/lib/store';
+import { deleteEntry, getSetting, listBookEntries, countBookLetters, setSetting, subscribe, todayISO, undeleteEntry, type Entry } from '@/lib/store';
 import { languageFor } from '@/lib/transcription-queue';
 import { useSpeechDownload, useWordsJob } from '@/lib/transcription-queue/use-words';
 import { bookHandoff, createArrivalGate, watchBook, firstBookViewThisSession, firstSeen, parseSeen, secondFreeOnArrival, withLeaving } from '@/components/book/book.logic';
@@ -74,6 +76,7 @@ import { photosPausedNow } from '@/lib/photos/pause';
 import { usePhotosLens } from '@/lib/photos/hooks';
 import { EndOfBook } from '@/components/book/end-of-book';
 import { MonthsSheet } from '@/components/book/months-sheet';
+import { monthsHintFor, readTheYearOn, yearRows } from '@/components/book/read-year.logic';
 import { QuietDayRow } from '@/components/book/quiet-day-row';
 import { isQuietMark, readableInBook } from '@/components/book/quiet-day.logic';
 import { isOwnEntry } from '@/components/child/child-store';
@@ -98,7 +101,7 @@ export default function Book() {
   // This book's letters are read in the initialiser, so the first frame is the book and never the empty-book state
   // (a Book that mounts with `arrived` has to find its card on that first look). `read.childId` says whose letters
   // these are, so the arrival waits for the right book.
-  const [read, setRead] = useState(() => ({ childId: active?.id ?? null, entries: active ? listEntriesForChild(active.id) : [] }));
+  const [read, setRead] = useState(() => ({ childId: active?.id ?? null, entries: active ? listBookEntries(active.id) : [] }));
   const entries = read.entries;
   const loaded = read.childId === (active?.id ?? null);
   const leaving = useSyncExternalStore(bookHandoff.subscribe, bookHandoff.get, bookHandoff.get);
@@ -140,11 +143,21 @@ export default function Book() {
     }, []),
   );
 
+  // NS-10-R13 (BL-1865): one Book-level line while recordings are on the other phone and backup is off; no per-letter
+  // warning. It stays until dismissed (phone-local, no name, date or text). Behind EXPO_PUBLIC_BACKUP_LINE (off), and
+  // drawn only while this build has no backup, so it never says the recordings stay on the phone beside a backup.
+  // The two keys are PROPOSED (docs/content/words-packet-20nov.md): counsel has not read the recording sentence.
+  const [backupLine, setBackupLine] = useState(() => backupLineOwed(getSetting(BACKUP_LINE_SETTING), backupInBuild(), backupLineEnabled()));
+  const dismissBackupLine = useCallback(() => {
+    setSetting(BACKUP_LINE_SETTING, BACKUP_LINE_DONE);
+    setBackupLine(false);
+  }, []);
+
   useEffect(() => {
     if (!active) return;
     // Subscribe, then read once more and keep that read only if it differs from the initialiser's: a change between the
     // initialiser's read and this subscribe is picked up at once (BL-1428).
-    return watchBook({ childId: active.id, read: listEntriesForChild, subscribe, set: setRead });
+    return watchBook({ childId: active.id, read: listBookEntries, subscribe, set: setRead });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active?.id]);
 
@@ -152,6 +165,8 @@ export default function Book() {
   const shown = useMemo(() => (active ? withLeaving(entries, leaving, active.id) : []), [entries, leaving, active]);
   const chapters = useMemo(() => (active ? bookChapters(shown, active, today) : []), [shown, active, today]);
   const rows = useMemo(() => monthRows(chapters), [chapters]);
+  // Read a year together (NS-24, BL-947): year rows in Go to a month, behind EXPO_PUBLIC_READ_THE_YEAR.
+  const years = useMemo(() => (active && readTheYearOn(process.env.EXPO_PUBLIC_READ_THE_YEAR) ? yearRows(entries, active, today) : []), [entries, active, today]);
   const readBack = useMemo(() => new Set(entries.filter((e) => e.captureMode !== 'typed' && isReadItBack(e.id)).map((e) => e.id)), [entries]);
 
   const wash = useCallback((ids: string[]) => {
@@ -262,7 +277,7 @@ export default function Book() {
   useFocusEffect(
     useCallback(() => {
       if (!activeId) return;
-      const letters = listEntriesForChild(activeId).filter((e) => e.kind !== 'not_much').length;
+      const letters = countBookLetters(activeId);
       trackBookOpened({ childIndex: childIndexOf(activeId), letters, role: 'parent' });
     }, [activeId]),
   );
@@ -381,7 +396,7 @@ export default function Book() {
   // name differs from the lens option "Months" (Voice Control, NS-01-R20e): a PROPOSED key for the founder.
   const months =
     !showPhotos && showsMonthsButton(rows)
-      ? { label: lensOn ? photos.book.lens.monthsButton : bookCopy.monthsButton, hint: bookCopy.monthsHint, onPress: () => setMonthsOpen(true) }
+      ? { label: lensOn ? photos.book.lens.monthsButton : bookCopy.monthsButton, hint: monthsHintFor(years.length > 0, bookCopy.monthsHint), onPress: () => setMonthsOpen(true) }
       : null;
   const openSettings = () => router.push('/settings');
   const header = (
@@ -404,6 +419,14 @@ export default function Book() {
           <Text variant="callout" tone="muted" style={{ marginBottom: tokens.space[3] }} testID="book.arrivalLine">
             {authCopy.newPhone.arrivedPlain}
           </Text>
+        ) : null}
+        {backupLine ? (
+          <View className="flex-row items-center gap-3" style={{ marginBottom: tokens.space[3] }} testID="book.backupLine">
+            <Text variant="callout" tone="muted" style={{ flex: 1 }}>
+              {authCopy.newPhone.recordingsElsewhere}
+            </Text>
+            <Button label={authCopy.newPhone.recordingsElsewhereDismiss} variant="quiet" size="sm" onPress={dismissBackupLine} />
+          </View>
         ) : null}
         {/* The lens switch (design spec 01 section 5.1): under the cover band and above the chapters, Months and Photos,
             shown only while a kept, open letter has a picture (NS-01-R10). */}
@@ -433,7 +456,7 @@ export default function Book() {
       importantForAccessibility={barUp ? 'auto' : 'no-hide-descendants'}>
       <BlurSurface edge="bottom" style={{ paddingTop: insets.top, paddingBottom: tokens.space[2], paddingHorizontal: tokens.space[5] }}>
         <View className="flex-row items-center gap-2" style={{ minHeight: BAR_HEIGHT }}>
-          <Text variant="headline" className="flex-1" maxFontSizeMultiplier={1.3}>
+          <Text variant="headline" className="flex-1">
             {title}
           </Text>
           {months ? <Button variant="quiet" size="sm" label={months.label} accessibilityHint={months.hint} onPress={months.onPress} testID="book.bar.months" /> : null}
@@ -518,7 +541,7 @@ export default function Book() {
             />
             </Animated.View>
             {topBar}
-            <MonthsSheet open={monthsOpen && !showPhotos} rows={rows} onClose={() => setMonthsOpen(false)} onChoose={jumpTo} />
+            <MonthsSheet open={monthsOpen && !showPhotos} rows={rows} onClose={() => setMonthsOpen(false)} onChoose={jumpTo} years={years} onChooseYear={(y) => { setMonthsOpen(false); router.push({ pathname: '/read-together', params: { childId: active.id, year: y.key } }); }} />
           </>
         )}
       </Animated.View>

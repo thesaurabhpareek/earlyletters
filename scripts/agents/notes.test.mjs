@@ -34,6 +34,7 @@ test("BL-1529: the marker must be the whole first non-blank line", () => {
   assert.equal(hasFounderMarker("<!-- founder --> Do X."), false);
   assert.equal(hasFounderMarker("<!-- founder:ops -->\nDo X."), false);
   assert.equal(hasFounderMarker(undefined), false);
+  assert.equal(hasFounderMarker("## Review A at " + "a".repeat(40) + ": PASS\n<!-- agent:ai-eng-lead -->\n<!-- founder -->"), false, "counted review header");
 });
 
 test("BL-1529: an agent comment from the founder login without the marker is not the founder", () => {

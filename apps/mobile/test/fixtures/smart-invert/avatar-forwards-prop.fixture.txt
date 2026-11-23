@@ -1,0 +1,5 @@
+// Control for [NS-33-R11] (BL-1841): an Avatar that passes the prop on to the image it draws.
+import { Image } from 'react-native';
+export function Avatar({ uri }: { uri: string }) {
+  return <Image source={{ uri }} accessibilityIgnoresInvertColors />;
+}

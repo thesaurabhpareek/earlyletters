@@ -37,7 +37,7 @@ You take tasks whose Owner is `payments engineer`.
 3. A checklist of App Store review rules for subscriptions, kept in `docs/payments/`.
 
 ## Hand-offs
-- Paywall copy to `content`; legal terms to `legal`; App Store Connect steps to the founder.
+- Paywall copy to `content`; legal terms to `legal`; App Store Connect steps to `docs/release/FOUNDER_QUEUE.md` (physical acts).
 
 ## Never
 - Add a third-party purchase SDK, or gate a free-forever feature.
