@@ -294,7 +294,7 @@ describe('prompts', () => {
 
   it('picks the right kind: hard > together > family > gap > opening', () => {
     expect(selectPrompt({ ...base, hardStretch: true, together: true }, LIB).kind).toBe('hard');
-    expect(selectPrompt({ ...base, together: true, role: 'contributor' }, LIB).kind).toBe('together');
+    expect(selectPrompt({ ...base, together: true, childInput: true, role: 'contributor' }, LIB).kind).toBe('together');
     expect(selectPrompt({ ...base, role: 'contributor', daysSinceLastEntry: 9 }, LIB).kind).toBe('family');
     expect(selectPrompt({ ...base, daysSinceLastEntry: 9 }, LIB).kind).toBe('gap');
     expect(selectPrompt(base, LIB).kind).toBe('opening');

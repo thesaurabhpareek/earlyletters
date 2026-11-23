@@ -1,7 +1,10 @@
 /**
  * Drafts: captures in progress. Written when recording starts, so a crash
  * or a closed sheet loses nothing (TDD 01 3.4). Rows only: audio files are
- * deleted by the explicit Discard in Listen, never here.
+ * deleted by a confirmed Let it go (Review, Listen), the launch sweep
+ * finishing one (capture/let-it-go.logic.ts, sweep.ts), erasing a deleted
+ * book (store.ts eraseBook) and Erase everything (eraseEverythingLocal),
+ * never here.
  */
 import { changes, type RepoContext } from './context';
 import type { BaseDirection, CaptureMode, Draft, DraftKind, DraftState, OccurredPrecision } from './types';
@@ -93,6 +96,21 @@ export function listForChild({ db }: RepoContext, childId: string): Draft[] {
       childId,
     )
     .map(fromRow);
+}
+
+/**
+ * When the newest draft waiting across the given books was made (`created_at`), in one query (BL-1648, NS-48-R27). A
+ * take still recording, or being let go, is not one. Null when none waits. Returns a date, never words.
+ */
+export function newestWaitingAt({ db }: RepoContext, childIds: readonly string[]): string | null {
+  if (childIds.length === 0) return null;
+  return (
+    db.get<{ created_at: string }>(
+      `SELECT created_at FROM drafts WHERE child_id IN (${childIds.map(() => '?').join(',')}) AND state NOT IN ('recording', 'discarding')
+       ORDER BY created_at DESC, id DESC LIMIT 1`,
+      ...childIds,
+    )?.created_at ?? null
+  );
 }
 
 // ── Review's choices (WP-F04-03; F04 section 11.3) ─────────────────────────

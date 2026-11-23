@@ -9,7 +9,7 @@
  * build dates themselves.
  */
 import { ageLabel, ageOn, chapterOf, dateline, isBeforeBirth } from '@scribe/core';
-import { copy, fill } from './copy';
+import { childLabel, copy, fill } from './copy';
 import type { Child } from './store';
 
 function deviceLocale(): string {
@@ -63,7 +63,7 @@ export function letterDateline(child: Pick<Child, 'name' | 'birthday'>, iso: str
   const day = dayDate(iso, locale);
   if (isBeforeBirth(child.birthday, iso)) return `${day}. ${fill(copy.book.dateline.beforeBirth, { child: child.name })}`;
   // Core gives "<date>. <Age sentence>."; keep its age sentence, use the locale date.
-  const core = dateline(iso, child.name, child.birthday!);
+  const core = dateline(iso, childLabel(child.name), child.birthday!);
   const cut = core.indexOf('. ');
   return cut < 0 ? `${day}.` : `${day}. ${core.slice(cut + 2)}`;
 }

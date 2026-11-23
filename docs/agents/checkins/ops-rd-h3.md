@@ -1,0 +1,1 @@
+19:05 (20 Nov) ops | done: 23 platform, CI, release, process and quality briefs written and cite-checked against develop 16e61549, README table | next: 8 PRs of at most 3 briefs, journal entry | blocked/needs: none for the docs; each brief names the founder items

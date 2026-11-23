@@ -10,6 +10,7 @@
     "start": "next start -p 3100",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
+    "qr:generate": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/gen-store-qr.mjs",
     "e2e": "playwright test -c e2e/playwright.config.ts",
     "e2e:report": "playwright show-report e2e/.results/report"
   },
@@ -42,6 +43,7 @@
     "@types/react-dom": "^19.2.0",
     "axe-core": "^4.13.0",
     "playwright-core": "^1.63.0",
+    "qrcode-generator": "2.0.4",
     "typescript": "~6.0.3",
     "vitest": "^3.2.7"
   }

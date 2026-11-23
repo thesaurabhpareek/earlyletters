@@ -4,6 +4,7 @@
  * connection, resolves defaults (active child, signature) and emits change
  * events. Import repositories directly only from src/lib.
  */
+export * as agreements from './agreements';
 export * as children from './children';
 export * as drafts from './drafts';
 export * as entries from './entries';

@@ -39,6 +39,7 @@ import { copy } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
 import { authCopy } from './copy';
 import { useAuth } from './session-provider';
+import { RevocationWaitLine } from './revocation-wait-line';
 
 const tryAgainLabel = copy.common.tryAgainButton;
 
@@ -95,7 +96,9 @@ export function SheetFrame({
   ) : null;
   const header = closeLabel || onBack;
   return (
-    <SafeAreaView edges={['bottom']} className="flex-1 bg-background">
+    // Modal for VoiceOver, so focus stays inside the sheet and the screen behind is not read; the two-finger scrub
+    // closes it only where the frame offers Close and it is not disabled (BL-1720). One place, so every sign-in, consent and invite step inherits it.
+    <SafeAreaView edges={['bottom']} className="flex-1 bg-background" accessibilityViewIsModal aria-modal onAccessibilityEscape={escapeHandler({ closeLabel, closeDisabled, close })} testID="sheet.frame">
       {closeLabel ? (
         <ModalHeader onClose={close} closeLabel={closeLabel} closeDisabled={closeDisabled} leading={onBack ? <BackButton onPress={onBack} /> : undefined} className="pt-3" />
       ) : onBack ? (
@@ -114,6 +117,15 @@ export function SheetFrame({
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
+}
+
+/**
+ * The two-finger escape closes the sheet only where the frame has a Close and it is enabled. Mid-verification
+ * (`closeDisabled`) and in steps with no Close (verify, consent) it does nothing, so a typed email and code are never
+ * dropped by a gesture (BL-1720).
+ */
+export function escapeHandler(input: { closeLabel?: string; closeDisabled?: boolean; close: () => void }): (() => void) | undefined {
+  return input.closeLabel && !input.closeDisabled ? input.close : undefined;
 }
 
 /** The sheet's title: `title2`, a heading, and where VoiceOver focus lands when the step appears (V-06). */
@@ -189,12 +201,13 @@ export function PrivacyLine({ text }: { text: string }) {
 }
 
 /** Apple's own button (ASAuthorizationAppleIDButton): approved artwork, localized, accessible (HIG). */
-export function AppleButton({ onPress, disabled }: { onPress: () => void; disabled?: boolean }) {
+export function AppleButton({ onPress, disabled, signIn }: { onPress: () => void; disabled?: boolean; signIn?: boolean }) {
   const dark = useScheme() === 'dark';
   return (
     <View pointerEvents={disabled ? 'none' : 'auto'} style={{ opacity: disabled ? 0.5 : 1 }}>
       <AppleAuthentication.AppleAuthenticationButton
-        buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+        // The sheet says "Continue with Apple"; the account-first Welcome says "Sign in with Apple" (BRAND.md form, 9 Nov ruling).
+        buttonType={signIn ? AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN : AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
         buttonStyle={dark ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
         cornerRadius={SHEET.button / 2}
         style={{ height: SHEET.button, width: '100%' }}
@@ -328,7 +341,14 @@ export function AccountGate({
     );
   }
 
-  if (s.status === 'checkingConsent' || s.status === 'signingOut') return <Busy label={authCopy.consent.settingUp} />;
+  if (s.status === 'checkingConsent' || s.status === 'signingOut') {
+    return (
+      <>
+        <Busy label={authCopy.consent.settingUp} />
+        <RevocationWaitLine state={s} />
+      </>
+    );
+  }
 
   // Consent still missing, or (BL-347) the claim screen was never answered: one way back to it.
   const claiming = s.status === 'ready' && s.sync === 'on' && auth.claimPending;
@@ -356,7 +376,7 @@ export function AccountGate({
   }
   // Signed in, and the gate could not be read at launch for any reason (readGateInOrder: offline, a server error, the
   // 10 second GATE_TIMEOUT_MS or an empty row), so say the connection, not that the phone is offline. Not
-  // errors.network, which ends "Sign in once you are back online" and so tells a signed-in person to sign in (BL-488).
+  // errors.network, which ends "Sign in once you're back online" and so tells a signed-in person to sign in (BL-488).
   return (
     <View className="gap-4">
       <SheetBody muted>{g.gateOffline}</SheetBody>

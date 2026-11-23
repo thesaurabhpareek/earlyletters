@@ -16,7 +16,7 @@
  *  - remote documents never fall back to the Supabase URL (lib/remote);
  *  - sign-in screens, Account and Delete account rows are not offered, and every
  *    co-parent entry point shows the "coming soon" presentation instead
- *    (components/family/coparent-soon.tsx, lib/family/entry.logic.ts).
+ *    (lib/family/entry.logic.ts; nothing is drawn, 11 Nov 2026).
  *
  * Remote config can never turn this on (BRIEF decision 16: nothing server-driven
  * may change what is collected). The value is read from the bundle only; this
@@ -204,6 +204,13 @@ export const capabilities = {
   },
   /** Letters upload and download (D-023). */
   get sync(): boolean {
+    return serverFeaturesEnabled();
+  },
+  /**
+   * Erase now reaches the server (BL-1854, WP-F16-13, F16-REQ-024): `store.eraseEntry` queues one id-only `entry.erase`
+   * and the server purges its copy. It exists wherever sync does, so it follows the same server switch.
+   */
+  get serverErase(): boolean {
     return serverFeaturesEnabled();
   },
   /** Invite and join a co-parent. Off: the coming-soon presentation. */

@@ -22,7 +22,7 @@
  * - A words conflict keeps this phone's version as a conflict copy in
  *   rejected_writes (code 'conflict'), never on the server, until the author picks.
  */
-import { LANGUAGE_CODES } from '@scribe/core';
+import { LANGUAGE_CODES, clampText } from '@scribe/core';
 import { prefsRow } from '../db/repos/children';
 import type { SqlDb } from '../db/sql';
 import { ALL_GROUPS, type EntryData, type FieldGroup, type HeldDraftData, type PushOp, type PushOpType, type WordsGroup } from './types';
@@ -750,9 +750,24 @@ function coalesceOrAppend(db: SqlDb, type: 'book.update' | 'prefs.upsert', child
   }
 }
 
+/** children.nickname: the server's CHECK is char_length <= 30 after its own trim (BL-1564). */
+export const NICKNAME_MAX = 30;
+
+/**
+ * The one place a book.update payload is shaped for the server's limits. A nickname that is typed or changed here is cut
+ * to 30 code points on a whole character (BL-957 helper), so the server never refuses it and wedges the queue. A value
+ * pulled from the server is never passed here: only changed fields travel, so a longer pulled nickname is kept as it came.
+ */
+function withinServerLimits(fields: Record<string, unknown>): Record<string, unknown> {
+  const n = fields.nickname;
+  if (typeof n !== 'string') return fields;
+  return { ...fields, nickname: clampText(n.trim(), NICKNAME_MAX) };
+}
+
 /** Book settings a parent changed: only the fields that changed travel (per-field last writer wins). */
-export function enqueueBookUpdate(db: SqlDb, childId: string, fields: Record<string, unknown>, ctx: EnqueueContext): void {
-  if (!syncOwner(db) || Object.keys(fields).length === 0) return;
+export function enqueueBookUpdate(db: SqlDb, childId: string, changed: Record<string, unknown>, ctx: EnqueueContext): void {
+  if (!syncOwner(db) || Object.keys(changed).length === 0) return;
+  const fields = withinServerLimits(changed);
   const c = getChildRow(db, childId);
   if (!c || c.server_state === 'local' || c.role === 'contributor') return;
   coalesceOrAppend(db, 'book.update', childId, fields, ctx);
@@ -789,6 +804,16 @@ export function pendingCount(db: SqlDb): number {
     `SELECT COUNT(*) AS n FROM sync_outbox o WHERE ${sendable(db)}
        AND NOT (o.lane = ${ERASE_LANE} AND o.next_attempt_at IS NOT NULL AND o.next_attempt_at > strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`,
   )!.n;
+}
+
+/**
+ * The sign-out check (BL-449): what the signed-in account can still send. The engine does not start
+ * for an account other than the phone's owner, so rows queued for another account can never drain
+ * under this one; they are not counted here and stay queued for their own account.
+ */
+export function pendingForAccount(db: SqlDb, userId: string): number {
+  const owner = readSetting(db, SYNC_SETTING.owner);
+  return owner !== null && owner !== userId ? 0 : pendingCount(db);
 }
 
 export function rejectedUnseenCount(db: SqlDb): number {

@@ -10,6 +10,10 @@
  * - Nothing runs while the app is in the background (no background work,
  *   PRD 7.7). A job stopped by backgrounding goes back to the queue without
  *   counting as a failure, and starts again on return.
+ * - Nothing runs while a take is being recorded (BL-572, capture/busy.ts): a
+ *   large model and the microphone together can end the app on a 3 to 4 GB
+ *   phone. A job stopped by a take goes back to the queue the same way and
+ *   starts again when the take is kept or discarded.
  * - A failure retries by itself after 30 s, then after 5 min, then waits
  *   for the next launch or the parent's "Try again". It never loops.
  * - Enqueueing is idempotent: the same recording is never queued twice, and
@@ -57,6 +61,8 @@ export interface QueueState {
   /** Languages this build does not hear yet (language-hold.ts): their jobs wait and never run. */
   onHold: SpeechLanguage[];
   foreground: boolean;
+  /** A take is being recorded (BL-572): nothing starts until it ends. */
+  recording: boolean;
 }
 
 export type QueueEvent =
@@ -70,14 +76,15 @@ export type QueueEvent =
   | { type: 'interrupt'; id: string }
   | { type: 'retry'; id: string }
   | { type: 'remove'; id: string }
-  | { type: 'foreground'; value: boolean };
+  | { type: 'foreground'; value: boolean }
+  | { type: 'recording'; value: boolean };
 
 export const RETRY_DELAYS_MS: readonly number[] = [30_000, 5 * 60_000];
 /** Automatic attempts per launch; after these, only "Try again" or the next launch. */
 export const MAX_AUTO_ATTEMPTS = RETRY_DELAYS_MS.length + 1;
 
 export function initialQueue(): QueueState {
-  return { jobs: {}, running: null, ready: [], onHold: [], foreground: true };
+  return { jobs: {}, running: null, ready: [], onHold: [], foreground: true, recording: false };
 }
 
 const isReady = (s: QueueState, lang: SpeechLanguage) => s.ready.includes(lang);
@@ -130,8 +137,8 @@ export function reduce(s: QueueState, e: QueueEvent): QueueState {
       return rephase({ ...s, onHold: [...new Set(e.languages)].sort() });
     case 'start': {
       const j = s.jobs[e.id];
-      // A language on hold is never handed to the recogniser, whoever asks.
-      if (!j || s.running || j.phase === 'done' || j.phase === 'running' || isOnHold(s, j.language)) return s;
+      // A language on hold is never handed to the recogniser, whoever asks; nothing starts while a take records.
+      if (!j || s.running || s.recording || j.phase === 'done' || j.phase === 'running' || isOnHold(s, j.language)) return s;
       return put(s, { ...j, phase: 'running', progress: null, failure: undefined }, e.id);
     }
     case 'progress': {
@@ -183,12 +190,14 @@ export function reduce(s: QueueState, e: QueueEvent): QueueState {
     }
     case 'foreground':
       return { ...s, foreground: e.value };
+    case 'recording':
+      return s.recording === e.value ? s : { ...s, recording: e.value };
   }
 }
 
 /** The job to run now, or null. Drafts first, then oldest recording; ties by id (deterministic). */
 export function nextJob(s: QueueState, now: number): string | null {
-  if (s.running || !s.foreground) return null;
+  if (s.running || !s.foreground || s.recording) return null;
   const runnable = Object.values(s.jobs).filter(
     (j) =>
       canRun(s, j.language) &&

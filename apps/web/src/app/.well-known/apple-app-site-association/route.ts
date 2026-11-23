@@ -15,6 +15,8 @@
  *   /auth/confirm   the sign-in and confirm-your-email link (F02 6.3)
  *   /auth/callback  the same link as the app and email templates on `develop` still write it; remove with the
  *                   page of the same name once they use /auth/confirm
+ *   /open           the link at the end of most emails (BL-510): opens the app, or the page app/open/page.tsx
+ *                   when the app is not on this phone. It carries no token.
  *   /j              co-parent invites (https://earlyletters.com/j#t=<token>, PRD V2 F11; app/j/page.tsx). The
  *                   earlier /i/<token> form put the token in the path; the app no longer writes or accepts it, so
  *                   it is not listed and no token path ever opens the app.
@@ -23,7 +25,7 @@
 export const dynamic = 'force-static';
 
 /** Every path the app opens, in the order the file lists them. */
-const APP_LINK_PATHS = ['/auth/confirm', '/auth/confirm/', '/auth/callback', '/auth/callback/', '/j', '/j/'];
+const APP_LINK_PATHS = ['/auth/confirm', '/auth/confirm/', '/auth/callback', '/auth/callback/', '/j', '/j/', '/open', '/open/'];
 
 /** Suffixes of the app ids served: production, then the TestFlight alpha builds. */
 const SERVED_SUFFIXES = ['', '.preview'];
