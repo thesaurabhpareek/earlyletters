@@ -48,7 +48,7 @@ describe('server features switch: off unless a build says on', () => {
   it('is off in this process (no EXPO_PUBLIC_SERVER_FEATURES), and every capability follows it', () => {
     expect(process.env.EXPO_PUBLIC_SERVER_FEATURES ?? '').not.toBe('on');
     expect(serverFeaturesEnabled()).toBe(false);
-    expect(capabilities).toEqual({ signIn: false, sync: false, coParent: false, backup: false, statusReport: false, accountDeletion: false, analytics: false, englishOnly: false });
+    expect(capabilities).toEqual({ signIn: false, sync: false, serverErase: false, coParent: false, backup: false, statusReport: false, accountDeletion: false, analytics: false, englishOnly: false });
   });
 
   it('is on only where flipped: the preview alpha (D-106), production (build 12, founder 8 Nov 2026), and testflight after the R-17 flip; development is off (eas.json)', () => {
@@ -87,7 +87,7 @@ describe('server features switch: off unless a build says on', () => {
   it('the override is for tests only, and goes back to the build value', () => {
     setServerFeaturesForTests(true);
     // Analytics, English only and the two build flags have their own switches: server features on does not turn them on.
-    expect(capabilities).toEqual({ signIn: true, sync: true, coParent: true, backup: false, statusReport: false, accountDeletion: false, analytics: false, englishOnly: false });
+    expect(capabilities).toEqual({ signIn: true, sync: true, serverErase: true, coParent: true, backup: false, statusReport: false, accountDeletion: false, analytics: false, englishOnly: false });
     setServerFeaturesForTests(null);
     expect(serverFeaturesEnabled()).toBe(false);
     const saved = process.env.VITEST;
@@ -215,7 +215,7 @@ describe('[D-111 item 4, D-121] English only: on in the alpha profiles and the s
     // And turning it on changes no other capability.
     setServerFeaturesForTests(null);
     setEnglishOnlyForTests(true);
-    expect(capabilities).toEqual({ signIn: false, sync: false, coParent: false, backup: false, statusReport: false, accountDeletion: false, analytics: false, englishOnly: true });
+    expect(capabilities).toEqual({ signIn: false, sync: false, serverErase: false, coParent: false, backup: false, statusReport: false, accountDeletion: false, analytics: false, englishOnly: true });
   });
 
   it('the override is for tests only, and goes back to the build value', () => {
@@ -590,6 +590,43 @@ describe('boot with server features off', () => {
     expect(registerUploadQueue).not.toHaveBeenCalled();
     expect(createClient).not.toHaveBeenCalled();
     stop();
+  });
+
+  // BL-442: the line above checks that nothing was wired; this one checks the thing a person would notice.
+  // A save on a phone with the switch off queues nothing to upload, because no account ever owns the database.
+  it('starts no sync: a save on a phone leaves no sync_outbox row', async () => {
+    const sync = await import('../src/lib/sync');
+    const stop = sync.startSync();
+    // The real outbox and migrations: this file mocks the sync modules above for the wiring checks.
+    const outbox = await vi.importActual<typeof import('../src/lib/sync/outbox')>('../src/lib/sync/outbox');
+    const { migrate } = await vi.importActual<typeof import('../src/lib/db/migrations')>('../src/lib/db/migrations');
+    const { nodeDb } = await import('./helpers/node-db');
+    const { insertBook } = await import('./helpers/store-fixture');
+    const { db, close } = nodeDb();
+    try {
+      const at = '2026-10-03T09:00:00.000Z';
+      let n = 0;
+      const ctx = { now: at, newId: () => `0199a000-0000-7000-8000-${String(++n).padStart(12, '0')}` };
+      migrate(db, ctx);
+      insertBook(db, { id: 'child-asha', name: 'Asha', birthday: '2025-04-12', at });
+      db.run(
+        `INSERT INTO entries (id, kind, occurred_on, captured_at, capture_mode, edit_level, engine_version, raw_transcript, machine_edits,
+           final_text, in_book, updated_at, child_id) VALUES ('l1', 'letter', '2026-09-29', ?, 'typed', 'verbatim', 2, 'She walked to me.', '[]', 'She walked to me.', 1, ?, 'child-asha')`,
+        at, at,
+      );
+      const queued = () => db.get<{ n: number }>('SELECT COUNT(*) AS n FROM sync_outbox')!.n;
+      outbox.enqueueEntryUpsert(db, 'l1', ['text'], ctx); // what a save asks of the outbox
+      expect(outbox.readSetting(db, 'sync.ownerId')).toBeNull();
+      expect(queued()).toBe(0);
+      // Control: the same call queues a row once an account owns the phone, so the zero above is not a broken helper.
+      outbox.writeSetting(db, 'sync.ownerId', '11111111-1111-1111-1111-111111111111');
+      db.run("UPDATE entries SET author_id = '11111111-1111-1111-1111-111111111111' WHERE id = 'l1'");
+      outbox.enqueueEntryUpsert(db, 'l1', ['text'], ctx);
+      expect(queued()).toBe(1);
+    } finally {
+      close();
+      stop();
+    }
   });
 
   it('with the switch on (v1.1 tests), the same build makes one client and wires sync', async () => {

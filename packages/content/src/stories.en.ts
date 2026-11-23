@@ -35,10 +35,11 @@ export const onboardingStories: readonly StoryCard[] = [
   {
     type: 'story',
     // v2 (LNG-18, 31 Oct 2026): one description of a small fix everywhere. v1 said "We fix slips of the tongue."
-    id: 'story.exact.v2',
+    // v3 (D-133): the true promise line. v2 headline was the old exact-words promise.
+    id: 'story.exact.v3',
     order: 2,
-    headline: "Exactly as you said it.",
-    line: "We only fix small slips, like an um, a repeat or a misheard word. We never rewrite your words.",
+    headline: "It stays in your words.",
+    line: "Every change is marked, and your original recording is kept unchanged. We never rewrite your words.",
     visual: 'letter-underline',
   },
   {
@@ -54,7 +55,7 @@ export const onboardingStories: readonly StoryCard[] = [
     id: 'story.private.v1',
     order: 4,
     headline: "Private to your family.",
-    line: "Only you and the people you invite can read these letters. We never sell them or use them for ads.",
+    line: "Your letters are yours, and you choose who else can read them. We never sell them and never use them for ads.",
     visual: 'two-hands',
   },
 ];

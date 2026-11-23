@@ -1,0 +1,9 @@
+// Positive control for [NS-33-R11] (BL-1841): an svg Image under another name, no prop. The Svg root is not a picture.
+import Svg, { Image as SvgPic } from 'react-native-svg';
+export function Bad({ uri }: { uri: string }) {
+  return (
+    <Svg width={10} height={10}>
+      <SvgPic href={uri} />
+    </Svg>
+  );
+}

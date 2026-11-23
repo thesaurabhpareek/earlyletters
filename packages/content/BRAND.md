@@ -27,11 +27,11 @@ Your words, never ours.
 - On-device transcription only fixes small slips, like an um, a repeat or a misheard word, and marks each one.
 - Word for word: every small fix is marked, and you can undo it.
 - We never rewrite your words. Every sentence is one the person actually said.
-- Every language stays as spoken: seven languages at v1.0, each in its own script, never translated. Hindi and English in one sentence arrives in v1.1.
+- Every language stays as spoken, each in its own script, never translated. Seven languages is the plan (D-056); the first store build is English only (D-121), and each language appears after its own gate (D-125 item 2). Don't promise one in public copy until it ships. Hindi and English in one sentence arrives in v1.1.
 
 ### 2. A voice to come back to
 Read it, and hear it.
-- The original recording is kept with each letter, on your phone by default, with optional encrypted backup that only you can restore or play (D-073). It is never altered; a cleaner listening copy may sit beside it (D-058). Hearing each other's recordings across phones arrives in v1.1.
+- The original recording is kept with each letter, on your phone by default, with optional encrypted backup. We hold a recovery key, and the copy says so (D-102). It is never altered; a cleaner listening copy may sit beside it (D-058). Hearing each other's recordings across phones arrives in v1.1.
 - Read together plays your letters in your own voice at bedtime. The moving word highlight arrives in v1.1.
 - Free PDF export any time. Printed books, starting with Early Letters: Year One, come later.
 
@@ -43,6 +43,8 @@ Love from everyone, pressure from no one.
 - Organised by month of age.
 
 ## Contrast lines
+
+Website and store only, never in the app, an email or a push. Owner: CMO. Open for the CMO (`WRITING-GUIDE.md` section 1): these lines use "not X, Y" and "Just talk", which the writing guide lists as tells, and "Every sentence is one you actually said" was found false under D-133 by the council review. Not edited here.
 
 **Versus fill-in-the-blank baby books:** "No blanks to fill. Just talk, and the page is yours."
 "Not 'First word: ____'. The whole story of the first word, told by the person who heard it."
@@ -89,7 +91,8 @@ One term per concept. Banned words must not appear in user-facing copy (app, web
 | What the product makes | memory book; "the book" or "{child}'s book" after first mention | journal, diary, baby book (except about paper competitors), album, scrapbook | "Journal" is allowed in the store name, subtitle and keywords, for search only (D-139). Store keywords may keep other search terms. Prose keeps "book" and "letter". |
 | Printed product | Early Letters: Year One (from `brand.printTitle`) | yearbook, photo book | Not promised in v1.0. |
 | Longer piece someone makes | letter | entry, post, memory, story, journal entry | |
-| Short piece someone makes | note | quick entry, moment | Only ever something a person makes. |
+| Short piece someone makes | note | quick entry, moment (as the name of a note or of anything a person makes) | Only ever something a person makes. A short piece is still a note. |
+| The fourth tab and its place | Moments (founder, 21 Nov 2026: "Change brand.md and I approve moments."). The tab, and the place a parent opens: "Open Moments", "in Moments" | "your moments", "new moments", "these moments", "saved moments", a number of moments, "photo moments", "capture a moment"; Moments as the name of a note, a letter, a recording, a picture or a day the parent marked; Moments in the store name, subtitle, keywords, listing, screenshots or website until counsel clears the name (X1, Q-X1-12) | A navigation label and a place name only, never a thing a person made. The tab shows days and the parent's own words; nothing in it is called a moment. The Me row for pictures says "pictures" and never "Moments" (NS-51-R35). Ordinary English stays: "in a moment", "One moment", "a good moment for a few words". In push and email, the word is not used for content and not in a subject line (founder direction, 21 Nov 2026). Enforced by `test/rules.test.ts`. |
 | What we send (billing, months, birthdays) | reminder; message | note | "A reminder before your trial ends", "Month and birthday messages". |
 | A month section of the book | month, "Month 4" | chapter (in copy), page | "chapter" may stay in code and design docs. |
 | The spoken audio | recording; "your voice" in headlines | voice note, audio file, clip | |
@@ -116,7 +119,7 @@ One term per concept. Banned words must not appear in user-facing copy (app, web
 | Sign-in buttons | Sign in with Apple; Sign in with Google; Sign in with email | Apple login, Google sign-in, log in, "Continue with Google", "Continue with email" | "Sign in with Google is now on your account". The app's buttons and the emails use the same words (LNG-13). Name a provider only where the build offers it. |
 | Sign out elsewhere | Sign out other devices | Sign out of other devices, log out everywhere | Button and Account row (LNG-14). |
 | Action | sign in / sign out | log in, log out, login | |
-| Privacy promise | private by default; "Only you, and your co-parent if you invite them, can read what you add to the book. Our staff look only in the rare cases our Privacy Policy lists." | "only the family you invite", secure vault, military-grade, 100% private, end-to-end (letters are encrypted at rest, not end-to-end) | No Vault mode or cloud transcription in v1.0 public copy. |
+| Privacy promise | private by default; "Our staff look only in the rare cases our Privacy Policy describes." | "only the family you invite", secure vault, military-grade, 100% private, end-to-end (letters are encrypted at rest, not end-to-end) | No Vault mode or cloud transcription in v1.0 public copy. Key: `en.trust.promise`. |
 | Release state | early version ("early version, can make mistakes", in the app only) | beta (in app, store and website copy), preview, alpha | TestFlight is the only beta (Brief 10). Legal terms may say beta until counsel changes them. |
 | Email sign-off | "Warmly," then the brand name | The Early Letters Team, Love, Cheers, Best | `emailChrome.signature`. |
 | Footer line | brand name, then the tagline "It stays in your words." | other tagline variants | `emailChrome.footer.nameLine`. |
@@ -136,3 +139,4 @@ Two vocabularies, one door, one direction. Code, schema, test names and spec sec
 | language pack, speech pack, text-rules pack | language; Settings > Languages and speech; "download" for the act | "Speech models" may stay where the file itself is meant. |
 | chapter | month | Already in the table above. |
 | `scribe` | nothing | The codename lives in repo, packages and bundle id only. |
+| moment (the `en.moments` celebration strings), "photo moments" (NS-51) | Celebrations: "The first letter."; pictures: "pictures". Neither is called a moment | The code namespace keeps its name. The tab is called Moments (glossary above); a parent never reads "photo moments". |

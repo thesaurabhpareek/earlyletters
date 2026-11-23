@@ -1,5 +1,7 @@
 # Early Letters voice guide
 
+> How a sentence should sound, with before and after pairs, tone by moment and the review checklist: `WRITING-GUIDE.md`. Read it first for any copy change. If this file and the guide disagree, stop and ask `content` (guide section 1). Open conflicts are listed there; none is edited away here.
+
 Scope: every word outside the app.
 
 ## Who we talk to
@@ -10,7 +12,7 @@ Parents of children from birth to five, usually tired, often holding someone. At
 
 **Warm.** We sound like a kind friend, not a brand.
 **Calm.** Short sentences. No hurry, no hype.
-**Literary, lightly.** A little care in the phrasing, and sometimes a smile.
+**Literary, lightly.** A little care in the phrasing, and sometimes a smile. (Where a smile is allowed is a PROPOSED policy in `WRITING-GUIDE.md` section 4, humour; the CMO and founder have not ruled on it.)
 
 ## Brand idea in one sentence
 
@@ -59,18 +61,20 @@ No fear, no pressure, no counting. No deadlines, no warnings about what might sl
 
 Families speak how they speak. Hindi and English in the same sentence is a feature, not an error. Never call it "mixed" or "broken" language. Never promise translation. Say: "Your words stay in the language you said them." Use examples from real code-switching families, and keep relationship names as families use them: Nani, Dadi, Papa, Amma.
 
-At v1.0 (founder, 3 Oct 2026, D-056) letters can be spoken in seven languages: English, Hindi, Spanish, Mandarin Chinese, French, Arabic and Portuguese, one language per letter, each written in its own script (Hindi in Devanagari, Arabic right to left, Chinese in characters). The app itself is in English. A mode for Hindi and English in one sentence comes in v1.1 (D-059). Until it ships, do not promise mixing languages in one sentence; the rest of this rule stands.
+Plan of record (founder, 3 Oct 2026, D-056): letters can be spoken in seven languages. The first store build is English only (D-121), and a language appears in the picker only after its own gate; don't promise others in public copy before then. The seven: English, Hindi, Spanish, Mandarin Chinese, French, Arabic and Portuguese, one language per letter, each written in its own script (Hindi in Devanagari, Arabic right to left, Chinese in characters). The app itself is in English. A mode for Hindi and English in one sentence comes in v1.1 (D-059). Until it ships, do not promise mixing languages in one sentence; the rest of this rule stands.
 
 ## How to write a notification
 
-- One idea, one line, under 60 characters if possible.
+- One idea, one line. The rules test enforces a title of 40 characters or fewer and a body of 110 or fewer; the house target is a body under 60 (WRITING-GUIDE.md section 2 for the limits, section 8 "Push notifications" for the target).
 - Invite, never remind. "Anything to tell {child} today?" not "Don't forget to write."
 - No counts, no days-since, no urgency words.
 - Always easy to ignore. One tap to "Not much today" is a complete answer.
-- At most one exclamation mark per month across all notifications.
+- No exclamation marks in notifications (Q-NTC-7, CL-040).
+- No "we" or "our" in a notification or reminder line (BL-474, ruling CMO-18; the test holds exactly those two words). Say what the parent can do, not what we will do. Also keep "Tell us" and "Let us know" out of notifications: they pass the test but read as a team asking for a report (WRITING-GUIDE.md section 8). The rules test `reminder-copy-no-we.test.ts` holds the line.
 
-Good: "Anything to tell {child} today?"
-Good: "A minute before bed? {child}'s book is open."
+Good: "Anything to tell {child} today?" (only where the parent has turned names on for the lock screen)
+Good: "A minute before bed? {child}'s book is open." (same: names on only)
+Good, no name: "A minute for the book?"
 Bad: "7 days in a row. Keep it going."
 
 ## Writing for grandparents
@@ -80,7 +84,7 @@ Family beyond the co-parent joins in v1.1. Until then this guidance applies to a
 - Bigger ideas, fewer words. One instruction per sentence.
 - Name the action plainly: "Tap the red circle and talk."
 - Avoid app terms like "sync" or "feed".
-- Reassure on privacy early: "Only you, and your co-parent if you invite them, can read what you add to the book. Our staff look only in the rare cases our Privacy Policy lists."
+- Reassure early, and only with what the product does today: "It stays in your words. We never rewrite your words."
 - Make them feel wanted, not managed: "Your letters belong in {child}'s book." (A person makes letters, never stories: BRAND.md glossary.)
 - Avoid "senior" or "elderly". They are Nani, Dada, Grandma, Pop.
 
@@ -106,7 +110,7 @@ The voice promise (`en.trust.voice`), said where a recording is made or kept: "W
 
 | Place | What we say | Control behind it |
 | --- | --- | --- |
-| Onboarding story 4 | Only you and the people you invite can read these letters. | Per-book sharing |
+| Onboarding story 4 | Your letters are yours, and you choose who else can read them. | Per-book sharing |
 | Sign-in | Why an account helps, who can read, what the email is for (`trust.signIn`). | Sign in with Apple's Hide My Email; no passwords |
 | First recording, once | Words are written down on this phone; the recording stays with the letter; we never imitate your voice (`trust.firstRecording`). | On-device transcription; encrypted backup of the owner's recordings, for them alone (D-073 supersedes D-059's "no audio upload"); the original is never altered (D-058) |
 | Settings, Privacy | The promise at the top, then the switches (`trust.settings`, `settings.privacy`). | Analytics off by default, sync and sharing, export, delete |
@@ -121,11 +125,12 @@ The voice promise (`en.trust.voice`), said where a recording is made or kept: "W
 
 A line that sounds automatic stops being heard. These earned their place once and then spread; reach for the specific fact instead.
 
-- **"safe".** Say what happened and where the words are: "Nothing you saved has changed", "Your words are still here", "Every letter you have kept is still in the book". Keep "safe" for the few places that need it (a failed save and a crash, where the words are on the phone). Sign-in and account errors say "Nothing has changed." only when nothing did (a lost session says "You were signed out.", and a setup that did not finish says that); "Your letters are still on this phone." only where a book is on the phone (under the code field, never in an error line, which a new phone reads too): with no recording backup in Build 12, "safe" is a promise the build does not make, and an error on a new phone is read where no letters are (packages/content/test/build12-untrue-copy.test.ts).
-- **"That did not work this time".** Name what did not finish: "That did not save", "That sign-in did not finish", "That did not go through".
+- **"safe".** Say what happened and where the words are: "Nothing you saved has changed", "Your words are still here", "Every letter you have kept is still in the book". A failed save and a crash say "still on this phone"; "safe" is not used for them. Sign-in and account errors say "Nothing has changed." only when nothing did (a lost session says "You were signed out.", and a setup that did not finish says that); "Your letters are still on this phone." only where a book is on the phone (under the code field, never in an error line, which a new phone reads too): with no recording backup in Build 12, "safe" is a promise the build does not make, and an error on a new phone is read where no letters are (packages/content/test/build12-untrue-copy.test.ts).
+- **"That did not work this time".** Name what did not finish: "That didn't save", "That sign-in didn't finish", "That didn't go through".
 - **"Nothing (else) to do".** Say it once in an email, never in both the preheader and the body.
 - **"Here is ...".** Say the thing: "Your confirmation code", not "Here is your code".
 - **"Plus is on."** A status, not a toast and a title as well. After a purchase: "Thank you. Plus is on".
+- **"A minute is plenty." and "A line is plenty."** Two lines, not a template. Rotate them, and keep a repeated line to one surface.
 - **"kept" in toasts.** Vary it; three toasts in a row should not all end in "kept".
 - **Greeting-card cadence.** No aphorism endings ("That is love, written down"), no "not X, it is Y", no triplets that exist for rhythm ("no counters, no badges, no scores"), no "Just X" closers.
 
@@ -133,7 +138,7 @@ A line that sounds automatic stops being heard. These earned their place once an
 
 - Transactional only, and only when something happened: a sign-in link or code, an invite, a security change, a deletion step, an export, a billing reminder the law asks for.
 - Subject says what happened, in plain words. Preview text adds the one useful next fact.
-- One action at most. Calm about security: "Did not ask for this? You can ignore it."
+- One action at most. Calm about security: "Didn't ask for this? You can ignore it."
 - No child's name, no letter text, nothing from the book. Nothing loads from a server: the logo travels inside the email as an inline attachment, there are no web fonts, no tracking pixels and no tracked links.
 - Where an email states the privacy promise, it uses `en.trust` word for word (D-061).
 - Signed "Warmly," then the brand name. Every email has a plain-text version. Copy lives in `packages/content/src/emails/*.en.ts`, one file per group, each email an `EmailCopy` (`emails/types.ts`). Catalog: `docs/emails/CATALOG.md`.
@@ -150,8 +155,9 @@ A line that sounds automatic stops being heard. These earned their place once an
 
 `test/rules.test.ts` enforces these too. If one fails, change the words, not the test.
 
-- No daily rhythm in anything the product says about itself: no "daily", "every day", "every night" or "a few words a day". Prompts may ask about the child's own days. Reminders, notifications and moments never count days, runs or gaps.
-- Moments celebrate what exists. No comparisons, no totals per person, no mention of Plus.
+- No daily rhythm in anything the product says about itself: no "daily", "every day", "every night" or "a few words a day". Prompts may ask about the child's own days. Reminders, notifications and the celebration strings (code namespace `en.moments`) never count days, runs or gaps.
+- The celebration strings (`en.moments`, not the Moments tab) celebrate what exists. No comparisons, no totals per person, no mention of Plus.
+- The tab is called Moments. It is a place, not a thing a person makes: nothing the parent writes or says is called a moment, and push and email never say "your moments", count them or put the word in a subject line (BRAND.md glossary).
 - The store and the website speak to adults. No "kids", no "for children", nothing that suggests a child uses the app alone. Adults doing things "on their own phone" is fine.
 - Digital only for now. No print, printed books, hard copies, photo books or ordering a copy. "Large print" as a reading size is fine.
 - No string says "beta" (D-060). The app keeps one quiet "early version, can make mistakes" note in Settings, About. The store listing also avoids "early version", "early access", "preview" and the like (App Review 2.2).

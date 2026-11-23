@@ -13,6 +13,8 @@ Owner: S20 (release), founder for every dashboard. Updated 15 Oct 2026 for the a
 
 The server switch, `BACKUP`, `STATUS_REPORT` and `ANALYTICS` are written out in every profile of `apps/mobile/eas.json`. Two switches are not: `ENGLISH_ONLY` is written `on` in the two alpha profiles and in `production` (the first store build is English only, D-121 item 1), and is unset, hence off, in `development` and `e2e`, and `ACCOUNT_DELETION` (the Delete account row, founder, 30 Oct 2026) is written `on` in `development`, `e2e` and `production` and **left out of the two alpha profiles**, so a build made without it hides the row and the EAS `preview` environment can switch it on after the freeze (TESTFLIGHT.md step 9). It is in no `.env*` file; the preflight FAILs on one. `apps/mobile/test/config.test.ts`, `capabilities.test.ts` and `account-deletion-switch.test.ts` hold all of this. Only `on` is on (`apps/mobile/src/lib/capabilities.ts`); a build flag also needs the server switch.
 
+Card flags (default off in every profile, including `production`; `apps/mobile/test/g6-production-flags-off.test.ts` fails a store profile that turns one on): `EXPO_PUBLIC_READ_THE_YEAR` (NS-24, BL-947) shows the "Read a year together" rows in Go to a month. Unset in `development`, `e2e`, both alpha profiles and `production`.
+
 | Profile | Use | Distribution | `EXPO_PUBLIC_APP_ENV` | Bundle id | EAS environment | `SERVER_FEATURES` | `BACKUP` | `STATUS_REPORT` | `ANALYTICS` | `ENGLISH_ONLY` | `ACCOUNT_DELETION` |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | `development` | dev client on the founder's desk | internal | `development` | `<id>.dev` | development | off | off | off | off | not written (off) | on |

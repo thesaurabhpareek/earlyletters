@@ -435,10 +435,10 @@ export const MIGRATIONS: Migration[] = [
       // `Library/Application Support/photos/<id>.jpg` (iOS; the app's files folder elsewhere; the media id, no entry id
       // in the name); the row decides who owns it.
       //   id          L2  media id (UUIDv7 made on the phone)
-      //   entry_id    L2  the kept letter; null while only a draft owns it
-      //   draft_id    L2  the draft; null once kept
-      //   kind, ext   L1  'photo' and 'jpg' only (no video in Build 13)
-      //   bytes       L1  size of the stripped copy
+      //   entry_id    L3  the kept letter (a letter id, as entries.id); null while only a draft owns it
+      //   draft_id    L3  the draft (as drafts.id); null once kept
+      //   kind, ext   L2  'photo' and 'jpg' only (no video in Build 13); enums, as entries.kind
+      //   bytes       L2  size of the stripped copy (as audio_bytes)
       //   sha256      L4  of the stripped copy (a hash of a picture is L4, DATA_CLASSIFICATION 1.1.2)
       //   width, height L2
       //   photo_text  L4  the parent's own words about the picture: the app keeps at most 140 characters a person
@@ -467,6 +467,80 @@ export const MIGRATIONS: Migration[] = [
         CREATE INDEX IF NOT EXISTS entry_media_entry_idx ON entry_media (entry_id) WHERE entry_id IS NOT NULL;
         CREATE INDEX IF NOT EXISTS entry_media_draft_idx ON entry_media (draft_id) WHERE draft_id IS NOT NULL;
         CREATE UNIQUE INDEX IF NOT EXISTS entry_media_one_photo_idx ON entry_media (COALESCE(entry_id, draft_id));
+      `);
+    },
+  },
+  {
+    version: 12,
+    name: 'raw_transcript is set once on this phone: two triggers (BL-412, DATA-REQ-040, ADR 0025 section 9 row C)',
+    up(db) {
+      // The server refuses any change of a set raw_transcript (entries_guard_immutable); this is the phone's copy of
+      // that rule, for raw_transcript only (captured_at, author_id, child_id, engine_version have local writers).
+      // Empty (or NULL on a draft) to the first words stays allowed; naming the column with the same value passes.
+      // The one exception is a pulled own row taking the first keep's raw (merge.ts takeProvenance): it sets
+      // settings('raw_takeover') to that one entry id and deletes it in the same transaction, so the trigger lets
+      // that entry's raw change and no other. Drafts have no exception. The message holds no words.
+      db.exec(`
+        CREATE TRIGGER IF NOT EXISTS entries_raw_transcript_set_once
+        BEFORE UPDATE OF raw_transcript ON entries
+        WHEN OLD.raw_transcript <> ''
+          AND NEW.raw_transcript IS NOT OLD.raw_transcript
+          AND OLD.id IS NOT (SELECT value FROM settings WHERE key = 'raw_takeover')
+        BEGIN
+          SELECT RAISE(ABORT, 'raw_transcript is immutable once set (DATA-REQ-040)');
+        END;
+        CREATE TRIGGER IF NOT EXISTS drafts_raw_transcript_set_once
+        BEFORE UPDATE OF raw_transcript ON drafts
+        WHEN OLD.raw_transcript IS NOT NULL AND OLD.raw_transcript <> ''
+          AND NEW.raw_transcript IS NOT OLD.raw_transcript
+        BEGIN
+          SELECT RAISE(ABORT, 'raw_transcript is immutable once set (DATA-REQ-040)');
+        END;
+      `);
+    },
+  },
+  {
+    version: 13,
+    name: 'the other four entry columns get their own phone-side rules: four triggers (BL-1497, BL-412 follow-up)',
+    up(db) {
+      // One rule per column, each the phone's copy of what its only legitimate writers do. Triggers only; no data
+      // is read or changed, and no settings row is written here. Naming a column with its own value always passes.
+      //  - captured_at: changes only for the entry named in settings('provenance_takeover'), which takeProvenance
+      //    (merge.ts, a pulled own row after the first keep, ADR 0025 row C) sets and deletes in the same transaction.
+      //  - engine_version: the same scope, and also while the words have not arrived (raw_transcript is '': the one
+      //    setWordsOnce statement) or the version is still 0 or NULL.
+      //  - author_id: NULL to a value only (the first sign-in claim, ownership.ts; the server row for an own letter).
+      //  - child_id: only while the letter has never synced (synced_at IS NULL; entries.ts upsert).
+      // Messages hold no words, ids or names.
+      db.exec(`
+        CREATE TRIGGER IF NOT EXISTS entries_captured_at_set_once
+        BEFORE UPDATE OF captured_at ON entries
+        WHEN NEW.captured_at IS NOT OLD.captured_at
+          AND OLD.id IS NOT (SELECT value FROM settings WHERE key = 'provenance_takeover')
+        BEGIN
+          SELECT RAISE(ABORT, 'entries.captured_at is set once (BL-1497)');
+        END;
+        CREATE TRIGGER IF NOT EXISTS entries_engine_version_set_once
+        BEFORE UPDATE OF engine_version ON entries
+        WHEN NEW.engine_version IS NOT OLD.engine_version
+          AND COALESCE(OLD.engine_version, 0) <> 0
+          AND OLD.raw_transcript <> ''
+          AND OLD.id IS NOT (SELECT value FROM settings WHERE key = 'provenance_takeover')
+        BEGIN
+          SELECT RAISE(ABORT, 'entries.engine_version is set once (BL-1497)');
+        END;
+        CREATE TRIGGER IF NOT EXISTS entries_author_id_set_once
+        BEFORE UPDATE OF author_id ON entries
+        WHEN OLD.author_id IS NOT NULL AND NEW.author_id IS NOT OLD.author_id
+        BEGIN
+          SELECT RAISE(ABORT, 'entries.author_id is set once (BL-1497)');
+        END;
+        CREATE TRIGGER IF NOT EXISTS entries_child_id_fixed_once_synced
+        BEFORE UPDATE OF child_id ON entries
+        WHEN OLD.synced_at IS NOT NULL AND NEW.child_id IS NOT OLD.child_id
+        BEGIN
+          SELECT RAISE(ABORT, 'entries.child_id is fixed once synced (BL-1497)');
+        END;
       `);
     },
   },
@@ -517,4 +591,21 @@ export function migrate(db: SqlDb, ctx: MigrationContext, migrations: Migration[
     to = m.version;
   }
   return { from, to, newer: false };
+}
+
+/**
+ * Boot sweep of the two guard-window keys (defence in depth after BL-412 and BL-1497). merge.ts takeProvenance opens
+ * settings('provenance_takeover') and settings('raw_takeover') for one statement each, inside the pull's transaction,
+ * and deletes them in a finally; a rollback removes them too, so a stale row should not exist. If one did (an older
+ * build, a crash), it would hold a guard open for that entry for ever. openStore calls this after migrate and before
+ * any pull can run. Cheap (two keyed deletes), idempotent, never throws, logs nothing. Never call it from a pull.
+ */
+export function sweepTakeoverKeys(db: SqlDb): void {
+  for (const key of ['provenance_takeover', 'raw_takeover']) {
+    try {
+      db.run('DELETE FROM settings WHERE key = ?', key);
+    } catch {
+      // a failed sweep never blocks launch; the next open tries again
+    }
+  }
 }

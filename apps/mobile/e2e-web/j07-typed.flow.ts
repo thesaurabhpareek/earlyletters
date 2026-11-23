@@ -110,6 +110,6 @@ test('[J07c] a typed letter kept private', async ({ app, record }) => {
   await btn(app, /^Type/).click();
   await app.getByRole('textbox').first().fill('A private one, only for us.');
   await btn(app, 'Keep private').click();
-  await expect(app.getByText(/Kept just for you/)).toBeVisible();
+  await expect(app.getByText(/Kept private/)).toBeVisible();
   await step('happy', 'Kept private', 'Keep private, from Write, keeps the letter outside the book with the lock chip, then lands on the Book with its Private chip. It can be added to the book later.', undefined, { settle: 120 });
 });

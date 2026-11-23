@@ -32,7 +32,7 @@ import {
   progressOf,
   setPrefersOriginal,
   spokenDuration,
-  stepPosition,
+  scrubA11y,
   useLetterPlayer,
 } from '@/lib/player';
 import { track } from '@/lib/analytics/track';
@@ -123,7 +123,6 @@ function PlayableRecording({
   const a11yLabel = p.playing
     ? fill(playerCopy.pauseA11y, { signsAs })
     : fill(playerCopy.playA11y, { label: fill(copy.book.hearLink, { signsAs }), duration: spokenDuration(p.duration) });
-  const valueText = fill(playerCopy.positionText, { elapsed: formatClock(shown), total: formatClock(p.duration) });
   const at = (x: number) => positionAt(x, width, p.duration);
 
   const toggle = () => {
@@ -170,12 +169,7 @@ function PlayableRecording({
         </Pressable>
 
         <View
-          accessible
-          accessibilityRole="adjustable"
-          accessibilityLabel={playerCopy.scrubLabel}
-          accessibilityValue={{ min: 0, max: Math.max(0, Math.round(p.duration)), now: Math.round(shown), text: valueText }}
-          accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
-          onAccessibilityAction={(ev) => p.seek(stepPosition(p.position, ev.nativeEvent.actionName === 'increment' ? 1 : -1, p.duration))}
+          {...scrubA11y({ position: p.position, shown, duration: p.duration, onSeek: p.seek })}
           onLayout={(ev) => setWidth(ev.nativeEvent.layout.width)}
           onStartShouldSetResponder={() => true}
           onMoveShouldSetResponder={() => p.duration > 0}

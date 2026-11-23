@@ -27,17 +27,20 @@ import { AppState, Platform } from 'react-native';
 import { getSetting, setSetting, subscribe } from '../store';
 import { reminderCopy } from './copy';
 import { ID_PREFIX, planReminders, planSignature, type Cadence, type PlannedNotification } from './planner';
-import { lastOwnSaveAt, plannerChildren, readPrefs, writePrefs } from './prefs';
-import { REMINDER_SOURCE, reminderContent } from './payload';
+import { anchorAt, lastMadeLetter, lastOwnSaveAt, plannerChildren, readOnSince, readPrefs, writeOnSince, writePrefs } from './prefs';
+import { REMINDER_SOURCE, reminderContent, routeForReminder } from './payload';
 import { registerReminderCategory } from './categories';
 import { LAST_PLANNED_VERSION_KEY, replanAfterUpdate } from './update';
 import { PLAN_ID_PREFIX } from '../billing/plan-reminders.logic';
 import { PLAN_MAX } from './budget';
+import { daysBuildEnabled, libraryDaysAllowed, remoteConfigReader, watchLibraryDaysPause, withoutLibraryNotes, type RemoteConfigReader } from './library-days';
 
 /** Marks our notifications in `content.data`, so we never cancel anyone else's (defined in payload.ts). */
 export { REMINDER_SOURCE };
 const ANDROID_CHANNEL = 'reminders';
 const STORE_DEBOUNCE_MS = 1200;
+const COLD_START_ROUTE_RETRIES = 5;
+const COLD_START_ROUTE_RETRY_MS = 200;
 
 export type ReminderPermission = 'granted' | 'denied' | 'undetermined';
 
@@ -53,6 +56,21 @@ let timer: ReturnType<typeof setTimeout> | null = null;
 let chain: Promise<ScheduleResult> = Promise.resolve(OK);
 let lastResult: ScheduleResult = OK;
 const resultListeners = new Set<(r: ScheduleResult) => void>();
+
+/**
+ * The signed config reader for the library days pause (BL-1008). Built on first use and only when the build switch is
+ * on, so a build without `EXPO_PUBLIC_DAYS` loads nothing extra. Tests inject their own.
+ */
+let configReader: RemoteConfigReader | null | undefined;
+function reader(): RemoteConfigReader | null {
+  if (configReader === undefined) configReader = daysBuildEnabled() ? remoteConfigReader() : null;
+  return configReader;
+}
+
+/** Tests only: the reader of the signed config (null: none), or undefined to build the default again. */
+export function setLibraryDaysReaderForTest(r: RemoteConfigReader | null | undefined): void {
+  configReader = r;
+}
 
 /** The running app version. Read late so boot and tests that never need it do not load expo-constants. */
 function currentAppVersion(): string {
@@ -139,6 +157,8 @@ export function intendedPlan(now = Date.now(), planPending: number = PLAN_MAX): 
     children: plannerChildren(),
     lastSaveAt: lastOwnSaveAt(),
     lastForegroundAt,
+    anchorAt: anchorAt(),
+    lastLetter: lastMadeLetter(),
   });
 }
 
@@ -161,8 +181,17 @@ function pendingPlanNotices(scheduled: readonly { identifier: string }[]): numbe
 }
 
 async function apply(): Promise<void> {
+  // A phone that turned reminders on before the anchor existed starts its count now (once), never stops at once.
+  if (readPrefs().enabled && readOnSince() === null) writeOnSince(Date.now());
+  // Reminders off: nothing to plan and nothing to read. An empty plan already applied (`lastSignature` is '') means
+  // none of ours is pending, so no read. The first apply after the switch goes off (or after a launch, or a failure)
+  // still reads once, to cancel what was scheduled earlier (BL-1189).
+  const off = !readPrefs().enabled;
+  if (off && lastSignature === '') return;
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-  const plan = await currentPlan(Date.now(), pendingPlanNotices(scheduled));
+  // A pause drops library notes from the plan, so the signature changes and the pending ones are cancelled below.
+  // Typed days and every other kind stay (NS-46-R33).
+  const plan = off ? [] : withoutLibraryNotes(await currentPlan(Date.now(), pendingPlanNotices(scheduled)), libraryDaysAllowed(reader()));
   const signature = planSignature(plan);
   if (signature === lastSignature) return;
   for (const s of scheduled) {
@@ -259,20 +288,39 @@ export function startReminders(): () => void {
   }
 
   const unsubscribeStore = subscribe(() => rescheduleSoon());
+  // A pause (or its end) arriving mid-session re-plans within the same debounce as a store write (NS-46-R42).
+  const unsubscribePause = watchLibraryDaysPause(reader(), () => rescheduleSoon());
   const appState = AppState.addEventListener('change', (state) => {
     if (state !== 'active') return;
     lastForegroundAt = Date.now();
     void rescheduleReminders(); // also picks up a new time zone, a new day, or permission changed in Settings
   });
-  const responses = Notifications.addNotificationResponseReceivedListener((r) => {
-    const data = r.notification.request.content.data;
-    if (!isOurs(data)) return;
-    try {
-      router.navigate(data.kind === 'evening' ? '/' : '/book');
-    } catch {
-      // Router not mounted yet (cold start): the app opens on Tonight anyway.
+  // A tap is routed once, by the notification's own data. The same response can reach both the listener and the
+  // cold-start read below, so the first one wins.
+  let routedKey: string | null = null;
+  const routeResponse = (r: Notifications.NotificationResponse, attempt = 0): void => {
+    const target = routeForReminder(r.notification.request.content.data);
+    if (!target) return;
+    const key = `${r.notification.request.identifier}@${r.notification.date}`;
+    if (attempt === 0) {
+      if (routedKey === key) return;
+      routedKey = key;
     }
-  });
+    try {
+      router.navigate(target);
+    } catch {
+      // Router not mounted yet (cold start): try again after the next frame, a few times, then stay on Tonight.
+      if (attempt < COLD_START_ROUTE_RETRIES) setTimeout(() => routeResponse(r, attempt + 1), COLD_START_ROUTE_RETRY_MS);
+    }
+  };
+  const responses = Notifications.addNotificationResponseReceivedListener((r) => routeResponse(r));
+  // Cold start: the tap that launched the app arrived before this listener existed, so read it (sync, no network).
+  try {
+    const launching = Notifications.getLastNotificationResponse();
+    if (launching) routeResponse(launching);
+  } catch {
+    // Nothing to read: the app opens on Tonight.
+  }
 
   void registerReminderCategory(Notifications.setNotificationCategoryAsync);
   // First launch after an update: plan everything again, after the first frame and not awaited (NS-32-R16, L-03).
@@ -292,6 +340,7 @@ export function startReminders(): () => void {
 
   return () => {
     unsubscribeStore();
+    unsubscribePause();
     appState.remove();
     responses.remove();
     if (timer) clearTimeout(timer);
@@ -320,6 +369,7 @@ export interface TurnOnResult {
  */
 export async function turnOnReminders(opts: { cadence?: Exclude<Cadence, 'off'> } = {}): Promise<TurnOnResult> {
   const prefs = readPrefs();
+  if (!(prefs.enabled && !prefs.paused) || readOnSince() === null) writeOnSince(Date.now()); // turned on again: the anchor moves (R27)
   writePrefs({ enabled: true, paused: false, cadence: opts.cadence ?? (prefs.cadence === 'off' ? 'fewTimes' : prefs.cadence) });
   let permission: ReminderPermission = 'undetermined';
   let asked = false;

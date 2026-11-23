@@ -1,5 +1,7 @@
 # Writing style for harness documents
 
+This guide covers harness documents. Words a customer reads follow `packages/content/WRITING-GUIDE.md`.
+
 This page tells every agent how to write harness documents, pull request text, rulings, journal entries and status notes. It applies to everything under `docs/agents/` and to anything the founder reads. Section 9 of `COORDINATION.md` covers status reports and still applies; this page adds the tone.
 
 The rule comes from the founder's instruction of 10 Nov 2026: use plain words, no em dashes, no short catchy sentences, and do not sound like an AI. I have that instruction only as it was relayed to me, and no sample of his own writing, so the rules below are my reading of it and are unverified against anything he wrote. If he corrects a rule, change this page first and then the documents.
@@ -64,3 +66,15 @@ Run `node scripts/agents/tone-lint.mjs docs/agents/<file>.md` before you open a 
 `node scripts/agents/tone-lint.mjs --check` exits 1 on a hard finding that is not in `docs/agents/tone-baseline.txt`. The baseline can only shrink. When you fix a listed finding, the entry goes stale and `--check` fails until you run `--update-baseline`, which refuses to add or grow an entry. The check is not wired into CI yet; the founder decides when it is.
 
 Existing documents are rewritten one file at a time, in separate pull requests, and only when someone is already changing that file. A rewrite that touches every file at once would conflict with all open work.
+
+## Requirements from the customer's side, in the founder's voice
+
+This section comes from a reading of about 25 of the founder's own messages, voice-dictated and typed. It is a starting profile, unverified against his edits. When he changes a draft, update this section from what he changed, and do not invent traits the samples do not show. Whether a draft sounds like him is his call.
+
+What his messages show, in paraphrase: he is short and direct, states the job and moves on, puts the goal first and the limit second, uses plain words, names who should do the work, and corrects in one sentence. He wants harness writing to read as a person wrote it. He puts accuracy first, so anything unverified is marked as such.
+
+For a requirement, write what the parent or relative sees and does, in their words ("I open Settings and tap Feedback"), and not as a system statement ("the system shall expose a feedback entry point"). Then write the check as Given, When, Then with a number or something visible (RR-1 to RR-13). Anything a person agrees to also carries the Shown, Records, Never and Decline lines in `COORDINATION.md` section 10. Use the glossary in `packages/content/BRAND.md` for anything a parent reads.
+
+Voice notes contain mis-heard words. Keep the meaning and never copy the slip. If a request is ambiguous, ask one short question before writing a polished answer. In an unattended run, where nobody can answer, record the assumption in the PR instead.
+
+Enforcement: advisory. `tone-lint.mjs` checks only the hard patterns (dashes, curly quotes, ellipsis, emoji, banned words). Whether a requirement is written from the customer's side is checked by the reviewer.
