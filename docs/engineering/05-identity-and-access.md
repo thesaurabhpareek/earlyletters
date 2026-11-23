@@ -24,7 +24,7 @@ Early Letters holds a family's spoken letters about a child: the most intimate d
 
 ## Rules
 
-How to read *Enforced by* (checked by grep on `develop` at c2aa1c77, 23 Nov 2026; the line numbers were re-pinned from the 8 Nov base): a named test or check is one that fails when the rule is broken; **review** means a steward checks it by hand; **not yet: BL-<n>** names the backlog item that adds the missing check. Server rules are enforced in the embedded Postgres of `npm run test:db`. Whether a hosted project carries them is a separate fact: `.github/migrations-applied.txt` lists only the first two migration files as applied to production, and BL-583 tracks staging's record. This sweep did not read any hosted project. The production and TestFlight build profiles set `EXPO_PUBLIC_SERVER_FEATURES` to `off` (`apps/mobile/eas.json`; only `preview` turns it on), so no store build signs anyone in today (D-121).
+How to read *Enforced by* (checked by grep on `develop` at c2aa1c77, 23 Nov 2026; the line numbers were re-pinned from the 8 Nov base): a named test or check is one that fails when the rule is broken; **review** means a steward checks it by hand; **not yet: BL-<n>** names the backlog item that adds the missing check. Server rules are enforced in the embedded Postgres of `npm run test:db`. Whether a hosted project carries them is a separate fact: `.github/migrations-applied.txt` lists only the first two migration files as applied to production, and BL-583 tracks staging's record. This sweep did not read any hosted project. In `apps/mobile/eas.json` on 23 Nov 2026 `EXPO_PUBLIC_SERVER_FEATURES` is `on` in the `preview` and `production` profiles and `off` in `development` and `testflight`, so a production build offers sign-in and the server rules below apply to it (D-121; `docs/DECISIONS.md` records `preview` and `production` as already `on`). Hosted state is a separate fact, as above.
 
 ### Identity model
 
@@ -60,13 +60,13 @@ How to read *Enforced by* (checked by grep on `develop` at c2aa1c77, 23 Nov 2026
 
 **IAM-R13 (MUST)** RLS on every table is DB-R12; on top of it, any table `authenticated` can reach has a restrictive policy that refuses anonymous sessions. *Enforced by:* `access_matrix.test.mjs:680` (tables) and the Storage bucket check after it (enforced on develop).
 
-**IAM-R14 (MUST)** Every function callable by `authenticated` is listed in the access matrix, starts with `require_user()` (or checks `is_anonymous()`), and no function is executable by `anon`. *Enforced by:* `access_matrix.test.mjs:643` (listed), `:643` (not `anon`), `:649` (`require_user()`) (enforced on develop).
+**IAM-R14 (MUST)** Every function callable by `authenticated` is listed in the access matrix, starts with `require_user()` (or checks `is_anonymous()`), and no function is executable by `anon`. *Enforced by:* `access_matrix.test.mjs:643` (listed), `:646` (not `anon`), `:652` (`require_user()`) (enforced on develop).
 
 **IAM-R15 (MUST)** Views are read-only to clients exactly as DB-R13 states; a view is never an authorisation boundary that grants more than its base tables. *Why:* DB-01 (Critical). *Enforced by:* `access_matrix.test.mjs:632` ("no view is writable by anon or authenticated") and the explicit grant list in `supabase/tests/grants.mjs` (enforced on develop). Since `20261023060000`, no client role holds SELECT on `book_entries`; `sync_pull` reads it as its owner.
 
 **IAM-R16 (MUST)** Book visibility has one predicate. Until D-024's `book_access` table exists, `book_entries`, Storage read policies and any pull RPC use the same logic and are covered by the same matrix rows. Once `book_access` lands, all of them read it and nothing else. *Enforced by:* review (data-steward, security-architect); `book_access` is not yet: BL-175 (deferred to v1.2).
 
-**IAM-R17 (MUST)** Contributors read only the child's name, nickname and birthday month and day; the birth date and due date are never selectable by a client role (D-039, DB-05). *How:* column privileges on `children` (`20261015000000`, G-08; the list is `COLUMNS.children` in `supabase/tests/grants.mjs`), and `sync_pull` and `sync_books` return `date_of_birth` only to a parent and `birthday_md` to everyone (`20261015000000_v1_gate_membership_sync_hardening.sql:303-309`). There is no `book_children` view. *Enforced by:* `access_matrix.test.mjs:124-128` and `:543`; `v1_gate_hardening.test.mjs:44-49`; `sync_engine.test.mjs:211-220` (enforced on develop).
+**IAM-R17 (MUST)** Contributors read only the child's name, nickname and birthday month and day, through `book_children`; the base `children` select is parents only (D-039, DB-05). *Enforced by:* pending PR #32 (`book_children` view, access matrix cell `book_children`).
 
 ### Invites, removal and role changes
 
@@ -74,7 +74,7 @@ How to read *Enforced by* (checked by grep on `develop` at c2aa1c77, 23 Nov 2026
 
 **IAM-R19 (MUST)** Accepting an invite never changes an existing member's role, and the inviter cannot accept their own invite (`accept_child_invite`). *Enforced by:* `security_family.test.mjs:65-70` (enforced on develop).
 
-**IAM-R20 (MUST)** A role change or a removal is an explicit, audited, parent-only RPC; no other path writes `child_members.role` or deletes another member's row. *Code:* `remove_child_member` (`20261005000000`), `undo_parent_join` (72 hours, `20261015020000`), `leave_child`; the `child_members_audit` trigger writes `member_removed`, `member_join_undone` and `left_book`. No role-change RPC exists, and no client role can write `role`. A parent cannot remove the other parent (PRD B F8). *Enforced by:* `db_followup_family_cap.test.mjs:139-159` (who may remove, audit row names the remover), `v1_gate_coparent.test.mjs:190-194` and `:246` (no direct role change or delete), `former_member_purge.test.mjs:82` (enforced on develop).
+**IAM-R20 (MUST)** A role change or a removal is an explicit, audited, parent-only RPC; no other path writes `child_members.role` or deletes another member's row. *Code:* `remove_child_member` (`20261005000000`), `undo_parent_join` (72 hours, `20261015020000`), `leave_child`; the `child_members_audit` trigger writes `member_removed`, `member_join_undone` and `left_book`. No role-change RPC exists, and no client role can write `role`. A parent cannot remove the other parent (PRD B F8). *Enforced by:* `db_followup_family_cap.test.mjs:139-159` (who may remove, audit row names the remover), `v1_gate_coparent.test.mjs:190-195` (no direct role change or delete), `former_member_purge.test.mjs:82` (enforced on develop).
 
 **IAM-R21 (MUST)** The last parent of a live book cannot leave (`child_members_guard`, SQLSTATE `SCLPG`). *Enforced by:* `data_governance.test.mjs:87`, `db_followup_family_cap.test.mjs:95-97` (enforced on develop).
 
@@ -84,7 +84,7 @@ How to read *Enforced by* (checked by grep on `develop` at c2aa1c77, 23 Nov 2026
 
 **IAM-R23 (MUST NOT)** Give an AI agent, its environment or its connectors a Supabase secret or `service_role` key (PINF-01, PINF-05). Keys in the app are SEC-R03. *Enforced by:* review: `.github/workflows/agents.yml` names no Supabase secret (grep, 23 Nov 2026); not yet: BL-727 for a check that keeps it so. Interactive sessions with a Supabase connector are outside `agents.yml`; BL-603 asks that no agent session can reach the staging organization.
 
-**IAM-R24 (MUST)** Every new table, column visible to clients, view, RPC or Storage policy adds rows to the access matrix for every persona (parent, co-parent, contributor, outsider, anonymous, anon) in the same PR, including at least one deny. *Enforced by:* `access_matrix.test.mjs:618` (every public table and view has a row) and `:640` (every callable function) (enforced on develop); review for the deny cell and for Storage policies.
+**IAM-R24 (MUST)** Every new table, column visible to clients, view, RPC or Storage policy adds rows to the access matrix for every persona (parent, co-parent, contributor, outsider, anonymous, anon) in the same PR, including at least one deny. *Enforced by:* `access_matrix.test.mjs:618` (every public table and view has a row) and `:643` (every callable function) (enforced on develop); review for the deny cell and for Storage policies.
 
 ## How to apply it
 

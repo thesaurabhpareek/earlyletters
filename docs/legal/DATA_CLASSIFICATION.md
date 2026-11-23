@@ -124,7 +124,6 @@ Removed on 3 Oct 2026 (migration `20261004000000_plus_on_device_only.sql`, found
 | `edit_level` | L2 | enum |
 | `prompt_key` | L2 | prompt catalogue key |
 | `prompt_library_version` | L2 | version number |
-| `engine_version` | L2 | version number |
 | `final_text` | L4 | content |
 | `in_book` | L2 | flag |
 | `photo_path` | L3 | object path |
@@ -251,7 +250,7 @@ Removed on 3 Oct 2026 (migration `20261004000000_plus_on_device_only.sql`, found
 | `edit_level` | L2 | enum |
 | `prompt_key` | L2 | prompt catalogue key |
 | `prompt_library_version` | L2 | version number |
-| `engine_version` | L2 | version number |
+| `engine_version` | L2 | version number. Author-only working material (FR-AIS-08), omitted from the `book_entries` view and the other parent's pull (CDO-1, BL-1952) |
 | `raw_transcript` | L4 | content: exact words, author-only (PRD K-09) |
 | `stt_meta` | L4 | content-derived: per-token timestamps, author-only |
 | `machine_edits` | L4 | content: edit list with offsets, author-only |
@@ -775,7 +774,7 @@ File paths cited in this section are under `apps/mobile/src/`. Protection floor 
 | `state` | L2 | Enum: live and the end states |
 | `want_ids` | L2 | Flag: ask the server for the full id list on the next pull |
 
-**`settings`** (key, value). Values are short strings; keys never hold content. Exceptions are classed L4 below: `child.bornCardHidden.<child id>` holds a due date, and the planned `typedDay.<yyyy-mm-dd>` will hold the parent's own words under a date.
+**`settings`** (key, value). Values are short strings; keys never hold content. Exceptions are classed L4 below: `child.bornCardHidden.<child id>` holds a due date, `firstRun.draft` holds the first-run answers (child names, birthday or due date), and the planned `typedDay.<yyyy-mm-dd>` will hold the parent's own words under a date.
 
 | Key | Level | Note |
 |---|---|---|
@@ -814,6 +813,7 @@ File paths cited in this section are under `apps/mobile/src/`. Protection floor 
 | `child.bornCardHidden.<child id>` | L4 | Holds the due date the card was hidden for (rule 1.1.7) (`components/child/child-settings.logic.ts:42`) |
 | `db.secureDeleteVacuumAt`, `lastLaunchAt`, `lastExportedAt` | L2 | Times (`lib/store.ts:192, 789`; `app/settings/export.tsx:39`) |
 | `letters.keptEver` | L2 | Count of letters ever kept, a number only (D-082) |
+| `firstRun.draft` | L4 | First-run answers kept as she goes (BL-1816): the step, the child's names, whether the child is expected, the birthday or due date only if she picked one (D-087), and what the child calls her. One JSON value. Cleared when the book is made and at sign-out; removed by Erase everything. Never synced, never exported, never in analytics or logs |
 | `newPhone.arrival`, `review.defaultView` | L2 | No name, date, text or id (`lib/first-run/new-phone.logic.ts:86`, `components/capture/review-view.logic.ts:16`) |
 | `plus.statusReport` | L3 | The account the sent marks belong to (a person id, rule 1.1.4), a fingerprint per purchase keyed by product and first-purchase date, and waiting consent facts (product, first-purchase date, terms version, shown time, owner account): purchase state of a person (`lib/billing/status-report.logic.ts:51, 65-86`). Its code comment at `:18` says L2; L3 is the level here |
 | `plus.notesSeen` | L3 | Ids of plan notes shown, `plan.<kind>.<date>`: each carries a renewal or trial-end date, purchase state of a person, as `subscription_status.renewal_date` is L3 on the server (`lib/billing/plan-notice.tsx:30`; `lib/billing/plan-reminders.logic.ts:190, 292, 339`) |

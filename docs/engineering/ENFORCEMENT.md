@@ -144,23 +144,23 @@ Gap ids defined here:
 | IAM-R04 | MUST NOT | `apps/mobile/test/age-gate.test.ts`; `classification.test.mjs` | enforced on develop | |
 | IAM-R05 | MUST | review (Apple, Google, email per D-054) | not yet | BL-727 |
 | IAM-R06 | MUST NOT | `packages/content/test/emails.test.ts:126` (copy); source ban | partly (copy); not yet (code) | BL-727 |
-| IAM-R07 | MUST NOT | `auth_config.test.mjs` (anonymous sign-ins off); access matrix `:649`, `:677` | enforced on develop (server, config); not yet (app source ban) | BL-727, MONO-01 |
+| IAM-R07 | MUST NOT | `auth_config.test.mjs` (anonymous sign-ins off); access matrix `:680` (anonymous policy), `:652` (`require_user`) | enforced on develop (server, config); not yet (app source ban) | BL-727, MONO-01 |
 | IAM-R08 | MUST | `apple-token/handler.test.ts`; `purge-worker/test/lib.test.ts`, `worker.test.ts` | enforced on develop (nonce hash: review) | |
 | IAM-R09 | MUST | `auth_config.test.mjs`; `auth-links`, `deep-link.allowlist`, `auth-email-link` tests | enforced on develop (links); not yet (no-reveal) | BL-727 |
 | IAM-R10 | MUST | storage adapter test | not yet | BL-599 |
-| IAM-R12 | MUST | `auth-machine.test.ts:211`; `account-view.test.ts:142` | partly; not yet (scope `others`, outbox kept) | BL-727, BL-597 |
-| IAM-R13 | MUST | `access_matrix.test.mjs:677` and bucket check | enforced on develop | |
-| IAM-R14 | MUST | `access_matrix.test.mjs:640`, `:643`, `:649` | enforced on develop | |
-| IAM-R15 | MUST | `access_matrix.test.mjs:629`; `grants.mjs` | enforced on develop | DB-01 |
+| IAM-R12 | MUST | `auth-machine.test.ts:352`; `account-view.test.ts:142` | partly; not yet (scope `others`, outbox kept) | BL-727, BL-597 |
+| IAM-R13 | MUST | `access_matrix.test.mjs:680` and bucket check | enforced on develop | |
+| IAM-R14 | MUST | `access_matrix.test.mjs:643`, `:646`, `:652` | enforced on develop | |
+| IAM-R15 | MUST | `access_matrix.test.mjs:632`; `grants.mjs` | enforced on develop | DB-01 |
 | IAM-R16 | MUST | review; `book_access` table | not yet | BL-175, DB-08, D-024 |
-| IAM-R17 | MUST | `children` column privileges; matrix `:123-127`, `:543`; `v1_gate_hardening`, `sync_engine` tests | enforced on develop | DB-05 |
-| IAM-R18 | MUST | `security_family.test.mjs:46-60`; `v1_gate_coparent.test.mjs:48-50`; `purge_batching.test.mjs:67` | enforced on develop | BL-112 |
-| IAM-R19 | MUST | `security_family.test.mjs:64-69` | enforced on develop | |
-| IAM-R20 | MUST | `db_followup_family_cap.test.mjs:138-158`; `v1_gate_coparent.test.mjs:189-193`, `:246` | enforced on develop | |
-| IAM-R21 | MUST | `data_governance.test.mjs:86`; `db_followup_family_cap.test.mjs:94-96` (SCLPG) | enforced on develop | |
+| IAM-R17 | MUST | `book_children` view; matrix cell | pending PR #32 | DB-05 |
+| IAM-R18 | MUST | `security_family.test.mjs:47-61`; `v1_gate_coparent.test.mjs:48-50`; `purge_batching.test.mjs:69` | enforced on develop | BL-112 |
+| IAM-R19 | MUST | `security_family.test.mjs:65-70` | enforced on develop | |
+| IAM-R20 | MUST | `db_followup_family_cap.test.mjs:139-159`; `v1_gate_coparent.test.mjs:190-195` | enforced on develop | |
+| IAM-R21 | MUST | `data_governance.test.mjs:87`; `db_followup_family_cap.test.mjs:95-97` (SCLPG) | enforced on develop | |
 | IAM-R22 | MUST | review | not yet | BL-728, DB-17 |
 | IAM-R23 | MUST NOT | review; no Supabase secret in `agents.yml` | review; not yet (check) | BL-727, BL-603 |
-| IAM-R24 | MUST | `access_matrix.test.mjs:615` (tables, views), `:640` (functions); review (deny cells, Storage) | enforced on develop | |
+| IAM-R24 | MUST | `access_matrix.test.mjs:618` (tables, views), `:643` (functions); review (deny cells, Storage) | enforced on develop | |
 | SEC-R01 | MUST | review; `docs/security/threat-model.md` | not yet | handoff to `security` |
 | SEC-R02 | MUST | `docs/ops/SECRETS.md` | file on develop (#1094); no check that every secret has a row | PINF-05, WS-18 |
 | SEC-R03 | MUST NOT | GitHub secret scanning; gitleaks; bundle scan | secret scanning on; own scanner (known misses, follow-ups in open #1163) scripts/packs/secret-scan.mjs plus apps/mobile/test/secret-scan.test.ts (proposed step: docs/ops/proposed/secret-scan.md, not enforced in CI as its own step until the founder pastes the workflow; the test runs in unit); gitleaks pending PR #30; bundle not yet | LEGAL-REQ-026 |
