@@ -1,6 +1,6 @@
 # The You tab as three named states, plus Account (BL-801)
 
-Owner: design systems. Status: spec for `mobile`, 9 Nov 2026. Nothing here is built yet except where it says "exists".
+Owner: design systems. Status: spec for `mobile`, 9 Nov 2026. Update, 23 Nov 2026: built as BL-801 slice 4b on `develop` (`apps/mobile/src/components/settings/signed-out-card.tsx`, `settings-home.logic.ts`, `apps/mobile/test/you-tab-states.test.ts` all cite this file). Everything below, including every "GAP" and "exists" line, describes `develop` on 9 Nov and has not been re-read against today's code.
 Sources read: exec council slice 3 section F (9 Nov), NX-36 S14, S15 and S16 (branch `docs/nx-36-screen-specs-9nov`), NX-30 and NX-30a, PR #699 (head `cab3713a3c872e10bcbcfc5266ae48530250ec04`), and `apps/mobile/src/app/settings/index.tsx`, `settings-home.logic.ts`, `lib/store.ts` (`localDeletionAllowed`), `lib/capabilities.ts`, `settings/account.tsx` and `packages/content/src/features/auth.en.ts` on `develop`.
 
 Where this file and NX-36 S14 differ, this file governs and says so. Where it differs from the code, the gap is flagged "GAP" and a decision is named.
