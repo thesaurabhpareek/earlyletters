@@ -69,15 +69,6 @@ export function useCloseSheet(): () => void {
 }
 
 /**
- * The two-finger escape closes the sheet only where the frame has a Close and it is enabled. Mid-verification
- * (`closeDisabled`) and in steps with no Close (verify, consent) it does nothing, so a typed email and code are never
- * dropped by a gesture (BL-1720).
- */
-export function escapeHandler(input: { closeLabel?: string; closeDisabled?: boolean; close: () => void }): (() => void) | undefined {
-  return input.closeLabel && !input.closeDisabled ? input.close : undefined;
-}
-
-/**
  * The frame of a sign-in or invite sheet. `closeLabel` adds the modal idiom's Close, top right
  * (lib/navigation.logic.ts), above the scroll and the keyboard: the code step puts its "Not now" there so it
  * stays in reach with the number pad up (P8a lens A3). The first step, whose "Not now" is one of its
@@ -126,6 +117,15 @@ export function SheetFrame({
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
+}
+
+/**
+ * The two-finger escape closes the sheet only where the frame has a Close and it is enabled. Mid-verification
+ * (`closeDisabled`) and in steps with no Close (verify, consent) it does nothing, so a typed email and code are never
+ * dropped by a gesture (BL-1720).
+ */
+export function escapeHandler(input: { closeLabel?: string; closeDisabled?: boolean; close: () => void }): (() => void) | undefined {
+  return input.closeLabel && !input.closeDisabled ? input.close : undefined;
 }
 
 /** The sheet's title: `title2`, a heading, and where VoiceOver focus lands when the step appears (V-06). */
