@@ -294,7 +294,8 @@ export interface PulledRow {
   capture_mode: string;
   edit_level: string;
   prompt_key: string | null;
-  engine_version: number;
+  /** Own rows only (FR-AIS-08, 20261123200000): book_entries no longer carries it, so another member's row has none. */
+  engine_version?: number;
   raw_transcript?: string;
   machine_edits?: unknown[];
   final_text: string;
