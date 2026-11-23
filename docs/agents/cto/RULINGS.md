@@ -1129,3 +1129,14 @@ Founder standing approval and hard limits are quoted in the Batch 6 section of `
 - Door: two-way. Way back: a later founder entry in `docs/DECISIONS.md`.
 - Founder-only: no.
 - Signed: Karma
+
+### CR-179 The consent gate on sync_pull and sync_books merged; what is and is not live (23 Nov 2026, Karma)
+- Ruling: PR #1676 merged into `develop` (29ea7945). The compliance side is CCO-19 in `docs/agents/exec/RULINGS.md`; this is the engineering side.
+  - Three `sync-two-phone` tests assumed a pull returns content during a consent pause. They were fixed to assert the pause: no row comes back, nothing is rewound and nothing is lost (conflict copies survive).
+  - Size exception: 677 lines, of which about 420 are function bodies restated by `create or replace`; the new logic is about 80 lines.
+  - The migration is NOT applied to any hosted project. That is the founder's physical act (`supabase/APPLY.md` File 46, after File 45).
+  - The app ignores `withheld` until BL-1918, so "last synced" can look fresh during a pause. Known and filed.
+  - Rows for the follow-ups: BL-1918 is the app side; BL-1919 is the shape, the security pack text and test hygiene; BL-1920 is counsel's reading and the tighter closed shape; BL-1921 is the `engine_version` leak. (The CCO comment on the PR cited BL-1919 and BL-1920 loosely; these are the right rows.)
+- Door: two-way. Way back: a new migration, never an edit of the applied one.
+- Founder-only: no.
+- Signed: Karma

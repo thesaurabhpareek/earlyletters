@@ -198,6 +198,18 @@ export function isMicProblem(phase: ListenPhase): phase is MicProblem {
   return phase === 'denied' || phase === 'busy' || phase === 'full';
 }
 
+/**
+ * BL-432: the length at which Listen says, calmly, that this is a long take. Nothing stops and nothing is cut: the take
+ * keeps recording, and the line only says Finish is there when they want it. (Whole-file VAD is fine to 30 minutes;
+ * past it the planner windows the audio, docs/tdd/03-audio-transcription.md.)
+ */
+export const LONG_TAKE_MS = 30 * 60 * 1000;
+
+/** True once a take has run 30 minutes, while it is recording or paused. Never in any other room, never on a bad clock. */
+export function longTakeNotice(phase: ListenPhase, ms: number): boolean {
+  return (phase === 'recording' || phase === 'paused') && Number.isFinite(ms) && ms >= LONG_TAKE_MS;
+}
+
 /** "1:05": the running clock while recording. Whole seconds, rounded down, so it never runs ahead of the take. */
 export function elapsedClock(ms: number): string {
   const s = Math.max(0, Math.floor((Number.isFinite(ms) ? ms : 0) / 1000));

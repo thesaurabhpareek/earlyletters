@@ -55,6 +55,26 @@ describe('[NX-39-R4] the plist adds keys only for the phases that are on', () =>
     expect(ids({ plist: lib('<key>PHPhotoLibraryPreventAutomaticLimitedAccessAlert</key><false/>'), library: on })).toEqual(['limited-alert']);
     expect(ids({ plist: wrap('<key>PHPhotoLibraryPreventAutomaticLimitedAccessAlert</key><false/>') })).toEqual(['limited-alert']);
   });
+  it('[BL-1414] UIFileSharingEnabled or LSSupportsOpeningDocumentsInPlace set true fails with its own id', () => {
+    expect(ids({ plist: wrap('<key>UIFileSharingEnabled</key><true/>') })).toEqual(['file-sharing']);
+    expect(ids({ plist: wrap('<key>LSSupportsOpeningDocumentsInPlace</key><true />') })).toEqual(['open-in-place']);
+    expect(ids({ plist: wrap('<key>UIFileSharingEnabled</key><true/><key>LSSupportsOpeningDocumentsInPlace</key><true/>') })).toEqual(['file-sharing', 'open-in-place']);
+  });
+  it('[BL-1414] either key present with a value that is not an explicit false fails closed', () => {
+    expect(ids({ plist: wrap('<key>UIFileSharingEnabled</key><string>YES</string>') })).toEqual(['file-sharing']);
+    expect(ids({ plist: wrap('<key>LSSupportsOpeningDocumentsInPlace</key><array/>') })).toEqual(['open-in-place']);
+  });
+  it('[BL-1414] a plist with neither key, or with both set false, passes', () => {
+    expect(ids({ plist: CLEAN })).toEqual([]);
+    expect(ids({ plist: wrap('<key>UIFileSharingEnabled</key><false/><key>LSSupportsOpeningDocumentsInPlace</key><false/>') })).toEqual([]);
+  });
+  it('[BL-1414] the problem text names the key and never prints a value from the plist', () => {
+    const secret = 'sb_secret_PLANTEDVALUE123';
+    const out = forbiddenNativeProblems({ plist: wrap(`<key>UIFileSharingEnabled</key><string>${secret}</string>`), entitlements: ENT_OK, pbxproj: PBX_OK });
+    expect(out.map((p: { id: string }) => p.id)).toEqual(['file-sharing']);
+    expect(JSON.stringify(out)).not.toContain(secret);
+    expect(JSON.stringify(out)).not.toContain('PLANTEDVALUE');
+  });
   it('[NX-39-R4] a project that links CoreLocation fails', () => {
     expect(ids({ plist: CLEAN, pbxproj: `${PBX_OK} path = System/Library/Frameworks/CoreLocation.framework;` })).toEqual(['core-location']);
   });
