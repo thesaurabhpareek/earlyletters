@@ -1,8 +1,10 @@
 /// <reference types="node" />
 /**
- * RT-PRV-07 (F17-REQ-007, P0): no letter content reaches Spotlight, Siri suggestions or Handoff.
- * The app has none of the APIs that publish to them, and this scan keeps it that way: it fails if any
- * appears in the app's code (src), its own native modules (modules), its config or its dependencies.
+ * RT-PRV-07 (F17-REQ-007, P0) and [X6-R1] (rulings D3 and D2 of 20 Nov; NS-01-R49, NS-02-R26): nothing about a
+ * letter, a picture, a child or a prompt reaches Spotlight, Siri, Handoff, App Intents or the share sheet's
+ * suggestions. The app has none of the APIs that publish to them, and this scan keeps it that way: it fails if any
+ * appears in the app's code (src), its own native modules (modules), its config, the Info.plist and entitlements its
+ * config plugins write, or the native code of the packages that ship in it.
  * Comments are ignored, so a note that names an API is fine; a call or an import is not.
  *
  * What it looks for:
@@ -12,10 +14,19 @@
  * - JS modules that wrap them: expo-router/head (sets an NSUserActivity per screen when `headOrigin`
  *   is configured), expo-quick-actions, and any spotlight, siri-shortcut or user-activity package.
  * - Linking.setInitialURL, as the lane asked (no such call should exist in the app).
+ * - [X6-R1] (BL-962): NEVER and NOT_BUILT_YET below, the compiled Info.plist and entitlements of every EAS
+ *   profile, and the iOS source of every package the app's dependencies pull in (ios/, apple/ or a podspec),
+ *   against a reviewed list. Prebuilt binaries (.xcframework) are not read; review B on #868 checked the two
+ *   shipped today (whisper.rn, expo-sqlite's libsql) with `strings` and found no donation symbol.
+ * Ruling D2 (system writing tools off on letter fields) is not tested here: React Native 0.86.3 has no switch for
+ * it, which BL-962 records as a finding: NS-01-R50 stays open, NS-06-A22 waits on the founder, and NS-21-R12
+ * accepts the recorded finding.
  * The device half (Spotlight searches "Asha" and a fixture sentence, 0 results) is on the device test plan.
  */
-import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { extname, join, relative } from 'node:path';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { createRequire } from 'node:module';
+import { dirname, extname, join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const APP = join(__dirname, '..');
@@ -34,23 +45,63 @@ const NATIVE_TOKENS = [
   'becomeCurrent',
   'setInitialURL',
 ];
+
+type Rule = { name: string; re: RegExp };
+const word = (name: string): Rule => ({ name, re: new RegExp(`\\b${name}\\b`) });
+
+/** [X6-R1] additions that hold for good (ruling D3; NS-01-R49, NS-02-R26, NS-06-C7; NSC-04 in the security design). */
+const NEVER: Rule[] = [
+  // Spotlight and App Intents entities: an indexed item or an entity is a copy of a letter or a name outside the book.
+  ...['CSSearchableItemAttributeSet', 'isEligibleForPublicIndexing', 'IndexedEntity', 'indexAppEntities', 'appEntityIdentifier'].map(word),
+  { name: 'AppEntity', re: /\b\w*AppEntity\b/ },
+  { name: 'EntityQuery', re: /\b\w*Entity\w*Query\b/ },
+  // A doorway may one day open the app (NS-06 Part C), but it never takes words, a file or a picture as a parameter.
+  { name: 'App Intents text parameter', re: /@Parameter\b[^{}]*?\bvar\s+\w+\s*:\s*\[?\s*(?:String|AttributedString|Substring|IntentFile)\b/ },
+  // Siri suggestions, Siri vocabulary (it would hold a child's name) and the share sheet's suggestion row (INSendMessageIntent).
+  ...['INVocabulary', 'INShortcut', 'INSendMessageIntent', 'setShortcutSuggestions', 'IntentDonationManager', 'RelevantIntentManager'].map(word),
+  { name: 'INRelevantShortcut', re: /\bINRelevantShortcut\w*/ },
+  { name: 'INVoiceShortcut', re: /\bIN(?:UIAdd)?VoiceShortcut\w*/ },
+  { name: 'donate', re: /\.donate\b|\bdonateInteraction\w*/ },
+  { name: 'Intents framework', re: /\b(?:import|@import)\s+Intents(?:UI)?\b|<Intents(?:UI)?\/|['"]Intents(?:UI)?['"]/ },
+  // Dynamic Home Screen quick actions: their titles show outside the app.
+  { name: 'shortcutItems', re: /\bshortcutItems\s*=(?!=)|\bsetShortcutItems\b|\bUIMutableApplicationShortcutItem\b/ },
+  // NS-02-R26: no embedding or vector index of letters.
+  ...['NLEmbedding', 'NLContextualEmbedding'].map(word),
+  { name: 'vector index', re: /\bUSING\s+(?:vec0|vss0)\b|\bsqlite[-_]?(?:vec|vss)\b/i },
+  // expo-router links its ExpoHead native module into every build, and its defaults publish a title to Spotlight and
+  // Siri (ExpoHeadModule.swift:15-21, 99). Our code never names it, however it is reached (review B on #868).
+  { name: 'ExpoHead native module', re: /\bExpoHead(?:Module)?\b/ },
+  { name: 'createActivity', re: /\bcreateActivity\b/ },
+];
+
+/**
+ * Not built yet: App Intents and App Shortcuts. NS-06 Part C (quick capture) may add a doorway that only opens the app;
+ * the PR that builds it moves these out under NS-06-C7 and NS-06-C8. NEVER is stricter than those rows on purpose; that
+ * PR may move a NEVER rule only by citing the card row that allows it.
+ */
+const NOT_BUILT_YET: Rule[] = ['AppIntents', 'AppIntent', 'AppShortcutsProvider', 'AppShortcut'].map(word);
+
+const RULES: Rule[] = [...NATIVE_TOKENS.map(word), ...NEVER, ...NOT_BUILT_YET];
+
 /**
  * A package name or any subpath of it: `expo-quick-actions` and `expo-quick-actions/router`; expo-router's head
  * module however it is reached (`expo-router/head`, `expo-router/head.js`, `expo-router/build/head`), but not
  * `expo-router` itself; and any spotlight, siri, user-activity or handoff package.
  */
 const FORBIDDEN_PACKAGE = /^expo-quick-actions(\/|$)|^expo-router\/(.+\/)?head(\.[cm]?[jt]sx?)?(\/|$)|spotlight|siri|user-?activity|handoff/i;
+/** [X6-R1]: any quick-actions or App Intents wrapper, and (NS-02-R26) any embedding or vector-index package. */
+const X6_PACKAGE = /(^|[/-])quick-?actions(\/|$)|app-?intents?|sqlite-?v(ec|ss)|embedding|vector-?(store|db|index|search)|faiss|hnsw/i;
 /** A third-party package that wraps these APIs. The app's own files (relative or `@/` paths) are not packages: `welcome-handoff.logic` is a screen handing over to the next, not Apple Handoff. */
-const isForbiddenPackage = (m: string) => !m.startsWith('.') && !m.startsWith('@/') && FORBIDDEN_PACKAGE.test(m);
+const isForbiddenPackage = (m: string) => !m.startsWith('.') && !m.startsWith('@/') && (FORBIDDEN_PACKAGE.test(m) || X6_PACKAGE.test(m));
 
 const strip = (t: string) => t.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 
-function walk(dir: string, exts: string[]): string[] {
+function walk(dir: string, exts: string[], skip: (name: string) => boolean = () => false): string[] {
   const out: string[] = [];
   for (const name of readdirSync(dir)) {
-    if (name === 'node_modules' || name.startsWith('.')) continue;
+    if (name === 'node_modules' || name.startsWith('.') || skip(name)) continue;
     const p = join(dir, name);
-    if (statSync(p).isDirectory()) out.push(...walk(p, exts));
+    if (statSync(p).isDirectory()) out.push(...walk(p, exts, skip));
     else if (exts.includes(extname(p))) out.push(p);
   }
   return out;
@@ -66,15 +117,182 @@ function importsOf(text: string): string[] {
 function findings(text: string): string[] {
   const code = strip(text);
   const bad = importsOf(code).filter(isForbiddenPackage).map((m) => `import ${m}`);
-  for (const t of NATIVE_TOKENS) if (new RegExp(`\\b${t}\\b`).test(code)) bad.push(t);
+  for (const r of RULES) if (r.re.test(code)) bad.push(r.name);
   return bad;
 }
+
+/**
+ * A dependency may receive a link or an activity the person opens, and may carry on-device language tools it never calls
+ * on our words; what it may not do unreviewed is publish. The ExpoHead rules are for our code: the module itself is reviewed below.
+ */
+const NOT_FOR_DEPENDENCIES = new Set(['NSUserActivity', 'userActivity', 'setInitialURL', 'NLEmbedding', 'NLContextualEmbedding', 'vector index', 'ExpoHead native module', 'createActivity']);
+/** In a dependency, making an activity (rather than receiving one) is publishing: UIKit makes a responder's activity current by itself. */
+const DEPENDENCY_ONLY: Rule[] = [{ name: 'NSUserActivity made', re: /\bNSUserActivity\s*\(\s*activityType\s*:|\binitWithActivityType\s*:|\.userActivity\s*=(?!=)/ }];
+const donations = (text: string) => [
+  ...findings(text).filter((f) => !f.startsWith('import ') && !NOT_FOR_DEPENDENCIES.has(f)),
+  ...DEPENDENCY_ONLY.filter((r) => r.re.test(strip(text))).map((r) => r.name),
+];
+/** A cheap first pass over thousands of dependency files: every rule's match contains one of these (the planted test checks it). */
+const MAYBE = /Spotlight|CSSearchable|Eligible|Invocation|INInteraction|becomeCurrent|Entit|@Parameter|Vocabulary|Shortcut|Intent|donat|NSUserActivity|userActivity|ActivityType|setInitialURL|Embedding|vec|vss|ExpoHead|createActivity/i;
 
 function scan(files: string[]): string[] {
   return files.flatMap((f) => findings(readFileSync(f, 'utf8')).map((b) => `${relative(APP, f)}: ${b}`));
 }
 
-describe('[RT-PRV-07] [F17-REQ-007] no letter content in Spotlight, Siri suggestions or Handoff', () => {
+const readJson = (p: string) => JSON.parse(readFileSync(p, 'utf8')) as Record<string, Record<string, string> | undefined>;
+
+/** Where Node would find package `name` from `from`, walking up through node_modules (npm hoists most of them to the root). */
+function packageDir(name: string, from: string): string | undefined {
+  for (let d = from; ; d = dirname(d)) {
+    if (existsSync(join(d, 'node_modules', name, 'package.json'))) return join(d, 'node_modules', name);
+    if (dirname(d) === d) return undefined;
+  }
+}
+
+/** Every package the app's `dependencies` pull in (not dev), and the required ones that are not installed. */
+function shippedPackages(): { packages: Map<string, string>; missing: string[] } {
+  const packages = new Map<string, string>();
+  const missing: string[] = [];
+  const queue: [string, string, boolean][] = Object.keys(readJson(join(APP, 'package.json')).dependencies ?? {}).map((n) => [n, APP, false]);
+  for (let next = queue.pop(); next; next = queue.pop()) {
+    const [name, from, optional] = next;
+    const dir = packageDir(name, from);
+    if (!dir) {
+      if (!optional) missing.push(name);
+      continue;
+    }
+    if (packages.has(dir)) continue;
+    packages.set(dir, name);
+    const pkg = readJson(join(dir, 'package.json'));
+    for (const d of Object.keys(pkg.dependencies ?? {})) queue.push([d, dir, false]);
+    for (const d of Object.keys(pkg.optionalDependencies ?? {})) queue.push([d, dir, true]);
+  }
+  return { packages, missing };
+}
+
+/**
+ * Donation APIs named in the iOS code (Swift, Objective-C, podspecs) of the given packages, by `<package>/<path>`; tests,
+ * examples and Android are skipped. A package counts as native if it has ios/, apple/ or macos/, a podspec at its root, or
+ * an expo-module.config.json (Expo is moving modules to apple/, as expo-modules-jsi already is; review B on #868).
+ */
+function dependencyHits(packages: Map<string, string>): { hits: Record<string, string[]>; files: number } {
+  const hits: Record<string, string[]> = {};
+  const notShipped = (n: string) => /^(tests?|__tests__|examples?|android)$/i.test(n);
+  let files = 0;
+  for (const [dir, name] of packages) {
+    const native = ['ios', 'apple', 'macos', 'expo-module.config.json'].some((n) => existsSync(join(dir, n)));
+    if (!native && !readdirSync(dir).some((f) => f.endsWith('.podspec'))) continue;
+    for (const f of walk(dir, ['.swift', '.m', '.mm', '.h', '.podspec'], notShipped)) {
+      files++;
+      const text = readFileSync(f, 'utf8');
+      const found = MAYBE.test(text) ? donations(text) : [];
+      if (found.length) hits[`${name}/${relative(dir, f)}`] = found;
+    }
+  }
+  return { hits, files };
+}
+
+/**
+ * Native iOS code in the shipped packages that names a donation API, read one by one for BL-962 (20 Nov, Expo SDK 57).
+ * A new file, or a new API in a listed file, fails until someone reads it and records here why it publishes nothing of ours.
+ */
+const REVIEWED_DEPENDENCY_CODE: Record<string, string[]> = {
+  // Linked into every build by expo-router's expo-module.config.json. It publishes only when JS calls createActivity:
+  // from <Head> (build/head/ExpoHead.ios.js:216), whose import the src scan forbids, or by the module's name, which the
+  // ExpoHead and createActivity rules forbid in our code.
+  'expo-router/ios/ExpoHeadModule.swift': [
+    'CoreSpotlight',
+    'CSSearchableIndex',
+    'isEligibleForSearch',
+    'isEligibleForPrediction',
+    'isEligibleForHandoff',
+    'becomeCurrent',
+    'CSSearchableItemAttributeSet',
+    'isEligibleForPublicIndexing',
+    'NSUserActivity made',
+  ],
+  // Opens the app from a Spotlight or Handoff continuation; publishes nothing.
+  'expo-router/ios/ExpoHeadAppDelegateSubscriber.swift': ['CoreSpotlight'],
+};
+
+/** The activity type expo-router's config plugin always declares (plugin/build/withRouter.js:11-20). It lets the app open such an activity; publishing one needs expo-router/head, forbidden above. */
+const EXPO_ROUTER_ACTIVITY = '$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route';
+const NEVER_PLIST = ['CoreSpotlightContinuation', 'INIntentsSupported', 'INIntentsRestrictedWhileLocked', 'NSExtension'];
+/** Not built yet, as NOT_BUILT_YET: a Siri or Home Screen doorway of NS-06 Part C would add these with its own tests. */
+const NOT_BUILT_YET_PLIST = ['NSSiriUsageDescription', 'UIApplicationShortcutItems'];
+
+function plistProblems(plist: Record<string, unknown>, entitlements: Record<string, unknown>, plugins: unknown): string[] {
+  const bad = [...NEVER_PLIST, ...NOT_BUILT_YET_PLIST].filter((k) => k in plist);
+  const types = (plist.NSUserActivityTypes ?? []) as string[];
+  bad.push(...types.filter((t) => t !== EXPO_ROUTER_ACTIVITY).map((t) => `NSUserActivityTypes ${t}`));
+  if ('com.apple.developer.siri' in entitlements) bad.push('com.apple.developer.siri');
+  const domains = (entitlements['com.apple.developer.associated-domains'] ?? []) as string[];
+  bad.push(...domains.filter((d) => d.startsWith('activitycontinuation:')).map((d) => `associated domain ${d}`));
+  // expo-sqlite links sqlite-vec when its plugin is asked to (NS-02-R26).
+  if (/SQLiteVec/i.test(JSON.stringify(plugins ?? []))) bad.push('sqlite-vec');
+  return bad;
+}
+
+/** The iOS config as `expo config --type introspect` compiles it for one EAS profile: every config plugin has run. */
+async function compiledIos(env: Record<string, string>) {
+  const req = createRequire(join(APP, 'package.json'));
+  const { getPrebuildConfigAsync } = createRequire(req.resolve('@expo/cli/package.json'))('@expo/prebuild-config');
+  const { compileModsAsync } = req('expo/config-plugins');
+  const names = [...Object.keys(process.env).filter((k) => /^(EXPO_PUBLIC_|EAS_)/.test(k)), ...Object.keys(env)];
+  const saved = Object.fromEntries(names.map((k) => [k, process.env[k]]));
+  try {
+    for (const k of names) delete process.env[k];
+    Object.assign(process.env, env);
+    const { exp } = await getPrebuildConfigAsync(APP, { platforms: ['ios'] });
+    const out = await compileModsAsync(exp, { projectRoot: APP, introspect: true, platforms: ['ios'], assertMissingModProviders: false, ignoreExistingNativeFiles: true });
+    return { plist: out.ios?.infoPlist ?? {}, entitlements: out.ios?.entitlements ?? {}, plugins: exp.plugins };
+  } finally {
+    for (const [k, v] of Object.entries(saved)) {
+      if (v === undefined) delete process.env[k];
+      else process.env[k] = v;
+    }
+  }
+}
+
+/** One planted use of every [X6-R1] rule, with what the scan must report for it. */
+const PLANTED: [string, string[]][] = [
+  ['let s = CSSearchableItemAttributeSet(contentType: .text)', ['CSSearchableItemAttributeSet']],
+  ['a.isEligibleForPublicIndexing = true', ['isEligibleForPublicIndexing']],
+  ['struct LetterEntity: IndexedEntity {}', ['IndexedEntity']],
+  ['try await CSSearchableIndex.default().indexAppEntities(items)', ['CSSearchableIndex', 'indexAppEntities']],
+  ['activity.appEntityIdentifier = EntityIdentifier(for: e)', ['appEntityIdentifier']],
+  ['struct ChildEntity: AppEntity { static var defaultQuery = ChildQuery() }', ['AppEntity']],
+  ['struct LetterQuery: EntityStringQuery {}', ['EntityQuery']],
+  ['@Parameter(title: "Words")\n  var words: String', ['App Intents text parameter']],
+  ['@Parameter(title: "Picture") var picture: IntentFile?', ['App Intents text parameter']],
+  ['INVocabulary.shared().setVocabularyStrings(names, of: .contactName)', ['INVocabulary']],
+  ['let s = INShortcut(intent: i)', ['INShortcut']],
+  ['let i = INSendMessageIntent(recipients: nil)', ['INSendMessageIntent']],
+  ['INVoiceShortcutCenter.shared.setShortcutSuggestions(s)', ['setShortcutSuggestions', 'INVoiceShortcut']],
+  ['try await IntentDonationManager.shared.donate(intent: i)', ['IntentDonationManager', 'donate']],
+  ['try await RelevantIntentManager.shared.updateRelevantIntents(r)', ['RelevantIntentManager']],
+  ['INRelevantShortcutStore.default.setRelevantShortcuts(r)', ['INRelevantShortcut']],
+  ['interaction.donate { _ in }', ['donate']],
+  ['[interaction donateInteractionWithCompletion:nil];', ['donate']],
+  ['import Intents', ['Intents framework']],
+  ['#import <IntentsUI/IntentsUI.h>', ['Intents framework']],
+  ["s.frameworks = 'UIKit', 'Intents'", ['Intents framework']],
+  ['UIApplication.shared.shortcutItems = [item]', ['shortcutItems']],
+  ['let e = NLEmbedding.sentenceEmbedding(for: .english)', ['NLEmbedding']],
+  ['let e = NLContextualEmbedding(language: .english)', ['NLContextualEmbedding']],
+  ["db.execSync('CREATE VIRTUAL TABLE v USING vec0(e float[384])')", ['vector index']],
+  ['import AppIntents', ['AppIntents']],
+  ['struct StartLetter: AppIntent {}', ['AppIntent']],
+  ['struct Doors: AppShortcutsProvider { static var appShortcuts: [AppShortcut] { [] } }', ['AppShortcutsProvider', 'AppShortcut']],
+  ["import { QuickActions } from 'react-native-quick-actions';", ['import react-native-quick-actions']],
+  ["import { Intents } from 'react-native-app-intents';", ['import react-native-app-intents']],
+  ["const v = require('react-native-embeddings');", ['import react-native-embeddings']],
+  ["const head = requireNativeModule('ExpoHead');", ['ExpoHead native module']],
+  ['globalThis.expo?.modules?.ExpoHead?.createActivity({ id, title })', ['ExpoHead native module', 'createActivity']],
+  ["NativeModules['ExpoHeadModule'].clearActivitiesAsync(ids)", ['ExpoHead native module']],
+];
+
+describe('[RT-PRV-07] [F17-REQ-007] [X6-R1] [NS-01-R49] [NS-02-R26] nothing about a letter, picture, child or prompt reaches Spotlight, Siri, Handoff or App Intents', () => {
   it('the scan catches each kind of use (so a clean result means something)', () => {
     expect(findings("import * as QuickActions from 'expo-quick-actions';")).toEqual(['import expo-quick-actions']);
     expect(findings("import Head from 'expo-router/head';")).toEqual(['import expo-router/head']);
@@ -94,15 +312,58 @@ describe('[RT-PRV-07] [F17-REQ-007] no letter content in Spotlight, Siri suggest
     expect(findings("import { x } from '@/components/family/welcome-handoff.logic';")).toEqual([]);
   });
 
+  it('[X6-R1] the scan catches every added pattern, and leaves receiving code and lookalikes alone', () => {
+    for (const [source, expected] of PLANTED) expect(findings(source), source).toEqual(expected);
+    for (const [source, names] of PLANTED) if (!names[0].startsWith('import ')) expect(MAYBE.test(source), source).toBe(true);
+    for (const t of NATIVE_TOKENS) expect(MAYBE.test(t), t).toBe(true);
+    const planted = new Set(PLANTED.flatMap(([, names]) => names));
+    expect([...NEVER, ...NOT_BUILT_YET].map((r) => r.name).filter((n) => !planted.has(n))).toEqual([]);
+    // Lookalikes stay quiet: a doorway option that is not words, reading quick actions, sharing out, icons, tokenizing.
+    expect(findings('@Parameter(title: "Size") var size: SizeOption')).toEqual([]);
+    expect(findings('let first = UIApplication.shared.shortcutItems?.first')).toEqual([]);
+    expect(findings("import { shareAsync } from 'expo-sharing';")).toEqual([]);
+    expect(findings("import { Ionicons } from '@expo/vector-icons';")).toEqual([]);
+    expect(findings('let t = NLTokenizer(unit: .word)')).toEqual([]);
+    // In a dependency, opening the app from a link, an activity or a quick action is receiving, not publishing.
+    expect(donations('func application(_ a: UIApplication, continue userActivity: NSUserActivity) -> Bool { open(userActivity.webpageURL) }')).toEqual([]);
+    expect(donations('func handle(_ shortcutItem: UIApplicationShortcutItem) {}')).toEqual([]);
+    expect(donations('activity.isEligibleForSearch = true; activity.becomeCurrent()')).toEqual(['isEligibleForSearch', 'becomeCurrent']);
+    expect(donations('INInteraction(intent: i, response: nil).donate { _ in }')).toEqual(['INInteraction', 'donate']);
+    const made = 'let a = NSUserActivity(activityType: "x"); a.title = name; vc.userActivity = a';
+    expect(donations(made)).toEqual(['NSUserActivity made']);
+    expect(MAYBE.test(made) && MAYBE.test('[[NSUserActivity alloc] initWithActivityType:t]')).toBe(true);
+    expect(donations('[[NSUserActivity alloc] initWithActivityType:t];')).toEqual(['NSUserActivity made']);
+  });
+
+  it('[X6-R1] the Info.plist check catches each planted key', () => {
+    const planted = plistProblems(
+      { NSUserActivityTypes: [EXPO_ROUTER_ACTIVITY, 'INSendMessageIntent'], NSSiriUsageDescription: 'x', UIApplicationShortcutItems: [], CoreSpotlightContinuation: true, INIntentsSupported: [] },
+      { 'com.apple.developer.siri': true, 'com.apple.developer.associated-domains': ['applinks:a.example', 'activitycontinuation:a.example'] },
+      ['expo-router', ['expo-sqlite', { withSQLiteVecExtension: true }]],
+    );
+    expect(planted).toEqual([
+      'CoreSpotlightContinuation',
+      'INIntentsSupported',
+      'NSSiriUsageDescription',
+      'UIApplicationShortcutItems',
+      'NSUserActivityTypes INSendMessageIntent',
+      'com.apple.developer.siri',
+      'associated domain activitycontinuation:a.example',
+      'sqlite-vec',
+    ]);
+    expect(plistProblems({ NSUserActivityTypes: [EXPO_ROUTER_ACTIVITY] }, { 'com.apple.developer.associated-domains': ['applinks:a.example'] }, ['expo-sqlite'])).toEqual([]);
+  });
+
   it('apps/mobile/src imports and calls none of them', () => {
     const files = walk(join(APP, 'src'), ['.ts', '.tsx', '.js', '.jsx', '.mjs']);
     expect(files.length).toBeGreaterThan(100); // the walk really reached the app
     expect(scan(files)).toEqual([]);
   });
 
-  it("the app's own native modules (Swift, Kotlin, Objective-C) use none of them", () => {
-    const files = walk(join(APP, 'modules'), ['.ts', '.swift', '.kt', '.m', '.mm', '.h', '.java']);
+  it("the app's own native modules (Swift, Kotlin, Objective-C, podspecs) use none of them", () => {
+    const files = walk(join(APP, 'modules'), ['.ts', '.swift', '.kt', '.m', '.mm', '.h', '.java', '.podspec']);
     expect(files.some((f) => f.endsWith('.swift'))).toBe(true);
+    expect(files.some((f) => f.endsWith('.podspec'))).toBe(true);
     expect(scan(files)).toEqual([]);
   });
 
@@ -114,4 +375,40 @@ describe('[RT-PRV-07] [F17-REQ-007] no letter content in Spotlight, Siri suggest
     expect(deps.length).toBeGreaterThan(10);
     expect(deps.filter(isForbiddenPackage)).toEqual([]);
   });
+
+  const eas = readJson(join(APP, 'eas.json')) as unknown as { build: Record<string, { env?: Record<string, string> }> };
+  for (const [profile, { env }] of Object.entries(eas.build)) {
+    it(`[X6-R1] ${profile}: the Info.plist and entitlements the config plugins write turn on no system surface`, async () => {
+      const { plist, entitlements, plugins } = await compiledIos(env ?? {});
+      expect(Object.keys(plist).length).toBeGreaterThan(10); // the plugins really ran
+      expect(plistProblems(plist, entitlements, plugins)).toEqual([]);
+    }, 60_000);
+  }
+
+  it('[X6-R1] the dependency scan finds planted donor packages under ios/ and apple/, and skips their tests', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'x6-donor-'));
+    try {
+      const [donor, appleDonor] = [join(dir, 'donor'), join(dir, 'apple-donor')];
+      mkdirSync(join(donor, 'ios', 'Tests'), { recursive: true });
+      writeFileSync(join(donor, 'ios', 'Donor.swift'), 'import Intents\nINInteraction(intent: i, response: nil).donate { _ in }\n');
+      writeFileSync(join(donor, 'ios', 'Tests', 'DonorTests.swift'), 'activity.becomeCurrent()\n');
+      writeFileSync(join(donor, 'ios', 'Opener.swift'), 'func open(_ userActivity: NSUserActivity) {}\n');
+      mkdirSync(join(appleDonor, 'apple'), { recursive: true });
+      writeFileSync(join(appleDonor, 'apple', 'Donor.swift'), 'let a = NSUserActivity(activityType: "x")\na.becomeCurrent()\n');
+      expect(dependencyHits(new Map([[donor, 'donor'], [appleDonor, 'apple-donor']]))).toEqual({
+        hits: { 'donor/ios/Donor.swift': ['INInteraction', 'donate', 'Intents framework'], 'apple-donor/apple/Donor.swift': ['becomeCurrent', 'NSUserActivity made'] },
+        files: 3,
+      });
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('[X6-R1] the iOS code of every package that ships in the app publishes nothing beyond the reviewed list', () => {
+    const { packages, missing } = shippedPackages();
+    expect(missing, 'node_modules does not match package-lock.json; run npm install').toEqual([]);
+    const { hits, files } = dependencyHits(packages);
+    expect(files).toBeGreaterThan(500); // the walk really reached react-native, expo and the rest
+    expect(hits).toEqual(REVIEWED_DEPENDENCY_CODE);
+  }, 60_000); // reads about 3,700 files: 2 to 5 s alone, more on a busy runner
 });

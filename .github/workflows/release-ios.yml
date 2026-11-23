@@ -46,9 +46,31 @@ env:
   EAS_CLI_VERSION: 24.10.0
 
 jobs:
+  # BL-1480 (CR-74): a release candidate tag never moves, so refuse it unless the newest `iOS compile` run on develop
+  # finished green on a commit at or after the merge base of the tagged commit. Final release tags skip this job.
+  launch-gate:
+    name: launch gate (develop launches green)
+    if: github.event_name == 'push' && contains(github.ref_name, '-rc.')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Newest iOS compile run on develop is green
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: node scripts/release/launch-gate.mjs --repo "$REPO" --sha "$GITHUB_SHA"
+
   classify:
     name: classify tag
-    if: github.event_name == 'push'
+    needs: launch-gate
+    if: ${{ !cancelled() && github.event_name == 'push' && needs.launch-gate.result != 'failure' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 3
     outputs:
@@ -212,7 +234,7 @@ jobs:
         run: |
           set -euo pipefail
           # The secret is one JSON string: GitHub masks the whole string, not its fields. Mask each field too.
-          node -e 'let r;try{r=JSON.parse(process.env.REVIEW||"")}catch{process.exit(0)}for(const v of Object.values(r))if(typeof v==="string"&&v.trim())console.log("::add-mask::"+v.replace(/\r?\n/g," "))'
+          node -e 'let r;try{r=JSON.parse(process.env.REVIEW||"")}catch{process.exit(0)}for(const v of Object.values(r))if(typeof v==="string"&&v.trim()){const t=v.trim();console.log("::add-mask::"+t.replace(/\r?\n/g," "))}'
           npx tsx scripts/release/with-review-contact.ts
       - uses: expo/expo-github-action@c7b66a9c327a43a8fa7c0158e7f30d6040d2481e # v8 (8.2.1)
         with:

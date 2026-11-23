@@ -1,6 +1,6 @@
 // Moved from apps/mobile/src/lib/family/copy.ts on 3 Oct 2026; that file now re-exports this one.
 /**
- * Words for the Family tab and co-parent sharing (PRD V2 F11; PRD B F5). Co-parent only at
+ * Words for the family page (a pushed page, not a tab) and co-parent sharing (PRD V2 F11; PRD B F5). Co-parent only at
  * launch (B1), so Family roles stay hidden. With server features on (D-100, drafted as D-089)
  * these drive invite, join and leave; with them off, `soon` is the one presentation (the kill
  * path). The content rules test scans this file. Placeholders: {child}, {signsAs}, {inviter},
@@ -35,7 +35,7 @@ export const familyCopy = {
   /**
    * A child's book settings with server features on (S46, P6 builds the row in settings/children/[id].tsx): in
    * place of `soon.settingsRow`. One parent: it opens the invite sheet. Two parents: its value is the co-parent's
-   * signature and it opens the Family tab.
+   * signature and it opens the family page.
    */
   bookRow: {
     label: 'Write this book together',
@@ -66,9 +66,13 @@ export const familyCopy = {
     share: 'Share invite link',
     working: 'Getting the link ready',
     shareTitle: "Join {child}'s book",
+    /** Used instead of the three keys around it when the book has no name (NX-31-R3): the parent is talking to their co-parent. */
+    shareTitleNoName: "Join our book of letters",
+    shareMessageNoName: "I started a book of letters for our child. Join me, so we can both write in it:",
+    shareMessageNamedNoName: "{signsAs}, I started a book of letters for our child. Join me, so we can both write in it:",
     shareMessage: "I started a book of letters for {child}. Join me, so we can both write to {child}:",
     shareMessageNamed: "{signsAs}, I started a book of letters for {child}. Join me, so we can both write to {child}:",
-    done: 'The invite waits on the Family tab until they join.',
+    done: 'The invite waits until they join.',
     /** F11-REQ-004: shown instead of Share when the book already has two parents (D-069). */
     full: "{child}'s book has two parents.",
   },
@@ -88,7 +92,8 @@ export const familyCopy = {
     join: 'Join the book',
     notNow: 'Not now',
     /** F11-U11: joining needs sync; the invite stays usable until it expires. */
-    needsSync: 'To join, turn on sync and sharing in Settings, Privacy.',
+    // Settings, Privacy has no switch (BL-485); "Agree and sync" is a row on Settings, Account after a no (offerSync).
+    needsSync: 'To join, choose Agree and sync in Settings, Account.',
     /** F11-REQ-024: the joined parent's signature for this book, prefilled with the inviter's suggestion. */
     signsAsLabel: 'What does {child} call you?',
     signsAsHelp: 'It signs your letters in this book.',
@@ -124,7 +129,7 @@ export const familyCopy = {
     /** After an invite that can no longer work: back to the paste field. */
     pasteAnother: 'Paste another link',
     /** The membership limit, as the invitee meets it while looking or joining. */
-    tryLater: 'Please wait a little while, then try again.',
+    tryLater: 'Wait a little while, then try again.',
   },
 
   /** Leaving a shared book (F11 6.2 D; F11-REQ-011, F11-REQ-027, F11-REQ-028; R4 PT-14, PT-15). Nothing is preselected. */
@@ -153,44 +158,12 @@ export const familyCopy = {
   },
 
   /**
-   * Co-parent sharing is coming in a later update (founder, 3 Oct 2026): v1.0 keeps every
-   * letter on this phone. One presentation for the Family tab and every invite entry point
-   * (apps/mobile/src/components/family/coparent-soon.tsx). Never a date; never "beta".
-   * {child} is the open book's name, or `childFallback` before there is a book.
+   * Only the leave sheet's title is drawn now (invite/leave.tsx). The rest of the old coming-soon words
+   * (title, lead, notify, quiet, close, Settings row and help) were deleted: D-161 has no "coming soon" line
+   * in any build, and BL-1834 ruled that no line promises a later update.
    */
   soon: {
     status: 'Coming soon',
-    title: 'Write to {child}, together',
-    lead: "Soon {child}'s other parent can write in this same book, from their own phone.",
-    points: [
-      {
-        title: 'One book, two voices',
-        body: 'Your letters and theirs sit side by side, each signed with the name {child} calls you.',
-      },
-      {
-        title: 'Each from your own phone',
-        body: 'Write whenever it suits you, and read every shared letter wherever you are.',
-      },
-      {
-        title: 'Private to your family',
-        body: "{child}'s book is shared only with {child}'s other parent, if you invite them. A letter you keep private stays yours.",
-      },
-    ],
-    building: "We're building it now. Until then, every letter you write stays on this phone.",
-    notify: {
-      button: "Tell me when it's here",
-      hint: 'Saves a note on this phone. Nothing is sent.',
-      // True only with the v1.1 card on Tonight (the first time a build with co-parent sharing opens on a phone that asked).
-      done: "Noted on this phone. When the update arrives, you will see it here.",
-    },
-    quiet: {
-      title: 'Just you, for now.',
-      body: "{child}'s book and every letter in it stay on this phone.",
-    },
-    childFallback: 'your child',
-    close: 'Close',
-    settingsRow: 'Write this book together',
-    settingsRowHelp: 'Sharing a book with a co-parent is coming in a later update.',
   },
 
   errors: {
@@ -198,14 +171,14 @@ export const familyCopy = {
     used: "This invite has already been used. Ask for a new one if that wasn't you.",
     revoked: 'This invite was cancelled. Ask for a new one.',
     already_member: "You're already part of this book.",
-    not_found: 'That link does not open an invite. Check it and try again.',
+    not_found: "That link doesn't open an invite. Check it and try again.",
     not_parent: "Only a parent of {child}'s book can invite. If you just signed in, give it a moment and try again.",
-    rate_limited: "That's a lot of invites for one day. You can send more tomorrow.",
+    rate_limited: "You've sent a lot of invites. Wait a while, then try again.",
     consent_needed: 'Finish setting up your account first.',
     book_deleted: "This book isn't available.",
     signed_out: 'Sign in again to continue.',
     network: 'This phone is offline. Try again once it is back online.',
-    unknown: 'That did not go through. Try again.',
+    unknown: "That didn't go through. Try again.",
     /** SCCAP (F11-U10, F11-REQ-026): the invitee's line. The inviter's sheet shows create.full instead. */
     book_full: 'This book already has two parents. Ask the person who invited you.',
     /** SCLPG: the only parent of a book cannot leave it (DATA-REQ-016). */
@@ -213,9 +186,9 @@ export const familyCopy = {
     /** 42501: a parent tried something only the server's own paths may do. Never offered by the app. */
     not_allowed: "That isn't possible from here.",
     /** An invite code or token collided twice in a row (code_taken, token_taken, closed); the app already retried once. */
-    retry_new_invite: 'That did not go through. Try again.',
+    retry_new_invite: "That didn't go through. Try again.",
     /** SCCID twice in a row: the same action and words as retry_new_invite. */
-    id_taken: 'That did not go through. Try again.',
+    id_taken: "That didn't go through. Try again.",
     /**
      * SCCON family-share (D-050, F11-REQ-018): only when the server's app.family_share_consent_required
      * is on, which follows a release with the family-share sheet; this build has no sheet.
@@ -226,6 +199,6 @@ export const familyCopy = {
      * nothing was sent; Cancel invite still works. Open invites and a link already on this phone stay
      * as they are. Shown to the inviter and to the invitee, so it never names the child.
      */
-    paused: 'Invites are paused for now. Please try again a little later.',
+    paused: 'Invites are paused for now. Try again a little later.',
   },
 } as const;

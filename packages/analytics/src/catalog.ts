@@ -22,6 +22,7 @@
  */
 import { CAPTURE_MODES, MEMBER_ROLES, OFFER_TRIGGERS } from '@scribe/core';
 import { bool, int, oneOf, opt, type EventSpec, type PropSpec } from './schema';
+import { MOMENTS_SLOT } from './registry';
 
 // ---------------------------------------------------------------------------
 // Shared value sets
@@ -42,6 +43,8 @@ export const AUTHOR_RELATION = oneOf('self', 'other_parent', 'family');
 export const CAPTURE_MODE = oneOf(...CAPTURE_MODES);
 /** packages/core PromptKind, plus `none` when no prompt was shown. */
 export const PROMPT_KIND = oneOf('opening', 'gap', 'hard', 'family', 'together', 'none');
+/** NS-53 R251: the only two card slots that may be reported (a slot is a position, never a source). */
+export { MOMENTS_SLOT };
 export const AUDIO_BUCKET = oneOf('lt_15s', '15_60s', '1_2m', '2_5m', 'gt_5m');
 export const WORDS_BUCKET = oneOf('lt_25', '25_99', '100_299', '300_plus');
 export const LETTERS_BUCKET = oneOf('0', '1', '2_4', '5_9', '10_49', '50_99', '100_364', '365_plus');
@@ -92,7 +95,7 @@ export const REJECT_REASON = oneOf(
 /** Sign-in methods (apps/mobile src/lib/auth AuthMethod). Passkeys are behind a flag at v1.0. */
 export const AUTH_METHOD = oneOf('apple', 'google', 'email', 'passkey');
 /** Where the sign-in sheet was opened from (src/lib/auth SignInTrigger). */
-export const SIGN_IN_TRIGGER = oneOf('first_letter', 'invite', 'invite_create', 'sign_in', 'settings');
+export const SIGN_IN_TRIGGER = oneOf('first_letter', 'third_letter', 'invite', 'invite_create', 'sign_in', 'settings');
 /** packages/core OfferTrigger. */
 export const PLUS_TRIGGER = oneOf(...OFFER_TRIGGERS);
 export const NETWORK = oneOf('wifi', 'cellular', 'none', 'unknown');
@@ -207,8 +210,12 @@ export const GLOBAL_PROPS = {
  * 5: two content-free events for the co-parent teaser (`coparent_soon_opened`, `coparent_soon_notify`, D-087).
  * 6: verifier reason `changes_invisible` (WP-F06-02, R-01 D4).
  * 7: `reminder_prime_shown.source` gains `first_letter` (the reminder card after the first letter, SET-02).
+ * 8: `coparent_soon_opened` and `coparent_soon_notify` removed: there is no co-parent coming-soon screen any more (founder, 11 Nov 2026).
+ * 9: `reminder_prime_shown.source` gains `first_month` (the second reminder card, after the first month chapter, BL-518, BL-1429).
+ * 10: `auth_sheet_shown.trigger` and `auth_deferred.trigger` gain `third_letter` (the Keep the book re-offer after the third letter, BL-519, BL-1464).
+ * 11: two Moments card events, `moments_card_impressed` and `moments_card_tapped`, one closed property `slot` (`look_back` | `question`), NS-53 section 18 and R251. Nothing is wired: the app sends neither until the Moments flag and a later PR.
  */
-export const SCHEMA_VERSION = 7;
+export const SCHEMA_VERSION = 11;
 
 /**
  * SHA-256 of `JSON.stringify(catalogShape())` per schema version. Versions 1
@@ -220,6 +227,10 @@ export const SCHEMA_FINGERPRINTS: Readonly<Record<number, string>> = Object.free
   5: '807e09376410c4f2f955535a6655dacca9de2fd2fc35e4ac7750bd03debb4860',
   6: '71c854663d0ac45e4014e9b99ea799eef7224f66102b4abe4eadae84698f9853',
   7: 'e9a036799e00d28ef83c1b5468c7348fbbaa6e0b2dc5e10559570ee8fc2ff5e0',
+  8: '281051b8507447394cd362e4198ccc667e35a3912cf9d7915e8cac7051b8c27d',
+  9: '4022bb86210eee98e8a6c9d4a42a5710bccaeacdd76e58bf92fb1d141f491f44',
+  10: '1bc7d06372de546ec176a3fcf3147727d28ac6c9a39bba035902980050f9165b',
+  11: 'd5086670df9e315dee3d38561bb79858605f4c247d260b20cc6cd96e44181711',
 });
 
 // ---------------------------------------------------------------------------
@@ -351,22 +362,6 @@ export const EVENTS = {
     reqs: ['B-REQ-007'],
     level: 'L2',
     props: { via: oneOf('link', 'code', 'paste'), signed_in: bool() },
-  },
-  // The co-parent teaser (D-087): measures interest without any content. `surface` is only the Family tab or the
-  // invite sheet (every door except the tab opens the sheet). Nothing about the book or the child.
-  coparent_soon_opened: {
-    area: 'entry',
-    when: 'The co-parent coming-soon presentation is shown (the Family tab, or the sheet any other door opens)',
-    reqs: ['PRD-REQ-016'],
-    level: 'L2',
-    props: { surface: oneOf('tab', 'sheet') },
-  },
-  coparent_soon_notify: {
-    area: 'entry',
-    when: 'Tell me when it is here is tapped on the coming-soon presentation (a note on this phone, nothing is sent to us)',
-    reqs: ['PRD-REQ-016'],
-    level: 'L2',
-    props: {},
   },
   local_merge_choice: {
     area: 'entry',
@@ -691,7 +686,7 @@ export const EVENTS = {
     when: 'Reminder priming card shown',
     reqs: ['C-REQ-034', 'PRD-REQ-001'],
     level: 'L2',
-    props: { source: oneOf('tonight', 'settings', 'family_first_letter', 'first_letter') },
+    props: { source: oneOf('tonight', 'settings', 'family_first_letter', 'first_letter', 'first_month') },
   },
   reminder_prime_result: {
     area: 'reminders',
@@ -902,6 +897,26 @@ export const EVENTS = {
     reqs: ['C-REQ-034', 'C-NFR-003'],
     level: 'L2',
     props: { outcome: oneOf('restored', 'nothing', 'cancelled', 'failed', 'unavailable') },
+  },
+
+  // --- Moments (NS-53 section 18, R251) -------------------------------------------
+  // Slot is position (a card in the question or look-back place), never source: no card dated by a
+  // child, a typed day, a tick or the library has an event, because its presence would disclose the
+  // date. `look_back` is limited to letters. No ids, dates, counts, places, pictures or permission
+  // results. At most one impression per slot per local day is a wiring rule for the app PR.
+  moments_card_impressed: {
+    area: 'moments',
+    when: 'A card in the question or look-back slot is drawn on the Moments tab (at most once per slot per local day). Cards dated by the child, a typed day, a tick or the library never send',
+    reqs: ['PRD-REQ-016'],
+    level: 'L2',
+    props: { slot: MOMENTS_SLOT },
+  },
+  moments_card_tapped: {
+    area: 'moments',
+    when: 'A card in the question or look-back slot is tapped. Says nothing about where the letter that follows began',
+    reqs: ['PRD-REQ-016'],
+    level: 'L2',
+    props: { slot: MOMENTS_SLOT },
   },
 
   // --- Errors ---------------------------------------------------------------------

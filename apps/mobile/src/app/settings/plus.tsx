@@ -4,7 +4,8 @@
  * money opens Apple's own sheet; this screen only says what StoreKit reports on this phone, and never types a price.
  *
  * An iOS Settings list (components/settings/plan.logic.ts): section Plus with "See what Plus adds" (or, with Plus
- * on, "Plus", its plan and dates) and the registered promise as its footer, once; then Manage subscription (only
+ * on, "Plus", its plan and dates) and the registered promise as its footer, once (F5: the setup line instead while
+ * Plus is off and never had; neither after it ended, when the row says the day it ended); "What Plus includes"; then Manage subscription (only
  * with their own subscription, never for Family Sharing), Restore purchases with its result inline under it, Redeem a code, and the payment line as
  * the footer. No lamp. Registered words are today's; the held switches after counsel are `HELD` in plan.logic.ts.
  *
@@ -164,7 +165,8 @@ export default function PlanSettings() {
     <ScrollView contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
       <Stack.Screen options={{ title: p.title }} />
 
-      <ListSection title={p.statusTitle} footer={screen.promise ?? undefined}>
+      {/* F5: the setup line while Plus is off and never had, else the registered promise; neither after Plus ended. */}
+      <ListSection title={p.statusTitle} footer={screen.freeLine ?? screen.promise ?? undefined}>
         {screen.status ? <ListRow title={screen.status.title} subtitle={screen.status.subtitle ?? undefined} value={screen.status.value ?? undefined} testID="plan.status" /> : null}
         {screen.seePlans?.kind === 'open' ? (
           <ListRow
@@ -185,6 +187,15 @@ export default function PlanSettings() {
           <ListRow title={screen.seePlans.title} testID="plan.unavailable" />
         ) : null}
       </ListSection>
+
+      {/* F5, PL-4: what Plus includes, readable before Apple's sheet opens (App Review 3.1.2(c)). Text only, no action. */}
+      {screen.includes ? (
+        <ListSection title={screen.includes.title}>
+          {screen.includes.items.map((item) => (
+            <ListRow key={item} title={item} testID="plan.includes" />
+          ))}
+        </ListSection>
+      ) : null}
 
       {note && (
         <ListSection title={billingCopy.note.title}>

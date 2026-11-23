@@ -119,9 +119,9 @@ describe('[S64] failures and the typed word', () => {
 });
 
 describe('[S64] held for counsel (C8)', () => {
-  it('the page shows today\'s intro until the one-line switch, and never the proposal before it', () => {
+  it('the page shows the intro Build 12 can stand behind, and no proposal exists beside it', () => {
     expect(HELD.intro).toBe(c.what.intro);
-    expect(HELD.intro).not.toBe(c.what.introProposed);
+    expect('introProposed' in c.what).toBe(false);
     expect(STATE.review()).toContain('{HELD.intro}');
     expect(page).not.toMatch(/c\.what\.intro\b|introProposed/);
   });
@@ -179,7 +179,7 @@ describe('[S64] the page', () => {
 
 
   it('step 1: Continue opens step 2, only once every book\'s outcome is on the page; a page that could not list them says so', () => {
-    expect(STATE.review()).toContain("<Button variant=\"outline\" size=\"lg\" fullWidth disabled={!list.known} label={c.continueButton} onPress={() => setWanted('confirm')} />");
+    expect(STATE.review()).toContain("<Button variant=\"outline\" size=\"lg\" fullWidth disabled={!list.known} label={c.continueButton} testID=\"deleteAccount.continue\" onPress={() => setWanted('confirm')} />");
     expect(between('{list.known ? null : (', ')}')).toMatch(/<ErrorLine message=\{c\.errors\.failed\} \/>\s*\{tryAgain\}/);
   });
 
@@ -246,7 +246,7 @@ describe('[S64] the page', () => {
     expect(s).toContain('{c.scheduled.emailNote}');
     expect(s).toMatch(/variant="outline"\s+size="lg"\s+fullWidth\s+loading=\{d\.busy\}\s+label=\{c\.scheduled\.cancelButton\}/);
     // Sign out is confirmed first, and the confirm says the request stays open (critics' pass S3).
-    expect(s).toContain('<Button variant="quiet" fullWidth disabled={d.busy} label={c.scheduled.doneButton} onPress={() => confirmSignOut(date, () => void d.signOut())} />');
+    expect(s).toContain('<Button variant="quiet" fullWidth disabled={d.busy} label={c.scheduled.doneButton} testID="deleteAccount.signOut" onPress={() => confirmSignOut(date, () => void d.signOut())} />');
     expect(s.match(/d\.signOut\(\)/g)).toHaveLength(1); // the only call is the confirm's button
     // After the request, the phone's next sync leaves Export without the person's own letters: no export line or row here.
     expect(s).not.toMatch(/exportNote|exportFirst|\/settings\/export/);
@@ -287,5 +287,26 @@ describe('[S64] the page', () => {
     expect(tracked.sort()).toEqual(["'export_offered'", "'started'"]);
     expect(page).toMatch(/if \(d\.signedIn && first\) d\.trackStage\('started'\);/);
     expect(page).toMatch(/<DeleteAccountPage key=\{attempt\} first=\{attempt === 0\} onRetry=/);
+  });
+});
+
+// BL-455 point 3: the ids the E2E-09 Maestro flow taps and asserts (e2e/TESTID_REQUESTS.md, "Delete account").
+describe('[BL-455] the test ids the E2E-09 flow needs', () => {
+  const raw = readFileSync(join(SRC, 'app', 'settings', 'delete-account.tsx'), 'utf8');
+  const ids = ['screen', 'signedOut', 'exportFirst', 'subscription', 'continue', 'confirm.input', 'confirm.button', 'scheduled', 'cancel', 'signOut'];
+  it.each(ids)('the page carries deleteAccount.%s', (id) => {
+    expect(raw).toContain(`testID="deleteAccount.${id}"`);
+  });
+  it('every deleteAccount id the flow uses is on the page', () => {
+    const flow = readFileSync(join(__dirname, '..', 'e2e', 'flows', 'E2E-09-account-deletion.yaml'), 'utf8');
+    const used = new Set([...flow.matchAll(/"(deleteAccount\.[\w.]+)"/g)].map((m) => m[1]));
+    expect(used.size).toBeGreaterThan(0);
+    for (const id of used) expect(raw, id).toContain(`testID="${id}"`);
+  });
+  it('the cancel and sign out buttons are in the scheduled state, the typed field and button in confirm', () => {
+    expect(STATE.scheduled()).toContain('testID="deleteAccount.cancel"');
+    expect(STATE.scheduled()).toContain('testID="deleteAccount.signOut"');
+    expect(STATE.confirm()).toContain('testID="deleteAccount.confirm.input"');
+    expect(STATE.confirm()).toContain('testID="deleteAccount.confirm.button"');
   });
 });

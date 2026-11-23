@@ -76,10 +76,13 @@ export const brand = {
   name,
   /** The category word people search for and understand. Always paired with the name. */
   category: 'memory book',
-  /** App Store name, max 30 characters. */
-  storeName: `${name}: Memory Book`,
-  /** App Store subtitle, max 30 characters. Adds search words the name lacks ("baby", "journal"). */
-  subtitle: 'Baby journal in your own voice',
+  /**
+   * App Store name, max 30 characters (27). Positioning A, founder decision D-139: "Baby Journal" is the search term
+   * Apple's hints offer; "journal" is allowed in the store name, subtitle and keywords only (BRAND.md glossary).
+   */
+  storeName: `${name}: Baby Journal`,
+  /** App Store subtitle, max 30 characters (29). D-139. A straight apostrophe, never a curly one. */
+  subtitle: "For parents who'd rather talk",
   tagline: 'It stays in your words.',
   /** Printed product naming pattern. */
   printTitle: (year: number) => `${name}: Year ${year === 1 ? 'One' : year === 2 ? 'Two' : year === 3 ? 'Three' : year}`,

@@ -266,11 +266,29 @@ function keepWordsOfRefusedUpload(db: SqlDb, row: OutboxRow, now: string): boole
  */
 function takeProvenance(db: SqlDb, row: PulledRow): void {
   const raw = row.raw_transcript ?? '';
-  db.run(
-    `UPDATE entries SET raw_transcript = CASE WHEN ? <> '' THEN ? ELSE raw_transcript END,
-       engine_version = COALESCE(?, engine_version), captured_at = COALESCE(?, captured_at) WHERE id = ?`,
-    raw, raw, row.engine_version ?? null, row.captured_at ?? null, row.id,
-  );
+  // captured_at and engine_version change only inside this window (migration 13, BL-1497): another flag, another
+  // key, so the raw_transcript guard is never open while these two are written. Set, used and deleted here.
+  db.run("INSERT OR REPLACE INTO settings (key, value) VALUES ('provenance_takeover', ?)", row.id);
+  try {
+    db.run(
+      'UPDATE entries SET engine_version = COALESCE(?, engine_version), captured_at = COALESCE(?, captured_at) WHERE id = ?',
+      row.engine_version ?? null, row.captured_at ?? null, row.id,
+    );
+  } finally {
+    db.run("DELETE FROM settings WHERE key = 'provenance_takeover'");
+  }
+  // The only writer of a set raw_transcript (BL-412, migration 12). The statement names the column only when the
+  // value differs, and the entry-scoped flag lives for that one statement: set, used and deleted here, in the pull's
+  // transaction (a rollback removes it too), so it cannot outlive the call or serve another entry.
+  const local = db.get<{ raw_transcript: string }>('SELECT raw_transcript FROM entries WHERE id = ?', row.id);
+  if (raw !== '' && local && local.raw_transcript !== raw) {
+    db.run("INSERT OR REPLACE INTO settings (key, value) VALUES ('raw_takeover', ?)", row.id);
+    try {
+      db.run('UPDATE entries SET raw_transcript = ? WHERE id = ?', raw, row.id);
+    } finally {
+      db.run("DELETE FROM settings WHERE key = 'raw_takeover'");
+    }
+  }
   for (const o of opsFor(db, row.id)) {
     if (!untouchedOp(o) || (o.type !== 'entry.upsert' && o.type !== 'entry.reupload')) continue;
     const p = JSON.parse(o.payload) as PushOp;
@@ -491,7 +509,7 @@ function insertOwnRow(db: SqlDb, row: PulledRow, edits: string, epoch: number, n
          child_id, author_id, author_signs_as, approval, server_version, server_updated_at, server_epoch, sync_state,
          language, occurred_precision, base_direction)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced', ?, COALESCE(?, 'day'), COALESCE(?, 'ltr'))`,
-      row.id, row.kind, row.occurred_on, row.captured_at, row.capture_mode, row.edit_level, row.prompt_key, row.engine_version,
+      row.id, row.kind, row.occurred_on, row.captured_at, row.capture_mode, row.edit_level, row.prompt_key, row.engine_version ?? 0,
       row.raw_transcript ?? '', edits, row.final_text, row.in_book ? 1 : 0, bool(row.sounds_like_me), now, row.deleted_at, now,
       row.child_id, row.author_id, row.author_signs_as, row.approval, row.v, row.updated_at, epoch,
       opt(row.language), opt(row.occurred_precision), opt(row.base_direction),
@@ -538,7 +556,7 @@ function adoptHeldDraft(db: SqlDb, id: string, now: string): void {
  * backup (F08 6.5 B), never through sync. A draft with ops still queued keeps its
  * own values (the queued op is the later writer). Nothing is ever deleted here:
  * a draft let go elsewhere is marked `discarding` (the launch sweep finishes it,
- * F04-REQ-004), a waiting letter let go elsewhere goes to Recently deleted.
+ * F04-REQ-009), a waiting letter let go elsewhere goes to Recently deleted.
  */
 function applyHeldRows(db: SqlDb, rows: (PulledHeld | PulledHeldGone)[], owner: string | null, now: string): number {
   let n = 0;
@@ -677,6 +695,8 @@ function mergedLanguage(local: string | null, server: string | null | undefined)
  * (book_entries, S02 20261015030000); a server without them leaves the defaults.
  */
 function mergeOtherRow(db: SqlDb, row: PulledRow, owner: string | null, epoch: number, now: string): void {
+  // A quiet day is its author's own (NS-07-C5-8): the other parent's mark is never stored here, even if a server serves it.
+  if (row.kind === 'not_much') return;
   const local = getEntryRow(db, row.id);
   if (local && (local.author_id === null || local.author_id === owner)) return;
   db.run(
@@ -694,18 +714,34 @@ function mergeOtherRow(db: SqlDb, row: PulledRow, owner: string | null, epoch: n
        server_version = excluded.server_version, server_updated_at = excluded.server_updated_at,
        server_epoch = excluded.server_epoch, sync_state = 'synced',
        occurred_precision = excluded.occurred_precision, base_direction = excluded.base_direction`,
-    row.id, row.kind, row.occurred_on, row.captured_at, row.capture_mode, row.edit_level, row.prompt_key, row.engine_version,
+    row.id, row.kind, row.occurred_on, row.captured_at, row.capture_mode, row.edit_level, row.prompt_key,
+    // Another author's row has no engine_version (FR-AIS-08, 20261123200000); 0 is the device's "not known" (set-once trigger).
+    row.engine_version ?? 0,
     row.final_text, row.in_book ? 1 : 0, bool(row.sounds_like_me), now, now,
     row.child_id, row.author_id, row.author_signs_as, row.approval, row.v, row.updated_at, epoch,
     opt(row.occurred_precision), opt(row.base_direction),
   );
 }
 
-function mergeRows(db: SqlDb, rows: PulledRow[], owner: string | null, epoch: number, now: string): void {
+function mergeRows(db: SqlDb, rows: PulledRow[], owner: string | null, epoch: number, now: string): number {
+  let refused = 0;
   for (const r of rows) {
-    if (r.own) mergeOwnRow(db, r, epoch, now);
-    else mergeOtherRow(db, r, owner, epoch, now);
+    // A row that meets a local entry-column trigger (migrations 12 and 13) is undone and skipped, so one bad row cannot roll
+    // the whole page back and make every later pull fail the same way. Any other error still fails the page.
+    db.exec('SAVEPOINT pulled_row');
+    try {
+      if (r.own) mergeOwnRow(db, r, epoch, now);
+      else mergeOtherRow(db, r, owner, epoch, now);
+      db.exec('RELEASE pulled_row');
+    } catch (e) {
+      const msg = String((e as { message?: unknown })?.message ?? '');
+      if (!msg.includes('raw_transcript is immutable') && !msg.includes('(BL-1497)')) throw e;
+      db.exec('ROLLBACK TO pulled_row');
+      db.exec('RELEASE pulled_row');
+      refused++;
+    }
   }
+  return refused;
 }
 
 /** Creates or updates the local book from the server's settings. Returns false when they were not applied. */
@@ -787,6 +823,8 @@ export interface PullOutcome {
   pulled: number;
   /** Some book's digest differs from the server's: pull again with ids. */
   wantIds: boolean;
+  /** Rows skipped because they met a local entry-column trigger (migrations 12 and 13; a count only, no words). */
+  refused: number;
 }
 
 /** Applies one sync_pull page (not a reset). */
@@ -799,6 +837,7 @@ export function applyPullPage(db: SqlDb, res: PullResponse, now: string): PullOu
   const epoch = res.epoch;
   let pulled = 0;
   let wantIds = false;
+  let refused = 0;
   for (const b of res.books ?? []) {
     const applied = mergeBook(db, b, now);
     upsertSyncBook(db, b.id, { cursor: b.cursor, access: b.access });
@@ -808,7 +847,7 @@ export function applyPullPage(db: SqlDb, res: PullResponse, now: string): PullOu
         applied ? b.meta_hash : null, JSON.stringify(b.meta.members ?? []), b.meta.birthday_md, b.id,
       );
     }
-    mergeRows(db, b.rows, owner, epoch, now);
+    refused += mergeRows(db, b.rows, owner, epoch, now);
     pulled += b.rows.length;
     if (b.more) continue;
     if (b.ids) {
@@ -829,7 +868,7 @@ export function applyPullPage(db: SqlDb, res: PullResponse, now: string): PullOu
   const heldServer = res.held ? '1' : null;
   if (readSetting(db, SYNC_SETTING.heldServer) !== heldServer) writeSetting(db, SYNC_SETTING.heldServer, heldServer);
   for (const g of res.gone ?? []) {
-    mergeRows(db, g.rows, owner, epoch, now);
+    refused += mergeRows(db, g.rows, owner, epoch, now);
     pulled += g.rows.length;
     if (g.more) {
       db.run('UPDATE sync_books SET cursor = ? WHERE child_id = ?', g.cursor, g.id);
@@ -837,7 +876,7 @@ export function applyPullPage(db: SqlDb, res: PullResponse, now: string): PullOu
     }
     closeBook(db, g, owner);
   }
-  return { pulled, wantIds };
+  return { pulled, wantIds, refused };
 }
 
 /** A book this person left, was removed from, or that was deleted: own letters stay on the phone, others' leave it. */

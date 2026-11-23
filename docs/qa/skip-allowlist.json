@@ -1,0 +1,9 @@
+[
+  {
+    "suite": "apps/web",
+    "count": 1,
+    "reason": "apps/web/test/brand-assets.test.ts:198 it.skipIf(mastersPresent) is the other half of a pair: it runs only when the brand master files are absent, so one of the pair always skips",
+    "owner": "qa",
+    "expires": "2026-12-01"
+  }
+]

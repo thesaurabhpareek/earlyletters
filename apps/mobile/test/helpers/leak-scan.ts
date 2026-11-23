@@ -1,0 +1,231 @@
+/**
+ * [BL-456] Plaintext-leak scan for the backup tests: what leaves the phone must hold no part of the recording.
+ *
+ * A bare 4-byte match is no signature (any 4 bytes of ciphertext equal them by chance, about 1 in 2^32 per byte).
+ * A 16-byte shingle cannot match by chance (2^-128). The scan takes shingles at a dense stride across the WHOLE
+ * take, not only its header or one fixed window, and looks for each at every offset of the haystack.
+ *
+ * Coverage: a stride of 48 puts at least one whole shingle inside any run of 64 plaintext bytes (64 - 16 + 1 = 49
+ * start offsets), so a 64-byte piece planted anywhere in the take is found. The first and the last window are always
+ * included.
+ *
+ * [BL-1417] Encoded copies: a recording written as base64 (standard or URL-safe, at any of the three byte alignments),
+ * hex (either case, either alignment) or a decimal list of bytes (`[1,2,3]`, with or without spaces, as
+ * `JSON.stringify(Array.from(bytes))` or a Buffer's JSON writes it) is decoded back to bytes and scanned like the
+ * raw bytes; a decoded run is decoded once more, for a copy written twice over (base64 of hex, tus metadata around
+ * a base64 value). [BL-1418] The URL, each header and each RPC's arguments of every request are scanned the same way.
+ * [BL-1419] Bodies are scanned one by one AND across every join of consecutive bodies (JOIN_WINDOW bytes either side),
+ * in recorded order and again per kind.
+ *
+ * Not covered: a leak shorter than 64 bytes that falls between shingles; a piece that is split over bodies and wider
+ * than 2 x JOIN_WINDOW; a leak written in another way (compressed, XOR-ed, split into words, a custom alphabet, a
+ * decimal list with other separators, or three or more layers of encoding). Known bypasses that stay open (BL-1476):
+ * XOR-ed bytes, and a piece under 16 bytes (the 2^-128 argument needs 16 bytes, so no shingle fits in it).
+ *
+ * [BL-1476] Four more text forms are decoded before the shingle scan: hex with space or colon separators (`89 50 4e`,
+ * `89:50:4e`), hex with a `0x` prefix per byte (`0x89, 0x50`), percent-encoded bytes (`%89%50`, with plain characters
+ * left in between), and base64 wrapped over lines (a raw or JSON-escaped line break between the lines).
+ * Wrapped base64 is matched in linear time, and each line is also scanned alone (padding may sit on any line, and Node stops decoding at the first `=`) (a 256 KB body takes well under a second; the first version backtracked
+ * quadratically). Known gap: base64 wrapped with spaces or tabs between the lines, or broken inside its first 20
+ * characters (or with a line under 4 characters in the middle), is not decoded, so a recording written that way passes the scan.
+ */
+import { createHash } from 'node:crypto';
+
+/** Bytes either side of a join of two consecutive bodies that the join scan reads (a 64-byte piece is at most 256 chars as a decimal list). */
+export const JOIN_WINDOW = 512;
+export const SHINGLE = 16;
+export const STRIDE = 48;
+
+/** Start offsets of the shingles for a take of `length` bytes: 0, every STRIDE, and the last full window. */
+export function shingleOffsets(length: number, stride = STRIDE, width = SHINGLE): number[] {
+  if (length < width) return [];
+  const last = length - width;
+  const out: number[] = [];
+  for (let at = 0; at < last; at += stride) out.push(at);
+  out.push(last);
+  return out;
+}
+
+/** Every SHINGLE-byte window of `hay`, as latin1 strings: one pass over the haystack, then one lookup per shingle. */
+export function windowIndex(hay: Uint8Array): Set<string> {
+  const text = Buffer.from(hay.buffer, hay.byteOffset, hay.byteLength).toString('latin1');
+  const out = new Set<string>();
+  for (let i = 0; i + SHINGLE <= text.length; i++) out.add(text.slice(i, i + SHINGLE));
+  return out;
+}
+
+const shingleCache = new WeakMap<Uint8Array, Array<[number, string]>>();
+/** The shingles of a take as [offset, latin1 text], built once per take. */
+function shinglesOf(plain: Uint8Array): Array<[number, string]> {
+  let c = shingleCache.get(plain);
+  if (!c) {
+    const p = Buffer.from(plain.buffer, plain.byteOffset, plain.byteLength);
+    c = shingleOffsets(p.length).map((at): [number, string] => [at, p.toString('latin1', at, at + SHINGLE)]);
+    shingleCache.set(plain, c);
+  }
+  return c;
+}
+
+/** The first plaintext offset whose shingle is in an index built by `windowIndex`, or null. */
+export function firstIndexedLeak(index: Set<string>, plain: Uint8Array): number | null {
+  if (index.size === 0) return null;
+  for (const [at, text] of shinglesOf(plain)) if (index.has(text)) return at;
+  return null;
+}
+
+/** The first plaintext offset whose shingle appears raw in `hay`, or null. No decoding. */
+export function firstRawLeak(hay: Uint8Array, plain: Uint8Array): number | null {
+  return firstIndexedLeak(windowIndex(hay), plain);
+}
+
+const B64_RUN = /[A-Za-z0-9+/_-]{22,}/g;
+const HEX_RUN = /[0-9a-fA-F]{32,}/g;
+/** [BL-1476] Hex bytes with a separator (space, colon or comma) and an optional 0x on each: 16 or more bytes. */
+const SEP_HEX_RUN = /(?:0x)?[0-9a-fA-F]{2}(?:[ :,]{1,2}(?:0x)?[0-9a-fA-F]{2}){15,}/g;
+/** [BL-1476] One line of a wrapped base64 text, or one line break (raw CR/LF or JSON-escaped). Every alternative is a plain run, so a scan with it is linear. */
+const B64_LINE_TOKEN = /([A-Za-z0-9+/_-]+)(={0,2})|\r\n|\n|\r|\\r\\n|\\n|\\r/g;
+const PERCENT_BYTE = /%([0-9a-fA-F]{2})/g;
+const LIST_RUN = /\d{1,3}(?:,\s?\d{1,3}){15,}/g;
+
+/**
+ * [BL-1476] Base64 over lines, found in one linear pass: a first line of 20+ characters, then more lines of 4+ characters
+ * (padding allowed at the end of a line), each after one line break. The line rules are applied here, in code: a regex that
+ * carries them backtracks quadratically on one long line (13 s at 50 KB, 44 s at 100 KB). Returns each run joined, no breaks.
+ */
+export function wrappedBase64Runs(text: string): string[] {
+  return wrappedBase64Spans(text).map((s) => s.flat);
+}
+
+/** The wrapped runs of `wrappedBase64Runs` with where each sits in `text` ([start, end)). */
+export function wrappedBase64Spans(text: string): Array<{ flat: string; start: number; end: number }> {
+  const out: Array<{ flat: string; start: number; end: number }> = [];
+  let parts: string[] | null = null; // the lines of the run being built
+  let start = 0;
+  let stop = 0; // where the last line of the run being built stopped
+  let pendingBreak = false;
+  let end = 0; // where the previous token stopped: anything between two tokens (a space, a tab) ends the run
+  const close = () => { if (parts && parts.length > 1) out.push({ flat: parts.join(''), start, end: stop }); parts = null; pendingBreak = false; };
+  for (const m of text.matchAll(B64_LINE_TOKEN)) {
+    if (m.index !== end) close();
+    end = m.index! + m[0].length;
+    if (m[1] === undefined) { // a line break
+      if (parts && !pendingBreak) pendingBreak = true; else close();
+      continue;
+    }
+    const line = m[1] + m[2];
+    if (parts && pendingBreak && m[1].length >= 4) { parts.push(line); pendingBreak = false; stop = end; }
+    else {
+      close();
+      if (m[1].length >= 20 && m[2] === '') { parts = [line]; start = m.index!; stop = end; }
+    }
+  }
+  close();
+  return out;
+}
+
+/** Every byte string hiding in `hay` as base64 (also wrapped), hex (also separated or 0x-prefixed), percent-encoding or a decimal list (one layer), as bytes. */
+export function decodedViews(hay: Uint8Array): Buffer[] {
+  const text = Buffer.from(hay.buffer, hay.byteOffset, hay.byteLength).toString('latin1');
+  const out: Buffer[] = [];
+  // Single-run pass on the original text, never blanked: Node's decoder stops at the first '=', so a joined run with padding
+  // in the middle would hide the lines after it. Each line is also found alone here.
+  for (const m of text.matchAll(B64_RUN)) for (let c = 0; c < 4; c++) out.push(Buffer.from(m[0].slice(c), 'base64'));
+  for (const m of text.matchAll(HEX_RUN)) for (let c = 0; c < 2; c++) out.push(Buffer.from(m[0].slice(c), 'hex'));
+  for (const m of text.matchAll(SEP_HEX_RUN)) out.push(Buffer.from(m[0].replace(/0x|[ :,]/gi, ''), 'hex'));
+  // Joined lines: split at each run of '=' (padding may sit on any line), then decode each piece at the four alignments.
+  for (const { flat } of wrappedBase64Spans(text)) {
+    for (const piece of flat.split(/=+/)) {
+      if (piece.length < 22) continue;
+      for (let c = 0; c < 4; c++) out.push(Buffer.from(piece.slice(c), 'base64'));
+    }
+  }
+  if (text.includes('%')) {
+    const plainText = text.replace(PERCENT_BYTE, (_, h: string) => String.fromCharCode(parseInt(h, 16)));
+    if (plainText !== text) out.push(Buffer.from(plainText, 'latin1'));
+  }
+  for (const m of text.matchAll(LIST_RUN)) {
+    let chunk: number[] = [];
+    const flush = () => { if (chunk.length) out.push(Buffer.from(chunk)); chunk = []; };
+    for (const n of m[0].split(',')) {
+      const v = Number(n.trim());
+      if (v > 255) flush(); else chunk.push(v);
+    }
+    flush();
+  }
+  return out;
+}
+
+/** `hay` itself and what it decodes to, up to `depth` layers. */
+export function leakViews(hay: Uint8Array, depth = 2): Buffer[] {
+  const top = Buffer.from(hay.buffer, hay.byteOffset, hay.byteLength);
+  if (depth <= 0) return [top];
+  return [top, ...decodedViews(top).flatMap((v) => leakViews(v, depth - 1))];
+}
+
+/** The first plaintext offset whose shingle appears in `hay`, raw or as base64, hex or a byte list; null when clean. */
+export function firstLeak(hay: Uint8Array, plain: Uint8Array): number | null {
+  for (const v of leakViews(hay)) {
+    const at = firstRawLeak(v, plain);
+    if (at !== null) return at;
+  }
+  return null;
+}
+
+/** Message for a failed scan: the offset only, never the bytes. */
+export const leakNote = (what: string, at: number | null) =>
+  at === null ? `${what} carries no part of a recording` : `${what} carries part of a recording (plaintext offset ${at})`;
+
+/** What a fake backend records of one request (BL-1418): `body` as before, plus the URL, headers and RPC arguments. */
+export interface ScannedRequest {
+  kind: string;
+  body: Buffer;
+  url?: string | null;
+  headers?: Record<string, string> | null;
+  args?: unknown;
+}
+
+/** The parts of one request that are scanned: [label, bytes]. */
+export function requestFields(req: ScannedRequest): Array<[string, Buffer]> {
+  const out: Array<[string, Buffer]> = [[`${req.kind} body`, req.body]];
+  if (req.url) out.push([`${req.kind} url`, Buffer.from(req.url, 'latin1')]);
+  for (const [k, v] of Object.entries(req.headers ?? {})) out.push([`${req.kind} header ${k}`, Buffer.from(String(v), 'latin1')]);
+  if (req.args !== undefined && req.args !== null) out.push([`${req.kind} arguments`, Buffer.from(JSON.stringify(req.args))]);
+  return out;
+}
+
+/** The windows across every join of consecutive bodies, ordered by position: [label, bytes]. */
+export function joinWindows(bodies: Buffer[], window = JOIN_WINDOW): Array<[string, Buffer]> {
+  const total = Buffer.concat(bodies);
+  const out: Array<[string, Buffer]> = [];
+  let at = 0;
+  for (let i = 0; i < bodies.length - 1; i++) {
+    at += bodies[i].length;
+    out.push([`bodies ${i} and ${i + 1}`, total.subarray(Math.max(0, at - window), at + window)]);
+  }
+  return out;
+}
+
+/**
+ * Every failed check over a list of recorded requests, as notes (offsets only, never bytes). Empty means clean.
+ * One call for the e2e loop and the queue test, so a scan that narrows (first body only) is one edit, and tested.
+ */
+export function scanRequests(requests: ScannedRequest[], plains: Uint8Array[]): string[] {
+  const notes: string[] = [];
+  const check = (label: string, bytes: Buffer) => {
+    const views = leakViews(bytes);
+    const indexes = views.map(windowIndex);
+    for (const plain of plains) {
+      for (const ix of indexes) {
+        const at = firstIndexedLeak(ix, plain);
+        if (at !== null) { notes.push(leakNote(label, at)); break; }
+      }
+      const hex = createHash('sha256').update(plain).digest('hex');
+      if (views.some((v) => v.includes(Buffer.from(hex)) || v.includes(Buffer.from(hex, 'hex')))) notes.push(`${label} carries a recording's hash`);
+    }
+  };
+  for (const req of requests) for (const [label, bytes] of requestFields(req)) check(label, bytes);
+  const streams: Array<[string, Buffer[]]> = [['all', requests.map((r) => r.body)]];
+  for (const kind of new Set(requests.map((r) => r.kind))) streams.push([kind, requests.filter((r) => r.kind === kind).map((r) => r.body)]);
+  for (const [name, bodies] of streams) for (const [label, bytes] of joinWindows(bodies)) check(`${name} ${label}`, bytes);
+  return notes;
+}

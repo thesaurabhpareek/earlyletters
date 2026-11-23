@@ -10,6 +10,7 @@
  * (test/family-e2e.test.ts).
  */
 import type { SyncBooksResponse } from '@scribe/api/server';
+import { clampGraphemes, SIGNS_AS_MAX } from '@scribe/core';
 
 /** One pending invite as the member list shows it. */
 export interface PendingInviteRow {
@@ -34,7 +35,7 @@ function readInvite(raw: unknown): PendingInviteRow | null {
   if (!isString(i.id) || !isString(i.created_at) || !isString(i.expires_at)) return null;
   if (!Number.isFinite(Date.parse(i.expires_at))) return null;
   if (i.status !== 'open' && i.status !== 'expired') return null;
-  const signsAs = typeof i.signs_as === 'string' ? i.signs_as.trim().slice(0, 30).trim() || null : null;
+  const signsAs = typeof i.signs_as === 'string' ? clampGraphemes(i.signs_as.trim(), SIGNS_AS_MAX, SIGNS_AS_MAX).trim() || null : null;
   return { id: i.id, signsAs, createdAt: i.created_at, expiresAt: i.expires_at, status: i.status };
 }
 

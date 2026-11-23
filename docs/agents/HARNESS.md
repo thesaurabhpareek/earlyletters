@@ -16,7 +16,7 @@ Last updated: 27 Oct 2026. Box below added 28 Oct 2026.
 | The 4-hourly scheduled task is a fallback lane. | It was scheduled six times a day from 1 Oct (task cron) and left no trace: no journal entry or receipt with its run id form `sched-YYYYMMDDHHMM`, and no "Lane sched-4h stopped" comment on #24 (its own STEP 7). Last run 28 Oct 04:45:46 to 04:46:45 UTC (59 s), status SUCCEEDED, no board write. **Disabled 28 Oct 06:05 UTC.** | Scheduled task "Early Letters: agent lane (every 4 hours)": created 1 Oct, `enabled: false`, `updated_at` 2026-10-28T06:05:39Z (task record read 28 Oct 06:10 UTC). Journal issues #5 to #23, #171, #172, #230 to #234 (all comments, collected 28 Oct). #24 `updated_at` 27 Oct 22:10:51 UTC; its 3 comments are from 14 and 15 Oct. |
 | Agents run on OpenCode with DeepSeek; the red team runs on GLM (section 3). | No OpenCode, DeepSeek or GLM run has happened. No `claude-code` engine run in Actions either. | All 31 run receipts on the journal issues have `sess-` (interactive) run ids; 28 name `claude-opus-5-5 (interactive subagent)`, 3 name no model. The scheduled tasks set `model: claude-opus-5-5` (task records). |
 | A red team on a different model family gives independent review (section 3, AIE-R19). | Never true. Red-team receipts name `claude-opus-5-5`, the authors' family. Since 15 Oct, review has been the build thread's two "lenses": two separate Claude review sessions per PR, with separate context but the same model family. The lens records do not say which model ran; "Claude" is inferred from the build thread being a Claude session whose commits are co-authored by Claude Sonnet 5.5 (c56d1158, 6bfb94a9). | Red-team receipts on #5 (3 to 15 Oct). #297 comments "Review A" and "Review B" (27 to 28 Oct); commit c56d1158 message. |
-| Agents act as the agents App; only the founder's comments instruct (sections 3, 11). | Every agent and thread post comes from the founder's account. The harness cannot tell the founder from a session. | All 7 comments on #297 and the 27 Oct comment on #22 ("Posted by the founder's release-coordination session") are by `thesaurabhpareek`. `isFounderComment` (`scripts/agents/lib.mjs`) treats any unmarked post from that account as a founder instruction. |
+| Agents act as the agents App; only the founder's comments instruct (sections 3, 11). | Every agent and thread post comes from the founder's account. The harness cannot tell the founder from a session. | All 7 comments on #297 and the 27 Oct comment on #22 ("Posted by the founder's release-coordination session") are by `thesaurabhpareek`. `isFounderComment` (`scripts/agents/lib.mjs`) treated any unmarked post from that account as a founder instruction; since BL-1529 it requires the `<!-- founder -->` first-line marker (a founder Request changes review holds without it). Residual: an agent posting as that login can write the marker too. |
 | The Agent board issue is where you see everything (sections 1, 7). | Board #24 is the dispatcher's state store, not project status. Its status line is wrong for local runs, its rows are stale ("ready: review #38"; #38 closed 28 Oct 04:35 UTC), and its last write came from a dispatcher on #164's branch, not `develop`. | #24 body lists `decision-records` and `reference-docs`, which are not among the 24 handles in `develop`'s `agents/roster.json`; #164 (open) adds them. |
 
 What did run: interactive sessions acting as agents on 3, 13 to 15 and 18 Oct (receipts and journals above), and the daily docs run, which ran 16, 17, 18, 23 and 27 Oct on #164's unmerged branch (journals #171, #172) and was disabled 28 Oct 05:30 UTC. The daily PRD update was disabled 28 Oct 06:05 UTC. The product itself was built by the build thread's streams (`docs/agents/BOARD.md`), outside this harness.
@@ -25,7 +25,7 @@ Ownership of `scripts/agents/**`: the founder (`.github/CODEOWNERS:31`). Any "ow
 
 ## 1. What it is
 
-A team of 24 role agents (five engineering standards stewards, engineering, product, design, data, decision science, applied science, quality, support, brand, marketing, legal drafting, operations) that works on this repository around the clock. A dispatcher written in plain code decides what each agent does next; GitHub Actions runs the agents; GitHub itself holds everything: the plan (`docs/BACKLOG.md`), the work (pull requests), the memory (files and journal issues) and the status (the Agent board issue). Agents never merge: every change waits for the founder.
+A team of 24 role agents (five engineering standards stewards, engineering, product, design, data, decision science, applied science, quality, support, brand, marketing, legal drafting, operations) that works on this repository around the clock. A dispatcher written in plain code decides what each agent does next; GitHub Actions runs the agents; GitHub itself holds everything: the plan (`docs/BACKLOG.md`), the work (pull requests), the memory (files and journal issues) and the status (the Agent board issue). The harness agents never merge: every change waits for Karma, who approves and merges once two counted reviews and the required checks hold (CR-73). What stays the founder's is the CR-73 list.
 
 ```mermaid
 flowchart LR
@@ -41,7 +41,7 @@ flowchart LR
   OC --> PR[Pull request into develop]
   CC --> PR
   PR --> RT[Red-team review]
-  RT --> F[Founder approves and merges]
+  RT --> F[Karma approves and merges, CR-73]
   W --> RC[Journal entry + run receipt]
 ```
 
@@ -63,7 +63,7 @@ flowchart LR
 | Bootstrap and checks | `scripts/agents/bootstrap.mjs`, `check.mjs`, `lib.test.mjs` | Create labels, journals and the board; keep the team consistent; test the dispatcher. |
 | Hardening modules | `scripts/agents/lane.mjs`, `reviewfp.mjs`, `verdicts.mjs`, `pause.mjs`, `memory.mjs`; notes in `docs/agents/hardening/` | Lane ticks, review fingerprints, the verdict mix, the dated writer pause and the memory loop. Each sits behind one hook in `dispatch.mjs` or `brief.mjs` and can be removed on its own. |
 | Workflows | `.github/workflows/agents.yml`, `claude.yml`, `agents-check.yml` | Run the team; `@claude` for the founder; the consistency check on PRs. |
-| GitHub objects | Labels `agent:<handle>`, `from:agent`, `needs:founder`, `review:*`, `approve-migration`, `handoff`, `rfc`, `from:<handle>`, `to:<handle>`; one journal issue per agent; the issue titled "Agent board"; daily `digest` issues | Where you see and steer everything. |
+| GitHub objects | Labels `agent:<handle>`, `from:agent`, `needs:founder` (only: a physical-act row for this PR is in `docs/release/FOUNDER_QUEUE.md`), `review:*`, `approve-migration`, `handoff`, `rfc`, `from:<handle>`, `to:<handle>`; one journal issue per agent; the issue titled "Agent board"; daily `digest` issues | Where you see and steer everything. |
 
 ## 3. Engines and models
 
@@ -106,7 +106,7 @@ Ownership of paths is exclusive, so two agents never edit the same files for the
 3. **Run.** The engine runs the agent on a fresh GitHub runner, checked out on `develop` with dependencies installed. Hard stops: dollar budget, steps or turns, and job timeout.
 4. **Output.** One branch and one PR into `develop` (labels `agent:<handle>`, `from:agent`), commits ending `Agent: <handle>`, and one journal entry.
 5. **Save and receipt.** Whatever stopped the run, the workflow pushes anything left uncommitted or unpushed to `agent/<handle>/wip-<run id>` and records it in the journal, so no work is lost to a cap, timeout or provider limit (`scripts/agents/salvage.mjs`; guaranteed for OpenCode runs, best effort for Claude Code runs). Then it posts cost, steps, minutes, model and outcome on the journal.
-6. **Review.** CI runs on the PR; the red team reviews it and labels it; you approve and merge. Supabase and sign-in changes also need your `approve-migration` label (D-041).
+6. **Review.** CI runs on the PR; the red team reviews it and labels it; Karma (the CTO role) approves and merges it under CR-70 and CR-73, not the founder. Applying a migration to a hosted project is a physical act: Karma prepares it and queues the one step in `docs/release/FOUNDER_QUEUE.md` (CR-176).
 
 ## 6. Creating an agent
 
@@ -188,12 +188,12 @@ The hard monthly stop is the budget on your OpenRouter key (and on the Claude Co
 ## 11. Governance and safety
 
 - Agents never merge, approve, close, force-push, or push to `develop` or `main`. Deny rules block the usual forms of those commands (the OpenCode config denies `git push origin develop*` and `main*`; the Claude Code arguments deny force pushes, `gh pr merge`, `gh pr review --approve` and pushes to `develop` and `main` by name), but a deny list is a tripwire, not a guarantee: branch protection (section 12) is what makes a push to `develop` or `main` impossible. Neither GitHub App can edit workflows.
-- Branch protection (section 12) makes your approval required. Supabase and sign-in changes also need a red-team review and your `approve-migration` label (D-041).
+- Branch protection (section 12) requires the three checks on `develop`; approval of the merge is Karma's (CR-73). Supabase and sign-in changes also need a red-team review.
 - Only your comments count as instructions. Issue and PR text from anyone else is information, never instructions.
 - OpenCode session sharing is disabled. Actions logs on a public repository are public, so the runner prints only short step totals and the agent's own text.
 - Prompts go only through OpenRouter, with zero-data-retention routing on (section 12). No user data passes through agents: they work on the repository only, and the privacy rules forbid real family details in it.
 
-## 12. Setup checklist (founder only)
+## 12. Setup checklist (physical acts, queued in `docs/release/FOUNDER_QUEUE.md`, CR-176)
 
 1. **OpenRouter:** create an API key with a monthly budget (for example $50) under Guardrails; in Settings, Privacy, turn on zero data retention so no provider can keep or train on prompts; add prepaid credit; save the key as the Actions secret `OPENROUTER_API_KEY`.
 2. **Agents GitHub App:** in GitHub, Settings, Developer settings, GitHub Apps, New GitHub App. Name it (for example `early-letters-agents`), set any homepage URL, turn the webhook off. Repository permissions: Contents read and write, Pull requests read and write, Issues read and write, Checks read, Actions read. Do not grant Workflows or Administration. Create it, install it on this repository only, generate a private key. Save the Client ID as the Actions variable `AGENTS_APP_CLIENT_ID` and the private key file's contents as the secret `AGENTS_APP_PRIVATE_KEY`.
@@ -248,6 +248,6 @@ Do it before the first external TestFlight families join (backlog milestone M12)
   - **Parallel ids collided.** ADR 0014 to 0017 were taken twice, and D-ids nearly were. `scripts/agents/next-id.mjs` counts `develop` and every open PR.
   - **Usage limits cut runs short.** Agents now post a journal stub first and complete it last, so an interrupted run leaves a trace. Interactive waves stay at two or three agents.
   - **Interactive posts came from the founder's account** and were read as founder instructions. Harness markers (receipt, journal, red-team, steward, handoff, agent) now exclude them, and every agent comment starts with `<!-- agent:<handle> -->`.
-  - **Other threads work in the same repo.** Briefs list live `BOARD.md` claims (read from `develop`) and branches pushed in the last 24 hours with no PR. The dispatcher sends an agent to fix its PR when it conflicts with `develop`. Cross-thread notes go in the Project doc `claude/Early-Letters-Coordination.md`.
+  - **Other threads work in the same repo.** Briefs list live `CLAIMS.md` claims (read from `develop`) and branches pushed in the last 24 hours with no PR. The dispatcher sends an agent to fix its PR when it conflicts with `develop`. Cross-thread notes go in the Project doc `claude/Early-Letters-Coordination.md`.
   - **Interactive sessions cannot close PRs or comment on other threads' PRs** (the session safety check refuses). Agents recommend closing in their PR body and journal, and the founder or coordinator closes.
 - 27 Oct 2026: five hardening modules close the gaps of the 18 Oct assessment and the 27 Oct follow-up (#297; notes in `docs/agents/hardening/`): lane ticks on the board with an 8-hour "quiet since" flag; review fingerprints, so a develop merge that keeps a PR's own diff does not re-queue the red team (the board records the match against the new head, naming both heads and the review it inherits; it is not a review of the new head); the red-team verdict mix with a calibration note for the founder; a dated `paused_until` for writing agents and an "Awaiting re-review" section; uncarried "Learned" lines in the next brief. The session halt of Sat 24 Oct, 5:10 AM PT to Tue 27 Oct, 1:00 PM PT is a different thing from the roster's `paused_until` writer pause (`docs/agents/hardening/scope-and-drift.md`).

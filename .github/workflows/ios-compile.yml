@@ -3,8 +3,9 @@
 # it. Until this runs, no Swift in this repository has ever been compiled.
 #
 # What it does: npm ci; `expo prebuild --platform ios --no-install` with the env of the eas.json `testflight`
-# profile and EXPO_PUBLIC_SERVER_FEATURES=off; pod install; xcodebuild for the simulator with
-# CODE_SIGNING_ALLOWED=NO. Compile errors become annotations on the file and line, and a list in the run summary.
+# profile and EXPO_PUBLIC_SERVER_FEATURES=off; pod install; React Native's prebuilt core in its Debug flavour; xcodebuild
+# for the simulator with CODE_SIGNING_ALLOWED=NO. Compile errors become annotations on the file and line, and a list in
+# the run summary.
 #
 # Runner and Xcode, checked on 16 Oct 2026:
 # - Expo SDK 57 needs Xcode 26.4 or later (docs.expo.dev/versions/v57.0.0, "Support for Android and iOS versions";
@@ -28,15 +29,47 @@
 name: iOS compile
 
 on:
+  # Batch lane (docs/ops/proposed/ci-speed.md, change 3; CR-175). A pull request starts a macOS run only when it
+  # changes a build path: the same list as NATIVE_PATHS in scripts/agents/merge-queue.mjs, plus this workflow and
+  # its crash-report script. Every other mobile change is launched once per merge into develop. On develop one run
+  # runs and one waits, and a newer waiting run replaces the older, so one run can cover several merges. That
+  # run's red or green opens or closes the `launch-red` issue (job `launch-alert`), and a release candidate tag is
+  # refused unless the newest run on develop is green (release-ios.yml, BL-1480). Neither check here is a required
+  # status check (branch protection requires `required`, `compliance-fence` and `applied migrations unchanged`).
   pull_request:
-    # Every mobile change for `launch` (the app's JavaScript is apps/mobile and the packages it bundles). `compile`
-    # keeps its native-only list through the `changes` job.
+    paths:
+      - apps/mobile/ios/**
+      - apps/mobile/modules/**
+      - apps/mobile/app.config.*
+      - apps/mobile/eas.json
+      - package-lock.json
+      - apps/mobile/metro.config.js
+      - apps/mobile/store.config.json
+      - apps/mobile/version.json
+      - apps/mobile/src/lib/privacy-manifest.ts
+      - apps/mobile/src/lib/permission-copy.ts
+      - apps/mobile/patches/**
+      - .github/workflows/ios-compile.yml
+      - .github/scripts/sim-crash-report.sh
+  push:
+    branches: [develop]
     paths:
       - apps/mobile/**
       - packages/**
       - package-lock.json
       - .github/workflows/ios-compile.yml
       - .github/scripts/sim-crash-report.sh
+      - '!**/*.md'
+      - '!apps/mobile/e2e/**'
+      - '!apps/mobile/e2e-web/**'
+      - '!apps/mobile/web-preview/**'
+      - '!apps/mobile/test/**'
+      - '!apps/mobile/vitest*.ts'
+      - '!apps/mobile/**/__tests__/**'
+      - '!**/*.test.ts'
+      - '!**/*.test.tsx'
+      - '!packages/*/test/**'
+      - '!packages/emails/**'
   workflow_dispatch:
 
 permissions:
@@ -44,7 +77,7 @@ permissions:
 
 concurrency:
   group: ios-compile-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   CI: '1'
@@ -149,6 +182,41 @@ jobs:
         working-directory: apps/mobile/ios
         run: '"$RUNNER_TEMP/step.sh" "pod install" pod install'
 
+      # React Native's prebuilt core (React.xcframework) and dependencies come in a Debug and a Release flavour. A build
+      # phase in each pod swaps them, keyed on a marker in the pod folder (.last_build_configuration), and with no marker
+      # it assumes Debug and keeps what is there (node_modules/react-native/scripts/replace-rncore-version.js). pod install
+      # deletes that marker whenever it installs or updates any pod: CocoaPods then cleans every pod folder, and the
+      # pods' preserve_paths '**/*.*' do not match a dotfile. The Pods restored above are saved by the Release jobs
+      # (launch, kill-harness.yml), so a pull request that added a pod linked the Release React into this Debug app
+      # (undefined RCTPackagerConnection, Sealable, ShadowNode::getDebugName: #833 to #844, 20 Nov). This step puts both
+      # in their Debug flavour with React Native's own scripts before xcodebuild, and checks the React binary is the
+      # Debug one. Only this Debug job: the Release jobs, the store build and EAS are untouched.
+      - name: React Native prebuilt core and dependencies in their Debug flavour
+        working-directory: apps/mobile/ios/Pods
+        run: |
+          set -euo pipefail
+          rn="$(cd .. && node -p 'require("path").dirname(require.resolve("react-native/package.json"))')"
+          version="$(node -p "require('$rn/package.json').version")"
+          # <pod folder> <React Native's switch script for it>
+          debug_flavour() {
+            if [ ! -d "$1" ]; then echo "$1: not installed, nothing to switch"; return; fi
+            # Any marker but Debug makes the script extract the Debug tarball pod install downloaded next to the Release one.
+            printf Release > "$1/.last_build_configuration"
+            node "$rn/$2" -c Debug -r "$version" -p "$PWD"
+            [ "$(cat "$1/.last_build_configuration")" = Debug ] || { echo "::error::$1 is not in its Debug flavour"; exit 1; }
+          }
+          debug_flavour React-Core-prebuilt scripts/replace-rncore-version.js
+          debug_flavour ReactNativeDependencies third-party-podspecs/replace_dependencies_version.js
+          # The Debug React.framework carries the dev-only classes (RCT_DEV); the Release one, which linked here on 20 Nov,
+          # does not. grep reads all of nm's output, so pipefail cannot see a SIGPIPE.
+          bin="$(find React-Core-prebuilt/React.xcframework -path '*simulator*/React.framework/React' -type f -print -quit)"
+          if [ -z "$bin" ]; then
+            echo "::warning::no simulator React.framework/React under Pods/React-Core-prebuilt: flavour not checked"
+          elif ! nm -gU "$bin" | grep 'RCTPackagerConnection' > /dev/null; then
+            echo "::error::${bin} has no RCTPackagerConnection: the Release React, which this Debug build cannot link"; exit 1
+          fi
+          echo "React Native ${version}: prebuilt core and dependencies in their Debug flavour"
+
       - name: Restore DerivedData
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -181,6 +249,11 @@ jobs:
             -IDEBuildingContinueBuildingAfterErrors=YES \
             build > "$log" 2>&1
           status=$?
+          # Linker and other non-compiler errors first, with their context: the list below is capped at 400 lines and
+          # the Pods' warnings alone can fill it, which hid a Debug link failure's own message (photo PRs, 20 Nov).
+          linker="$RUNNER_TEMP/linker-errors.txt"
+          grep -n -E -B 2 -A 30 'Undefined symbols|duplicate symbol|^ld: |^clang: error|linker command failed|^error: ' "$log" | head -300 > "$linker" || true
+          if [ -s "$linker" ]; then echo "Linker and tool errors:"; cat "$linker"; fi
           grep -E '(error|warning): |\*\* BUILD (SUCCEEDED|FAILED) \*\*|^The following build commands failed' "$log" | grep -v '/Pods/' | head -400 || true
           # Every compile error as an annotation on its file and line, and a list in the summary.
           root="$GITHUB_WORKSPACE/"
@@ -204,7 +277,8 @@ jobs:
             sed -e 's/^/- `/' -e 's/: \(fatal \)\{0,1\}error: /`: /' "$errors" >> "$GITHUB_STEP_SUMMARY"
           elif [ $status -ne 0 ]; then
             # Failed without a compiler error (a script phase, the linker, a missing file): annotate the failure section.
-            { grep -E -A 20 '^The following build commands failed' "$log"; echo '...'; tail -60 "$log"; } | sed -e 's/%/%25/g' | awk 'BEGIN{ORS="%0A"} {print}' > "$RUNNER_TEMP/fail.txt"
+            { grep -E -A 20 '^The following build commands failed' "$log"; echo '...'; head -80 "$linker"; echo '...'; tail -60 "$log"; } | sed -e 's/%/%25/g' | awk 'BEGIN{ORS="%0A"} {print}' > "$RUNNER_TEMP/fail.txt"
+            { echo; echo '#### Linker and tool errors'; echo; echo '```'; head -120 "$linker"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
             echo "::error title=xcodebuild failed (exit ${status}) without a compiler error::$(cat "$RUNNER_TEMP/fail.txt")"
           else
             echo "::notice title=iOS compile succeeded::Xcode ${XCODE_VERSION}, scheme ${SCHEME}, $(grep -c ': warning: ' "$log" || true) warnings in total"
@@ -241,8 +315,9 @@ jobs:
           path: ${{ runner.temp }}/xcodebuild.log
           retention-days: 14
 
-  # Which files changed: the Debug compile above keeps its native-only scope; the launch check below runs on every
-  # mobile change. A diff git cannot answer runs the compile (never a reason to skip).
+  # Which files changed: the Debug compile above runs for a build path (the same list as NATIVE_PATHS in
+  # scripts/agents/merge-queue.mjs and docs/ops/RELEASE.md 3.4, so a PR that the merge queue holds on both macOS checks
+  # gets both); the launch check below runs on every mobile change that reaches this workflow. A diff git cannot answer runs the compile (never a reason to skip).
   changes:
     name: native files changed?
     runs-on: ubuntu-24.04
@@ -257,13 +332,13 @@ jobs:
       - id: diff
         env:
           EVENT: ${{ github.event_name }}
-          BASE: ${{ github.event.pull_request.base.sha }}
-          HEAD: ${{ github.event.pull_request.head.sha }}
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           set -uo pipefail
           native=true
-          if [ "$EVENT" = pull_request ] && files="$(git diff --name-only "${BASE}...${HEAD}")"; then
-            if ! grep -qE '^(apps/mobile/modules/|apps/mobile/app\.config\.ts$|apps/mobile/package\.json$|apps/mobile/ios/|package-lock\.json$|\.github/workflows/ios-compile\.yml$)' <<< "$files"; then
+          if { [ "$EVENT" = pull_request ] || [ "$EVENT" = push ]; } && files="$(git diff --name-only "${BASE}...${HEAD}")"; then
+            if ! grep -qE '^(apps/mobile/modules/|apps/mobile/app\.config\.|apps/mobile/package\.json$|apps/mobile/ios/|apps/mobile/eas\.json$|apps/mobile/metro\.config\.js$|apps/mobile/store\.config\.json$|apps/mobile/version\.json$|apps/mobile/src/lib/(privacy-manifest|permission-copy)\.ts$|apps/mobile/patches/|package-lock\.json$|\.github/workflows/ios-compile\.yml$)' <<< "$files"; then
               native=false
             fi
           fi
@@ -462,3 +537,77 @@ jobs:
             ${{ runner.temp }}/xcodebuild-release.log
           if-no-files-found: ignore
           retention-days: 14
+
+  # CR-175: the launch check runs on develop once per batch of merges, after the merge, so a red there has to be seen.
+  # Push runs only. A red `launch` opens one `launch-red` issue (or comments on the open one); a green one closes it.
+  # No checkout and no install: the script below is the whole job, run by the image's Node, and the job token holds
+  # issues: write and nothing else. It touches only open `launch-red` issues this job opened (github-actions[bot]),
+  # never a person's issue or a pull request. The text is the run link, the commit and the time: no content.
+  # A cancelled or skipped launch (a newer run replaced it) changes nothing. apps/mobile/test/launch-alert-issue.test.ts
+  # runs this exact script against a stand-in for the GitHub API.
+  launch-alert:
+    name: launch issue (opened on red, closed on green)
+    needs: [launch]
+    if: ${{ !cancelled() && github.event_name == 'push' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Open, update or close the launch-red issue
+        id: launch-issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LAUNCH_RESULT: ${{ needs.launch.result }}
+          SHA: ${{ github.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          node --input-type=module <<'JS'
+          const api = `${process.env.GITHUB_API_URL}/repos/${process.env.GITHUB_REPOSITORY}`;
+          const BOT = 'github-actions[bot]';
+          async function call(method, path, body, okStatuses = []) {
+            const res = await fetch(api + path, {
+              method,
+              headers: {
+                authorization: `Bearer ${process.env.GH_TOKEN}`,
+                accept: 'application/vnd.github+json',
+                'x-github-api-version': '2022-11-28',
+                'content-type': 'application/json',
+              },
+              body: body === undefined ? undefined : JSON.stringify(body),
+            });
+            if (!res.ok && !okStatuses.includes(res.status)) throw new Error(`${method} ${path.split('?')[0]}: HTTP ${res.status}`);
+            return res.status === 204 || !res.ok ? null : res.json();
+          }
+          const result = process.env.LAUNCH_RESULT;
+          if (result !== 'failure' && result !== 'success') {
+            console.log(`launch result is ${result}: nothing to report`);
+            process.exit(0);
+          }
+          const sha = String(process.env.SHA).slice(0, 9);
+          const when = `${new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC`;
+          // Oldest first; only issues this job opened, never a pull request.
+          const listed = await call('GET', '/issues?labels=launch-red&state=open&sort=created&direction=asc&per_page=100');
+          const open = listed.filter((i) => !i.pull_request && i.user?.login === BOT);
+          if (result === 'failure') {
+            const body = `The store-profile Release launch is red on develop at ${sha}, ${when}: ${process.env.RUN_URL}`;
+            if (open.length) {
+              await call('POST', `/issues/${open[0].number}/comments`, { body });
+              console.log(`red: commented on #${open[0].number}`);
+            } else {
+              // 422: the label exists already.
+              await call('POST', '/labels', { name: 'launch-red', color: 'd73a4a', description: 'A red launch check on develop (ios-compile.yml)' }, [422]);
+              const issue = await call('POST', '/issues', { title: 'The store launch check is red on develop', body: `${body}\n\nThe next green launch run on develop closes this issue. A release candidate tag is refused while the newest run is red.`, labels: ['launch-red'] });
+              // A label dropped on create would hide this issue from the next run and open a second one.
+              if (!issue.labels?.some((l) => (l.name ?? l) === 'launch-red')) await call('POST', `/issues/${issue.number}/labels`, { labels: ['launch-red'] });
+              console.log(`red: opened #${issue.number}`);
+            }
+          } else {
+            for (const i of open) {
+              await call('POST', `/issues/${i.number}/comments`, { body: `Green again at ${sha}, ${when}: ${process.env.RUN_URL}` });
+              await call('PATCH', `/issues/${i.number}`, { state: 'closed', state_reason: 'completed' });
+              console.log(`green: closed #${i.number}`);
+            }
+            if (!open.length) console.log('green: no launch-red issue open');
+          }
+          JS

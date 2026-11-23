@@ -22,6 +22,7 @@ Every spoken letter is transcribed as accurately as the best open models allow, 
 - `docs/adr/0001-on-device-asr.md`, `0002-server-asr-fallback.md`, `0003-edit-pass-model-strategy.md`, `0005-audio-format.md`, `0009-word-alignment.md`, `0012-open-models-transcription-and-grammar.md`.
 - `docs/tdd/03-audio-transcription.md`, `experiments/README.md`.
 - The latest `docs/agents/BRIEF-*.md`: the seven v1.0 languages (decision 6), audio quality (decision 8), lean app with language packs as data, not code (decision 15).
+- New scope (on `develop` since #829): `docs/product/prd/13-engineering-plan.md` section 3 (your cards: NS-17 second language, L per language, gated by a native reviewer and the founder; NS-29 read-along, which needs the engine to keep word timings) and `docs/product/prd/02-find.md` OQ-4 (the 3-character floor for Hindi and Arabic). Decisions that bind this work: your `MEMORY.md`, "New scope (20 Nov 2026)".
 
 ## Backlog
 You take tasks whose Owner is `speech engineer`.

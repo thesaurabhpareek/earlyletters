@@ -6,19 +6,21 @@ Owner: S20 (release), founder for every dashboard. Updated 15 Oct 2026 for the a
 
 - Neither hosted project exists yet: `scribe-staging` and `scribe-prod` in the "Early Letters" organisation are founder steps (DEPLOY.md, TESTFLIGHT.md step 6). The old project `early-letters` is slated for retirement and nothing points at it.
 - **The alpha runs against staging** (D-106): alpha build 2 (`preview` profile) signs the founder's family in on `scribe-staging`. Staging therefore holds **real family letters** for the length of the alpha. See "Staging during the alpha".
-- Production stays unbuilt until the store submission is re-planned after the alpha (D-106). The `production` profile keeps server features off.
+- Production stays unbuilt until the store submission is re-planned after the alpha (D-106). **Updated 9 Nov: the `production` profile is servers on (build 12, founder decision 8 Nov 2026, against `scribe-prod`; the D-### entry is still to be recorded and reverses D-121 item 1). Backup, status report and analytics stay off.** See [../ops/PRODUCTION_VARIABLES.md](../ops/PRODUCTION_VARIABLES.md).
 - Updated 23 Oct: migrations reach staging from `develop` only (`.github/workflows/deploy-db.yml`, since #205 on 18 Oct): a push to `develop` that changes migrations, or the manual catch-up run on `develop`, after the `staging` reviewer approves. A push to `main` deploys nothing to a database. Build 2 has a schema to talk to once the first such run is approved and has pushed (TESTFLIGHT.md step 6).
 
 ## Build profiles and switches
 
 The server switch, `BACKUP`, `STATUS_REPORT` and `ANALYTICS` are written out in every profile of `apps/mobile/eas.json`. Two switches are not: `ENGLISH_ONLY` is written `on` in the two alpha profiles and in `production` (the first store build is English only, D-121 item 1), and is unset, hence off, in `development` and `e2e`, and `ACCOUNT_DELETION` (the Delete account row, founder, 30 Oct 2026) is written `on` in `development`, `e2e` and `production` and **left out of the two alpha profiles**, so a build made without it hides the row and the EAS `preview` environment can switch it on after the freeze (TESTFLIGHT.md step 9). It is in no `.env*` file; the preflight FAILs on one. `apps/mobile/test/config.test.ts`, `capabilities.test.ts` and `account-deletion-switch.test.ts` hold all of this. Only `on` is on (`apps/mobile/src/lib/capabilities.ts`); a build flag also needs the server switch.
 
+Card flags (default off in every profile, including `production`; `apps/mobile/test/g6-production-flags-off.test.ts` fails a store profile that turns one on): `EXPO_PUBLIC_READ_THE_YEAR` (NS-24, BL-947) shows the "Read a year together" rows in Go to a month. Unset in `development`, `e2e`, both alpha profiles and `production`.
+
 | Profile | Use | Distribution | `EXPO_PUBLIC_APP_ENV` | Bundle id | EAS environment | `SERVER_FEATURES` | `BACKUP` | `STATUS_REPORT` | `ANALYTICS` | `ENGLISH_ONLY` | `ACCOUNT_DELETION` |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | `development` | dev client on the founder's desk | internal | `development` | `<id>.dev` | development | off | off | off | off | not written (off) | on |
 | `testflight` | **alpha build 1**, store lane after the R-17 flip | store (TestFlight) | `preview` | `<id>.preview` | preview | **off** until the R-17 gate (one-line flip, TESTFLIGHT.md) | off | off | off | on | **not written**: from the EAS `preview` environment, else off |
 | `preview` | **alpha build 2**, against staging | store (TestFlight) | `preview` | `<id>.preview` | preview | **on** | off | off | off | on | **not written**: from the EAS `preview` environment, else off (row hidden) |
-| `production` | the App Store app, later | store | `production` | `<id>` | production | off | off | off | off | on (D-121 item 1) | on (hide-until-proven is for the alpha only) |
+| `production` | the App Store app (build 12) | store | `production` | `<id>` | production | **on** (build 12) | off | off | off | on (D-121 item 1) | on (hide-until-proven is for the alpha only) |
 
 The `e2e` simulator profile is not in this table: it is the development app env with `EXPO_PUBLIC_E2E=1`, servers off, and `ACCOUNT_DELETION` on.
 
