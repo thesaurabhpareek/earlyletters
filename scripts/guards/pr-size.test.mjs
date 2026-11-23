@@ -113,3 +113,18 @@ test('[CODE-R02] the run reads git and the events with GET calls only and prints
 test('[CODE-R02] a git failure exits 2, never a pass', () => {
   assert.equal(main([], {}, () => { throw new Error('no git'); }), 2);
 });
+
+test('[BL-1880] each over-cap message names the cap that was exceeded', () => {
+  const msg = (r) => evaluate({ rows: r }).lines[1];
+  const lock = msg(rows(['package-lock.json', MAX_LOCK_LINES + 1]));
+  assert.match(lock, /the lockfile over 10000, counted/);
+  assert.doesNotMatch(lock, /2000/);
+  const map = msg(rows(['docs/content/map/content-map.json', MAX_MAP_LINES + 1]));
+  assert.match(map, /the content map output over 6000, counted/);
+  assert.doesNotMatch(map, /2000/);
+  const other = msg(rows(['packages/core/test/golden/a.json', MAX_EXCLUDED_LINES + 1]));
+  assert.match(other, /other excluded files over 2000, counted/);
+  const both = msg(rows(['docs/content/map/content-map.json', MAX_MAP_LINES + 1], ['x/__fixtures__/a.ts', MAX_EXCLUDED_LINES + 1]));
+  assert.match(both, /over 6000, counted.*over 2000, counted|over 2000, counted.*over 6000, counted/);
+  assert.doesNotMatch(msg(rows(['package-lock.json', 3000])), /over/);
+});

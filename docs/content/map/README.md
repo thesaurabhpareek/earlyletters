@@ -31,9 +31,8 @@ node --test scripts/content/export-content-map.test.mjs # same check, plus sanit
 Output is sorted and has no timestamps, so a clean regenerate gives an empty diff. Run it after the content waves merge, in
 the same PR as any content change you want mapped.
 
-Wiring (proposal; root `package.json` is founder-listed): add `"content:map": "node scripts/content/export-content-map.mjs"`
-and add `scripts/content/export-content-map.test.mjs` to the root `test` node:test list. Until then the check runs by hand.
-Once wired, every content PR must regenerate the map.
+CI: `scripts/content/export-content-map.test.mjs` is in the root `npm test` list (BL-1880), so a stale map fails the build.
+Every content PR must regenerate the map.
 
 ## Walked
 `packages/content/src/**`, copy files under `apps/mobile/src` (most only re-export content, so they add few rows),
