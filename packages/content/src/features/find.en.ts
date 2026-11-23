@@ -1,8 +1,8 @@
 // Find (NS-02, behind EXPO_PUBLIC_BOOK_SEARCH). Slots as docs/design/specs/02-FIND-11nov.md section 9 names them.
 // PROPOSED, every key: the founder approves Find's words (BL-952 slice 6). From #798 (head 7f36031a) except notReady,
 // which drops "still" (card 02-find section 16 bans it; NS-02-R39).
-// Not registered in features/index.ts yet: that file belongs to the photo stack until #838 to #840 merge, and the one
-// registration line follows then. test/find-copy.test.ts runs the general character rules on this file until it does.
+// Registered in features/index.ts as `find` (and exported from there), so rules.test.ts reads it with the rest;
+// test/find-copy.test.ts adds the Find-specific rules (no count, no ask for a letter).
 // Rules: VOICE.md and BRAND.md. Find shows the parent's own words as kept and writes nothing, so no line describes,
 // summarises or suggests. No number of results is ever said (R11); no line asks for a letter to be written (R13).
 // The no-match view reuses book.empty.searchTitle (content rewords it without "yet": R39, open). Withdrawn for good:
@@ -23,7 +23,7 @@ export const findCopy = {
   // Beside the failed view, only while the index is being made (R38).
   notReady: 'Find is getting ready on this phone.',
   // The failed view (R37), announced once.
-  error: 'Find could not look just now.',
+  error: "Find couldn't look just now.",
   retry: 'Try again',
   // One result, read aloud: no count, no score (R41).
   rowA11y: '{date}. {label}. Opens the letter.',

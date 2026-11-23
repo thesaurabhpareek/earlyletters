@@ -26,8 +26,13 @@ describe('planCapture: what each source does, exactly as Home did before', () =>
     expect(planCapture({ source: 'notMuchToday' })).toEqual({ kind: 'quietDay' });
   });
 
-  it('photo and the four doorways are reserved: planning them starts nothing', () => {
-    for (const source of ['photo', ...CAPTURE_DOORWAYS] as const) expect(planCapture({ source })).toEqual({ kind: 'reserved', source });
+  it('[NS-01-R1] the photo start opens Listen at Ready with the prompt as route params, not armed', () => {
+    expect(planCapture({ source: 'photo', prompt })).toEqual({ kind: 'photo', pathname: '/listen', params: { promptKey: 'first_smile', promptLibraryVersion: '3' } });
+    expect(planCapture({ source: 'photo' })).toEqual({ kind: 'photo', pathname: '/listen', params: {} });
+  });
+
+  it('the four doorways are reserved: planning them starts nothing', () => {
+    for (const source of CAPTURE_DOORWAYS) expect(planCapture({ source })).toEqual({ kind: 'reserved', source });
   });
 
   it('the list is closed: the Home controls and the doorway names the PRD gives, in one order', () => {
@@ -42,7 +47,7 @@ describe('planCapture: what each source does, exactly as Home did before', () =>
 
 describe('startCapture runs the plan in the order Home did (source)', () => {
   it('a route: the opt-in event with the screen as its catalog source, the arming tap, then the push', () => {
-    const route = entry.slice(entry.indexOf("case 'route':"), entry.indexOf("case 'quietDay':"));
+    const route = entry.slice(entry.indexOf("case 'route':"), entry.indexOf("case 'photo':"));
     expect(route).toMatch(/trackCaptureStarted\(\{\s*mode: plan\.mode,\s*source: 'tonight',\s*promptKind: promptKindOf\(req\.prompt\?\.key\),\s*childIndex: childIndexOf\(getActiveChildId\(\)\),\s*role: 'parent',\s*\}\);/);
     expect(route.indexOf('trackCaptureStarted(')).toBeLessThan(route.indexOf('armListenStart()'));
     expect(route).toMatch(/if \(plan\.armListen\) armListenStart\(\);/);
@@ -50,13 +55,23 @@ describe('startCapture runs the plan in the order Home did (source)', () => {
     expect(route).toContain('router.push({ pathname: plan.pathname, params: plan.params });');
   });
 
+  it('[NS-01-R1] the photo start: the push and nothing else (no opt-in event, no arming tap: Listen waits at Ready)', () => {
+    const photo = entry.slice(entry.indexOf("case 'photo':"), entry.indexOf("case 'quietDay':"));
+    expect(photo).toContain('router.push({ pathname: plan.pathname, params: plan.params });');
+    expect(photo).not.toMatch(/track|armListenStart|saveEntry/);
+  });
+
   it('a quiet day: one mark a day with no words (D-084), kept only when none exists', () => {
     const quiet = entry.slice(entry.indexOf("case 'quietDay':"), entry.indexOf("case 'reserved':"));
-    expect(quiet).toContain('const existing = markOn(listEntries(), day);');
-    expect(quiet).toContain('const mark = existing ?? newQuietMark({ id: uuidv7(), occurredOn: day, capturedAt: new Date().toISOString() });');
-    expect(quiet).toContain('if (!existing) saveEntry(mark);');
+    expect(quiet).toContain('return keepQuietDay({ day: todayISO(), now: new Date().toISOString(), id: uuidv7, entries: listEntries, save: saveEntry });');
+    // The rule itself is the helper's (BL-1723): one mark a day, kept only when none exists, a failed save answers.
+    const helper = code(readFileSync(join(__dirname, '..', 'src', 'lib', 'capture', 'quiet-day-save.logic.ts'), 'utf8'));
+    expect(helper).toContain('const existing = markOn(input.entries(), input.day);');
+    expect(helper).toContain('const mark = existing ?? newQuietMark({ id: input.id(), occurredOn: input.day, capturedAt: input.now });');
+    expect(helper).toContain('if (!existing) input.save(mark);');
     // No words field is ever set: the mark is a date and nothing else.
     expect(quiet).not.toMatch(/typedText|finalText|rawTranscript|text:/);
+    expect(helper).not.toMatch(/typedText|finalText|rawTranscript/);
   });
 
   it('a reserved source returns the plan and touches nothing', () => {

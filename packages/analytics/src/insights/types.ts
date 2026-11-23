@@ -36,6 +36,9 @@ export interface ServerAggregates {
     first_letter_d1: number | null;
     first_letter_d7: number | null;
     first_letter_d30: number | null;
+    /** Increments (BL-326): null unless both ends are published; optional so older payloads still parse. */
+    first_letter_d2_7?: number | null;
+    first_letter_d8_30?: number | null;
   }[];
   family_invites: { week: string; role: 'co_parent' | 'contributor'; sent: number | null; accepted: number | null; accepted_within_7d: number | null }[];
   retention_cohorts: { cohort_week: string; week_offset: number; cohort_writers: number | null; active_writers: number | null }[];

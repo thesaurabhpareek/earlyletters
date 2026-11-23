@@ -1,0 +1,5 @@
+// Positive control for [NS-33-R11] (BL-1841): an Avatar that draws an Image and never sets the prop. Fictional family only.
+import { Image } from 'react-native';
+export function Avatar({ uri }: { uri: string }) {
+  return <Image source={{ uri }} accessibilityLabel="Asha" />;
+}

@@ -25,7 +25,7 @@ describe('shelf strings', () => {
     expect(d.erasesOn).toBe('Kept here until {date}');
     expect(d.eraseNow).toBe('Erase now');
     expect(d.eraseNowTitle).toBe('Erase this letter now?');
-    expect(d.eraseNowBody).toBe('The letter and its recording are erased for good.');
+    expect(d.eraseNowBody).toBe('The letter and its recording are erased from this phone. Backups and exports you already saved are not changed.');
     expect(d.restoredToast).toBe("Back in {child}'s book.");
     for (const k of ['entryTitle', 'entryBody', 'entryConfirm', 'recentlyDeleted', 'restoreButton', 'deletedOn']) expect(d[k], k).toBeTruthy();
   });
@@ -43,9 +43,21 @@ describe('shelf strings', () => {
 
   it('screens use only strings that exist', () => {
     const used = (file: string, name: string) => [...src(file).matchAll(new RegExp(`\\b${name}\\.(\\w+)`, 'g'))].map((m) => m[1]);
-    for (const k of used('app/settings/recently-deleted.tsx', 'd')) expect(d[k], `recently-deleted d.${k}`).toBeTruthy();
-    for (const k of used('app/settings/export.tsx', 'e')) expect(x[k] ?? (en.settings.export as Record<string, unknown>)[k], `export e.${k}`).toBeTruthy();
-    for (const k of [...src('app/letter/[id].tsx').matchAll(/copy\.settings\.delete\.(\w+)/g)].map((m) => m[1])) expect(d[k], `letter delete.${k}`).toBeTruthy();
+    // BL-442: a name the screens use must resolve to a non-empty string (not 0, a number, an object or a space),
+    // and each screen must use some, or the loops below prove nothing.
+    const nonEmpty = (v: unknown, label: string) => {
+      expect(typeof v, label).toBe('string');
+      expect((v as string).trim().length, label).toBeGreaterThan(0);
+    };
+    const deleted = used('app/settings/recently-deleted.tsx', 'd');
+    const exported = used('app/settings/export.tsx', 'e');
+    const inLetter = [...src('app/letter/[id].tsx').matchAll(/copy\.settings\.delete\.(\w+)/g)].map((m) => m[1]);
+    expect(deleted.length, 'recently-deleted uses d.*').toBeGreaterThan(0);
+    expect(exported.length, 'export uses e.*').toBeGreaterThan(0);
+    expect(inLetter.length, 'letter uses copy.settings.delete.*').toBeGreaterThan(0);
+    for (const k of deleted) nonEmpty(d[k], `recently-deleted d.${k}`);
+    for (const k of exported) nonEmpty(x[k] ?? (en.settings.export as Record<string, unknown>)[k], `export e.${k}`);
+    for (const k of inLetter) nonEmpty(d[k], `letter delete.${k}`);
   });
 
   // D-085: deleting moves a letter to Recently deleted for 30 days, and the ordinary book export does not read it.

@@ -155,7 +155,8 @@ export const ADDED = [
   'en.errors.micBusy.body',
   'en.errors.phoneFull.title',
   'en.errors.phoneFull.body',
-  'en.review.waitingLong',
+  'en.review.waitingBody',
+  'en.review.waitingSlow',
   'en.review.laterButton',
   'features.words.pack.stoppedInterruption',
   'features.words.pack.stoppedClosed',
@@ -342,8 +343,6 @@ const FAMILY_BUTTONS = [
   'accept.pasteAnother',
   'leave.confirm',
   'leave.cancel',
-  'soon.notify.button',
-  'soon.close',
 ];
 
 const DELETION_BUTTONS = [
@@ -445,15 +444,17 @@ export const SURFACES: readonly Surface[] = [
  */
 export const SURFACE_OPT_OUT: Partial<Record<keyof typeof features, string>> = {
   appLock: 'PROPOSED (PATH-04): the one line above the App lock switch; the rest of the lock words are still in apps/mobile and move later; the global rules read it through features',
-  backup: 'P8c S61 and S62, off in build 2 (no backup); no per-file rule set written yet',
-  billing: 'registered text, pinned word for word in experience-pass.test.ts; its claims rules (D-082, D-083, D-085) are in rules.test.ts',
+  backup: 'P8c S61 and S62, off in build 2 (no backup); no per-file rule set written yet; its "we" lines, each a recorded promise from F08 6.5: sheetBody, waitingKey, quotaReached, writeToUs, restoreWaiting, restoreUnavailable',
+  billing: 'registered text, pinned in part in experience-pass.test.ts (not every leaf); its claims rules (D-082, D-083, D-085) are in rules.test.ts; its one "we" line is plan.payment ("We never see your card details")',
   contentBlocks: 'labels for server-delivered content blocks, not screen sentences; no per-file rule set written yet',
   export: 'P6b; its screen is pinned in apps/mobile/test/settings-p6b.test.ts; no per-file rule set written yet',
   find: 'NS-02 Find words, PROPOSED until the founder approves; pinned in test/find-copy.test.ts (R3, R23, R39); no per-file rule set written yet',
   language: 'the language picker; no per-file rule set written yet',
   licences: 'attribution lines and library names; the licences rules in rules.test.ts read it',
+  momentsTab: 'PROPOSED (PR 12a, spec 28-moments-tab.md): the Moments tab plain strings, off behind a flag; its rules are pinned in test/moments-tab-copy.test.ts',
   newDevicePage: 'PROPOSED (E83, E-S34): the web confirm page for the new-device email; not built yet, so nothing is shown; the global rules read it through features; no per-file rule set until the page exists',
   packs: 'speech pack downloads; no per-file rule set written yet',
+  photos: 'photo with a letter (NS-01); its rules are pinned in test/photos-copy.test.ts',
   player: 'the letter player; no per-file rule set written yet',
   reminders: 'P6b; its screen is pinned in apps/mobile/test/settings-p6b.test.ts; no per-file rule set written yet',
   screenStates: 'PROPOSED (#1207): words drafted in the area A, B and D WORDS files, nothing reads them yet; the global rules read them through features',

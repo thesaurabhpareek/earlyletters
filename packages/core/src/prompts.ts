@@ -53,6 +53,13 @@ export interface SelectInput {
   role: 'parent' | 'contributor';
   /** The child is with the author right now (Read together / write together). */
   together: boolean;
+  /**
+   * The `child-input` flag (PRIV-R20, BL-119): prompts that ask a child to speak or type are offered only when this is
+   * true AND `together` is true. Absent means false, which is the production setting until counsel's written opinion
+   * is linked. With it off, a `together` prompt is never chosen, by any path, even from a library that has nothing else
+   * to offer.
+   */
+  childInput?: boolean;
   /** Prompt keys used recently by this author, most recent first. */
   recentKeys: string[];
   /** Stable per night, e.g. the ISO date, so a reopened app shows the same prompt. */
@@ -101,16 +108,16 @@ function hash(s: string): number {
 }
 
 /** Which kind of prompt tonight calls for. Order matters: the most specific need wins. */
-export function kindFor(input: Pick<SelectInput, 'hardStretch' | 'together' | 'role' | 'daysSinceLastEntry'>): PromptKind {
+export function kindFor(input: Pick<SelectInput, 'hardStretch' | 'together' | 'role' | 'daysSinceLastEntry'> & { childInput?: boolean }): PromptKind {
   if (input.hardStretch) return 'hard';
-  if (input.together) return 'together';
+  if (input.together && input.childInput === true) return 'together';
   if (input.role === 'contributor') return 'family';
   if (input.daysSinceLastEntry !== null && input.daysSinceLastEntry >= GAP_DAYS) return 'gap';
   return 'opening';
 }
 
 /**
- * Deterministic: same inputs, same prompt. Throws only if the library is empty.
+ * Deterministic: same inputs, same prompt. Throws only if the library is empty (leaving out `together` prompts while `child-input` is off).
  *
  * Who sees what: a book before the birth is offered the `before` set and nothing else; a born child is never offered
  * it. Then the usual order, kind first, then the openings that fit, then any opening.
@@ -120,7 +127,8 @@ export function kindFor(input: Pick<SelectInput, 'hardStretch' | 'together' | 'r
  * fit this child. Without exclusions nothing is widened, so a night's first prompt does not depend on this.
  */
 export function selectPrompt(input: SelectInput, library: readonly Prompt[]): Prompt {
-  const alive = library.filter((p) => !p.retired);
+  const childInputOn = input.childInput === true && input.together;
+  const alive = library.filter((p) => !p.retired && (childInputOn || p.kind !== 'together'));
   const unnamed = input.childNameBlank === true ? alive.filter((p) => !isNameThemed(p.key)) : alive;
   const live = unnamed.length > 0 ? unnamed : alive;
   if (live.length === 0) throw new Error('selectPrompt: empty prompt library');
@@ -156,8 +164,15 @@ export function selectPrompt(input: SelectInput, library: readonly Prompt[]): Pr
     if (banded.length && hash(input.seed) % 3 !== 0) pool = banded;
   }
   const fresh = pool.filter((p) => !recent.has(p.key));
-  const choices = fresh.length ? fresh : pool;
-  return choices[hash(`${input.seed}:${kind}`) % choices.length];
+  if (fresh.length) return fresh[hash(`${input.seed}:${kind}`) % fresh.length];
+  // Every prompt in the pool was used lately (a small kind such as gap or hard, smaller than the window): serve the one
+  // used longest ago, so last night's words never come back the next night and all of them are used before any repeats.
+  // No ties: each key's latest use is at its own position in recentKeys (newest first).
+  const age = (p: Prompt) => {
+    const at = input.recentKeys.indexOf(p.key);
+    return at === -1 ? Number.POSITIVE_INFINITY : at;
+  };
+  return pool.reduce((best, p) => (age(p) > age(best) ? p : best));
 }
 
 /** Fill placeholders. Unknown placeholders are left visible so they get noticed in review. */

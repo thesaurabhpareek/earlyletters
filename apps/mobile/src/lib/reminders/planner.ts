@@ -27,11 +27,14 @@
  *   month or birthday note, never named, and while every book is quiet no
  *   evening nudge either.
  *
- * Not here (P1, later): back-off after unopened nudges (C-REQ-008),
- * `gentleReturn`, plan notices, per-book "pause celebrations".
+ * - Back-off (NS-13 section 3a; R3, R4, R18): counted from the anchor day (`anchorAt`). Evening nudges follow the
+ *   cadence on days 1 to 7, then at most one in each 7-day block on days 8 to 35, then nothing. Month and birthday
+ *   notes only on days 0 to 35. A parent who never opens the app gets nothing after day 35. No screen says so.
+ *
+ * Not here (P1, later): `gentleReturn`, plan notices, per-book "pause celebrations".
  */
 import { en } from '@scribe/content';
-import { eligibleFloorIndexes, floorIndexOfKey, selectNotificationKey, type KeySelector } from '@scribe/core';
+import { eligibleFloorIndexes, floorIndexOfKey, recencyBand, selectNotificationKey, type KeyInput, type KeySelector, type LastLetterKind } from '@scribe/core';
 import { childLabel, fill } from '../copy';
 import { budgetedSlots, chooseOnePerDay, PLAN_MAX, TOTAL_MAX } from './budget';
 import { reminderCopy } from './copy';
@@ -82,7 +85,15 @@ export interface PlannerChild {
   quiet?: boolean;
 }
 
+/** The newest made letter as the layers read it (NS-48-R27): epoch ms of `captured_at` and its kind, null when unknown. */
+export interface LastLetter {
+  at: number;
+  kind: LastLetterKind | null;
+}
+
 export interface PlanInput {
+  /** The newest letter this phone's user made (prefs.ts `lastMadeLetter`). Absent: the layers do not run (the floor). */
+  lastLetter?: LastLetter | null;
   now: number;
   timeZone: string;
   prefs: ReminderPrefs;
@@ -91,6 +102,12 @@ export interface PlanInput {
   lastSaveAt?: number | null;
   /** When the app last came to the foreground (epoch ms). */
   lastForegroundAt?: number | null;
+  /**
+   * The anchor (NS-13 section 3a, R27): the later of the newest made letter (kept, or a draft waiting at Keep or held)
+   * and the moment reminders were last turned on, epoch ms. Its local date is day 0 of the back-off. Null or absent:
+   * no anchor is known, so no back-off is applied (prefs.ts `anchorAt` always has one once reminders are on).
+   */
+  anchorAt?: number | null;
   /** Evening nudges are planned this many days ahead (default 21). */
   horizonDays?: number;
   /** Month and birthday notes are planned this many days ahead (default 92). */
@@ -156,6 +173,10 @@ export const DEFAULT_DAYS = [2, 6]; // Tuesday and Saturday (C-REQ-002)
 export const DEFAULT_WEEKLY_DAY = 6; // Saturday (F13 section 6, K-03)
 export const BIRTHDAY_TIME: ReminderTime = { hour: 9, minute: 0 };
 export const RECENT_SAVE_QUIET_MS = 20 * 3_600_000;
+/** Last day, counted from the anchor, that an evening nudge, month note or birthday note may fall on (R4, R18). */
+export const BACKOFF_LAST_DAY = 35;
+/** Days 1 to this many follow the chosen cadence; later days are one a 7-day block (R3). */
+export const CADENCE_DAYS = 7;
 export const FOREGROUND_QUIET_MS = 2 * 3_600_000;
 const MIN_LEAD_MS = 60_000;
 
@@ -310,15 +331,30 @@ function inQuietHours(fireAt: number, timeZone: string, window: ReminderWindow):
 }
 
 /** The injected selector's key if it is one of ours; otherwise the floor, so a note is never without words. */
-function chooseKey(select: KeySelector, slot: number, minutesOfDay: number): string {
+function chooseKey(select: KeySelector, slot: number, minutesOfDay: number, layers: Pick<KeyInput, 'recency' | 'lastKind'> = {}): string {
   try {
-    const key = select({ slotOrdinal: slot, minutesOfDay });
+    const key = select({ slotOrdinal: slot, minutesOfDay, ...layers });
     const index = floorIndexOfKey(key); // eligible now only: no evening-worded key before 17:00 (NS-48-R12)
     if (index !== null && eligibleFloorIndexes(minutesOfDay).includes(index)) return key;
   } catch {
     // fall through to the floor
   }
   return selectNotificationKey({ slotOrdinal: slot, minutesOfDay });
+}
+
+/**
+ * Back-off for one evening date (NS-13 section 3a, R3): `offset` is days after the anchor. Days 1 to 7 take every chosen
+ * weekday; days 8 to 35 take only the first chosen weekday of each 7-day block (8 to 14, 15 to 21, 22 to 28, 29 to 35);
+ * day 0 (the anchor itself) and anything past day 35 take none.
+ */
+export function eveningDayAllowed(offset: number, date: CalendarDate, weekdays: number[]): boolean {
+  if (offset < 1 || offset > BACKOFF_LAST_DAY) return false;
+  if (offset <= CADENCE_DAYS) return true;
+  const blockStart = CADENCE_DAYS + 1 + Math.floor((offset - CADENCE_DAYS - 1) / 7) * 7;
+  for (let k = blockStart; k < blockStart + 7; k++) {
+    if (weekdays.includes(weekdayOf(addDays(date, k - offset)))) return k === offset;
+  }
+  return false;
 }
 
 export function planReminders(input: PlanInput): PlannedNotification[] {
@@ -334,8 +370,11 @@ export function planReminders(input: PlanInput): PlannedNotification[] {
   const birthdayTime = clampReminderTime(BIRTHDAY_TIME, window).time;
   const todayParts = zonedParts(now, timeZone);
   const today: CalendarDate = { y: todayParts.y, m: todayParts.m, d: todayParts.d };
-  const lastDay = dayNumber(today) + monthHorizon - 1;
-  const eveningLastDay = dayNumber(today) + horizon - 1;
+  // The back-off, when an anchor is known: day 0 is the anchor's local date, nothing after day 35 (replaces the horizons).
+  const anchorDay = input.anchorAt != null && Number.isFinite(input.anchorAt) ? dayNumber(zonedParts(input.anchorAt, timeZone)) : null;
+  const lastDay = anchorDay !== null ? anchorDay + BACKOFF_LAST_DAY : dayNumber(today) + monthHorizon - 1;
+  const eveningLastDay = anchorDay !== null ? anchorDay + BACKOFF_LAST_DAY : dayNumber(today) + horizon - 1;
+  const lastLetterDay = input.lastLetter && Number.isFinite(input.lastLetter.at) ? dayNumber(zonedParts(input.lastLetter.at, timeZone)) : null;
   const awake = input.children.filter((c) => !c.quiet);
   const included = awake.filter((c) => c.included);
   const out: PlannedNotification[] = [];
@@ -350,7 +389,7 @@ export function planReminders(input: PlanInput): PlannedNotification[] {
         const date = monthDay(birth, k);
         const n = dayNumber(date);
         if (n > lastDay) break;
-        if (n < dayNumber(today)) continue;
+        if (n < dayNumber(today) || (anchorDay !== null && n < anchorDay)) continue;
         const kind = k % 12 === 0 ? 'birthday' : 'monthAge';
         const key = `${kind}:${isoDate(date)}`;
         const note = notes.get(key) ?? { kind, date, children: [] };
@@ -396,12 +435,15 @@ export function planReminders(input: PlanInput): PlannedNotification[] {
     for (let n = dayNumber(today); n <= eveningLastDay; n++) {
       const date = addDays(today, n - dayNumber(today));
       if (!weekdays.includes(weekdayOf(date))) continue;
+      if (anchorDay !== null && !eveningDayAllowed(n - anchorDay, date, weekdays)) continue;
       if (noteDays.has(n)) continue; // the month or birthday note is today's one note
       const fireAt = at(date, time, timeZone);
       if (fireAt <= now + MIN_LEAD_MS || fireAt < quietUntil || inQuietHours(fireAt, timeZone, window)) continue;
       const ordinal = slotOrdinal(date, weekdays);
       const minutesOfDay = time.hour * 60 + time.minute;
-      const key = chooseKey(select, ordinal, minutesOfDay);
+      // Recency is the fire date minus the newest made letter's date in this zone, at plan time (NS-48-R3).
+      const band = lastLetterDay !== null ? recencyBand(n, lastLetterDay) : null;
+      const key = chooseKey(select, ordinal, minutesOfDay, { recency: band, lastKind: input.lastLetter?.kind ?? null });
       const variant = floorIndexOfKey(key) ?? 0;
       const nameIdx = namedSlotIndex(ordinal, eligibleFloorIndexes(minutesOfDay));
       const named = prefs.namesOnLockScreen && included.length > 0 ? included[nameIdx % included.length].name : null;

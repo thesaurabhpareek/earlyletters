@@ -102,3 +102,19 @@ describe('[F2] Before you begin: two controls on one screen (design 2.1, COMPONE
     }
   });
 });
+
+describe('[BL-420] the way back opens only inside the window that offers it (CCO-7 follow-ups)', () => {
+  it('windowPassed is derived from the stored decision being "ask", and from nothing else', () => {
+    expect(screen).toMatch(/const windowPassed = decision === 'ask';/);
+  });
+
+  it('answeredByMistake returns before anything reopens the gate when the window has not passed', () => {
+    const at = screen.indexOf('const answeredByMistake = () => {');
+    expect(at, 'answeredByMistake exists').toBeGreaterThan(0);
+    const body = screen.slice(at, screen.indexOf('\n  };', at));
+    expect(body).toMatch(/^const answeredByMistake = \(\) => \{\s*if \(!windowPassed\) return;/);
+    expect(body.indexOf('if (!windowPassed) return;')).toBeLessThan(body.indexOf('reopenAgeGate()'));
+    // windowPassed is a const declared after the handler: it is only read when the handler runs, never at declaration.
+    expect(screen.indexOf('const windowPassed')).toBeGreaterThan(at);
+  });
+});

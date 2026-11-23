@@ -13,22 +13,22 @@
  * It never shows an error message, code or stack. Dynamic Type works (no fixed heights on text).
  */
 import { Component, useEffect, useRef, type ReactNode } from 'react';
-import { AccessibilityInfo, Pressable, ScrollView, Text, View, useColorScheme } from 'react-native';
+import { AccessibilityInfo, Pressable, ScrollView, Text, View, useColorScheme, useWindowDimensions } from 'react-native';
 import { initialWindowMetrics } from 'react-native-safe-area-context';
 import Svg, { Circle, Path } from 'react-native-svg';
 import * as SplashScreen from 'expo-splash-screen';
 import * as SystemUI from 'expo-system-ui';
 import { tokens } from '@scribe/design-tokens';
 import { loadFonts } from '@/components/ui/fonts';
-import { getSetting } from '@/lib/store';
-import { PLAIN_LAYOUT, PLAIN_TYPE, plainArt, plainButton } from './plain-screen.styles';
+import { getSettingIfOpen } from '@/lib/store';
+import { PLAIN_LAYOUT, PLAIN_TYPE, plainActionsInline, plainArt, plainButton } from './plain-screen.styles';
 
 export type PlainAction = { label: string; onPress: () => void; kind?: 'primary' | 'quiet'; busy?: boolean };
 
 export function useSchemeSafely(): 'light' | 'dark' {
   const system = useColorScheme() === 'dark' ? 'dark' : 'light';
   try {
-    const v = getSetting('appearance'); // the store may be the very thing that failed
+    const v = getSettingIfOpen('appearance'); // reads only; the store may be the very thing that failed, and a render must not open it
     if (v === 'light' || v === 'dark') return v;
   } catch {
     // fall back to the system scheme
@@ -119,6 +119,33 @@ export function PlainScreen({ title, body, hint, note, noteKey, actions }: { tit
   }, [note, noteKey]);
 
   const L = PLAIN_LAYOUT;
+  // From AX1 the buttons follow the words inside the scroll, so large text never leaves a sliver to read in (BL-495 point 4).
+  const inline = plainActionsInline(useWindowDimensions().fontScale || 1);
+  const buttons = (
+    <View style={{ paddingHorizontal: inline ? 0 : L.gutter, paddingTop: tokens.space[2], gap: tokens.space[1], alignSelf: 'stretch' }}>
+      {actions.map((a, i) => {
+        const s = plainButton(a.kind ?? 'primary', c, !!a.busy);
+        return (
+          <Pressable
+            // By place, not by label: the export button's words change while it works, and a new key would
+            // remount it and drop VoiceOver focus.
+            key={i}
+            accessibilityRole="button"
+            accessibilityLabel={a.label}
+            accessibilityState={{ busy: !!a.busy, disabled: !!a.busy }}
+            disabled={a.busy}
+            onPress={a.onPress}
+            style={({ pressed }) => ({ ...s.container, opacity: pressed ? 0.85 : 1 })}
+          >
+            <Text maxFontSizeMultiplier={PLAIN_TYPE.button.maxScale} style={s.label}>
+              {a.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets?.top ?? 0, paddingBottom: Math.max(insets?.bottom ?? 0, tokens.space[3]) }}>
       <ScrollView
@@ -149,30 +176,10 @@ export function PlainScreen({ title, body, hint, note, noteKey, actions }: { tit
               </Text>
             ) : null}
           </View>
+          {inline ? buttons : null}
         </View>
       </ScrollView>
-      <View style={{ paddingHorizontal: L.gutter, paddingTop: tokens.space[2], gap: tokens.space[1] }}>
-        {actions.map((a, i) => {
-          const s = plainButton(a.kind ?? 'primary', c, !!a.busy);
-          return (
-            <Pressable
-              // By place, not by label: the export button's words change while it works, and a new key would
-              // remount it and drop VoiceOver focus.
-              key={i}
-              accessibilityRole="button"
-              accessibilityLabel={a.label}
-              accessibilityState={{ busy: !!a.busy, disabled: !!a.busy }}
-              disabled={a.busy}
-              onPress={a.onPress}
-              style={({ pressed }) => ({ ...s.container, opacity: pressed ? 0.85 : 1 })}
-            >
-              <Text maxFontSizeMultiplier={PLAIN_TYPE.button.maxScale} style={s.label}>
-                {a.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      {inline ? null : buttons}
     </View>
   );
 }

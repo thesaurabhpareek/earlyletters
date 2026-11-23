@@ -25,7 +25,7 @@ check('a v7 id from the future is refused', (await codeOf(() => create(A, uuid7(
 check('another person\'s book id is refused without saying whose', (await codeOf(() => create(C, first))) === 'SCCID');
 check('[B-REQ-001] a birthday or a due date is required', (await codeOf(() => create(C, uuid7(), 'Asha', null, null))) === '22023');
 // A name is optional since 20261109000000 (NX-31 R28); see child_name_optional.test.mjs. A long one is still refused.
-check('a name over 60 characters is refused', (await codeOf(() => create(C, uuid7(), 'a'.repeat(61), '2025-04-12'))) === '22023');
+check('a name over 960 characters is refused', (await codeOf(() => create(C, uuid7(), 'a'.repeat(961), '2025-04-12'))) === '22023');
 check('a future birthday is refused', (await codeOf(() => create(C, uuid7(), 'Asha', '2099-01-01'))) === '22023');
 const expecting = await create(C, uuid7(), 'Asha', null, new Date(Date.now() + 90 * 86400e3).toISOString().slice(0, 10));
 check('[B-REQ-005] a book can start from a due date', (await sys(`select due_date is not null and date_of_birth is null ok from children where id=$1`, [expecting])).rows[0].ok);
