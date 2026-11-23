@@ -31,7 +31,7 @@ Exactly what must change:
 | `apps/mobile/src/app/(auth)/sign-in/index.tsx:78-95` | Route `region_refused` from Apple and Google to `RegionRefusedScreen` (card NS-54-R8: "the screen is the neutral refusal, not an error"). Today only `sign-in/code.tsx:223` does; the provider path shows the one-line `authErrorMessage`. This is a mobile change, listed here and not made here. |
 | Welcome / email Send (`send` context) | See section 3: at Send the kind must be held in memory, not shown (E62). |
 | `supabase/migrations/20261121030000_compliance_gates.sql` | No change. `supabase/tests/compliance_gates.test.mjs:32` already pins the message; add the drift test in section 8. |
-| `docs/tdd/new-scope/12-first-run.md:105`, `docs/product/prd/19-*.md` NS-40-R9 notes | Already say message. The note "no spec names a code" at `errors.logic.ts:50-51` becomes this document. |
+| `docs/tdd/new-scope/12-first-run.md:105` | Already says a 403 whose message is `signup_unavailable_region`. No change. The "no spec names a code" comment at `errors.logic.ts:50-51` is replaced by section 1 of this note. |
 
 ## 2. One paragraph per method: how the hook and the calling code interact
 
