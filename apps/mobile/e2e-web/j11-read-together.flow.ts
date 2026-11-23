@@ -12,7 +12,7 @@ const at = (app: import('@playwright/test').Page, n: number, count = 5) => app.g
  * window would break in those zones.
  */
 const opener = (app: import('@playwright/test').Page) => app.getByRole('heading', { name: /^(This month, )?Month 6\. / });
-/** The header's Close, not "Close the book" on the end page (which may still be leaving after "Read it again"). */
+/** The header's Close, not "Done reading" on the end page (which may still be leaving after "Read it again"). */
 const close = (app: import('@playwright/test').Page) => app.getByRole('button', { name: 'Close', exact: true });
 
 test('[J11] Read together: pages turn, no limit, every time it opens', async ({ app, record }) => {
@@ -30,8 +30,8 @@ test('[J11] Read together: pages turn, no limit, every time it opens', async ({ 
   await btn(app, 'Next letter').click();
   await expect(at(app, 2)).toBeAttached();
   await expect(app.getByText(/^Month \d+ · From Mama$/).last()).toBeVisible();
-  await step('happy', 'Next letter', 'Next letter turns the page sideways (24 pt, a fade, no curl); Back one turns it back, and a swipe does the same. The dateline names the month first, then who wrote it: "Month 2 · From Mama".');
-  await btn(app, 'Back one').click();
+  await step('happy', 'Next letter', 'Next letter turns the page sideways (24 pt, a fade, no curl); Earlier letter turns it back, and a swipe does the same. The dateline names the month first, then who wrote it: "Month 2 · From Mama".');
+  await btn(app, 'Earlier letter').click();
   await expect(at(app, 1)).toBeAttached();
   await btn(app, 'Next letter').click();
   // The page that turned away leaves the screen after its fade; then only the current page's chip is there.
@@ -42,8 +42,8 @@ test('[J11] Read together: pages turn, no limit, every time it opens', async ({ 
   for (let i = 0; i < 3; i++) await btn(app, 'Next letter').click();
   await btn(app, 'Next letter').click();
   await expect(app.getByText(/Next letter/)).toHaveCount(0);
-  await expect(app.getByText('That is every letter so far. More are still being written.')).toBeVisible();
-  await step('happy', 'The end of the book', 'After the last letter: the moon draws on once above the line, then nothing moves; "Close the book" and "Read it again".');
+  await expect(app.getByText("That's every letter so far.")).toBeVisible();
+  await step('happy', 'The end of the book', 'After the last letter: the moon draws on once above the line, then nothing moves; "Done reading" and "Read it again".');
   await btn(app, /Read it again/).first().click();
   await expect(at(app, 1)).toBeAttached();
   await close(app).click();

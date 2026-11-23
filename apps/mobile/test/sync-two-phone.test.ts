@@ -1522,15 +1522,21 @@ describe('the held draft state table, ADR 0025 section 9: two phones of one auth
     try {
       editWords(P, id2, 'You hid the spoon in the plant, and laughed.');
       expect((await P.sync(w.s)).phase).toBe('paused_consent'); // the edit waits; this pull brings the letter's row
-      expect(local(P, id2)).toMatchObject({ final_text: 'You hid the spoon in the plant, and laughed.', raw_transcript: 'You hid the spoon in the plant.' });
-      expect(queued(P, 'entry.upsert', id2)?.op.data).toMatchObject({ raw_transcript: 'You hid the spoon in the plant.' });
+      // FR-PRV-20: during the consent pause the pull brings no content rows, so the letter's raw transcript does
+      // not arrive; nothing local is deleted or rewound, and the edit still waits with this phone's own raw transcript.
+      expect(local(P, id2)).toMatchObject({ final_text: 'You hid the spoon in the plant, and laughed.', raw_transcript: 'You hid the spoon and the fork.' });
+      expect(queued(P, 'entry.upsert', id2)?.op.data).toMatchObject({ raw_transcript: 'You hid the spoon and the fork.' });
     } finally {
       await server.sensitiveConsent(MAMA, 'accept');
     }
+    // Consent is back: the push goes before the pull, so the waiting edit meets the server's raw transcript (SCIMM)
+    // and becomes a conflict copy beside the first one; the pull then brings the letter's row. Nothing is lost.
     await P.sync(w.s);
-    expect(w.answers('entry.upsert', id2).at(-1)).toMatchObject({ ok: true, applied: true });
-    expect(await letter(id2)).toMatchObject({ final_text: 'You hid the spoon in the plant, and laughed.', raw_transcript: 'You hid the spoon in the plant.' });
-    expect(copies(P, id2)).toEqual(['You hid the spoon and the fork.']);
+    expect(w.answers('entry.upsert', id2).at(-1)).toMatchObject({ ok: false, code: 'SCIMM' });
+    expect(await letter(id2)).toMatchObject({ final_text: 'You hid the spoon in the plant.', raw_transcript: 'You hid the spoon in the plant.' });
+    expect(copies(P, id2)).toEqual(expect.arrayContaining(['You hid the spoon in the plant, and laughed.', 'You hid the spoon and the fork.']));
+    expect(local(P, id2)).toMatchObject({ final_text: 'You hid the spoon in the plant.', raw_transcript: 'You hid the spoon in the plant.' });
+    expect(outbox(P)).toEqual([]);
   }, 60_000);
 
   it('[table C, note: an upload refused SCIMM for another reason] its words are a copy and nothing is lost; "Keep the other one" leaves the letter showing this phone\'s words until a newer server row arrives (a lag)', async () => {
@@ -2309,8 +2315,10 @@ describe('a refused op that runs again after a lost answer and meets SCCON: the 
     });
     expect(await receipt(opH)).toBe(true);
     expect(await heldText(nap)).toBe('You napped in the sling, all the way home.'); // H applied on the first run
+    // FR-PRV-20: the consent pause is on, so Q's pull brings no content rows: Q keeps its copy as it was, and
+    // nothing local is deleted or rewound. It takes H's words once consent returns (checked at the end).
     await Q.sync();
-    expect(draftText(Q, nap)).toBe('You napped in the sling, all the way home.');
+    expect(draftText(Q, nap)).toBe('You napped in the sling.');
 
     // P never heard H's answer, so its let-go names the version from before H: stale only because of P's own upload.
     letGo(P, nap);
@@ -2477,8 +2485,9 @@ describe('a refused op that runs again after a lost answer and meets SCCON: the 
     const { w } = await refusedThenPaused(() => {
       P.store.setDraftTyped(hat, 'You wore the paper hat to bed.'); // op H, behind B
     });
+    // FR-PRV-20: during the pause Q's pull brings no content rows, so Q keeps the words it had.
     await Q.sync();
-    expect(draftText(Q, hat)).toBe('You wore the paper hat to bed.');
+    expect(draftText(Q, hat)).toBe('You wore the paper hat.');
     const theirs = 'You wore the paper hat to bed, and to breakfast.';
     tick(5_000);
     Q.store.setDraftTyped(hat, theirs);

@@ -577,3 +577,28 @@ Proposed ruling (the founder approves the words key by key before anything turns
 New question for the register: Q-NTC-14 (Q-NTC-10 is already the moment-nudge class on develop), humour in the catalogue and the saved-letter line, PROPOSED as written above; extends Q-FD-27; the founder's selection of 21 Nov is the basis, and approval of the words is separate.
 
 Edited in place: none. The first draft of this text sat in `notification-catalogue.md` as section 7.1 and a Q-NTC-10 row (that id was taken on develop; see Q-NTC-14) (PR #1183); it was moved here because the catalogue is CURRENT (LOCKED rev 2) and this repo changes locked cards through this file. Plan delta: none (no re-size); content, design-systems.
+
+## Eighth round, E98 (23 Nov, product, PROPOSED; the number is the next free on develop at the time of writing and is assigned again at merge)
+
+### E98: sign-in policy, D-054 against the locked card and the identity chapter (23 Nov, product; NS-41-R1, NS-41-R20, NS-41 section 14, IAM-R05; NS-54 section 2 and section 10; BL-1888; PROPOSED)
+
+Question: D-044 said Google sign-in moves to v1.1. D-054, decided by the founder, supersedes it: "Sign-in: Apple, Google and email magic link". Two documents still follow D-044: the locked card NS-41 (R1 offers exactly Apple and email; R20 says no Google button renders) and `docs/engineering/05-identity-and-access.md` IAM-R05 ("Google sign-in is v1.1"). Google is built but off (`apps/mobile/src/lib/auth/google.ts`; `[auth.external.google] enabled = false` in `supabase/config.toml`). Separately, NS-41 section 14 says "Never a password, a reset flow, SMS or a phone number", and LEGAL-REQ-012 lists "phone number" as never collected. Card 29 (NS-54) proposes phone verification in phases that would reverse that line.
+
+Ruling (proposed): the ids below change only when the gates in CR-180 hold (the ruling is recorded as CR-180 and D-171), and only in the order shown. Until then every row reads as locked, and the app offers Apple and email only.
+
+Changed ids, each with its trigger:
+
+| Id | Today (locked text, short) | Proposed change | Trigger |
+|---|---|---|---|
+| NS-41-R1 | The Welcome offers exactly Sign in with Apple and Sign in with email, at equal size | Apple first at Apple's size, then email, and Google beside them only in a build where NS-54-R6 holds (both client ids present and the hosted provider on). "No password, name or phone field" and the ban on "sign up", "log in", "create account" stay | CR-180 recorded, BL-1908 text published, BL-1893 and BL-1894 merged |
+| NS-41-R20 | No Google button and no passkey control renders; `auth.noEmailHelp` names only the ways the build offers | The Google half is dropped for a build that meets NS-54-R6. The passkey half and the "names only what shows" half stay | Same as NS-41-R1 |
+| IAM-R05 | v1.0 methods are Apple and email; Google is v1.1 | Reads "Apple, email link plus code, and Google where NS-54-R6 holds (D-054); no other provider without a decision". Its why-line keeps the Guideline 4.8 point: offering Google is allowed because Apple is offered | Same as NS-41-R1; the identity steward edits IAM-R05 in the same change |
+| NS-41 section 14, "Never ... SMS or a phone number" | Never SMS or a phone number | Narrowed to "Never SMS or a phone number as a way in; a verified number only as an optional factor after the first letter, on the rules of NS-54 section 7". Held | Counsel has read (BL-1897) AND the LEGAL-REQ-012 change in BL-1909 has merged. Never ahead of either |
+| NS-41 section 14, "never automatic merging ... beyond Supabase's same-verified-email link" | As written | Unchanged. NS-54-R16 names a likely duplicate and merges nothing | None |
+| CG13 in the card's decision list (`auth.noEmailHelp` names Google) | Drop Google while it is off | Reads "name Google only where the button shows" | Same as NS-41-R20 |
+
+Not changed by this erratum: IAM-R06 (no passwords; passkeys only after sign-in), NS-41-R2 to R19 and R21 to R25, LEGAL-REQ-012 itself (BL-1909 changes it, with counsel), the privacy label and policy text (BL-1900, counsel sees them first), and the store build's Review Notes line for Guideline 4.8 (regulatory lead, `docs/regulatory/signup-geo-checks.md`).
+
+Why this order: Google without linking makes a second, empty book for a person who used Apple's Hide My Email and later taps Google (card 29, 2.3), so the linking rows come first. Google without its public text (Terms 3.1, policy, subprocessor list, BL-1908) would be a claim the build does not match. The phone line is last because counsel has not read the SMS rules and LEGAL-REQ-012 is the stricter document (LEGAL-REQ wins over the PRD on conflict).
+
+Edited in place: none (PROPOSED). NS-41-R1, NS-41-R20, NS-41 section 14, IAM-R05 and CG13 are not edited here; no test title changes. Plan delta: none to the sizes in BL-1889 to BL-1910; BL-1890 and BL-1908 depend on BL-1888 and now wait on BL-1908, BL-1893 and BL-1894 (BL-1892 is done; BL-1894 depends on BL-1893 and BL-1895). BL-1890 does not list BL-1894 as a dependency; gating the button on it is intended and is the ruling's trigger, so BL-1890 reads it from CR-180. The card 29 section 10 proposals 1 and 3 point here. Roles: `product` (this text), `security-architect` (IAM-R05), `content` (the help line), `legal` and counsel (the section 14 line), `mobile` (the button).

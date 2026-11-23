@@ -52,6 +52,22 @@ export function bornCardShown(input: { birthday: string | null; dueDate: string 
   return input.hiddenFor !== input.dueDate;
 }
 
+/**
+ * Whether the "{child} is here?" row shows (BL-472, F12-U16): any time the book is expecting (a due date and no birthday),
+ * so a baby born before the due date can say so. It is a row the parent opens, never a prompt: no countdown and no
+ * notification (F09-REQ-021, F13-U14). Once the due date has passed and the card is up, the card leads to the same step,
+ * so the row steps aside rather than repeat it; hiding the card brings the row back.
+ */
+export function hereRowShown(input: { birthday: string | null; dueDate: string | null; today: string; hiddenFor: string | null }): boolean {
+  if (input.birthday || !input.dueDate) return false;
+  return !bornCardShown(input);
+}
+
+/** The row's title: the child's name and a question. */
+export function hereRowTitle(childName: string): string {
+  return fill(copy.childrenExtra.edit.born.hereRow, { child: childName });
+}
+
 /** The card's words: a title naming the child's birthday, and one gentle line. Never "was born", never a number. */
 export function bornCard(childName: string): { title: string; body: string; setButton: string; hideButton: string } {
   const b = copy.childrenExtra.edit.born;

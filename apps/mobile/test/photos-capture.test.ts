@@ -170,8 +170,8 @@ describe('[NS-01-R4][NX-39-R14] backing out writes nothing', () => {
   });
 });
 
-describe('[NS-01-R5] a picture without words cannot be kept', () => {
-  it('[NS-01-R5] no words: Keep is off and commit writes nothing; words: it works', async () => {
+describe('[NS-01-R5a] a picture without words cannot be kept', () => {
+  it('[NS-01-R5a] no words: Keep is off and commit writes nothing; words: it works', async () => {
     expect(canKeepWithPhoto('')).toBe(false);
     expect(canKeepWithPhoto('  \n ')).toBe(false);
     const { d, store, files } = deps();
@@ -250,8 +250,8 @@ describe('[NS-01-R25] a quiet day cannot carry a picture', () => {
   });
 });
 
-describe('[NS-01-R9][NS-01-R21] the picture has the parent\'s words or a fixed label', () => {
-  it('[NS-01-R21][BL-957] the letter page keeps 140 and 60 characters a person sees: no maxLength on its fields (UTF-16 units), and editing caps by characters', async () => {
+describe('[NS-01-R9a][NS-01-R21a] the picture has the parent\'s words or a fixed label', () => {
+  it('[NS-01-R21a][BL-957] the letter page keeps 140 and 60 characters a person sees: no maxLength on its fields (UTF-16 units), and editing caps by characters', async () => {
     const page = readFileSync(join(__dirname, '..', 'src', 'components', 'photos', 'letter-photo.tsx'), 'utf8');
     expect(page).not.toMatch(/maxLength/);
     const { d, store } = deps();
@@ -261,11 +261,11 @@ describe('[NS-01-R9][NS-01-R21] the picture has the parent\'s words or a fixed l
     expect(editPhotoWords(d, 'e1', { text: ki.repeat(141), place: family.repeat(61) })).toBe(true);
     expect([store.get('e1')!.text, store.get('e1')!.place]).toEqual([ki.repeat(140), family.repeat(60)]);
   });
-  it('[NS-01-R9a] the picture has a fixed label: [NS-01-R9] no typed words, the label is "Photo with this letter"', () => {
+  it('[NS-01-R9a] the picture has a fixed label: no typed words, the label is "Photo with this letter"', () => {
     expect(photoA11yLabel(null)).toBe('Photo with this letter');
     expect(photoA11yLabel('   ')).toBe('Photo with this letter');
   });
-  it('[NS-01-R21a] photo words and place are optional and capped: [NS-01-R21] photo text is the parent\'s, optional and 140 characters', async () => {
+  it('[NS-01-R21a] photo words and place are optional and capped: photo text is the parent\'s, optional and 140 characters', async () => {
     expect(normalizePhotoText(undefined)).toBeNull();
     expect(normalizePhotoText('x'.repeat(141))!.length).toBe(140);
     expect(normalizePhotoText('  Asha on the swing  ')).toBe('Asha on the swing');
@@ -278,7 +278,7 @@ describe('[NS-01-R9][NS-01-R21] the picture has the parent\'s words or a fixed l
     await commitPhoto(d, { ...ONE, entryId: 'e2', bytes: makeJpeg(), text: 'y'.repeat(300) });
     expect(store.get('e2')!.text!.length).toBe(140);
   });
-  it('[NS-01-R21] the typed place is optional, at most 60 characters, the parent\'s only, and kept in its own field', async () => {
+  it('[NS-01-R21a] the typed place is optional, at most 60 characters, the parent\'s only, and kept in its own field', async () => {
     expect(normalizePhotoPlace(undefined)).toBeNull();
     expect(normalizePhotoPlace('  ')).toBeNull();
     expect(normalizePhotoPlace('  Grandma\'s garden ')).toBe('Grandma\'s garden');
@@ -298,7 +298,7 @@ describe('[NS-01-R9][NS-01-R21] the picture has the parent\'s words or a fixed l
   });
 });
 
-describe('[NS-01-R17][NX-39-R12][NX-39-R13][NX-39-R14] failed picks leave nothing; iCloud and Live Photo behave', () => {
+describe('[NS-01-R17a][NS-01-R17b][NS-01-R17c][NX-39-R12][NX-39-R13][NX-39-R14] failed picks leave nothing; iCloud and Live Photo behave', () => {
   const picker = (outcome: 'picked' | 'cancelled' | 'failed' | 'throws', extra: { progress?: number[]; paired?: boolean } = {}) => {
     const calls = { cancel: 0, permission: 0 };
     const p: PhotoPicker & { requestPermission?: () => void } = {
@@ -316,7 +316,7 @@ describe('[NS-01-R17][NX-39-R12][NX-39-R13][NX-39-R14] failed picks leave nothin
     p.requestPermission = () => void calls.permission++;
     return { p, calls };
   };
-  it('[NS-01-R17] a cancel and a decode failure write 0 files', async () => {
+  it('[NS-01-R17a] a cancel and a decode failure write 0 files', async () => {
     for (const o of ['cancelled', 'failed', 'throws'] as const) {
       const { p } = picker(o);
       const r = await runPick(p).done;
@@ -326,7 +326,7 @@ describe('[NS-01-R17][NX-39-R12][NX-39-R13][NX-39-R14] failed picks leave nothin
     expect((await commitPhoto(d, { ...ONE, bytes: Uint8Array.of(0, 1, 2, 3) })).status).toBe('unreadable');
     expect(files.disk.size + store.all().length).toBe(0);
   });
-  it('[NS-01-R17] a full phone writes 0 files and the letter is not touched', async () => {
+  it('[NS-01-R17a] a full phone writes 0 files and the letter is not touched', async () => {
     const { d, files, store } = deps({ files: memoryFiles({ free: 10 }) });
     expect((await commitPhoto(d, { ...ONE, bytes: makeJpeg() })).status).toBe('no_space');
     expect(files.disk.size + store.all().length).toBe(0);
@@ -340,12 +340,12 @@ describe('[NS-01-R17][NX-39-R12][NX-39-R13][NX-39-R14] failed picks leave nothin
     expect((await commitPhoto(enough.d, { ...ONE, bytes: makeJpeg() })).status).toBe('stored');
     expect(PHOTO_FREE_MARGIN_BYTES).toBe(50 * 1024 * 1024);
   });
-  it('[NS-01-R17] a write that fails halfway leaves 0 files and 0 rows', async () => {
+  it('[NS-01-R17a] a write that fails halfway leaves 0 files and 0 rows', async () => {
     const { d, files, store } = deps({ files: memoryFiles({ failWrite: true }) });
     expect((await commitPhoto(d, { ...ONE, bytes: makeJpeg() })).status).toBe('failed');
     expect(files.disk.size + store.all().length).toBe(0);
   });
-  it('[NS-01-R17][NX-39-R13] an iCloud-only picture reports progress and Cancel reaches the picker', async () => {
+  it('[NS-01-R17b][NX-39-R13] an iCloud-only picture reports progress and Cancel reaches the picker', async () => {
     const seen: number[] = [];
     const { p, calls } = picker('cancelled', { progress: [0.2, 0.7] });
     const run = runPick(p, (f) => seen.push(f));
@@ -354,7 +354,7 @@ describe('[NS-01-R17][NX-39-R12][NX-39-R13][NX-39-R14] failed picks leave nothin
     expect(calls.cancel).toBe(1);
     expect((await run.done).status).toBe('cancelled');
   });
-  it('[NS-01-R17c] only the still of a Live Photo: [NS-01-R17][NX-39-R12] a Live Photo stores its still only, 1 file', async () => {
+  it('[NS-01-R17c] only the still of a Live Photo: [NX-39-R12] a Live Photo stores its still only, 1 file', async () => {
     const { p } = picker('picked', { paired: true });
     const r = await runPick(p).done;
     if (r.status !== 'picked') throw new Error('not picked');
@@ -374,12 +374,12 @@ describe('[NS-01-R17][NX-39-R12][NX-39-R13][NX-39-R14] failed picks leave nothin
   });
 });
 
-describe('[NS-01-R10][NS-01-R11][NS-01-R12] the Photos lens', () => {
+describe('[NS-01-R10a][NS-01-R10b][NS-01-R10c][NS-01-R11][NS-01-R12] the Photos lens', () => {
   const L = (id: string, over: object = {}) => ({ id, inBook: true, ...over });
   const P = (entryId: string, over: object = {}) => ({ entryId, mediaId: `m-${entryId}`, ext: 'jpg' as const, bytes: 1, sha256: 'x', width: 4, height: 4, text: null, place: null, addedAt: '2026-11-11T00:00:00Z', deletedAt: null, ...over });
   const ids = (lens: ReturnType<typeof photosLens>) => [...lens.photos.keys()].sort();
 
-  it('[NS-01-R10] offered only when a kept, open letter has a picture; no empty state otherwise', () => {
+  it('[NS-01-R10a][NS-01-R10c] offered only when a kept, open letter has a picture; no empty state otherwise', () => {
     expect(photosLens([L('a')], [])).toEqual({ visible: false, photos: new Map() });
     expect(photosLens([L('a')], [P('a')]).visible).toBe(true);
     // a picture whose letter is not kept, a quiet day, a closed seal or a letter in Recently deleted does not count

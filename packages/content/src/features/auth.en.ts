@@ -160,6 +160,10 @@ export const authCopy = {
     // 6 and 7, option A of each); the founder has not approved them and `content` owns the final words. Its buttons reuse
     // account.finishSetup, consent.noBook.tryAnother, settingsHome.deleteAccountLabel and settingsHome.exportLabel.
     consentBody: 'Finish setting up to open your book here.',
+    // BL-1865, NS-10-R13: the one Book-level line on a new phone with backup off. PROPOSED, needs word approval (docs/content/words-packet-20nov.md: counsel has not read the recording sentence; the line is behind EXPO_PUBLIC_BACKUP_LINE, off); the
+    // words are the second half of `nothingToCopy`, kept to what that line already says. No per-letter version exists.
+    recordingsElsewhere: 'Your recordings are on the phone that made them.',
+    recordingsElsewhereDismiss: 'Got it',
     nothingToCopy: 'There is nothing on this phone to copy yet. Your letters are in your account, and recordings are on the phone that made them.',
   },
 
@@ -179,7 +183,7 @@ export const authCopy = {
   claim: {
     title: 'Keep your letters in this account?',
     body: 'Your letters on this phone will be kept in the account {email}.',
-    noEmail: 'Your letters on this phone will be kept in the account you just signed in to.',
+    noEmail: 'Your letters on this phone will be kept in the account you signed in to.',
     help: "If this isn't your account, choose Not my account. Nothing on this phone changes.",
     // BL-488: 'Keep them here' read as this phone; the choice is this account. Names it, 20 characters (a button may have 22).
     keep: 'Keep in this account',
@@ -212,7 +216,7 @@ export const authCopy = {
     // As the S52 table in docs/design/EXPERIENCE_PASS_2026-10.md words them (amended 28 Oct, #360): service- or
     // network-caused errors say nothing has changed first (VOICE, the Error row); input errors (wrong_code,
     // expired, invalid_email) keep their words; unknown says it second.
-    network: 'Nothing has changed. Sign in once you are back online.',
+    network: "Nothing has changed. Sign in once you're back online.",
     expired: 'That link has expired. Send a new email for a fresh one.',
     wrong_code: "That code didn't match. Check the newest email, or send a new one.",
     code_paused: 'Nothing has changed. You can try a code again in 15 minutes.',
@@ -220,11 +224,19 @@ export const authCopy = {
     // per-IP verify limit), and the app cannot tell them apart from the answer, so neither line names a length it cannot
     // know, and neither names a provider the build may not offer. `email_wait`: a 429 while sending an email.
     // `rate_limited`: a 429 anywhere else (checking a code or a link), where no email was being sent.
-    email_wait: "Nothing has changed. Another email can't be sent just yet. Wait a few minutes, then try again.",
+    email_wait: "Nothing has changed. Another email can't go out yet. Wait a few minutes, then try again.",
     rate_limited: 'Nothing has changed. Too many tries for now. Wait a few minutes, then try again.',
     invalid_email: "That email doesn't look quite right.",
     not_available: "Nothing has changed. This way of signing in isn't available right now. Try another way.",
     provider: "Nothing has changed. That sign-in didn't finish. Try again, or try another way.",
+    // BL-452. PLACEHOLDER words, locked by Karma under delegation (not founder-approved, replaceable by him). They show for a
+    // passkey and for Account actions. `passkey_not_added` and `sign_out_others_failed` claim only what the app knows: the
+    // action did not finish, and for the second, that the other devices may still be signed in. `passkey_unavailable` is
+    // for a phone or project that cannot make a passkey at all (not_available in the passkey_add context).
+    passkey_expired: 'That timed out. Try your passkey again.',
+    passkey_not_added: "The passkey didn't get added. Try again, or use another way to sign in.",
+    passkey_unavailable: "This phone can't add a passkey right now.",
+    sign_out_others_failed: 'The other devices may still be signed in. Try again.',
     session_expired: 'You were signed out. Sign in again to carry on.',
     under_18: '{app} is currently for adults 18 and over.',
     consent_unavailable: 'Setting up your account did not finish. Try again.',

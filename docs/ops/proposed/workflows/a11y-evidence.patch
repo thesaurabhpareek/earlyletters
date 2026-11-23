@@ -1,0 +1,74 @@
+diff --git a/.github/workflows/a11y-evidence.yml b/.github/workflows/a11y-evidence.yml
+new file mode 100644
+index 000000000..b1fab1cf5
+--- /dev/null
++++ b/.github/workflows/a11y-evidence.yml
+@@ -0,0 +1,68 @@
++# AX5 and accessibility-tree evidence (BL-409, apps/mobile/e2e-web/j25-ax5-evidence.flow.ts). Owner: QA. PROPOSED (docs/ops/proposed/workflows/a11y-evidence.patch).
++#
++# Unnamed-control check and emulation screenshots; not AX5 conformance. Drives Review, a letter, Settings, the Plus gate in Chromium (seam build), uploads the four
++# screenshots and the step JSON (roles, names, order), and fails when any recorded step has a control with no accessible
++# name (A11Y_STRICT=1). Emulation evidence, not device evidence. Path filtered and NOT a required check, like web-e2e.yml:
++# a required check that never reports blocks merges that do not touch the app.
++name: A11y evidence (unnamed-control check; not AX5 conformance)
++
++on:
++  pull_request:
++    paths:
++      - 'apps/mobile/src/**'
++      - 'apps/mobile/e2e-web/**'
++      - 'packages/design-tokens/**'
++      - 'package-lock.json'
++      - '.github/workflows/a11y-evidence.yml'
++  workflow_dispatch:
++
++concurrency:
++  group: a11y-evidence-${{ github.event.pull_request.number || github.ref }}
++  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
++
++permissions:
++  contents: read
++
++env:
++  CI: true
++
++jobs:
++  ax5:
++    name: Unnamed-control check and emulation screenshots; not AX5 conformance
++    runs-on: ubuntu-latest
++    timeout-minutes: 15
++    steps:
++      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
++        with:
++          persist-credentials: false
++
++      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
++        with:
++          node-version: 22
++
++      - name: Install
++        run: npm ci --no-audit --no-fund
++
++      - name: Install Chromium
++        run: npx playwright install --with-deps chromium
++
++      - name: AX5 journey (J25)
++        working-directory: apps/mobile
++        env:
++          JOURNEY_SHOTS: '1'
++          A11Y_STRICT: '1'
++        run: |
++          export PLAYWRIGHT_CHROMIUM_PATH="$(node -e "console.log(require('@playwright/test').chromium.executablePath())")"
++          npx playwright test -c e2e-web/playwright.config.ts j25-ax5-evidence
++
++      - name: Upload screens and step JSON
++        if: always()
++        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
++        with:
++          name: ax5-evidence
++          path: |
++            docs/release/journey/screens/J25-*.png
++            docs/release/journey/steps/J25-*.json
++            apps/mobile/e2e-web/.results/artifacts
++          retention-days: 14
++          if-no-files-found: ignore

@@ -40,3 +40,12 @@ vi.mock('@/lib/a11y', async () => {
 
 // Icons are native SVG: stood in by an empty glyph that keeps the size it was asked for.
 vi.mock('phosphor-react-native/src/icons/WarningCircle', () => ({ WarningCircleIcon: () => null }));
+vi.mock('phosphor-react-native/src/icons/CaretRight', () => ({ CaretRightIcon: () => null }));
+vi.mock('phosphor-react-native/src/icons/Check', () => ({ CheckIcon: () => null }));
+
+// Haptics and the press-scale animation are device-only: a tap does nothing here, and the pressable is a plain Pressable.
+vi.mock('@/lib/haptics', () => ({ haptic: () => undefined }));
+vi.mock('@/components/motion/press', async () => {
+  const { Pressable } = await import('react-native-web');
+  return { AnimatedPressable: Pressable, usePressScale: () => ({ onPressIn: undefined, onPressOut: undefined, animatedStyle: undefined }) };
+});

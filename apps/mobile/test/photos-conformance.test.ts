@@ -77,6 +77,6 @@ describe('[BL-1445] one ErrorLine, 56 pt rows, the add group', () => {
     const box = /testID="letter\.photo\.missing"/.exec(s);
     expect(box).not.toBeNull();
     expect(s).toMatch(/borderWidth: tokens\.stroke\.control, borderColor: c\.mediaFrame/);
-    expect(photosCopy.book.letter.missing).toBe('Not on this phone any more');
+    expect(photosCopy.book.letter.missing).toBe('Not on this phone anymore');
   });
 });

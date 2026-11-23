@@ -58,8 +58,8 @@ test('[J06b] keep the letter private', async ({ app, record }) => {
   await openReview(app);
   await btn(app, 'Got it').click();
   await btn(app, 'Keep private').click();
-  await expect(app.getByText(/Kept just for you/)).toBeVisible();
-  await step('happy', 'Kept private', 'The letter is saved outside the book, with the lock chip "Kept just for you.", then lands on the Book with its Private chip, as a kept letter does (S21).', undefined, { settle: 120 });
+  await expect(app.getByText(/Kept private/)).toBeVisible();
+  await step('happy', 'Kept private', 'The letter is saved outside the book, with the lock chip "Kept private.", then lands on the Book with its Private chip, as a kept letter does (S21).', undefined, { settle: 120 });
 });
 
 test('[J06c] close Review without saving: the recording is kept as a draft', async ({ app, record }) => {

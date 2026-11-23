@@ -1,5 +1,7 @@
 # NX-40: First run and sign-in, end to end: a short story intro, then an account, then the book, then the way back in
 
+> Superseded as requirements by NS-38 to NS-45; the story intro (BL-893) is parked by NS-39-R12, not carried; BL-892 to BL-897 still cite this file's ids.
+
 Status: v1, 10 Nov 2026 (UTC); amended 11 Nov 2026 for the CTO rulings on the seven conflicts (section 12). Docs only. Author: `product`, for the first-run and sign-in team (brief: Karma). Nothing here is reserved in `DECISIONS.md`. Backlog rows BL-891 to BL-897 are in `docs/BACKLOG.md` (ids from `scripts/agents/next-id.mjs` on 10 Nov; run `id-collisions.mjs` before merge, other team members may have taken the same numbers). NX-37 is unused; NX-40 is the next free id (NX-39 is the highest in the repo and on open PRs).
 
 Tag: EVIDENCE = a repo file or an Apple page read this session (named). HYPOTHESIS = anything about what a parent feels or does. UNVERIFIED = not read. Every privacy or promise line is COUNSEL-READ, not cleared.

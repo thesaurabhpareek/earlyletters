@@ -15,7 +15,7 @@ export function wantedLabels(roster) {
     { name: "agent-board", color: "0e8a16", description: "Live status of the agent team" },
     { name: "report", color: "bfdadc", description: "Recurring report written by an agent" },
     { name: "digest", color: "bfdadc", description: "Daily founder digest" },
-    { name: "needs:founder", color: "d93f0b", description: "Blocked on a founder decision or account step" },
+    { name: "needs:founder", color: "d93f0b", description: "Blocked on a physical act only the account holder can do (row in docs/release/FOUNDER_QUEUE.md)" },
     { name: "review:red-team-ok", color: "0e8a16", description: "Red team: ship" },
     { name: "review:changes-needed", color: "b60205", description: "Red team: fix first" },
     { name: "approve-migration", color: "5319e7", description: "Founder approval for a supabase or auth change (D-041)" },

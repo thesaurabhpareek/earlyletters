@@ -20,14 +20,16 @@
  * is kept, not overwritten, and comes back if the lock is turned off. Turning the lock on or off writes a setting, so
  * the store listeners reschedule with the new answer (scheduler.ts).
  */
+import { lastLetterKind } from '@scribe/core';
 import { appLockOn } from '../app-lock/prefs';
-import { currentUserId, getSetting, listChildren, listDrafts, listEntriesForChild, setSetting } from '../store';
+import { currentUserId, getSetting, listChildren, newestMadeLetter, newestWaitingDraftAt, setSetting } from '../store';
 import {
   clampReminderTime,
   DEFAULT_DAYS,
   DEFAULT_TIME,
   DEFAULT_WEEKLY_DAY,
   type Cadence,
+  type LastLetter,
   type PlannerChild,
   type ReminderPrefs,
   type ReminderTime,
@@ -130,22 +132,33 @@ export function plannerChildren(): PlannerChild[] {
 }
 
 /**
- * Newest letter made by this phone's user across visible books: a kept letter's `captured_at`, or a draft waiting at
- * Keep or held (`listDrafts` never lists one being recorded or marked `discarding`), by its `createdAt` (NS-13-R8,
- * R27). Smart quiet and the anchor both read it. Null when nothing is made yet.
+ * Newest letter made by this phone's user across visible books: a kept letter's `captured_at` (a quiet-day mark is not
+ * a letter), or a draft waiting at Keep or held (never one being recorded or marked `discarding`), by its `createdAt`
+ * (NS-13-R8, R27). Smart quiet and the anchor both read it. Two single-row queries, the same as `lastMadeLetter`
+ * (BL-1648, NS-48-R27): no book is loaded. Null when nothing is made yet.
  */
 export function lastOwnSaveAt(): number | null {
-  const me = currentUserId();
+  const books = listChildren().map((c) => c.id);
+  const kept = newestMadeLetter(books, currentUserId());
+  const waiting = newestWaitingDraftAt(books);
   let newest: number | null = null;
-  const see = (iso: string) => {
-    const t = Date.parse(iso);
+  for (const iso of [kept?.capturedAt, waiting]) {
+    const t = iso ? Date.parse(iso) : NaN;
     if (Number.isFinite(t) && (newest === null || t > newest)) newest = t;
-  };
-  for (const child of listChildren()) {
-    for (const e of listEntriesForChild(child.id)) if (!(e.authorId && me && e.authorId !== me)) see(e.capturedAt);
-    for (const d of listDrafts(child.id)) see(d.createdAt);
   }
   return newest;
+}
+
+/**
+ * The newest letter this phone's user made, as the planner's layers read it (NS-48-R27): `at` (epoch ms of
+ * `captured_at`) and the kind (`spoke` or `typed`; null when it cannot be told). One query, no entry text. Null when
+ * nothing is made yet.
+ */
+export function lastMadeLetter(): LastLetter | null {
+  const books = listChildren().map((c) => c.id);
+  const row = newestMadeLetter(books, currentUserId());
+  const at = row ? Date.parse(row.capturedAt) : NaN;
+  return row && Number.isFinite(at) ? { at, kind: lastLetterKind(row.captureMode, row.kind) } : null;
 }
 
 /** When reminders were last turned on (epoch ms), or null. */

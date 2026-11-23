@@ -34,7 +34,7 @@ import { PROMPTS } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
 import { ListeningAura } from '@/components/capture/listening-aura';
 import { PendingPhotoThumb } from '@/components/photos/pending-photo-thumb';
-import { discardPendingPhoto, usePendingPhoto } from '@/lib/photos/hooks';
+import { adoptPendingPhoto, discardPendingPhoto, usePendingPhoto } from '@/lib/photos/hooks';
 import { METER_MS, METER_SILENT, meterDb, progressMark } from '@/components/capture/listen-meter.logic';
 import { useRecorderClock } from '@/components/capture/use-recorder-clock';
 import {
@@ -45,6 +45,7 @@ import {
   finishWithin,
   isMicProblem,
   listenRoom,
+  longTakeNotice,
   maySpeak,
   startTake,
   promptLine,
@@ -300,6 +301,8 @@ export default function Listen() {
     if (out.kind === 'gone') return;
     takeId.current = out.draftId;
     setPhase('recording');
+    // A picture chosen before recording goes with the draft now, so a kill during recording keeps it (NS-01-R43).
+    void adoptPendingPhoto(out.draftId, '', false);
     // The take is live, so the gate drops this: the red circle and the system microphone indicator say it instead.
     announcer.say(t.listening, { phase: 'recording', capturing: capturingNow() });
   };
@@ -438,7 +441,7 @@ export default function Listen() {
           // The one place audio is deleted: the parent confirmed it. Let it go's steps, as in Review (BL-924): a file
           // that will not delete keeps the row, marked and off every list, for the launch sweep to finish.
           if (id) letItGo(id, uri, { beginDiscard, deleteFile: (u) => deleteIfPresent(new File(u)), finishDiscard });
-          discardPendingPhoto(); // "The photo goes too": nothing of it was stored
+          discardPendingPhoto(); // The photo goes too: one stored at record start went with the draft above (finishDiscard); this drops the picker's copy
           router.back();
         },
       },
@@ -508,6 +511,11 @@ export default function Listen() {
           {elapsedClock(status.durationMillis)}
         </Text>
       )}
+      {longTakeNotice(phase, status.durationMillis) ? (
+        <Text variant="footnote" tone="muted" className="px-8 text-center" testID="listen.longTake">
+          {t.longTake}
+        </Text>
+      ) : null}
       <View className="items-center px-8" accessibilityLiveRegion={speakable ? 'polite' : 'none'}>
         {line !== null ? (
           <Text variant="callout" tone={room.line === 'readyHint' ? 'muted' : undefined} className="text-center" accessibilityLabel={labels.line ?? line}>
@@ -515,6 +523,11 @@ export default function Listen() {
           </Text>
         ) : null}
       </View>
+      {room.lockNote ? (
+        <Text variant="footnote" tone="muted" className="mt-2 text-center" testID="listen.lockNote">
+          {t.pausedLock}
+        </Text>
+      ) : null}
     </View>
   );
 

@@ -49,7 +49,7 @@ describe('[NS-23-R8] quiet book never resurfaces', () => {
   it('Home reads the open book\'s quiet with its room and hands it to "A month ago" (source)', () => {
     const screen = code('app/(tabs)/index.tsx');
     expect(screen).toMatch(/quiet: getActiveChild\(\)\?\.quiet === true/);
-    expect(screen).toContain('resurfaced(room?.entries ?? [], today, cards.length, { quiet: !!room?.quiet })');
+    expect(screen).toContain('resurfaced(room?.window ?? [], today, cards.length, { quiet: !!room?.quiet })');
   });
 });
 

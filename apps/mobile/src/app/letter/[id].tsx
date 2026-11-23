@@ -42,6 +42,8 @@ import { useUnlitRoom } from '@/components/ui/lamp';
 import { ListRow, ListSection } from '@/components/ui/list-row';
 import { UIProvider } from '@/components/ui/provider';
 import { BackButton, ModalHeader } from '@/components/ui/screen-header';
+import { letterStartY, topBarHeight } from '@/lib/letter-top-bar.logic';
+import { SIZE_WORD_MAX_SCALE, showsSizeWord } from '@/lib/reader-words.logic';
 import { Sheet } from '@/components/ui/sheet';
 import { StateScreen } from '@/components/ui/state-screen';
 import { Text } from '@/components/ui/text';
@@ -272,6 +274,9 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
   const leave = useLeave();
   const reduced = useReducedMotion();
   const screen = useWindowDimensions();
+  const fontScale = useFontScale();
+  // The letter starts below the top bar, which follows its Back button at large text (BL-1790).
+  const pageTop = CARD_MODE ? letterStartY(insets.top, fontScale) : insets.top + 60;
   // In a push the page draws its own opening (no carried copy stands in), so it is the page's: selectable, with an id.
   const ownOpening = useRef(null);
 
@@ -280,7 +285,7 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
   // out first, as the words go back into their card. Without a carry, the rest is part of the page CardToPage fades.
   const [rest] = useState(() => {
     const r = CARD_MODE ? cardRects.get(entry.id) : undefined;
-    const pageY = insets.top + 60;
+    const pageY = pageTop;
     const column = { x: CARD_TEXT_INSET, y: pageY, width: screen.width - 2 * CARD_TEXT_INSET, height: Number.MAX_SAFE_INTEGER, lineHeight: openingLineHeight };
     return pageRestPlan({
       carried: !hasPicture && !!r && !reduced && canCarry(r.text, column),
@@ -355,9 +360,16 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
       hitSlop={6}
       testID="letter.readingSize"
       className="mr-1 h-11 min-w-11 items-center justify-center rounded-full px-2 active:bg-secondary">
-      <Text variant="title2" tone="accent" maxFontSizeMultiplier={1.3}>
-        {copy.reader.readingSizeButton}
-      </Text>
+      <View className="flex-row items-center gap-1.5">
+        <Text variant="title2" tone="accent" maxFontSizeMultiplier={1.3}>
+          {copy.reader.readingSizeButton}
+        </Text>
+        {showsSizeWord(fontScale) ? (
+          <Text variant="labelSmall" tone="accent" maxFontSizeMultiplier={SIZE_WORD_MAX_SCALE} testID="letter.readingSize.word">
+            {copy.reader.readingSizeWord}
+          </Text>
+        ) : null}
+      </View>
     </Pressable>
   );
 
@@ -403,13 +415,13 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
     back();
   };
 
-  const topBar = CARD_MODE ? <TopBar onBack={back} trailing={aa} inset={insets.top} /> : null;
+  const topBar = CARD_MODE ? <TopBar onBack={back} trailing={aa} inset={insets.top} fontScale={fontScale} /> : null;
 
   return (
     <View className="flex-1 bg-background">
       {CARD_MODE ? <Stack.Screen options={{ headerShown: false }} /> : <Stack.Screen options={{ headerRight: () => aa }} />}
       <ScrollView
-        contentContainerStyle={{ paddingTop: insets.top + 60, paddingBottom: insets.bottom + 48, paddingHorizontal: CARD_TEXT_INSET, gap: 28 }}
+        contentContainerStyle={{ paddingTop: pageTop, paddingBottom: insets.bottom + 48, paddingHorizontal: CARD_TEXT_INSET, gap: 28 }}
         testID="letter.page">
         <View className="gap-6">
           {showOriginal ? (
@@ -549,7 +561,7 @@ function PrivateChipSlot({ shown, color }: { shown: boolean; color: string }) {
 }
 
 /** Card to page only: the page's own Back and "Aa" (the native header is hidden). A swipe down on it goes back too. */
-function TopBar({ onBack, trailing, inset }: { onBack: () => void; trailing: ReactNode; inset: number }) {
+function TopBar({ onBack, trailing, inset, fontScale }: { onBack: () => void; trailing: ReactNode; inset: number; fontScale: number }) {
   const { c } = useTheme();
   const swipe = Gesture.Pan()
     .activeOffsetY(16)
@@ -561,7 +573,7 @@ function TopBar({ onBack, trailing, inset }: { onBack: () => void; trailing: Rea
     <GestureDetector gesture={swipe}>
       <View
         className="absolute left-0 right-0 top-0 flex-row items-center justify-between px-5"
-        style={{ paddingTop: inset, height: inset + 52, backgroundColor: c.bg }}>
+        style={{ paddingTop: inset, height: topBarHeight(inset, fontScale), backgroundColor: c.bg }}>
         <BackButton onPress={onBack} className="self-center" />
         {trailing}
       </View>
