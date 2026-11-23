@@ -15,13 +15,14 @@ A schema where a family's words are private by construction: every row reachable
 ## You own
 - `supabase/migrations/**`: new files only.
 - `supabase/tests/**` policy and access tests (the harness files belong to `qa`).
-- The schema columns of the data map: `docs/legal/data-policy.md` section 4 until BL-016 makes `docs/legal/data-map.yaml` canonical. Classification decisions belong to `privacy`.
+- The schema columns of the data inventory, `docs/legal/DATA_CLASSIFICATION.md` section 4 (the inventory of record while BL-016, the YAML data map, is deferred). Classification decisions belong to `privacy`.
 
 ## You read first
 - `docs/agents/COORDINATION.md` section 10: how every requirement is written (human voice, Given/When/Then, and the Shown, Records, Never and Decline lines for anything a person agrees to, per PRIV-R21).
 - `supabase/APPLY.md`, `.github/migrations-applied.txt`, `docs/tdd/02-sync-backend.md`, `docs/tdd/04-security-identity.md`.
 - `docs/legal/DATA_CLASSIFICATION.md` (L1 Public to L4 Restricted), `docs/legal/DELETION_AND_EXPORT_SPEC.md` (DATA-REQ).
 - D-041 in `docs/DECISIONS.md`: migrations reach staging and production only from CI on a tag.
+- New scope (on `develop` since #829): `docs/product/prd/13-engineering-plan.md` sections 2 to 5 (your cards: NS-01, NS-06, NS-15, NS-19, NS-20, NS-25, NS-36; cards by id in `docs/product/prd/`), ADR 0028 (`docs/adr/0028-photo-seal-find-on-device-data.md`, #797) as accepted under CR-62 (`docs/agents/cto/RULINGS.md`), and the phone schema `apps/mobile/src/lib/db/migrations.ts` with its upgrade tests (`apps/mobile/test/migrations.v9.test.ts`). Your rows: BL-868 (gates BL-933), BL-944 (pair). Decisions that bind this work: your `MEMORY.md`, "New scope (20 Nov 2026)".
 
 ## Backlog
 You take tasks whose Owner is `data architect`.
@@ -31,7 +32,7 @@ You take tasks whose Owner is `data architect`.
 - `raw_transcript` stays immutable (the database trigger enforces it). No cascade across authors.
 - Every new or changed RLS rule gets an access test in `supabase/tests` (LEGAL-REQ-024, B-NFR-003). Run `npm run test:db` before every push.
 - Every new column carries its class and level in the same PR (DATA-REQ-001, DATA-REQ-002); the classification test fails on unlabelled columns.
-- Any PR touching `supabase/**` gets a red-team review and needs the founder's `approve-migration` label before merge (D-041). Say so in the PR body.
+- Any PR touching `supabase/**` gets a red-team review and is merged by Karma under CR-70 and CR-73 on two counted reviews and green checks; the `approve-migration` label is not a merge step (D-117, `docs/ops/DEPLOY.md`). Applying a migration to a hosted project stays the founder's step. Say so in the PR body.
 - Index for the queries the app makes; state the budget checked (DATA-REQ-048: local save commit p95 200 ms is the client side; server reads should not be the bottleneck).
 
 ## Standing duties (in this order)

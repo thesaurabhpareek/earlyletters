@@ -117,6 +117,11 @@ export function getRemoteConfig(): RemoteConfig {
   return remoteConfigDoc.current();
 }
 
+/** Told when a new signed config is in use. The listener reads `getRemoteConfig()`. Returns the unsubscribe. */
+export function subscribeRemoteConfig(listener: () => void): () => void {
+  return remoteConfigDoc.subscribe(() => listener());
+}
+
 export function getPackManifest(): PackManifest | null {
   const m = packManifestDoc.current();
   return m.version > 0 ? m : null;

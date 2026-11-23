@@ -47,15 +47,23 @@ export function sensitiveStatusWords(status: SensitiveDataStatus): string {
 }
 
 export function useSensitiveDataStatus(): { status: SensitiveDataStatus; open?: () => void } {
-  const [status, setStatus] = useState<SensitiveDataStatus>(() => source.read());
+  // Status and open live together in state: a source that registers an `open` later with the same status still
+  // re-renders a mounted row (BL-504). Reading `source.open` at render would miss it.
+  const snapshot = (): { status: SensitiveDataStatus; open?: () => void } => ({ status: source.read(), open: source.open });
+  const [state, setState] = useState(snapshot);
   useEffect(() => {
     let unsub: (() => void) | undefined;
+    const sync = () =>
+      setState((prev) => {
+        const next = snapshot();
+        return prev.status === next.status && prev.open === next.open ? prev : next;
+      });
     // Runs now and again whenever the owner registers a source, so a screen that mounted first (a deep link straight to
     // Privacy, a provider remount) still follows the new source instead of staying on the one it started with.
     const attach = () => {
       unsub?.();
-      unsub = source.subscribe?.(() => setStatus(source.read()));
-      setStatus(source.read());
+      unsub = source.subscribe?.(sync);
+      sync();
     };
     listeners.add(attach);
     attach();
@@ -64,5 +72,5 @@ export function useSensitiveDataStatus(): { status: SensitiveDataStatus; open?: 
       unsub?.();
     };
   }, []);
-  return { status, open: source.open };
+  return state;
 }

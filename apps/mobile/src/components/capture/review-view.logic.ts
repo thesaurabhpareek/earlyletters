@@ -174,9 +174,9 @@ export type SavedKind = 'book' | 'private' | 'voice';
 /**
  * The saved moment's chip and line (S21, MOTION 5e). In the book: the chip names the real month ("Kept in Month 7",
  * "Kept in the first weeks", "Kept in Before You") and the line says "Added to Asha's book." with a check. Kept
- * private: the chip "Kept just for you." with the lock, no line. A recording kept before its words: the lock chip
+ * private: the chip "Kept private." with the lock, no line. A recording kept before its words: the lock chip
  * "Recording kept on this phone." (true at this moment: a backup upload, when backup is on, comes after the save),
- * or, when its words are on their way, "Your voice is kept. The words will follow."
+ * or, when its words are on their way, "Recording kept. The words will follow."
  */
 export function savedMoment(input: { kind: SavedKind; childName: string; month: number | null; keptForWords?: boolean }): {
   chip: string;
@@ -319,4 +319,32 @@ export const SIGN_IN_AFTER_BOOK_MS = 600;
 /** From the moment Review leaves for the Book: its dissolve (the route's own length), then 600 ms on the Book. */
 export function signInAfterLandingMs(reduced: boolean): number {
   return (reduced ? tokens.motion.fadeMs : tokens.motion.route.dissolveMs) + SIGN_IN_AFTER_BOOK_MS;
+}
+
+/**
+ * What VoiceOver says when a fix is put back (BL-1793): "Put back." with its Undo and the new count of small fixes, as
+ * one sentence run ("Put back. Undo. 2 small fixes."). iOS VoiceOver ignores a live region, so the words are spoken
+ * with `announce()`. Only words the content already holds; `countText` is the line Review shows under the letter.
+ */
+export function putBackSpeech(input: { putBack: string; undo: string; countText: string }): string {
+  const end = (s: string) => (/[.!?]$/.test(s) ? s : `${s}.`);
+  return [input.putBack, input.undo, input.countText].map((s) => s.trim()).filter(Boolean).map(end).join(' ');
+}
+
+/**
+ * The line that says a take stopped early, spoken once after the screen settles (BL-1793). Returns a cancel for the
+ * timer. `said` holds the lines already spoken on this screen, so a re-render, or the line coming back, never says it
+ * twice. Nothing is spoken for a null line.
+ */
+export function speakOnceAfterSettle(
+  line: string | null,
+  deps: { said: Set<string>; settleMs: number; speak: (line: string) => void; later: (fn: () => void, ms: number) => unknown; cancel: (handle: unknown) => void },
+): () => void {
+  if (!line || deps.said.has(line)) return () => {};
+  const handle = deps.later(() => {
+    if (deps.said.has(line)) return;
+    deps.said.add(line);
+    deps.speak(line);
+  }, deps.settleMs);
+  return () => deps.cancel(handle);
 }

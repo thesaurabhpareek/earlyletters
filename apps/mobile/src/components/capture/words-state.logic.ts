@@ -7,7 +7,7 @@
  * letter waiting for its words (review.tsx keepRecordingOnly, where the Keep step decides).
  *
  *   state        when                                      title                         primary            quiet
- *   writing      queued or being written down (S14)        Writing down what you said.   none               Read it back later, after 15 s with no progress
+ *   writing      queued or being written down (S14)        Writing down what you said.   none               after 15 s with no progress: Keep the recording, Type it instead
  *   ask          language not on this phone, no yes yet    Get your words ready          Download on Wi-Fi  Keep the recording
  *   downloading  language on its way, yes given (S15)      Your voice is kept            Keep the recording Use {size} of cellular on a Wi-Fi wait, else Type it instead
  *   language     a language this build does not hear (#260) the waiting-for-language line Keep the recording Type it instead
@@ -36,14 +36,14 @@ import { downloadingLine } from '@/lib/models/speech-download.logic';
 import { waitingForLanguageNote } from '@/lib/transcription-queue/language-hold';
 import type { Job } from '@/lib/transcription-queue/machine';
 
-/** S14: after this long the waiting card adds "Long recordings take a little more time." */
+/** S14: after this long the waiting hint `long` is set (the card's body no longer changes with it, BL-399). */
 export const WAITING_LONG_MS = 8_000;
-/** S14: after this long with no progress the waiting card offers "Read it back later". */
+/** S14, BL-399: after this long with no progress the waiting card says it is taking longer and offers Keep or Type. */
 export const LATER_AFTER_MS = 15_000;
 
-export type WordsStateName = 'writing' | 'ask' | 'downloading' | 'language' | 'failed' | 'unsupported' | 'unreadable' | 'fileMissing' | 'emptyTake' | 'noWords';
+export type WordsStateName = 'writing' | 'ask' | 'downloading' | 'language' | 'failed' | 'unsupported' | 'unreadable' | 'fileMissing' | 'emptyTake' | 'shortTake' | 'noWords';
 
-export type WordsAction = 'retry' | 'keep' | 'type' | 'write' | 'recordAgain' | 'download' | 'cellular' | 'later';
+export type WordsAction = 'retry' | 'keep' | 'type' | 'write' | 'recordAgain' | 'letGo' | 'download' | 'cellular' | 'later';
 
 export type WordsInput = {
   /** The take's file holds no sound: the recorder or the launch sweep stored 0 bytes (see `takeFile`). */
@@ -53,6 +53,11 @@ export type WordsInput = {
    * mid-take). The recording is kept; its words cannot be written down from it (see `takeFile`).
    */
   unreadable?: boolean;
+  /**
+   * BL-379: the take is under about a second (`isShortTake`). When no words came of it, the card says so and offers
+   * Let it go first, instead of the transcription-failed heading.
+   */
+  shortTake?: boolean;
   job: Pick<Job, 'phase' | 'outcome' | 'failure' | 'progress'> | null;
   /** The language download (D-087): whether to ask, its progress (0 to 1) and why it waits. */
   download: {
@@ -103,6 +108,8 @@ export function wordsActionLabel(a: WordsAction, size = ''): string {
       return wordsCopy.waiting.writeButton;
     case 'recordAgain':
       return wordsCopy.noSpeech.recordAgainButton;
+    case 'letGo':
+      return copy.listen.discardButton;
     case 'download':
       return speechConsentCopy.downloadButton;
     case 'cellular':
@@ -123,14 +130,16 @@ function writing(i: WordsInput): WordsCard {
     art: 'moon',
     still: i.playing,
     title: total > 1 ? fill(wordsCopy.listening, { n: part, count: total }) : wordsCopy.preparing,
-    body: i.hints.long ? copy.review.waitingLong : undefined,
+    // BL-399: always the reassurance (working, voice kept, can close); after the "no progress" threshold, the plain
+    // longer-than-usual line with Keep the recording and Type it instead.
+    body: i.hints.later ? copy.review.waitingSlow : copy.review.waitingBody,
     // The recogniser's own progress within each part when it reports it (whisper.rn), else a step per part; no bar
     // before the first part starts (preparing: reading the recording, finding speech, opening the model).
     // If the recogniser never reports (no callback), the first part shows its words and no bar, never an empty bar
     // that looks stuck; later parts step per part.
     bar: progress?.fraction !== undefined && total > 0 ? progress.fraction : total > 1 && done > 0 ? done / total : undefined,
-    primary: null,
-    quiet: i.hints.later ? 'later' : null,
+    primary: i.hints.later ? 'keep' : null,
+    quiet: i.hints.later ? 'type' : null,
   };
 }
 
@@ -206,6 +215,21 @@ export function wordsCard(i: WordsInput): WordsCard {
       quiet: 'type',
     };
   }
+  if (i.shortTake && (i.unreadable || i.job?.phase === 'failed' || (i.job?.phase === 'done' && i.job.outcome === 'no_speech'))) {
+    if (!(i.job?.phase === 'failed' && i.job.failure === 'file_missing')) {
+      // The recording is kept unless the person lets it go; Let it go comes first and is confirmed by the screen.
+      return {
+        state: 'shortTake',
+        kind: 'empty',
+        art: 'page',
+        still: true,
+        title: copy.review.shortTake.title,
+        body: copy.review.shortTake.body,
+        primary: 'letGo',
+        quiet: 'keep',
+      };
+    }
+  }
   if (i.unreadable) {
     const t = copy.errors.transcriptionFailed;
     return { state: 'unreadable', kind: 'error', art: 'envelope', still: true, title: t.title, body: t.body, primary: 'keep', quiet: 'type' };
@@ -241,6 +265,13 @@ export function wordsCard(i: WordsInput): WordsCard {
   return writing(i);
 }
 
+/** A take of under about a second (or with no length known to be longer) is a short take (BL-379). */
+export const SHORT_TAKE_MS = 1000;
+
+export function isShortTake(audioDurationMs: number | null | undefined): boolean {
+  return typeof audioDurationMs === 'number' && audioDurationMs >= 0 && audioDurationMs < SHORT_TAKE_MS;
+}
+
 /** Every action the card offers, primary first (for the "at most two controls plus Close" rule, S15). */
 export function wordsActions(card: Pick<WordsCard, 'primary' | 'quiet'>): WordsAction[] {
   return [card.primary, card.quiet].filter((a): a is WordsAction => a !== null);
@@ -262,12 +293,13 @@ export function recordingKept(card: Pick<WordsCard, 'state'> | null): boolean {
 
 /**
  * Why a take stopped early, one line above the card or the letter (S14): leaving the app, a call or an alert (Listen's
- * `stopped` param), or the app closing (the launch sweep found the take: `recoveredAt`). Finish needs no line. Every
- * line ends "Everything before that is kept.", so none shows when no recording was kept (S16: `kept` false).
+ * `stopped` param), or the app closing (the launch sweep found the take: `recoveredAt`). Finish needs no line. The
+ * lines that say so end "Everything before that is kept."; none shows when no recording was kept (S16: `kept` false). Leaving the
+ * app or a lock (BL-1787) says only what happened: no keep promise until BL-1786 or a trace of the background path shows it.
  */
 export function stopLine(s: { stopped?: string | null; recoveredAt: string | null; spoken: boolean; kept: boolean }): string | null {
   if (!s.spoken || !s.kept) return null;
-  if (s.stopped === 'background') return wordsCopy.pack.stoppedInBackground;
+  if (s.stopped === 'background') return wordsCopy.pack.stoppedLeftOrLocked;
   if (s.stopped === 'interruption') return wordsCopy.pack.stoppedInterruption;
   if (s.recoveredAt) return wordsCopy.pack.stoppedClosed;
   return null;

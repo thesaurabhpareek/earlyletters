@@ -14,6 +14,10 @@
  */
 export const BLOCK_MS = 24 * 60 * 60 * 1000;
 
+/** Settings keys from docs/DECISIONS.md D-026 (DATA_CLASSIFICATION 4.6, L2). */
+export const AGE_GATE_PASSED_KEY = 'ageGate.passed';
+export const AGE_GATE_STOPPED_KEY = 'ageGate.stoppedAt';
+
 export type GateDecision = 'ask' | 'stop' | 'pass';
 
 export interface GateState {

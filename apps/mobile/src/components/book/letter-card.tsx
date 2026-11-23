@@ -18,6 +18,7 @@
  * first time) carries the 1.6 s accentSoft wash once, behind its words. A card that leaves (deleted here, or on
  * another phone) collapses out of its row: a fade over exitMs while the rows below close up on `standard`.
  */
+import { cardLabelWithPhoto } from '@/lib/photos/lens';
 import { LockSimpleIcon } from 'phosphor-react-native/src/icons/LockSimple';
 import { WaveformIcon } from 'phosphor-react-native/src/icons/Waveform';
 import { useEffect, type ReactNode } from 'react';
@@ -33,7 +34,7 @@ import { useFontScale, useTheme } from '@/lib/a11y';
 import { copy, fill, pendingCopy } from '@/lib/copy';
 import { layoutSpring, type Motion } from '@/lib/motion';
 import type { Child, Entry } from '@/lib/store';
-import { authorOf, isOwnEntry } from '@/components/child/child-store';
+import { authorOf } from '@/components/child/child-store';
 import { entryDateline, entryDatelineA11y } from './date-change.logic';
 import { AppNote } from './app-note';
 import { bookExcerptLines, cardFooterStacks, voiceMarker } from './book-page.logic';
@@ -50,6 +51,11 @@ interface Props {
   wash?: number;
   /** The waiting card's live reason beside its length ("Getting ready, 40%", "Ready to read back"). */
   reason?: string | null;
+  /**
+   * The Photos lens (NS-01-R11, design spec 01 section 5.1): the letter's picture leads its words, hidden from VoiceOver,
+   * and its label (the parent's words or "Photo with this letter") is read after the card's own (NS-01-R9, R21).
+   */
+  photo?: { thumb: ReactNode; label: string };
 }
 
 const LAYOUT = layoutSpring('standard');
@@ -73,7 +79,7 @@ export function cardLineHeight(note: boolean, fontScale: number): number {
   return lineHeightFor(note ? 'footnote' : 'letterBody', fontScale);
 }
 
-export function LetterCard({ entry, child, onPress, wash, reason }: Props) {
+export function LetterCard({ entry, child, onPress, wash, reason, photo }: Props) {
   const { c, scheme } = useTheme();
   const fontScale = useFontScale();
   const signsAs = authorOf(entry, child);
@@ -99,10 +105,18 @@ export function LetterCard({ entry, child, onPress, wash, reason }: Props) {
     inBook: entry.inBook,
     privateLabel: copy.book.privateLabel,
     reason,
-    spoken,
-    own: isOwnEntry(entry),
+    audioUri: entry.audioUri,
     recordingOnPhone: copy.book.recordingOnPhone,
   });
+
+  const textBlock = (
+    <CardText lineHeight={cardLineHeight(note, fontScale)} rtl={rtl} style={{ gap: CARD_TEXT_GAP }}>
+      <Text variant="letterDateline" caps>
+        {date}
+      </Text>
+      {note ? <AppNote>{text}</AppNote> : <ExcerptFade text={text} lines={lines} variant="letterBody" surface={c.surfaceRaised} />}
+    </CardText>
+  );
 
   return (
     <Card
@@ -112,18 +126,23 @@ export function LetterCard({ entry, child, onPress, wash, reason }: Props) {
       // words sit in the same 330 pt column in both schemes and the page can carry them (canCarry allows 1 pt).
       style={scheme === 'dark' ? { padding: tokens.space[4] - CARD_EDGE_DARK } : undefined}
       onPress={() => onPress(entry.id)}
-      accessibilityLabel={label}
+      accessibilityLabel={photo ? cardLabelWithPhoto(label, photo.label) : label}
       accessibilityHint={copy.reader.openHint}
       className="gap-2.5"
       testID="book.card">
 
       <Wash run={wash} color={c.accentSoft} />
-      <CardText lineHeight={cardLineHeight(note, fontScale)} rtl={rtl} style={{ gap: CARD_TEXT_GAP }}>
-        <Text variant="letterDateline" caps>
-          {date}
-        </Text>
-        {note ? <AppNote>{text}</AppNote> : <ExcerptFade text={text} lines={lines} variant="letterBody" surface={c.surfaceRaised} />}
-      </CardText>
+      {photo ? (
+        // At accessibility sizes the thumbnail sits above the words, one column (design spec 01 section 5.1).
+        <View className={stacked ? 'gap-3' : 'flex-row items-start gap-3'} testID="book.card.photo">
+          <View className="self-start" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+            {photo.thumb}
+          </View>
+          <View className={stacked ? undefined : 'flex-1'}>{textBlock}</View>
+        </View>
+      ) : (
+        textBlock
+      )}
 
       <View className={stacked ? 'items-start gap-1 pt-0.5' : 'flex-row flex-wrap items-center gap-x-3 gap-y-1 pt-0.5'}>
         {signed ? <Text variant="signature">{signature}</Text> : null}

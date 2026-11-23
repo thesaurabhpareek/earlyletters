@@ -108,16 +108,14 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 
 | Event | Fires when | Properties (type: allowed values) | Serves |
 |---|---|---|---|
-| `auth_sheet_shown` | Keep the book / sign-in sheet shown | `trigger` (enum: first_letter \| invite \| invite_create \| sign_in \| settings) | PRD-REQ-001, PRD-REQ-016 |
+| `auth_sheet_shown` | Keep the book / sign-in sheet shown | `trigger` (enum: first_letter \| third_letter \| invite \| invite_create \| sign_in \| settings) | PRD-REQ-001, PRD-REQ-016 |
 | `auth_method_selected` | A sign-in method tapped (observed from the auth state) | `method` (enum: apple \| google \| email \| passkey) | PRD-REQ-016 |
 | `auth_succeeded` | A new session exists on this phone (observed from the auth state). New accounts are counted on the server | `method` (enum: apple \| google \| email \| passkey)<br>`had_local_data` (bool) | A-NFR-013, PRD-REQ-016 |
 | `auth_failed` | Sign-in failed or was cancelled (observed). An under-18 answer is never sent | `method` (enum: apple \| google \| email \| passkey)<br>`reason` (enum: cancelled \| network \| expired \| wrong_code \| code_paused \| rate_limited \| invalid_email \| not_available \| provider \| session_expired \| consent_unavailable \| unknown) | A-NFR-013 |
 | `auth_email_sent` | Email sign-in link or code sent (observed); attempt counts sends in this sign-in | `attempt` (int 1 to 10) | A-NFR-013 |
-| `auth_deferred` | User chose Later on the sign-in sheet | `trigger` (enum: first_letter \| invite \| invite_create \| sign_in \| settings) | PRD-REQ-016 |
+| `auth_deferred` | User chose Later on the sign-in sheet | `trigger` (enum: first_letter \| third_letter \| invite \| invite_create \| sign_in \| settings) | PRD-REQ-016 |
 | `signed_out` | The session ended on this phone (observed): by the person, Apple revoked it, account switch, or the session was lost | `reason` (enum: user \| apple_revoked \| switch_account \| session_lost) | A-NFR-013, PRD-REQ-016 |
 | `invite_opened` | An invite link or code is opened in the app | `via` (enum: link \| code \| paste)<br>`signed_in` (bool) | B-REQ-007 |
-| `coparent_soon_opened` | The co-parent coming-soon presentation is shown (the Family tab, or the sheet any other door opens) | `surface` (enum: tab \| sheet) | PRD-REQ-016 |
-| `coparent_soon_notify` | Tell me when it is here is tapped on the coming-soon presentation (a note on this phone, nothing is sent to us) | (none) | PRD-REQ-016 |
 | `local_merge_choice` | User with local letters picks where they go at sign-in | `choice` (enum: existing \| new) | PRD-REQ-016 |
 
 #### children
@@ -176,7 +174,7 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 
 | Event | Fires when | Properties (type: allowed values) | Serves |
 |---|---|---|---|
-| `reminder_prime_shown` | Reminder priming card shown | `source` (enum: tonight \| settings \| family_first_letter \| first_letter) | C-REQ-034, PRD-REQ-001 |
+| `reminder_prime_shown` | Reminder priming card shown | `source` (enum: tonight \| settings \| family_first_letter \| first_letter \| first_month) | C-REQ-034, PRD-REQ-001 |
 | `reminder_prime_result` | Priming card answered | `choice` (enum: yes \| not_now) | C-REQ-034 |
 | `os_permission_result` | OS notification permission answered | `granted` (bool)<br>`platform` (enum: ios \| android) | C-REQ-034 |
 | `reminder_schedule_set` | Reminder cadence, time or pause saved (observed from the stored preferences) | `cadence` (enum: off \| weekly \| few_times \| every_evening)<br>`hour_bucket` (enum: morning \| afternoon \| evening \| late_evening)<br>`paused` (bool) | C-REQ-034 |
@@ -191,6 +189,13 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 | `moment_shown` | A quiet milestone card is shown. Month-chapter and Year One are excluded: they fire on dates set by the birthday | `type` (enum: first_letter \| letters_10 \| letters_50 \| letters_100 \| letters_365 \| first_family_letter \| first_read_together) | C-REQ-034, C-REQ-010 |
 | `resurface_shown` | An "On this day" card is shown | `kind` (enum: one_month \| one_year) | C-REQ-034, C-REQ-014 |
 | `resurface_opened` | An "On this day" card is opened | `kind` (enum: one_month \| one_year) | C-REQ-034 |
+
+#### moments
+
+| Event | Fires when | Properties (type: allowed values) | Serves |
+|---|---|---|---|
+| `moments_card_impressed` | A card in the question or look-back slot is drawn on the Moments tab (at most once per slot per local day). Cards dated by the child, a typed day, a tick or the library never send | `slot` (enum: look_back \| question) | PRD-REQ-016 |
+| `moments_card_tapped` | A card in the question or look-back slot is tapped. Says nothing about where the letter that follows began | `slot` (enum: look_back \| question) | PRD-REQ-016 |
 
 #### settings
 
@@ -286,7 +291,7 @@ Migration `supabase/migrations/20261004300000_insights_aggregates.sql`, tested b
 |---|---|---|
 | `weekly_keeping_families` | ISO week (UTC) | families, families_with_book_letter, letters, spoken_letters, typed_letters, complete |
 | `letters_per_active_family` | week | active_families, letters_per_family_mean, p50, p90, families_two_plus_voices |
-| `first_letter_conversion` | sign-up week | new_accounts, first_letter_d1, d7, d30, matured flags |
+| `first_letter_conversion` | sign-up week | new_accounts, first_letter_d1, d7, d30, increments first_letter_d2_7 and first_letter_d8_30, matured flags. Nested counts are published only while every pair differs by 0 or at least k (BL-326, review L12) |
 | `family_invites` | week x role (co_parent, contributor) | sent, accepted, accepted_within_7d |
 | `retention_cohorts` | first-letter week x week offset (0 to 12, 26) | cohort_writers, active_writers (completed weeks only) |
 | `language_mix` | week x language (seven codes or other) | families. Reports `available: false` until `public.entries.language` exists (owner: language/sync; the column must be L4) |
@@ -407,7 +412,6 @@ Crash reports (Sentry) follow the same switch (LEGAL-REQ-003): the Sentry bootst
 | `auth_sheet_shown`, `auth_deferred` | `app/(auth)/sign-in/index.tsx`: on show and on Later, with `getSignInTrigger()` | auth | to wire |
 | `local_merge_choice` | sign-in re-ownership step | auth, sync | to wire |
 | `invite_opened` | `lib/family/pending-invite-watcher.tsx` | auth/family | to wire |
-| `coparent_soon_opened`, `coparent_soon_notify` | `components/family/coparent-soon.tsx`: on focus (tab or sheet) and on the Tell me tap | family | wired |
 | `invite_created`, `invite_failed` | `app/invite/new.tsx`: `trackInviteCreated({ role: 'parent', channel, shared, childIndex })`; on error `track('invite_failed', { stage, reason: inviteErrorKind(e) })` | family | to wire |
 | `member_removed`, `member_left`, `family_letter_reviewed` | family screens | family | to wire |
 | `capture_started`, `capture_discarded` | `app/listen.tsx`, `app/write.tsx` | capture (Mobile A) | to wire |
@@ -421,6 +425,7 @@ Crash reports (Sentry) follow the same switch (LEGAL-REQ-003): the Sentry bootst
 | `free_allowance_reached`, `keep_gate_shown`, `letter_held`, `plus_started_from_gate`, `offer_code_redeemed` | `app/review.tsx` (after a Keep), `components/child/plus-gate.tsx`, `app/settings/plus.tsx` (D-082, D-083; numbers only) | payments | wired |
 | `settings_changed` | appearance, reading size, names in notifications, packs on mobile data, listening copy | settings owners | to wire |
 | `moment_shown`, `resurface_*` | celebrate cards | book | to wire |
+| `moments_card_impressed`, `moments_card_tapped` | Moments tab, question and look-back slots only: `trackMomentsCard({ action, slot })` (NS-53 section 18, R251) | mobile | not wired: waits for the Moments flag |
 | `error_shown`, `sync_failed` | `components/ui` toast and errors; `lib/sync/engine.ts` after retries | design, sync | to wire |
 | Consent sheet | ask sequencer: show `<AnalyticsConsentSheet>` when `analyticsAskDue(...)`; call `recordAnalyticsOffer()` | coordinator (BL-023) | to wire |
 

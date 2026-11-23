@@ -70,8 +70,8 @@ export const site = {
 
   comingSoon: {
     line: 'A baby book you fill by talking. Say what happened today, out loud, and it stays in your own words.',
-    // Re-check at the first release with sync or backup (1.0.x): "stay on your iPhone" is true for the first build only (D-121).
-    trust: 'Your letters and recordings stay on your iPhone, and none of it is sent to us.',
+    // No "stays on your iPhone" claim: it is false once a person signs in (D-121 re-check, 10 Nov). Registered wording only.
+    trust: 'Private by default. Never sold, never used for ads.',
     shareButton: 'Share with a friend',
     howTitle: 'How it works',
     writeToUs: 'Write to us any time:',
@@ -114,7 +114,7 @@ export const site = {
       label: 'Evening',
       dateline: '9:41 pm',
       headline: 'Meera is asleep.',
-      support: 'The house has gone quiet. You are still turning the day over.',
+      support: "The day's done, and you're still turning it over.",
     },
     s02: {
       label: 'A minute',
@@ -202,11 +202,11 @@ export const site = {
     },
     s09: {
       label: 'Private',
-      headline: 'Kept on your iPhone.',
+      headline: 'Private by default.',
       points: [
-        'Letters and recordings stay on your iPhone. We never receive them.',
+        'Your recordings are kept on the phone that made them.',
         'No ads. We never sell your data.',
-        'Your letters are never used to train AI.',
+        'Your letters and recordings are private. We never sell them and never use them for ads.',
         'Export your letters whenever you want.',
         'Delete any letter, any time.',
       ],
@@ -250,18 +250,18 @@ export const site = {
     /** The single, quiet sign-up on the home page (components/landing). */
     quietButton: 'Save my place',
     sending: 'Saving',
-    successTitle: 'Thank you, you are on the list.',
-    successBody: `There is a hello waiting in your inbox. You will hear from us once more, at launch.`,
-    success: `Thank you, you are on the list. There is a hello waiting in your inbox. You will hear from us once more, at launch.`,
+    successTitle: "Thanks, you're on the list.",
+    successBody: `A hello is in your inbox. We'll write once more, at launch.`,
+    success: `Thanks, you're on the list. A hello is in your inbox. We'll write once more, at launch.`,
     /** Shown when the address is already on the list (the server says so; components/cta/NotifyForm.tsx). */
-    alreadyTitle: 'You are already on the list.',
-    alreadyBody: `We already have your address. You will hear from us at launch.`,
-    already: `You are already on the list. We already have your address. You will hear from us at launch.`,
-    error: 'That email does not look quite right. Could you check it and try again?',
+    alreadyTitle: "You're already on the list.",
+    alreadyBody: `We already have your address. You'll hear from us at launch.`,
+    already: `You're already on the list. We already have your address. You'll hear from us at launch.`,
+    error: "That email doesn't look right. Check for a typo.",
     rateLimited: 'Give it a minute and try again.',
-    server: 'Something went wrong on our side. Try again in a moment.',
+    server: "That didn't go through. Try again in a moment.",
     empty: 'Add your email address first.',
-    network: 'We could not connect just now. Check your connection and try again.',
+    network: "Couldn't connect. Check your connection and try again.",
     sendingStatus: 'Saving your place on the list.',
     retry: 'Try again',
     honeypotLabel: 'Company',
@@ -278,7 +278,7 @@ export const site = {
     kicker: 'Welcome',
     headline: 'You are on the list.',
     intro: `${NAME} is the baby memory book you fill by talking. It is coming to iPhone in the US. You will hear from us once more, at launch.`,
-    letterLabel: 'What a letter looks like',
+    letterLabel: 'A sample letter',
     letterTo: 'To Meera',
     letterMeta: 'Month 9, Tuesday night',
     letterFrom: 'From Papa',
@@ -289,7 +289,7 @@ export const site = {
     promises: [
       'We never rewrite your words.',
       'Each letter you speak keeps its original recording, unchanged.',
-      'Your letters and recordings stay on your iPhone. No ads, and we never sell your data.',
+      'No ads, and we never sell your data.',
     ],
     closing: 'Until then, there is nothing you need to do.',
     signoff: `The ${NAME} team`,
@@ -302,13 +302,13 @@ export const site = {
   /** The unsubscribe page (app/unsubscribe/page.tsx), reached from the link in every email. */
   unsubscribe: {
     title: 'Stop these emails?',
-    body: 'We will not write to this address again. If you change your mind, you can sign up again on the website.',
+    body: "We won't write to this address again. If you change your mind, you can sign up again on the website.",
     button: 'Unsubscribe',
-    doneTitle: 'You are unsubscribed.',
-    doneBody: 'We will not write to you again. Take care.',
-    invalidTitle: 'That link did not work.',
-    invalidBody: 'It may be old or incomplete. Write to hello@earlyletters.com and we will remove your address ourselves.',
-    error: 'That did not go through on our side. Please try again in a moment.',
+    doneTitle: "You're unsubscribed.",
+    doneBody: "We won't write to this address again.",
+    invalidTitle: "That link didn't work.",
+    invalidBody: "It may be old or incomplete. Write to hello@earlyletters.com and we'll remove your address ourselves.",
+    error: "That didn't go through. Try again in a moment.",
     home: `Back to ${NAME}`,
   },
 
@@ -324,8 +324,24 @@ export const site = {
     body: `Open ${NAME} on your iPhone and type the code from this email. It signs you in, or confirms your email if you are new.`,
     onPhone: 'Already on your iPhone? Tap below, then type the code.',
     open: `Open ${NAME}`,
-    expired: 'If the app says the code has expired, tap "Send a new email".',
+    expired: 'If the code does not work, tap Send a new email in the app.',
     notYou: 'If you did not ask for this email, you can ignore it. Nothing changes.',
+    home: `Back to ${NAME}`,
+  },
+
+  /**
+   * The page behind the link at the end of most emails, https://earlyletters.com/open (app/open/page.tsx; BL-510,
+   * TPL-06). It shows only when the app did not open the link. It carries no token and asks for nothing. PROPOSED
+   * words: they need the founder's approval before this page is merged.
+   */
+  openApp: {
+    title: `Open ${NAME}`,
+    line: `Open ${NAME} on your iPhone.`,
+    body: `If ${NAME} is on this phone, tap below. If it is not, you can get it from the App Store.`,
+    bodyPrelaunch: `If ${NAME} is on this phone, tap below.`,
+    open: `Open ${NAME}`,
+    get: `Get ${NAME} on the App Store`,
+    onComputer: `On a computer? Open this link on the iPhone that has ${NAME}.`,
     home: `Back to ${NAME}`,
   },
 
@@ -371,6 +387,8 @@ export const site = {
   },
 
   footer: {
+    /** The film's letter is written for the site, so the site says plainly that any letter shown here is a sample. */
+    sampleNote: 'Any letter shown on this site is a sample, written for it.',
     /** The website's own footer line. Held out of public copy: the brand tagline waits on counsel (D-125). */
     tagline: 'In your own words.',
     contact: 'hello@earlyletters.com',

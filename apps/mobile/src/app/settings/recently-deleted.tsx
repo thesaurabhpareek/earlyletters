@@ -38,8 +38,9 @@ import { bookCopy } from '@/components/book/copy';
  * recording's file cannot be removed, the letter was not erased and the toast says so ("The letter was not erased. It is still
  * in Recently deleted."); the card stays, with Erase now to try again.
  *
- * A build that syncs shows no Erase now until the server erase exists (S63, F17-REQ-025): the card shows its date
- * line, from the server's deleted_at plus 30 days, and the letter goes at the server purge.
+ * A build that syncs shows Erase now once the server erase exists (S63, F17-REQ-025, BL-1854): it queues one id-only
+ * `entry.erase` and the server purges its copy. The card also shows its date line, from the server's deleted_at plus 30
+ * days, and a letter left alone goes at the server purge.
  */
 export default function RecentlyDeleted() {
   return (
@@ -61,7 +62,7 @@ function Shelf() {
   const [erasingBook, setErasingBook] = useState<DeletedBook | null>(null);
   useEffect(() => subscribeTo('entries', () => setRows(read())), [read]);
   useEffect(() => subscribeTo(['children', 'settings'], () => setBooks(listDeletedBooks())), []);
-  const actions = shelfActions({ sync: capabilities.sync });
+  const actions = shelfActions({ sync: capabilities.sync, serverErase: capabilities.serverErase });
 
   const restore = (e: DeletedEntry) => {
     haptic('tap');

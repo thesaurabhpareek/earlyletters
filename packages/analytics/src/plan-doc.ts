@@ -6,11 +6,12 @@
  */
 import { EVENTS, GLOBAL_PROPS } from './catalog';
 import type { EventSpec, PropSpec } from './schema';
+import { AREAS, ID_KINDS, ID_KIND_CAP, ID_ROWS, type IdRow } from './ids';
 
 export const PLAN_BEGIN = '<!-- catalogue:begin (generated from packages/analytics/src/catalog.ts by `npm run plan -w @scribe/analytics`; do not edit by hand) -->';
 export const PLAN_END = '<!-- catalogue:end -->';
 
-const AREA_ORDER = ['app', 'consent', 'entry', 'children', 'capture', 'languages', 'book', 'family', 'reminders', 'celebrate', 'settings', 'plus', 'errors'];
+const AREA_ORDER = ['app', 'consent', 'entry', 'children', 'capture', 'languages', 'book', 'family', 'reminders', 'celebrate', 'moments', 'settings', 'plus', 'errors'];
 
 const esc = (s: string) => s.replace(/\|/g, '\\|');
 
@@ -43,4 +44,35 @@ export function withRenderedCatalogue(doc: string): string {
   const b = doc.indexOf(PLAN_END);
   if (a < 0 || b < a) throw new Error('TRACKING_PLAN.md: catalogue markers missing');
   return `${doc.slice(0, a + PLAN_BEGIN.length)}\n${renderCatalogue()}\n${doc.slice(b)}`;
+}
+
+/** Where the generated id registry is written (relative to the repo root). */
+export const IDS_DOC_PATH = 'docs/analytics/instrumentation/ids.md';
+
+const cell = (row: IdRow) => (row.route === undefined ? '' : row.route === '' ? '(root)' : `\`${row.route}\``);
+
+/** The whole of docs/analytics/instrumentation/ids.md, generated from ids.ts (ER-B01). */
+export function renderIdsDoc(rows: readonly IdRow[] = ID_ROWS): string {
+  const out: string[] = [
+    '# Id registry (generated)',
+    '',
+    'Generated from `packages/analytics/src/ids.ts` by `npm run plan -w @scribe/analytics`; do not edit by hand. A test fails if this file differs from that output. Rules: `00-event-standard.md` section 4 and V4, V16. An id never comes from text on screen or from a person, child, book, letter or picture; a dynamic list is one element id.',
+    '',
+    `Cap: at most ${ID_KIND_CAP} ids per kind. Kinds: ${ID_KINDS.join(', ')}. Areas: ${AREAS.join(', ')}.`,
+    '',
+  ];
+  for (const kind of ID_KINDS) {
+    const of = rows.filter((row) => row.kind === kind);
+    out.push(`## ${kind} (${of.length})`, '');
+    if (of.length === 0) {
+      out.push('None yet. Added by the rows that need them.', '');
+      continue;
+    }
+    out.push('| Id | Area | IA-FINAL id | Shape | Route template | Sent today as | Note |', '|---|---|---|---|---|---|---|');
+    for (const row of of) {
+      out.push(`| \`${row.id}\` | ${row.area} | ${row.ia} | ${row.shape ?? ''} | ${cell(row)} | ${row.routeValue ? `\`${row.routeValue}\`` : ''} | ${esc(row.note ?? '')} |`);
+    }
+    out.push('');
+  }
+  return out.join('\n');
 }

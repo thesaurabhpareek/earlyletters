@@ -2,7 +2,7 @@
 /**
  * PageTurn (EXPERIENCE_PASS S30, motion catalogue "page turn"): Read together turns pages sideways, the way
  * a book does, with no curl. "Next letter" moves the page tokens.motion.pageTurn.dx (24 pt) left over
- * exitMs, while the next page arrives from 24 pt right on `standard`; "Back one" reverses it. The words
+ * exitMs, while the next page arrives from 24 pt right on `standard`; "Earlier letter" reverses it. The words
  * hand off rather than pile up: the old page's words are gone early and the new ones start as the old
  * are half gone (transitions.logic HAND_OFF), so two letters never sit on top of each other.
  * A horizontal swipe does the same: the page follows the finger, and the turn can be interrupted (springs

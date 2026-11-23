@@ -9,7 +9,7 @@
  * over the real library in packages/content/test/prompts.preBirth.test.ts.
  */
 import { describe, expect, it } from 'vitest';
-import { AVOID_RECENT, bandFor, GAP_DAYS, kindFor, MIN_ALTERNATIVES, renderTemplate, selectPrompt, type Prompt, type PromptBand, type SelectInput } from '../src';
+import { AVOID_RECENT, bandFor, GAP_DAYS, isNameThemed, kindFor, MIN_ALTERNATIVES, renderTemplate, selectPrompt, type Prompt, type PromptBand, type SelectInput } from '../src';
 
 const LIB: Prompt[] = [
   { key: 'o.any.1', text: 'What did {child} do today?', band: 'any', kind: 'opening' },
@@ -60,7 +60,7 @@ describe('bandFor: the age bands and their edges', () => {
 describe('kindFor: the most specific need wins', () => {
   it('hard > together > family > gap > opening, and the gap starts at GAP_DAYS', () => {
     expect(kindFor({ ...base, hardStretch: true, together: true, role: 'contributor', daysSinceLastEntry: 30 })).toBe('hard');
-    expect(kindFor({ ...base, together: true, role: 'contributor', daysSinceLastEntry: 30 })).toBe('together');
+    expect(kindFor({ ...base, together: true, childInput: true, role: 'contributor', daysSinceLastEntry: 30 })).toBe('together');
     expect(kindFor({ ...base, role: 'contributor', daysSinceLastEntry: 30 })).toBe('family');
     expect(kindFor({ ...base, daysSinceLastEntry: GAP_DAYS })).toBe('gap');
     expect(kindFor({ ...base, daysSinceLastEntry: GAP_DAYS - 1 })).toBe('opening');
@@ -111,6 +111,22 @@ describe('selectPrompt: fallbacks and freshness', () => {
     expect(p.retired).toBeUndefined();
   });
 
+  it('repeat suppression (backlog 08 rank 22): when every prompt of a small kind is recent, the one served is the one used longest ago, never last night\'s', () => {
+    // A pool smaller than the recent window (the real gap pool has 7, hard 8): the old rule picked any of them at random,
+    // so the same words could come two nights running. Nights fed back the way Tonight does (newest first).
+    const small: Prompt[] = ['a', 'b', 'c'].map((k) => ({ key: `g.${k}`, text: `Gap ${k}.`, band: 'any' as const, kind: 'gap' as const }));
+    const recent: string[] = [];
+    const served: string[] = [];
+    for (let d = 0; d < 90; d++) {
+      const p = selectPrompt({ ...base, daysSinceLastEntry: 9, seed: `night-${d}`, recentKeys: recent }, small);
+      served.push(p.key);
+      recent.unshift(p.key);
+    }
+    for (let i = 1; i < served.length; i++) expect(served[i], `night ${i}`).not.toBe(served[i - 1]);
+    // And all three are used before any comes round again.
+    for (let i = 0; i + 3 <= served.length; i++) expect(new Set(served.slice(i, i + 3)).size, `window ${i}`).toBe(3);
+  });
+
   it('prefers age-specific openings: two nights in three they are the only pool, the third night any opening may come', () => {
     // 2/3 of nights are banded by rule; on the other third half the pool is banded too, so about 5/6 overall.
     let banded = 0;
@@ -129,7 +145,7 @@ describe('selectPrompt: fallbacks and freshness', () => {
 
   it('[PRD-REQ-005] together prompts are served only when the caller says the child is present', () => {
     for (let d = 0; d < 30; d++) expect(selectPrompt({ ...base, seed: `t${d}` }, LIB).kind).not.toBe('together');
-    expect(selectPrompt({ ...base, together: true }, LIB).kind).toBe('together');
+    expect(selectPrompt({ ...base, together: true, childInput: true }, LIB).kind).toBe('together');
   });
 });
 
@@ -434,5 +450,100 @@ describe('[S4] selectPrompt: a press of "Another thought" never shows the prompt
     ];
     // both are recent, one is on screen: the other is served
     for (let d = 0; d < 20; d++) expect(selectPrompt({ ...base, ageMonths: 70, seed: `d${d}`, recentKeys: ['a', 'b'], excludeKeys: ['a'] }, two).key).toBe('b');
+  });
+});
+
+describe('[NX-31-R3] a child with no name is never asked about the name', () => {
+  const NAMED: Prompt[] = [
+    ...LIB,
+    { key: 'opening.0-3.name', text: 'Tell {child} how the name was chosen.', band: '0-3', kind: 'opening' },
+    { key: 'opening.before.name-story', text: 'Where did the name {child} come from?', band: 'before', kind: 'opening' },
+    { key: 'opening.before.weeks', text: 'How are the weeks going?', band: 'before', kind: 'opening' },
+    { key: 'together.13-18.name-things', text: 'Let {child} name the things in the room.', band: '13-18', kind: 'together' },
+  ];
+
+  it('[NX-31-R3] isNameThemed matches the name prompts by their last key segment only', () => {
+    expect(isNameThemed('opening.0-3.name')).toBe(true);
+    expect(isNameThemed('opening.before.name-story')).toBe(true);
+    expect(isNameThemed('together.13-18.name-things')).toBe(false);
+    expect(isNameThemed('opening.any.remember')).toBe(false);
+  });
+
+  it('[NX-31-R3] a blank name skips the name prompts on every night, born or not yet born', () => {
+    for (let d = 0; d < 60; d++) {
+      const born = selectPrompt({ ...base, ageMonths: 1, seed: `n${d}`, childNameBlank: true }, NAMED).key;
+      const before = selectPrompt({ ...base, ageMonths: 0, beforeBirth: true, seed: `n${d}`, childNameBlank: true }, NAMED).key;
+      expect(isNameThemed(born)).toBe(false);
+      expect(isNameThemed(before)).toBe(false);
+    }
+  });
+
+  it('[NX-31-R3] without the flag the name prompts are still offered, so a named child loses nothing', () => {
+    const seen = new Set<string>();
+    for (let d = 0; d < 200; d++) seen.add(selectPrompt({ ...base, ageMonths: 1, seed: `n${d}` }, NAMED).key);
+    expect(seen.has('opening.0-3.name')).toBe(true);
+  });
+
+  it('[NX-31-R3] if only name prompts exist, one is still returned and nothing throws', () => {
+    const only: Prompt[] = [{ key: 'opening.0-3.name', text: 'Tell {child} how the name was chosen.', band: '0-3', kind: 'opening' }];
+    expect(selectPrompt({ ...base, ageMonths: 1, childNameBlank: true }, only).key).toBe('opening.0-3.name');
+  });
+});
+
+describe('[BL-119] the child-input flag', () => {
+  const only = (kind: Prompt['kind']): Prompt[] => LIB.filter((p) => p.kind === kind);
+  const seeds = Array.from({ length: 40 }, (_, d) => `s${d}`);
+  const nights: Partial<SelectInput>[] = [{}, { daysSinceLastEntry: 9 }, { daysSinceLastEntry: null }, { hardStretch: true }, { role: 'contributor' }, { role: 'contributor', daysSinceLastEntry: 9 }];
+
+  it('[BL-119] together prompts never show when together is false, flag on or off', () => {
+    for (const childInput of [undefined, false, true]) {
+      for (const n of nights) {
+        for (const seed of seeds) expect(selectPrompt({ ...base, ...n, together: false, childInput, seed }, LIB).kind).not.toBe('together');
+      }
+    }
+  });
+
+  it('[BL-119] together prompts never show when the flag is off or absent, even if together is true', () => {
+    for (const childInput of [undefined, false]) {
+      for (const n of nights) {
+        for (const seed of seeds) expect(selectPrompt({ ...base, ...n, together: true, childInput, seed }, LIB).kind).not.toBe('together');
+      }
+    }
+  });
+
+  it('[BL-119] with the flag off, together does not steal the kind from family, gap or opening', () => {
+    expect(kindFor({ ...base, together: true, role: 'contributor', daysSinceLastEntry: 30 })).toBe('family');
+    expect(kindFor({ ...base, together: true, daysSinceLastEntry: 30 })).toBe('gap');
+    expect(kindFor({ ...base, together: true })).toBe('opening');
+    expect(kindFor({ ...base, together: true, childInput: false })).toBe('opening');
+  });
+
+  it('[BL-119] with the flag on and together true, a together prompt is served', () => {
+    expect(selectPrompt({ ...base, together: true, childInput: true }, LIB).kind).toBe('together');
+  });
+
+  it('[BL-119] hard still wins over together when the flag is on', () => {
+    expect(selectPrompt({ ...base, hardStretch: true, together: true, childInput: true }, LIB).kind).toBe('hard');
+  });
+
+  it('[BL-119] the flag alone does nothing: together false with the flag on serves no together prompt', () => {
+    expect(kindFor({ ...base, together: false, childInput: true })).toBe('opening');
+  });
+
+  it('[BL-119] no fallback path leaks a together prompt: no openings, "Another thought", and a before-birth book', () => {
+    const noOpenings = LIB.filter((p) => p.kind !== 'opening');
+    for (const seed of seeds) {
+      expect(selectPrompt({ ...base, seed }, noOpenings).kind).not.toBe('together');
+      expect(selectPrompt({ ...base, seed, childInput: true }, noOpenings).kind).not.toBe('together');
+      expect(selectPrompt({ ...base, seed, excludeKeys: ['o.any.1'] }, LIB).kind).not.toBe('together');
+      expect(selectPrompt({ ...base, seed, together: true, hardStretch: true, excludeKeys: ['h.any.1'] }, LIB).kind).not.toBe('together');
+    }
+    const pre: Prompt[] = [...LIB, { key: 'before.t', text: 'x', band: 'before', kind: 'together' }, { key: 'before.o', text: 'y', band: 'before', kind: 'opening' }];
+    for (const seed of seeds) expect(selectPrompt({ ...base, seed, beforeBirth: true, together: true }, pre).kind).not.toBe('together');
+  });
+
+  it('[BL-119] a library of only together prompts throws while the flag is off, rather than show one', () => {
+    expect(() => selectPrompt(base, only('together'))).toThrow();
+    expect(selectPrompt({ ...base, together: true, childInput: true }, only('together')).kind).toBe('together');
   });
 });
