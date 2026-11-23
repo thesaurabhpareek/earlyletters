@@ -335,7 +335,7 @@ describe('Review uses the card (source)', () => {
   });
 
   it('the stop line sits in footnote, textMuted', () => {
-    expect(review).toMatch(/<Text variant="footnote" tone="muted" accessibilityLiveRegion="polite" testID="review\.stopLine">/);
+    expect(src('components/capture/early-stop-line.tsx')).toMatch(/<Text variant="footnote" tone="muted" accessibilityLiveRegion="polite" testID="review\.stopLine">/);
   });
 
   it('InlineState draws a still drawing for any kind, and holds loading still on request (P1 component, S14 to S16)', () => {
