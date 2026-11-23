@@ -343,8 +343,6 @@ const FAMILY_BUTTONS = [
   'accept.pasteAnother',
   'leave.confirm',
   'leave.cancel',
-  'soon.notify.button',
-  'soon.close',
 ];
 
 const DELETION_BUTTONS = [

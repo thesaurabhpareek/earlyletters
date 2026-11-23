@@ -111,6 +111,22 @@ describe('selectPrompt: fallbacks and freshness', () => {
     expect(p.retired).toBeUndefined();
   });
 
+  it('repeat suppression (backlog 08 rank 22): when every prompt of a small kind is recent, the one served is the one used longest ago, never last night\'s', () => {
+    // A pool smaller than the recent window (the real gap pool has 7, hard 8): the old rule picked any of them at random,
+    // so the same words could come two nights running. Nights fed back the way Tonight does (newest first).
+    const small: Prompt[] = ['a', 'b', 'c'].map((k) => ({ key: `g.${k}`, text: `Gap ${k}.`, band: 'any' as const, kind: 'gap' as const }));
+    const recent: string[] = [];
+    const served: string[] = [];
+    for (let d = 0; d < 90; d++) {
+      const p = selectPrompt({ ...base, daysSinceLastEntry: 9, seed: `night-${d}`, recentKeys: recent }, small);
+      served.push(p.key);
+      recent.unshift(p.key);
+    }
+    for (let i = 1; i < served.length; i++) expect(served[i], `night ${i}`).not.toBe(served[i - 1]);
+    // And all three are used before any comes round again.
+    for (let i = 0; i + 3 <= served.length; i++) expect(new Set(served.slice(i, i + 3)).size, `window ${i}`).toBe(3);
+  });
+
   it('prefers age-specific openings: two nights in three they are the only pool, the third night any opening may come', () => {
     // 2/3 of nights are banded by rule; on the other third half the pool is banded too, so about 5/6 overall.
     let banded = 0;

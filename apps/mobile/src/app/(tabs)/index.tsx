@@ -56,14 +56,14 @@ import {
   draftCards,
   greetingParts,
   resumed,
-  resurfaced,
   roomClock,
   tonightArrival,
   tonightDateline,
   tonightLampIntensity,
 } from '@/components/tonight/draft-card.logic';
+import { chooseSlip } from '@/components/tonight/slip-registry';
 import { tonightPromptInput, tonightStageLabel } from '@/components/tonight/prompt.logic';
-import { heldCountOf, plusLineShows, tonightRows } from '@/components/tonight/tonight-plus.logic';
+import { heldCountOf, plusLineShows } from '@/components/tonight/tonight-plus.logic';
 import { QuietDayInline } from '@/components/tonight/quiet-day-inline';
 import { ResurfacedCard } from '@/components/tonight/resurfaced-card';
 import { Button, ButtonRow } from '@/components/ui/button';
@@ -205,19 +205,18 @@ export default function Tonight() {
   );
 
   const cards = useMemo(() => draftCards(room?.drafts ?? [], room?.at), [room?.drafts, room?.at]);
-  const rows = useMemo(() => tonightRows(cards), [cards]);
+  // The one slip Home shows, in the one fixed order (BL-963, [FRAME-SLIP]): the waiting set, else one past letter. A
+  // quieted book brings no past letter back (NS-23-R8, J-N19).
+  const slip = useMemo(
+    () => chooseSlip({ cards, window: room?.window ?? [], today, quiet: !!room?.quiet }),
+    [cards, room?.window, room?.quiet, today],
+  );
   // A new held letter, or one kept or let go, closes the held list; the row shows the new count, closed.
-  const heldCount = heldCountOf(rows);
+  const heldCount = slip?.type === 'waiting' ? heldCountOf(slip.rows) : 0;
   useEffect(() => setHeldOpen(false), [heldCount]);
   // The held list also closes when the person leaves Tonight (blur).
   useFocusEffect(useCallback(() => () => setHeldOpen(false), []));
   const showPlusLine = plusLineShows({ plan: plan.view, now: new Date().toISOString(), lettersKept, allowance: freeLettersAllowance(), alpha: PLUS_ALPHA });
-  // A quieted book brings nothing back (NS-23-R8, J-N19).
-  const monthAgo = useMemo(
-    () => resurfaced(room?.window ?? [], today, cards.length, { quiet: !!room?.quiet }),
-    [room?.window, room?.quiet, today, cards.length],
-  );
-
   // Photo-first (NS-01, behind EXPO_PUBLIC_PHOTOS): the one place a photo can start a letter, through the one capture
   // entry once the system picker has returned a picture. Absent when off.
   const photoStart = usePhotoStart(() => startCapture({ source: 'photo', prompt: { key: prompt.key, libraryVersion: PROMPT_LIBRARY_VERSION } }));
@@ -338,9 +337,9 @@ export default function Tonight() {
         {/* Dynamic Type at accessibility sizes: the actions scroll with the page, under the question, before the cards. */}
         {inlineActions ? actions : null}
 
-        {cards.length > 0 ? (
+        {slip?.type === 'waiting' ? (
           <View className="mt-8 gap-3">
-            {rows.map((row, i) =>
+            {slip.rows.map((row, i) =>
               row.kind === 'held' ? (
                 <Animated.View key={row.id} entering={enter(3 + i)}>
                   <HeldRow row={row} open={heldOpen} onToggle={() => setHeldOpen((o) => !o)} onOpenCard={(card) => router.push(card.route)} />
@@ -352,10 +351,10 @@ export default function Tonight() {
               ),
             )}
           </View>
-        ) : monthAgo ? (
+        ) : slip?.type === 'pastLetter' ? (
           <Animated.View entering={enter(3)} className="mt-8">
-            <CardSource id={monthAgo.id}>
-              <ResurfacedCard card={monthAgo} onPress={() => router.push({ pathname: '/letter/[id]', params: { id: monthAgo.id } })} />
+            <CardSource id={slip.card.id}>
+              <ResurfacedCard card={slip.card} onPress={() => router.push({ pathname: '/letter/[id]', params: { id: slip.card.id } })} />
             </CardSource>
           </Animated.View>
         ) : null}
