@@ -22,6 +22,9 @@ export const STORE_FLAGS = Object.freeze([
   Object.freeze({ env: 'EXPO_PUBLIC_BOOK_SEARCH', card: 'NS-02', allowedOn: Object.freeze([]) }),
   Object.freeze({ env: 'EXPO_PUBLIC_NEW_DEVICE_EMAIL', card: 'NS-08', allowedOn: Object.freeze([]) }),
   Object.freeze({ env: 'EXPO_PUBLIC_BACKUP_LINE', card: 'NS-10', allowedOn: Object.freeze([]) }),
+  // Erase now on a signed-in phone (BL-1854): held until the founder clears BL-1805's wording (CLO-22, CR-177; gate row
+  // BL-1805, owner founder, CR-178 item 1). The same diff that clears it deletes this row (BL-1805's apply step).
+  Object.freeze({ env: 'EXPO_PUBLIC_SERVER_ERASE', card: 'BL-1854', allowedOn: Object.freeze([]) }),
 ]);
 
 /**

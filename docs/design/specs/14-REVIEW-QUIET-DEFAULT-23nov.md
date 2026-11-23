@@ -92,7 +92,7 @@ One behaviour per id. Given the evidence limit, each has a unit or source-text t
 | Id | Given, When, Then | Satisfies | Test title |
 |---|---|---|---|
 | QD-01 | Given a spoken letter with words ready, at least one proposed fix and no screen reader, When Review opens, Then the view control, the fix rows and "Change words" are not visible and the count row is | NEU-010 | `[QD-01] opens folded` |
-| QD-02 | Given QD-01, When the count row is tapped, Then the view control, the fix rows and "Change words" are visible and the count row is announced as expanded | NEU-010 | `[QD-02] one tap opens every control` |
+| QD-02 | Given QD-01, When the count row is tapped, Then the view control, the fix rows and "Change words" are visible and the count row is announced as expanded. At AX5 the count row wraps and stays one control, never truncated; it shows words plus a chevron and is at least 44 pt | NEU-010 | `[QD-02] one tap opens every control` |
 | QD-03 | Given the parent chose "Exactly as said", When Review shows, Then the count row is still present | NEU-010 | `[QD-03] way back stays` |
 | QD-04 | Given a letter with no proposed fix, When Review opens, Then "Change words" is visible and there is no fold | NEU-010 | `[QD-04] nothing to fold` |
 | QD-05 | Given any applied edit, When Review opens folded, Then its mark is in the words | NEU-010, 13.5a item 4 | `[QD-05] marks never folded` |
@@ -109,11 +109,11 @@ Door lines (COORDINATION section 10): not needed. Add to the book and Keep priva
 
 | # | Question | Who | Default if no answer | By |
 |---|---|---|---|---|
-| 1 | Is folding the view control and "Change words" quiet enough, and does the count row read as a control at the largest text size | Chief Design Officer, then the five-parent check | The fold in section 3 stands | Fri 27 Nov 2026 (the gate date, D-169) |
+| 1 | Is folding the view control and "Change words" quiet enough, and does the count row read as a control at the largest text size | Chief Design Officer, then the five-parent check | The fold in section 3 stands. RULED (CDesO, 23 Nov): the fold stands; the five-parent check (BL-1714) may change it | Fri 27 Nov 2026 (the gate date, D-169) |
 | 2 | The first-time note is the heaviest thing on a first Review and is also an in-app disclosure (K-14; same words as the web contribution note). Should it get lighter | CLO and `privacy` (it is disclosure text), with the Chief Design Officer | Unchanged. This spec does not touch it | Fri 27 Nov 2026 |
 | 3 | Build before or after the SE 3 sitting | Karma | Build after this spec merges, and change it if the sitting disagrees. The sitting has no operator (D-169, item 4), so waiting has no date | Fri 27 Nov 2026 |
-| 4 | Wider "every" line | founder and counsel through BL-1711 | Not shipped. Section 4 limits apply | Fri 27 Nov 2026 (the counsel engagement decision date, D-169 item 4) |
-| 5 | Should a VoiceOver parent also get the fold | Chief Design Officer, with the VoiceOver findings of BL-1786 | Unfolded, as section 3 says | Fri 27 Nov 2026 |
+| 4 | Wider "every" line | founder and counsel through BL-1711 | Not shipped. Section 4 limits apply. Recommendation: do not ship a wider line. Default: not shipped. Founder, by Fri 27 Nov 2026 | Fri 27 Nov 2026 (the counsel engagement decision date, D-169 item 4) |
+| 5 | Should a VoiceOver parent also get the fold | Chief Design Officer, with the VoiceOver findings of BL-1786 | RULED (CDesO, 23 Nov): a screen-reader parent gets Review unfolded; no fold. Revisit only on a real VoiceOver parent's finding | Fri 27 Nov 2026 |
 
 No decision reserved for the founder is made here. Question 4 is already the founder's under BL-1711.
 
