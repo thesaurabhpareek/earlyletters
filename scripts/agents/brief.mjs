@@ -76,7 +76,7 @@ function assignmentSection() {
     lines.push("", "For failing checks, read the logs with `gh run list --branch <branch>` and `gh run view <id> --log-failed`.");
   } else if (mode === "review") {
     const pr = openPRs.find((p) => String(p.number) === String(prNum));
-    lines.push(`**Review PR #${prNum}** by \`${pr ? agentOfPR(pr) : "unknown"}\`: ${oneLine(pr?.title)}. Head commit \`${pr?.head?.sha ?? "?"}\`.`);
+    lines.push(`**Review PR #${prNum}** by \`${pr ? agentOfPR(pr) ?? pr.user?.login ?? "unknown" : "unknown"}\`: ${oneLine(pr?.title)}. Head commit \`${pr?.head?.sha ?? "?"}\`.`);
     lines.push("Follow section 6 of the operating model. Read the diff with `gh pr diff " + prNum + "`. Your review body must start with `<!-- red-team:" + (pr?.head?.sha ?? "<sha>") + " -->`.");
   } else if (mode === "handoff") {
     lines.push(...handoffSection(String(taskId).replace(/^#/, "")));
@@ -138,7 +138,7 @@ function stewardSection() {
     `Files in your review paths (${mineFiles.length} of ${files.length}): ${mineFiles.slice(0, 30).map((f) => `\`${f}\``).join(", ")}${mineFiles.length > 30 ? ", and more" : ""}.`,
     `Check them against your chapters: ${chapters.map((c) => `\`${c}\``).join(", ") || "(none found in docs/engineering/)"}. Read the diff with \`gh pr diff ${prNum}\`; search the chapters by rule id rather than reading them whole.`,
     "",
-    `Post exactly one comment with \`gh pr comment ${prNum} --body-file <file>\`. First line \`${stewardMarker(handle, pr.head.sha)}\`, then \`Verdict: ship\`, \`Verdict: fix first\` or \`Verdict: founder decision\`, then findings most serious first, each citing a rule id, file and line, and the smallest fix.`,
+    `Post exactly one comment with \`gh pr comment ${prNum} --body-file <file>\`. First line \`${stewardMarker(handle, pr.head.sha)}\`, then \`Verdict: ship\`, or \`Verdict: fix first\` (never a request to the founder, CR-176), then findings most serious first, each citing a rule id, file and line, and the smallest fix.`,
     "Review only your domain; other stewards and the red team cover theirs. A rule the PR breaks because the rule is wrong is a finding against the rule: say so, and open an `rfc` handoff to the other stewards.",
     "Never push to the PR branch. Never approve or merge.",
   ];
@@ -218,23 +218,18 @@ function latestBrief() {
 import { gh as ghOne } from "./lib.mjs"; // separate import keeps stacked PR #39 mergeable
 import { trustedJournalEntries, oneLine } from "./hardening.mjs";
 import * as memoryBrief from "./memory.mjs";
+import { claimsLines } from "./board-check.mjs";
 
 // Other sessions (the founder's build thread and its agents) claim files in
-// docs/agents/BOARD.md on develop. Their live claims are off limits.
+// docs/agents/CLAIMS.md on develop. Their live claims are off limits.
 function otherThreadsSection() {
-  // Read the board as it is on the base branch now (a local checkout may be stale).
-  const fromApi = ghOne(`/repos/${repo}/contents/docs/agents/BOARD.md?ref=${roster.base_branch}`, { allowFail: true });
+  // Read the claims as they are on the base branch now (a local checkout may be stale).
+  const fromApi = ghOne(`/repos/${repo}/contents/docs/agents/CLAIMS.md?ref=${roster.base_branch}`, { allowFail: true });
   let text = fromApi?.content ? Buffer.from(fromApi.content, "base64").toString("utf8") : undefined;
-  if (!text) { try { text = readText(join(ROOT, "docs", "agents", "BOARD.md")); } catch { text = ""; } }
-  const rows = (text.split(/^## Active claims/m)[1] ?? "").split(/^## /m)[0]
-    .split("\n").filter((l) => /^\|/.test(l) && !/^\|\s*-/.test(l) && !/\|\s*Agent\s*\|/.test(l))
-    .map((l) => l.split("|").map((c) => c.trim()))
-    .filter((c) => c.length > 5 && !/^done/i.test(c[5]) && !/merge only/i.test(c[3]));
+  if (!text) { try { text = readText(join(ROOT, "docs", "agents", "CLAIMS.md")); } catch { text = undefined; } }
   const lines = ["## Other threads working in this repo", "",
-    "The founder's build thread and its agents claim files in `docs/agents/BOARD.md` (rules: `docs/agents/COORDINATION.md`). Do not edit files under a live claim; if your assignment needs them, say so in your journal and PR body and stop or take your next item."];
-  lines.push("", rows.length
-    ? rows.map((c) => `- ${c[1]}: ${c[3]} (since ${c[4]})`).join("\n")
-    : "No live claims right now.", "");
+    "The founder's build thread and its agents claim files in `docs/agents/CLAIMS.md` (rules: `docs/agents/COORDINATION.md`). Do not edit files under a live claim; if your assignment needs them, say so in your journal and PR body and stop or take your next item."];
+  lines.push("", ...claimsLines(text), "");
   // Work pushed in the last 24 hours that has no open PR yet (another session's branch).
   const since = Date.now() - 24 * 3600_000;
   const prRefs = new Set(openPRs.map((p) => p.head.ref));

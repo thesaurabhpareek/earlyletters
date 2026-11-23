@@ -43,7 +43,7 @@ A chapter never restates a requirement; it cites the id (`DATA-REQ-0xx`, `LEGAL-
 | Steward review by path | The dispatcher assigns a steward any open PR that touches its `review_paths` and lacks its verdict for the head commit. "Fix first" sends the author back to fix it | `agents/roster.json`, `docs/agents/AGENT-COMMS.md` section 7 |
 | Checks in code | Tests, database constraints, CI jobs and lint rules listed per rule in `ENFORCEMENT.md` | the rule's *Enforced by* line |
 | Turning wishes into checks | Each steward's standing duty 2: convert one `not yet` rule into a real check, or a backlog proposal, per run | each steward's charter |
-| Red team and founder | Every PR still gets the red-team review and the founder's merge; `supabase/**` and auth changes also need `approve-migration` (D-041) | `docs/agents/OPERATING_MODEL.md` |
+| Red team and founder | Every PR still gets the red-team review and Karma's merge (CR-73); `supabase/**` and auth changes also need the red-team review | `docs/agents/OPERATING_MODEL.md` |
 | Consistency check | `check.mjs` fails if a chapter's `owner` is not on the roster | `scripts/agents/check.mjs` |
 
 Status on 2026-10-03 (not recounted since; see the drift note at the top of `ENFORCEMENT.md`), counted from `ENFORCEMENT.md`: of 192 rules, 42 are enforced on `develop`, 38 are pending in open PRs (mostly #26 to #32 and #39), 34 are partly enforced, review-only or covered by the rule they cite, and 78 have no check yet. The `not yet` rows are the stewards' work queue.
@@ -52,7 +52,7 @@ Status on 2026-10-03 (not recounted since; see the drift note at the top of `ENF
 
 1. Anyone (agent or human) who thinks a rule is wrong says so: an agent opens an `rfc` handoff to the chapter's owner and the other four stewards (`node scripts/agents/handoff.mjs open --kind rfc`).
 2. The owner drafts the change in a PR that edits the chapter, `ENFORCEMENT.md` and, if needed, `PRINCIPLES.md`. Every other steward replies with a position on the RFC.
-3. A new or changed MUST rule merges only with the founder's approval. SHOULD and wording changes follow normal review.
+3. A new or changed MUST rule merges only with the exec review recorded in the ruling log (CR-176). SHOULD and wording changes follow normal review.
 4. Rule ids are permanent. A retired rule keeps its id, marked `(RETIRED: reason)`; its number is never reused.
 5. Exceptions to a MUST rule are granted only by the founder: a `D-###` for a standing exception, or an `Exception:` line in the PR body for a one-off.
 

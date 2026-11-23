@@ -163,7 +163,7 @@ describe('Export what is readable (J20)', () => {
   });
 });
 
-describe('Go to Tonight from the error screen', () => {
+describe('Go to Home from the error screen', () => {
   it('remounts first, then goes to Tonight when the router is ready, retrying while it is not', () => {
     const order: string[] = [];
     const queue: Array<() => void> = [];
@@ -187,7 +187,9 @@ describe('Go to Tonight from the error screen', () => {
 
   it('does nothing more if retry itself throws', () => {
     const go = vi.fn();
-    goToTonightAfterRetry(() => { throw new Error('x'); }, go, { setTimeout: (fn) => { fn(); return 0; } });
+    const setTimeout = vi.fn((fn: () => void) => { fn(); return 0; });
+    goToTonightAfterRetry(() => { throw new Error('x'); }, go, { setTimeout });
     expect(go).not.toHaveBeenCalled();
+    expect(setTimeout).not.toHaveBeenCalled(); // no later try is scheduled either
   });
 });

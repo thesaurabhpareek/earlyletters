@@ -1,4 +1,9 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import type { NextConfig } from 'next';
+import { appStoreHref } from './src/lib/launch';
+import { BADGE_FILE, checkLaunchGate, launchGateMessage } from './src/lib/launch-guard';
+import { STORE_QR } from './src/lib/qr/qr.generated';
 
 // Owner: E1 (web platform). Headers, the /lab switch and the build setup.
 // NEXT_DIST_DIR lets parallel agents run their own dev servers without sharing .next.
@@ -60,6 +65,28 @@ const tokenLinkPaths = ['/a', '/auth', '/i', '/j', '/r'];
  */
 const PRIMARY_HOST = 'earlyletters.com';
 const REDIRECT_HOSTS = ['www.earlyletters.com', 'earlyletters.app', 'www.earlyletters.app'];
+
+/**
+ * The launch gate (docs/web/launch-flip.md). Nothing here does anything unless NEXT_PUBLIC_APP_STORE_URL is a valid App
+ * Store link: with it unset the live site builds exactly as before. When it is set, the build stops, loudly, if the
+ * badge file, the badge flag, the site mode or the committed QR does not match. The QR itself is NOT made here.
+ */
+function assertLaunchReady(): void {
+  let badgeFile: string | null = null;
+  try {
+    badgeFile = readFileSync(join(process.cwd(), BADGE_FILE), 'utf8');
+  } catch {
+    badgeFile = null;
+  }
+  const gate = checkLaunchGate({ env: process.env, badgeFile, qr: STORE_QR, qrHref: appStoreHref('qr') });
+  if (!gate.launch) return;
+  for (const note of gate.notes) console.warn(`[launch] ${note}`);
+  if (gate.problems.length) {
+    if (gate.strict) throw new Error(launchGateMessage(gate.problems));
+    console.warn(`${launchGateMessage(gate.problems)}\n[launch] Not enforced here (not a Vercel production build, LAUNCH_STRICT is not 1).`);
+  }
+}
+assertLaunchReady();
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,

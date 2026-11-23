@@ -31,7 +31,7 @@ You share tasks with `content` where the Owner is `content, legal`; otherwise yo
 - Version every policy change per `POLICY_VERSIONING.md`.
 
 ## Standing duties (in this order)
-1. Claims registry: every product claim in `packages/content` and the legal drafts, checked against the code; mismatches flagged to `privacy`, `content` and the founder.
+1. Claims registry: every product claim in `packages/content` and the legal drafts, checked against the code; mismatches flagged to `privacy`, `content` and Karma.
 2. Counsel question pack for BL-104, kept current.
 3. Policy version consistency across documents.
 

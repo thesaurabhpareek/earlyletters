@@ -63,17 +63,21 @@ describe('figureTrim (the numeral)', () => {
   });
 });
 
-describe('MonthOpener uses the trim and the card column', () => {
+describe('the Book\'s light and headings use the card column (book-page.md 2: the light moved to the cover band)', () => {
   const src = read('components/book/month-opener.tsx');
-  it('the numeral is trimmed to its figures', () => {
-    expect(src).toMatch(/<Text variant="numeral" trim="figures">/);
+  const band = read('components/book/cover-band.tsx');
+  it('a month heading is words in title1, never a bare numeral', () => {
+    expect(src).not.toMatch(/variant="numeral"/);
+    expect(src).toMatch(/<Text variant="title1">\{opener\.heading\}<\/Text>/);
   });
-  it('no hand-typed sizes: the lit card and the hairline take theirs from tokens and the letter card column', () => {
-    expect(src).not.toMatch(/padding: \d/);
-    expect(src).not.toMatch(/marginBottom: \d/);
-    expect(src).toMatch(/LIT_PAD_X = CARD_TEXT_INSET - GUTTER - LIT_EDGE/);
+  it('no hand-typed sizes: the band and the hairline take theirs from tokens and the letter card column', () => {
+    for (const f of [src, band]) {
+      expect(f).not.toMatch(/padding: \d/);
+      expect(f).not.toMatch(/marginBottom: \d/);
+    }
+    expect(band).toMatch(/LIT_PAD_X = CARD_TEXT_INSET - GUTTER - LIT_EDGE/);
   });
-  it('the lit card words start where a letter card\'s words start', () => {
+  it('the band\'s words start where a letter card\'s words start', () => {
     const CARD_TEXT_INSET = 36;
     expect(read('components/book/letter-card.tsx')).toMatch(new RegExp(`CARD_TEXT_INSET = ${CARD_TEXT_INSET};`));
     // The card's words: the gutter plus a card's padding (space 5 + space 4).

@@ -44,9 +44,55 @@ test('[J13b] the reminder card after the first letter (C-REQ-001 Rev, DR-12 B): 
   await expect(app.getByRole('heading', { name: 'A gentle nudge, now and then?' })).toHaveCount(0);
   await step('unhappy', 'No reminders', 'No OS prompt; one calm line. Settings, Reminders still offers them.');
 
-  await tab(app, 'Tonight').click();
+  await tab(app, 'Home').click();
   await typeLetter(app, 'You laughed at the rain.');
   await expect(selectedTab(app, 'Book')).toBeVisible({ timeout: 6000 });
   await app.waitForTimeout(2500);
   await expect(app.getByRole('heading', { name: 'A gentle nudge, now and then?' }), 'the second letter does not bring it back').toHaveCount(0);
+});
+
+test('[J13c] the second reminder card, once, after the first month (C-REQ-001 Rev, BL-518, BL-1427): never a third', async ({ app, record }) => {
+  // The page's clock is ours (Playwright), so the first month passes in a moment; the logic that decides is the app's own
+  // (lib/asks/next-ask.logic.ts: firstLetterAt at least 30 days old, exactly one prime shown, cap of 2). A reload is a new session.
+  test.setTimeout(150_000);
+  const step = journey(record, 'J13', 'reminders', 8, 'J13-07');
+  const card = app.getByRole('heading', { name: 'A gentle nudge, now and then?' });
+  await firstRun(app);
+  await typeLetter(app, 'You held the spoon by yourself today.');
+  await expect(card).toBeVisible({ timeout: 8000 });
+  await btn(app, 'No reminders').click();
+  await expect(card).toHaveCount(0);
+
+  // Day 10 (inside the first month): a new session and a new letter, and no second card yet.
+  await app.clock.setFixedTime(new Date(Date.now() + 10 * 864e5));
+  await app.reload();
+  await expect(selectedTab(app, 'Book')).toBeVisible({ timeout: 15_000 });
+  await tab(app, 'Home').click();
+  await typeLetter(app, 'You laughed at the rain.');
+  await expect(selectedTab(app, 'Book')).toBeVisible({ timeout: 6000 });
+  await app.waitForTimeout(2500);
+  await expect(card, 'inside the first month there is no second card').toHaveCount(0);
+
+  // Day 31: a new session and a new letter, and the second card shows.
+  await app.clock.setFixedTime(new Date(Date.now() + 31 * 864e5));
+  await app.reload();
+  await expect(selectedTab(app, 'Book')).toBeVisible({ timeout: 15_000 });
+  await tab(app, 'Home').click();
+  await typeLetter(app, 'You waved at the moon.');
+  await expect(card).toBeVisible({ timeout: 8000 });
+  for (const b of ['Yes, evenings', 'Pick a time', 'No reminders']) await expect(btn(app, b)).toBeVisible();
+  await step('happy', 'After the first month: the second card', 'Over the Book, once the first month is behind you: the same reminder card, shown a second time. The first one was answered with No reminders, and this is the last time it is offered. (Browser clock moved forward; the logic is the app\'s own.)');
+  await btn(app, 'No reminders').click();
+  await expect(card).toHaveCount(0);
+
+  // Day 40: a new session and a new letter, and no third card, ever.
+  await app.clock.setFixedTime(new Date(Date.now() + 40 * 864e5));
+  await app.reload();
+  await expect(selectedTab(app, 'Book')).toBeVisible({ timeout: 15_000 });
+  await tab(app, 'Home').click();
+  await typeLetter(app, 'You clapped for the dog.');
+  await expect(selectedTab(app, 'Book')).toBeVisible({ timeout: 6000 });
+  await app.waitForTimeout(2500);
+  await expect(card, 'a third card never shows').toHaveCount(0);
+  await step('unhappy', 'No third card', 'Another letter in a new session, well past the first month: nothing is asked. The card is offered twice at most.');
 });

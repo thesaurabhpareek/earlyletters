@@ -33,6 +33,7 @@ import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { copy, fill } from '@/lib/copy';
 import { todayISO, type Child } from '@/lib/store';
+import { nameEditorError } from './child-settings.logic';
 import { DateField } from './date-field';
 import { dateRange } from './date-field.logic';
 
@@ -73,7 +74,7 @@ export function NameEditor({ child, onSave, onCancel }: EditorProps) {
         autoCorrect={false}
         textContentType="givenName"
         returnKeyType="done"
-        error={check.ok ? null : e.nameEmpty}
+        error={nameEditorError(child.name, draft)}
         helper={nearLimit(textLength(draft), CHILD_NAME_MAX) ? fill(e.nameTooLong, { n: CHILD_NAME_MAX }) : undefined}
       />
       <Actions canSave={changed} onCancel={onCancel} onSave={() => check.ok && onSave({ name: check.value })} />

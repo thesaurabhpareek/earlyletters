@@ -55,7 +55,7 @@ export interface ServerConfig {
   url: string;
   /** Publishable (anon) key for the `apikey` header. */
   publishableKey: string;
-  /** Bearer for a role that may run insights_aggregates: an insights_reader JWT (recommended) or a secret key. */
+  /** Bearer for a role that may run insights_aggregates: a read-only reporting credential (planned reporting_reader, IN-DA-03). An insights_reader JWT no longer works through the Data API (CR-71 C9); never put the service key in CI. */
   bearer: string;
   weeks: number;
 }

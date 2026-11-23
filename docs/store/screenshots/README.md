@@ -28,7 +28,7 @@ iPhone only. The earlier 6.5 inch and Play folders (website re-renders) were rem
 | 3 | 03-letter.png | A letter from Mama with Hear Mama | Your voice stays with each letter. | The original recording is kept unchanged. |
 | 4 | 04-book.png | The Book after Add to Asha's book: this month and the month before | A book that grows by month. | Each letter goes into your child's month of age. |
 | 5 | 05-letter-night.png | Read together, dark, no word highlight | Read together at bedtime. | One letter at a time, oldest first. |
-| 6 | 06-privacy.png | Settings, Privacy, "What we never do" | Your book stays on your phone. | Private by default. Never sold, never used for ads. |
+| 6 | 06-privacy.png | Settings, Privacy, "What we never do" | Your book is private. | Private by default. Never sold, never used for ads. |
 | 7 | 07-quiet-day.png | "A quiet day, kept." with Undo | Quiet days are fine. | Tap Not much today. That is enough. |
 | 8 | 08-listening.png | Listening, no words on screen | Pause, laugh, start again. | Take your time. Say it however it comes. |
 

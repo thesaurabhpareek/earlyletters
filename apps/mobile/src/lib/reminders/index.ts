@@ -12,6 +12,17 @@ import { reminderCopy } from './copy';
 import type { ReminderPrefs, ReminderTime } from './planner';
 import { readPrefs } from './prefs';
 
+export {
+  addNotificationClass,
+  budgetedSlots,
+  chooseOnePerDay,
+  IOS_PENDING_LIMIT,
+  NOTIFICATION_CLASSES,
+  PLAN_MAX,
+  TOTAL_MAX,
+  type NotificationClass,
+  type NotificationClassId,
+} from './budget';
 export { reminderCopy } from './copy';
 export {
   clampReminderTime,
@@ -25,11 +36,13 @@ export {
   type ReminderTime,
   type ReminderWindow,
 } from './planner';
-export { LOCK_SCREEN_NAMES_DEFAULT, lockScreenNamesOn, plannerChildren, readPrefs, writePrefs } from './prefs';
+export { anchorAt, LOCK_SCREEN_NAMES_DEFAULT, lockScreenNamesOn, plannerChildren, readPrefs, writeOnSince, REMINDER_SESSION_KEY, REMINDER_SETTING_KEYS, writePrefs } from './prefs';
+export { endReminderSession, sessionEnded, settleReminderSession } from './session';
 export {
   currentPlan,
   disableReminders,
   enableReminders,
+  forgetReminders,
   getReminderPermission,
   getReminderPermissionDetail,
   intendedPlan,

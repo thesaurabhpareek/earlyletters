@@ -174,6 +174,17 @@ export async function stopAnalyticsForUnder18(): Promise<void> {
   notify();
 }
 
+/**
+ * Erase everything on this phone (BL-387, DATA-REQ-024): stop collecting at once and forget every id, quietly.
+ * Nothing is sent about it: no consent event, no last flush (revoke clears the queue). The settings rows that held
+ * the choice and the ids are wiped with the rest.
+ */
+export async function stopAnalyticsForErase(): Promise<void> {
+  if (analytics.consent() === 'granted') await analytics.revoke();
+  await analytics.forgetIds();
+  notify();
+}
+
 /** For the account-deletion request (TDD 05 X-02 `analytics-forget`): current and retired ids. */
 export function analyticsIdsForDeletion(): string[] {
   return analytics.analyticsIds();

@@ -1,0 +1,323 @@
+/**
+ * The recording-backup state file on this phone (`backup-<profile id>.db` and its -wal, -shm and -journal
+ * sidecars): its name, its exclusion from the phone's backup, and its removal (Erase everything, sign-out). CR-71 B5; BRIEF B5.
+ *
+ * A data right, like the photo sweep: it works with `capabilities.backup` off, because an install that once ran a
+ * build with the flag on may hold the file. So it imports only expo-file-system, expo-sqlite (the folder) and the
+ * ScribeFiles module, and nothing from the backup runtime (test/backup-gate.test.ts holds that line).
+ *
+ * The exclusion is per FILE and never `scribe.db`: that stays in the backup, and the folder is never excluded.
+ * Fail closed: a file whose exclusion cannot be set, or reads back false, is deleted (with its sidecars, which are
+ * useless alone) and the store does not open it.
+ */
+import { Directory, File } from 'expo-file-system';
+import * as SQLite from 'expo-sqlite';
+import { ScribeFiles } from '../../../modules/scribe-files';
+
+/** backup-<uuid>.db and its sidecars. Never matches scribe.db* (the recovery export's DB_FILE, X-2). */
+const BACKUP_FILE = /^backup-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.db(-wal|-shm|-journal)?$/i;
+const SIDECAR = /-(wal|shm|journal)$/i;
+
+export function isBackupFileName(name: string): boolean {
+  return BACKUP_FILE.test(name);
+}
+
+function databaseDirectory(): Directory | null {
+  try {
+    const dir = new Directory(SQLite.defaultDatabaseDirectory);
+    return dir.exists ? dir : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Every backup state file now in the database folder (names only; no file is opened). A folder that exists but
+ * cannot be listed THROWS: an empty answer there would read as "nothing to secure" (fail open).
+ */
+export function listBackupFiles(): File[] {
+  const dir = databaseDirectory();
+  if (!dir) return [];
+  return dir.list().filter((i): i is File => i instanceof File && isBackupFileName(i.name));
+}
+
+/** Set the exclusion on one file and read it back. False on any doubt (module absent, call threw, read false). */
+function excludeAndReadBack(file: File): boolean {
+  try {
+    if (!ScribeFiles) return false;
+    ScribeFiles.setExcludedFromBackup(file.uri, true);
+    return ScribeFiles.isExcludedFromBackup(file.uri) === true;
+  } catch {
+    return false;
+  }
+}
+
+/** True when the file is gone afterwards. A failure is counted by the caller (no name or path is kept or logged). */
+function deleteFile(file: File): boolean {
+  try {
+    if (file.exists) file.delete();
+    return !file.exists;
+  } catch {
+    return false; // left for the next launch's check, which fails the same way and tries again
+  }
+}
+
+/** The file and its sidecars that exist, grouped by the database they belong to. */
+function families(files: File[]): Map<string, File[]> {
+  const out = new Map<string, File[]>();
+  for (const f of files) {
+    const base = f.name.replace(SIDECAR, '').toLowerCase();
+    out.set(base, [...(out.get(base) ?? []), f]);
+  }
+  return out;
+}
+
+export interface SecureResult {
+  kept: number;
+  deleted: number;
+  /** Files that failed the check and could not be deleted (a count only). */
+  failed: number;
+  /** The folder exists but could not be listed, so nothing was checked. */
+  listFailed: boolean;
+}
+
+function secureFamilies(files: File[]): { kept: number; deleted: number; failed: number } {
+  let kept = 0;
+  let deleted = 0;
+  let failed = 0;
+  for (const members of families(files).values()) {
+    if (members.every(excludeAndReadBack)) {
+      kept += members.length;
+    } else {
+      for (const m of members) {
+        if (deleteFile(m)) deleted += 1;
+        else failed += 1;
+      }
+    }
+  }
+  return { kept, deleted, failed };
+}
+
+/**
+ * Launch step (after the first frame, never awaited: a folder listing and a call per file). Every backup file that
+ * exists is excluded and read back, on every install, new and old; one that reads false is deleted. Never throws;
+ * `failed` and `listFailed` are content-free signals the caller may surface.
+ */
+export function secureBackupFilesAtLaunch(): SecureResult {
+  try {
+    return { ...secureFamilies(listBackupFiles()), listFailed: false };
+  } catch {
+    return { kept: 0, deleted: 0, failed: 0, listFailed: true };
+  }
+}
+
+/** The named database file and its sidecars, built from exact names (no folder listing), those that exist. */
+function filesNamed(name: string): { files: File[]; main: File } | null {
+  const dir = databaseDirectory();
+  if (!dir) return null;
+  const base = name.replace(SIDECAR, '');
+  const main = new File(dir, base);
+  const all = [main, ...['-wal', '-shm', '-journal'].map((s) => new File(dir, base + s))];
+  return { files: all.filter((f) => f.exists), main };
+}
+
+/**
+ * Before the store opens a file (and again after it opens, which is when a new file first exists): true only if
+ * that file, if present, is excluded and reads back so. False means it was deleted and must not be opened.
+ * Fail closed: the files are found by exact name, so a folder that cannot be listed changes nothing; any throw is
+ * false; after the open (`opened`) the main file must exist.
+ */
+export function backupFileIsSecure(name: string, opened = false): boolean {
+  if (!isBackupFileName(name)) return false;
+  let found: ReturnType<typeof filesNamed>;
+  try {
+    found = filesNamed(name);
+  } catch {
+    return false;
+  }
+  if (!found) return !opened; // no database folder yet: nothing to exclude before the open, impossible after it
+  if (opened && !found.main.exists) return false;
+  const r = secureFamilies(found.files);
+  return r.deleted === 0 && r.failed === 0;
+}
+
+/** The store was refused a backup file because its exclusion could not be set or read back (the file was deleted). */
+export class BackupFileNotExcluded extends Error {
+  constructor() {
+    super('backup_file_not_excluded');
+  }
+}
+
+/**
+ * The one way the store opens the file (B5-3): check before, open, run the first statements (`firstUse`: the schema,
+ * which is what makes SQLite create the -wal and -shm files in WAL mode), then check again. A failed check refuses
+ * with `BackupFileNotExcluded`, closing the handle. The second check MUST follow `firstUse`: those sidecars hold
+ * the table rows and are created by the first statement, not by the open. Files SQLite creates later in the session
+ * are marked at the next launch.
+ */
+export function openSecureBackupFile<T extends { close: () => void }, R>(
+  name: string,
+  open: (name: string) => T,
+  firstUse: (opened: T) => R,
+): R {
+  if (!backupFileIsSecure(name)) throw new BackupFileNotExcluded();
+  const opened = open(name);
+  try {
+    const result = firstUse(opened);
+    if (!backupFileIsSecure(name, true)) throw new BackupFileNotExcluded();
+    return result;
+  } catch (e) {
+    opened.close();
+    throw e;
+  }
+}
+
+export interface DeleteResult {
+  deleted: number;
+  /** Files that would not go (a count only; no name or path is kept or logged). */
+  failed: number;
+}
+
+function deleteAll(files: File[]): DeleteResult {
+  let deleted = 0;
+  let failed = 0;
+  for (const f of files) {
+    if (deleteFile(f)) deleted += 1;
+    else failed += 1;
+  }
+  return { deleted, failed };
+}
+
+/**
+ * Erase everything (B5-4): every backup state file and sidecar, whichever account it belongs to. Synchronous, so it
+ * can sit inside `eraseDeviceFiles()` with no await before it. THROWS when the folder cannot be listed (an empty
+ * answer there would read as "nothing to delete") or a file will not go, so the erase stays pending and repeats.
+ * Never touches scribe.db*.
+ */
+export function deleteBackupFiles(): DeleteResult {
+  const r = deleteAll(listBackupFiles());
+  if (r.failed > 0) throw new BackupFileDeleteFailed();
+  return r;
+}
+
+/** A backup state file would not go (CODE-R15: callers branch on `code`, never on the message). */
+export class BackupFileDeleteFailed extends Error {
+  readonly code = 'backup_file_delete';
+  constructor() {
+    super('backup_file_delete');
+  }
+}
+
+/**
+ * Sign-out (B5-5): the one account's file and sidecars, by exact name (no listing). The caller has closed the
+ * handle first. Never throws. A file left (a failed delete, a kill before it) is NOT removed by the launch's exclusion check, which
+ * keeps an excluded file; `deleteBackupFilesExcept` at the next settled launch or session change removes it. The book is not touched.
+ */
+export function deleteBackupFilesFor(profileId: string): DeleteResult {
+  const name = `backup-${profileId.toLowerCase()}.db`;
+  if (!isBackupFileName(name)) return { deleted: 0, failed: 0 };
+  try {
+    const found = filesNamed(name);
+    return found ? deleteAll(found.files) : { deleted: 0, failed: 0 };
+  } catch {
+    return { deleted: 0, failed: 1 };
+  }
+}
+
+const OWNER = /^backup-([0-9a-f-]{36})\.db$/;
+
+/**
+ * Keying rule (B5-5): a backup file belongs to the account named in its file name, and only the account signed in
+ * NOW (`keep`, null when signed out) may keep one. Run once the session has settled at launch (so a session that
+ * ended while the app was closed, or a kill right after sign-out, is caught) and on every change of the signed-in
+ * user. Each other family has its handle closed, is marked ended and is deleted; a failure is counted, never thrown,
+ * and the next run retries it. Idempotent and cheap when nothing is there. The account signing in builds its own file
+ * only after this runs, and `keep` spares an account that is already signed in, so an account switch cannot delete
+ * the incoming account's file. A list failure counts as failed (the next run retries). Never touches scribe.db*.
+ */
+export function deleteBackupFilesExcept(keep: string | null): DeleteResult {
+  const keepBase = keep ? `backup-${keep.toLowerCase()}.db` : null;
+  let files: File[];
+  try {
+    files = listBackupFiles();
+  } catch {
+    return { deleted: 0, failed: 1 };
+  }
+  const out: DeleteResult = { deleted: 0, failed: 0 };
+  for (const [base, family] of families(files)) {
+    if (base === keepBase) continue;
+    const id = OWNER.exec(base)?.[1];
+    if (id) {
+      endedAccounts.add(id);
+      closeHandles(id);
+    }
+    const r = deleteAll(family);
+    out.deleted += r.deleted;
+    out.failed += r.failed;
+  }
+  return out;
+}
+
+/**
+ * Open handles are the runtime's, which this file must not import (flag off loads none of it). The runtime hands its
+ * closer here when it loads; with the flag off none is registered, and none is open.
+ */
+type HandleCloser = (profileId: string | null) => void;
+let handleCloser: HandleCloser | null = null;
+
+export function registerBackupHandleCloser(close: HandleCloser | null): void {
+  handleCloser = close;
+}
+
+function closeHandles(profileId: string | null): void {
+  try {
+    handleCloser?.(profileId);
+  } catch {
+    // A handle that will not close must not stop the delete that follows.
+  }
+}
+
+/** Erase everything: close every open backup handle. */
+export function closeBackupHandles(): void {
+  closeHandles(null);
+}
+
+/**
+ * Sign-out (B5-5, D1): close this account's backup handle, then delete its file. The order matters (an open handle
+ * on a deleted file keeps writing to it). Runs with the flag off too. The book is not touched. Never throws.
+ */
+export function endBackupFileFor(profileId: string): DeleteResult {
+  endedAccounts.add(profileId.toLowerCase());
+  closeHandles(profileId);
+  return deleteBackupFilesFor(profileId);
+}
+
+/**
+ * Accounts that signed out (or were replaced) on this phone and have not signed in since. A service pass already
+ * running for such an account must not open its file again, or it would re-create the file just deleted (the
+ * handle was closed, the map entry forgotten). The runtime asks here in `dbFor` and clears the mark when the
+ * account's next service is built (a sign-in). In memory only: a launch starts with no service and no mark.
+ */
+const endedAccounts = new Set<string>();
+
+export function backupAccountEnded(profileId: string): boolean {
+  return endedAccounts.has(profileId.toLowerCase());
+}
+
+export function backupAccountStarted(profileId: string): void {
+  endedAccounts.delete(profileId.toLowerCase());
+}
+
+/**
+ * The name of this account's backup file, only if its main file EXISTS now and the account has not signed out since
+ * (the tombstone). For a caller that must open an existing file and never create one (the token move). Null otherwise.
+ */
+export function existingBackupFileFor(profileId: string): string | null {
+  const name = `backup-${profileId.toLowerCase()}.db`;
+  if (!isBackupFileName(name) || backupAccountEnded(profileId)) return null;
+  try {
+    return filesNamed(name)?.main.exists ? name : null;
+  } catch {
+    return null;
+  }
+}

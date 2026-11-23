@@ -63,7 +63,7 @@ function openWrite(reopen: string | null = null) {
   };
   const initial = reopen ? (store.getDraft(reopen)?.typedText ?? '') : '';
   const session = createWriteSession(
-    { persist, draftId: () => draftId, hasRecording: (id) => !!store.getDraft(id)?.audioUri, deleteDraft: store.deleteDraft },
+    { persist, settled: () => {}, draftId: () => draftId, hasRecording: (id) => !!store.getDraft(id)?.audioUri, deleteDraft: store.deleteDraft },
     { initial },
   );
   /** Type the words one keystroke at a time, `gapMs` apart (fast typing: well inside the pause). */
@@ -349,7 +349,7 @@ describe('write.tsx uses the session on every way out', () => {
     .replace(/(^|[^:])\/\/.*$/gm, '$1');
 
   it('keystrokes, Close, both destinations, unmount and leaving the foreground all go through it', () => {
-    expect(code).toMatch(/createWriteSession\(\s*\{\s*persist: \(value\) => persistRef\.current\(value\),\s*draftId: \(\) => draftId\.current,\s*hasRecording: \(id\) => !!getDraft\(id\)\?\.audioUri,\s*deleteDraft,\s*\},\s*\{ initial: initialText \},\s*\)/);
+    expect(code).toMatch(/createWriteSession\(\s*\{\s*persist: \(value, quiet\) => persistRef\.current\(value, quiet\),\s*settled: \(value\) => settledRef\.current\(value\),\s*draftId: \(\) => draftId\.current,\s*hasRecording: \(id\) => !!getDraft\(id\)\?\.audioUri,\s*deleteDraft,\s*\},\s*\{ initial: initialText \},\s*\)/);
     expect(code).toMatch(/session\.change\(value\);/);
     expect(code).toMatch(/const close = \(\) => \{\s*if \(session\.close\(\)\) router\.back\(\);\s*\};/);
     expect(code).toMatch(/const keep = \(inBook: boolean\) => \{\s*const id = session\.keep\(\);\s*if \(!id\) return;\s*armKeep\(id, inBook\);\s*router\.replace\(\{ pathname: '\/review', params: \{ draftId: id \} \}\);\s*\};/);

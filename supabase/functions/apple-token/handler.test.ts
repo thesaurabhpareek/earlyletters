@@ -24,7 +24,7 @@ const PEM = await p8();
 
 function env(extra: Record<string, string> = {}): Record<string, string> {
   return {
-    SUPABASE_URL: SUPA, SUPABASE_SERVICE_ROLE_KEY: 'service-key', SUPABASE_ANON_KEY: 'anon-key', APPLE_TEAM_ID: 'AB12CD34EF', APPLE_SIGNIN_KEY_ID: 'KEY1234567',
+    SUPABASE_URL: SUPA, SUPABASE_SERVICE_ROLE_KEY: 'legacy.service.key', SUPABASE_ANON_KEY: 'anon-key', APPLE_TEAM_ID: 'AB12CD34EF', APPLE_SIGNIN_KEY_ID: 'KEY1234567',
     APPLE_SIGNIN_PRIVATE_KEY: PEM, TOKEN_KEK_V1: toBase64(new Uint8Array(32)), TOKEN_KEK_V2: KEK, ...extra,
   };
 }
@@ -97,7 +97,7 @@ Deno.test('[F02-REQ-004] exchanges the code, wraps the refresh token under the n
   assert.ok(Number(secret.exp) - Number(secret.iat) <= 600, 'a 10-minute client secret');
 
   const put = w.calls.find((c) => c.url.endsWith('/ops_apple_token_put'))!;
-  assert.equal((put.init.headers as Record<string, string>).Authorization, 'Bearer service-key');
+  assert.equal((put.init.headers as Record<string, string>).Authorization, 'Bearer legacy.service.key');
   const args = JSON.parse(String(put.init.body));
   assert.equal(args.p_profile, CANARY.profileId);
   assert.equal(args.p_key_version, 2);
@@ -185,7 +185,7 @@ Deno.test('[ADR 0017 rule 4] the shared counter: rate_hit(apple_token) as the ca
   const user = w.calls.find((c) => c.url === `${SUPA}/auth/v1/user`)!;
   assert.equal((user.init.headers as Record<string, string>).apikey, 'anon-key', 'the session check is made as the person too (review 3, nit 3)');
   const store = w.calls.find((c) => c.url.endsWith('/rpc/ops_apple_token_put'))!;
-  assert.equal((store.init.headers as Record<string, string>).Authorization, 'Bearer service-key', 'only the store call uses the service role');
+  assert.equal((store.init.headers as Record<string, string>).Authorization, 'Bearer legacy.service.key', 'only the store call uses the service role');
   const noAnon = env();
   delete noAnon.SUPABASE_ANON_KEY;
   const skipped = world({ env: noAnon });
@@ -304,7 +304,7 @@ Deno.test('[LEGAL-REQ-014] canary: nothing it was sent or received reaches a log
   const text = [...lines, ...bodies].join('\n');
   assert.ok(lines.length >= 4);
   assert.deepEqual(findCanaries(text), []);
-  for (const secret of [CODE, APPLE_SUB, CANARY.appleRefreshToken, 'service-key', 'anon-key']) assert.ok(!text.includes(secret), secret);
+  for (const secret of [CODE, APPLE_SUB, CANARY.appleRefreshToken, 'legacy.service.key', 'anon-key']) assert.ok(!text.includes(secret), secret);
 });
 
 Deno.test('helpers: Apple subjects and JWT claims', () => {
@@ -314,4 +314,26 @@ Deno.test('helpers: Apple subjects and JWT claims', () => {
   assert.equal(jwtClaims(42), null);
   assert.equal(jwtClaims('a.!!!.c'), null);
   assert.deepEqual(jwtClaims(idToken({ sub: 'x' })), { sub: 'x' });
+});
+
+Deno.test('[BL-594] with the legacy keys switched off, the new keys capture the token: 204, the store call on apikey only', async () => {
+  const e = env({ SUPABASE_SECRET_KEYS: JSON.stringify({ default: 'sb_secret_fixture_only' }), SUPABASE_PUBLISHABLE_KEYS: JSON.stringify({ default: 'sb_publishable_fixture_only' }) });
+  delete e.SUPABASE_SERVICE_ROLE_KEY;
+  delete e.SUPABASE_ANON_KEY;
+  const w = world({ env: e });
+  const res = await w.handler(req({ code: CODE, clientId: BUNDLE }));
+  assert.equal(res.status, 204);
+  const put = w.calls.find((c) => c.url.endsWith('/ops_apple_token_put'))!;
+  const headers = put.init.headers as Record<string, string>;
+  assert.equal(headers.apikey, 'sb_secret_fixture_only');
+  assert.equal(headers.Authorization, undefined, 'a new secret key never goes as a bearer token');
+});
+
+Deno.test('[BL-594] with no usable key at all, the function refuses as not configured', async () => {
+  const e = env();
+  delete e.SUPABASE_SERVICE_ROLE_KEY;
+  const w = world({ env: e });
+  const res = await w.handler(req({ code: CODE, clientId: BUNDLE }));
+  assert.ok(res.status >= 500, `status ${res.status}`);
+  assert.ok(w.lines.some((l) => l.includes('"code":"config"')), 'logs code: config');
 });

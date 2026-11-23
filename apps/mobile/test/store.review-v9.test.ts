@@ -2,7 +2,8 @@
 /**
  * Review's own choices on the draft (SR-C-06, CR-39; RT-REV-02, RT-REV-07; BL-377, WP-F06-08b), through the store
  * facade over node:sqlite: written, read back, cleared at Keep and at Let it go, never queued for sync, never touching
- * raw_transcript or typed_text. Plus the writer's debounce (F04-REQ-011: at most 500 ms). Fictional family "Asha" only.
+ * raw_transcript or typed_text. Plus the writer's wait (F04-REQ-011: at most 500 ms; the long-burst and retry cases are in
+ * review-writer-autosave.test.ts). Fictional family "Asha" only.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Edit } from '@scribe/core';
@@ -161,11 +162,11 @@ describe('[SR-C-06] restoring: the machine adds nothing from storage', () => {
 });
 
 describe('[F04-REQ-011] typed words are written within 500 ms', () => {
-  it('the debounce is at most 500 ms', () => {
+  it('the wait for typed words is at most 500 ms', () => {
     expect(TYPED_WRITE_DEBOUNCE_MS).toBeLessThanOrEqual(500);
   });
 
-  it('writes the last words after the quiet, put-backs and the view at once, and flush writes now', () => {
+  it('writes the last words after the wait, put-backs and the view at once, and flush writes now', () => {
     vi.useFakeTimers();
     try {
       const writes: unknown[] = [];

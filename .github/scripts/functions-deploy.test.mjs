@@ -204,13 +204,14 @@ test('this repository: every function that takes a person\'s session keeps the g
   // The exact sets (review B N6 on #138): a function added, or added with --no-verify-jwt in both its header
   // and NO_VERIFY_JWT, or given an anonymous smoke, must change this test too, never only those places.
   const PUBLIC = ['config', 'content', 'purge-worker'];
-  assert.deepEqual(NO_VERIFY_JWT, PUBLIC);
-  assert.deepEqual([...r.noVerifyJwt].sort(), PUBLIC);
+  const BEARER = [...PUBLIC, 'new-device-email'];   // a shared-secret caller (cron), no anonymous health route
+  assert.deepEqual(NO_VERIFY_JWT, BEARER);
+  assert.deepEqual([...r.noVerifyJwt].sort(), [...BEARER].sort());
   assert.deepEqual(SMOKE_HEALTH, PUBLIC);
   assert.deepEqual([...r.smoke].sort(), PUBLIC);
   // And the deploy list itself (review B note 1 on #253): a new function fails here until it is named.
-  assert.deepEqual([...r.deploy].sort(), ['analytics-forget', 'apple-token', 'config', 'content', 'invite-redeem', 'purge-worker', 'subscription-status']);
-  const session = r.deploy.filter((n) => !PUBLIC.includes(n));
+  assert.deepEqual([...r.deploy].sort(), ['analytics-forget', 'apple-token', 'config', 'content', 'invite-redeem', 'new-device-email', 'new-device-fill', 'purge-worker', 'subscription-status']);
+  const session = r.deploy.filter((n) => !BEARER.includes(n));
   for (const n of ['analytics-forget', 'apple-token', 'invite-redeem', 'subscription-status', ...session]) {
     assert.ok(r.deploy.includes(n), `${n} is deployed`);
     assert.ok(!r.noVerifyJwt.includes(n), `${n} keeps the gateway JWT check`);

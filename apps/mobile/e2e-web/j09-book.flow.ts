@@ -5,7 +5,7 @@ test('[J09] the Book: empty, one letter, many letters', async ({ app, record }) 
   const step = journey(record, 'J09', 'the-book', 1, 'J07-04');
   await firstRun(app);
   await app.getByText('Book', { exact: true }).last().click();
-  await expect(app.getByText('The first page is waiting.')).toBeVisible();
+  await expect(app.getByText('Your first letter will show up here.')).toBeVisible();
   await expect(app.getByText('Tell Asha one thing about today.')).toBeVisible();
   // S24: the closed cover from first run, with the name and "From Mama" (decorative: the heading already says the name).
   await expect(app.getByText('From Mama', { exact: true }).first()).toBeVisible();
