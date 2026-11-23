@@ -29,6 +29,9 @@ Totals across 192 rules (2026-10-03, counted from the rows below): 42 enforced, 
 | CODE-R18 | MUST | review (principal-architect); ADR | enforced on develop (review only) | none |
 | CODE-R19 | MUST | `app_config` table and client | not yet | PDATA-08 (BL-022) |
 | CODE-R20 | MUST | typecheck `strict` in CI; ESLint and Prettier | typecheck enforced on develop; lint not yet (PR #30 job waits for WS-12, WS-16) | MONO-01 |
+| CODE-R23 | MUST | `scripts/release/go-no-go-check.mjs` for per-build pages; review | partly: per-build pages checked; one file per gate not yet | none |
+| CODE-R24 | SHOULD | review | review only | none |
+| CODE-R25 | SHOULD | `timeout-minutes` per job in `ci.yml`; review | partly: per-job timeouts on develop; wording in `ci.yml`, `.github/README.md`, TDD 07 not yet changed | none |
 | API-R01 | MUST | `packages/api` (manifests, config, content, envelope); typed RPC wrappers and DB types | partly on develop; wrappers and types not yet | API-G4 (WS-04) |
 | API-R02 | MUST | generated types plus drift test | not yet | WS-04 |
 | API-R03 | MUST | cites DB-R13 for views; RPC or narrow policy writes by review | see DB-R13; review | DB-01 |
