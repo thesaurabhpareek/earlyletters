@@ -1,8 +1,9 @@
 // Fails when the committed content map is stale against the tree. Run: node --test scripts/content/export-content-map.test.mjs
-// Not wired into `npm test` (root package.json is founder-listed); wiring is proposed in docs/content/map/README.md.
+// Wired into the root `npm test` list (BL-1880), so a stale map fails CI.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, mkdirSync, writeFileSync, rmSync, mkdtempSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildMap, render, COLUMNS } from './export-content-map.mjs';
@@ -55,4 +56,23 @@ test('[BL-1883] build-dependent privacy lines name the build they are true for',
   // found by pattern, not named: any line that says our servers hold it
   assert.equal(bdOf(byId('strings.en.ts#en.settings.delete.bookBody')), 'servers on');
   assert.ok(map.rows.every((r) => (r.hold === 'build-dependent') === (r.hold_reason.startsWith('build-dependent:'))));
+});
+
+test('[BL-1880] the root npm test list runs this check', () => {
+  const pkg = JSON.parse(readFileSync(join(dir, '..', '..', '..', 'package.json'), 'utf8'));
+  assert.match(pkg.scripts.test, /scripts\/content\/export-content-map\.test\.mjs/);
+});
+test('[BL-1880] a planted stale map fails --check and a current one passes', () => {
+  const root = join(dir, '..', '..', '..');
+  const tmp = mkdtempSync(join(root, '.map-check-'));
+  const rel = tmp.slice(root.length + 1);
+  const run = () => spawnSync(process.execPath, [join(root, 'scripts/content/export-content-map.mjs'), '--check', '--out', rel], { encoding: 'utf8' });
+  try {
+    const out = render(map);
+    writeFileSync(join(tmp, 'content-map.json'), out.json);
+    writeFileSync(join(tmp, 'content-map.csv'), out.csv);
+    assert.equal(run().status, 0);
+    writeFileSync(join(tmp, 'content-map.json'), out.json.replace('"', '"x', 1));
+    assert.equal(run().status, 1);
+  } finally { rmSync(tmp, { recursive: true, force: true }); }
 });

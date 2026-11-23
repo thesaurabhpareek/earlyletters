@@ -73,7 +73,10 @@ export function measure(rows) {
     const rule = kindOf(r.path);
     if (rule && over(groupOf(rule))) { lines += r.lines; files += 1; }
   }
-  return { lines, files, excluded, capped: over('lock') || over('map') || over('other'), why };
+  // Each kind over its own cap is named with that cap, so the message never prints another kind's number.
+  const names = { lock: 'the lockfile', map: 'the content map output', other: 'other excluded files' };
+  const overCaps = ['lock', 'map', 'other'].filter(over).map((g) => `${names[g]} over ${cap[g]}`);
+  return { lines, files, excluded, capped: overCaps.length > 0, overCaps, why };
 }
 
 /** True when the newest `size:accepted` event is a `labeled` by `owner`. Events are oldest first, as GitHub returns them. */
@@ -88,7 +91,7 @@ export const hasExceptionLine = (body) => /^Size exception:\s*\S/m.test(body ?? 
 export function evaluate({ rows, events = [], body = '', owner = '' }) {
   const m = measure(rows);
   const out = [`lines ${m.lines} / ${MAX_LINES}, files ${m.files} / ${MAX_FILES}`];
-  if (m.excluded) out.push(`excluded ${m.excluded} lines (${[...m.why].map(([k, v]) => `${k}: ${v}`).join('; ')})${m.capped ? `: over ${MAX_EXCLUDED_LINES}, counted` : ''}`);
+  if (m.excluded) out.push(`excluded ${m.excluded} lines (${[...m.why].map(([k, v]) => `${k}: ${v}`).join('; ')})${m.capped ? `: ${m.overCaps.map((c) => `${c}, counted`).join('; ')}` : ''}`);
   if (m.lines <= MAX_LINES && m.files <= MAX_FILES) return { ok: true, lines: out };
   const labelled = events.some((e) => e.event === 'labeled' && e.label?.name === LABEL);
   const byOwner = ownerAccepted(events, owner);
