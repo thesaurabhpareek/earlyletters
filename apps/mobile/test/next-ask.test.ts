@@ -300,9 +300,9 @@ describe('wiring (source checks; the card and the sheet are on the device list)'
   const src = (p: string) => readFileSync(join(__dirname, '..', 'src', p), 'utf8');
   it('Review asks the sequencer after the save, and acts after the Book lands', () => {
     const review = src('app/review.tsx');
-    expect(review).toMatch(/askAfterLanding\.current = askAfterSave\(\{ firstLetter, signInOffered: auth\.configured && auth\.state\.status === 'signedOut' \}\)/);
+    expect(review).toMatch(/askAfterLanding\.current = askAfterSave\(\{\s*firstLetter,\s*signInOffered: auth\.configured && auth\.state\.status === 'signedOut',\s*surfaceBusy: surfaceBusy\(\),/);
     expect(review).toMatch(/askAfterLanding\.current === 'keep_book'/);
-    expect(review).toMatch(/askAfterLanding\.current === 'reminder_prime'[\s\S]*?setTimeout\(requestReminderPrime, signInAfterLandingMs\(motion\.reduced\)\)/);
+    expect(review).toMatch(/askAfterLanding\.current === 'reminder_prime'[\s\S]*?setTimeout\(\(\) => fireDelayedAsk\('reminder_prime', requestReminderPrime\), signInAfterLandingMs\(motion\.reduced\)\)/);
     expect(review).not.toMatch(/offerSignIn/);
   });
 

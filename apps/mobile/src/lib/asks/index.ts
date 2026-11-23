@@ -27,10 +27,12 @@ import { noteAskShown } from '@/lib/analytics/ask';
 import { getSetting, listChildren, listEntriesForChild, listHiddenChildren, setSetting } from '@/lib/store';
 import { readPrefs } from '@/lib/reminders/prefs';
 import { recordDayAsk, todayCounts } from './day-store';
+import { surfaceBusy } from './surface';
 import { firstMonthDone, nextAsk, reminderPrimeSource, sessionAfterForeground, type AskKind, type NextAsk } from './next-ask.logic';
 
 type ReminderPrimeSource = ReturnType<typeof reminderPrimeSource>;
 
+export { setSurfaceBusy, surfaceBusy, type BusySurface } from './surface';
 export { MAX_ASKS_PER_DAY, MAX_OS_ASKS_PER_DAY, MAX_REMINDER_PRIMES, nextAsk, primeAllowed, type AskFacts, type NextAsk } from './next-ask.logic';
 
 const K = {
@@ -92,7 +94,10 @@ export function noteReminderPrimeYes(): void {
 
 /**
  * Call once right after a letter is kept, with `firstLetter` true when the phone had no letter before it.
- * Returns the one ask due, and records it as shown when it is the account sheet (the card records itself when it appears).
+ * Returns the one ask due. Nothing is recorded here: the card records itself when it appears, and the account sheet is
+ * recorded by `fireDelayedAsk` when it is actually opened, so an ask skipped because a take or an export began is not
+ * counted as shown and comes back at the next save (BL-1985).
+ * `surfaceBusy` defaults to the phone's own read (a take recording or an export running), so a caller cannot forget it.
  */
 export function askAfterSave(input: { firstLetter: boolean; signInOffered: boolean; surfaceBusy?: boolean }, now = Date.now()): NextAsk {
   try {
@@ -115,18 +120,34 @@ export function askAfterSave(input: { firstLetter: boolean; signInOffered: boole
       askShownThisSession: askSession === session,
       asksShownToday: today.asks,
       osAsksShownToday: today.osAsks,
-      surfaceBusy: input.surfaceBusy,
+      surfaceBusy: input.surfaceBusy ?? surfaceBusy(),
       firstMonthDone: firstMonthDone(Number.isFinite(at) && at > 0 ? at : null, now),
     });
-    if (ask === 'keep_book') {
-      if (getSetting(K.keepBook) === 'on') setSetting(K.keepBookReoffer, 'on');
-      setSetting(K.keepBook, 'on');
-      noteAsked('keep_book', now);
-    }
     return ask;
   } catch {
     return null; // an ask is never worth an error after a save
   }
+}
+
+/**
+ * The account sheet is about to open: records it as shown (and the one re-offer, BL-519), as it was when the ask was decided.
+ * Called from `fireDelayedAsk` only.
+ */
+function noteKeepBookShown(now = Date.now()): void {
+  if (getSetting(K.keepBook) === 'on') setSetting(K.keepBookReoffer, 'on');
+  setSetting(K.keepBook, 'on');
+  noteAsked('keep_book', now);
+}
+
+/**
+ * Review's delayed ask fires (the timer after the Book lands). Re-reads the busy surfaces: if a take started or an
+ * export began in the delay, nothing shows and nothing is counted (BL-1985). Returns whether the ask was shown.
+ */
+export function fireDelayedAsk(kind: 'keep_book' | 'reminder_prime', show: () => void, now = Date.now()): boolean {
+  if (surfaceBusy()) return false;
+  if (kind === 'keep_book') noteKeepBookShown(now);
+  show();
+  return true;
 }
 
 // ── The reminder card's request, for <ReminderPrimeAsk> ──────────────────
