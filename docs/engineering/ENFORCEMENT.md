@@ -4,7 +4,7 @@ Every MUST rule in the compendium and what enforces it today. Status words: **en
 
 Rules that stay `not yet` are the backlog for the stewards' standing duty 2: turn one into a real check per run, or file it as a backlog proposal for `product`. The owner of each chapter keeps its rows current in the same PR that changes a rule or adds a check.
 
-Totals across 192 rules (2026-10-03, counted from the rows below): 42 enforced, 38 pending in open PRs, 34 partly enforced, review-only or covered by the rule they cite, 78 not yet.
+Totals across 192 rules (2026-10-03 count, adjusted for rules and rows changed since: see the git log of this file): 42 enforced, 38 pending in open PRs, 36 partly enforced, review-only or covered by the rule they cite, 76 not yet.
 
 **Known drift since 2026-10-03** (noted 15 Oct when the compendium landed; the totals above are not recounted): rows that cited PRs #4, #27, #28, #29, #31, #36 and #39 were re-checked against `develop` at `56ec5b5` on 15 Oct and now say `on develop` or `enforced on develop`; `packages/api` (21 files) and `supabase/functions/` (`purge-worker`, `analytics-forget`, `config`, `content`, `_shared`) exist, so API-R01, API-G4, DQ-R12, DQ-R13, DSR-R06, DSR-R07 and DSR-R08 were rewritten on 15 Oct to say what is on `develop` and what is still missing; `packages/brand` sets the support address. Each owner's first standing run should sweep its rows.
 
@@ -53,7 +53,7 @@ Totals across 192 rules (2026-10-03, counted from the rows below): 42 enforced, 
 | OBS-R03 | MUST | request id end to end | not yet | OBS-G1 |
 | OBS-R04 | MUST | review | review only | none |
 | OBS-R05 | MUST | ESLint `no-console`; Babel strip in release | not yet | MONO-01 |
-| OBS-R06 | MUST | Sentry init after consent; `setUser` never-called test | not yet | MOB-15, BL-021 |
+| OBS-R06 | MUST | Sentry init after consent; `setUser` never-called test; precondition: no crash SDK before that test and device-side OBS-R02 tests | not yet; no Sentry dependency today, so nothing to gate | MOB-15, BL-021, OBS-G5 |
 | OBS-R07 | MUST | `audit_events` table and tests; `ops_audit_log` | `audit_events` on develop (pending migration 4); `ops_audit_log` not yet | DOC-11 |
 | OBS-R08 | MUST | analytics validator fails closed | enforced on develop (#31) | PDATA-03 |
 | OBS-R09 | MUST | `ops_health` views and job | not yet | OBS-G3 (PDATA-06) |
@@ -76,6 +76,7 @@ Gap ids defined here:
 - OBS-G1: request id generation on device, header propagation, echo and storage with rejected ops.
 - OBS-G2: typed `OpsLog` logger with Asha canary unit tests.
 - OBS-G3: `ops_health` views and the 5-minute job.
+- OBS-G5: a check that fails a build adding a crash SDK dependency before the `setUser` test and device-side OBS-R02 tests exist (OBS-R06 precondition).
 - OBS-G4: end-to-end log canary over every log stream.
 
 ## data-steward (chapters 03, 04)
