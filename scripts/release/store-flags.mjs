@@ -21,6 +21,7 @@ export const STORE_FLAGS = Object.freeze([
   Object.freeze({ env: 'EXPO_PUBLIC_PHOTOS', card: 'NS-01', allowedOn: Object.freeze([]) }),
   Object.freeze({ env: 'EXPO_PUBLIC_BOOK_SEARCH', card: 'NS-02', allowedOn: Object.freeze([]) }),
   Object.freeze({ env: 'EXPO_PUBLIC_NEW_DEVICE_EMAIL', card: 'NS-08', allowedOn: Object.freeze([]) }),
+  Object.freeze({ env: 'EXPO_PUBLIC_BACKUP_LINE', card: 'NS-10', allowedOn: Object.freeze([]) }),
 ]);
 
 /**
