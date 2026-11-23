@@ -211,9 +211,9 @@ What a compliant on-device local notification would be (PROPOSED; all of it alre
 7. The notification permission is the existing reminder ask, after the first saved letter (K-02). The library tab does not ask for it.
 
 App Review and label implications:
-- A local notification is not "collection": nothing is sent to us or to Apple's push service (UNVERIFIED this session; I read no Apple page on local notifications, and I read App Review only to character 100000, so any promotional-notification rule beyond 5.1.2(i) is UNVERIFIED and counsel and `mobile` should read guideline 4.5.4 before any wording ships). The label stays Data Not Collected if nothing leaves the phone.
+- A local notification is not "collection": nothing is sent to us or to Apple's push service (UNVERIFIED this session; I read no Apple page on local notifications, and I read App Review only to character 100000, so any promotional-notification rule beyond 5.1.2(i) is UNVERIFIED and counsel and `mobile` should read guideline 4.5.4 before any wording ships). The label stays Data Not Collected if nothing leaves the phone. (History, superseded by CPrivO-28 to 31, D-165 and D-169; do not reuse.)
 - 5.1.2(i): the notification and library permissions may not be required to use the app; both remain optional with the app working without them.
-- The privacy policy and in-app disclosures must say plainly that reminders may be timed from pictures on the phone, and that this never leaves the phone. That sentence needs a code test (the claims-inventory pattern) before it is published. Those files are in `docs/legal/**`; I do not edit them.
+- The privacy policy and in-app disclosures must say plainly that reminders may be timed from pictures on the phone, and that this never leaves the phone. That sentence needs a code test (the claims-inventory pattern) before it is published. Those files are in `docs/legal/**`; I do not edit them. (History, superseded by CPrivO-28 to 31, D-165 and D-169; do not reuse.)
 - Engagement claim: the founder says this would bring engagement. I found no measured evidence in the repo for a lift from library nudges and read none outside it, so I treat that as the founder's belief, not a fact, and I do not rely on it. The existing parent study plan Q4 and Q5 is where a test would live.
 
 Reversals the founder must own in this section (each is his decision, none is made here):
@@ -222,7 +222,7 @@ Reversals the founder must own in this section (each is his decision, none is ma
 |---|---|
 | NX-39 ruling 3 and K1 (no notification derived from the library) | Any library-driven nudge, even a neutral one, reverses it. NS-51-R11 already proposes the neutral form; the founder should own it explicitly, with the existence-disclosure reasoning in front of him |
 | NX-39 R26 and R27 (fixed content keys; no library-derived notification) | Same |
-| NS-51-R26 and K1 on server and analytics (nothing derived leaves the phone) | Overturned only if email or remote push uses the library or analytics marks a nudge. Recommended: do not reverse |
+| NS-51-R26 and K1 on server and analytics (nothing derived leaves the phone) | Overturned only if email or remote push uses the library or analytics marks a nudge. Recommended: do not reverse (History, superseded by CPrivO-28 to 31, D-165 and D-169; do not reuse.) |
 | NX-39 card rule: a notification never carries a place or thumbnail | Overturned only if the nudge shows a picture or place. Recommended: do not reverse |
 
 Counsel questions added:

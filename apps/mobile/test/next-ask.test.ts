@@ -10,6 +10,12 @@ import { en } from '@scribe/content';
 import {
   ASK_SESSION_GAP_MS,
   MAX_REMINDER_PRIMES,
+  MAX_ASKS_PER_DAY,
+  MAX_OS_ASKS_PER_DAY,
+  OS_OR_CONSENT_ASKS,
+  countsAfter,
+  countsFor,
+  dayAllows,
   FIRST_MONTH_MS,
   firstMonthDone,
   localDay,
@@ -34,7 +40,8 @@ const facts = (over: Partial<AskFacts> = {}): AskFacts => ({
   firstLetterSession: S1,
   session: S1,
   askShownThisSession: false,
-  askShownToday: false,
+  asksShownToday: 0,
+  osAsksShownToday: 0,
   firstMonthDone: false,
   ...over,
 });
@@ -82,8 +89,8 @@ describe('[DR-12 B, F02 6.1] Keep the book: the second letter, or the first save
     expect(nextAsk(facts({ firstLetter: false, lettersSaved: 2, primesShown: 1, askShownThisSession: true }))).toBeNull();
   });
 
-  it('one ask per calendar day', () => {
-    expect(nextAsk(facts({ firstLetter: false, lettersSaved: 2, primesShown: 1, session: S2, askShownToday: true }))).toBeNull();
+  it('[BL-1784] no second OS-alert or consent ask in a day', () => {
+    expect(nextAsk(facts({ firstLetter: false, lettersSaved: 2, primesShown: 1, session: S2, asksShownToday: 1, osAsksShownToday: 1 }))).toBeNull();
   });
 
   it('the second letter in session 1 when no card was shown (reminders already on): keep_book', () => {
@@ -128,7 +135,7 @@ describe('[C-REQ-001 Rev, F13 6.2 B row 4c, BL-518] the second reminder prime, a
 
   it('one ask per session and per day still hold', () => {
     expect(nextAsk(later({ askShownThisSession: true }))).toBeNull();
-    expect(nextAsk(later({ askShownToday: true }))).toBeNull();
+    expect(nextAsk(later({ asksShownToday: 1, osAsksShownToday: 1 }))).toBeNull();
   });
 
   it('[BL-1430] a person who ever said Yes is never primed again, even with reminders turned off later', () => {
@@ -206,7 +213,7 @@ describe('[F02 6.1, BL-519] Keep the book comes once more after the third letter
 
   it('the session and day caps hold for the re-offer', () => {
     expect(nextAsk(offered({ askShownThisSession: true }))).toBeNull();
-    expect(nextAsk(offered({ askShownToday: true }))).toBeNull();
+    expect(nextAsk(offered({ asksShownToday: 1, osAsksShownToday: 1 }))).toBeNull();
   });
 
   it('never when the person signed in or servers are off (signInOffered false)', () => {
@@ -221,6 +228,57 @@ describe('[F02 6.1, BL-519] Keep the book comes once more after the third letter
     const asks = readFileSync(join(__dirname, '..', 'src', 'lib/asks/index.ts'), 'utf8');
     expect(asks).toMatch(/keepBookReoffered:\s*getSetting\(K\.keepBookReoffer\) === 'on'/);
     expect(asks).toMatch(/setSetting\(K\.keepBookReoffer, 'on'\)/);
+  });
+});
+
+describe('[BL-1784] two setup asks a day, one OS-alert or consent ask, never during recording, Review or export', () => {
+  const second = (over: Partial<AskFacts> = {}) => facts({ firstLetter: false, lettersSaved: 2, primesShown: 1, session: S2, ...over });
+
+  it('the caps are two setup asks and one OS-alert or consent ask', () => {
+    expect(MAX_ASKS_PER_DAY).toBe(2);
+    expect(MAX_OS_ASKS_PER_DAY).toBe(1);
+    expect([...OS_OR_CONSENT_ASKS].sort()).toEqual(['analytics_consent', 'keep_book', 'reminder_prime']);
+  });
+
+  it('a second ask the same day, after a session change, when the first was not an OS-alert or consent ask', () => {
+    expect(nextAsk(second({ asksShownToday: 1, osAsksShownToday: 0 }))).toBe('keep_book');
+  });
+
+  it('no third ask in a day, whatever kind', () => {
+    expect(nextAsk(second({ asksShownToday: 2, osAsksShownToday: 0 }))).toBeNull();
+    expect(nextAsk(second({ asksShownToday: 3, osAsksShownToday: 0 }))).toBeNull();
+  });
+
+  it('no second OS-alert or consent ask in a day', () => {
+    expect(nextAsk(second({ asksShownToday: 1, osAsksShownToday: 1 }))).toBeNull();
+    expect(dayAllows('analytics_consent', 1, 1)).toBe(false);
+    expect(dayAllows('keep_book', 0, 0)).toBe(true);
+  });
+
+  it('still none in the same session, even with room in the day', () => {
+    expect(nextAsk(second({ askShownThisSession: true }))).toBeNull();
+  });
+
+  it('none while the person is recording, in Review or exporting', () => {
+    expect(nextAsk(second({ surfaceBusy: true }))).toBeNull();
+    expect(nextAsk(second({ surfaceBusy: false }))).toBe('keep_book');
+  });
+
+  it('the counts reset at local midnight', () => {
+    const late = new Date(2026, 10, 1, 23, 59).getTime();
+    const after = new Date(2026, 10, 2, 0, 1).getTime();
+    const day1 = countsAfter({ day: null, asks: 0, osAsks: 0 }, 'reminder_prime', late);
+    expect(day1).toEqual({ day: '2026-11-01', asks: 1, osAsks: 1 });
+    expect(countsFor(day1, late)).toEqual({ asks: 1, osAsks: 1 });
+    expect(countsFor(day1, after)).toEqual({ asks: 0, osAsks: 0 });
+    expect(countsAfter(day1, 'keep_book', after)).toEqual({ day: '2026-11-02', asks: 1, osAsks: 1 });
+  });
+
+  it('every ask counts when shown; analytics consent counts toward both totals', () => {
+    const a = countsAfter({ day: '2026-11-01', asks: 0, osAsks: 0 }, 'analytics_consent', new Date(2026, 10, 1, 9).getTime());
+    expect(a).toEqual({ day: '2026-11-01', asks: 1, osAsks: 1 });
+    const src = readFileSync(join(__dirname, '..', 'src', 'lib/analytics/ask.ts'), 'utf8');
+    expect(src).toMatch(/recordDayAsk\('analytics_consent'\)/);
   });
 });
 

@@ -11,11 +11,55 @@
  *      save from the third letter on (F02 6.1, BL-519), and never a third time.
  *   3. Analytics consent stays with its own sequencer (lib/analytics/ask.ts) and is off in the 1.0 line (D-124 item 3).
  *
- * At most one ask per session and one per calendar day (F02 6.1), so a second letter in the same session as the
- * prime waits for the next session's first save. If the founder picks A after the C1 cohorts, only this table changes.
+ * At most one ask per session, two setup asks per local calendar day, and at most one OS-alert or consent ask a day
+ * (BL-1784, ruling Q1 of 22 Nov 2026; F02 6.1), so a second letter in the same session as the prime waits for the
+ * next session's first save. Never during recording, Review or export. If the founder picks A after the C1 cohorts,
+ * only this table changes.
  */
 
 export type NextAsk = 'reminder_prime' | 'keep_book' | null;
+
+/** Every ask that counts toward the day totals: what `nextAsk` returns, plus the analytics consent sheet (own sequencer). */
+export type AskKind = Exclude<NextAsk, null> | 'analytics_consent';
+
+/** Setup asks a local calendar day (BL-1784). */
+export const MAX_ASKS_PER_DAY = 2;
+/** OS-alert or consent asks a local calendar day (BL-1784). */
+export const MAX_OS_ASKS_PER_DAY = 1;
+
+/**
+ * Asks that open an OS alert or a consent screen. The reminder prime leads to the notification permission; Keep the
+ * book is sign-in with Terms, the Apple sheet and the sensitive-data consent screen after it (one ask, F02 6.1);
+ * analytics consent is a consent sheet. Not counted here: the Plus sheet and Restore (the person taps them), the
+ * microphone prompt (the person taps Speak), the 18+ gate (before any letter). Photo permission and Family Sharing
+ * asks join this list when they are built.
+ */
+export const OS_OR_CONSENT_ASKS: readonly AskKind[] = ['reminder_prime', 'keep_book', 'analytics_consent'];
+
+export interface DayCounts {
+  /** Local day (YYYY-MM-DD) the counts belong to; null when nothing was recorded. */
+  day: string | null;
+  asks: number;
+  osAsks: number;
+}
+
+/** The counts that apply on the day of `now`: a stored day that is not today counts as nothing (reset at local midnight). */
+export function countsFor(stored: DayCounts, now: number): { asks: number; osAsks: number } {
+  return stored.day === localDay(now) ? { asks: stored.asks, osAsks: stored.osAsks } : { asks: 0, osAsks: 0 };
+}
+
+/** The counts after `kind` was shown at `now`. An ask counts when it is shown. */
+export function countsAfter(stored: DayCounts, kind: AskKind, now: number): DayCounts {
+  const c = countsFor(stored, now);
+  return { day: localDay(now), asks: c.asks + 1, osAsks: c.osAsks + (OS_OR_CONSENT_ASKS.includes(kind) ? 1 : 0) };
+}
+
+/** Whether the day totals leave room for this ask. */
+export function dayAllows(kind: AskKind, asksToday: number, osAsksToday: number): boolean {
+  if (asksToday >= MAX_ASKS_PER_DAY) return false;
+  if (OS_OR_CONSENT_ASKS.includes(kind) && osAsksToday >= MAX_OS_ASKS_PER_DAY) return false;
+  return true;
+}
 
 /** C-REQ-001 Rev: "Given No reminders twice, Then the card never shows a third time". */
 export const MAX_REMINDER_PRIMES = 2;
@@ -49,8 +93,12 @@ export interface AskFacts {
   session: number;
   /** An ask (any) already appeared in this session. */
   askShownThisSession: boolean;
-  /** An ask (any) already appeared on this local calendar day. */
-  askShownToday: boolean;
+  /** Setup asks (any) shown on this local calendar day. */
+  asksShownToday: number;
+  /** OS-alert or consent asks shown on this local calendar day (OS_OR_CONSENT_ASKS). */
+  osAsksShownToday: number;
+  /** The person is recording, in Review or exporting: no ask now. Absent means not busy. */
+  surfaceBusy?: boolean;
   /** The first month chapter is done (`firstMonthDone`). */
   firstMonthDone: boolean;
 }
@@ -75,8 +123,14 @@ export function reminderPrimeSource(primesShownBefore: number): 'first_letter' |
 
 /** The one ask due right after this save, or null. */
 export function nextAsk(f: AskFacts): NextAsk {
+  const ask = pickAsk(f);
+  return ask !== null && dayAllows(ask, f.asksShownToday, f.osAsksShownToday) ? ask : null;
+}
+
+/** The ask the order table names, before the day totals. */
+function pickAsk(f: AskFacts): NextAsk {
   if (f.lettersSaved < 1) return null;
-  if (f.askShownThisSession || f.askShownToday) return null;
+  if (f.askShownThisSession || f.surfaceBusy) return null;
   // 1. The first ask slot after the first letter goes to the reminder prime.
   if (f.firstLetter && f.primesShown === 0 && primeAllowed(f.primesShown) && !f.remindersOn) return 'reminder_prime';
   // 2. Keep the book: never on the first letter's save; on the second letter, or the first save of a later session.
@@ -101,7 +155,7 @@ export function sessionAfterForeground(current: number, backgroundedAt: number |
   return now - backgroundedAt >= ASK_SESSION_GAP_MS ? now : current;
 }
 
-/** Local calendar day, YYYY-MM-DD, for the one-ask-per-day rule. */
+/** Local calendar day, YYYY-MM-DD, for the daily ask totals. */
 export function localDay(at: number): string {
   const d = new Date(at);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
