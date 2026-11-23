@@ -158,6 +158,11 @@ const COLLECTED_ROWS: readonly CollectedRow[] = [
   // The status report: plan, trial end, renewal date, cancelled flag, and the purchase consent record
   // (D-080, D-081).
   { type: 'NSPrivacyCollectedDataTypePurchaseHistory', when: 'statusReport' },
+  // The consent record the app sends (document, version, method, app version, platform, locale) and the
+  // deletion and audit records kept against the account. Data sent off the device and kept longer than the
+  // request is "collected" (Apple's app-privacy-details). Exec ruling of 23 Nov 2026 (privacy seat): Yes,
+  // linked, not tracking, App Functionality; over-disclosing is the safe error.
+  { type: 'NSPrivacyCollectedDataTypeOtherDataTypes', when: 'serverFeatures' },
 ];
 
 const APP_FUNCTIONALITY = 'NSPrivacyCollectedDataTypePurposeAppFunctionality';

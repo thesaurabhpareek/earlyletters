@@ -1,8 +1,8 @@
 ---
 title: Early Letters App Privacy answers, privacy manifest and permission strings
-version: 2.2.0
+version: 2.3.0
 status: draft-for-counsel
-last_updated: 2026-11-10
+last_updated: 2026-11-23
 effective_date: TBD
 owner: founder
 reviewers: outside privacy counsel (TBD), iOS engineer
@@ -10,7 +10,7 @@ reviewers: outside privacy counsel (TBD), iOS engineer
 
 # App Privacy answers, privacy manifest and permission strings
 
-Drafted for counsel. Not legal advice. Version 2.2.0 describes the v1.0 build under option B (founder, 15 Oct 2026; D-100): sign-in, sync and co-parent sharing with two parents per book, with encrypted recording backup and a recovery key we hold once backup ships. The subscription status report, reminder emails, push notifications and new-device notices are planned but not built (checked 16 Oct 2026; COUNSEL_PACKET section 0), so the answers below leave them out and section 3.4 says what changes when each ships. There is no analytics SDK in v1.0 (D-095). These answers are statements to Apple: re-check each one against the release build before every submission, and keep them in line with the Privacy Policy (3.0.0) and the privacy manifest. Counsel approves this draft before App Store Connect is filled in (F17 section 8.5, F21-REQ-007; COUNSEL_PACKET Q54).
+Drafted for counsel. Not legal advice. Version 2.3.0 describes the v1.0 build under option B (founder, 15 Oct 2026; D-100): sign-in, sync and co-parent sharing with two parents per book, with encrypted recording backup and a recovery key we hold once backup ships. The subscription status report, reminder emails, push notifications and new-device notices are planned but not built (checked 16 Oct 2026; COUNSEL_PACKET section 0), so the answers below leave them out and section 3.4 says what changes when each ships. There is no analytics SDK in v1.0 (D-095). These answers are statements to Apple: re-check each one against the release build before every submission, and keep them in line with the Privacy Policy (3.1.0 draft) and the privacy manifest. Counsel approves this draft before App Store Connect is filled in (F17 section 8.5, F21-REQ-007; COUNSEL_PACKET Q54).
 
 ## 1. Apple's rules we rely on
 
@@ -62,31 +62,31 @@ All purposes use Apple's names. "Linked" means linked to the user's identity. Ev
 | Usage Data | Product Interaction, Advertising Data, Other Usage Data | No (changed in 1.4.0) | | | | No analytics SDK in any current build (D-095, D-124): `posthog-react-native` is not a dependency of `apps/mobile`, and `EXPO_PUBLIC_ANALYTICS` is `off` in every `eas.json` profile, so no usage event leaves the phone |
 | Diagnostics | Crash Data, Performance Data, Other Diagnostic Data | No (changed in 1.4.0) | | | | No crash SDK and no analytics in v1.0. Apple's own crash reports reach us through App Store Connect under the user's Apple setting; that is Apple's collection |
 | Surroundings, Body | all | No | | | | |
-| Other Data | Other Data Types | No | | | | No push tokens: server pushes are not built. If they ship, whether tokens need a row is a counsel question (Q54); default: no row |
+| Other Data | Other Data Types | **Yes** (changed in 2.3.0) | Yes | No | App Functionality | The consent record the app sends (document, version, method, app version, platform, locale) and the deletion and audit records kept against the account. Data sent off the device and kept longer than the request needs is "collected" (section 1), so the cautious answer is Yes, and over-disclosing is the safe error. Ruled by the exec team on 23 Nov 2026 (privacy seat; a Claude role, not counsel; counsel to confirm, Q54). No push tokens: server pushes are not built; if they ship, tokens are revisited. The manifest carries `NSPrivacyCollectedDataTypeOtherDataTypes` for every server-on build, so label and manifest agree |
 
 **Download hosts.** With PR #126 the app fetches its signed remote config, pack manifest and content bundle, and self-hosted speech files, from `packs.earlyletters.app` on Cloudflare R2 (D-097; develop on 16 Oct still names `models.earlyletters.com`), and upstream model files from Hugging Face (`apps/mobile/src/lib/models/catalog.ts`) until they are mirrored. Those requests carry an IP address and a file name, are needed to service the request, and nothing is kept or linked by us. Not declared as a data type; disclosed in the Privacy Policy section 6 (COUNSEL_PACKET Q12).
 
 ### 3.3 What the label will show (expected)
 
 - **Data Used to Track You:** none.
-- **Data Linked to You (v1.0 without backup):** Contact Info (Name, Email Address), User Content (Other User Content), Identifiers (User ID), Sensitive Info. Backup adds Audio Data and Device ID; the status report adds Purchase History.
+- **Data Linked to You (v1.0 without backup):** Contact Info (Name, Email Address), User Content (Other User Content), Identifiers (User ID), Sensitive Info, Other Data (Other Data Types). Backup adds Audio Data and Device ID; the status report adds Purchase History.
 - **Data Not Linked to You:** none.
 
 ### 3.4 Build-state variants
 
 | Build | Label |
 |---|---|
-| Build 2 (`preview` profile) and later builds with server features on and backup off (`EXPO_PUBLIC_SERVER_FEATURES` on) | Section 3.2 as written today: Audio Data, Device ID and Purchase History No |
+| Build 2 (`preview` profile) and later builds with server features on and backup off (`EXPO_PUBLIC_SERVER_FEATURES` on) | Section 3.2 as written today: Audio Data, Device ID and Purchase History No; Other Data Types Yes |
 | Backup on (`capabilities.backup`) | Audio Data Yes and Device ID Yes |
 | Status report on | Purchase History Yes; Email Address purpose adds reminder emails |
 | New-device notice on | Device ID Yes (`account_sessions_seen`) |
 | Build 1 (`testflight` profile): server features off (D-121) | Only what the build still sends (the download hosts, section 3.2). The D-088 answer (no data collected) applies to this build only, subject to counsel (D-121 item 3); with sign-in off there are no Contact Info, Identifiers, Purchases or User Content rows |
-| First store build, Build 12 (`production` profile): server features on, sign-in required, recording backup off, status report off (D-157, D-160; founder, 10 Nov 2026) | Section 3.2 as written today: Name, Email Address, Sensitive Info, Other User Content and User ID Yes (linked, not tracking, App Functionality); Audio Data, Device ID and Purchase History No. Subject to counsel. The D-088 answer does not apply to this build. Re-run this file against the binary before submitting |
+| First store build, Build 12 (`production` profile): server features on, sign-in required, recording backup off, status report off (D-157, D-160; founder, 10 Nov 2026) | Section 3.2 as written today: Name, Email Address, Sensitive Info, Other User Content, User ID and Other Data Types Yes (linked, not tracking, App Functionality); Audio Data, Device ID and Purchase History No. Subject to counsel. IP addresses: the sign-up country check keeps no IP in our code, but whether the Supabase Auth and API logs or Cloudflare keep request IPs is unread (account consoles), so Location No rests on our code only until that is checked. The D-088 answer does not apply to this build. Re-run this file against the binary before submitting |
 | A later build with opt-in analytics (v1.1) | Add Usage Data and Diagnostics for Analytics, and Analytics on the identifier rows; the Linked or Not linked question (COUNSEL_PACKET Q7) returns |
 
 ## 4. Privacy manifest (`PrivacyInfo.xcprivacy`)
 
-Owned by the release stream (S20, BL-349) in `apps/mobile/app.config.ts`. The collected data types must equal section 3.2 for the build exactly. The block below is the full set once backup and the status report ship; for a build without them, drop the AudioData, DeviceID and PurchaseHistory entries (section 3.4):
+Owned by the release stream (S20, BL-349) in `apps/mobile/app.config.ts`. The collected data types must equal section 3.2 for the build exactly. The block below is the full set once backup and the status report ship; for a build without them, drop the AudioData, DeviceID and PurchaseHistory entries (section 3.4); the OtherDataTypes entry stays for every server-on build:
 
 ```json
 {
@@ -100,7 +100,8 @@ Owned by the release stream (S20, BL-349) in `apps/mobile/app.config.ts`. The co
     { "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypeOtherUserContent", "NSPrivacyCollectedDataTypeLinked": true, "NSPrivacyCollectedDataTypeTracking": false, "NSPrivacyCollectedDataTypePurposes": ["NSPrivacyCollectedDataTypePurposeAppFunctionality"] },
     { "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypeUserID", "NSPrivacyCollectedDataTypeLinked": true, "NSPrivacyCollectedDataTypeTracking": false, "NSPrivacyCollectedDataTypePurposes": ["NSPrivacyCollectedDataTypePurposeAppFunctionality"] },
     { "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypeDeviceID", "NSPrivacyCollectedDataTypeLinked": true, "NSPrivacyCollectedDataTypeTracking": false, "NSPrivacyCollectedDataTypePurposes": ["NSPrivacyCollectedDataTypePurposeAppFunctionality"] },
-    { "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypePurchaseHistory", "NSPrivacyCollectedDataTypeLinked": true, "NSPrivacyCollectedDataTypeTracking": false, "NSPrivacyCollectedDataTypePurposes": ["NSPrivacyCollectedDataTypePurposeAppFunctionality"] }
+    { "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypePurchaseHistory", "NSPrivacyCollectedDataTypeLinked": true, "NSPrivacyCollectedDataTypeTracking": false, "NSPrivacyCollectedDataTypePurposes": ["NSPrivacyCollectedDataTypePurposeAppFunctionality"] },
+    { "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypeOtherDataTypes", "NSPrivacyCollectedDataTypeLinked": true, "NSPrivacyCollectedDataTypeTracking": false, "NSPrivacyCollectedDataTypePurposes": ["NSPrivacyCollectedDataTypePurposeAppFunctionality"] }
   ]
 }
 ```
@@ -132,6 +133,7 @@ Required-reason API declarations stay as 1.3.0 listed them (UserDefaults CA92.1,
 
 | Version | Date | Change |
 |---|---|---|
+| 2.3.0 | 2026-11-23 | Other Data Types changes from No to Yes (linked, not tracking, App Functionality) for every server-on build: the consent record and the deletion and audit records are data sent off the device and kept. Section 3.3, the 3.4 rows for Build 2 and the first store build, and the section 4 manifest block follow; `NSPrivacyCollectedDataTypeOtherDataTypes` is added to `collectedDataTypes()` for server features in `apps/mobile/src/lib/privacy-manifest.ts`, with its test pin. The other 14 answers for the `production` profile are unchanged. Notes that IP retention at Supabase and Cloudflare is unread. Ruled by the exec team on 23 Nov 2026 (Claude roles, not counsel); counsel to confirm; entering the answers in App Store Connect is the founder's. Minor (records the build's existing behavior more completely). Related Privacy Policy draft: 3.1.0. |
 | 2.2.0 | 2026-11-10 | Build-state table split: Build 1 (`testflight`, servers off) keeps the D-088 answer for that build only; the first store build is Build 12 (`production`, servers on, sign-in required, backup and status report off) and takes section 3.2 as written (Name, Email Address, Sensitive Info, Other User Content, User ID Yes; Audio Data, Device ID, Purchase History No), subject to counsel. Founder statement of 10 Nov 2026 relayed by Karma; the matching decision entries are D-157 to D-160. Purchases row wording follows. Draft for counsel. |
 | 2.1.0 | 2026-10-31 | Merge of develop (31 Oct 2026): microphone-denied string added to the permission row. Analytics wording made exact (no `posthog-react-native` dependency; analytics and status report off in every `eas.json` profile, D-095, D-121). Purchases row names the flag. Build-state rows map to the `testflight`, `preview` and `production` profiles; first store build has the D-088 working default. Privacy choices URL moved to /privacy (the /delete-account page was removed from the website). Version 2.1.0 because 1.4.0 is this branch's own draft and 2.0.0 is used by another branch (POLICY_VERSIONING 2.4). Record only. |
 | 1.4.0 | 2026-10-16 | Drafted for option B (founder, 15 Oct 2026; D-100; F17 8.5, R4 PT-24): Audio Data Yes (backup with a recovery key we hold, D-102); Purchase History Yes for App Functionality (status report, D-080, D-081); Email adds billing reminders; Device ID added (random install ID for backup and new-device notices; counsel to confirm); Usage Data and Diagnostics No (no analytics SDK in v1.0, D-095); every row App Functionality; microphone string drops "Your recordings stay on this phone."; build-state variants; manifest to match. The 2.0.0 answer of pull request #81 ("Data Not Collected", on-device build, never merged) is superseded and kept only in this history. 16 Oct (review of PR #163): Audio Data, Device ID and Purchase History are No until backup and the status report are built; push tokens and new-device notices are not built; download hosts follow #126. Draft for counsel. |

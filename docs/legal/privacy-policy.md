@@ -1,16 +1,16 @@
 ---
 title: Early Letters Privacy Policy
-version: 3.0.0
+version: 3.1.0
 status: draft-for-counsel
 effective_date: TBD
-last_updated: 2026-10-31
+last_updated: 2026-11-23
 owner: founder
 published_at_url: https://earlyletters.com/privacy
 ---
 
 # Early Letters Privacy Policy
 
-Version 3.0.0. Effective [effective date].
+Version 3.1.0. Effective [effective date].
 
 Early Letters is the baby memory book you fill by talking. Parents speak or type letters to their child. This policy explains what Early Letters collects, how we use it, who can see it, and the choices you have. It covers the Early Letters app for iPhone and our website, earlyletters.com.
 
@@ -18,7 +18,8 @@ Early Letters is the baby memory book you fill by talking. Parents speak or type
 
 This policy describes Early Letters as it is planned for the App Store. Not every part is in every build of the app. A part of this policy takes effect only when the feature it describes ships.
 
-- **Build 1 (the first test build) and the first App Store build.** Servers are off. You do not sign in, sync or share a book, and the app sends nothing about your letters or recordings to us. The parts of sections 3, 7 and 9 about our servers, and all of section 4, describe features these builds do not have.
+- **The first App Store build.** Servers are on. You sign in to use it, and your book syncs to our servers after you agree in a separate step. You can delete your account in the app (Settings, Your data). It has no way to invite a co-parent or to share a book, and recording backup is off. Your recordings stay on the phone that made them, and in your phone's own iPhone backup if you use one. The parts of sections 3, 5 and 7 about sharing a book with a co-parent, and all of section 4, describe features this build does not have. It is offered in English only.
+- **Build 1 (the first test build).** Servers are off. You do not sign in, sync or share a book, and the app sends nothing about your letters or recordings to us.
 - **Build 2 (the family test build).** Servers are on: sign-in, sync, sharing a book with a co-parent, and deleting your account. Recording backup is off.
 - **Recording backup.** It is in no build yet. Section 4 takes effect only when it ships, and until then no recording is copied to our servers.
 - **Analytics.** There are none in any build.
@@ -30,7 +31,7 @@ Early Letters is run by [legal name], an individual based in California ("we", "
 
 ## 2. What we collect
 
-**Your account.** If you sign in, we keep your email address, your name if Apple shares it, the name you sign your letters with, a random account ID, your confirmation that you are 18 or older, the version of our Terms you accepted, and the agreements you gave or withdrew.
+**Your account.** If you sign in, we keep your email address, your name if Apple shares it, the name you sign your letters with, a random account ID, your confirmation that you are 18 or older, the version of our Terms you accepted, and the agreements you gave or withdrew, each with its time, how you gave it, and the app version, platform and language it was given in.
 
 **Your book.** For each child: a name or nickname, and a birthday or due date. Your letters: the words you speak or type, the original transcript, each small fix the app made, and the final text. Your list of names and words. All of this is kept on your phone. When you sign in and agree to sync, it is also kept on our servers so it can reach your other devices and your co-parent.
 
@@ -48,7 +49,7 @@ Early Letters is run by [legal name], an individual based in California ("we", "
 
 ## 3. Who can see your letters
 
-*This section takes effect with sign-in and sync (build 2 and later). In builds with servers off, only you can see your letters, on your phone.*
+*This section takes effect with sign-in and sync (the first App Store build and later). In builds with servers off, only you can see your letters, on your phone. The part about your co-parent takes effect when sharing a book ships; the first App Store build cannot invite anyone.*
 
 - **You.** A letter is private to you until you add it to a child's book.
 - **Your co-parent.** A child's book can have at most two parents. The other parent can read the letters in that book. They cannot see your original transcripts, your fixes or your recordings, and they cannot change or delete your letters.
@@ -106,12 +107,12 @@ The list above is the current list; the separate providers page was removed from
 
 ## 7. How long we keep things, and deleting
 
-*The parts about our servers take effect with sign-in and sync (build 2 and later). In builds with servers off, everything is on your phone and you delete it there.*
+*The parts about our servers take effect with sign-in and sync (the first App Store build and later). In builds with servers off, everything is on your phone and you delete it there. The parts about shared books and about someone who left a book take effect when sharing ships.*
 
 We keep your book until you delete it or your account. We never delete them because you stopped using the app or ended Plus.
 
 - **A letter.** Deleting a letter moves it to Recently deleted for 30 days, so you can restore it. Then it is erased.
-- **Your account.** Email us from the address on your account and we will start the deletion. Where the Delete account control is in your build (Settings, Your data), you can start it there instead; the early test builds hide it unless it is switched on. You have 30 days to change your mind. We then erase your information from our live systems within 31 days of your request, apart from the book entry described under "Letters of someone who left a book" below, from our backups within 38 days, and our providers erase it within 45 days. Our email provider keeps each email it sends for 30 days.
+- **Your account.** Email us from the address on your account and we will start the deletion. The first App Store build has a Delete account control (Settings, Your data), and you can start it there instead; the early test builds hide it unless it is switched on. You have 30 days to change your mind. We then erase your information from our live systems within 31 days of your request, apart from the book entry described under "Letters of someone who left a book" below, from our backups within 38 days, and our providers erase it within 45 days. Our email provider keeps each email it sends for 30 days.
 - **Shared books.** Deleting your account removes your letters from every book. A book you share stays with your co-parent. A book where you are the only parent is deleted, except for the entry described next.
 - **Letters of someone who left a book.** If a parent left a book, or their joining was undone, before the other parent deleted the book or their own account, that person's letters, their letters waiting to be kept, and any recording backup of theirs are not deleted with it. They stay theirs. To label those letters we keep the book's entry, with the child's name, birth date and due date, and we clear its nickname, photo and other details. Nothing in the app can read that entry today; it will be shown only to the person whose letters remain, once the app can list books they have left. We delete it when nothing of theirs is left in it.
 - **Plus.** Deleting your account does not cancel Plus. Cancel it in your Apple Account.
@@ -132,9 +133,9 @@ Early Letters is for adults. You must be 18 or older to use it. The app asks bef
 
 ## 9. Health details
 
-*The syncing parts of this section take effect with sign-in and sync (build 2 and later).*
+*The syncing parts of this section take effect with sign-in and sync (the first App Store build and later).*
 
-Letters can mention health, and a due date shows a pregnancy. We treat everything in a letter as private. Before your book first syncs, we ask for your agreement in a separate step, and you can withdraw it at any time. Withdrawing stops syncing, and we offer to delete what was synced. The control for this, in Settings, Privacy, is not in every build: the family test build (build 2) shows whether sync is on or off but has no withdrawal control, and the control is built before anyone outside the family signs in. Until it exists, ask us by email (section 10). We never use health details for advertising, and we never try to work out anything about anyone's health.
+Letters can mention health, and a due date shows a pregnancy. We treat everything in a letter as private. Before your book first syncs, we ask for your agreement in a separate step, and you can withdraw it at any time. Withdrawing stops syncing, and we offer to delete what was synced. The control for this, in Settings, Privacy, is not built yet: the first App Store build and the family test build (build 2) show whether sync is on or off but have no withdrawal control. Until it exists, ask us by email (section 10) and we will stop syncing and offer to delete what was synced. We never use health details for advertising, and we never try to work out anything about anyone's health.
 
 ## 10. Your rights
 
@@ -156,7 +157,7 @@ We do not offer Early Letters in places where US sanctions or export rules restr
 
 If we make a change that matters to how your information is used, we will tell you in the app and by email at least 30 days before it takes effect, and ask for your agreement where the law requires.
 
-If we ever close Early Letters, we will tell you at least 90 days ahead and keep export working the whole time.
+If we ever plan to close Early Letters, we will tell you at least 90 days ahead and keep export working the whole time.
 
 ## 14. Contact
 
@@ -166,6 +167,7 @@ If we ever close Early Letters, we will tell you at least 90 days ahead and keep
 
 | Version | Date | Change |
 |---|---|---|
+| 3.1.0 | 2026-11-23 | Describes the first App Store build with servers on, as the `production` profile builds it: sign-in required, sync after a separate agreement, account deletion in the app, no way to invite or share, no recording backup, no analytics, English only. The "builds" list no longer says the first App Store build has servers off; the sharing parts of sections 3, 5 and 7 take effect when sharing ships. Section 2 lists the details kept with each agreement you gave (time, how, app version, platform, language), which is the Other Data Types answer on the App Privacy label. Section 9 no longer says the withdrawal control is built before anyone outside the family signs in: it is not built, and email works meanwhile (an open gap). Section 13: the closing pledge reads "If we ever plan to close", the same words as Terms 12 and the app. Classified minor on the reading that nothing here collects data the 3.0.0 text did not already say it would collect, and that no published version exists to re-consent from; a lawyer may rule it major (POLICY_VERSIONING 2.1 item 1, 2.4: when in doubt, major). Not read by a lawyer: drafted from the 23 Nov 2026 exec rulings (Claude roles), which are not a lawyer's review. Not published; the website `/privacy` still serves the website-only text. |
 | 3.0.0 | 2026-10-31 | Says which builds of the app each part covers, and that server parts take effect only when the feature ships. Adds the letters of a parent who left a book, which stay theirs when the other parent deletes the book or their account, and the book entry we keep to label them; the 31-day erasure statement names that one exception. Says the in-app Delete account and withdraw controls are used where a build has them, and that email works in the meantime. Adds a line that what you put in your book is not used in our marketing without your written yes for that one use. Removes the link to the providers page, which the website no longer serves. Adds the country check at sign-up (sections 2, 5 and 12): the IP address is used to work out the country and is not kept for it; it takes effect when the check ships. |
 | 2.1.1 | 2026-10-31 | Wording only: the opening line describes Early Letters as the baby memory book you fill by talking, and no longer says "notes". No change to what we collect or do. |
 | 2.1.0 | 2026-10-16 | Covers accounts, sharing a book with a co-parent, how recording backup and the recovery key will work, and Plus reminders. |
