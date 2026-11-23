@@ -4,8 +4,8 @@
 // readable by them, by the table, the version history, the book view or the pull; the author reads all of them.
 // The sentinels below are unique strings, so a leak is found wherever it appears. Fictional family "Asha" only.
 //
-// Known gap, not asserted here (reported with this file): engine_version is a column of book_entries, so the pull
-// carries it in the other parent's row. FR-AIS-08 lists it. Closing that needs its own reviewed migration.
+// engine_version is working material too (FR-AIS-08, CDO-1): 20261123200000 takes it out of book_entries, so the
+// other parent's pull no longer carries it; the author's own pull still does. Asserted below, with a mutant.
 import { createDb, users, uuid7 } from './harness.mjs';
 
 const h = await createDb(process.argv.slice(2));
@@ -81,8 +81,28 @@ for (const [who, uid] of [['the other parent', B], ['a contributor', N]]) {
     !SENTINELS.some((s) => text.includes(s)));
   for (const col of SECRET_COLS) check(`[FR-AIS-08] ${who}'s pull has no "${col}" key anywhere`, !text.includes(`"${col}"`));
 }
+// engine_version (CDO-1, 20261123200000): the letter above was saved with engine_version 7.
+check('[FR-AIS-08] the book view has no engine_version column', !viewCols.includes('engine_version'));
+check('[FR-AIS-08] the author\'s own pull still carries engine_version (the own branch reads entries, not the view)',
+  JSON.stringify(ownPull).includes('"engine_version":7'));
+for (const [who, uid] of [['the other parent', B], ['a contributor', N]]) {
+  check(`[FR-AIS-08] ${who}'s pull has no "engine_version" key anywhere`, !JSON.stringify(await pull(uid)).includes('"engine_version"'));
+}
+
 const blocked = await as(B, `update entries set raw_transcript = 'x' where id = $1 returning id`, [ID]);
 check('[FR-AIS-08] the other parent cannot change the author\'s raw transcript',
   blocked.rows.length === 0 && (await sys(`select raw_transcript r from entries where id = $1`, [ID])).rows[0].r === RAW);
+
+// Mutant: put the column back on the view and the other parent's pull carries it, so the checks above can fail.
+await sys(`drop view public.book_entries`);
+await sys(`create view public.book_entries with (security_barrier = true) as
+  select e.id, e.child_id, e.author_id, e.author_signs_as, e.kind, e.occurred_on, e.captured_at, e.capture_mode, e.edit_level,
+         e.prompt_key, e.prompt_library_version, e.engine_version, e.final_text, e.in_book, e.photo_path, e.audio_kept_on_device,
+         e.sounds_like_me, e.created_at, e.updated_at, e.deleted_at, e.search, e.approval, e.occurred_precision, e.base_direction
+    from public.entries e
+   where e.author_id = (select auth.uid())
+      or (e.deleted_at is null and e.in_book and e.child_id in (select m.child_id from public.child_members m where m.profile_id = (select auth.uid())))`);
+check('[FR-AIS-08] mutant: with engine_version back on the view the other parent\'s pull carries it, so the checks above can fail',
+  JSON.stringify(await pull(B)).includes('"engine_version":7'));
 
 done();

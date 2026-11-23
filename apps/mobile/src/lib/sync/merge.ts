@@ -509,7 +509,7 @@ function insertOwnRow(db: SqlDb, row: PulledRow, edits: string, epoch: number, n
          child_id, author_id, author_signs_as, approval, server_version, server_updated_at, server_epoch, sync_state,
          language, occurred_precision, base_direction)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced', ?, COALESCE(?, 'day'), COALESCE(?, 'ltr'))`,
-      row.id, row.kind, row.occurred_on, row.captured_at, row.capture_mode, row.edit_level, row.prompt_key, row.engine_version,
+      row.id, row.kind, row.occurred_on, row.captured_at, row.capture_mode, row.edit_level, row.prompt_key, row.engine_version ?? 0,
       row.raw_transcript ?? '', edits, row.final_text, row.in_book ? 1 : 0, bool(row.sounds_like_me), now, row.deleted_at, now,
       row.child_id, row.author_id, row.author_signs_as, row.approval, row.v, row.updated_at, epoch,
       opt(row.language), opt(row.occurred_precision), opt(row.base_direction),
@@ -714,7 +714,9 @@ function mergeOtherRow(db: SqlDb, row: PulledRow, owner: string | null, epoch: n
        server_version = excluded.server_version, server_updated_at = excluded.server_updated_at,
        server_epoch = excluded.server_epoch, sync_state = 'synced',
        occurred_precision = excluded.occurred_precision, base_direction = excluded.base_direction`,
-    row.id, row.kind, row.occurred_on, row.captured_at, row.capture_mode, row.edit_level, row.prompt_key, row.engine_version,
+    row.id, row.kind, row.occurred_on, row.captured_at, row.capture_mode, row.edit_level, row.prompt_key,
+    // Another author's row has no engine_version (FR-AIS-08, 20261123200000); 0 is the device's "not known" (set-once trigger).
+    row.engine_version ?? 0,
     row.final_text, row.in_book ? 1 : 0, bool(row.sounds_like_me), now, now,
     row.child_id, row.author_id, row.author_signs_as, row.approval, row.v, row.updated_at, epoch,
     opt(row.occurred_precision), opt(row.base_direction),
