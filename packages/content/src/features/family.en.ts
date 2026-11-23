@@ -158,35 +158,12 @@ export const familyCopy = {
   },
 
   /**
-   * Co-parent sharing is coming in a later update (founder, 3 Oct 2026): v1.0 keeps every
-   * letter on this phone. Kept for a later family release; nothing draws it now (founder, 11 Nov 2026: no coming-soon screen, row or tab).
-   * Never a date; never "beta".
-   * {child} is the open book's name, or `childFallback` before there is a book.
+   * Only the leave sheet's title is drawn now (invite/leave.tsx). The rest of the old coming-soon words
+   * (title, lead, notify, quiet, close, Settings row and help) were deleted: D-161 has no "coming soon" line
+   * in any build, and BL-1834 ruled that no line promises a later update.
    */
   soon: {
-    /** The Settings row value and the leave sheet's title (child-settings.logic.ts, invite/leave.tsx). Not shown on the coming-soon screen. */
     status: 'Coming soon',
-    /**
-     * The screen is the drawing, this heading and one line (founder, 8 Nov 2026: rewrite B of
-     * proposals/family-soon-content.md). No badge, points or footer: the old footer said letters stay on this phone,
-     * and recordings are also in the iPhone's own backup.
-     */
-    title: 'For now, this book is yours.',
-    lead: "In a later update, {child}'s other parent can add letters too, from their own phone.",
-    notify: {
-      button: "Tell me when it's here",
-      hint: 'Saves a note on this phone. Nothing is sent.',
-      // True only with the v1.1 card on Tonight (the first time a build with co-parent sharing opens on a phone that asked).
-      done: "Noted on this phone. When the update arrives, you will see it here.",
-    },
-    quiet: {
-      title: 'For now, this book is yours.',
-      body: "{child}'s book and every letter in it stay on this phone.",
-    },
-    childFallback: 'your child',
-    close: 'Close',
-    settingsRow: 'Write this book together',
-    settingsRowHelp: 'Sharing a book with a co-parent is coming in a later update.',
   },
 
   errors: {

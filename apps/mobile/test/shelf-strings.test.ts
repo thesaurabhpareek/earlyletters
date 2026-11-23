@@ -25,7 +25,7 @@ describe('shelf strings', () => {
     expect(d.erasesOn).toBe('Kept here until {date}');
     expect(d.eraseNow).toBe('Erase now');
     expect(d.eraseNowTitle).toBe('Erase this letter now?');
-    expect(d.eraseNowBody).toBe('The letter and its recording are erased for good.');
+    expect(d.eraseNowBody).toBe('The letter and its recording are erased from this phone. Backups and exports you already saved are not changed.');
     expect(d.restoredToast).toBe("Back in {child}'s book.");
     for (const k of ['entryTitle', 'entryBody', 'entryConfirm', 'recentlyDeleted', 'restoreButton', 'deletedOn']) expect(d[k], k).toBeTruthy();
   });

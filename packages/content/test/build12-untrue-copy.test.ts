@@ -35,7 +35,7 @@ const RULES: readonly Rule[] = [
     id: 'backup',
     claim: /\bbacked up\b|\bbacks? up\b|\bbacking up\b|\brecovery key\b|\bencrypted backup\b|\brecording backup\b|\bbackups?\b/i,
     // The person's own iPhone backup is true in every build, and the Erase page says exports and phone backups are not changed.
-    truths: [/\biPhone backup\b/gi, /\biCloud Backup\b/gi, /\byour iPhone's own backup\b/gi, /\bbackups of this phone\b/gi],
+    truths: [/\biPhone backup\b/gi, /\biCloud Backup\b/gi, /\byour iPhone's own backup\b/gi, /\bbackups of this phone\b/gi, /\bBackups and exports you already saved are not changed\b/gi],
   },
   { id: 'safe', claim: /\b(?:are|is) safe\b|\bkeeps? your (?:book|letters) safe\b/i },
 ];

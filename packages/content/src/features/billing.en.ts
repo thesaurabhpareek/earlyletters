@@ -43,7 +43,7 @@ export const billingCopy = {
    */
   keepGate: {
     title: "Keep adding to {child}'s book",
-    body: 'Your first two letters are kept for good. Plus lets you keep adding letters.',
+    body: 'Your first two letters are free. Plus lets you keep adding letters.',
     // heldNote, heldNoteSynced and offline promise the letter "waits on Home": P3 shows a card on Home (the first tab,
     // once called Tonight) for every draft (spec S09, S22). Written to the register row "Keep step and held letter"
     // (#163, 3.1.0); counsel reads them (C10). heldNoteSynced is the signed-in line: held for counsel (C10); nothing
