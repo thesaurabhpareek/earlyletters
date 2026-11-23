@@ -6,6 +6,9 @@
  * rules). Any hit fails the journey. There is no allow-list: a log line that holds a person's words is a leak
  * (LEGAL-REQ-014, DATA-REQ-004), never an expected error state.
  *
+ * BL-1901 (NS-54-R26, NS-41-R16): a phone number, a partial number or a registered one is a leak too, before the
+ * first line of phone code exists. Fictional numbers only (US 555-01XX, UK 07700 900XXX).
+ *
  * Pure (no Playwright, no browser): unit-tested in test/log-canary.test.ts.
  */
 
@@ -27,6 +30,22 @@ export const SEED_TEXT_FRAGMENTS: readonly string[] = [
   'painted your face with it',
   'an ordinary day',
 ];
+
+/**
+ * Phone shapes: a plus and a country code followed by more digits, grouped national numbers (US, UK), and a bare
+ * country-code prefix before a group. Plain dates, times, ids and epoch times do not match. Known gap: a bare
+ * run of digits with no plus and no grouping is not seen (an epoch time looks the same); register the number
+ * as a phone fixture instead.
+ */
+const PHONE_SHAPES: readonly RegExp[] = [
+  /(?<![\w+])\+\d{1,3}(?:[ .()-]?\d){6,}/, // +12025550147, +44 7700 900123
+  /(?<![\w+])\+\d{1,3}[ .-]\(?\d{2,4}\)?(?![\d:])/, // partial: +44 7700, +1 202
+  /(?<![\d.])\(?\d{3}\)?[ .-]\d{3}[ .-]\d{4}(?![\d.])/, // (202) 555-0147
+  /(?<![\d.])0\d{3,4}[ ]\d{3}[ ]?\d{3,4}(?![\d.])/, // 07700 900123
+];
+
+/** A fixture's own digits, so a registered number is found whole or by its last four (the part a mask shows). */
+const digitsOf = (s: string) => s.replace(/\D/g, '');
 
 const norm = (s: string) => s.replace(/\s+/g, ' ').trim().toLowerCase();
 
@@ -51,16 +70,20 @@ export function runtimeFixture(text: string): string | null {
  * Known gap: Playwright's `m.text()` shows an object argument as `JSHandle@object`, so a letter logged inside an
  * object is not seen.
  */
-export function findLeaks(lines: readonly string[], typed: readonly string[] = []): Leak[] {
+export function findLeaks(lines: readonly string[], typed: readonly string[] = [], phones: readonly string[] = []): Leak[] {
   const phrases = [
     ...SEED_TEXT_FRAGMENTS.map((p, i) => ({ label: `seed:${i}`, p: norm(p) })),
     ...typed.map((p, i) => ({ label: `typed:${i}`, p: norm(p) })),
   ].filter((x) => x.p.length >= 8);
   const name = new RegExp(`(^|[^\\p{L}\\p{N}])${CHILD_NAME}([^\\p{L}\\p{N}]|$)`, 'iu');
+  const tails = phones.map((p, i) => ({ label: `phone:${i}`, d: digitsOf(p), re: new RegExp(`(?<!\\d)${digitsOf(p).slice(-4)}(?!\\d)`) })).filter((x) => x.d.length >= 4);
   const leaks: Leak[] = [];
   lines.forEach((line, at) => {
     const n = norm(line);
-    const label = name.test(line) ? 'child-name' : phrases.find((x) => n.includes(x.p))?.label;
+    const label =
+      (name.test(line) ? 'child-name' : phrases.find((x) => n.includes(x.p))?.label) ??
+      (PHONE_SHAPES.some((re) => re.test(line)) ? 'phone-shape' : undefined) ??
+      tails.find((x) => digitsOf(line).includes(x.d) || x.re.test(line))?.label;
     if (label) leaks.push({ label, line: at });
   });
   return leaks;
