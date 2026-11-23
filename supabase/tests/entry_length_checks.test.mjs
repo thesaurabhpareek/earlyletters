@@ -3,6 +3,7 @@
 // signs_as columns to 480, so a 30-character Devanagari name is no longer cut. Each limit is tested at the edge (960 accepted,
 // 961 refused; 480 accepted, 481 refused), in code points not bytes, with the refusal value-free (BL-244). children.nickname stays 30.
 // Fictional family "Asha" only; Devanagari is built from code points, never a real name.
+import { readFileSync } from 'node:fs';
 import { createDb, users, uuid7 } from './harness.mjs';
 
 const { check, as, sys, codeOf, done, publishPolicies, consent, newChild } = await createDb(process.argv.slice(2));
@@ -67,6 +68,14 @@ check('[BL-1572] exactly one check on each of the five columns, none left at the
 check('[BL-1572] children.nickname stays at 30',
   (await refusal(`update children set nickname = $1 where id = '${kid}'`, ['a'.repeat(30)])) === null
   && (await refusal(`update children set nickname = $1 where id = '${kid}'`, ['a'.repeat(31)]))?.code === '23514');
+
+// The founder's hosted check in APPLY.md File 47, run as written (extracted from the doc, so the two cannot drift): 5.
+const apply = readFileSync(new URL('../APPLY.md', import.meta.url), 'utf8');
+const sec = apply.slice(apply.indexOf('## File 47:'));
+const q = /\*\*Check \[U\] \(hosted, founder\):\*\* `([^`]+)`/.exec(sec)?.[1];
+check('[BL-1572] APPLY.md File 47 has a check query to run', !!q);
+check('[BL-1572] the APPLY.md File 47 check query returns 5 on the migrated schema (two closing parens, each name at its own limit)',
+  q && Number((await sys(q)).rows[0].count) === 5);
 
 await sys('rollback');
 done();

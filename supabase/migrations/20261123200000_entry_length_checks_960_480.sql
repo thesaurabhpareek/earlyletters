@@ -17,9 +17,13 @@
 -- Ordering. Apply after 20261123100000 (File 46, sync_pull_consent_gate). Not applied. Applying it to a hosted project is the
 -- founder's step (D-041, CR-73), from a CI tag run. The app does not change until then. If this merges after the main cut, it ships
 -- in a later tag.
--- Rollback (forward-fix only; never edit this file once applied): a new migration that restores the old numbers in the five
--- places above. Rows saved after the raise may be over the old limits, and words are never cut (the constitution), so add the old
--- CHECKs NOT VALID and keep the new rows; the data architect decides before it is used.
+-- Rollback (forward-fix only; never edit this file once applied). Restoring the old numbers is safe only if no row is over the old
+-- limits (children.name 60, the four signs_as columns 30). A NOT VALID check skips the scan at apply time, but it and the old
+-- BEFORE triggers still test the row on every later INSERT or UPDATE, so a row over the old limit would refuse every update of
+-- that row, even of an unrelated column: the book could not be renamed, edited or synced. Words are never cut (the constitution).
+-- So: do not restore the old triggers or checks while any row is above the old limits. Either keep the new limits (the default:
+-- they are looser, so they cannot fail old data) or first fix those rows by a decision of the data architect, then restore the
+-- old numbers in the five places above.
 --
 -- Safety. The new limits are looser, so no stored row can fail them. DROP and ADD CONSTRAINT take one short ACCESS EXCLUSIVE lock
 -- and scan the table once; run in one transaction so no write sees neither check. No new object, column or grant (the functions keep
