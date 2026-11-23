@@ -91,7 +91,7 @@ export function Toast({ message, action, durationMs = 4000, bottomOffset = 0, on
     })
     .onEnd((e) => {
       if (e.translationY > 40 || e.velocityY > 600) {
-        dy.value = withTiming(120, { duration: tokens.motion.exitMs });
+        dy.value = withTiming(tokens.motion.dismissDy, { duration: tokens.motion.exitMs });
         runOnJS(dismiss)();
       } else {
         const s = tokens.motion.snappy;

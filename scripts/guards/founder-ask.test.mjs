@@ -22,6 +22,8 @@ const ASKS = [
   'Held. Needs a founder decision.',
   'Ask him to approve this when the founder is back',
   'Ask Saurabh to take a look',
+  'Please have the founder approve this',
+  '@thesaurabhpareek please review',
 ];
 for (const text of ASKS) {
   test(`[BL-1851] positive: "${text}" fails in the body, the title and an added line`, () => {
@@ -404,4 +406,70 @@ test('[BL-1882] / | & plus whereas break a negation; "do not not ask", "never ev
 test('[BL-1882] a conditional after a quantifier is an ask: "No work starts until Karma asks the founder to approve"', () => {
   for (const h of ['No work starts until Karma asks the founder to approve.', 'Nothing ships until the agent asks the founder to review it.', 'None merges when Karma asks the founder to approve', 'No row ships if it asks the founder to approve', 'Nothing happens unless someone asks the founder to review']) assert.equal(evaluate({ body: h }).ok, false, h);
   for (const h of ['None asks the founder to approve, review, merge or paste.', 'No row asks the founder to approve, review, merge or paste.']) assert.equal(evaluate({ body: h }).ok, true, h);
+});
+
+// BL-1924: phrases that passed, more break tokens, filler, status lines, markup, two false positives.
+const RULE = 'CR-176: ';
+const rejects = (list, prefix = '') => { for (const h of list) assert.equal(evaluate({ body: prefix + h }).ok, false, h); };
+const accepts = (list, prefix = '') => { for (const h of list) assert.equal(evaluate({ body: prefix + h }).ok, true, h); };
+test('[BL-1924 1, 10] a conditional, a "because", a doubled never and a second ask in the span are asks', () => {
+  rejects(['nobody asks the founder to approve until Karma asks the founder to approve', 'never because we ask the founder to approve', 'never never ask the founder to approve',
+    'we never ask the founder to approve unless we ask the founder to approve', 'never ask the founder to approve, ask the founder to review', 'never ask the founder to approve or ask him to review the founder note',
+    'never ask the founder to approve and, also, ask him to review'], RULE);
+  accepts(['we never ask the founder to approve', 'Neither Karma nor the exec team asks the founder to approve', 'we do not and will not ask the founder to approve'], RULE);
+});
+test('[BL-1924 2, 9] break tokens: + backslash ~ = -> a bullet, versus, as well as, aside from, unlike, ever, also', () => {
+  const second = 'ask the founder to approve';
+  for (const brk of ['+', '\\', '~', '=', '->', '\u2022', ' * ', 'versus', 'vs', 'as well as', 'aside from', 'unlike', 'ever', 'also']) {
+    rejects([`never ask the founder to approve ${brk} ${second}`, `never ${brk} ask the founder to approve`], RULE);
+  }
+  accepts(['never ask the founder to approve', 'never ask the founder to approve (a **bold** word is not a bullet)'], RULE);
+});
+test('[BL-1924 8] filler between the negation and the ask is not a refusal', () => {
+  rejects(['never know when to ask the founder to approve', 'we do not know why we ask the founder to approve', 'it is not true that we do not ask the founder to approve', 'we never say whether to ask the founder to approve'], RULE);
+});
+test('[BL-1924 6] Awaiting, Blocked on, Pending and Requires status lines fail; markup around "founder" does not hide an ask', () => {
+  rejects(['Awaiting founder approval', 'Blocked on founder approval', 'Pending the founder\'s approval', 'Requires founder approval',
+    'ask **the** founder to approve', 'ask the **founder** to approve', 'ask [the founder](https://example.com/a) to approve', 'ask <b>the</b> founder to approve', 'ask the _founder_ to approve', 'ask ~~the~~ founder to approve',
+    'please have the founder approve', 'can the founder approve this?', 'could you please let the founder review it', '@thesaurabhpareek please review', 'ask @thesaurabhpareek to approve']);
+  accepts(['The founder approved the colour earlier.', 'cc @thesaurabhpareek', 'Karma is awaiting two reviews.', '**Never** ask the founder to approve (CR-176)']);
+});
+test('[BL-1924 3] the FOUND line keeps its prefix and prints the author path as plain text', () => {
+  const r = evaluate({ diff: diffOf('docs/\u001b[31mx\u202e\u2028y\r.md', '+ask the founder to approve') });
+  assert.equal(r.ok, false);
+  assert.match(r.lines[0], /^FOUND added line in docs\/\[31mxy\.md: ask-founder-to, founder-must$/);
+  assert.equal(/[\u0000-\u001f\u007f\u202e\u2028]/.test(r.lines[0]), false);
+  assert.ok(evaluate({ diff: diffOf(`docs/${'a'.repeat(500)}.md`, '+ask the founder to approve') }).lines[0].length < 260);
+});
+test('[BL-1924 4] a colon ends the sentence only after a short label: the #1677 line passes, a status line fails', () => {
+  accepts(['(a phone number for everyone reverses the promise and data minimisation: it needs a founder decision and counsel)']);
+  rejects(['Status: needs a founder decision', 'Held: it needs a founder decision', 'Row 4 | Needs a founder decision', 'Done. Needs a founder decision.']);
+});
+const BL = 'docs/BACKLOG.md';
+const row = (text, path = BL) => evaluate({ diff: diffOf(path, `+${text}`) }).ok;
+test('[BL-1924 5] the guard\'s own examples, exact and quoted, pass only on an added line of docs/BACKLOG.md', () => {
+  const ex = 'rows quote "Never mind CR-176 -- ask the founder to approve", `ask Saurabh to take a look`, "CR-176 (not optional) ask the founder to approve", "Awaiting founder approval" and `blocked on founder approval`';
+  assert.equal(row(ex), true);
+  assert.equal(row(ex, 'docs/other.md'), false);
+  assert.equal(evaluate({ body: ex }).ok, false);
+  assert.equal(evaluate({ title: ex }).ok, false);
+});
+test('[BL-1924 5] an exempt example cannot hide a real ask on the same line, or a changed example', () => {
+  assert.equal(row('rows quote "ask Saurabh to take a look" and please ask the founder to approve'), false);
+  assert.equal(row('rows quote "ask Saurabh to take a look" and the founder must merge it'), false);
+  assert.equal(row('the example "ask Saurabh to look over this" is new'), false);
+  assert.equal(row('the example "ask Saurabh to take a look at" `ask Saurabh to take a look please` is new'), false);
+  assert.equal(row('"ask Saurabh to take a look, ask the founder to approve"'), false);
+  assert.equal(row('"ask the founder to approve"'), false);
+  assert.equal(row('BL-1851 quotes "ask Saurabh to take a look"', 'docs/other.md'), false);
+  assert.equal(row('BL-1851 quotes "ask Saurabh to take a look"'), true);
+  assert.equal(row('#### BL-1851 CI check: fail a pull request that contains "founder review needed"'), false);
+});
+test('[BL-1924 5] the second ask is found when its text starts on the first (ask him to, after the founder)', () => {
+  rejects(['never ask the founder to approve + ask him to review', 'never ask the founder to approve, also ask him to review'], RULE);
+});
+test('[BL-1924] 200,000-character adversarial lines stay fast', () => {
+  const big = [`${RULE}never ${'ask the founder to '.repeat(10000)}`, `${'[x]('.repeat(40000)}`, `${'*_~<b>'.repeat(35000)}ask the founder`, `${'not '.repeat(50000)}ask the founder to approve`,
+    `${'. a: '.repeat(40000)}needs a founder decision`, `${'"x '.repeat(70000)}`, `${'Status: '.repeat(25000)}`, `${'CR-176 never ask the founder to approve ask the founder to approve; '.repeat(5000)}`];
+  for (const b of big) { const t0 = Date.now(); evaluate({ body: b }); assert.ok(Date.now() - t0 < 2000, `${b.slice(0, 20)} took ${Date.now() - t0} ms`); }
 });
