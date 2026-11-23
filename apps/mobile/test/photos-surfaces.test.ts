@@ -296,8 +296,8 @@ describe('[NS-01-R8][CL-116 C-01] the picture on the letter page', () => {
     expect(check(page, m3).length, 'derived label').toBeGreaterThan(0);
     // No slot, no gap for a letter without a picture: the slot is a null child, and the carry is kept for it.
     expect(page).toMatch(/const picture = hasPicture \? <LetterPicture/);
-    expect(page).toMatch(/carried: !hasPicture && /);
-    expect(page).toMatch(/<PageOpening lineHeight=\{openingLineHeight\} carry=\{!hasPicture\} \/>/);
+    expect(page).toMatch(/carried: carriesWords\(\{ hasPicture, fontScale \}\) && /);
+    expect(page).toMatch(/<PageOpening lineHeight=\{openingLineHeight\} carry=\{carriesWords\(\{ hasPicture, fontScale \}\)\} \/>/);
   });
   it('[NS-01-R8][CL-116 C-01] the picture is sized from its stored width and height, capped, one column at AX3 and up, never cropped', () => {
     const wide = { columnWidth: 300, windowHeight: 667, aspect: 3 / 2, largeText: false };
