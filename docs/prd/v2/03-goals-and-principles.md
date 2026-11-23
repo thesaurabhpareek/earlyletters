@@ -35,7 +35,7 @@ Four things must be true for that sentence to hold:
 7. **Standard over custom.** Use what Apple and well-maintained permissive open source provide; add finishing touches on top (B16). Custom native code only where no standard exists (for example the SubscriptionStoreView bridge, R4 C5).
 8. **Ship a language or feature when it passes its gate.** A language, model or feature ships when it passes its gate on the reference device (iPhone SE 3rd gen), not when it compiles. Where quality is not there, say so and fall back to what is true (keep the recording, let the author type).
 9. **Every screen passes AX5 text and VoiceOver on the iPhone SE 3.** Benchmarks for finish: Calm, Day One, Apple Journal and Apple's own apps (B16).
-10. **One ask at a time.** At most one permission or consent sheet per session after the first letter, never during recording, review or export (PRD-REQ-001; F02 owns the session definition and the full ask table).
+10. **A few asks, one at a time.** Up to two setup asks a day, at most one per session after the first letter, at most one of them an OS-alert or consent ask in a day, never during recording, Review or export (PRD-REQ-001 Rev, Karma ruling 22 Nov 2026 on founder delegation; F02 owns the session definition and the full ask table).
 
 ## 4. Success metrics
 

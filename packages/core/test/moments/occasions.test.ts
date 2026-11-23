@@ -132,7 +132,7 @@ describe('[NS-53-R22] the birthday and the month day follow the planner date rul
   });
 });
 
-describe('[NS-53-R18] [NS-53-R36] the one reason when several apply to a date', () => {
+describe('[NS-53-R42] the one reason when several apply to a date', () => {
   it('follows the closed precedence: marked, first, birthday, month day, holiday', () => {
     expect(reasonFor(['RSN-HOLIDAY', 'RSN-MONTHDAY', 'RSN-BIRTHDAY', 'RSN-FIRST', 'RSN-MARKED'])).toBe('RSN-MARKED');
     expect(reasonFor(['RSN-HOLIDAY', 'RSN-MONTHDAY', 'RSN-BIRTHDAY', 'RSN-FIRST'])).toBe('RSN-FIRST');
@@ -165,6 +165,10 @@ describe('[NS-53-R18] public holidays by date (O-33: US civic list, PROPOSED)', 
     expect(on('2026-12-25')).toEqual([]);
     expect(HOLIDAY_KEYS).toHaveLength(9);
     expect(HOLIDAY_KEYS.every((k) => /^[a-z_]+$/.test(k))).toBe(true);
+  });
+  it('has none for a region it has no table for, never a throw', () => {
+    expect(holidaysOn('2026-07-04', 'CA' as never)).toEqual([]);
+    expect(holidaysOn('2026-07-04', 'constructor' as never)).toEqual([]);
   });
   it('has none with no region, and a per-holiday switch removes that holiday only', () => {
     expect(holidaysOn('2026-07-04', null)).toEqual([]);

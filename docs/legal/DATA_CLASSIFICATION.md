@@ -336,6 +336,8 @@ Added by `20261028010000_invite_redeem_by_code.sql`. Closed to every role; writt
 | `accepted_at` | L2 | server time of the act |
 | `client_recorded_at` | L2 | device time of the act |
 | `app_version` | L2 | app version |
+| `app_build` | L2 | EAS build number that drew the screen, digits and dots only (`supabase/migrations/20261108000000_consent_record_fields.sql:64`; basis: the migration column comments and `docs/engineering/07-privacy-engineering.md` PRIV-R21) |
+| `os_major` | L2 | Major OS version only, 1 to 999, never the minor (`20261108000000_consent_record_fields.sql:65`; same basis) |
 | `platform` | L2 | enum |
 | `locale` | L3 | device locale (language proxy) |
 | `rendered_sha256` | L2 | hash of the consent text shown |
@@ -780,6 +782,8 @@ File paths cited in this section are under `apps/mobile/src/`. Protection floor 
 | `activeChildId` | L3 | Book id |
 | `appearance`, `readingSize`, `review.firstNoteSeen`, `content.dismissed` | L2 | Device preferences and dismissed content-block ids (server content keys) |
 | `reminders.enabled`, `.paused`, `.cadence`, `.days`, `.weeklyDay`, `.time`, `.monthNotes` | L2 | Reminder preferences (C-REQ-001 to -011). The time is a local clock time, not linked to a child's dates |
+| `reminders.onSince` | L2 | When reminders were last turned on, as epoch milliseconds (`lib/reminders/prefs.ts:16, 159`; CDO-19). It stores epoch milliseconds, not a date as CDO-19 words it; same class, L2. Stays on the phone, never synced or exported. Clears with the other `reminders.*` settings when the session ends (`lib/reminders/prefs.ts:58`, `lib/reminders/session.ts:58`; NS-13-R14) |
+| `app.lastPlannedVersion` | L1 | The app version the reminder list was last planned by, a version string only (`lib/reminders/update.ts:8`; CDO-19). Stays on the phone, never synced or exported |
 | `notifications.lockScreenNames` | L2 | The setting only. When on, local notification text carries the child's name (L4) on the lock screen (section 6, item 4) |
 | `player.original` | L2 | Play the original recording instead of the listening copy |
 | `auth.lastMethod` | L2 | Last sign-in method (apple, google, email, passkey) |
@@ -816,7 +820,7 @@ File paths cited in this section are under `apps/mobile/src/`. Protection floor 
 | `e2eKillDrill.owned` | L2 | Development and test builds only (`dev/kill-drill.logic.ts:66`) |
 | `find.dirtyAt`, `find.secureDelete` | L2 | In PR #798. A time; a flag. The code comment at `lib/find/lifecycle.ts:38` says L1: flags about this phone's database are L2 (section 1) |
 | Planned: `discard.failures.<draft id>` (NS-09, BL-977); `copySlip.<child id>.<year>` (NS-11, BL-942) | L3 key, L2 value | A retry count; a shown mark |
-| Planned: `newPhoneLine.dismissed` (NS-10, BL-978); `reminders.onSince` (NS-13, BL-943); `home.pastLetters`, `home.pastLetter.dismissedOn` (NS-23, BL-946); `typedDay.showWords` (NS-18, BL-982); `seal_watermark` per book (NS-06 Part B, BL-970) | L2 | Settings and times |
+| Planned: `newPhoneLine.dismissed` (NS-10, BL-978); `home.pastLetters`, `home.pastLetter.dismissedOn` (NS-23, BL-946); `typedDay.showWords` (NS-18, BL-982); `seal_watermark` per book (NS-06 Part B, BL-970) | L2 | Settings and times |
 | Planned: `typedDay.<yyyy-mm-dd>` (NS-18, BL-982) | L4 | The parent's words for a day's reminder; the date in the key can be a birthday (rule 1.1.6) |
 | Planned: `culture.asked.<ownerKey>` (NS-47-R2, R6, R11, R15, R16; ADR 0032 item 8). The key name is subject to an errata row from `product`: NS-47-R4 lints out any setting key named like "culture", so the name may change and this row follows it | L3 | One value, `done`, the same after every answer, so it holds no tradition and cannot mean "the parent chose days". The key carries `ownerKey`, 16 hex of SHA-256 of the user id, which is a person identifier (rule 1.1.4; the same reading as `copySlip.<child id>.<year>` and `family.seenCoParents.<child id>`). The card says L2 and the value alone would be L2; the key makes it L3 here, which only tightens handling. Per account. In the iPhone backup (it is in `settings` inside `scribe.db`, so a restored phone does not ask again, NS-47-R6). Not cleared at sign-out: it stays keyed to the account that answered, and a second account is asked afresh (NS-47-R15). Deleted by Erase everything (NS-47-R11, R16). Never synced, never exported (NS-47-R10), never in analytics, logs or crash reports |
 | Planned: `notifications.dayNames` (NS-47-R12, R14, R37; ADR 0033 item 4) | L3 | Whether day words may show on a lock screen: `on` or `off`, default off, forced off and the stored value cleared while App lock is on, effective value `stored AND NOT appLockOn`. It names no day. In the iPhone backup (`settings`). Deleted by Erase everything. Never synced, never exported, never in a push payload. Sign-out: neither the card (NS-47-R15) nor `13-days-culture-home.md` 4.5 clears it, and it is not keyed to an account, so a switch left on would apply to the next account's days. Recommendation to `product` and `mobile`: reset it to off at sign-out. Not ruled here, because it changes a card |

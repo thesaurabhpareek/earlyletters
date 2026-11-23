@@ -1,6 +1,7 @@
 /** Shared moves for the journey flows. Only fictional family data ("Asha"); everything goes through the real screens. */
 import type { Page } from '@playwright/test';
 import { canary, expect, type Recorder } from './journey';
+import { assertUniqueStepId } from './step-id';
 
 export const CHILD = 'Asha';
 export const SIGNS_AS = 'Mama';
@@ -20,11 +21,11 @@ export async function passAgeGate(page: Page) {
 
 export async function startOnboarding(page: Page) {
   await btn(page, 'Begin the book').click();
-  await expect(btn(page, 'That sounds right')).toBeVisible();
+  await expect(btn(page, 'Continue')).toBeVisible();
 }
 
 export async function toChildStep(page: Page) {
-  await btn(page, 'That sounds right').click();
+  await btn(page, 'Continue').click();
   await expect(page.getByText('Who is this book for?')).toBeVisible();
 }
 
@@ -53,9 +54,13 @@ export async function firstRun(page: Page, name = CHILD) {
 export function journey(record: Recorder, code: string, name: string, start = 1, first?: string) {
   let n = start - 1;
   let last = first;
+  // BL-480: ids used by THIS journey call; the map is per call, so a repeat inside one call throws. The J24 tests do not
+  // rely on that: each has its own start id (AX1 01-03, AX3 04-06, AX5 07-09, hi/es/zh/fr/ar/pt 10-15; BL-1643).
+  const seen = new Map<string, string>();
   return async (kind: 'happy' | 'unhappy', title: string, note: string, from?: string, opts?: { settle?: number }): Promise<string> => {
     n += 1;
     const id = `${code}-${String(n).padStart(2, '0')}`;
+    assertUniqueStepId(seen, id, title);
     await record({ id, journey: name, kind, title, note, from: from ?? last }, opts);
     last = id;
     return id;

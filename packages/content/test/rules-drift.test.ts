@@ -83,6 +83,9 @@ const EXEMPT: Record<string, string> = {
   HELPLINE_MAX_AGE_DAYS: 'helplines.test.ts',
   CONSENT_LOCALE: 'consent-manifest.test.ts',
   CONSENT_SHOWN_IDS: 'consent-manifest.test.ts',
+  DAY_AUTHORITIES: 'days.calendar.test.ts',
+  DAY_AUTHORITY_IDS: 'days.calendar.test.ts',
+  US_DAY_ROWS: 'days.calendar.test.ts',
 };
 
 describe('content rules drift', () => {

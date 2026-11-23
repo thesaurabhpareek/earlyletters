@@ -7,7 +7,7 @@ This page says how agents ask each other for things. An agent that needs somethi
 | Channel | Use it for | Where | Who answers |
 |---|---|---|---|
 | Handoff | A question, a request for work in someone else's files, or an FYI | An issue labelled `handoff`, `from:<sender>`, `to:<recipient>` (one label per recipient) | Each recipient, on its next run (the dispatcher schedules it ahead of backlog work) |
-| RFC | A proposed change to an engineering standard (`docs/engineering/**`) | A handoff with kind `rfc` and the label `rfc`, sent to every other steward | Every recipient states a position; the founder decides on the PR |
+| RFC | A proposed change to an engineering standard (`docs/engineering/**`) | A handoff with kind `rfc` and the label `rfc`, sent to every other steward | Every recipient states a position; Karma decides with the exec team on the PR (CR-176) |
 | Steward review | Checking an agent's or the founder's PR against a domain's rules (PRs from anyone else are never assigned) | A PR comment starting `<!-- steward:<handle>:<head sha> -->` | The steward whose `review_paths` the PR touches |
 | Journal | The agent's own record and the founder's instructions to it | The agent's journal issue | The agent itself, every run |
 
@@ -46,7 +46,7 @@ node scripts/agents/handoff.mjs reply --issue 123 --from privacy --status done -
 | `answered` | The answer is in the reply. |
 | `done` | The work is done; link the PR (it still needs Karma's merge, CR-73). |
 | `declined` | You will not do it; say why, citing a rule or decision, and who should. |
-| `blocked` | You cannot finish; say on what. Open a handoff to that agent, or add `needs:founder` to the issue. |
+| `blocked` | You cannot finish; say on what. Open a handoff to that agent or to Karma. Add `needs:founder` only when a physical act blocks you and its row is in `docs/release/FOUNDER_QUEUE.md`. |
 
 For an `rfc`, start the body with `Position: agree`, `Position: agree with changes` or `Position: object`, then reasons citing rule ids.
 

@@ -1,0 +1,67 @@
+diff --git a/.github/workflows/e2e-web.yml b/.github/workflows/e2e-web.yml
+new file mode 100644
+index 000000000..1b886f923
+--- /dev/null
++++ b/.github/workflows/e2e-web.yml
+@@ -0,0 +1,61 @@
++# Mobile web end-to-end journeys (apps/mobile/e2e-web). Owner: QA. PROPOSED (docs/ops/proposed/workflows/e2e-web.patch).
++#
++# Builds the app four times for the web (support/builds.ts) and drives it in Chromium at phone size. Emulation evidence,
++# not device evidence. Path filtered and NOT a required check, like web-e2e.yml: a required check that never reports
++# blocks merges that do not touch the app. Only the `seam` build carries the web presentation seam (B-8, B-9).
++name: Mobile web e2e
++
++on:
++  pull_request:
++    paths:
++      - 'apps/mobile/**'
++      - 'packages/**'
++      - 'package-lock.json'
++      - '.github/workflows/e2e-web.yml'
++  workflow_dispatch:
++
++concurrency:
++  group: e2e-web-${{ github.event.pull_request.number || github.ref }}
++  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
++
++permissions:
++  contents: read
++
++env:
++  CI: true
++
++jobs:
++  e2e:
++    name: mobile web e2e (Chromium)
++    runs-on: ubuntu-latest
++    timeout-minutes: 25
++    steps:
++      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
++
++      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
++        with:
++          node-version: 22
++
++      - name: Install
++        run: npm ci --no-audit --no-fund
++
++      - name: Install Chromium
++        run: npx playwright install --with-deps chromium
++
++      # The config reads the browser path from PLAYWRIGHT_CHROMIUM_PATH; point it at the one just installed.
++      - name: End-to-end journeys
++        working-directory: apps/mobile
++        run: |
++          export PLAYWRIGHT_CHROMIUM_PATH="$(node -e "console.log(require('@playwright/test').chromium.executablePath())")"
++          npm run e2e:web
++
++      - name: Upload traces and report
++        if: failure()
++        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
++        with:
++          name: e2e-web-traces
++          path: |
++            apps/mobile/e2e-web/.results/artifacts
++            apps/mobile/e2e-web/.results/report
++          retention-days: 14
++          if-no-files-found: ignore

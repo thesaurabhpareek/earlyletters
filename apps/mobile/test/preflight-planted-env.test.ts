@@ -23,7 +23,7 @@ const roots: string[] = [];
 type Mutant = { file: 'preflight-testflight.mjs' | 'env-file-guard.mjs'; from: string; to: string };
 
 /** A temp repo: the app without node_modules, plus what the preflight reads from the repo. Optionally one source edit. */
-function sandbox(env: { file: string; text: string } | null, mutant?: Mutant): string {
+function sandbox(env: { file: string; text: string | null } | null, mutant?: Mutant): string {
   const root = mkdtempSync(join(tmpdir(), 'bl506-'));
   roots.push(root);
   const app = join(root, 'apps', 'mobile');
@@ -33,7 +33,11 @@ function sandbox(env: { file: string; text: string } | null, mutant?: Mutant): s
     cpSync(join(REPO, p), join(root, p), { recursive: true });
   }
   symlinkSync(join(REPO, 'node_modules'), join(root, 'node_modules'));
-  if (env !== null) writeFileSync(join(app, env.file), env.text);
+  if (env !== null) {
+    // `dir: true` plants a directory of that name: it is listed by readdir like a file, and reading it fails (EISDIR).
+    if (env.text === null) mkdirSync(join(app, env.file));
+    else writeFileSync(join(app, env.file), env.text);
+  }
   if (mutant) {
     const f = join(app, 'scripts', mutant.file);
     const text = readFileSync(f, 'utf8');
@@ -154,4 +158,28 @@ describe('[BL-506] the preflight, run against a planted .env file', () => {
       expect(r.code, 'the preflight exits non-zero').not.toBe(0);
     });
   }, 180_000);
+
+  // BL-1405, the two mutants #1219's review left alive (M4 and M5).
+  it('[BL-1405] a .env.local that cannot be read (a directory of that name) is a FAIL on that file, not a pass and not a crash', async () => {
+    const r = await run(sandbox({ file: '.env.local', text: null }));
+    const fails = envLines(r, 'FAIL');
+    expect(fails, 'one FAIL for the unreadable file').toHaveLength(1);
+    expect(fails[0]).toContain('.env.local: <unreadable>');
+    expect(envLines(r, 'PASS'), 'the guard does not pass').toEqual([]);
+    expect(r.lines.some((l) => /profile names no Supabase or analytics key in eas\.json/.test(l)), 'the script ran past section 4, it did not crash').toBe(true);
+    expect(r.text, 'no stack trace').not.toMatch(/EISDIR|at .*\.mjs:\d+/);
+  }, 120_000);
+
+  it('[BL-1405] a value with "#" in it is still a FAIL: only a line that starts with "#" is a comment (the key is a line number, the value is never printed)', async () => {
+    const values = ['abc#def', '#abc', 'abc #def'];
+    const runs = await Promise.all(values.map((v) => run(sandbox({ file: '.env.local', text: `SUPABASE_SERVICE_ROLE_KEY=${v}\n` }))));
+    runs.forEach((r, i) => {
+      const fails = envLines(r, 'FAIL');
+      expect(fails, values[i]).toHaveLength(1);
+      expect(fails[0], values[i]).toContain('.env.local: <unparsable line 1>');
+      expect(r.text, values[i]).not.toContain('SUPABASE_SERVICE_ROLE_KEY');
+      expect(r.text, values[i]).not.toContain('def');
+      expect(envLines(r, 'PASS'), values[i]).toEqual([]);
+    });
+  }, 120_000);
 });

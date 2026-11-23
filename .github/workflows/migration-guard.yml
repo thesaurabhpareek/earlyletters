@@ -11,6 +11,14 @@ on:
 permissions:
   contents: read
 
+# A newer head of the same pull request cancels the older run, which would otherwise hold a runner slot to
+# report on a head nobody will merge. Every push run gets its own group (the run id), so a burst of pushes
+# to develop is not coalesced: each push keeps its own verdict, as before the group existed.
+# The check name does not change, so the required context still reports for the current head.
+concurrency:
+  group: migration-guard-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   guard:
     name: applied migrations unchanged

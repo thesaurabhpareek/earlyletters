@@ -1,5 +1,7 @@
 # Moments tab: privacy and constitution read (21 Nov 2026)
 
+> 23 Nov 2026: PROPOSED, nothing applied. Do not quote "label stays Data Not Collected" or "nothing leaves the phone" from this file (history, superseded by CPrivO-28 to 31, D-165 and D-169; CPrivO-31 bars that wording, CPrivO-10 and 12 hold the per-type claims).
+
 Status: PROPOSED. Docs only. Nothing here is built, decided or recorded in `DECISIONS.md`.
 Owner: `privacy`. Written for the founder, `product`, `mobile`, `design` and counsel.
 Nothing here is legal advice; every legal or store reading is "counsel must confirm".
@@ -99,7 +101,7 @@ Effect on the label (A7): library data read and kept only on the phone is not "c
 
 ## 4. Element by element
 
-Tests used: C = the constitution ("the machine may remove and repair; it may never add meaning": no caption or title written for a parent, no scene or place guess, no face matching); P = privacy rules (nothing leaves the phone; label stays Data Not Collected); B = BL-1305 (no photo-library usage string or PhotoKit symbol in any 1.x build).
+Tests used: C = the constitution ("the machine may remove and repair; it may never add meaning": no caption or title written for a parent, no scene or place guess, no face matching); P = privacy rules (nothing leaves the phone; label stays Data Not Collected); B = BL-1305 (no photo-library usage string or PhotoKit symbol in any 1.x build). (History, superseded by CPrivO-28 to 31, D-165 and D-169; do not reuse.)
 
 | Element in the reference | Route A | Route B | Recommendation (PROPOSED) |
 |---|---|---|---|
@@ -169,7 +171,7 @@ What the App Privacy label says:
 
 | Id | Question | Recommended default |
 |---|---|---|
-| CQ-1 | May we ship Route B (usage string, PhotoKit) in a 1.x build, reversing BL-1305, if the label stays Data Not Collected? | Yes only with the NS-51 rows and tests, flag-gated; counsel to confirm the label wording and the usage string |
+| CQ-1 | May we ship Route B (usage string, PhotoKit) in a 1.x build, reversing BL-1305, if the label stays Data Not Collected? | Yes only with the NS-51 rows and tests, flag-gated; counsel to confirm the label wording and the usage string | (History, superseded by CPrivO-28 to 31, D-165 and D-169; do not reuse.)
 | CQ-2 | Does Apple review or approve `com.apple.developer.journal.allow`, and does Route A need any extra privacy text or plist key? | Treat as unknown. Do not ship Route A until the capability is enabled in a test build and App Review's reply is on record |
 | CQ-3 | DPLA: what does the sensitive-content handling section require of an app that receives suggestion data (A3 links to it; not read)? | Receive pictures only; discard every other item type at the boundary; counsel reads the section |
 | CQ-4 | Is sending coordinates to Apple's geocoder "collection" under the App Privacy definition, and is a map tile a transfer to Apple? | Avoid the question: no geocode, no map tile, parent-typed place only |
@@ -197,7 +199,7 @@ Founder, 20 Nov (verbatim): "It doesn't need to be default but think if it can b
 
 Standing rulings this meets. The coordinator cites "ML-3: no push from library data". I did not find a row with that id; the text matches NX-39 ruling 3, "No notification is ever derived from the library", with its reason in the NX-39 decision table: "A notification that exists because of a library read discloses a derived fact by existing, whatever its words", and K1 ("No photo in a notification, widget, lock screen or analytics", extended to place, count and any library-derived notification at all). `product` should confirm the ML numbering. One newer row already cuts into this: NS-51-R11 (20 Nov, CL-053 closed Q-PM-8) lets a moment be a ranked source of the evening reminder with one neutral title and body, planned only while the app is open. So the position today is: a neutral local nudge is written into NS-51; NX-39's flat ban still stands in its own file. I treat the NX-39 ban as the standing ruling and NS-51-R11 as a narrow, already-proposed exception that the founder has not been shown as a reversal.
 
-Email. Not possible without a reversal that I recommend against. The server never sees the library (NS-51-R26: a network fake sees zero requests; nothing derived leaves the phone). An email that says anything about pictures would need the phone to tell the server that pictures exist, which is data derived from the library sent off the phone, so by the App Privacy definition it is collected (A7: "If you derive anything from that data and send it off device, the resulting data should be considered separately"). That would change the label from Data Not Collected for Photos or Videos, break K1 and NS-51-R26, and need a new disclosure. Recommended: email never uses the library. It may keep using what it uses today (a fixed schedule and the parent's own typed days), with no sentence, count or timing derived from pictures. A server-sent (remote) push is the same case and is refused for the same reason.
+Email. Not possible without a reversal that I recommend against. The server never sees the library (NS-51-R26: a network fake sees zero requests; nothing derived leaves the phone). An email that says anything about pictures would need the phone to tell the server that pictures exist, which is data derived from the library sent off the phone, so by the App Privacy definition it is collected (A7: "If you derive anything from that data and send it off device, the resulting data should be considered separately"). That would change the label from Data Not Collected for Photos or Videos, break K1 and NS-51-R26, and need a new disclosure. Recommended: email never uses the library. It may keep using what it uses today (a fixed schedule and the parent's own typed days), with no sentence, count or timing derived from pictures. A server-sent (remote) push is the same case and is refused for the same reason. (History, superseded by CPrivO-28 to 31, D-165 and D-169; do not reuse.)
 
 What a compliant on-device local notification would be (PROPOSED; all of it already points the same way as NS-51-R11 and NS-48, with the last two lines stricter):
 1. Scheduled by the phone itself, never by the server, and only while the app is open (no background mode; Q-PM-8). A weekend's pictures taken after the last open do not prompt.

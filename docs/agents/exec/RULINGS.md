@@ -522,9 +522,9 @@ Reading rule for M1 to M9 and M10: the Moments tab is PROPOSED and off behind a 
 - Question: analytics consent and the random id live in the settings table, per phone. On a shared phone, account B inherits A's yes and the same id. Per person, or per phone?
 - Seats consulted (their views are the council's reasoning, not sourced from repo docs unless a cite follows): CLO and CCO (consent is the person's own, not the phone's; law not read this session, UNVERIFIED, counsel to confirm), CISO, CDO (a rotated id breaks linkage across people), Karma.
 - Verdict: RULED as a build gate, with no promise changed. Analytics is off in v1.0 and no SDK is in the bundle, so nothing is live.
-- Ruling: per person. At every user change and at sign-out, in the same place as `joinWait.clear()` in `publishAuth`, analytics consent goes back to unanswered and the id is rotated. The reset clears the stored consent in the settings table (`lib/analytics/index.ts:46-50`), not only memory, and the test reads the table. No analytics SDK may ship before that is built and tested. Nothing here changes any words a person reads.
+- Ruling: per person. At every user change and at sign-out, in the same place as `joinWait.clear()` in `publishAuth`, analytics consent goes back to unanswered and the id is rotated. The reset clears the stored consent in the settings table (`apps/mobile/src/lib/analytics/index.ts:46-51`), not only memory, and the test reads the table. No analytics SDK may ship before that is built and tested. Nothing here changes any words a person reads.
 - Reason: it keeps less and asks again, so it only tightens the opt-in promise. A yes given by one person on a shared phone is not a yes from the next.
-- Evidence: audit F5; review B of #1427 (accurate, latent); `lib/analytics/index.ts:46-110`.
+- Evidence: audit F5; review B of #1427 (accurate, latent); `apps/mobile/src/lib/analytics/index.ts:46-110`.
 - Decision rights: internal behaviour that keeps less, latent (no SDK), and not a user promise under CR-73.
 - Door: two-way. Way back: remove the reset. Founder-only: no for the build gate. If the founder wants a per-phone choice, or the policy says otherwise, that is his.
 - Next: one backlog row, ready only when an analytics SDK is on the plan (`product`); `security-architect` adds the test through `publishAuth`.
@@ -534,11 +534,11 @@ Reading rule for M1 to M9 and M10: the Moments tab is PROPOSED and off behind a 
 - Question: a saved invite token survives sign-out and a user change for up to 14 days, and the server treats it as a single-use bearer not bound to a person. Keep, clear when a session had read it, or shorten the cap?
 - Seats consulted (their views are the council's reasoning, not sourced from repo docs unless a cite follows): CPrivO, CLO (the invite is the inviter's offer, not a right of the next account), CPO (A-REQ-028: it survives sign-in and a kill), Karma.
 - Verdict: RULED for the middle path. The 14-day cap is not touched and is founder-only.
-- Ruling: clear the token at sign-out or user change only when a signed-in session had already read it. The "had read it" mark is persisted with the token, in the same Keychain item (for example the id of the signed-in user whose session read it). Develop stores only `{token, receivedAt}` (`pending-invite.ts:10-27`) and reads it once, at `invite/index.tsx:96` or in the launch watcher, so a mark held in memory would be lost on a kill and relaunch and the leak would stay. The clear runs next to `joinWait.clear()` (`auth-store.ts:123`), on sign-out and on any user change. "Open the link, then sign in" still works, and so does a kill and relaunch. A token nobody read in a signed-in session stays. Default if asked about the cap: keep 14 days, unchanged.
-- Accepted residue: a token saved while A is signed in, before any screen has read it, then A signs out and B signs in and reads it: it is unread, so it stays, which is the intended open-link-then-sign-in path. The clear is an async Keychain call fired from the synchronous `publishAuth`, and `clearPendingInvite` swallows a locked Keychain (`pending-invite.ts:39-45`), so a failed clear is fail-open and the 14 days still bounds it.
+- Ruling: clear the token at sign-out or user change only when a signed-in session had already read it. The "had read it" mark is persisted with the token, in the same Keychain item (for example the id of the signed-in user whose session read it). Develop stored only `{token, receivedAt}` (`apps/mobile/src/lib/family/pending-invite.ts`, lines 10-27 at the ruling's head; #1456 has since added the reader mark, now at lines 15-50) and reads it once, at `apps/mobile/src/app/invite/index.tsx:96` or in the launch watcher, so a mark held in memory would be lost on a kill and relaunch and the leak would stay. The clear runs next to `joinWait.clear()` (`apps/mobile/src/lib/auth/auth-store.ts:132`), on sign-out and on any user change. "Open the link, then sign in" still works, and so does a kill and relaunch. A token nobody read in a signed-in session stays. Default if asked about the cap: keep 14 days, unchanged.
+- Accepted residue: a token saved while A is signed in, before any screen has read it, then A signs out and B signs in and reads it: it is unread, so it stays, which is the intended open-link-then-sign-in path. The clear is an async Keychain call fired from the synchronous `publishAuth`, and `clearPendingInvite` swallows a locked Keychain (`apps/mobile/src/lib/family/pending-invite.ts:61-72`), so a failed clear is fail-open and the 14 days still bounds it.
 - Decision rights: internal behaviour that keeps less. It is not a user promise under CR-73, and the cap (A-REQ-028) is untouched.
 - Reason: this closes the one case that is a leak, "A saw the preview, signs out, B taps". It does not make the invite shorter-lived for anyone who has not yet signed in, so the A-REQ-028 promise holds.
-- Evidence: audit F6; review B of #1427; `lib/family/pending-invite.ts:9-45`; `accept_child_invite` (single use, expiry).
+- Evidence: audit F6; review B of #1427; `apps/mobile/src/lib/family/pending-invite.ts:9-72`; `accept_child_invite` (single use, expiry).
 - Door: two-way. Way back: remove the clear. Founder-only: the cap (A-REQ-028 is a promise).
 - Next: a fix PR from `sync` or `mobile`, test first, through `publishAuth`. The test must cover kill and relaunch between the read and the sign-out, and a user change with no null step in between. CDesO has no new word to write.
 - Signed: CISO (Claude role, not an auditor), with the Chief Privacy Officer (Claude role, not counsel)
@@ -547,8 +547,8 @@ Reading rule for M1 to M9 and M10: the Moments tab is PROPOSED and off behind a 
 - Question: what to do with the four lower findings.
 - Seats consulted (their views are the council's reasoning, not sourced from repo docs unless a cite follows): CPrivO, CPO, Karma.
 - Verdict: RULED.
-- Ruling: F8 fix now, one concern: key the new-device report `inFlight` by the user id the call was asked for, and check that the access token read inside `reportOnce` after its await belongs to that same user, so B's report can never carry A's token and B does not lose its new-device email because A's report was in flight (`report.ts:24-47`). F9 accept: one install id per phone is by design, and the privacy data map gets one row saying an operator can link two accounts on one phone (a public policy sentence, if any, goes to counsel and the founder). F10 accept: a draft id and a 5 second window, no words. F11 accept: an unowned local book is offered to the first account that signs in (A-REQ-015); `product` adds a check that the claim is an explicit choice and never automatic. Recorded as an accepted exposure of the phone's first holder, not as "no person data": `bookVisibleTo` returns true for an unowned book to any signed-in user (`account-scope.logic.ts:35-37`), so a second person who signs in first sees the pre-account book (child name, letters) before any claim choice. Sync stays off until the claim, so nothing leaves the phone. It is A-REQ-015 by design and not fixed here. F2 to F4 stay queued as in the audit.
-- Reason: F8 is the only one that suppresses a security notice for a real person. The others are intended or carry no person data.
+- Ruling: F8 fix now, one concern: key the new-device report `inFlight` by the user id the call was asked for, and check that the access token read inside `reportOnce` after its await belongs to that same user, so B's report can never carry A's token and B does not lose its new-device email because A's report was in flight (`apps/mobile/src/lib/auth/new-device/report.ts:29-52`). F9 accept: one install id per phone is by design, and the privacy data map gets one row saying an operator can link two accounts on one phone (a public policy sentence, if any, goes to counsel and the founder). F10 accept: a draft id and a 5 second window, no words. F11 accept: an unowned local book is offered to the first account that signs in (A-REQ-015); `product` adds a check that the claim is an explicit choice and never automatic. Recorded as an accepted exposure of the phone's first holder, not as "no person data": `bookVisibleTo` returns true for an unowned book to any signed-in user (`apps/mobile/src/lib/auth/account-scope.logic.ts:34-37`), so a second person who signs in first sees the pre-account book (child name, letters) before any claim choice. Sync stays off until the claim, so nothing leaves the phone. It is A-REQ-015 by design and not fixed here. F2 to F4 stay queued as in the audit.
+- Reason: F8 is the only one that suppresses a security notice for a real person. F9 and F10 are intended by design, and F10 carries no words. F11 is intended by design (A-REQ-015) but is an accepted exposure of the phone's first holder, as the Ruling records: the pre-account book is shown to the first account that signs in.
 - Evidence: audit F8 to F11; review B of #1427 confirms the file and line cites. F11 behaviour was not run.
 - Door: two-way. Way back: revert the keying. Founder-only: no.
 - Next: one fix PR (`sync` or `mobile`) with a failing test first.
@@ -636,6 +636,7 @@ This section is a separate trailing block. Ids continue past the highest per sea
 - Reason: the spec already decided this in R253; E-4-5 asked because R24's text was narrower. R24 is read with R253. Showing is irreversible once seen; hiding costs one card on a day the parent did not want it.
 - Spec erratum, exact wording (replace the E-4-5 row's Reads and Status; edits R24): "R24 is read with R253. In a hard stretch or a quiet book, and on any phone where a visible book is in one, Moments shows no library pictures card and none of the library surfaces named in R253. The picker door stays. The question still shows, under R25. Status: RULED (CPO-27), PROPOSED; the whole-phone flag comes from `buildMoments` (PR 9)."
 - Owed: #1447 drops the S7 card when `hardStretch` or the book is quiet, with a test (a planted library day with the state hard: no pictures card; the door row remains) and one mutant; PR 9 passes the whole-phone flag and a test with two books.
+- Build default (22 Nov 2026, from the review notes on #1471; RULED, within the CPO seat's rights, reversible, flagged for the CPO to confirm): the ruling above does not say what happens to pictures the parent picked themselves (S5) in a hard stretch. Default: library-derived pictures (S7 and the library surfaces named in R253) are suppressed; parent-picked S5 pictures stay visible, because the parent chose them, and R253's list names library surfaces only. Way back: suppress S5 too, one line and its test. Nothing stored. This is not a reversal of CPO-27 and does not touch R253.
 - Door: two-way. Way back: remove the suppression line and its test; nothing stored.
 - Founder-only: no. A founder who wants pictures shown on a hard day would be changing R253, a P0 privacy row, and that is his.
 - Signed: Chief Product Officer (Claude role)
@@ -674,6 +675,7 @@ This section is a separate trailing block. Ids continue past the highest per sea
   5. Rows in `DATA_CLASSIFICATION.md` 4.6 and the ADR 0032 amendment (status stays Proposed) ship in the PR 8 diff, with a deletion test per field, as R250 requires. The device-store row in `docs/legal/data-policy.md` 4.4 is legal text: recommended, not written here (CPrivO-16).
   6. A higher `v` than the app knows reads as empty and writes nothing; a corrupt file is deleted without a message (R221). No analytics, log or crash report records a label, a key or that a clear happened.
 - Reason: every item is already in R221, R249, R250 and the R29 and R65 wipe rules; this ruling fixes the gaps (retention, book deletion, other-device deletion) with the safe default of deleting on the phone.
+- Erratum (22 Nov 2026, from the review notes on #1471; recorded by Karma): item 4 and the owner id check assume a claim step for a `local` owner. As merged in #1481 the store keeps a `local` moments file at sign-in and in `cleanupAtLaunch` (mirroring the days store). No claim step exists yet, so a file with a `local` owner is orphaned until one is built (NS-47-R7, E73). Named gap, not a data-protection claim: the plain sentence must not say a `local` file is claimed or cleared by sign-in.
 - Door: two-way until PR 8 ships; after it, a retention change is a migration of a small file. Way back: bump `v` and rewrite the file.
 - Founder-only: the export route only.
 - Signed: Chief Data Officer (Claude role)
@@ -682,19 +684,21 @@ This section is a separate trailing block. Ids continue past the highest per sea
 - Question: are typed day and place labels L4 device-only, and are they in "Export everything" (route A: no, said plainly; route B: yes, as a labelled section)?
 - Seats consulted: CDO (the data is small, local, parent-typed, never synced), CLO (the "export everything" promise reads as every entry the parent authored, with audio and photos, per `docs/legal/ENGINEERING_REQUIREMENTS.md` section on export; whether a typed label is within a portability right is UNVERIFIED and is a counsel question), CCO (the same, UNVERIFIED; no new claim may say "all your data" while route A holds).
 - Verdict: RULED for the class; FOUNDER for the export route, with a default.
-- Ruling: typed day labels and typed place labels are L4, device only, never synced, never in a backup, never in analytics, logs or crash reports, as reviewed on #1393 (not re-read in this session). The export route is a promise about what a person gets back, so it is the founder's. Recommendation and default: route A. Until the founder answers, PR 8 builds route A: no export, and the plain sentence of R250 says the labels stay on this phone. Reason: a label is a parent's own typed words about a day, which argues for route B on fairness; but route B adds a new section to the export file, a new test of the export contract and a claim, and a person who loses the phone loses the label either way. Route B is cheap to add later (a section in the ZIP), route A is cheap to start, so the default is the way that is easy to reverse and holds nothing back from a person who asks.
+- Ruling: typed day labels and typed place labels are L4, device only, never synced, never in a backup, never in analytics, logs or crash reports, as reviewed on #1393 (not re-read in this session; the read is `docs/product/moments-tab/EXPORT-DUTY-READ.md`). The export route is a promise about what a person gets back, so it is the founder's. Recommendation and default: route A. Until the founder answers, PR 8 builds route A: no export, and the plain sentence of R250 says the labels stay on this phone. Reason: a label is a parent's own typed words about a day, which argues for route B on fairness; but route B adds a new section to the export file, a new test of the export contract and a claim, and a person who loses the phone loses the label either way. Route B is cheap to add later (a section in the ZIP), route A is cheap to start, so the default is the way that is easy to reverse and holds nothing back from a person who asks.
 - Owed: no copy anywhere may say "everything" about the export while route A holds without the labels exception being read by `content` and the CLO seat (UNVERIFIED claim risk).
+- Erratum (22 Nov 2026, from the review notes on #1471; recorded by Karma): the export read this entry rests on is `docs/product/moments-tab/EXPORT-DUTY-READ.md` (it is not under `docs/legal/`). Read it for what it says: it finds no duty the written spec enforces; it leans route B (an engineering lean, because of the backup point in its section 3); it wants counsel to read the narrowed wording if route A holds; and it keeps label typing dark (no label typing UI ships) until counsel has read it. The default above (route A) therefore carries that condition: no label typing ships until counsel has read the narrowed wording, whichever route the founder picks. The lean and the default differ and the choice stays the founder's (Q-LABELS-EXPORT). No FOUNDER item changes.
 - Door: two-way (route B can be added). Way back: add a labelled section to the export ZIP and its test.
 - Founder question: Q-LABELS-EXPORT. Route A (default) or route B. Founder-only: yes.
 - Signed: Chief Privacy Officer (Claude role, not counsel)
 
 ### CPO-29 Q-9a: PR 9a may start its pure TypeScript surface before the G1a-L read-out, with limits (22 Nov 2026, CPO with Karma (CTO) and CISO)
 - Question: the spec gates PR 9 on the G1a-L device read-out; the planner recommends 9a not start before it. May 9a (access status, request, TS surface, `nullSource`, and `fixtureSource`) start now?
-- Seats consulted: Karma (the TS interface and `nullSource` call no native code and are small; a rewrite after the read-out costs a few lines), CISO (the risk is a native read of the library before the unknowns are known, and 9a has none of that), CPO (the header ruling of 21 Nov says the gates are release gates, not gates on starting code; the table's last column for row 9 is the gate for merging the native fetch).
+- Seats consulted: Karma (the TS interface and `nullSource` call no native code and are small; a rewrite after the read-out costs a few lines), CISO (the risk is a native read of the library before the unknowns are known, and 9a has none of that), CPO (CPO-17 item 2 says gates G1 to G11 apply before store submission, not before coding, so they are release gates, not gates on starting code; the table's last column for row 9 is the gate for merging the native fetch).
 - Verdict: RULED.
 - Ruling: yes, with limits. 9a may start now and may merge to develop. It holds: the `MomentsSource` interface and access-state types per R220's closed list of functions, `nullSource`, the mapping from the native access status to the app's access states (no prompt, no request wired), and `fixtureSource` only as a test helper outside `src` (a fixture that holds a coordinate stays out of `src`, CPrivO-14). It must not hold: any call to the native module, the columnar fetch, a native module file, a permission string, or anything that reads a library; those are 9b and wait for the G1a-L read-out. The flag stays off and nothing imports 9a on a code path a person reaches. If G1a-L changes a shape (for example whether location is readable under Limited), 9a is revised in the same PR as the change.
-- Reason: no bridge is touched and no data is read, so there is no privacy risk to wait out; waiting would idle the mobile agent for a week.
+- Reason: no bridge is touched and no data is read, so there is no privacy risk to wait out; waiting would idle the mobile agent for about a week (an estimate, not measured).
 - Spec erratum, exact wording (row 9 of 19.4, last column): "9a: none (pure TS, no native call); 9b: G1a-L read-out; G3 and G3-x to merge". Status: RULED (CPO-29), PROPOSED.
+- Erratum (22 Nov 2026, from the review notes on #1471; recorded by Karma): (a) the source of "release gates" above is CPO-17 item 2 (21 Nov), not a header ruling. (b) The ruling lists `fixtureSource` in 9a, but PRD 19.4 row 9 puts it in 9b (columnar fetch and `fixtureSource`). It was built as a test helper outside `src` in merged #1477, which is what this ruling asked of it and which keeps a fixture with a coordinate out of `src`. Read the ruling as: `fixtureSource` is a test helper outside `src`, and 19.4 keeps its row-9 placement in 9b for the production-side surface. The limits above are unchanged.
 - Door: two-way. Way back: revert 9a; nothing depends on it until 9b and PR 15.
 - Founder-only: no.
 - Signed: Chief Product Officer (Claude role)
@@ -706,10 +710,739 @@ This section is a separate trailing block. Ids continue past the highest per sea
 | Q-R25 question kind in a hard stretch | RULED CPO-26 (Home's kind; `hard` only in a hard stretch; never `gap`) | product erratum R25 and S6; #1447 quiet-versus-hard test | #1447 |
 | Q-R24 pictures card in hard or quiet | RULED CPO-27 (suppress; door stays; R253 governs) | product erratum R24; #1447 suppression and test; PR 9 whole-phone flag | #1447, PR 9 |
 | Q-X exclude list before `momentsFor` | RULED CDO-22 (build rule, fail closed) | product erratum E-4-4; PR 8 and 9 tests | PR 8, PR 9 |
-
 | Q-3c row for `buildMoments` | RULED CPO-28 (new pure row 3c, mobile, about 300 lines, after #1446 and #1447; PR 15 depends on 3c) | product adds row 3c and edits row 15 | PR 15 |
 | Q-PR8 store, erase, retention | RULED CDO-23 (R221 members only; kept until removed; erase, book delete and sign-out wipe; other-device deletion UNVERIFIED, named gap); class RULED CPrivO-16 | builder starts PR 8; DATA_CLASSIFICATION 4.6 rows and ADR 0032 amendment in the diff | PR 8 |
 | Q-LABELS-EXPORT labels in export | FOUNDER, recommend route A (no export, said plainly), default route A | founder picks A or B | none (PR 8 builds A) |
 | Q-9a PR 9a before G1a-L | RULED CPO-29 (yes for pure TS and `nullSource`; no native call; fixtureSource test-only) | product edits row 9 gate | PR 9a |
 
 Founder-only items in this batch: Q-LABELS-EXPORT (route A or B for typed labels in "Export everything"; the `docs/legal/data-policy.md` 4.4 device-store row is legal text and is recommended only). A reversal of CPO-27 would change R253 and is the founder's.
+
+## Batch 5: claim step, design council, analytics (22 Nov 2026, recorded by the product agent for Karma)
+
+Recorded from the council notes and review verdicts named in each entry. None of these entries is a founder decision, and `docs/DECISIONS.md` is not touched. Where a point could not be read in the repository it is marked [UNVERIFIED].
+
+### CPO-30 Q1 to Q3 (claim step): no new claim screen for a phone with only days or moments files; the first sign-in that is not a claim deletes `local` silently (22 Nov 2026, CPO with CPrivO and CDO; council round a727f25081a7a28a6)
+- Question: the claim step of NS-47-R7 and E73 was written for the letters files. (Q1) What happens on a phone that holds only a days or moments `local` file and no letters? (Q2) Does "Not my account" delete the `local` file? (Q3) Does Moments follow the same rule?
+- Seats consulted: CPO, CPrivO, CDO (council round of 22 Nov 2026; the council note is outside the repository, so its wording is quoted from the work queue of Karma's session, not from a file here).
+- Verdict: RULED for the build default. Extending the claim screen is the founder's, because it would be new words a parent reads.
+- Ruling:
+  1. Q1: no new claim screen for a days-only or moments-only phone. E73 as written stands: the first sign-in that is not a claim deletes the `local` file silently. That is the build default.
+  2. Q2: "Not my account" does NOT delete the `local` file. It declines the claim step and leaves the phone as it was. Sign-out must skip clearing `local`; this is a code change.
+  3. Q3: Moments follows E73 and item 2. `adoptLocal` runs only on an explicit "Keep in this account". A failed adoption leaves the claim unconfirmed and the `local` file untouched (as built at the head of #1529, c8935ddb; review notes on #1529 asked for this after a first head confirmed the claim and then deleted `local`).
+  4. ADR 0032 item 4 (the stale "kept, orphaned" wording) is edited by the builder in #1529, and NS-51 gets a mirror row NS-51-R43 of NS-47-R7. This supersedes the named gap in the errata under CDO-23 once #1529 merges.
+- Evidence: #1476 (merged; family notice keeps the user captured before the await, BL-1500 and BL-1501); #1523 (merged; boot sweep of stale takeover keys); #1529 (OPEN, not merged: it is queued, and every statement about its behaviour in this entry is a statement about its open head, not about develop). #1481 (merged) kept a `local` moments file at sign-in, which is the record this ruling replaces. Record against record: ADR 0032 item 4 and the days code keep `local`, while E73, A4 and CL-147 delete it; this ruling follows E73 for the first non-claim sign-in and keeps `local` on sign-out and on decline.
+- Door: two-way until #1529 merges. Way back: revert #1529. Deletion of a `local` file is device-only data and cannot be undone after the fact.
+- Founder-only: extending the claim screen (new words). Nothing else.
+- Signed: Chief Product Officer (Claude role)
+
+### CPrivO-17 Q1 to Q3 (claim step, privacy): the council ruling on the claim step, privacy seat (22 Nov 2026, CPrivO; council round a727f25081a7a28a6; not counsel)
+- Question: the claim step of NS-47-R7 and E73 for the days and moments `local` files (Q1 to Q3 as in CPO-30).
+- Verdict: RULED for the build default, as recorded in CPO-30.
+- Ruling: exactly the council's rulings in CPO-30 items 1 to 3: no new claim screen for a days-only or moments-only phone; E73 as written (silent delete at the first sign-in that is not a claim) is the build default; "Not my account" does not delete the `local` file; the sign-out path skips clearing `local`; Moments follows E73 and that rule. Nothing is added here.
+- Evidence: the council note, outside the repository, quoted from Karma's work queue [UNVERIFIED wording]. Seat-specific wording by CPrivO is not in the visible source.
+- Founder-only: extending the claim screen (new words).
+- Signed: Chief Privacy Officer (Claude role, not counsel)
+
+### CDO-24 Q1 to Q3 (claim step, data): owner key, adoption and the `local` file lifecycle (22 Nov 2026, CDO with CPO and CPrivO)
+- Question: data read of CPO-30.
+- Verdict: RULED for the build default.
+- Ruling: the owner key is the first 16 hex of the SHA-256 of the user id (as built in #1529, `local-claim.ts`; this entry does not restate the code). Sign-in sets the owner of both device-only stores; `setOwner` deletes a `local` file nobody adopted; `adoptLocal` rewrites `local` to the key on the write queue and runs only after an explicit Keep, before `confirmAccountClaim`. Sign-out puts the stores back to `local` and keeps a `local` file. A `local` write running at sign-out is not deleted behind it. A failed adoption leaves the claim unconfirmed and `local` untouched. `leave()` on the family notice takes the owner as a required argument, so a stale leave for user A cannot clear user B's waiting line.
+- Evidence: #1529 (open; head c8935ddb; 11 mutants each killed by a named test, per the PR body and later head note). Not verified here: a device run; the erase-all baseline failures (the PR body reports 9 files and 79 tests failing on clean develop).
+- Door: two-way until #1529 merges.
+- Founder-only: no.
+- Signed: Chief Data Officer (Claude role)
+
+### CDesO-13 Q1 and Q2 (BL-419, BL-423): the finale keeps `hero`, with a no-break space; the first-letter row stays "Write the first one" and does not open the recorder (22 Nov 2026, CDesO with CPO; council round a15d8150b380fc987, no conflicts)
+- Question: (Q1) BL-419: what does the finale display, and how is the single-word last line fixed? (Q2) BL-423: keep the row's words, and may the first tap open the recorder?
+- Verdict: RULED.
+- Ruling:
+  1. Q1: the BL-419 finale keeps the `hero` display. The row's "display" value is a mistake. The orphan (one word alone on the last line) is fixed at render time by a no-break space joining the last two words.
+  2. Q2: BL-423 keeps "Write the first one". Two taps are accepted. The recorder is NOT auto-opened, because that would skip the primer (NS-39-R10) and start capture without it, which is a scope and consent change. The row's Done-when becomes: "Tonight shows Speak as the first thing, with no card in front". "Tell {child} something" would be new parent-facing copy and needs founder or content approval; it is not adopted.
+- Evidence: the council round named above (note outside the repository; quoted from Karma's work queue) [UNVERIFIED wording]. N13 builds the finale orphan fix in its own PR. The BACKLOG rows for BL-419 and BL-423 are edited by the backlog PR, not here.
+- Door: two-way. Way back: a founder-approved line and a primer-aware recorder entry.
+- Founder-only: new copy only.
+- Signed: Chief Design Officer (Claude role)
+
+### CPO-31 Q3 (BL-891): retire BL-891 as superseded by NS-38 to NS-45; one banner line on NX-40 (22 Nov 2026, CPO with CDesO; same council round as CDesO-13)
+- Question: is BL-891 still needed?
+- Verdict: RULED for BL-891. OPEN for BL-892 to BL-897.
+- Ruling: BL-891 is retired as superseded by NS-38 to NS-45. NX-40 gets a one-line banner saying so, and the NX-40 file is kept, because BL-892 and BL-893 cite it.
+- OPEN: BL-892 to BL-897 may also be superseded. [UNVERIFIED] Nobody has checked; it is a separate check by the product agent.
+- Evidence: the council round named in CDesO-13. The docs PR for the banner is N13's (docs/nx-40-superseded-banner).
+- Door: two-way. Way back: reopen the row.
+- Founder-only: no.
+- Signed: Chief Product Officer (Claude role)
+
+### CDO-25 #1533 (Moments analytics): Karma's rulings on the five author questions, with open questions (22 Nov 2026, Karma (CTO); T1, reversible, nothing wired, flag off)
+- Question: #1533 adds `moments_card_impressed` and `moments_card_tapped`, each with one closed property `slot` (`look_back` | `question`). Five questions from the author went to review.
+- Seats consulted: review A (analytics) and review B (privacy lens), both PASS WITH NOTES at d694ee06. This is a Karma ruling; no CDO or CPrivO co-signature is claimed.
+- Verdict: RULED (Karma) for items 1 to 5. OPEN for items 6 and 7. #1533 itself is open, not merged.
+- Ruling:
+  1. Event names stay snake_case. Product amends the spec 28 section 18 names to match the catalogue.
+  2. The once-per-slot-per-day cap is a P0 test in the wiring PR, not in #1533.
+  3. The registry test allows only the two exact `moments_` names. Whether `moment_shown`, which still exists in the catalogue, is kept is decided in that test's PR. [UNVERIFIED: not decided here.]
+  4. The `ids.ts` and `registry.ts` rows land with the wiring PR; #1533's body says so.
+  5. PRD-REQ-016 is accepted as the requirement.
+- OPEN 6 (CDO and CPrivO input, before wiring): should `child_count_bucket` (including "none") ride on Moments impression events? Review B noted that it rides on every event today.
+- OPEN 7 (counsel and CPrivO): the App Store privacy label wording, Linked versus Not linked, and the policy wording for these events. Not decided in this log.
+- Evidence: reviews A and B on #1533 at d694ee06; the `^moment_` forbidden pattern does not match `moments_` (review B). Founder-only: the label wording is legal and store text.
+- Door: two-way. Way back: remove the two catalogue names.
+- Signed: Karma (CTO)
+
+
+## Batch 6 (22 Nov, founder standing approval: decide blocked rows with the exec team)
+
+Authority, in the founder's own words: "All blocked I approve. Just decide with executive team and whatever their recommendation is I approve." Each entry below is the council's ruling on one blocked or needs-decision backlog row, read against the row, `develop`, the decisions and the merged PRs. It is a chat line relayed by Karma, not a signature, and it covers only what is inside the council's decision rights (technical, process and product-scope calls for scope the founder already approved, all reversible). The founder can overrule any entry in one line, recorded as a new entry that supersedes it. Anything the council marked [UNVERIFIED] stays marked here. Words a parent reads stay PROPOSED until a store build. The ids are the next free number per role at the time of writing. The 24 rulings that are Karma's own (CTO role) are not in this file: they are recorded as CR-150 to CR-173 at the end of `docs/agents/cto/RULINGS.md`, and the entries here that mention them cite those CR numbers. Every ruling here or there that sets a row in `supabase/`, `.github/`, scripts, ops, compliance or keys paths `ready` still needs the counted security-lens review under CR-70 and CR-73 before it merges. Rows the council judged already done or stale, and rows that hit a founder-only limit, are not repeated here: they are in the status report. This batch records 83 rulings; 82 are RULED and 1 is OPEN: founder (BL-777, because it would change wording that D-144 reserves to the founder). Where a ruled row carries a part that is counsel's or the founder's, the entry says so on its Open line and that part is not ruled.
+
+### Hard limits not covered
+
+The standing approval does not reach secrets and credentials, account actions (Apple, Expo, Supabase hosted migration apply, Vercel, domains, stores), spending money, the constitution in `CLAUDE.md`, legal text counsel must see (`docs/legal/**`, terms, privacy policy, consent text), `docs/DECISIONS.md` entries, store builds and submission, or anything that needs the founder's hands or device. No entry below bypasses CODEOWNERS, branch protection, the CCO fence or the counted-review gates. The single action the founder owes for each such row is in the founder action list in the status report.
+
+**Sign-in, account and deletion**
+
+### CCO-16 BL-475 Sign-in code step words: five claims (22 Nov 2026, CCO, CPrivO, CMO, CDesO; CLO for point 5)
+- Verdict: RULED.
+- Ruling: Points 1 to 4 ruled. "Your letters are still on this phone." is true on the sign-in, failed sign-in and sign-out path (A-REQ-033); record claims row A2 as verified. The "newest link works" line (NS-41-R9) stays as the locked card words; `otp_expiry` is 900 and the hosted value is [UNVERIFIED]. Points 3 and 4 are built as shipped. Point 5 (`sensitiveConsent.declineHelp`) is counsel's registered text and is not ruled here.
+- Evidence: `packages/content/src/features/auth.en.ts:5-11,99,106,202-232`; `docs/product/prd/19-from-download-to-first-letter.md:730,732`; `supabase/config.toml:75`; claims inventory rows 121-122.
+- Way back: re-open the claims row; no code change to undo.
+- Status the row takes: `Status: partly done (points 1, 3 and 4 shipped in code; point 2 accepted, NS-41-R9; the remaining docs PR sets claims rows A2 and A3 and fixes the stale comment; point 5 is counsel, packet Q48). Mode: agent. Owner: content.`
+- Founder-only: no. OPEN: counsel for point 5 (`sensitiveConsent.declineHelp`, packet Q48); not ruled here.
+
+### CISO-4 BL-477 The wrong-code pause stays in memory (22 Nov 2026, CISO, CPrivO, CPO)
+- Verdict: RULED.
+- Ruling: Option (a). The pause stays in memory and a restart clears it; the server limits hold. The locked card NS-41-R9 does not say the pause survives a restart, and the locked pack wins over A-REQ-027's "on the device" (CR-66). Persisting would need a key, and the address is never stored. The per-IP verify limit number is [UNVERIFIED] against Supabase.
+- Evidence: `apps/mobile/src/lib/auth/pending.ts:7-18`; `docs/product/prd/19-from-download-to-first-letter.md:730,732`; `docs/product/prd/18-errata-after-lock.md:295` (E77); `docs/prd/v2/features/F02-account.md:210`.
+- Way back: add a persisted count keyed by a non-address value later, with CPrivO's read.
+- Status the row takes: `Status: ready (council ruling: memory only; one docs PR by the product manager reads A-REQ-027 as "while the app stays open", citing NS-41-R9). Mode: agent. Owner: product manager.`
+- Founder-only: no.
+
+### CCO-17 BL-487 Age step "No" keeps the 24-hour closure as built (22 Nov 2026, CCO, CLO, CDesO, CPO)
+- Verdict: RULED.
+- Ruling: Option (a), keep as built. An account that says it is under 18 is treated like any other answer: LEGAL-REQ-002 sets the 24-hour closure and the locked cards keep a local stop flag with nothing sent (NS-40-R3, R8, CL-130). The guard is the confirming Continue and "I answered by mistake". A second confirm would be a new registered line, which is counsel's. QA records once whether read, play and Save a copy stay reachable during the closure; if not, that is the defect. Whether any account is affected is [UNVERIFIED].
+- Evidence: `apps/mobile/src/app/(auth)/sign-in/consent.tsx:304-326`; `apps/mobile/src/lib/auth/machine.logic.ts:94-99,166`; `docs/legal/ENGINEERING_REQUIREMENTS.md:29-35`; `docs/product/prd/GAP-LOG.md:641` (CL-130).
+- Way back: counsel can add the confirm later; one registered line.
+- Status the row takes: `Status: ready (council ruling: option (a), keep as built; S55 acceptance records why an existing account holder is treated like a new install; QA records whether read and Save a copy stay reachable during the closure). Mode: agent. Owner: qa engineer, design systems.`
+- Founder-only: no.
+
+### CDesO-14 BL-490 Sign-in sheet departures and phone-only checks (22 Nov 2026, CDesO, CPO, CTO (QA))
+- Verdict: RULED.
+- Ruling: Drop the two `tap` haptics on the provider buttons (S52 says no haptic; the only first-run haptic is the first Keep, NS-44-R12). A wrapped label keeps a pill up to two lines and takes a smaller radius beyond that; design systems names the radius. Points 2 and 4 become device-plan rows in S1-27. Whether the sheet shape is the same screen under account-first sign-in is [UNVERIFIED].
+- Evidence: `apps/mobile/src/lib/auth/ui.tsx:202,263`; `docs/design/EXPERIENCE_PASS_2026-10.md:1293`; `docs/design/e2e/E-foundations-and-system-states/DESIGN.md:780,942`; `apps/mobile/src/components/ui/button.tsx:48,204`.
+- Way back: restore the haptic calls; one PR.
+- Status the row takes: `Status: ready (council ruling: drop the two tap haptics; wrapped label takes a smaller radius, owner names it; points 2 and 4 become S1-27 rows). Mode: agent. Owner: design systems, mobile engineer, qa engineer.`
+- Founder-only: no.
+
+### CISO-5 BL-491 Delete account: decisions left open by the critics' pass (22 Nov 2026, CISO, CLO, CPrivO, CDesO, CPO)
+- Verdict: RULED.
+- Ruling: Points 2, 4 and 6 ruled: the Export leaving out the person's own letters is accepted (BL-446 holds the fix); design systems applies the four S64 spec rows; a sole parent's letters stay unreachable while a request is open and Cancel restores them. Council block S1 ruled points 1, 3 and 5 as well; they are recorded here as recommendations only, because point 1 departs from step 5 of counsel's legal spec and points 3 and 5 are deletion terms, which the council cannot decide for counsel. As recommendations:  for 1.0 the typed word is the gate (a departure from step 5 of counsel's `DELETION_AND_EXPORT_SPEC.md`, with the 30-day undo, the scheduled email and App lock as compensating controls); today's held-intro line (names "photos") ships; a cancel-specific failure line is a PROPOSED key. All three go to the counsel relay, not into a store build, until counsel has read them.
+- Evidence: `docs/legal/DELETION_AND_EXPORT_SPEC.md:200,202`; `apps/mobile/src/components/settings/delete-account.logic.ts:14-16,63-66`; `packages/content/src/features/account-deletion.en.ts:18-19,42,107`; `docs/design/reviews/P6C_P8C_CRITICS_PASS_2026-10-30.md:47,234-245`.
+- Way back: restore the old spec rows; revisit point 1 if device owner authentication is built (BL-782).
+- Status the row takes: `Status: ready (council ruling: points 2, 4 and 6; points 1, 3 and 5 are recommendations and PROPOSED words for the counsel relay). Mode: pair. Owner: design systems (point 4), content (point 5), legal (relay).`
+- Founder-only: yes. OPEN: counsel and founder for points 1, 3 and 5 (a departure from a counsel-owned legal spec and two deletion-term lines); one action: merge the counsel-reviewed legal PR when it exists.
+
+### CPrivO-18 BL-448 Deletion words and docs agree with the S64 page (22 Nov 2026, CPrivO, CCO, CLO, CMO, CDesO)
+- Verdict: RULED.
+- Ruling: Points 1, 2, 6 and the content parts of 3 ruled. Fail closed: remove the two "export" lines from the book-deletion email unless that screen offers Save a copy; remove or hold the unbacked lines in `pages.en.ts` and correct the path (Delete account is its own section). Fix the three QA doc lines to say the app stays signed in. Points 4 and 5 (the register row, Privacy Policy line and `DELETION_AND_EXPORT_SPEC.md` 2.6.1) are `docs/legal/**`: recommendation only (the built S64 wins on "Sign out of this phone" and section placement; Export and Continue are both outline). Deploying the site to `main` stays held (CR-60).
+- Evidence: `packages/content/src/emails/account.en.ts:43-52,108,112,188`; `packages/content/src/pages.en.ts:199,223`; BL-783; `docs/qa/DEVICE_TEST_PLAN.md:503`.
+- Way back: revert the content PR.
+- Status the row takes: `Status: ready (points 1, 2, 3 content and 6 by council ruling; points 4 and 5 move to BL-783 and the counsel relay). Mode: agent. Owner: content (emails, pages), qa engineer (run sheets).`
+- Founder-only: yes. OPEN: counsel and founder merge for points 4 and 5 (legal text).
+
+### CLO-21 BL-501 Settings path words while Delete account is hidden (22 Nov 2026, CLO, CPrivO, CMO, CCO)
+- Verdict: RULED.
+- Ruling: Narrowed to what is not counsel's. With the row on in the store build, the three email lines, the runbook line and their tests stand. Fix the path in `pages.en.ts:199,223` ("Settings, then Your data, then Delete account") to the app's real path in one content PR; it removes a false direction and adds no promise. The Terms and policy drafts and `ENGINEERING_REQUIREMENTS.md:225` are `docs/legal/**` and ride BL-783. Deploying the site stays held (CR-60).
+- Evidence: `packages/content/src/emails/account.en.ts:51,152,253`; `packages/content/test/server-surfaces-account-deletion.test.ts:153,165,166`; `docs/ops/runbooks/incident-notification.md:54`; `apps/mobile/src/app/settings/index.tsx:116-122`.
+- Way back: revert the content PR.
+- Status the row takes: `Status: ready (council ruling: email and runbook lines stand with the row on; fix the pages.en.ts path and its pinned lines; legal drafts ride BL-783). Mode: agent. Owner: content.`
+- Founder-only: no, except: legal drafts stay with counsel (BL-783).
+
+### CPrivO-19 BL-486 No server guard for a book made during a deletion request (22 Nov 2026, CPrivO, CDO, CTO (data architect, sync), CLO (words))
+- Verdict: RULED.
+- Ruling: Option (b), accept and say so; no migration. The data architect and sync owner first prove on the real SQL what the day-30 purge does with a book made or joined after the request. If it is deleted, the confirm step carries one calm PROPOSED line (a deletion term that counsel reads before a store build); if not, the line is corrected. Karma's tie-break between CPrivO (a is more protective) and CTO (cost and hosted apply out of proportion): (b).
+- Evidence: `supabase/migrations/20261015000000_v1_gate_membership_sync_hardening.sql:778-826`; `20261023020000_purge_legal_holds.sql:299-336`; `apps/mobile/test/account-deletion-two-phone.test.ts:235,253-256`; BL-493 (PR #1514).
+- Way back: add the guard migration later; it is additive.
+- Status the row takes: `Status: ready (council ruling: option (b), accept and say so; data architect and sync owner write the purge test first; the confirm-step line is PROPOSED, counsel reads it). Mode: pair.`
+- Founder-only: no.
+
+### CDesO-15 BL-776 Recently deleted reachable after a cold start: placement ruled (22 Nov 2026, CDesO (placement), CPO, CPrivO)
+- Verdict: RULED.
+- Ruling: CPO-10 already ruled option (a). Placement: the existing Recently deleted row sits on the first screen first run shows on a cold start, below the primary action, as a quiet text row using the existing key `settings.delete.recentlyDeleted`. It shows only while `listDeletedBooks().length > 0` and the phone has no visible book; it opens the existing shelf route and the way back returns to first run. No new word. A new install sees nothing. Whether the Settings stack mounts from first run is untried: the builder reports it back and device walk S1-153 row (a) settles it [UNVERIFIED on a phone]. A new word would go to the founder first (D-132).
+- Evidence: CPO-10 (`docs/agents/exec/RULINGS.md`); `docs/design/screens/DELETE_THIS_BOOK.md:105-125`; `packages/content/src/strings.en.ts:877`; D-160; PRs 715, 723.
+- Way back: revert the build PR.
+- Status the row takes: `Status: ready (CDesO placement ruled: first screen of first run, below the primary action; existing key only). Mode: agent. Depends on: none.`
+- Founder-only: no.
+
+### CPrivO-20 BL-777 VoiceOver line after Erase everything (22 Nov 2026, CPrivO, CDesO, CCO, CMO)
+- Verdict: OPEN: founder.
+- Ruling: Council recommendation: replace `copy.settings.erase.doneA11y` with "Your books, letters, recordings and settings are erased from this phone." (names only what was erased; matches the screen body), pinned in a content test and read back in S1-133. It is NOT recorded as RULED: D-144 says a later change to its lines goes back to the founder, and the standing approval is a relayed chat line, not a recorded decision on D-144. Until the founder answers, the existing key stays.
+- Evidence: `apps/mobile/src/app/settings/erase.tsx:84`; D-144 item 1 and its "Open" list; CCO-6; LEGAL-REQ-051 and -044.
+- Way back: one content key.
+- Status the row takes: `Status: needs-founder (recommended line above, PROPOSED; D-144 wording is the founder's). Mode: agent. Owner: content, mobile engineer.`
+- Founder-only: yes. OPEN: founder. One action: reply "yes" to the line above or give a different line (D-144 item 1).
+
+### CPrivO-21 BL-528 Offline export carries a copy of the consent record (22 Nov 2026, CPrivO, CDO, CCO, CTO)
+- Verdict: RULED.
+- Ruling: Option (a), kept small. After each successful signed-in read keep on the phone only the person's own rows with the columns the export already reads (`ACT_COLUMNS`, `STATE_COLUMNS`, never `profile_id` or `subject_hash`), class L3, stamped with when read. An offline export carries it and says when it was read; with no copy the existing `unavailable` stands. Delete it on sign-out, account deletion and Erase everything. Options (b) and (c) edit LEGAL-REQ-034 (legal text) and are not taken. The data-map line goes to `docs/ops/proposed/`, as CR-145 did for BL-1464. Medium, not a release gate.
+- Evidence: `apps/mobile/src/lib/export/server-records.logic.ts:1-22`; `docs/legal/ENGINEERING_REQUIREMENTS.md:296`; CPrivO-11, CPrivO-16; CR-145.
+- Way back: delete the local copy and its write; the export reverts to `unavailable` offline.
+- Status the row takes: `Status: ready (council ruling: option (a), own rows only, L3, deleted with sign-out, account deletion and Erase everything; the data-map line goes to docs/ops/proposed/). Mode: agent. Owner: export owner, privacy engineer.`
+- Founder-only: no.
+
+### CDesO-16 BL-1441 Refused Apple or Google sign-up on first-run Welcome (22 Nov 2026, CDesO, CPO, CCO; CLO (words held))
+- Verdict: RULED.
+- Ruling: The design already exists; only wiring is missing. A refusal from either provider on the first-run Welcome shows the refused-region screen (E-S04.refused-region, NS-40-R9, R14): one line, Terms and Get in touch, no Try again, no reason, nothing stored. Wire it through the existing `region_refused` mapping with a test per provider and a check that no analytics call carries the reason. The words are PROPOSED and held for counsel and the founder, so it reaches users only through a store build.
+- Evidence: `docs/design/e2e/E-foundations-and-system-states/DESIGN.md:57,201,269,699,943`; `packages/content/src/features/auth.en.ts:202-232`; `apps/mobile/src/components/onboarding/region-refused-screen.tsx`.
+- Way back: revert the wiring PR.
+- Status the row takes: `Status: ready (council ruling: reuse E-S04.refused-region for Apple and Google refusals on the Welcome; words PROPOSED and held for counsel). Mode: agent. Owner: mobile engineer.`
+- Founder-only: no, except: words stay with counsel and the founder.
+
+
+**Words and copy**
+
+### CMO-18 BL-474 No "we" or "our" in notification copy (22 Nov 2026, CMO, CDesO, CPrivO)
+- Verdict: RULED.
+- Ruling: Notification copy says no "we" or "our": a lock screen is read by people the parent did not choose. The two named lines are already reworded, so the work left is a content rule that fails on `\bwe\b` and `\bour\b` in the notification and reminder keys and one VOICE.md surface-rule line.
+- Evidence: `packages/content/src/features/reminders.en.ts:18`; `packages/content/test/rules.test.ts:270,1069,1248`; PR #447.
+- Way back: delete the rule line.
+- Status the row takes: `Status: ready (council ruling: no "we" in notification copy; the two lines are already reworded; add the rules.test.ts guard and one VOICE.md line). Mode: agent. Owner: content.`
+- Founder-only: no.
+
+### CDesO-17 BL-925 Words for a recording that could not be let go (N-07) (22 Nov 2026, CDesO (content), CPrivO, CLO (one key), CPO)
+- Verdict: RULED.
+- Ruling: Option A for four of five keys, locked under CR-144 as PROPOSED and replaceable by the founder; they reach users only through a store build (CR-145 precedent): `en.review.letGoPending`, `en.listen.letGoStuck`, `en.listen.removeNowButton`, `en.listen.removeNowA11yHint`. `en.listen.discardBodyNoUndo` is held until counsel rules the K2 case ("cannot be brought back" may be untrue for a draft held on the server); `discardBody` stays in use. BL-926 is unblocked; BL-977 switches the two screens only after the held key is cleared.
+- Evidence: `packages/content/src/strings.en.ts:305-321,401`; `docs/content/words-packet-20nov.md` Part 1 rows 1 to 5; PRs #866, #832.
+- Way back: replace the keys; each is one content key.
+- Status the row takes: `Status: done (council ruling: four keys approved as PROPOSED under CR-144; discardBodyNoUndo held for counsel K2; BL-926 is unblocked)`
+- Founder-only: no, except: `discardBodyNoUndo` stays held for counsel (K2).
+
+### CPO-32 BL-926 Review says so when Let it go did not finish (N-07) (22 Nov 2026, CPO, CDesO, CTO)
+- Verdict: RULED.
+- Ruling: The line already exists as a PROPOSED key (`strings.en.ts:390`, option A, with `ns09-copy.test.ts`). The code does not need approval, only a store build does. The builder reads the `letItGo` result, shows the key once, announces it to VoiceOver and keeps Review usable. See the BL-925 entry.
+- Evidence: `apps/mobile/src/app/review.tsx:417`; `packages/content/src/strings.en.ts:390-400`; `apps/mobile/test/ns09-let-go-source.test.ts:7`.
+- Way back: revert the build PR.
+- Status the row takes: `Status: ready (builds on the PROPOSED key at strings.en.ts:390; the founder's word approval, BL-925, gates the store build, not the code). Mode: agent.`
+- Founder-only: no.
+
+### CPO-33 BL-977 Let it go always finishes: remaining rows (22 Nov 2026, CPO and content (words), CTO, data architect)
+- Verdict: RULED.
+- Ruling: Keep blocked on the chain BL-925 (words) then BL-926 then this row; Depends on names BL-926 only. The server half of D7 is already in tests (#1074), so only the `sync` report and the counter remain.
+- Evidence: BL-925, BL-926; PRs #866, #1074, #1140, #1141.
+- Way back: none needed.
+- Status the row takes: `Status: blocked (BL-926, which waits on BL-925 words; the server purge test is in, PR #1074). Mode: agent. Depends on: BL-926.`
+- Founder-only: no.
+
+### CDesO-18 BL-1557 Two Moments strings (22 Nov 2026, CDesO (owns the words), CMO (voice), CPrivO, CPO)
+- Verdict: RULED.
+- Ruling: A words question, not a hard limit: not legal text, makes no promise, and the strings sit behind a flag that is off. RSN-HEART becomes "Pictures you marked as favorites" (Apple's term; whether the Favorites flag is readable under Limited access is [UNVERIFIED], NS-53-R290, BM-18). RSN-MONTHDAY becomes "The day of the month {child} was born". Content applies the change to `moments-tab.en.ts` and spec 6.4a and runs the rules tests; the CMO voice check is the one required read; the founder's in-app read is an optional veto, not a gate.
+- Evidence: `docs/product/prd/28-moments-tab.md` 6.4a line 297, R290, BM-18; `packages/content/src/features/moments-tab.en.ts:38,42`; WRITING-GUIDE lines 160, 412; PR #1479.
+- Way back: revert the two strings in one commit.
+- Status the row takes: `Status: ready (council-ruled strings: "Pictures you marked as favorites", "The day of the month {child} was born"; content applies; founder may veto at first in-app read). Mode: agent.`
+- Founder-only: no.
+
+### CPO-34 BL-1469 Servers-off Welcome stops naming Plus (22 Nov 2026, CPO, CMO, CBO, CDesO, CPrivO)
+- Verdict: RULED.
+- Ruling: Option (b). NS-44-R1 is a locked P0 card (no Plus name at any step of first run) and is newer than the 1 Nov F5 line; under CR-66 the card wins. The F5 intent survives in Me, Plus and at the Keep gate. Keep the allowance and drop the Plus sentence, for example "Your first two letters are free. Reading, listening and your copy stay free." (PROPOSED; content may offer a better line). Change `billing-f5-lines.test.ts` and its source in the same PR and flip the `it.fails` for NS-44-R1 to a plain `it`. No price or plan change. Karma's tie-break between CMO/CBO: (b).
+- Evidence: `packages/content/src/strings.en.ts:75`; `apps/mobile/src/app/onboarding.tsx:399-400`; `apps/mobile/test/ns41-44-first-run-no-surprise.test.ts:106-123`; `docs/product/prd/19-from-download-to-first-letter.md:1371,1414,1437`.
+- Way back: revert the line and the test; the founder can restore F5 in one line.
+- Status the row takes: `Status: ready (council ruling: option (b); the servers-off Welcome line drops the Plus sentence; F5's test and source change in the same PR; the new words are PROPOSED). Mode: agent. Owner: content, mobile engineer.`
+- Founder-only: no.
+
+
+**Invite codes, co-parent and remote push**
+
+### CDesO-19 BL-524 Typed-code app copy, including `codes_paused` (22 Nov 2026, CDesO and content, CMO, CPrivO, CTO)
+- Verdict: RULED.
+- Ruling: Do not wait for the client. Write the keys first with no screen using them, covering every answer the endpoint can give (`SCINV` details, `rate_limited` with `codes_paused` pointing the person to ask for the link). Words follow WRITING-GUIDE and the rules test; they are council-locked, not founder-approved, replaceable, and reach users only when BL-445's flag flips.
+- Evidence: `packages/api/src/envelope.ts:113`; `supabase/functions/invite-redeem/handler.ts:166`; `docs/design/e2e/D-family-sharing-reminders/DESIGN.md:1057`; `docs/DECISIONS.md` D-120 effects.
+- Way back: delete the unused keys.
+- Status the row takes: `Status: ready (first step of BL-445; words only, no screen uses them until BL-445's flag flips). Mode: agent.`
+- Founder-only: no.
+
+### CPO-35 BL-546 Remote push foundation is parked with the co-parent work (22 Nov 2026, CPO, CISO, CPrivO, CTO)
+- Verdict: RULED.
+- Ruling: Stays blocked and the old reason ("servers are off in v1.0") is wrong since D-157. Remote push exists only for the co-parent letter push (F11, M14); D-162 keeps co-parent entry points out of a store build until BL-882 to BL-889; FR-MSG-17 needs a named APNs key holder, consent text, an opt-out and a label read. Parked; nobody adds `aps-environment` or a token request in another task. The APNs key is a founder account action when scheduled.
+- Evidence: D-121, D-157, D-162; `docs/design/NOTIFICATIONS.md:36`; `docs/product/prd/FUNCTION-TRACE.md:3178`.
+- Way back: reopen when BL-882 to BL-889 are scheduled.
+- Status the row takes: `Status: blocked (parked with the co-parent work, BL-882 to BL-889, D-162; needs a named APNs key holder, consent text and a label read first, FR-MSG-17). Mode: agent.`
+- Founder-only: no.
+
+
+**Moments and the photo library**
+
+### CPO-36 BL-1019 NS-51 photo moments row is carried by Moments (22 Nov 2026, CPO, CPrivO, CISO, CTO)
+- Verdict: RULED.
+- Ruling: Do not dispatch. Its content is carried by BL-1434, BL-1435 and BL-1436 (read set NS-53-R37); CPO-17 and D-165 put the library read in 1.0 through the Moments tab. Keep it blocked, not closed, because NS-51-R5, R24, R26 and R29 map to it in the P0 map; CPO re-homes those four, then Karma flips it to superseded. The BL-1001 reversal and counsel on Photos access ride with Moments gates G2 and G3 already queued.
+- Evidence: CPO-17; D-165; `docs/product/prd/28-moments-tab.md` (RV-19, NS-53-R37); `docs/product/P0-TO-BL-20nov.md:520,532`.
+- Way back: reopen the row.
+- Status the row takes: `Status: blocked (superseded in design by BL-1434, BL-1435 and BL-1436 under CPO-17 and D-165; CPO re-homes NS-51-R5, R24, R26 and R29 in the P0 map, then this flips to superseded)`
+- Founder-only: no.
+
+### CPO-37 BL-849 Memory Library specs stay parked (22 Nov 2026, CPO, CDesO, CPrivO)
+- Verdict: RULED.
+- Ruling: Keep parked so no agent dispatches it. The Memory Library P1 to P4 specs overlap the Moments design (PRD 28), which owns the card, permission and hidden-choice surfaces; folding them into COMPONENTS.md would make two design sources. CDesO reconciles once the first Moments screens (BL-1436 PRs 13 to 17) land, then closes or cuts the row.
+- Evidence: `docs/product/prd/17-engineering-project-plan.md:250`; `docs/product/prd/28-moments-tab.md` (RV-07, RV-18); PRs #746, #751.
+- Way back: set the row ready again.
+- Status the row takes: `Status: deferred (parked: Memory Library P1 to P4 overlap the Moments tab design, NS-53; CDesO reconciles when BL-1436 PRs 13 to 17 land, then this row is closed or cut down)`
+- Founder-only: no.
+
+### CPO-38 BL-860 Decisions logic row stays parked (22 Nov 2026, CPO, CDO, CPrivO, CTO)
+- Verdict: RULED.
+- Ruling: Keep parked. `moments.v1.json` (PR #1481) holds day keys and hide and keep-close choices, device-only, excluded from backup, with no photo key; `buildMoments` (#1528) replaces the NX-39 engine. Building `decisions.ts` now would duplicate it. Recommendation: Karma closes PR #754 as superseded with the reason posted; CPO re-points or closes the row when BL-1433 finishes.
+- Evidence: PR #1481 body; PR #754 (open); PR #1528; `docs/product/prd/17-engineering-project-plan.md:250`.
+- Way back: reopen the row.
+- Status the row takes: `Status: deferred (parked: the Moments store, PR #1481, and buildMoments, PR #1528, replace the NX-39 decisions design; PR #754 to be closed as superseded; CPO re-points or closes when BL-1433 finishes)`
+- Founder-only: no.
+
+### CPO-39 BL-874 P2a date-range chooser stays parked (22 Nov 2026, CPO, CPrivO, CISO, CLO)
+- Verdict: RULED.
+- Ruling: Keep parked. The first library surface is the Moments tab and Apple's picker door; PRD 28 has no album chooser. A date-range chooser is a second library surface with a parallel permission story and a second native module pass (BL-878). The counsel items (CB-2, CB-5, CB-15) ride with Moments gate G2.
+- Evidence: BL-1436 (PR 17); `docs/product/prd/28-moments-tab.md`; `docs/product/prd/17-engineering-project-plan.md:250`.
+- Way back: reopen after Moments ships if parents ask.
+- Status the row takes: `Status: deferred (parked: Moments, NS-53, is the first library surface; a date-range chooser is a later row after it ships and counsel CB-2, CB-5, CB-15 answers)`
+- Founder-only: no.
+
+### CPO-40 BL-875 P2c background top-up is deferred (22 Nov 2026, CPO, CISO, CPrivO, CTO)
+- Verdict: RULED.
+- Ruling: Deferred, not blocked. The locked Moments spec has no `PHPhotoLibraryChangeObserver` and no background mode (NS-51-R29); freshness comes from a scan on focus and foreground. Its gates (device spikes BL-871, BL-872; counsel CB-19, CB-20, CB-27) are device and counsel items nothing in the first release needs.
+- Evidence: `docs/product/prd/28-moments-tab.md:632,1064`; BL-871, BL-872.
+- Way back: set ready with a new row if the founder asks for background freshness.
+- Status the row takes: `Status: deferred (after the first Moments release; NS-53 has no background mode, NS-51-R29). Depends on: BL-853.`
+- Founder-only: no.
+
+### CPO-41 BL-853 P2b "Suggest days" is superseded by Moments (22 Nov 2026, CPO, CDesO, CPrivO, CTO)
+- Verdict: RULED.
+- Ruling: Park as superseded in design. The 1.0 library read is NS-53 (CPO-17). Spec 28 reverses the card rules this row is built on (RV-07, RV-18), and the module, index and screens are in BL-1435 and BL-1436 under their own stores (CDO-23). Do not start it; the product agent maps each NX-39 R-id still wanted (R3, R11, R15 to R20, R42, R45) to an NS-53 row so none is dropped silently.
+- Evidence: `docs/product/prd/28-moments-tab.md:100,111,162`; CPO-17; CDO-23; `docs/product/prd/17-engineering-project-plan.md:250`.
+- Way back: reinstate the row.
+- Status the row takes: `Status: superseded (in design by NS-53 Moments, spec 28, CPO-17; surfaces are in BL-1433, BL-1435 and BL-1436; product agent maps each NX-39 R-id before this closes).`
+- Founder-only: no.
+
+### CPO-42 BL-876 Ledger page and Hidden choices page are superseded by Moments (22 Nov 2026, CPO, CDesO, CPrivO)
+- Verdict: RULED.
+- Ruling: Superseded in design: KM4 in spec 28 keeps the Hidden choices list and the hide controls, and BL-1436 PR 21 builds them. The NX-39 ledger page and "Forget the list" belong to the old design. Do not start it; the product agent carries NX-39-R49's plain line into PR 21's rows if still wanted.
+- Evidence: `docs/product/prd/28-moments-tab.md:162` (KM4); `docs/product/moments-tab/HARNESS-REPLAN-HYBRID.md:53`; BL-1436 PR 21.
+- Way back: reinstate the row.
+- Status the row takes: `Status: superseded (by BL-1436 PR 21, Me list with Hidden choices and Turn off; product agent carries NX-39-R49 across).`
+- Founder-only: no.
+
+### CPO-43 BL-880 Acceptability harness stays parked (22 Nov 2026, CPO, CPrivO, CDO)
+- Verdict: RULED.
+- Ruling: Keep parked with BL-859, which Moments replaced with `buildMoments`. The founder-phone step is a device row no agent can do; the Moments gates file their own row if they want an aggregate-shape read on a real phone. No founder action now.
+- Evidence: BL-859 (blocked, parked); PR #1528; `docs/product/prd/17-engineering-project-plan.md:250`.
+- Way back: reopen.
+- Status the row takes: `Status: deferred (parked with BL-859; Moments gates carry any founder-phone read; mode human)`
+- Founder-only: no.
+
+### CPO-44 BL-1436 Moments umbrella stays blocked; O-50 ruled, O-48 not (22 Nov 2026, CPO, CDesO, CPrivO, CISO, CTO)
+- Verdict: RULED.
+- Ruling: Keep the umbrella blocked and do not dispatch it as one XL row. O-50 (names and month numbers in Moments push and email): the stricter reading, no child name and no month number on any Moments push or email setting; it matches CPO-17 item 5 (no library-timed push and no Moments email in 1.0) and unblocks PR 23 on O-50. O-48 (value proposition and first-run promise) stays a founder-and-counsel item (what a user is promised): D-165 keeps the pair unpublished until counsel answers and the words stay PROPOSED. O-61 is Karma's under CR-73, not the founder's (see BL-1475). Recommend Karma splits the row into per-PR child rows.
+- Evidence: `docs/product/moments-tab/FREEZE-CHECKLIST.md:50,52,216,218,229`; CPO-17; D-165; BL-1433, BL-1435, BL-1447, BL-1451; PRs #1479, #1481, #1482, #1477.
+- Way back: restore the stricter-reading default later by a new ruling if the founder wants names in notes.
+- Status the row takes: `Status: blocked (umbrella; split into per-PR child rows: PRs 13 and 14 after BL-1433's PR 12, PRs 15 to 17 and 19 after BL-1435, PR 22 after BL-1451; O-50 ruled as the stricter reading so PR 23 is unblocked on it; O-48 words stay PROPOSED until counsel answers)`
+- Founder-only: yes. OPEN: founder and counsel for O-48 (what users are promised); not ruled here.
+
+### CPrivO-22 BL-1410 Metadata scan on every picture send-out is a standing condition (22 Nov 2026, CPrivO, CISO, QA, CTO)
+- Verdict: RULED.
+- Ruling: Not a work row. Keep it non-dispatchable; it closes when the BL-933 (picture export) and BL-939 (one-letter share) PRs each carry the byte test (bytes equal `entry_media.sha256`, no metadata segment, a planted located picture turns it red) and cite this id.
+- Evidence: `docs/BACKLOG.md` BL-1410 gate line, BL-933, BL-939.
+- Way back: none.
+- Status the row takes: `Status: blocked (condition only: closes when the BL-933 and BL-939 PRs each carry the test; not dispatched alone). Depends on: BL-933.`
+- Founder-only: no.
+
+### CISO-6 BL-1408 Picture file protection class: unblock via BL-1045 (22 Nov 2026, CISO, CTO, security-architect)
+- Verdict: RULED.
+- Ruling: The blocker BL-1045 is `proposed`, size S, waits on nothing, and `modules/REVIEWED.sha256` does not exist on develop. Karma sets BL-1045 ready and BL-1408 follows. The NSC-01 review gate stands and security-architect reads it. Class stays `completeUntilFirstUserAuthentication`, not `complete` (P8). Device row D-2 stays the founder's phone.
+- Evidence: `docs/security/MEDIA_THREAT_MODEL.md` P8, G-3, D-2; BL-1045.
+- Way back: set BL-1045 back to proposed.
+- Status the row takes: `Status: blocked (BL-1045 only, which Karma sets ready; the NSC-01 review gate stands; D-2 is the founder's device row). Mode: agent. Depends on: BL-1045`
+- Founder-only: no.
+
+### CISO-7 BL-1413 Writing Tools off on letter fields: unblock via BL-1045 (22 Nov 2026, CISO, CAIO, CTO, CDesO)
+- Verdict: RULED.
+- Ruling: BL-1045 (native-module review gate, NSC-01) is a small row waiting on nothing; Karma sets it ready and this row follows. The gate is not skipped: a native setting waits on NSC-01 and a security-architect read. It serves the constitution (a phone feature must not rewrite a letter), is never presented as a feature, and changes no words. ADR 0039 is PROPOSED and needs Karma's acceptance in the same sequence.
+- Evidence: `docs/tdd/new-scope/security.md:17,20,50,54` (NSC-01, NSC-05); `apps/mobile/src/lib/photos/words-setting.ts:2-3`; BL-1045.
+- Way back: set BL-1045 back to proposed.
+- Status the row takes: `Status: blocked (BL-1045 only; BL-1045 is set ready by this ruling). Mode: agent.`
+- Founder-only: no.
+
+### CPrivO-23 BL-1415 Account deletion leaves pictures and recordings on the phone, said plainly (22 Nov 2026, CPrivO, CDO, CLO (consulted, not counsel), CTO)
+- Verdict: RULED.
+- Ruling: Already answered by the locked design: J-C21 (NS-45-R5, K4) shows "pictures and recordings stay on each phone until that phone is erased". Staying is intended and said plainly, so no user promise changes. QA runs D-7b on an Asha test account to confirm the code matches; BL-965 carries the deletion text for pictures. Do not call `eraseDeviceFiles` from account deletion. If D-7b shows files do go, the delete words must change and that becomes a founder item.
+- Evidence: `docs/design/e2e/C-keeping-and-trust/DESIGN.md:345-349` (J-C21); BL-965; `docs/security/MEDIA_THREAT_MODEL.md` P12, G-9, D-7b.
+- Way back: one call and one key.
+- Status the row takes: `Status: blocked (the D-7b device result only; the answer is recorded: the files stay, the delete screen says so per J-C21, BL-965 carries the words). Mode: pair. Depends on: none`
+- Founder-only: no, except: the D-7b device result is the founder's phone or a simulator; a different result becomes a founder item.
+
+
+**Days, reminders and Home slips**
+
+### CPO-45 BL-534 No prompt repeats within 365 days is a 1.0.1 item (22 Nov 2026, CPO, CTO, CDO)
+- Verdict: RULED.
+- Ruling: Not in 1.0: the selector keeps `AVOID_RECENT = 10`. The row stays as the 1.0.1 build: a per-author, per-child local history as a new local migration, `selectPrompt` avoiding keys shown in the last 365 days, with the exhausted-pool rule written first. It needs a local schema step and 1.0 already carries local migrations 11 and 12 (CR-62, CR-64); Moments also calls `selectPrompt`, so the history is designed once for both callers. A repeat prompt is a quality gap, not harm.
+- Evidence: `packages/core/src/prompts.ts:93,138`; `docs/design/NOTIFICATIONS.md:19`; `docs/agents/harness-v2/RELEASE-PATH-ORDER.md:98`; D-130 freeze text in the row.
+- Way back: pull it into 1.0 if a store candidate has room and the migration number is free.
+- Status the row takes: `Status: deferred (1.0.1; council ruling: keep AVOID_RECENT = 10 for 1.0; build the 365-day history after 1.0 with the exhausted-pool rule first). Mode: agent. Owner: mobile engineer. Depends on: BL-530 (done).`
+- Founder-only: no.
+
+### CPO-46 BL-538 Pause for a while is not in 1.0 (22 Nov 2026, CPO, CDesO)
+- Verdict: RULED.
+- Ruling: Defer; do not build a timed pause. S34 removed "Pause all reminders" as a duplicate of the master switch; a timed pause is a new setting, new state that must survive time-zone changes, and new words. Nothing in the locked pack asks for it. Reopen only if parents ask after launch.
+- Evidence: `docs/product/prd/GAP-LOG.md` (no pause row); grep of `packages/content/src` and `apps/mobile/src` finds only remote kill switches named "pause".
+- Way back: set the row ready again.
+- Status the row takes: `Status: deferred (after 1.0, FUTURE; council ruling: no timed pause for 1.0; reopen on parent demand). Mode: agent. Owner: reminders owner. Size: S.`
+- Founder-only: no.
+
+### CPO-47 BL-1011 Calendar engine: computed dates now, copied tables as n/r (22 Nov 2026, CPO, CLO and CCO (source rights), CDO, CTO)
+- Verdict: RULED.
+- Ruling: Release the part that needs no counsel. Rule dates are computed (fixed, nth weekday, Easter by the computus) and checked against a sourced, dated oracle table; no third-party table is copied (DL-4, NS-46-R12). Build `days.ts`, `daysDueOn(rows, today)` with an injected today, the oracle with authority and read-on date per row (a row with no authority fails the build) and one age function. Any row whose date would be copied ships as the literal `n/r` until counsel answers Q113 (FR-CMP-31).
+- Evidence: `docs/product/prd/21-days-cultural-photos-home.md:274,285`; `docs/product/prd/functions/compliance.md:313,334`; BL-1002 (PR #1029).
+- Way back: delete the module; nothing is user-visible until the Days flag turns on.
+- Status the row takes: `Status: ready (computed rule dates only, DL-4; any copied-source row ships as n/r until counsel answers Q113). Mode: agent. Depends on: none.`
+- Founder-only: no.
+
+### CPO-48 BL-1013 Days page and Browse: blocked on code, not on words (22 Nov 2026, CPO, CDesO, CPrivO)
+- Verdict: RULED.
+- Ruling: Stays blocked only on code: BL-1010 (partly done) and BL-1012. "Founder words G3" is not a blocker for coding: words stay PROPOSED keys and the founder's reading gates the store build only. The consent line on this page is consent text, so counsel's read gates its flag (as BL-1010 says).
+- Evidence: BL-1010, BL-1012 status lines; `docs/agents/exec/RULINGS.md` (words stay PROPOSED).
+- Way back: restore the old status line.
+- Status the row takes: `Status: blocked (BL-1010, BL-1012; the words stay PROPOSED, so the founder's G3 reading gates the store build, not the code). Mode: agent.`
+- Founder-only: no, except: the consent line is counsel's.
+
+### CPO-49 BL-1016 NS-48 recency layers: BL-537 is no longer a dependency (22 Nov 2026, CPO, CTO)
+- Verdict: RULED.
+- Ruling: The NS-13 back-off BL-537 described is built and merged (PR 1248; `BACKOFF_LAST_DAY = 35` at `planner.ts:169`; stop after day 35; anchor `onSince`), and applies to the evening class only. Drop BL-537 from Depends on. BL-1004 is done (PR 1032). Words wait for G3 as the row says.
+- Evidence: `apps/mobile/src/lib/reminders/planner.ts:31-32,169,339-365`; PR 1248; `docs/product/prd/11-foundations.md:19,38`.
+- Way back: re-add a dependency if NS-13 semantics change.
+- Status the row takes: `Status: ready. Mode: agent. Depends on: BL-1004 (done). BL-537 is superseded by the built NS-13 back-off (PR 1248).`
+- Founder-only: no.
+
+### CPO-50 BL-1320 Days ticks and quiet days: BL-537 superseded by BL-943 (22 Nov 2026, CPO, CDO, CDesO, CTO)
+- Verdict: RULED.
+- Ruling: The "deferred BL-537 decision" is moot: BL-537 is covered by the NS-13 back-off in BL-943 (PR #1248 merged). Record BL-537 as superseded by BL-943 and remove it from Depends on. Still blocking: BL-963 (ready, not built) and BL-965 (partly done). The row is ready when BL-963 is done and BL-965's days words exist.
+- Evidence: BL-537, BL-943, BL-966, BL-963, BL-965; `docs/product/P0-SPLIT-PLAN-21nov.md:113`.
+- Way back: restore BL-537 as a dependency.
+- Status the row takes: `Status: blocked (BL-963 and BL-965; BL-537 is superseded by BL-943, PR #1248, and is no longer a dependency). Mode: agent. Depends on: BL-966, BL-963, BL-965.`
+- Founder-only: no.
+
+### CPO-51 BL-1321 Days words and the line before a first tick (22 Nov 2026, CPO, CDesO and content, CTO)
+- Verdict: RULED.
+- Ruling: Same finding as BL-1016: BL-537 is superseded by the built NS-13 back-off (PR 1248), so the split plan's "waits on the deferred BL-537 decision" step is void for this row and for BL-1319, BL-1320 and BL-1322. Still gating: BL-963 (ready) and BL-965 (partly done; its words are PROPOSED). The words may not say last year or again or show what the parent wrote on that day before.
+- Evidence: `docs/product/P0-SPLIT-PLAN-21nov.md:113`; `apps/mobile/src/lib/reminders/planner.ts:169`.
+- Way back: restore the dependency.
+- Status the row takes: `Status: blocked (BL-963 and BL-965; BL-537 is superseded by the built NS-13 back-off, PR 1248). Mode: agent. Depends on: BL-966 (done), BL-963, BL-965.`
+- Founder-only: no.
+
+### CPO-52 BL-1322 Days library file and listing words: start tests-first now (22 Nov 2026, CPO, CDO, CPrivO, CMO)
+- Verdict: RULED.
+- Ruling: BL-537 is not a real dependency: the row's four ids (NS-46-R46, NS-46-R48, NS-50-R8, FR-DAY-20) never use it; the block came from a batch-wide rule in the split plan. Drop it. The row is tests-first (a test per id, title starting with its id), so it can start now. The listing line in R46 is a public claim: it stays PROPOSED, the default pending the founder (Q-FD-19) is used, and CMO and CCO check it against the claims inventory.
+- Evidence: `docs/product/prd/21-days-cultural-photos-home.md:308,310,1092`; `docs/product/P0-SPLIT-PLAN-21nov.md:113`; `docs/product/prd/23-dependency-map-and-plan.md:291`.
+- Way back: restore the dependency.
+- Status the row takes: `Status: ready (tests first; BL-537 is not a dependency of these four ids). Mode: agent. Depends on: BL-966, BL-963, BL-965.`
+- Founder-only: no.
+
+### CPO-53 BL-1324 Days notification words: ready (22 Nov 2026, CPO, CDesO and content, CPrivO, CTO)
+- Verdict: RULED.
+- Ruling: Same BL-537 ruling as BL-1320: BL-537 is superseded by BL-943 (PR #1248) and drops out. BL-966's core is merged (budget registry, one note a day, 60 pending, names-off lock screen), so the only other dependency is met. Ready: tests first, then code or words only where a test fails, one PR.
+- Evidence: `apps/mobile/src/lib/reminders/budget.ts`; PRs #1088, #1089, #1174, #1172, #1075, #1248.
+- Way back: set blocked again.
+- Status the row takes: `Status: ready (BL-966 core merged; BL-537 is superseded by BL-943, PR #1248). Mode: agent. Depends on: none.`
+- Founder-only: no.
+
+### CPO-54 BL-1007 Day-only reminder gate: dispatch dark (22 Nov 2026, CPO, CPrivO and CLO (consent line), CTO)
+- Verdict: RULED.
+- Ruling: Q-FD-20 and Q-FD-21 are CLOSED (GAP-LOG CL-026), so the behaviour is decided and BL-966 is done. The code (a day-only gate beside `prefs.enabled`, one `next-ask`-style door at the first tick) needs no counsel to build. The sentence before the first tick, the "Your iPhone will ask" line and the Reminders-off line stay PROPOSED; counsel (G2) and the founder's words approval (G3) gate any build that turns the Days surface on. Dispatch the code dark.
+- Evidence: `docs/product/prd/GAP-LOG.md:537` (CL-026); `docs/product/prd/21-days-cultural-photos-home.md:77-78,293`; `docs/design/e2e/D-family-sharing-reminders/DESIGN.md:174,179`; `docs/product/READINESS-20nov.md:271`.
+- Way back: revert the gate.
+- Status the row takes: `Status: ready. Mode: agent. Depends on: BL-966 (done). Words PROPOSED; Days surface stays off until counsel (G2) and the founder's words approval (G3).`
+- Founder-only: no, except: the consent sentence is counsel's.
+
+### CPO-55 BL-946 One past letter on Home: depends on BL-937 and BL-963 (22 Nov 2026, CPO, CDesO, CPrivO)
+- Verdict: RULED.
+- Ruling: BL-931 is done and BL-952 is effectively done for this row; the real dependencies are BL-937 and BL-963 (both `ready`; BL-963 is counted as this row's first PR in plan 17). Keep the P0 test NS-23-R8 first. The switch label stays the founder's words (PROPOSED key), which gates the flag, not the build.
+- Evidence: `docs/product/prd/17-engineering-project-plan.md:186`; BL-963, BL-937.
+- Way back: flag and switch default.
+- Status the row takes: `Status: blocked (BL-937 and BL-963, both ready). Mode: agent. Depends on: BL-937, BL-963.`
+- Founder-only: no.
+
+### CDesO-20 BL-937 "This letter" list waits for a second non-photo row (22 Nov 2026, CDesO, CPO, CTO)
+- Verdict: RULED.
+- Ruling: Do not dispatch now. CDesO-12 keeps "Add to this letter" until a second non-photo row has a build (building the list for rows that are off is gold-plating before the gate). Trigger to set ready: any of Firsts, the seal, or Save a copy's letter-page row reaches a store build. The list's heading words are PROPOSED for the founder.
+- Evidence: `docs/BACKLOG.md:3631-3637`; CDesO-12; BL-928.
+- Way back: one component and one key (CDesO-12 way back).
+- Status the row takes: `Status: deferred (CDesO-12: replace the group with the "This letter" list when a second non-photo row has a build; BL-928's letter page parts are merged, so nothing else blocks it)`
+- Founder-only: no.
+
+### CPO-56 BL-942 Save a copy of the year: Me action now, slip after BL-963 (22 Nov 2026, CPO, CDesO, CTO)
+- Verdict: RULED.
+- Ruling: Narrow the blocker: BL-931 slices #834 to #840 are merged and BL-952 (Find) is not used by Save a copy. Only BL-963 (Home slip registry; the registry test fails on an unregistered slip) is real. The Me screen half can start now; the Home slip waits for BL-963. Flag `EXPO_PUBLIC_SAVE_A_COPY` stays off in production; words stay PROPOSED until the founder reads them in the app; no notification.
+- Evidence: `docs/BACKLOG.md:3666-3672`; `git log origin/develop --grep BL-931`; `docs/product/prd/17-engineering-project-plan.md`.
+- Way back: restore the old status line.
+- Status the row takes: `Status: blocked (BL-963, the Home slip registry, for the slip half only; the Me action can start). Mode: agent. Depends on: BL-963`
+- Founder-only: no.
+
+
+**Pictures, share, sealed letters and accessibility**
+
+### CPO-57 BL-939 Share one letter: trim the blocker to BL-937 and fix the scope to E14 (22 Nov 2026, CPO, CTO, CPrivO and CLO (picture arm), security-architect read)
+- Verdict: RULED.
+- Ruling: Trim the blocker to BL-937 (BL-931 done; BL-952 slices 1 to 7 of 8 merged and the eighth does not touch a one-letter share; principal-architect says in the PR if a shared file exists). Correct the row to erratum E14: the card wins, the shared text is the wrapper (date, words, signature) with no footer, brand name or link (NS-05-R16b), and the optional picture is gated by counsel Q45 and the security-architect read. The founder's words approval and the production flag stay out of this build step.
+- Evidence: `docs/product/prd/18-errata-after-lock.md:22` (E14); `docs/product/prd/05-share-one-letter.md:36`; PRs 892, 893.
+- Way back: flag off.
+- Status the row takes: `Status: blocked (BL-937 only; BL-931 done, BL-952 slice 8 not needed). Mode: agent. Depends on: BL-937. Scope to be corrected to erratum E14 (wrapper text, no recording, no footer).`
+- Founder-only: no.
+
+### CDesO-21 BL-956 Pictures at large text: shrink scope, split on BL-932 (22 Nov 2026, CDesO, CTO, design-systems)
+- Verdict: RULED.
+- Ruling: BL-931 slices are merged. Smart Invert is already built (#1097), so shrink the scope. The large-text 88 pt thumbnail, fit-not-crop and the lens as a `ChoiceGroup` can ship first; the 512 px read waits for BL-932 (two derivatives), which should be set ready (no derivative code exists on develop).
+- Evidence: `docs/BACKLOG.md:3759-3766`; #834 to #840, #1097; `accessibilityIgnoresInvertColors` in `photo-frame.tsx`.
+- Way back: restore the old scope.
+- Status the row takes: `Status: blocked (BL-932 for the 512 px lens read only; Smart Invert is done in #1097; the large-text, fit-not-crop and radio-group parts can start). Mode: agent. Depends on: BL-932`
+- Founder-only: no.
+
+### CPO-58 BL-1018 NS-52 variant A: blocker rewritten (22 Nov 2026, CPO, CPrivO, CISO, CDO, CTO)
+- Verdict: RULED.
+- Ruling: Keep blocked but rewrite the blocker. Cleared: #835 merged; Q-PM-2 and Q-PM-3 are founder-answered with the default accepted (CL-047, CL-048: 6 pictures and 2 videos, 60 s, 100 MB, local only, free). Reclassified: counsel's label read (CR-146 row 11, Q43, Q54) gates turning the flag on in a store build, not the code. Still real: BL-1001, BL-933, BL-961, and the `expo-video` and transcode dependency review through BL-878. The Moments one-picture default (BL-1472, O-62) means this row is not on the first-release path.
+- Evidence: `docs/BACKLOG.md:4207-4214`; `docs/product/prd/27-photo-moments-and-media.md:54-55`; CR-146 rows 3, 4, 11; BL-933, BL-961, BL-878, BL-868, BL-1472.
+- Way back: restore the old blocker text.
+- Status the row takes: `Status: blocked (BL-1001 record, BL-933, BL-961, and the expo-video dependency review through BL-878; Q-PM-2 and Q-PM-3 are answered; counsel's label read gates the flag in a store build, not the code). Mode: agent. Depends on: BL-1001, BL-933, BL-961`
+- Founder-only: no.
+
+### CPO-59 BL-973 Printable book (PDF) waits for BL-933 (22 Nov 2026, CPO, CDesO, CLO (font licence evidence))
+- Verdict: RULED.
+- Ruling: Stays blocked until BL-933 (now ready). The CLO evidence on embedding the fonts must be on the card before done; the word is "Printable", never "print-ready"; no proof-book spend (money is the founder's). The 8.5 by 8.5 page size is a provisional founder default and stays.
+- Evidence: `docs/BACKLOG.md` BL-973 scope; BL-933.
+- Way back: none needed.
+- Status the row takes: `Status: blocked (BL-933, now ready). Mode: agent.`
+- Founder-only: no.
+
+### CPrivO-24 BL-980 Someone else speaks: build behind a flag, off in production (22 Nov 2026, CPrivO, CLO, CCO (flag condition), CPO, CTO)
+- Verdict: RULED.
+- Ruling: The counsel questions (Q45, Q46, Q48, Q54) gate turning the feature on, not writing it; the card says so, and CPO-17 applies the same rule (gates before store submission, not before coding). Ready behind `EXPO_PUBLIC_SIGN_AS_OTHER`, off in every production profile (the g6 production-flags test must list it); the instruction line is a PROPOSED key; no consent record; Find does not index the name. The new synced column's migration file is written but the hosted apply is the founder's. Turning the flag on is a separate FOUNDER-LIMIT later.
+- Evidence: `docs/product/prd/09-capture.md:715,767`; `docs/legal/COUNSEL_PACKET.md:80-118`; CPO-17; CR-146 row 11.
+- Way back: flag off; revert.
+- Status the row takes: `Status: ready (behind EXPO_PUBLIC_SIGN_AS_OTHER, off in production; counsel Q45, Q46, Q48, Q54 and the hosted migration apply gate the flip, not the code). Mode: agent.`
+- Founder-only: no, except: the hosted migration apply and the counsel answers are the founder's.
+
+### CDesO-22 BL-984 Accessibility floor: unblock BL-928 first (22 Nov 2026, CDesO, CTO)
+- Verdict: RULED.
+- Ruling: Stays blocked on BL-928; its own blocker BL-927 is done (#867), so Karma flips BL-928 to ready. The "undo windows through BL-954" item can be split to the end of the row. No Accessibility Nutrition Label is declared until the device walk passes (founder default stands; the walk is the founder's phone, BL-948).
+- Evidence: BL-927 (PR #867); `git log 6813ab2f7`.
+- Way back: restore the old status line.
+- Status the row takes: `Status: blocked (BL-928, which is ready now that BL-927 is done). Mode: agent.`
+- Founder-only: no.
+
+
+**Analytics and consent**
+
+### CPO-60 BL-895 Stories outcome event is deferred (22 Nov 2026, CPO, CDO, CPrivO, CTO)
+- Verdict: RULED.
+- Ruling: Defer with its parents BL-892 and BL-893. The story intro is not in the app (no `FIRST_RUN_INTRO` switch), NX-40's FD-1 default is "off in production, ships in 1.0.1", and D-163 supersedes D-124 item 3 (the basis this row cites) for the production build only, so the event shape is re-read against BL-1238 before anyone builds it.
+- Evidence: `docs/roadmap/next/03-requirements/NX-40-first-run-and-sign-in.md:191`; D-163; `packages/analytics/src/catalog.ts:270`.
+- Way back: set ready once BL-893 ships.
+- Status the row takes: `Status: deferred (1.0.1 with BL-892 and BL-893; re-read against D-163 and BL-1238 before building). Depends on: BL-893.`
+- Founder-only: no.
+
+### CPO-61 BL-892 Story intro scaffolding is deferred (22 Nov 2026, CPO (requirement hygiene and backlog order only), CDesO, CTO)
+- Verdict: RULED.
+- Ruling: Defer, do not build now. FD-1 is answered by records already in force: D-043 moves the four-story intro to v1.1, plan 17 keeps BL-892 to BL-895 out of the current waves, and NX-40 FD-1's default is off in production. This ruling changes no release content; it records that backlog order already puts it after the current waves. FD-2 stays Karma's earlier ruling.
+- Evidence: D-043; `docs/product/prd/17-engineering-project-plan.md:261`; `docs/roadmap/next/03-requirements/NX-40-first-run-and-sign-in.md:155,191-192`.
+- Way back: when the founder wants the intro in a build, set the row ready.
+- Status the row takes: `Status: deferred (D-043 puts the story intro in v1.1; plan 17 keeps BL-892 to BL-895 out of the current waves; NX-40 FD-1 default is off in production; #764 is merged, so it can start when the founder asks)`
+- Founder-only: no.
+
+### CPrivO-25 BL-1252 Deletion coverage for installs that never said yes: split (22 Nov 2026, CPrivO, CDO, CTO; analytics engineer reviews)
+- Verdict: RULED.
+- Ruling: Split the row. The phone half (a) to (c) needs only BL-1239 (ready) and the analytics-engineer review on `consent.ts`. The function half (d) and (e) waits on BL-1061 (needs BL-1060, a drill on a throwaway PostHog project, an account step, FH-1) and BL-1062 (withdrawal route, waiting on the founder's FD-4, counsel and `approve-migration` through BL-1133). Karma sets BL-1061 and BL-1062 from `proposed` only when their founder steps are named done. Withdrawal wording stays counsel's.
+- Evidence: BL-1239, BL-1060, BL-1061, BL-1062, BL-1133; D-163 item 5; `docs/analytics/instrumentation/ENGINEERING-REQUIREMENTS-21nov.md` (ER-A17, FH list).
+- Way back: re-merge the two rows.
+- Status the row takes: `Status: blocked (BL-1239 for the phone half a to c, which becomes its own ready row once BL-1239 merges; function half d and e moves to a new row blocked on BL-1061 and BL-1062, which wait on founder steps FH-1 and FD-4).`
+- Founder-only: no, except: FH-1 and FD-4 are the founder's.
+
+### CPrivO-26 BL-1266 Settings off switch ruled; disclosure stays a placeholder (22 Nov 2026, CPrivO, CDesO, CTO, CLO (counsel on the disclosure))
+- Verdict: RULED.
+- Ruling: FH-11 (the Settings switch and place) ruled as "Settings, Privacy, one switch that turns usage counts off and on", the row's own scope; it is required by `collect_by_default`. FH-4 (the disclosure wording) is consent text counsel must see: the founder writes it and counsel reads it. The row builds it as a `CONTENT-NEEDED` placeholder, so FH-4 does not block the build, only turning the flag on in production (FH-7, the founder's `eas.json` flip). What blocks the row is BL-1238 (policy-aware gate, `ready`).
+- Evidence: `docs/analytics/instrumentation/ENGINEERING-REQUIREMENTS-21nov.md:149,214,222,225`; BL-1238; D-163.
+- Way back: remove the switch and the placeholder key.
+- Status the row takes: `Status: blocked (BL-1238; the Settings, Privacy switch is ruled, the disclosure stays a CONTENT-NEEDED placeholder until the founder writes it and counsel reads it, FH-4). Mode: agent. Depends on: BL-1238.`
+- Founder-only: no, except: FH-4 (disclosure and Decline lines) is the founder's and counsel's; FH-7 is the founder's flip.
+
+### CPrivO-27 BL-1267 Ask sequencer under ask_first: FH-4 is not a dependency (22 Nov 2026, CPrivO, CDO, CTO (analytics engineer))
+- Verdict: RULED.
+- Ruling: The scope and done-when are pure logic (`analyticsAskDue` false under `collect_by_default`; the two-offer cap holds under `ask_first`; a dismissed sheet is not a yes) and use the existing sheet. New or changed wording stays counsel's and the founder's. The real blocker is BL-1238, which waits on BL-1236, BL-1237 and BL-1239 (all ready).
+- Evidence: `docs/analytics/instrumentation/ENGINEERING-REQUIREMENTS-21nov.md:151`; `apps/mobile/src/components/consent/analytics-consent-sheet.tsx`; `apps/mobile/src/lib/analytics/index.ts`.
+- Way back: revert the logic.
+- Status the row takes: `Status: blocked (BL-1238 and its ready chain BL-1236, BL-1237, BL-1239; FH-4 wording does not gate this row). Mode: agent. Depends on: BL-1238.`
+- Founder-only: no.
+
+
+**Process, release and quality**
+
+### CPO-62 BL-930 NFR rows 42 and 216 reworded to what the hand-offs can meet (22 Nov 2026, CPO, CDesO, CTO, QA lens)
+- Verdict: RULED.
+- Ruling: Approve the draft in `docs/qa/NS-34-TARGETS.md` (PR #880) and let product write it into `docs/prd/v2/06-nfr.md`. FOUNDER 1: stand-in sample counts (200 taps for Speak, 20 runs for each other design row 1 to 6, each marked stand-in) until the perf markers land. FOUNDER 2: "Review to the Book after Keep" leaves the 900 ms list and is held to the 2,000 ms save hand-off bound. FOUNDER 3: keep the Low Power Mode clause (the card wins) with one shared guard as its own row, through the native module gate BL-878 before `expo-battery`. CONFIRM 2: reading (b): decoration is a loop and follows every clause; progress indicators and the voice-following light are exempt from "opacity only" but stop under Reduce Motion and Low Power Mode. Council-locked under the founder's delegation, not his own words; he can replace them in one line.
+- Evidence: `docs/qa/NS-34-TARGETS.md`; `docs/agents/checkins/qa-bl-930.md`; PR #880; `docs/prd/v2/06-nfr.md` section 0; CPO-1 (precedent).
+- Way back: revert the two rows in `06-nfr.md`.
+- Status the row takes: `Status: ready (council rulings on CONFIRM 2 and FOUNDER 1 to 3 recorded as a CPO ruling; an interactive session as product edits docs/prd/v2/06-nfr.md; the Low Power Mode guard is a separate row behind BL-878). Mode: pair.`
+- Founder-only: no.
+
+### CPO-63 BL-971 Quick capture doorways stay blocked on BL-972 (22 Nov 2026, CPO, CAIO and speech, CTO)
+- Verdict: RULED.
+- Ruling: Keep blocked: BL-972 (hands-free spike) waits on BL-935 (pilot kit), which is `ready`. Doorways stay off until each works on that phone. Suggest the dispatcher starts BL-935. No founder item.
+- Evidence: BL-972, BL-935.
+- Way back: none needed.
+- Status the row takes: `Status: blocked (BL-972 spike, which waits on BL-935, which is ready). Mode: agent. Depends on: BL-972.`
+- Founder-only: no.
+
+
+
+**Design backlog exec review, 22 Nov 2026**
+
+Source: Karma's exec review of the design backlog recommendations, recorded in `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13 (PR #1631, once merged; #1621 and persona fold-in #1628 are the inputs). Every legal judgment below is a role's view, not advice: counsel must confirm. In every entry below the Door, Way back and Revisit when lines are derived by Karma, because the review did not state them (copy text and gates are two-way before release). Why lines are Karma's reasoning from the review unless they cite a source. Any default that says "derived by Karma" is Karma's, not the review's. Founder items are listed as FOUNDER and are not rulings. Latest spec: `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13 and the design ticket section of `docs/BACKLOG.md`. Cross-cutting rule from the review: defaults that edit legal-adjacent text need a founder merge (D-125 item 5), and silence means the status quo text ships.
+
+Source items not recorded here (see DESIGN-BACKLOG.md section 13): BL-1801, BL-1767, BL-1787, the BL-1730, BL-1731 and BL-1829 defaults, BL-1807 routing, device gate tiering (BL-1700), and the NEEDS EVIDENCE rows.
+
+### CPO-64 BL-1724 Home Plus line: the plain version (22 Nov 2026, CPO and CBO via the exec review session)
+- Verdict: RULED.
+- Ruling: BL-1724 uses the shortest line already true: the letter waits, nothing is lost. No price, no link, no urgency. This replaces the earlier default "content rewords to a quiet pointer". Counsel must confirm that "nothing is lost" is true; no question number is assigned for BL-1724 (Q40 belongs to BL-1806, the free-slot Delete line). The evidence is UNVERIFIED here.
+- Why: the CPO and CBO ruled the plain version (review). That a pointer naming Plus or linking is a different line is Karma's summary.
+- Evidence: `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13 (PR #1631, once merged). Source for "nothing is lost": UNVERIFIED.
+- Door: two-way (derived by Karma)
+- Way back: restore the earlier default line (derived by Karma).
+- Revisit when: the 27 Nov 2026 gate passes or counsel answers (derived by Karma).
+- Founder-only: the amended wording ships only after a founder merge (D-125 item 5). On silence, the status quo text ships. FOUNDER: a pointer that names Plus or links to it. Default: the plain line, after his merge.
+
+### CPO-65 Drop order for the pre-1 Dec cut (22 Nov 2026, CPO and CDesO via the exec review session)
+- Verdict: RULED.
+- Ruling: BL-1716 (offline) is dropped first. BL-1717 (interruptions) stays, as a short device script in the SE 3 sitting. BL-1790 (Back at AX5) moves out of the drop order. BL-1709 stays ahead of BL-1723 and BL-1720.
+- Why: ordering is the CPO's and CDesO's call (review). That Back is a way out of a screen is Karma's reasoning.
+- Evidence: `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13 (PR #1631, once merged).
+- Door: two-way (derived by Karma)
+- Way back: reorder the rows in `docs/BACKLOG.md` (derived by Karma).
+- Revisit when: the 27 Nov 2026 gate passes (derived by Karma).
+- Founder-only: no. NEEDS EVIDENCE: who runs the SE 3 sitting (no operator is named; CTO and qa). FOUNDER: the SE 3 operator and the 27 Nov gate date. No default stated by the review.
+
+### CDesO-23 BL-1798 Large print floor in Read together (22 Nov 2026, CDesO via the exec review session)
+- Verdict: RULED.
+- Ruling: Build a floor in Read together now. A floor raises readable size and caps nothing, so D-027 is untouched. Build after BL-1791, size it at the sitting, and offer the Aa sheet in Read together. Off the founder list.
+- Why: the CDesO rules it (review); a floor is not a cap.
+- Evidence: `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13 (PR #1631, once merged); D-027.
+- Door: two-way (derived by Karma)
+- Way back: remove the floor, one PR (derived by Karma).
+- Revisit when: the sitting shows the size is wrong (derived by Karma).
+- Founder-only: no.
+
+### CDesO-24 BL-1796 Take-start cue (22 Nov 2026, CDesO and CPO via the exec review session)
+- Verdict: RULED.
+- Ruling: A VoiceOver announcement "Listening" that finishes before the mic opens, plus the existing haptic. No sound while the mic is live. Tone stays a Paper sounds option. First 1.0.x.
+- Why: CDesO and CPO ruled it (review). The reason a live-mic sound would be recorded is Karma's inference.
+- Evidence: `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13 (PR #1631, once merged).
+- Door: two-way (derived by Karma)
+- Way back: remove the announcement, one PR (derived by Karma).
+- Revisit when: a device test shows the announcement is late or clipped (derived by Karma).
+- Founder-only: no.
+
+### CDesO-25 BL-1836 Magic Tap and the safe stop (22 Nov 2026, CDesO via the exec review session)
+- Verdict: RULED.
+- Ruling: Magic Tap pauses and resumes, which resolves the conflict with BL-1796. Finish stays a visible button. No Voice Control claim until tested.
+- Why: the CDesO rules it (review).
+- Evidence: `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13 (PR #1631, once merged).
+- Door: two-way (derived by Karma)
+- Way back: remove the Magic Tap handler, one PR (derived by Karma).
+- Revisit when: Voice Control is tested on a device (derived by Karma).
+- Founder-only: "Long silence ends the take" is a new capture feature, not a ruling. FOUNDER with CAIO and CPO. No default stated by the review.
+
+### CLO-22 BL-1805 "For good" held out of new builds (22 Nov 2026, CLO via the exec review session; not counsel)
+- Verdict: RULED.
+- Ruling: hold "for good" on Erase now out of new builds. The replacement is the Erase everything line "Erased from this phone. Backups and exports you already saved are not changed." The wording is the founder's, and the trace of the server copy is open (NEEDS EVIDENCE: mobile and data; does Erase now remove the server copy on a signed-in phone). Counsel Q51 must confirm.
+- Why: the CLO rules the hold (review). That "for good" may overpromise is Karma's reasoning.
+- Evidence: `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13 (PR #1631, once merged).
+- Door: two-way (derived by Karma)
+- Way back: restore the old words (derived by Karma).
+- Revisit when: counsel answers Q51 or the server-copy trace returns (derived by Karma).
+- Founder-only: the wording. The amended line ships only after a founder merge (D-125 item 5); on silence, the status quo text ships.
+
+### CLO-23 BL-1799 "Each letter signed" held out of the listing (22 Nov 2026, CLO via the exec review session; not counsel)
+- Verdict: RULED.
+- Ruling: fail-closed hold on the phrase "each one signed" in store text about the first build. The line at `docs/store/app-store.md:136` ("Both parents read every letter in the book, each one signed.", under WHAT A CO-PARENT SEES) must not ship. Correct `packages/content/BRAND.md` line 40, which also says co-parent "at v1.0", false for the first build; counsel must confirm that it is false for the first build.
+- Why: the CLO rules the hold (review). That the first build has no sharing is D-121 and D-126.
+- Evidence: `docs/store/app-store.md:136`; `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13 (PR #1631, once merged).
+- Door: two-way (derived by Karma)
+- Way back: lift the hold in one line here (derived by Karma).
+- Revisit when: counsel answers or the 27 Nov 2026 gate passes (derived by Karma).
+- Founder-only: the wording. The amended text and the BRAND.md fix ship only after a founder merge (D-125 item 5); on silence, the status quo text ships.
+
+### CLO-24 Invite residue: fail closed if the site is unlaunched (22 Nov 2026, CLO via the exec review session; not counsel)
+- Verdict: RULED.
+- Ruling: for the whole invite residue (the /j page, the share message, the website film and the "in an update" text): if the site is unlaunched, fail-closed hold. If it is live, qualify or remove the line. CMO and CLO share it. BL-1821 and BL-1832 to 1834 leave the pre-1 Dec list (alpha only). Counsel must confirm.
+- Why: invites in a mixed build are mostly settled by D-126, D-161 and D-162 (review).
+- Evidence: `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13 (PR #1631, once merged).
+- Door: two-way (derived by Karma)
+- Way back: lift the hold or restore the line (derived by Karma).
+- Revisit when: the site's launch state is confirmed (derived by Karma).
+- Founder-only: no. NEEDS EVIDENCE: whether the site is live.
+
+### CPrivO-28 BL-1742 Photos primer swipe-down (22 Nov 2026, CPO and CPrivO via the exec review session)
+- Verdict: RULED, pending founder confirmation.
+- Ruling: swipe-down persists nothing, never triggers Apple's alert, and never returns unprompted. Re-entry is a tap on the door row. Only "Not now" records a decline. Counsel must confirm.
+- Why: CPO and CPrivO ruled it (review). It edits NS-53-G05 and NS-53-R73, so the founder confirms.
+- Evidence: `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13 (PR #1631, once merged).
+- Door: two-way (derived by Karma)
+- Way back: restore the previous swipe behaviour (derived by Karma).
+- Revisit when: counsel clears the primer lines (derived by Karma).
+- Founder-only: FOUNDER: confirm the edit to NS-53-G05 and NS-53-R73. No default stated by the review.
+
+### CPrivO-29 Photo flag: five gates (22 Nov 2026, CPrivO via the exec review session)
+- Verdict: RULED.
+- Ruling: the photo flag turns on only when all five hold: (1) counsel-cleared primer lines; (2) a network-egress test showing no library data leaves the phone; (3) photos out of sync and out of our backup; (4) Export includes pictures or says it does not (BL-1830); (5) device rows. This replaces the earlier gate "words cleared".
+- Why: the CPrivO rules the gate list (review).
+- Evidence: `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13 (PR #1631, once merged).
+- Door: two-way (derived by Karma)
+- Way back: change the gate list in one line here (derived by Karma).
+- Revisit when: the 27 Nov 2026 gate passes or counsel answers (derived by Karma).
+- Founder-only: the flag date. FOUNDER: the date, with one explicit line that if the gates are not closed by then, 1.0 ships with the library read off (this shrinks 1.0 against CPO-17 and D-165). Default: the flag stays off.
+
+### CPrivO-30 BL-1830 Export writes photos as null: fail closed (22 Nov 2026, CPrivO via the exec review session)
+- Verdict: RULED.
+- Ruling: no photo flag while Export says "everything" and writes photos as null. Counsel must confirm.
+- Why: the CPrivO's rule (review); it is also gate 4 of CPrivO-29.
+- Evidence: `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13 (PR #1631, once merged).
+- Door: two-way (derived by Karma)
+- Way back: lift the hold once Export includes pictures or says it does not (derived by Karma).
+- Revisit when: BL-1830 merges (derived by Karma).
+- Founder-only: no.
+
+### CPrivO-31 Label wording: "we do not receive" (22 Nov 2026, CPrivO via the exec review session)
+- Verdict: RULED, conditional.
+- Ruling: no sentence says "nothing leaves the phone". The wording "we do not receive" is allowed only if the network-egress test (CPrivO-29 gate 2) and the geocoder check pass. NEEDS EVIDENCE: whether reverse geocoding for Moments places sends coordinates to Apple (CISO, mobile). Counsel must confirm.
+- Why: the CPrivO's wording rule (review); the CISO and mobile check on the geocoder is named in the review. Any other seat is proposed. The host also sees the IP address (Q12).
+- Evidence: `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13 (PR #1631, once merged).
+- Door: two-way (derived by Karma)
+- Way back: revert the wording (derived by Karma).
+- Revisit when: the egress test and geocoder check return, or counsel answers (derived by Karma).
+- Founder-only: no.
+
+### CCO-18 BL-1835 Age gate left as is (22 Nov 2026, CPrivO and CLO via the exec review session, CCO seat proposed; not counsel)
+- Verdict: RULED.
+- Ruling: leave the age gate as built. No "Are you sure?" after No. The 24-hour stop stays (D-026; LEGAL-REQ-002, as in CCO-17). Fact about the build (D-026): the age stop is local only, so reinstalling the app clears it. This goes into the register, and counsel Q45 and Q46 decide whether that is acceptable; this is not a ruling. Counsel must confirm the ruling.
+- Why: the review names CPrivO, CLO and counsel for this item; the CCO seat is proposed, as is any other seat not in the source. Consistent with CCO-17 (Karma's note).
+- Evidence: `docs/legal/ENGINEERING_REQUIREMENTS.md` (LEGAL-REQ-002); `docs/design/review-2026-11-22/DESIGN-BACKLOG.md` section 13 (PR #1631, once merged).
+- Door: two-way (derived by Karma)
+- Way back: counsel can add a confirm later (derived by Karma).
+- Revisit when: counsel answers Q45 and Q46 (derived by Karma).
+- Founder-only: no.
+
+### CCO-19 PR #1676 sync_pull and sync_books withhold content without consent: passes the compliance fence (CCO-review tier) for merge into develop (23 Nov 2026, CCO via Karma's session on the founder's explicit go; not counsel)
+- Ruling: PR #1676 passes the compliance fence for merge into `develop`. Checklist read at head 2f8c875b: no new personal data is collected; no user-facing promise changed; no new door path; nothing stores or logs an IP, birth date, age range, name or user content. The closed `sync_books` answer keeps the child's name and each member's `role`, `is_me` and `signs_as`, so the account-deletion screen can tell "stays with the co-parent" from "deleted with the account" (T7-23). Both independent reviews passed it; the security-lens Review B judged that shape acceptable.
+- Why the fence caught it: the diff names `policy_acceptances` and `record_policy_act` only in `supabase/tests/sync_pull_consent.test.mjs`, in the lines that withdraw and re-accept consent. The migration replaces `sync_pull` and `sync_books` and changes neither that table nor that function (read in the merged diff at 29ea7945).
+- Evidence: `supabase/migrations/20261123100000_sync_pull_consent_gate.sql`; `supabase/tests/sync_pull_consent.test.mjs`; `apps/mobile/test/sync-two-phone.test.ts`; `packages/api/src/server/sync.ts`; `supabase/APPLY.md` File 46; reviews at 2f8c875b (both PASS); the CCO comment on the PR.
+- Way back: a new migration that tightens the closed shape (`other_parent_signs_as` plus a contributor count, BL-1920), never an edit of the applied one.
+- Open: counsel has not read this call. It is a delegated default until counsel confirms; BL-1920 asks counsel's reading.
+- Signed: Chief Compliance Officer (Claude role, not counsel)
+
+### FOUNDER items from this review (not rulings; his under CR-73)
+Silence on 27 Nov 2026 means the status quo text (D-125 item 5). The review dates only that silence rule; the gate date itself is a founder item.
+1. First-run order and the public timing promise, after the BL-1705 reading. Default: steps stay, promise reworded to speaking-time.
+2. Public wording: handed-over signature line and BRAND fix, free-slot line (BL-1806), free list (BL-1767), synthetic voice line (with counsel; a true line ships, not silence), sign-in line (BL-1803), Erase line, 90-day pledge. Default: the amended defaults, each only after his merge.
+3. Photo flag date (see CPrivO-29). Default: the flag stays off.
+4. The SE 3 operator, the 27 Nov gate date, the counsel engagement date. If counsel is not engaged, every "wait for counsel" default is open-ended until a date is named.
+5. Signed-in wipe (BL-1804, deferred; an L build, not for 1 Dec), long-silence stop, tappable "From Mama" option (default to owner, typed name, fixed after Keep; as an option, not a default). App-lock grace: offer on first turn-on, default one minute (CISO check).

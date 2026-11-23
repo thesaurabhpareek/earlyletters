@@ -336,7 +336,7 @@ function nextWork(agent, mine, queue) {
 
 function idleReason(agent, mine) {
   if (agent.kind === "digest") return state.lastDigest === today ? "today's digest is done" : "digest not due yet";
-  if (mine.length >= agent.wip_limit) return `waiting for founder review (${mine.length}/${agent.wip_limit} open PRs)`;
+  if (mine.length >= agent.wip_limit) return `waiting for Karma's merge queue (${mine.length}/${agent.wip_limit} open PRs)`;
   if (state.standing[agent.handle]) return "nothing changed since its last standing run";
   return "nothing to do";
 }

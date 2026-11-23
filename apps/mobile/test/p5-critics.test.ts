@@ -125,7 +125,7 @@ describe('[S1] the arrival wash survives a Book that mounts with `arrived`', () 
     const screen = code(src('app/(tabs)/book.tsx'));
 
     it('reads the letters in the state initialiser, so the first frame is the book and not the empty-book state', () => {
-      expect(screen).toMatch(/useState\(\(\) => \(\{ childId: active\?\.id \?\? null, entries: active \? listEntriesForChild\(active\.id\) : \[\] \}\)\)/);
+      expect(screen).toMatch(/useState\(\(\) => \(\{ childId: active\?\.id \?\? null, entries: active \? listBookEntries\(active\.id\) : \[\] \}\)\)/);
       expect(screen).not.toMatch(/useState<Entry\[\]>\(\[\]\)/);
       expect(screen).toMatch(/const loaded = read\.childId === \(active\?\.id \?\? null\);/);
     });
@@ -162,7 +162,7 @@ describe('[S1] the arrival wash survives a Book that mounts with `arrived`', () 
     });
 
     it('follows the store through watchBook: subscribe, then one catch-up read, then a reread on every change (BL-1428)', () => {
-      expect(screen).toMatch(/return watchBook\(\{ childId: active\.id, read: listEntriesForChild, subscribe, set: setRead \}\);/);
+      expect(screen).toMatch(/return watchBook\(\{ childId: active\.id, read: listBookEntries, subscribe, set: setRead \}\);/);
       expect(screen).not.toMatch(/\n\s*reread\(\);\n/);
     });
   });
@@ -286,7 +286,7 @@ describe('[S6] Erase now fails with a word', () => {
   });
 
   it('the line says what did not happen, then what is true, and claims nothing about the recording', () => {
-    expect(d.eraseFailedToast).toBe('The letter was not erased. It is still in Recently deleted.');
+    expect(d.eraseFailedToast).toBe("That letter wasn't erased. It's still in Recently deleted.");
     expect(d.eraseFailedToast).not.toMatch(/recording|file|try again|sorry|error|fail/i);
     expect(d.eraseFailedToast).not.toBe(d.erasedToast);
   });
