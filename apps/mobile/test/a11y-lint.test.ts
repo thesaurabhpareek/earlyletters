@@ -47,7 +47,6 @@ const R6 = /#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b(?![\w-])|rgba?\(/;
 /** Today's `maxFontSizeMultiplier` uses outside `ui/text.tsx`. Shrink only. */
 const R2_ALLOW = [
   'app/(auth)/sign-in/code.tsx',
-  'app/(tabs)/book.tsx',
   'app/letter/[id].tsx',
   'components/book/book-cover.tsx',
   'components/player/audio-player.tsx',
