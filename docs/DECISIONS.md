@@ -1339,7 +1339,7 @@ These carry out the fleet rule and were not said by him: a cap or a budget that 
 - **What this does NOT change:**
   1. The constitution in `CLAUDE.md`: the machine may remove and repair, never add meaning; faithful edit only.
   2. The privacy rules in `CLAUDE.md`: no entry text, transcript, audio or child name in analytics, logs or crash reports. Analytics stay opt-in and content-free, with the typed allowlist in `packages/analytics`. The items D-163 left open (consent wording, the account and region host, counsel's view, the LEGAL-REQ-043 privacy-manifest test, whether crash capture is on) stay open with their owners; this entry decides none of them.
-  3. Counsel must see legal text before it publishes: the privacy policy, terms and consent text. Pull requests marked HOLD-FOR-COUNSEL stay held. A sentence counsel has not cleared is held by not building the sentence (CR-177).
+  3. Counsel must see legal text before it publishes: the privacy policy, terms and consent text. Pull requests marked HOLD-FOR-COUNSEL stay held. A sentence counsel has not cleared is never built as live copy: it stays PROPOSED and held until counsel has seen it, and any flag that holds it off meets the three conditions of CR-177 item 1.
   4. Account creation on does not remove the age and region checks: 18 and over, blocked countries, `docs/regulatory`, FILE 28 and BL-553. They are built and verified before public sign-up.
   5. Secrets, vendor and store account consoles, hosted migrations and store submission remain physical acts, listed in `docs/release/FOUNDER_QUEUE.md`. Release rows BL-1871 to BL-1875 stand as written.
 - **Not claimed:** any approval of a specific spend, submission, migration or legal text; any change to the three required checks.
