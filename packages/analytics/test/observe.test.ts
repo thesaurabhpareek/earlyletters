@@ -10,20 +10,17 @@ import {
   recordingProvider,
   type AuthLike,
 } from '../src';
-import { intentRecorder } from './support';
 
 async function granted() {
   const provider = recordingProvider();
   const analytics = createAnalytics({ provider, randomId: () => '00000000-0000-4000-8000-0000000000aa', flushIntervalMs: 0 });
   await analytics.init();
   await analytics.grant();
-  const rec = intentRecorder(analytics);
   return {
-    analytics: rec.analytics,
+    analytics,
     sent: async () => {
       await analytics.flush();
-      void provider;
-      return rec.intents;
+      return provider.captured().map((e) => [e.event, Object.fromEntries(Object.entries(e.properties).filter(([k]) => k !== 'schema_version'))]);
     },
   };
 }

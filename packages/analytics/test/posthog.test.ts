@@ -45,11 +45,11 @@ function fakeSdk() {
   return sdk;
 }
 
-describe('PostHog options (verified against posthog-react-native 4.87.1)', () => {
+describe('PostHog options (verified against posthog-react-native 4.78.4)', () => {
   it('[LEGAL-REQ-003] [LEGAL-REQ-017] pins opt-in, replay, lifecycle, geoip, flags, surveys, errors and disk off', () => {
     expect(REQUIRED_POSTHOG_OPTIONS).toMatchObject({
       defaultOptIn: false,
-      persistence: 'file',
+      persistence: 'memory',
       enableSessionReplay: false,
       captureAppLifecycleEvents: false,
       disableGeoip: true,
@@ -58,6 +58,7 @@ describe('PostHog options (verified against posthog-react-native 4.87.1)', () =>
       disableRemoteFeatureFlags: true,
       sendFeatureFlagEvent: false,
       disableSurveys: true,
+      errorTracking: { autocapture: false },
       capturePushNotificationSubscriptions: false,
       capturePushNotificationOpened: false,
       flushInterval: 0,

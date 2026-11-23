@@ -1,6 +1,6 @@
 /**
  * ER-A00 P2: the registry as data. Imports only `registry.ts`, `values.ts` and
- * `schema.ts`, and, from P4, checks that the barrel exports the registry (the send path reads it).
+ * `schema.ts`, because the registry is not exported from the barrel until P4.
  * The cross-file rules (V1 to V16) land with `registry-rules.ts` in P6, and the
  * shipped-registry canary in P8. Fixtures: the fictional family Asha only.
  */
@@ -27,10 +27,10 @@ const GLOBALS = ['schema_version', 'child_count_bucket', 'sample_pct'];
 const NEVER = /religion|region|background|ethnic|birth|dob|due|child_name|name|transcript|audio_url|photo|entry|text|body|note/;
 
 describe('registry.ts (P2, data only)', () => {
-  it('is exported from the barrel from P4 (the send path reads it), and the barrel copy is the same object', () => {
-    expect(barrel.REGISTRY).toBe(REGISTRY);
-    expect(barrel.EV).toBe(EV);
-    expect(barrel.PROP).toBe(PROP);
+  it('is not exported from the barrel yet, so it cannot collide with catalog.ts', () => {
+    expect(Object.prototype.hasOwnProperty.call(barrel, 'REGISTRY')).toBe(false);
+    expect(Object.prototype.hasOwnProperty.call(barrel, 'EV')).toBe(false);
+    expect(Object.prototype.hasOwnProperty.call(barrel, 'PROP')).toBe(false);
   });
 
   it('holds about 25 events, every name snake_case', () => {

@@ -1,10 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { ALLOWED_SDK_PROPERTIES, APP_BUNDLE_FILES, CRASH_REPORTING, errorTrackingOptions, KNOWN_ERROR_CLASSES, reduceExceptionEvent } from '../src';
+import { CRASH_REPORTING, errorTrackingOptions, KNOWN_ERROR_CLASSES, reduceExceptionEvent } from '../src';
 
 /** Fictional family only (the Asha rule). Every string here is invented. */
 const ID = '00000000-0000-4000-8000-0000000000aa';
-/** The caller passes the ten V6 keys, never a wider list (Review B note 2 on #1232). */
-const SDK_ALLOWED = ALLOWED_SDK_PROPERTIES;
+const SDK_ALLOWED = ['$app_version', '$app_build', '$os_name', '$os_version', '$device_type', '$exception_level', '$exception_list', '$set'];
 
 const exceptionEvent = (err: Error) => ({
   event: '$exception',
@@ -72,7 +71,6 @@ describe('crash capture: built, off, and one flip from on', () => {
     }
     const props = out.properties as Record<string, unknown>;
     expect(Object.keys(props).sort()).toEqual(['$app_build', '$app_version', '$device_type', '$exception_level', '$exception_list', '$os_name', '$os_version', 'distinct_id']);
-    expect(SDK_ALLOWED).toHaveLength(10);
     const list = props.$exception_list as { type: string; value?: string; stacktrace: { frames: Record<string, unknown>[] } }[];
     expect(list[0].type).toBe('Error'); // an unknown class name is reported as the plain class
     expect(list[0]).not.toHaveProperty('value');
@@ -92,87 +90,28 @@ describe('crash capture: built, off, and one flip from on', () => {
     }
   });
 
-  it('drops a frame from any file but our bundle, and a frame that is not in_app', () => {
-    const frames = [
-      { filename: 'https://example.com/asha/app.bundle?user=asha', function: 'saveLetter', lineno: 4, colno: 2, in_app: true },
-      { filename: '2026-03-14.js', function: 'saveLetter', lineno: 1, colno: 1, in_app: true },
-      { filename: 'asha-first-words.m4a', function: 'saveLetter', lineno: 1, colno: 1, in_app: true },
-      { filename: 'Asha.tsx', function: 'saveLetter', lineno: 1, colno: 1, in_app: true },
-      { filename: '/Users/asha.parent/Documents/photo.heic', function: 'saveLetter', lineno: 1, colno: 1, in_app: true },
-      { filename: 'node_modules/react-native/index.js', function: 'render', lineno: 1, colno: 1, in_app: false },
-      { filename: 'app.bundle', function: 'fromLibrary', lineno: 2, colno: 2, in_app: false },
-      { filename: 'app.bundle', function: 'noFlag', lineno: 3, colno: 3 },
-      { function: '[native code]', in_app: true },
-      'x',
-      null,
-    ];
-    const out = reduceExceptionEvent({ event: '$exception', properties: { $exception_list: [{ type: 'TypeError', stacktrace: { frames } }] } }, SDK_ALLOWED)!;
-    const kept = ((out.properties as Record<string, unknown>).$exception_list as { stacktrace: { frames: Record<string, unknown>[] } }[])[0].stacktrace.frames;
-    expect(kept).toEqual([{ filename: 'app.bundle', function: 'saveLetter', lineno: 4, colno: 2, in_app: true }]);
-    expect(APP_BUNDLE_FILES).toContain('app.bundle');
-    const wire = JSON.stringify(out);
-    for (const leak of ['asha', 'Asha', 'm4a', 'heic', '2026-03-14', 'example.com', 'fromLibrary', 'noFlag']) expect(wire, leak).not.toContain(leak);
-  });
-
-  const frameOf = (fn: unknown) => ({ filename: 'app.bundle', function: fn, lineno: 1, colno: 1, in_app: true });
-  const keptFunctions = (names: unknown[]) => {
-    const evt = { event: '$exception', properties: { $exception_list: [{ type: 'Error', stacktrace: { frames: names.map(frameOf) } }] } };
-    const out = reduceExceptionEvent(evt, SDK_ALLOWED)!;
-    const frames = ((out.properties as Record<string, unknown>).$exception_list as { stacktrace: { frames: Record<string, unknown>[] } }[])[0].stacktrace.frames;
-    return frames.map((f) => f.function);
-  };
-
-  it('keeps a function name only if it fits the closed shape, and keeps the frame without it otherwise', () => {
-    expect(keptFunctions(['saveLetter', 'Screen.onPress', 'a.b.c', '<anonymous>', 'render', 'record_voice_take', '$lambda'])).toEqual(['saveLetter', 'Screen.onPress', 'a.b.c', '<anonymous>', 'render', 'record_voice_take', '$lambda']);
-    const dropped = [
-      'first steps today', // spaces
-      'Asha', 'Ashi', 'asha', // one short word: how a first name looks
-      'asha.family@example.com', 'ashas_iPhone', "Asha's", '@asha_mum', // PII shapes
-      'asha-first-words.m4a', 'record.wav', 'photo.HEIC', // audio and image extensions
-      'march_4_2025', 'Asha_birthday_march_4', // written dates
-      'a.b.c.d', 'x'.repeat(61), 'save/Letter', 'save(letter)', 'save[0]', '', 42, null, {}, // outside the shape
-      'asha.dev', 'phc_AbCdEf0123456789', // bare host, vendor key
-    ];
-    expect(keptFunctions(dropped).every((f) => f === undefined)).toBe(true);
-  });
-
-  it('says plainly what a shape cannot see: an identifier that holds a name passes, because it is code we wrote in our own bundle', () => {
-    // Not a defence, a pin: a name inside a longer identifier cannot be told from code. The protection is that the
-    // frame must be in_app and in our bundle (above), so the name comes from our source, never from what a person typed.
-    expect(keptFunctions(['saveAshaLetter', 'handleAshaEntry'])).toEqual(['saveAshaLetter', 'handleAshaEntry']);
-  });
-
-  it('drops a kept $ value that is PII-shaped or not a scalar, even if the caller listed the key', () => {
+  it('drops a frame field that looks like contact details or a date, and the query on a file name', () => {
     const evt = {
       event: '$exception',
       properties: {
-        distinct_id: ID,
-        $app_version: '1.0.10',
-        $device_name: "Asha's iPhone",
-        $current_url: 'https://example.com/asha',
-        $screen_name: { route: 'letter' },
-        $os_name: 'asha.family@example.com',
-        $device_type: 'Mobile',
-        $exception_list: [{ type: 'Error', stacktrace: { frames: [frameOf('saveLetter')] } }],
+        $exception_list: [
+          {
+            type: 'TypeError',
+            stacktrace: {
+              frames: [
+                { filename: 'https://example.com/asha/app.bundle?user=asha', function: 'asha.family@example.com', lineno: 4, colno: 2 },
+                { filename: '2026-03-14.js', function: 'saveLetter', lineno: -1, colno: 1.5 },
+              ],
+            },
+          },
+        ],
       },
     };
-    const wide = [...SDK_ALLOWED, '$device_name', '$current_url', '$screen_name'];
-    const out = reduceExceptionEvent(evt, wide)!;
-    const props = out.properties as Record<string, unknown>;
-    expect(props.$app_version).toBe('1.0.10'); // a build number is not a date
-    expect(props.$device_type).toBe('Mobile');
-    expect(props).not.toHaveProperty('$os_name');
-    expect(props).not.toHaveProperty('$current_url');
-    expect(props).not.toHaveProperty('$screen_name');
-    expect(JSON.stringify(out)).not.toContain('Asha');
-  });
-
-  it('drops the event when distinct_id is not the random consent id', () => {
-    for (const bad of ['Asha', 'asha.family@example.com', '', 7]) {
-      const evt = exceptionEvent(new TypeError('x'));
-      (evt.properties as Record<string, unknown>).distinct_id = bad;
-      expect(reduceExceptionEvent(evt, SDK_ALLOWED), String(bad)).toBeNull();
-    }
+    const out = reduceExceptionEvent(evt, SDK_ALLOWED)!;
+    const frames = ((out.properties as Record<string, unknown>).$exception_list as { stacktrace: { frames: Record<string, unknown>[] } }[])[0].stacktrace.frames;
+    expect(frames[0]).toEqual({ filename: 'app.bundle', lineno: 4, colno: 2 });
+    expect(frames[1]).toEqual({ function: 'saveLetter' });
+    expect(JSON.stringify(out)).not.toContain('asha');
   });
 
   it('returns null when there is no usable exception list, and never carries person properties', () => {

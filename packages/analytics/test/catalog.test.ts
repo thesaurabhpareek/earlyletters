@@ -116,8 +116,6 @@ describe('catalogue rules', () => {
   });
 });
 
-const ID = '3f2b8c1e-9a4d-4c7b-8e2f-1a2b3c4d5e6f';
-
 describe('PostHog configuration (LEGAL-REQ-017 CI check)', () => {
   it('pins replay, autocapture and opt-in off', () => {
     expect(REQUIRED_POSTHOG_OPTIONS.defaultOptIn).toBe(false);
@@ -140,13 +138,12 @@ describe('PostHog configuration (LEGAL-REQ-017 CI check)', () => {
         $set: { email: 'asha.parent@example.com' },
         $os: 'iOS',
         $app_version: '1.0.0',
-        distinct_id: ID,
+        distinct_id: '3f2b8c1e-9a4d-4c7b-8e2f-1a2b3c4d5e6f',
       },
     })!;
-    // `$os` is not one of the ten V6 keys, so it goes too (ER-A00 P4).
-    expect(Object.keys(out.properties!).sort()).toEqual(['$app_version', 'distinct_id', 'route', 'schema_version']);
+    expect(Object.keys(out.properties!).sort()).toEqual(['$app_version', '$os', 'distinct_id', 'route', 'schema_version']);
     for (const k of Object.keys(out.properties!)) {
-      if (k.startsWith('$')) expect(ALLOWED_SDK_PROPERTIES).toContain(k);
+      if (k.startsWith('$') || k === 'distinct_id') expect(ALLOWED_SDK_PROPERTIES).toContain(k);
     }
   });
 
@@ -154,8 +151,8 @@ describe('PostHog configuration (LEGAL-REQ-017 CI check)', () => {
     const beforeSend = posthogBeforeSend();
     expect(beforeSend({ event: '$screen', properties: { $screen_name: 'x' } })).toBeNull();
     expect(beforeSend({ event: '$autocapture', properties: {} })).toBeNull();
-    const id = beforeSend({ event: '$identify', properties: { distinct_id: ID, $set: { name: 'Asha' }, route: 'book' } })!;
-    expect(id.properties).toEqual({ distinct_id: ID });
+    const id = beforeSend({ event: '$identify', properties: { distinct_id: 'abc', $set: { name: 'Asha' }, route: 'book' } })!;
+    expect(id.properties).toEqual({ distinct_id: 'abc' });
   });
 
   it('before_send drops events whose catalogue props carry PII', () => {

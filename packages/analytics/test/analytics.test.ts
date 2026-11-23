@@ -175,32 +175,36 @@ describe('allowlist', () => {
     const { analytics, provider } = setup();
     await analytics.init();
     await analytics.grant();
-    analytics.track('keep_gate_shown', { letters_kept: 2.5, allowance: 5, lapsed: 0 });
-    analytics.track('keep_gate_shown', {
-      // @ts-expect-error null is never allowed
-      letters_kept: null,
-      allowance: 5,
-      lapsed: 0,
+    analytics.track('read_together_ended', {
+      reason: 'finished',
+      session_bucket: '1_5m',
+      letters_heard: 2.5,
     });
-    analytics.track('keep_gate_shown', {
-      letters_kept: 4,
-      allowance: 5,
-      lapsed: 0,
+    analytics.track('read_together_ended', {
+      reason: 'finished',
+      // @ts-expect-error null is never allowed
+      session_bucket: null,
+      letters_heard: 2,
+    });
+    analytics.track('read_together_ended', {
+      reason: 'finished',
+      session_bucket: '1_5m',
+      letters_heard: 2,
       // @ts-expect-error nested objects are never allowed
       extra: { a: 1 },
     });
-    analytics.track('keep_gate_shown', {
+    analytics.track('read_together_ended', {
+      reason: 'finished',
+      session_bucket: '1_5m',
       // @ts-expect-error arrays are never allowed
-      letters_kept: [1],
-      allowance: 5,
-      lapsed: 0,
+      letters_heard: [1],
     });
     await analytics.flush();
     expect(provider.captured()).toHaveLength(1);
     expect(provider.captured()[0].properties).toEqual({
-      letters_kept: 4,
-      allowance: 5,
-      lapsed: 0,
+      reason: 'finished',
+      session_bucket: '1_5m',
+      letters_heard: 2,
       schema_version: SCHEMA_VERSION,
     });
   });
@@ -243,7 +247,7 @@ describe('free text and PII', () => {
     await analytics.init();
     await analytics.grant();
     // @ts-expect-error free text
-    analytics.track('child_added', { has_date: true, child_ordinal: 'Asha', in_first_run: true, added_together: false });
+    analytics.track('child_switched', { child_ordinal: 'Asha', surface: 'book' });
     // @ts-expect-error free text
     analytics.track('error_shown', { code: 'She laughed at the dog today' });
     // @ts-expect-error too long
@@ -347,7 +351,7 @@ describe('globals, sampling, queue cap', () => {
     await analytics.init();
     await analytics.grant();
     analytics.setChildCount(3);
-    analytics.track('screen_view', { route: 'book' });
+    analytics.track('child_switched', { child_ordinal: 'third_plus', surface: 'book' });
     await analytics.flush();
     expect(provider.captured()[0].properties.child_count_bucket).toBe('three_plus');
     expect(provider.calls.find((c) => c.method === 'identify')!.args).toHaveLength(1);

@@ -1,6 +1,5 @@
 export * from './schema';
 export * from './catalog';
-export * from './registry';
 export * from './validate';
 export * from './consent';
 export * from './provider';
