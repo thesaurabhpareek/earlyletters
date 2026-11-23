@@ -96,7 +96,9 @@ export function SheetFrame({
   ) : null;
   const header = closeLabel || onBack;
   return (
-    <SafeAreaView edges={['bottom']} className="flex-1 bg-background">
+    // Modal for VoiceOver, so focus stays inside the sheet and the screen behind is not read; the two-finger scrub
+    // closes it, as Close does (BL-1720). One place, so every sign-in, consent and invite step inherits it.
+    <SafeAreaView edges={['bottom']} className="flex-1 bg-background" accessibilityViewIsModal aria-modal onAccessibilityEscape={close} testID="sheet.frame">
       {closeLabel ? (
         <ModalHeader onClose={close} closeLabel={closeLabel} closeDisabled={closeDisabled} leading={onBack ? <BackButton onPress={onBack} /> : undefined} className="pt-3" />
       ) : onBack ? (
