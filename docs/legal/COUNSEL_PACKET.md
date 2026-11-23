@@ -9,6 +9,8 @@ prepared_by: AI (Claude), legal drafting support (stream S17); not legal advice
 
 > **This packet was prepared by an AI. It is not legal advice, and no attorney-client relationship exists.** It collects every open legal question about the v1.0 build the founder chose on 15 Oct 2026 (option B), as questions, not conclusions. Each has a default the product follows if counsel has not answered by the date named; dates are milestone ids from PRD V2 `docs/prd/v2/08-delivery.md` section 2.1 (branch `docs/prd-v2`, PR #124). Facts are tagged **V** (verified on a page or file opened, with the date), **S** (secondary) or **U** (unverified). Source checks are in `BENCHMARK.md`. The published drafts contain no notes for counsel by the founder's direction of 15 Oct; everything counsel must confirm is here and in the pull request description.
 
+> **Read under D-172 (23 Nov 2026).** No outside counsel is engaged and none has reviewed or approved anything here. Wherever this packet says "counsel", read the exec-team review (CLO, CCO, Chief Privacy Officer; Claude roles, not licensed lawyers; not legal advice). The calendar dates below that name counsel are superseded (D-172). The packet's wording is otherwise unchanged and is not edited line by line.
+
 ## 0. How to use this packet
 
 **New in 1.9.0 (21 Nov 2026).** Adds section 9 (Q123 to Q132, Moments tab, NS-53) and corrects the Q129 default to the founder's O-44 decision (disclose the iPhone backup in one plain line). Sections 1 to 8 are unchanged.
@@ -21,7 +23,7 @@ prepared_by: AI (Claude), legal drafting support (stream S17); not legal advice
 
 **Decisions behind it.** Founder, 13 and 14 Oct (PR #128, D-100 to D-108). Delegated, 15 Oct (PR #122, D-093 to D-099). Founder, 15 Oct: option B, backup free for everyone; and the direction for legal pages (plain, short, no internal references, name only services the code uses, no separate health notice pending Q32).
 
-**The calendar (PRD V2 08 section 2.1).** T05 Fri 23 Oct: this packet to counsel. T17 Fri 13 Nov: counsel comments. T19 Mon 23 Nov: switch-on internal TestFlight. T20 Tue 1 Dec: legal pages live as drafts. T22 Mon 7 Dec: first outside families. T27 Mon 18 Jan 2027: backup on for C1 families who opt in. T32 Fri 1 Jan 2027: California AB 1043. T30 by Fri 23 Apr 2027: counsel sign-off. T36 3 to 5 May 2027: submission.
+**The calendar (PRD V2 08 section 2.1).** T05 Fri 23 Oct: this packet to the reviewers. T17 Fri 13 Nov: review comments. T19 Mon 23 Nov: switch-on internal TestFlight. T20 Tue 1 Dec: legal pages live as drafts. T22 Mon 7 Dec: first outside families. T27 Mon 18 Jan 2027: backup on for C1 families who opt in. T32 Fri 1 Jan 2027: California AB 1043. T30 by Fri 23 Apr 2027: exec-team review sign-off (D-172). T36 3 to 5 May 2027: submission.
 
 **Priorities.** **A** blocks the first outside family (T22) or submission. **B** before a dated event in the row. **C** before a later feature.
 
@@ -206,7 +208,7 @@ Full text is in this file's 1.0.0 version (git history). Only the change is show
 - **The plan** is #847 (`17-engineering-project-plan.md` on `docs/engineering-project-plan-20nov` at `94603780`).
 - **Code facts** were read on `develop` at `20553b18`, 20 Nov 2026.
 
-**What counsel is asked.** Each question gives the facts, the questions, the default the product follows until counsel answers, what changes if counsel says no, and what it blocks. Where a card and a design disagree, the card wins, and the entry says so.
+**What the reviewers are asked (counsel, read as the exec-team review under D-172).** Each question gives the facts, the questions, the default the product follows until counsel answers, what changes if counsel says no, and what it blocks. Where a card and a design disagree, the card wins, and the entry says so.
 
 **How the numbers work.** A topic that already has a 1.5.0 number keeps it, and its new parts continue its letters. Where a 1.5.0 question has unlettered parts, they count as (a), (b) and so on in the order written. For example, Q46's parts are old Q5, the stored age signal and AB 1043 for earlier installs, so its new part is (d). The two new questions take Q107 and Q108. The numbers in between are claimed by open drafts: Q58 to Q74 by #598, Q75 to Q77 by BL-780, and Q78 to Q106 by #760. A search of every remote branch on 20 Nov found no Q107 or higher.
 
