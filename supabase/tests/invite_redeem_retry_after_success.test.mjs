@@ -66,4 +66,22 @@ const t2 = await total();
 check('below any limit the retry is the same success and counts nothing', (await redeem(V, 'accept', good)).outcome === 'accepted' && (await total()) === t2);
 check('a wrong code is still unusable and counted', (await redeem(V, 'accept', unknown)).outcome === 'unusable' && (await total()) === t2 + 4);
 
+// Mutant guards (BL-1845). A success must record who joined and when; the retry shortcut and peek
+// answer exactly the fields they do today and nothing more (peek never carries a book id or the child's name).
+const rec = (await sys(`select accepted_by, accepted_at is not null as stamped from child_invites where child_id = $1 and code_hash = $2`, [BK, good])).rows[0];
+check('[BL-525] a successful accept records who joined and when (accepted_by, accepted_at)', rec && rec.accepted_by === V && rec.stamped === true);
+const keys = (o) => JSON.stringify(Object.keys(o).sort());
+check('[BL-525] the retry shortcut answers exactly outcome, child_id and role',
+  keys(await redeem(V, 'accept', good)) === '["child_id","outcome","role"]');
+const pj = await redeem(V, 'peek', good);
+check('[BL-525] peek after joining answers exactly outcome, inviter, role and joined, no book id or child name',
+  pj.outcome === 'peek' && pj.joined === true && keys(pj) === '["inviter","joined","outcome","role"]'
+  && !JSON.stringify(pj).includes(BK) && !JSON.stringify(pj).includes('Asha'));
+const BK2 = await newChild(A, 'Asha', '2025-04-12');
+await as(A, `select public.create_child_invite($1::uuid, $2::uuid, 'parent', sha256(convert_to($3, 'UTF8')), sha256(convert_to($4, 'UTF8')), null)`,
+  [uuid7(), BK2, ('ASHA5432' + 'x'.repeat(64)).slice(0, 64), 'ASHA5432']);
+const po = await redeem(S, 'peek', await hashOf('ASHA5432'));
+check('[BL-525] peek of an open code answers exactly outcome, inviter and role, no book id or child name',
+  po.outcome === 'peek' && keys(po) === '["inviter","outcome","role"]' && !JSON.stringify(po).includes(BK2) && !JSON.stringify(po).includes('Asha'));
+
 await done();

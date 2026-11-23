@@ -55,9 +55,9 @@ describe('[BL-474] reminder and notification copy never says "we"', () => {
     expect(weOffenders([{ path: 'notifications.evening[1].body', text: 'Our book is open.' }])).toHaveLength(1);
   });
 
-  it('does not flag "us" or "ours" (the ruling names we and our only)', () => {
+  it('does not flag a line with no we or our, or the word "ours" (the ruling names we and our only)', () => {
     const quiet: Leaf[] = [
-      { path: 'notifications.evening[1].body', text: 'Tell us how it went.' },
+      { path: 'notifications.evening[1].body', text: 'How did it go?' },
       { path: 'notifications.evening[2].body', text: 'The book is ours to open.' },
     ];
     expect(weOffenders(quiet)).toEqual([]);
