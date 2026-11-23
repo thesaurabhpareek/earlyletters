@@ -10,10 +10,13 @@
  * 1 an ask was found, 2 could not run. Output names the place and the pattern id, never the text of the PR.
  *
  * Allowed, by exact rule (each is tested):
- *  1. A line that quotes the rule: it names CR-176 or D-168 AND carries a negation (never, not, nobody, no one,
- *     do not, don't). This is the PR template's own "never write ..." line.
+ *  1. A line that quotes the rule: it names CR-176 or D-168 AND a negation (never, not, nobody, no one, do not,
+ *     don't) governs each ask: earlier in the same sentence (a colon, semicolon, full stop, ! or ? ends it), with no
+ *     comma, bracket, dash or turning word (so, but, then) between. This is the PR template's own "never write ..." line.
  *  2. A physical act: the line names FOUNDER_QUEUE (the file that lists the acts only his hands can do).
  *  3. Added lines in the files that must state the rule: ALLOWED_PATHS below. A new entry is a reviewed edit.
+ *  4. The BL-1851 phrase itself (EXEMPT_PHRASES) in backticks on a line that names BL-1851, with no other ask on the line.
+ * A line is read twice, with format characters (\p{Cf}, such as zero-width) removed and turned into spaces; both readings must pass.
  */
 import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
@@ -41,6 +44,8 @@ export const PATTERNS = [
   // "ask him to approve" counts only when the same line names the founder (before or after).
   ['ask-him-to', new RegExp(String.raw`(?:\b${FOUNDER}\b[^\n]{0,80}\b(?:ask|asks|asking|asked)\s+(?:him|her)\s+to\s+${VERB}\b|\b(?:ask|asks|asking|asked)\s+(?:him|her)\s+to\s+${VERB}\b[^\n]{0,80}\b${FOUNDER}\b)`, 'i')],
   ['ask-founder-to', new RegExp(String.raw`\b(?:ask|asks|asking|asked|requests?|requesting|needs?|requires?|want|wants)\s+${FOUNDER}\s+to\s+${VERB}\b`, 'i')],
+  // "ask Saurabh to take a look": the same ask shape with the softer verbs.
+  ['ask-founder-to-look', new RegExp(String.raw`\b(?:ask|asks|asking|asked|requests?|requesting|needs?|requires?|want|wants)\s+${FOUNDER}\s+to\s+(?:take\s+a\s+look|have\s+a\s+look|look\s+(?:at|over)|weigh\s+in|check|ok|okay|green-?light|bless)\b`, 'i')],
   ['founder-must', new RegExp(String.raw`\b${FOUNDER}\s+(?:must|should|needs\s+to|has\s+to|please|to)\s+${VERB}\b`, 'i')],
   ['for-founder-verb', new RegExp(String.raw`\bfor\s+${FOUNDER}\s+(?:approval|review|merge|sign[\s-]?off)\b`, 'i')],
   ['please-founder', new RegExp(String.raw`\bplease\s+(?:${VERB})\b[^.\n]{0,40}\b${FOUNDER}\b`, 'i')],
@@ -48,8 +53,23 @@ export const PATTERNS = [
   ['founder-merge-label', /\b(?:please|ask|asks|asking|waiting\s+(?:for|on)|wait\s+for)\b[^.;\n]{0,30}\bfounder[\s-]merge\b/i],
 ];
 
-const NEGATION = /\b(?:never|not|nobody|no\s+one|do\s+not|don't|doesn't|without)\b/i;
+/** The one phrase BL-1851 names. A new entry is a reviewed edit (rule 4 below). */
+export const EXEMPT_PHRASES = ['founder review needed'];
+
+// A negation. "never mind", "do not hesitate", "don't forget" are not negations of the ask that follows.
+const NEGATION = /\b(?:never|not|nobody|no\s+one|do\s+not|don't|doesn't|without)\b(?!\s+(?:mind|hesitate|forget|fail|neglect|bother))/gi;
 const RULE_REF = /\b(?:CR-176|D-168)\b/;
+const SENTENCE_END = /[.;:!?]\s/;
+// Between a negation and the ask it governs there is no clause break: no comma, bracket, dash or turning word.
+const CLAUSE_BREAK = /[,()[\]{}]|--|\b(?:so|but|then|instead|however|yet|except|though|although|while|and\s+then)\b/i;
+/** How far back from an ask a negation may sit (also bounds the work per ask, so a long line cannot make it slow). */
+const WINDOW = 200;
+
+/** Two readings of a line: format characters (\p{Cf}: zero-width, soft hyphen, BOM) removed, and turned into spaces. Whitespace is collapsed. */
+const readings = (line) => {
+  const s = String(line ?? '');
+  return [...new Set([s.replace(/\p{Cf}/gu, ''), s.replace(/\p{Cf}/gu, ' ')].map((t) => t.replace(/\s+/g, ' ')))];
+};
 
 /** Start index of every ask match in a collapsed line. */
 function askStarts(t) {
@@ -61,22 +81,46 @@ function askStarts(t) {
   return out;
 }
 
-/** Why a line is allowed, or '' when it is not. */
-export function allowedBecause(line) {
-  if (/FOUNDER_QUEUE/.test(line)) return 'physical act (FOUNDER_QUEUE)';
-  const t = String(line ?? '').replace(/\s+/g, ' ');
-  if (RULE_REF.test(t)) {
-    // The negation must govern each ask: it sits earlier in the same sentence (no . ; ! ? between).
-    const governed = askStarts(t).every((at) => NEGATION.test(t.slice(0, at).split(/[.;!?]\s/).pop()));
-    if (governed && NEGATION.test(t)) return 'quotes the rule (CR-176 or D-168 with a negation)';
-  }
-  return '';
+/** True when a negation sits earlier in the same sentence as the ask at `at`, with no clause break between them. */
+function negated(t, at) {
+  const sentence = t.slice(Math.max(0, at - WINDOW), at).split(SENTENCE_END).pop();
+  let last = null;
+  for (const m of sentence.matchAll(NEGATION)) last = m;
+  return last !== null && !CLAUSE_BREAK.test(sentence.slice(last.index + last[0].length));
 }
 
-/** Ids of the patterns that match one line (whitespace is collapsed first). */
+/** Rule 4: with the BL-1851 phrase in backticks, and nothing else asking. `named` is true when BL-1851 is on the line. */
+function exemptPhrase(t, named) {
+  if (!named) return false;
+  let hit = false;
+  const rest = t.replace(/`([^`]{1,60})`/g, (whole, inner) => {
+    if (!EXEMPT_PHRASES.includes(inner.trim().replace(/\s+/g, ' ').toLowerCase())) return whole;
+    hit = true;
+    return ' ';
+  });
+  return hit && askStarts(rest).length === 0;
+}
+
+/** Why a line is allowed, or '' when it is not. Every reading of the line must pass; a name (FOUNDER_QUEUE, CR-176, BL-1851) counts if any reading shows it. */
+export function allowedBecause(line) {
+  const rs = readings(line);
+  const any = (re) => rs.some((t) => re.test(t));
+  if (any(/FOUNDER_QUEUE/)) return 'physical act (FOUNDER_QUEUE)';
+  const ref = any(RULE_REF);
+  const named = any(/\bBL-1851\b/);
+  const whys = rs.map((t) => {
+    if (ref && askStarts(t).every((at) => negated(t, at))) return 'quotes the rule (CR-176 or D-168 with a negation)';
+    if (exemptPhrase(t, named)) return 'quotes the BL-1851 phrase in backticks (BL-1851)';
+    return '';
+  });
+  return whys.every(Boolean) ? whys[0] : '';
+}
+
+/** Ids of the patterns that match one line (format characters removed or spaced, whitespace collapsed). */
 export function asksIn(line) {
-  const t = String(line ?? '').replace(/\s+/g, ' ');
-  return PATTERNS.filter(([, re]) => re.test(t)).map(([id]) => id);
+  const ids = new Set();
+  for (const t of readings(line)) for (const [id, re] of PATTERNS) if (re.test(t)) ids.add(id);
+  return PATTERNS.map(([id]) => id).filter((id) => ids.has(id));
 }
 
 /** Added lines of `git diff -U0` text, as { path, text }. Removed and context lines are dropped. */
