@@ -63,6 +63,7 @@ import {
   getChild,
   getEntry,
   listDeleted,
+  listLeftBooks,
   setEntryDate,
   setEntryInBook,
   todayISO,
@@ -108,6 +109,11 @@ const MEASURE_MS = 4 * 16;
 const REST_WITHIN_PT = 4;
 /** On Back the rest of the page leaves this fast (six frames), before the words go back: a quick, legible answer. */
 const REST_OUT_MS = 96;
+
+/** Whether the letter is in a book this phone has left (BL-444): read only. Asked through the store's gated list. */
+function isLeftBookLetter(entry: Entry): boolean {
+  return listLeftBooks().some((b) => b.id === entry.childId);
+}
 
 /** UIProvider is a no-op once the root layout mounts it (Sheet and Toast need it). */
 export default function LetterScreen() {
@@ -173,7 +179,7 @@ function Letter() {
   // the plain 200 ms fade (the carry moves dateline and words as one rigid block); a letter without one carries as before.
   const hasPicture =
     !!storedPhoto && words !== 'waiting' && photoSurfaces({ build: photosBuildEnabled(), paused: photosPausedNow() }).addActions;
-  const picture = hasPicture ? <LetterPicture entryId={entry.id} own={isOwnEntry(entry)} columnWidth={screenWidth - 2 * CARD_TEXT_INSET} /> : null;
+  const picture = hasPicture ? <LetterPicture entryId={entry.id} own={isOwnEntry(entry) && !isLeftBookLetter(entry)} columnWidth={screenWidth - 2 * CARD_TEXT_INSET} /> : null;
   const openingFor: Opening = (focus) => (
     <OpeningBlock focusRef={focus} dateline={dateline} spokenDateline={spokenDateline} text={text} note={shownNote} scale={scale} swapKey={`${size}:${showOriginal}`} picture={picture} />
   );
@@ -343,13 +349,18 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
   const spoken = entry.captureMode !== 'typed';
   const typedWords = provenanceOf(entry) === 'typed'; // typed, or typed for a recording that had no words
   const own = isOwnEntry(entry);
+  // A letter of a book this phone has left (BL-444, D-113) opens to read: no Add to book, Change the date, Delete, words
+  // to write, review or picture controls. Every one of those writes would queue an op for a book the server no longer
+  // lets this person write to. Export and Delete for these letters are later slices.
+  const readOnly = isLeftBookLetter(entry);
+  const editable = own && !readOnly;
   const canShowOriginal = exactViewAvailable(entry, { own, hasWords: words === 'words' });
   // One provenance line (S27): "Spoken, with small fixes. Recording kept on this phone." The other parent's
   // recording is on their phone, which the player's place says (D-073), so the line names only how it was made, and
   // only that it was spoken: this phone never holds their raw words, so it cannot know whether any fix was made (S8).
   const provenanceLine = provenanceLineOf(entry, { own, audioUri: entry.audioUri, words: copy.book.provenance, recordingOnPhone: copy.book.recordingOnPhone });
   // The words card: a recording waiting for its words, or one with no words that the store can still take words for (S3).
-  const wordsCard = wordsCardKind({ own, words, canWrite: words === 'nobodySpoke' && canTypeWordsFor(entry.id) });
+  const wordsCard = readOnly ? null : wordsCardKind({ own, words, canWrite: words === 'nobodySpoke' && canTypeWordsFor(entry.id) });
 
   const aa = (
     <Pressable
@@ -443,10 +454,10 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
         {spoken && <AudioPlayer entryId={entry.id} />}
         {/* The picture's controls (add, change, words, remove) stay after the words and Play; the picture itself is drawn by the
             opening, between the dateline and the words (CL-116 C-01, ruling NS-01-C01-order): absent when photos are off. */}
-        {words !== 'waiting' ? <LetterPhoto entryId={entry.id} finalText={entry.finalText} own={own} /> : null}
+        {words !== 'waiting' ? <LetterPhoto entryId={entry.id} finalText={entry.finalText} own={editable} /> : null}
 
         {wordsCard && <WaitingCard entry={entry} kind={wordsCard} onWrite={() => setWriting(true)} />}
-        {own && words === 'words' && (unread || entry.wordsUnreviewed) && (
+        {editable && words === 'words' && (unread || entry.wordsUnreviewed) && (
           <ReadItBackCard
             typed={typedWords}
             onRead={() => {
@@ -484,7 +495,7 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
           </View>
         )}
 
-        {own && (
+        {editable && (
           <View style={{ marginHorizontal: 20 - CARD_TEXT_INSET }}>
             <ListSection>
               <ListRow
@@ -528,7 +539,7 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
         onConfirm={remove}
       />
 
-      {own && (
+      {editable && (
         <DateSheet open={dateOpen} child={child} entry={entry} todayISO={todayISO()} onClose={() => setDateOpen(false)} onSave={changeDate} />
       )}
 

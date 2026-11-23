@@ -11,6 +11,7 @@ export { exportCopy } from './export.en';
 export { familyCopy } from './family.en';
 export { findCopy } from './find.en';
 export { languageCopy } from './language.en';
+export { leftBookCopy } from './left-book.en';
 export { licences } from './licences.en';
 export { momentsTabCopy } from './moments-tab.en';
 export { newDevicePageCopy } from './new-device.en';
@@ -32,6 +33,7 @@ import { exportCopy } from './export.en';
 import { familyCopy } from './family.en';
 import { findCopy } from './find.en';
 import { languageCopy } from './language.en';
+import { leftBookCopy } from './left-book.en';
 import { licences } from './licences.en';
 import { momentsTabCopy } from './moments-tab.en';
 import { newDevicePageCopy } from './new-device.en';
@@ -55,6 +57,7 @@ export const features = {
   family: familyCopy,
   find: findCopy,
   language: languageCopy,
+  leftBook: leftBookCopy,
   licences,
   momentsTab: momentsTabCopy,
   newDevicePage: newDevicePageCopy,
