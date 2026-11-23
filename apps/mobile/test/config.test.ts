@@ -322,7 +322,7 @@ describe('eas.json (POPS-02, POPS-08): the alpha profile story (D-106)', () => {
     });
   });
 
-  describe('testflight profile (alpha build 1: servers off until the R-17 gate passes)', () => {
+  describe('testflight profile (alpha build 1: servers on since the founder\'s 23 Nov 2026 flip)', () => {
     const tf = eas.build.testflight;
 
     it('is a store build that is a preview build in every other respect', () => {

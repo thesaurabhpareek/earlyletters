@@ -165,12 +165,13 @@ describe('the profiles: hidden in the alpha builds unless the EAS environment sa
     expect((await readCapability(buildEnv('preview', { [VAR]: 'on' }))).row).toBe(true);
   });
 
-  it('alpha build 1 (testflight, servers off): no row either way; after the R-17 flip it follows the same variable as build 2', async () => {
+  it('alpha build 1 (testflight, servers on since the founder\'s 23 Nov 2026 flip) follows the same variable as build 2: no row as written, the row with it "on"; with servers forced off (the kill path) no row either way', async () => {
+    expect(eas.build.testflight.env?.EXPO_PUBLIC_SERVER_FEATURES).toBe('on');
     expect((await readCapability(buildEnv('testflight'))).row).toBe(false);
-    expect((await readCapability(buildEnv('testflight', { [VAR]: 'on' }))).row).toBe(false);
-    const flipped = { ...buildEnv('testflight'), EXPO_PUBLIC_SERVER_FEATURES: 'on' };
-    expect((await readCapability(flipped)).row).toBe(false);
-    expect((await readCapability({ ...flipped, [VAR]: 'on' })).row).toBe(true);
+    expect((await readCapability(buildEnv('testflight', { [VAR]: 'on' }))).row).toBe(true);
+    const killed = { ...buildEnv('testflight'), EXPO_PUBLIC_SERVER_FEATURES: 'off' };
+    expect((await readCapability(killed)).row).toBe(false);
+    expect((await readCapability({ ...killed, [VAR]: 'on' })).row).toBe(false);
   });
 
   it('development, e2e and production keep the row wherever servers are on (as they flip it): no variable to set', async () => {
@@ -347,14 +348,15 @@ describe('the preflight prints the state and never fails on it (both alpha build
     }
   }, 120_000);
 
-  it('with the variable "on" in the shell: build 2 says "shown" as a WARN, build 1 still hidden (no servers); neither is a FAIL', async () => {
+  it('with the variable "on" in the shell: both alpha builds (servers on) say "shown" as a WARN; neither is a FAIL', async () => {
     const [build1, build2] = await Promise.all([
       preflight('testflight', { [VAR]: 'on' }),
       preflight('preview', { [VAR]: 'on' }),
     ]);
     expect(build2.filter((l) => /^WARN\s+Delete account row: shown/.test(l))).toHaveLength(1);
     expect(build2.filter((l) => /^PASS\s+Delete account row: hidden/.test(l))).toEqual([]);
-    expect(build1.filter((l) => /^PASS\s+Delete account row: hidden/.test(l))).toHaveLength(1);
+    expect(build1.filter((l) => /^WARN\s+Delete account row: shown/.test(l))).toHaveLength(1);
+    expect(build1.filter((l) => /^PASS\s+Delete account row: hidden/.test(l))).toEqual([]);
     expect(about(build1).concat(about(build2)).filter((l) => l.startsWith('FAIL'))).toEqual([]);
   }, 120_000);
 });

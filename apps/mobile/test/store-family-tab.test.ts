@@ -128,14 +128,15 @@ describe('alpha builds keep the real flow, on routes and rows and not on a tab',
     expect(link).toEqual({ route: '/invite', keepInviteToken: true, keepAuthLink: false });
   });
 
-  it('an alpha build with servers off has no row and no flow, like a store build', () => {
-    const p = profile('testflight');
+  it('an alpha build with servers off (the kill path: testflight with the switch written off) has no row and no flow, like a store build', () => {
+    const p = profile('testflight', { EXPO_PUBLIC_SERVER_FEATURES: 'off' });
     expect(p).toEqual({ alpha: true, coParent: false, shown: false });
     expect(bookRow({ serverFeatures: p.coParent, alpha: p.alpha, coParent: null, invite: '/invite' })).toBeNull();
   });
 
-  it('the eas.json profiles: preview has the flow, testflight and production (servers off) do not', () => {
+  it('the eas.json profiles: preview and testflight (servers on, founder 23 Nov 2026) have the flow; production, a store build, does not', () => {
     expect(profile('preview')).toEqual({ alpha: true, coParent: true, shown: true });
+    expect(profile('testflight')).toEqual({ alpha: true, coParent: true, shown: true });
     expect(profile('production', { EXPO_PUBLIC_SERVER_FEATURES: 'off' }).shown).toBe(false);
     expect(profile('production', { EXPO_PUBLIC_SERVER_FEATURES: 'on' })).toEqual({ alpha: false, coParent: true, shown: false });
   });

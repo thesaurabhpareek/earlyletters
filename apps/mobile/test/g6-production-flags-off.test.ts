@@ -165,6 +165,46 @@ describe('G6: store builds ship with the new-scope flags off', () => {
   });
 });
 
+describe('server switches: every store profile ships servers on (founder, 23 Nov 2026), the card flags stay off', () => {
+  // Reason: the founder decided "server on, account creation on" for the build everyone installs, so preview, testflight and production
+  // write EXPO_PUBLIC_SERVER_FEATURES=on (sign-in, sync, co-parent). The switches that need a secret, an unbuilt check or counsel stay
+  // off and are pinned off here with their reason: BACKUP (no escrow key in BUNDLED_ESCROW_KEYS, NS-08 conditions), STATUS_REPORT
+  // (WP-F14-15), ANALYTICS (no PostHog SDK in the bundle and no key; the privacy label says Data Not Collected for analytics).
+  const SERVER_ON = (eas: Eas) => storeProfiles(eas).filter((n) => String((resolveProfile(eas.build ?? {}, n)?.env ?? {}).EXPO_PUBLIC_SERVER_FEATURES).trim().toLowerCase() !== 'on');
+  const STILL_OFF = ['EXPO_PUBLIC_BACKUP', 'EXPO_PUBLIC_STATUS_REPORT', 'EXPO_PUBLIC_ANALYTICS'];
+  const stillOn = (eas: Eas) =>
+    storeProfiles(eas).flatMap((n) => STILL_OFF.filter((f) => !isOff((resolveProfile(eas.build ?? {}, n)?.env ?? {})[f])).map((f) => `${n} ${f}`));
+
+  it('[SERVERS-ON-1] every store profile (preview, testflight, production) writes EXPO_PUBLIC_SERVER_FEATURES=on', () => {
+    const eas = readEas();
+    expect(storeProfiles(eas)).toEqual(['preview', 'production', 'testflight']);
+    expect(SERVER_ON(eas)).toEqual([]);
+  });
+
+  it('[SERVERS-ON-2] production keeps servers on and the Delete account row on (Apple 5.1.1(v): accounts exist, so deletion is in the app)', () => {
+    const env = readEas().build?.production?.env ?? {};
+    expect(env.EXPO_PUBLIC_SERVER_FEATURES).toBe('on');
+    expect(env.EXPO_PUBLIC_ACCOUNT_DELETION).toBe('on');
+    expect(env.EXPO_PUBLIC_APP_ENV).toBe('production');
+  });
+
+  it('[SERVERS-ON-3] backup, status report and analytics stay off in every store profile, and no e2e seam is in one (B-8, B-9)', () => {
+    const eas = readEas();
+    expect(stillOn(eas)).toEqual([]);
+    for (const n of storeProfiles(eas)) expect((resolveProfile(eas.build ?? {}, n)?.env ?? {}).EXPO_PUBLIC_E2E, n).toBeUndefined();
+  });
+
+  it('[SERVERS-ON-4] mutants: servers off in a copy of testflight, or analytics on in a copy of production, turn these checks red', () => {
+    const base = readEas();
+    const flipOff = JSON.parse(JSON.stringify(base)) as Eas;
+    (flipOff.build as NonNullable<Eas['build']>).testflight.env = { ...flipOff.build?.testflight?.env, EXPO_PUBLIC_SERVER_FEATURES: 'off' };
+    expect(SERVER_ON(flipOff)).toEqual(['testflight']);
+    const analyticsOn = JSON.parse(JSON.stringify(base)) as Eas;
+    (analyticsOn.build as NonNullable<Eas['build']>).production.env = { ...analyticsOn.build?.production?.env, EXPO_PUBLIC_ANALYTICS: 'on' };
+    expect(stillOn(analyticsOn)).toEqual(['production EXPO_PUBLIC_ANALYTICS']);
+  });
+});
+
 describe('G6 positive control: the check can go red', () => {
   const storeFixture = (env: Record<string, string>): Eas => ({
     build: { development: { distribution: 'internal', env: {} }, production: { env: { EXPO_PUBLIC_APP_ENV: 'production', ...env } } },

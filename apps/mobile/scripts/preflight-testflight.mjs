@@ -2,7 +2,8 @@
 /**
  * Preflight for the two alpha TestFlight builds (D-106; docs/release/TESTFLIGHT.md):
  *
- *   alpha build 1, profile `testflight`: server features OFF (no accounts, nothing leaves the phone)
+ *   alpha build 1, profile `testflight`: server features ON against the staging Supabase project (the R-17 flip,
+ *                                        founder, 23 Nov 2026: servers on in every store profile)
  *   alpha build 2, profile `preview`:    server features ON against the staging Supabase project
  *
  *   npm run preflight:testflight -w @scribe/mobile                     # build 1 (profile testflight)
@@ -38,12 +39,12 @@ const profileArg = process.argv.indexOf('--profile');
 const PROFILE = profileArg > -1 ? String(process.argv[profileArg + 1] ?? '') : 'testflight';
 
 /**
- * The two alpha builds (D-106). `server` is what the profile must say today; the R-17 flip changes testflight.
+ * The two alpha builds (D-106). `server` is what the profile must say today; both alpha profiles are servers on since the founder's 23 Nov 2026 decision.
  * `google` is whether the build offers Google sign-in: neither does (docs/release/ENVIRONMENTS.md, "Not in the
  * alpha: Apple and email only"), and neither the privacy manifest nor S17's worksheet has Google's rows (4c).
  */
 const ALPHA = {
-  testflight: { build: 'alpha build 1', server: false, google: false },
+  testflight: { build: 'alpha build 1', server: true, google: false },
   preview: { build: 'alpha build 2', server: true, google: false },
 };
 if (!Object.hasOwn(ALPHA, PROFILE)) {
@@ -151,12 +152,12 @@ if (prof) {
   const sf = profEnv.EXPO_PUBLIC_SERVER_FEATURES;
   if (PROFILE === 'preview') {
     check(sf === 'on', 'preview profile: EXPO_PUBLIC_SERVER_FEATURES=on (alpha build 2: sign-in, sync and co-parent against staging)', `preview profile EXPO_PUBLIC_SERVER_FEATURES is ${JSON.stringify(sf)}; the preview profile is the alpha with servers and must say "on" (D-106).`);
-  } else if (sf === 'off') {
-    pass('testflight profile: EXPO_PUBLIC_SERVER_FEATURES=off (alpha build 1: no Supabase, sign-in, sync or co-parent)');
   } else if (sf === 'on') {
-    warn('testflight profile has EXPO_PUBLIC_SERVER_FEATURES=on: that is the R-17 flip. Build it only after the R-17 security gate has passed (T16) and the founder approved the flip; until then nobody outside the family signs in (D-100).');
+    pass('testflight profile: EXPO_PUBLIC_SERVER_FEATURES=on (alpha build 1: sign-in, sync and co-parent against staging; founder, 23 Nov 2026, the same switch as preview and production)');
+  } else if (sf === 'off') {
+    warn('testflight profile has EXPO_PUBLIC_SERVER_FEATURES=off: that is the kill path (no Supabase, sign-in, sync or co-parent in this build). The founder decided on 23 Nov 2026 that every store profile ships servers on; write "on" unless you are deliberately pulling the switch.');
   } else {
-    fail(`testflight profile EXPO_PUBLIC_SERVER_FEATURES is ${JSON.stringify(sf)}; write "off" (or "on" after the R-17 gate), never leave it to a default.`);
+    fail(`testflight profile EXPO_PUBLIC_SERVER_FEATURES is ${JSON.stringify(sf)}; write "on" (or "off" for the kill path), never leave it to a default.`);
   }
   // D-111 item 4: the alpha transcribes English only, so both alpha builds offer English alone in the picker.
   check(

@@ -18,7 +18,7 @@ Card flags (default off in every profile, including `production`; `apps/mobile/t
 | Profile | Use | Distribution | `EXPO_PUBLIC_APP_ENV` | Bundle id | EAS environment | `SERVER_FEATURES` | `BACKUP` | `STATUS_REPORT` | `ANALYTICS` | `ENGLISH_ONLY` | `ACCOUNT_DELETION` |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | `development` | dev client on the founder's desk | internal | `development` | `<id>.dev` | development | off | off | off | off | not written (off) | on |
-| `testflight` | **alpha build 1**, store lane after the R-17 flip | store (TestFlight) | `preview` | `<id>.preview` | preview | **off** until the R-17 gate (one-line flip, TESTFLIGHT.md) | off | off | off | on | **not written**: from the EAS `preview` environment, else off |
+| `testflight` | **alpha build 1**, store lane | store (TestFlight) | `preview` | `<id>.preview` | preview | **on** (flipped on 23 Nov 2026, founder: servers on in every store profile; the R-17 gate record is not in this repo, so the build stays in the family internal group, see TESTFLIGHT.md) | off | off | off | on | **not written**: from the EAS `preview` environment, else off |
 | `preview` | **alpha build 2**, against staging | store (TestFlight) | `preview` | `<id>.preview` | preview | **on** | off | off | off | on | **not written**: from the EAS `preview` environment, else off (row hidden) |
 | `production` | the App Store app (build 12) | store | `production` | `<id>` | production | **on** (build 12) | off | off | off | on (D-121 item 1) | on (hide-until-proven is for the alpha only) |
 

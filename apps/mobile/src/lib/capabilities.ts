@@ -5,9 +5,8 @@
  *
  *   SERVER_FEATURES   `EXPO_PUBLIC_SERVER_FEATURES=on` in the build's env (eas.json
  *                     profile or `.env.*`). Anything else, or nothing, is OFF. In
- *                     eas.json only `preview` (the alpha against staging) is on; the
- *                     store profiles stay off until the R-17 security gate passes
- *                     (docs/release/TESTFLIGHT.md, "The flip").
+ *                     eas.json `preview`, `testflight` (flipped 23 Nov 2026, founder)
+ *                     and `production` are on; `development` and `e2e` are off.
  *
  * Off:
  *  - no Supabase client is ever constructed (lib/supabase/client.ts returns null),

@@ -115,7 +115,10 @@ describe('[BL-506] the preflight, run against a planted .env file', () => {
   // The proof is the FAIL line: the sandbox exits 1 on its own (section 6 needs packages/content), so the exit code says nothing here.
   const survives = (r: Run) => {
     expect(envLines(r, 'FAIL'), 'a surviving mutant would still fail').toEqual([]);
-    expect(r.text).not.toContain('SUPABASE');
+    // The planted name and value stay out of the output. (This was `not.toContain('SUPABASE')` while testflight had servers off; with servers on
+    // the script's own UNVERIFIED line names EXPO_PUBLIC_SUPABASE_URL, so the proxy became the thing it was a proxy for.)
+    expect(r.text).not.toContain('SUPABASE_SERVICE_ROLE_KEY');
+    expect(r.text).not.toContain(FAKE_VALUE);
     // The mutant ran to the check after the guard: it is the guard that went quiet, not the script that crashed.
     expect(r.lines.some((l) => /profile names no Supabase or analytics key in eas\.json/.test(l)), 'the script ran past section 4').toBe(true);
   };
