@@ -22,6 +22,7 @@
  */
 import { CAPTURE_MODES, MEMBER_ROLES, OFFER_TRIGGERS } from '@scribe/core';
 import { bool, int, oneOf, opt, type EventSpec, type PropSpec } from './schema';
+import { MOMENTS_SLOT } from './registry';
 
 // ---------------------------------------------------------------------------
 // Shared value sets
@@ -43,7 +44,7 @@ export const CAPTURE_MODE = oneOf(...CAPTURE_MODES);
 /** packages/core PromptKind, plus `none` when no prompt was shown. */
 export const PROMPT_KIND = oneOf('opening', 'gap', 'hard', 'family', 'together', 'none');
 /** NS-53 R251: the only two card slots that may be reported (a slot is a position, never a source). */
-export const MOMENTS_SLOT = oneOf('look_back', 'question');
+export { MOMENTS_SLOT };
 export const AUDIO_BUCKET = oneOf('lt_15s', '15_60s', '1_2m', '2_5m', 'gt_5m');
 export const WORDS_BUCKET = oneOf('lt_25', '25_99', '100_299', '300_plus');
 export const LETTERS_BUCKET = oneOf('0', '1', '2_4', '5_9', '10_49', '50_99', '100_364', '365_plus');

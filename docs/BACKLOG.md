@@ -9796,26 +9796,26 @@ Rows for notes the reviews of these pull requests left open. Rows BL-1918 to BL-
 - Scope: (1) `whereLive.onPhone` is flagged "servers off only", but its sentence is true in every build: remove the flag (this reverses the flag BL-1883 added); (2) `settings.privacy.keptOnPhone` and `settings.erase.onThisPhone` are flagged too narrowly: read each against the build modes and set the flag to what the line says; (3) the text pattern for build-dependent lines misses the singular "our server" (TestFlight lines, the export README lines 38 and 46 of `apps/mobile/test/__golden__/export-asha/README.txt`, generated from `packages/content/src/features/export.en.ts`, `settings.privacy.noAccount`): widen it to catch the singular, with a planted line; (4) `consent.noBook`, `childFallback`, `settingUp`, `age.yes` and `age.no` are held as consent text but are not agreements: unhold them, keep the real agreement lines held, and say in the README which keys are held and why.
 - Done when: each of the four reads true in the regenerated map, and the generator's test covers each with a planted line.
 
-#### BL-1918 Sync consent gate: the app side of a withheld page (follow-up to #1676; when it lands)
-- Status: proposed (review of #1676; start when it lands). Mode: agent. Owner: sync owner (sync handle). Milestone: M15. Size: S. Depends on: none.
+#### BL-1918 Sync consent gate: the app side of a withheld page (follow-up to #1676, merged 29ea7945)
+- Status: proposed (review of #1676; start after #1676, merged 29ea7945). Mode: agent. Owner: sync owner (sync handle). Milestone: M15. Size: S. Depends on: none.
 - Satisfies: the consent gate of #1676; D-170 (servers on); `apps/mobile/src/lib/sync/engine.ts`, `apps/mobile/src/lib/sync/merge.ts`.
 - Scope: (1) `pullAll` (`engine.ts:284-285`) still writes `lastSyncedAt` and `lastVerifyAt` after a page the server withheld: stamp neither on a withheld page; (2) `dropStaleHeld` (`merge.ts:968`) drops held local letters after 30 days: after a restore plus a long consent pause it could delete letters that never reached the server: hold the drop while consent is paused, or count the 30 days from when sync resumed; (3) the `SyncPullResponse` schema and the engine read the word `withheld` (showing the consent state is BL-1931). Tests first, a mutant each; Asha only.
 - Done when: the three behaviours have a test each that fails under its mutant, and `npm test -w apps/mobile` passes.
 
-#### BL-1919 Sync consent gate: shape, security pack and test hygiene (follow-up to #1676; when it lands)
-- Status: proposed (review of #1676; start when it lands). Mode: agent. Owner: data architect. Milestone: M15. Size: M. Depends on: none.
+#### BL-1919 Sync consent gate: shape, security pack and test hygiene (follow-up to #1676, merged 29ea7945)
+- Status: proposed (review of #1676; start after #1676, merged 29ea7945). Mode: agent. Owner: data architect. Milestone: M15. Size: M. Depends on: none.
 - Satisfies: the consent gate of #1676; `docs/security/` pack text S-1; `packages/api` sync schemas; `supabase/tests/`.
 - Scope: (1) S-1 in the security pack describes the gate before it landed: bring the text to the built behaviour; (2) `SyncBookSchema` is strict and does not describe the closed `sync_books` shape: add a closed-shape schema and use it where a closed row is read; (3) the pending-invites list is empty while a book is closed: check the Family screen does not read that as "no invites" and add a test if it does; (4) the test title near line 1485 of the two-phone sync test still says "and it applies": correct it; (5) the order "gate before reads" is held only by a comment: add a test that reads the function's source with `pg_get_functiondef` and fails if a read of a book table comes before the gate call in source order (mutant: move the gate below the first read); (6) the rate-limit case (121 closed pulls) has no test: add one.
 - Done when: each of the six has its change and test (or a written reason), and `npm run test:db` and `npm test -w packages/api` pass.
 
-#### BL-1920 Closed sync_books returns the child's name and every member's signs_as: counsel's reading (follow-up to #1676; when it lands)
-- Status: proposed (review of #1676; start when it lands). Mode: human. Owner: legal. Milestone: M15. Size: XS. Depends on: none.
+#### BL-1920 Closed sync_books returns the child's name and every member's signs_as: counsel's reading (follow-up to #1676, merged 29ea7945)
+- Status: proposed (review of #1676; start after #1676, merged 29ea7945). Mode: human. Owner: legal. Milestone: M15. Size: XS. Depends on: none.
 - Satisfies: LEGAL-REQ (child data); the consent gate of #1676; privacy rule "no child name" in logs and analytics.
 - Scope: a closed `sync_books` row returns the child's name and every member's `signs_as`. Hand counsel the question whether returning the child's name to a person whose consent is not recorded is acceptable, with the evidence (the function and its test). Record the reading here. The tighter shape to put to counsel: a closed row returns one field `other_parent_signs_as` and a contributor count per book instead of every member's `signs_as`; it needs a change to the function and its schema, so it is its own row if counsel says so.
 - Done when: counsel's reading is recorded on this row and, if it asks for the tighter shape, a new row is filed for it.
 
-#### BL-1921 Server read surface: engine_version in sync_pull, and a test of what `authenticated` can read or run (follow-up to #1676; when it lands)
-- Status: proposed (review of #1676; start when it lands). Mode: agent. Owner: security engineer. Milestone: M15. Size: M. Depends on: none.
+#### BL-1921 Server read surface: engine_version in sync_pull, and a test of what `authenticated` can read or run (follow-up to #1676, merged 29ea7945)
+- Status: proposed (review of #1676; start after #1676, merged 29ea7945). Mode: agent. Owner: security engineer. Milestone: M15. Size: M. Depends on: none.
 - Satisfies: LEGAL-REQ (the other parent sees no raw data); BL-1852 (`coparent_no_raw`); migration `20261016000000` (about line 1498).
 - Scope: (1) the non-author branch of `sync_pull` returns `to_jsonb(be) - 'search'`, which includes `engine_version`: drop it from that branch in a new migration (never edit the applied one), with grants in the same file; (2) add a test that lists every table, view and function the `authenticated` role can read or execute and fails on a new one that is not on a written allowlist, because `coparent_no_raw` would not catch a SECURITY DEFINER function that returns `raw_transcript`.
 - Done when: the non-author pull holds no `engine_version`, the enumeration test fails under a mutant (add a function that returns the raw text), and `npm run test:db` passes.
