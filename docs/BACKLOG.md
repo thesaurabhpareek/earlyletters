@@ -8009,7 +8009,7 @@ Each row below cites its PR or review. A row that waits for an open PR is `propo
 - Test: `apps/mobile/test/` beside the sync outbox tests.
 
 #### BL-1565 Docs that still say the privacy cover draws only while App lock is on
-- Status: done (PR #1524 merged as `1be68cc68`: the first-run spec carries the correction line; the other hits were not re-checked here). Mode: agent. Owner: design systems. Milestone: M15. Size: XS. Depends on: none.
+- Status: done (PR #1524 merged as `1be68cc68`; checked against develop on 23 Nov 2026: `docs/design/specs/FIRST-RUN-AND-SIGN-IN-JOURNEY-10nov.md` carries the dated correction line under the quote, and #1524's body lists each other hit it left and why, which is the whole Done when. #1524 also flagged near hits that match none of the three phrases, `docs/design/COMPONENTS.md:614`, the Moments cover components C-6 and C-7 and `docs/design/e2e/E-foundations-and-system-states/MOTION.md` lines 96 and 272; no row files them yet). Mode: agent. Owner: design systems. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none. Not `docs/legal/**`.
 - Satisfies: none given. Related: BL-1407 (PR #1442, `3877a90f9`).
 - Problem and evidence: since #1442 the cover draws whenever the app is not active, lock on or off (`apps/mobile/src/lib/app-lock/machine.ts` header, lines 13 to 14). Review A on #1442 (note 1) found `docs/design/specs/FIRST-RUN-AND-SIGN-IN-JOURNEY-10nov.md:137`, which quotes the old header "Off, it never covers, never locks and never asks", and said it is a dated quote that may stay with a correction line. The code comments are already right (review A, note 3). `docs/security/MEDIA_THREAT_MODEL.md` is BL-1567, not this row.
@@ -8081,7 +8081,7 @@ Each row below cites its PR or review. A row that waits for an open PR is `propo
 - Test: `supabase/tests/` (the same file as the BL-1499 cases, or beside it).
 
 #### BL-1573 Tests cite NS ids that no acceptance card defines (16 on 22 Nov)
-- Status: done (PR #1527 merged as `baf1c8788`: the NS tests cite the acceptance rows they were meant for; whether `trace.mjs` now reports none of the 16 was not re-run here). Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
+- Status: done (PR #1527 merged as `baf1c8788`: 14 of the 16 ids now cite the rows they were meant for; `node scripts/trace.mjs --no-write` on develop at `1f9065188` plus this PR, 23 Nov 2026, no longer reports any of the original 16 except two, NS-36-B5-4 and NS-41-O8. The Done when allows those two, because PR #1527's body names each with its reason: B5-4 is a CR-71 review finding, not a row of the NS-36 table, and O8 is an open decision on card 19, not an acceptance row; the founder or product decides the rows. The same run now also lists seven NS-54 ids (R1, R2, R3, R5, R7, R9, R26): they are not among the 16, card 29 defines them, and `trace.mjs` does not read card 29 yet, which is BL-1933). Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
 - Priority: Low. Gate: none. Requirement cards are never edited by this row: a missing id is reported in the PR body for the founder.
 - Satisfies: none given. Cited: `scripts/trace.mjs` NS report, `docs/product/prd/14-test-plan.md` (section 7, the register).
 - Problem and evidence: `node scripts/trace.mjs --no-write` on develop (22 Nov) reports "NS id defined nowhere" for NS-01-R5, R9, R10, R13, R16, R17, R20, R21, R23 and R50b (in `apps/mobile/test/photos-capture.test.ts`, `photos-device.test.ts`, `erase-all.test.ts` and `photos-surfaces.test.ts`), NS-36-B5-4 (`erase-all.test.ts:1656`), NS-39-R2-1 to R2-4 (`first-run-no-prompts.test.ts`) and NS-41-O8 (`auth-apple-fp9.test.ts:55`). A test that cites an id the card does not define cannot count toward that card's coverage. The earlier eight "defined nowhere" ids of `docs/qa/test-plan-b13/04-analytics-and-insights.md` are closed (the card filter now reads cards 19, 21, 27 and 28). This row stands in for the coordinator's note of eight QA traceability gaps, which is not written down where it was said to be (`docs/agents/qa` does not exist and the BL-1426 text of PR #1415 holds no such list); if the eight are a different set, product files them.
@@ -8404,7 +8404,7 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Done when: grep for '41 items', '10,130' and '43 PRs' in docs/product finds only history quotes.
 
 #### BL-1597 Renumber BL-1580 in PR #1515
-- Status: done (PR #1515 gave its row BL-1951; `id-collisions.mjs` is run on the merge head and its result is in the PR). Mode: agent. Owner: product. Milestone: M15. Size: XS. Depends on: none.
+- Status: in-review (PR #1515, which gives its row BL-1951 and points BL-1535 at it; becomes done when #1515 merges, and the merging product agent flips it then. `id-collisions.mjs` exits 0 on the head of #1515). Mode: agent. Owner: product. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: none new (review follow-up, not re-read here).
 - Problem and evidence: PR #1515 files its own BL-1580 (words typed during a commit) while develop already has BL-1580 (Moments PR 3c buildMoments, from #1498).
