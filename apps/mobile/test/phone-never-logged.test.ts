@@ -65,6 +65,12 @@ describe('[NS-54-R26] the log canary sees a phone number', () => {
     expect(decodeLine('%2B44%207700 %zz %')).toBe('+44 7700 %zz %');
   });
 
+  it('[BL-1947] decoding never hides what the raw line shows, and stops at ASCII', () => {
+    const both = ['to +12025550147%41', '+44 7700 900123%41', 'call (202) 555-0147%41', 'Asha%41', 'the whole house is quiet%41'];
+    expect(findLeaks(both).map((l) => l.line)).toEqual(both.map((_, i) => i));
+    expect(decodeLine('%2B%A0 %E2%80 %7F %80')).toBe('+%A0 %E2%80 \x7f %80');
+  });
+
   it('[BL-1947] flags the national form of a registered number by its last 10 digits, without echoing a digit', () => {
     const us = findLeaks(['sent 2025550147', 'sent 1 2025550147', 'q=%32025550147'], [], ['+12025550147']);
     expect(us.map((l) => l.label)).toEqual(['phone:0', 'phone:0', 'phone:0']);
@@ -76,11 +82,13 @@ describe('[NS-54-R26] the log canary sees a phone number', () => {
 
   it('[BL-1947] names the gaps it does not cover, in the canary doc, and does not claim more than it does', () => {
     const src = readFileSync(new URL('../e2e-web/support/log-canary.ts', import.meta.url), 'utf8');
-    const gaps = ['+1 202 555', '+91 98765 43210', '+49 151 12345678', '(+44) 7700 900123', '555-0142', '020 7946 0123', '+44 7700 failed', '%2B44+7700+900123', '%252B44%25207700%2520900123'];
-    for (const gap of gaps) expect(src, gap).toContain(gap.slice(0, 7));
+    const gaps = ['+1 202 555', '+91 98765 43210', '+49 151 12345678', '(+44) 7700 900123', '555-0142', '020 7946 0123', '+44 7700 failed', '%2B44+7700+900123', '%252B44', '%u002B', '%00', '%2B44%A07700', '%2B 44 7700', '0044 7700 900123', '+44(0)7700 900123', '\\u002B44', '&#43;44', '%2B1%2F202'];
+    const list = src.slice(src.indexOf('Known gaps'), src.indexOf('Register such'));
+    for (const gap of gaps) expect(list, gap).toContain(gap);
+    expect(src).toContain('"+1 800" partial carries only a prefix and no subscriber digits');
     expect(src).not.toMatch(/fails? closed/i);
-    for (const gap of gaps)
-      expect(findLeaks([`x ${gap}`]).map((l) => l.label), gap).toEqual([]);
+    const pinned = [...gaps, '%u002B44 7700 900123', '\uFF0B', '\uFF0B44 7700 900123', '+\uFF11 \uFF12\uFF10\uFF12 555 0147'];
+    for (const gap of pinned) expect(findLeaks([`x ${gap}`]).map((l) => l.label), gap).toEqual([]);
   });
 
   it('[NS-54-R26] reports a label and a position, never the number', () => {

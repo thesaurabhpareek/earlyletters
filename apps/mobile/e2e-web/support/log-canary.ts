@@ -43,13 +43,17 @@ export const SEED_TEXT_FRAGMENTS: readonly string[] = [
  * +1 202; "+44 7700 failed" is a known miss, the full-number shapes and the fixture check cover it).
  * After +1 or +7 the first group must start 2 to 9 and not be a round hundred, so a retry count or a delta at
  * the end of a line ("retry +1 200", "delta +1 100,") stays quiet; "+1 200" and "+1 800" are misses on purpose.
+ * A "+1 800" partial carries only a prefix and no subscriber digits, so missing it loses no number.
  * Not flagged: dates, times, offsets, semver, IPs, epoch times, UUIDs, durations, sizes, counters, serials.
  * Known gaps, on purpose, each a line this canary does not match (pinned by name in test/phone-never-logged.test.ts):
  *   a bare run of digits with no plus and no grouping; a dashed 3-3-4 number outside the 555-01XX exchange (a
  *   serial looks the same) and a bare 555-0142; a number cut after two groups (+1 202 555); an Indian or German
  *   grouping (+91 98765 43210, +49 151 12345678); a bracketed country code ((+44) 7700 900123); the UK 3-4-4 form
  *   (020 7946 0123); a partial followed by a word (+44 7700 failed); form-encoded spaces (%2B44+7700+900123) and
- *   a double-encoded line (%252B44).
+ *   a double-encoded line (%252B44); %u002B forms; %00 inside a number; an encoded no-break space (%2B44%A07700);
+ *   an encoded plus with a space after it (%2B 44 7700); an international prefix (0044 7700 900123); a bracketed trunk
+ *   zero (+44(0)7700 900123); a JSON-escaped plus (\u002B44); an HTML entity plus (&#43;44); full-width plus or digits;
+ *   an encoded slash between groups (%2B1%2F202).
  * Register such a number as a phone fixture instead. That check (below) does not guess: it flags a line that
  * holds a registered number's digits whole, its last 10 digits (the national form: 2025550147, 07700900123) or
  * its last four as a whole group (the part a mask shows), and a finding never echoes a digit. It sees only the
@@ -102,13 +106,17 @@ export function findLeaks(lines: readonly string[], typed: readonly string[] = [
   const name = new RegExp(`(^|[^\\p{L}\\p{N}])${CHILD_NAME}([^\\p{L}\\p{N}]|$)`, 'iu');
   const tails = phones.map((p, i) => ({ label: `phone:${i}`, d: digitsOf(p), re: new RegExp(`(?<!\\d)${digitsOf(p).slice(-4)}(?!\\d)`) })).filter((x) => x.d.length >= 4);
   const leaks: Leak[] = [];
-  lines.forEach((raw, at) => {
-    const line = decodeLine(raw);
+  // Both views: a decoded letter next to a number ("+12025550147%41") must not hide what the raw line showed.
+  const labelOf = (line: string) => {
     const n = norm(line);
-    const label =
+    return (
       (name.test(line) ? 'child-name' : phrases.find((x) => n.includes(x.p))?.label) ??
       (PHONE_SHAPES.some((re) => re.test(line)) ? 'phone-shape' : undefined) ??
-      tails.find((x) => digitsOf(line).includes(x.d) || (x.d.length >= 10 && digitsOf(line).includes(x.d.slice(-10))) || x.re.test(line))?.label;
+      tails.find((x) => digitsOf(line).includes(x.d) || (x.d.length >= 10 && digitsOf(line).includes(x.d.slice(-10))) || x.re.test(line))?.label
+    );
+  };
+  lines.forEach((raw, at) => {
+    const label = labelOf(raw) ?? labelOf(decodeLine(raw));
     if (label) leaks.push({ label, line: at });
   });
   return leaks;
