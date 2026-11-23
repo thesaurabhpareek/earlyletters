@@ -67,13 +67,13 @@ Tell your child one thing about today. The first laugh, the long night, the song
 Years from now, your child can read it, and hear how you sounded when you said it.
 
 IT STAYS IN YOUR WORDS
-Your words are written down on your phone, and the app only fixes small slips, like an um, a repeat or a name spelled your way. It never adds a word. Every change is marked, and you can put any of them back. We never rewrite your words, shorten them or write for you. A word can be misheard, so have a quick read before you keep a letter. Letters you type stay as you typed them.
+Your words are written down on your phone, and the app only fixes small slips, like an um, a repeat or a name spelled your way. It never adds a word. Every word we change is marked, and you can put any of them back. We never rewrite your words, shorten them or write for you. A word can be misheard, so have a quick read before you keep a letter. Letters you type stay as you typed them.
 
 YOUR VOICE, KEPT
 Every letter you speak keeps its recording, on your phone and in your iPhone's own backup if you use one. We never imitate your voice. Your original recording is always kept exactly as you made it.
 
 READ TOGETHER AT BEDTIME
-Open Read together and go through the book one letter at a time, oldest first. Listen to the letters you spoke, with the words on the screen. Typed letters are there too, ready to read aloud.
+Open Read together and go through the book one letter at a time, oldest first. Listen to the letters you spoke, with the words on the screen. Typed letters are there too, for you to read aloud.
 
 A MINUTE IS PLENTY
 Some nights it's a sentence, some nights a long letter. Stuck for words? There's a question to start with. If today was quiet, tap ""Not much today"" and that's enough. Nothing keeps score.
@@ -85,7 +85,7 @@ NAMES SPELLED YOUR WAY
 Add the names and home words you use, like a nickname or the name of a stuffed rabbit, so we spell them your way.
 
 PRIVATE BY DEFAULT
-Your letters and recordings are private. We never sell them, never use them for ads and never use them to train machine learning models. Without an account, your book stays on your phone. Keep any letter just for you, out of the book. Delete one and it waits in Recently deleted for 30 days, or erase it at once.
+Your letters and recordings are private. We never sell them, never use them for ads and never use them to train machine learning models. You sign in to keep your book. If you agree to sync, the words of your letters and your child's name and dates are kept on our servers so they reach a new phone. Recordings stay on the phone that made them. Keep any letter just for you, out of the book. Delete one and it waits in Recently deleted for 30 days.
 
 REMINDERS, ONLY IF YOU WANT THEM
 Reminders are off until you turn them on. You pick the days and the time, and none comes after 9:30 at night.
@@ -103,9 +103,9 @@ Payment is charged to your Apple Account. Plus renews automatically unless you t
 
 For parents of babies and young children, from the first weeks to the first years.
 
-Terms of Use: https://earlyletters.com/terms
-Privacy Policy: https://earlyletters.com/privacy",3454,protected,"D-061 privacy promise line, word for word on every surface",,,,cmo,live on develop,content
-apps/mobile/store.config.json#apple.info.en-US.promoText,store,store listing,apps/mobile/store.config.json,26,en,"Tell your child about today in a minute. It stays in your words. Every change is marked, and your original recording is kept unchanged.",135,protected,D-133 public promise line,,,,cmo,live on develop,content
+Terms of Service: https://earlyletters.com/terms
+Privacy Policy: https://earlyletters.com/privacy",3603,protected,"D-061 privacy promise line, word for word on every surface; build-dependent: true for servers on only",,,,cmo,live on develop,content
+apps/mobile/store.config.json#apple.info.en-US.promoText,store,store listing,apps/mobile/store.config.json,26,en,"Tell your child about today. A minute is plenty. It stays in your words. Every word we change is marked, and your original recording is kept unchanged.",151,protected,D-133 public promise line,,,,cmo,live on develop,content
 apps/web/src/content/site.ts#INVITE_BY_HAND,site,website,apps/web/src/content/site.ts,25,en,"Go back to the message, press and hold the link and copy it. Then open ${NAME}, tap ""I was invited"" and paste it.",113,,,,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#sampleLetter.to,site,website,apps/web/src/content/site.ts,34,en,[redacted],10,,,,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#sampleLetter.from,site,website,apps/web/src/content/site.ts,35,en,Papa,4,,,,,,cmo,live on develop,web-content
@@ -328,7 +328,7 @@ apps/web/src/content/site.ts#site.footer.links.1.label,site,website,apps/web/src
 apps/web/src/content/site.ts#site.footer.links.2.label,site,website,apps/web/src/content/site.ts,398,en,Contact,7,,,,,,cmo,live on develop,web-content
 docs/store/listing/listing.json#apple.name,store,store listing,docs/store/listing/listing.json,4,en,Early Letters: Memory Book,26,,,,,,cmo,live on develop,store-doc
 docs/store/listing/listing.json#apple.subtitle,store,store listing,docs/store/listing/listing.json,5,en,Baby memory book in your voice,30,,,,,,cmo,live on develop,store-doc
-docs/store/listing/listing.json#apple.promotionalText,store,store listing,docs/store/listing/listing.json,6,en,"Tell your child about today in a minute. It stays in your words. Every change is marked, and your original recording is kept unchanged.",135,protected,D-133 public promise line,,,,cmo,live on develop,store-doc
+docs/store/listing/listing.json#apple.promotionalText,store,store listing,docs/store/listing/listing.json,6,en,"Tell your child about today. A minute is plenty. It stays in your words. Every word we change is marked, and your original recording is kept unchanged.",151,protected,D-133 public promise line,,,,cmo,live on develop,store-doc
 docs/store/listing/listing.json#apple.keywords,store,store listing,docs/store/listing/listing.json,7,en,"journal,diary,keepsake,newborn,toddler,parents,mom,dad,family,audio,scrapbook,dictation",87,,,,,,cmo,live on develop,store-doc
 docs/store/listing/listing.json#apple.categoryPrimary,store,store listing,docs/store/listing/listing.json,8,en,Lifestyle,9,,,,,,cmo,live on develop,store-doc
 docs/store/listing/listing.json#apple.categorySecondary,store,store listing,docs/store/listing/listing.json,9,en,Productivity,12,,,,,,cmo,live on develop,store-doc
@@ -465,9 +465,9 @@ docs/store/notes-for-review-1.0.txt#text~25,store,store listing,docs/store/notes
 docs/store/notes-for-review-1.0.txt#text~26,store,store listing,docs/store/notes-for-review-1.0.txt,35,en,Contact: hello@earlyletters.com,31,held,"app-review notes, sent to Apple only",,,,cmo,live on develop,store-doc
 docs/store/screenshots/captions.json#0.headline,store,store listing,docs/store/screenshots/captions.json,2,en,Tell your child about today.,28,,,,,,cmo,live on develop,store-doc
 docs/store/screenshots/captions.json#0.sub,store,store listing,docs/store/screenshots/captions.json,2,en,A minute is plenty. It becomes a letter.,40,,,,,,cmo,live on develop,store-doc
-docs/store/screenshots/captions.json#1.headline,store,store listing,docs/store/screenshots/captions.json,3,en,Every change is marked.,23,,,,,,cmo,live on develop,store-doc
+docs/store/screenshots/captions.json#1.headline,store,store listing,docs/store/screenshots/captions.json,3,en,Every word we change is marked.,31,,,,,,cmo,live on develop,store-doc
 docs/store/screenshots/captions.json#1.sub,store,store listing,docs/store/screenshots/captions.json,3,en,We only fix small slips. Tap one to put it back.,48,,,,,,cmo,live on develop,store-doc
-docs/store/screenshots/captions.json#2.headline,store,store listing,docs/store/screenshots/captions.json,4,en,Your voice stays with each letter.,34,,,,,,cmo,live on develop,store-doc
+docs/store/screenshots/captions.json#2.headline,store,store listing,docs/store/screenshots/captions.json,4,en,A spoken letter keeps your voice.,33,,,,,,cmo,live on develop,store-doc
 docs/store/screenshots/captions.json#2.sub,store,store listing,docs/store/screenshots/captions.json,4,en,The original recording is kept unchanged.,41,,,,,,cmo,live on develop,store-doc
 docs/store/screenshots/captions.json#3.headline,store,store listing,docs/store/screenshots/captions.json,5,en,A book that grows by month.,27,,,,,,cmo,live on develop,store-doc
 docs/store/screenshots/captions.json#3.sub,store,store listing,docs/store/screenshots/captions.json,5,en,Each letter goes into your child's month of age.,48,,,,,,cmo,live on develop,store-doc
@@ -638,7 +638,7 @@ emails/auth.en.ts#authEmails.welcome.preheader,email,email preheader,packages/co
 emails/auth.en.ts#authEmails.welcome.heading,email,email body,packages/content/src/emails/auth.en.ts,102,en,Welcome to ${brand.name},24,,,,,,content,live on develop,content
 emails/auth.en.ts#authEmails.welcome.body.0,email,email body,packages/content/src/emails/auth.en.ts,104,en,"You're in. Open the app, tap the red circle and talk.",53,,,,,,content,live on develop,content
 emails/auth.en.ts#authEmails.welcome.body.1,email,email body,packages/content/src/emails/auth.en.ts,105,en,A minute is plenty. A quiet day is fine too.,44,,,,,,content,live on develop,content
-emails/auth.en.ts#authEmails.welcome.body.2,email,email body,packages/content/src/emails/auth.en.ts,106,en,"It stays in your words. Every word we change is marked, and your original recording is kept unchanged. We never rewrite your words.",131,,,,,,content,live on develop,content
+emails/auth.en.ts#authEmails.welcome.body.2,email,email body,packages/content/src/emails/auth.en.ts,106,en,"It stays in your words. Every word we change is marked, and your original recording is kept unchanged. We never rewrite your words.",131,protected,D-133 public promise line,,,,content,live on develop,content
 emails/auth.en.ts#authEmails.welcome.body.4,email,email body,packages/content/src/emails/auth.en.ts,109,en,Our staff look only in the rare cases our Privacy Policy describes.,67,,,,,,content,live on develop,content
 emails/auth.en.ts#authEmails.welcome.body.5,email,email body,packages/content/src/emails/auth.en.ts,110,en,Ideas are welcome too. Write back any time.,43,,,,,,content,live on develop,content
 emails/auth.en.ts#authEmails.welcome.cta.label,email,email body,packages/content/src/emails/auth.en.ts,112,en,Open ${brand.name},18,,,,,,content,live on develop,content
@@ -952,7 +952,7 @@ emails/lifecycle.en.ts#lifecycleEmails.welcome-coparent.preheader,email,email pr
 emails/lifecycle.en.ts#lifecycleEmails.welcome-coparent.heading,email,email body,packages/content/src/emails/lifecycle.en.ts,45,en,You and {parentName} share this book,36,,,,,,content,live on develop,content
 emails/lifecycle.en.ts#lifecycleEmails.welcome-coparent.body.0,email,email body,packages/content/src/emails/lifecycle.en.ts,47,en,{parentName} invited you to keep the book together. You can write letters of your own and read every letter in the book.,120,,,,,,content,live on develop,content
 emails/lifecycle.en.ts#lifecycleEmails.welcome-coparent.body.1,email,email body,packages/content/src/emails/lifecycle.en.ts,48,en,"Your letters are yours, and {parentName}'s are theirs. Neither of you can change the other's words.",99,,,,,,content,live on develop,content
-emails/lifecycle.en.ts#lifecycleEmails.welcome-coparent.body.2,email,email body,packages/content/src/emails/lifecycle.en.ts,49,en,"It stays in your words. Every word we change is marked, and your original recording is kept unchanged.",102,,,,,,content,live on develop,content
+emails/lifecycle.en.ts#lifecycleEmails.welcome-coparent.body.2,email,email body,packages/content/src/emails/lifecycle.en.ts,49,en,"It stays in your words. Every word we change is marked, and your original recording is kept unchanged.",102,protected,D-133 public promise line,,,,content,live on develop,content
 emails/lifecycle.en.ts#lifecycleEmails.welcome-coparent.body.3,email,email body,packages/content/src/emails/lifecycle.en.ts,50,en,"When you have a minute, open the app and talk. A sentence is plenty.",68,,,,,,content,live on develop,content
 emails/lifecycle.en.ts#lifecycleEmails.welcome-coparent.cta.label,email,email body,packages/content/src/emails/lifecycle.en.ts,52,en,Open the book,13,,,,,,content,live on develop,content
 emails/lifecycle.en.ts#lifecycleEmails.welcome-coparent.cta.urlVar,email,email body,packages/content/src/emails/lifecycle.en.ts,52,en,{appUrl},8,,,,,,content,live on develop,content
@@ -2314,9 +2314,9 @@ site.en.ts#v1_1.gift.body,site,website,packages/content/src/site.en.ts,143,en,"G
 site.en.ts#v1_1.gift.cta,site,website,packages/content/src/site.en.ts,144,en,Give ${brand.name},18,,,,,,cmo,live on develop,content
 store.en.ts#screenshots.0.caption,store,store listing,packages/content/src/store.en.ts,36,en,Tell your child about today.,28,,,,,,cmo,live on develop,content
 store.en.ts#screenshots.0.subline,store,store listing,packages/content/src/store.en.ts,36,en,A minute is plenty. It becomes a letter.,40,,,,,,cmo,live on develop,content
-store.en.ts#screenshots.1.caption,store,store listing,packages/content/src/store.en.ts,37,en,Every change is marked.,23,,,,,,cmo,live on develop,content
+store.en.ts#screenshots.1.caption,store,store listing,packages/content/src/store.en.ts,37,en,Every word we change is marked.,31,,,,,,cmo,live on develop,content
 store.en.ts#screenshots.1.subline,store,store listing,packages/content/src/store.en.ts,37,en,We only fix small slips. Tap one to put it back.,48,,,,,,cmo,live on develop,content
-store.en.ts#screenshots.2.caption,store,store listing,packages/content/src/store.en.ts,38,en,Your voice stays with each letter.,34,,,,,,cmo,live on develop,content
+store.en.ts#screenshots.2.caption,store,store listing,packages/content/src/store.en.ts,38,en,A spoken letter keeps your voice.,33,,,,,,cmo,live on develop,content
 store.en.ts#screenshots.2.subline,store,store listing,packages/content/src/store.en.ts,38,en,The original recording is kept unchanged.,41,,,,,,cmo,live on develop,content
 store.en.ts#screenshots.3.caption,store,store listing,packages/content/src/store.en.ts,39,en,A book that grows by month.,27,,,,,,cmo,live on develop,content
 store.en.ts#screenshots.3.subline,store,store listing,packages/content/src/store.en.ts,39,en,Each letter goes into your child's month of age.,48,,,,,,cmo,live on develop,content
@@ -2328,7 +2328,7 @@ store.en.ts#screenshots.6.caption,store,store listing,packages/content/src/store
 store.en.ts#screenshots.6.subline,store,store listing,packages/content/src/store.en.ts,42,en,Tap Not much today. That is enough.,35,,,,,,cmo,live on develop,content
 store.en.ts#screenshots.7.caption,store,store listing,packages/content/src/store.en.ts,43,en,"Pause, laugh, start again.",26,,,,,,cmo,live on develop,content
 store.en.ts#screenshots.7.subline,store,store listing,packages/content/src/store.en.ts,43,en,Take your time. Say it however it comes.,40,,,,,,cmo,live on develop,content
-store.en.ts#storeListing.promotionalText,store,store listing,packages/content/src/store.en.ts,50,en,"Tell your child about today in a minute. It stays in your words. Every change is marked, and your original recording is kept unchanged.",135,protected,D-133 public promise line,,,,cmo,live on develop,content
+store.en.ts#storeListing.promotionalText,store,store listing,packages/content/src/store.en.ts,50,en,"Tell your child about today. A minute is plenty. It stays in your words. Every word we change is marked, and your original recording is kept unchanged.",151,protected,D-133 public promise line,,,,cmo,live on develop,content
 store.en.ts#storeListing.keywords,store,store listing,packages/content/src/store.en.ts,52,en,"diary,keepsake,memory,book,voice,newborn,toddler,child,parenting,audio,recorder,bedtime,mom,dad,mama",100,,,,,,cmo,live on develop,content
 store.en.ts#storeListing.description,store,store listing,packages/content/src/store.en.ts,53,en,"${brand.name}: letters to your child, in your own words and voice.
 
@@ -2337,13 +2337,13 @@ Tell your child one thing about today. The first laugh, the long night, the song
 Years from now, your child can read it, and hear how you sounded when you said it.
 
 IT STAYS IN YOUR WORDS
-Your words are written down on your phone, and the app only fixes small slips, like an um, a repeat or a name spelled your way. It never adds a word. Every change is marked, and you can put any of them back. We never rewrite your words, shorten them or write for you. A word can be misheard, so have a quick read before you keep a letter. Letters you type stay as you typed them.
+Your words are written down on your phone, and the app only fixes small slips, like an um, a repeat or a name spelled your way. It never adds a word. Every word we change is marked, and you can put any of them back. We never rewrite your words, shorten them or write for you. A word can be misheard, so have a quick read before you keep a letter. Letters you type stay as you typed them.
 
 YOUR VOICE, KEPT
 Every letter you speak keeps its recording, on your phone and in your iPhone's own backup if you use one. ${en.trust.voice}
 
 READ TOGETHER AT BEDTIME
-Open Read together and go through the book one letter at a time, oldest first. Listen to the letters you spoke, with the words on the screen. Typed letters are there too, ready to read aloud.
+Open Read together and go through the book one letter at a time, oldest first. Listen to the letters you spoke, with the words on the screen. Typed letters are there too, for you to read aloud.
 
 A MINUTE IS PLENTY
 Some nights it's a sentence, some nights a long letter. Stuck for words? There's a question to start with. If today was quiet, tap ""Not much today"" and that's enough. Nothing keeps score.
@@ -2355,7 +2355,7 @@ NAMES SPELLED YOUR WAY
 Add the names and home words you use, like a nickname or the name of a stuffed rabbit, so we spell them your way.
 
 PRIVATE BY DEFAULT
-${en.trust.promise} Without an account, your book stays on your phone. Keep any letter just for you, out of the book. Delete one and it waits in Recently deleted for 30 days, or erase it at once.
+${en.trust.promise} You sign in to keep your book. If you agree to sync, the words of your letters and your child's name and dates are kept on our servers so they reach a new phone. Recordings stay on the phone that made them. Keep any letter just for you, out of the book. Delete one and it waits in Recently deleted for 30 days.
 
 REMINDERS, ONLY IF YOU WANT THEM
 Reminders are off until you turn them on. You pick the days and the time, and none comes after 9:30 at night.
@@ -2373,8 +2373,8 @@ Payment is charged to your Apple Account. Plus renews automatically unless you t
 
 For parents of babies and young children, from the first weeks to the first years.
 
-Terms of Use: ${brand.web.terms}
-Privacy Policy: ${brand.web.privacy}",3239,,,,,,cmo,live on develop,content
+Terms of Service: ${brand.web.terms}
+Privacy Policy: ${brand.web.privacy}",3388,build-dependent,build-dependent: true for servers on only,,,,cmo,live on develop,content
 store.en.ts#storeListing.supportUrl,store,store listing,packages/content/src/store.en.ts,99,en,${brand.web.origin}/support,27,,,,,,cmo,live on develop,content
 store.en.ts#storeListing.reviewNotes,store,store listing,packages/content/src/store.en.ts,110,en,"A family memory journal: parents speak or type short letters to their child. The app never rewrites what a person says. It makes only small marked fixes to the transcript (stray sounds, repeated words, a misheard name from the family's own word list, punctuation), and each fix can be put back. Version 1.0 keeps everything on the phone: there is no account to create and no server copy of letters. The birthday or due date a parent enters is used to file letters by month of age. This is not a health or medical service and gives no health advice.",548,build-dependent,build-dependent: true for servers off only,,,,cmo,live on develop,content
 store.en.ts#storeListing.primaryCategory,store,store listing,packages/content/src/store.en.ts,112,en,Lifestyle,9,,,,,,cmo,live on develop,content
@@ -2793,7 +2793,7 @@ strings.en.ts#en.family.contributorWelcome.title,app screen,in-app,packages/cont
 strings.en.ts#en.family.contributorWelcome.body,app screen,in-app,packages/content/src/strings.en.ts,716,en,{inviter} is keeping a book of letters for {child}. Yours can be part of it.,76,,,,,,content,live on develop,content
 strings.en.ts#en.family.contributorWelcome.howTitle,app screen,in-app,packages/content/src/strings.en.ts,717,en,How it works,12,,,,,,content,live on develop,content
 strings.en.ts#en.family.contributorWelcome.howStep1,app screen,in-app,packages/content/src/strings.en.ts,718,en,Tap the red circle and talk.,28,,,,,,content,live on develop,content
-strings.en.ts#en.family.contributorWelcome.howStep2,app screen,in-app,packages/content/src/strings.en.ts,719,en,"It stays in your words. Every word we change is marked, and your original recording is kept unchanged.",102,,,,,,content,live on develop,content
+strings.en.ts#en.family.contributorWelcome.howStep2,app screen,in-app,packages/content/src/strings.en.ts,719,en,"It stays in your words. Every word we change is marked, and your original recording is kept unchanged.",102,protected,D-133 public promise line,,,,content,live on develop,content
 strings.en.ts#en.family.contributorWelcome.howStep3,app screen,in-app,packages/content/src/strings.en.ts,720,en,{inviter} adds your letter to {child}'s book.,45,,,,,,content,live on develop,content
 strings.en.ts#en.family.contributorWelcome.voiceNote,app screen,in-app,packages/content/src/strings.en.ts,721,en,"Your recording is kept on your phone too, so one day {child} can hear you tell it.",82,,,,,,content,live on develop,content
 strings.en.ts#en.family.contributorWelcome.privacyNote,app screen,in-app,packages/content/src/strings.en.ts,722,en,Only {child}'s parents see your letters until they go in the book.,66,,,,,,content,live on develop,content

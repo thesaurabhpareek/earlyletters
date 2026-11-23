@@ -13,9 +13,9 @@
 // - no other platform's name (App Review 2.3.10); Apple's own Family Sharing is fine;
 // - adults only: no "kids", "for children" or child-directed phrases (LEGAL-REQ-045, App Review 2.3.8);
 // - English only (D-121 item 1); the other six languages return one by one as each passes its gate (D-125 item 2);
-// - no co-parent sharing, sign-in or sync promised in the listing (D-121, D-126, D-161, D-162): nothing invites anyone. The
+// - no co-parent sharing promised in the listing (D-121, D-126, D-161, D-162): nothing invites anyone. The
 //   store build runs with servers on (D-157, D-170), so every line must also be true of a servers-on build: the
-//   privacy paragraph says what holds without an account and claims nothing about the servers (#672 claim 3);
+//   privacy paragraph says that sign-in keeps the book and what sync keeps on our servers (exec rulings 23 Nov 2026, item 8a);
 // - "exactly as you said it" is held from the listing until counsel clears it at T30 (D-125 item 9);
 // - recordings: no backup of our own (backup flag off); the person's own iPhone backup plus Export;
 //   no family listening and no word highlight in Read together (D-059);
@@ -34,8 +34,8 @@ import { en } from './strings.en';
  */
 const screenshots = [
   { id: '01-tonight', caption: "Tell your child about today.", subline: "A minute is plenty. It becomes a letter.", scheme: 'dark' },
-  { id: '02-review', caption: "Every change is marked.", subline: "We only fix small slips. Tap one to put it back.", scheme: 'light' },
-  { id: '03-letter', caption: "Your voice stays with each letter.", subline: "The original recording is kept unchanged.", scheme: 'light' },
+  { id: '02-review', caption: "Every word we change is marked.", subline: "We only fix small slips. Tap one to put it back.", scheme: 'light' },
+  { id: '03-letter', caption: "A spoken letter keeps your voice.", subline: "The original recording is kept unchanged.", scheme: 'light' },
   { id: '04-book', caption: "A book that grows by month.", subline: "Each letter goes into your child's month of age.", scheme: 'light' },
   { id: '05-letter-night', caption: "Read together at bedtime.", subline: "One letter at a time, oldest first.", scheme: 'dark' },
   { id: '06-privacy', caption: "Your book is private.", subline: "Private by default. Never sold, never used for ads.", scheme: 'light' },
@@ -47,7 +47,7 @@ export const storeListing = {
   appName: brand.storeName,
   subtitle: brand.subtitle,
   promotionalText:
-    "Tell your child about today in a minute. It stays in your words. Every change is marked, and your original recording is kept unchanged.",
+    "Tell your child about today. A minute is plenty. It stays in your words. Every word we change is marked, and your original recording is kept unchanged.",
   // D-139: no word from the name or subtitle; "memory" and "book" keep those searches matching. 100 of 100 bytes.
   keywords: "diary,keepsake,memory,book,voice,newborn,toddler,child,parenting,audio,recorder,bedtime,mom,dad,mama",
   description: `${brand.name}: letters to your child, in your own words and voice.
@@ -57,13 +57,13 @@ Tell your child one thing about today. The first laugh, the long night, the song
 Years from now, your child can read it, and hear how you sounded when you said it.
 
 IT STAYS IN YOUR WORDS
-Your words are written down on your phone, and the app only fixes small slips, like an um, a repeat or a name spelled your way. It never adds a word. Every change is marked, and you can put any of them back. We never rewrite your words, shorten them or write for you. A word can be misheard, so have a quick read before you keep a letter. Letters you type stay as you typed them.
+Your words are written down on your phone, and the app only fixes small slips, like an um, a repeat or a name spelled your way. It never adds a word. Every word we change is marked, and you can put any of them back. We never rewrite your words, shorten them or write for you. A word can be misheard, so have a quick read before you keep a letter. Letters you type stay as you typed them.
 
 YOUR VOICE, KEPT
 Every letter you speak keeps its recording, on your phone and in your iPhone's own backup if you use one. ${en.trust.voice}
 
 READ TOGETHER AT BEDTIME
-Open Read together and go through the book one letter at a time, oldest first. Listen to the letters you spoke, with the words on the screen. Typed letters are there too, ready to read aloud.
+Open Read together and go through the book one letter at a time, oldest first. Listen to the letters you spoke, with the words on the screen. Typed letters are there too, for you to read aloud.
 
 A MINUTE IS PLENTY
 Some nights it's a sentence, some nights a long letter. Stuck for words? There's a question to start with. If today was quiet, tap "Not much today" and that's enough. Nothing keeps score.
@@ -75,7 +75,7 @@ NAMES SPELLED YOUR WAY
 Add the names and home words you use, like a nickname or the name of a stuffed rabbit, so we spell them your way.
 
 PRIVATE BY DEFAULT
-${en.trust.promise} Without an account, your book stays on your phone. Keep any letter just for you, out of the book. Delete one and it waits in Recently deleted for 30 days, or erase it at once.
+${en.trust.promise} You sign in to keep your book. If you agree to sync, the words of your letters and your child's name and dates are kept on our servers so they reach a new phone. Recordings stay on the phone that made them. Keep any letter just for you, out of the book. Delete one and it waits in Recently deleted for 30 days.
 
 REMINDERS, ONLY IF YOU WANT THEM
 Reminders are off until you turn them on. You pick the days and the time, and none comes after 9:30 at night.
@@ -93,7 +93,7 @@ Payment is charged to your Apple Account. Plus renews automatically unless you t
 
 For parents of babies and young children, from the first weeks to the first years.
 
-Terms of Use: ${brand.web.terms}
+Terms of Service: ${brand.web.terms}
 Privacy Policy: ${brand.web.privacy}`,
   // App Store Connect fields (D-063).
   supportUrl: `${brand.web.origin}/support`,
