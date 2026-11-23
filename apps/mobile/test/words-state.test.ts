@@ -86,7 +86,7 @@ describe('S14: while the words are being written down', () => {
     }
     expect(en.review.waitingBody).toMatch(/Listening back to what you said/);
     expect(en.review.waitingBody).toMatch(/Your voice is kept/);
-    expect(en.review.waitingBody).toMatch(/You can close this, it will be waiting on Tonight/);
+    expect(en.review.waitingBody).toMatch(/You can close this and come back to it from Tonight/);
     const slow = card({ hints: { long: true, later: true } });
     expect(slow.body).toBe(en.review.waitingSlow);
     expect(slow.body).toMatch(/taking longer than usual/);
