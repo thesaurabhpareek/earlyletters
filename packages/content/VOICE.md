@@ -84,7 +84,7 @@ Family beyond the co-parent joins in v1.1. Until then this guidance applies to a
 - Bigger ideas, fewer words. One instruction per sentence.
 - Name the action plainly: "Tap the red circle and talk."
 - Avoid app terms like "sync" or "feed".
-- Reassure on privacy early: "Only you, and your co-parent if you invite them, can read what you add to the book. Our staff look only in the rare cases our Privacy Policy lists."
+- Reassure early, and only with what the product does today: "It stays in your words. We never rewrite your words."
 - Make them feel wanted, not managed: "Your letters belong in {child}'s book." (A person makes letters, never stories: BRAND.md glossary.)
 - Avoid "senior" or "elderly". They are Nani, Dada, Grandma, Pop.
 
@@ -110,7 +110,7 @@ The voice promise (`en.trust.voice`), said where a recording is made or kept: "W
 
 | Place | What we say | Control behind it |
 | --- | --- | --- |
-| Onboarding story 4 | Only you and the people you invite can read these letters. | Per-book sharing |
+| Onboarding story 4 | Your letters are yours, and you choose who else can read them. | Per-book sharing |
 | Sign-in | Why an account helps, who can read, what the email is for (`trust.signIn`). | Sign in with Apple's Hide My Email; no passwords |
 | First recording, once | Words are written down on this phone; the recording stays with the letter; we never imitate your voice (`trust.firstRecording`). | On-device transcription; encrypted backup of the owner's recordings, for them alone (D-073 supersedes D-059's "no audio upload"); the original is never altered (D-058) |
 | Settings, Privacy | The promise at the top, then the switches (`trust.settings`, `settings.privacy`). | Analytics off by default, sync and sharing, export, delete |

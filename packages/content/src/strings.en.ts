@@ -1560,7 +1560,7 @@ export const en = {
     // Sign-in screen, under the buttons (Apple, Google, email link).
     signIn: {
       why: "An account keeps your book safe when you change phones.",
-      privacy: "Only you and the people you invite can read your letters. We never sell them or use them for ads.",
+      privacy: "You choose who else can read your letters. We never sell them and never use them for ads.",
       email: "We use your email only to sign you in and to write to you about your account.",
     },
     // Once, the first time someone records (a quiet line on Listening or under the first Review).

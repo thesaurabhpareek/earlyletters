@@ -19,7 +19,9 @@ function leaves(value: unknown, path = ''): Leaf[] {
 /** Ruled exceptions: leaf paths allowed to say "we". Empty on purpose (BL-474). */
 export const REMINDER_WE_RULED: ReadonlySet<string> = new Set<string>([]);
 
-const WE = /\b(?:we|we'll|we're|we've|we'd|us|our|ours)\b/i;
+// CMO-18 ruling: the first-person words "we" and "our" only. \bwe\b already covers we'll, we're, we've and we'd.
+// "us" and "ours" are not banned: "let us know" style lines are not a we making a promise.
+const WE = /\b(?:we|our)\b/i;
 
 export function weOffenders(all: Leaf[], ruled: ReadonlySet<string> = REMINDER_WE_RULED): string[] {
   return all
@@ -40,7 +42,7 @@ describe('[BL-474] reminder and notification copy never says "we"', () => {
     expect(scanned.some((l) => l.path.startsWith('notifications.evening'))).toBe(true);
   });
 
-  it('has no "we", "us" or "our" in today\'s reminder and notification copy', () => {
+  it('has no "we" or "our" in today\'s reminder and notification copy', () => {
     expect(weOffenders(ALL)).toEqual([]);
   });
 
@@ -50,6 +52,15 @@ describe('[BL-474] reminder and notification copy never says "we"', () => {
     ];
     expect(weOffenders(planted)).toHaveLength(1);
     expect(weOffenders([{ path: 'notifications.evening[1].body', text: "We'll keep it safe." }])).toHaveLength(1);
+    expect(weOffenders([{ path: 'notifications.evening[1].body', text: 'Our book is open.' }])).toHaveLength(1);
+  });
+
+  it('does not flag "us" or "ours" (the ruling names we and our only)', () => {
+    const quiet: Leaf[] = [
+      { path: 'notifications.evening[1].body', text: 'Tell us how it went.' },
+      { path: 'notifications.evening[2].body', text: 'The book is ours to open.' },
+    ];
+    expect(weOffenders(quiet)).toEqual([]);
   });
 
   it('starts with no ruled exceptions', () => {

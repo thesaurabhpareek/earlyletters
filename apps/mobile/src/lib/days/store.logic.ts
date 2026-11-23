@@ -3,7 +3,7 @@ export const DAYS_FILE_VERSION = 1;
 /** Owner of a file made before any sign-in. Adopted only at the claim step (NS-47-R7, E73; next PR). */
 export const LOCAL_OWNER = 'local';
 
-/** BL-1200: a file over this is never read (a real one is a few KB); over it reads as unreadable and is kept, never deleted. */
+/** BL-1200: a file over this is never read (a real one is a few KB); over it reads as unreadable and a read never deletes it; sign-out (an unreadable file is not a `local` one) and Erase still remove it. */
 export const DAYS_MAX_BYTES = 64 * 1024;
 /** BL-1200: at most this many ticked days; more is corrupt, and a tick past it is refused. */
 export const DAYS_MAX_TICKS = 500;

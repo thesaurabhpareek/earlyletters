@@ -66,7 +66,7 @@ export const pages = {
       {
         heading: "How privacy works",
         paragraphs: [
-          "Letters are private by default. Only you, and {child}'s other parent if you invite them, can read what you add to the book. Each child has their own book.",
+          "Letters are private by default. You decide who else can read the book, and it starts with just you. Each child has their own book.",
           "Transcription happens on your phone. No audio leaves your phone to turn speech into text.",
           "Recordings are kept on the phone that made them, and in your iPhone's own backup if you use one.",
           "When you sign in, your letter text syncs to our servers in the United States so your co-parent and your next phone can read it. It is encrypted in transit and at rest, and we hold the keys. Our staff look only if you ask for help, to deal with a security problem or serious misuse, or when the law requires it. Each access is logged and reviewed.",
