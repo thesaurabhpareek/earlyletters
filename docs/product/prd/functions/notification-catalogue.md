@@ -187,7 +187,7 @@ Written to VOICE.md and checked against the rules in `rules.test.ts` by my scrat
 | ntc.kind.small.toddler.01 | last: not much, toddler | One small thing | What did {child} point at, say or carry around? Or tap Not much today. | What did your little one point at, say or carry around? Or tap Not much today. |
 | ntc.occ.public.01 | chosen day, public (named) | {day} | What was the day like for {child}? A few words will keep it. | What was the day like for your little one? A few words will keep it. |
 | ntc.occ.family.01 | chosen day, family (named) | {day} | A few words to {child} about the people around you today. | A few words to your little one about the people around you today. |
-| ntc.occ.neutral.01 | chosen day, any (neutral title) | Something for the book today | A day you chose to mark. A few words for {child}, if you like. | A day you chose to mark. A few words for your little one, if you like. |
+| ntc.occ.neutral.01 | chosen day, any (neutral title) | Something for the book today | Whenever you have a minute. (`days.lock.body.neutral`, F-08d, #1391: one fixed body, no `{child}` in any state) | Whenever you have a minute. |
 | ntc.occ.newyear.01 | New Year's Day | A new year begins | Say a hope for {child} out loud. One day {child} can hear it. | Say a hope for your little one out loud. One day your little one can hear it. |
 | ntc.occ.thanksgiving.01 | Thanksgiving | Thanksgiving | Who was around {child} today? Say it while the day is fresh. | Who was around your little one today? Say it while the day is fresh. |
 | ntc.occ.fourthjuly.01 | 4 July | Fourth of July | What was today like for {child}? A line or two is plenty. | What was today like for your little one? A line or two is plenty. |

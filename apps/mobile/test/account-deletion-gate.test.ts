@@ -615,7 +615,7 @@ describe('[A2] decideGate remembers the deletion screen only until something els
 describe('the wiring that is read off the source (the behaviour is run in account-deletion-gate-hook.test.ts and open-deletion-press.test.ts)', () => {
   it('[S-2] the gate hook passes the stored note, the session user and the route to decideGate, and acts on its answer', () => {
     const s = read('lib', 'account-deletion', 'use-first-run-gate.ts');
-    expect(s).toMatch(/decideGate\(\{\s*hasBook, hasDeletedBook, note, nowMs: Date\.now\(\), signedIn: auth\.signedIn, userId, checked, confirmed,\s*wasDeletion: wasDeletion\.current, pathname,\s*\}\)/);
+    expect(s).toMatch(/decideGate\(\{\s*hasBook, hasDeletedBook, note, nowMs: Date\.now\(\), signedIn: auth\.signedIn, restoring: auth\.state\.status === 'restoring', userId, checked, confirmed,\s*wasDeletion: wasDeletion\.current, pathname,\s*\}\)/);
     expect(s).toContain('const userId = authUserId(auth.state);');
     expect(s).toContain('const note = useMemo(() => parseOpenRequest(raw), [raw]);');
     expect(s).toContain('wasDeletion.current = gate.wasDeletion;');
@@ -694,5 +694,21 @@ describe('the routes use the gate', () => {
     expect(s.match(/loadStatus\(/g)).toHaveLength(1);
     expect(s).toContain('void loadStatus(client)');
     expect(s).not.toMatch(/\bawait\b/);
+  });
+});
+
+describe('[BL-493 point 5] decideGate while the saved session is being read', () => {
+  const base = {
+    hasBook: false, hasDeletedBook: true, note: null, nowMs: Date.parse('2026-10-30T09:00:00.000Z'), signedIn: false,
+    userId: null, checked: false, confirmed: false, wasDeletion: false, pathname: '/onboarding',
+  };
+  it('restoring is paper for a closed book, and signed out (restoring false) is the welcome', () => {
+    expect(decideGate({ ...base, restoring: true }).screen).toBe('checking');
+    expect(decideGate({ ...base, restoring: false }).screen).toBe('welcome');
+  });
+  it('restoring never clears a stale note; signed out does', () => {
+    const note = { state: 'held' as const, requestId: 'r', scheduledFor: '2026-10-20T09:00:00.000Z', userId: 'u' };
+    expect(decideGate({ ...base, note, restoring: true }).clear).toBe(false);
+    expect(decideGate({ ...base, note, restoring: false }).clear).toBe(true);
   });
 });

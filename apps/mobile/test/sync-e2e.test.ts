@@ -7,9 +7,7 @@
  * Fictional family "Asha" only (CLAUDE.md).
  */
 import { randomBytes } from 'node:crypto';
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
-import { PGlite } from '@electric-sql/pglite';
+import type { PGlite } from '@electric-sql/pglite';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { MIGRATIONS, migrate } from '../src/lib/db/migrations';
 import type { SqlDb } from '../src/lib/db/sql';
@@ -26,15 +24,15 @@ import {
 import { takeOwnership } from '../src/lib/sync/ownership';
 import { ALL_GROUPS, type RpcResult, type SupabaseLike } from '../src/lib/sync/types';
 import { nodeDb } from './helpers/node-db';
+import { migratedServer } from './helpers/migrated-server';
 import { insertBook } from './helpers/store-fixture';
 
-// ── Server (PGlite with every migration) ─────────────────────────────────
-function migrationsDir(): string {
-  for (const p of [resolve(process.cwd(), '../../supabase/migrations'), resolve(process.cwd(), 'supabase/migrations')]) {
-    if (existsSync(p)) return p;
-  }
-  throw new Error('supabase/migrations not found');
-}
+// Server (PGlite with every migration, from a shared dump: helpers/migrated-server.ts)
+/**
+ * Test-only (20261023060000): the tombstone test compares a phone with what the co-parent sees through
+ * book_entries; on a project only sync_pull reads that view (as its owner), so no client holds SELECT on it.
+ */
+const TEST_ONLY_GRANT = 'grant select on public.book_entries to authenticated';
 
 const A = '11111111-1111-1111-1111-111111111111'; // Mama, two phones (A1, A2)
 const B = '22222222-2222-2222-2222-222222222222'; // Papa, co-parent
@@ -200,26 +198,10 @@ describe('sync end to end (phones on node:sqlite, server SQL on PGlite)', () => 
   const ids: Record<string, string> = {};
 
   beforeAll(async () => {
-    pg = new PGlite();
-    await pg.exec(`
-      create role authenticated nologin; create role anon nologin; create role service_role nologin bypassrls;
-      create schema auth; create table auth.users (id uuid primary key);
-      create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
-      grant usage on schema auth to authenticated, anon;
-      create schema storage;
-      create table storage.buckets (id text primary key, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]);
-      create table storage.objects (id uuid primary key default gen_random_uuid(), bucket_id text, name text);
-      create function storage.foldername(name text) returns text[] language sql immutable as $$ select (string_to_array(name, '/'))[1:array_length(string_to_array(name, '/'),1)-1] $$;
-      alter table storage.objects enable row level security;
-      grant usage on schema storage to authenticated, anon; grant all on storage.objects to authenticated, anon;
-      grant usage on schema public to authenticated, anon;
-      alter default privileges in schema public grant select, insert, update, delete on tables to authenticated, anon;
-    `);
-    const dir = migrationsDir();
-    for (const f of readdirSync(dir).filter((x) => x.endsWith('.sql')).sort()) await pg.exec(readFileSync(join(dir, f), 'utf8'));
-    // Test-only (20261023060000): the tombstone test compares a phone with what the co-parent sees through
-    // book_entries; on a project only sync_pull reads that view (as its owner), so no client holds SELECT on it.
-    await pg.exec('grant select on public.book_entries to authenticated');
+    // BL-443: from a dump of the migrated data directory when one exists for these exact migrations, else built
+    // the long way once (helpers/migrated-server.ts).
+    pg = await migratedServer();
+    await pg.exec(TEST_ONLY_GRANT);
     protocolV1 = (await pg.query<{ v1: boolean }>(
       "select exists (select 1 from pg_proc where proname = 'sync_push' and prosrc like '%conflict_groups%') as v1",
     )).rows[0].v1;

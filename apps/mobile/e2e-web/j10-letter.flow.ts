@@ -37,11 +37,11 @@ test('[J10] a letter: the page, the original words, reading size, make private, 
   await app.getByRole('button', { name: 'Close' }).first().click({ force: true });
 
   await app.getByText('Make private', { exact: true }).click();
-  await expect(app.getByText(/Kept just for you/)).toBeVisible();
+  await expect(app.getByText(/Kept private/)).toBeVisible();
   await step('happy', 'Make private', 'The letter leaves the book; a "Private" mark and a toast confirm it. Moving it back is one tap.');
 
-  await app.getByText(/Kept just for you/).locator('xpath=ancestor::*[.//button][1]').getByRole('button').last().click();
-  await expect(app.getByText(/Kept just for you/)).toBeHidden();
+  await app.getByText(/Kept private/).locator('xpath=ancestor::*[.//button][1]').getByRole('button').last().click();
+  await expect(app.getByText(/Kept private/)).toBeHidden();
   await app.getByText(/^Delete$/).last().click();
   await expect(app.getByText('Delete this letter?')).toBeVisible();
   await expect(app.getByText('It waits in Recently deleted for 30 days.')).toBeVisible();
@@ -148,8 +148,8 @@ test('[J10e] a recording with no words', async ({ app, record }) => {
 test('[J10d] a letter that does not exist', async ({ app, record }) => {
   const step = journey(record, 'J10', 'letter-detail', 11, 'J10-01');
   await seeded(app, 'asha', '/letter/does-not-exist');
-  await expect(app.getByText('This letter is not in the book')).toBeVisible();
+  await expect(app.getByText("This letter isn't in the book")).toBeVisible();
   await expect(btn(app, 'Back to the book')).toBeVisible();
   await expect(app.getByText(/does-not-exist/)).toHaveCount(0);
-  await step('unhappy', 'Letter not found', 'A letter that is not on this phone (a stale link) shows "This letter is not in the book" and one way back. Never the id or the route. If it is on the Recently deleted shelf, the page says so and opens the shelf.');
+  await step('unhappy', 'Letter not found', 'A letter that is not on this phone (a stale link) shows "This letter isn\'t in the book" and one way back. Never the id or the route. If it is on the Recently deleted shelf, the page says so and opens the shelf.');
 });

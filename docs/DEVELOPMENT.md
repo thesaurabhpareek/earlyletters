@@ -6,8 +6,8 @@ How work moves from an idea to a build in people's hands. If this file and anoth
 
 | Branch | Role | Who may merge into it |
 |---|---|---|
-| `develop` | Integration branch and release base for the app. Always green (typecheck, tests, db tests). | The coordinator for app code, docs and tests, once two independent review agents pass and CI is green on the head; and, under D-117's operating rule (the coordinator's, which the founder may reverse), also `supabase/**`, auth, payments, release configuration and the engine files, after two independent passing reviews on the current head and green CI (`docs/agents/COORDINATION.md` section 6) |
-| `main` | What is live: the website (Vercel deploys from `main`) and tagged app releases. Updated only by a release PR from `develop`, or a website hotfix. | Founder |
+| `develop` | Integration branch and release base for the app. Always green (typecheck, tests, db tests). | The coordinator for app code, docs and tests, once two independent review agents pass and CI is green on the head; and, under D-117's operating rule (the coordinator's, which the founder may reverse), also `supabase/**`, auth, payments, release configuration and the engine files, after two independent passing reviews on the current head and green CI (`docs/agents/COORDINATION.md` section 6); since CR-176 Karma merges all of it |
+| `main` | What is live: the website (Vercel deploys from `main`) and tagged app releases. Updated only by a release PR from `develop`, or a website hotfix. | Karma (CR-176); store submission is a physical act in the queue file |
 | short branches | `feat/<area>-<what>`, `fix/<what>`, `chore/<what>`, `docs/<what>`, `test/<what>`, `qa/<what>`, `exp/<what>` | The author opens a PR into `develop` |
 
 Rules:
@@ -18,7 +18,7 @@ Rules:
 - Database changes ship as a new migration file. Never edit a migration that has been applied.
 
 ## Definition of Ready
-A task is ready when it has a backlog id (`docs/BACKLOG.md`, FT-## for founder steps), an owner role, a testable outcome, and no open founder decision. Founder decisions are recorded as `D-###` in `docs/DECISIONS.md` before code depends on them. Ids are never reused, and an id is never renumbered once its entry is on `develop`.
+A task is ready when it has a backlog id (`docs/BACKLOG.md`, FT-## for founder steps), an owner role, a testable outcome, and no open decision. Decisions (the founder's words, and Karma's and the exec team's under D-168) are recorded as `D-###` in `docs/DECISIONS.md` before code depends on them. Ids are never reused, and an id is never renumbered once its entry is on `develop`.
 
 ## Definition of Done
 A pull request merges only when all hold:
@@ -37,4 +37,4 @@ A pull request merges only when all hold:
 | production | `com.earlyletters.scribe` | production | App Store. The id is permanent once created |
 
 ## Who does what
-The role agents (`.claude/agents/`, `agents/roster.json`) pick up backlog items through the dispatcher and open PRs. Two independent review agents pass a pull request before it merges (D-107). Agents never merge, never change founder decisions, and never touch secrets. Founder-only steps (Apple, Expo, Supabase, domains, keys) live in `docs/FOUNDER_TASKS.md`.
+The role agents (`.claude/agents/`, `agents/roster.json`) pick up backlog items through the dispatcher and open PRs. Two independent review agents pass a pull request before it merges (D-107). The harness agents never merge (Karma does, CR-73), never edit the founder's recorded words, and never touch secrets. Physical acts (Apple, Expo, Supabase, domains, keys, paying) are listed once in `docs/release/FOUNDER_QUEUE.md` (CR-176); `docs/FOUNDER_TASKS.md` is the older list.

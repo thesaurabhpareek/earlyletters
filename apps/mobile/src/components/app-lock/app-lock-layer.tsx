@@ -7,7 +7,7 @@
  *   and it mounts only while needed, so it is never in the way of a touch otherwise. Elsewhere (web preview) it is an
  *   absolute layer on top of the root.
  * - It only covers. Nothing under it unmounts, so a take being kept as the app left the front finishes underneath.
- * - Cover: drawn at once when the app goes inactive while the lock is on (no fade). Lock screen: the cover plus one
+ * - Cover: drawn at once when the app goes inactive, whatever App lock says (no fade). Lock screen: the cover plus one
  *   Unlock button; the system sheet asks once on its own per lock, never in a loop; Cancel leaves Unlock and nothing
  *   else. Success: the cover fades out over fadeMs (also the Reduce Motion form) and nothing plays (no haptic).
  * - VoiceOver: the layer is modal; the cover reads only the app name; focus lands on Unlock, with its hint.

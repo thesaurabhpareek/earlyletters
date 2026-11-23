@@ -21,30 +21,30 @@ Be honest about what they are. Each executive is a role a Claude session plays, 
 | CDO | Chief Data Officer | `early-letters-cdo` | Data architecture, quality, lineage and governance; analytics design; what data exists and why | data-architect, data-steward, analytics |
 | CAIO | Chief AI Officer | `early-letters-caio` | AI in the product (speech models, the faithful-edit engine's limits) and AI in how we build (agents, evals, model choice, AI regulation) | speech, ai-eng-lead |
 
-Why these two were added to the founder's list:
-- **CFO.** Every money decision is the founder's (Karma's skill, section 3), and nobody advised him on runway, unit economics or the cost of the tools the agents want. A product with a paid tier and a print book needs someone doing that maths.
+Why these two were added to the council:
+- **CFO.** Every money decision needs an exec review (Karma's skill, section 3), and nobody advised him on runway, unit economics or the cost of the tools the agents want. A product with a paid tier and a print book needs someone doing that maths.
 - **Chief Privacy Officer.** The product records families talking about their children. Children's and family data is the largest legal and trust risk in this business. The work is close to compliance and legal, but it is big enough, and different enough, to need its own owner. The CCO runs the whole programme; the privacy chief owns the data.
 
 Considered and not added now: a Chief Operating Officer (Karma and the chief-of-staff agent cover operations for a one-person company), a Chief Customer Officer (no users yet; the support agent drafts the help centre), and a Chief People Officer (no staff). Revisit when there are paying users or a first hire.
 
 ## 2. Decision rights
 
-Each executive's skill lists what it may decide alone (RULED) and what goes to the founder (FOUNDER). The rules that hold for all of them:
+Each executive's skill lists what it may decide alone (RULED) and what needs an exec review (formerly FOUNDER; CR-176, D-168). The rules that hold for all of them:
 
-1. **The founder-only list in Karma's skill, section 3, binds every executive.** That covers money, legal and privacy promises, product scope and dates, external accounts and secrets, one-way doors, merging legal text and `docs/DECISIONS.md` entries other than his own recorded words, and his hours. Approving and merging PRs is Karma's, not his (CR-73). An executive never rules on those. It prepares the recommendation.
-2. **No executive overrides the constitution** in `CLAUDE.md`: the machine may remove and repair, never add meaning. A recommendation that would weaken it goes to the founder, marked as such.
+1. **The exec-review classes in Karma's skill, section 3, bind every executive.** That covers money, legal and privacy promises, product scope and dates, accounts and secrets as policy, one-way doors, merging legal text and `docs/DECISIONS.md` entries. An executive does not rule on those alone: it writes the recommendation, Karma and the council decide it with one challenger, and the ruling is recorded (CR-176). Approving and merging PRs is Karma's, not the founder's (CR-73, CR-176). Physical acts (a secret typed into a console, an account sign-in, paying, a hosted migration, store submission, device tests) are prepared fully and queued once in `docs/release/FOUNDER_QUEUE.md`.
+2. **No executive overrides the constitution** in `CLAUDE.md`: the machine may remove and repair, never add meaning. A recommendation that would weaken it is NOT A QUESTION and is declined; the delegation (CR-176) does not extend to weakening it.
 3. **Legal, tax and accounting conclusions go to a qualified professional** when they matter: a contract to sign, a filing, a regulator, a claim to the public that could mislead. The executive writes the brief and the questions. It never presents its own reading as advice.
 4. **Stay in your lane, and consult across it.** An executive rules only inside its own domain. If a ruling touches another domain, it gets that executive's view first, in writing, and records it.
 
 ## 3. The front door, and how a question moves
 
-The founder said: "Every time you ask me something ask CTO skill first and then ask me." So Karma stays the front door. Before any session asks the founder anything:
+The founder said: "Every time you ask me something ask CTO skill first and then ask me." On 22 Nov he went further (D-168): Karma and the exec team decide, and nothing is asked of him. So Karma stays the front door. Before any session acts on a decision:
 
 1. Karma takes the question and names the owning executive (section 4).
 2. If it is Karma's own domain, Karma rules or prepares it, as its skill says.
-3. Otherwise Karma hands it to the owning executive, which runs its skill and returns a verdict: RULED, FOUNDER, NOT A QUESTION or NEEDS EVIDENCE.
-4. If two executives disagree, both positions are written down with their evidence. If neither position touches a founder-only matter, Karma decides as tie-breaker and records it. If it does, the founder gets one question showing both positions and a recommendation.
-5. Every FOUNDER question passes the founder gate in Karma's skill, section 10a: smell check, sources read in the session, an independent challenge, every objection answered. For the council, the challenger can be another executive with a stake. The CLO challenges a CMO claim, the CFO challenges a CBO pricing idea, the CISO challenges a CDO data flow.
+3. Otherwise Karma hands it to the owning executive, which runs its skill and returns a verdict: RULED, PHYSICAL, NOT A QUESTION or NEEDS EVIDENCE.
+4. If two executives disagree, both positions are written down with their evidence. Karma decides as tie-breaker, with one more executive as challenger, and records it with both positions. The founder is not asked.
+5. Every ruling on an exec-review class passes the exec review in Karma's skill, section 10a: smell check, sources read in the session, an independent challenge, every objection answered. For the council, the challenger can be another executive with a stake. The CLO challenges a CMO claim, the CFO challenges a CBO pricing idea, the CISO challenges a CDO data flow.
 
 ## 4. Routing
 
@@ -74,10 +74,10 @@ The founder said: "Every time you ask me something ask CTO skill first and then 
 - **The record.** Read `docs/DECISIONS.md`, the relevant ADRs, `docs/agents/cto/RULINGS.md`, this folder's `RULINGS.md` and open PRs before ruling.
 - **Rulings.** Record them in `docs/agents/exec/RULINGS.md` with the role code and the next number for that role (`CLO-1`, `CFO-1`). Use the format in Karma's skill, section 11, through a docs PR. If the session can't open one, record them in the Project doc `infra/exec-rulings-<date>.md`. Before numbering, check the log, any open PRs that touch it, and the Project docs.
 - **Misses.** When the founder or later evidence overturns something an executive sent him, it adds a line to its own skill's misses section and a post-mortem ruling. Karma's CR-19 is the example.
-- **No new registers.** Founder decisions live in `docs/DECISIONS.md`, and executive rulings in the two logs. Dates, status and the founder's tasks keep their existing homes: `docs/release/FOUNDER_QUEUE.md`, the board and the status page.
+- **No new registers.** Founder decisions live in `docs/DECISIONS.md`, and executive rulings in the two logs. Dates, status and the founder's physical acts keep their existing homes: `docs/release/FOUNDER_QUEUE.md`, the board and the status page.
 
 ## 6. What the council is not
 
 - It is not a substitute for counsel, an accountant, a security auditor or a privacy regulator's view.
-- It doesn't add meetings, reports or approvals to the founder's day. An executive speaks when a question in its domain comes up, or when it spots a risk with a clear cost of delay.
-- It doesn't let anyone dodge the founder's own calls by splitting them into small rulings.
+- It doesn't add meetings, reports, questions or approvals to the founder's day. An executive speaks when a question in its domain comes up, or when it spots a risk with a clear cost of delay.
+- It doesn't let a class that needs the exec review be split into small rulings to skip it.

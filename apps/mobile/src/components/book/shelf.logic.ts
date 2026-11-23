@@ -7,9 +7,9 @@
  * November 12." The second date is the deletion time plus the shelf days, shown in the phone's own day, never as a
  * countdown (nothing here counts down or counts what is left), and always as a date still to come.
  *
- * Erase now is offered only where it can do what it says. A build that syncs has no Erase now until the server
- * erase exists (WP-F16-13, F17-REQ-025): store.eraseEntry refuses in a sync build today, so the honest shelf shows
- * Restore and the date line, and the letter goes at the server purge.
+ * Erase now is offered only where it can do what it says. A build that syncs has Erase now only with the server erase
+ * (WP-F16-13, F17-REQ-025; BL-1854): store.eraseEntry queues one id-only `entry.erase` for a letter the server may
+ * hold. A sync build without it shows Restore and the date line, and the letter goes at the server purge.
  */
 import { dateLocale, isMonthOnly, isoOf, longDate, monthOnlyDateline } from '../../lib/dates';
 import { SHELF_DAYS } from '../../lib/shelf-days';
@@ -106,8 +106,8 @@ export function shelfDateLine(v: Pick<ShelfRowView, 'deletedDay' | 'keptUntilDay
 
 /**
  * What a shelf card offers. Restore always. Erase now only when this build can erase for good everywhere the letter
- * is: always on a phone that does not sync; in a sync build only once the server erase exists (`serverErase`, from
- * the sync stream when WP-F16-13 lands; until then nothing passes it, so a sync build shows no Erase now).
+ * is: always on a phone that does not sync; in a sync build only with the server erase (`serverErase`, from
+ * `capabilities.serverErase`; a build that passes nothing shows no Erase now).
  */
 export function shelfActions(build: { sync: boolean; serverErase?: boolean }): { restore: true; eraseNow: boolean } {
   return { restore: true, eraseNow: !build.sync || build.serverErase === true };

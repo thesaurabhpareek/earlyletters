@@ -23,7 +23,7 @@ const roots: string[] = [];
 type Mutant = { file: 'preflight-testflight.mjs' | 'env-file-guard.mjs'; from: string; to: string };
 
 /** A temp repo: the app without node_modules, plus what the preflight reads from the repo. Optionally one source edit. */
-function sandbox(env: { file: string; text: string } | null, mutant?: Mutant): string {
+function sandbox(env: { file: string; text: string | null } | null, mutant?: Mutant): string {
   const root = mkdtempSync(join(tmpdir(), 'bl506-'));
   roots.push(root);
   const app = join(root, 'apps', 'mobile');
@@ -33,7 +33,11 @@ function sandbox(env: { file: string; text: string } | null, mutant?: Mutant): s
     cpSync(join(REPO, p), join(root, p), { recursive: true });
   }
   symlinkSync(join(REPO, 'node_modules'), join(root, 'node_modules'));
-  if (env !== null) writeFileSync(join(app, env.file), env.text);
+  if (env !== null) {
+    // `dir: true` plants a directory of that name: it is listed by readdir like a file, and reading it fails (EISDIR).
+    if (env.text === null) mkdirSync(join(app, env.file));
+    else writeFileSync(join(app, env.file), env.text);
+  }
   if (mutant) {
     const f = join(app, 'scripts', mutant.file);
     const text = readFileSync(f, 'utf8');
@@ -63,6 +67,8 @@ const KEYS: Record<string, string> = {
   SUPABASE_SERVICE_ROLE_KEY: `${FAKE_VALUE}service`,
   EXPO_PUBLIC_POSTHOG_KEY: `${FAKE_VALUE}posthog`,
 };
+/** What the FAIL line may name for a planted key: an EXPO_PUBLIC_* name, or nothing but the line number. */
+const shown = (key: string) => (/^EXPO_PUBLIC_[A-Z0-9_]{1,64}$/.test(key) ? key : '<unparsable line 1>');
 const plant = (file: string, key: string) => ({ file, text: `${key}=${KEYS[key]}\n` });
 
 const mutantFor = (file: string): Mutant => ({ file: 'preflight-testflight.mjs', from: "f.startsWith('.env'));", to: `f.startsWith('.env') && f !== '${file}');` });
@@ -77,14 +83,15 @@ afterAll(() => {
 }, 60_000);
 
 describe('[BL-506] the preflight, run against a planted .env file', () => {
-  it('[BL-506] each key planted in each .env file the build or dev server loads is a FAIL naming the file and the key, never the value', async () => {
+  it('[BL-506] each key planted in each .env file the build or dev server loads is a FAIL naming the file and the key (only an EXPO_PUBLIC_* key; any other as a line number), never the value', async () => {
     const cases = FILES.flatMap((f) => Object.keys(KEYS).map((k) => [f, k] as const));
     const runs = await Promise.all(cases.map(([f, k]) => run(sandbox(plant(f, k)))));
     runs.forEach((r, i) => {
       const [f, k] = cases[i];
       const fails = envLines(r, 'FAIL');
       expect(fails, `${f} ${k}`).toHaveLength(1);
-      expect(fails[0], `${f} ${k}`).toContain(`${f}: ${k}`);
+      expect(fails[0], `${f} ${k}`).toContain(`${f}: ${shown(k)}`);
+      if (shown(k) !== k) expect(fails[0], `${f} ${k}: a non-public name is not printed`).not.toContain(k);
       expect(r.text, `${f} ${k}: the value is not printed`).not.toContain(KEYS[k]);
       expect(envLines(r, 'PASS'), `${f} ${k}`).toEqual([]);
     });
@@ -124,12 +131,55 @@ describe('[BL-506] the preflight, run against a planted .env file', () => {
     }, 120_000);
   }
 
-  // Found in review of #1219, fixed after #1203 merges: scripts/env-file-guard.mjs:32 splits a line on "=" and :36 puts the first
-  // part in the message, so a line with no "=" (a bare secret, or "KEY:value") is printed whole. This is red today by design.
-  it.fails('[BL-506] a line with no "=" does not put its text into the FAIL message (follow-up after #1203)', async () => {
+  // Found in review of #1219: the guard used to print a line with no "=" whole, then any name before "=". Fixed in BL-1404.
+  it('[BL-1404] a line with no "=" does not put its text into the FAIL message', async () => {
     const secret = 'sb_secret_ashafictional0000';
     const r = await run(sandbox({ file: '.env.local', text: `${secret}\n` }));
     expect(envLines(r, 'FAIL')).toHaveLength(1);
     expect(r.text).not.toContain(secret);
+  }, 120_000);
+
+  it('[BL-1404] text before "=" that looks like a secret name, a padded base64 string or a 200,000-character name is never printed; the run still fails', async () => {
+    const texts = [
+      'sb_secret_ashafictional0000=1',
+      'ghp_ashafictional0000=1',
+      'sk_live_ashafictional0000=1',
+      'sb_secret_abc=',
+      'abcDEF123456789==',
+      `${'x'.repeat(200_000)}=1`,
+    ];
+    const runs = await Promise.all(texts.map((t) => run(sandbox({ file: '.env.local', text: `${t}\n` }))));
+    runs.forEach((r, i) => {
+      const fails = envLines(r, 'FAIL');
+      expect(fails, texts[i].slice(0, 40)).toHaveLength(1);
+      expect(fails[0]).toContain('.env.local: <unparsable line 1>');
+      expect(fails[0].length).toBeLessThan(400);
+      expect(r.text).not.toContain(texts[i].slice(0, 12));
+      expect(r.code, 'the preflight exits non-zero').not.toBe(0);
+    });
+  }, 180_000);
+
+  // BL-1405, the two mutants #1219's review left alive (M4 and M5).
+  it('[BL-1405] a .env.local that cannot be read (a directory of that name) is a FAIL on that file, not a pass and not a crash', async () => {
+    const r = await run(sandbox({ file: '.env.local', text: null }));
+    const fails = envLines(r, 'FAIL');
+    expect(fails, 'one FAIL for the unreadable file').toHaveLength(1);
+    expect(fails[0]).toContain('.env.local: <unreadable>');
+    expect(envLines(r, 'PASS'), 'the guard does not pass').toEqual([]);
+    expect(r.lines.some((l) => /profile names no Supabase or analytics key in eas\.json/.test(l)), 'the script ran past section 4, it did not crash').toBe(true);
+    expect(r.text, 'no stack trace').not.toMatch(/EISDIR|at .*\.mjs:\d+/);
+  }, 120_000);
+
+  it('[BL-1405] a value with "#" in it is still a FAIL: only a line that starts with "#" is a comment (the key is a line number, the value is never printed)', async () => {
+    const values = ['abc#def', '#abc', 'abc #def'];
+    const runs = await Promise.all(values.map((v) => run(sandbox({ file: '.env.local', text: `SUPABASE_SERVICE_ROLE_KEY=${v}\n` }))));
+    runs.forEach((r, i) => {
+      const fails = envLines(r, 'FAIL');
+      expect(fails, values[i]).toHaveLength(1);
+      expect(fails[0], values[i]).toContain('.env.local: <unparsable line 1>');
+      expect(r.text, values[i]).not.toContain('SUPABASE_SERVICE_ROLE_KEY');
+      expect(r.text, values[i]).not.toContain('def');
+      expect(envLines(r, 'PASS'), values[i]).toEqual([]);
+    });
   }, 120_000);
 });

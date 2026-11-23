@@ -32,6 +32,7 @@ import { allowanceSourceFor, PLUS_ALPHA, PlanNoticeHost, setFreeLettersAllowance
 import { runLaunchSweep } from '@/lib/capture/sweep';
 import { cleanupExports } from '@/lib/export';
 import { PendingInviteWatcher } from '@/lib/family/pending-invite-watcher';
+import { startMomentsCleanup } from '@/lib/moments/launch';
 import { startPacks } from '@/lib/packs';
 import { startReminders } from '@/lib/reminders';
 import { getRemoteConfig, startRemote } from '@/lib/remote';
@@ -118,6 +119,7 @@ function startServices(launchedAt: number): void {
   safely(startPlus); // StoreKit 2 entitlements on this phone
   safely(startLetterLedger); // heals the free-letter count after a reinstall or a backup restore (D-083)
   safely(startReminders);
+  safely(startMomentsCleanup); // NS-53 PR 8 follow-up (BL-1541): flag off returns at once; on, waits for the owner to settle (lib/moments/launch.logic.ts)
   safely(cleanupExports); // ZIPs left in the cache by an export cut off by a kill
   // Opt-in analytics: nothing is sent before a yes (LEGAL-REQ-003).
   safely(() => startAnalytics({ ttfiMs: Date.now() - launchedAt }));

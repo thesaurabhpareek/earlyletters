@@ -1,0 +1,9 @@
+// Planted writer for the CONST-C04 positive control. Read as text, never run.
+// It builds machine edits by hand, applies them and stores them: no verifyEdits.
+import { applyEdits } from '@scribe/core';
+
+export function saveAshaLetterQuickly(db: any, id: string, raw: string) {
+  const edits = [{ type: 'filler', start: 0, end: 3, original: 'um ', replacement: '', source: 'rule' }];
+  const finalText = applyEdits(raw, edits as any);
+  db.run('UPDATE entries SET machine_edits = ?, final_text = ? WHERE id = ?', JSON.stringify(edits), finalText, id);
+}
