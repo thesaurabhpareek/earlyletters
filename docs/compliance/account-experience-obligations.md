@@ -1,6 +1,6 @@
 # Account and experience programs: counsel questions, 1 Dec obligations, founder steps
 
-Regulatory Affairs Lead (`regulatory-affairs`), 1 Nov 2026, on `origin/develop` b79982d0. **Engineering reading, confirm with counsel. Not legal advice.** Nothing here decides that a law applies or does not.
+Regulatory Affairs Lead (`regulatory-affairs`), 1 Nov 2026, on `origin/develop` b79982d0. **Engineering reading, confirm with counsel. Not legal advice.** Dated 1 Nov 2026; read the date rows and the Q61 to Q74 and 1.6.0 numbering against the packet on `develop` (now at 1.9.0, Q132) before using them. Nothing here decides that a law applies or does not.
 
 This file proposes text. It does not change `docs/legal/**` (founder-owned) or `compliance/**` (fenced). The legal lane copies section 1 into `docs/legal/COUNSEL_PACKET.md` and `docs/legal/TESTFLIGHT_TESTERS.md` if the founder agrees.
 
@@ -105,8 +105,8 @@ Already outside 1 Dec: F7 clinician (deferred), F9 illustrator (deferred), F10 w
 
 | By | Step | Why | Cost under the 1 Nov rule |
 |---|---|---|---|
-| **Mon 2 Nov** | Decide W0-13 now: engage counsel (a spend, so it needs your exception to the rule) or record that 1 Dec ships without counsel review and on which no-cost routes | Every A item (Q61 to Q67, Q70) waits on it. Counsel comments were due T17 (Fri 13 Nov); a packet sent after about Wed 4 Nov leaves little review time before the 20 Nov cut-off. This is the main risk to 1 Dec (account council section 4) | Counsel: paid, amount unknown. No counsel: zero, risk carried by you |
-| Mon 2 Nov | If counsel: send `COUNSEL_PACKET.md` from develop with section 1.2 above added and numbering fixed (Q58 to Q60), and ask for Q61, Q63 and Q70 first | Those three gate what ships 1 Dec | As above |
+| **Mon 2 Nov** | Decide W0-13 now. Read under D-172 (23 Nov 2026): there is no outside counsel, and "counsel" means the exec team's own review (CLO, CCO and Chief Privacy Officer roles; Claude roles, not licensed lawyers; not legal advice), so no engagement spend arises and the 27 Nov counsel-decision date is superseded. The row's original wording, written 1 Nov: engage counsel (a spend) or record that 1 Dec ships without counsel review and on which no-cost routes | Every A item (Q61 to Q67, Q70) waits on it. Counsel comments were due T17 (Fri 13 Nov); a packet sent after about Wed 4 Nov leaves little review time before the 20 Nov cut-off. This is the main risk to 1 Dec (account council section 4) | Counsel: paid, amount unknown. No counsel: zero, risk carried by you |
+| Mon 2 Nov | If counsel (read under D-172 as the exec-team review, with the packet questions as its checklist): send `COUNSEL_PACKET.md` from develop with section 1.2 above added and numbering fixed (Q58 to Q60), and ask for Q61, Q63 and Q70 first | Those three gate what ships 1 Dec | As above |
 | **Mon 9 Nov** (go/no-go) | Decide O4: the Declared Age Range call in the 1 Dec build, or a recorded reason it is not | LEGAL-REQ-002 names Texas; nothing is built | Zero (engineering time) |
 | Mon 9 Nov | Confirm F2 (two controls) and F1 scope stand; choose O2 route: Apple standard EULA or a custom licence | Copy and screens depend on it | Zero |
 | **Fri 13 Nov** | Approve the on-device Privacy Policy draft and the Terms route (O1, O2); fill the bracketed blanks (packet 6.1: legal name, mailing address, county, effective date) | Pages must be live a week before submission | Zero, except the mailing address (below) |
