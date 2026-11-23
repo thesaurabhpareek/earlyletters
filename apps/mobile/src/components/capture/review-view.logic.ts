@@ -320,3 +320,31 @@ export const SIGN_IN_AFTER_BOOK_MS = 600;
 export function signInAfterLandingMs(reduced: boolean): number {
   return (reduced ? tokens.motion.fadeMs : tokens.motion.route.dissolveMs) + SIGN_IN_AFTER_BOOK_MS;
 }
+
+/**
+ * What VoiceOver says when a fix is put back (BL-1793): "Put back." with its Undo and the new count of small fixes, as
+ * one sentence run ("Put back. Undo. 2 small fixes."). iOS VoiceOver ignores a live region, so the words are spoken
+ * with `announce()`. Only words the content already holds; `countText` is the line Review shows under the letter.
+ */
+export function putBackSpeech(input: { putBack: string; undo: string; countText: string }): string {
+  const end = (s: string) => (/[.!?]$/.test(s) ? s : `${s}.`);
+  return [input.putBack, input.undo, input.countText].map((s) => s.trim()).filter(Boolean).map(end).join(' ');
+}
+
+/**
+ * The line that says a take stopped early, spoken once after the screen settles (BL-1793). Returns a cancel for the
+ * timer. `said` holds the lines already spoken on this screen, so a re-render, or the line coming back, never says it
+ * twice. Nothing is spoken for a null line.
+ */
+export function speakOnceAfterSettle(
+  line: string | null,
+  deps: { said: Set<string>; settleMs: number; speak: (line: string) => void; later: (fn: () => void, ms: number) => unknown; cancel: (handle: unknown) => void },
+): () => void {
+  if (!line || deps.said.has(line)) return () => {};
+  const handle = deps.later(() => {
+    if (deps.said.has(line)) return;
+    deps.said.add(line);
+    deps.speak(line);
+  }, deps.settleMs);
+  return () => deps.cancel(handle);
+}

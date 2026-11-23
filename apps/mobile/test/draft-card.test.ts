@@ -339,8 +339,11 @@ describe('[S33] not much today, and the light', () => {
     // The mark is kept by the one capture entry (lib/capture/start-capture.ts); Home asks for it and shows the line.
     expect(screen).toContain("startCapture({ source: 'notMuchToday' })");
     const oneEntry = code('lib/capture/start-capture.ts');
-    expect(oneEntry).toContain('newQuietMark(');
-    expect(oneEntry).toContain('markOn(listEntries(), day)');
+    expect(oneEntry).toContain('keepQuietDay(');
+    // The rule lives in the helper (BL-1723): one mark a day, no words.
+    const helper = code('lib/capture/quiet-day-save.logic.ts');
+    expect(helper).toContain('newQuietMark(');
+    expect(helper).toContain('markOn(input.entries(), input.day)');
     const inline = code('components/tonight/quiet-day-inline.tsx');
     expect(inline).toContain('<MoonIcon size={20} color={c.textMuted}');
     expect(inline).toContain('<Text variant="callout">{copy.notMuch.savedToast}</Text>');

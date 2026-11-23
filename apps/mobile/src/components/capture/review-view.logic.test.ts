@@ -1,5 +1,5 @@
 import { tokens } from '@scribe/design-tokens';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   BUTTON_MAX_CHARS,
   SCREEN_READER_HOLD_MS,
@@ -28,6 +28,8 @@ import {
   sheetKeyboardOffset,
   followCaretToEnd,
   pageEndOffset,
+  putBackSpeech,
+  speakOnceAfterSettle,
 } from './review-view.logic';
 
 describe('review view (D-086)', () => {
@@ -247,5 +249,46 @@ describe('the saved moment (S21)', () => {
     expect(SIGN_IN_AFTER_BOOK_MS).toBe(600);
     expect(signInAfterLandingMs(false)).toBe(tokens.motion.route.dissolveMs + 600);
     expect(signInAfterLandingMs(true)).toBe(tokens.motion.fadeMs + 600);
+  });
+});
+
+describe('Review speaks what iOS VoiceOver ignores in a live region (BL-1793)', () => {
+  const deps = () => {
+    const said = new Set<string>();
+    const speak = vi.fn();
+    return { said, speak, settleMs: 280, later: (fn: () => void, ms: number) => setTimeout(fn, ms), cancel: (h: unknown) => clearTimeout(h as ReturnType<typeof setTimeout>) };
+  };
+
+  it('says the early-stop line once, only after the screen has settled', () => {
+    vi.useFakeTimers();
+    const d = deps();
+    speakOnceAfterSettle('Everything before that is kept.', d);
+    vi.advanceTimersByTime(279);
+    expect(d.speak).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1);
+    expect(d.speak).toHaveBeenCalledTimes(1);
+    expect(d.speak).toHaveBeenCalledWith('Everything before that is kept.');
+    // A re-render or a remount with the same line says nothing more.
+    speakOnceAfterSettle('Everything before that is kept.', d);
+    vi.advanceTimersByTime(1000);
+    expect(d.speak).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
+  });
+
+  it('says nothing for no line, and nothing when the screen goes away before it settles', () => {
+    vi.useFakeTimers();
+    const d = deps();
+    speakOnceAfterSettle(null, d);
+    const cancel = speakOnceAfterSettle('Everything before that is kept.', d);
+    cancel();
+    vi.advanceTimersByTime(1000);
+    expect(d.speak).not.toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+
+  it('says "Put back." with Undo and the new count of small fixes', () => {
+    expect(putBackSpeech({ putBack: 'Put back.', undo: 'Undo', countText: '2 small fixes' })).toBe('Put back. Undo. 2 small fixes.');
+    expect(putBackSpeech({ putBack: 'Put back.', undo: 'Undo', countText: '1 small fix' })).toBe('Put back. Undo. 1 small fix.');
+    expect(putBackSpeech({ putBack: 'Put back.', undo: 'Undo', countText: 'Every fix put back.' })).toBe('Put back. Undo. Every fix put back.');
   });
 });
