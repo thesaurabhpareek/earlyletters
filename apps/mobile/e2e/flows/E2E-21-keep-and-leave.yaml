@@ -1,14 +1,22 @@
-# Blocked until testIDs land: tonight.screen, tonight.type, tonight.waiting
-# (requested in TESTID_REQUESTS.md, not yet set in apps/mobile/src; no app code
-# was invented here). Also not set, and only asserted absent: plusGate.screen.
+# BLOCKED: this flow cannot run yet, and nothing in it has run on a device or a simulator.
+# Needs, in apps/mobile/src (app code this file does not write; owner S19, TESTID_REQUESTS.md section 3):
+#   1. The launch seam in src/dev/e2e-seams.ts: e2eSeed and e2eOffline are not read there yet (it holds only e2eRefusal).
+#   2. A seed `asha-recordings`: Asha's book with 3 or more spoken letters, each with a real fixture recording,
+#      on a Free phone (past the 2 free letters). `seedAsha` in src/dev/asha-seed.ts is not it: it makes 6 letters, 4
+#      spoken, with the fake path file:///preview/asha.m4a, so player.play would not prove playback.
+# Blocked until testIDs land: book.screen, export.ready, export.screen, letter.screen, readTogether.close, readTogether.screen, settings.screen, tab.book, tonight.screen, tonight.type, tonight.waiting, write.input, write.screen
+# (the line above is every id this flow and its subflows use that is not set in apps/mobile/src; the guard test
+# e2e-21-keep-and-leave.test.ts keeps it exact in both directions. Where the app already has the same thing under
+# another id, the flow uses the app's: book.card, export.failed, settings.whereLive, whereLive.export.)
+# tonight.waiting stays the request for one held letter: tonight.heldRow renders only for two or more.
 # E2E-21  Keep and leave: on a Free phone past the 2 free letters, only the Keep
 # step of a NEW letter asks for Plus. That letter waits, whole; everything that
 # already exists stays readable, playable and exportable, with no Plus sheet.
 # Proves: LEGAL-REQ-050 (P0), F14-REQ-029, D-082 and D-083. The code-level pins
 # are billing-keep-gate-m17.test.ts and billing-keep-gate-plan-read.test.ts; the
 # row-by-row pin of this file is e2e-21-keep-and-leave.test.ts.
-# Fixture: seed `asha-recordings` is a Free phone (no cached entitlement) with 3
-# spoken letters, already past the 2 free ones (src/dev/asha-seed.ts), offline.
+# Fixture (once the seed above exists): `asha-recordings`, a Free phone (no cached
+# entitlement) with 3 spoken letters, already past the 2 free ones, offline.
 # Delete and restore from Recently deleted is the same promise and is stated by
 # E2E-08 (steps 1 to 3); this flow does not repeat it.
 # Assumption: on the first simulator run, check that the Keep sheet opens with no
@@ -19,9 +27,7 @@
 # Not automated here: that the held letter stays after a relaunch and after a
 # plan lapse (DEVICE_TEST_PLAN S1-17; apps/mobile/test/review-keep-m17.test.ts),
 # and that no StoreKit call is made on the reading paths (device check D-3).
-# Ids used that the app does not set yet are listed by
-#   node apps/mobile/e2e/bin/lint-flows.mjs --app
-# (see TESTID_REQUESTS.md, section "Keep and leave (E2E-21)").
+# See TESTID_REQUESTS.md, section "Keep and leave (E2E-21)".
 appId: ${APP_ID}
 name: E2E-21 Keep and leave
 tags:
@@ -78,7 +84,7 @@ env:
 - assertVisible:
     id: "book.screen"
 - tapOn:
-    id: "book.letter"
+    id: "book.card"
     index: 0
 - assertVisible:
     id: "letter.screen"
@@ -99,7 +105,9 @@ env:
 # 6. Export works and offers the files, no Plus sheet.
 - runFlow: ../subflows/open-settings.yaml
 - tapOn:
-    id: "settings.export"
+    id: "settings.whereLive"
+- tapOn:
+    id: "whereLive.export"
 - assertVisible:
     id: "export.screen"
 - assertNotVisible:
@@ -112,7 +120,7 @@ env:
       id: "export.ready"
     timeout: 120000
 - assertNotVisible:
-    id: "export.error"
+    id: "export.failed"
 - assertNotVisible:
     id: "plusGate.hold"
 - stopApp

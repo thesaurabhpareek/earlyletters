@@ -40,7 +40,7 @@ describe('[LEGAL-REQ-050] E2E-21 keep and leave', () => {
   });
 
   it('rows 2 to 5: read, play, Read together and export are each followed by "no Plus sheet"', () => {
-    for (const id of ['book.letter', 'letter.screen', 'player.play', 'book.readTogether', 'readTogether.screen', 'export.screen', 'export.start', 'export.ready']) {
+    for (const id of ['book.card', 'letter.screen', 'player.play', 'book.readTogether', 'readTogether.screen', 'export.screen', 'export.start', 'export.ready']) {
       // Read together is opened by the shared subflow, so its ids are checked there.
       const where = id.startsWith('book.readTogether') || id.startsWith('readTogether') ? readFileSync(join(E2E, 'subflows', 'read-together-once.yaml'), 'utf8') : steps;
       expect(where, id).toContain(`"${id}"`);
@@ -82,18 +82,42 @@ describe('[LEGAL-REQ-050] E2E-21 keep and leave', () => {
     expect(row).toMatch(/readable, playable and exportable/);
   });
 
-  it('is honest about the ids the app does not set yet: each one is named in the header and requested', () => {
-    const used = [...new Set([...steps.matchAll(/id: "([a-z][A-Za-z0-9.]+)"/g)].map((m) => m[1]))];
+  it('is honest about what is missing: the blocked line is exactly the ids not set in src, matched in full', () => {
+    // The flow plus the subflows it runs (open-settings, read-together-once) are what Maestro selects by id.
+    const sub = ['open-settings.yaml', 'read-together-once.yaml'].map((f) => readFileSync(join(E2E, 'subflows', f), 'utf8')).join('\n');
+    const used = [...new Set([...(steps + sub).matchAll(/id: "([a-z][A-Za-z0-9.]+)"/g)].map((m) => m[1]))].sort();
     const src = sourceFiles(join(APP, 'src')).map((f) => readFileSync(f, 'utf8')).join('\n');
+    // The full id as a string value somewhere in src (a testID prop, a constant or a table), never a prefix of it.
+    const isSet = (id: string) => ['\'', '"', '`'].some((q) => src.includes(`${q}${id}${q}`));
+    const missing = used.filter((id) => !isSet(id));
+    const blocked = (head.match(/^# Blocked until testIDs land: (.+)$/m)?.[1] ?? '').split(/,\s*/).map((s) => s.trim()).filter(Boolean).sort();
+    expect(blocked.length).toBeGreaterThan(0);
+    // Both directions: an unset id left out of the line fails, and so does an id that landed but is still listed.
+    expect(blocked).toEqual(missing);
     const requests = readFileSync(join(E2E, 'TESTID_REQUESTS.md'), 'utf8');
-    // plusGate.screen is only ever asserted absent in the old flows; this flow uses none of those.
-    const missing = used.filter((id) => !src.includes(`'${id}'`) && !src.includes(`"${id}"`) && !src.includes(`\`${id}\``));
-    const blocked = (head.match(/Blocked until testIDs land: ([^\n(]+)/)?.[1] ?? '').split(/,\s*/).map((s) => s.trim()).filter(Boolean);
-    // An id the screens build from a prefix (export.*, tab.*, book.*) is checked by its prefix in src.
-    const trulyMissing = missing.filter((id) => !src.includes(id.split('.')[0] + '.') && !src.includes(`testID="${id}`));
-    for (const id of trulyMissing) expect(blocked, `${id} is not set in src and not named in the blocked line`).toContain(id);
-    for (const id of blocked) expect(requests, id).toContain(`\`${id}\``);
-    // Anything the header calls blocked really is missing: when the id lands, this fails and the line is deleted.
-    for (const id of blocked) expect(missing, `${id} now exists in src: delete it from the blocked line`).toContain(id);
+    for (const id of used) expect(requests, id).toContain(`\`${id}\``);
+    // Ids the app already has under another name are used as the app names them, not requested again.
+    for (const id of ['book.card', 'export.failed', 'settings.whereLive', 'whereLive.export']) expect(isSet(id), id).toBe(true);
+    for (const old of ['book.letter', 'export.error', 'settings.export']) expect(used, old).not.toContain(old);
+  });
+
+  it('is honest about the seam and the seed: the header says both are missing while src/dev/e2e-seams.ts lacks them', () => {
+    const seams = readFileSync(join(APP, 'src', 'dev', 'e2e-seams.ts'), 'utf8');
+    const seedLanded = seams.includes('asha-recordings');
+    const seamLanded = /e2eSeed/.test(seams) && /e2eOffline/.test(seams);
+    // When both land this fails: delete the BLOCKED lines for them and add the flow to run-suite.sh.
+    expect(head).toMatch(/^# BLOCKED: this flow cannot run yet/m);
+    expect(head).toMatch(/e2eSeed and e2eOffline are not read there yet/);
+    expect(head).toMatch(/seedAsha[\s\S]*6 letters, 4\s*#?\s*spoken/);
+    expect(seedLanded, 'asha-recordings now exists in e2e-seams.ts: update the header').toBe(false);
+    expect(seamLanded, 'the launch seam now exists: update the header').toBe(false);
+    expect(head).not.toMatch(/ran on a device|passed on a device/);
+  });
+
+  it('while blocked, the flow is not in the nightly list of run-suite.sh', () => {
+    const suite = readFileSync(join(E2E, 'bin', 'run-suite.sh'), 'utf8');
+    const list = suite.slice(suite.indexOf('FLOWS=('), suite.indexOf('\n)', suite.indexOf('FLOWS=(')));
+    expect(list).not.toContain('E2E-21');
+    expect(existsSync(FLOW)).toBe(true);
   });
 });

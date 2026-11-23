@@ -62,8 +62,9 @@ FLOWS=(
   E2E-11-analytics-consent
   E2E-12-sign-in-email
   E2E-15-voiceover-smoke
-  E2E-21-keep-and-leave
 )
+
+# E2E-21-keep-and-leave is not listed: it is blocked on the launch seam, the asha-recordings seed and testIDs (see its header). Add it when they land.
 
 declare -a RESULTS=()
 FAILED=0
