@@ -9,13 +9,13 @@ Nothing here decides Google, the SMS vendor, spend, a date or legal text. Phone 
 | WS-1 | C-S30 Ways to sign in | `/settings/sign-in-methods` | NS-54-R14, R17, R18, R38 | PROPOSED |
 | WS-2 | C-S31 Add a way (provider sheet return and refusal) | same page, system sheet | NS-54-R14, R18 | PROPOSED |
 | WS-3 | C-S32 Last way guard | sheet on C-S30 | NS-54-R17 | PROPOSED |
-| WS-4 | E-S30 You may already have a book (duplicate line) | between the provider sheet and consent | NS-54-R16, R21 | PROPOSED |
+| WS-4 | E-S40 You may already have a book (duplicate line) | between the provider sheet and consent | NS-54-R16, R21 | PROPOSED |
 | WS-5 | C-S33 Phone prompt after the first letter | sheet after Keep | NS-54-R22, R23 | PROPOSED |
 | WS-6 | C-S34 Phone number | page in the same flow | NS-54-R23, R28, R34 | PROPOSED |
 | WS-7 | C-S35 Phone code | page in the same flow | NS-54-R24, R27, R34 | PROPOSED |
 | WS-8 | C-S36 Phone in Me, Account | row and detail on `/settings/account` | NS-54-R39, R41 | PROPOSED |
 
-Components used (all built, `apps/mobile/src/components/ui`): `ScreenHeader`, `ListRow`, `Card`, `TextField`, `Button`, `Sheet`, `InlineState`, `StateScreen`, `ErrorLine`, `Text`, `Separator`. One shape is new and PROPOSED: ST-NOTICE `Notice` (SCREEN-PATHS-20nov.md section 0). No new component is needed beyond it; the code field is a `TextField` (section 6.3).
+Components used (all built, `apps/mobile/src/components/ui`): `BackButton` and `ModalHeader` for modal pages (Settings pages use the native Stack header, as `app/settings/_layout.tsx` does, so the title there is the route title), `ListRow`, `Card`, `TextField`, `Button`, `Sheet`, `InlineState`, `StateScreen`, `ErrorLine`, `Text`, `Separator`. One shape is new and PROPOSED: ST-NOTICE `Notice` (SCREEN-PATHS-20nov.md section 0). No new component is needed beyond it; the code field is a `TextField` (section 6.3).
 
 ## 1. Rules every screen here holds
 
@@ -26,7 +26,7 @@ Tokens only, from `packages/design-tokens/src/tokens.ts`; a screen names a role,
 | Gutter | `layout.gutter` (16 compact, 20 regular); gaps `space.3` to `space.6`; section gap `layout.sectionGap` |
 | Row height | `layout.listRowMin`; every target at least `target.min`; primaries `target.primary` |
 | Type | page title `display` or `cardTitle`; body `body`; helper `footnote`; row title `label`; code field `nameField` is NOT used, see 6.3; no size below `minFontSize` |
-| Colour | `text`, `textMuted`, `surface`, `surfaceRaised`, `accent`, `caution` for a condition, `controlBorder` for field edges, `focus` for the ring, `destructive` only for a final removal; never `recording` |
+| Colour | `text`, `textMuted`, `surface`, `surfaceRaised`, `accent`, `caution` for a condition, `controlBorder` for field edges, `focus` for the ring, `destructive` is not used here (removing a way does not put the book at risk); never `recording` |
 | Shape | `radius.sm` fields, `radius.md` cards, `radius.pill` buttons, `radius.xl` sheet |
 | Motion | `motion.standard` for a sheet or row change; under Reduce Motion `motion.reduceMotion` (a 200 ms fade) and no spring, no slide |
 | Contrast | text 4.5:1, outlines and icons 3:1 in light and dark and under Increase Contrast (the `highContrast` overrides); colour is never the only signal: a method row says "Linked" in words |
@@ -40,9 +40,9 @@ Tokens only, from `packages/design-tokens/src/tokens.ts`; a screen names a role,
 
 ## 2. C-S30 Ways to sign in (`/settings/sign-in-methods`, from Me, Account)
 
-Behaviour. A list, one row per way: Apple, Google (only where Google is on in this build, NS-54-R6), email. Each row shows the way's name, "Linked" or "Not linked" in words, and for email the masked address style the Account page already uses. Linked rows open C-S32 only through a quiet "Remove" action; unlinked rows carry "Add". The page never says "sign up" or "log in" (R10). It never shows a provider's id. It never compares or counts ("2 of 3").
+Behaviour. A list, one row per way: Apple, Google (only where Google is on in this build, NS-54-R6), email. Each row shows the way's name from the BRAND.md glossary ("Apple Account", "Google Account", "Email"), "Linked" or "Not linked" in words, and for email the masked address style the Account page already uses. Linked rows open C-S32 only through a quiet "Remove" action; unlinked rows carry "Add". The page never says "sign up" or "log in" (R10). It never shows a provider's id. It never compares or counts ("2 of 3").
 
-Layout. `ScreenHeader` title, one explanation sentence (`footnote`, `textMuted`), then `Card` with `Separator` rows (`ListRow`, `layout.listRowMin`). Row: provider mark (decorative, hidden from VoiceOver), name (`label`), status (`footnote`), trailing action as a `Button` quiet variant of `target.min`.
+Layout. The native Stack header carries the title, then one explanation sentence (`footnote`, `textMuted`), then `Card` with `Separator` rows (`ListRow`, `layout.listRowMin`). Row: provider mark (decorative, hidden from VoiceOver), name (`label`), status (`footnote`), trailing action as a quiet `Button` of `target.min` whose visible label carries the provider ("Add Google Account", "Remove Apple Account"; keys take `{provider}`), so Voice Control and VoiceOver agree.
 
 States.
 
@@ -62,8 +62,8 @@ States.
 | AX5 (SE 3) | Rows stack: name, status, action each on its own line, action full width; the explanation sits above the card and scrolls | built layout |
 | Dark, Increase Contrast | Row edges `line` becomes control strength; status words stay 4.5:1 | none |
 | Reduce Motion | Row flips by cross-fade only | none |
-| VoiceOver | Row is one element: "Apple, linked", hint "Remove"; or "Google, not linked", hint "Add". Order top to bottom. Status change is announced with `announce` | `ways.a11y.*` |
-| Voice Control | "Tap Add Google" and "Tap Remove Apple" work: the visible label contains the provider name | none |
+| VoiceOver | Row is one element: "Apple Account, linked", hint "Remove"; or "Google Account, not linked", hint "Add". Order top to bottom. Status change is announced with `announce` | `ways.a11y.*` |
+| Voice Control | "Tap Add Google Account" works because the visible label contains the provider name | none |
 
 Shown: `ways.*`. Records: the link and unlink act on the account only; an analytics event only if analytics was agreed and it carries no provider id or address. Never: a full address, a provider id, a merge of two accounts, a count of what is missing. Decline: closing the page changes nothing.
 
@@ -77,7 +77,7 @@ Not a screen of ours: Apple's or Google's own sheet, then the row state above. S
 | Same account already has it | Row already reads Linked; nothing happens | none |
 | Another account has it (R18) | ST-NOTICE `ways.errors.inUse`; no name of whose | `ways.errors.inUse` |
 | Needs a recent sign-in | The reauth step, then retry once | `ways.reauth` |
-| Refused country (NS-40) | The neutral refusal screen, not an error (R8) | `authCopy.region.*` (built) |
+| Refused country (NS-40) | The neutral refusal screen, not an error (R8) | `authCopy.region.*` (on hold and PROPOSED per its own comment, not built) |
 | Anything else | `ways.errors.generic` | `ways.errors.generic` |
 
 ## 4. C-S32 The last-way guard (NS-54-R17)
@@ -86,19 +86,19 @@ A guard, not a punishment. With one way left, Remove is absent (section 2). If t
 
 | State | Sheet | Key |
 |---|---|---|
-| Confirm | Title (first heading), one sentence saying the book stays and this way stops working, "Remove" as `destructive` button of `target.primary`, Cancel as equal-size quiet | `ways.removeSheet.title`, `.body`, `.confirm`, `.cancel` |
-| Last way (refusal) | Title, one sentence saying this is the only way in and another must be added first, one primary "Add another way" that closes the sheet and opens the add choice; no destructive button | `ways.lastSheet.title`, `.body`, `.addAnother` |
+| Confirm | Title (first heading), one sentence saying the book stays and this way stops working, Remove as a neutral `Button` (`accent` fill, not `destructive`: taking a way off does not put the book at risk) of `target.primary`, Cancel as equal-size quiet | `ways.removeSheet.title`, `.body`, `.confirm`, `.cancel` |
+| Last way (refusal) | Title, one sentence saying this is the only way in and another must be added first, one primary "Add another way" that closes the sheet and opens the add choice, and a quiet Close; swipe down, the scrim and the VoiceOver Escape gesture also dismiss it; no remove button | `ways.lastSheet.title`, `.body`, `.addAnother` |
 | Reauth first | The reauth step runs before the Sheet opens | `ways.reauth` |
-| Done | Sheet closes, toast (Close only, never Undo: a link cannot be un-removed without proof) says it was removed, a notice email goes out | `ways.removed` |
+| Done | Sheet closes, toast (words only and it times out: `toast.tsx` has no Close of its own on this path and a link cannot be un-removed without proof; the words are also announced) says it was removed, a notice email goes out | `ways.removed` |
 | Offline, ERR | ST-NOTICE inside the Sheet; nothing removed | `ways.errors.generic`, `authCopy.offline.*` |
 
-AX5: Sheet scrolls, buttons stack, full width, at the end of the body (not pinned). VoiceOver: the Sheet title takes focus; the destructive action is read with its consequence in the hint. Never: "are you sure", fear or loss wording; the book is not said to be at risk because it is not.
+AX5: Sheet scrolls, buttons stack, full width, at the end of the body (not pinned). VoiceOver: the Sheet title takes focus; the Remove action is read with its consequence in the hint. Never: "are you sure", fear or loss wording; the book is not said to be at risk because it is not.
 
-## 5. E-S30 You may already have a book (the duplicate line, NS-54-R16, R21)
+## 5. E-S40 You may already have a book (the duplicate line, NS-54-R16, R21)
 
-Where. After a provider sheet returns for a person with no account on this phone, and only when the address returned is a relay or differs from any account that sign-in can see. It sits before the age and consent steps, so before anything is agreed. It does not appear when the same verified email matched an existing account (R15: that person simply signs in) and never when no other way is plausible: it is a line, not a gate.
+Where. After a provider sheet returns for a person with no account on this phone, The trigger is decided on the phone from the provider result alone (an Apple relay address, or no address returned), never from an account lookup, so the screen cannot reveal whether any address has an account (enumeration). It sits before the age and consent steps, so before anything is agreed. It does not appear when the same verified email matched an existing account (R15: that person simply signs in) and never when no other way is plausible: it is a line, not a gate.
 
-Layout. ST-FULL, calm, no alert colour. Title, one sentence, two equal-size buttons of `target.primary`: the first "Sign in another way" (goes back to the Welcome choices, nothing created), the second "Continue and start a new book" (goes on to consent and creates the account). Neither is the louder: both are the same variant weight, the first listed first. Never a pre-selected default, never a timer, never a confirm-shaming line.
+Layout. ST-FULL, calm, no alert colour. Title, one sentence, two equal-size buttons of `target.primary`: the first "Sign in another way" (goes back to the Welcome choices, nothing created), the second "Start a new book" (button copy stays within the 22-character cap of `rules.test.ts` "buttons stay short") (goes on to consent and creates the account). Neither is the louder: both are the same variant weight, the first listed first. Never a pre-selected default, never a timer, never a confirm-shaming line.
 
 | State | Exact screen | Key (PROPOSED) |
 |---|---|---|
@@ -134,7 +134,7 @@ Layout. Sheet: title, one sentence on what it is for, the Shown line (6.5) with 
 
 ### 6.2 C-S34 Phone number
 
-Layout. `ScreenHeader` with Back; title; one `TextField` for the number with a country picker as a separate labelled control beside it (stacked from AX1); helper line; primary "Send the code"; quiet "Not now". Field uses `textContentType="telephoneNumber"` and a phone keypad; the number is normalised to E.164 on the phone only (R23), and the full number is shown while typing and never again after (R39).
+Layout. `BackButton` in the modal header (or the Stack back); title; one `TextField` for the number with a country picker as a separate labelled control beside it (stacked from AX1); helper line; primary "Send the code"; quiet "Not now". Field uses `textContentType="telephoneNumber"` and a phone keypad; the number is normalised to E.164 on the phone only (R23), and the full number is shown while typing and never again after (R39).
 
 | State | Exact screen | Key |
 |---|---|---|
@@ -142,13 +142,14 @@ Layout. `ScreenHeader` with Back; title; one `TextField` for the number with a c
 | Typing | Format as the person types; no per-key validation message | none |
 | Invalid shape | Helper becomes a plain line under the field, text kept, focus stays | `phone.number.invalid` |
 | Sending | Primary reads "Sending", field locked, then the next page; the same page and timing for a number that has an account and one that has not (R23) | `phone.number.sending` |
-| Cannot use this number (R28) | ST-NOTICE: this number cannot be used here, with the fallback (6.6) and Not now; never "fraud", "blocked" or "suspicious" | `phone.number.unusable` |
+| Cannot use this number (R28) | ST-NOTICE with a contracted sketch (P: "We can't text this number."), then the fallback (6.6) and Not now; no mention of region, never "fraud", "blocked" or "suspicious" | `phone.number.unusable` |
 | Country not reachable | Same notice and fallback | `phone.number.unusable` |
 | Roaming or foreign SIM (R30) | Any supported country verifies; no price or store change; nothing said about it | none |
 | Too many sends (R24) | Page stays, the wait is said in words, Not now stays | `phone.errors.wait` |
-| Provider fails or offline (R27) | ST-NOTICE with Try again and Not now; the book is untouched and says so | `phone.errors.generic`, `authCopy.offline.*` |
+| Provider fails or offline (R27) | ST-NOTICE with Try again and Not now; nothing on the phone changes | `phone.errors.generic`, `authCopy.offline.*` |
 | AX5 | Country control above the field, both full width; primary and Not now stack and scroll | built layout |
-| Dark | Field edge `controlBorder` 3:1 | none |
+| Dark, Increase Contrast | Field edge `controlBorder` 3:1 (control strength under Increase Contrast); helper and notice text 4.5:1 | none |
+| Reduce Motion | Page change and notice by `motion.reduceMotion` fade only | none |
 | VoiceOver | Title; field labelled "Phone number"; country control labelled with its name and calling code; helper; primary; Not now | `phone.number.a11y.*` |
 | Voice Control | "Tap Send the code" works from the visible label | none |
 
@@ -158,19 +159,20 @@ Layout. Title that names only the last two digits of the number ("ends in 42", n
 
 | State | Exact screen | Key |
 |---|---|---|
-| Waiting | Field focused; AutoFill suggestion allowed; Send again shows the wait in words, not a ticking bar | `phone.code.title`, `.resendWait` |
-| Entering | Auto-submits when the length is reached; a Verify primary also exists for people who cannot rely on auto-submit | `phone.code.verify` |
+| Waiting | Focus rule: the field takes keyboard focus on arrival so AutoFill can offer the code, but with VoiceOver on, VoiceOver focus goes to the title first and the field is next (focus is not stolen); AutoFill allowed; Send again shows the wait in words, not a ticking bar | `phone.code.title`, `.resendWait` |
+| Entering | Auto-submits when the length is reached, except with VoiceOver or Switch Control on, where only the Verify primary submits so the digits can be heard first; Verify always exists | `phone.code.verify` |
 | Wrong code | One line under the field, text kept, focus stays; the field clears only on the next keystroke | `phone.code.wrong` |
 | Five wrong tries (R24) | Entry pauses as the email code does (NS-41-R9): the wait is said in words; Send again and Not now stay | `phone.code.paused` |
 | Expired | Plain line and a primary to send a new code | `phone.code.expired` |
-| No code arrives (R27) | After the wait: Send again, Use another way, Not now, in that order; the lines say it can take a minute and the book is fine | `phone.code.noCode` |
+| No code arrives (R27) | After the wait: Send again, Use another way, Not now, in that order; the line says it can take a minute (any line that the book is unaffected is a claim that must be true in the build before it is written) | `phone.code.noCode` |
 | Resend | Allowed after the wait; announces "Code sent"; same screen for every number | `phone.code.sent` |
 | Verified | Success haptic, one line, the page closes to where the person was; VoiceOver announces it; only the last two digits show from here on | `phone.code.done` |
 | Provider fails / offline | ST-NOTICE, Try again, Not now | `phone.errors.generic`, `authCopy.offline.*` |
 | Backgrounded, killed | The step restarts at the number page; nothing is kept but the choice to be asked later; no number is stored in route params or state restoration (R26) | none |
 | AX5 | Title, field, Verify, Send again, Use another way, Not now stack in that order and scroll; nothing pinned | built layout |
 | VoiceOver | Title with the last two digits read as digits; field "Code, N digits"; every error is announced when it appears, not only drawn | `phone.code.a11y.*` |
-| Reduce Motion | No shake on a wrong code; a line only | none |
+| Reduce Motion | No shake on a wrong code; a line only; page change by fade | none |
+| Dark, Increase Contrast | Code field edge `controlBorder`; every line 4.5:1 | none |
 
 ### 6.4 C-S36 Phone in Me, Account
 
@@ -182,17 +184,17 @@ Shown before the number is typed, on C-S33, and linked from C-S34. One content k
 
 ### 6.6 Fallback and Not now
 
-Where a text cannot arrive (no phone, no signal, an unreachable number), the screen offers "Use another way": for Phase A this is Not now plus a line that the book and everything on the phone work without a number. The wider fallback for Phase B (7.4 of the card: cloud features only, voice call, support) is not decided and not drawn. Not now is never smaller, dimmer, further down in order or later in reading order than Continue, and never carries a consequence line.
+Where a text cannot arrive (no phone, no signal, an unreachable number), the screen offers "Use another way": for Phase A this is Not now plus a line that the book and everything on the phone work without a number. The wider fallback for Phase B (7.4 of the card: cloud features only, voice call, support) is not decided and not drawn. Not now is never smaller, dimmer, further down in order or later in reading order than Continue, and never carries a consequence line or an untrue reassurance.
 
 ## 7. Content-key list (all PROPOSED; none exists; `content` owns the words)
 
-`ways.title`, `.intro`, `.lastReason`, `.remove`, `.adding`, `.added`, `.noticeSent`, `.removing`, `.removed`, `.reauth`, `.offlineNote`, `.errors.inUse`, `.errors.generic`, `.removeSheet.{title,body,confirm,cancel}`, `.lastSheet.{title,body,addAnother}`, `.a11y.*`; `duplicate.{title,body,back,continue}`, `duplicate.a11y.*`; `phone.prompt.{title,body,shown,continue,later,readMore}`, `phone.number.{helper,invalid,sending,unusable}`, `phone.code.{title,verify,wrong,paused,expired,noCode,resendWait,sent,done}`, `phone.errors.{generic,wait}`, `phone.account.*`, `phone.*.a11y.*`. Reused, built: `authCopy.offline.*`, `authCopy.region.*`, `authCopy.errors.*`. Placeholders `{last2}`, `{length}`; never `{child}` gendered, no child name on these screens.
+`ways.title`, `.intro`, `.lastReason`, `.remove`, `.adding`, `.added`, `.noticeSent`, `.removing`, `.removed`, `.reauth`, `.offlineNote`, `.errors.inUse`, `.errors.generic`, `.removeSheet.{title,body,confirm,cancel}`, `.lastSheet.{title,body,addAnother}`, `.a11y.*`; `duplicate.{title,body,back,continue}`, `duplicate.a11y.*`; `phone.prompt.{title,body,shown,continue,later,readMore}`, `phone.number.{helper,invalid,sending,unusable}`, `phone.code.{title,verify,wrong,paused,expired,noCode,resendWait,sent,done}`, `phone.errors.{generic,wait}`, `phone.account.*`, `phone.*.a11y.*`. Reused, built: `authCopy.offline.*`, `authCopy.errors.*`; on hold, PROPOSED: `authCopy.region.*`. Placeholders `{last2}`, `{length}`; never `{child}` gendered, no child name on these screens.
 
 ## 8. Open and held
 
 - Phase B and the fallback beyond Not now: held for the founder with counsel (card 7.4, Q6, Q8); no screen is drawn.
 - Whether Google shows at all: founder's scope call; section 2 handles both.
-- Whether the duplicate line also appears after Google when Apple was the first way: its trigger rule (relay address or differing address) is the security engineer's to confirm against the Supabase version run [UNVERIFIED].
+- Whether the duplicate line also appears after Google when Apple was the first way: the trigger is the provider result alone (section 5); the security engineer confirms it against the Supabase version run [UNVERIFIED].
 - Route names and screen ids are PROPOSED; `mobile` confirms.
 - UNVERIFIED on device: VoiceOver order, AX5 stacking, Increase Contrast, AutoFill of the code, the Apple button's own accessibility. A phone walk is needed on iPhone SE 3 (NS-33 floor) before the build is called accessible.
 - No contrast numbers are new: all roles are existing tokens, so no token test is added.
