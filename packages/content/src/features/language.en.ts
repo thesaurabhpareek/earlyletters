@@ -54,7 +54,7 @@ export const languageCopy = {
   // D-111 item 4 (N2 on #247, round 2 on #260): in builds that offer English only, a recording whose language was
   // set to another is not heard in English; it waits for its language, and Review and the letter page say so with
   // this line. No date is promised.
-  waitingForLanguage: 'This recording is waiting for its language. Other languages are coming in a later update.',
+  waitingForLanguage: 'This recording is kept. This version writes down English.',
 
   picker: {
     title: 'Choose a language',
@@ -66,6 +66,6 @@ export const languageCopy = {
     selectedA11y: 'Selected',
     rowHint: 'Chooses this language',
     // D-111 item 4: builds that offer English only show this under the list. No date is promised.
-    englishOnly: 'Other languages are coming in a later update.',
+    englishOnly: 'This version writes down letters spoken in English.',
   },
 } as const;

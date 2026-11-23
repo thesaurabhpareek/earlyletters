@@ -86,6 +86,8 @@ describe('[CPrivO-5] Settings > Privacy', () => {
 
   it('who can see it: the plain fact while the app lock is off, the lock line while on, never "Only you" (content 7, LEGAL-REQ-044)', () => {
     expect(p.whoLockOff).toBe('Anyone who can unlock this iPhone can open the book.');
+    expect(p.staffAccess).toBe("We don't look at your letters. The few times we could are written in the Privacy Policy.");
+    expect(screen).toMatch(/<ListRow title=\{p\.staffAccess\} testID="privacy\.staffAccess" \/>/);
     expect(screen).toMatch(/<ListRow title=\{lockOn \? appLockCopy\.privacy\.whoLockOn\[method\] : p\.whoLockOff\} testID="privacy\.who" \/>/);
     expect((Object.values(p) as unknown[]).filter((v): v is string => typeof v === "string").filter((v) => /only you/i.test(v))).toEqual([]);
     // Names in notifications opens Reminders and reads the real setting; P8 is the section footer.

@@ -44,7 +44,7 @@ export const newDevicePageCopy = {
   // Not an error screen: calm lines with the in-app path beside them.
   states: {
     // No connection when the button is pressed; the button stays pressable.
-    offline: 'Nothing has changed. Try again once you are back online.',
+    offline: "Nothing has changed. Try again once you're back online.",
     // The sign-out did not go through on our side.
     failed: 'Nothing has changed. That device is still signed in.',
     // The link is too old, or has been used already.

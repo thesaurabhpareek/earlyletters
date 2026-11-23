@@ -260,7 +260,7 @@ export const authCopy = {
     settingUp: 'Setting up your account',
     terms: {
       title: 'Before your book syncs',
-      body: 'Your letters stay private to you and the family you invite. We never sell them, use them for ads or use them to train machine learning models.',
+      body: 'Your letters stay yours. We never sell them, use them for ads or use them to train machine learning models.',
       agreeLine,
       termsLink: 'Terms of Service',
       privacyLink: 'Privacy Policy',

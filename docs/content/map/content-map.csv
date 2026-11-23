@@ -454,7 +454,7 @@ docs/store/notes-for-review-1.0.txt#text~14,store,store listing,docs/store/notes
 docs/store/notes-for-review-1.0.txt#text~15,store,store listing,docs/store/notes-for-review-1.0.txt,20,en,"Plus Monthly (plus.monthly) $4.99 with a 1-month free trial; Plus Annual (plus.annual) $49.99 with a 2-month free trial. The first 2 letters kept are free; keeping more needs Plus. Letters already kept stay readable, playable and exportable without Plus. To reach the sheet: keep two typed letters, then try to keep a third, or open Settings, Plan. The sheet is Apple's subscription view with Restore Purchases, Terms of Use and Privacy Policy. Settings, Plan also has Restore purchases, Manage subscription and Redeem a code. Please use a sandbox account. Plus is checked on the device with StoreKit.",601,held,"app-review notes, sent to Apple only",,,,cmo,live on develop,store-doc
 docs/store/notes-for-review-1.0.txt#text~16,store,store listing,docs/store/notes-for-review-1.0.txt,22,en,"CODE THAT IS SWITCHED OFF IN THIS BUILD (2.3.1(a), 2.5.19)",58,held,"app-review notes, sent to Apple only",,,,cmo,live on develop,store-doc
 docs/store/notes-for-review-1.0.txt#text~17,store,store listing,docs/store/notes-for-review-1.0.txt,23,en,"The binary also contains code for later updates: sign-in (Sign in with Apple, email link), sync, co-parent sharing, recording backup, a subscription status email, account deletion for accounts, and analytics. All of it is off at build time in this version: EXPO_PUBLIC_SERVER_FEATURES, EXPO_PUBLIC_BACKUP, EXPO_PUBLIC_STATUS_REPORT and EXPO_PUBLIC_ANALYTICS are off. Nothing in the app reaches it, no account is created, and no remote setting can turn it on. Each feature will be described in the Notes for Review of the update that turns it on.",545,held,"app-review notes, sent to Apple only",,,,cmo,live on develop,store-doc
-docs/store/notes-for-review-1.0.txt#text~18,store,store listing,docs/store/notes-for-review-1.0.txt,24,en,"[FOUNDER, KEEP ONE LINE: ""The Family tab and invite screens are not shown in this version."" (if the D-126 change is in the build) OR ""The Family tab shows a short note that writing a book together comes in a later update. It has no buttons and no feature behind it."" (D-126 fallback)]",284,held,"app-review notes, sent to Apple only",,,,cmo,live on develop,store-doc
+docs/store/notes-for-review-1.0.txt#text~18,store,store listing,docs/store/notes-for-review-1.0.txt,24,en,"[FOUNDER, KEEP THIS LINE: ""The Family tab and invite screens are not shown in this version."" The D-126 fallback, a Family note that writing a book together comes in a later update, is removed: D-161 rules out a ""coming soon"" co-parent surface in every build.]",259,held,"app-review notes, sent to Apple only",,,,cmo,live on develop,store-doc
 docs/store/notes-for-review-1.0.txt#text~19,store,store listing,docs/store/notes-for-review-1.0.txt,26,en,NETWORK REQUESTS IN THIS VERSION,32,held,"app-review notes, sent to Apple only",,,,cmo,live on develop,store-doc
 docs/store/notes-for-review-1.0.txt#text~20,store,store listing,docs/store/notes-for-review-1.0.txt,27,en,"1. Signed settings files from packs.earlyletters.app (our host): app settings, the list of downloadable files and the English text bundle. They carry no user data. The settings can only pause downloads or make the free allowance larger; they cannot add features.",262,held,"app-review notes, sent to Apple only",,,,cmo,live on develop,store-doc
 docs/store/notes-for-review-1.0.txt#text~21,store,store listing,docs/store/notes-for-review-1.0.txt,28,en,"2. The speech model files from huggingface.co, after the person agrees.",71,held,"app-review notes, sent to Apple only",,,,cmo,live on develop,store-doc
@@ -638,7 +638,7 @@ emails/auth.en.ts#authEmails.welcome.preheader,email,email preheader,packages/co
 emails/auth.en.ts#authEmails.welcome.heading,email,email body,packages/content/src/emails/auth.en.ts,102,en,Welcome to ${brand.name},24,,,,,,content,live on develop,content
 emails/auth.en.ts#authEmails.welcome.body.0,email,email body,packages/content/src/emails/auth.en.ts,104,en,"You're in. Open the app, tap the red circle and talk.",53,,,,,,content,live on develop,content
 emails/auth.en.ts#authEmails.welcome.body.1,email,email body,packages/content/src/emails/auth.en.ts,105,en,A minute is plenty. A quiet day is fine too.,44,,,,,,content,live on develop,content
-emails/auth.en.ts#authEmails.welcome.body.2,email,email body,packages/content/src/emails/auth.en.ts,106,en,"It stays in your words. Every change is marked, and your original recording is kept unchanged. We never rewrite your words.",123,protected,D-133 public promise line,,,,content,live on develop,content
+emails/auth.en.ts#authEmails.welcome.body.2,email,email body,packages/content/src/emails/auth.en.ts,106,en,"It stays in your words. Every word we change is marked, and your original recording is kept unchanged. We never rewrite your words.",131,,,,,,content,live on develop,content
 emails/auth.en.ts#authEmails.welcome.body.4,email,email body,packages/content/src/emails/auth.en.ts,109,en,Our staff look only in the rare cases our Privacy Policy describes.,67,,,,,,content,live on develop,content
 emails/auth.en.ts#authEmails.welcome.body.5,email,email body,packages/content/src/emails/auth.en.ts,110,en,Ideas are welcome too. Write back any time.,43,,,,,,content,live on develop,content
 emails/auth.en.ts#authEmails.welcome.cta.label,email,email body,packages/content/src/emails/auth.en.ts,112,en,Open ${brand.name},18,,,,,,content,live on develop,content
@@ -952,7 +952,7 @@ emails/lifecycle.en.ts#lifecycleEmails.welcome-coparent.preheader,email,email pr
 emails/lifecycle.en.ts#lifecycleEmails.welcome-coparent.heading,email,email body,packages/content/src/emails/lifecycle.en.ts,45,en,You and {parentName} share this book,36,,,,,,content,live on develop,content
 emails/lifecycle.en.ts#lifecycleEmails.welcome-coparent.body.0,email,email body,packages/content/src/emails/lifecycle.en.ts,47,en,{parentName} invited you to keep the book together. You can write letters of your own and read every letter in the book.,120,,,,,,content,live on develop,content
 emails/lifecycle.en.ts#lifecycleEmails.welcome-coparent.body.1,email,email body,packages/content/src/emails/lifecycle.en.ts,48,en,"Your letters are yours, and {parentName}'s are theirs. Neither of you can change the other's words.",99,,,,,,content,live on develop,content
-emails/lifecycle.en.ts#lifecycleEmails.welcome-coparent.body.2,email,email body,packages/content/src/emails/lifecycle.en.ts,49,en,"It stays in your words. Every change is marked, and your original recording is kept unchanged.",94,protected,D-133 public promise line,,,,content,live on develop,content
+emails/lifecycle.en.ts#lifecycleEmails.welcome-coparent.body.2,email,email body,packages/content/src/emails/lifecycle.en.ts,49,en,"It stays in your words. Every word we change is marked, and your original recording is kept unchanged.",102,,,,,,content,live on develop,content
 emails/lifecycle.en.ts#lifecycleEmails.welcome-coparent.body.3,email,email body,packages/content/src/emails/lifecycle.en.ts,50,en,"When you have a minute, open the app and talk. A sentence is plenty.",68,,,,,,content,live on develop,content
 emails/lifecycle.en.ts#lifecycleEmails.welcome-coparent.cta.label,email,email body,packages/content/src/emails/lifecycle.en.ts,52,en,Open the book,13,,,,,,content,live on develop,content
 emails/lifecycle.en.ts#lifecycleEmails.welcome-coparent.cta.urlVar,email,email body,packages/content/src/emails/lifecycle.en.ts,52,en,{appUrl},8,,,,,,content,live on develop,content
@@ -1110,7 +1110,7 @@ features/auth.en.ts#authCopy.errors.other_phone_spent,error,in-app error,package
 features/auth.en.ts#authCopy.errors.already_signed_in,error,in-app error,packages/content/src/features/auth.en.ts,256,en,"You're already signed in on this phone. To use another account, sign out, then type the code from the email.",108,,,,,,content,live on develop,content
 features/auth.en.ts#authCopy.consent.settingUp,legal,consent,packages/content/src/features/auth.en.ts,260,en,Setting up your account,23,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
 features/auth.en.ts#authCopy.consent.terms.title,legal,consent,packages/content/src/features/auth.en.ts,262,en,Before your book syncs,22,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
-features/auth.en.ts#authCopy.consent.terms.body,legal,consent,packages/content/src/features/auth.en.ts,263,en,"Your letters stay private to you and the family you invite. We never sell them, use them for ads or use them to train machine learning models.",142,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
+features/auth.en.ts#authCopy.consent.terms.body,legal,consent,packages/content/src/features/auth.en.ts,263,en,"Your letters stay yours. We never sell them, use them for ads or use them to train machine learning models.",107,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
 features/auth.en.ts#authCopy.consent.terms.termsLink,legal,consent,packages/content/src/features/auth.en.ts,265,en,Terms of Service,16,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
 features/auth.en.ts#authCopy.consent.terms.privacyLink,legal,consent,packages/content/src/features/auth.en.ts,266,en,Privacy Policy,14,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
 features/auth.en.ts#authCopy.consent.terms.agree,legal,consent,packages/content/src/features/auth.en.ts,267,en,Agree and continue,18,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
@@ -1202,7 +1202,7 @@ features/billing.en.ts#billingCopy.store.renewal,app screen,in-app,packages/cont
 features/billing.en.ts#billingCopy.store.cancel,app screen,in-app,packages/content/src/features/billing.en.ts,35,en,"Cancel any time in Settings, Plan, Manage subscription, or in your Apple Account subscriptions.",95,,,,,,content,live on develop,content
 features/billing.en.ts#billingCopy.store.family,app screen,in-app,packages/content/src/features/billing.en.ts,36,en,Plus can be shared with your family through Apple Family Sharing.,65,,,,,,content,live on develop,content
 features/billing.en.ts#billingCopy.keepGate.title,app screen,in-app,packages/content/src/features/billing.en.ts,45,en,Keep adding to {child}'s book,29,,,,,,content,live on develop,content
-features/billing.en.ts#billingCopy.keepGate.body,app screen,in-app,packages/content/src/features/billing.en.ts,46,en,Your first two letters are kept for good. Plus lets you keep adding letters.,76,,,,,,content,live on develop,content
+features/billing.en.ts#billingCopy.keepGate.body,app screen,in-app,packages/content/src/features/billing.en.ts,46,en,Your first two letters are free. Plus lets you keep adding letters.,67,,,,,,content,live on develop,content
 features/billing.en.ts#billingCopy.keepGate.heldNote,app screen,in-app,packages/content/src/features/billing.en.ts,52,en,"This letter waits on Home, on this phone, exactly as it is. Keep it whenever you like.",86,,,,,,content,live on develop,content
 features/billing.en.ts#billingCopy.keepGate.heldNoteSynced,app screen,in-app,packages/content/src/features/billing.en.ts,53,en,"This one waits on Home, exactly as it is, for as long as you like. It syncs privately with your account.",104,,,,,,content,live on develop,content
 features/billing.en.ts#billingCopy.keepGate.heldChip,app screen,in-app,packages/content/src/features/billing.en.ts,55,en,Waiting,7,,,,,,content,live on develop,content
@@ -1290,7 +1290,7 @@ features/billing.en.ts#billingCopy.confirmation.family,app screen,in-app,package
 features/billing.en.ts#billingCopy.confirmation.reminders,app screen,in-app,packages/content/src/features/billing.en.ts,218,en,"As a courtesy, this iPhone also tries to remind you before a free period ends, before an annual plan renews and once a year, if notifications are allowed. A reminder can come late or not at all, so the dates in Settings, Plan and Apple's receipts are the ones to go by.",269,,,,,,content,live on develop,content
 features/billing.en.ts#billingCopy.confirmation.saveCopy,app screen,in-app,packages/content/src/features/billing.en.ts,219,en,Save a copy,11,,,,,,content,live on develop,content
 features/billing.en.ts#billingCopy.confirmation.saveCopyHelp,app screen,in-app,packages/content/src/features/billing.en.ts,220,en,"Keep these terms in Mail, Notes or Files.",41,,,,,,content,live on develop,content
-features/billing.en.ts#billingCopy.confirmation.saveCopyFailed,app screen,in-app,packages/content/src/features/billing.en.ts,222,en,"The copy could not be shared just now. The same terms are in Settings, Plan.",76,,,,,,content,live on develop,content
+features/billing.en.ts#billingCopy.confirmation.saveCopyFailed,app screen,in-app,packages/content/src/features/billing.en.ts,222,en,"The copy couldn't be shared just now. The same terms are in Settings, Plan.",75,,,,,,content,live on develop,content
 features/billing.en.ts#billingCopy.confirmation.remindTrialOneMonth,app screen,in-app,packages/content/src/features/billing.en.ts,223,en,Remind me before the free period ends,37,,,,,,content,live on develop,content
 features/billing.en.ts#billingCopy.confirmation.remindTrialMonths,app screen,in-app,packages/content/src/features/billing.en.ts,224,en,Remind me before the free period ends,37,,,,,,content,live on develop,content
 features/billing.en.ts#billingCopy.confirmation.remindRenewal,app screen,in-app,packages/content/src/features/billing.en.ts,225,en,Remind me before Plus renews,28,,,,,,content,live on develop,content
@@ -1486,37 +1486,26 @@ features/family.en.ts#familyCopy.leave.coParentFallback,app screen,in-app,packag
 features/family.en.ts#familyCopy.leave.later,app screen,in-app,packages/content/src/features/family.en.ts,150,en,Leaving a shared book is coming in a later update.,50,,,,,,content,live on develop,content
 features/family.en.ts#familyCopy.left.note,app screen,in-app,packages/content/src/features/family.en.ts,155,en,{signsAs} has left {child}'s book.,34,,,,,,content,live on develop,content
 features/family.en.ts#familyCopy.left.noteUnsigned,app screen,in-app,packages/content/src/features/family.en.ts,157,en,Your co-parent has left {child}'s book.,39,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.soon.status,app screen,in-app,packages/content/src/features/family.en.ts,168,en,Coming soon,11,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.soon.title,app screen,in-app,packages/content/src/features/family.en.ts,174,en,"For now, this book is yours.",28,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.soon.lead,app screen,in-app,packages/content/src/features/family.en.ts,175,en,"In a later update, {child}'s other parent can add letters too, from their own phone.",84,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.soon.notify.button,app screen,in-app,packages/content/src/features/family.en.ts,177,en,Tell me when it's here,22,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.soon.notify.hint,app screen,in-app,packages/content/src/features/family.en.ts,178,en,Saves a note on this phone. Nothing is sent.,44,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.soon.notify.done,app screen,in-app,packages/content/src/features/family.en.ts,180,en,"Noted on this phone. When the update arrives, you will see it here.",67,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.soon.quiet.title,app screen,in-app,packages/content/src/features/family.en.ts,183,en,"For now, this book is yours.",28,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.soon.quiet.body,app screen,in-app,packages/content/src/features/family.en.ts,184,en,{child}'s book and every letter in it stay on this phone.,57,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.soon.childFallback,app screen,in-app,packages/content/src/features/family.en.ts,186,en,your child,10,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.soon.close,app screen,in-app,packages/content/src/features/family.en.ts,187,en,Close,5,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.soon.settingsRow,app screen,in-app,packages/content/src/features/family.en.ts,188,en,Write this book together,24,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.soon.settingsRowHelp,app screen,in-app,packages/content/src/features/family.en.ts,189,en,Sharing a book with a co-parent is coming in a later update.,60,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.errors.expired,error,in-app error,packages/content/src/features/family.en.ts,193,en,This invite has expired. Ask for a new one.,43,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.errors.used,error,in-app error,packages/content/src/features/family.en.ts,194,en,This invite has already been used. Ask for a new one if that wasn't you.,72,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.errors.revoked,error,in-app error,packages/content/src/features/family.en.ts,195,en,This invite was cancelled. Ask for a new one.,45,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.errors.already_member,error,in-app error,packages/content/src/features/family.en.ts,196,en,You're already part of this book.,33,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.errors.not_found,error,in-app error,packages/content/src/features/family.en.ts,197,en,That link doesn't open an invite. Check it and try again.,57,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.errors.not_parent,error,in-app error,packages/content/src/features/family.en.ts,198,en,"Only a parent of {child}'s book can invite. If you just signed in, give it a moment and try again.",98,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.errors.rate_limited,error,in-app error,packages/content/src/features/family.en.ts,199,en,"You've sent a lot of invites. Wait a while, then try again.",59,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.errors.consent_needed,error,in-app error,packages/content/src/features/family.en.ts,200,en,Finish setting up your account first.,37,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.errors.book_deleted,error,in-app error,packages/content/src/features/family.en.ts,201,en,This book isn't available.,26,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.errors.signed_out,error,in-app error,packages/content/src/features/family.en.ts,202,en,Sign in again to continue.,26,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.errors.network,error,in-app error,packages/content/src/features/family.en.ts,203,en,This phone is offline. Try again once it is back online.,56,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.errors.unknown,error,in-app error,packages/content/src/features/family.en.ts,204,en,That didn't go through. Try again.,34,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.errors.book_full,error,in-app error,packages/content/src/features/family.en.ts,206,en,This book already has two parents. Ask the person who invited you.,66,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.errors.last_parent,error,in-app error,packages/content/src/features/family.en.ts,208,en,"You're the only parent of {child}'s book now, so it stays with you.",67,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.errors.not_allowed,error,in-app error,packages/content/src/features/family.en.ts,210,en,That isn't possible from here.,30,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.errors.retry_new_invite,error,in-app error,packages/content/src/features/family.en.ts,212,en,That didn't go through. Try again.,34,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.errors.id_taken,error,in-app error,packages/content/src/features/family.en.ts,214,en,That didn't go through. Try again.,34,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.errors.family_share_consent,error,in-app error,packages/content/src/features/family.en.ts,219,en,"Sharing a book now asks for one more agreement. Update the app to see it, then try again.",89,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.errors.paused,error,in-app error,packages/content/src/features/family.en.ts,225,en,Invites are paused for now. Try again a little later.,53,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.soon.status,app screen,in-app,packages/content/src/features/family.en.ts,166,en,Coming soon,11,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.errors.expired,error,in-app error,packages/content/src/features/family.en.ts,170,en,This invite has expired. Ask for a new one.,43,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.errors.used,error,in-app error,packages/content/src/features/family.en.ts,171,en,This invite has already been used. Ask for a new one if that wasn't you.,72,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.errors.revoked,error,in-app error,packages/content/src/features/family.en.ts,172,en,This invite was cancelled. Ask for a new one.,45,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.errors.already_member,error,in-app error,packages/content/src/features/family.en.ts,173,en,You're already part of this book.,33,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.errors.not_found,error,in-app error,packages/content/src/features/family.en.ts,174,en,That link doesn't open an invite. Check it and try again.,57,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.errors.not_parent,error,in-app error,packages/content/src/features/family.en.ts,175,en,"Only a parent of {child}'s book can invite. If you just signed in, give it a moment and try again.",98,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.errors.rate_limited,error,in-app error,packages/content/src/features/family.en.ts,176,en,"You've sent a lot of invites. Wait a while, then try again.",59,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.errors.consent_needed,error,in-app error,packages/content/src/features/family.en.ts,177,en,Finish setting up your account first.,37,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.errors.book_deleted,error,in-app error,packages/content/src/features/family.en.ts,178,en,This book isn't available.,26,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.errors.signed_out,error,in-app error,packages/content/src/features/family.en.ts,179,en,Sign in again to continue.,26,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.errors.network,error,in-app error,packages/content/src/features/family.en.ts,180,en,This phone is offline. Try again once it is back online.,56,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.errors.unknown,error,in-app error,packages/content/src/features/family.en.ts,181,en,That didn't go through. Try again.,34,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.errors.book_full,error,in-app error,packages/content/src/features/family.en.ts,183,en,This book already has two parents. Ask the person who invited you.,66,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.errors.last_parent,error,in-app error,packages/content/src/features/family.en.ts,185,en,"You're the only parent of {child}'s book now, so it stays with you.",67,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.errors.not_allowed,error,in-app error,packages/content/src/features/family.en.ts,187,en,That isn't possible from here.,30,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.errors.retry_new_invite,error,in-app error,packages/content/src/features/family.en.ts,189,en,That didn't go through. Try again.,34,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.errors.id_taken,error,in-app error,packages/content/src/features/family.en.ts,191,en,That didn't go through. Try again.,34,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.errors.family_share_consent,error,in-app error,packages/content/src/features/family.en.ts,196,en,"Sharing a book now asks for one more agreement. Update the app to see it, then try again.",89,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.errors.paused,error,in-app error,packages/content/src/features/family.en.ts,202,en,Invites are paused for now. Try again a little later.,53,,,,,,content,live on develop,content
 features/find.en.ts#findCopy.button,app screen,in-app,packages/content/src/features/find.en.ts,13,en,Find,4,,,,,,content,live on develop,content
 features/find.en.ts#findCopy.buttonHint,app screen,in-app,packages/content/src/features/find.en.ts,15,en,Looks for a word in this book's letters.,40,,,,,,content,live on develop,content
 features/find.en.ts#findCopy.placeholder,app screen,in-app,packages/content/src/features/find.en.ts,17,en,Find in {child}'s book,22,,,,,,content,live on develop,content
@@ -1562,7 +1551,7 @@ features/language.en.ts#languageCopy.status.downloadNow,app screen,in-app,packag
 features/language.en.ts#languageCopy.announceStarted,app screen,in-app,packages/content/src/features/language.en.ts,50,en,Downloading {name},18,,,,,,content,live on develop,content
 features/language.en.ts#languageCopy.announceFinished,app screen,in-app,packages/content/src/features/language.en.ts,51,en,{name} is on this phone,23,,,,,,content,live on develop,content
 features/language.en.ts#languageCopy.safeModeNote,app screen,in-app,packages/content/src/features/language.en.ts,53,en,"Until it arrives, letters in {name} keep your words exactly as heard, with only punctuation fixed.",98,,,,,,content,live on develop,content
-features/language.en.ts#languageCopy.waitingForLanguage,app screen,in-app,packages/content/src/features/language.en.ts,57,en,This recording is waiting for its language. Other languages are coming in a later update.,89,,,,,,content,live on develop,content
+features/language.en.ts#languageCopy.waitingForLanguage,app screen,in-app,packages/content/src/features/language.en.ts,57,en,This recording is kept. This version writes down English.,57,,,,,,content,live on develop,content
 features/language.en.ts#languageCopy.picker.title,app screen,in-app,packages/content/src/features/language.en.ts,60,en,Choose a language,17,,,,,,content,live on develop,content
 features/language.en.ts#languageCopy.picker.close,app screen,in-app,packages/content/src/features/language.en.ts,61,en,Close,5,,,,,,content,live on develop,content
 features/language.en.ts#languageCopy.picker.searchLabel,app screen,in-app,packages/content/src/features/language.en.ts,62,en,Search languages,16,,,,,,content,live on develop,content
@@ -1571,7 +1560,7 @@ features/language.en.ts#languageCopy.picker.none,app screen,in-app,packages/cont
 features/language.en.ts#languageCopy.picker.chosenA11y,app screen,in-app,packages/content/src/features/language.en.ts,65,en,Already chosen,14,,,,,,content,live on develop,content
 features/language.en.ts#languageCopy.picker.selectedA11y,app screen,in-app,packages/content/src/features/language.en.ts,66,en,Selected,8,,,,,,content,live on develop,content
 features/language.en.ts#languageCopy.picker.rowHint,app screen,in-app,packages/content/src/features/language.en.ts,67,en,Chooses this language,21,,,,,,content,live on develop,content
-features/language.en.ts#languageCopy.picker.englishOnly,app screen,in-app,packages/content/src/features/language.en.ts,69,en,Other languages are coming in a later update.,45,,,,,,content,live on develop,content
+features/language.en.ts#languageCopy.picker.englishOnly,app screen,in-app,packages/content/src/features/language.en.ts,69,en,This version writes down letters spoken in English.,51,,,,,,content,live on develop,content
 features/licences.en.ts#licences.title,app screen,in-app,packages/content/src/features/licences.en.ts,12,en,Licenses,8,,,,,,content,live on develop,content
 features/licences.en.ts#licences.rowLabel,app screen,in-app,packages/content/src/features/licences.en.ts,13,en,Licenses,8,,,,,,content,live on develop,content
 features/licences.en.ts#licences.intro,app screen,in-app,packages/content/src/features/licences.en.ts,14,en,This app is built with the help of open work by many people. Thank you.,71,,,,,,content,live on develop,content
@@ -1639,7 +1628,7 @@ features/new-device.en.ts#newDevicePageCopy.done.email,app screen,in-app,package
 features/new-device.en.ts#newDevicePageCopy.decline.title,app screen,in-app,packages/content/src/features/new-device.en.ts,37,en,Thank you for checking,22,,,,,,content,live on develop,content
 features/new-device.en.ts#newDevicePageCopy.decline.body,app screen,in-app,packages/content/src/features/new-device.en.ts,38,en,"Nothing has changed, and there is nothing else to do. You can close this page.",78,,,,,,content,live on develop,content
 features/new-device.en.ts#newDevicePageCopy.inAppPath,app screen,in-app,packages/content/src/features/new-device.en.ts,42,en,"You can also do this in the app. Go to Me, then Account, then Sign out other devices.",85,,,,,,content,live on develop,content
-features/new-device.en.ts#newDevicePageCopy.states.offline,app screen,in-app,packages/content/src/features/new-device.en.ts,47,en,Nothing has changed. Try again once you are back online.,56,,,,,,content,live on develop,content
+features/new-device.en.ts#newDevicePageCopy.states.offline,app screen,in-app,packages/content/src/features/new-device.en.ts,47,en,Nothing has changed. Try again once you're back online.,55,,,,,,content,live on develop,content
 features/new-device.en.ts#newDevicePageCopy.states.failed,app screen,in-app,packages/content/src/features/new-device.en.ts,49,en,Nothing has changed. That device is still signed in.,52,,,,,,content,live on develop,content
 features/new-device.en.ts#newDevicePageCopy.states.expired,app screen,in-app,packages/content/src/features/new-device.en.ts,51,en,"This link is too old, or it has already been used.",50,,,,,,content,live on develop,content
 features/new-device.en.ts#newDevicePageCopy.states.already,app screen,in-app,packages/content/src/features/new-device.en.ts,53,en,That device is already signed out.,34,,,,,,content,live on develop,content
@@ -2393,13 +2382,13 @@ store.en.ts#storeListing.whatsNewV1,store,store listing,packages/content/src/sto
 stories.en.ts#onboardingStories.0.headline,app screen,in-app,packages/content/src/stories.en.ts,31,en,Talk for a minute.,18,,,,,,content,live on develop,content
 stories.en.ts#onboardingStories.0.line,app screen,in-app,packages/content/src/stories.en.ts,32,en,Tell your child about today. It becomes a letter in their book.,63,,,,,,content,live on develop,content
 stories.en.ts#onboardingStories.1.headline,app screen,in-app,packages/content/src/stories.en.ts,41,en,It stays in your words.,23,,,,,,content,live on develop,content
-stories.en.ts#onboardingStories.1.line,app screen,in-app,packages/content/src/stories.en.ts,42,en,"Every change is marked, and your original recording is kept unchanged. We never rewrite your words.",99,,,,,,content,live on develop,content
+stories.en.ts#onboardingStories.1.line,app screen,in-app,packages/content/src/stories.en.ts,42,en,"Every word we change is marked, and your original recording is kept unchanged. We never rewrite your words.",107,,,,,,content,live on develop,content
 stories.en.ts#onboardingStories.2.headline,app screen,in-app,packages/content/src/stories.en.ts,49,en,"Read together, in your voice.",29,,,,,,content,live on develop,content
 stories.en.ts#onboardingStories.2.line,app screen,in-app,packages/content/src/stories.en.ts,50,en,"Years from now, your child can hear how you sounded tonight.",60,,,,,,content,live on develop,content
-stories.en.ts#onboardingStories.3.headline,app screen,in-app,packages/content/src/stories.en.ts,57,en,Private to your family.,23,,,,,,content,live on develop,content
-stories.en.ts#onboardingStories.3.line,app screen,in-app,packages/content/src/stories.en.ts,58,en,"Your letters are yours, and you choose who else can read them. We never sell them and never use them for ads.",109,,,,,,content,live on develop,content
-stories.en.ts#alternateStories.0.headline,app screen,in-app,packages/content/src/stories.en.ts,76,en,Private by default.,19,,,,,,content,live on develop,content
-stories.en.ts#alternateStories.0.line,app screen,in-app,packages/content/src/stories.en.ts,77,en,"Shared only with the other parent, if you invite them. Never sold, never used for ads.",86,,,,,,content,live on develop,content
+stories.en.ts#onboardingStories.3.headline,app screen,in-app,packages/content/src/stories.en.ts,57,en,Private by default.,19,,,,,,content,live on develop,content
+stories.en.ts#onboardingStories.3.line,app screen,in-app,packages/content/src/stories.en.ts,58,en,Your letters are yours. We never sell them and never use them for ads.,70,,,,,,content,live on develop,content
+stories.en.ts#alternateStories.0.headline,app screen,in-app,packages/content/src/stories.en.ts,77,en,Private by default.,19,,,,,,content,live on develop,content
+stories.en.ts#alternateStories.0.line,app screen,in-app,packages/content/src/stories.en.ts,78,en,"Shared only with the other parent, if you invite them. Never sold, never used for ads.",86,,,,,,content,live on develop,content
 strings.en.ts#en.app.name,app screen,in-app,packages/content/src/strings.en.ts,31,en,{app},5,,,,,,content,live on develop,content
 strings.en.ts#en.app.oneLine,app screen,in-app,packages/content/src/strings.en.ts,35,en,"{app}: letters to your child, in your own words and voice.",58,,,,,,content,live on develop,content
 strings.en.ts#en.common.continueButton,app screen,in-app,packages/content/src/strings.en.ts,39,en,Continue,8,,,,,,content,live on develop,content
@@ -2429,7 +2418,7 @@ strings.en.ts#en.onboarding.welcome.startButton,app screen,in-app,packages/conte
 strings.en.ts#en.onboarding.welcome.signInButton,app screen,in-app,packages/content/src/strings.en.ts,77,en,I already have a book,21,,,,,,content,live on develop,content
 strings.en.ts#en.onboarding.welcome.joinButton,app screen,in-app,packages/content/src/strings.en.ts,78,en,I was invited,13,,,,,,content,live on develop,content
 strings.en.ts#en.onboarding.promise.title,app screen,in-app,packages/content/src/strings.en.ts,82,en,It stays in your words.,23,,,,,,content,live on develop,content
-strings.en.ts#en.onboarding.promise.body2,app screen,in-app,packages/content/src/strings.en.ts,86,en,"Every change is marked, and your original recording is kept unchanged. We never rewrite your words, shorten them or write for you.",130,,,,,,content,live on develop,content
+strings.en.ts#en.onboarding.promise.body2,app screen,in-app,packages/content/src/strings.en.ts,86,en,"Every word we change is marked, and your original recording is kept unchanged. We never rewrite your words, shorten them or write for you.",138,,,,,,content,live on develop,content
 strings.en.ts#en.onboarding.promise.sampleLabel,app screen,in-app,packages/content/src/strings.en.ts,89,en,For example,11,,,,,,content,live on develop,content
 strings.en.ts#en.onboarding.promise.sampleRaw,app screen,in-app,packages/content/src/strings.en.ts,90,en,"Today, um, you you held the spoon all by yourself.",50,,,,,,content,live on develop,content
 strings.en.ts#en.onboarding.promise.sampleHint,app screen,in-app,packages/content/src/strings.en.ts,91,en,Word for word marks every small fix. Tap one to put it back.,60,,,,,,content,live on develop,content
@@ -2804,7 +2793,7 @@ strings.en.ts#en.family.contributorWelcome.title,app screen,in-app,packages/cont
 strings.en.ts#en.family.contributorWelcome.body,app screen,in-app,packages/content/src/strings.en.ts,716,en,{inviter} is keeping a book of letters for {child}. Yours can be part of it.,76,,,,,,content,live on develop,content
 strings.en.ts#en.family.contributorWelcome.howTitle,app screen,in-app,packages/content/src/strings.en.ts,717,en,How it works,12,,,,,,content,live on develop,content
 strings.en.ts#en.family.contributorWelcome.howStep1,app screen,in-app,packages/content/src/strings.en.ts,718,en,Tap the red circle and talk.,28,,,,,,content,live on develop,content
-strings.en.ts#en.family.contributorWelcome.howStep2,app screen,in-app,packages/content/src/strings.en.ts,719,en,"It stays in your words. Every change is marked, and your original recording is kept unchanged.",94,protected,D-133 public promise line,,,,content,live on develop,content
+strings.en.ts#en.family.contributorWelcome.howStep2,app screen,in-app,packages/content/src/strings.en.ts,719,en,"It stays in your words. Every word we change is marked, and your original recording is kept unchanged.",102,,,,,,content,live on develop,content
 strings.en.ts#en.family.contributorWelcome.howStep3,app screen,in-app,packages/content/src/strings.en.ts,720,en,{inviter} adds your letter to {child}'s book.,45,,,,,,content,live on develop,content
 strings.en.ts#en.family.contributorWelcome.voiceNote,app screen,in-app,packages/content/src/strings.en.ts,721,en,"Your recording is kept on your phone too, so one day {child} can hear you tell it.",82,,,,,,content,live on develop,content
 strings.en.ts#en.family.contributorWelcome.privacyNote,app screen,in-app,packages/content/src/strings.en.ts,722,en,Only {child}'s parents see your letters until they go in the book.,66,,,,,,content,live on develop,content
@@ -2934,7 +2923,7 @@ strings.en.ts#en.settings.delete.deletedOn,app screen,in-app,packages/content/sr
 strings.en.ts#en.settings.delete.erasesOn,app screen,in-app,packages/content/src/strings.en.ts,913,en,Kept here until {date},22,,,,,,content,live on develop,content
 strings.en.ts#en.settings.delete.eraseNow,app screen,in-app,packages/content/src/strings.en.ts,914,en,Erase now,9,,,,,,content,live on develop,content
 strings.en.ts#en.settings.delete.eraseNowTitle,app screen,in-app,packages/content/src/strings.en.ts,915,en,Erase this letter now?,22,,,,,,content,live on develop,content
-strings.en.ts#en.settings.delete.eraseNowBody,app screen,in-app,packages/content/src/strings.en.ts,918,en,The letter and its recording are erased for good.,49,,,,,,content,live on develop,content
+strings.en.ts#en.settings.delete.eraseNowBody,app screen,in-app,packages/content/src/strings.en.ts,918,en,The letter and its recording are erased from this phone. Backups and exports you already saved are not changed.,111,,,,,,content,live on develop,content
 strings.en.ts#en.settings.delete.restoredToast,app screen,in-app,packages/content/src/strings.en.ts,920,en,Back in {child}'s book.,23,,,,,,content,live on develop,content
 strings.en.ts#en.settings.delete.restoredToastNoName,app screen,in-app,packages/content/src/strings.en.ts,923,en,Back in the book.,17,,,,,,content,live on develop,content
 strings.en.ts#en.settings.delete.openButton,app screen,in-app,packages/content/src/strings.en.ts,925,en,Open,4,,,,,,content,live on develop,content
@@ -3013,306 +3002,306 @@ strings.en.ts#en.settings.privacy.lockScreenLabel,app screen,in-app,packages/con
 strings.en.ts#en.settings.privacy.namesValueOn,app screen,in-app,packages/content/src/strings.en.ts,1056,en,On,2,,,,,,content,live on develop,content
 strings.en.ts#en.settings.privacy.namesValueOff,app screen,in-app,packages/content/src/strings.en.ts,1057,en,Off,3,,,,,,content,live on develop,content
 strings.en.ts#en.settings.privacy.promiseTitle,app screen,in-app,packages/content/src/strings.en.ts,1058,en,Our promise,11,,,,,,content,live on develop,content
-strings.en.ts#en.settings.privacy.controlsHelp,app screen,in-app,packages/content/src/strings.en.ts,1060,en,"These switches are yours. Export your book, stop sharing or delete everything, any time.",88,,,,,,content,live on develop,content
-strings.en.ts#en.settings.privacy.whereTitle,app screen,in-app,packages/content/src/strings.en.ts,1064,en,Where your book is kept,23,,,,,,content,live on develop,content
-strings.en.ts#en.settings.privacy.keptOnPhone,app screen,in-app,packages/content/src/strings.en.ts,1069,en,Your letters and recordings are kept on this phone. They are not sent to us.,76,build-dependent,build-dependent: true for servers off only,,,,content,live on develop,content
-strings.en.ts#en.settings.privacy.keptSynced,app screen,in-app,packages/content/src/strings.en.ts,1071,en,"Your letters are kept on this phone and on our servers, so they reach your other devices. Your recordings are kept on this phone.",129,build-dependent,build-dependent: true for servers on only,,,,content,live on develop,content
-strings.en.ts#en.settings.privacy.iphoneBackupTitle,app screen,in-app,packages/content/src/strings.en.ts,1074,en,iPhone backup,13,,,,,,content,live on develop,content
-strings.en.ts#en.settings.privacy.iphoneBackup,app screen,in-app,packages/content/src/strings.en.ts,1075,en,"Includes your recordings, if iCloud Backup is on.",49,,,,,,content,live on develop,content
-strings.en.ts#en.settings.privacy.speechOnPhone,app screen,in-app,packages/content/src/strings.en.ts,1077,en,Your speech is written down on this phone.,42,,,,,,content,live on develop,content
-strings.en.ts#en.settings.privacy.noReports,app screen,in-app,packages/content/src/strings.en.ts,1079,en,This version collects no usage or crash reports.,48,,,,,,content,live on develop,content
-strings.en.ts#en.settings.privacy.whoTitle,app screen,in-app,packages/content/src/strings.en.ts,1080,en,Who can see it,14,,,,,,content,live on develop,content
-strings.en.ts#en.settings.privacy.whoLockOff,app screen,in-app,packages/content/src/strings.en.ts,1083,en,Anyone who can unlock this iPhone can open the book.,52,,,,,,content,live on develop,content
-strings.en.ts#en.settings.privacy.notificationsLine,app screen,in-app,packages/content/src/strings.en.ts,1085,en,Notifications never show the words of a letter.,47,,,,,,content,live on develop,content
-strings.en.ts#en.settings.privacy.canDoTitle,app screen,in-app,packages/content/src/strings.en.ts,1086,en,What you can do,15,,,,,,content,live on develop,content
-strings.en.ts#en.settings.privacy.noAccount,app screen,in-app,packages/content/src/strings.en.ts,1088,en,There is no account in this version. Deleting the app removes its letters and recordings from this phone.,105,,,,,,content,live on develop,content
-strings.en.ts#en.settings.privacy.documentsTitle,app screen,in-app,packages/content/src/strings.en.ts,1089,en,Our promises in full,20,,,,,,content,live on develop,content
-strings.en.ts#en.settings.privacy.privacyPolicyLink,app screen,in-app,packages/content/src/strings.en.ts,1090,en,Privacy Policy,14,,,,,,content,live on develop,content
-strings.en.ts#en.settings.privacy.healthPrivacyLink,app screen,in-app,packages/content/src/strings.en.ts,1091,en,Consumer Health Data Privacy Policy,35,,,,,,content,live on develop,content
-strings.en.ts#en.settings.privacy.subprocessorsLink,app screen,in-app,packages/content/src/strings.en.ts,1092,en,Who helps us run the app,24,,,,,,content,live on develop,content
-strings.en.ts#en.settings.privacy.termsLink,app screen,in-app,packages/content/src/strings.en.ts,1093,en,Terms of Service,16,,,,,,content,live on develop,content
-strings.en.ts#en.sensitiveConsent.title,legal,consent,packages/content/src/strings.en.ts,1100,en,Before your book syncs,22,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
-strings.en.ts#en.sensitiveConsent.body,legal,consent,packages/content/src/strings.en.ts,1101,en,"Letters can hold private things, like health details about you or {child}. To sync your book and share it with the family you choose, we store what you write on our servers.",173,held,consent (docs/legal/in-app-disclosures.md); build-dependent: true for servers on only,,,,privacy,live on develop,content
-strings.en.ts#en.sensitiveConsent.use,legal,consent,packages/content/src/strings.en.ts,1102,en,"We use it only to keep and show your book. We never sell it, use it for ads or use it to train machine learning models.",119,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
-strings.en.ts#en.sensitiveConsent.changeLater,legal,consent,packages/content/src/strings.en.ts,1107,en,"You can turn them on later in Settings, Account.",48,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
-strings.en.ts#en.sensitiveConsent.declineHelp,legal,consent,packages/content/src/strings.en.ts,1109,en,"If you keep it on this phone, syncing and sharing stay off.",59,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
-strings.en.ts#en.sensitiveConsent.agreeButton,legal,consent,packages/content/src/strings.en.ts,1110,en,Agree and sync,14,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
-strings.en.ts#en.sensitiveConsent.declineButton,legal,consent,packages/content/src/strings.en.ts,1111,en,Keep on this phone,18,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
-strings.en.ts#en.analyticsConsent.title,legal,consent,packages/content/src/strings.en.ts,1116,en,Help us make it better?,23,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
-strings.en.ts#en.analyticsConsent.body,legal,consent,packages/content/src/strings.en.ts,1117,en,"Share how you use the app, like which screens you open and when something crashes. Never your letters, recordings, photos or anyone's names.",140,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
-strings.en.ts#en.analyticsConsent.detail,legal,consent,packages/content/src/strings.en.ts,1118,en,Nothing is shared unless you say yes. Saying no changes nothing else.,69,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
-strings.en.ts#en.analyticsConsent.changeLater,legal,consent,packages/content/src/strings.en.ts,1119,en,"You can change this any time in Settings, Privacy.",50,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
-strings.en.ts#en.analyticsConsent.yesButton,legal,consent,packages/content/src/strings.en.ts,1120,en,Share usage,11,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
-strings.en.ts#en.analyticsConsent.noButton,legal,consent,packages/content/src/strings.en.ts,1121,en,Don't share,11,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
-strings.en.ts#en.children.switcher.label,app screen,in-app,packages/content/src/strings.en.ts,1127,en,For {child},11,,,,,,content,live on develop,content
-strings.en.ts#en.children.switcher.hint,app screen,in-app,packages/content/src/strings.en.ts,1128,en,Switch to another child's book,30,,,,,,content,live on develop,content
-strings.en.ts#en.children.switcher.title,app screen,in-app,packages/content/src/strings.en.ts,1129,en,Whose book?,11,,,,,,content,live on develop,content
-strings.en.ts#en.children.switcher.addButton,app screen,in-app,packages/content/src/strings.en.ts,1130,en,Add a child,11,,,,,,content,live on develop,content
-strings.en.ts#en.children.switcher.hiddenLink,app screen,in-app,packages/content/src/strings.en.ts,1131,en,Hidden books,12,,,,,,content,live on develop,content
-strings.en.ts#en.children.switcher.toLabel,app screen,in-app,packages/content/src/strings.en.ts,1132,en,To {child},10,,,,,,content,live on develop,content
-strings.en.ts#en.children.switcher.changeLink,app screen,in-app,packages/content/src/strings.en.ts,1133,en,Write to another child,22,,,,,,content,live on develop,content
-strings.en.ts#en.children.add.title,app screen,in-app,packages/content/src/strings.en.ts,1136,en,Add a child,11,,,,,,content,live on develop,content
-strings.en.ts#en.children.add.twinsHelp,app screen,in-app,packages/content/src/strings.en.ts,1138,en,Twins or more? Each child gets their own book.,46,,,,,,content,live on develop,content
-strings.en.ts#en.children.add.cta,app screen,in-app,packages/content/src/strings.en.ts,1139,en,Add {child}'s book,18,,,,,,content,live on develop,content
-strings.en.ts#en.children.add.ctaShort,app screen,in-app,packages/content/src/strings.en.ts,1141,en,Add this book,13,,,,,,content,live on develop,content
-strings.en.ts#en.children.add.saveFailed,app screen,in-app,packages/content/src/strings.en.ts,1144,en,This book did not save. What you typed is still here.,53,,,,,,content,live on develop,content
-strings.en.ts#en.children.add.rowLabel,app screen,in-app,packages/content/src/strings.en.ts,1147,en,Add a book,10,,,,,,content,live on develop,content
-strings.en.ts#en.children.settings.sectionTitle,app screen,in-app,packages/content/src/strings.en.ts,1150,en,Children,8,,,,,,content,live on develop,content
-strings.en.ts#en.children.settings.booksSectionTitle,app screen,in-app,packages/content/src/strings.en.ts,1152,en,Books,5,,,,,,content,live on develop,content
-strings.en.ts#en.children.settings.title,app screen,in-app,packages/content/src/strings.en.ts,1153,en,{child}'s book,14,,,,,,content,live on develop,content
-strings.en.ts#en.children.settings.detailsLabel,app screen,in-app,packages/content/src/strings.en.ts,1154,en,Name and birthday,17,,,,,,content,live on develop,content
-strings.en.ts#en.children.settings.signsAsLabel,app screen,in-app,packages/content/src/strings.en.ts,1155,en,Sign my letters to {child} as,29,,,,,,content,live on develop,content
-strings.en.ts#en.children.settings.remindersLabel,app screen,in-app,packages/content/src/strings.en.ts,1156,en,Include {child} in my reminders,31,,,,,,content,live on develop,content
-strings.en.ts#en.children.settings.remindersHelp,app screen,in-app,packages/content/src/strings.en.ts,1158,en,Month and birthday messages for {child} follow this switch.,59,,,,,,content,live on develop,content
-strings.en.ts#en.children.settings.celebrationsLabel,app screen,in-app,packages/content/src/strings.en.ts,1159,en,Pause celebrations for {child},30,,,,,,content,live on develop,content
-strings.en.ts#en.children.settings.celebrationsHelp,app screen,in-app,packages/content/src/strings.en.ts,1160,en,Only for you. Month and birthday messages and milestones for {child} rest until you turn them back on.,102,,,,,,content,live on develop,content
-strings.en.ts#en.children.settings.familyLabel,app screen,in-app,packages/content/src/strings.en.ts,1161,en,Who writes to {child},21,,,,,,content,live on develop,content
-strings.en.ts#en.children.settings.familyCanReadLabel,app screen,in-app,packages/content/src/strings.en.ts,1162,en,Family can read {child}'s book,30,,,,,,content,live on develop,content
-strings.en.ts#en.children.settings.themeLabel,app screen,in-app,packages/content/src/strings.en.ts,1163,en,How the book looks,18,,,,,,content,live on develop,content
-strings.en.ts#en.children.settings.hideLabel,app screen,in-app,packages/content/src/strings.en.ts,1164,en,Hide this book,14,,,,,,content,live on develop,content
-strings.en.ts#en.children.settings.hideBody,app screen,in-app,packages/content/src/strings.en.ts,1166,en,Hiding {child}'s book quiets every reminder and message about {child}. Nothing is deleted.,90,,,,,,content,live on develop,content
-strings.en.ts#en.children.settings.hideShared,app screen,in-app,packages/content/src/strings.en.ts,1168,en,Hiding is only for you. {coParent} still sees {child}'s book as before.,71,,,,,,content,live on develop,content
-strings.en.ts#en.children.settings.showButton,app screen,in-app,packages/content/src/strings.en.ts,1169,en,Show this book again,20,,,,,,content,live on develop,content
-strings.en.ts#en.children.settings.hiddenTitle,app screen,in-app,packages/content/src/strings.en.ts,1170,en,Hidden books,12,,,,,,content,live on develop,content
-strings.en.ts#en.children.settings.hiddenEmpty,app screen,in-app,packages/content/src/strings.en.ts,1171,en,No hidden books.,16,,,,,,content,live on develop,content
-strings.en.ts#en.children.quiet.label,app screen,in-app,packages/content/src/strings.en.ts,1180,en,Quiet this book,15,,,,,,content,live on develop,content
-strings.en.ts#en.children.quiet.help,app screen,in-app,packages/content/src/strings.en.ts,1181,en,"Home and reminders stay quiet about {child}, for you. Your letters stay as they are.",84,,,,,,content,live on develop,content
-strings.en.ts#en.children.quiet.offLabel,app screen,in-app,packages/content/src/strings.en.ts,1182,en,Turn Quiet off,14,,,,,,content,live on develop,content
-strings.en.ts#en.children.quiet.quietedToast,app screen,in-app,packages/content/src/strings.en.ts,1183,en,{child}'s book is quiet for you.,32,,,,,,content,live on develop,content
-strings.en.ts#en.children.quiet.offToast,app screen,in-app,packages/content/src/strings.en.ts,1184,en,Quiet is off for {child}'s book.,32,,,,,,content,live on develop,content
-strings.en.ts#en.children.quiet.saveFailed,app screen,in-app,packages/content/src/strings.en.ts,1185,en,That did not save. {child}'s book is as it was.,47,,,,,,content,live on develop,content
-strings.en.ts#en.children.sharing.pickerTitle,app screen,in-app,packages/content/src/strings.en.ts,1188,en,Which books?,12,,,,,,content,live on develop,content
-strings.en.ts#en.children.sharing.oneBookNote,app screen,in-app,packages/content/src/strings.en.ts,1189,en,This invite is for {child}'s book only.,39,,,,,,content,live on develop,content
-strings.en.ts#en.children.sharing.separateNote,app screen,in-app,packages/content/src/strings.en.ts,1190,en,Each child's book has its own family list. Inviting someone to one book doesn't open the others.,96,,,,,,content,live on develop,content
-strings.en.ts#en.web.firstNote.title,app screen,in-app,packages/content/src/strings.en.ts,1197,en,Please have a read,18,,,,,,content,live on develop,content
-strings.en.ts#en.web.firstNote.body,app screen,in-app,packages/content/src/strings.en.ts,1198,en,"We fix small slips, like ""um"" and repeats. We can also mishear a word or a name. Please read it before you save.",112,,,,,,content,live on develop,content
-strings.en.ts#en.web.ageConfirm,app screen,in-app,packages/content/src/strings.en.ts,1200,en,I am 18 or older,16,,,,,,content,live on develop,content
-strings.en.ts#en.plus.legal.renewAnnual,app screen,in-app,packages/content/src/strings.en.ts,1206,en,"Free for 2 months, then {price} a year. Renews automatically until you cancel, at least 24 hours before it renews.",114,,,,,,content,live on develop,content
-strings.en.ts#en.plus.legal.renewMonthly,app screen,in-app,packages/content/src/strings.en.ts,1207,en,"Free for 1 month, then {price} a month. Renews automatically until you cancel, at least 24 hours before it renews.",114,,,,,,content,live on develop,content
-strings.en.ts#en.plus.legal.renewNoTrialAnnual,app screen,in-app,packages/content/src/strings.en.ts,1208,en,"{price} a year, charged now. Renews automatically until you cancel, at least 24 hours before it renews.",103,,,,,,content,live on develop,content
-strings.en.ts#en.plus.legal.renewNoTrialMonthly,app screen,in-app,packages/content/src/strings.en.ts,1209,en,"{price} a month, charged now. Renews automatically until you cancel, at least 24 hours before it renews.",104,,,,,,content,live on develop,content
-strings.en.ts#en.plus.legal.cancel,app screen,in-app,packages/content/src/strings.en.ts,1210,en,"Cancel any time in Settings, Plan, Manage subscription, or in your Apple Account subscriptions.",95,,,,,,content,live on develop,content
-strings.en.ts#en.plus.legal.termsLink,app screen,in-app,packages/content/src/strings.en.ts,1211,en,Terms of Service,16,,,,,,content,live on develop,content
-strings.en.ts#en.plus.legal.privacyLink,app screen,in-app,packages/content/src/strings.en.ts,1212,en,Privacy Policy,14,,,,,,content,live on develop,content
-strings.en.ts#en.plus.legal.subscriptionTermsLink,app screen,in-app,packages/content/src/strings.en.ts,1213,en,Subscription terms,18,,,,,,content,live on develop,content
-strings.en.ts#en.plus.legal.restoreLink,app screen,in-app,packages/content/src/strings.en.ts,1214,en,Restore,7,,,,,,content,live on develop,content
-strings.en.ts#en.plus.legal.agree,app screen,in-app,packages/content/src/strings.en.ts,1215,en,"By continuing, you agree to the Subscription terms and Terms of Service.",72,,,,,,content,live on develop,content
-strings.en.ts#en.errors.saveFailed.title,error,in-app error,packages/content/src/strings.en.ts,1221,en,Not saved to the book yet,25,,,,,,content,live on develop,content
-strings.en.ts#en.errors.saveFailed.body,error,in-app error,packages/content/src/strings.en.ts,1222,en,Your words are still on this phone.,35,,,,,,content,live on develop,content
-strings.en.ts#en.errors.saveFailed.button,error,in-app error,packages/content/src/strings.en.ts,1223,en,Try again now,13,,,,,,content,live on develop,content
-strings.en.ts#en.errors.micDenied.title,error,in-app error,packages/content/src/strings.en.ts,1230,en,The microphone is off,21,,,,,,content,live on develop,content
-strings.en.ts#en.errors.micDenied.body,error,in-app error,packages/content/src/strings.en.ts,1231,en,"Turn it on in Settings, or type this one.",41,,,,,,content,live on develop,content
-strings.en.ts#en.errors.micDenied.settingsButton,error,in-app error,packages/content/src/strings.en.ts,1232,en,Open Settings,13,,,,,,content,live on develop,content
-strings.en.ts#en.errors.micDenied.typeButton,error,in-app error,packages/content/src/strings.en.ts,1233,en,Type instead,12,,,,,,content,live on develop,content
-strings.en.ts#en.errors.micBusy.title,error,in-app error,packages/content/src/strings.en.ts,1236,en,The microphone is in use,24,,,,,,content,live on develop,content
-strings.en.ts#en.errors.micBusy.body,error,in-app error,packages/content/src/strings.en.ts,1237,en,A call or another app has it right now.,39,,,,,,content,live on develop,content
-strings.en.ts#en.errors.phoneFull.title,error,in-app error,packages/content/src/strings.en.ts,1240,en,This phone is full,18,,,,,,content,live on develop,content
-strings.en.ts#en.errors.phoneFull.body,error,in-app error,packages/content/src/strings.en.ts,1241,en,"Free some space to record, or type this one.",44,,,,,,content,live on develop,content
-strings.en.ts#en.errors.transcriptionFailed.title,error,in-app error,packages/content/src/strings.en.ts,1244,en,No words yet for this one,25,,,,,,content,live on develop,content
-strings.en.ts#en.errors.transcriptionFailed.body,error,in-app error,packages/content/src/strings.en.ts,1245,en,The recording is kept.,22,,,,,,content,live on develop,content
-strings.en.ts#en.errors.transcriptionFailed.button,error,in-app error,packages/content/src/strings.en.ts,1246,en,Try again,9,,,,,,content,live on develop,content
-strings.en.ts#en.errors.offline.title,error,in-app error,packages/content/src/strings.en.ts,1249,en,You're offline,14,,,,,,content,live on develop,content
-strings.en.ts#en.errors.offline.body,error,in-app error,packages/content/src/strings.en.ts,1250,en,Keep talking. Everything is saved on this phone.,48,,,,,,content,live on develop,content
-strings.en.ts#en.errors.inviteExpired.title,error,in-app error,packages/content/src/strings.en.ts,1253,en,This invite has expired,23,,,,,,content,live on develop,content
-strings.en.ts#en.errors.inviteExpired.body,error,in-app error,packages/content/src/strings.en.ts,1254,en,Ask {inviter} to send a new one.,32,,,,,,content,live on develop,content
-strings.en.ts#en.errors.generic.title,error,in-app error,packages/content/src/strings.en.ts,1257,en,That didn't work,16,,,,,,content,live on develop,content
-strings.en.ts#en.errors.generic.body,error,in-app error,packages/content/src/strings.en.ts,1258,en,Try again. Nothing you saved has changed.,41,,,,,,content,live on develop,content
-strings.en.ts#en.errors.crash.title,error,in-app error,packages/content/src/strings.en.ts,1263,en,This page didn't open,21,,,,,,content,live on develop,content
-strings.en.ts#en.errors.crash.body,error,in-app error,packages/content/src/strings.en.ts,1264,en,Your letters and recordings are still on this phone.,52,,,,,,content,live on develop,content
-strings.en.ts#en.errors.crash.tryAgainButton,error,in-app error,packages/content/src/strings.en.ts,1265,en,Try again,9,,,,,,content,live on develop,content
-strings.en.ts#en.errors.crash.tonightButton,error,in-app error,packages/content/src/strings.en.ts,1266,en,Go to Home,10,,,,,,content,live on develop,content
-strings.en.ts#en.errors.notFoundPage.title,error,in-app error,packages/content/src/strings.en.ts,1270,en,Nothing at this link,20,,,,,,content,live on develop,content
-strings.en.ts#en.errors.notFoundPage.body,error,in-app error,packages/content/src/strings.en.ts,1271,en,Your book is right where you left it.,37,,,,,,content,live on develop,content
-strings.en.ts#en.errors.notFoundPage.button,error,in-app error,packages/content/src/strings.en.ts,1272,en,Back to Home,12,,,,,,content,live on develop,content
-strings.en.ts#en.errors.launch.title,error,in-app error,packages/content/src/strings.en.ts,1280,en,The book couldn't open,22,,,,,,content,live on develop,content
-strings.en.ts#en.errors.launch.body,error,in-app error,packages/content/src/strings.en.ts,1281,en,"Export saves a copy of the recordings and book files it can read, exactly as they are.",86,,,,,,content,live on develop,content
-strings.en.ts#en.errors.launch.hint,error,in-app error,packages/content/src/strings.en.ts,1282,en,"Try again, or restart the phone.",32,,,,,,content,live on develop,content
-strings.en.ts#en.errors.launch.tryAgainButton,error,in-app error,packages/content/src/strings.en.ts,1283,en,Try again,9,,,,,,content,live on develop,content
-strings.en.ts#en.errors.launch.tryingAgainButton,error,in-app error,packages/content/src/strings.en.ts,1285,en,Trying again,12,,,,,,content,live on develop,content
-strings.en.ts#en.errors.launch.stillClosed,error,in-app error,packages/content/src/strings.en.ts,1286,en,It didn't open this time either.,32,,,,,,content,live on develop,content
-strings.en.ts#en.errors.launch.exportButton,error,in-app error,packages/content/src/strings.en.ts,1287,en,Export what's readable,22,,,,,,content,live on develop,content
-strings.en.ts#en.errors.launch.exportingTitle,error,in-app error,packages/content/src/strings.en.ts,1288,en,Gathering your files,20,,,,,,content,live on develop,content
-strings.en.ts#en.errors.launch.exportNothing,error,in-app error,packages/content/src/strings.en.ts,1289,en,There's nothing to export right now.,36,,,,,,content,live on develop,content
-strings.en.ts#en.errors.launch.exportFailed,error,in-app error,packages/content/src/strings.en.ts,1290,en,The export didn't finish. Your files are still on this phone.,61,,,,,,content,live on develop,content
-strings.en.ts#en.errors.launch.readme,error,in-app error,packages/content/src/strings.en.ts,1292,en,"These are the files found on this phone when the book could not be opened.
+strings.en.ts#en.settings.privacy.whereTitle,app screen,in-app,packages/content/src/strings.en.ts,1062,en,Where your book is kept,23,,,,,,content,live on develop,content
+strings.en.ts#en.settings.privacy.keptOnPhone,app screen,in-app,packages/content/src/strings.en.ts,1067,en,Your letters and recordings are kept on this phone. They are not sent to us.,76,build-dependent,build-dependent: true for servers off only,,,,content,live on develop,content
+strings.en.ts#en.settings.privacy.keptSynced,app screen,in-app,packages/content/src/strings.en.ts,1069,en,"Your letters are kept on this phone and on our servers, so they reach your other devices. Your recordings are kept on this phone.",129,build-dependent,build-dependent: true for servers on only,,,,content,live on develop,content
+strings.en.ts#en.settings.privacy.iphoneBackupTitle,app screen,in-app,packages/content/src/strings.en.ts,1072,en,iPhone backup,13,,,,,,content,live on develop,content
+strings.en.ts#en.settings.privacy.iphoneBackup,app screen,in-app,packages/content/src/strings.en.ts,1073,en,"Includes your recordings, if iCloud Backup is on.",49,,,,,,content,live on develop,content
+strings.en.ts#en.settings.privacy.speechOnPhone,app screen,in-app,packages/content/src/strings.en.ts,1075,en,Your speech is written down on this phone.,42,,,,,,content,live on develop,content
+strings.en.ts#en.settings.privacy.noReports,app screen,in-app,packages/content/src/strings.en.ts,1077,en,This version collects no usage or crash reports.,48,,,,,,content,live on develop,content
+strings.en.ts#en.settings.privacy.whoTitle,app screen,in-app,packages/content/src/strings.en.ts,1078,en,Who can see it,14,,,,,,content,live on develop,content
+strings.en.ts#en.settings.privacy.whoLockOff,app screen,in-app,packages/content/src/strings.en.ts,1081,en,Anyone who can unlock this iPhone can open the book.,52,,,,,,content,live on develop,content
+strings.en.ts#en.settings.privacy.staffAccess,app screen,in-app,packages/content/src/strings.en.ts,1084,en,We don't look at your letters. The few times we could are written in the Privacy Policy.,88,,,,,,content,live on develop,content
+strings.en.ts#en.settings.privacy.notificationsLine,app screen,in-app,packages/content/src/strings.en.ts,1086,en,Notifications never show the words of a letter.,47,,,,,,content,live on develop,content
+strings.en.ts#en.settings.privacy.canDoTitle,app screen,in-app,packages/content/src/strings.en.ts,1087,en,What you can do,15,,,,,,content,live on develop,content
+strings.en.ts#en.settings.privacy.noAccount,app screen,in-app,packages/content/src/strings.en.ts,1089,en,There is no account in this version. Deleting the app removes its letters and recordings from this phone.,105,,,,,,content,live on develop,content
+strings.en.ts#en.settings.privacy.documentsTitle,app screen,in-app,packages/content/src/strings.en.ts,1090,en,Our promises in full,20,,,,,,content,live on develop,content
+strings.en.ts#en.settings.privacy.privacyPolicyLink,app screen,in-app,packages/content/src/strings.en.ts,1091,en,Privacy Policy,14,,,,,,content,live on develop,content
+strings.en.ts#en.settings.privacy.healthPrivacyLink,app screen,in-app,packages/content/src/strings.en.ts,1092,en,Consumer Health Data Privacy Policy,35,,,,,,content,live on develop,content
+strings.en.ts#en.settings.privacy.subprocessorsLink,app screen,in-app,packages/content/src/strings.en.ts,1093,en,Who helps us run the app,24,,,,,,content,live on develop,content
+strings.en.ts#en.settings.privacy.termsLink,app screen,in-app,packages/content/src/strings.en.ts,1094,en,Terms of Service,16,,,,,,content,live on develop,content
+strings.en.ts#en.sensitiveConsent.title,legal,consent,packages/content/src/strings.en.ts,1101,en,Before your book syncs,22,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
+strings.en.ts#en.sensitiveConsent.body,legal,consent,packages/content/src/strings.en.ts,1102,en,"Letters can hold private things, like health details about you or {child}. To sync your book across your phones, we store what you write on our servers.",152,held,consent (docs/legal/in-app-disclosures.md); build-dependent: true for servers on only,,,,privacy,live on develop,content
+strings.en.ts#en.sensitiveConsent.use,legal,consent,packages/content/src/strings.en.ts,1103,en,"We use it to keep and show your book. We never sell it, use it for ads or use it to train machine learning models.",114,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
+strings.en.ts#en.sensitiveConsent.changeLater,legal,consent,packages/content/src/strings.en.ts,1108,en,"You can turn syncing on later in Settings, Account.",51,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
+strings.en.ts#en.sensitiveConsent.declineHelp,legal,consent,packages/content/src/strings.en.ts,1110,en,"If you keep it on this phone, syncing stays off.",48,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
+strings.en.ts#en.sensitiveConsent.agreeButton,legal,consent,packages/content/src/strings.en.ts,1111,en,Agree and sync,14,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
+strings.en.ts#en.sensitiveConsent.declineButton,legal,consent,packages/content/src/strings.en.ts,1112,en,Keep on this phone,18,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
+strings.en.ts#en.analyticsConsent.title,legal,consent,packages/content/src/strings.en.ts,1117,en,Help us make it better?,23,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
+strings.en.ts#en.analyticsConsent.body,legal,consent,packages/content/src/strings.en.ts,1118,en,"Share how you use the app, like which screens you open and when something crashes. Never your letters, recordings, photos or anyone's names.",140,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
+strings.en.ts#en.analyticsConsent.detail,legal,consent,packages/content/src/strings.en.ts,1119,en,Nothing is shared unless you say yes. Saying no changes nothing else.,69,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
+strings.en.ts#en.analyticsConsent.changeLater,legal,consent,packages/content/src/strings.en.ts,1120,en,"You can change this any time in Settings, Privacy.",50,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
+strings.en.ts#en.analyticsConsent.yesButton,legal,consent,packages/content/src/strings.en.ts,1121,en,Share usage,11,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
+strings.en.ts#en.analyticsConsent.noButton,legal,consent,packages/content/src/strings.en.ts,1122,en,Don't share,11,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
+strings.en.ts#en.children.switcher.label,app screen,in-app,packages/content/src/strings.en.ts,1128,en,For {child},11,,,,,,content,live on develop,content
+strings.en.ts#en.children.switcher.hint,app screen,in-app,packages/content/src/strings.en.ts,1129,en,Switch to another child's book,30,,,,,,content,live on develop,content
+strings.en.ts#en.children.switcher.title,app screen,in-app,packages/content/src/strings.en.ts,1130,en,Whose book?,11,,,,,,content,live on develop,content
+strings.en.ts#en.children.switcher.addButton,app screen,in-app,packages/content/src/strings.en.ts,1131,en,Add a child,11,,,,,,content,live on develop,content
+strings.en.ts#en.children.switcher.hiddenLink,app screen,in-app,packages/content/src/strings.en.ts,1132,en,Hidden books,12,,,,,,content,live on develop,content
+strings.en.ts#en.children.switcher.toLabel,app screen,in-app,packages/content/src/strings.en.ts,1133,en,To {child},10,,,,,,content,live on develop,content
+strings.en.ts#en.children.switcher.changeLink,app screen,in-app,packages/content/src/strings.en.ts,1134,en,Write to another child,22,,,,,,content,live on develop,content
+strings.en.ts#en.children.add.title,app screen,in-app,packages/content/src/strings.en.ts,1137,en,Add a child,11,,,,,,content,live on develop,content
+strings.en.ts#en.children.add.twinsHelp,app screen,in-app,packages/content/src/strings.en.ts,1139,en,Twins or more? Each child gets their own book.,46,,,,,,content,live on develop,content
+strings.en.ts#en.children.add.cta,app screen,in-app,packages/content/src/strings.en.ts,1140,en,Add {child}'s book,18,,,,,,content,live on develop,content
+strings.en.ts#en.children.add.ctaShort,app screen,in-app,packages/content/src/strings.en.ts,1142,en,Add this book,13,,,,,,content,live on develop,content
+strings.en.ts#en.children.add.saveFailed,app screen,in-app,packages/content/src/strings.en.ts,1145,en,This book did not save. What you typed is still here.,53,,,,,,content,live on develop,content
+strings.en.ts#en.children.add.rowLabel,app screen,in-app,packages/content/src/strings.en.ts,1148,en,Add a book,10,,,,,,content,live on develop,content
+strings.en.ts#en.children.settings.sectionTitle,app screen,in-app,packages/content/src/strings.en.ts,1151,en,Children,8,,,,,,content,live on develop,content
+strings.en.ts#en.children.settings.booksSectionTitle,app screen,in-app,packages/content/src/strings.en.ts,1153,en,Books,5,,,,,,content,live on develop,content
+strings.en.ts#en.children.settings.title,app screen,in-app,packages/content/src/strings.en.ts,1154,en,{child}'s book,14,,,,,,content,live on develop,content
+strings.en.ts#en.children.settings.detailsLabel,app screen,in-app,packages/content/src/strings.en.ts,1155,en,Name and birthday,17,,,,,,content,live on develop,content
+strings.en.ts#en.children.settings.signsAsLabel,app screen,in-app,packages/content/src/strings.en.ts,1156,en,Sign my letters to {child} as,29,,,,,,content,live on develop,content
+strings.en.ts#en.children.settings.remindersLabel,app screen,in-app,packages/content/src/strings.en.ts,1157,en,Include {child} in my reminders,31,,,,,,content,live on develop,content
+strings.en.ts#en.children.settings.remindersHelp,app screen,in-app,packages/content/src/strings.en.ts,1159,en,Month and birthday messages for {child} follow this switch.,59,,,,,,content,live on develop,content
+strings.en.ts#en.children.settings.celebrationsLabel,app screen,in-app,packages/content/src/strings.en.ts,1160,en,Pause celebrations for {child},30,,,,,,content,live on develop,content
+strings.en.ts#en.children.settings.celebrationsHelp,app screen,in-app,packages/content/src/strings.en.ts,1161,en,Only for you. Month and birthday messages and milestones for {child} rest until you turn them back on.,102,,,,,,content,live on develop,content
+strings.en.ts#en.children.settings.familyLabel,app screen,in-app,packages/content/src/strings.en.ts,1162,en,Who writes to {child},21,,,,,,content,live on develop,content
+strings.en.ts#en.children.settings.familyCanReadLabel,app screen,in-app,packages/content/src/strings.en.ts,1163,en,Family can read {child}'s book,30,,,,,,content,live on develop,content
+strings.en.ts#en.children.settings.themeLabel,app screen,in-app,packages/content/src/strings.en.ts,1164,en,How the book looks,18,,,,,,content,live on develop,content
+strings.en.ts#en.children.settings.hideLabel,app screen,in-app,packages/content/src/strings.en.ts,1165,en,Hide this book,14,,,,,,content,live on develop,content
+strings.en.ts#en.children.settings.hideBody,app screen,in-app,packages/content/src/strings.en.ts,1167,en,Hiding {child}'s book quiets every reminder and message about {child}. Nothing is deleted.,90,,,,,,content,live on develop,content
+strings.en.ts#en.children.settings.hideShared,app screen,in-app,packages/content/src/strings.en.ts,1169,en,Hiding is only for you. {coParent} still sees {child}'s book as before.,71,,,,,,content,live on develop,content
+strings.en.ts#en.children.settings.showButton,app screen,in-app,packages/content/src/strings.en.ts,1170,en,Show this book again,20,,,,,,content,live on develop,content
+strings.en.ts#en.children.settings.hiddenTitle,app screen,in-app,packages/content/src/strings.en.ts,1171,en,Hidden books,12,,,,,,content,live on develop,content
+strings.en.ts#en.children.settings.hiddenEmpty,app screen,in-app,packages/content/src/strings.en.ts,1172,en,No hidden books.,16,,,,,,content,live on develop,content
+strings.en.ts#en.children.quiet.label,app screen,in-app,packages/content/src/strings.en.ts,1181,en,Quiet this book,15,,,,,,content,live on develop,content
+strings.en.ts#en.children.quiet.help,app screen,in-app,packages/content/src/strings.en.ts,1182,en,"Home and reminders stay quiet about {child}, for you. Your letters stay as they are.",84,,,,,,content,live on develop,content
+strings.en.ts#en.children.quiet.offLabel,app screen,in-app,packages/content/src/strings.en.ts,1183,en,Turn Quiet off,14,,,,,,content,live on develop,content
+strings.en.ts#en.children.quiet.quietedToast,app screen,in-app,packages/content/src/strings.en.ts,1184,en,{child}'s book is quiet for you.,32,,,,,,content,live on develop,content
+strings.en.ts#en.children.quiet.offToast,app screen,in-app,packages/content/src/strings.en.ts,1185,en,Quiet is off for {child}'s book.,32,,,,,,content,live on develop,content
+strings.en.ts#en.children.quiet.saveFailed,app screen,in-app,packages/content/src/strings.en.ts,1186,en,That did not save. {child}'s book is as it was.,47,,,,,,content,live on develop,content
+strings.en.ts#en.children.sharing.pickerTitle,app screen,in-app,packages/content/src/strings.en.ts,1189,en,Which books?,12,,,,,,content,live on develop,content
+strings.en.ts#en.children.sharing.oneBookNote,app screen,in-app,packages/content/src/strings.en.ts,1190,en,This invite is for {child}'s book only.,39,,,,,,content,live on develop,content
+strings.en.ts#en.children.sharing.separateNote,app screen,in-app,packages/content/src/strings.en.ts,1191,en,Each child's book has its own family list. Inviting someone to one book doesn't open the others.,96,,,,,,content,live on develop,content
+strings.en.ts#en.web.firstNote.title,app screen,in-app,packages/content/src/strings.en.ts,1198,en,Please have a read,18,,,,,,content,live on develop,content
+strings.en.ts#en.web.firstNote.body,app screen,in-app,packages/content/src/strings.en.ts,1199,en,"We fix small slips, like ""um"" and repeats. We can also mishear a word or a name. Please read it before you save.",112,,,,,,content,live on develop,content
+strings.en.ts#en.web.ageConfirm,app screen,in-app,packages/content/src/strings.en.ts,1201,en,I am 18 or older,16,,,,,,content,live on develop,content
+strings.en.ts#en.plus.legal.renewAnnual,app screen,in-app,packages/content/src/strings.en.ts,1207,en,"Free for 2 months, then {price} a year. Renews automatically until you cancel, at least 24 hours before it renews.",114,,,,,,content,live on develop,content
+strings.en.ts#en.plus.legal.renewMonthly,app screen,in-app,packages/content/src/strings.en.ts,1208,en,"Free for 1 month, then {price} a month. Renews automatically until you cancel, at least 24 hours before it renews.",114,,,,,,content,live on develop,content
+strings.en.ts#en.plus.legal.renewNoTrialAnnual,app screen,in-app,packages/content/src/strings.en.ts,1209,en,"{price} a year, charged now. Renews automatically until you cancel, at least 24 hours before it renews.",103,,,,,,content,live on develop,content
+strings.en.ts#en.plus.legal.renewNoTrialMonthly,app screen,in-app,packages/content/src/strings.en.ts,1210,en,"{price} a month, charged now. Renews automatically until you cancel, at least 24 hours before it renews.",104,,,,,,content,live on develop,content
+strings.en.ts#en.plus.legal.cancel,app screen,in-app,packages/content/src/strings.en.ts,1211,en,"Cancel any time in Settings, Plan, Manage subscription, or in your Apple Account subscriptions.",95,,,,,,content,live on develop,content
+strings.en.ts#en.plus.legal.termsLink,app screen,in-app,packages/content/src/strings.en.ts,1212,en,Terms of Service,16,,,,,,content,live on develop,content
+strings.en.ts#en.plus.legal.privacyLink,app screen,in-app,packages/content/src/strings.en.ts,1213,en,Privacy Policy,14,,,,,,content,live on develop,content
+strings.en.ts#en.plus.legal.subscriptionTermsLink,app screen,in-app,packages/content/src/strings.en.ts,1214,en,Subscription terms,18,,,,,,content,live on develop,content
+strings.en.ts#en.plus.legal.restoreLink,app screen,in-app,packages/content/src/strings.en.ts,1215,en,Restore,7,,,,,,content,live on develop,content
+strings.en.ts#en.plus.legal.agree,app screen,in-app,packages/content/src/strings.en.ts,1216,en,"By continuing, you agree to the Subscription terms and Terms of Service.",72,,,,,,content,live on develop,content
+strings.en.ts#en.errors.saveFailed.title,error,in-app error,packages/content/src/strings.en.ts,1222,en,Not saved to the book yet,25,,,,,,content,live on develop,content
+strings.en.ts#en.errors.saveFailed.body,error,in-app error,packages/content/src/strings.en.ts,1223,en,Your words are still on this phone.,35,,,,,,content,live on develop,content
+strings.en.ts#en.errors.saveFailed.button,error,in-app error,packages/content/src/strings.en.ts,1224,en,Try again now,13,,,,,,content,live on develop,content
+strings.en.ts#en.errors.micDenied.title,error,in-app error,packages/content/src/strings.en.ts,1231,en,The microphone is off,21,,,,,,content,live on develop,content
+strings.en.ts#en.errors.micDenied.body,error,in-app error,packages/content/src/strings.en.ts,1232,en,"Turn it on in Settings, or type this one.",41,,,,,,content,live on develop,content
+strings.en.ts#en.errors.micDenied.settingsButton,error,in-app error,packages/content/src/strings.en.ts,1233,en,Open Settings,13,,,,,,content,live on develop,content
+strings.en.ts#en.errors.micDenied.typeButton,error,in-app error,packages/content/src/strings.en.ts,1234,en,Type instead,12,,,,,,content,live on develop,content
+strings.en.ts#en.errors.micBusy.title,error,in-app error,packages/content/src/strings.en.ts,1237,en,The microphone is in use,24,,,,,,content,live on develop,content
+strings.en.ts#en.errors.micBusy.body,error,in-app error,packages/content/src/strings.en.ts,1238,en,A call or another app has it right now.,39,,,,,,content,live on develop,content
+strings.en.ts#en.errors.phoneFull.title,error,in-app error,packages/content/src/strings.en.ts,1241,en,This phone is full,18,,,,,,content,live on develop,content
+strings.en.ts#en.errors.phoneFull.body,error,in-app error,packages/content/src/strings.en.ts,1242,en,"Free some space to record, or type this one.",44,,,,,,content,live on develop,content
+strings.en.ts#en.errors.transcriptionFailed.title,error,in-app error,packages/content/src/strings.en.ts,1245,en,No words yet for this one,25,,,,,,content,live on develop,content
+strings.en.ts#en.errors.transcriptionFailed.body,error,in-app error,packages/content/src/strings.en.ts,1246,en,The recording is kept.,22,,,,,,content,live on develop,content
+strings.en.ts#en.errors.transcriptionFailed.button,error,in-app error,packages/content/src/strings.en.ts,1247,en,Try again,9,,,,,,content,live on develop,content
+strings.en.ts#en.errors.offline.title,error,in-app error,packages/content/src/strings.en.ts,1250,en,You're offline,14,,,,,,content,live on develop,content
+strings.en.ts#en.errors.offline.body,error,in-app error,packages/content/src/strings.en.ts,1251,en,Keep talking. Everything is saved on this phone.,48,,,,,,content,live on develop,content
+strings.en.ts#en.errors.inviteExpired.title,error,in-app error,packages/content/src/strings.en.ts,1254,en,This invite has expired,23,,,,,,content,live on develop,content
+strings.en.ts#en.errors.inviteExpired.body,error,in-app error,packages/content/src/strings.en.ts,1255,en,Ask {inviter} to send a new one.,32,,,,,,content,live on develop,content
+strings.en.ts#en.errors.generic.title,error,in-app error,packages/content/src/strings.en.ts,1258,en,That didn't work,16,,,,,,content,live on develop,content
+strings.en.ts#en.errors.generic.body,error,in-app error,packages/content/src/strings.en.ts,1259,en,Try again. Nothing you saved has changed.,41,,,,,,content,live on develop,content
+strings.en.ts#en.errors.crash.title,error,in-app error,packages/content/src/strings.en.ts,1264,en,This page didn't open,21,,,,,,content,live on develop,content
+strings.en.ts#en.errors.crash.body,error,in-app error,packages/content/src/strings.en.ts,1265,en,Your letters and recordings are still on this phone.,52,,,,,,content,live on develop,content
+strings.en.ts#en.errors.crash.tryAgainButton,error,in-app error,packages/content/src/strings.en.ts,1266,en,Try again,9,,,,,,content,live on develop,content
+strings.en.ts#en.errors.crash.tonightButton,error,in-app error,packages/content/src/strings.en.ts,1267,en,Go to Home,10,,,,,,content,live on develop,content
+strings.en.ts#en.errors.notFoundPage.title,error,in-app error,packages/content/src/strings.en.ts,1271,en,Nothing at this link,20,,,,,,content,live on develop,content
+strings.en.ts#en.errors.notFoundPage.body,error,in-app error,packages/content/src/strings.en.ts,1272,en,Your book is right where you left it.,37,,,,,,content,live on develop,content
+strings.en.ts#en.errors.notFoundPage.button,error,in-app error,packages/content/src/strings.en.ts,1273,en,Back to Home,12,,,,,,content,live on develop,content
+strings.en.ts#en.errors.launch.title,error,in-app error,packages/content/src/strings.en.ts,1281,en,The book couldn't open,22,,,,,,content,live on develop,content
+strings.en.ts#en.errors.launch.body,error,in-app error,packages/content/src/strings.en.ts,1282,en,"Export saves a copy of the recordings and book files it can read, exactly as they are.",86,,,,,,content,live on develop,content
+strings.en.ts#en.errors.launch.hint,error,in-app error,packages/content/src/strings.en.ts,1283,en,"Try again, or restart the phone.",32,,,,,,content,live on develop,content
+strings.en.ts#en.errors.launch.tryAgainButton,error,in-app error,packages/content/src/strings.en.ts,1284,en,Try again,9,,,,,,content,live on develop,content
+strings.en.ts#en.errors.launch.tryingAgainButton,error,in-app error,packages/content/src/strings.en.ts,1286,en,Trying again,12,,,,,,content,live on develop,content
+strings.en.ts#en.errors.launch.stillClosed,error,in-app error,packages/content/src/strings.en.ts,1287,en,It didn't open this time either.,32,,,,,,content,live on develop,content
+strings.en.ts#en.errors.launch.exportButton,error,in-app error,packages/content/src/strings.en.ts,1288,en,Export what's readable,22,,,,,,content,live on develop,content
+strings.en.ts#en.errors.launch.exportingTitle,error,in-app error,packages/content/src/strings.en.ts,1289,en,Gathering your files,20,,,,,,content,live on develop,content
+strings.en.ts#en.errors.launch.exportNothing,error,in-app error,packages/content/src/strings.en.ts,1290,en,There's nothing to export right now.,36,,,,,,content,live on develop,content
+strings.en.ts#en.errors.launch.exportFailed,error,in-app error,packages/content/src/strings.en.ts,1291,en,The export didn't finish. Your files are still on this phone.,61,,,,,,content,live on develop,content
+strings.en.ts#en.errors.launch.readme,error,in-app error,packages/content/src/strings.en.ts,1293,en,"These are the files found on this phone when the book could not be opened.
 The recordings folder holds your voice recordings; they play in any audio app.
 The database folder holds the book itself, exactly as it was. Nothing here was changed or removed.
 Keep this export somewhere safe, and write to us if you would like help getting it back into the book.",355,,,,,,content,live on develop,content
-strings.en.ts#en.reader.readingSizeTitle,app screen,in-app,packages/content/src/strings.en.ts,1298,en,Reading size,12,,,,,,content,live on develop,content
-strings.en.ts#en.reader.readingSizeButton,app screen,in-app,packages/content/src/strings.en.ts,1299,en,Aa,2,,,,,,content,live on develop,content
-strings.en.ts#en.reader.readingSizeWord,app screen,in-app,packages/content/src/strings.en.ts,1301,en,Size,4,,,,,,content,live on develop,content
-strings.en.ts#en.reader.readingSizeA11y,app screen,in-app,packages/content/src/strings.en.ts,1302,en,Reading size,12,,,,,,content,live on develop,content
-strings.en.ts#en.reader.sizes.standard,app screen,in-app,packages/content/src/strings.en.ts,1304,en,Standard,8,,,,,,content,live on develop,content
-strings.en.ts#en.reader.sizes.large,app screen,in-app,packages/content/src/strings.en.ts,1305,en,Large,5,,,,,,content,live on develop,content
-strings.en.ts#en.reader.sizes.largePrint,app screen,in-app,packages/content/src/strings.en.ts,1306,en,Large print,11,,,,,,content,live on develop,content
-strings.en.ts#en.reader.previewEmpty,app screen,in-app,packages/content/src/strings.en.ts,1309,en,Aa,2,,,,,,content,live on develop,content
-strings.en.ts#en.reader.notFoundTitle,app screen,in-app,packages/content/src/strings.en.ts,1310,en,This letter isn't in the book,29,,,,,,content,live on develop,content
-strings.en.ts#en.reader.notFoundDeleted,app screen,in-app,packages/content/src/strings.en.ts,1312,en,It's in Recently deleted.,25,,,,,,content,live on develop,content
-strings.en.ts#en.reader.openShelfButton,app screen,in-app,packages/content/src/strings.en.ts,1313,en,Open Recently deleted,21,,,,,,content,live on develop,content
-strings.en.ts#en.reader.notFoundCta,app screen,in-app,packages/content/src/strings.en.ts,1314,en,Back to the book,16,,,,,,content,live on develop,content
-strings.en.ts#en.reader.openHint,app screen,in-app,packages/content/src/strings.en.ts,1315,en,Opens the letter.,17,,,,,,content,live on develop,content
-strings.en.ts#en.childrenExtra.dueDateLabel,app screen,in-app,packages/content/src/strings.en.ts,1320,en,Due date,8,,,,,,content,live on develop,content
-strings.en.ts#en.childrenExtra.nameRequired,app screen,in-app,packages/content/src/strings.en.ts,1321,en,Add a name to continue.,23,,,,,,content,live on develop,content
-strings.en.ts#en.childrenExtra.notSet,app screen,in-app,packages/content/src/strings.en.ts,1322,en,Not set,7,,,,,,content,live on develop,content
-strings.en.ts#en.childrenExtra.edit.nameLabel,app screen,in-app,packages/content/src/strings.en.ts,1325,en,Name,4,,,,,,content,live on develop,content
-strings.en.ts#en.childrenExtra.edit.rowHint,app screen,in-app,packages/content/src/strings.en.ts,1326,en,Opens to change it.,19,,,,,,content,live on develop,content
-strings.en.ts#en.childrenExtra.edit.save,app screen,in-app,packages/content/src/strings.en.ts,1327,en,Save,4,,,,,,content,live on develop,content
-strings.en.ts#en.childrenExtra.edit.nameEmpty,app screen,in-app,packages/content/src/strings.en.ts,1328,en,Add a name to save.,19,,,,,,content,live on develop,content
-strings.en.ts#en.childrenExtra.edit.nameLimit,app screen,in-app,packages/content/src/strings.en.ts,1329,en,A name can have up to {n} characters.,37,,,,,,content,live on develop,content
-strings.en.ts#en.childrenExtra.edit.nameTooLong,app screen,in-app,packages/content/src/strings.en.ts,1330,en,Up to {n} characters.,21,,,,,,content,live on develop,content
-strings.en.ts#en.childrenExtra.edit.signsAsEmpty,app screen,in-app,packages/content/src/strings.en.ts,1331,en,Add what {child} calls you to save.,35,,,,,,content,live on develop,content
-strings.en.ts#en.childrenExtra.edit.signsAsLimit,app screen,in-app,packages/content/src/strings.en.ts,1332,en,Up to {n} characters.,21,,,,,,content,live on develop,content
-strings.en.ts#en.childrenExtra.edit.signsAsTooLong,app screen,in-app,packages/content/src/strings.en.ts,1333,en,Up to {n} characters.,21,,,,,,content,live on develop,content
-strings.en.ts#en.childrenExtra.edit.signsAsNewOnly,app screen,in-app,packages/content/src/strings.en.ts,1334,en,Letters already written keep their signature.,45,,,,,,content,live on develop,content
-strings.en.ts#en.childrenExtra.edit.birthdayFuture,app screen,in-app,packages/content/src/strings.en.ts,1336,en,Choose today or an earlier day.,31,,,,,,content,live on develop,content
-strings.en.ts#en.childrenExtra.edit.birthdayMissing,app screen,in-app,packages/content/src/strings.en.ts,1337,en,Choose a date to save.,22,,,,,,content,live on develop,content
-strings.en.ts#en.childrenExtra.edit.dueDateRange,app screen,in-app,packages/content/src/strings.en.ts,1338,en,Choose a due date from today up to ten months ahead.,52,,,,,,content,live on develop,content
-strings.en.ts#en.childrenExtra.edit.dateInvalid,app screen,in-app,packages/content/src/strings.en.ts,1339,en,That date doesn't look right. Try again.,40,,,,,,content,live on develop,content
-strings.en.ts#en.childrenExtra.edit.born.title,app screen,in-app,packages/content/src/strings.en.ts,1343,en,{child}'s birthday,18,,,,,,content,live on develop,content
-strings.en.ts#en.childrenExtra.edit.born.offerBody,app screen,in-app,packages/content/src/strings.en.ts,1344,en,Add it when you are ready.,26,,,,,,content,live on develop,content
-strings.en.ts#en.childrenExtra.edit.born.pickerLabel,app screen,in-app,packages/content/src/strings.en.ts,1345,en,{child}'s birthday,18,,,,,,content,live on develop,content
-strings.en.ts#en.childrenExtra.edit.born.confirm,app screen,in-app,packages/content/src/strings.en.ts,1346,en,Set the birthday,16,,,,,,content,live on develop,content
-strings.en.ts#en.childrenExtra.edit.born.hideButton,app screen,in-app,packages/content/src/strings.en.ts,1347,en,Hide,4,,,,,,content,live on develop,content
-strings.en.ts#en.childrenExtra.edit.born.hereRow,app screen,in-app,packages/content/src/strings.en.ts,1350,en,{child} is here?,16,,,,,,content,live on develop,content
-strings.en.ts#en.childrenExtra.edit.born.keepNote,app screen,in-app,packages/content/src/strings.en.ts,1351,en,Letters written before this day stay in Before You.,51,,,,,,content,live on develop,content
-strings.en.ts#en.childrenExtra.familyCanReadHelp,app screen,in-app,packages/content/src/strings.en.ts,1354,en,Family see the letters you add to {child}'s book. This starts once family can join.,83,,,,,,content,live on develop,content
-strings.en.ts#en.childrenExtra.plusNotYet,app screen,in-app,packages/content/src/strings.en.ts,1355,en,Plus is not available on this device yet.,41,,,,,,content,live on develop,content
-strings.en.ts#en.familyTab.membersTitle,app screen,in-app,packages/content/src/strings.en.ts,1359,en,Who writes to {child},21,,,,,,content,live on develop,content
-strings.en.ts#en.familyTab.youLabel,app screen,in-app,packages/content/src/strings.en.ts,1360,en,You,3,,,,,,content,live on develop,content
-strings.en.ts#en.familyTab.rolesTitle,app screen,in-app,packages/content/src/strings.en.ts,1361,en,Two ways to join,16,,,,,,content,live on develop,content
-strings.en.ts#en.familyTab.coParentLabel,app screen,in-app,packages/content/src/strings.en.ts,1362,en,Co-parent,9,,,,,,content,live on develop,content
-strings.en.ts#en.familyTab.coParentBody,app screen,in-app,packages/content/src/strings.en.ts,1363,en,"Writes to {child} and reads the whole book, as an equal.",56,,,,,,content,live on develop,content
-strings.en.ts#en.familyTab.familyLabel,app screen,in-app,packages/content/src/strings.en.ts,1365,en,Family,6,,,,,,content,live on develop,content
-strings.en.ts#en.familyTab.familyBody,app screen,in-app,packages/content/src/strings.en.ts,1366,en,Writes to {child}. You choose which letters go in the book.,59,,,,,,content,live on develop,content
-strings.en.ts#en.settingsMore.accountTitle,app screen,in-app,packages/content/src/strings.en.ts,1370,en,Account,7,,,,,,content,live on develop,content
-strings.en.ts#en.settingsMore.signedOutLabel,app screen,in-app,packages/content/src/strings.en.ts,1371,en,Not signed in,13,,,,,,content,live on develop,content
-strings.en.ts#en.settingsMore.appearanceTitle,app screen,in-app,packages/content/src/strings.en.ts,1372,en,Appearance,10,,,,,,content,live on develop,content
-strings.en.ts#en.settingsMore.themeLabel,app screen,in-app,packages/content/src/strings.en.ts,1373,en,Theme,5,,,,,,content,live on develop,content
-strings.en.ts#en.settingsMore.themes.system,app screen,in-app,packages/content/src/strings.en.ts,1375,en,Match this phone,16,,,,,,content,live on develop,content
-strings.en.ts#en.settingsMore.themes.light,app screen,in-app,packages/content/src/strings.en.ts,1376,en,Light,5,,,,,,content,live on develop,content
-strings.en.ts#en.settingsMore.themes.dark,app screen,in-app,packages/content/src/strings.en.ts,1377,en,Dark,4,,,,,,content,live on develop,content
-strings.en.ts#en.settingsMore.remindersNotYet,app screen,in-app,packages/content/src/strings.en.ts,1381,en,Reminders are not on in this version.,37,,,,,,content,live on develop,content
-strings.en.ts#en.settingsMore.legalTitle,app screen,in-app,packages/content/src/strings.en.ts,1382,en,Legal,5,,,,,,content,live on develop,content
-strings.en.ts#en.settingsMore.versionLabel,app screen,in-app,packages/content/src/strings.en.ts,1383,en,Version,7,,,,,,content,live on develop,content
-strings.en.ts#en.settingsHome.sections.writing,app screen,in-app,packages/content/src/strings.en.ts,1394,en,Writing,7,,,,,,content,live on develop,content
-strings.en.ts#en.settingsHome.sections.plus,app screen,in-app,packages/content/src/strings.en.ts,1395,en,Plus,4,,,,,,content,live on develop,content
-strings.en.ts#en.settingsHome.sections.letters,app screen,in-app,packages/content/src/strings.en.ts,1396,en,Your letters,12,,,,,,content,live on develop,content
-strings.en.ts#en.settingsHome.sections.privacy,app screen,in-app,packages/content/src/strings.en.ts,1397,en,Privacy and security,20,,,,,,content,live on develop,content
-strings.en.ts#en.settingsHome.sections.help,app screen,in-app,packages/content/src/strings.en.ts,1398,en,Help and legal,14,,,,,,content,live on develop,content
-strings.en.ts#en.settingsHome.sections.about,app screen,in-app,packages/content/src/strings.en.ts,1399,en,About,5,,,,,,content,live on develop,content
-strings.en.ts#en.settingsHome.cardOnPhone,app screen,in-app,packages/content/src/strings.en.ts,1404,en,On this phone,13,,,,,,content,live on develop,content
-strings.en.ts#en.settingsHome.cardHint.account,app screen,in-app,packages/content/src/strings.en.ts,1406,en,Opens Account.,14,,,,,,content,live on develop,content
-strings.en.ts#en.settingsHome.signedOut.body,app screen,in-app,packages/content/src/strings.en.ts,1413,en,Your letters are on this phone.,31,,,,,,content,live on develop,content
-strings.en.ts#en.settingsHome.localStart.body,app screen,in-app,packages/content/src/strings.en.ts,1419,en,Signing in adds them to your account after you agree.,53,,,,,,content,live on develop,content
-strings.en.ts#en.settingsHome.youTabHint,app screen,in-app,packages/content/src/strings.en.ts,1422,en,Settings and account,20,,,,,,content,live on develop,content
-strings.en.ts#en.settingsHome.legalLabel,app screen,in-app,packages/content/src/strings.en.ts,1423,en,Legal,5,,,,,,content,live on develop,content
-strings.en.ts#en.settingsHome.accountLabel,app screen,in-app,packages/content/src/strings.en.ts,1424,en,Account,7,,,,,,content,live on develop,content
-strings.en.ts#en.settingsHome.accountHelp,app screen,in-app,packages/content/src/strings.en.ts,1425,en,"Sign in, and the ways you sign in.",34,,,,,,content,live on develop,content
-strings.en.ts#en.settingsHome.whereLive,app screen,in-app,packages/content/src/strings.en.ts,1428,en,Where your letters live,23,,,,,,content,live on develop,content
-strings.en.ts#en.settingsHome.yourWords,app screen,in-app,packages/content/src/strings.en.ts,1429,en,Your words,10,,,,,,content,live on develop,content
-strings.en.ts#en.settingsHome.languageLabel,app screen,in-app,packages/content/src/strings.en.ts,1431,en,Spoken language,15,,,,,,content,live on develop,content
-strings.en.ts#en.settingsHome.languageHelp,app screen,in-app,packages/content/src/strings.en.ts,1432,en,The language you speak your letters in.,39,,,,,,content,live on develop,content
-strings.en.ts#en.settingsHome.planLabel,app screen,in-app,packages/content/src/strings.en.ts,1434,en,Plan,4,,,,,,content,live on develop,content
-strings.en.ts#en.settingsHome.planHelp,app screen,in-app,packages/content/src/strings.en.ts,1435,en,Your first two letters are free. Plus lets you keep adding letters.,67,,,,,,content,live on develop,content
-strings.en.ts#en.settingsHome.remindersLabel,app screen,in-app,packages/content/src/strings.en.ts,1436,en,Reminders,9,,,,,,content,live on develop,content
-strings.en.ts#en.settingsHome.exportLabel,app screen,in-app,packages/content/src/strings.en.ts,1437,en,Export your book,16,,,,,,content,live on develop,content
-strings.en.ts#en.settingsHome.exportHelp,app screen,in-app,packages/content/src/strings.en.ts,1438,en,"Every letter and recording, free, any time.",43,,,,,,content,live on develop,content
-strings.en.ts#en.settingsHome.privacyLabel,app screen,in-app,packages/content/src/strings.en.ts,1439,en,Privacy,7,,,,,,content,live on develop,content
-strings.en.ts#en.settingsHome.storageLabel,app screen,in-app,packages/content/src/strings.en.ts,1441,en,Storage,7,,,,,,content,live on develop,content
-strings.en.ts#en.settingsHome.storageHelp,app screen,in-app,packages/content/src/strings.en.ts,1442,en,Languages and space on this phone.,34,,,,,,content,live on develop,content
-strings.en.ts#en.settingsHome.recordingsLabel,app screen,in-app,packages/content/src/strings.en.ts,1443,en,Recordings,10,,,,,,content,live on develop,content
-strings.en.ts#en.settingsHome.appearanceLabel,app screen,in-app,packages/content/src/strings.en.ts,1444,en,Appearance,10,,,,,,content,live on develop,content
-strings.en.ts#en.settingsHome.deleteAccountLabel,app screen,in-app,packages/content/src/strings.en.ts,1445,en,Delete account,14,,,,,,content,live on develop,content
-strings.en.ts#en.settingsHome.termsLabel,app screen,in-app,packages/content/src/strings.en.ts,1446,en,Terms of Service,16,,,,,,content,live on develop,content
-strings.en.ts#en.settingsHome.privacyPolicyLabel,app screen,in-app,packages/content/src/strings.en.ts,1447,en,Privacy Policy,14,,,,,,content,live on develop,content
-strings.en.ts#en.settingsHome.helpLabel,app screen,in-app,packages/content/src/strings.en.ts,1448,en,Help,4,,,,,,content,live on develop,content
-strings.en.ts#en.settingsHome.helpValue,app screen,in-app,packages/content/src/strings.en.ts,1449,en,Write to us,11,,,,,,content,live on develop,content
-strings.en.ts#en.settingsHome.helpSubject,app screen,in-app,packages/content/src/strings.en.ts,1450,en,Help with the app,17,,,,,,content,live on develop,content
-strings.en.ts#en.settingsHome.licencesLabel,app screen,in-app,packages/content/src/strings.en.ts,1452,en,Licenses,8,,,,,,content,live on develop,content
-strings.en.ts#en.settingsHome.legalOpenFailed,app screen,in-app,packages/content/src/strings.en.ts,1455,en,That page did not open. Nothing has changed.,44,,,,,,content,live on develop,content
-strings.en.ts#en.settingsHome.versionLabel,app screen,in-app,packages/content/src/strings.en.ts,1456,en,Version,7,,,,,,content,live on develop,content
-strings.en.ts#en.settingsHome.versionValue,app screen,in-app,packages/content/src/strings.en.ts,1459,en,{version} ({build}),19,,,,,,content,live on develop,content
-strings.en.ts#en.settingsHome.signOff,app screen,in-app,packages/content/src/strings.en.ts,1462,en,Made with care in California,28,,,,,,content,live on develop,content
-strings.en.ts#en.settingsHome.strugglingA11yHint,app screen,in-app,packages/content/src/strings.en.ts,1463,en,"Shows free, confidential support lines.",39,,,,,,content,live on develop,content
-strings.en.ts#en.whereLive.title,app screen,in-app,packages/content/src/strings.en.ts,1469,en,Where your letters live,23,,,,,,content,live on develop,content
-strings.en.ts#en.whereLive.onPhoneTitle,app screen,in-app,packages/content/src/strings.en.ts,1470,en,On this phone,13,,,,,,content,live on develop,content
-strings.en.ts#en.whereLive.onPhone,app screen,in-app,packages/content/src/strings.en.ts,1472,en,Your letters and recordings are kept on this iPhone.,52,build-dependent,build-dependent: true for servers off only,,,,content,live on develop,content
-strings.en.ts#en.whereLive.onPhoneSynced,app screen,in-app,packages/content/src/strings.en.ts,1474,en,Your letters are kept on this iPhone and on our servers. Your recordings are kept on this iPhone.,97,build-dependent,build-dependent: true for servers on only,,,,content,live on develop,content
-strings.en.ts#en.whereLive.newPhoneTitle,app screen,in-app,packages/content/src/strings.en.ts,1475,en,If you get a new phone,22,,,,,,content,live on develop,content
-strings.en.ts#en.whereLive.iphoneBackup.title,app screen,in-app,packages/content/src/strings.en.ts,1477,en,iPhone backup,13,,,,,,content,live on develop,content
-strings.en.ts#en.whereLive.iphoneBackup.body,app screen,in-app,packages/content/src/strings.en.ts,1481,en,"Includes your recordings, if iCloud Backup is on.",49,,,,,,content,live on develop,content
-strings.en.ts#en.whereLive.iphoneBackup.howTo,app screen,in-app,packages/content/src/strings.en.ts,1482,en,How to check,12,,,,,,content,live on develop,content
-strings.en.ts#en.whereLive.iphoneBackup.howToHint,app screen,in-app,packages/content/src/strings.en.ts,1483,en,Opens Apple's help page.,24,,,,,,content,live on develop,content
-strings.en.ts#en.whereLive.exportEmpty,app screen,in-app,packages/content/src/strings.en.ts,1486,en,Save a copy any time.,21,,,,,,content,live on develop,content
-strings.en.ts#en.whereLive.backupTitle,app screen,in-app,packages/content/src/strings.en.ts,1487,en,Encrypted backup,16,,,,,,content,live on develop,content
-strings.en.ts#en.whereLive.backupLater,app screen,in-app,packages/content/src/strings.en.ts,1489,en,Not in this version,19,,,,,,content,live on develop,content
-strings.en.ts#en.whereLive.footer,app screen,in-app,packages/content/src/strings.en.ts,1492,en,An export is a copy to open and keep. We hold no copy.,54,,,,,,content,live on develop,content
-strings.en.ts#en.yourWords.title,app screen,in-app,packages/content/src/strings.en.ts,1498,en,Your words,10,,,,,,content,live on develop,content
-strings.en.ts#en.yourWords.marked.label,app screen,in-app,packages/content/src/strings.en.ts,1500,en,"Small fixes, marked",19,,,,,,content,live on develop,content
-strings.en.ts#en.yourWords.marked.line,app screen,in-app,packages/content/src/strings.en.ts,1501,en,"An um or a repeat comes out, marked, and you can put it back.",61,,,,,,content,live on develop,content
-strings.en.ts#en.yourWords.exact.label,app screen,in-app,packages/content/src/strings.en.ts,1504,en,Exactly as said,15,,,,,,content,live on develop,content
-strings.en.ts#en.yourWords.exact.line,app screen,in-app,packages/content/src/strings.en.ts,1505,en,Every um and false start stays in.,34,,,,,,content,live on develop,content
-strings.en.ts#en.yourWords.footer,app screen,in-app,packages/content/src/strings.en.ts,1507,en,"Either way, we never rewrite your words.",40,,,,,,content,live on develop,content
-strings.en.ts#en.yourWords.saveFailed,app screen,in-app,packages/content/src/strings.en.ts,1509,en,That choice didn't save. It is as it was.,41,,,,,,content,live on develop,content
-strings.en.ts#en.struggling.title,safety,support links,packages/content/src/strings.en.ts,1522,en,If you are struggling,21,protected,helplines and safety instructions,,,,cco,live on develop,content
-strings.en.ts#en.struggling.body,safety,support links,packages/content/src/strings.en.ts,1524,en,"The early months ask a lot of anyone. If you want to talk to someone, these lines are there.",92,protected,helplines and safety instructions,,,,cco,live on develop,content
-strings.en.ts#en.struggling.emergencyTitle,safety,support links,packages/content/src/strings.en.ts,1525,en,Are you or your baby in danger right now?,41,protected,helplines and safety instructions,,,,cco,live on develop,content
-strings.en.ts#en.struggling.emergencyCall,safety,support links,packages/content/src/strings.en.ts,1526,en,Call {n},8,protected,helplines and safety instructions,,,,cco,live on develop,content
-strings.en.ts#en.struggling.emergencyLocal,safety,support links,packages/content/src/strings.en.ts,1527,en,Call your local emergency number.,33,protected,helplines and safety instructions,,,,cco,live on develop,content
-strings.en.ts#en.struggling.call,safety,support links,packages/content/src/strings.en.ts,1528,en,Call,4,protected,helplines and safety instructions,,,,cco,live on develop,content
-strings.en.ts#en.struggling.text,safety,support links,packages/content/src/strings.en.ts,1529,en,Text,4,protected,helplines and safety instructions,,,,cco,live on develop,content
-strings.en.ts#en.struggling.callA11y,safety,support links,packages/content/src/strings.en.ts,1530,en,Call {name},11,protected,helplines and safety instructions,,,,cco,live on develop,content
-strings.en.ts#en.struggling.textA11y,safety,support links,packages/content/src/strings.en.ts,1531,en,Text {name},11,protected,helplines and safety instructions,,,,cco,live on develop,content
-strings.en.ts#en.struggling.directory,safety,support links,packages/content/src/strings.en.ts,1532,en,Find a free helpline near you,29,protected,helplines and safety instructions,,,,cco,live on develop,content
-strings.en.ts#en.struggling.directoryBody,safety,support links,packages/content/src/strings.en.ts,1533,en,A directory of verified lines in many countries.,48,protected,helplines and safety instructions,,,,cco,live on develop,content
-strings.en.ts#en.struggling.otherCountries,safety,support links,packages/content/src/strings.en.ts,1534,en,Lines in other countries,24,protected,helplines and safety instructions,,,,cco,live on develop,content
-strings.en.ts#en.struggling.otherCountriesBody,safety,support links,packages/content/src/strings.en.ts,1535,en,"If you are travelling, or your phone is set to somewhere you are not.",69,protected,helplines and safety instructions,,,,cco,live on develop,content
-strings.en.ts#en.struggling.emergencyIn,safety,support links,packages/content/src/strings.en.ts,1536,en,Emergency: {n},14,protected,helplines and safety instructions,,,,cco,live on develop,content
-strings.en.ts#en.struggling.privacy,safety,support links,packages/content/src/strings.en.ts,1537,en,Nothing on this page is recorded or sent.,41,protected,helplines and safety instructions,,,,cco,live on develop,content
-strings.en.ts#en.helpLinks.callHint,safety,support links,packages/content/src/strings.en.ts,1544,en,Starts a call.,14,protected,helplines and safety instructions,,,,cco,live on develop,content
-strings.en.ts#en.helpLinks.callHintNoPhone,safety,support links,packages/content/src/strings.en.ts,1545,en,Shows the number to call from a phone or copy.,46,protected,helplines and safety instructions,,,,cco,live on develop,content
-strings.en.ts#en.helpLinks.noCallTitle,safety,support links,packages/content/src/strings.en.ts,1547,en,Call from a phone,17,protected,helplines and safety instructions,,,,cco,live on develop,content
-strings.en.ts#en.helpLinks.noPhoneBody,safety,support links,packages/content/src/strings.en.ts,1548,en,This device cannot make calls right now. Copy the number and use it on a phone.,79,protected,helplines and safety instructions,,,,cco,live on develop,content
-strings.en.ts#en.helpLinks.noTextTitle,safety,support links,packages/content/src/strings.en.ts,1550,en,Text from a phone,17,protected,helplines and safety instructions,,,,cco,live on develop,content
-strings.en.ts#en.helpLinks.noTextBody,safety,support links,packages/content/src/strings.en.ts,1551,en,Messages did not open on this device. Copy the number and use it on a phone.,76,protected,helplines and safety instructions,,,,cco,live on develop,content
-strings.en.ts#en.helpLinks.textHint,safety,support links,packages/content/src/strings.en.ts,1552,en,"Opens Messages, or shows the number to copy.",44,protected,helplines and safety instructions,,,,cco,live on develop,content
-strings.en.ts#en.helpLinks.webHint,safety,support links,packages/content/src/strings.en.ts,1553,en,Opens the directory in a browser.,33,protected,helplines and safety instructions,,,,cco,live on develop,content
-strings.en.ts#en.helpLinks.copyNumber,safety,support links,packages/content/src/strings.en.ts,1554,en,Copy number,11,protected,helplines and safety instructions,,,,cco,live on develop,content
-strings.en.ts#en.helpLinks.numberCopied,safety,support links,packages/content/src/strings.en.ts,1555,en,Number copied,13,protected,helplines and safety instructions,,,,cco,live on develop,content
-strings.en.ts#en.helpLinks.noMailTitle,safety,support links,packages/content/src/strings.en.ts,1557,en,Write to us,11,protected,helplines and safety instructions,,,,cco,live on develop,content
-strings.en.ts#en.helpLinks.noMailBody,safety,support links,packages/content/src/strings.en.ts,1558,en,Mail didn't open on this device. Copy our address and write from any email app.,79,protected,helplines and safety instructions,,,,cco,live on develop,content
-strings.en.ts#en.helpLinks.copyAddress,safety,support links,packages/content/src/strings.en.ts,1559,en,Copy address,12,protected,helplines and safety instructions,,,,cco,live on develop,content
-strings.en.ts#en.helpLinks.addressCopied,safety,support links,packages/content/src/strings.en.ts,1560,en,Address copied,14,protected,helplines and safety instructions,,,,cco,live on develop,content
-strings.en.ts#en.trust.promise,app screen,in-app,packages/content/src/strings.en.ts,1567,en,"Your letters and recordings are private. We never sell them, never use them for ads and never use them to train machine learning models.",136,protected,"D-061 privacy promise line, word for word on every surface",,,,content,live on develop,content
-strings.en.ts#en.trust.short,app screen,in-app,packages/content/src/strings.en.ts,1569,en,"Private by default. Never sold, never used for ads.",51,,,,,,content,live on develop,content
-strings.en.ts#en.trust.voice,app screen,in-app,packages/content/src/strings.en.ts,1571,en,We never imitate your voice. Your original recording is always kept exactly as you made it.,91,,,,,,content,live on develop,content
-strings.en.ts#en.trust.signIn.why,app screen,in-app,packages/content/src/strings.en.ts,1574,en,An account keeps your book safe when you change phones.,55,,,,,,content,live on develop,content
-strings.en.ts#en.trust.signIn.privacy,app screen,in-app,packages/content/src/strings.en.ts,1575,en,You choose who else can read your letters. We never sell them and never use them for ads.,89,,,,,,content,live on develop,content
-strings.en.ts#en.trust.signIn.email,app screen,in-app,packages/content/src/strings.en.ts,1576,en,We use your email only to sign you in and to write to you about your account.,77,,,,,,content,live on develop,content
-strings.en.ts#en.trust.firstRecording.title,app screen,in-app,packages/content/src/strings.en.ts,1580,en,Your voice stays here,21,,,,,,content,live on develop,content
-strings.en.ts#en.trust.firstRecording.body,app screen,in-app,packages/content/src/strings.en.ts,1581,en,"Your words are written down on this phone, and the recording stays with your letter. We never imitate your voice or use it to train machine learning models.",156,,,,,,content,live on develop,content
-strings.en.ts#en.trust.firstRecording.dismissButton,app screen,in-app,packages/content/src/strings.en.ts,1582,en,Good to know,12,,,,,,content,live on develop,content
-strings.en.ts#en.trust.settings.title,app screen,in-app,packages/content/src/strings.en.ts,1586,en,Our promise,11,,,,,,content,live on develop,content
-strings.en.ts#en.trust.settings.body,app screen,in-app,packages/content/src/strings.en.ts,1587,en,"Your letters and recordings are private. We never sell them, never use them for ads and never use them to train machine learning models.",136,protected,"D-061 privacy promise line, word for word on every surface",,,,content,live on develop,content
-strings.en.ts#en.trust.settings.voice,app screen,in-app,packages/content/src/strings.en.ts,1588,en,We never imitate your voice. Your original recording is always kept exactly as you made it.,91,,,,,,content,live on develop,content
-strings.en.ts#en.auth.troubleButton,app screen,in-app,packages/content/src/strings.en.ts,1595,en,Trouble signing in?,19,,,,,,content,live on develop,content
-strings.en.ts#en.auth.noEmailHelp,app screen,in-app,packages/content/src/strings.en.ts,1596,en,"Nothing yet? Wait a minute, then check Spam, Junk or Promotions for an email from ${brand.email.fromAddress}. Still nothing? Use Sign in with Apple or Google, or write to us.",174,,,,,,content,live on develop,content
-strings.en.ts#en.auth.emptyBookHelp,app screen,in-app,packages/content/src/strings.en.ts,1597,en,"See an empty book? You may have signed in a different way from the first time. Sign out, then use the way you first joined: Apple, Google, or the same email.",157,,,,,,content,live on develop,content
-strings.en.ts#en.coParentLeft.title,app screen,in-app,packages/content/src/strings.en.ts,1603,en,Some letters are no longer in the book,38,,,,,,content,live on develop,content
-strings.en.ts#en.coParentLeft.body,app screen,in-app,packages/content/src/strings.en.ts,1604,en,The person who wrote them is closing their account. Letters you wrote are not affected.,87,,,,,,content,live on develop,content
-strings.en.ts#en.coParentLeft.dismissButton,app screen,in-app,packages/content/src/strings.en.ts,1605,en,Okay,4,,,,,,content,live on develop,content
-strings.en.ts#en.ageGate.title,legal,consent,packages/content/src/strings.en.ts,1611,en,Are you 18 or older?,20,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
-strings.en.ts#en.ageGate.yesButton,legal,consent,packages/content/src/strings.en.ts,1612,en,Yes,3,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
-strings.en.ts#en.ageGate.noButton,legal,consent,packages/content/src/strings.en.ts,1613,en,No,2,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
-strings.en.ts#en.ageGate.stopTitle,legal,consent,packages/content/src/strings.en.ts,1615,en,{app} is currently for adults 18 and over,41,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
-strings.en.ts#en.ageGate.mistakeButton,legal,consent,packages/content/src/strings.en.ts,1616,en,I answered by mistake,21,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
-strings.en.ts#en.beforeBegin.agree,app screen,in-app,packages/content/src/strings.en.ts,1623,en,I agree to the Terms of Service and Privacy Policy.,51,,,,,,content,live on develop,content
-strings.en.ts#en.beforeBegin.termsLink,app screen,in-app,packages/content/src/strings.en.ts,1624,en,Terms of Service,16,,,,,,content,live on develop,content
-strings.en.ts#en.beforeBegin.privacyLink,app screen,in-app,packages/content/src/strings.en.ts,1625,en,Privacy Policy,14,,,,,,content,live on develop,content
-strings.en.ts#en.beforeBegin.linkA11yHint,app screen,in-app,packages/content/src/strings.en.ts,1626,en,Opens in a browser inside the app.,34,,,,,,content,live on develop,content
-strings.en.ts#en.beforeBegin.chooseAnswer,app screen,in-app,packages/content/src/strings.en.ts,1628,en,Choose Yes or No.,17,,,,,,content,live on develop,content
-strings.en.ts#en.beforeBegin.tickBox,app screen,in-app,packages/content/src/strings.en.ts,1629,en,Check the box to continue.,26,,,,,,content,live on develop,content
-strings.en.ts#en.beforeBegin.returningTitle,app screen,in-app,packages/content/src/strings.en.ts,1631,en,Before you continue,19,,,,,,content,live on develop,content
+strings.en.ts#en.reader.readingSizeTitle,app screen,in-app,packages/content/src/strings.en.ts,1299,en,Reading size,12,,,,,,content,live on develop,content
+strings.en.ts#en.reader.readingSizeButton,app screen,in-app,packages/content/src/strings.en.ts,1300,en,Aa,2,,,,,,content,live on develop,content
+strings.en.ts#en.reader.readingSizeWord,app screen,in-app,packages/content/src/strings.en.ts,1302,en,Size,4,,,,,,content,live on develop,content
+strings.en.ts#en.reader.readingSizeA11y,app screen,in-app,packages/content/src/strings.en.ts,1303,en,Reading size,12,,,,,,content,live on develop,content
+strings.en.ts#en.reader.sizes.standard,app screen,in-app,packages/content/src/strings.en.ts,1305,en,Standard,8,,,,,,content,live on develop,content
+strings.en.ts#en.reader.sizes.large,app screen,in-app,packages/content/src/strings.en.ts,1306,en,Large,5,,,,,,content,live on develop,content
+strings.en.ts#en.reader.sizes.largePrint,app screen,in-app,packages/content/src/strings.en.ts,1307,en,Large print,11,,,,,,content,live on develop,content
+strings.en.ts#en.reader.previewEmpty,app screen,in-app,packages/content/src/strings.en.ts,1310,en,Aa,2,,,,,,content,live on develop,content
+strings.en.ts#en.reader.notFoundTitle,app screen,in-app,packages/content/src/strings.en.ts,1311,en,This letter isn't in the book,29,,,,,,content,live on develop,content
+strings.en.ts#en.reader.notFoundDeleted,app screen,in-app,packages/content/src/strings.en.ts,1313,en,It's in Recently deleted.,25,,,,,,content,live on develop,content
+strings.en.ts#en.reader.openShelfButton,app screen,in-app,packages/content/src/strings.en.ts,1314,en,Open Recently deleted,21,,,,,,content,live on develop,content
+strings.en.ts#en.reader.notFoundCta,app screen,in-app,packages/content/src/strings.en.ts,1315,en,Back to the book,16,,,,,,content,live on develop,content
+strings.en.ts#en.reader.openHint,app screen,in-app,packages/content/src/strings.en.ts,1316,en,Opens the letter.,17,,,,,,content,live on develop,content
+strings.en.ts#en.childrenExtra.dueDateLabel,app screen,in-app,packages/content/src/strings.en.ts,1321,en,Due date,8,,,,,,content,live on develop,content
+strings.en.ts#en.childrenExtra.nameRequired,app screen,in-app,packages/content/src/strings.en.ts,1322,en,Add a name to continue.,23,,,,,,content,live on develop,content
+strings.en.ts#en.childrenExtra.notSet,app screen,in-app,packages/content/src/strings.en.ts,1323,en,Not set,7,,,,,,content,live on develop,content
+strings.en.ts#en.childrenExtra.edit.nameLabel,app screen,in-app,packages/content/src/strings.en.ts,1326,en,Name,4,,,,,,content,live on develop,content
+strings.en.ts#en.childrenExtra.edit.rowHint,app screen,in-app,packages/content/src/strings.en.ts,1327,en,Opens to change it.,19,,,,,,content,live on develop,content
+strings.en.ts#en.childrenExtra.edit.save,app screen,in-app,packages/content/src/strings.en.ts,1328,en,Save,4,,,,,,content,live on develop,content
+strings.en.ts#en.childrenExtra.edit.nameEmpty,app screen,in-app,packages/content/src/strings.en.ts,1329,en,Add a name to save.,19,,,,,,content,live on develop,content
+strings.en.ts#en.childrenExtra.edit.nameLimit,app screen,in-app,packages/content/src/strings.en.ts,1330,en,A name can have up to {n} characters.,37,,,,,,content,live on develop,content
+strings.en.ts#en.childrenExtra.edit.nameTooLong,app screen,in-app,packages/content/src/strings.en.ts,1331,en,Up to {n} characters.,21,,,,,,content,live on develop,content
+strings.en.ts#en.childrenExtra.edit.signsAsEmpty,app screen,in-app,packages/content/src/strings.en.ts,1332,en,Add what {child} calls you to save.,35,,,,,,content,live on develop,content
+strings.en.ts#en.childrenExtra.edit.signsAsLimit,app screen,in-app,packages/content/src/strings.en.ts,1333,en,Up to {n} characters.,21,,,,,,content,live on develop,content
+strings.en.ts#en.childrenExtra.edit.signsAsTooLong,app screen,in-app,packages/content/src/strings.en.ts,1334,en,Up to {n} characters.,21,,,,,,content,live on develop,content
+strings.en.ts#en.childrenExtra.edit.signsAsNewOnly,app screen,in-app,packages/content/src/strings.en.ts,1335,en,Letters already written keep their signature.,45,,,,,,content,live on develop,content
+strings.en.ts#en.childrenExtra.edit.birthdayFuture,app screen,in-app,packages/content/src/strings.en.ts,1337,en,Choose today or an earlier day.,31,,,,,,content,live on develop,content
+strings.en.ts#en.childrenExtra.edit.birthdayMissing,app screen,in-app,packages/content/src/strings.en.ts,1338,en,Choose a date to save.,22,,,,,,content,live on develop,content
+strings.en.ts#en.childrenExtra.edit.dueDateRange,app screen,in-app,packages/content/src/strings.en.ts,1339,en,Choose a due date from today up to ten months ahead.,52,,,,,,content,live on develop,content
+strings.en.ts#en.childrenExtra.edit.dateInvalid,app screen,in-app,packages/content/src/strings.en.ts,1340,en,That date doesn't look right. Try again.,40,,,,,,content,live on develop,content
+strings.en.ts#en.childrenExtra.edit.born.title,app screen,in-app,packages/content/src/strings.en.ts,1344,en,{child}'s birthday,18,,,,,,content,live on develop,content
+strings.en.ts#en.childrenExtra.edit.born.offerBody,app screen,in-app,packages/content/src/strings.en.ts,1345,en,Add it when you are ready.,26,,,,,,content,live on develop,content
+strings.en.ts#en.childrenExtra.edit.born.pickerLabel,app screen,in-app,packages/content/src/strings.en.ts,1346,en,{child}'s birthday,18,,,,,,content,live on develop,content
+strings.en.ts#en.childrenExtra.edit.born.confirm,app screen,in-app,packages/content/src/strings.en.ts,1347,en,Set the birthday,16,,,,,,content,live on develop,content
+strings.en.ts#en.childrenExtra.edit.born.hideButton,app screen,in-app,packages/content/src/strings.en.ts,1348,en,Hide,4,,,,,,content,live on develop,content
+strings.en.ts#en.childrenExtra.edit.born.hereRow,app screen,in-app,packages/content/src/strings.en.ts,1351,en,{child} is here?,16,,,,,,content,live on develop,content
+strings.en.ts#en.childrenExtra.edit.born.keepNote,app screen,in-app,packages/content/src/strings.en.ts,1352,en,Letters written before this day stay in Before You.,51,,,,,,content,live on develop,content
+strings.en.ts#en.childrenExtra.familyCanReadHelp,app screen,in-app,packages/content/src/strings.en.ts,1355,en,Family see the letters you add to {child}'s book. This starts once family can join.,83,,,,,,content,live on develop,content
+strings.en.ts#en.childrenExtra.plusNotYet,app screen,in-app,packages/content/src/strings.en.ts,1356,en,Plus is not available on this device yet.,41,,,,,,content,live on develop,content
+strings.en.ts#en.familyTab.membersTitle,app screen,in-app,packages/content/src/strings.en.ts,1360,en,Who writes to {child},21,,,,,,content,live on develop,content
+strings.en.ts#en.familyTab.youLabel,app screen,in-app,packages/content/src/strings.en.ts,1361,en,You,3,,,,,,content,live on develop,content
+strings.en.ts#en.familyTab.rolesTitle,app screen,in-app,packages/content/src/strings.en.ts,1362,en,Two ways to join,16,,,,,,content,live on develop,content
+strings.en.ts#en.familyTab.coParentLabel,app screen,in-app,packages/content/src/strings.en.ts,1363,en,Co-parent,9,,,,,,content,live on develop,content
+strings.en.ts#en.familyTab.coParentBody,app screen,in-app,packages/content/src/strings.en.ts,1364,en,"Writes to {child} and reads the whole book, as an equal.",56,,,,,,content,live on develop,content
+strings.en.ts#en.familyTab.familyLabel,app screen,in-app,packages/content/src/strings.en.ts,1366,en,Family,6,,,,,,content,live on develop,content
+strings.en.ts#en.familyTab.familyBody,app screen,in-app,packages/content/src/strings.en.ts,1367,en,Writes to {child}. You choose which letters go in the book.,59,,,,,,content,live on develop,content
+strings.en.ts#en.settingsMore.accountTitle,app screen,in-app,packages/content/src/strings.en.ts,1371,en,Account,7,,,,,,content,live on develop,content
+strings.en.ts#en.settingsMore.signedOutLabel,app screen,in-app,packages/content/src/strings.en.ts,1372,en,Not signed in,13,,,,,,content,live on develop,content
+strings.en.ts#en.settingsMore.appearanceTitle,app screen,in-app,packages/content/src/strings.en.ts,1373,en,Appearance,10,,,,,,content,live on develop,content
+strings.en.ts#en.settingsMore.themeLabel,app screen,in-app,packages/content/src/strings.en.ts,1374,en,Theme,5,,,,,,content,live on develop,content
+strings.en.ts#en.settingsMore.themes.system,app screen,in-app,packages/content/src/strings.en.ts,1376,en,Match this phone,16,,,,,,content,live on develop,content
+strings.en.ts#en.settingsMore.themes.light,app screen,in-app,packages/content/src/strings.en.ts,1377,en,Light,5,,,,,,content,live on develop,content
+strings.en.ts#en.settingsMore.themes.dark,app screen,in-app,packages/content/src/strings.en.ts,1378,en,Dark,4,,,,,,content,live on develop,content
+strings.en.ts#en.settingsMore.remindersNotYet,app screen,in-app,packages/content/src/strings.en.ts,1382,en,Reminders are not on in this version.,37,,,,,,content,live on develop,content
+strings.en.ts#en.settingsMore.legalTitle,app screen,in-app,packages/content/src/strings.en.ts,1383,en,Legal,5,,,,,,content,live on develop,content
+strings.en.ts#en.settingsMore.versionLabel,app screen,in-app,packages/content/src/strings.en.ts,1384,en,Version,7,,,,,,content,live on develop,content
+strings.en.ts#en.settingsHome.sections.writing,app screen,in-app,packages/content/src/strings.en.ts,1395,en,Writing,7,,,,,,content,live on develop,content
+strings.en.ts#en.settingsHome.sections.plus,app screen,in-app,packages/content/src/strings.en.ts,1396,en,Plus,4,,,,,,content,live on develop,content
+strings.en.ts#en.settingsHome.sections.letters,app screen,in-app,packages/content/src/strings.en.ts,1397,en,Your letters,12,,,,,,content,live on develop,content
+strings.en.ts#en.settingsHome.sections.privacy,app screen,in-app,packages/content/src/strings.en.ts,1398,en,Privacy and security,20,,,,,,content,live on develop,content
+strings.en.ts#en.settingsHome.sections.help,app screen,in-app,packages/content/src/strings.en.ts,1399,en,Help and legal,14,,,,,,content,live on develop,content
+strings.en.ts#en.settingsHome.sections.about,app screen,in-app,packages/content/src/strings.en.ts,1400,en,About,5,,,,,,content,live on develop,content
+strings.en.ts#en.settingsHome.cardOnPhone,app screen,in-app,packages/content/src/strings.en.ts,1405,en,On this phone,13,,,,,,content,live on develop,content
+strings.en.ts#en.settingsHome.cardHint.account,app screen,in-app,packages/content/src/strings.en.ts,1407,en,Opens Account.,14,,,,,,content,live on develop,content
+strings.en.ts#en.settingsHome.signedOut.body,app screen,in-app,packages/content/src/strings.en.ts,1414,en,Your letters are on this phone.,31,,,,,,content,live on develop,content
+strings.en.ts#en.settingsHome.localStart.body,app screen,in-app,packages/content/src/strings.en.ts,1420,en,Signing in adds them to your account after you agree.,53,,,,,,content,live on develop,content
+strings.en.ts#en.settingsHome.youTabHint,app screen,in-app,packages/content/src/strings.en.ts,1423,en,Settings and account,20,,,,,,content,live on develop,content
+strings.en.ts#en.settingsHome.legalLabel,app screen,in-app,packages/content/src/strings.en.ts,1424,en,Legal,5,,,,,,content,live on develop,content
+strings.en.ts#en.settingsHome.accountLabel,app screen,in-app,packages/content/src/strings.en.ts,1425,en,Account,7,,,,,,content,live on develop,content
+strings.en.ts#en.settingsHome.accountHelp,app screen,in-app,packages/content/src/strings.en.ts,1426,en,"Sign in, and the ways you sign in.",34,,,,,,content,live on develop,content
+strings.en.ts#en.settingsHome.whereLive,app screen,in-app,packages/content/src/strings.en.ts,1429,en,Where your letters live,23,,,,,,content,live on develop,content
+strings.en.ts#en.settingsHome.yourWords,app screen,in-app,packages/content/src/strings.en.ts,1430,en,Your words,10,,,,,,content,live on develop,content
+strings.en.ts#en.settingsHome.languageLabel,app screen,in-app,packages/content/src/strings.en.ts,1432,en,Spoken language,15,,,,,,content,live on develop,content
+strings.en.ts#en.settingsHome.languageHelp,app screen,in-app,packages/content/src/strings.en.ts,1433,en,The language you speak your letters in.,39,,,,,,content,live on develop,content
+strings.en.ts#en.settingsHome.planLabel,app screen,in-app,packages/content/src/strings.en.ts,1435,en,Plan,4,,,,,,content,live on develop,content
+strings.en.ts#en.settingsHome.planHelp,app screen,in-app,packages/content/src/strings.en.ts,1436,en,Your first two letters are free. Plus lets you keep adding letters.,67,,,,,,content,live on develop,content
+strings.en.ts#en.settingsHome.remindersLabel,app screen,in-app,packages/content/src/strings.en.ts,1437,en,Reminders,9,,,,,,content,live on develop,content
+strings.en.ts#en.settingsHome.exportLabel,app screen,in-app,packages/content/src/strings.en.ts,1438,en,Export your book,16,,,,,,content,live on develop,content
+strings.en.ts#en.settingsHome.exportHelp,app screen,in-app,packages/content/src/strings.en.ts,1439,en,"Every letter and recording, free, any time.",43,,,,,,content,live on develop,content
+strings.en.ts#en.settingsHome.privacyLabel,app screen,in-app,packages/content/src/strings.en.ts,1440,en,Privacy,7,,,,,,content,live on develop,content
+strings.en.ts#en.settingsHome.storageLabel,app screen,in-app,packages/content/src/strings.en.ts,1442,en,Storage,7,,,,,,content,live on develop,content
+strings.en.ts#en.settingsHome.storageHelp,app screen,in-app,packages/content/src/strings.en.ts,1443,en,Languages and space on this phone.,34,,,,,,content,live on develop,content
+strings.en.ts#en.settingsHome.recordingsLabel,app screen,in-app,packages/content/src/strings.en.ts,1444,en,Recordings,10,,,,,,content,live on develop,content
+strings.en.ts#en.settingsHome.appearanceLabel,app screen,in-app,packages/content/src/strings.en.ts,1445,en,Appearance,10,,,,,,content,live on develop,content
+strings.en.ts#en.settingsHome.deleteAccountLabel,app screen,in-app,packages/content/src/strings.en.ts,1446,en,Delete account,14,,,,,,content,live on develop,content
+strings.en.ts#en.settingsHome.termsLabel,app screen,in-app,packages/content/src/strings.en.ts,1447,en,Terms of Service,16,,,,,,content,live on develop,content
+strings.en.ts#en.settingsHome.privacyPolicyLabel,app screen,in-app,packages/content/src/strings.en.ts,1448,en,Privacy Policy,14,,,,,,content,live on develop,content
+strings.en.ts#en.settingsHome.helpLabel,app screen,in-app,packages/content/src/strings.en.ts,1449,en,Help,4,,,,,,content,live on develop,content
+strings.en.ts#en.settingsHome.helpValue,app screen,in-app,packages/content/src/strings.en.ts,1450,en,Write to us,11,,,,,,content,live on develop,content
+strings.en.ts#en.settingsHome.helpSubject,app screen,in-app,packages/content/src/strings.en.ts,1451,en,Help with the app,17,,,,,,content,live on develop,content
+strings.en.ts#en.settingsHome.licencesLabel,app screen,in-app,packages/content/src/strings.en.ts,1453,en,Licenses,8,,,,,,content,live on develop,content
+strings.en.ts#en.settingsHome.legalOpenFailed,app screen,in-app,packages/content/src/strings.en.ts,1456,en,That page did not open. Nothing has changed.,44,,,,,,content,live on develop,content
+strings.en.ts#en.settingsHome.versionLabel,app screen,in-app,packages/content/src/strings.en.ts,1457,en,Version,7,,,,,,content,live on develop,content
+strings.en.ts#en.settingsHome.versionValue,app screen,in-app,packages/content/src/strings.en.ts,1460,en,{version} ({build}),19,,,,,,content,live on develop,content
+strings.en.ts#en.settingsHome.signOff,app screen,in-app,packages/content/src/strings.en.ts,1463,en,Made with care in California,28,,,,,,content,live on develop,content
+strings.en.ts#en.settingsHome.strugglingA11yHint,app screen,in-app,packages/content/src/strings.en.ts,1464,en,"Shows free, confidential support lines.",39,,,,,,content,live on develop,content
+strings.en.ts#en.whereLive.title,app screen,in-app,packages/content/src/strings.en.ts,1470,en,Where your letters live,23,,,,,,content,live on develop,content
+strings.en.ts#en.whereLive.onPhoneTitle,app screen,in-app,packages/content/src/strings.en.ts,1471,en,On this phone,13,,,,,,content,live on develop,content
+strings.en.ts#en.whereLive.onPhone,app screen,in-app,packages/content/src/strings.en.ts,1473,en,Your letters and recordings are kept on this iPhone.,52,build-dependent,build-dependent: true for servers off only,,,,content,live on develop,content
+strings.en.ts#en.whereLive.onPhoneSynced,app screen,in-app,packages/content/src/strings.en.ts,1475,en,Your letters are kept on this iPhone and on our servers. Your recordings are kept on this iPhone.,97,build-dependent,build-dependent: true for servers on only,,,,content,live on develop,content
+strings.en.ts#en.whereLive.newPhoneTitle,app screen,in-app,packages/content/src/strings.en.ts,1476,en,If you get a new phone,22,,,,,,content,live on develop,content
+strings.en.ts#en.whereLive.iphoneBackup.title,app screen,in-app,packages/content/src/strings.en.ts,1478,en,iPhone backup,13,,,,,,content,live on develop,content
+strings.en.ts#en.whereLive.iphoneBackup.body,app screen,in-app,packages/content/src/strings.en.ts,1482,en,"Includes your recordings, if iCloud Backup is on.",49,,,,,,content,live on develop,content
+strings.en.ts#en.whereLive.iphoneBackup.howTo,app screen,in-app,packages/content/src/strings.en.ts,1483,en,How to check,12,,,,,,content,live on develop,content
+strings.en.ts#en.whereLive.iphoneBackup.howToHint,app screen,in-app,packages/content/src/strings.en.ts,1484,en,Opens Apple's help page.,24,,,,,,content,live on develop,content
+strings.en.ts#en.whereLive.exportEmpty,app screen,in-app,packages/content/src/strings.en.ts,1487,en,Save a copy any time.,21,,,,,,content,live on develop,content
+strings.en.ts#en.whereLive.backupTitle,app screen,in-app,packages/content/src/strings.en.ts,1488,en,Encrypted backup,16,,,,,,content,live on develop,content
+strings.en.ts#en.whereLive.backupLater,app screen,in-app,packages/content/src/strings.en.ts,1490,en,Not in this version,19,,,,,,content,live on develop,content
+strings.en.ts#en.whereLive.footer,app screen,in-app,packages/content/src/strings.en.ts,1493,en,An export is a copy to open and keep. We hold no copy.,54,,,,,,content,live on develop,content
+strings.en.ts#en.yourWords.title,app screen,in-app,packages/content/src/strings.en.ts,1499,en,Your words,10,,,,,,content,live on develop,content
+strings.en.ts#en.yourWords.marked.label,app screen,in-app,packages/content/src/strings.en.ts,1501,en,"Small fixes, marked",19,,,,,,content,live on develop,content
+strings.en.ts#en.yourWords.marked.line,app screen,in-app,packages/content/src/strings.en.ts,1502,en,"An um or a repeat comes out, marked, and you can put it back.",61,,,,,,content,live on develop,content
+strings.en.ts#en.yourWords.exact.label,app screen,in-app,packages/content/src/strings.en.ts,1505,en,Exactly as said,15,,,,,,content,live on develop,content
+strings.en.ts#en.yourWords.exact.line,app screen,in-app,packages/content/src/strings.en.ts,1506,en,Every um and false start stays in.,34,,,,,,content,live on develop,content
+strings.en.ts#en.yourWords.footer,app screen,in-app,packages/content/src/strings.en.ts,1508,en,"Either way, we never rewrite your words.",40,,,,,,content,live on develop,content
+strings.en.ts#en.yourWords.saveFailed,app screen,in-app,packages/content/src/strings.en.ts,1510,en,That choice didn't save. It is as it was.,41,,,,,,content,live on develop,content
+strings.en.ts#en.struggling.title,safety,support links,packages/content/src/strings.en.ts,1523,en,If you are struggling,21,protected,helplines and safety instructions,,,,cco,live on develop,content
+strings.en.ts#en.struggling.body,safety,support links,packages/content/src/strings.en.ts,1525,en,"The early months ask a lot of anyone. If you want to talk to someone, these lines are there.",92,protected,helplines and safety instructions,,,,cco,live on develop,content
+strings.en.ts#en.struggling.emergencyTitle,safety,support links,packages/content/src/strings.en.ts,1526,en,Are you or your baby in danger right now?,41,protected,helplines and safety instructions,,,,cco,live on develop,content
+strings.en.ts#en.struggling.emergencyCall,safety,support links,packages/content/src/strings.en.ts,1527,en,Call {n},8,protected,helplines and safety instructions,,,,cco,live on develop,content
+strings.en.ts#en.struggling.emergencyLocal,safety,support links,packages/content/src/strings.en.ts,1528,en,Call your local emergency number.,33,protected,helplines and safety instructions,,,,cco,live on develop,content
+strings.en.ts#en.struggling.call,safety,support links,packages/content/src/strings.en.ts,1529,en,Call,4,protected,helplines and safety instructions,,,,cco,live on develop,content
+strings.en.ts#en.struggling.text,safety,support links,packages/content/src/strings.en.ts,1530,en,Text,4,protected,helplines and safety instructions,,,,cco,live on develop,content
+strings.en.ts#en.struggling.callA11y,safety,support links,packages/content/src/strings.en.ts,1531,en,Call {name},11,protected,helplines and safety instructions,,,,cco,live on develop,content
+strings.en.ts#en.struggling.textA11y,safety,support links,packages/content/src/strings.en.ts,1532,en,Text {name},11,protected,helplines and safety instructions,,,,cco,live on develop,content
+strings.en.ts#en.struggling.directory,safety,support links,packages/content/src/strings.en.ts,1533,en,Find a free helpline near you,29,protected,helplines and safety instructions,,,,cco,live on develop,content
+strings.en.ts#en.struggling.directoryBody,safety,support links,packages/content/src/strings.en.ts,1534,en,A directory of verified lines in many countries.,48,protected,helplines and safety instructions,,,,cco,live on develop,content
+strings.en.ts#en.struggling.otherCountries,safety,support links,packages/content/src/strings.en.ts,1535,en,Lines in other countries,24,protected,helplines and safety instructions,,,,cco,live on develop,content
+strings.en.ts#en.struggling.otherCountriesBody,safety,support links,packages/content/src/strings.en.ts,1536,en,"If you are travelling, or your phone is set to somewhere you are not.",69,protected,helplines and safety instructions,,,,cco,live on develop,content
+strings.en.ts#en.struggling.emergencyIn,safety,support links,packages/content/src/strings.en.ts,1537,en,Emergency: {n},14,protected,helplines and safety instructions,,,,cco,live on develop,content
+strings.en.ts#en.struggling.privacy,safety,support links,packages/content/src/strings.en.ts,1538,en,Nothing on this page is recorded or sent.,41,protected,helplines and safety instructions,,,,cco,live on develop,content
+strings.en.ts#en.helpLinks.callHint,safety,support links,packages/content/src/strings.en.ts,1545,en,Starts a call.,14,protected,helplines and safety instructions,,,,cco,live on develop,content
+strings.en.ts#en.helpLinks.callHintNoPhone,safety,support links,packages/content/src/strings.en.ts,1546,en,Shows the number to call from a phone or copy.,46,protected,helplines and safety instructions,,,,cco,live on develop,content
+strings.en.ts#en.helpLinks.noCallTitle,safety,support links,packages/content/src/strings.en.ts,1548,en,Call from a phone,17,protected,helplines and safety instructions,,,,cco,live on develop,content
+strings.en.ts#en.helpLinks.noPhoneBody,safety,support links,packages/content/src/strings.en.ts,1549,en,This device cannot make calls right now. Copy the number and use it on a phone.,79,protected,helplines and safety instructions,,,,cco,live on develop,content
+strings.en.ts#en.helpLinks.noTextTitle,safety,support links,packages/content/src/strings.en.ts,1551,en,Text from a phone,17,protected,helplines and safety instructions,,,,cco,live on develop,content
+strings.en.ts#en.helpLinks.noTextBody,safety,support links,packages/content/src/strings.en.ts,1552,en,Messages did not open on this device. Copy the number and use it on a phone.,76,protected,helplines and safety instructions,,,,cco,live on develop,content
+strings.en.ts#en.helpLinks.textHint,safety,support links,packages/content/src/strings.en.ts,1553,en,"Opens Messages, or shows the number to copy.",44,protected,helplines and safety instructions,,,,cco,live on develop,content
+strings.en.ts#en.helpLinks.webHint,safety,support links,packages/content/src/strings.en.ts,1554,en,Opens the directory in a browser.,33,protected,helplines and safety instructions,,,,cco,live on develop,content
+strings.en.ts#en.helpLinks.copyNumber,safety,support links,packages/content/src/strings.en.ts,1555,en,Copy number,11,protected,helplines and safety instructions,,,,cco,live on develop,content
+strings.en.ts#en.helpLinks.numberCopied,safety,support links,packages/content/src/strings.en.ts,1556,en,Number copied,13,protected,helplines and safety instructions,,,,cco,live on develop,content
+strings.en.ts#en.helpLinks.noMailTitle,safety,support links,packages/content/src/strings.en.ts,1558,en,Write to us,11,protected,helplines and safety instructions,,,,cco,live on develop,content
+strings.en.ts#en.helpLinks.noMailBody,safety,support links,packages/content/src/strings.en.ts,1559,en,Mail didn't open on this device. Copy our address and write from any email app.,79,protected,helplines and safety instructions,,,,cco,live on develop,content
+strings.en.ts#en.helpLinks.copyAddress,safety,support links,packages/content/src/strings.en.ts,1560,en,Copy address,12,protected,helplines and safety instructions,,,,cco,live on develop,content
+strings.en.ts#en.helpLinks.addressCopied,safety,support links,packages/content/src/strings.en.ts,1561,en,Address copied,14,protected,helplines and safety instructions,,,,cco,live on develop,content
+strings.en.ts#en.trust.promise,app screen,in-app,packages/content/src/strings.en.ts,1568,en,"Your letters and recordings are private. We never sell them, never use them for ads and never use them to train machine learning models.",136,protected,"D-061 privacy promise line, word for word on every surface",,,,content,live on develop,content
+strings.en.ts#en.trust.short,app screen,in-app,packages/content/src/strings.en.ts,1570,en,"Private by default. Never sold, never used for ads.",51,,,,,,content,live on develop,content
+strings.en.ts#en.trust.voice,app screen,in-app,packages/content/src/strings.en.ts,1572,en,We never imitate your voice. Your original recording is always kept exactly as you made it.,91,,,,,,content,live on develop,content
+strings.en.ts#en.trust.signIn.why,app screen,in-app,packages/content/src/strings.en.ts,1575,en,An account keeps the words of your letters with you when you change phones.,75,,,,,,content,live on develop,content
+strings.en.ts#en.trust.signIn.privacy,app screen,in-app,packages/content/src/strings.en.ts,1576,en,Your letters are yours. We never sell them and never use them for ads.,70,,,,,,content,live on develop,content
+strings.en.ts#en.trust.signIn.email,app screen,in-app,packages/content/src/strings.en.ts,1577,en,We use your email only to sign you in and to write to you about your account.,77,,,,,,content,live on develop,content
+strings.en.ts#en.trust.firstRecording.title,app screen,in-app,packages/content/src/strings.en.ts,1581,en,Your voice stays here,21,,,,,,content,live on develop,content
+strings.en.ts#en.trust.firstRecording.body,app screen,in-app,packages/content/src/strings.en.ts,1582,en,"Your words are written down on this phone, and the recording stays with your letter. We never imitate your voice or use it to train machine learning models.",156,,,,,,content,live on develop,content
+strings.en.ts#en.trust.firstRecording.dismissButton,app screen,in-app,packages/content/src/strings.en.ts,1583,en,Good to know,12,,,,,,content,live on develop,content
+strings.en.ts#en.trust.settings.title,app screen,in-app,packages/content/src/strings.en.ts,1587,en,Our promise,11,,,,,,content,live on develop,content
+strings.en.ts#en.trust.settings.body,app screen,in-app,packages/content/src/strings.en.ts,1588,en,"Your letters and recordings are private. We never sell them, never use them for ads and never use them to train machine learning models.",136,protected,"D-061 privacy promise line, word for word on every surface",,,,content,live on develop,content
+strings.en.ts#en.trust.settings.voice,app screen,in-app,packages/content/src/strings.en.ts,1589,en,We never imitate your voice. Your original recording is always kept exactly as you made it.,91,,,,,,content,live on develop,content
+strings.en.ts#en.auth.troubleButton,app screen,in-app,packages/content/src/strings.en.ts,1596,en,Trouble signing in?,19,,,,,,content,live on develop,content
+strings.en.ts#en.auth.noEmailHelp,app screen,in-app,packages/content/src/strings.en.ts,1597,en,"Nothing yet? Wait a minute, then check Spam, Junk or Promotions for an email from ${brand.email.fromAddress}. Still nothing? Use Sign in with Apple or Google, or write to us.",174,,,,,,content,live on develop,content
+strings.en.ts#en.auth.emptyBookHelp,app screen,in-app,packages/content/src/strings.en.ts,1598,en,"See an empty book? You may have signed in a different way from the first time. Sign out, then use the way you first joined: Apple, Google, or the same email.",157,,,,,,content,live on develop,content
+strings.en.ts#en.coParentLeft.title,app screen,in-app,packages/content/src/strings.en.ts,1604,en,Some letters are no longer in the book,38,,,,,,content,live on develop,content
+strings.en.ts#en.coParentLeft.body,app screen,in-app,packages/content/src/strings.en.ts,1605,en,The person who wrote them is closing their account. Letters you wrote are not affected.,87,,,,,,content,live on develop,content
+strings.en.ts#en.coParentLeft.dismissButton,app screen,in-app,packages/content/src/strings.en.ts,1606,en,Okay,4,,,,,,content,live on develop,content
+strings.en.ts#en.ageGate.title,legal,consent,packages/content/src/strings.en.ts,1612,en,Are you 18 or older?,20,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
+strings.en.ts#en.ageGate.yesButton,legal,consent,packages/content/src/strings.en.ts,1613,en,Yes,3,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
+strings.en.ts#en.ageGate.noButton,legal,consent,packages/content/src/strings.en.ts,1614,en,No,2,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
+strings.en.ts#en.ageGate.stopTitle,legal,consent,packages/content/src/strings.en.ts,1616,en,{app} is currently for adults 18 and over,41,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
+strings.en.ts#en.ageGate.mistakeButton,legal,consent,packages/content/src/strings.en.ts,1617,en,I answered by mistake,21,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
+strings.en.ts#en.beforeBegin.agree,app screen,in-app,packages/content/src/strings.en.ts,1624,en,I agree to the Terms of Service and Privacy Policy.,51,,,,,,content,live on develop,content
+strings.en.ts#en.beforeBegin.termsLink,app screen,in-app,packages/content/src/strings.en.ts,1625,en,Terms of Service,16,,,,,,content,live on develop,content
+strings.en.ts#en.beforeBegin.privacyLink,app screen,in-app,packages/content/src/strings.en.ts,1626,en,Privacy Policy,14,,,,,,content,live on develop,content
+strings.en.ts#en.beforeBegin.linkA11yHint,app screen,in-app,packages/content/src/strings.en.ts,1627,en,Opens in a browser inside the app.,34,,,,,,content,live on develop,content
+strings.en.ts#en.beforeBegin.chooseAnswer,app screen,in-app,packages/content/src/strings.en.ts,1629,en,Choose Yes or No.,17,,,,,,content,live on develop,content
+strings.en.ts#en.beforeBegin.tickBox,app screen,in-app,packages/content/src/strings.en.ts,1630,en,Check the box to continue.,26,,,,,,content,live on develop,content
+strings.en.ts#en.beforeBegin.returningTitle,app screen,in-app,packages/content/src/strings.en.ts,1632,en,Before you continue,19,,,,,,content,live on develop,content
 supabase/templates/confirmation.html#html,email,supabase auth template,supabase/templates/confirmation.html,17,en,@media (prefers-color-scheme: dark){,36,held,D-041 supabase templates,,,,content,live on develop,supabase-template
 supabase/templates/confirmation.html#html~2,email,supabase auth template,supabase/templates/confirmation.html,18,en,.el-desk{background-color:#161412 !important;},46,held,D-041 supabase templates,,,,content,live on develop,supabase-template
 supabase/templates/confirmation.html#html~3,email,supabase auth template,supabase/templates/confirmation.html,19,en,.el-sheet{background-color:#201D1A !important;border-color:#33302C !important;},79,held,D-041 supabase templates,,,,content,live on develop,supabase-template
