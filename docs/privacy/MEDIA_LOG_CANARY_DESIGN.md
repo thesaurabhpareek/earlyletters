@@ -13,11 +13,11 @@ Gate (NX-39 section 3): the canary is running and green before P2b can switch on
 ## 2. What exists today, and what this reuses
 
 - `apps/mobile/e2e-web/support/log-canary.ts` (BL-415, with BL-1901 for phone numbers): a pure matcher, `findLeaks(lines, typed)`, with whole-word, any-case matching for the child name "Asha" and seeded letter fragments. Unit-tested in `apps/mobile/test/log-canary.test.ts`. It watches the web journey's console and page errors only. No media value is known to it.
-- `packages/analytics/test/analytics.test.ts` (line 219, per PRIV-R10): Asha fixtures cannot reach the provider whatever the caller does.
+- `packages/analytics/test/analytics.test.ts` (the `CANARIES` list and the PII-drop cases that use it, per PRIV-R10): Asha fixtures cannot reach the provider whatever the caller does.
 - `apps/mobile/src/lib/resilience/global-errors.ts`: fault records hold kind, code, id and time only, the last 20 (test `test/global-errors.test.ts`).
 - The `DATA_CLASSIFICATION.md` section 0 row "log canary not built" is still true for media.
 
-Design choice: extend the one matcher rather than add a second. Media canary values join `findLeaks` as a new fixture set with their own label, so one failure format covers children's names, letter text, phone numbers and media. The harness in NX-39 section 16 is `scripts/guards/log-canary.test.mjs`; the pure rules belong beside `log-canary.ts` so the existing unit test style carries over. Where they live is BL-862's call; this page asks only for one matcher.
+Design choice: extend the one matcher rather than add a second. Media canary values join `findLeaks` as a new fixture set with their own label, so one failure format covers children's names, letter text, phone numbers and media. The harness in NX-39 section 16 is `scripts/guards/log-canary.test.mjs`, which is not yet created on `develop`; the pure rules belong beside `log-canary.ts` so the existing unit test style carries over. Where they live is BL-862's call; this page asks only for one matcher.
 
 ## 3. The canary values
 
@@ -64,12 +64,15 @@ Each sink is a function or object the test can read after the journey. Each has 
 | S6 | Sync payloads and the `packages/api` schemas | Serialise the outbox after a letter with media syncs; the keys library, local_id, asset, place, geohash, moment, occasion, taken_at and media must not appear (NX-39-R33) | R33 |
 | S7 | Local notification requests (title, body, subtitle, `userInfo`, attachments, `threadIdentifier`) | A fake scheduler. Body is a fixed content key; `userInfo` holds only a random id (R26) | R26, R27 |
 | S8 | Support prefill and share text (`mailto` body, share-sheet text) | Build each with a media-bearing state | PRIV-R10 |
-| S9 | The export ZIP and the deletion receipt | Read the bytes. A city appears only for an item the parent kept and only with "Include places" on. The index and the decisions are not exported (R32). A receipt holds none | R32, DATA-REQ-004 |
+| S9 | The parent's export ZIP and the deletion receipt | Read the bytes. A city appears only for an item the parent kept and only with "Include places" on. The index and the decisions are not exported (R32). A receipt holds none | R32, DATA-REQ-004 |
+| S9b | The recovery export ZIP (`lib/resilience/recovery-export.logic.ts`, `recovery-export.ts`) | Build the ZIP from a store holding the canary items, then read every entry. This ZIP packs the recordings and the `scribe.db` files as they sit, with no "Include places" gate, so the S9 rule does not apply to it and a canary built to S9 alone would fail on it or miss it. Rule to assert, matching `DATA_CLASSIFICATION.md` 4.6 and the proposed rows: the kept capture day and kept city name (and the parent-typed `place` and `photo_text`) may appear, only inside the database entry, as the stored column text and nowhere else; a canary value in a file name, a path inside the ZIP, a manifest or any entry other than the database files is a leak; no picture file is packed; the moments index file and the decisions file are not in it; the Find index may hold neither the capture day nor the city name (S13). A capture day or city the parent cleared must not appear at all | R32, DATA-REQ-004, PRIV-R10 |
+| S13 | The Find index (`letter_search`, `letter_search_rows`, the `searchable_letters` view) | Query and dump the index after every step that sets a capture day or city. The index holds the words, the label, the typed photo words and the typed place as today, and never the capture day or the captured city name (NX-39-R10). Also covered by S11 on erase: Find is dropped at launch with Find off and by Erase everything | R10, R31 |
+| S14 | The on-phone backup queue and state file (`lib/backup/local-store.ts`, `token-vault.ts`; the state file `backup-<profile id>.db` in `DATA_CLASSIFICATION.md` 4.6) | At rest, after a run with the backup capability on and the canary items present. Opened only with `EXPO_PUBLIC_BACKUP` on (`lib/backup/gate.ts`), so low risk today and media is not backed up; the wire side is S5. Expect no canary value | R30, R33 |
 | S10 | The native error that crosses the bridge | A fake native module throws an error whose message holds every canary; the adapter must pass on a closed enum code only (NX-39-R50) | R50 |
 | S11 | Files left on disk after erase | A file-tree diff after Erase everything: no copy, field, index, sidecar (`-wal`, `-shm`), cursor, look log or decision remains (R31) | R31 |
 | S12 | URLs and deep-link paths the app opens or builds | Route builders called with media-bearing state | PRIV-R10 |
 
-Where a canary is allowed to be: the local store (`entry_media` date and city fields for a kept item), the screens that show them, and the parent's own export under its rules. The test asserts the canary is present there too (section 6, positive control), so a silent no-op cannot pass.
+Where a canary is allowed to be: the local store (`entry_media` date and city fields for a kept item), the screens that show them, the parent's own export under its rules, and the recovery export's database entry under the S9b rule. The Find index is not on this list for the capture day or the city name. The test asserts the canary is present there too (section 6, positive control), so a silent no-op cannot pass.
 
 ## 5. The journey the harness runs
 
@@ -94,7 +97,7 @@ After each step, and again at the end, every sink in section 4 is scanned for ev
 
 A canary that cannot fail proves nothing. Mirroring the AST scanner's rule (NX-39-R9(c)):
 
-- For each sink S1 to S12, a test writes a canary value into that sink on purpose, in at least two encodings, and asserts the matcher reports it with the sink's label.
+- For each sink S1 to S14, a test writes a canary value into that sink on purpose, in at least two encodings, and asserts the matcher reports it with the sink's label.
 - A test removes the media adapter's field filter (a stand-in that passes thirty extra fields) and asserts the run fails.
 - A test removes the closed-code mapping at the bridge (S10) and asserts the run fails.
 - A test with the matcher's value list emptied asserts the run fails as "no canary loaded", not as a pass.
@@ -106,6 +109,7 @@ A failure names the sink, the form that matched, the journey step, the nonce, an
 
 ## 8. What this does not cover (said plainly)
 
+- The dev-only performance ring (`lib/perf/markers.ts`): a closed list of event names and one number each, in memory, and `mark` does nothing unless `EXPO_PUBLIC_PERF` is "on". It cannot hold a media value by construction, so it is out of scope and not scanned.
 - Anything outside the JavaScript runtime. The native modules log through the system. A canary in native error text proves the bridge keeps it from JavaScript; it does not read `os_log`. The device row for that is D-11 in `docs/security/MEDIA_THREAT_MODEL.md` (force each photo failure, read the fault records and the device console). It is run by a person with a phone and Asha fixtures.
 - Apple's own crash reports, which reach the developer through App Store Connect under the user's Apple setting, and any system log the phone keeps. We cannot scan them, and the label doc already says they are Apple's collection.
 - The iPhone backup and the picker's out-of-process view (threat model PK-6, D-20).
