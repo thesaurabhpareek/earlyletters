@@ -13,12 +13,16 @@
  * stored age or time).
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
+import * as Application from 'expo-application';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { HEADER_IDEMPOTENCY_KEY } from '@scribe/api';
+import { CONSENT_LOCALE, consentShownText, type ConsentShownId } from '@scribe/content';
+import { sha256Hex } from '../sha256';
 import { idempotencyKey } from '../supabase/client';
 import { errorCode } from '../supabase/errors.logic';
 import { heldAnswers } from './consent-key.logic';
+import { buildConsentAct, isNoCandidate, withoutNewFields, type ConsentEnv } from './consent-record';
 import type { AuthMethod, ConsentStep, SyncGate } from './machine.logic';
 
 type PolicyDocument = 'terms' | 'sensitive-data';
@@ -84,6 +88,19 @@ function platform(): 'ios' | 'android' | 'web' {
   return Platform.OS === 'ios' || Platform.OS === 'android' ? Platform.OS : 'web';
 }
 
+/** What each sheet shows, by step (packages/content consent-shown.ts; the manifest hashes the same words). */
+const SHOWN: Record<ConsentStep, ConsentShownId> = { terms: 'terms', age: 'age', sensitive: 'sensitive' };
+
+function consentEnv(): ConsentEnv {
+  return {
+    sha256: sha256Hex,
+    appBuild: Application.nativeBuildVersion,
+    appVersion: Constants.expoConfig?.version ?? '0.0.0',
+    osVersion: Platform.Version,
+    platform: platform(),
+  };
+}
+
 /** Answers waiting for the server, each with one key (consent-key.logic.ts; NS-10-R7). */
 const answers = heldAnswers(idempotencyKey);
 
@@ -111,21 +128,24 @@ export async function recordConsent(
   // One person's answers to one document: a new answer ends any earlier hold (consent-key.logic.ts).
   const group = JSON.stringify([userId, document]);
   const held = answers.hold(group, answerId, () => new Date().toISOString());
-  const { error } = await sb
-    .rpc('record_policy_act', {
-      p_document: document,
-      p_version: version,
-      p_action: accepted ? 'accept' : 'decline',
-      p_method: step === 'sensitive' ? 'consent_sheet' : 'signin_sheet',
-      p_surface: SURFACE[step],
-      p_app_version: (Constants.expoConfig?.version ?? '0.0.0').slice(0, 32),
-      p_platform: platform(),
-      // The sheets are in English at v1.0 (BRIEF decision 6).
-      p_locale: 'en',
-      p_client_recorded_at: held.recordedAt,
-      p_context: context,
-    })
-    .setHeader(HEADER_IDEMPOTENCY_KEY, held.key);
+  const args = buildConsentAct(
+    {
+      document,
+      version,
+      action: accepted ? 'accept' : 'decline',
+      method: step === 'sensitive' ? 'consent_sheet' : 'signin_sheet',
+      surface: SURFACE[step],
+      shownText: consentShownText(SHOWN[step]),
+      locale: CONSENT_LOCALE,
+      clientRecordedAt: held.recordedAt,
+      context,
+    },
+    consentEnv(),
+  );
+  const send = (a: Record<string, unknown>) => sb.rpc('record_policy_act', a).setHeader(HEADER_IDEMPOTENCY_KEY, held.key);
+  let { error } = await send(args);
+  // Shipped before 20261108000000 was applied (FS-21): the old function has no p_app_build. Retry once, old form, same key.
+  if (error && isNoCandidate(errorCode(error))) ({ error } = await send(withoutNewFields(args)));
   if (error) throw error;
   answers.confirmed(group);
 }
@@ -133,12 +153,6 @@ export async function recordConsent(
 /** True when this error means "consent is missing" (pause and show the sheets, never drop a write). */
 export function isConsentMissing(e: unknown): boolean {
   return errorCode(e) === 'SCCON';
-}
-
-/** Writes the name Apple shared at first sign-in, once Terms are accepted. */
-export async function saveDisplayName(sb: SupabaseClient, userId: string, name: string): Promise<void> {
-  const { error } = await sb.from('profiles').update({ display_name: name.slice(0, 60) }).eq('id', userId);
-  if (error) throw error;
 }
 
 /** "No book here yet" (PRD A F4): the account belongs to no book on the server. */

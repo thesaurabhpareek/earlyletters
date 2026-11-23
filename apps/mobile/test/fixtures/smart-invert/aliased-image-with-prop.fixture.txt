@@ -1,0 +1,13 @@
+// Negative control for [NS-33-R11] (BL-1443): the same aliased images, each carrying the prop. The scan must pass it.
+import { Image as Pic } from 'react-native';
+import FastImage from 'react-native-fast-image';
+const Snap = Pic;
+export function Good({ uri }: { uri: string }) {
+  return (
+    <>
+      <Pic source={{ uri }} accessibilityIgnoresInvertColors />
+      <FastImage source={{ uri }} accessibilityIgnoresInvertColors={true} />
+      <Snap source={{ uri }} accessibilityIgnoresInvertColors />
+    </>
+  );
+}

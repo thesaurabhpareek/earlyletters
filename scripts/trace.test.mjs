@@ -607,3 +607,25 @@ test('[BL-964] baseline lines are read with CRLF, indentation and comments', () 
   const out = [];
   assert.equal(main(NS_ARGS(repo), (l) => out.push(l)), 0, out.join('\n'));
 });
+
+test('[CODE-R02] card 28 is read: three-digit row ids, a Pri header, and a repo without card 28', () => {
+  const mk = (withCard) => {
+    const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'trace-ns28-'));
+    const w = (p, t) => { fs.mkdirSync(path.dirname(path.join(repo, p)), { recursive: true }); fs.writeFileSync(path.join(repo, p), t); };
+    w('docs/prd/PRD.md', '# PRD\n');
+    w('docs/product/prd/14-test-plan.md', '# Plan\n');
+    if (withCard) {
+      w('docs/product/prd/28-demo.md', '# NS-91 Demo\n\n| Id | Given / When / Then | Layer | Pri | Phase |\n|---|---|---|---|---|\n' +
+        '| NS-91-R9 | Given Asha, Then it holds | L0 | P0 (a) | 1 |\n| NS-91-R100 | Given Asha, Then it holds | L0 | P0 (b) | 1 |\n| NS-91-R301 | Given Asha, Then it holds | L1 | P1 | 1 |\n');
+      w('apps/mobile/test/m.test.ts', "it('[NS-91-R100] three digits', () => {});\n");
+    }
+    return repo;
+  };
+  const register = (repo) => path.join(repo, 'docs/product/prd/14-test-plan.md');
+  const ns = collectNs({ repo: mk(true), register: register(mk(true)) });
+  assert.deepEqual(ns.p0.map((r) => [r.id, r.status]).sort(), [['NS-91-R100', 'tested'], ['NS-91-R9', 'untested']]);
+  assert.equal(summarizeNs(ns).rows, 3);
+  assert.deepEqual(nsIds('NS-91-R301 and NS-91-R1000'), ['NS-91-R301']);
+  const none = mk(false);
+  assert.equal(summarizeNs(collectNs({ repo: none, register: register(none) })).cards, 0);
+});

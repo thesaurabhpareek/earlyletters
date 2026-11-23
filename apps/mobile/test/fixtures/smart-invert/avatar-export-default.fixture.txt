@@ -1,0 +1,4 @@
+// Positive control for [NS-33-R11] (BL-1877): Avatar is the default export of a separate statement, and it drops the prop.
+import { Image } from 'react-native';
+const Avatar = ({ uri }: { uri: string }) => <Image source={{ uri }} />;
+export default Avatar;

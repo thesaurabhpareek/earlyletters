@@ -11,7 +11,12 @@
 import { errorCode, errorStatus, isNetworkError } from '../supabase/errors.logic';
 import type { AuthErrorKind } from './machine.logic';
 
-export type AuthErrorContext = 'code' | 'link' | 'provider' | 'send' | 'passkey';
+/**
+ * Where the error happened. 'passkey' is signing in with a passkey. 'passkey_add' (Account, Add a passkey) and
+ * 'sign_out_others' (Account, Sign out other devices) are signed-in actions, so the sign-in words (email, "link",
+ * "try another way") are wrong for them (BL-452 points 1 and 2).
+ */
+export type AuthErrorContext = 'code' | 'link' | 'provider' | 'send' | 'passkey' | 'passkey_add' | 'sign_out_others';
 
 /** The error carries an HTTP status of 500 or more: a server answered. Status 0 (a failed fetch) or none is not one. */
 function isServerError(e: unknown): boolean {
@@ -20,6 +25,19 @@ function isServerError(e: unknown): boolean {
 }
 
 export function authErrorKind(e: unknown, context: AuthErrorContext): AuthErrorKind {
+  const kind = baseKind(e, context);
+  // A signed-in action has no "sign-in" to try again or another way to try: the provider and not-available lines are about
+  // signing in, so these two contexts get their own (a cancel stays silent, a network or rate limit keeps its own words).
+  if (context === 'passkey_add') {
+    // No support, no setup or passkeys switched off: trying again will not help, so it gets its own true line.
+    if (kind === 'not_available') return 'passkey_unavailable';
+    if (kind === 'provider') return 'passkey_not_added';
+  }
+  if (context === 'sign_out_others' && (kind === 'provider' || kind === 'not_available')) return 'sign_out_others_failed';
+  return kind;
+}
+
+function baseKind(e: unknown, context: AuthErrorContext): AuthErrorKind {
   if (e && typeof e === 'object') {
     const x = e as { error?: unknown };
     // react-native-passkey rejects with { error, message }.
@@ -28,6 +46,11 @@ export function authErrorKind(e: unknown, context: AuthErrorContext): AuthErrorK
     if (x.error === 'NoCredentials') return 'cancelled';
   }
   const code = errorCode(e);
+  // FP-6 (NS-40-R9, E47): the sign-up hook's refusal, before the network check so it is never read as an outage. A failed lookup
+  // fails open on the server and never arrives here. The hook's code string is [U] until the hosted hook is
+  // checked: card 19 (NS-40-R9 notes) names a 403 from the before-user-created hook and the kind, and no spec names a code. Any other
+  // code falls through to the ordinary mapping (the inline unknown error), which is safe. req-question FP6-1.
+  if (code === 'region_refused') return 'region_refused';
   // expo-apple-authentication: the person closed the Apple sheet.
   if (code === 'ERR_REQUEST_CANCELED') return 'cancelled';
   // "Network" is a request that never got an answer. @supabase/auth-js also throws AuthRetryableFetchError for a
@@ -44,9 +67,12 @@ export function authErrorKind(e: unknown, context: AuthErrorContext): AuthErrorK
     case 'bad_code_verifier':
     case 'flow_state_not_found':
       return 'other_phone';
+    // BL-452 point 1: the words for 'expired' are about an email link, so a passkey's timed-out challenge and a provider
+    // sign-in's lost state do not use them.
     case 'webauthn_challenge_expired':
+      return context === 'passkey' || context === 'passkey_add' ? 'passkey_expired' : 'expired';
     case 'flow_state_expired':
-      return 'expired';
+      return context === 'passkey' || context === 'passkey_add' ? 'passkey_expired' : context === 'provider' ? 'provider' : 'expired';
     // SIGN-01: in the send step a 429 is about emails (the per-address wait or the hourly cap); elsewhere it is not.
     case 'over_email_send_rate_limit':
     case 'over_request_rate_limit':
@@ -73,7 +99,7 @@ export function authErrorKind(e: unknown, context: AuthErrorContext): AuthErrorK
       return 'provider';
   }
   if (errorStatus(e) === 429) return context === 'send' ? 'email_wait' : 'rate_limited';
-  return context === 'provider' || context === 'passkey' ? 'provider' : 'unknown';
+  return context === 'provider' || context === 'passkey' || context === 'passkey_add' || context === 'sign_out_others' ? 'provider' : 'unknown';
 }
 
 export const CODE_ATTEMPT_LIMIT = 5;

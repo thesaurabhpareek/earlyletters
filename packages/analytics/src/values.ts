@@ -75,7 +75,7 @@ export const REJECT_REASON = oneOf(
 /** Sign-in methods (apps/mobile src/lib/auth AuthMethod). Passkeys are behind a flag at v1.0. */
 export const AUTH_METHOD = oneOf('apple', 'google', 'email', 'passkey');
 /** Where the sign-in sheet was opened from (src/lib/auth SignInTrigger). */
-export const SIGN_IN_TRIGGER = oneOf('first_letter', 'invite', 'invite_create', 'sign_in', 'settings');
+export const SIGN_IN_TRIGGER = oneOf('first_letter', 'third_letter', 'invite', 'invite_create', 'sign_in', 'settings');
 /** packages/core OfferTrigger. */
 export const PLUS_TRIGGER = oneOf(...OFFER_TRIGGERS);
 export const NETWORK = oneOf('wifi', 'cellular', 'none', 'unknown');

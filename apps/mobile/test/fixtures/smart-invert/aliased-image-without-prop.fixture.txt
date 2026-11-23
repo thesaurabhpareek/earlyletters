@@ -1,0 +1,18 @@
+// Positive control for [NS-33-R11] (BL-1443): images under other names, none with accessibilityIgnoresInvertColors.
+// The scan finds them by import source, not by tag name. Fictional family only.
+import { Image as Pic, ImageBackground } from 'react-native';
+import { Image as ExpoPic } from 'expo-image';
+import FastImage from 'react-native-fast-image';
+import { Image } from 'react-native';
+const Snap = Image;
+export function Bad({ uri }: { uri: string }) {
+  return (
+    <>
+      <Pic source={{ uri }} />
+      <ExpoPic source={uri} />
+      <FastImage source={{ uri }} />
+      <Snap source={{ uri }} />
+      <ImageBackground source={{ uri }} />
+    </>
+  );
+}

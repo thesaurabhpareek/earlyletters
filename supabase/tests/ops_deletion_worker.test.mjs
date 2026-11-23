@@ -59,6 +59,10 @@ const SERVICE_ONLY = [
   // 20261121020000 (NDS-2 fill, NDS-5 re-key)
   `select public.ops_new_device_pending_fill('${A}', '${A}', 'other', decode(repeat('00', 16), 'hex'))`,
   `select public.ops_new_device_rekey('${A}', decode(repeat('00', 16), 'hex'), decode(repeat('01', 16), 'hex'))`,
+  // 20261121030000 (CR-26)
+  `select public.ops_count_check('web_contribution_region', 'pass')`, `select public.ops_regwatch_record('[]')`,
+  `select public.ops_regwatch_triage(1, 'actioned')`, `select public.ops_compliance_report(current_date, current_date)`,
+  `select public.ops_compliance_retention(now())`,
 ];
 for (const sql of SERVICE_ONLY) {
   const name = sql.match(/public\.(\w+)/)[1];

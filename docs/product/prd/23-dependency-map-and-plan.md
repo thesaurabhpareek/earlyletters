@@ -30,7 +30,7 @@ Columns. Owner: the agent handle in `agents/roster.json` that takes the row (the
 
 | Id | Workstream | Owner | Drop | Gate | Depends on | Size | Status |
 |---|---|---|---|---|---|---|---|
-| P01 | Merge #846 (the locked pack and rows BL-952 to BL-987) | founder (agents never merge) | all | none | council round 2 done | one click | Draft, open, mergeable state unknown. Until it merges `develop` has no BL-952 to BL-987 |
+| P01 | Merge #846 (the locked pack and rows BL-952 to BL-987) | Karma (the harness agents never merge) | all | none | council round 2 done | one click | Done another way: #846 was closed as a draft and never merged, and the BL-952 to BL-987 rows are on `develop` (checked 22 Nov 2026). Nothing left to merge |
 | P02 | Dispatcher reads BL ids of 3 or 4 digits | none yet: propose a row (section 6.3). Path `scripts/agents/**` is founder-owned (`.github/CODEOWNERS`) | all | none | none | S | No row, no PR found (no open PR title or branch mentions it) |
 | P03 | BL-966 one notification budget (`budget.ts`) | `mobile` (Owner `reminders owner`) | B (prereq) | none | none; reworks draft #758 | M | Row ready. No `budget.ts` on `develop` (`git ls-tree`). #758 open draft since 10 Nov |
 | P04 | BL-943 reminders proven on a phone | `mobile` | B (prereq) | G4 device run with a time-zone change | BL-966 (BL-967 merged, #904) | M | Row says blocked on BL-966 and BL-967; the second is now done, so only BL-966 holds it |

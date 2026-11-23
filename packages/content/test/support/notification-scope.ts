@@ -4,8 +4,9 @@
  * here once and every notification rule sees it (NS-48-R28).
  */
 /**
- * Pending (NS-46 to NS-49): the `days`, `culture` and `ntc` families do not exist yet. When one lands with
- * lock-screen text, add its path here in the same PR; rules-drift.test.ts fails on an unlisted lookalike.
+ * The `days`, `culture` and `ntc` families have no keys yet (NS-46 to NS-49). When one lands with lock-screen
+ * text, add its path here in the same PR; rules-drift.test.ts fails on an unlisted lookalike.
+ * features.photos.suggestions is already listed below.
  * features.billing.reminders is the plan reminder text (billing.en.ts, G-15).
  */
 export const NOTIFICATION_PATH =

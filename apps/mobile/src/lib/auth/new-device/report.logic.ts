@@ -4,6 +4,11 @@
  *
  * What goes out: the class word and a random per-install id in the body, the access token as bearer. No profile or
  * session id: the function reads them from the token. Fire and forget: nothing here throws, shows UI or logs.
+ *
+ * What counts as fresh (NDA-1, closed): a sign-in whose method is known when the state is built. Every way of signing in sets
+ * its method before Supabase answers, the email link included (session-provider verifyEmailLink sets 'email' before the PKCE
+ * exchange, so a link opened after a cold start, the app killed since the email was asked for, still reports once). A restored
+ * session has no method: the launch's INITIAL_SESSION never carries one (methodForEvent), so it never reports.
  */
 import type { AuthState } from '../machine.logic';
 
@@ -16,18 +21,25 @@ export const DEVICE_ID_PATTERN = /^[\x21-\x7e]{8,128}$/;
 
 export const deviceClassOf = (os: string): DeviceClass => (os === 'ios' ? 'apple' : 'other');
 
+/** The method an auth event carries into the state. INITIAL_SESSION is a restore by definition: never a method, never fresh. */
+export function methodForEvent<M>(event: string, current: M | null): M | null {
+  return event === 'INITIAL_SESSION' ? null : current;
+}
+
 /** The reported sign-in: a user id waiting for its settled state, or null. */
 export type ReportMark = string | null;
 
 /**
  * Once per sign-in. A sign-in that began on this run (a method is known) is marked while its consent is checked; the mark is
  * spent the moment the state is ready with sync on (session ready, consent recorded). A restored session has no method, so a
- * launch or a foreground re-check never calls. Signed out clears the mark.
+ * launch or a foreground re-check never calls. Signed out clears the mark. Sync is judged once, when the fresh sign-in
+ * reaches ready: not on then (off or unknown) drops the mark, so turning sync on later in the same run never calls.
  */
 export function nextReportMark(mark: ReportMark, state: AuthState): { mark: ReportMark; call: boolean } {
   if (state.status === 'signedOut' || state.status === 'signingIn') return { mark: null, call: false };
   if ((state.status === 'checkingConsent' || state.status === 'needsConsent') && state.method) return { mark: state.userId, call: false };
   if (state.status === 'ready' && state.sync === 'on' && mark === state.userId) return { mark: null, call: true };
+  if (state.status === 'ready' && mark === state.userId) return { mark: null, call: false }; // sync not on: drop, never call later
   return { mark, call: false };
 }
 

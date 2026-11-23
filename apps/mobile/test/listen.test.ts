@@ -115,7 +115,7 @@ describe('one room, five moments (S11, S12)', () => {
   const all: RoomPhase[] = ['ready', 'asking', 'recording', 'paused', 'finishing'];
 
   it('ready: the red circle at rest is the start control, no aura, no clock, the hint, Close', () => {
-    expect(listenRoom('ready')).toEqual({ close: true, startControl: true, aura: 'ready', clock: false, line: 'readyHint', controls: false, discard: false });
+    expect(listenRoom('ready')).toEqual({ close: true, startControl: true, aura: 'ready', clock: false, line: 'readyHint', lockNote: false, controls: false, discard: false });
   });
 
   it('asking: the same room while iOS asks and the take starts, with no second start control and no Close', () => {
@@ -136,6 +136,12 @@ describe('one room, five moments (S11, S12)', () => {
     expect(listenRoom('recording')).toMatchObject({ close: false, aura: 'listening', clock: true, line: 'listening', controls: true, discard: true });
     expect(listenRoom('paused')).toMatchObject({ close: false, aura: 'paused', clock: true, line: 'paused', controls: true, discard: true });
     expect(listenRoom('finishing')).toMatchObject({ close: false, aura: 'processing', clock: true, controls: false });
+  });
+
+  it('BL-1787: only the paused screen says a lock ends the take, in words that promise nothing', () => {
+    expect(all.filter((p) => listenRoom(p).lockNote)).toEqual(['paused']);
+    expect(en.tonight.states.pausedLock).toBe('If the phone locks while paused, the recording ends.');
+    expect(en.tonight.states.pausedLock).not.toMatch(/kept|safe/i);
   });
 
   it('only one moment offers the circle as a start: the microphone is untouched until it is tapped (S12)', () => {

@@ -68,17 +68,24 @@ export interface BudgetCandidate {
   date: string;
 }
 
+/** The one-a-day key: month and day zero-padded, so `2026-12-8` and `2026-12-08` are one day. Anything else is kept as is. */
+function dayKey(date: string): string {
+  const m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(date);
+  return m ? `${m[1]}-${m[2]!.padStart(2, '0')}-${m[3]!.padStart(2, '0')}` : date;
+}
+
 /**
  * At most one note a local day: for each date the candidate with the best (lowest) rank. Within one rank the earlier
  * candidate in the input wins, so the caller's order (for example by id) decides a tie and the result is stable.
- * A source whose class is not registered throws (NS-32-R2). Output is ordered by date.
+ * A source whose class is not registered throws (NS-32-R2). Dates are compared with month and day zero-padded. Output is ordered by date.
  */
 export function chooseOnePerDay<T extends BudgetCandidate>(candidates: readonly T[], classes: readonly NotificationClass[] = NOTIFICATION_CLASSES): T[] {
   const best = new Map<string, T>();
   for (const c of candidates) {
     classRow(classOfSource(c.source), classes);
-    const held = best.get(c.date);
-    if (!held || SOURCE_RANK[c.source] < SOURCE_RANK[held.source]) best.set(c.date, c);
+    const key = dayKey(c.date);
+    const held = best.get(key);
+    if (!held || SOURCE_RANK[c.source] < SOURCE_RANK[held.source]) best.set(key, c);
   }
   return [...best.entries()].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)).map(([, v]) => v);
 }

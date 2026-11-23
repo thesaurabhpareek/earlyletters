@@ -8,7 +8,7 @@
  */
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 
 const require = createRequire(import.meta.url);
 const APP = join(__dirname, '..');
@@ -18,10 +18,16 @@ const shim = require(SHIM) as (s: string) => string;
 const original = require(require.resolve('decode-uri-component', { paths: [require.resolve('query-string')] })) as (s: string) => string;
 
 describe('[G-22] metro bundles the shim instead of decode-uri-component 0.2.2', () => {
+  // BL-443: metro.config.js pulls in expo/metro-config, which takes seconds to load on a cold or busy runner. It
+  // loads here, under its own hook timeout, so the test below measures the resolver and not the load.
+  let config: {
+    resolver: { resolveRequest: (ctx: unknown, name: string, platform: string) => { type: string; filePath: string } };
+  };
+  beforeAll(() => {
+    config = require(join(APP, 'metro.config.js')) as typeof config;
+  }, 60_000);
+
   it('resolves decode-uri-component to the shim on ios, android and web', () => {
-    const config = require(join(APP, 'metro.config.js')) as {
-      resolver: { resolveRequest: (ctx: unknown, name: string, platform: string) => { type: string; filePath: string } };
-    };
     const context = {
       originModulePath: require.resolve('query-string'),
       resolveRequest: () => {

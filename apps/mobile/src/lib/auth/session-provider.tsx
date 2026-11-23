@@ -26,7 +26,8 @@ import { settleBackupTokens } from '../backup/launch-migrate';
 import { removeBackupTokensFor } from '../backup/token-vault';
 import { backupSweepFor, readStoredSession, type StoredSessionRead } from './stored-session.logic';
 import { settleReminderSession } from '../reminders/session';
-import { nextReportMark, type ReportMark } from './new-device/report.logic';
+import { discardPendingPhotoOnLeaving } from '../photos/leaving';
+import { methodForEvent, nextReportMark, type ReportMark } from './new-device/report.logic';
 import { reportNewDeviceFor } from './new-device/report';
 import { useRemoteConfig } from '../remote';
 import { currentUserId, getSetting, localSqlDb, setSetting } from '../store';
@@ -36,6 +37,7 @@ import { secureStorage } from '../supabase/secure-storage';
 import { maskEmail, phoneHoldsAnyRow } from './account-claim.logic';
 import { appleCredentialRevoked, clearPendingAppleName, forgetAppleUser, signInWithApple, watchAppleRevocation } from './apple';
 import { isAppleSession, onAppBecameActive, startAppleRevocationWatch } from './apple-revocation.logic';
+import { adoptDeviceOnlyLocal, bindDeviceOnlyOwners } from './local-claim';
 import { accountClaimPending, confirmAccountClaim, publishAuth, onUploadsDrained, pendingUploads, setClaimReaders, subscribeAuth } from './auth-store';
 import { loadSyncGate, recordConsent as recordConsentAct } from './consent';
 import { RESEND_WAIT_MS, sendEmailLink as sendEmail, verifyEmailCode as verifyCode, verifyEmailLinkPkce } from './email';
@@ -50,6 +52,7 @@ import {
   initialAuthState,
   isSignedIn,
   readGateInOrder,
+  nothingPending,
   shouldFinishSignOut,
   shouldRecheckGate,
   signOutWouldWait,
@@ -61,7 +64,7 @@ import {
 import { signInWithPasskey as passkeySignIn } from './passkey';
 import { clearPendingEmailRequest, clearWrongCodes, notePendingEmailRequest, noteWrongCode, readPendingEmailRequest, sessionSavedOnPhone, wrongCodeTimes } from './pending';
 import { reauthPhaseOf, reauthStep, REAUTH_EPOCH_KEY } from './reauth.logic';
-import { registerSensitiveDataRow } from './sensitive-row';
+import { useRegisterSensitiveDataRow } from './sensitive-row-hook';
 
 export type Outcome = { ok: true } | { ok: false; error: AuthErrorKind };
 
@@ -187,6 +190,8 @@ export function SessionProvider({ children, onUnder18 }: Props) {
       setClaimReaders(null);
     };
   }, [sb]);
+  // CPO-30: the days and moments files follow the signed-in person (sign-in sets the owner, sign-out puts it back to 'local').
+  useEffect(() => bindDeviceOnlyOwners(), []);
   useEffect(() => publishAuth(state), [state]);
   // BL-967 (NS-13-R14, R13, R15): one hook on the signed-in user id. When it goes (Sign out and account deletion finish
   // below, the under-18 answer, a sign-out Supabase makes itself) or another account replaces it, reminders end; and
@@ -215,20 +220,27 @@ export function SessionProvider({ children, onUnder18 }: Props) {
       void settleBackupTokens(sweep.keep);
     }
   }, [sessionUser, authSettled]);
+  // BL-1444: a picture chosen but not yet kept does not carry over to the next account, or to nobody (Sign out, switch).
+  // Its own effect, so the reminders and backup effect above keeps the shape its tests pin.
+  const photoUser = useRef<string | null>(null);
+  useEffect(() => {
+    if (!authSettled) return;
+    const before = photoUser.current;
+    photoUser.current = sessionUser;
+    if (before && before !== sessionUser) void discardPendingPhotoOnLeaving();
+  }, [sessionUser, authSettled]);
   // NDR-1 (NS-08-R21): once per fresh sign-in, after the session is ready, sync is on and consent is recorded, the app tells
   // the new-device function its class and install id. Dark: a no-op unless EXPO_PUBLIC_NEW_DEVICE_EMAIL=on. Fire and forget.
   const reportMark = useRef<ReportMark>(null);
   useEffect(() => {
     const next = nextReportMark(reportMark.current, state);
     reportMark.current = next.mark;
-    if (next.call && sb) void reportNewDeviceFor(sb);
+    if (next.call && sb && state.status === 'ready') void reportNewDeviceFor(sb, state.userId);
   }, [state, sb]);
   // BL-485 (b): Settings > Privacy's "Sync and family sharing" row reads this auth state. Read and subscribe only: no
   // `open`, because nothing withdraws the consent yet (lib/auth/sensitive-row.ts). Registered whether or not a Supabase
   // client exists: without one the state is signed out and the row says "Not signed in", as before.
-  useEffect(() => {
-    registerSensitiveDataRow();
-  }, []);
+  useRegisterSensitiveDataRow();
 
   // Restore from the Keychain, then listen to Supabase Auth.
   useEffect(() => {
@@ -250,12 +262,14 @@ export function SessionProvider({ children, onUnder18 }: Props) {
       // emitted only when supabase-js really removes the session (_removeSession).
       if (session || event !== 'INITIAL_SESSION') setAccount(accountOf(session));
       if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
-        dispatch({ type: 'SIGNED_IN', userId: session.user.id, method: methodRef.current });
+        dispatch({ type: 'SIGNED_IN', userId: session.user.id, method: methodForEvent(event, methodRef.current) });
       } else if (event === 'SIGNED_OUT') {
-        // H1: a sign-out Supabase made itself (revoked elsewhere) drops the pending note too.
-        // Keychain only, so it is safe inside this callback (no Supabase call).
+        // H1 and audit F2: a sign-out Supabase made itself (revoked elsewhere) drops the Apple user id and the pending request.
+        // The Apple id goes first, so nothing below can skip it. Keychain only, so safe inside this callback.
+        void forgetAppleUser();
         void clearPendingEmailRequest();
         dispatch({ type: 'SIGNED_OUT' });
+        methodRef.current = null; // a signed-out run keeps no method for the next session
       }
     });
     const stopRefresh = startAutoRefreshWhileActive();
@@ -297,7 +311,7 @@ export function SessionProvider({ children, onUnder18 }: Props) {
       check: appleCredentialRevoked,
       isAppleSession: async () => isAppleSession((await sb?.auth.getSession())?.data.session),
       pendingUploads,
-      dispatchSignOut: (n) => dispatch({ type: 'SIGN_OUT_REQUESTED', reason: 'apple_revoked', pendingUploads: n }),
+      dispatchSignOut: (p) => dispatch({ type: 'SIGN_OUT_REQUESTED', reason: 'apple_revoked', pendingUploads: p }),
       onAppActive: (l) => onAppBecameActive((e, h) => AppState.addEventListener(e, h), l),
       onAppleRevoked: watchAppleRevocation,
       now: Date.now,
@@ -313,7 +327,7 @@ export function SessionProvider({ children, onUnder18 }: Props) {
     const poll = setInterval(() => {
       // S01: a wait whose first gate read failed (still offline) tries again here, not only on foreground.
       if (shouldRecheckGate(stateRef.current, false)) void checkGate();
-      void pendingUploads().then((n) => n === 0 && done());
+      void pendingUploads().then((p) => nothingPending(p) && done());
     }, 10_000);
     return () => {
       off();
@@ -371,7 +385,8 @@ export function SessionProvider({ children, onUnder18 }: Props) {
     const step = reauthStep({ remoteEpoch, storedRaw: getSetting(REAUTH_EPOCH_KEY), phase: reauthPhase });
     if (step.record !== null) setSetting(REAUTH_EPOCH_KEY, String(step.record));
     if (step.signOut) {
-      void pendingUploads().then((n) => dispatch({ type: 'SIGN_OUT_REQUESTED', reason: 'force_reauth', pendingUploads: n }));
+      void discardPendingPhotoOnLeaving(); // BL-1444: a forced sign-out waits for uploads; the picture does not wait with it
+      void pendingUploads().then((p) => dispatch({ type: 'SIGN_OUT_REQUESTED', reason: 'force_reauth', pendingUploads: p }));
     }
   }, [remoteEpoch, reauthPhase]);
   useEffect(() => {
@@ -417,10 +432,12 @@ export function SessionProvider({ children, onUnder18 }: Props) {
       claimPending,
       keepLettersHere() {
         const cur = stateRef.current;
-        if (isSignedIn(cur)) confirmAccountClaim(cur.userId);
+        // CPO-30: the days and moments files that are still 'local' join the account first, then the claim is confirmed.
+        if (isSignedIn(cur)) void adoptDeviceOnlyLocal(cur.userId).then((ok) => ok && confirmAccountClaim(cur.userId)); // a failed adopt leaves the claim prompt up and the local files alone
       },
       async notMyAccount() {
-        // Nothing was claimed or queued for this account (no owner, no outbox), so nothing to wait for.
+        // Nothing was claimed or queued for this account (no owner, no outbox), so nothing to wait for. This never
+        // reads the probe, so the literal is a real count of 0, not an unreadable one (BL-1425).
         dispatch({ type: 'SIGN_OUT_REQUESTED', reason: 'switch_account', pendingUploads: 0 });
         await clearPendingEmailRequest();
       },
@@ -490,6 +507,7 @@ export function SessionProvider({ children, onUnder18 }: Props) {
         // `restoring` while a saved session waits to be read.
         const signedInNow = isSignedIn(stateRef.current) || (await sessionSavedOnPhone(SESSION_STORAGE_KEY));
         let started = false;
+        let methodBefore: AuthMethod | null = methodRef.current; // what an earlier sign-in in this run set
         try {
           const r = await openEmailLink(
             { tokenHash, type },
@@ -500,6 +518,9 @@ export function SessionProvider({ children, onUnder18 }: Props) {
                 started = true;
                 // TPL-04: an email-change link confirms the new address of the account signed in here; it is not a sign-in.
                 if (t === 'email_change') return verifyEmailLinkPkce(sb, hash, t);
+                // NDA-1: a link sign-in is a fresh sign-in (new-device report), also at a cold start from the link. Set before the
+                // exchange, because Supabase's SIGNED_IN fires inside it.
+                methodBefore = methodRef.current;
                 methodRef.current = 'email';
                 if (stateRef.current.status !== 'awaitingCode') dispatch({ type: 'START', method: 'email' });
                 return verifyEmailLinkPkce(sb, hash, t);
@@ -522,7 +543,10 @@ export function SessionProvider({ children, onUnder18 }: Props) {
           // SIGN-06: refused after GET /verify ran (another phone with its own recent request): the token, and so the
           // email's code, may be spent; point to a new email rather than the code.
           const error: AuthErrorKind = kind === 'other_phone' ? 'other_phone_spent' : kind;
-          if (type !== 'email_change') dispatch({ type: 'FAILED', error }); // a failed change leaves the session as it was
+          if (type !== 'email_change') {
+            methodRef.current = methodBefore; // undo only what this link set; an earlier provider sign-in's method stays (NDA1-2)
+            dispatch({ type: 'FAILED', error });
+          } // a failed change leaves the session as it was
           return { ok: false, error };
         }
       },
@@ -568,13 +592,13 @@ export function SessionProvider({ children, onUnder18 }: Props) {
       },
 
       async signOutOtherDevices() {
-        if (!sb) return { ok: false, error: 'not_available' };
+        if (!sb) return { ok: false, error: 'sign_out_others_failed' };
         try {
           const { error } = await sb.auth.signOut({ scope: 'others' });
           if (error) throw error;
           return { ok: true };
         } catch (e) {
-          return { ok: false, error: authErrorKind(e, 'provider') };
+          return { ok: false, error: authErrorKind(e, 'sign_out_others') };
         }
       },
     }),

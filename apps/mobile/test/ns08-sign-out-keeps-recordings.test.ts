@@ -237,6 +237,7 @@ describe('[NS-08-R6] sign out never removes a recording', () => {
     expect(touchesFiles).toEqual([
       'lib/backup/files.ts', // B5-5: a sign-out deletes the signed-out account's backup state file (below); never a recording
       'lib/days/store-file.ts', // sign-out clears the days store (NS-47-R15): only its own folder, `days/` in Application Support
+      'lib/moments/store-file.ts', // sign-out clears the moments file (CDO-23): only its own folder, `moments/` in Application Support
       'lib/packs/app-support.ts', // names the packs folder in Application Support; deletes nothing
       'lib/remote/expo-adapter.ts', // the remote-config cache: remove(name) deletes only that cache file
     ]);
@@ -249,6 +250,8 @@ describe('[NS-08-R6] sign out never removes a recording', () => {
     expect(src('lib/packs/app-support.ts')).not.toMatch(/\.delete\(\)/);
     expect(src('lib/days/store-file.ts').match(/\.delete\(\)/g)).toHaveLength(1); // one delete, inside the days folder's `remove`
     expect(src('lib/days/store-file.ts')).toMatch(/^(?![\s\S]*(Paths\.cache|recording))[\s\S]*DAYS_FOLDER = 'days'/); // its own folder only
+    expect(src('lib/moments/store-file.ts').match(/\.delete\(\)/g)).toHaveLength(1); // one delete, inside the moments folder's `remove`
+    expect(src('lib/moments/store-file.ts')).toMatch(/^(?![\s\S]*(Paths\.cache|recording))[\s\S]*MOMENTS_FOLDER = 'moments'/);
   });
 });
 

@@ -43,7 +43,7 @@ export function usePressScale(kind: 'control' | 'card' = 'control', enabled: boo
 
   const animate = (to: number) => {
     p.value = reduced
-      ? withTiming(to, { duration: 90, reduceMotion: ReduceMotion.Never })
+      ? withTiming(to, { duration: P.reducedMs, reduceMotion: ReduceMotion.Never })
       : withSpring(to, { stiffness: S.stiffness, damping: S.damping, mass: S.mass, reduceMotion: ReduceMotion.Never });
   };
   const go = (to: number) => {

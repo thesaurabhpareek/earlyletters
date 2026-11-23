@@ -6,6 +6,21 @@
 const REGEX_AFTER_WORD = /(?:^|[^\w$.])(?:return|typeof|case|do|else|in|of|void|delete|throw|new|yield|await)\s*$/;
 
 /**
+ * True when the `/*` at `at` is JSX text: on its line it follows an open tag's `>` with no `{` between, and a `<`
+ * (the closing tag) comes later on the line before any `*` + `/`. `<View>{/* c *\/}</View>` and `Array<T> /* c *\/` are comments.
+ * Limit: JSX text that runs over several lines is not recognised.
+ */
+function startsJsxText(src: string, at: number): boolean {
+  const from = src.lastIndexOf('\n', at - 1) + 1;
+  if (!/(?:<[A-Za-z][^<>{}]*|<)>[^<>{}]*$/.test(src.slice(from, at))) return false;
+  let eol = src.indexOf('\n', at);
+  if (eol < 0) eol = src.length;
+  const rest = src.slice(at + 2, eol);
+  const close = rest.indexOf('*/');
+  return (close < 0 ? rest : rest.slice(0, close)).includes('<');
+}
+
+/**
  * Removes comments in one pass and leaves strings, templates and regex literals untouched (so `'src/*'` is not a comment).
  * A `/` opens a regex after an operator, after a keyword such as `return`, and after the `)` that closes `if (...)`,
  * `while (...)`, `for (...)` or `with (...)`; after any other `)` it is a division.
@@ -21,12 +36,15 @@ export function stripComments(src: string): string {
   const parens: boolean[] = []; // per open `(`: does it belong to if, while, for or with
   for (let i = 0; i < src.length; ) {
     const c = src[i];
-        if (c === '/' && src[i + 1] === '/') {
+    if (c === '/' && src[i + 1] === '/') {
       while (i < src.length && src[i] !== '\n') i++;
-    } else if (c === '/' && src[i + 1] === '*') {
+    } else if (c === '/' && src[i + 1] === '*' && !startsJsxText(src, i)) {
       const end = src.indexOf('*/', i + 2);
       i = end < 0 ? src.length : end + 2;
       put(' ');
+    } else if (c === '/' && src[i + 1] === '*') {
+      put(c); // `/*` in JSX text is text, not a comment
+      i++;
     } else if (c === "'" || c === '"' || c === '`' || (c === '/' && (last === '' || '(,=:[!&|?{};+-*%<>~^'.includes(last) || (/[\w$]/.test(last) && REGEX_AFTER_WORD.test(tail))))) {
       let j = i + 1;
       let inClass = false;
@@ -89,7 +107,7 @@ export function importSpecifiers(source: string): string[] {
     if (!m || isTypeOnlyClause(m[1].trim())) return;
     out.push(spec);
   });
-  for (const m of src.matchAll(/\brequire\(\s*['"]([^'"\n]+)['"]\s*\)/g)) out.push(m[1]);
+  for (const m of src.matchAll(/\brequire\(\s*(?:['"]([^'"\n]+)['"]|`([^`$\n]+)`)\s*\)/g)) out.push(m[1] ?? m[2]);
   return out;
 }
 

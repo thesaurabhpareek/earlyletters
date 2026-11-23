@@ -3,16 +3,18 @@
 // Limits: appName <= 30, subtitle <= 30, promotionalText <= 170, keywords <= 100 (comma-separated,
 // no spaces, no words already in the name or subtitle), whatsNew <= 4000, captions <= 40.
 //
-// The first store build (D-121, staged release): on-device only, with server features, backup, status report
-// and analytics off, English only, Plus on. Applied from docs/store/app-store-staged-1.0-proposal.md, 31 Oct 2026.
+// The first store build (D-121, staged release), as amended: server features are on in production (D-157, D-170), so
+// sign-in is required (D-160); there is no co-parent entry point in any store build (D-126, D-161, D-162); backup and
+// status report are off; analytics is off in production until D-163's gate clears (BL-1886); English only, Plus on.
+// First applied from docs/store/app-store-staged-1.0-proposal.md, 31 Oct 2026; refreshed 23 Nov 2026 (BL-1855).
 // Each later 1.0.x release that turns a feature on adds it back here in the same pull request.
 // - no "beta" anywhere (D-060, App Review 2.2): the beta runs on TestFlight; no "early version" or
 //   "early access" either, since the in-app note says "early version";
 // - no other platform's name (App Review 2.3.10); Apple's own Family Sharing is fine;
 // - adults only: no "kids", "for children" or child-directed phrases (LEGAL-REQ-045, App Review 2.3.8);
 // - English only (D-121 item 1); the other six languages return one by one as each passes its gate (D-125 item 2);
-// - no co-parent sharing, sign-in or sync promised in the listing (D-121, D-126): nothing invites anyone. Build 12 runs
-//   with servers on (founder, 8 Nov 2026; no D-### yet), so every line must also be true of a servers-on build: the
+// - no co-parent sharing, sign-in or sync promised in the listing (D-121, D-126, D-161, D-162): nothing invites anyone. The
+//   store build runs with servers on (D-157, D-170), so every line must also be true of a servers-on build: the
 //   privacy paragraph says what holds without an account and claims nothing about the servers (#672 claim 3);
 // - "exactly as you said it" is held from the listing until counsel clears it at T30 (D-125 item 9);
 // - recordings: no backup of our own (backup flag off); the person's own iPhone backup plus Export;
@@ -64,7 +66,7 @@ READ TOGETHER AT BEDTIME
 Open Read together and go through the book one letter at a time, oldest first. Listen to the letters you spoke, with the words on the screen. Typed letters are there too, ready to read aloud.
 
 A MINUTE IS PLENTY
-Some nights it is a sentence, some nights a long letter. Stuck for words? There is a question to begin with. If today was quiet, tap "Not much today" and that is enough. Nothing keeps score.
+Some nights it's a sentence, some nights a long letter. Stuck for words? There's a question to start with. If today was quiet, tap "Not much today" and that's enough. Nothing keeps score.
 
 A BOOK THAT GROWS BY MONTH
 Each letter goes into your child's month of age, so the book reads in order. Expecting? Start before the birth, in a part of the book called Before You. Twins or more each get their own book.

@@ -33,6 +33,8 @@ import Animated, { useSharedValue } from 'react-native-reanimated';
 import { PROMPTS } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
 import { ListeningAura } from '@/components/capture/listening-aura';
+import { PendingPhotoThumb } from '@/components/photos/pending-photo-thumb';
+import { adoptPendingPhoto, discardPendingPhoto, usePendingPhoto } from '@/lib/photos/hooks';
 import { METER_MS, METER_SILENT, meterDb, progressMark } from '@/components/capture/listen-meter.logic';
 import { useRecorderClock } from '@/components/capture/use-recorder-clock';
 import {
@@ -43,6 +45,7 @@ import {
   finishWithin,
   isMicProblem,
   listenRoom,
+  longTakeNotice,
   maySpeak,
   startTake,
   promptLine,
@@ -77,6 +80,7 @@ import {
   setRecorderProbe,
 } from '@/lib/speech-gate';
 import { copy, fill, pendingCopy } from '@/lib/copy';
+import { photos } from '@/lib/photos/copy';
 import { haptic } from '@/lib/haptics';
 import { useMotion, useReducedMotion } from '@/lib/motion';
 import { track, trackCaptureDiscarded } from '@/lib/analytics/track';
@@ -111,6 +115,7 @@ export default function Listen() {
   // At accessibility text sizes the room scrolls; the clock and "Listening." then sit with Pause and Finish, so the
   // screen always says it is recording, and the prompt is shown whole (P4 critics' pass S5).
   const large = useIsAccessibilitySize();
+  const pendingPhoto = usePendingPhoto();
   const takeId = useRef<string | null>(null);
   const ended = useRef(false);
   const seenLive = useRef(false);
@@ -132,6 +137,7 @@ export default function Listen() {
   // Continue included; a start after a blocker or a failure is a new tap and plays it.
   const startTick = useRef(createStartTick(tapped.current)).current;
   const [phase, setPhase] = useState<ListenPhase>(tapped.current ? 'asking' : 'ready');
+  const withPhoto = phase === 'ready' && !!pendingPhoto?.source; // a picture chosen on Home waits at Ready
   const announcedMinute = useRef(0);
   /** The labels VoiceOver last could hear: they hold still while capturing (listen.logic `stableLabels`, F04-REQ-041). */
   const labelsRef = useRef<RoomLabels | null>(null);
@@ -295,6 +301,8 @@ export default function Listen() {
     if (out.kind === 'gone') return;
     takeId.current = out.draftId;
     setPhase('recording');
+    // A picture chosen before recording goes with the draft now, so a kill during recording keeps it (NS-01-R43).
+    void adoptPendingPhoto(out.draftId, '', false);
     // The take is live, so the gate drops this: the red circle and the system microphone indicator say it instead.
     announcer.say(t.listening, { phase: 'recording', capturing: capturingNow() });
   };
@@ -433,6 +441,7 @@ export default function Listen() {
           // The one place audio is deleted: the parent confirmed it. Let it go's steps, as in Review (BL-924): a file
           // that will not delete keeps the row, marked and off every list, for the launch sweep to finish.
           if (id) letItGo(id, uri, { beginDiscard, deleteFile: (u) => deleteIfPresent(new File(u)), finishDiscard });
+          discardPendingPhoto(); // The photo goes too: one stored at record start went with the draft above (finishDiscard); this drops the picker's copy
           router.back();
         },
       },
@@ -441,7 +450,11 @@ export default function Listen() {
 
   // "Type instead" carries the prompt over as Write's line (5.8 row 3).
   const typeInstead = () => router.replace({ pathname: '/write', params: promptKey ? { promptKey } : {} });
-  const close = () => (router.canGoBack() ? router.back() : router.replace('/'));
+  const close = () => {
+    discardPendingPhoto(); // closing at rest leaves nothing behind, the picker's copy included
+    if (router.canGoBack()) router.back();
+    else router.replace('/');
+  };
 
   if (!child) return null;
 
@@ -498,6 +511,11 @@ export default function Listen() {
           {elapsedClock(status.durationMillis)}
         </Text>
       )}
+      {longTakeNotice(phase, status.durationMillis) ? (
+        <Text variant="footnote" tone="muted" className="px-8 text-center" testID="listen.longTake">
+          {t.longTake}
+        </Text>
+      ) : null}
       <View className="items-center px-8" accessibilityLiveRegion={speakable ? 'polite' : 'none'}>
         {line !== null ? (
           <Text variant="callout" tone={room.line === 'readyHint' ? 'muted' : undefined} className="text-center" accessibilityLabel={labels.line ?? line}>
@@ -505,6 +523,11 @@ export default function Listen() {
           </Text>
         ) : null}
       </View>
+      {room.lockNote ? (
+        <Text variant="footnote" tone="muted" className="mt-2 text-center" testID="listen.lockNote">
+          {t.pausedLock}
+        </Text>
+      ) : null}
     </View>
   );
 
@@ -535,6 +558,8 @@ export default function Listen() {
               {p.audience}
             </Text>
           </View>
+          {/* Ready with a picture chosen on Home (NS-01-R3): the thumbnail, then the prompt. Absent otherwise. */}
+          {phase === 'ready' ? <PendingPhotoThumb /> : null}
           {/* The prompt, only when the take started from one (S11): the one literary line, quiet. */}
           {prompt && (
             <Text variant="prompt" tone="muted" className="mt-3 text-center" testID="listen.prompt">
@@ -558,6 +583,11 @@ export default function Listen() {
               />
             )}
           </View>
+          {/* Ready with a picture (NS-01 section 4 steps 3-4, R20b): Speak is the circle above, Type is here, so a parent
+              who will not speak aloud can still start a letter from the picture. Type keeps the pending picture. */}
+          {room.startControl && withPhoto ? (
+            <Button variant="quiet" size="md" label={photos.capture.typeButton} onPress={typeInstead} testID="listen.photo.type" />
+          ) : null}
           {!large && clockAndLine}
           <View className="items-center gap-1 px-8">
             {room.line === 'listening' && (

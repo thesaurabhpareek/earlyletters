@@ -823,6 +823,8 @@ export const PullResponseSchema = v.object({
    */
   held: v.optional(PulledHeldSectionSchema),
   more: v.optional(v.boolean()),
+  /** FR-PRV-20 (20261123100000): without current consent the answer is an empty page and says why. Additive; an older phone ignores it. */
+  withheld: v.optional(v.picklist(['consent'])),
 });
 export type PullResponse = v.InferOutput<typeof PullResponseSchema>;
 
@@ -865,6 +867,12 @@ export const SyncBooksResponseSchema = v.object({
   epoch: v.nullable(v.number()),
   first_run_open: v.boolean(),
   books: v.array(SyncBookSchema),
+  /**
+   * FR-PRV-20 (20261123100000): 'consent' when the gate is closed. Each book then carries only id, role, name and
+   * members (role, is_me, signs_as): the strict SyncBookSchema does not describe that shape, and no caller parses it
+   * strictly (the claim step and account deletion read `first_run_open`, `books` and those fields defensively).
+   */
+  withheld: v.optional(v.picklist(['consent'])),
 });
 export type SyncBooksResponse = v.InferOutput<typeof SyncBooksResponseSchema>;
 

@@ -76,7 +76,7 @@ function assignmentSection() {
     lines.push("", "For failing checks, read the logs with `gh run list --branch <branch>` and `gh run view <id> --log-failed`.");
   } else if (mode === "review") {
     const pr = openPRs.find((p) => String(p.number) === String(prNum));
-    lines.push(`**Review PR #${prNum}** by \`${pr ? agentOfPR(pr) : "unknown"}\`: ${oneLine(pr?.title)}. Head commit \`${pr?.head?.sha ?? "?"}\`.`);
+    lines.push(`**Review PR #${prNum}** by \`${pr ? agentOfPR(pr) ?? pr.user?.login ?? "unknown" : "unknown"}\`: ${oneLine(pr?.title)}. Head commit \`${pr?.head?.sha ?? "?"}\`.`);
     lines.push("Follow section 6 of the operating model. Read the diff with `gh pr diff " + prNum + "`. Your review body must start with `<!-- red-team:" + (pr?.head?.sha ?? "<sha>") + " -->`.");
   } else if (mode === "handoff") {
     lines.push(...handoffSection(String(taskId).replace(/^#/, "")));
@@ -138,7 +138,7 @@ function stewardSection() {
     `Files in your review paths (${mineFiles.length} of ${files.length}): ${mineFiles.slice(0, 30).map((f) => `\`${f}\``).join(", ")}${mineFiles.length > 30 ? ", and more" : ""}.`,
     `Check them against your chapters: ${chapters.map((c) => `\`${c}\``).join(", ") || "(none found in docs/engineering/)"}. Read the diff with \`gh pr diff ${prNum}\`; search the chapters by rule id rather than reading them whole.`,
     "",
-    `Post exactly one comment with \`gh pr comment ${prNum} --body-file <file>\`. First line \`${stewardMarker(handle, pr.head.sha)}\`, then \`Verdict: ship\`, \`Verdict: fix first\` or \`Verdict: founder decision\`, then findings most serious first, each citing a rule id, file and line, and the smallest fix.`,
+    `Post exactly one comment with \`gh pr comment ${prNum} --body-file <file>\`. First line \`${stewardMarker(handle, pr.head.sha)}\`, then \`Verdict: ship\`, or \`Verdict: fix first\` (never a request to the founder, CR-176), then findings most serious first, each citing a rule id, file and line, and the smallest fix.`,
     "Review only your domain; other stewards and the red team cover theirs. A rule the PR breaks because the rule is wrong is a finding against the rule: say so, and open an `rfc` handoff to the other stewards.",
     "Never push to the PR branch. Never approve or merge.",
   ];
