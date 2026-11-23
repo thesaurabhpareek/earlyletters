@@ -76,7 +76,7 @@ test('[J10f] Recently deleted: restore, and erase now', async ({ app, record }) 
   await expect(app.getByText(/^Deleted \w+ \d+\. Kept here until \w+ \d+\.$|^Deleted \d+ \w+\. Kept here until \d+ \w+\.$/).first()).toBeVisible();
   await expect(app.getByText(/Erased on/)).toHaveCount(0);
   await expect(app.getByText('Letters you delete wait here for 30 days.').last()).toBeVisible();
-  await step('happy', 'Recently deleted', 'Settings, Recently deleted lists the letter as a card: its first words in the letter face, ending in a fade, "From Mama", and one line: "Deleted October 13. Kept here until November 12." Then Restore and Erase now. No countdown and no count. (Seeded fictional family Asha.)');
+  await step('happy', 'Recently deleted', 'Settings, Recently deleted lists the letter as a card: its first words in the letter face, ending in a fade, "From Mama", and one line that says when it was deleted and when it stays until (the seed is relative to the run day, so the dates change with it). Then Restore and Erase now. No countdown and no count. (Seeded fictional family Asha.)');
 
   await app.getByRole('button', { name: 'Restore' }).first().click();
   await expect(app.getByText("Back in Asha's book.")).toBeVisible();
