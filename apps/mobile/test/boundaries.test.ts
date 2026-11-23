@@ -45,7 +45,7 @@ const KNOWN: Record<string, Known> = {
   ],
   // The recorder and the player screens still read and write the take through the native modules themselves.
   // CODE-R11 says they call `src/lib` instead. Finding for mobile: move both behind `lib/capture` and delete these.
-  b: ['listen.tsx::expo-audio', 'listen.tsx::expo-file-system', 'review.tsx::expo-audio', 'review.tsx::expo-file-system'].map((x) => ({
+  b: ['listen.tsx::expo-audio', 'listen.tsx::expo-file-system', 'review.tsx::expo-file-system'].map((x) => ({
     at: `apps/mobile/src/app/${x}`,
     reason: 'screen still talks to the native module; move behind lib/capture (finding for mobile)',
   })),
@@ -54,7 +54,7 @@ const KNOWN: Record<string, Known> = {
 };
 
 /** The ratchet count per rule. Raising a number needs a written reason in the PR body; lowering it is the goal. */
-const KNOWN_COUNT: Record<string, number> = { a: 8, b: 4, c: 0, d: 0 };
+const KNOWN_COUNT: Record<string, number> = { a: 8, b: 3, c: 0, d: 0 };
 
 /** Folders under `apps/mobile/src` that no rule scans, each with why. A new folder must be scanned or listed here. */
 const UNSCANNED_MOBILE: Record<string, string> = {

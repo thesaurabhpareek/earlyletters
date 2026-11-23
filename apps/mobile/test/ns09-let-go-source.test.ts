@@ -44,7 +44,7 @@ function problems(fn: string, ns: string): string[] {
 
 describe('[NS-09-R9] the confirmation defaults to keep', () => {
   const screens: [string, string, string, string][] = [
-    ['review.tsx', 'const letGo = () => {', 'const player = useAudioPlayer(', 'copy.listen'],
+    ['review.tsx', 'const letGo = () => {', 'const player = useLetterPlayer(', 'copy.listen'],
     ['listen.tsx', 'const discard = () => {', 'const typeInstead =', 'p'],
   ];
   it('[NS-09-R9] the confirmation defaults to keep (positive control: the check sees a swapped order and an Undo)', () => {
@@ -70,7 +70,7 @@ describe('[NS-09-R17] no remote switch stops a let-go', () => {
     ['store.beginDiscard and finishDiscard', slice(store, 'export function beginDiscard(', 'export function deleteDraft(')],
     ['sweep.finishLetGo', slice(code(src('lib/capture/sweep.ts')), 'function finishLetGo(', '\n}\n')],
     ['repo beginDiscard and finishDiscard', code(src('lib/db/repos/drafts.ts'))],
-    ['review confirm', slice(code(src('app/review.tsx')), 'const letGo = () => {', 'const player = useAudioPlayer(')],
+    ['review confirm', slice(code(src('app/review.tsx')), 'const letGo = () => {', 'const player = useLetterPlayer(')],
     ['listen confirm', slice(code(src('app/listen.tsx')), 'const discard = () => {', 'const typeInstead =')],
   ];
 
