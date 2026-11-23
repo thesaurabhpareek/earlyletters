@@ -63,13 +63,22 @@ async function call<T>(fn: () => PromiseLike<Result>, read: (data: unknown) => T
   }
 }
 
-export function loadStatus(client: DeletionClient): Promise<ApiOutcome<ServerStatus>> {
+/**
+ * The status read. With a timeout it is the page's load (a hung read ends as offline). Without one it is the check made
+ * after a failed write: that check must wait for its own answer, because giving up on it would leave the page saying
+ * "nothing has changed" about a request that may be open (BL-492).
+ */
+function readStatus(client: DeletionClient, timeoutMs?: number): Promise<ApiOutcome<ServerStatus>> {
   return call(
     () => client.from('deletion_requests').select('id,status,scheduled_for').eq('kind', 'account')
       .in('status', ['scheduled', 'held', 'executing']).order('requested_at', { ascending: false }).limit(1),
     parseStatus,
-    READ_TIMEOUT_MS,
+    timeoutMs,
   );
+}
+
+export function loadStatus(client: DeletionClient): Promise<ApiOutcome<ServerStatus>> {
+  return readStatus(client, READ_TIMEOUT_MS);
 }
 
 export function loadBooks(client: DeletionClient): Promise<ApiOutcome<SyncBook[]>> {
@@ -98,7 +107,7 @@ export async function requestDeletion(client: DeletionClient, hadActiveSubscript
     },
   );
   if (r.ok) return r;
-  const s = await loadStatus(client);
+  const s = await readStatus(client);
   if (s.ok && (s.value.state === 'scheduled' || s.value.state === 'held')) {
     return { ok: true, value: { requestId: s.value.requestId, scheduledFor: s.value.scheduledFor } };
   }
@@ -113,7 +122,7 @@ export async function requestDeletion(client: DeletionClient, hadActiveSubscript
 export async function cancelDeletion(client: DeletionClient): Promise<ApiOutcome<boolean>> {
   const r = await call(() => client.rpc('cancel_account_deletion'), (d) => d === true);
   if (!r.ok || r.value) return r;
-  const s = await loadStatus(client);
+  const s = await readStatus(client);
   return s.ok && s.value.state === 'none' ? { ok: true, value: true } : { ok: false, reason: s.ok ? 'failed' : s.reason };
 }
 
