@@ -242,6 +242,8 @@ export const en = {
       // BL-432: after 30 minutes of one take. Nothing stops and nothing is cut; this only says Finish is there.
       longTake: "This is a long one. Finish whenever you like, or keep talking.",
       paused: "Paused.",
+      // Under "Paused." only (BL-1787): auto-lock ends a take that is paused, because only a live take keeps the screen awake (D-087). Says what happens and promises nothing about what is kept.
+      pausedLock: "If the phone locks while paused, the recording ends.",
       resumeButton: "Keep talking",
       stopButton: "Finish",
       saving: "Saving your words.",
@@ -300,6 +302,8 @@ export const en = {
     ready: {
       // Listening at rest: the red circle is the start control (BRAND.md glossary phrase).
       hint: "Tap the red circle and talk.",
+      // With a screen reader on, the red circle is not seen, so the line names the control instead (BL-1827, PER4-019).
+      hintScreenReader: "Double tap Start recording and talk.",
       startA11y: "Start recording",
     },
     discardButton: "Let it go",
@@ -623,6 +627,8 @@ export const en = {
       showOriginal: "Show exactly what I said",
       shareButton: "Share",
       deleteButton: "Delete",
+      // Spoken hint on the Delete row: says the result, not the label (BL-1827, PER4-014). The 30 days is `delete.entryBody`.
+      deleteHint: "Asks first. It waits in Recently deleted for 30 days.",
       // F09 6.2 step 6: own letters only. Opens the date sheet (`review.date.*`).
       changeDate: "Change the date",
     },

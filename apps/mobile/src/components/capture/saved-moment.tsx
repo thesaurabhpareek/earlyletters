@@ -21,12 +21,12 @@ import { CheckCircleIcon } from 'phosphor-react-native/src/icons/CheckCircle';
 import { LockSimpleIcon } from 'phosphor-react-native/src/icons/LockSimple';
 import { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Platform, Pressable, View } from 'react-native';
-import Animated, { Easing, ReduceMotion, useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming } from 'react-native-reanimated';
+import Animated, { ReduceMotion, useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming } from 'react-native-reanimated';
 import { tokens } from '@scribe/design-tokens';
 import { ExcerptFade } from '@/components/motion/excerpt-fade';
 import { Text } from '@/components/ui/text';
 import { announce, useIsAccessibilitySize, useScreenReader, useTheme } from '@/lib/a11y';
-import { useReducedMotion } from '@/lib/motion';
+import { STANDARD_EASING, useReducedMotion } from '@/lib/motion';
 import { fileIntoMonthPlan } from '@/lib/transitions.logic';
 import { LetterHeaderRow, useSheetSurface, type LetterHeader } from './letter-sheet';
 import { momentAnnouncement, savedMomentLeaveInMs, type AnnouncementEnd } from './review-view.logic';
@@ -39,7 +39,6 @@ export const SAVED_CARD_LINES = 6;
 export const SAVED_CARD_LINES_LARGE = 2;
 
 const M = tokens.motion;
-const STANDARD = Easing.bezier(...M.easing);
 /** The website's lit edge on the chip: the lamp's amber at 40 percent (EXPERIENCE_PASS 5.6). */
 const LIT_EDGE = `${tokens.atmosphere.tone.amber}66`;
 
@@ -107,11 +106,11 @@ export function SavedMoment({
       scale.value = withSpring(plan.scaleTo, spring);
       radius.value = withSpring(tokens.radius.md, spring);
     }
-    chipIn.value = withDelay(plan.chipAtMs, withTiming(1, { duration: plan.chipFadeMs, easing: STANDARD, reduceMotion: ReduceMotion.Never }));
+    chipIn.value = withDelay(plan.chipAtMs, withTiming(1, { duration: plan.chipFadeMs, easing: STANDARD_EASING, reduceMotion: ReduceMotion.Never }));
     if (plan.moveAtMs !== null) {
       const leave = plan.dismissAtMs - plan.moveAtMs;
-      lift.value = withDelay(plan.moveAtMs, withTiming(plan.dy, { duration: leave, easing: STANDARD, reduceMotion: ReduceMotion.Never }));
-      fade.value = withDelay(plan.moveAtMs, withTiming(0, { duration: leave, easing: STANDARD, reduceMotion: ReduceMotion.Never }));
+      lift.value = withDelay(plan.moveAtMs, withTiming(plan.dy, { duration: leave, easing: STANDARD_EASING, reduceMotion: ReduceMotion.Never }));
+      fade.value = withDelay(plan.moveAtMs, withTiming(0, { duration: leave, easing: STANDARD_EASING, reduceMotion: ReduceMotion.Never }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [committed]);
