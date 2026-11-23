@@ -47,7 +47,7 @@ Sources cited by short name: PRD (docs/prd/PRD.md 1.3), TDD 01 to 10 (docs/tdd/)
 | D-041 | Two Supabase projects, migrations only from CI on a tag; unattended agent runs paused for `supabase/` and auth | Recommended | Yes | 2026-10-03 |
 | D-042 | `/delete-account` at v1.0 is a static page plus an email route; the full web flow ships before Android | Recommended (counsel confirms) | Yes | 2026-10-03 |
 | D-043 | v1.0 entry: one welcome screen then the 18+ gate; 4-story intro in v1.1 | Recommended | Yes | 2026-10-03 |
-| D-044 | Sign in with Apple and email link plus code at v1.0; Google sign-in in v1.1 | Recommended | Yes | 2026-10-03 |
+| D-044 | Sign in with Apple and email link plus code at v1.0; Google sign-in in v1.1 | Recommended; Amended by D-171 (Google timing only; superseded earlier by D-054) | Yes | 2026-10-03 |
 | D-045 | Beta cohorts before submission: founding family, then 15 to 25 friendly families for 3 weeks; public TestFlight link optional, after submission | Recommended (needs founder OK) | Yes | 2026-10-03 |
 | D-046 | Speech model files on a zero-egress host, never on Supabase egress | Recommended (founder picks the host) | Yes | 2026-10-03 |
 | D-047 | Restore never moves an active subscription between two accounts | Recommended | Yes | 2026-10-03 |
@@ -343,7 +343,7 @@ Sources cited by short name: PRD (docs/prd/PRD.md 1.3), TDD 01 to 10 (docs/tdd/)
 | D-051 | Standard over custom: Apple and well-known open-source first; our finishing touches on top | Decided (founder) | Yes | 2026-10-03 |
 | D-052 | Quality bar: premium and calm, benchmarked on Airbnb, Calm, Headspace, Day One and Apple; motion and components from proven libraries | Decided (founder) | Yes | 2026-10-03 |
 | D-053 | Payments: Apple only, on device (StoreKit 2, Apple's subscription screen, restore and manage sheets, `currentEntitlements`); no server sees purchases; Family Sharing on; $3.99/month with 1 month free, $29.99/year with 2 months free. Plus gates only Read together after 3 free sessions per book, and books for more children | Decided (founder); supersedes D-001's server half; prices superseded by D-082 | Yes | 2026-10-03 |
-| D-054 | Sign-in: Apple, Google and email magic link; passkeys can be added after sign-in; no passwords | Decided (founder); supersedes D-044 | Yes | 2026-10-03 |
+| D-054 | Sign-in: Apple, Google and email magic link; passkeys can be added after sign-in; no passwords | Decided (founder); supersedes D-044; Amended by D-171 (Google timing only) | Yes | 2026-10-03 |
 | D-055 | Family at launch: co-parent only; contributors and the web page later (database keeps contributors) | Decided (founder); supersedes D-002 | Yes | 2026-10-03 |
 | D-056 | Spoken languages at v1.0: English, Hindi, Spanish, Mandarin Chinese, French, Arabic, Portuguese; correct script and punctuation per language; phonetics for taught names; UI in English, ready for localisation | Decided (founder) | Yes | 2026-10-03 |
 | D-057 | What the machine may do to words: unchanged constitution; typed text keeps the keyboard's own autocorrect and is never rewritten | Decided (founder) | Yes | 2026-10-03 |
@@ -1374,6 +1374,15 @@ These carry out the fleet rule and were not said by him: a cap or a budget that 
 - **Numbering:** `node scripts/agents/next-id.mjs` returned D-170 (D-169 is the last entry on `develop`, since #1673 merged, and D-170 is next). Re-check before merging.
 - **Amends:** none by text. It replaces the 20 Nov default named above and narrows nothing in D-157, D-160, D-161 or D-163.
 - **Owner:** founder; Karma merges.
+
+### D-171 Google sign-in ships after the first submission build, behind linking and its public text (23 Nov 2026, decided by Karma and the exec team under D-168)
+- **Status:** Decided by Karma and the exec team under D-168, as CR-180 in `docs/agents/cto/RULINGS.md` (CPO and CCO positions recorded there). It amends the timing in D-054 only. Not the founder's words, so Karma does not merge it under D-132 as a quote; it is merged as an exec ruling (CR-176).
+- **Why:** D-054 (decided by the founder) says sign-in is Apple, Google and email, and supersedes D-044 ("Google sign-in moves to v1.1"). The locked store card (NS-41-R1, NS-41-R20) and the identity chapter (IAM-R05) still follow D-044. E98 in `docs/product/prd/18-errata-after-lock.md` lists every id that changes. Google is built but off.
+- **Options weighed:** (1) Google after the first submission build, behind linking and its public text. (2) Google in the first submission build. (3) Google stays at v1.1 and D-054's Google half is retired.
+- **Decision:** option 1. Apple stays P0 and ships as is, with email. Google ships in the first build after the submission build, and only when all of these hold: linking is merged (BL-1893, BL-1894), its public text is published (Terms 3.1, privacy policy, subprocessor list; BL-1908), and its deletion path and drill hold under D-170 item 4 and CR-178 item 5, including revoking any provider token on deletion. Until then NS-41-R1, NS-41-R20 and IAM-R05 stay as written and the app offers Apple and email only.
+- **What it does not decide:** a phone number. The NS-41 line "never SMS or a phone number" changes only after counsel has read (BL-1897) and after the LEGAL-REQ-012 change in BL-1909, never ahead of either. SMS vendor and spend are BL-1898. No change to the constitution, the privacy rules or the age and region checks.
+- **Amends:** the timing in D-054 (after submission, not at it). D-044 stays superseded.
+- **Numbering:** D-170 was the last entry on `develop` at the time of writing, so this is D-171. Re-check with `node scripts/agents/next-id.mjs` before merging; it is assigned again at merge.
 
 ### D-172 The SE 3 sitting is simulated, and "counsel" means the exec team's own review (founder, 23 Nov 2026)
 - **Status:** Decided (founder). Decided in chat on 23 Nov 2026 (local date; the chat is not stored in the repo). Recorded by the product agent, a Claude role, as a docs-only entry. Entries that record the founder's own words are merged by Karma under D-132 and D-168.

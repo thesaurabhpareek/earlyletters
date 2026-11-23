@@ -9699,7 +9699,7 @@ Source: `docs/product/prd/29-sign-in-methods-and-phone-verification.md` (card NS
 #### BL-1888 Reconcile sign-in policy: erratum for NS-41 R1, R20, IAM-R05 and the never-a-phone line (D-054 against the locked card)
 - Status: ready. Mode: agent. Owner: product manager. Milestone: M15. Size: S. Priority: P1. Depends on: none.
 - Satisfies: NS-54; D-044 ("Google sign-in moves to v1.1"), D-054 (founder-decided, supersedes D-044); `docs/engineering/05-identity-and-access.md` IAM-R05 ("Google sign-in is v1.1"); NS-41-R1, NS-41-R20, NS-41 section 14; LEGAL-REQ-012 ("phone number" under never collected; the legal change itself is BL-1909).
-- Scope: Draft the next numbered erratum in `docs/product/prd/18-errata-after-lock.md` listing every changed id (NS-41 R1 and R20 and IAM-R05 when Google ships; the NS-41 never-SMS line only after counsel, and never ahead of the LEGAL-REQ-012 change in BL-1909), and a proposed D-### entry for the founder on Google timing. Nothing is applied until the founder records the decision.
+- Scope: Draft the next numbered erratum in `docs/product/prd/18-errata-after-lock.md` listing every changed id (NS-41 R1 and R20 and IAM-R05 when Google ships; the NS-41 never-SMS line only after counsel, and never ahead of the LEGAL-REQ-012 change in BL-1909), and a D-### entry on Google timing (ruled as CR-180 and D-171). Nothing is applied to a locked row until BL-1908, BL-1893 and BL-1894 hold.
 - Done when: the erratum and the proposal are in a PR with each changed id listed; no locked row changes before then.
 
 #### BL-1889 Sign in with Apple: test titles and hosted read-back for what exists (NS-54-R1 to R5)
@@ -9709,7 +9709,7 @@ Source: `docs/product/prd/29-sign-in-methods-and-phone-verification.md` (card NS
 - Done when: each of R1 to R5 has a title that goes red under its mutant.
 
 #### BL-1890 Google in the store build: profiles, button, help line and the NS-41-R20 flip
-- Status: proposed (NS-54; waits on the founder's Google timing call and BL-1888). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Priority: P1. Depends on: BL-1888, BL-1891, BL-1893, BL-1908.
+- Status: proposed (NS-54; the Google timing ruling is recorded as CR-180 and D-171; what remains is BL-1908, BL-1893 and BL-1894, plus BL-1888 landing). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Priority: P1. Depends on: BL-1888, BL-1891, BL-1893, BL-1908.
 - Satisfies: NS-54-R1, R6, R10, R11, R13; NS-41-R20; A-REQ-017.
 - Scope: Set the Google client ids in the profiles the founder names (ids are public, no secret), keep the no-ids-no-button rule, update `auth.noEmailHelp` so it names only what shows (words PROPOSED by `content`), and update the NS-41-R20 test to the new truth. In this same pull request, publish the counsel-read Google text (Terms 3.1, privacy policy, subprocessor list) and remove Google from NOT_USED in `packages/content/test/legal-docs.test.ts`, since the test fails if a published document names Google while the build does not offer it. Google must not render before linking (BL-1893) is merged.
 - Done when: a build with both ids shows Google beside Apple and email, one without shows none, and the tests for both pass.
