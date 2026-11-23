@@ -23,6 +23,7 @@ vi.mock('../src/lib/capture/erase', () => ({ eraseAudioFile: () => {} }));
 vi.mock('../src/lib/capture/recordings', () => ({ listRecordingFiles: () => [] }));
 vi.mock('../src/lib/photos/files', () => ({ BAKED_CACHE_FOLDER: 'b', PICKER_CACHE_FOLDER: 'p', photosDirectory: () => ({ exists: false }) }));
 vi.mock('../src/lib/days', () => ({ eraseDaysFile: () => {} }));
+vi.mock('../src/lib/moments', () => ({ eraseMomentsFile: () => {} }));
 vi.mock('../src/lib/family/pending-invite', () => ({ clearPendingInvite: async () => {} }));
 vi.mock('../src/lib/reminders/scheduler', () => ({ forgetReminders: async () => {} }));
 vi.mock('../src/lib/supabase/secure-storage', () => ({ secureStorage: { removeItem: async () => {} } }));

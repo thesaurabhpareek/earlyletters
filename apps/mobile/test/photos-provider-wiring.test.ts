@@ -19,6 +19,7 @@ vi.mock('react/jsx-runtime', () => ({ jsx: (type: unknown, props: unknown) => ({
 vi.mock('react/jsx-dev-runtime', () => ({ jsxDEV: (type: unknown, props: unknown) => ({ type, props }), Fragment: 'Fragment' }));
 vi.mock('react-native', () => ({ AppState: { currentState: 'active', addEventListener: () => ({ remove: () => {} }) }, Platform: { OS: 'ios' } }));
 vi.mock('../src/lib/backup/files', () => ({ deleteBackupFilesExcept: () => {}, endBackupFileFor: () => {} }));
+vi.mock('../src/lib/auth/local-claim', () => ({ bindDeviceOnlyOwners: () => () => {}, adoptDeviceOnlyLocal: async () => true }));
 vi.mock('../src/lib/backup/launch-migrate', () => ({ settleBackupTokens: async () => {} }));
 vi.mock('../src/lib/backup/token-vault', () => ({ removeBackupTokensFor: async () => {} }));
 vi.mock('../src/lib/reminders/session', () => ({ settleReminderSession: async () => {} }));
