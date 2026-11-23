@@ -197,7 +197,6 @@ export const en = {
     invite: {
       title: "Writing this with someone?",
       body: "Invite {child}'s other parent to add letters of their own, each one signed.",
-      privacyNote: "Letters you keep private are for you alone. Only the ones you add to the book are shared.",
       addButton: "Invite co-parent",
       laterButton: "Maybe later",
     },
