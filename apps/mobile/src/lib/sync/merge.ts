@@ -695,6 +695,8 @@ function mergedLanguage(local: string | null, server: string | null | undefined)
  * (book_entries, S02 20261015030000); a server without them leaves the defaults.
  */
 function mergeOtherRow(db: SqlDb, row: PulledRow, owner: string | null, epoch: number, now: string): void {
+  // A quiet day is its author's own (NS-07-C5-8): the other parent's mark is never stored here, even if a server serves it.
+  if (row.kind === 'not_much') return;
   const local = getEntryRow(db, row.id);
   if (local && (local.author_id === null || local.author_id === owner)) return;
   db.run(

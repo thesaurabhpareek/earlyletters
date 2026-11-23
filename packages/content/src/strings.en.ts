@@ -239,6 +239,8 @@ export const en = {
       listening: "Listening.",
       listeningHint: "Say it however it comes.",
       stillHere: "Still here. Take your time.",
+      // BL-432: after 30 minutes of one take. Nothing stops and nothing is cut; this only says Finish is there.
+      longTake: "This is a long one. Finish whenever you like, or keep talking.",
       paused: "Paused.",
       // Under "Paused." only (BL-1787): auto-lock ends a take that is paused, because only a live take keeps the screen awake (D-087). Says what happens and promises nothing about what is kept.
       pausedLock: "If the phone locks while paused, the recording ends.",
@@ -376,8 +378,10 @@ export const en = {
     headerTo: "To {child} · Month {month}",
     headerToNewborn: "To {child} · The first weeks",
     headerToBefore: "To {child} · Before You",
-    // Writing down a long take (S14): after 8 s, then a quiet way out after 15 s with no progress.
-    waitingLong: "Long recordings take a little more time.",
+    // Writing down a take (BL-399, J05-03): the waiting card says it is working, that the voice is kept and that
+    // Review can be closed. After 15 s with no progress it says so plainly and offers Keep or Type.
+    waitingBody: "Listening back to what you said. Your voice is kept. You can close this, it will be waiting on Tonight.",
+    waitingSlow: "This is taking longer than usual. Your voice is kept, and you can close this.",
     laterButton: "Read it back later",
     // Keep the recording tapped while the save is still running (the hung-save case, #618): nothing is kept yet, so say so.
     keepStillSaving: "This recording is still being saved. Give it a moment, then tap Keep again.",

@@ -28,6 +28,12 @@ export interface GateInputs {
   note: OpenRequest | null;
   nowMs: number;
   signedIn: boolean;
+  /**
+   * The saved session has not been read yet (auth `restoring`, the first frame of a cold launch). `signedIn` is false then,
+   * but the phone may well be signed in: it is not yet known, so the gate treats it as maybe signed in (paper while the
+   * answer is not in, a note past its date kept, not cleared) and never as signed out. Optional: false when not given.
+   */
+  restoring?: boolean;
   /** The session's user (authUserId of the auth state), known from checkingConsent on; null signed out. */
   userId: string | null;
   /** The server has been asked since this screen opened (answered, failed or timed out). */
@@ -50,8 +56,10 @@ export interface GateDecision {
 }
 
 export function decideGate(i: GateInputs): GateDecision {
+  // BL-493 point 5: while the saved session is being read, "not signed in" is not known to be true.
+  const maybeSignedIn = i.signedIn || i.restoring === true;
   const base = chooseScreen({
-    hasBook: i.hasBook, note: i.note, nowMs: i.nowMs, signedIn: i.signedIn, hasDeletedBook: i.hasDeletedBook,
+    hasBook: i.hasBook, note: i.note, nowMs: i.nowMs, signedIn: maybeSignedIn, hasDeletedBook: i.hasDeletedBook,
     checked: i.checked, userId: i.userId, confirmed: i.confirmed,
   });
   const counted = countedNote(i.note, i.userId, i.nowMs);
@@ -63,7 +71,7 @@ export function decideGate(i: GateInputs): GateDecision {
     screen: leaving ? 'deletion' : base,
     request: leaving ? { state: 'cancelled', at: new Date(i.nowMs).toISOString() } : base === 'deletion' ? counted : null,
     leave: leaving && welcomeMayLeave('welcome', i.pathname),
-    clear: noteIsDead({ note: i.note, nowMs: i.nowMs, signedIn: i.signedIn, userId: i.userId, checked: i.checked, confirmed: i.confirmed }),
+    clear: noteIsDead({ note: i.note, nowMs: i.nowMs, signedIn: maybeSignedIn, userId: i.userId, checked: i.checked, confirmed: i.confirmed }),
     refreshWithBook: i.hasBook && i.signedIn && open,
     wasDeletion: base === 'deletion' ? true : base === 'welcome' || base === 'checking' ? false : i.wasDeletion,
   };
