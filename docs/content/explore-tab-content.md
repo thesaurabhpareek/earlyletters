@@ -85,7 +85,7 @@ No photo ask comes before the first saved letter. Until then the tab shows EX-03
 | EX-30 | DORMANT. M2 day tile, visible text | {date, from the locale formatter}, for example "Saturday, November 14" | the same | Only the formatted date is allowed. A fact the parent can check, built by a fixed rule from timestamps, never from content (CQ-5). No title, no place, no "outing" or "visit", no count, no "best" |
 | EX-31 | M2 day tile, time range | DROPPED (council). Only the formatted date shows | none | Nothing to write |
 | EX-32 | M2 section line when a ticked or typed day is today and pictures also show | none | none | Shows in one place only (7.2, NS-53-R11): the item sits on Moments, Home shows only its slip order |
-| EX-33 | DORMANT. M3 nothing to show | Days with pictures will show here. | Nothing here right now. | 34 chars. One line of what will be here, one action (EX-16 sits under it). No "no moments yet", no count, no gap. The fallback avoids "yet" |
+| EX-33 | DORMANT. M3 nothing to show | Days with pictures will show here. | Days will show here. | 34 chars. One line of what will be here, one action (EX-16 sits under it). No "no moments yet", no count, no gap. The fallback says what will be here, never that nothing is. |
 | EX-34 | M4 declined or off | none | none | By the rule in NS-53-R4 and FR-PHS-44 the tab says nothing about access. It shows EX-16, typed days, ticked days and one past letter. The only access words live in the Me row (EX-60) |
 | EX-35 | M2 limited access | none | none | Behaves exactly like full. No line about what is missing (FR-PRV-38). The "Choose which pictures" control lives in the Me row (EX-61) |
 | EX-36 | M5 quiet or hidden book | none | none | Nothing from that book shows (NS-23-R8). No line says it is hidden |
