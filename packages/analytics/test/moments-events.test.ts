@@ -4,7 +4,7 @@
  * fictional family Asha only.
  */
 import { describe, expect, it } from 'vitest';
-import { createAnalytics, createTrackers, EVENTS, memoryStorage, recordingProvider, sanitizeEvent, type Violation } from '../src';
+import { REGISTRY, createAnalytics, createTrackers, EVENTS, memoryStorage, recordingProvider, sanitizeEvent, type Violation } from '../src';
 
 const MOMENTS = ['moments_card_impressed', 'moments_card_tapped'] as const;
 
@@ -40,18 +40,29 @@ describe('Moments events (NS-53-R251, NS-53-R167)', () => {
     expect(violations.length).toBeGreaterThan(0);
   });
 
-  it('[NS-53-R251-c] only the slot enum is accepted: other slots, extra properties and free text are refused', async () => {
+  /*
+   * Held until wiring. #1533 typed the two names in catalog.ts; #1259 then made the send path read only registry.ts
+   * (validate.ts: "registry-driven sending is the only path", founder note of 20 Nov), and CDO-25 item 4 says the
+   * registry.ts and ids.ts rows land with the wiring PR. So today a Moments name is unknown to sanitizeEvent and a
+   * send is dropped as dropped_invalid with nothing captured. #1533 and #1695 merged while #1259 was open, which is
+   * why -c, -e and -f once asserted the pre-registry behaviour.
+   */
+  it('[NS-53-R251-c] held until wiring: the Moments names are not in the registry, so any payload, slot or extra property is refused whole', () => {
     for (const n of MOMENTS) {
-      for (const slot of ['today', 'pictures', 'birthday', 'Asha', 'She laughed at the dog today', '2025-03-14', '', 'look_back ']) {
-        expect(sanitizeEvent(n, { slot, schema_version: 11 }).props, `${n} slot ${slot}`).toBeNull();
+      expect(n in REGISTRY, `${n} in registry`).toBe(false);
+      for (const props of [{ slot: 'question', schema_version: 11 }, { slot: 'look_back', schema_version: 11 }, { slot: 'Asha', schema_version: 11 }, { slot: 'question', schema_version: 11, title: 'asha' }, { schema_version: 11 }]) {
+        const r = sanitizeEvent(n, props);
+        expect(r.props, `${n} ${JSON.stringify(props)}`).toBeNull();
       }
-      for (const extra of ['title', 'text', 'child_name', 'letter_id', 'date', 'count', 'place', 'source', 'permission', 'device_tier', 'ms_bucket']) {
-        const r = sanitizeEvent(n, { slot: 'question', schema_version: 11, [extra]: 'asha' });
-        expect(r.violations.some((v) => v.kind === 'unknown_property' && v.event === n), `${n}.${extra}`).toBe(true);
-        expect(r.props, `${n}.${extra}`).toEqual({ slot: 'question', schema_version: 11 });
-      }
-      expect(sanitizeEvent(n, { schema_version: 11 }).props, 'slot is required').toBeNull();
     }
+  });
+
+  it('[NS-53-R251-g] guard: fails the moment the registry gains a Moments row; the wiring PR must then restore the accept and refuse assertions', () => {
+    const present = MOMENTS.filter((n) => n in REGISTRY);
+    expect(
+      present,
+      'Moments rows are in registry.ts. The wiring PR (CDO-25 item 4) must flip [NS-53-R251-c], -e and -f back to: slot enum only, extra property reported unknown_property, trackMomentsCard returns queued, bad slot dropped.',
+    ).toEqual([]);
   });
 
   it('[NS-53-R251-d] stays opt-in: with analytics off or undecided nothing is sent or queued', async () => {
@@ -70,24 +81,22 @@ describe('Moments events (NS-53-R251, NS-53-R167)', () => {
     }
   });
 
-  it('[NS-53-R251-e] with consent the helper sends one event per call with the slot and nothing else of its own', async () => {
+  it('[NS-53-R251-e] held until wiring: with consent the helper drops both calls as dropped_invalid and nothing is queued or captured', async () => {
     const { analytics, provider } = await setup(true);
     const t = createTrackers(analytics);
-    expect(t.trackMomentsCard({ action: 'impressed', slot: 'look_back' })).toBe('queued');
-    expect(t.trackMomentsCard({ action: 'tapped', slot: 'question' })).toBe('queued');
+    expect(t.trackMomentsCard({ action: 'impressed', slot: 'look_back' })).toBe('dropped_invalid');
+    expect(t.trackMomentsCard({ action: 'tapped', slot: 'question' })).toBe('dropped_invalid');
+    expect(analytics.queueLength()).toBe(0);
     await analytics.flush();
-    const got = provider.captured();
-    expect(got.map((e) => e.event)).toEqual(['moments_card_impressed', 'moments_card_tapped']);
-    expect(got.map((e) => e.properties.slot)).toEqual(['look_back', 'question']);
-    for (const e of got) expect(Object.keys(e.properties).filter((k) => !['schema_version', 'child_count_bucket', 'sample_pct'].includes(k))).toEqual(['slot']);
+    expect(provider.captured()).toHaveLength(0);
   });
 
-  it('[NS-53-R251-f] the helper refuses a slot outside the closed set at run time', async () => {
+  it('[NS-53-R251-f] held until wiring: a slot outside the closed set, or an unknown action, is dropped as well and nothing is captured', async () => {
     const { analytics, provider } = await setup(true);
     const t = createTrackers(analytics);
-    for (const slot of ['birthday', 'Asha', 'pictures']) t.trackMomentsCard({ action: 'tapped', slot } as never);
+    for (const slot of ['birthday', 'Asha', 'pictures', 'question']) t.trackMomentsCard({ action: 'tapped', slot } as never);
     t.trackMomentsCard({ action: 'asked', slot: 'question' } as never);
     await analytics.flush();
-    expect(provider.captured().map((e) => e.properties.slot)).toEqual(['question']);
+    expect(provider.captured()).toEqual([]);
   });
 });

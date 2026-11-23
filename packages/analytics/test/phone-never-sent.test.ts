@@ -123,6 +123,9 @@ describe('[NS-54-R26] the phone number never reaches analytics', () => {
   });
 });
 
+/** The random consent id is a uuid; the reducer drops an event whose id is any other shape (ER-A11, #1259). */
+const CONSENT_ID = '00000000-0000-4000-8000-000000000001';
+
 /** A crash event as the SDK builds it: the message, the stack and the caller's own properties all try to carry the number. */
 const crashWith = (n: string) => {
   // Code identifiers and file names come from our build, not from data: a bare four-digit tail as a function name is not a leak path.
@@ -130,7 +133,7 @@ const crashWith = (n: string) => {
   return {
   event: '$exception',
   properties: {
-    distinct_id: 'anon-phone-id',
+    distinct_id: CONSENT_ID,
     $app_version: '1.0.0',
     $exception_level: 'error',
     $exception_message: `could not send a code to ${n}`,
@@ -158,6 +161,16 @@ describe('[NS-54-R26] the phone number never reaches a crash event', () => {
       const out = reduceExceptionEvent(crashWith(n), sdk);
       expect(out, n).not.toBeNull();
       expect(found(JSON.stringify(out)), n).toEqual([]);
+    }
+  });
+
+  it('[NS-54-R26] a distinct_id that is not the uuid consent id drops the whole event, so the planted number goes nowhere (ER-A11)', () => {
+    for (const n of PLANTS) {
+      for (const bad of ['anon-phone-id', n, '']) {
+        const evt = crashWith(n);
+        (evt.properties as Record<string, unknown>).distinct_id = bad;
+        expect(reduceExceptionEvent(evt, sdk), `${n} as ${bad}`).toBeNull();
+      }
     }
   });
 
