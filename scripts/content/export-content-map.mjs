@@ -59,7 +59,7 @@ function classify(file, path, text) {
 }
 const HELD = [
   [(r) => /(^|\.)trust\.promise$/.test(r.path.join('.')) || /never use them to train machine learning models/.test(r.text), 'protected', 'D-061 privacy promise line, word for word on every surface'],
-  [(r) => /It stays in your words\. Every change is marked/.test(r.text), 'protected', 'D-133 public promise line'],
+  [(r) => /It stays in your words\. Every (word we )?change is marked/.test(r.text), 'protected', 'D-133 public promise line'],
   [(r) => r.file.endsWith('helplines.ts') || /^(struggling|helpLinks)$/.test(r.path[1] ?? ''), 'protected', 'helplines and safety instructions'],
   [(r) => /(^|\.)erase(\.|$)/.test(r.path.join('.')) || /Your free letters start again\./.test(r.text), 'held', 'D-144 erase-everything lines'],
   [(r) => r.surface === 'legal' && r.channel === 'consent', 'held', 'consent (docs/legal/in-app-disclosures.md)'],

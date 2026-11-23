@@ -34,7 +34,10 @@ Decisions and facts that bind Build 13 work; re-check each against `develop` bef
 - Requirement documents are never edited; propose changes.
 
 ## Open threads
-- None yet.
+- Memory Library (10 Nov): analysis in `docs/privacy/MEMORY-LIBRARY-PRIVACY-ANALYSIS-10nov.md`; draft PR waits on counsel, `legal` and the founder (promise words, label answers, publishing are founder-only).
 
 ## Lessons
-- None yet.
+- Apple: on-device-only data is not "collected", but anything derived and sent off device is judged separately (App Privacy Details, read 10 Nov). The rule for media code is no derived value leaves the phone.
+- Export spec "original bytes" versus LEGAL-REQ-013 (10 Nov): fixed on develop (`DELETION_AND_EXPORT_SPEC.md:335,340` now say the stored copy, never the original bytes; checked 23 Nov). The export scan test (BL-933) is still open.
+- The claims test has no rule for photos, location or occasions; add rules so a claim is false until its capability is on.
+- WebFetch needs a URL to appear in a prior search result or fetch; search first, then fetch (Markdown versions of Apple doc pages work, JavaScript pages do not).

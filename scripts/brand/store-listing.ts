@@ -20,7 +20,7 @@ const SCREENS: Record<string, string> = {
   '03-letter': 'A letter from Mama with "Hear Mama"',
   '04-book': "Asha's book after Add to the book: this month and the month before",
   '05-letter-night': 'Read together, dark: one letter, Back one and Next letter',
-  '06-privacy': 'Settings, Privacy: "What we never do"',
+  '06-privacy': 'Settings, Privacy, as it opens now (the promise first): no "What we never do" list, no photo line',
   '07-quiet-day': '"A quiet day, kept." after Not much today',
   '08-listening': 'Listening: no words on screen while you talk',
 };
@@ -75,7 +75,9 @@ Eight frames: 1 to 6 are the set, 7 and 8 are optional. Captured from the real a
 |---|---|---|---|---|
 ${s.screenshots.map((f, i) => `| ${i + 1} | ${f.caption} | ${f.subline} | ${SCREENS[f.id] ?? ''} | ${f.scheme} |`).join('\n')}
 
-The first three show in search results when there is no preview, so they carry the core promise: talk, every change marked, your voice. Frame 5 is dark, as bedtime is (CREATIVE section 4). Frame 6 is the privacy promise, shown as the real Settings screen rather than a badge.
+Recapture before submission (a founder or device step, not done in this change; exec rulings 23 Nov 2026, item 8e): frames 2 and 3 carry new headlines in \`captions.json\`, so their images must be composed again from the current build. Frame 3 must not show the "Exactly as said" link inside the picture (D-133: it names the raw machine view). Frame 6 is recaptured from current \`develop\` with its caption unchanged, and shows no "What we never do" list, no lock icons and no photo line (BL-1853). Details: \`SCREENSHOT-COPY-AUDIT.md\`.
+
+The first three show in search results when there is no preview, so they carry the core promise: talk, every word we change marked, your voice. Frame 5 is dark, as bedtime is (CREATIVE section 4). Frame 6 is the privacy promise, shown as the real Settings screen rather than a badge.
 
 ## Privacy, said calmly
 
