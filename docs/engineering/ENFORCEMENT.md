@@ -29,6 +29,8 @@ Totals across 192 rules (2026-10-03, counted from the rows below): 42 enforced, 
 | CODE-R18 | MUST | review (principal-architect); ADR | enforced on develop (review only) | none |
 | CODE-R19 | MUST | `app_config` table and client | not yet | PDATA-08 (BL-022) |
 | CODE-R20 | MUST | typecheck `strict` in CI; ESLint and Prettier | typecheck enforced on develop; lint not yet (PR #30 job waits for WS-12, WS-16) | MONO-01 |
+| CODE-R21 | MUST | review; `stacked-prs` skill; PR template hint | review only | none |
+| CODE-R22 | MUST | review; PR template `Done when:` line | review only; template line not yet | CODE-G5 |
 | API-R01 | MUST | `packages/api` (manifests, config, content, envelope); typed RPC wrappers and DB types | partly on develop; wrappers and types not yet | API-G4 (WS-04) |
 | API-R02 | MUST | generated types plus drift test | not yet | WS-04 |
 | API-R03 | MUST | cites DB-R13 for views; RPC or narrow policy writes by review | see DB-R13; review | DB-01 |
@@ -67,6 +69,7 @@ Gap ids defined here:
 - CODE-G2: closed for `packages/core/src/age.ts` (typed `InvalidIsoDateError`, fixed message, #1118 and #1146). Other error sites in `core` are still found by review.
 - CODE-G3: licence allowlist check for production dependencies.
 - CODE-G4: `docs/GLOSSARY.md` (WS-17) not started.
+- CODE-G5: `.github/pull_request_template.md` has no `Done when:` line (CODE-R22); handoff to `product`.
 - API-G1: scan the built app bundle for `service_role` and `sb_secret` strings.
 - API-G2: idempotency key parameter and store for RPCs not keyed on a row id (`request_account_deletion`, invites, policy acts).
 - API-G3: contract compatibility test against the previous release tag.
