@@ -4,7 +4,7 @@ Every MUST rule in the compendium and what enforces it today. Status words: **en
 
 Rules that stay `not yet` are the backlog for the stewards' standing duty 2: turn one into a real check per run, or file it as a backlog proposal for `product`. The owner of each chapter keeps its rows current in the same PR that changes a rule or adds a check.
 
-Totals across 192 rules (2026-10-03, counted from the rows below): 42 enforced, 38 pending in open PRs, 34 partly enforced, review-only or covered by the rule they cite, 78 not yet.
+Totals across 195 rules (2026-10-03 count, adjusted for rules and rows changed since: see the git log of this file): 42 enforced, 38 pending in open PRs, 36 partly enforced, review-only or covered by the rule they cite, 79 not yet.
 
 **Known drift since 2026-10-03** (noted 15 Oct when the compendium landed; the totals above are not recounted): rows that cited PRs #4, #27, #28, #29, #31, #36 and #39 were re-checked against `develop` at `56ec5b5` on 15 Oct and now say `on develop` or `enforced on develop`; `packages/api` (21 files) and `supabase/functions/` (`purge-worker`, `analytics-forget`, `config`, `content`, `_shared`) exist, so API-R01, API-G4, DQ-R12, DQ-R13, DSR-R06, DSR-R07 and DSR-R08 were rewritten on 15 Oct to say what is on `develop` and what is still missing; `packages/brand` sets the support address. Each owner's first standing run should sweep its rows.
 
@@ -29,9 +29,9 @@ Totals across 192 rules (2026-10-03, counted from the rows below): 42 enforced, 
 | CODE-R18 | MUST | review (principal-architect); ADR | enforced on develop (review only) | none |
 | CODE-R19 | MUST | `app_config` table and client | not yet | PDATA-08 (BL-022) |
 | CODE-R20 | MUST | typecheck `strict` in CI; ESLint and Prettier | typecheck enforced on develop; lint not yet (PR #30 job waits for WS-12, WS-16) | MONO-01 |
-| CODE-R23 | MUST | `scripts/release/go-no-go-check.mjs` for per-build pages; review | partly: per-build pages checked; one file per gate not yet | none |
+| CODE-R23 | MUST | `scripts/release/go-no-go-check.mjs` (form only); review | partly: per-build page form checked; judgment and one file per gate by review; template wording stale after CR-176 | none |
 | CODE-R24 | SHOULD | review | review only | none |
-| CODE-R25 | SHOULD | `timeout-minutes` per job in `ci.yml`; review | partly: per-job timeouts on develop; wording in `ci.yml`, `.github/README.md`, TDD 07 not yet changed | none |
+| CODE-R25 | SHOULD | review; `timeout-minutes` ceilings in `ci.yml` (4, 5, 10, 15, 5, 5, 15, 1) are not the budget | target only; no measurement; wording in `ci.yml`, `.github/README.md`, TDD 07 not yet changed | CODE-G7 |
 | API-R01 | MUST | `packages/api` (manifests, config, content, envelope); typed RPC wrappers and DB types | partly on develop; wrappers and types not yet | API-G4 (WS-04) |
 | API-R02 | MUST | generated types plus drift test | not yet | WS-04 |
 | API-R03 | MUST | cites DB-R13 for views; RPC or narrow policy writes by review | see DB-R13; review | DB-01 |
@@ -69,6 +69,7 @@ Gap ids defined here:
 - CODE-G1: CI check that fails or labels PRs over 400 lines or 20 files (excluding lockfile, generated, test data).
 - CODE-G2: closed for `packages/core/src/age.ts` (typed `InvalidIsoDateError`, fixed message, #1118 and #1146). Other error sites in `core` are still found by review.
 - CODE-G3: licence allowlist check for production dependencies.
+- CODE-G7: no measurement of required-job run time against the 10-minute target (CODE-R25); proposal for `qa`.
 - CODE-G4: `docs/GLOSSARY.md` (WS-17) not started.
 - API-G1: scan the built app bundle for `service_role` and `sb_secret` strings.
 - API-G2: idempotency key parameter and store for RPCs not keyed on a row id (`request_account_deletion`, invites, policy acts).
