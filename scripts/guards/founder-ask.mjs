@@ -34,22 +34,42 @@ const VERB = String.raw`(?:approve|approval|approving|review|reviewing|merge|mer
 /** Each pattern is tested alone (founder-ask.test.mjs). */
 export const PATTERNS = [
   ['phrase-review-needed', /founder\s+(?:review|approval|merge|sign[\s-]?off)\s+(?:needed|required)/i],
-  ['phrase-needs-approval', /needs?\s+(?:the\s+)?founder(?:'s)?\s+(?:approval|review|merge|sign[\s-]?off|decision)/i],
-  ['phrase-waiting', /waiting\s+(?:for|on)\s+(?:the\s+)?founder/i],
+  ['phrase-needs-approval', /needs?\s+(?:(?:the\s+)?founder(?:'s)?\s+(?:approval|review|merge|sign[\s-]?off|decision))/i],
+  // "Needs a founder decision" only as the start of a sentence (a status line); mid-sentence it is description.
+  ['needs-founder-decision', /(?:^|[.;:!?]\s+|\|\s*)(?:this\s+|it\s+)?needs\s+a\s+founder\s+(?:decision|ruling|call|answer)\b/i],
+  ['phrase-waiting', new RegExp(String.raw`waiting\s+(?:for|on)\s+${FOUNDER}`, 'i')],
+  // "ask him to approve" counts only when the same line names the founder (before or after).
+  ['ask-him-to', new RegExp(String.raw`(?:\b${FOUNDER}\b[^\n]{0,80}\b(?:ask|asks|asking|asked)\s+(?:him|her)\s+to\s+${VERB}\b|\b(?:ask|asks|asking|asked)\s+(?:him|her)\s+to\s+${VERB}\b[^\n]{0,80}\b${FOUNDER}\b)`, 'i')],
   ['ask-founder-to', new RegExp(String.raw`\b(?:ask|asks|asking|asked|requests?|requesting|needs?|requires?|want|wants)\s+${FOUNDER}\s+to\s+${VERB}\b`, 'i')],
   ['founder-must', new RegExp(String.raw`\b${FOUNDER}\s+(?:must|should|needs\s+to|has\s+to|please|to)\s+${VERB}\b`, 'i')],
   ['for-founder-verb', new RegExp(String.raw`\bfor\s+${FOUNDER}\s+(?:approval|review|merge|sign[\s-]?off)\b`, 'i')],
   ['please-founder', new RegExp(String.raw`\bplease\s+(?:${VERB})\b[^.\n]{0,40}\b${FOUNDER}\b`, 'i')],
-  ['founder-merge-label', /\bfounder[\s-]merge\b/i],
+  // Only the ask shape. A rule that says a change "ships only after a founder merge (D-125 item 5)" is not an ask.
+  ['founder-merge-label', /\b(?:please|ask|asks|asking|waiting\s+(?:for|on)|wait\s+for)\b[^.;\n]{0,30}\bfounder[\s-]merge\b/i],
 ];
 
 const NEGATION = /\b(?:never|not|nobody|no\s+one|do\s+not|don't|doesn't|without)\b/i;
 const RULE_REF = /\b(?:CR-176|D-168)\b/;
 
+/** Start index of every ask match in a collapsed line. */
+function askStarts(t) {
+  const out = [];
+  for (const [, re] of PATTERNS) {
+    const g = new RegExp(re.source, `${re.flags.replace('g', '')}g`);
+    for (const m of t.matchAll(g)) out.push(m.index);
+  }
+  return out;
+}
+
 /** Why a line is allowed, or '' when it is not. */
 export function allowedBecause(line) {
   if (/FOUNDER_QUEUE/.test(line)) return 'physical act (FOUNDER_QUEUE)';
-  if (RULE_REF.test(line) && NEGATION.test(line)) return 'quotes the rule (CR-176 or D-168 with a negation)';
+  const t = String(line ?? '').replace(/\s+/g, ' ');
+  if (RULE_REF.test(t)) {
+    // The negation must govern each ask: it sits earlier in the same sentence (no . ; ! ? between).
+    const governed = askStarts(t).every((at) => NEGATION.test(t.slice(0, at).split(/[.;!?]\s/).pop()));
+    if (governed && NEGATION.test(t)) return 'quotes the rule (CR-176 or D-168 with a negation)';
+  }
   return '';
 }
 

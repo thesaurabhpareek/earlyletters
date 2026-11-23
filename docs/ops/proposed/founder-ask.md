@@ -8,9 +8,15 @@ The title, the body, or any added line of the diff (removed lines never count) t
 
 ## What is allowed (three exact rules)
 
-1. Quoting the rule: a line that names CR-176 or D-168 and carries a negation (never, not, nobody, no one, do not, don't). This is the PR template's own line.
+1. Quoting the rule: a line that names CR-176 or D-168 and carries a negation (never, not, nobody, no one, do not, don't) earlier in the same sentence as each ask (a negation in another sentence does not count). This is the PR template's own line.
 2. A physical act: a line that names `FOUNDER_QUEUE` (the file that lists acts only his hands can do).
 3. Added lines in the files that state the rule: `ALLOWED_PATHS` (RULINGS.md, FOUNDER_QUEUE.md, the PR template, this guard, its test and this proposal).
+
+## Known limits
+
+- The founder-merge label fails only in the ask shape (please, ask, waiting for, wait for). A rule that says a change ships only after a founder merge (D-125 item 5) is not an ask. "Needs a founder merge" as an ask is not caught.
+- "Needs a founder decision" fails only at the start of a sentence or table cell; mid-sentence it describes a held item.
+- Run over the 30 most recent merged PRs into develop: 2 fail, both lines that quote the BL-1851 phrase itself in docs/BACKLOG.md and a PR body (merged before the guard existed). A new PR that must quote it names CR-176 with a negation, or goes under FOUNDER_QUEUE or an allowed path.
 
 ## Security
 
@@ -18,7 +24,7 @@ PR text is untrusted data. The workflow passes it only as environment variables;
 
 ## How to verify
 
-- `node --test scripts/guards/founder-ask.test.mjs` (21 tests; also in root `npm test`).
+- `node --test scripts/guards/founder-ask.test.mjs` (54 tests across the guards; also in root `npm test`).
 - Mutants that each turn one test red: drop the queue allow, drop the negation test, drop the path allow, count removed lines, skip the title.
 - After the paste: a throwaway PR with "founder review needed" in the body is red; the template's own line is green.
 
