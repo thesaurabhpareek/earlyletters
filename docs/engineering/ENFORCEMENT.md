@@ -48,8 +48,8 @@ Totals across 192 rules (2026-10-03, counted from the rows below): 42 enforced, 
 | API-R18 | MUST | rate limit in RPC or function, `SCRAT` | invites only on develop; generic not yet | DOC-11 |
 | API-R19 | MUST | CDN plus ETag config client | not yet | PDATA-08 (BL-022) |
 | API-R20 | MUST | on-device schema and SHA-256 manifest validation | not yet | API-G6 |
-| OBS-R01 | MUST | typed `OpsLog` logger | not yet | OBS-G2 (PDATA-06) |
-| OBS-R02 | MUST NOT | logger tests; BL-021 scrubbers | not yet | OBS-G2, BL-021 |
+| OBS-R01 | MUST | typed server logger `supabase/functions/_shared/log/log.ts`; `log.test.ts` | partly: server side on develop; device side not yet | OBS-G2 (PDATA-06) |
+| OBS-R02 | MUST NOT | `log.test.ts`, `canary.test.ts`; BL-021 scrubbers | partly: server side on develop; device side and scrubbers not yet | OBS-G2, BL-021 |
 | OBS-R03 | MUST | request id end to end | not yet | OBS-G1 |
 | OBS-R04 | MUST | review | review only | none |
 | OBS-R05 | MUST | ESLint `no-console`; Babel strip in release | not yet | MONO-01 |
