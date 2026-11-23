@@ -82,6 +82,21 @@ describe('[X4-R1] the owner\'s account-deletion note survives another account\'s
     run.unmount();
   });
 
+  it('B then signs out: the phone still says A can cancel (the note is A\'s pointer, BL-493 point 4)', async () => {
+    const state = { status: 'ready', userId: B, sync: 'on' };
+    h.auth = { state, signedIn: true, client: { rpc: () => undefined } };
+    h.snapshot = state;
+    const run = renderHook(() => useFirstRunGate());
+    await vi.advanceTimersByTimeAsync(5000);
+    h.auth = { state: { status: 'signedOut' }, signedIn: false, client: null };
+    h.snapshot = h.auth.state as Record<string, unknown>;
+    run.rerender();
+    expect(run.result.current.screen).toBe('deletion');
+    expect(h.settings.get(OPEN_REQUEST_KEY)).toBe(A_NOTE);
+    expect(h.clearCalls).toBe(0);
+    run.unmount();
+  });
+
   it('A signed in: the hook still asks and reads as before (the guard is for another account only)', async () => {
     const state = { status: 'ready', userId: A, sync: 'on' };
     h.auth = { state, signedIn: true, client: { rpc: () => undefined } };
