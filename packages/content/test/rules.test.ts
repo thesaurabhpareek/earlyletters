@@ -1113,7 +1113,7 @@ const P0_IN_APP: Leaf[] = [
 
 describe('[EXPERIENCE_PASS_2026-10 P0] rules on every string the pass touched', () => {
   it('says "we" or "our" only inside the sanctioned promises (principle 2)', () => {
-    const SANCTIONED = [/we never rewrite your words\.?/gi, en.trust.promise, en.trust.voice];
+    const SANCTIONED = [/we never rewrite your words\.?/gi, /every word we change is marked/gi, en.trust.promise, en.trust.voice];
     const bad = TOUCHED.filter(
       (l) => !P0_WE_ALLOWED.has(l.path) && /\b(?:we|our)\b/i.test(SANCTIONED.reduce<string>((t, s) => t.replace(s, ''), l.text)),
     );
@@ -1152,7 +1152,8 @@ describe('[EXPERIENCE_PASS_2026-10 P0] rules on every string the pass touched', 
   });
 
   it('never says or implies that letters stay on the phone, that there are no accounts, or no sharing (option B, D-100)', () => {
-    expect(TOUCHED.filter((l) => ON_DEVICE_ONLY.test(l.text)).map((l) => `${l.path}: ${l.text}`)).toEqual([]);
+    // Exec ruling 23 Nov 2026 (3b): Erase now says where the letter is erased from, "from this phone", true of an erase.
+    expect(TOUCHED.filter((l) => l.path !== 'en.settings.delete.eraseNowBody' && ON_DEVICE_ONLY.test(l.text)).map((l) => `${l.path}: ${l.text}`)).toEqual([]);
   });
 });
 
@@ -1238,7 +1239,7 @@ describe('[EXPERIENCE_PASS_2026-10 P8] every feature copy file has per-surface r
   it('pins the size of the auth, family and deletion button lists', () => {
     const size = (f: string) => SURFACES.find((s) => s.feature === f)!.buttons.length;
     expect(size('auth')).toBe(28);
-    expect(size('family')).toBe(17);
+    expect(size('family')).toBe(15);
     expect(size('accountDeletion')).toBe(8);
     for (const s of SURFACES) expect(new Set(s.buttons).size, s.name).toBe(s.buttons.length);
   });

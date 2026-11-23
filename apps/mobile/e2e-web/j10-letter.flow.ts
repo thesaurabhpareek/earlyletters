@@ -91,8 +91,8 @@ test('[J10f] Recently deleted: restore, and erase now', async ({ app, record }) 
   await toShelf(app);
   await app.getByRole('button', { name: 'Erase now' }).first().click();
   await expect(app.getByText('Erase this letter now?')).toBeVisible();
-  await expect(app.getByText('The letter and its recording are erased for good.')).toBeVisible();
-  await step('unhappy', 'Erase now asks first', 'Erase now ends the wait, after one question: "The letter and its recording are erased for good." "Keep it" is the default.');
+  await expect(app.getByText('The letter and its recording are erased from this phone. Backups and exports you already saved are not changed.')).toBeVisible();
+  await step('unhappy', 'Erase now asks first', 'Erase now ends the wait, after one question: "The letter and its recording are erased from this phone. Backups and exports you already saved are not changed." "Keep it" is the default.');
   await app.getByRole('button', { name: 'Erase now' }).last().click();
   await expect(app.getByText('Letter erased.')).toBeVisible();
   await expect(app.getByText("Back in Asha's book.")).toHaveCount(0);

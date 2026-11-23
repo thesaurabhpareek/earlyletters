@@ -39,7 +39,7 @@ export const onboardingStories: readonly StoryCard[] = [
     id: 'story.exact.v3',
     order: 2,
     headline: "It stays in your words.",
-    line: "Every change is marked, and your original recording is kept unchanged. We never rewrite your words.",
+    line: "Every word we change is marked, and your original recording is kept unchanged. We never rewrite your words.",
     visual: 'letter-underline',
   },
   {

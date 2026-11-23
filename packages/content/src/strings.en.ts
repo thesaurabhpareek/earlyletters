@@ -83,7 +83,7 @@ export const en = {
       // S04, directly under the title: the true promise (D-133), then the two other claims. The title and this line
       // are the sanctioned sentence, "It stays in your words. Every change is marked, and your original recording is
       // kept unchanged." Every build uses it, the alpha included (founder, 31 Oct 2026).
-      body2: "Every change is marked, and your original recording is kept unchanged. We never rewrite your words, shorten them or write for you.",
+      body2: "Every word we change is marked, and your original recording is kept unchanged. We never rewrite your words, shorten them or write for you.",
       // The promise specimen (S04). The sample's raw words are cleaned at runtime by the real engine in packages/core,
       // verifyEdits included, and render whatever it returns. They are fictional and name no child.
       sampleLabel: "For example",
@@ -716,7 +716,7 @@ export const en = {
       body: "{inviter} is keeping a book of letters for {child}. Yours can be part of it.",
       howTitle: "How it works",
       howStep1: "Tap the red circle and talk.",
-      howStep2: "It stays in your words. Every change is marked, and your original recording is kept unchanged.",
+      howStep2: "It stays in your words. Every word we change is marked, and your original recording is kept unchanged.",
       howStep3: "{inviter} adds your letter to {child}'s book.",
       voiceNote: "Your recording is kept on your phone too, so one day {child} can hear you tell it.",
       privacyNote: "Only {child}'s parents see your letters until they go in the book.",
@@ -915,7 +915,7 @@ export const en = {
       eraseNowTitle: "Erase this letter now?",
       // Option B (D-100): a synced letter is not only on this phone, so the erase lines name no place.
       // Counsel claims review (listed in the P0 pull request).
-      eraseNowBody: "The letter and its recording are erased for good.",
+      eraseNowBody: "The letter and its recording are erased from this phone. Backups and exports you already saved are not changed.",
       // After Restore (S38), with "Open"; {child} is the restored letter's book.
       restoredToast: "Back in {child}'s book.",
       // Restore when no book can be named (the letter's book is gone and none is open): the same line without a name,
