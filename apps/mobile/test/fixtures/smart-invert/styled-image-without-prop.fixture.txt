@@ -1,0 +1,14 @@
+// Positive control for [NS-33-R11] (BL-1841): images wrapped with styled(Image), none with the prop.
+import { Image } from 'react-native';
+const Pic = styled(Image);
+const Tall = styled(Image, { height: 200 });
+const Photo2 = styled(Pic);
+export function Bad({ uri }: { uri: string }) {
+  return (
+    <>
+      <Pic source={{ uri }} />
+      <Tall source={{ uri }} />
+      <Photo2 source={{ uri }} />
+    </>
+  );
+}

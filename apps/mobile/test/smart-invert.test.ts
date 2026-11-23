@@ -64,6 +64,13 @@ export function imageNames(source: string): Set<string> {
   }
   for (let grew = true; grew; ) {
     grew = false;
+    // BL-1841: `const Pic = styled(Image)` and `styled(Image, opts)` wrap an image and are still a picture.
+    for (const m of code.matchAll(/\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*styled\(\s*([A-Za-z_$][\w$.]*)\s*[,)]/g)) {
+      if (names.has(m[2]) && !names.has(m[1])) {
+        names.add(m[1]);
+        grew = true;
+      }
+    }
     for (const m of code.matchAll(/\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*([A-Za-z_$][\w$.]*)\s*;/g)) {
       if (names.has(m[2]) && !names.has(m[1])) {
         names.add(m[1]);
@@ -122,6 +129,18 @@ export function frameProblems(source: string): string[] {
   const bad = [...images, ...blanks].filter((t) => !setsProp(t.text)).map((t) => t.tag);
   return [...(images.length ? [] : ['no Image']), ...(blanks.length ? [] : ['no blank box']), ...bad];
 }
+
+/**
+ * BL-1841: a custom Avatar or PictureCard only protects a picture if it passes the prop on to the image it draws; a prop
+ * set on the call site does nothing inside it. Read from the component's own source (no device): it must draw at least one
+ * image and every image it draws must carry the prop (not `={false}`). Problems are returned as text.
+ */
+export function forwardProblems(source: string): string[] {
+  const tags = pictureTags(source, (n) => !SELF_PROTECTING.has(n) && !NOT_A_PICTURE[n] && !/^(PictureCard|Avatar)$/.test(n) && picturePredicate(source)(n));
+  const bad = tags.filter((t) => !setsProp(t.text)).map((t) => t.tag);
+  return [...(tags.length ? [] : ['draws no image']), ...bad];
+}
+const DEFINES_CUSTOM = /\bexport\s+(?:default\s+)?(?:function|const)\s+(PictureCard|Avatar)\b/;
 
 function files(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
@@ -233,5 +252,36 @@ describe('[NS-33-R11] Smart Invert ignores pictures', () => {
     expect(offenders('<Avatar uri={u} />')).toEqual(['Avatar']);
     expect(offenders(`<PictureCard uri={u} ${PROP} />`)).toEqual([]);
     expect(offenders(`<Avatar uri={u} ${PROP} />`)).toEqual([]);
+  });
+  // BL-1841: three gaps the reviews of #1635 named.
+  const FIX = (n: string) => readFileSync(join(APP, 'test/fixtures/smart-invert', n), 'utf8');
+
+  it('[NS-33-R11] a custom Avatar or PictureCard in src forwards the prop to the image it draws', () => {
+    const bad = all.filter((f) => DEFINES_CUSTOM.test(readFileSync(f, 'utf8')))
+      .flatMap((f) => forwardProblems(readFileSync(f, 'utf8')).map((p) => `${rel(f)}: ${p}`));
+    expect(bad).toEqual([]); // vacuous while src has neither component: the planted cases below show the check bites
+  });
+
+  it('[NS-33-R11] positive control: a planted Avatar and PictureCard that drop the prop fail, ones that forward it pass', () => {
+    expect(forwardProblems(FIX('avatar-drops-prop.fixture.txt'))).toEqual(['Image']);
+    expect(forwardProblems(FIX('picturecard-drops-prop.fixture.txt'))).toEqual(['Image', 'ExpoPic']);
+    expect(forwardProblems(FIX('avatar-forwards-prop.fixture.txt'))).toEqual([]);
+    expect(forwardProblems("export function Avatar() { return null; }")).toEqual(['draws no image']);
+    expect(DEFINES_CUSTOM.test(FIX('avatar-drops-prop.fixture.txt'))).toBe(true);
+  });
+
+  it('[NS-33-R11] an image wrapped with styled(Image) is a picture, so it needs the prop', () => {
+    const wrapped = FIX('styled-image-without-prop.fixture.txt');
+    expect([...imageNames(wrapped)].sort()).toEqual(['Image', 'Photo2', 'Pic', 'Tall']);
+    expect(offenders(wrapped)).toEqual(['Pic', 'Tall', 'Photo2']);
+    expect(offenders(wrapped.replace(/<(Pic|Tall|Photo2) /g, `<$1 ${PROP} `))).toEqual([]);
+    expect(offenders("import { View } from 'react-native';\nconst Box = styled(View);\n<Box />")).toEqual([]); // not an image
+  });
+
+  it('[NS-33-R11] positive control: an svg Image without the prop is flagged, the Svg root is not', () => {
+    const svg = FIX('svg-image-without-prop.fixture.txt');
+    expect([...imageNames(svg)]).toEqual(['SvgPic']);
+    expect(offenders(svg)).toEqual(['SvgPic']);
+    expect(offenders(svg.replace('<SvgPic ', `<SvgPic ${PROP} `))).toEqual([]);
   });
 });
