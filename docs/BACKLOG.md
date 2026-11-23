@@ -9099,7 +9099,7 @@ Queue order (the dispatcher takes the first `ready` row an agent owns, in file o
 - Done when: each failing control reaches 44 pt and has a role, shown by a test.
 
 #### BL-1735 Spec: what "Read a year together" is (year rows in the Months sheet, end-of-year state)
-- Status: in-review (PR #PR_BL1735). Mode: agent. Owner: product manager. Milestone: M15. Size: M. Depends on: none.
+- Status: in-review (PR #1714). Mode: agent. Owner: product manager. Milestone: M15. Size: M. Depends on: none.
 - Set ready by: product manager, now: the spec is product's own work; when it is merged product marks this `done`. BL-1792 is already `ready` (it waits on this row being `done`); BL-1736 is not filed in this file, so it has no row to set.
 - Spec: `docs/design/specs/13-READ-A-YEAR-TOGETHER-23nov.md`. Written from a read of source at `29ea7945e`, not a device run. It finds the year rows and the closing line already built behind `EXPO_PUBLIC_READ_THE_YEAR`, and it records the list order (SQL newest first, Read together reverses to oldest first). Open: the flag date (founder, default off in the 1 Dec build, by Fri 27 Nov 2026) and the placement (Chief Design Officer).
 - Priority: P1. Gate: none. Lane: product.
@@ -9135,7 +9135,7 @@ Queue order (the dispatcher takes the first `ready` row an agent owns, in file o
 - Done when: the token test covers them and no screen types them.
 
 #### BL-1710 Spec: Review opens on a quiet default
-- Status: in-review (PR #PR_BL1710). Mode: agent. Owner: product manager. Milestone: M15. Size: M. Depends on: none.
+- Status: in-review (PR #1714). Mode: agent. Owner: product manager. Milestone: M15. Size: M. Depends on: none.
 - Set ready by: product manager, when BL-1705 is read (or the BL-1700 sitting has run) and the default is written; BL-1788 follows. The default is written, from a read of source and not from the sitting, which has no named operator (D-169). The sitting amends the spec if it disagrees.
 - Spec: `docs/design/specs/14-REVIEW-QUIET-DEFAULT-23nov.md`. Its section 4 is the evidence for "every": true for the edits `verifyEdits` passes, false for character normalisation and stripped tags, so no line may say "every" until BL-1711 clears (D-169 item 2). A mobile build row for it is not filed; Karma decides when.
 - Priority: P1. Gate: spec. Lane: product, then mobile.
