@@ -8,7 +8,7 @@
  * The scan reads the four route files and every file each one imports from `@/components/`, one level deep, skipping
  * `.logic` files. It proves what code can: a line limit only below accessibility sizes, no shrink-to-fit or ellipsis
  * mode, no fixed type, and letter text never capped (D-027). Widths, overlap and split words are the AX5 walk on the
- * phone (X1). The Book's inline bar (BL-928 (d)) lands with or after #798 and has its own test then.
+ * phone (X1). The Book's inline bar (BL-928 (d), BL-1860) has its own scan at the end of this file.
  */
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -112,5 +112,59 @@ describe('NS-33-R4 at accessibility sizes', () => {
     expect(row).toMatch(/accessibilityLabel=\{detail \? `\$\{label\}, \$\{detail\}` : label\}/);
     expect(row).toMatch(/accessibilityState=\{\{ expanded: open \}\}/);
     expect(row).toMatch(/min-h-12/);
+  });
+});
+
+/** The Book's inline bar: from `const topBar = (` to the `return (` after it. */
+function bookBar(src: string): string {
+  const from = src.indexOf('const topBar = (');
+  return from < 0 ? '' : src.slice(from, src.indexOf('\n  return (', from));
+}
+
+const own = (o: object, k: string) => Object.prototype.hasOwnProperty.call(o, k);
+
+/** What cuts or fixes the bar's text, or shrinks a control, at accessibility sizes. Empty means clean. */
+function barDefects(bar: string): string[] {
+  const found: string[] = [];
+  if (!bar) return ['bar not found'];
+  const rules: Record<string, RegExp> = {
+    'text capped': /maxFontSizeMultiplier/,
+    'line limit': /numberOfLines/,
+    'shrink or ellipsis': /adjustsFontSizeToFit|ellipsizeMode/,
+    'fixed type': /\b(fontSize|lineHeight)\s*:|\btext-\[\d+px\]/,
+    'fixed height': /(?<![a-zA-Z])height\s*:/,
+    'scaling off': /allowFontScaling=\{false\}/,
+    'small control': /size="xs"|<Chip\b/,
+  };
+  for (const name of Object.keys(rules)) if (own(rules, name) && rules[name].test(bar)) found.push(name);
+  for (const tag of tags(bar, 'IconButton')) if (/size="sm"/.test(tag)) found.push('IconButton sm');
+  // Button sizes are minimums of 44 pt or more (button.tsx); md and lg only grow.
+  for (const tag of tags(bar, 'Button')) {
+    const size = /size="(\w+)"/.exec(tag)?.[1];
+    if (size && !['sm', 'md', 'lg'].includes(size)) found.push(`Button ${size}`);
+  }
+  return found;
+}
+
+describe('BL-1860 the Book inline bar at accessibility sizes', () => {
+  const bar = bookBar(read('app/(tabs)/book.tsx'));
+
+  it('finds the bar with its title, Months and settings controls', () => {
+    expect(bar).toMatch(/testID="book\.bar\.months"/);
+    expect(bar).toMatch(/testID="book\.bar\.settings"/);
+    expect(bar).toMatch(/<Text variant="headline"/);
+  });
+
+  it('[NS-33-R4] the real bar cuts nothing, fixes no type and keeps every control at 44 pt or more', () => {
+    expect(barDefects(bar)).toEqual([]);
+    // Its own floor: the title row is a minimum height, not a height.
+    expect(bar).toMatch(/minHeight: BAR_HEIGHT/);
+  });
+
+  it('[NS-33-R4] fails on a planted fixed-size title, a capped title and a small control', () => {
+    expect(barDefects(bar.replace('<Text variant="headline"', '<Text variant="headline" style={{ fontSize: 17 }}'))).toContain('fixed type');
+    expect(barDefects(bar.replace('<Text variant="headline"', '<Text variant="headline" maxFontSizeMultiplier={1.3}'))).toContain('text capped');
+    expect(barDefects(bar.replace('<IconButton ', '<IconButton size="sm" '))).toContain('IconButton sm');
+    expect(barDefects(bar.replace('minHeight: BAR_HEIGHT', 'height: 44'))).toContain('fixed height');
   });
 });
