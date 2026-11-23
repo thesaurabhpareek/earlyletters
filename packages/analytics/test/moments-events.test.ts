@@ -4,7 +4,8 @@
  * fictional family Asha only.
  */
 import { describe, expect, it } from 'vitest';
-import { createAnalytics, createTrackers, EVENTS, memoryStorage, recordingProvider, sanitizeEvent, type Violation } from '../src';
+import { createAnalytics, createTrackers, EVENTS, memoryStorage, recordingProvider, sanitizeEvent, sanitizeWith, SCHEMA_VERSION, type Violation } from '../src';
+import { intentRecorder } from './support';
 
 const MOMENTS = ['moments_card_impressed', 'moments_card_tapped'] as const;
 
@@ -43,14 +44,14 @@ describe('Moments events (NS-53-R251, NS-53-R167)', () => {
   it('[NS-53-R251-c] only the slot enum is accepted: other slots, extra properties and free text are refused', async () => {
     for (const n of MOMENTS) {
       for (const slot of ['today', 'pictures', 'birthday', 'Asha', 'She laughed at the dog today', '2025-03-14', '', 'look_back ']) {
-        expect(sanitizeEvent(n, { slot, schema_version: 11 }).props, `${n} slot ${slot}`).toBeNull();
+        expect(sanitizeWith(EVENTS, n, { slot, schema_version: SCHEMA_VERSION }).props, `${n} slot ${slot}`).toBeNull();
       }
       for (const extra of ['title', 'text', 'child_name', 'letter_id', 'date', 'count', 'place', 'source', 'permission', 'device_tier', 'ms_bucket']) {
-        const r = sanitizeEvent(n, { slot: 'question', schema_version: 11, [extra]: 'asha' });
+        const r = sanitizeWith(EVENTS, n, { slot: 'question', schema_version: SCHEMA_VERSION, [extra]: 'asha' });
         expect(r.violations.some((v) => v.kind === 'unknown_property' && v.event === n), `${n}.${extra}`).toBe(true);
-        expect(r.props, `${n}.${extra}`).toEqual({ slot: 'question', schema_version: 11 });
+        expect(r.props, `${n}.${extra}`).toEqual({ slot: 'question', schema_version: SCHEMA_VERSION });
       }
-      expect(sanitizeEvent(n, { schema_version: 11 }).props, 'slot is required').toBeNull();
+      expect(sanitizeWith(EVENTS, n, { schema_version: SCHEMA_VERSION }).props, 'slot is required').toBeNull();
     }
   });
 
@@ -70,24 +71,35 @@ describe('Moments events (NS-53-R251, NS-53-R167)', () => {
     }
   });
 
-  it('[NS-53-R251-e] with consent the helper sends one event per call with the slot and nothing else of its own', async () => {
+  it('[NS-53-R251-e] the two events are held off the send path: the registry does not list them, so even with consent nothing is queued or sent', async () => {
     const { analytics, provider } = await setup(true);
     const t = createTrackers(analytics);
-    expect(t.trackMomentsCard({ action: 'impressed', slot: 'look_back' })).toBe('queued');
-    expect(t.trackMomentsCard({ action: 'tapped', slot: 'question' })).toBe('queued');
+    for (const n of MOMENTS) expect(sanitizeEvent(n, { slot: 'question', schema_version: SCHEMA_VERSION }).props, n).toBeNull();
+    expect(t.trackMomentsCard({ action: 'impressed', slot: 'look_back' })).toBe('dropped_invalid');
+    expect(t.trackMomentsCard({ action: 'tapped', slot: 'question' })).toBe('dropped_invalid');
+    expect(analytics.queueLength()).toBe(0);
     await analytics.flush();
-    const got = provider.captured();
-    expect(got.map((e) => e.event)).toEqual(['moments_card_impressed', 'moments_card_tapped']);
-    expect(got.map((e) => e.properties.slot)).toEqual(['look_back', 'question']);
-    for (const e of got) expect(Object.keys(e.properties).filter((k) => !['schema_version', 'child_count_bucket', 'sample_pct'].includes(k))).toEqual(['slot']);
+    expect(provider.captured()).toHaveLength(0);
   });
 
-  it('[NS-53-R251-f] the helper refuses a slot outside the closed set at run time', async () => {
-    const { analytics, provider } = await setup(true);
-    const t = createTrackers(analytics);
+  it('[NS-53-R251-f] the helper sends one event per call with the slot and nothing else of its own (checked against the catalogue shape)', async () => {
+    const { analytics } = await setup(true);
+    const { analytics: rec, intents } = intentRecorder(analytics);
+    const t = createTrackers(rec);
+    expect(t.trackMomentsCard({ action: 'impressed', slot: 'look_back' })).toBe('queued');
+    expect(t.trackMomentsCard({ action: 'tapped', slot: 'question' })).toBe('queued');
+    expect(intents).toEqual([
+      ['moments_card_impressed', { slot: 'look_back' }],
+      ['moments_card_tapped', { slot: 'question' }],
+    ]);
+  });
+
+  it('[NS-53-R251-g] the helper refuses a slot outside the closed set at run time', async () => {
+    const { analytics } = await setup(true);
+    const { analytics: rec, intents } = intentRecorder(analytics);
+    const t = createTrackers(rec);
     for (const slot of ['birthday', 'Asha', 'pictures']) t.trackMomentsCard({ action: 'tapped', slot } as never);
     t.trackMomentsCard({ action: 'asked', slot: 'question' } as never);
-    await analytics.flush();
-    expect(provider.captured().map((e) => e.properties.slot)).toEqual(['question']);
+    expect(intents.map(([, p]) => p.slot)).toEqual(['question']);
   });
 });
