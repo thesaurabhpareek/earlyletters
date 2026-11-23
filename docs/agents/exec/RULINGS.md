@@ -1468,3 +1468,11 @@ Silence on 27 Nov 2026 means the status quo text (D-125 item 5). The review date
 - Debate: CLO objected that D-083 kept prices out of app copy so a typed price can never drift. Answer: `displayPrice` is Apple's localized string for that buyer, so nothing is typed and nothing can drift. Route (ii) waits on counsel, who is not yet engaged (W0-13).
 - Door: two-way
 - Revisit when: counsel answers Q8, or the founder says he meant route (ii).
+
+### CCO-20 PR #1463 age gate way back holds outside the 24h window: passes the compliance fence (CCO-review tier) for merge into develop (23 Nov 2026, CCO via Karma's session; not counsel)
+- Verdict: RULED.
+- Ruling: `answeredByMistake` returns at once unless the 24 hours have passed (`windowPassed`). It only narrows when the way back works. It cannot clear a stop or pass the gate. The 18+ gate, the 24-hour closure (D-026; LEGAL-REQ-002; CCO-17, CCO-18) and the stored data are unchanged. No new data, no copy, no promise changes.
+- Evidence: `apps/mobile/src/components/gate/age-gate-screen.tsx:119-131`; `apps/mobile/src/lib/age-gate.logic.ts:35-42`; `apps/mobile/src/lib/age-gate.ts:59`; `apps/mobile/test/age-gate-screen.test.ts:106-120` (source-regex pins: they prove the guard text and order, not runtime behaviour). CCO review at f09bd3e6869751cdc25eeca07591302d1ea11b3a; approval line posted on PR #1463.
+- Way back: revert one line and its two tests.
+- Founder-only: no. Counsel must confirm the 24-hour way back itself (packet Q5, Q45, Q46); not decided here. Exec-team counsel has not read this call; it is a delegated default until counsel confirms.
+- Signed: Chief Compliance Officer (Claude role, not counsel)
