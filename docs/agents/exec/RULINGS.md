@@ -1431,6 +1431,14 @@ Source items not recorded here (see DESIGN-BACKLOG.md section 13): BL-1801, BL-1
 - Revisit when: counsel answers Q45 and Q46 (derived by Karma).
 - Founder-only: no.
 
+### CCO-19 PR #1676 sync_pull and sync_books withhold content without consent: passes the compliance fence (CCO-review tier) for merge into develop (23 Nov 2026, CCO via Karma's session on the founder's explicit go; not counsel)
+- Ruling: PR #1676 passes the compliance fence for merge into `develop`. Checklist read at head 2f8c875b: no new personal data is collected; no user-facing promise changed; no new door path; nothing stores or logs an IP, birth date, age range, name or user content. The closed `sync_books` answer keeps the child's name and each member's `role`, `is_me` and `signs_as`, so the account-deletion screen can tell "stays with the co-parent" from "deleted with the account" (T7-23). Both independent reviews passed it; the security-lens Review B judged that shape acceptable.
+- Why the fence caught it: the diff names `policy_acceptances` and `record_policy_act` only in `supabase/tests/sync_pull_consent.test.mjs`, in the lines that withdraw and re-accept consent. The migration replaces `sync_pull` and `sync_books` and changes neither that table nor that function (read in the merged diff at 29ea7945).
+- Evidence: `supabase/migrations/20261123100000_sync_pull_consent_gate.sql`; `supabase/tests/sync_pull_consent.test.mjs`; `apps/mobile/test/sync-two-phone.test.ts`; `packages/api/src/server/sync.ts`; `supabase/APPLY.md` File 46; reviews at 2f8c875b (both PASS); the CCO comment on the PR.
+- Way back: a new migration that tightens the closed shape (`other_parent_signs_as` plus a contributor count, BL-1920), never an edit of the applied one.
+- Open: counsel has not read this call. It is a delegated default until counsel confirms; BL-1920 asks counsel's reading.
+- Signed: Chief Compliance Officer (Claude role, not counsel)
+
 ### FOUNDER items from this review (not rulings; his under CR-73)
 Silence on 27 Nov 2026 means the status quo text (D-125 item 5). The review dates only that silence rule; the gate date itself is a founder item.
 1. First-run order and the public timing promise, after the BL-1705 reading. Default: steps stay, promise reworded to speaking-time.
