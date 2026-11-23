@@ -1,5 +1,5 @@
 // BL-1572 (NS-01-R54, NS-06-A, NS-16-R1, NS-16-R6 as cited by the row): the server counts a typed name and a signature in code
-// points, and the phone counts graphemes at up to 16 code points each. 20261123200000 raises children.name to 960 and the four
+// points, and the phone counts graphemes at up to 16 code points each. 20261123210000 raises children.name to 960 and the four
 // signs_as columns to 480, so a 30-character Devanagari name is no longer cut. Each limit is tested at the edge (960 accepted,
 // 961 refused; 480 accepted, 481 refused), in code points not bytes, with the refusal value-free (BL-244). children.nickname stays 30.
 // Fictional family "Asha" only; Devanagari is built from code points, never a real name.

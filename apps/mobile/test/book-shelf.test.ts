@@ -61,9 +61,12 @@ describe('Erase now (S39, S63)', () => {
   });
 
   it('[BL-1854] a signed-in build passes the server erase capability, so the button shows; a build that syncs without it still hides it', async () => {
-    const { capabilities, setServerFeaturesForTests } = await import('../src/lib/capabilities');
+    const { capabilities, setBuildFlagForTests, setServerFeaturesForTests } = await import('../src/lib/capabilities');
     try {
       setServerFeaturesForTests(true);
+      expect(capabilities.serverErase).toBe(false); // [BL-1960] the build flag is not on, as in every store profile
+      expect(shelfActions({ sync: capabilities.sync, serverErase: capabilities.serverErase }).eraseNow).toBe(false);
+      setBuildFlagForTests('serverErase', true);
       expect(capabilities.serverErase).toBe(true);
       expect(shelfActions({ sync: capabilities.sync, serverErase: capabilities.serverErase }).eraseNow).toBe(true);
       setServerFeaturesForTests(false);
@@ -72,6 +75,7 @@ describe('Erase now (S39, S63)', () => {
       expect(shelfActions({ sync: true, serverErase: capabilities.serverErase }).eraseNow).toBe(false); // sync without the server erase
     } finally {
       setServerFeaturesForTests(null);
+      setBuildFlagForTests('serverErase', null);
     }
   });
 
