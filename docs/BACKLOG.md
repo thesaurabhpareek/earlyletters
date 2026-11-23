@@ -825,7 +825,7 @@ Built in the design wave (9be06db) and the integration wave (a66376a); mobile-po
 - Needs: production App Store Connect record, `submit.production.ascAppId`, `EXPO_TOKEN`, production signing credentials in EAS, BL-339.
 
 #### BL-438 Release records (new, D-089)
-- Status: partly done (`docs/release/1.0.0.md` is still the 27 and 28 Oct record: its section 0 and section 1 describe an alpha with servers off and it predates D-157 and D-160; PR #1550 only added the SLO pointer; the refresh is filed as BL-1868). Mode: agent. Owner: platform (the release engineer role of D-090 until the `release` agent is on the roster, PR #112).
+- Status: partly done (`docs/release/1.0.0.md` is still the first alpha-era record: its section 0 and section 1 describe an alpha with servers off and it predates D-157 and D-160; PR #1550 only added the SLO pointer; the refresh is filed as BL-1868). Mode: agent. Owner: platform (the release engineer role of D-090 until the `release` agent is on the roster, PR #112).
 - Scope: keep `docs/release/1.0.0.md` current twice a week until release; one record per later version; `apple.copyright` once the founder confirms the holder.
 
 #### BL-439 Release health watch (new, D-090)
@@ -3816,7 +3816,7 @@ How the harness reads this section: a row is eligible when its Status is `ready`
 - Done when: the test passes and #721 is reconciled or superseded.
 
 #### BL-964 Traceability sees the NS ids (gate G0)
-- Status: partly done (PRs #878 and #1060 report the NS P0 rows; PR #1205 merged, 86eccfa09: the NS ratchet is in `scripts/trace.mjs:529-543` and `npm test` runs `node scripts/trace.mjs --no-write`; remains: the CI step that compares against the base branch, which is not in `.github/workflows/ci.yml` (a workflow file, so a physical act), filed as BL-1869, and rule (d), a P0 row dropped from section 7, which waits on founder question 07 Q8). Mode: agent. Owner: qa engineer. Milestone: M15. Size: S.
+- Status: partly done (PRs #878 and #1060 report the NS P0 rows; PR #1205 merged, 86eccfa09: the NS ratchet is in `scripts/trace.mjs:786-797` (`nsOpen`, `nsRatchet`; the gate that runs it is `nsGate` at line 805) and `npm test` runs `node scripts/trace.mjs --no-write`; remains: the CI step that compares against the base branch, which is not in `.github/workflows/ci.yml` (a workflow file, so a physical act), filed as BL-1869, and rule (d), a P0 row dropped from section 7, which waits on founder question 07 Q8). Mode: agent. Owner: qa engineer. Milestone: M15. Size: S.
 - Satisfies: gate G0 (`14-test-plan.md`); council finding F1.
 - Problem: `scripts/trace.mjs` matches only `X-REQ-nnn` and `X-NFR-nnn` under `docs/prd/v2`, so no NS row is traceable. #819 (draft) does part of it.
 - Scope: rework #819 or replace it: read `docs/product/prd/` as a second source, match `NS-nn-Rnn` and the split and lettered forms (`R9a`, `A2b`, `C28-13`, `B8b`), and the cross-cutting ids `X4-R1`, `X6-R1`, `FRAME-SLIP`; a ratchet that fails when a P0 row in `14-test-plan.md` section 7 has no test title found in the code.
@@ -9387,7 +9387,7 @@ Note, not a ruling. The decisions of record for the first store build are D-157 
 - Done when: the scan covers the bar, fails on a planted fixed-size title, and passes on the real file.
 
 #### BL-1861 Device row: VoiceOver and AX5 walk of the letter page, Me and the Book header
-- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
+- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: BL-1859 (all three rows edit `docs/qa/DEVICE_TEST_PLAN.md`, so they land in order: BL-1859, BL-1861, BL-1863).
 - Satisfies: NS-33-R1, NS-33-R2, NS-33-R4. Remainder of BL-928.
 - Scope: add one row to `docs/qa/DEVICE_TEST_PLAN.md` for an iPhone SE 3: the letter page dateline and Me bar title read as headings by the Headings rotor, and the three screens at the largest text size with nothing cut and every control reachable. The run itself is a human's and is not part of this row.
 - Done when: the row is merged with its steps, the phone, and what to record (Asha only).
@@ -9399,7 +9399,7 @@ Note, not a ruling. The decisions of record for the first store build are D-157 
 - Done when: the sheet is merged and names how each number is read and where it is written down.
 
 #### BL-1863 Device row: a second account on one phone, and what sign-out says
-- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
+- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: BL-1861 (same file, `docs/qa/DEVICE_TEST_PLAN.md`; lands after BL-1859 and BL-1861).
 - Satisfies: X4-R1, NS-10-R3. Remainder of BL-961.
 - Scope: add one `DJ-N` row to `docs/qa/DEVICE_TEST_PLAN.md` (the table near line 1310): sign out as Mama, sign in as Papa on the same phone, and see none of Mama's letters, pictures, Find results or reminders; sign back in as Mama and everything is there. The sign-out line itself is BL-965's PROPOSED key.
 - Done when: the row is merged and cites `[X4-R1]`.
@@ -9417,7 +9417,7 @@ Note, not a ruling. The decisions of record for the first store build are D-157 
 - Done when: that test exists, fails without the line, and the content rules test passes.
 
 #### BL-1866 Does `sync_pull` serve rows while consent is outstanding? Answer it and pin it
-- Status: ready. Mode: agent. Owner: sync owner. Milestone: M15. Size: S. Depends on: none. Security lens: yes (`supabase/tests`, access rules).
+- Status: ready. Mode: agent. Owner: sync owner (co-owner: data architect, for the `supabase/tests` file). Milestone: M15. Size: S. Depends on: none. Security lens: yes (`supabase/tests`, access rules).
 - Satisfies: FR-PRV-20. Remainder of BL-978.
 - Scope: read the current `sync_pull` in `supabase/migrations` and write the answer on the BL-978 card; add `[FR-PRV-20] sync_pull returns no content rows without current consent` to `supabase/tests` if it is missing (no match today). If the answer is that it does serve rows, stop and report it as a finding to data architect; do not edit an applied migration.
 - Done when: the answer is written and the test fails on a version that serves rows.
@@ -9437,41 +9437,41 @@ Note, not a ruling. The decisions of record for the first store build are D-157 
 #### BL-1869 Apply the trace ratchet step to CI
 - Status: blocked (applying a workflow file is a physical act, listed in `docs/release/FOUNDER_QUEUE.md` when it arrives; the step is written in `docs/ops/proposed/trace-ns-ratchet.md`; the plain `--check` question in it is open with founder question 07 Q8). Mode: human. Owner: platform. Milestone: M15. Size: XS. Depends on: none.
 - Satisfies: gate G0 (BL-964). Remainder of BL-964.
-- Scope: paste the proposed step into the `unit` job of `.github/workflows/ci.yml`; no secret is involved.
+- Scope: the proposed CI step in `docs/ops/proposed/trace-ns-ratchet.md` is written into the `unit` job of `.github/workflows/ci.yml` by Karma's commit (a GitHub write under CR-176 item 5). Only if the session proxy refuses a workflow-file write does it become the account holder's own edit of that file in the GitHub web editor, and then Karma adds the line to `docs/release/FOUNDER_QUEUE.md`. No secret is involved.
 - Done when: a pull request that drops an NS P0 test title fails the step.
 
 #### BL-1870 Demo account and the App Review notes entry
 - Status: ready (physical act). Mode: human. Owner: platform. Milestone: M12. Size: S. Depends on: none.
 - Satisfies: BL-341; D-157 (sign-in required, so a reviewer needs an account).
-- Scope: create the demo account on the production project seeded with the fictional family Asha, and enter the notes from `packages/content/src/release/app-review.en.ts` in App Store Connect. The login stays in the vendor console and is never written in the repo, an issue or a chat. Listed in `docs/release/FOUNDER_QUEUE.md`.
+- Scope: create the demo account on the production project seeded with the fictional family Asha, and enter the notes from `packages/content/src/release/app-review.en.ts` in App Store Connect. The login stays in the vendor console and is never written in the repo, an issue or a chat. Listed in `docs/release/FOUNDER_QUEUE.md`: see the session sheet row 3 (Apple consoles; the review notes and reviewer sign-in).
 - Done when: the notes entry is saved and a fresh install signs in with the demo account and reaches Asha's book.
 
 #### BL-1871 Cut the release: the release PR into main, then the release branch
 - Status: blocked (waits on the cut rows of plan 17 section 3a: BL-925, BL-926, BL-977, BL-1446, BL-922, BL-978, BL-958 and the NS-32 and NS-33 rows merged). Mode: human. Owner: platform. Milestone: M12. Size: XS. Depends on: none.
 - Satisfies: ADR 0022; `docs/product/prd/17-engineering-project-plan.md` section 3a (release path). No row existed for this; PR #830 (the earlier snapshot into main) closed unmerged.
-- Scope: open the release PR from `develop` into `main` and cut `release/1.0` from `main` (`docs/ops/RELEASE.md`); agents never push or merge to `main`. A GitHub write under CR-176 item 5 that Karma makes; it is a queue row only if the session proxy refuses it.
+- Scope: open the release PR from `develop` into `main` and cut `release/1.0` from `main` (`docs/ops/RELEASE.md`); agents never push or merge to `main`. A GitHub write under CR-176 item 5 that Karma makes; it is a queue row only if the session proxy refuses it. It is the step before `docs/release/FOUNDER_QUEUE.md` session sheet rows 5 and 7 (gates G2 and G3 there): see the session sheet rows 5 and 7.
 - Done when: `release/1.0` exists and its head is the commit the RC will be built from.
 
 #### BL-1872 Tag the first release candidate
 - Status: blocked (BL-1871). Mode: human. Owner: platform. Milestone: M12. Size: XS. Depends on: BL-1871.
 - Satisfies: ADR 0022; BL-437 (the workflow); BL-1480 (an RC tag needs a green launch of the same commit).
-- Scope: push `ios-v1.0.0-rc.1` on the `release/1.0` head, after the launch run of that exact commit is green; approve the `app-store` environment so the build starts (the testflight runs that waited took hours, so do it in the same sitting). Tags never move.
+- Scope: push `ios-v1.0.0-rc.1` on the `release/1.0` head, after the launch run of that exact commit is green. The tag run then waits at the `app-store` deployment: on the account holder's own console, click Review deployments, then Approve, on the `app-store` deployment (the testflight runs that waited took hours, so do it in the same sitting). Tags never move. See `docs/release/FOUNDER_QUEUE.md`, the session sheet row 7.
 - Done when: the tag run built and uploaded the candidate to TestFlight.
 
 #### BL-1873 Re-run the hosted deploy and apply the pending migrations
 - Status: ready (physical act; under the servers-off reading it gates the first outside family, not the cut). Mode: human. Owner: platform. Milestone: M12. Size: S. Depends on: none.
 - Satisfies: D-157; D-041 (hosted migrations are a person's act); `docs/product/prd/17-engineering-project-plan.md` section 3a ("F4" and the deploy step).
-- Scope: fix the production database connection secret in the vendor console, re-run the deploy workflow (dry run first), approve it at the Environment reviewer step, and apply what `supabase/APPLY.md` lists as pending, including the BL-525 migration (PR #1638) and the signed content pack republish. `docs/release/FOUNDER_QUEUE.md` already lists the apply, the approval and the republish. No secret is written anywhere.
+- Scope: fix the production database connection secret in the vendor console, re-run the deploy workflow (dry run first); the run then waits at its Environment deployment, and on the account holder's own console the act is Review deployments, then Approve, on the `db-production` deployment. Then apply what `supabase/APPLY.md` lists as pending, including the BL-525 migration (PR #1638) and the signed content pack republish. `docs/release/FOUNDER_QUEUE.md` already lists these: see the session sheet rows 1 (staging apply), 2 (republish), 4 (the connection secret) and 5 (production apply). No secret is written anywhere.
 - Done when: `supabase/APPLY.md` and `.github/migrations-applied.txt` match the hosted project.
 
 #### BL-1874 Run the device sheet on the release candidate
 - Status: blocked (BL-1872). Mode: human. Owner: qa engineer. Milestone: M12. Size: L. Depends on: BL-1872.
 - Satisfies: the P0 device rows of `docs/qa/DEVICE_TEST_PLAN.md`; BL-1862 (the small-phone sheet); gate G4.
-- Scope: P0 rows first, on the phones that are to hand, against the TestFlight candidate; record in `docs/qa/evidence/` (Asha only). A failed row is filed as a fix row and the affected rows re-run on the next candidate.
+- Scope: P0 rows first, on the phones that are to hand, against the TestFlight candidate; record in `docs/qa/evidence/` (Asha only). See `docs/release/FOUNDER_QUEUE.md`, the session sheet row 9. A failed row is filed as a fix row and the affected rows re-run on the next candidate.
 - Done when: every P0 row has a recorded result for the candidate.
 
 #### BL-1875 Submit the build to App Review
 - Status: blocked (BL-340, BL-1870, BL-1874). Mode: human. Owner: platform. Milestone: M12. Size: XS. Depends on: BL-340, BL-1870, BL-1874.
 - Satisfies: D-158 (released automatically on approval); `docs/release/1.0.0.md` section 5.
-- Scope: attach the candidate in App Store Connect, confirm the listing, label answers and review notes match the repo (BL-440, BL-341), and submit. One-way; do it last and alone.
+- Scope: attach the candidate in App Store Connect, confirm the listing, label answers and review notes match the repo (BL-440, BL-341), and submit. One-way; do it last and alone. See `docs/release/FOUNDER_QUEUE.md`, the session sheet row 9 (the submit step) and row 8 (screenshots and the build on the record).
 - Done when: the submission shows Waiting for Review.
