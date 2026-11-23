@@ -87,7 +87,7 @@ describe('server features switch: off unless a build says on', () => {
   it('the override is for tests only, and goes back to the build value', () => {
     setServerFeaturesForTests(true);
     // Analytics, English only and the two build flags have their own switches: server features on does not turn them on.
-    expect(capabilities).toEqual({ signIn: true, sync: true, serverErase: true, coParent: true, backup: false, statusReport: false, accountDeletion: false, analytics: false, englishOnly: false });
+    expect(capabilities).toEqual({ signIn: true, sync: true, serverErase: false, coParent: true, backup: false, statusReport: false, accountDeletion: false, analytics: false, englishOnly: false });
     setServerFeaturesForTests(null);
     expect(serverFeaturesEnabled()).toBe(false);
     const saved = process.env.VITEST;
@@ -101,11 +101,48 @@ describe('server features switch: off unless a build says on', () => {
   });
 });
 
+describe('[BL-1960] Erase now on a signed-in phone is held by its own build flag', () => {
+  afterEach(() => {
+    setServerFeaturesForTests(null);
+    setBuildFlagForTests('serverErase', null);
+  });
+
+  it('is off with the server switch on and the flag unset, which is every store profile', () => {
+    setServerFeaturesForTests(true);
+    expect(process.env.EXPO_PUBLIC_SERVER_ERASE ?? '').not.toBe('on');
+    expect(capabilities.sync).toBe(true);
+    expect(capabilities.serverErase).toBe(false);
+  });
+
+  it('is on only with the switch and the flag both on; the flag alone never turns it on', () => {
+    setBuildFlagForTests('serverErase', true);
+    setServerFeaturesForTests(false);
+    expect(capabilities.serverErase).toBe(false);
+    setServerFeaturesForTests(true);
+    expect(capabilities.serverErase).toBe(true);
+  });
+
+  it('turning it on does not turn on backup, the status report or Delete account', () => {
+    setServerFeaturesForTests(true);
+    setBuildFlagForTests('serverErase', true);
+    expect([capabilities.backup, capabilities.statusReport, capabilities.accountDeletion]).toEqual([false, false, false]);
+  });
+
+  it('no store profile in eas.json writes it on, and the profile reading is the real one', () => {
+    const eas = JSON.parse(readFileSync(join(APP, 'eas.json'), 'utf8')) as { build: Record<string, { env?: Record<string, string> }> };
+    for (const [name, p] of Object.entries(eas.build)) {
+      if (['preview', 'testflight', 'production'].includes(name)) {
+        expect(String(p.env?.EXPO_PUBLIC_SERVER_ERASE ?? 'off').trim().toLowerCase(), name).toBe('off');
+      }
+    }
+  });
+});
+
 describe('[F19-REQ-025] build flags backup and statusReport: off unless the build says on, and only with the server switch', () => {
   const FLAGS: BuildFlag[] = ['backup', 'statusReport'];
   // accountDeletion is a build flag too but not one of these two: it is written `on` (not `off`) where it is wanted, and left out
   // of the alpha profiles. Its own file pins it (account-deletion-switch.test.ts).
-  const VARIABLE: Record<BuildFlag, string> = { backup: 'EXPO_PUBLIC_BACKUP', statusReport: 'EXPO_PUBLIC_STATUS_REPORT', accountDeletion: 'EXPO_PUBLIC_ACCOUNT_DELETION' };
+  const VARIABLE: Record<BuildFlag, string> = { backup: 'EXPO_PUBLIC_BACKUP', statusReport: 'EXPO_PUBLIC_STATUS_REPORT', accountDeletion: 'EXPO_PUBLIC_ACCOUNT_DELETION', serverErase: 'EXPO_PUBLIC_SERVER_ERASE' };
   afterEach(() => {
     setServerFeaturesForTests(null);
     for (const f of FLAGS) setBuildFlagForTests(f, null);
@@ -240,7 +277,7 @@ describe('[D-111 item 4, D-121] English only: on in the alpha profiles and the s
     expect(code).not.toMatch(/process\.env\s*\[/);
     expect(code).not.toMatch(/\{[^}]*\}\s*=\s*process\.env\b/);
     const reads = [...code.matchAll(/process\.env\.([A-Za-z0-9_]+)/g)].map((m) => m[1]);
-    expect(reads.sort()).toEqual(['EXPO_PUBLIC_ACCOUNT_DELETION', 'EXPO_PUBLIC_ANALYTICS', 'EXPO_PUBLIC_BACKUP', 'EXPO_PUBLIC_ENGLISH_ONLY', 'EXPO_PUBLIC_SERVER_FEATURES', 'EXPO_PUBLIC_SPOKEN_LANGUAGES', 'EXPO_PUBLIC_STATUS_REPORT']);
+    expect(reads.sort()).toEqual(['EXPO_PUBLIC_ACCOUNT_DELETION', 'EXPO_PUBLIC_ANALYTICS', 'EXPO_PUBLIC_BACKUP', 'EXPO_PUBLIC_ENGLISH_ONLY', 'EXPO_PUBLIC_SERVER_ERASE', 'EXPO_PUBLIC_SERVER_FEATURES', 'EXPO_PUBLIC_SPOKEN_LANGUAGES', 'EXPO_PUBLIC_STATUS_REPORT']);
     expect(code).toMatch(/const SPOKEN_LANGUAGES_BUILD_VALUE: readonly string\[\] \| null = parseLanguageList\(process\.env\.EXPO_PUBLIC_SPOKEN_LANGUAGES\);/);
     expect(code.match(/process\.env\.EXPO_PUBLIC_SPOKEN_LANGUAGES/g)?.length).toBe(1);
     expect(code).toMatch(/const ENGLISH_ONLY_BUILD_VALUE: boolean = parseServerFeatures\(process\.env\.EXPO_PUBLIC_ENGLISH_ONLY\);/);

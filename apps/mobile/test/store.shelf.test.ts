@@ -18,7 +18,7 @@ vi.mock('../src/lib/db/repos/open-native', () => ({
 
 import type { AudioEraser } from '../src/lib/store';
 const store = await import('../src/lib/store');
-const { setServerFeaturesForTests } = await import('../src/lib/capabilities');
+const { setServerFeaturesForTests, setBuildFlagForTests } = await import('../src/lib/capabilities');
 const require_shelf = () => shelfLogic;
 const require_caps = () => capsMod;
 const shelfLogic = await import('../src/components/book/shelf.logic');
@@ -56,6 +56,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   setServerFeaturesForTests(null);
+  setBuildFlagForTests('serverErase', null);
   store.closeStore();
   close();
 });
@@ -296,6 +297,7 @@ describe('the 30 day purge', () => {
   it('[BL-1854] a signed-in phone Erase now: the shelf offers it with the server capability, and one id-only entry.erase is queued, with the rest of the book untouched', () => {
     const { shelfActions } = require_shelf();
     setServerFeaturesForTests(true);
+    setBuildFlagForTests('serverErase', true); // BL-1960: held from store profiles, on in a test build
     const { capabilities } = require_caps();
     expect(shelfActions({ sync: capabilities.sync, serverErase: capabilities.serverErase }).eraseNow).toBe(true);
     const db = store.localSqlDb();
