@@ -22,7 +22,7 @@ import { MAMA, mockServer, type MockServer } from './support/mock-server';
 
 const ON = () => process.env.E2E_WEB_ON_URL!;
 const EMAIL = 'mama@example.invalid';
-const PRIVACY = 'You choose who else can read your letters. We never sell them and never use them for ads.';
+const PRIVACY = 'Your letters are yours. We never sell them and never use them for ads.';
 const SAFE = 'Your letters are still on this phone.';
 const BODY = 'The words of your letters come with you to a new phone. Recordings are kept on the phone that made them.';
 const TOKEN = 'q8Zr0_Yc-3Jk9LmN2pQ4sT6vW8xZ1aB3cD5eF7gH9iJ';
@@ -257,7 +257,7 @@ test('[J22d] account setup: Terms, then sensitive data declined at the same size
   await signInWithEmail(app);
   await expect(app.getByRole('heading', { name: 'Before your book syncs' })).toBeVisible({ timeout: 15_000 });
   await expect(
-    app.getByText('Your letters stay private to you and the family you invite. We never sell them, use them for ads or use them to train machine learning models.'),
+    app.getByText('Your letters stay yours. We never sell them, use them for ads or use them to train machine learning models.'),
   ).toBeVisible();
   await expect(app.getByText('By continuing, you confirm you are 18 or older and agree to the Terms of Service and Privacy Policy.')).toBeVisible();
   for (const doc of ['Terms of Service', 'Privacy Policy']) await expect(app.getByRole('link', { name: doc, exact: true })).toBeVisible();
@@ -270,8 +270,8 @@ test('[J22d] account setup: Terms, then sensitive data declined at the same size
   const keep = await btn(app, 'Keep on this phone').boundingBox();
   expect(keep!.width).toBeCloseTo(agree!.width, 0);
   expect(keep!.height).toBeCloseTo(agree!.height, 0);
-  await expect(app.getByText('If you keep it on this phone, syncing and sharing stay off.')).toBeVisible();
-  await expect(app.getByText('You can turn them on later in Settings, Account.')).toBeVisible();
+  await expect(app.getByText('If you keep it on this phone, syncing stays off.')).toBeVisible();
+  await expect(app.getByText('You can turn syncing on later in Settings, Account.')).toBeVisible();
   await step('happy', 'Sensitive data', 'Every registered line, then "Agree and sync" and "Keep on this phone" at the same height and width: a no as easy as a yes (LEGAL-REQ-006).');
 
   await btn(app, 'Keep on this phone').click();
@@ -285,7 +285,7 @@ test('[J22d] account setup: Terms, then sensitive data declined at the same size
   await step('happy', 'Kept on this phone, still signed in', 'The decline is recorded and the person stays signed in with sync off; Account offers "Agree and sync" for later. Nothing synced.');
 
   await app.getByText('Agree and sync').click();
-  await expect(app.getByText('If you keep it on this phone, syncing and sharing stay off.').last()).toBeVisible();
+  await expect(app.getByText('If you keep it on this phone, syncing stays off.').last()).toBeVisible();
   await expect(app.getByText(/^Letters can hold private things, like health details about you or Asha\./).last()).toBeVisible();
   await expect(btn(app, 'Keep on this phone')).toBeVisible();
   expect(acts(), 'opening the step records nothing').toEqual(['terms:accept', 'sensitive-data:decline']);
@@ -535,6 +535,6 @@ test('[J22i] the invite sheet\'s gate says why in its own words, and nothing abo
   await btn(app, 'Agree and continue').click();
   await btn(app, 'Keep on this phone').click();
   await expect(btn(app, 'Agree and sync')).toBeVisible({ timeout: 15_000 });
-  await expect(app.getByText('If you keep it on this phone, syncing and sharing stay off.')).toHaveCount(0);
+  await expect(app.getByText('If you keep it on this phone, syncing stays off.')).toHaveCount(0);
   await step('unhappy', 'Invite, after a decline', 'Nothing above "Agree and sync": the decline was the person\'s own choice, and the step it opens shows every registered line before anything is recorded.');
 });
