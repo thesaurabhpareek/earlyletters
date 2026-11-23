@@ -64,6 +64,9 @@ export const CONTROL = oneOf(
 /** The few surfaces whose impressions we count because we will change them. */
 export const SURFACE = oneOf('tonight_prompt', 'keep_sheet', 'reminder_card', 'invite_card');
 
+/** Which Moments place a card is in (NS-53 R251). Position, never source: a card dated by the child, a typed day or the library has no event. */
+export const MOMENTS_SLOT = oneOf('look_back', 'question');
+
 /** The five timed steps. */
 export const PERF_METRIC = oneOf('cold_start', 'speak_to_mic', 'save_commit', 'book_first_render', 'transcription_ready');
 
@@ -337,6 +340,24 @@ export const REGISTRY = {
     level: 'L2',
     props: { surface: SURFACE, route: ROUTE, rank: opt(int(1, 9)) },
   },
+  moments_card_impressed: {
+    stage: 'return',
+    decision: "Whether families see the question and look-back cards on Moments, so we decide which of the two places earns its spot.",
+    area: 'moments',
+    when: 'A card in the question or look-back slot is drawn on the Moments tab (at most once per slot per local day). Cards dated by the child, a typed day, a tick or the library never send',
+    reqs: ['PRD-REQ-016', 'NS-53-R251'],
+    level: 'L2',
+    props: { slot: MOMENTS_SLOT },
+  },
+  moments_card_tapped: {
+    stage: 'return',
+    decision: "Whether a Moments card makes a family start a letter, so we decide if the question or look-back card stays on that tab.",
+    area: 'moments',
+    when: 'A card in the question or look-back slot is tapped. Says nothing about where the letter that follows began',
+    reqs: ['PRD-REQ-016', 'NS-53-R251'],
+    level: 'L2',
+    props: { slot: MOMENTS_SLOT },
+  },
   perf_measured: {
     stage: 'basics',
     decision: 'Whether the app feels fast on real phones, so we decide which slow step to fix before adding features.',
@@ -376,6 +397,8 @@ export const EV = {
   controlTapped: 'control_tapped',
   surfaceImpressed: 'surface_impressed',
   perfMeasured: 'perf_measured',
+  momentsCardImpressed: 'moments_card_impressed',
+  momentsCardTapped: 'moments_card_tapped',
 } as const satisfies Record<string, RegistryName>;
 
 /** Property names, as constants. The only way call sites name a property. Includes the three global properties the client adds. */
@@ -426,6 +449,7 @@ export const PROP = {
   schemaVersion: 'schema_version',
   shared: 'shared',
   signedIn: 'signed_in',
+  slot: 'slot',
   source: 'source',
   stage: 'stage',
   surface: 'surface',
