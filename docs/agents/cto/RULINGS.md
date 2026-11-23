@@ -1103,6 +1103,18 @@ Founder standing approval and hard limits are quoted in the Batch 6 section of `
 - Revisit when: a physical act is missed because it sat in a place other than the queue file; or the machine account (CR-20) exists and the fence can check identity.
 - Founder-only: no. Physical acts only, per item 6.
 
+### CR-177 BL-1854 may merge to develop but stays out of every store candidate and TestFlight build until BL-1805 wording is cleared (23 Nov 2026, Karma)
+- Question: BL-1854 shows Erase now on a signed-in phone, which makes the "for good" line reachable there. May it ship in a build before BL-1805 clears that wording?
+- Tier and type: T1; clear.
+- Options considered: (a) hold BL-1854 from `develop` until BL-1805 clears; (b) merge it to `develop` and hold it from builds; (c) ship both together.
+- Ruling: (b). BL-1854 may be built and merged to `develop`. No store candidate or TestFlight build carries it until BL-1805's wording is cleared. This is a release hold, not a dependency: BL-1805 depends on BL-1854, never the reverse. The row carries the held-from-store-build marker (no such label exists yet) until the product agent removes it. D-169 item 5 (22 Nov 2026) confirms the hold.
+- Why: CLO-22 holds "for good" out of new builds, and once Erase now shows on a signed-in phone that line is reachable there. Counsel Q51 confirms.
+- Evidence: PR #1659 (BL-1853 to BL-1858 filed with the evidence findings); `docs/BACKLOG.md` BL-1854 and BL-1805; `docs/agents/exec/RULINGS.md` CLO-22.
+- Door: two-way. Way back: lift the marker in BL-1854 once BL-1805 is cleared.
+- Revisit when: BL-1805 wording is cleared or counsel answers Q51.
+- Founder-only: no.
+- Signed: Karma
+
 ### CR-178 Production ready from now on (23 Nov 2026, Karma, on the founder's words)
 - Status: in effect from the merge of this PR. D-170 records the founder's words: "Server on. We build everything production ready now onwards. Analytics on. Server on. Account creation on. Everything."
 - Question: what does "done" mean for new work now that servers, accounts and analytics are on?
@@ -1111,7 +1123,7 @@ Founder standing approval and hard limits are quoted in the Batch 6 section of `
   - 2. An unreviewed sentence of parent-read copy is never built as live copy: it is PROPOSED and held until the gate clears. A PR marked HOLD-FOR-COUNSEL stays held, and legal text still publishes only after counsel has seen it.
   - 3. Tests, trace rows, accessibility and the device rows are part of done, not a follow-up. A kill switch or remote pause that fails open is allowed as an operating tool; it is not the shipping default.
   - 4. The example to follow is PR #1672 (the Book backup line, flag `EXPO_PUBLIC_BACKUP_LINE`; gate: counsel reads the line, row 10 of the table in `docs/content/words-packet-20nov.md` at line 46, key `en.book.newPhoneLine.body`, packet Q43: "Until counsel reads it, only `arrivedPlain` ships"). Any other PROPOSED key introduced earlier behind a flag is reviewed one by one against items 1 and 2: it meets all three conditions, or it ships on because its words are cleared, or it is removed.
-  - 4a. Analytics under this rule: the module and allowlist are on in `preview` and `testflight` (with a tester disclosure line) and on in `production` only when D-163's production gate clears. The flag `EXPO_PUBLIC_ANALYTICS` meets item 1 through BL-1886 (gate and owner named), stays in `scripts/release/store-flags.mjs` with production out of `allowedOn`, and the row that flips it on and deletes the flag is in the launch set.
+  - 4a. Analytics under this rule: the module and allowlist go on in `preview` and `testflight` only after the tester disclosure is written, shown and the tester docs are updated (BL-1887; the testflight servers switch waits on the same update), and on in `production` only when D-163's production gate clears. The flag `EXPO_PUBLIC_ANALYTICS` meets item 1 through BL-1886 (gate and owner named), stays in `scripts/release/store-flags.mjs` with production out of `allowedOn`, and the row that flips it on and deletes the flag is in the launch set.
   - 5. Unchanged: the constitution and the privacy rules in `CLAUDE.md` (the content ban and the allowlist stay; the analytics consent default stays open exactly as D-163 left it, and D-170 decides none of D-163's open items); the age and region checks (18 and over, blocked countries: migration `20261121030000_compliance_gates.sql`, `supabase/tests/compliance_gates.test.mjs`, `apps/mobile/src/lib/age-gate.ts`, `compliance/`, BL-553, whose refusal screen is not built yet) are built and verified before public sign-up, and the deletion drill is a precondition for any outside sign-in; secrets, vendor consoles, hosted migrations and store submission stay physical acts in `docs/release/FOUNDER_QUEUE.md`.
 - What this does not change: CR-176 (nobody is asked to approve, review, merge or paste), the CR-70 gates, CR-27 fences.
 - Door: two-way. Way back: a later founder entry in `docs/DECISIONS.md`.
