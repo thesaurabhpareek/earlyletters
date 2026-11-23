@@ -2322,25 +2322,25 @@ site.en.ts#v1_1.faqGrandparents.a,site,website,packages/content/src/site.en.ts,1
 site.en.ts#v1_1.gift.title,site,website,packages/content/src/site.en.ts,142,en,A gift from the grandparents,28,,,,,,cmo,live on develop,content
 site.en.ts#v1_1.gift.body,site,website,packages/content/src/site.en.ts,143,en,"Give ${brand.name} to a new family and add the first letter yourself. Tell {child} about the day you heard the news, or the lullaby you once sang to {child}'s parent, long ago. It is a gift that keeps growing, one letter at a time.",231,,,,,,cmo,live on develop,content
 site.en.ts#v1_1.gift.cta,site,website,packages/content/src/site.en.ts,144,en,Give ${brand.name},18,,,,,,cmo,live on develop,content
-store.en.ts#screenshots.0.caption,store,store listing,packages/content/src/store.en.ts,34,en,Tell your child about today.,28,,,,,,cmo,live on develop,content
-store.en.ts#screenshots.0.subline,store,store listing,packages/content/src/store.en.ts,34,en,A minute is plenty. It becomes a letter.,40,,,,,,cmo,live on develop,content
-store.en.ts#screenshots.1.caption,store,store listing,packages/content/src/store.en.ts,35,en,Every change is marked.,23,,,,,,cmo,live on develop,content
-store.en.ts#screenshots.1.subline,store,store listing,packages/content/src/store.en.ts,35,en,We only fix small slips. Tap one to put it back.,48,,,,,,cmo,live on develop,content
-store.en.ts#screenshots.2.caption,store,store listing,packages/content/src/store.en.ts,36,en,Your voice stays with each letter.,34,,,,,,cmo,live on develop,content
-store.en.ts#screenshots.2.subline,store,store listing,packages/content/src/store.en.ts,36,en,The original recording is kept unchanged.,41,,,,,,cmo,live on develop,content
-store.en.ts#screenshots.3.caption,store,store listing,packages/content/src/store.en.ts,37,en,A book that grows by month.,27,,,,,,cmo,live on develop,content
-store.en.ts#screenshots.3.subline,store,store listing,packages/content/src/store.en.ts,37,en,Each letter goes into your child's month of age.,48,,,,,,cmo,live on develop,content
-store.en.ts#screenshots.4.caption,store,store listing,packages/content/src/store.en.ts,38,en,Read together at bedtime.,25,,,,,,cmo,live on develop,content
-store.en.ts#screenshots.4.subline,store,store listing,packages/content/src/store.en.ts,38,en,"One letter at a time, oldest first.",35,,,,,,cmo,live on develop,content
-store.en.ts#screenshots.5.caption,store,store listing,packages/content/src/store.en.ts,39,en,Your book is private.,21,,,,,,cmo,live on develop,content
-store.en.ts#screenshots.5.subline,store,store listing,packages/content/src/store.en.ts,39,en,"Private by default. Never sold, never used for ads.",51,,,,,,cmo,live on develop,content
-store.en.ts#screenshots.6.caption,store,store listing,packages/content/src/store.en.ts,40,en,Quiet days are fine.,20,,,,,,cmo,live on develop,content
-store.en.ts#screenshots.6.subline,store,store listing,packages/content/src/store.en.ts,40,en,Tap Not much today. That is enough.,35,,,,,,cmo,live on develop,content
-store.en.ts#screenshots.7.caption,store,store listing,packages/content/src/store.en.ts,41,en,"Pause, laugh, start again.",26,,,,,,cmo,live on develop,content
-store.en.ts#screenshots.7.subline,store,store listing,packages/content/src/store.en.ts,41,en,Take your time. Say it however it comes.,40,,,,,,cmo,live on develop,content
-store.en.ts#storeListing.promotionalText,store,store listing,packages/content/src/store.en.ts,48,en,"Tell your child about today in a minute. It stays in your words. Every change is marked, and your original recording is kept unchanged.",135,protected,D-133 public promise line,,,,cmo,live on develop,content
-store.en.ts#storeListing.keywords,store,store listing,packages/content/src/store.en.ts,50,en,"diary,keepsake,memory,book,voice,newborn,toddler,child,parenting,audio,recorder,bedtime,mom,dad,mama",100,,,,,,cmo,live on develop,content
-store.en.ts#storeListing.description,store,store listing,packages/content/src/store.en.ts,51,en,"${brand.name}: letters to your child, in your own words and voice.
+store.en.ts#screenshots.0.caption,store,store listing,packages/content/src/store.en.ts,36,en,Tell your child about today.,28,,,,,,cmo,live on develop,content
+store.en.ts#screenshots.0.subline,store,store listing,packages/content/src/store.en.ts,36,en,A minute is plenty. It becomes a letter.,40,,,,,,cmo,live on develop,content
+store.en.ts#screenshots.1.caption,store,store listing,packages/content/src/store.en.ts,37,en,Every change is marked.,23,,,,,,cmo,live on develop,content
+store.en.ts#screenshots.1.subline,store,store listing,packages/content/src/store.en.ts,37,en,We only fix small slips. Tap one to put it back.,48,,,,,,cmo,live on develop,content
+store.en.ts#screenshots.2.caption,store,store listing,packages/content/src/store.en.ts,38,en,Your voice stays with each letter.,34,,,,,,cmo,live on develop,content
+store.en.ts#screenshots.2.subline,store,store listing,packages/content/src/store.en.ts,38,en,The original recording is kept unchanged.,41,,,,,,cmo,live on develop,content
+store.en.ts#screenshots.3.caption,store,store listing,packages/content/src/store.en.ts,39,en,A book that grows by month.,27,,,,,,cmo,live on develop,content
+store.en.ts#screenshots.3.subline,store,store listing,packages/content/src/store.en.ts,39,en,Each letter goes into your child's month of age.,48,,,,,,cmo,live on develop,content
+store.en.ts#screenshots.4.caption,store,store listing,packages/content/src/store.en.ts,40,en,Read together at bedtime.,25,,,,,,cmo,live on develop,content
+store.en.ts#screenshots.4.subline,store,store listing,packages/content/src/store.en.ts,40,en,"One letter at a time, oldest first.",35,,,,,,cmo,live on develop,content
+store.en.ts#screenshots.5.caption,store,store listing,packages/content/src/store.en.ts,41,en,Your book is private.,21,,,,,,cmo,live on develop,content
+store.en.ts#screenshots.5.subline,store,store listing,packages/content/src/store.en.ts,41,en,"Private by default. Never sold, never used for ads.",51,,,,,,cmo,live on develop,content
+store.en.ts#screenshots.6.caption,store,store listing,packages/content/src/store.en.ts,42,en,Quiet days are fine.,20,,,,,,cmo,live on develop,content
+store.en.ts#screenshots.6.subline,store,store listing,packages/content/src/store.en.ts,42,en,Tap Not much today. That is enough.,35,,,,,,cmo,live on develop,content
+store.en.ts#screenshots.7.caption,store,store listing,packages/content/src/store.en.ts,43,en,"Pause, laugh, start again.",26,,,,,,cmo,live on develop,content
+store.en.ts#screenshots.7.subline,store,store listing,packages/content/src/store.en.ts,43,en,Take your time. Say it however it comes.,40,,,,,,cmo,live on develop,content
+store.en.ts#storeListing.promotionalText,store,store listing,packages/content/src/store.en.ts,50,en,"Tell your child about today in a minute. It stays in your words. Every change is marked, and your original recording is kept unchanged.",135,protected,D-133 public promise line,,,,cmo,live on develop,content
+store.en.ts#storeListing.keywords,store,store listing,packages/content/src/store.en.ts,52,en,"diary,keepsake,memory,book,voice,newborn,toddler,child,parenting,audio,recorder,bedtime,mom,dad,mama",100,,,,,,cmo,live on develop,content
+store.en.ts#storeListing.description,store,store listing,packages/content/src/store.en.ts,53,en,"${brand.name}: letters to your child, in your own words and voice.
 
 Tell your child one thing about today. The first laugh, the long night, the song you made up in the car. It becomes a letter in your own words, with your voice kept beside it.
 
@@ -2385,10 +2385,10 @@ For parents of babies and young children, from the first weeks to the first year
 
 Terms of Use: ${brand.web.terms}
 Privacy Policy: ${brand.web.privacy}",3239,,,,,,cmo,live on develop,content
-store.en.ts#storeListing.supportUrl,store,store listing,packages/content/src/store.en.ts,97,en,${brand.web.origin}/support,27,,,,,,cmo,live on develop,content
-store.en.ts#storeListing.reviewNotes,store,store listing,packages/content/src/store.en.ts,108,en,"A family memory journal: parents speak or type short letters to their child. The app never rewrites what a person says. It makes only small marked fixes to the transcript (stray sounds, repeated words, a misheard name from the family's own word list, punctuation), and each fix can be put back. Version 1.0 keeps everything on the phone: there is no account to create and no server copy of letters. The birthday or due date a parent enters is used to file letters by month of age. This is not a health or medical service and gives no health advice.",548,build-dependent,build-dependent: true for servers off only,,,,cmo,live on develop,content
-store.en.ts#storeListing.primaryCategory,store,store listing,packages/content/src/store.en.ts,110,en,Lifestyle,9,,,,,,cmo,live on develop,content
-store.en.ts#storeListing.whatsNewV1,store,store listing,packages/content/src/store.en.ts,112,en,"This is the first version of ${brand.name}. Talk or type a letter to your child, keep your voice with it, read together at bedtime, and export your book any time.",162,,,,,,cmo,live on develop,content
+store.en.ts#storeListing.supportUrl,store,store listing,packages/content/src/store.en.ts,99,en,${brand.web.origin}/support,27,,,,,,cmo,live on develop,content
+store.en.ts#storeListing.reviewNotes,store,store listing,packages/content/src/store.en.ts,110,en,"A family memory journal: parents speak or type short letters to their child. The app never rewrites what a person says. It makes only small marked fixes to the transcript (stray sounds, repeated words, a misheard name from the family's own word list, punctuation), and each fix can be put back. Version 1.0 keeps everything on the phone: there is no account to create and no server copy of letters. The birthday or due date a parent enters is used to file letters by month of age. This is not a health or medical service and gives no health advice.",548,build-dependent,build-dependent: true for servers off only,,,,cmo,live on develop,content
+store.en.ts#storeListing.primaryCategory,store,store listing,packages/content/src/store.en.ts,112,en,Lifestyle,9,,,,,,cmo,live on develop,content
+store.en.ts#storeListing.whatsNewV1,store,store listing,packages/content/src/store.en.ts,114,en,"This is the first version of ${brand.name}. Talk or type a letter to your child, keep your voice with it, read together at bedtime, and export your book any time.",162,,,,,,cmo,live on develop,content
 stories.en.ts#onboardingStories.0.headline,app screen,in-app,packages/content/src/stories.en.ts,31,en,Talk for a minute.,18,,,,,,content,live on develop,content
 stories.en.ts#onboardingStories.0.line,app screen,in-app,packages/content/src/stories.en.ts,32,en,Tell your child about today. It becomes a letter in their book.,63,,,,,,content,live on develop,content
 stories.en.ts#onboardingStories.1.headline,app screen,in-app,packages/content/src/stories.en.ts,41,en,It stays in your words.,23,,,,,,content,live on develop,content
