@@ -39,6 +39,7 @@ vi.mock('@/lib/analytics', () => ({
   analytics: { track: () => undefined },
   analyticsIdsForDeletion: () => [],
   forgetAnalyticsIds: () => undefined,
+  forgetAnalyticsIdsSome: () => undefined,
   withdrawAnalytics: () => Promise.resolve(),
 }));
 vi.mock('../src/lib/account-deletion/api', () => ({
