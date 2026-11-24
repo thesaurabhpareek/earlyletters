@@ -12,13 +12,13 @@ const reg = REGISTRY as Record<string, { level: string; props: Record<string, un
 
 /** In REGISTRY only: the generic rows that replaced several catalogue rows (control taps, impressions, timings). */
 const REGISTRY_ONLY = ['control_tapped', 'perf_measured', 'surface_impressed'];
-/** In EVENTS only: typed and held, never sent until a row is added to the registry (a decision, not a drive-by). */
 /*
  * Promotion rule. Moving an event off this list takes three things together: a row in REGISTRY
  * (packages/analytics/src/registry.ts), a row in docs/analytics/TRACKING_PLAN.md section 3.1, and a look from
  * the privacy agent. Until all three are in, the event stays held. Production analytics stay off until the
  * D-163 gate clears (D-170, docs/DECISIONS.md), so a held event is not sent from a production build either way.
  */
+/** In EVENTS only: typed and held, never sent until a row is added to the registry (a decision, not a drive-by). */
 const HELD = [
   'account_deletion', 'app_backgrounded', 'app_cold_start', 'auth_deferred', 'auth_email_sent', 'auth_failed',
   'auth_method_selected', 'auth_sheet_shown', 'child_setting_changed', 'child_switched', 'dictionary_term_added',
