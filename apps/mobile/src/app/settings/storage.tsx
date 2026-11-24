@@ -1,5 +1,5 @@
 import { Stack } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, ScrollView, View } from 'react-native';
 import { Button, ListRow, ListSection, Text, ToggleRow } from '@/components/ui';
 import { fill } from '@/lib/copy';
@@ -16,6 +16,7 @@ import {
 } from '@/lib/packs';
 import { formatBytes, packName, packsCopy as t } from '@/lib/packs/copy';
 import { getPackManifest } from '@/lib/remote';
+import { announce } from '@/lib/a11y';
 import { track } from '@/lib/analytics/track';
 import { languagesInUse, packsShownAsLanguages, SpeechRow } from '@/components/settings/speech-row';
 import { speechSettingsCopy } from '@/lib/models/copy';
@@ -46,6 +47,23 @@ function progressLine(p: PackProgress): string {
   if (p.phase === 'failed' || p.phase === 'cancelled') return p.failure ? (t.failures[p.failure] ?? t.failures.generic) : phase;
   if (p.phase === 'downloading' && p.bytesTotal > 0) return `${phase}, ${fill(t.sizeOf, { n: formatBytes(p.bytesDone), count: formatBytes(p.bytesTotal) })}`;
   return phase;
+}
+
+/**
+ * One pack's progress line. The phase is spoken when it changes (VoiceOver ignores accessibilityLiveRegion on iOS);
+ * the running byte count is not, so a download does not talk over the screen reader every tick.
+ */
+function ProgressLine({ pack }: { pack: PackProgress }) {
+  const line = progressLine(pack);
+  const phaseLine = progressLine({ ...pack, bytesDone: 0, bytesTotal: 0 });
+  useEffect(() => {
+    announce(phaseLine);
+  }, [phaseLine]);
+  return (
+    <Text variant="footnote" accessibilityLiveRegion="polite">
+      {line}
+    </Text>
+  );
 }
 
 function ProgressBar({ done, total }: { done: number; total: number }) {
@@ -100,9 +118,7 @@ export default function Storage() {
           {inFlight.map((p) => (
             <View key={p.id} className="gap-2 px-4 py-3">
               <Text variant="body">{nameFor(p.id)}</Text>
-              <Text variant="footnote" accessibilityLiveRegion="polite">
-                {progressLine(p)}
-              </Text>
+              <ProgressLine pack={p} />
               {p.phase === 'downloading' && <ProgressBar done={p.bytesDone} total={p.bytesTotal} />}
               <View className="flex-row gap-2">
                 {p.phase === 'downloading' || p.phase === 'queued' || p.phase === 'waiting_for_wifi' ? (
