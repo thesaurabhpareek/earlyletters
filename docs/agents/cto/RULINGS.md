@@ -1472,15 +1472,15 @@ Challenge record for CR-215 to CR-224 (24 Nov, afternoon): self-challenged only 
 ### CR-216 #1957: size exception under CODE-R02 accepted for the analytics catalog shrink (24 Nov 2026, Karma under CR-176)
 - Verdict: RULED, after the fact (#1957 merged). Founder-only: no. Signed: Karma.
 - Decision group: size limit (CODE-R02). Cites BL-1235, BL-2148, CR-186, CR-194.
-- Ruling: I accept the exception. The PR changes 562 lines (93 added, 469 deleted, 7 files). Its body says about 430 of the 467 removed lines are rows or enums that moved to `registry.ts` or `values.ts`, and the hand-written rest is under 100 lines. I applied the `size:accepted` label myself. That count is the author's; I did not recount it.
+- Ruling: I accept the exception. The PR changes 562 lines (93 added, 469 deleted, 7 files). The PR body says about 430 of the 467 removed lines are rows or enums that moved to `registry.ts` or `values.ts`, and the hand-written rest is under 100 lines. The 467 is the author's body figure; the API shows +93 and -469 (562 lines changed), and I did not recount the 430. I applied the `size:accepted` label myself.
 - The PR keeps production analytics off (CR-186, CR-194): no flag, build setting, consent or send path is touched.
 - Door: two-way. Way back: revert #1957; the old catalog, plan block and schema version 11 come back together.
 
 ### CR-217 #1980, #1982, #1983, #1991, #1993: tests only, no word changed (24 Nov 2026, Karma under CR-176)
 - Verdict: RULED, after the fact (all merged). Founder-only: no. Signed: Karma.
 - Decision group: tests that pin existing decisions. Cites BL-1168, BL-1169, BL-1170, BL-1171, BL-1312, BL-1313, BL-287, BL-407, D-051, D-082, D-083.
-- Ruling: these five add tests that assert decisions already made. No parent-facing word changed, so no exec reading was needed.
-- #1993 specifically: the deprecated `readTogetherFreeSessions` key (default 3) in `packages/api/src/remote-config.ts` stays. Nothing under `apps/` reads it; only the file itself (`effectiveFreeSessions`) and its own tests use it. Removing it changes a signed remote-config schema, which is not a cleanup to slip into a test PR. It is filed as its own row, in the 24 Nov status-sync PR (no id yet). The same PR deleted the unused `READ_TOGETHER_SESSIONS_KEY` constant.
+- Ruling: these five are tests only, plus one deleted unused constant (3 source lines) in #1993. They assert decisions already made. No parent-facing word changed, so no exec reading was needed.
+- #1993 specifically: the deprecated `readTogetherFreeSessions` key (default 3) in `packages/api/src/remote-config.ts` stays. No app runtime code reads it. It also appears in `apps/mobile/src/lib/remote/__tests__/documents.test.ts`, `apps/mobile/e2e/TESTID_REQUESTS.md`, the signed `supabase/functions/config/published.ts` and the `scripts/packs` tests, which is why removing it changes a signed remote-config schema and needs its own row, not a slip into a test PR. The row is BL-2201, in the 24 Nov status-sync PR #1994. The deleted constant is `READ_TOGETHER_SESSIONS_KEY` in `apps/mobile/src/lib/billing/config.ts`.
 - Door: two-way. Way back: revert the PR.
 
 ### CR-218 #1970: six rows set ready under CR-176 (24 Nov 2026, Karma under CR-176)
@@ -1509,7 +1509,7 @@ Challenge record for CR-215 to CR-224 (24 Nov, afternoon): self-challenged only 
 ### CR-221 Transient red on develop on 24 Nov: two analytics PRs in flight (24 Nov 2026, Karma under CR-176)
 - Verdict: RULED (process note). Founder-only: no. Signed: Karma.
 - Decision group: merge order. Cites BL-1255, CR-212.
-- Ruling: #1957 (merged 09:42 UTC) changed the analytics catalog before #1972 (merged 09:56 UTC) regenerated `docs/analytics/WIRE-NAMES.md`, so `wire-names.test.ts` failed ("WIRE-NAMES.md equals the render") on the `develop` push run for #1970's merge, and on merge refs, until #1972 landed: about 14 minutes. The cause of the second red push run at 7c97a288 (09:55) was not read and is UNVERIFIED.
+- Ruling: #1957 (merged 09:42 UTC) changed the analytics catalog before #1972 (merged 09:56 UTC) regenerated `docs/analytics/WIRE-NAMES.md`, so `wire-names.test.ts` failed ("WIRE-NAMES.md equals the render") on the `develop` push run for #1970's merge, and on merge refs, until #1972 landed: about 14 minutes. The second red push run (7c97a288, run 45369853774) started at 09:55:56, 14 seconds before #1972 merged, and failed on the same `wire-names.test.ts` check.
 - Rule: when two analytics PRs are open, the second merges after the first has regenerated the generated files. The way out used: update the branch from `develop` for a fresh merge ref.
 - Door: two-way. Way back: none needed, nothing to undo.
 
@@ -1523,7 +1523,8 @@ Challenge record for CR-215 to CR-224 (24 Nov, afternoon): self-challenged only 
 ### CR-223 Disk: at most three heavy clones at once (24 Nov 2026, Karma under CR-176)
 - Verdict: RULED. Founder-only: no. Signed: Karma.
 - Decision group: harness hygiene. Cites CR-222.
-- Ruling: parallel `npm ci` clones filled the session disk twice on 24 Nov. For the harness and for interactive sessions I direct: at most 3 heavy clones (ones that run `npm ci`) at once; reviews of docs PRs are API-only, with no clone and no install; every clone, and every `/tmp/bl506-*` test temp directory, older than 30 minutes is deleted.
+- Ruling: for the harness and for interactive sessions I direct: at most 3 heavy clones (ones that run `npm ci`) at once; reviews of docs PRs are API-only, with no clone and no install; a session deletes only the clones and `/tmp/bl506-*` test temp directories that it or its own agents created and that are older than 30 minutes. It never deletes another person's or another session's files.
+- UNVERIFIED: that parallel `npm ci` clones filled the session disk twice on 24 Nov. That is the reviewers' reports of a full disk; no log was kept.
 - Why: a full disk fails the next session at a random step, which costs more than a slower review. This sits beside CR-222: the whole-suite run is the heavy case, so it gets the slots.
 - Door: two-way. Revisit when: the disk is larger or the install is cheaper.
 
@@ -1531,5 +1532,5 @@ Challenge record for CR-215 to CR-224 (24 Nov, afternoon): self-challenged only 
 - Verdict: RULED. Founder-only: no. Signed: Karma.
 - Decision group: words kept. Cites BL-422, BL-1788, BL-1984, D-061.
 - Ruling: `listen.audience` ("Only you, until you add it to the book.", `packages/content/src/strings.en.ts` line 298) stays. It is true today. `docs/design/specs/14-REVIEW-QUIET-DEFAULT-23nov.md` line 84 says it stays, and `docs/design/EXPERIENCE_PASS_2026-10.md` line 468 lists it under KEEP. BL-422's scope says "remove the warning on the listening screen if it has no consequence"; I rule it has one, so that clause is not done. No word changes, so no exec reading is needed.
-- The rest of BL-422 is met, as I read it: the explanation lines are keys from BL-1788 (#1804, with `review-keep-lines.test.ts`); Read together skips private letters; export keeps them tagged Private. UNVERIFIED here: those last two behaviours were not re-read in code today, and BACKLOG.md still shows BL-1984 (wiring the two lines in Review) as partly done, so BL-422's "done when" is not proven until it is.
+- The rest of BL-422 is met, as I read it: the explanation lines are keys from BL-1788 (#1804, with `review-keep-lines.test.ts`); Read together skips private letters; export keeps them tagged Private. UNVERIFIED here: those last two behaviours were not re-read in code today. The Review wiring is on `develop`: `review.tsx` calls `keepLine('add')` and `keepLine('private')` (lines 914 and 920, and `keepLine(kind)` at 1246) and `review-quiet-default.test.ts` exists. So the BL-1984 status line in BACKLOG.md ("partly done", as of eab8156) is stale, not the work unbuilt. The open status-sync PR #1994 flips BL-422 to done, and this ruling closes the `listen.audience` clause by keeping the line unchanged.
 - Door: two-way. Way back: edit the key in `packages/content` with an exec reading. Revisit when: v1.0 has a case where the line is false (for example a letter shared before the parent adds it to the book).
