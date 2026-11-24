@@ -44,6 +44,10 @@ test('[J25] Settings at AX5 (emulation evidence, not device evidence)', async ({
 });
 
 test('[J25] the Plus gate at AX5 (emulation evidence, not device evidence)', async ({ app, record }) => {
+  // Known failure on develop: BL-2009, the same cause as J06e (a free phone past its first two letters comes from the seed
+  // hook, which the reading says does not run on the store build; not confirmed). Remove this line when BL-2009 is fixed:
+  // a pass turns the job red.
+  test.fail(true, 'Known failure BL-2009: remove this line in the PR that fixes it');
   const step = journey(record, 'J25', 'ax5-evidence', 4);
   await app.goto(SEAM('/', 'asha')); // a free phone past its first two letters, as in J06e
   await app.getByText('Read it back').first().click();
