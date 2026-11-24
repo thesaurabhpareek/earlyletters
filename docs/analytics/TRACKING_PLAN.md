@@ -111,7 +111,7 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 |---|---|---|---|
 | `auth_failed` | Sign-in failed or was cancelled (observed). An under-18 answer is never sent | `method` (enum: apple \| google \| email \| passkey)<br>`reason` (enum: cancelled \| network \| expired \| wrong_code \| code_paused \| rate_limited \| invalid_email \| not_available \| provider \| session_expired \| consent_unavailable \| unknown) | A-NFR-013 |
 | `auth_deferred` | User chose Later on the sign-in sheet | `trigger` (enum: first_letter \| third_letter \| invite \| invite_create \| sign_in \| settings) | PRD-REQ-016 |
-| `signed_out` | The session ended on this phone (observed): by the person, Apple revoked it, account switch, or the session was lost | `reason` (enum: user \| apple_revoked \| switch_account \| session_lost) | A-NFR-013, PRD-REQ-016 |
+| `me:session_end` | The session ended on this phone (observed): by the person, Apple revoked it, account switch, or the session was lost | `reason` (enum: user \| apple_revoked \| switch_account \| session_lost) | A-NFR-013, PRD-REQ-016 |
 | `invite_opened` | An invite link or code is opened in the app | `via` (enum: link \| code \| paste)<br>`signed_in` (bool) | B-REQ-007 |
 | `auth_succeeded` | A new session exists on this phone (observed from the auth state). New accounts are counted on the server | `method` (enum: apple \| google \| email \| passkey)<br>`had_local_data` (bool) | A-NFR-013, PRD-REQ-016 |
 
@@ -138,7 +138,7 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 
 | Event | Fires when | Properties (type: allowed values) | Serves |
 |---|---|---|---|
-| `language_set` | An author adds, removes or makes primary one spoken-letter language (observed; one language per event) | `lang` (enum: en \| hi \| es \| zh \| fr \| ar \| pt)<br>`action` (enum: added \| removed \| made_primary) | B-REQ-003, PRD-REQ-016 |
+| `me:language_update` | An author adds, removes or makes primary one spoken-letter language (observed; one language per event) | `lang` (enum: en \| hi \| es \| zh \| fr \| ar \| pt)<br>`action` (enum: added \| removed \| made_primary) | B-REQ-003, PRD-REQ-016 |
 | `pack_download` | A language pack or speech model download changes state (observed). Named by analytics pack id and language code only | `pack` (enum: rules_en \| rules_hi \| rules_es \| rules_zh \| rules_fr \| rules_ar \| rules_pt \| prompts_en \| prompts_hi \| prompts_es \| prompts_zh \| prompts_fr \| prompts_ar \| prompts_pt \| model_vad \| model_turbo \| model_small \| model_hindi_small \| model_zh_turbo \| other)<br>`lang`? (enum: en \| hi \| es \| zh \| fr \| ar \| pt)<br>`pack_version` (int 1 to 1000)<br>`stage` (enum: started \| completed \| failed \| removed)<br>`failure`? (enum: no_manifest \| not_in_manifest \| needs_app_update \| downloads_paused \| waiting_for_wifi \| offline \| no_space \| hash_mismatch \| download_failed \| cancelled \| storage_error)<br>`network` (enum: wifi \| cellular \| none \| unknown) | B-REQ-003, NFR-7.7 |
 
 #### book
@@ -179,7 +179,7 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 
 | Event | Fires when | Properties (type: allowed values) | Serves |
 |---|---|---|---|
-| `settings_changed` | A person-level setting is changed (which one, never the value) | `key` (enum: reading_size \| theme \| reminders \| languages \| lock_screen_names \| sensitive_data \| pack_cellular \| listening_copy) | C-REQ-034, C-REQ-016 |
+| `me:setting_update` | A person-level setting is changed (which one, never the value) | `key` (enum: reading_size \| theme \| reminders \| languages \| lock_screen_names \| sensitive_data \| pack_cellular \| listening_copy) | C-REQ-034, C-REQ-016 |
 | `keeping:export_start` | Export everything started (one ZIP made on the phone) | `format` (enum: archive)<br>`letters_bucket` (enum: 0 \| 1 \| 2_4 \| 5_9 \| 10_49 \| 50_99 \| 100_364 \| 365_plus) | C-REQ-034, PRD-REQ-009 |
 | `keeping:export_complete` | Export finished and checked | `format` (enum: archive)<br>`size_bucket` (enum: lt_10mb \| 10_100mb \| 100_500mb \| gt_500mb)<br>`duration_bucket` (enum: lt_30s \| 30s_2m \| gt_2m) | C-REQ-034, C-NFR-007 |
 | `keeping:export_fail` | Export stopped before a file was ready | `format` (enum: archive)<br>`reason` (enum: cancelled \| low_space \| too_large \| check_failed \| unknown) | C-REQ-034, C-NFR-007 |
@@ -205,7 +205,7 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 | `sync_failed` | A sync attempt fails after retries | `reason` (enum: network \| auth \| conflict \| server \| unknown) | PRD-REQ-016 |
 | `error_shown` | A user-facing error from strings `errors.*` is shown | `code` (enum: save_failed \| mic_denied \| transcription_failed \| offline \| backup_failed \| invite_expired \| storage_low \| generic) | PRD-REQ-016 |
 
-Held, not sendable (27; typed in catalog.ts for call sites that still exist, dropped and counted at run time until each gets a registry row with a decision, a plan row and a privacy look, or is removed): `auth_deferred`, `auth_failed`, `child_switched`, `invite_failed`, `invite_opened`, `keeping:export_complete`, `keeping:export_fail`, `keeping:export_start`, `language_set`, `machine_edit_rejected`, `machine_edit_reverted`, `notification_opened`, `offer_code_redeemed`, `os_permission_result`, `pack_download`, `playback_started`, `read_together_ended`, `read_together_started`, `reminder_prime_result`, `reminder_prime_shown`, `reminder_schedule_set`, `reminder_suppressed`, `restore_result`, `review_action`, `settings_changed`, `signed_out`, `sync_failed`.
+Held, not sendable (27; typed in catalog.ts for call sites that still exist, dropped and counted at run time until each gets a registry row with a decision, a plan row and a privacy look, or is removed): `auth_deferred`, `auth_failed`, `child_switched`, `invite_failed`, `invite_opened`, `keeping:export_complete`, `keeping:export_fail`, `keeping:export_start`, `machine_edit_rejected`, `machine_edit_reverted`, `me:language_update`, `me:session_end`, `me:setting_update`, `notification_opened`, `offer_code_redeemed`, `os_permission_result`, `pack_download`, `playback_started`, `read_together_ended`, `read_together_started`, `reminder_prime_result`, `reminder_prime_shown`, `reminder_schedule_set`, `reminder_suppressed`, `restore_result`, `review_action`, `sync_failed`.
 
 Global properties: `schema_version` (int 1 to 1000), `child_count_bucket`? (enum: none \| one \| two \| three_plus), `sample_pct`? (int 1 to 99).
 <!-- catalogue:end -->

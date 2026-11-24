@@ -325,7 +325,7 @@ export default function Reminders() {
               disabled={lockOn}
               onValueChange={(v) => {
                 update({ namesOnLockScreen: v });
-                track('settings_changed', { key: 'lock_screen_names' });
+                track('me:setting_update', { key: 'lock_screen_names' });
               }}
             />
           </ListSection>

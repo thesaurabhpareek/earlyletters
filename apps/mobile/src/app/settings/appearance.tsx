@@ -49,7 +49,7 @@ export default function AppearanceSettings() {
           onChange={(v) => {
             setTheme(v);
             setAppearance(v);
-            track('settings_changed', { key: 'theme' });
+            track('me:setting_update', { key: 'theme' });
           }}
         />
       </ListSection>
@@ -71,7 +71,7 @@ export default function AppearanceSettings() {
           onChange={(v) => {
             setSize(v);
             setReadingSize(v);
-            track('settings_changed', { key: 'reading_size' });
+            track('me:setting_update', { key: 'reading_size' });
           }}
         />
       </ListSection>

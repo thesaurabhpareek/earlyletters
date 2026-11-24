@@ -163,7 +163,7 @@ export default function Storage() {
           onValueChange={(v) => {
             setCellular(v);
             setAllowCellular(v);
-            track('settings_changed', { key: 'pack_cellular' });
+            track('me:setting_update', { key: 'pack_cellular' });
           }}
         />
       </ListSection>

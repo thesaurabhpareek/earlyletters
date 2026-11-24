@@ -2,7 +2,7 @@
 
 Generated from `packages/analytics/src/wire-names.ts` by `npm run wire-names -w @scribe/analytics`; do not edit by hand. `npm run wire-names -w @scribe/analytics -- --check` and `packages/analytics/test/wire-names.test.ts` fail when this file differs from that output. BL-1255 step 1 (CR-212): this is the table `posthog-standard.md` section 2.9 points to as "IN-03".
 
-The rename (step 2b onward, BL-2176) moves one area at a time, each PR on the one below. 3 of 47 keys that own a name hold it now; for the rest the "Key" column is still the old key, and "Was" says so. Where a key was renamed, "Was" is the old key, and `LEGACY_EVENT_NAMES` in `wire-names.ts` maps it to the new one, so a note, funnel or query written against an old name can still be read. Nothing was ever sent under an old name (analytics are off in every profile, CR-186). The tier column is the tier of the catalogue and registry rows, unchanged by the rename, and the basics set stays pinned to `screen_view` by `test/tiers.test.ts`. The four pattern keys keep their keys: their names are generated per registered id.
+The rename (step 2b onward, BL-2176) moves one area at a time, each PR on the one below. 6 of 47 keys that own a name hold it now; for the rest the "Key" column is still the old key, and "Was" says so. Where a key was renamed, "Was" is the old key, and `LEGACY_EVENT_NAMES` in `wire-names.ts` maps it to the new one, so a note, funnel or query written against an old name can still be read. Nothing was ever sent under an old name (analytics are off in every profile, CR-186). The tier column is the tier of the catalogue and registry rows, unchanged by the rename, and the basics set stays pinned to `screen_view` by `test/tiers.test.ts`. The four pattern keys keep their keys: their names are generated per registered id.
 
 Counts: 51 keys: 30 ruled by 2.9, 17 named by the 24 Nov rulings, 4 patterns generated per registered id, 0 NEEDS RULING; 47 have a name of their own. Step 2a (BL-2175) deleted 22 keys: 18 dropped, 4 merged (see Retired keys).
 
@@ -14,13 +14,13 @@ Reading a row. "Ruled" means 2.9 names this event (a domain row, the seven examp
 |---|---|---|---|---|---|---|---|
 | `auth_failed` | (not renamed yet) | catalogue | entry | consented | ruled | `onboarding:sign_in_fail` | 2.9 domain table: `onboarding.sign_in.failed` |
 | `auth_deferred` | (not renamed yet) | catalogue | entry | consented | named | `onboarding:sign_in_dismiss` | PM1 `onboarding.sign_in.dismissed` names this key; `dismiss` is the verb for closing a slip without acting |
-| `signed_out` | (not renamed yet) | catalogue | entry | consented | named | `me:session_end` | PM1 `me.session.closed` names this key; `reason` already carries the four causes |
+| `me:session_end` | `signed_out` | catalogue | entry | consented | named | `me:session_end` | PM1 `me.session.closed` names this key; `reason` already carries the four causes |
 | `invite_opened` | (not renamed yet) | catalogue | entry | consented | ruled | `family:invite_open` | 2.9 domain table: `family.invite.opened` (phone side) |
 | `child_switched` | (not renamed yet) | catalogue | children | consented | named | `capture:child_update` | PM1 `capture.child.selected` ("active book changed") lists this key as its Was; `selected` folds to `update` |
 | `review_action` | (not renamed yet) | catalogue | capture | consented | named | `capture:review_update` | PM1 `capture.review.selected`, a step of funnel F2; `selected` folds to `update`; `submit` is for forms |
 | `machine_edit_reverted` | (not renamed yet) | catalogue | capture | consented | named | `capture:edit_restore` | the 2.4 `restore` row names "a reverted machine edit"; PM1 `edit_cancel` loses; constitution guardrail and insights reader |
 | `machine_edit_rejected` | (not renamed yet) | catalogue | capture | consented | named | `capture:edit_decline` | PM1 `capture.edit.declined`; `decline` is "from us" (the verifier); same guardrail and reader |
-| `language_set` | (not renamed yet) | catalogue | languages | consented | ruled | `me:language_update` | 2.9 domain table: `me.language.changed` |
+| `me:language_update` | `language_set` | catalogue | languages | consented | ruled | `me:language_update` | 2.9 domain table: `me.language.changed` |
 | `pack_download` | (not renamed yet) | catalogue | languages | consented | named | `system:pack_download_update` | PM1 maps four states to this one key and 2.9 only holds `pack_start`; `changed` folds to `update`; the `pack_download` object keeps it from reading as a pack version update |
 | `playback_started` | (not renamed yet) | catalogue | book | consented | ruled | `book:playback_start` | 2.9 domain table: `book.playback.started` |
 | `read_together_started` | (not renamed yet) | catalogue | book | consented | ruled | `book:read_together_start` | 2.9 domain table: `book.read_together.started` |
@@ -32,7 +32,7 @@ Reading a row. "Ruled" means 2.9 names this event (a domain row, the seven examp
 | `reminder_schedule_set` | (not renamed yet) | catalogue | reminders | consented | ruled | `notifications:schedule_update` | 2.9 domain table: `notifications.schedule.changed` |
 | `reminder_suppressed` | (not renamed yet) | catalogue | reminders | consented | ruled | `notifications:reminder_cancel` | 2.9 domain table: `notifications.reminder.suppressed` |
 | `notification_opened` | (not renamed yet) | catalogue | reminders | consented | named | `notifications:notification_open` | one key with four types; 2.9 `reminder_open` and `plan_notice_open` have no key of their own and stay unassigned |
-| `settings_changed` | (not renamed yet) | catalogue | settings | consented | ruled | `me:setting_update` | 2.9 domain table: `me.setting.changed` |
+| `me:setting_update` | `settings_changed` | catalogue | settings | consented | ruled | `me:setting_update` | 2.9 domain table: `me.setting.changed` |
 | `keeping:export_start` | `export_started` | catalogue | settings | consented | named | `keeping:export_start` | the object must agree with `export_complete` and `export_fail`; `download_start` is retired; funnel F9 and the insights engine read it |
 | `keeping:export_complete` | `export_completed` | catalogue | settings | consented | ruled | `keeping:export_complete` | 2.9 line 118, the seven examples |
 | `keeping:export_fail` | `export_failed` | catalogue | settings | consented | ruled | `keeping:export_fail` | 2.9 domain table: `keeping.export.failed` |

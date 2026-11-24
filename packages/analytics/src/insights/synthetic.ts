@@ -120,8 +120,8 @@ export function syntheticInput(date: string, opts: { weeks?: number; seed?: numb
     add(w, 'read_together_started', 40, Math.round(opened * 0.1));
     add(w, 'plus_offer_closed', 30, 25, 'outcome', 'dismissed');
     add(w, 'plus_offer_closed', 3, 3, 'outcome', 'purchased');
-    add(w, 'language_set', 25, 20, 'lang', 'hi');
-    add(w, 'language_set', 15, 12, 'lang', 'es');
+    add(w, 'me:language_update', 25, 20, 'lang', 'hi');
+    add(w, 'me:language_update', 15, 12, 'lang', 'es');
     add(w, 'error_shown', w === last ? 120 : jitter(30, 0.1), w === last ? 70 : 20, 'code', 'save_failed');
     add(w, 'error_shown', jitter(40, 0.1), 25, 'code', 'offline');
     return { week: w, opened, started, saved };

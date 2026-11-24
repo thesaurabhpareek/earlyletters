@@ -24,7 +24,7 @@ export const BREAKDOWNS: Readonly<Partial<Record<EventName, readonly string[]>>>
   capture_discarded: ['stage'],
   plus_offer_closed: ['outcome'],
   plan_changed: ['to_state'],
-  language_set: ['lang', 'action'],
+  'me:language_update': ['lang', 'action'],
   error_shown: ['code'],
   sync_failed: ['reason'],
   auth_failed: ['reason'],
