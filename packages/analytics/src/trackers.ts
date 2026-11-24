@@ -35,7 +35,7 @@ export type MemberRole = 'parent' | 'contributor';
 /** A member's role in a book: co-parents are `parent` (B section 6). */
 export type InviteRoleInput = 'parent' | 'contributor';
 
-const inviteRole = (r: InviteRoleInput) => r as V<'invite_created', 'role'>;
+const inviteRole = (r: InviteRoleInput) => r as V<'family:invite_create', 'role'>;
 
 export interface LetterSavedInput {
   mode: 'spoken' | 'typed';
@@ -172,12 +172,12 @@ export function createTrackers(analytics: Pick<Analytics, 'track'>) {
       });
     },
 
-    trackInviteCreated(i: { role: InviteRoleInput; channel: V<'invite_created', 'channel'>; shared: boolean; childIndex: number }): TrackResult {
-      return track('invite_created', { role: inviteRole(i.role), channel: i.channel, shared: i.shared, child_ordinal: childOrdinal(i.childIndex) });
+    trackInviteCreated(i: { role: InviteRoleInput; channel: V<'family:invite_create', 'channel'>; shared: boolean; childIndex: number }): TrackResult {
+      return track('family:invite_create', { role: inviteRole(i.role), channel: i.channel, shared: i.shared, child_ordinal: childOrdinal(i.childIndex) });
     },
 
     trackInviteAccepted(i: { role: InviteRoleInput }): TrackResult {
-      return track('invite_accepted', { role: inviteRole(i.role), surface: 'app' });
+      return track('family:invite_accept', { role: inviteRole(i.role), surface: 'app' });
     },
 
     trackExportStarted(i: { letters: number }): TrackResult {

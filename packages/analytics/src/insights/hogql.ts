@@ -28,7 +28,7 @@ export const BREAKDOWNS: Readonly<Partial<Record<EventName, readonly string[]>>>
   error_shown: ['code'],
   sync_failed: ['reason'],
   auth_failed: ['reason'],
-  invite_failed: ['reason'],
+  'family:invite_fail': ['reason'],
   'keeping:export_fail': ['reason'],
   read_together_started: ['access'],
 };
@@ -44,7 +44,7 @@ export const WEEKLY_EVENTS: readonly EventName[] = [
   'machine_edit_rejected',
   'machine_edit_reverted',
   'read_together_started',
-  'invite_created',
+  'family:invite_create',
   'plus_offer_viewed',
   'plus_offer_closed',
   'error_shown',

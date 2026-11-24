@@ -225,8 +225,8 @@ describe('[F19-REQ-011] switch on: nothing is sent, and the screens say invites 
   });
 
   it('a pause is not counted as a failed invite (nothing was attempted)', () => {
-    expect(src('app/invite/new.tsx')).toMatch(/if \(kind !== 'paused'\) track\('invite_failed'/);
-    expect(src('app/invite/index.tsx')).toMatch(/if \(kind !== 'paused'\) track\('invite_failed'/);
+    expect(src('app/invite/new.tsx')).toMatch(/if \(kind !== 'paused'\) track\('family:invite_fail'/);
+    expect(src('app/invite/index.tsx')).toMatch(/if \(kind !== 'paused'\) track\('family:invite_fail'/);
   });
 
   it('the paused line is one neutral sentence pair that never names the child, on every screen', () => {

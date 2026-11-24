@@ -250,7 +250,7 @@ export const REGISTRY = {
     tier: 'consented',
     props: { letters_kept: int(0, 1000) },
   },
-  invite_created: {
+  'family:invite_create': {
     stage: 'return',
     decision: "How many families invite another parent, so we decide whether to invest in the family flow.",
     area: 'family',
@@ -265,7 +265,7 @@ export const REGISTRY = {
       child_ordinal: CHILD_ORDINAL,
     },
   },
-  invite_accepted: {
+  'family:invite_accept': {
     stage: 'return',
     decision: "How many invites end with a second parent in the book, so we decide whether to fix the invite steps.",
     area: 'family',
@@ -391,8 +391,8 @@ export const EV = {
   keepGateShown: 'keep_gate_shown',
   letterHeld: 'letter_held',
   plusStartedFromGate: 'plus_started_from_gate',
-  inviteCreated: 'invite_created',
-  inviteAccepted: 'invite_accepted',
+  inviteCreated: 'family:invite_create',
+  inviteAccepted: 'family:invite_accept',
   plusOfferViewed: 'plus_offer_viewed',
   plusOfferClosed: 'plus_offer_closed',
   planChanged: 'plan_changed',
@@ -478,7 +478,7 @@ export const FUNNELS = {
   f_plus_offer_converted: ['plus_offer_viewed', 'plus_offer_closed', 'plan_changed'],
   // Wire names (BL-2175, CR-213): the Book and letter reads are the generated screen views, not events of their own.
   f_return_book_read: ['system:app_open', 'book:book_screen_view', 'book:letter_detail_screen_view'],
-  f_family_invite_joined: ['invite_created', 'invite_accepted'],
+  f_family_invite_joined: ['family:invite_create', 'family:invite_accept'],
 } as const satisfies Record<string, readonly FunnelStep[]>;
 
 /**

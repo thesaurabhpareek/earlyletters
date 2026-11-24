@@ -112,7 +112,7 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 | `auth_failed` | Sign-in failed or was cancelled (observed). An under-18 answer is never sent | `method` (enum: apple \| google \| email \| passkey)<br>`reason` (enum: cancelled \| network \| expired \| wrong_code \| code_paused \| rate_limited \| invalid_email \| not_available \| provider \| session_expired \| consent_unavailable \| unknown) | A-NFR-013 |
 | `auth_deferred` | User chose Later on the sign-in sheet | `trigger` (enum: first_letter \| third_letter \| invite \| invite_create \| sign_in \| settings) | PRD-REQ-016 |
 | `me:session_end` | The session ended on this phone (observed): by the person, Apple revoked it, account switch, or the session was lost | `reason` (enum: user \| apple_revoked \| switch_account \| session_lost) | A-NFR-013, PRD-REQ-016 |
-| `invite_opened` | An invite link or code is opened in the app | `via` (enum: link \| code \| paste)<br>`signed_in` (bool) | B-REQ-007 |
+| `family:invite_open` | An invite link or code is opened in the app | `via` (enum: link \| code \| paste)<br>`signed_in` (bool) | B-REQ-007 |
 | `auth_succeeded` | A new session exists on this phone (observed from the auth state). New accounts are counted on the server | `method` (enum: apple \| google \| email \| passkey)<br>`had_local_data` (bool) | A-NFR-013, PRD-REQ-016 |
 
 #### children
@@ -153,9 +153,9 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 
 | Event | Fires when | Properties (type: allowed values) | Serves |
 |---|---|---|---|
-| `invite_failed` | Creating or accepting an invite failed (the reason class only) | `stage` (enum: create \| accept)<br>`reason` (enum: expired \| used \| revoked \| already_member \| not_found \| not_parent \| rate_limited \| consent_needed \| book_deleted \| signed_out \| network \| unknown) | B-REQ-007 |
-| `invite_created` | A parent creates an invite | `role` (enum: parent \| contributor)<br>`channel` (enum: share_sheet \| copy_link \| code)<br>`shared` (bool)<br>`child_ordinal` (enum: first \| second \| third_plus) | B-REQ-007, B-NFR-001, PRD-REQ-014 |
-| `invite_accepted` | An invite is accepted in the app (observed). Server aggregates count every acceptance | `role` (enum: parent \| contributor)<br>`surface` (enum: app) | B-NFR-001 |
+| `family:invite_fail` | Creating or accepting an invite failed (the reason class only) | `stage` (enum: create \| accept)<br>`reason` (enum: expired \| used \| revoked \| already_member \| not_found \| not_parent \| rate_limited \| consent_needed \| book_deleted \| signed_out \| network \| unknown) | B-REQ-007 |
+| `family:invite_create` | A parent creates an invite | `role` (enum: parent \| contributor)<br>`channel` (enum: share_sheet \| copy_link \| code)<br>`shared` (bool)<br>`child_ordinal` (enum: first \| second \| third_plus) | B-REQ-007, B-NFR-001, PRD-REQ-014 |
+| `family:invite_accept` | An invite is accepted in the app (observed). Server aggregates count every acceptance | `role` (enum: parent \| contributor)<br>`surface` (enum: app) | B-NFR-001 |
 
 #### reminders
 
@@ -205,7 +205,7 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 | `sync_failed` | A sync attempt fails after retries | `reason` (enum: network \| auth \| conflict \| server \| unknown) | PRD-REQ-016 |
 | `error_shown` | A user-facing error from strings `errors.*` is shown | `code` (enum: save_failed \| mic_denied \| transcription_failed \| offline \| backup_failed \| invite_expired \| storage_low \| generic) | PRD-REQ-016 |
 
-Held, not sendable (27; typed in catalog.ts for call sites that still exist, dropped and counted at run time until each gets a registry row with a decision, a plan row and a privacy look, or is removed): `auth_deferred`, `auth_failed`, `child_switched`, `invite_failed`, `invite_opened`, `keeping:export_complete`, `keeping:export_fail`, `keeping:export_start`, `machine_edit_rejected`, `machine_edit_reverted`, `me:language_update`, `me:session_end`, `me:setting_update`, `notification_opened`, `offer_code_redeemed`, `os_permission_result`, `pack_download`, `playback_started`, `read_together_ended`, `read_together_started`, `reminder_prime_result`, `reminder_prime_shown`, `reminder_schedule_set`, `reminder_suppressed`, `restore_result`, `review_action`, `sync_failed`.
+Held, not sendable (27; typed in catalog.ts for call sites that still exist, dropped and counted at run time until each gets a registry row with a decision, a plan row and a privacy look, or is removed): `auth_deferred`, `auth_failed`, `child_switched`, `family:invite_fail`, `family:invite_open`, `keeping:export_complete`, `keeping:export_fail`, `keeping:export_start`, `machine_edit_rejected`, `machine_edit_reverted`, `me:language_update`, `me:session_end`, `me:setting_update`, `notification_opened`, `offer_code_redeemed`, `os_permission_result`, `pack_download`, `playback_started`, `read_together_ended`, `read_together_started`, `reminder_prime_result`, `reminder_prime_shown`, `reminder_schedule_set`, `reminder_suppressed`, `restore_result`, `review_action`, `sync_failed`.
 
 Global properties: `schema_version` (int 1 to 1000), `child_count_bucket`? (enum: none \| one \| two \| three_plus), `sample_pct`? (int 1 to 99).
 <!-- catalogue:end -->

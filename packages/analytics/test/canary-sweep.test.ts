@@ -50,7 +50,7 @@ const VALID: Record<string, unknown> = {
   trackTranscriptionCompleted: { engine: E('transcription_completed', 'engine'), modelId: null, audioMs: 4000, latencyMs: 900, outcome: E('transcription_completed', 'outcome') },
   trackReadTogetherStarted: { childIndex: 0, access: 'free', letters: 3 },
   trackReadTogetherEnded: { reason: 'finished', durationMs: 60000, lettersHeard: 2 },
-  trackInviteCreated: { role: 'parent', channel: E('invite_created', 'channel'), shared: true, childIndex: 0 },
+  trackInviteCreated: { role: 'parent', channel: E('family:invite_create', 'channel'), shared: true, childIndex: 0 },
   trackInviteAccepted: { role: 'parent' },
   trackExportStarted: { letters: 3 },
   trackExportCompleted: { bytes: 5000000, durationMs: 9000 },
@@ -212,7 +212,7 @@ describe('canary sweep (J-N18)', () => {
   });
 
   it('[J-N18] positive control: a tracker that writes to the provider around the validator turns the sweep red', async () => {
-    const leaky: Path = (c) => exerciseTrackers(c, (x) => ({ ...(createTrackers(x.analytics) as unknown as TrackerSet), trackInviteAccepted: (i: never) => void x.provider.capture('invite_accepted', { role: (i as { role: string }).role }) }));
+    const leaky: Path = (c) => exerciseTrackers(c, (x) => ({ ...(createTrackers(x.analytics) as unknown as TrackerSet), trackInviteAccepted: (i: never) => void x.provider.capture('family:invite_accept', { role: (i as { role: string }).role }) }));
     const r = await sweep([leaky]);
     expect(r.hits(ALL)).toEqual(expect.arrayContaining(['asha', 'zz-test-album', 'zz-test-file']));
   });

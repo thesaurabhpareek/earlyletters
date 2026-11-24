@@ -138,7 +138,7 @@ function InviteCoParent() {
     } catch (e) {
       const kind = inviteErrorKind(e);
       // A pause sent nothing, so there is no failed invite to count.
-      if (kind !== 'paused') track('invite_failed', { stage: 'create', reason: trackedInviteReason(kind) });
+      if (kind !== 'paused') track('family:invite_fail', { stage: 'create', reason: trackedInviteReason(kind) });
       setError(kind);
     } finally {
       setBusy(false);

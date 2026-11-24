@@ -2,7 +2,7 @@
 
 Generated from `packages/analytics/src/wire-names.ts` by `npm run wire-names -w @scribe/analytics`; do not edit by hand. `npm run wire-names -w @scribe/analytics -- --check` and `packages/analytics/test/wire-names.test.ts` fail when this file differs from that output. BL-1255 step 1 (CR-212): this is the table `posthog-standard.md` section 2.9 points to as "IN-03".
 
-The rename (step 2b onward, BL-2176) moves one area at a time, each PR on the one below. 6 of 47 keys that own a name hold it now; for the rest the "Key" column is still the old key, and "Was" says so. Where a key was renamed, "Was" is the old key, and `LEGACY_EVENT_NAMES` in `wire-names.ts` maps it to the new one, so a note, funnel or query written against an old name can still be read. Nothing was ever sent under an old name (analytics are off in every profile, CR-186). The tier column is the tier of the catalogue and registry rows, unchanged by the rename, and the basics set stays pinned to `screen_view` by `test/tiers.test.ts`. The four pattern keys keep their keys: their names are generated per registered id.
+The rename (step 2b onward, BL-2176) moves one area at a time, each PR on the one below. 10 of 47 keys that own a name hold it now; for the rest the "Key" column is still the old key, and "Was" says so. Where a key was renamed, "Was" is the old key, and `LEGACY_EVENT_NAMES` in `wire-names.ts` maps it to the new one, so a note, funnel or query written against an old name can still be read. Nothing was ever sent under an old name (analytics are off in every profile, CR-186). The tier column is the tier of the catalogue and registry rows, unchanged by the rename, and the basics set stays pinned to `screen_view` by `test/tiers.test.ts`. The four pattern keys keep their keys: their names are generated per registered id.
 
 Counts: 51 keys: 30 ruled by 2.9, 17 named by the 24 Nov rulings, 4 patterns generated per registered id, 0 NEEDS RULING; 47 have a name of their own. Step 2a (BL-2175) deleted 22 keys: 18 dropped, 4 merged (see Retired keys).
 
@@ -15,7 +15,7 @@ Reading a row. "Ruled" means 2.9 names this event (a domain row, the seven examp
 | `auth_failed` | (not renamed yet) | catalogue | entry | consented | ruled | `onboarding:sign_in_fail` | 2.9 domain table: `onboarding.sign_in.failed` |
 | `auth_deferred` | (not renamed yet) | catalogue | entry | consented | named | `onboarding:sign_in_dismiss` | PM1 `onboarding.sign_in.dismissed` names this key; `dismiss` is the verb for closing a slip without acting |
 | `me:session_end` | `signed_out` | catalogue | entry | consented | named | `me:session_end` | PM1 `me.session.closed` names this key; `reason` already carries the four causes |
-| `invite_opened` | (not renamed yet) | catalogue | entry | consented | ruled | `family:invite_open` | 2.9 domain table: `family.invite.opened` (phone side) |
+| `family:invite_open` | `invite_opened` | catalogue | entry | consented | ruled | `family:invite_open` | 2.9 domain table: `family.invite.opened` (phone side) |
 | `child_switched` | (not renamed yet) | catalogue | children | consented | named | `capture:child_update` | PM1 `capture.child.selected` ("active book changed") lists this key as its Was; `selected` folds to `update` |
 | `review_action` | (not renamed yet) | catalogue | capture | consented | named | `capture:review_update` | PM1 `capture.review.selected`, a step of funnel F2; `selected` folds to `update`; `submit` is for forms |
 | `machine_edit_reverted` | (not renamed yet) | catalogue | capture | consented | named | `capture:edit_restore` | the 2.4 `restore` row names "a reverted machine edit"; PM1 `edit_cancel` loses; constitution guardrail and insights reader |
@@ -25,7 +25,7 @@ Reading a row. "Ruled" means 2.9 names this event (a domain row, the seven examp
 | `playback_started` | (not renamed yet) | catalogue | book | consented | ruled | `book:playback_start` | 2.9 domain table: `book.playback.started` |
 | `read_together_started` | (not renamed yet) | catalogue | book | consented | ruled | `book:read_together_start` | 2.9 domain table: `book.read_together.started` |
 | `read_together_ended` | (not renamed yet) | catalogue | book | consented | ruled | `book:read_together_end` | 2.9 domain table: `book.read_together.ended` |
-| `invite_failed` | (not renamed yet) | catalogue | family | consented | ruled | `family:invite_fail` | 2.9 domain table: `family.invite.failed` |
+| `family:invite_fail` | `invite_failed` | catalogue | family | consented | ruled | `family:invite_fail` | 2.9 domain table: `family.invite.failed` |
 | `reminder_prime_shown` | (not renamed yet) | catalogue | reminders | consented | named | `notifications:reminder_prime_view` | the denominator of the reminder-fatigue guardrail; an impression of our own card |
 | `reminder_prime_result` | (not renamed yet) | catalogue | reminders | consented | named | `notifications:reminder_prime_submit` | `answered` folds to `submit`, as `os_permission_result` is `permission_submit` |
 | `os_permission_result` | (not renamed yet) | catalogue | reminders | consented | ruled | `notifications:permission_submit` | 2.9 domain table: `notifications.permission.answered` |
@@ -52,8 +52,8 @@ Reading a row. "Ruled" means 2.9 names this event (a domain row, the seven examp
 | `keep_gate_shown` | (not renamed yet) | both | plus | consented | named | `plus:keep_gate_view` | registry row; I3 and F7 read `letters_kept`, `allowance`, `lapsed`; no Keep sheet screen id exists, and a screen view carries none of those |
 | `letter_held` | (not renamed yet) | both | plus | consented | ruled | `plus:letter_hold_create` | 2.9 domain table: `plus.letter.held` |
 | `plus_started_from_gate` | (not renamed yet) | both | plus | consented | named | `plus:keep_gate_plan_start` | keeps the gate in the name; `plus:plan_start` stays free for the broader PM5 event |
-| `invite_created` | (not renamed yet) | both | family | consented | ruled | `family:invite_create` | 2.9 line 118, the seven examples |
-| `invite_accepted` | (not renamed yet) | both | family | consented | ruled | `family:invite_accept` | 2.9 domain table: `family.invite.accepted` |
+| `family:invite_create` | `invite_created` | both | family | consented | ruled | `family:invite_create` | 2.9 line 118, the seven examples |
+| `family:invite_accept` | `invite_accepted` | both | family | consented | ruled | `family:invite_accept` | 2.9 domain table: `family.invite.accepted` |
 | `plus_offer_viewed` | (not renamed yet) | both | plus | consented | ruled | `plus:offer_view` | 2.9 line 118, the seven examples |
 | `plus_offer_closed` | (not renamed yet) | both | plus | consented | ruled | `plus:offer_end` | 2.9 domain table: `plus.offer.closed` |
 | `plan_changed` | (not renamed yet) | both | plus | consented | ruled | `plus:plan_update` | 2.9 domain table: `plus.plan.changed` |
