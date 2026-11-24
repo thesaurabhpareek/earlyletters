@@ -399,6 +399,8 @@ const motion = {
   hardCeilingMs: 2000,
   /** accentSoft wash on a newly saved letter. */
   newMarkMs: 1600,
+  /** Review's open mark card entering (CDESO-3): opacity only. Reduce Motion: no delay and `fadeMs`. */
+  markCard: { delayMs: 80, ms: 160 },
   /**
    * The saved moment (MOTION 5e, EXPERIENCE_PASS S21): commit first, then the Review sheet scales to `scale`; the
    * "Filed in Month N" chip fades in at `chipAtMs`; at `moveAtMs` the card moves down `dy` and leaves; the modal
