@@ -612,7 +612,7 @@ describe('[D-160] the button hands the sign-out to the route (wiring is a source
     const { readFileSync } = await import('node:fs');
     const t = readFileSync(new URL('../src/app/onboarding.tsx', import.meta.url), 'utf8');
     // BL-1816 also clears the kept answers there: they belonged to the account that left.
-    expect(t).toMatch(/\.then\(\(outcome\) => \{\s*if \(outcome === 'done'\) \{\s*clearDraft\(\);[^\n]*\n\s*onSignedOut\?\.\(\);\s*\}\s*\}\)/);
+    expect(t).toMatch(/\.then\(\(outcome\) => \{\s*if \(outcome === 'done'\) \{\s*clearFirstRunDraft\(\);[^\n]*\n\s*onSignedOut\?\.\(\);\s*\}\s*\}\)/);
   });
 });
 
