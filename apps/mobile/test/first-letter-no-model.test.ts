@@ -38,15 +38,30 @@ describe('the typed offer on Listen (spec 15 section 3)', () => {
       expect(typedOfferShown({ ...base, startControl: listenRoom(phase).startControl })).toBe(false);
     }
     expect(typedOfferShown({ ...base, startControl: listenRoom('ready').startControl })).toBe(true);
-    expect(listen).toMatch(/typedOfferShown\(\{\s*startControl: room\.startControl,/);
+    expect(listen).toMatch(/startControl: room\.startControl,/);
   });
   it('[FL-06] typing starts nothing: the offer opens Write as typeInstead does and never writes the choice or starts a download', () => {
-    expect(listen).toMatch(/label=\{copy\.errors\.micDenied\.typeButton\} onPress=\{typeInstead\} testID="listen\.type"/);
+    expect(listen).toMatch(/label=\{copy\.errors\.micDenied\.typeButton\} onPress=\{typeInstead\} disabled=\{!typeOffer\} testID="listen\.type"/);
     expect(listen).toMatch(/const typeInstead = \(\) => router\.replace\(\{ pathname: '\/write', params: promptKey \? \{ promptKey \} : \{\} \}\)/);
     expect(listen).not.toMatch(/setSpeechDownloadChoice|startSpeechDownload|requestWords/);
   });
   it('shows once: the picture Type already is the offer, so the two never show together', () => {
-    expect(listen).toMatch(/\{!withPhoto &&\s*typedOfferShown\(/);
+    expect(listen).toMatch(/const typeOffer =\s*!withPhoto &&/);
+    expect(listen).toMatch(/\{!withPhoto \? \(\s*<View[^>]*testID="listen\.typeSlot"/);
+  });
+  it('the install check is lazy: it is evaluated only after room.startControl, never during a take (#480)', () => {
+    const at = listen.indexOf('const typeOffer =');
+    const expr = listen.slice(at, listen.indexOf(';', at));
+    expect(expr.indexOf('room.startControl &&')).toBeGreaterThan(-1);
+    expect(expr.indexOf('room.startControl &&')).toBeLessThan(expr.indexOf('speechOnThisPhone('));
+    expect(listen.match(/speechOnThisPhone\(speechLanguage\)/g)).toHaveLength(1);
+  });
+  it('the slot is always held, hidden like listen.discardSlot, so the red circle never moves (5.8 rule 3)', () => {
+    const slot = listen.slice(listen.indexOf('testID="listen.typeSlot"') - 400, listen.indexOf('testID="listen.typeSlot"'));
+    expect(slot).toMatch(/opacity: typeOffer \? 1 : 0/);
+    expect(slot).toMatch(/pointerEvents=\{typeOffer \? 'auto' : 'none'\}/);
+    expect(slot).toMatch(/accessibilityElementsHidden=\{!typeOffer\}/);
+    expect(slot).toMatch(/importantForAccessibility=\{typeOffer \? 'auto' : 'no-hide-descendants'\}/);
   });
   it('reads the model state without starting anything, and adds no new string', () => {
     expect(listen).toMatch(/useSpeechDownload\(speechLanguage\)/);

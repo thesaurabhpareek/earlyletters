@@ -511,6 +511,12 @@ export default function Listen() {
   }
 
   const room = listenRoom(phase);
+  // Short-circuits: speechOnThisPhone (planFor, deviceTier, settings reads) is evaluated only at Ready with no picture,
+  // never on the once-a-second renders of a live take.
+  const typeOffer =
+    !withPhoto &&
+    room.startControl &&
+    typedOfferShown({ startControl: room.startControl, onThisPhone: speechOnThisPhone(speechLanguage), choice: speechChoice, hold: speech.hold, failure: speech.failure });
   const quiet = phase === 'recording' && (status.metering ?? -160) < -50 && status.durationMillis > 8000;
   const prompt = promptLine(promptKey, PROMPTS);
   // While iOS asks and the take starts there is nothing to tap, so no hint (5.8 row 1: the room arrives at rest).
@@ -618,16 +624,19 @@ export default function Listen() {
             <Button variant="quiet" size="md" label={photos.capture.typeButton} onPress={typeInstead} testID="listen.photo.type" />
           ) : null}
           {/* BL-1999: no speech model on the phone and no yes in motion, so typing is open before she records. The
-              picture's own Type above already is that offer, so the two never show together. */}
-          {!withPhoto &&
-          typedOfferShown({
-            startControl: room.startControl,
-            onThisPhone: speechOnThisPhone(speechLanguage),
-            choice: speechChoice,
-            hold: speech.hold,
-            failure: speech.failure,
-          }) ? (
-            <Button variant="quiet" size="md" label={copy.errors.micDenied.typeButton} onPress={typeInstead} testID="listen.type" />
+              picture's own Type above already is that offer, so the two never show together. The slot is always held
+              (like listen.discardSlot) so the red circle never moves when the offer comes or goes (5.8 rule 3). The
+              install check is behind room.startControl, so nothing is read while a take is live (#480). */}
+          {!withPhoto ? (
+            <View
+              style={{ opacity: typeOffer ? 1 : 0 }}
+              pointerEvents={typeOffer ? 'auto' : 'none'}
+              accessibilityElementsHidden={!typeOffer}
+              importantForAccessibility={typeOffer ? 'auto' : 'no-hide-descendants'}
+              testID="listen.typeSlot"
+            >
+              <Button variant="quiet" size="md" label={copy.errors.micDenied.typeButton} onPress={typeInstead} disabled={!typeOffer} testID="listen.type" />
+            </View>
           ) : null}
           {!large && clockAndLine}
           <View className="items-center gap-1 px-8">
