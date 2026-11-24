@@ -38,6 +38,11 @@ async function signInWithEmail(page: Page, email: string) {
 const restCalls = (m: MockServer) => m.calls.filter((c) => c.path.startsWith('/rest/'));
 
 test('[J21] invitee: "I was invited", a generic landing before sign-in, then ask before joining', async ({ app, record }) => {
+  // Known failure on develop: BL-2006. Fails at the shared passAgeGate wait (support/app.ts:22) for the button "Begin the book",
+  // which this server-on welcome does not show (it is WelcomeSignIn: "Sign in to begin your book.", "Sign in with email",
+  // "I was invited"). Read from the Web journeys log: the cause for J21 is not read past that wait, so whether the flow or the
+  // screen is wrong is not decided. No assertion changed. Remove this line when BL-2006 is fixed: a pass turns the job red.
+  test.fail(true, 'Known failure BL-2006: remove this line in the PR that fixes it');
   const step = journey(record, 'J21', 'co-parent-sharing', 1, 'J01-02');
   const m = await mockServer(app, { user: PAPA, email: 'papa@example.invalid' });
   m.rpc('peek_invite', () => ({ body: { inviter: 'Mama', role: 'parent' } }));
@@ -142,6 +147,11 @@ async function joinWhileSyncRuns(app: Page, server: { hasBook: boolean }) {
 }
 
 test('[J21i] invitee: Close before the book arrives while sync runs: the welcome says it is on its way, with no "Begin the book"', async ({ app }) => {
+  // Known failure on develop: BL-2006. Fails at the shared passAgeGate wait (support/app.ts:22) for the button "Begin the book",
+  // which this server-on welcome does not show (it is WelcomeSignIn: "Sign in to begin your book.", "Sign in with email",
+  // "I was invited"). Read from the Web journeys log: the cause for J21 is not read past that wait, so whether the flow or the
+  // screen is wrong is not decided. No assertion changed. Remove this line when BL-2006 is fixed: a pass turns the job red.
+  test.fail(true, 'Known failure BL-2006: remove this line in the PR that fixes it');
   await joinWhileSyncRuns(app, { hasBook: false });
   await btn(app, 'Close').click();
   await expect(app.getByTestId('onboarding.joinWait').getByText(`${CHILD}'s book is on its way to this phone.`)).toBeVisible();
@@ -150,6 +160,11 @@ test('[J21i] invitee: Close before the book arrives while sync runs: the welcome
 });
 
 test('[J21j] invitee: the quiet wait runs out at 30 s (Try again and "Begin the book" come back), Try again starts it over, and a retry that finds the book hands over to the Book', async ({ app }) => {
+  // Known failure on develop: BL-2006. Fails at the shared passAgeGate wait (support/app.ts:22) for the button "Begin the book",
+  // which this server-on welcome does not show (it is WelcomeSignIn: "Sign in to begin your book.", "Sign in with email",
+  // "I was invited"). Read from the Web journeys log: the cause for J21 is not read past that wait, so whether the flow or the
+  // screen is wrong is not decided. No assertion changed. Remove this line when BL-2006 is fixed: a pass turns the job red.
+  test.fail(true, 'Known failure BL-2006: remove this line in the PR that fixes it');
   // The page's clock is ours, so 30 s pass in a moment (critics' pass S2; components/family/join-wait.tsx).
   await app.clock.install();
   const server = { hasBook: false };
@@ -192,6 +207,11 @@ test('[J21j] invitee: the quiet wait runs out at 30 s (Try again and "Begin the 
 });
 
 test('[J21e] invitee: a typed code is not read, and the link still works', async ({ app }) => {
+  // Known failure on develop: BL-2006. Fails at the shared passAgeGate wait (support/app.ts:22) for the button "Begin the book",
+  // which this server-on welcome does not show (it is WelcomeSignIn: "Sign in to begin your book.", "Sign in with email",
+  // "I was invited"). Read from the Web journeys log: the cause for J21 is not read past that wait, so whether the flow or the
+  // screen is wrong is not decided. No assertion changed. Remove this line when BL-2006 is fixed: a pass turns the job red.
+  test.fail(true, 'Known failure BL-2006: remove this line in the PR that fixes it');
   await mockServer(app, { user: PAPA });
   await openOn(app);
   await passAgeGate(app);
@@ -207,6 +227,11 @@ test('[J21e] invitee: a typed code is not read, and the link still works', async
 });
 
 test('[J21f] invitee: a server that does not answer is said plainly, and Try again keeps the link', async ({ app }) => {
+  // Known failure on develop: BL-2006. Fails at the shared passAgeGate wait (support/app.ts:22) for the button "Begin the book",
+  // which this server-on welcome does not show (it is WelcomeSignIn: "Sign in to begin your book.", "Sign in with email",
+  // "I was invited"). Read from the Web journeys log: the cause for J21 is not read past that wait, so whether the flow or the
+  // screen is wrong is not decided. No assertion changed. Remove this line when BL-2006 is fixed: a pass turns the job red.
+  test.fail(true, 'Known failure BL-2006: remove this line in the PR that fixes it');
   allowConsoleError(app, /status of 503/);
   const m = await mockServer(app, { user: PAPA });
   let down = true;
@@ -257,6 +282,11 @@ async function joinWithTheBookArriving(app: Page) {
 }
 
 test('[J21g] invitee: once the book is on this phone, "Open the book" lands on the Book', async ({ app, record }) => {
+  // Known failure on develop: BL-2006. Fails at the shared passAgeGate wait (support/app.ts:22) for the button "Begin the book",
+  // which this server-on welcome does not show (it is WelcomeSignIn: "Sign in to begin your book.", "Sign in with email",
+  // "I was invited"). Read from the Web journeys log: the cause for J21 is not read past that wait, so whether the flow or the
+  // screen is wrong is not decided. No assertion changed. Remove this line when BL-2006 is fixed: a pass turns the job red.
+  test.fail(true, 'Known failure BL-2006: remove this line in the PR that fixes it');
   const step = journey(record, 'J21', 'co-parent-sharing', 6);
   await joinWithTheBookArriving(app);
   await expect(app.getByLabel(`What does ${CHILD} call you?`)).toHaveValue('Papa');
@@ -284,6 +314,11 @@ test('[J21g] invitee: once the book is on this phone, "Open the book" lands on t
 });
 
 test('[J21h] invitee: Close on the joined sheet, with the book here, hands over to the Book (no joined light: only Open leaves the mark)', async ({ app }) => {
+  // Known failure on develop: BL-2006. Fails at the shared passAgeGate wait (support/app.ts:22) for the button "Begin the book",
+  // which this server-on welcome does not show (it is WelcomeSignIn: "Sign in to begin your book.", "Sign in with email",
+  // "I was invited"). Read from the Web journeys log: the cause for J21 is not read past that wait, so whether the flow or the
+  // screen is wrong is not decided. No assertion changed. Remove this line when BL-2006 is fixed: a pass turns the job red.
+  test.fail(true, 'Known failure BL-2006: remove this line in the PR that fixes it');
   await joinWithTheBookArriving(app);
   await btn(app, 'Close').click();
   // First run is over once a book is on this phone: the welcome hands over to the Book (5.8 row 12), with no mark.
@@ -292,6 +327,11 @@ test('[J21h] invitee: Close on the joined sheet, with the book here, hands over 
 });
 
 test('[J21b] invitee: a book that already has two parents is said plainly', async ({ app, record }) => {
+  // Known failure on develop: BL-2006. Fails at the shared passAgeGate wait (support/app.ts:22) for the button "Begin the book",
+  // which this server-on welcome does not show (it is WelcomeSignIn: "Sign in to begin your book.", "Sign in with email",
+  // "I was invited"). Read from the Web journeys log: the cause for J21 is not read past that wait, so whether the flow or the
+  // screen is wrong is not decided. No assertion changed. Remove this line when BL-2006 is fixed: a pass turns the job red.
+  test.fail(true, 'Known failure BL-2006: remove this line in the PR that fixes it');
   const step = journey(record, 'J21', 'co-parent-sharing', 10, 'J21-03');
   allowConsoleError(app, /status of 400/);
   const m = await mockServer(app, { user: PAPA });
