@@ -337,7 +337,7 @@ None of this is built or scheduled. Every row is "new row needed" (BL ids are as
 
 ## 8. Founder and counsel questions, with recommended defaults
 
-Counsel numbers are from `docs/legal/COUNSEL_PACKET.md` 1.5.0 where one exists (Q11 processors; Q47 publisher identity; Q30 "Later features", row printed books). New questions say "needs a number from legal". Claude roles are not licensed professionals; every legal reading here needs counsel.
+Counsel numbers are in `docs/legal/COUNSEL_PACKET.md` (Q11 and Q30 in section 5, Q47 in section 2; the print mapping is in section 7); the rows below carry them where one exists (Q11 processors; Q47 publisher identity; Q30 "Later features", row printed books). A row with no packet question says so or cites a register or finance id instead. Claude roles are not licensed professionals; every legal reading here needs counsel.
 
 | Id | Question | Recommended default | Who | Counsel number |
 |---|---|---|---|---|
