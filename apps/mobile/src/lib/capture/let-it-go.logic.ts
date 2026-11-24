@@ -14,6 +14,11 @@ export interface LetItGoSteps {
   /** Must treat a file that is already gone as success (see deleteIfPresent); any throw means the file may still be there. */
   deleteFile: (uri: string) => void;
   finishDiscard: (id: string) => boolean;
+  /**
+   * Called once for each let-go that ends with the draft still on the phone, after step 1 was taken (NS-09-R15):
+   * it keeps the persisted failure count. A throw here never changes the result.
+   */
+  onFailure?: (id: string) => void;
 }
 
 /** The file-system side of step 2: a file that is not there counts as removed; a real failure (permission, IO) throws. */
@@ -28,12 +33,20 @@ export function deleteIfPresent(file: { exists: boolean; delete: () => void }): 
  */
 export function letItGo(id: string, audioUri: string | null | undefined, steps: LetItGoSteps): boolean {
   if (!steps.beginDiscard(id)) return false;
+  const failed = (): false => {
+    try {
+      steps.onFailure?.(id);
+    } catch {
+      // the count is a record, never a reason to stop
+    }
+    return false;
+  };
   if (audioUri) {
     try {
       steps.deleteFile(audioUri);
     } catch {
-      return false;
+      return failed();
     }
   }
-  return steps.finishDiscard(id);
+  return steps.finishDiscard(id) || failed();
 }

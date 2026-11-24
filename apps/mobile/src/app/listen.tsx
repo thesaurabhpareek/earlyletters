@@ -64,6 +64,7 @@ import { ModalHeader } from '@/components/ui/screen-header';
 import { StateGlyph, StateScreen } from '@/components/ui/state-screen';
 import { STATE_LAYOUT } from '@/components/ui/state-screen.logic';
 import { Text } from '@/components/ui/text';
+import { setSurfaceBusy } from '@/lib/asks/surface';
 import { announce, useFocusOnMount, useIsAccessibilitySize, useTheme } from '@/lib/a11y';
 import { setAudioMode } from '@/lib/audio-mode';
 import {
@@ -87,7 +88,7 @@ import { track, trackCaptureDiscarded } from '@/lib/analytics/track';
 import { freeBytesFrom } from '@/lib/capture/free-space';
 import { deleteIfPresent, letItGo } from '@/lib/capture/let-it-go.logic';
 import { VOICE_RECORDING_OPTIONS, abandonTake, beginTake, finalizeTake, type StopReason } from '@/lib/capture/recorder';
-import { beginDiscard, finishDiscard, getActiveChild, setRecordingProgress } from '@/lib/store';
+import { beginDiscard, finishDiscard, getActiveChild, noteDiscardFailure, setRecordingProgress } from '@/lib/store';
 import { KEEP_AWAKE_TAGS, useKeepAwakeWhile } from '@/lib/resilience/keep-awake';
 import { consumeListenStart } from '@/lib/resilience/start-intent';
 
@@ -158,6 +159,14 @@ export default function Listen() {
       if (code) track('error_shown', { code });
     }
   }, [phase]);
+
+  // No setup ask lands on a take: busy from the start of a take until it is kept or let go, and cleared when this
+  // screen goes (BL-1985). Phone memory only.
+  const takeInProgress = phase === 'recording' || phase === 'paused' || phase === 'finishing';
+  useEffect(() => {
+    setSurfaceBusy('recording', takeInProgress);
+  }, [takeInProgress]);
+  useEffect(() => () => setSurfaceBusy('recording', false), []);
 
   // Metering straight into the aura's shared value at 20 Hz (MOTION 5b), never through React state: nothing re-renders
   // for the voice (listening-cue.md 2). No reading (metering off, or a released recorder) is silence: the idle breath.
@@ -440,7 +449,7 @@ export default function Listen() {
           haptic('warning');
           // The one place audio is deleted: the parent confirmed it. Let it go's steps, as in Review (BL-924): a file
           // that will not delete keeps the row, marked and off every list, for the launch sweep to finish.
-          if (id) letItGo(id, uri, { beginDiscard, deleteFile: (u) => deleteIfPresent(new File(u)), finishDiscard });
+          if (id) letItGo(id, uri, { beginDiscard, deleteFile: (u) => deleteIfPresent(new File(u)), finishDiscard, onFailure: noteDiscardFailure });
           discardPendingPhoto(); // The photo goes too: one stored at record start went with the draft above (finishDiscard); this drops the picker's copy
           router.back();
         },

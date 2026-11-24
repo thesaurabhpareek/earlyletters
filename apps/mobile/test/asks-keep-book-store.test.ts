@@ -25,7 +25,7 @@ vi.mock('@/lib/store', () => ({
   listEntriesForChild: () => Array.from({ length: h.letters }, () => ({ kind: 'letter' })),
 }));
 
-let askAfterSave: typeof import('../src/lib/asks').askAfterSave;
+let askAfterSave: (input: { firstLetter: boolean; signInOffered: boolean }, now?: number) => 'keep_book' | 'reminder_prime' | null;
 
 const OFFERED = 'asks.keepBookOffered';
 const REOFFERED = 'asks.keepBookReoffered';
@@ -47,7 +47,13 @@ beforeEach(async () => {
   h.settings.clear();
   h.letters = 0;
   vi.resetModules(); // the ask session is module state: each test starts a fresh one
-  askAfterSave = (await import('../src/lib/asks')).askAfterSave;
+  const asks = await import('../src/lib/asks');
+  // The sheet is recorded when Review's delayed ask fires (BL-1985): decide at the save, then open it.
+  askAfterSave = (input, now) => {
+    const ask = asks.askAfterSave(input, now);
+    if (ask === 'keep_book') asks.fireDelayedAsk('keep_book', () => undefined, now);
+    return ask;
+  };
 });
 
 describe('[BL-1463] the Keep the book offer marks the re-offer only on the second offer', () => {

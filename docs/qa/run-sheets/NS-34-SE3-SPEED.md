@@ -2,6 +2,8 @@
 
 > **Drill identities first.** Follow `README.md` "Drill identities": drill child Asha, no real letter on the phone. This sheet only taps, scrolls and watches, and keeps scripted Asha letters (SE3.0a, SE3.6); it deletes nothing. Do the drill-phone check (`README.md` rule 3) before step SE3.0.
 
+> **Simulated is not SE 3.** A simulator or simulated run is not an iPhone SE 3 result and must be recorded as simulated. If the founder owns no iPhone SE 3, the evidence file says so (D-172).
+
 | | |
 |---|---|
 | Proves | NS-34-R2 (a miss holds its feature), NS-34-R5 (the numbers below, read on an iPhone SE 3rd generation), NS-34-R6 (markers carry an event name and a number only). Backlog: BL-929 (this sheet), BL-1862 |

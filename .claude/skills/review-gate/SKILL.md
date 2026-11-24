@@ -38,7 +38,7 @@ Load this before you review a pull request whose merge needs two counted reviews
 Keep this order; reviewers who skip a part leave the merger to redo it.
 
 1. `Read:` the files and line ranges you read, the PR body, the rows it claims (`docs/BACKLOG.md` by id, the card in `docs/product/prd/`).
-2. `Ran:` what you ran in a worktree at the head: focused tests, then the workspace; `tsc`; the content rules if strings changed. For each new test, run it over `develop`'s source and say how many go red: a test that passes on the old code proves nothing (AIE-R14). Name the mutations you tried and their result.
+2. `Ran:` what you ran in a worktree at the head (your own, under a unique name, with `@scribe/*` pointing at that worktree's packages: AIE-R48): focused tests, then the workspace (the whole suite of the touched app, or the result of `tests and content rules` at the head, whenever the PR changes an import, a module boundary or a pinned source string: AIE-R46); `tsc`; the content rules if strings changed. For each new test, run it over `develop`'s source and say how many go red: a test that passes on the old code proves nothing (AIE-R14). Name the mutations you tried and their result.
 3. The merge check: `git merge-tree` (or a scratch merge with `--no-commit`) against `origin/develop`, and the required CI contexts at the head.
 4. Numbered findings, most serious first, each with file and line and the rule id (constitution first, then privacy, access, tests, content, scope; `OPERATING_MODEL.md` section 6).
 5. `Must fix:` the list, or `Must fix: none.` Then `Notes`.
@@ -47,7 +47,7 @@ Keep this order; reviewers who skip a part leave the merger to redo it.
 
 ## 5. When a review stops counting
 
-- The head moves (a new commit, a merge of `develop`, a rebuild): every earlier review is stale. Re-review the delta with `git diff <old head> <new head>` and post a new header at the new head.
+- The head moves (a new commit, a merge of `develop`, a rebuild): every earlier review is stale. Re-review the delta with `git diff <old head> <new head>` and post a new header at the new head. When the push only merges `develop` or regenerates a generated file, the delta review is enough: show the PR's own files are unchanged and the generator leaves the tree clean (AIE-R49).
 - Neither lens is the author agent, its thread, or the session that commissioned or will merge the PR, and the two use different lenses (D-132; CTO skill section 4).
 - A review by an account outside OWNER, MEMBER or COLLABORATOR never counts on this public repo.
 - Every session posts as the founder's account, so independence is of method, not of identity (CTO skill section 4). Say so when it matters.

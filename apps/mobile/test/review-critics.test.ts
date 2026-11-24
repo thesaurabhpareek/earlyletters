@@ -131,7 +131,9 @@ describe('[S3] VoiceOver reads the letter as it will be kept, and the fix rows a
   });
 
   it('with a screen reader on, the fix rows (the path to every mark) start open', () => {
-    expect(review).toMatch(/const screenReader = useScreenReader\(\);\s*useEffect\(\(\) => \{\s*if \(screenReader\) setFixesOpen\(true\);\s*\}, \[screenReader\]\);/);
+    // BL-1984: the fold reads the same hook; the full QD-11 check is test/review-quiet-default.test.ts.
+    expect(review).toMatch(/const screenReader = useScreenReader\(\);/);
+    expect(review).toMatch(/foldIsOpen\(\{ applies, toggled: foldToggled, screenReader \}\)/);
   });
 });
 
