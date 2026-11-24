@@ -4379,10 +4379,10 @@ Every row is `proposed`: the dispatcher skips it until Karma or the founder sets
 - Source: `docs/tdd/new-scope/12-first-run-5.md` section 2 (PR breakdown) and section 3 (sequencing); map id FP-15, first-run drop D (E43).
 
 #### BL-1036 NS-45: deletion step 1 and typed-word reason wired (R5, R1) (FP-16a)
-- Status: proposed (docs/tdd/new-scope/12-first-run-5.md; scoped by product, waits on the sheet row, the words row and the new content row; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-961, BL-965, BL-2153.
+- Status: proposed (docs/tdd/new-scope/12-first-run-5.md; scoped by product, waits on the sheet row, the words row and the new content row; it must not go ready before the words row is approved; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-961, BL-965, BL-2153.
 - Satisfies: NS-45-R1, NS-45-R5.
 - Scope: wiring only, no new words (the keys come from BL-965 and BL-2153): (1) `apps/mobile/src/app/settings/delete-account.tsx` shows step 1 with its keys and the typed-word reason field; (2) tests named for R1 and R5 that fail on the old code. About 250 lines in 7 files, inside CODE-R02.
-- Done when: `[NS-45-R1]` and `[NS-45-R5]` tests are red on develop before the change and green after; a test fails if any string on these screen is a literal rather than a content key.
+- Done when: `[NS-45-R1]` and `[NS-45-R5]` tests are red on develop before the change and green after; a test fails if any string on this screen is a literal rather than a content key.
 - Test: `apps/mobile/test/delete-account-ns45.test.ts` (unit and source pin).
 
 - Source: `docs/tdd/new-scope/12-first-run-5.md` section 2 (PR breakdown) and section 3 (sequencing); map id FP-16a, first-run drop D (E43).
@@ -5502,10 +5502,10 @@ Ids. The dispatcher reads three-digit ids only. Collision check on 20 Nov 2026: 
 - Source: catalogue A, NS-33 section.
 
 #### BL-162 An XCUITest target for the accessibility audit (NS-33-R16), part (a)
-- Status: proposed (docs/engineering/readiness-20nov/quality catalogue A, row marked GAP; errata E42; scoped by product, split in three; Karma or the founder sets it to ready). Mode: agent. Owner: qa engineer, mobile engineer. Milestone: M15. Size: M. Depends on: BL-984.
+- Status: proposed (docs/engineering/readiness-20nov/quality catalogue A, row marked GAP; errata E42; scoped by product, split in four; Karma or the founder sets it to ready). Mode: agent. Owner: qa engineer, mobile engineer. Milestone: M15. Size: M. Depends on: BL-984.
 - Closes the test-design gap of 1 P0 row: NS-33-R16 (with BL-2154, BL-2155 and BL-2158). Builds beside BL-984.
 - Satisfies: NS-33-R16.
-- Scope: part (a) of three: add an XCUITest target to the e2e build profile through an Expo config plugin (no hand-edited Xcode project), with one smoke test that launches the app and runs `performAccessibilityAudit()` on the first screen. About 3 engineer-days for all three parts (an estimate, not a commitment). Until all three land the row stays a hand run with Accessibility Inspector, recorded as a stand-in and not claimed green.
+- Scope: part (a) of four: add an XCUITest target to the e2e build profile through an Expo config plugin (no hand-edited Xcode project), with one smoke test that launches the app and runs `performAccessibilityAudit()` on the first screen. About 3 engineer-days for all four parts (an estimate, not a commitment). Until all three land the row stays a hand run with Accessibility Inspector, recorded as a stand-in and not claimed green.
 - Done when: a Node test pins the XCUITest plugin entry in the e2e profile and fails when it is removed. The simulator build and run is BL-2158 (a qa row), not this one.
 - Test: `apps/mobile/test/xcuitest-target-config.test.ts` (unit, config pin).
 
@@ -5524,7 +5524,7 @@ Ids. The dispatcher reads three-digit ids only. Collision check on 20 Nov 2026: 
 - Satisfies: NS-33-R16.
 - Scope: a workflow patch under `docs/ops/proposed/` that runs the audit target on a macOS runner on a schedule and on release candidates, not on every PR; its cost and minutes are stated in the patch.
 - Done when: the patch file exists and a text test pins its trigger; once applied, `[NS-33-R16] automated audit` cites the run.
-- Test: `scripts/ci/xcuitest-audit-workflow.test.mjs` (new, text pin of the patch file under `docs/ops/proposed/`).
+- Test: `scripts/ci/xcuitest-audit-workflow.test.mjs` (new, text pin of the patch file under `docs/ops/proposed/`). The root `npm test` lists test files one by one and does not run `scripts/ci/*.test.mjs`, so the PR adds this file to the root `test` script in `package.json`.
 - Source: split from BL-162, catalogue A, NS-33 section.
 
 #### BL-2158 Run the accessibility audit target on a simulator and record it (NS-33-R16, part d of BL-162)
@@ -5563,8 +5563,8 @@ Ids. The dispatcher reads three-digit ids only. Collision check on 20 Nov 2026: 
 - Status: ready (scoped by product to the NS-21-R12 half, which can be built today; the NS-06-A22 half is BL-2157 and the native-setting branch waits on ADR 0039, which is PROPOSED). Mode: agent. Owner: mobile engineer, design systems. Milestone: M15. Size: S. Depends on: none.
 - Closes the test-design gap of 1 P0 row: NS-21-R12. BL-962 is done and its tests exist. NS-01-R50 is not claimed here: its production-off test already exists (`apps/mobile/test/photos-surfaces.test.ts:365`) and its native-setting branch stays an open `it.fails` (line 362) as the marker for ADR 0039; NS-06-A22 moved to BL-2157.
 - Satisfies: NS-21-R12.
-- Scope: pin the gate `photoWordsFieldsShown` in `apps/mobile/src/lib/photos/words-setting.ts` for the words sheet on the letter page (`apps/mobile/src/components/photos/letter-photo.tsx` calls it): add `[NS-21-R12]` and `[NS-21-R12b]` tests in `apps/mobile/test/no-system-indexing.test.ts` (source test) that fail when the words sheet can be rendered in a `production` profile while the native setting is not built (CR-67 AX-1; E41), and when the sheet does not read the gate. If the sheet is found shown in production, the PR reports it to the exec council in its body; this row does not decide what ships (reported, not decided).
-- Done when: both titles pass on develop; a mutant that makes `photoWordsFieldsShown` return true for `production` without the setting, or that renders the sheet without reading the gate, turns them red.
+- Scope: pin the gate `photoWordsFieldsShown` in `apps/mobile/src/lib/photos/words-setting.ts` for the words sheet on the letter page (`apps/mobile/src/components/photos/letter-photo.tsx` calls it): add in `apps/mobile/test/no-system-indexing.test.ts` (source tests): `[NS-21-R12b]` as a plain test that fails when the words sheet can be rendered in a `production` profile while the native setting is not built (CR-67 AX-1; E41) or does not read the gate, and `[NS-21-R12]` as an `it.fails` for the native-setting branch (ADR 0039, PROPOSED), the same shape as NS-01-R50 in `photos-surfaces.test.ts`. If the sheet is found shown in production, the PR reports it to the exec council in its body; this row does not decide what ships (reported, not decided).
+- Done when: `[NS-21-R12b]` passes on develop and the `it.fails` `[NS-21-R12]` is green as an expected failure; a mutant that makes `photoWordsFieldsShown` return true for `production` without the setting, or that renders the sheet without reading the gate, turns them red.
 - Test: `apps/mobile/test/no-system-indexing.test.ts` and `apps/mobile/test/photos-surfaces.test.ts` (unit, mutant).
 
 - Source: catalogues B (NS-01), C (NS-21), D (NS-06).
@@ -5572,7 +5572,7 @@ Ids. The dispatcher reads three-digit ids only. Collision check on 20 Nov 2026: 
 #### BL-2157 The label field is never prefilled and stays off in production without the setting (NS-06-A22, split from BL-287)
 - Status: blocked (the label field is NS-06 Part A, wave 4, and no code for it exists; a test written now would pass with nothing to fail it). Mode: agent. Owner: mobile engineer, design systems. Milestone: M15. Size: S. Depends on: none.
 - Satisfies: NS-06-A22.
-- Scope: when the label field lands, a source test that fails if the field is prefilled from the letter's words, if it renders in a `production` profile without the native writing-tools setting (CR-67 AX-1; E41), or if it does not read `photoWordsFieldsShown`-style gate; the product agent sets this row `ready` when the NS-06 Part A row merges. Not written before then.
+- Scope: when the label field lands, a source test that fails if the field is prefilled from the letter's words, if it renders in a `production` profile without the native writing-tools setting (CR-67 AX-1; E41), or if it does not read the same gate as the words sheet (`photoWordsFieldsShown`); the product agent sets this row `ready` when the NS-06 Part A row merges. Not written before then.
 - Done when: `[NS-06-A22]` and `[NS-06-A22b]` pass and a mutant that prefills the field or ungates it turns them red.
 - Test: `apps/mobile/test/no-system-indexing.test.ts` (source test, mutant).
 - Source: split from BL-287, catalogue D (NS-06).
