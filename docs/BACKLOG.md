@@ -6923,9 +6923,9 @@ BL-408 stays `partly done`: its server half (a launch-scale SQL perf test with p
 - Test: `node apps/mobile/e2e/bin/lint-flows.mjs`; the summary script's own test under `apps/mobile/test/` or `apps/mobile/e2e/`.
 - Gate: BL-044's device run stays the founder's; this row never marks it done.
 
-## Co-parent: the real feature, groomed (BL-882 to BL-889; re-cut of PR #767 on 24 Nov 2026, CR-207)
+## Co-parent: the real feature, groomed (BL-882 to BL-889; re-cut of PR #767 on 24 Nov 2026; ruled in the held-PRs rulings, see the note below)
 
-The co-parent work behind D-161 and D-162, which cite BL-882 to BL-889 by id. In every build nothing says "coming soon" (D-161), so BL-882 is retired below and BL-883 to BL-889 stay `proposed` until BL-883 (the design row) is done. The real feature is after 1.0 (D-121 order); a groomed row is not work shipped dark (CR-178). Source text: PR #767, head a6b9be48, with each `Depends on` re-read against `develop` (the dependencies on #720 and #724 are gone: both merged). Tiers are the CTO skill section 4 definitions: T0 copy, docs or test only; T1 reversible app code behind a flag; T2 schema, auth, infrastructure, CI or a secret; T3 spend, counsel or a decision only the founder can make.
+The co-parent work behind D-161 and D-162, which cite BL-882 to BL-889 by id. In every build nothing says "coming soon" (D-161), so BL-882 is retired below and BL-883 to BL-889 stay `proposed` until BL-883 (the design row) is done. The real feature is after 1.0 (D-121 order); a groomed row is not work shipped dark (CR-178). Rulings cited here (ids provisional): the Project note `infra/exec-rulings-2026-11-24-held-prs.md` (24 Nov 2026 exec rulings, section 6; ids provisional, not yet in `docs/agents/cto/RULINGS.md` or `docs/agents/exec/RULINGS.md`). Source text: PR #767, head a6b9be48, with each `Depends on` and each scope line re-read against `develop` on 24 Nov 2026: the dependencies on #720 and #724 are gone (both merged), and what `develop` already has is named in BL-883 to BL-885 and not listed again as work. Tiers are the CTO skill section 4 definitions: T0 copy, docs or test only; T1 reversible app code behind a flag; T2 schema, auth, infrastructure, CI or a secret; T3 spend, counsel or a decision only the founder can make.
 
 **Suggested order.** 883, then 884, then 885, then 886 and 887, then 888 and 889. Do not build 884 until BL-883's spec has been through the exec read.
 
@@ -6940,7 +6940,7 @@ The co-parent work behind D-161 and D-162, which cite BL-882 to BL-889 by id. In
 - Done when: not applicable.
 
 #### BL-883 Co-parent real feature, decision record and threat model (design first)
-- Status: proposed (CPO-91 and CR-207, 24 Nov 2026: the defaults below are its starting answers and BL-883 may change them with its threat model; the exec read of its spec comes before BL-884 is built; set `ready` only by Karma or the founder)
+- Status: proposed (24 Nov 2026 held-PRs rulings note: the defaults below are its starting answers and BL-883 may change them with its threat model; the exec read of its spec comes before BL-884 is built; set `ready` only by Karma or the founder)
 - Mode: pair
 - Owner: family owner
 - Milestone: after Build 12 (a 1.0.x release, D-121)
@@ -6949,7 +6949,7 @@ The co-parent work behind D-161 and D-162, which cite BL-882 to BL-889 by id. In
 - Satisfies: A-REQ (co-parent), LEGAL-REQ-005, LEGAL-REQ-010 as they bind, PRIV-R21, D-099 and D-124 (two-parent cap takes effect when sharing first ships), D-113 (Leave).
 - Who: `product` drafts; `privacy`, `legal`, `cto` review. Counsel is the founder's step (FT-47 list).
 - Scope: one written spec (no code) fixing: who can be invited (an adult with their own account, signed in, 18 or older), what an invitee sees before accepting (the Shown, Records, Never and Decline lines of COORDINATION section 10, citing LEGAL-REQ-006's sensitive-data text that names the co-parent), what the invitee's consent records, what each parent can read, what happens on removal, leave, a separated household (FAM-11 floor) and account deletion of either parent, and the two-parent cap. Produces the D-### proposals and the counsel questions. Cites `docs/backlog/future/06-coparent-sharing-v1-1.md` (CP-01 to CP-03, the flip-the-switch criteria) and FAM-01, FAM-11, FAM-12 rather than copying them.
-- Starting defaults (CPO-91, CR-207; the conservative option each time, binding nothing until this spec and its exec read): two parents at most (Q1); the invitee has their own account and is 18 or older, a Decline leaves no row (Q2); no Leave until left books are listed with read, export and delete (Q3); the other parent keeps the book and the leaver's letters are deleted or exported per the spec (Q4); the separated-households safety floor ships with the first sharing (Q5); this spec goes through the exec read before BL-884 is built (Q6); real sharing ships in a 1.0.x release chosen after this row sizes it (Q9). The invitee sees nothing about the child before agreeing (the existing `peek_invite` rule, D-111 item 8). Invitee consent wording is a legal text and waits for this spec and the exec read.
+- Starting defaults (the same rulings note; the conservative option each time, binding nothing until this spec and its exec read): two parents at most (Q1); the invitee has their own account and is 18 or older, a Decline leaves no row (Q2); no Leave until left books are listed with read, export and delete (Q3): already met on `develop`, BL-1961 is done and `LEAVE_BOOK_OFFERED = true` after BL-444, BL-1959 and BL-1960, so BL-883 records it and does not gate on it; the other parent keeps the book and the leaver's letters are deleted or exported per the spec (Q4); the separated-households safety floor ships with the first sharing (Q5); this spec goes through the exec read before BL-884 is built (Q6); real sharing ships in a 1.0.x release chosen after this row sizes it (Q9). The invitee sees nothing about the child before agreeing (the existing `peek_invite` rule, D-111 item 8). Invitee consent wording is a legal text and waits for this spec and the exec read.
 - Acceptance:
   - Given the spec, when `privacy` and `legal` read it, then every datum is classified L1 to L4 (principle 10) and each public claim maps to code and a test (principle 14).
   - Given the spec, then each of BL-884 to BL-889 below has its acceptance lines in the spec's terms and no requirement is invented (each line cites an existing id or is marked as a proposal).
@@ -6957,15 +6957,16 @@ The co-parent work behind D-161 and D-162, which cite BL-882 to BL-889 by id. In
 - Depends on: none.
 
 #### BL-884 Invite and join server path: peek, redeem, rate limits, token never logged
-- Status: proposed (CR-207; waits for BL-883)
+- Status: proposed (the 24 Nov held-PRs rulings note; waits for BL-883)
 - Mode: agent
 - Owner: sync owner
 - Milestone: after Build 12
 - Size: M
 - Tier: T2 (schema and Edge Function; needs the founder's `approve-migration` label, D-041). Privacy and legal flags: invitee consent (the join asks before it joins, BL-322); token only in the fragment and never in logs (A-NFR-012); deny and allow tests for every new function (principle 7).
+- Already on `develop` (read 24 Nov 2026 by `git grep` and the rows; nothing run): `peek_invite` (BL-322 partly done; BL-334 migration `20261015010000`), the 8-character code and `invite_redeem_by_code` (BL-445; migrations `20261028010000`, `20261122300000`, `20261123000000`), the `invite-redeem` Edge Function with request ids, a rate limit and the `invites` kill switch (`supabase/functions/invite-redeem/handler.ts` and its test), the two-parent cap `SCCAP` and `consume_rate()` on `accept_child_invite` (BL-331, BL-332; `supabase/tests/access_matrix.test.mjs`), invite expiry and `revoke_invite`, and the fragment-only token in the link (BL-348). BL-884 does not rebuild any of this.
 - Satisfies: BL-322, BL-331 and BL-334 outcomes as they apply, CP-01 dependency list, G-02 and G-04 in `docs/backlog/future/06-coparent-sharing-v1-1.md` (reuse branch `auto/2026-10-05-fixes`), A-NFR-012.
 - Who: `db`, `platform`; review `privacy`, `cto`.
-- Scope: `peek_invite`, redeem through an Edge Function with rate limits and request ids, 8-character code as well as link, invite expiry and cancel, idempotent on a client key. No client UI here.
+- Scope: remaining work only, after BL-883's spec. Read each acceptance line below against the code and tests named above, and add only what has no test yet (the typed codes for an expired, used or cancelled invite; the 20-in-a-minute limit as the spec fixes it; a test that no token reaches any log line) or what the spec changes (for example the Decline-leaves-no-row rule). If every line already has a test, close BL-884 with the list of test names. No client UI here. Not verified: which of the acceptance lines already have a test; that read was not done for this row.
 - Acceptance:
   - Given an expired, used or cancelled invite, when redeemed, then a typed code returns and no row changes.
   - Given 20 redeems from one user in a minute, then the limit holds and the response carries a request id and no user data.
@@ -6974,23 +6975,24 @@ The co-parent work behind D-161 and D-162, which cite BL-882 to BL-889 by id. In
 - Depends on: BL-883.
 
 #### BL-885 Membership, leave and remove, with "private from now on" and the safety floor
-- Status: proposed (CR-207; waits for BL-883, BL-884)
+- Status: proposed (the 24 Nov held-PRs rulings note; waits for BL-883, BL-884)
 - Mode: agent
 - Owner: sync owner
 - Milestone: after Build 12
 - Size: M
-- Tier: T2. Privacy and legal flags: children's data (what the leaver and the remaining parent keep); deletion (D-113: left books must be listed with read, export and delete before Leave is offered); counsel on a separated household (FAM-11 floor); nobody deletes another author's words (principle 15).
+- Tier: T2. Privacy and legal flags: children's data (what the leaver and the remaining parent keep); deletion (D-113: left books are listed with read, export and delete before Leave is offered, which `develop` already does, BL-444, BL-1960, BL-1961); counsel on a separated household (FAM-11 floor); nobody deletes another author's words (principle 15).
+- Already on `develop` (read 24 Nov 2026; nothing run): `leave_child` and `remove_child_member` with tests (BL-331 done, `supabase/migrations/20261005000000_family_cap_language_idempotency.sql`; `supabase/tests/access_matrix.test.mjs`, `v1_gate_coparent.test.mjs`); the phone calls `leave_child` (`apps/mobile/src/lib/family/invites.ts`, `app/invite/leave.tsx`); the left-books list under "Letters to {child}" with read, export and the delete rule (BL-444 slices 1 and 2, BL-1959, BL-1960 done at store level); the Leave row is back (`LEAVE_BOOK_OFFERED = true`, BL-1961, PR #1816); the `invites` kill switch is read by the app screens and by `invite-redeem`. BL-175 (the larger `book_access` model) stays deferred.
 - Satisfies: BL-331, BL-175 (deferred), D-113, FAM-11 floor, LEGAL-REQ-040 kill switch `invites`.
 - Who: `db`, `mobile`; review `privacy`, `legal`.
-- Scope: `leave_child` and `remove_child_member` with tests, the left-books list under "Letters to {child}" (read, export, delete) that D-113 waits for, and a kill switch that stops invites within 5 minutes while the app keeps working locally.
+- Scope: remaining work only, after BL-883's spec: (1) a phone path for a parent to remove the other parent (`remove_child_member` has tests on the server, but no call to it was found in `apps/mobile/src` or `packages/api` clients; not verified beyond that search); (2) the "private from now on" rule and the separated-households safety floor (FAM-11) as the spec fixes them, with a deny test; (3) a check that the `invites` kill switch stops a send and a redeem within 5 minutes while an open app keeps recording (the switch exists; the 5-minute bound was not read). Leave, the left-books list, export and delete are built and are not in this row.
 - Acceptance:
-  - Given a parent who leaves, then their own letters stay theirs and are listed, readable, exportable and deletable on their phone, and the other parent sees only what the spec says.
+  - Given a parent who leaves, then what the other parent sees is only what the spec says (the leaver's own letters already stay theirs and are listed, readable, exportable and deletable on their phone, BL-444 and BL-1960; a regression check, not new work).
   - Given a removed parent, then they read nothing new after removal (deny test).
   - Given the `invites` switch stopped, when five minutes pass, then an open app cannot send or redeem an invite and keeps recording.
-- Depends on: BL-883, BL-884.
+- Depends on: BL-883. BL-884 only where item 3 needs a test it adds.
 
 #### BL-886 Invite and join screens: ask before joining, calm failure messages
-- Status: proposed (CR-207; waits for BL-884)
+- Status: proposed (the 24 Nov held-PRs rulings note; waits for BL-884)
 - Mode: agent
 - Owner: mobile engineer
 - Milestone: after Build 12
@@ -7007,7 +7009,7 @@ The co-parent work behind D-161 and D-162, which cite BL-882 to BL-889 by id. In
 - Depends on: BL-884, copy from `content`.
 
 #### BL-887 Two parents, one book: sync, private letters and "From Papa" signing
-- Status: proposed (CR-207; waits for BL-883, BL-885)
+- Status: proposed (the 24 Nov held-PRs rulings note; waits for BL-883, BL-885)
 - Mode: pair
 - Owner: mobile engineer
 - Milestone: after Build 12
@@ -7023,7 +7025,7 @@ The co-parent work behind D-161 and D-162, which cite BL-882 to BL-889 by id. In
 - Depends on: BL-883, BL-885.
 
 #### BL-888 Co-parent claims, privacy label and App Review notes
-- Status: proposed (CR-207; waits for BL-883)
+- Status: proposed (the 24 Nov held-PRs rulings note; waits for BL-883)
 - Mode: human
 - Owner: legal
 - Milestone: before the release that turns sharing on
@@ -7038,7 +7040,7 @@ The co-parent work behind D-161 and D-162, which cite BL-882 to BL-889 by id. In
 - Depends on: BL-883.
 
 #### BL-889 Co-parent device test sheet and the switch-on gate
-- Status: proposed (CR-207; waits for BL-884, BL-885, BL-886, BL-887)
+- Status: proposed (the 24 Nov held-PRs rulings note; waits for BL-884, BL-885, BL-886, BL-887)
 - Mode: human
 - Owner: qa engineer
 - Milestone: before the release that turns sharing on
