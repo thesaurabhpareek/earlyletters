@@ -1052,8 +1052,9 @@ export const en = {
     // Settings > Privacy (PRD.md K-01, K-17). Each consent is visible and changeable here.
     privacy: {
       title: "Privacy",
-      analyticsLabel: "Share usage and crash reports",
-      analyticsHelp: "Which screens you open and when something breaks. Never your letters, recordings, photos or anyone's names.",
+      // PROPOSED (BL-389): usage only; no crash reporter exists in v1.0 (claims test: consent-claims.test.ts). Needs an exec-team reading.
+      analyticsLabel: "Share usage",
+      analyticsHelp: "Which screens you open and when. Never your letters, recordings or anyone's names.",
       analyticsOffNote: "Turning this off stops sharing right away. Nothing else changes.",
       sensitiveLabel: "Sync across your phones",
       // Names the health category, as Washington and Connecticut consent requires (lawyer-2 H4, CHD policy HN-4).
@@ -1127,11 +1128,14 @@ export const en = {
   // Product analytics consent. Third ask after the first letter, on a later session (PRD.md K-01, PRD-REQ-001).
   analyticsConsent: {
     title: "Help us make it better?",
-    body: "Share how you use the app, like which screens you open and when something crashes. Never your letters, recordings, photos or anyone's names.",
+    // PROPOSED (BL-389): says only what v1.0 sends (usage, no crash data) and drops "photos". Needs an exec-team reading before it ships as final.
+    body: "Share how you use the app, like which screens you open. Never your letters, recordings or anyone's names.",
     detail: "Nothing is shared unless you say yes. Saying no changes nothing else.",
     changeLater: "You can change this any time in Settings, Privacy.",
     yesButton: "Share usage",
     noButton: "Don't share",
+    // PROPOSED (BL-389): the label the sheet's close control speaks, in place of "Close". Closing is not a no (the ask may return once).
+    notNowLabel: "Not now",
   },
 
   // One book per child (PRD.md K-12, PRD-REQ-011 to PRD-REQ-015).
