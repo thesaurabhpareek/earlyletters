@@ -188,3 +188,38 @@ Deno.test('no secret, id, hash, device id or token in any log line or response',
     assert.deepEqual(findCanaries(all), []);
   }
 });
+
+Deno.test('[SEC-R13 fill limit] BL-2192: past the per-person limit the RPC answers false, and the caller still gets the uniform 200 with no id logged', async () => {
+  // The limit lives in ops_new_device_pending_fill (20261124132000, 10 calls per person per hour): past it the RPC answers false,
+  // the same answer as "nothing to fill". This fake plays that database: true for the first 10 calls of a person, then false.
+  const LIMIT = 10;
+  const calls: Record<string, unknown>[] = [];
+  const lines: string[] = [];
+  const fetchFn = (_url: string, init?: RequestInit): Promise<Response> => {
+    calls.push(JSON.parse(String(init?.body ?? '{}')));
+    return Promise.resolve(new Response(JSON.stringify(calls.length <= LIMIT)));
+  };
+  const handler = makeHandler((n) => ENV[n], { fetch: fetchFn, logSink: (l) => lines.push(l) });
+  const post = async () => {
+    const res = await handler(new Request('https://fn.local/new-device-fill', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${GOOD}` }, body: JSON.stringify(GOOD_BODY),
+    }));
+    return { status: res.status, body: (await res.text()).replace(/"request_?[iI]d":"[^"]*"/g, '') };
+  };
+  const answers = [];
+  for (let i = 0; i < LIMIT + 3; i++) answers.push(await post());
+  // One RPC per call: the function adds no second round trip and no limit of its own; the database decides.
+  assert.equal(calls.length, LIMIT + 3);
+  for (const a of answers) {
+    assert.equal(a.status, 200);
+    assert.equal(a.body, answers[0].body); // a served call and a limited one read the same (no oracle)
+  }
+  assert.match(answers[0].body, /"status":"ok"/);
+  // Logs: counts and enums only. A limited call logs rows 0, like an unfilled one, and never the profile, session, device or token.
+  const done = lines.filter((l) => l.includes('fill.done'));
+  assert.equal(done.length, LIMIT + 3);
+  assert.equal(done.filter((l) => /"rows":0/.test(l)).length, 3);
+  const all = lines.join('\n');
+  for (const secret of [ASHA.profile, ASHA.session, ASHA.device, KEY, 'svc-fixture', GOOD]) assert.ok(!all.includes(secret), secret.slice(0, 8));
+  assert.deepEqual(findCanaries(all), []);
+});
