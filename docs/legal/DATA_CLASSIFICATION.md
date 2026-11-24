@@ -491,7 +491,7 @@ Service only; 12 months; never part of an export (CR-71 C3; privacy confirms the
 
 ##### `ops.forget_quota_retired`
 
-Separate daily bucket for the analytics-forget reason `retired_id` (BL-1252), so retired-id cleanup cannot use up the shared bucket. Same columns as `ops.forget_quota`; counts only, never an analytics id.
+Separate daily bucket for the analytics-forget reason `retired_id` (BL-1252), so retired-id cleanup cannot use up the shared bucket. Same columns as `ops.forget_quota`; counts only, never an analytics id. Retention: rows older than 2 days are deleted by `ops_retention` (LEGAL-REQ-033), the same rule as `ops.forget_quota`; rows also go with the person on account deletion.
 
 | Column | Level | Note |
 |---|---|---|

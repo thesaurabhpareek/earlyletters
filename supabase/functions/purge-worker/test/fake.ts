@@ -323,7 +323,7 @@ export class FakeWorld {
         return this.ledger.filter((r) => r.at >= String(a.p_from) && r.at < String(a.p_until));
       case 'ops_retention':
         this.retentionCalls++;
-        return { audit_log: 0, forget_quota: 0 };
+        return { audit_log: 0, forget_quota: 0, forget_quota_retired: 0 };
       case 'backup_svc_unwraps_between':
         return this.escrowLog.filter((r) => String(r.at) >= String(a.p_from) && String(r.at) < String(a.p_until));
       case 'backup_svc_sweep':

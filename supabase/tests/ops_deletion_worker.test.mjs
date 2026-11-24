@@ -238,6 +238,13 @@ check('runbook names are a closed list', (await codeOf(() => sys(`select public.
 await sys(`insert into ops.audit_log (at, operator, runbook, reason_code, ticket) values (now() - interval '13 months', 'f', 'deletion', 'old', 'T-0')`);
 const ret = await j(`select public.ops_retention(now()) v`);
 check('retention removes runbook rows older than 12 months only', ret.audit_log === 1 && (await sys(`select count(*)::int n from ops.audit_log`)).rows[0].n === 1);
+await sys(`insert into ops.forget_quota_retired values ($1, current_date - 5, 4)`, [A]);
+await sys(`insert into ops.forget_quota_retired values ($1, current_date - 3, 2)`, [B]);
+await sys(`insert into ops.forget_quota_retired values ($1, current_date, 1) on conflict (profile_id, day) do nothing`, [A]);
+const ret2 = await j(`select public.ops_retention(now()) v`);
+check('retention clears retired_id quota rows older than 2 days and keeps today', ret2.forget_quota_retired === 2
+  && (await sys(`select count(*)::int n from ops.forget_quota_retired where profile_id = $1 and day < current_date - 2`, [A])).rows[0].n === 0
+  && (await sys(`select count(*)::int n from ops.forget_quota_retired where profile_id = $1 and day = current_date`, [A])).rows[0].n === 1);
 
 // ── Incident scope (LEGAL-REQ-039) ────────────────────────────────────────
 const S2 = '88888888-8888-8888-8888-888888888888';
