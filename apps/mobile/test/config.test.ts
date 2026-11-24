@@ -490,29 +490,39 @@ describe('e2e seams stay out of every uploadable build (TESTID_REQUESTS.md B-1, 
   });
 });
 
-describe('no remote push in any build (docs/ops/RELEASE.md section 4)', () => {
-  // expo-notifications' automatic plugin writes aps-environment; app.config.ts removes it. This evaluates the
-  // config the way `expo config --type introspect` does, which is what EAS capability sync reads (eas-cli 24.10.0
-  // build/project/ios/entitlements.js), so the removal is guarded under npm test, not only by the preflight's prebuild.
-  const req = createRequire(path.join(ROOT, 'package.json'));
-  const { getPrebuildConfigAsync } = createRequire(req.resolve('@expo/cli/package.json'))('@expo/prebuild-config');
-  const { compileModsAsync } = req('expo/config-plugins');
+/**
+ * Evaluates the iOS config the way `expo config --type introspect` does, which is what EAS capability sync reads
+ * (eas-cli 24.10.0 build/project/ios/entitlements.js): getPrebuildConfigAsync applies app.config.ts and every config
+ * plugin (listed and auto-applied), then compileModsAsync runs their mods in introspect mode against Expo's built-in
+ * templates (no ios/ folder is read or written). `extra` adds variables on top of the profile's env.
+ */
+const prebuildRequire = createRequire(path.join(ROOT, 'package.json'));
+const { getPrebuildConfigAsync } = createRequire(prebuildRequire.resolve('@expo/cli/package.json'))('@expo/prebuild-config');
+const { compileModsAsync } = prebuildRequire('expo/config-plugins');
 
-  async function introspectedEntitlements(name: string): Promise<Record<string, unknown>> {
-    const names = [...PROFILE_VARIABLES, ...ALPHA_ONLY_VARIABLES, ...FROM_EAS_ONLY, 'EXPO_PUBLIC_E2E', 'EAS_BUILD_PROFILE'];
-    const saved = Object.fromEntries(names.map((k) => [k, process.env[k]]));
-    try {
-      for (const k of names) delete process.env[k];
-      for (const [k, v] of Object.entries(easFile.build[name]?.env ?? {})) process.env[k] = v;
-      const { exp } = await getPrebuildConfigAsync(ROOT, { platforms: ['ios'] });
-      const out = await compileModsAsync(exp, { projectRoot: ROOT, introspect: true, platforms: ['ios'], assertMissingModProviders: false, ignoreExistingNativeFiles: true });
-      return out.ios?.entitlements ?? {};
-    } finally {
-      for (const [k, v] of Object.entries(saved)) {
-        if (v === undefined) delete process.env[k];
-        else process.env[k] = v;
-      }
+async function introspectedIos(name: string, extra: Record<string, string> = {}): Promise<{ entitlements?: Record<string, unknown>; infoPlist?: Record<string, unknown> }> {
+  const names = [...PROFILE_VARIABLES, ...ALPHA_ONLY_VARIABLES, ...NON_ALPHA_ONLY_VARIABLES, ...FROM_EAS_ONLY, 'EXPO_PUBLIC_E2E', 'EAS_BUILD_PROFILE'];
+  const saved = Object.fromEntries(names.map((k) => [k, process.env[k]]));
+  try {
+    for (const k of names) delete process.env[k];
+    for (const [k, v] of Object.entries({ ...(easFile.build[name]?.env ?? {}), ...extra })) process.env[k] = v;
+    const { exp } = await getPrebuildConfigAsync(ROOT, { platforms: ['ios'] });
+    const out = await compileModsAsync(exp, { projectRoot: ROOT, introspect: true, platforms: ['ios'], assertMissingModProviders: false, ignoreExistingNativeFiles: true });
+    return out.ios ?? {};
+  } finally {
+    for (const [k, v] of Object.entries(saved)) {
+      if (v === undefined) delete process.env[k];
+      else process.env[k] = v;
     }
+  }
+}
+
+describe('no remote push in any build (docs/ops/RELEASE.md section 4)', () => {
+  // expo-notifications' automatic plugin writes aps-environment; app.config.ts removes it. introspectedIos evaluates
+  // the config the way EAS capability sync reads it, so the removal is guarded under npm test, not only by the
+  // preflight's prebuild.
+  async function introspectedEntitlements(name: string): Promise<Record<string, unknown>> {
+    return (await introspectedIos(name)).entitlements ?? {};
   }
 
   for (const name of Object.keys(easFile.build)) {
@@ -531,6 +541,79 @@ describe('no remote push in any build (docs/ops/RELEASE.md section 4)', () => {
   it('eas.json turns off eas-cli\'s push setup question, so an interactive build never offers to make a push key', () => {
     expect(easFile.cli.promptToConfigurePushNotifications).toBe(false);
   });
+});
+
+describe('Info.plist keys are an allowlist in every build (BL-2131, LEGAL-REQ-007, D-065)', () => {
+  // Reads the introspected Info.plist (introspectedIos above): app.config.ts ios.infoPlist plus every config plugin's
+  // withInfoPlist mod, applied to Expo's built-in Info.plist template (@expo/config-plugins withIosBaseMods
+  // getInfoPlistTemplate). It is not the plist inside a built .ipa: the template used by `expo prebuild`, build
+  // phases (see expo-dev-launcher below) and pods can still differ from it. A key missing here is a reviewed change:
+  // add it with the line or plugin that writes it, and for a purpose string (*UsageDescription) get counsel's read
+  // of the copy first (LEGAL-REQ-007).
+  const TEMPLATE = "Expo's Info.plist template (@expo/config-plugins withIosBaseMods)";
+  const INFO_PLIST_ALLOWLIST: Record<string, string> = {
+    CFBundleDevelopmentRegion: TEMPLATE,
+    CFBundleExecutable: TEMPLATE,
+    CFBundleIdentifier: TEMPLATE,
+    CFBundleName: TEMPLATE,
+    CFBundlePackageType: TEMPLATE,
+    CFBundleInfoDictionaryVersion: TEMPLATE,
+    CFBundleSignature: TEMPLATE,
+    LSMinimumSystemVersion: TEMPLATE,
+    LSRequiresIPhoneOS: TEMPLATE,
+    NSAppTransportSecurity: TEMPLATE,
+    UIRequiredDeviceCapabilities: TEMPLATE,
+    UIViewControllerBasedStatusBarAppearance: TEMPLATE,
+    UIStatusBarStyle: TEMPLATE,
+    UILaunchStoryboardName: `${TEMPLATE}; expo-splash-screen`,
+    CADisableMinimumFrameDurationOnPhone: `app.config.ts ios.infoPlist (also in ${TEMPLATE})`,
+    LSApplicationQueriesSchemes: 'app.config.ts ios.infoPlist (tel and mailto for the crisis lines and Write to us)',
+    CFBundleShortVersionString: 'Expo base mod withVersion (version.json through app.config.ts version)',
+    CFBundleVersion: 'Expo base mod withBuildNumber (EAS remote versioning sets the real number)',
+    ITSAppUsesNonExemptEncryption: 'Expo base mod withUsesNonExemptEncryption (app.config.ts ios.config.usesNonExemptEncryption)',
+    RCTMetroPort: 'Expo base mod withDevServer',
+    CFBundleURLTypes: 'Expo base mod withScheme (app.config.ts scheme, bundle id); expo-dev-client adds exp+<slug>; @react-native-google-signin/google-signin adds its URL scheme when the iOS client id is set',
+    UIRequiresFullScreen: 'Expo base mod withRequiresFullScreen',
+    UISupportedInterfaceOrientations: 'Expo base mod withOrientation (app.config.ts orientation)',
+    CFBundleDisplayName: 'Expo base mod withDisplayName (app.config.ts name)',
+    CFBundleAllowMixedLocalizations: 'Expo base mod withLocales; expo-apple-authentication',
+    UIUserInterfaceStyle: 'expo-system-ui (app.config.ts userInterfaceStyle)',
+    RCTRootViewBackgroundColor: 'expo-system-ui (app.config.ts backgroundColor)',
+    UIAppFonts: 'expo-font plugin in app.config.ts (packages/design-tokens/fonts)',
+    NSUserActivityTypes: 'expo-router plugin',
+    NSBonjourServices: 'expo-dev-launcher (auto-applied with expo-dev-client); its build phase strips _expo._tcp from non-Debug builds',
+    // Purpose strings: every one is also pinned in PURPOSE_STRINGS below.
+    NSMicrophoneUsageDescription: 'expo-audio plugin in app.config.ts (microphonePermission, permissionCopy.microphone)',
+    NSFaceIDUsageDescription: 'expo-local-authentication plugin in app.config.ts (faceIDPermission, permissionCopy.faceId)',
+    NSLocalNetworkUsageDescription: 'expo-dev-launcher (auto-applied with expo-dev-client); its build phase strips the dev-launcher text from non-Debug builds',
+  };
+  const PURPOSE_STRINGS = ['NSFaceIDUsageDescription', 'NSLocalNetworkUsageDescription', 'NSMicrophoneUsageDescription'];
+
+  // The five builds BL-2131 names, plus e2e (every eas.json profile). Production is checked with servers off (the
+  // store build, which drops sign-in) and with servers on, whichever eas.json writes today.
+  const CASES: ReadonlyArray<{ label: string; profile: string; extra?: Record<string, string> }> = [
+    { label: 'development', profile: 'development' },
+    { label: 'e2e', profile: 'e2e' },
+    { label: 'preview', profile: 'preview' },
+    { label: 'testflight', profile: 'testflight' },
+    { label: 'production, servers off', profile: 'production', extra: { EXPO_PUBLIC_SERVER_FEATURES: 'off' } },
+    { label: 'production, servers on', profile: 'production', extra: { EXPO_PUBLIC_SERVER_FEATURES: 'on' } },
+  ];
+
+  it('covers every eas.json build profile', () => {
+    expect([...new Set(CASES.map((c) => c.profile))].sort()).toEqual(Object.keys(easFile.build).sort());
+  });
+
+  for (const { label, profile, extra } of CASES) {
+    it(`${label}: every introspected Info.plist key is on the allowlist, and the purpose strings are exactly the three named`, async () => {
+      const plist = (await introspectedIos(profile, extra)).infoPlist ?? {};
+      const keys = Object.keys(plist).sort();
+      expect(keys.length, label).toBeGreaterThan(0);
+      expect(keys.filter((k) => !(k in INFO_PLIST_ALLOWLIST)), `${label}: Info.plist keys not on the allowlist`).toEqual([]);
+      expect(keys.filter((k) => k.endsWith('UsageDescription')), label).toEqual(PURPOSE_STRINGS);
+      expect(plist.LSApplicationQueriesSchemes, label).toEqual(['tel', 'mailto']);
+    }, 60_000);
+  }
 });
 
 describe('.env.development', () => {
