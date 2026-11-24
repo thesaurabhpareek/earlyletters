@@ -72,6 +72,79 @@ export function rowShows(e: Pick<Edit, 'original' | 'replacement'>): RowShows {
 }
 
 /* ------------------------------------------------------------------ */
+/* The quiet default (spec 14, BL-1984, QD-01 to QD-11) */
+/* ------------------------------------------------------------------ */
+
+export interface FoldInput {
+  /** A letter that was only typed: the machine proposes nothing for it. */
+  typed: boolean;
+  /** The person's own words from Change words, or null. With them the view control and the count are not on screen. */
+  userText: string | null;
+  /** How many fixes the machine proposed for this letter. */
+  proposed: number;
+  /** Whether the count row has been opened on this Review. */
+  open: boolean;
+}
+
+export interface FoldShows {
+  /** The count row exists: it is the one control that opens and folds the rest. */
+  countRow: boolean;
+  viewControl: boolean;
+  fixRows: boolean;
+  changeWords: boolean;
+}
+
+/**
+ * What Review shows under the letter (QD-01 to QD-04). The fold exists only while there is a count row to open it:
+ * a spoken letter with at least one proposed fix. With none (a short clean letter, a language with no fix rules, a
+ * typed letter) or with the person's own words there is nothing to fold, so "Change words" stays where it is.
+ * "Exactly as said" and every fix put back keep the row (QD-03), so the way back never goes. The marks in the words
+ * are not in this list on purpose: they are never folded (QD-05).
+ */
+export function quietFold(input: FoldInput): FoldShows {
+  const fold = !input.typed && input.userText === null && showViewControl(input.proposed);
+  return { countRow: fold, viewControl: fold && input.open, fixRows: fold && input.open, changeWords: !fold || input.open };
+}
+
+/**
+ * Whether the fold starts open. A new Review always starts folded (QD-10: the choice is never remembered), except
+ * with a screen reader on, where the fix rows are the path to the marks (QD-11, CDesO ruling 23 Nov). Reads the same
+ * `useScreenReader` value the rest of Review reads, passed in.
+ */
+export function foldStartsOpen(screenReader: boolean): boolean {
+  return screenReader;
+}
+
+/**
+ * The words on the count row. With fixes in force it says the fixes are marked, and nothing wider (QD-06, D-169
+ * item 2). In "Exactly as said" the marks are not drawn, so it counts what is on offer without the marked clause.
+ * After every fix is put back it keeps the existing line.
+ */
+export function foldRowText(input: { view: ReviewView; applied: number; proposed: number }): string {
+  const r = copy.review;
+  const count = (n: number, one: string, many: string) => (n === 1 ? one : fill(many, { count: n }));
+  if (input.view === 'exact') return count(input.proposed, r.changesLabelOne, r.changesLabel);
+  if (input.applied > 0) return count(input.applied, r.changesMarkedOne, r.changesMarked);
+  return r.noChangesAfterUndo;
+}
+
+/** The count row's spoken hint: what a tap does from its current state. The open state itself is spoken by the control. */
+export function foldRowHint(open: boolean): string {
+  return open ? copy.review.foldCloseHint : copy.review.foldOpenHint;
+}
+
+/**
+ * The one line under each Keep button (QD-08), which is also that button's spoken hint, once: the visible line is
+ * hidden from the screen reader. After a save that did not work there are none (QD-09): the caution line is the
+ * only thing above "Try again".
+ */
+export function keepLines(input: { saveFailed: boolean }): { add: string; private: string } | null {
+  if (input.saveFailed) return null;
+  const d = copy.review.destination;
+  return { add: d.addLine, private: d.privateLine };
+}
+
+/* ------------------------------------------------------------------ */
 /* The letter sheet and the saved moment (EXPERIENCE_PASS S17, S21, P4b) */
 /* ------------------------------------------------------------------ */
 

@@ -76,6 +76,10 @@ import {
   DEFAULT_VIEW_SETTING,
   arrivalParams,
   countLine,
+  foldRowHint,
+  foldRowText,
+  keepLines,
+  quietFold,
   letterHeader,
   primaryDestination,
   putBackNoteShows,
@@ -89,7 +93,6 @@ import {
   fixesInForce,
   rowShows,
   setAsideAtSave,
-  showViewControl,
   viewFromSetting,
   type ReviewView,
 } from '@/components/capture/review-view.logic';
@@ -491,7 +494,7 @@ export default function Review() {
     announce(putBackSpeech({ putBack: pendingCopy.review.putBack, undo: copy.common.undoButton, countText: countTextFor(next.applied.length) }));
     setOpenEdit(null);
     setWash(true);
-    setTimeout(() => setWash(false), 1600);
+    setTimeout(() => setWash(false), tokens.motion.newMarkMs);
   };
 
   const undoPutBack = () => {
@@ -788,8 +791,10 @@ export default function Review() {
     );
   }
 
-  const line = countLine({ view, applied: applied.length, proposed, hasFixRules: spokenEditLevel(language) === 'clean' });
   const countText = countTextFor(applied.length);
+  // The quiet default (spec 14): the count row opens the view control, the fix rows and Change words together.
+  const fold = quietFold({ typed, userText, proposed, open: fixesOpen });
+  const keepLine = keepLines({ saveFailed });
 
   // The letter sheet's header (S17): the month it files into, from the day it was said.
   const occurredOn = draft.createdAt ? todayISO(new Date(draft.createdAt)) : todayISO();
@@ -901,13 +906,21 @@ export default function Review() {
                   {r.saveFailed}
                 </Text>
               )}
-              <Button size="lg" fullWidth onPress={() => keepTo(primaryDestination({ saveFailed, lastInBook: lastDestination.current }))} disabled={!finalText.trim()} testID="review.save.book">
+              <Button
+                size="lg"
+                fullWidth
+                onPress={() => keepTo(primaryDestination({ saveFailed, lastInBook: lastDestination.current }))}
+                disabled={!finalText.trim()}
+                accessibilityHint={keepLine?.add}
+                testID="review.save.book">
                 <Text>{savePrimaryLabel({ childName: child.name, saveFailed })}</Text>
               </Button>
+              {keepLine && <KeepLine text={keepLine.add} testID="review.save.book.line" />}
               {/* Stays after a failed save, so focus is never dropped and the other destination is one tap away (S17). */}
-              <Button variant="quiet" fullWidth onPress={() => keepTo(false)} disabled={!finalText.trim()} testID="review.save.private">
+              <Button variant="quiet" fullWidth onPress={() => keepTo(false)} disabled={!finalText.trim()} accessibilityHint={keepLine?.private} testID="review.save.private">
                 <Text>{r.destination.privateButton}</Text>
               </Button>
+              {keepLine && <KeepLine text={keepLine.private} testID="review.save.private.line" />}
             </>
           ),
         )
@@ -946,7 +959,10 @@ export default function Review() {
   // The open mark's card ("You said / Now it reads", Put it back): it opens under the line the mark ends on (S17,
   // MOTION 5d; P4 critics' pass S8), so on a long letter it is never off screen below the last line.
   const markCard = openE ? (
-    <Animated.View entering={FadeIn.delay(80).duration(160)} className="my-3 gap-2 rounded-2xl bg-muted p-4" testID="review.card">
+    <Animated.View
+      entering={motion.reduced ? FadeIn.duration(tokens.motion.fadeMs) : FadeIn.delay(tokens.motion.markCard.delayMs).duration(tokens.motion.markCard.ms)}
+      className="my-3 gap-2 rounded-2xl bg-muted p-4"
+      testID="review.card">
       <Text variant="labelSmall">{labelOf(openE).label}</Text>
       <Text variant="subhead">{labelOf(openE).explain}</Text>
       {/* You said / Now it reads: before and after, in the parent's own words (D-086). */}
@@ -1125,10 +1141,9 @@ export default function Review() {
 
               {!typed && userText === null && !editing && (
                 <View className="gap-3">
-                  {/* One control, both the view and the choice for this letter. Reversible until save. */}
-                  {showViewControl(proposed) && <ViewControl view={view} onChange={chooseView} />}
-                  {line === 'count' ? (
-                    // "2 small fixes": one disclosure row; the rows fold behind it, since every mark is tappable in the letter (S17).
+                  {fold.countRow ? (
+                    // "2 small fixes, marked in your words": the one disclosure row. The view control, the rows and Change words
+                    // fold behind it; the marks in the letter are never folded and stay tappable (S17, QD-05).
                     <Pressable
                       onPress={() => {
                         haptic('tap');
@@ -1136,10 +1151,14 @@ export default function Review() {
                       }}
                       accessibilityRole="button"
                       accessibilityState={{ expanded: fixesOpen }}
+                      accessibilityHint={foldRowHint(fixesOpen)}
                       accessibilityLiveRegion="polite"
                       className="min-h-12 flex-row items-center justify-between gap-3"
                       testID="review.count">
-                      <Text variant="subhead">{countText}</Text>
+                      {/* flex-1 so at AX5 the words wrap beside the chevron and are never cut (QD-02). */}
+                      <Text variant="subhead" className="flex-1">
+                        {foldRowText({ view, applied: applied.length, proposed })}
+                      </Text>
                       {fixesOpen ? <CaretDownIcon size={16} color={c.textMuted} weight="bold" /> : <CaretRightIcon size={16} color={c.textMuted} weight="bold" />}
                     </Pressable>
                   ) : (
@@ -1147,6 +1166,8 @@ export default function Review() {
                       {countText}
                     </Text>
                   )}
+                  {/* One control, both the view and the choice for this letter. Reversible until save. */}
+                  {fold.viewControl && <ViewControl view={view} onChange={chooseView} />}
                   {/* Every fix as a row: the VoiceOver path to the marks (COMPONENTS 2.19). */}
                   {view === 'fixes' && applied.length > 0 && fixesOpen && (
                     <View>
@@ -1168,7 +1189,7 @@ export default function Review() {
               )}
 
               {/* A later letter's words are kept as they are stored: keeping them writes no words. */}
-              {!isSample && !editing && !later && (
+              {!isSample && !editing && !later && fold.changeWords && (
                 <Button
                   variant="quiet"
                   size="sm"
@@ -1212,6 +1233,18 @@ export default function Review() {
       />
       {keepSheet}
     </SafeAreaView>
+  );
+}
+
+/**
+ * The one plain line under a Keep button (QD-08). Its words are also that button's spoken hint, so this text is hidden
+ * from the screen reader and nothing is read twice.
+ */
+function KeepLine({ text, testID }: { text: string; testID: string }) {
+  return (
+    <Text variant="footnote" tone="muted" className="text-center" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" testID={testID}>
+      {text}
+    </Text>
   );
 }
 

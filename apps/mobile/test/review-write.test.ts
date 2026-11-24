@@ -295,7 +295,7 @@ describe('S17: Review reads as a letter', () => {
 
   it('"Keep private" stays after a failed save, so focus is never dropped and the other destination is one tap away', () => {
     const footer = review.slice(review.indexOf('const footer ='), review.indexOf('const keepFooter'));
-    expect(footer).toMatch(/<Button variant="quiet" fullWidth onPress=\{\(\) => keepTo\(false\)\} disabled=\{!finalText\.trim\(\)\} testID="review\.save\.private">/);
+    expect(footer).toMatch(/<Button variant="quiet" fullWidth onPress=\{\(\) => keepTo\(false\)\} disabled=\{!finalText\.trim\(\)\} accessibilityHint=\{keepLine\?\.private\} testID="review\.save\.private">/);
     expect(footer).not.toMatch(/!saveFailed\s*&&/);
   });
 
@@ -452,7 +452,7 @@ describe('every word on these screens comes from packages/content (lens B X1, X4
 
 describe('S23: Review opened with no draft', () => {
   it('"Nothing to read back here", the page drawing, one way to the book, no error, nothing to try again', () => {
-    const empty = review.slice(review.indexOf('if (!draft || !child) {'), review.indexOf('const line = countLine'));
+    const empty = review.slice(review.indexOf('if (!draft || !child) {'), review.indexOf('const countText = countTextFor'));
     expect(empty).toMatch(/kind="notFound"/);
     expect(empty).toMatch(/title=\{r\.noDraft\.title\}/);
     expect(empty).toMatch(/label: r\.noDraft\.button, onPress: \(\) => router\.dismissTo\('\/book'\)/);
