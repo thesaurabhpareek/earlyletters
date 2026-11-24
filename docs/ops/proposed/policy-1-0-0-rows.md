@@ -22,14 +22,14 @@ Hashes are `sha256sum` of the exact files in this PR, taken after the last edit 
 
 | Document key | Version | File | sha256 |
 |---|---|---|---|
-| terms | 1.0.0 | `docs/legal/drafts/store-1.0/terms-1.0.0.md` | `d6b9bb37e07e4ea0e1bc1b10462b6d939670d5948a160491b417bc31ebcde200` |
-| privacy | 1.0.0 | `docs/legal/drafts/store-1.0/privacy-1.0.0.md` | `ae11a9b99ddb1ad37ed249cd754ddcec6430fe9d4b927883e61e385cc0ed35d5` |
-| sensitive-data | 1.0.0 | `docs/legal/drafts/store-1.0/sensitive-data-1.0.0.md` | `b35ff8cb21b6cf0a56bf933b6e9d7af9f0f078f627c2d06b21e69d75bebece66` |
+| terms | 1.0.0 | `docs/legal/drafts/store-1.0/terms-1.0.0.md` | `215a37c0d0437b3f1bdbf88d71bfc88f10e5b6c66a59dce0364fd155a1a1ee39` |
+| privacy | 1.0.0 | `docs/legal/drafts/store-1.0/privacy-1.0.0.md` | `7301f423f39fd06694f7293df7f0bfded74ac3d2c671d7d5415c7494e005cac9` |
+| sensitive-data | 1.0.0 | `docs/legal/drafts/store-1.0/sensitive-data-1.0.0.md` | `4a5c0dfa05d5d2a94998f91b5e48409d594304d0d6ab5938a63e86cad86ff18d` |
 | (not inserted) auto-renewal-terms | 1.0.0 | `docs/legal/drafts/store-1.0/subscription-terms-1.0.0.md` | `5871becf785bc418147964eb8084bed049d785eaf1fc33fb224336cf23d8dcc0` |
 
-**These hashes are for the drafts as they stand, with the PROPOSED banner and every bracketed mark.** Those come out before publishing, so the published bytes, and the hash that goes into `policy_versions.content_sha256`, will differ. Take the hashes again with `sha256sum` on the exact published file, which the website serves byte for byte (POLICY_VERSIONING 2.4), and replace the four values below. A pin test like `packages/content/test/legal-beta.test.ts` for the 1.0.0 files does not exist yet (not mine to write).
+**Hashes taken again 24 Nov 2026 for the drafts as edited in the reconcile PR (they change with any later edit).** **These hashes are for the drafts as they stand, with the PROPOSED banner and every bracketed mark.** Those come out before publishing, so the published bytes, and the hash that goes into `policy_versions.content_sha256`, will differ. Take the hashes again with `sha256sum` on the exact published file, which the website serves byte for byte (POLICY_VERSIONING 2.4), and replace the four values below. A pin test like `packages/content/test/legal-beta.test.ts` for the 1.0.0 files does not exist yet (not mine to write).
 
-**The in-app hash for the sensitive-data sheet** (a different thing: `policy_acceptances.rendered_sha256`, the hash of the words shown, `consent-record.ts` line 59). I joined `sensitiveConsent.title`, `.body`, `.use`, `.declineHelp`, `.changeLater` with a newline, as `consentShownText('sensitive')` does, and hashed it with `sha256sum`: `c70866a8991746b2b6dd19cc789b3e9d4282c6344c2d8ec0edc0cae51539eda2`. This is my hand reconstruction, not the app's output (I did not run the app). It changes if `content` changes the sheet (open question SD-1).
+**The in-app hash for the sensitive-data sheet** (a different thing: `policy_acceptances.rendered_sha256`, the hash of the words shown, `consent-record.ts` line 59). I joined `sensitiveConsent.title`, `.body`, `.use`, `.declineHelp`, `.changeLater` with a newline, as `consentShownText('sensitive')` does, and hashed it with `sha256sum`: `e3ca8dc4b0e78f71cf7dfa60314daf9e03dc39d0513452da1cd341b9dc7965fd`. This is my hand reconstruction, not the app's output (I did not run the app). Taken again on 24 Nov 2026 (the earlier value began `c70866a8` and was for the older words) from the text now in `strings.en.ts` lines 1112 to 1122 on `develop` d05e0cee1, joined in the order title, body, use, declineHelp, changeLater, with no trailing newline (that join order and the no-newline choice were not re-checked against `consentShownText`). It changes if `content` changes the sheet again (SD-1b).
 
 ### Variant A: production has no `policy_versions` rows (the likely case)
 
@@ -39,15 +39,15 @@ insert into public.policy_versions
   (document, version, change_class, requires_reconsent, published_at, new_users_from, effective_at, content_sha256, url, summary)
 values
   ('terms', '1.0.0', 'initial', false, now(), now(), now(),
-   decode('d6b9bb37e07e4ea0e1bc1b10462b6d939670d5948a160491b417bc31ebcde200', 'hex'),
+   decode('215a37c0d0437b3f1bdbf88d71bfc88f10e5b6c66a59dce0364fd155a1a1ee39', 'hex'),
    'https://earlyletters.com/legal/terms/1.0.0',
    'First version for the App Store app.'),
   ('privacy', '1.0.0', 'initial', false, now(), now(), now(),
-   decode('ae11a9b99ddb1ad37ed249cd754ddcec6430fe9d4b927883e61e385cc0ed35d5', 'hex'),
+   decode('7301f423f39fd06694f7293df7f0bfded74ac3d2c671d7d5415c7494e005cac9', 'hex'),
    'https://earlyletters.com/legal/privacy/1.0.0',
    'First version for the App Store app.'),
   ('sensitive-data', '1.0.0', 'initial', false, now(), now(), now(),
-   decode('b35ff8cb21b6cf0a56bf933b6e9d7af9f0f078f627c2d06b21e69d75bebece66', 'hex'),
+   decode('4a5c0dfa05d5d2a94998f91b5e48409d594304d0d6ab5938a63e86cad86ff18d', 'hex'),
    'https://earlyletters.com/legal/sensitive-data/1.0.0',
    'First version of the health and sensitive details agreement, asked once before a book first syncs.');
 select document, version, encode(content_sha256, 'hex') as sha256 from public.policy_versions order by 1, 2;
@@ -118,7 +118,8 @@ How to read "Backing": `read` means I opened the file on develop at `079cb892d` 
 
 These carry over from the PR #672 drafts unless marked new. The packet numbers refer to `docs/legal/COUNSEL_PACKET.md` and its addenda.
 
-- V-1, V-2, V-3: version questions above (new).
+- V-1, V-2, V-3: version questions above (new). V-4 (24 Nov, ruling CLO-A and CLO-B): POLICY_VERSIONING 2.4 says when in doubt treat the bump as major; the published number is 1.0.0 and 4.2.0 and 3.1.0 are internal revisions; Variant A or B above is NOT ruled.
+- New (24 Nov, C9): Privacy section 6 says Supabase holds the request IP address and device details, while the label answers Location No and Device ID No. Needs a Chief Privacy Officer ruling after the founder reads the Supabase and Cloudflare log settings. Unverified.
 - SD-1, SD-2, SD-3: the sensitive-data sheet's "family you choose" words, whether a link is needed beside the words, and whether email-only withdrawal is enough for Washington and Connecticut health data rules (packet Q32, Q48; OQ-L1).
 - New (review fixes): SD-1b (changeLater line and the "family you choose" line in one change, then retake the hash); P-1 (server-side aggregate counts and letter language sync, before migration file 11 applies); P-2 (new-device sign-in email unapplied); P-3 (unverified 12-month, 30-day and 38-day periods, and OQ-5 of the deletion spec); L-1 (label 2.2.0 sign-in required against the local start, and option B mismatch before submission).
 - New: whether Privacy and Terms should say nothing about sharing with another parent until BL-882 to BL-889 ship (Privacy 4 and 8, Terms 4). Terms S-25 (packet Q50, custody and safety) is parked with it.
