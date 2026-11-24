@@ -656,7 +656,7 @@ describe('the wiring that is read off the source (the behaviour is run in accoun
     const s = read('components', 'settings', 'open-deletion.tsx');
     expect(s).toContain("kind={working ? 'loading' : failure ? 'error' : 'empty'}");
     expect(s).toContain('const failure = press.acted ? failureLine(d.error) : null;');
-    expect(s).toContain('announce(`${c.open.restoringTitle}. ${c.open.restoringBody}`);');
+    expect(s).toContain('ctl.say(`${c.open.restoringTitle}. ${c.open.restoringBody}`);');
     expect(s).toContain('if (press.failedPresses > 0 && failure) announce(failure);');
     expect(s).toContain('cancel: () => ctl.cancel(),');
     expect(s).toContain('retry: () => ctl.retry(),');
@@ -682,7 +682,7 @@ describe('the routes use the gate', () => {
     const s = read('components', 'settings', 'open-deletion.tsx');
     // Scheduled and held say first that the request stays open; executing has nothing to promise and signs out at once.
     expect(s).toContain("signOut: () => (request.state === 'executing' ? void d.signOut() : confirmSignOut(date, () => void d.signOut())),");
-    expect(s).toContain("signIn: () => router.push({ pathname: '/sign-in', params: { trigger: 'settings' } }),");
+    expect(s).toContain("signIn: () => router.push({ pathname: '/sign-in', params: deletionSignInParams(request.state) }),");
     expect(s).not.toMatch(/'\/settings|addChild|\/onboarding|\/book'/);
     expect(s).toContain('<StateScreen');
   });
