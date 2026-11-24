@@ -592,7 +592,7 @@ I did not read the engineering chapters, `prefs.ts` or `scheduler.ts` beyond the
 
 ## 12. Founder and counsel questions (each with a recommended default)
 
-Counsel numbers are from `docs/legal/COUNSEL_PACKET.md` 1.5.0 where one exists; I did not read the packet for this file, so each counsel question below "needs a number from legal".
+Counsel numbers are in `docs/legal/COUNSEL_PACKET.md` (version 1.9.0 at 24 Nov 2026); the rows below carry them where one exists.
 
 | Id | Question | Recommended default | Who |
 |---|---|---|---|
@@ -605,7 +605,7 @@ Counsel numbers are from `docs/legal/COUNSEL_PACKET.md` 1.5.0 where one exists; 
 | Q-DAY-7 | Variants per day: 4 and 3 (direction 4.3) against 8 to 12 (N-1) | 4 per day and 3 per season; 8 to 12 only for the evening grid | Karma CLOSED 20 Nov, see GAP-LOG Closures CL-085 |
 | Q-DAY-8 | Is a regional or sub-community day (Pongal, Onam, Parsi New Year, Norooz) in the first release? | Yes if its list was read and the parent can move it; no if not | Content CLOSED 20 Nov, see GAP-LOG Closures CL-023 |
 | Q-DAY-9 | May the library offer days of a religion without a member of that community reviewing them? | No: a reviewer from each of the six biggest groups reads the tradition's rows and names before ship; costs a small fee or a volunteer; a family can always add their own | Founder, counsel CLOSED 20 Nov, see GAP-LOG Closures CL-087 |
-| Q-DAY-10 | Licence of the sources (FR-DAY-23) | Compute rule-based dates; license or cite each table; counsel confirms | Counsel (Q113) FOUNDER-ANSWERED 20 Nov, default accepted (CL-088, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement |
+| Q-DAY-10 | Licence of the sources (FR-DAY-23) | Compute rule-based dates; license or cite each table; counsel confirms | Counsel (Q113; gates any Drop B row whose date is copied from a source table, packet 8.6; card 21 Drop B gate: counsel on any copied table licence) FOUNDER-ANSWERED 20 Nov, default accepted (CL-088, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement |
 | Q-DAY-11 | Is the ticked-days list "special category" data by inference, wherever it is stored (GDPR Article 9 and similar laws)? | Counsel must confirm. Keep it on the phone only and out of analytics, logs, crash reports and the exported copy until counsel answers (see `functions/cultural-background-data.md`) | Counsel (Q109) FOUNDER-ANSWERED 20 Nov, default accepted (CL-088, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement |
 | Q-DAY-12 | Q-FD-1 "East East": if the founder meant "East Asian", that is a culture or origin group, not a religion, and its days (Lunar New Year, Lantern, Mid-Autumn, Chuseok, Dragon Boat) are in the culture-led group above and need no religion answer | Treat "East Asian" as a region choice only if the founder confirms; otherwise stay with "Prefer not to say" | Founder FOUNDER-ANSWERED 20 Nov, default accepted (CL-089): Culture group not religion; same plain-words ask as Q-FD-1 |
 

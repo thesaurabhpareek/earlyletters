@@ -250,7 +250,7 @@ No em dashes, no emoji, never implies AI writes, `{child}` never gendered, no lo
 
 ## 10. Founder and counsel questions
 
-Each has a recommended default that holds until answered. Counsel numbers are packet 1.5.0; new ones "need a number from legal".
+Each has a recommended default that holds until answered. Counsel numbers are now in `docs/legal/COUNSEL_PACKET.md` (section 8); the rows below carry them.
 
 | # | Question | Who | Recommended default | Counsel number |
 |---|---|---|---|---|
@@ -281,7 +281,7 @@ Everything else outside the repo is UNVERIFIED in this file: other US state acts
 
 ## 12. Hand-offs
 
-- To `legal`: Privacy Policy sentence, in-app disclosure line, the 1.1.1 read of library content, counsel questions CUL-Q5 to Q7 and Q11 (packet 1.8.0 numbers: Q110, Q109, Q111, Q112).
+- To `legal`: Privacy Policy sentence, in-app disclosure line, the 1.1.1 read of library content, counsel questions CUL-Q5 to Q7 and Q11 (the numbers in `docs/legal/COUNSEL_PACKET.md`: Q110, Q109, Q111, Q112).
 - To `regulatory-affairs`: CUL-Q8 and the Notes for Review section; the 5.1.1(iii) reading.
 - To `data-architect`: the migration lint (FR-CUL-04, 05); no schema change otherwise.
 - To `analytics`: FR-CUL-09 allowlist negative test.
