@@ -29,7 +29,9 @@ function sourceFiles(dir: string): string[] {
 }
 
 /** Evidence of a crash reporter: a dependency in a manifest, or an import or init of one in the app's source. */
-export function reporterEvidence(): string[] {
+const CRASH_TS = join(REPO, 'packages', 'analytics', 'src', 'crash.ts');
+
+export function reporterEvidence(crashSrc: string = readFileSync(CRASH_TS, 'utf8')): string[] {
   const manifests = ['package.json', 'apps/mobile/package.json', 'packages/analytics/package.json', 'packages/core/package.json']
     .filter((m) => { try { statSync(join(REPO, m)); return true; } catch { return false; } })
     .flatMap((m) => {
@@ -38,7 +40,18 @@ export function reporterEvidence(): string[] {
     });
   const imports = [...sourceFiles(join(REPO, 'apps', 'mobile', 'src')), ...sourceFiles(join(REPO, 'packages', 'analytics', 'src'))]
     .flatMap((f) => readFileSync(f, 'utf8').split('\n').filter((l) => /^\s*(?:import|export)\b.*from\s+['"]/.test(l) && REPORTERS.test(l)).map((l) => `${f}: ${l.trim()}`));
-  return [...manifests, ...imports];
+  // The switch in packages/analytics/src/crash.ts: `enabled: true` there turns on the crash reporter the words may then mention.
+  const crashSwitch = crashReportingEnabled(crashSrc)
+    ? ['packages/analytics/src/crash.ts: CRASH_REPORTING.enabled is true'] : [];
+  return [...manifests, ...imports, ...crashSwitch];
+}
+
+/** True when the CRASH_REPORTING object in crash.ts has `enabled: true`. Comments are dropped first, so prose that says
+ *  "enabled: true" does not count. Exported so the mutation check below can run it on a flipped copy. */
+export function crashReportingEnabled(src: string): boolean {
+  const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+  const block = /CRASH_REPORTING\b[^=]*=\s*\{([\s\S]*?)\n\}/.exec(code)?.[1] ?? '';
+  return /^\s*enabled:\s*true\b/m.test(block);
 }
 
 const CRASH_CLAIM = /\bcrash(?:es|ed|ing)?\b|\bwhen something (?:breaks|goes wrong|fails)\b|\berror reports?\b|\bbug reports?\b/i;
@@ -77,6 +90,17 @@ describe('[BL-389] the consent words and the crash reporter', () => {
     expect(REPORTERS.test('@sentry/react-native')).toBe(true);
     expect(REPORTERS.test('expo-crashlytics')).toBe(true);
     expect(REPORTERS.test('@supabase/supabase-js')).toBe(false);
+  });
+
+  it('treats `enabled: true` in crash.ts as a reporter (mutation check: flipping the switch trips the detector)', () => {
+    const real = readFileSync(CRASH_TS, 'utf8');
+    expect(/^\s*enabled:\s*false\b/m.test(real), 'crash.ts CRASH_REPORTING.enabled shape changed; update the detector').toBe(true);
+    const flipped = real.replace(/^(\s*)enabled:\s*false\b/m, '$1enabled: true');
+    expect(flipped).not.toBe(real);
+    expect(reporterEvidence(flipped).some((e) => e.includes('CRASH_REPORTING.enabled'))).toBe(true);
+    expect(reporterEvidence(real).some((e) => e.includes('CRASH_REPORTING.enabled'))).toBe(false);
+    // a comment that merely says "enabled: true" is not a switch
+    expect(crashReportingEnabled(`/** edit: enabled: true */\nexport const CRASH_REPORTING = {\n  // enabled: true\n  enabled: false,\n}`)).toBe(false);
   });
 
   it('with no crash reporter configured, no consent word says crashes or breakages are shared', () => {
