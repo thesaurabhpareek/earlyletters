@@ -6,7 +6,7 @@ Owner: `ops`, with `support`; `privacy` reviews changes to this file. It is an e
 
 **Status.** Nothing below has been run against a live project. Routes 2, 3 and 5 are written here from the repo, and Route 4 is its own runbook. **Route 1, deleting an account by email, cannot be run at all:** the tool it needs, BL-551, is in no migration. **Route 2's offer to delete what was synced cannot be kept either** (Route 2 step 7). Section 9 lists every promise that cannot be kept by hand today; CR-60 leaves it to the founder whether the 0.9.0 pages go live while any of them stands. Before the pages go live, run each route once on a fictional account (section 10).
 
-Sections are numbered 0 to 10. The routes are numbered 1 to 5 and sit in sections 3 to 7.
+Sections are numbered 0 to 11. The routes are numbered 1 to 5 and sit in sections 3 to 7. Section 11 is the weekly card that keeps the 45-day clocks.
 
 ## What the 0.9.0 text promises, and by when
 
@@ -46,11 +46,14 @@ Also in Privacy 7: "To have your email address removed from our list, email us f
 | Carries a child's name or letter text (kind `other`, or the kind of the route its request goes on through) | We never need it | The request inside it, if there is one, goes on through its own route. Only the text is handled here: do not repeat, copy, quote, forward or search it, and ask them to send no more |
 | Says they, or a child, are in danger or in distress (kind `safety`) | Terms 4.4; `.claude/agents/support.md` (sensitive disclosures go to crisis resources; support never counsels) | **The first message is the pointer to help, not the section 1 reply.** Start no data-request process that day. **The safety routing does not exist yet:** `underage-account.md` says `support` drafted it and it is not on `develop` (help centre PR #41). Until it does, point them to local emergency services and to the help the app shows by region (Settings, If you are struggling; `packages/content/src/helplines.ts`), and answer the data request afterwards |
 | From an executor, relative or guardian of a holder who died or cannot act (kind `other`) | The Terms have no clause for it; COUNSEL_PACKET Q49 says "runbook before C1" and none exists | No action. The founder gives counsel the kind and the date only (through the CLO) |
-| From a lawyer, a court or the police (kind `legal_process`) | Terms 4.4; DSR-R10 and DSR-R11 | No action, no disclosure, and no reply until counsel says so. The same hand-off to counsel (COUNSEL_PACKET Q50). Write down the same day any date the letter names (a deadline, a hearing) in the log's `legal_date` field. The founder decides with counsel |
+| From a lawyer, a court or the police (kind `legal_process`) | Terms 4.4; DSR-R10 and DSR-R11 | No action, no disclosure, and no reply until counsel says so. The same hand-off to counsel (COUNSEL_PACKET Q50). Write down the same day any date the letter names (a deadline, a hearing) in the log's `legal_date` field. The founder tells the CLO the kind and the date only, never the document, and writes an `ops.audit_log` row with runbook `legal_process` only when a step touches data (FR-BKO-16). The founder decides with counsel. The weekly card keeps the row with counsel and off the 45-day clock (section 11) |
+| Reports misuse or abuse by another account, with no one in danger (kind `abuse_report`) | FR-BKO-13; Terms 4.4. Nothing can suspend or limit one account today (BL-552, BL-2103) | Triage it the day you read it: a ticket and the kind, no free text, and the section 1 first reply, the same words every time, which never says whether an account exists (IAM-R09). Nothing in the log, the ticket or a message holds a name, a letter, a picture or an email. Change nothing on any account; the founder decides with counsel. If it says someone is in danger, use the safety row above |
 | Asks us to limit, remove or move another person's access to a book, or to settle a custody or family dispute (kind `safety`, or `other`) | Terms 4.4: we do not decide custody or family disputes, and "If someone's safety is at risk, contact us; after checking, we may limit a person's access to a book"; COUNSEL_PACKET Q50. No safety-removal runbook exists (`safety_removal` is a value in `ops.audit_log`, and `docs/ops/runbooks` has no file for it) | No action. Take it to counsel; the founder decides with counsel. If it also says someone is in danger, use the safety row above |
 | From a parent or guardian who says the holder is under 18, and wants to see, change or delete the account (kind `other`) | Authors own their words; the account is not theirs | Refuse in the same words every time, without saying whether the account exists. The age report itself goes to Route 4 |
 
 ## 1. Receive it (the day you read it)
+
+Triage happens the day you read it (FR-BKO-13): the ticket, the kind and the first reply, all that day. That is an internal target, not a published time; the only time the 0.9.0 text gives is a reply within 45 days.
 
 1. **Ticket reference.** `DREQ-<yyyymmdd>-<n>` (this file's convention): the date you received it and a counter for that day. No name, no email.
 2. **Request log row** (DSR-R05; chapter 08 "Request log"). Until a `privacy_requests` table exists (BL-237), keep one dated file, one row per request. **Where it lives:** a file on the founder's own computer that only he opens (a spreadsheet or plain text), in a folder that does not sync to a cloud drive. Not a cloud sheet and not a tool a session or connector can read, unless `docs/legal/subprocessors.md` lists that service first (Privacy 6 lists none today). A row holds these fields and nothing else:
@@ -58,13 +61,16 @@ Also in Privacy 7: "To have your email address removed from our list, email us f
    | Field | Example |
    |---|---|
    | ticket | `DREQ-20261109-1` |
-   | kind | `delete_account`, `withdraw_sync`, `see_export`, `correct`, `under_18`, `testflight_feedback`, `email_list`, `safety`, `legal_process`, `other` |
+   | kind | `delete_account`, `withdraw_sync`, `see_export`, `correct`, `under_18`, `testflight_feedback`, `email_list`, `safety`, `abuse_report`, `legal_process`, `other` |
    | channel | `email` |
    | received, acknowledged, verified, extended, completed | dates |
    | verified by | `code_to_account_address`, `code_to_tester_address`, `none_needed` |
    | due | received + 45 days |
    | legal_date | blank, unless a lawyer, court or police letter names a date |
+   | next_action | the next action date the weekly card gives (section 11) |
    | outcome | `done`, `done_in_part`, `could_not_verify`, `cannot_be_done`, `declined`, `referred` (sent to counsel) |
+
+   Keep it as a CSV file whose header row is these field names, one column for each date (`received`, `acknowledged`, `verified`, `extended`, `completed`), so the weekly card can read it (section 11). The card refuses a log with any other column, a kind off the list, or text where a date or a value from the list belongs.
 
    **No person id, no email, no name, no code, no free text, no email body, no letter or feedback text.** Chapter 08's field list includes a profile id; this runbook leaves it out. A file cannot null the id at deletion the way a table can, so an older row would keep it after the account is deleted. `docs/legal/DATA_CLASSIFICATION.md` section 2 (Logging row) keeps L3 person ids out of log streams and in database audit tables; it does not speak of a founder's file, but it points the same way. The link from a ticket to a person is the `ops.audit_log` row that `ops_audit_write` writes (ticket and profile id, kept 12 months); after that it is gone on purpose. `compliance-engineer` confirms the difference from chapter 08 (section 9). The mailbox holds the correspondence; the log holds the proof. Keep a finished row for 3 years.
 3. **First reply** to the address the email came from. It says the request arrived with its reference and that nothing changes until it is confirmed with the address on the account, if there is one. It says nothing about whether an account exists. The `support` macro for it does not exist yet (section 9); until it does the founder writes it by hand and keeps to those three facts.
@@ -268,6 +274,25 @@ Run each route once on a fictional account (the family "Asha", an address you co
 | 3. See, export, correct | The export runs; the read-back shows the verified email beside the id before the update; a mistyped or someone else's id raises and renames no one; the block pasted without filling the tags fails; the new name appears in the next export (`data/account.json`, `profile`, signed in and online); a name with an apostrophe is stored as typed; a name with a dollar sign is refused before anything is sent or run |
 | 4. Under 18 | `underage-account.md` sections 1 and 2 run; section 4 waits for BL-551 |
 | 5. TestFlight feedback | A test item is deleted in App Store Connect; anonymous feedback is refused; the log row has no tester content |
+
+## 11. The weekly card (FR-BKO-09)
+
+Every Monday, on your own computer, where the request log lives (never in a session: section 0, "Agent sessions do not run these steps"):
+
+```
+node scripts/ops/weekly-card.ts --log <path to the request log>
+```
+
+It reads the log and prints one table: every open request with its ticket, kind, day (counted from the day it arrived, section 0 "The clock"), due date (received plus 45 days, or plus 90 once an extension notice went), next action date and next action. It prints tickets, kinds, numbers and dates only. Exit 0: nothing at day 35 or later. Exit 1: something is. Exit 2: it could not read the log, or the log holds a field or a value section 1 does not allow; the message names the line and the field, never the value. Fix the row, never the script.
+
+- **Order.** Any request at day 35 or later comes first, oldest first. The rest follow by next action date.
+- **Follow-ups.** The next action date walks day 7, day 30 and day 40, then the due date. Copy it into the row's `next_action` field.
+- **Day 35 to 44.** Finish it, or send the extension notice with its reason before day 45 (DSR-R12), then put the date in `extended`. The card dates this step day 44.
+- **Past day 45 with no notice.** A P0 defect: it goes to counsel the same day (section 8 step 3).
+- **No first reply logged** a day or more after it arrived: send the section 1 first reply today and log `acknowledged` (FR-BKO-13).
+- **`legal_process`.** Stays with counsel and off the 45-day clock: no reply until counsel says so. The card shows the date the letter names (`legal_date`), or today's date as a reminder to log one (FR-BKO-16).
+
+The rest of the Monday card (support tally, `ops-alert` issues, mail caps, helpline expiry, DMARC, open pauses) is FR-BKO-23 and is not built. If you cannot run the card yourself for a while, `founder-cannot-act.md` is the plan.
 
 ## The person-facing lines (COORDINATION section 10)
 
