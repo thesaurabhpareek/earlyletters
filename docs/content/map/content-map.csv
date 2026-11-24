@@ -1601,30 +1601,45 @@ features/licences.en.ts#licences.loadFailed,app screen,in-app,packages/content/s
 features/licences.en.ts#licences.loading,app screen,in-app,packages/content/src/features/licences.en.ts,47,en,The list is on its way.,23,,,,,,content,live on develop,content
 features/licences.en.ts#licences.rowCollapsedA11y,app screen,in-app,packages/content/src/features/licences.en.ts,50,en,"{label}, collapsed",18,,,,,,content,live on develop,content
 features/licences.en.ts#licences.rowExpandedA11y,app screen,in-app,packages/content/src/features/licences.en.ts,51,en,"{label}, expanded",17,,,,,,content,live on develop,content
-features/moments-tab.en.ts#momentsTabCopy.tab.label,app screen,in-app,packages/content/src/features/moments-tab.en.ts,12,en,Moments,7,,,,,,content,live on develop,content
-features/moments-tab.en.ts#momentsTabCopy.heading.title,app screen,in-app,packages/content/src/features/moments-tab.en.ts,16,en,Moments,7,,,,,,content,live on develop,content
-features/moments-tab.en.ts#momentsTabCopy.heading.job,app screen,in-app,packages/content/src/features/moments-tab.en.ts,19,en,Choose a day to tell {child} about.,35,,,,,,content,live on develop,content
-features/moments-tab.en.ts#momentsTabCopy.card.continue,app screen,in-app,packages/content/src/features/moments-tab.en.ts,23,en,Continue,8,,,,,,content,live on develop,content
-features/moments-tab.en.ts#momentsTabCopy.card.letterHere,app screen,in-app,packages/content/src/features/moments-tab.en.ts,26,en,A letter is here,16,,,,,,content,live on develop,content
-features/moments-tab.en.ts#momentsTabCopy.card.example,app screen,in-app,packages/content/src/features/moments-tab.en.ts,29,en,An example,10,,,,,,content,live on develop,content
-features/moments-tab.en.ts#momentsTabCopy.reason.marked,app screen,in-app,packages/content/src/features/moments-tab.en.ts,34,en,A day you marked,16,,,,Pictures from this day,,content,live on develop,content
-features/moments-tab.en.ts#momentsTabCopy.reason.birthday,app screen,in-app,packages/content/src/features/moments-tab.en.ts,36,en,On {child}'s birthday,21,,,,Pictures from this day,,content,live on develop,content
-features/moments-tab.en.ts#momentsTabCopy.reason.monthDay,app screen,in-app,packages/content/src/features/moments-tab.en.ts,39,en,The day of the month {child} was born,37,,,,Pictures from this day,,content,live on develop,content
-features/moments-tab.en.ts#momentsTabCopy.reason.kept,app screen,in-app,packages/content/src/features/moments-tab.en.ts,41,en,A day you kept close,20,,,,Pictures from this day,,content,live on develop,content
-features/moments-tab.en.ts#momentsTabCopy.reason.heart,app screen,in-app,packages/content/src/features/moments-tab.en.ts,43,en,Pictures you marked as favorites,32,,,,Pictures from this day,,content,live on develop,content
-features/moments-tab.en.ts#momentsTabCopy.reason.video,app screen,in-app,packages/content/src/features/moments-tab.en.ts,45,en,A video from this day,21,,,,Pictures from this day,,content,live on develop,content
-features/moments-tab.en.ts#momentsTabCopy.reason.year,app screen,in-app,packages/content/src/features/moments-tab.en.ts,49,en,Pictures from this day in {year},32,,,,Pictures from this day,,content,live on develop,content
-features/moments-tab.en.ts#momentsTabCopy.reason.run,app screen,in-app,packages/content/src/features/moments-tab.en.ts,52,en,Pictures from these days,24,,,,Pictures from this day,,content,live on develop,content
-features/moments-tab.en.ts#momentsTabCopy.reason.picked,app screen,in-app,packages/content/src/features/moments-tab.en.ts,54,en,Pictures you picked before,26,,,,Pictures from this day,,content,live on develop,content
-features/moments-tab.en.ts#momentsTabCopy.reason.place,app screen,in-app,packages/content/src/features/moments-tab.en.ts,57,en,Pictures from {place},21,,,,Pictures from this day,,content,live on develop,content
-features/moments-tab.en.ts#momentsTabCopy.reason.holiday,app screen,in-app,packages/content/src/features/moments-tab.en.ts,60,en,On {holiday},12,,,,Pictures from this day,,content,live on develop,content
-features/moments-tab.en.ts#momentsTabCopy.reason.first,app screen,in-app,packages/content/src/features/moments-tab.en.ts,62,en,A first you marked,18,,,,Pictures from this day,,content,live on develop,content
-features/moments-tab.en.ts#momentsTabCopy.reason.letter,app screen,in-app,packages/content/src/features/moments-tab.en.ts,64,en,A letter from this day,22,,,,Pictures from this day,,content,live on develop,content
-features/moments-tab.en.ts#momentsTabCopy.reason.question,app screen,in-app,packages/content/src/features/moments-tab.en.ts,66,en,A question to start from,24,,,,Pictures from this day,,content,live on develop,content
-features/moments-tab.en.ts#momentsTabCopy.teach.name,app screen,in-app,packages/content/src/features/moments-tab.en.ts,71,en,Name this day,13,,,,,,content,live on develop,content
-features/moments-tab.en.ts#momentsTabCopy.teach.keepClose,app screen,in-app,packages/content/src/features/moments-tab.en.ts,73,en,Keep this day close,19,,,,,,content,live on develop,content
-features/moments-tab.en.ts#momentsTabCopy.teach.notThisOne,app screen,in-app,packages/content/src/features/moments-tab.en.ts,75,en,Not this one,12,,,,,,content,live on develop,content
-features/moments-tab.en.ts#momentsTabCopy.teach.hideDay,app screen,in-app,packages/content/src/features/moments-tab.en.ts,77,en,Hide this day,13,,,,,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.tab.label,app screen,in-app,packages/content/src/features/moments-tab.en.ts,16,en,Moments,7,,,,,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.heading.title,app screen,in-app,packages/content/src/features/moments-tab.en.ts,20,en,Moments,7,,,,,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.heading.job,app screen,in-app,packages/content/src/features/moments-tab.en.ts,23,en,Choose a day to tell {child} about.,35,,,,,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.card.continue,app screen,in-app,packages/content/src/features/moments-tab.en.ts,27,en,Continue,8,,,,,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.card.letterHere,app screen,in-app,packages/content/src/features/moments-tab.en.ts,30,en,A letter is here,16,,,,,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.card.example,app screen,in-app,packages/content/src/features/moments-tab.en.ts,33,en,An example,10,,,,,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.reason.marked,app screen,in-app,packages/content/src/features/moments-tab.en.ts,38,en,A day you marked,16,,,,Pictures from this day,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.reason.birthday,app screen,in-app,packages/content/src/features/moments-tab.en.ts,40,en,On {child}'s birthday,21,,,,Pictures from this day,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.reason.monthDay,app screen,in-app,packages/content/src/features/moments-tab.en.ts,43,en,The day of the month {child} was born,37,,,,Pictures from this day,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.reason.kept,app screen,in-app,packages/content/src/features/moments-tab.en.ts,45,en,A day you kept close,20,,,,Pictures from this day,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.reason.heart,app screen,in-app,packages/content/src/features/moments-tab.en.ts,47,en,Pictures you marked as favorites,32,,,,Pictures from this day,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.reason.video,app screen,in-app,packages/content/src/features/moments-tab.en.ts,49,en,A video from this day,21,,,,Pictures from this day,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.reason.year,app screen,in-app,packages/content/src/features/moments-tab.en.ts,53,en,Pictures from this day in {year},32,,,,Pictures from this day,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.reason.run,app screen,in-app,packages/content/src/features/moments-tab.en.ts,56,en,Pictures from these days,24,,,,Pictures from this day,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.reason.picked,app screen,in-app,packages/content/src/features/moments-tab.en.ts,58,en,Pictures you picked before,26,,,,Pictures from this day,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.reason.place,app screen,in-app,packages/content/src/features/moments-tab.en.ts,61,en,Pictures from {place},21,,,,Pictures from this day,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.reason.holiday,app screen,in-app,packages/content/src/features/moments-tab.en.ts,64,en,On {holiday},12,,,,Pictures from this day,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.reason.first,app screen,in-app,packages/content/src/features/moments-tab.en.ts,66,en,A first you marked,18,,,,Pictures from this day,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.reason.letter,app screen,in-app,packages/content/src/features/moments-tab.en.ts,68,en,A letter from this day,22,,,,Pictures from this day,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.reason.question,app screen,in-app,packages/content/src/features/moments-tab.en.ts,70,en,A question to start from,24,,,,Pictures from this day,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.teach.name,app screen,in-app,packages/content/src/features/moments-tab.en.ts,75,en,Name this day,13,,,,,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.teach.keepClose,app screen,in-app,packages/content/src/features/moments-tab.en.ts,77,en,Keep this day close,19,,,,,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.teach.notThisOne,app screen,in-app,packages/content/src/features/moments-tab.en.ts,79,en,Not this one,12,,,,,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.teach.hideDay,app screen,in-app,packages/content/src/features/moments-tab.en.ts,81,en,Hide this day,13,,,,,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.ask.title,app screen,in-app,packages/content/src/features/moments-tab.en.ts,92,en,Show days from your pictures?,29,,,,,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.ask.accept,app screen,in-app,packages/content/src/features/moments-tab.en.ts,94,en,Show days,9,,,,,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.ask.notNow,app screen,in-app,packages/content/src/features/moments-tab.en.ts,96,en,Not now,7,,,,,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.primer.title,app screen,in-app,packages/content/src/features/moments-tab.en.ts,115,en,Show days from your pictures?,29,,,,,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.primer.body,app screen,in-app,packages/content/src/features/moments-tab.en.ts,122,en,"{app} reads the date, time and place of your pictures on this phone, while this tab is open, to show you days to tell {child} about.",132,,,,,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.primer.continue,app screen,in-app,packages/content/src/features/moments-tab.en.ts,128,en,Continue,8,,,,,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.primer.notNow,app screen,in-app,packages/content/src/features/moments-tab.en.ts,135,en,Not now,7,,,,,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.state.limited,app screen,in-app,packages/content/src/features/moments-tab.en.ts,147,en,Choose pictures to start from.,30,,,,,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.state.denied,app screen,in-app,packages/content/src/features/moments-tab.en.ts,150,en,Days from your pictures are off.,32,,,,,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.state.restricted,app screen,in-app,packages/content/src/features/moments-tab.en.ts,153,en,Days from your pictures are turned off by a phone setting.,58,,,,,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.state.openSettings,app screen,in-app,packages/content/src/features/moments-tab.en.ts,156,en,Open Settings,13,,,,,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.door.label,app screen,in-app,packages/content/src/features/moments-tab.en.ts,166,en,Choose pictures,15,,,,,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.door.heading,app screen,in-app,packages/content/src/features/moments-tab.en.ts,169,en,Choose pictures to start a letter,33,,,,,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.door.start,app screen,in-app,packages/content/src/features/moments-tab.en.ts,172,en,Start,5,,,,,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.door.notNow,app screen,in-app,packages/content/src/features/moments-tab.en.ts,175,en,Not now,7,,,,,,content,live on develop,content
 features/new-device.en.ts#newDevicePageCopy.heldEmailLine,app screen,in-app,packages/content/src/features/new-device.en.ts,15,en,On that page you can choose to sign that device out. Nothing is signed out until you press the button.,102,,,,,,content,live on develop,content
 features/new-device.en.ts#newDevicePageCopy.title,app screen,in-app,packages/content/src/features/new-device.en.ts,18,en,Was this you?,13,,,,,,content,live on develop,content
 features/new-device.en.ts#newDevicePageCopy.what,app screen,in-app,packages/content/src/features/new-device.en.ts,19,en,"Your account was signed in on {device}, {when}.",47,,,,,,content,live on develop,content
