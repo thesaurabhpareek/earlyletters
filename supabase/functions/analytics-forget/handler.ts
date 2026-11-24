@@ -134,7 +134,7 @@ export function makeForgetHandler(env: EnvGetter, opts: ForgetOptions = {}): (re
     }
     if (!userRes.ok) {
       await discard(userRes);
-      log.error('forget.failed', { provider: 'auth', status: userRes.status });
+      log.error('forget.failed', { provider: 'auth', status: userRes.status, reason });
       return reply(503, failure({ code: 'unavailable', retryable: true }, log.reqId));
     }
     let profileId: string;
@@ -149,15 +149,18 @@ export function makeForgetHandler(env: EnvGetter, opts: ForgetOptions = {}): (re
 
     // Rate limit per person per day. Counts only; the ids are not stored. `retired_id` has its own bucket: a cleanup
     // reason must never spend the calls account deletion needs (refused calls still count, so a shared one would starve).
-    const retired = reason === 'retired_id';
-    const q = await timed(fetchFn, `${supabaseUrl}/rest/v1/rpc/${retired ? 'ops_consume_forget_quota_retired' : 'ops_consume_forget_quota'}`, {
+    const quotaInit = (limit: number): RequestInit => ({
       method: 'POST',
       headers: { ...serviceHeaders(serviceKey), 'Content-Type': 'application/json' },
-      body: JSON.stringify({ p_profile: profileId, p_limit: retired ? DAILY_RETIRED_CALLS : DAILY_CALLS }),
-    }, timeoutMs);
+      body: JSON.stringify({ p_profile: profileId, p_limit: limit }),
+    });
+    // Two literal call sites on purpose: supabase/tests/function_rpc_contract checks each name against the schema.
+    const q = reason === 'retired_id'
+      ? await timed(fetchFn, `${supabaseUrl}/rest/v1/rpc/ops_consume_forget_quota_retired`, quotaInit(DAILY_RETIRED_CALLS), timeoutMs)
+      : await timed(fetchFn, `${supabaseUrl}/rest/v1/rpc/ops_consume_forget_quota`, quotaInit(DAILY_CALLS), timeoutMs);
     if (!q || !q.ok) {
       await discard(q);
-      log.error('forget.failed', { provider: 'postgrest', status: q?.status ?? 0 });
+      log.error('forget.failed', { provider: 'postgrest', status: q?.status ?? 0, reason });
       return reply(503, failure({ code: 'unavailable', retryable: true }, log.reqId));
     }
     if ((await q.json()) !== true) return fail('rate_limited', true, 429, { 'Retry-After': '3600' });

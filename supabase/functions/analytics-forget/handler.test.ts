@@ -12,7 +12,7 @@ const ENV: Record<string, string> = {
 const ROUTE = 'https://fn.local/analytics-forget/v1';
 const ID2 = '9a9a9a9a-0000-4000-8000-0000000000bb';
 
-function world(opts: { user?: unknown; userStatus?: number; quota?: boolean; retiredQuota?: boolean; phStatus?: number; env?: Record<string, string> } = {}) {
+function world(opts: { quotaStatus?: number; retiredStatus?: number; user?: unknown; userStatus?: number; quota?: boolean; retiredQuota?: boolean; phStatus?: number; env?: Record<string, string> } = {}) {
   const calls: { url: string; init: RequestInit }[] = [];
   const lines: string[] = [];
   let quotaCalls = 0;
@@ -25,11 +25,11 @@ function world(opts: { user?: unknown; userStatus?: number; quota?: boolean; ret
     }
     if (url === `${SUPA}/rest/v1/rpc/ops_consume_forget_quota`) {
       quotaCalls++;
-      return new Response(JSON.stringify(opts.quota ?? true), { status: 200 });
+      return new Response(JSON.stringify(opts.quota ?? true), { status: opts.quotaStatus ?? 200 });
     }
     if (url === `${SUPA}/rest/v1/rpc/ops_consume_forget_quota_retired`) {
       retiredCalls++;
-      return new Response(JSON.stringify(opts.retiredQuota ?? true), { status: 200 });
+      return new Response(JSON.stringify(opts.retiredQuota ?? true), { status: opts.retiredStatus ?? 200 });
     }
     if (url === 'https://us.posthog.com/api/projects/12345/persons/bulk_delete/') {
       return new Response(null, { status: opts.phStatus ?? 202 });
@@ -198,16 +198,29 @@ Deno.test('no id, token, key or email is logged for any reason on any path', asy
   }
 });
 
-Deno.test('a quota service failure on the retired bucket is retryable and does not reach PostHog', async () => {
-  const calls: string[] = [];
-  const handler = makeForgetHandler((n) => ENV[n], {
-    logSink: () => {},
-    fetch: async (url: string) => {
-      calls.push(url);
-      if (url === `${SUPA}/auth/v1/user`) return new Response(JSON.stringify({ id: CANARY.profileId, is_anonymous: false }), { status: 200 });
-      return new Response(null, { status: 404 });
-    },
-  });
-  assert.equal((await handler(req({ ids: [CANARY.analyticsId], reason: 'retired_id' }))).status, 503);
-  assert.ok(!calls.some((u) => u.includes('posthog')));
+Deno.test('the retired bucket passes while the shared one is full', async () => {
+  const w = world({ quota: false });
+  assert.equal((await w.handler(req({ ids: [CANARY.analyticsId], reason: 'retired_id' }))).status, 202);
+  assert.deepEqual(rpcUrls(w), [RETIRED_RPC]);
+});
+
+Deno.test('a quota service failure is retryable, never reaches PostHog, and logs a reason and no canary', async () => {
+  for (const reason of ['account_deletion', 'device_after_deletion', 'retired_id']) {
+    for (const o of [{ quotaStatus: 500, retiredStatus: 500 }, { quotaStatus: 401, retiredStatus: 401 }]) {
+      const w = world(o);
+      assert.equal((await w.handler(req({ ids: [CANARY.analyticsId], reason }))).status, 503, reason);
+      assert.ok(!w.calls.some((c) => c.url.includes('posthog')));
+      const failed = JSON.parse(w.lines.find((l) => l.includes('forget.failed'))!);
+      assert.equal(failed.reason, reason);
+      assert.equal(failed.provider, 'postgrest');
+      assert.deepEqual(findCanaries(w.lines.join('\n')), []);
+    }
+  }
+});
+
+Deno.test('an auth service failure logs the reason and no canary', async () => {
+  const w = world({ userStatus: 500 });
+  assert.equal((await w.handler(req({ ids: [CANARY.analyticsId], reason: 'retired_id' }))).status, 503);
+  assert.equal(JSON.parse(w.lines.find((l) => l.includes('forget.failed'))!).reason, 'retired_id');
+  assert.deepEqual(findCanaries(w.lines.join('\n')), []);
 });
