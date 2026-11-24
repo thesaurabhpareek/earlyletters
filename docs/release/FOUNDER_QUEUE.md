@@ -42,7 +42,7 @@ Written under CR-176 item 4. Work top to bottom; each row is one physical act. N
 | Gate | Check | State when this was written |
 |---|---|---|
 | G1 Content pack words merged | PR #1644 is merged (`gh api repos/thesaurabhpareek/earlyletters/pulls/1644 --jq .merged`) | merged; of its changed files only `packages/content/src/stories.en.ts` (`onboardingStories`) is signed into the content bundle by `scripts/packs/publish.ts`; `strings.en.ts` and `pages.en.ts` ship with the app and the website |
-| G2 Release PR from `develop` into `main` merged | `git diff --stat origin/main origin/develop -- supabase/migrations` prints nothing | not met (read 24 Nov 2026): 20 migration files are on `develop` and not on `main`, from `20261110000000_photo_bucket_closed` to `20261124110000_new_device_token_expiry_cap`; the duplicate `20261123200000` version is gone (#1786 merged). No release PR exists. The production job refuses a tag that is not on `main` (`.github/workflows/deploy-db.yml`, step "Tag must point at a commit on main") |
+| G2 Release PR from `develop` into `main` merged | `git diff --stat origin/main origin/develop -- supabase/migrations` prints nothing | not met (read 24 Nov 2026): 20 migration files are on `develop` and not on `main`, from `20261110000000_photo_bucket_closed` to `20261124110000_new_device_token_expiry_cap`; the duplicate `20261123200000` version is gone (#1786 merged). The G2 release PR is #1979 (opened 24 Nov 2026; snapshot branch `release-candidate/develop-23cba3ec`; Karma merges it as a merge commit; `main` is already an ancestor of `develop` since #1950). No founder act changes: only physical acts reach the founder. The production job refuses a tag that is not on `main` (`.github/workflows/deploy-db.yml`, step "Tag must point at a commit on main") |
 | G3 `release/1.0` cut and a green launch run | newest `iOS compile` run on `develop` is green at or after the merge base (`scripts/release/launch-gate.mjs`, first job of `.github/workflows/release-ios.yml`) | no `release/*` branch and no `ios-v*` tag exist; the cut mechanics are GitHub writes Karma does under CR-176 item 5, and become a row here only if the session proxy refuses them [UNVERIFIED] |
 | G4 Dry run of the RC checks | Actions, Release iOS, job `checks` on `develop` (`.github/workflows/release-ios.yml`, manual run) is green | [UNVERIFIED] not read for the current head |
 | G5 Setup record read | `npm run release:ready -- --brief` (`scripts/release/setup-state.mjs`, steps in `docs/release/setup-steps.json`) | PASS rows are not asked again; the record is [UNVERIFIED] for today because its DNS and host probes cannot run from an agent session |
@@ -160,7 +160,7 @@ Written by the release and operations engineer from the founder's 10 Nov answers
 | #728 account-first code screen, consent hand-off | develop | `3da02d5fb920cd57f03eb5f99d528de581b9a69b` |
 | #738 the You tab as signed in, signed out and local start | develop | `0cd8e1f176ab6bbd50404a401e8fd0d4dc96db57` |
 | #764 S17 tier 0, Opening your book on a new phone | `feat/mobile-you-tab-states` (a stack branch, not develop) | `6787af24a525ede3e257d80c6a92162f4a9356de` |
-| #760 counsel packet addendum (Q78 to Q91, Q103) | develop | `f6e08de98407960f8293c542410254b5e433410f` |
+| #760 counsel packet addendum (Q78 to Q91, Q103) (CLOSED unmerged 24 Nov 2026, CR-211, D-172; not live) | develop | `f6e08de98407960f8293c542410254b5e433410f` |
 | #761 founder-device run sheet, Memory Library spikes | develop | `1a3f8cce1fde008ffd7787840bbdc5ea325b3d31` |
 | #763 Memory Library parent study plan | develop | `a510bb61ddc3d97c5c8fd31e955e29afeb0baf03` |
 | #768 store, microphone, site and reminder lines true whether or not servers are on | develop | `67fd7c3ac7970b05e825feb4ddf93ca59f393e97` |
@@ -168,7 +168,7 @@ Written by the release and operations engineer from the founder's 10 Nov answers
 | #766 | develop | superseded by #768 and #769; do not merge (last read `3767bcaf86246fb650fd997cb9cfa2ab3ae3bb9a`) |
 | #767 groom co-parent work (BL-882 to BL-889) | develop | `046fcd3ec730ce7cadfe051bfa2e2dfae7620142` |
 
-The #760, #761 and #763 heads match the ones you were given. #700 is stamped `20261109000000`; as of `origin/develop` at `526c9b8b3` it is not in `.github/migrations-applied.txt`.
+The #761 and #763 heads match the ones you were given. #700 is stamped `20261109000000`; as of `origin/develop` at `526c9b8b3` it is not in `.github/migrations-applied.txt`.
 
 ### The actions
 

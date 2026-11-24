@@ -1,6 +1,6 @@
 /**
- * Owner: content. Every word on /support. PROPOSED: the founder approves each line before it ships (the pull request
- * lists them). This version is true of the app in both profiles of the store build, servers off (develop today) and
+ * Owner: content. Every word on /support. The CMO and CLO roles read these lines on 24 Nov 2026 (Claude roles, not
+ * counsel), under D-168 and D-172. This version is true of the app in both profiles of the store build, servers off (develop today) and
  * servers on (Build 12), because packages/content/test/claims-capabilities.test.ts judges every string in apps/web/src
  * against the production profile in eas.json, and a sign-in or account line fails it while servers are off. The
  * sign-in help and account deletion sections are staged in the pull request body and join this file in the pull

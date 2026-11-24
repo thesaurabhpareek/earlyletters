@@ -412,3 +412,38 @@ describe('[RT-PRV-07] [F17-REQ-007] [X6-R1] [NS-01-R49] [NS-02-R26] nothing abou
     expect(hits).toEqual(REVIEWED_DEPENDENCY_CODE);
   }, 60_000); // reads about 3,700 files: 2 to 5 s alone, more on a busy runner
 });
+
+/**
+ * [NS-21-R12] (BL-287; ruling D2, CR-67 AX-1, E41): system writing tools (rewrite, proofread) are off on the words sheet
+ * of the letter page, because a rewrite would put words in a letter that the parent did not say. React Native 0.86 has no
+ * switch for it, so until the native setting of ADR 0039 (PROPOSED) is built the sheet is not shown in a `production`
+ * profile. The NS-06-A22 label field is BL-2157 and is not covered here.
+ */
+describe('[NS-21-R12] writing tools are off on the words sheet of the letter page', () => {
+  const words = readFileSync(join(APP, 'src', 'lib', 'photos', 'words-setting.ts'), 'utf8');
+  const sheet = readFileSync(join(APP, 'src', 'components', 'photos', 'letter-photo.tsx'), 'utf8');
+
+  // KNOWN GAP (E41): `it.fails` keeps CI green while the native setting is not built. When ADR 0039 lands and
+  // PHOTO_WORDS_WRITING_TOOLS_OFF is true this turns red, and the next person makes it a plain `it`.
+  it.fails('[NS-21-R12] writing tools off on the words sheet', () => {
+    expect(/export const PHOTO_WORDS_WRITING_TOOLS_OFF\s*=\s*true\b/.test(words), 'OPEN: needs the native setting of ADR 0039').toBe(true);
+  });
+
+  it('[NS-21-R12b] the sheet stays off in production until the setting exists', () => {
+    const code = strip(words);
+    // The switch is still off, and nothing else turns the gate on for production: the gate is `not production, or built`.
+    expect(code).toMatch(/export const PHOTO_WORDS_WRITING_TOOLS_OFF\s*=\s*false\b/);
+    expect(code).toMatch(/return \(env \?\? 'development'\) !== 'production' \|\| settingBuilt;/);
+    expect(code).toMatch(/settingBuilt = PHOTO_WORDS_WRITING_TOOLS_OFF\b/);
+
+    // The sheet's fields draw only behind the gate, and nothing opens the sheet except the gated button.
+    const draws = strip(sheet);
+    const gate = '{editing && controls.editWords && photoWordsFieldsShown() ? (';
+    expect(draws).toContain(gate);
+    expect(draws).toMatch(/\{!editing && photoWordsFieldsShown\(\) \? <Button[^\n]*testID="letter\.photo\.editWords"/);
+    expect(draws.slice(0, draws.indexOf(gate)), 'a text field is drawn before the gate').not.toMatch(/<(?:TextField|TextInput)\b/);
+    expect(draws.slice(draws.indexOf(gate))).toMatch(/<TextField\b/);
+    expect(draws.match(/setEditing\(true\)/g)?.length).toBe(1); // only the gated button opens the sheet
+    expect(draws.match(/photoWordsFieldsShown\(\)/g)?.length).toBe(2);
+  });
+});
