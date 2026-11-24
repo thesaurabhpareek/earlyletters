@@ -7,6 +7,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { SIGN_IN_TRIGGER } from '@scribe/analytics';
 import { authCopy } from '@scribe/content';
 import { deletionSignInParams } from '../src/components/settings/open-deletion.logic';
 import { signInBody } from '../src/lib/auth/sheet-body.logic';
@@ -32,8 +33,7 @@ describe('what the deletion screen opens the sheet with', () => {
   });
 
   it('the trigger it sends is one the analytics catalog already lists', () => {
-    const catalog = readFileSync(join(__dirname, '..', '..', '..', 'packages', 'analytics', 'src', 'catalog.ts'), 'utf8');
-    expect(catalog).toMatch(new RegExp(`SIGN_IN_TRIGGER = oneOf\\([^)]*'${deletionSignInParams('scheduled').trigger}'`));
+    expect(SIGN_IN_TRIGGER.values).toContain(deletionSignInParams('scheduled').trigger);
   });
 
   it('the screen and the sheet are wired to it', () => {
