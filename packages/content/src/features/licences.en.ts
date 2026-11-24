@@ -29,6 +29,10 @@ export const licences = {
     'Traditional and Simplified character tables derived from OpenCC (https://github.com/BYVoid/OpenCC), Copyright BYVoid and contributors, Apache License 2.0.',
     'Pinyin readings derived from pinyin-data (https://github.com/mozillazg/pinyin-data), Copyright 2016 mozillazg, MIT License, from the Unicode Han Database (Unihan) kMandarin field, Copyright Unicode, Inc., Unicode License v3.',
   ],
+  // DB-IP Lite (CC BY 4.0) maps the request's IP to a country at sign-up. Its licence asks for a link back to
+  // DB-IP.com on pages that use the results; the wording is DB-IP's own suggested link text (db-ip.com/db/lite.php).
+  // PROPOSED: read by the CCO and CLO before it ships. Shown on this page and on the refused sign-up screen.
+  geoAttribution: { text: 'IP Geolocation by DB-IP', href: 'https://db-ip.com' },
   // The notices themselves come from apps/mobile/src/lib/licences.ts (generated), not from copy.
   libraries: 'React Native, Expo and the other libraries in this app are open source. Each one is listed below with its license.',
   /** Under a row, when it is open: its version, then its copyright lines and full license text. */
