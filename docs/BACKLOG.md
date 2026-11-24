@@ -650,7 +650,7 @@ Added 1 Nov 2026 by the reminders design effort (two product, two research, two 
 - Done when: screen tests cover every state; VoiceOver and Dynamic Type pass; the cap of two showings ever still holds.
 
 #### BL-537 Back-off after unopened reminders (C-REQ-008) [Medium]
-- Status: deferred (1.1; the planner header lists it as later). Mode: agent. Owner: reminders owner. Size: M.
+- Status: superseded (by BL-943). Mode: agent. Owner: reminders owner. Size: M.
 - Scope: four unanswered reminders drop to weekly, four more leave only month-age messages plus one card with no numbers; any save restores (F13-U18).
 
 #### BL-538 Pause for a while [Low]
@@ -4622,7 +4622,7 @@ Every row is `proposed`: the dispatcher skips it until Karma or the founder sets
 - Source: `docs/analytics/instrumentation/analytics.md`, row IN-02/an; chain: instrumentation, IN (phase 1) (readiness map PR #1079, section 2.11).
 
 #### BL-1052 Rename catalogue and full rename table (M3) (IN-03/an)
-- Status: proposed (docs/analytics/instrumentation/analytics.md; Karma or the founder sets it to ready). Mode: agent. Owner: analytics engineer. Milestone: M15. Size: M. Depends on: BL-1051.
+- Status: superseded (by BL-1255). Mode: agent. Owner: analytics engineer. Milestone: M15. Size: M. Depends on: BL-1051.
 - Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
 - Scope: Rename catalogue and full rename table (M3). Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
 - Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done.
@@ -4636,14 +4636,14 @@ Every row is `proposed`: the dispatcher skips it until Karma or the founder sets
 - Source: `docs/analytics/instrumentation/analytics.md`, row IN-04/an; chain: instrumentation, IN (phase 1) (readiness map PR #1079, section 2.11).
 
 #### BL-1054 Hooks and screen wiring (M5), 29 routes first (IN-05/an)
-- Status: proposed (docs/analytics/instrumentation/analytics.md; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-1052.
+- Status: superseded (by BL-1257). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-1052.
 - Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
 - Scope: Hooks and screen wiring (M5), 29 routes first. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
 - Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done.
 - Source: `docs/analytics/instrumentation/analytics.md`, row IN-05/an; chain: instrumentation, IN (phase 2) (readiness map PR #1079, section 2.11).
 
 #### BL-1055 Controls and elements wiring per area from PM tables (IN-06/an)
-- Status: proposed (docs/analytics/instrumentation/analytics.md; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: L. Depends on: BL-1054.
+- Status: superseded (by BL-1258 and BL-1259). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: L. Depends on: BL-1054.
 - Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
 - Scope: Controls and elements wiring per area from PM tables. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
 - Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done.
@@ -4802,7 +4802,7 @@ Every row is `proposed`: the dispatcher skips it until Karma or the founder sets
 - Source: `docs/product/instrumentation/02-book-reading-find-photos.md`, row IN-203; chain: instrumentation, IN (phase 1) (readiness map PR #1079, section 2.11).
 
 #### BL-1076 Book, letter page and Read together call sites behind the dark gate (IN-204)
-- Status: proposed (docs/product/instrumentation/02-book-reading-find-photos.md; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-1075.
+- Status: superseded (by BL-1258). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-1075.
 - Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
 - Scope: Book, letter page and Read together call sites behind the dark gate. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
 - Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done.
@@ -4951,7 +4951,7 @@ Every row is `proposed`: the dispatcher skips it until Karma or the founder sets
 - Source: `docs/product/instrumentation/05-plus-growth-foundations.md`, row IN-03/pm5; chain: instrumentation, IN (phase 1) (readiness map PR #1079, section 2.11).
 
 #### BL-1097 Perf marker harness and perf profile (H1 in MEASUREMENT-PLAN; BL-929 only covers (IN-04/pm5)
-- Status: proposed (docs/product/instrumentation/05-plus-growth-foundations.md; Karma or the founder sets it to ready). Mode: pair. Owner: mobile engineer. Milestone: M15. Size: M.
+- Status: superseded (by BL-1047). Mode: pair. Owner: mobile engineer. Milestone: M15. Size: M.
 - Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
 - Scope: Perf marker harness and perf profile (H1 in MEASUREMENT-PLAN; BL-929 only covers. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
 - Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done. Founder or counsel step it waits on: EAS build count (founder).
@@ -5028,7 +5028,7 @@ Every row is `proposed`: the dispatcher skips it until Karma or the founder sets
 - Source: `docs/product/instrumentation/01-capture-and-first-run.md (PR #1040)`, row IN-04/pm1; chain: instrumentation, IN (phase 1) (readiness map PR #1079, section 2.11).
 
 #### BL-1108 screen.<screen_id>.viewed from the router hook (IN-05/pm1)
-- Status: proposed (docs/product/instrumentation/01-capture-and-first-run.md (PR #1040); Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-1107.
+- Status: superseded (by BL-1257). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-1107.
 - Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
 - Scope: screen.<screen_id>.viewed from the router hook. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
 - Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done.
@@ -5065,7 +5065,7 @@ Every row is `proposed`: the dispatcher skips it until Karma or the founder sets
 - Source: `docs/product/instrumentation/01-capture-and-first-run.md (PR #1040)`, row IN-09/pm1; chain: instrumentation, IN (phase 1) (readiness map PR #1079, section 2.11).
 
 #### BL-1113 Perf markers (H1) and the three perf.*.measured events (confirm owner with ops) (IN-10/pm1)
-- Status: proposed (docs/product/instrumentation/01-capture-and-first-run.md (PR #1040); Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-1047.
+- Status: superseded (by BL-1047 and BL-1080). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-1047.
 - Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
 - Scope: Perf markers (H1) and the three perf.*.measured events (confirm owner with ops). Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
 - Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done. Founder or counsel step it waits on: perf build.
@@ -5368,63 +5368,63 @@ Ids. The dispatcher reads only three-digit ids (`scripts/agents/lib.mjs`), and B
 - Source: docs/product/prd/BACKLOG-GAPS.md G02. Group G02; 7 rows.
 
 #### BL-128 Recording backup, flip build rows (NS-08 R10 to R19)
-- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G03; Karma or the founder sets it to ready). Mode: agent. Owner: sync owner. Milestone: M15. Size: L. Depends on: BL-976.
+- Status: superseded (by BL-1179 and BL-1180). Mode: agent. Owner: sync owner. Milestone: M15. Size: L. Depends on: BL-976.
 - Satisfies: 8 P0 rows with no backlog row: NS-08-R10 to NS-08-R11, NS-08-R13 to NS-08-R14, NS-08-R16 to NS-08-R19.
 - Scope: tests first, then code or words only where a test fails, for the rows above: the rows marked as the flip build; waits for the founder's flip decision, as BL-976 says. The card is the source of truth; nothing here changes a row.
 - Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
 - Source: docs/product/prd/BACKLOG-GAPS.md G03. Group G03; 8 rows.
 
 #### BL-181 Let it go and the child switcher: rows BL-923 to BL-926 do not name (NS-09, NS-14)
-- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G04; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-925, BL-926, BL-977, BL-941.
+- Status: superseded (by BL-1181 and BL-1182). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-925, BL-926, BL-977, BL-941.
 - Satisfies: 9 P0 rows with no backlog row: NS-09-R1 to NS-09-R3, NS-09-R4a, NS-09-R4b, NS-09-R7 to NS-09-R8, NS-14-R8, NS-14-R11.
 - Scope: tests first, then code or words only where a test fails, for the rows above: BL-923 and BL-924 are done (#832) and may already satisfy NS-09-R1 to R3: add the ids first, then test. The card is the source of truth; nothing here changes a row.
 - Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
 - Source: docs/product/prd/BACKLOG-GAPS.md G04. Group G04; 9 rows.
 
 #### BL-182 Languages: only what is shipped, in a store build (NS-17, FR-LOC)
-- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G05; Karma or the founder sets it to ready). Mode: agent. Owner: content, speech engineer. Milestone: M15. Size: L. Depends on: BL-965, BL-958.
+- Status: superseded (by BL-1312, BL-1313, BL-1314 and BL-1315). Mode: agent. Owner: content, speech engineer. Milestone: M15. Size: L. Depends on: BL-965, BL-958.
 - Satisfies: 27 P0 rows with no backlog row: FR-LOC-01 to FR-LOC-05, FR-LOC-08, FR-LOC-10, FR-LOC-13, FR-LOC-19 to FR-LOC-24, FR-LOC-26, FR-LOC-28 to FR-LOC-29, NS-17-R1, NS-17-R3 to NS-17-R8, NS-17-R10 to NS-17-R12.
 - Scope: tests first, then code or words only where a test fails, for the rows above: a language is offered only when its pack is in the build; FR-LOC-10 cites BL-321, which has no heading. Note: split into at most four PRs when made ready. The card is the source of truth; nothing here changes a row.
 - Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
 - Source: docs/product/prd/BACKLOG-GAPS.md G05. Group G05; 27 rows.
 
 #### BL-183 Capture and reading stragglers of the 20 Nov lock (NS-19, NS-21, NS-24, NS-35, NS-37)
-- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G06; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-931, BL-952, BL-947.
+- Status: superseded (by BL-1174 and BL-1175). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-931, BL-952, BL-947.
 - Satisfies: 10 P0 rows with no backlog row: NS-19-R1, NS-19-R4, NS-21-R9, NS-21-R11, NS-21-R13, NS-24-R10, NS-35-R1, NS-35-R3 to NS-35-R4, NS-37-R2.
 - Scope: tests first, then code or words only where a test fails, for the rows above: single rows left over on locked cards. The card is the source of truth; nothing here changes a row.
 - Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
 - Source: docs/product/prd/BACKLOG-GAPS.md G06. Group G06; 10 rows.
 
 #### BL-184 Accessibility floor rows (NS-33 R1 to R8)
-- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G07; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer, design systems. Milestone: M15. Size: S. Depends on: BL-927, BL-928, BL-984.
+- Status: superseded (by BL-1172 and BL-1173). Mode: agent. Owner: mobile engineer, design systems. Milestone: M15. Size: S. Depends on: BL-927, BL-928, BL-984.
 - Satisfies: 7 P0 rows with no backlog row: NS-33-R1 to NS-33-R2, NS-33-R4 to NS-33-R8.
 - Scope: tests first, then code or words only where a test fails, for the rows above: BL-927 and BL-928 satisfy LEGAL-REQ-051, not these ids, so the fix may be Satisfies lines. The card is the source of truth; nothing here changes a row.
 - Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
 - Source: docs/product/prd/BACKLOG-GAPS.md G07. Group G07; 7 rows.
 
 #### BL-185 Quality gates: test plan rows and a trace ratchet for backlog rows (NS-34, FR-QAL)
-- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G08; Karma or the founder sets it to ready). Mode: agent. Owner: qa engineer. Milestone: M15. Size: M. Depends on: BL-929, BL-948, BL-964.
+- Status: superseded (by BL-1341, BL-1342 and BL-1365). Mode: agent. Owner: qa engineer. Milestone: M15. Size: M. Depends on: BL-929, BL-948, BL-964.
 - Satisfies: 16 P0 rows with no backlog row: FR-QAL-01, FR-QAL-03, FR-QAL-05 to FR-QAL-06, FR-QAL-11 to FR-QAL-12, FR-QAL-15 to FR-QAL-17, FR-QAL-20 to FR-QAL-23, NS-34-R2, NS-34-R5 to NS-34-R6.
 - Scope: tests first, then code or words only where a test fails, for the rows above: test plan rows and a check that runs p0.py; the workflow change is a proposal under docs/ops/proposed/, qa cannot edit workflows. The card is the source of truth; nothing here changes a row.
 - Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
 - Source: docs/product/prd/BACKLOG-GAPS.md G08. Group G08; 16 rows.
 
 #### BL-186 Data follows the letter (NS-36)
-- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G09; Karma or the founder sets it to ready). Mode: agent. Owner: export owner, mobile engineer. Milestone: M15. Size: M. Depends on: BL-933, BL-959, BL-960, BL-952.
+- Status: superseded (by BL-1176, BL-1177 and BL-1178). Mode: agent. Owner: export owner, mobile engineer. Milestone: M15. Size: M. Depends on: BL-933, BL-959, BL-960, BL-952.
 - Satisfies: 12 P0 rows with no backlog row: NS-36-R1a, NS-36-R1b, NS-36-R1c, NS-36-R1d, NS-36-R2 to NS-36-R3, NS-36-R5, NS-36-R7 to NS-36-R8, NS-36-R10 to NS-36-R12.
 - Scope: tests first, then code or words only where a test fails, for the rows above: what leaves, stays and is erased with a letter. Note: BL-933 and BL-959 are blocked today. The card is the source of truth; nothing here changes a row.
 - Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
 - Source: docs/product/prd/BACKLOG-GAPS.md G09. Group G09; 12 rows.
 
 #### BL-187 Store candidate gate evidence and the App Store record (NS-38, FR-CMP)
-- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G10; Karma or the founder sets it to ready). Mode: agent. Owner: platform, content. Milestone: M15. Size: M. Depends on: BL-958, BL-965, BL-975.
+- Status: superseded (by BL-1316, BL-1317 and BL-1318). Mode: agent. Owner: platform, content. Milestone: M15. Size: M. Depends on: BL-958, BL-965, BL-975.
 - Satisfies: 23 P0 rows with no backlog row: FR-CMP-01, FR-CMP-03 to FR-CMP-07, FR-CMP-11 to FR-CMP-13, FR-CMP-15 to FR-CMP-20, NS-38-R1 to NS-38-R5, NS-38-R7 to NS-38-R9.
 - Scope: tests first, then code or words only where a test fails, for the rows above: evidence rows for the store candidate; the founder's steps on the store record are not part of this row. The card is the source of truth; nothing here changes a row.
 - Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
 - Source: docs/product/prd/BACKLOG-GAPS.md G10. Group G10; 23 rows.
 
 #### BL-188 First launch: age first, no prompt, offline (NS-39)
-- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G11; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-965, BL-958.
+- Status: superseded (by BL-1170 and BL-1171). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-965, BL-958.
 - Satisfies: 10 P0 rows with no backlog row: NS-39-R1 to NS-39-R6, NS-39-R10 to NS-39-R12, NS-39-R14.
 - Scope: tests first, then code or words only where a test fails, for the rows above: the first screens before any account. The card is the source of truth; nothing here changes a row.
 - Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
@@ -5438,42 +5438,42 @@ Ids. The dispatcher reads only three-digit ids (`scripts/agents/lib.mjs`), and B
 - Source: docs/product/prd/BACKLOG-GAPS.md G12. Group G12; 11 rows.
 
 #### BL-208 Sign in: Apple, email code, link and session (NS-41)
-- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G13; Karma or the founder sets it to ready). Mode: agent. Owner: auth owner. Milestone: M15. Size: L. Depends on: BL-053, BL-961.
+- Status: superseded (by BL-1158, BL-1159 and BL-1160). Mode: agent. Owner: auth owner. Milestone: M15. Size: L. Depends on: BL-053, BL-961.
 - Satisfies: 17 P0 rows with no backlog row: NS-41-R1 to NS-41-R5, NS-41-R7, NS-41-R9 to NS-41-R11, NS-41-R13 to NS-41-R14, NS-41-R16, NS-41-R18 to NS-41-R20, NS-41-R22 to NS-41-R23.
 - Scope: tests first, then code or words only where a test fails, for the rows above: sign-in screens, server limits and the Apple path; BL-053 waits on founder steps FT-07, FT-12 and FT-13. Note: three PRs: screens, server limits, Apple. The card is the source of truth; nothing here changes a row.
 - Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
 - Source: docs/product/prd/BACKLOG-GAPS.md G13. Group G13; 17 rows.
 
 #### BL-291 Agree to the Terms and the sensitive-data question (NS-42)
-- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G14; Karma or the founder sets it to ready). Mode: agent. Owner: privacy engineer, mobile engineer. Milestone: M15. Size: M. Depends on: BL-577, BL-579.
+- Status: superseded (by BL-1166 and BL-1167). Mode: agent. Owner: privacy engineer, mobile engineer. Milestone: M15. Size: M. Depends on: BL-577, BL-579.
 - Satisfies: 12 P0 rows with no backlog row: NS-42-R1 to NS-42-R6, NS-42-R9 to NS-42-R11, NS-42-R13, NS-42-R15 to NS-42-R16.
 - Scope: tests first, then code or words only where a test fails, for the rows above: consent screens; NS-42-R7 is already cited by BL-577; build after the sign-in row (BL-208). Note: BL-577 and BL-579 are deferred. The card is the source of truth; nothing here changes a row.
 - Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
 - Source: docs/product/prd/BACKLOG-GAPS.md G14. Group G14; 12 rows.
 
 #### BL-292 The first book: name, birthday, signs-as (NS-43)
-- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G15; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M.
+- Status: superseded (by BL-1164 and BL-1165). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M.
 - Satisfies: 11 P0 rows with no backlog row: NS-43-R1 to NS-43-R4, NS-43-R6 to NS-43-R8, NS-43-R10 to NS-43-R11, NS-43-R13 to NS-43-R14.
 - Scope: tests first, then code or words only where a test fails, for the rows above: first book setup; build after the age-gate row (BL-198) and the Terms row (BL-291). The card is the source of truth; nothing here changes a row.
 - Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
 - Source: docs/product/prd/BACKLOG-GAPS.md G15. Group G15; 11 rows.
 
 #### BL-293 The first Keep and the allowance gate (NS-44)
-- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G16; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer, payments engineer. Milestone: M15. Size: M. Depends on: BL-965.
+- Status: superseded (by BL-1034). Mode: agent. Owner: mobile engineer, payments engineer. Milestone: M15. Size: M. Depends on: BL-965.
 - Satisfies: 10 P0 rows with no backlog row: NS-44-R1 to NS-44-R4, NS-44-R6 to NS-44-R10, NS-44-R12.
 - Scope: tests first, then code or words only where a test fails, for the rows above: first Keep and the allowance gate; build after the first-book row (BL-292). The card is the source of truth; nothing here changes a row.
 - Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
 - Source: docs/product/prd/BACKLOG-GAPS.md G16. Group G16; 10 rows.
 
 #### BL-294 Sign out and Delete account on the phone (NS-45)
-- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G17; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer, privacy engineer. Milestone: M15. Size: L. Depends on: BL-237, BL-961.
+- Status: superseded (by BL-1161, BL-1162 and BL-1163). Mode: agent. Owner: mobile engineer, privacy engineer. Milestone: M15. Size: L. Depends on: BL-237, BL-961.
 - Satisfies: 15 P0 rows with no backlog row: NS-45-R1 to NS-45-R3, NS-45-R5 to NS-45-R13, NS-45-R15 to NS-45-R16, NS-45-R18.
 - Scope: tests first, then code or words only where a test fails, for the rows above: sign out and account deletion on the phone; build after the sign-in row (BL-208). Note: BL-237 is done in part; split into at most three PRs. The card is the source of truth; nothing here changes a row.
 - Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
 - Source: docs/product/prd/BACKLOG-GAPS.md G17. Group G17; 15 rows.
 
 #### BL-295 Days we mark and the Home slip (NS-46, NS-50, FR-DAY)
-- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G18; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer, content. Milestone: M15. Size: L. Depends on: BL-966, BL-963, BL-965, BL-537.
+- Status: superseded (by BL-1319, BL-1320, BL-1321 and BL-1322). Mode: agent. Owner: mobile engineer, content. Milestone: M15. Size: L. Depends on: BL-966, BL-963, BL-965, BL-537.
 - Satisfies: 32 P0 rows with no backlog row: FR-DAY-02, FR-DAY-04, FR-DAY-06, FR-DAY-15, FR-DAY-20, FR-DAY-23, FR-DAY-25, NS-46-R2, NS-46-R4 to NS-46-R5, NS-46-R7 to NS-46-R8, NS-46-R14, NS-46-R16 to NS-46-R17, NS-46-R19, NS-46-R22 to NS-46-R23, NS-46-R26 to NS-46-R27, NS-46-R30 to NS-46-R32, NS-46-R34 to NS-46-R36, NS-46-R46, NS-46-R48, NS-50-R2 to NS-50-R3, NS-50-R8, NS-50-R11.
 - Drop (card 21, Rows by drop): B for 22 of the 25 NS rows, B and C for 2, C for 1.
 - Scope: tests first, then code or words only where a test fails, for the rows above: days, the ask slip and the Home slip; counsel and a tradition reviewer gate public days (NS-46-R23, FR-DAY-23). Note: BL-537 is deferred; split by drop. The card is the source of truth; nothing here changes a row.
@@ -5481,7 +5481,7 @@ Ids. The dispatcher reads only three-digit ids (`scripts/agents/lib.mjs`), and B
 - Source: docs/product/prd/BACKLOG-GAPS.md G18. Group G18; 32 rows.
 
 #### BL-296 Cultural background store and lock-screen rules (NS-47, FR-CUL)
-- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G19; Karma or the founder sets it to ready). Mode: agent. Owner: privacy engineer, mobile engineer. Milestone: M15. Size: L. Depends on: BL-961, BL-975.
+- Status: superseded (by BL-1306, BL-1307, BL-1308, BL-1309, BL-1310 and BL-1311). Mode: agent. Owner: privacy engineer, mobile engineer. Milestone: M15. Size: L. Depends on: BL-961, BL-975.
 - Satisfies: 42 P0 rows with no backlog row: FR-CUL-01 to FR-CUL-09, FR-CUL-11 to FR-CUL-12, FR-CUL-16, FR-CUL-21 to FR-CUL-23, NS-47-R1 to NS-47-R13, NS-47-R15 to NS-47-R18, NS-47-R21 to NS-47-R26, NS-47-R29, NS-47-R34, NS-47-R36, NS-47-R38.
 - Drop (card 21, Rows by drop): B for 26 of the 27 NS-47 rows, C for 1; the FR-CUL rows carry no drop.
 - Scope: tests first, then code or words only where a test fails, for the rows above: the background store and what a lock screen may show; privacy review before any build outside the founder's family; build after the days row (BL-295). Note: split by drop. The card is the source of truth; nothing here changes a row.
@@ -5489,7 +5489,7 @@ Ids. The dispatcher reads only three-digit ids (`scripts/agents/lib.mjs`), and B
 - Source: docs/product/prd/BACKLOG-GAPS.md G19. Group G19; 42 rows.
 
 #### BL-297 Notification catalogue and rotation (NS-48, FR-NTC)
-- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G20; Karma or the founder sets it to ready). Mode: agent. Owner: reminders owner. Milestone: M15. Size: M. Depends on: BL-966, BL-537.
+- Status: superseded (by BL-1323 and BL-1324). Mode: agent. Owner: reminders owner. Milestone: M15. Size: M. Depends on: BL-966, BL-537.
 - Satisfies: 22 P0 rows with no backlog row: FR-NTC-01 to FR-NTC-05, FR-NTC-08 to FR-NTC-11, NS-48-R1 to NS-48-R5, NS-48-R9 to NS-48-R11, NS-48-R21, NS-48-R26, NS-48-R28, NS-48-R30, NS-48-R36.
 - Drop (card 21, Rows by drop): A for 6 of the 13 NS-48 rows, B for 3, C for 4; the FR-NTC rows carry no drop.
 - Scope: tests first, then code or words only where a test fails, for the rows above: the catalogue and its rotation; build after the days row (BL-295). Note: BL-537 is deferred. The card is the source of truth; nothing here changes a row.
@@ -5497,7 +5497,7 @@ Ids. The dispatcher reads only three-digit ids (`scripts/agents/lib.mjs`), and B
 - Source: docs/product/prd/BACKLOG-GAPS.md G20. Group G20; 22 rows.
 
 #### BL-298 Suggestions from the library, level 2 (NS-49, FR-PHS, FR-OPP)
-- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G21; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: L. Depends on: BL-931, BL-952, BL-962.
+- Status: superseded (by BL-1300, BL-1301, BL-1302, BL-1303, BL-1304 and BL-1305). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: L. Depends on: BL-931, BL-952, BL-962.
 - Satisfies: 48 P0 rows with no backlog row: FR-OPP-03, FR-OPP-05 to FR-OPP-06, FR-OPP-09, FR-PHS-04, FR-PHS-11 to FR-PHS-12, FR-PHS-14 to FR-PHS-15, FR-PHS-17, FR-PHS-19 to FR-PHS-20, FR-PHS-22 to FR-PHS-23, FR-PHS-33, FR-PHS-40 to FR-PHS-41, FR-PHS-43 to FR-PHS-44, FR-PHS-50 to FR-PHS-57, NS-49-R3, NS-49-R6 to NS-49-R7, NS-49-R9 to NS-49-R13, NS-49-R15 to NS-49-R17, NS-49-R19, NS-49-R21, NS-49-R23 to NS-49-R28, NS-49-R33, NS-49-R35.
 - Drop (card 21, Rows by drop): A for 3 of the 21 NS-49 rows, C for 18; the FR-PHS and FR-OPP rows carry no drop.
 - Scope: tests first, then code or words only where a test fails, for the rows above: level 2 suggestions behind EXPO_PUBLIC_SUGGESTIONS. Note: two stacks: the module, then governance and the label. The card is the source of truth; nothing here changes a row.
@@ -8442,7 +8442,7 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Done when: each of the five is done or recorded as left, with the line it points at; the table renders as one table.
 
 #### BL-1540 Moments PR 8: a claim step for a kept `local` moments file
-- Status: proposed (the claim step is taken up by BL-1559 in one PR with the owner wiring; review of PR #1481; the claim step is also in a live claim row, check docs/agents/CLAIMS.md before starting). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: none.
+- Status: superseded (by BL-1559). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: none.
 - Priority: Medium. Gate: none.
 - Satisfies: NS-53-R7 and E73 (docs/product/prd/18-errata-after-lock.md; not re-read here).
 - Problem and evidence: PR #1481 ships `moments.json` with an owner key; a kept `local` file is orphaned until a claim step exists.
