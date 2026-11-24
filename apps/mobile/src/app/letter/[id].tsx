@@ -31,7 +31,7 @@ import { TrashIcon } from 'phosphor-react-native/src/icons/Trash';
 import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { BackHandler, Platform, Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, { Easing, FadeIn, ReduceMotion, runOnJS, useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
+import Animated, { FadeIn, ReduceMotion, runOnJS, useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tokens } from '@scribe/design-tokens';
 import { CardToPage, PageOpening, cardRects, useCardToPageClose, type Opening } from '@/components/motion/card-transition';
@@ -78,7 +78,7 @@ import {
   type Entry,
   type OccurredPrecision,
 } from '@/lib/store';
-import { useMotion, useReducedMotion } from '@/lib/motion';
+import { curve, useMotion, useReducedMotion } from '@/lib/motion';
 import { ROUTES, canCarry, type Move } from '@/lib/transitions.logic';
 import { languageFor, retryWords, startSpeechDownload, waitingForLanguageNote } from '@/lib/transcription-queue';
 import { wordsCopy } from '@/lib/transcription-queue/copy';
@@ -112,7 +112,7 @@ const MEASURE_MS = 4 * 16;
 /** The rest of the page shows once the carried words are this close to home: under the gap below them. */
 const REST_WITHIN_PT = 4;
 /** On Back the rest of the page leaves this fast (six frames), before the words go back: a quick, legible answer. */
-const REST_OUT_MS = 96;
+const REST_OUT_MS = tokens.motion.cardToPage.restOutMs;
 
 /** Whether the letter is in a book this phone has left (BL-444): read only. Asked through the store's gated list. */
 function isLeftBookLetter(entry: Entry): boolean {
@@ -252,8 +252,8 @@ function OpeningBlock({
       {play}
       {/* The picture, when the letter has one: second in order (after Play, from AX1 up), after the one level 1 heading and before the words. */}
       {picture}
-      {/* "Exactly as said" and Reading Size cross-fade the words over 150 ms; the size itself never animates. */}
-      <Animated.View key={swapKey} entering={focusRef ? FadeIn.duration(150).reduceMotion(ReduceMotion.Never) : undefined}>
+      {/* "Exactly as said" and Reading Size cross-fade the words over `swapMs`; the size itself never animates. */}
+      <Animated.View key={swapKey} entering={focusRef ? FadeIn.duration(tokens.motion.swapMs).reduceMotion(ReduceMotion.Never) : undefined}>
         {note ? (
           <AppNote scale={scale}>{text}</AppNote>
         ) : (
@@ -316,7 +316,7 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
   const restOpacity = useSharedValue(rest.showAtMs ? 0 : 1);
   useEffect(() => {
     if (!rest.showAtMs) return;
-    restOpacity.value = withDelay(rest.showAtMs, withTiming(1, { duration: rest.fadeMs, easing: Easing.linear, reduceMotion: ReduceMotion.Never }));
+    restOpacity.value = withDelay(rest.showAtMs, withTiming(1, { duration: rest.fadeMs, easing: curve('veil'), reduceMotion: ReduceMotion.Never }));
   }, [rest, restOpacity]);
   const restSignature = useAnimatedStyle(() => ({ opacity: restOpacity.value }));
   const restBody = useAnimatedStyle(() => ({ opacity: restOpacity.value }));
@@ -329,7 +329,7 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
       restOpacity.value = 0; // a Back before the rest showed: it never comes in
       return leave();
     }
-    restOpacity.value = withTiming(0, { duration: REST_OUT_MS, easing: Easing.linear, reduceMotion: ReduceMotion.Never });
+    restOpacity.value = withTiming(0, { duration: REST_OUT_MS, easing: curve('veil'), reduceMotion: ReduceMotion.Never });
     leaveTimer.current = setTimeout(leave, REST_OUT_MS);
   }, [rest, restOpacity, leave]);
   useEffect(() => () => clearTimeout(leaveTimer.current), []);

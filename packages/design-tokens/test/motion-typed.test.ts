@@ -25,10 +25,7 @@ const EXEMPT = new Set(['lib/motion.ts']);
  * Files another lane is changing, so this row does not edit them. Shrink-only: delete a row when its owner lands, and
  * the test below fails if a row has nothing left to allow. Every row names its backlog id.
  */
-const ALLOWLIST: Record<string, string> = {
-  // BL-1754: the letter page's FadeIn.duration(150), Easing.linear and REST_OUT_MS = 96 (DSR-004, DSR-005). Letter page lane.
-  'app/letter/[id].tsx': 'BL-1754 (letter page rest fade and focus swap)',
-};
+const ALLOWLIST: Record<string, string> = {};
 
 const TYPED: [string, RegExp][] = [
   ['duration', /\bduration\s*:\s*\d|\.duration\(\s*\d/],
@@ -113,6 +110,12 @@ describe('[BL-1754] the tokens the components now read', () => {
     expect(m.dismissDy).toBe(120);
     expect([...m.penEasing]).toEqual([0.45, 0, 0.2, 1]);
     expect(m.curve).toEqual({ veil: 'linear', sweep: 'quad', breath: 'sine' });
+  });
+  it('[BL-1790] the letter page tokens: the focus swap, the veil curve and a Back rest-out that fits the exit', () => {
+    expect(m.swapMs).toBe(150);
+    expect(m.curve.veil).toBe('linear');
+    expect(m.cardToPage.restOutMs).toBe(96);
+    expect(m.cardToPage.restOutMs).toBeLessThanOrEqual(m.exitMs);
   });
   it('[BL-1988] hold one loop cap: 30 s, longer than any one cycle of the two loops', () => {
     expect(m.loopCapMs).toBe(30000);
