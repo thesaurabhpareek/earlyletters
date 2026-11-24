@@ -64,6 +64,7 @@ import { ModalHeader } from '@/components/ui/screen-header';
 import { StateGlyph, StateScreen } from '@/components/ui/state-screen';
 import { STATE_LAYOUT } from '@/components/ui/state-screen.logic';
 import { Text } from '@/components/ui/text';
+import { setSurfaceBusy } from '@/lib/asks/surface';
 import { announce, useFocusOnMount, useIsAccessibilitySize, useTheme } from '@/lib/a11y';
 import { setAudioMode } from '@/lib/audio-mode';
 import {
@@ -158,6 +159,14 @@ export default function Listen() {
       if (code) track('error_shown', { code });
     }
   }, [phase]);
+
+  // No setup ask lands on a take: busy from the start of a take until it is kept or let go, and cleared when this
+  // screen goes (BL-1985). Phone memory only.
+  const takeInProgress = phase === 'recording' || phase === 'paused' || phase === 'finishing';
+  useEffect(() => {
+    setSurfaceBusy('recording', takeInProgress);
+  }, [takeInProgress]);
+  useEffect(() => () => setSurfaceBusy('recording', false), []);
 
   // Metering straight into the aura's shared value at 20 Hz (MOTION 5b), never through React state: nothing re-renders
   // for the voice (listening-cue.md 2). No reading (metering off, or a released recorder) is silence: the idle breath.
