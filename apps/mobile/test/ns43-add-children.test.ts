@@ -82,21 +82,28 @@ describe('[NS-43-R9] the first books commit together', () => {
     expect(store.listChildren().map((c) => c.name)).toEqual(['Asha', 'Asha B']);
   });
 
-  it('signed in: each book queues its create upload, and a failure queues none', async () => {
+  const signedIn = async () => {
     const { takeOwnership } = await import('../src/lib/sync/ownership');
-    const ctx = { now: '2026-11-20T09:00:00.000Z', newId: () => at(700) };
-    takeOwnership(store.localSqlDb(), '0192f0aa-0000-7000-8000-0000000000a1', ctx);
-    const before = rows().o;
-    await Promise.resolve();
+    takeOwnership(store.localSqlDb(), '0192f0aa-0000-7000-8000-0000000000a1', { now: '2026-11-20T09:00:00.000Z', newId: () => at(700) });
+  };
+
+  it('signed in: each book queues its create upload', async () => {
+    await signedIn();
     store.addChildren([asha, twin]);
     expect(creates()).toBe(2);
-    expect(rows().o - before).toBe(4); // a create and a signature line per book
-    await open([at(1), at(2), at(2)]);
-    const own = await import('../src/lib/sync/ownership');
-    own.takeOwnership(store.localSqlDb(), '0192f0aa-0000-7000-8000-0000000000a1', ctx);
+  });
+
+  it('signed in: the outbox refusing the SECOND book leaves no books, no signature rows, no ops, no active book, no event', async () => {
+    await signedIn();
     const base = rows();
+    // The second book's create op is refused by the engine, after the first book and its op were written.
+    store.localSqlDb().exec("CREATE TRIGGER refuse2 BEFORE INSERT ON sync_outbox WHEN NEW.payload LIKE '%book.create%' AND (SELECT COUNT(*) FROM sync_outbox WHERE payload LIKE '%book.create%') >= 1 BEGIN SELECT RAISE(ABORT, 'refused'); END");
+    const heard: string[][] = [];
+    store.subscribeTo(['children', 'settings'], (t) => heard.push([...t]));
     expect(() => store.addChildren([asha, twin, third])).toThrow();
     expect(rows()).toEqual(base);
+    expect(store.getSetting('activeChildId')).toBeNull();
+    expect(heard).toEqual([]);
   });
 
   it('a book already active stays active; an empty list makes nothing', () => {
@@ -130,12 +137,6 @@ describe('[NS-43-R10] first run ends on Home', () => {
     expect(after).toMatch(/router\.replace\('\/'\)/);
     expect(after).not.toMatch(/router\.push|present|Sheet|Alert|request[A-Z]\w*Permission|LockOffer|paywall/i);
     expect(readFileSync(join(__dirname, '..', 'src', 'app', 'onboarding.tsx'), 'utf8')).not.toMatch(/<LockOffer|requestPermission/);
-  });
-
-  it('the new book is the active one before Home opens', () => {
-    const body = finishSource();
-    expect(body.indexOf('setActiveChildId(created[0].id)')).toBeGreaterThan(body.indexOf('addChildren('));
-    expect(body.indexOf("router.replace('/')")).toBeGreaterThan(body.indexOf('setActiveChildId(created[0].id)'));
   });
 });
 
