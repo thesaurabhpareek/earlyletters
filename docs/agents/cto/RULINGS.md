@@ -1447,3 +1447,13 @@ Challenge record for CR-202 to CR-212 (the held-PR rulings): self-challenged onl
 - Ruling: of the 39 keys, 18 are named, 4 merge into `screen_view` or perf, and 17 are dropped (held events have no history, so dropping before first send is free). No tier changes: the basics set stays pinned to `['screen_view']`. The nine categories stay closed. Conditions: step 1b (merged, PR 1972) corrected and re-rendered the table with `dropped` and `merged` statuses; step 2a deletes the dropped and merged rows and call sites in one PR cut on PR 1957 and re-expresses the return-to-book funnel; `FORBIDDEN_EVENT_PATTERNS` is re-expressed against wire names in the same step or the guard silently stops matching; `posthog-standard.md` gets a one-time edit by its owner afterwards. The `letter_deleted` key is flagged for a separate exec look.
 - UNVERIFIED: PostHog colon names in funnels and HogQL (standard 2.8).
 - Door: two-way. Way back: revert the step 2 PRs; re-add a key by a new row with a decision.
+
+### CR-214 Release PR #1979: the servers-on profile, the /open and /support read, the AASA path, the merge method (24 Nov 2026, Karma and the exec team under D-168 and D-172)
+- Verdict: RULED. Founder-only: no. Signed: Karma.
+- Decision group: G2, G6, D-170, CR-178. Cites CCO, CMO, CLO, CISO.
+- `apps/mobile/eas.json` production keeps `EXPO_PUBLIC_SERVER_FEATURES` on. D-170, CR-178 and gate G6 (the G6 row in `docs/release/FOUNDER_QUEUE.md`) rule it. Condition (CCO): no store submission until the BL-553 refusal screen and the account-deletion drill are verified. Until both are, a servers-on build stays out of any store submission.
+- The /open and /support copy was read on 24 Nov 2026 by the CMO and CLO roles. The CISO role read only the AASA /open path and the unsubscribe handler, not the page copy. These are Claude roles, not counsel; the text is not described as counsel-approved. The /open wording is the one in #1968. The /support header comment is corrected to say so; no copy changes.
+- CCO evidence item: the CCO asked for the claims-capabilities test (`packages/content/test/claims-capabilities.test.ts`). It was run on 24 Nov 2026 and passes (30 tests, per the release PR #1979 prep). If a run against the production profile in `eas.json` differs, that run is the one that counts.
+- The AASA change to the exact `/open` path is approved, with the test added in #1967.
+- Method: the release PR #1979 (snapshot branch `release-candidate/develop-23cba3ec`, `develop` into `main`) merges as a merge commit, not a squash. `main` is already an ancestor of `develop` since #1950.
+- Door: two-way for the comment and the record; the merge itself is one-way on `main`. Physical acts named here stay in FOUNDER_QUEUE only.
