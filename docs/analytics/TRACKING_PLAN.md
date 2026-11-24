@@ -37,14 +37,14 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 | # | Stage | Metric and definition | Primary source | Device events used | Target (A unless noted) | Serves |
 |---|---|---|---|---|---|---|
 | 1 | Activation: first letter | Share of new accounts with a first letter within 1, 7 and 30 days; median time from first launch to first saved letter | S `first_letter_conversion`; ASC installs; D `analytics_opted_in.time_to_first_letter` | `analytics_opted_in` | Median first letter 90 s or less (B F1, R1) | PRD-REQ-016 |
-| 2 | Keep the book | Share of first-letter users with an account by day 7 | S (accounts with 1 or more letters) over D/ASC | `auth_sheet_shown`, `auth_succeeded`, `auth_deferred`, `local_merge_choice` | 50% or more (A Q2 threshold) | PRD-REQ-001, A-NFR-013 |
+| 2 | Keep the book | Share of first-letter users with an account by day 7 | S (accounts with 1 or more letters) over D/ASC | `screen_view` (the sign-in sheet), `auth_succeeded`, `auth_deferred`, `local_merge_choice` | 50% or more (A Q2 threshold) | PRD-REQ-001, A-NFR-013 |
 | 3 | Activated writer | Letters saved in 2 or more different weeks within 4 weeks of the first letter | S `retention_cohorts` | `letter_saved`, `capture_started` | Set after first cohorts | PRD-REQ-016 |
 | 4 | Weekly letters | Letters per active family per week; spoken versus typed; book versus private | S `weekly_keeping_families`, `letters_per_active_family`; D for `prompt_kind`, `from_notification_2h`, edit counts | `letter_saved`, `transcription_completed` | Set after first cohorts | C-REQ-034 |
 | 5 | Co-parent | Co-parent invites sent and accepted within 7 days; families with two voices | S `family_invites`, `letters_per_active_family`; D for channel | `invite_created`, `invite_accepted`, `invite_failed` | Set after first cohorts | B-REQ-007 |
 | 6 | Languages | Families by spoken-letter language; pack download success and failure by pack | S `language_mix` (once a server language column exists); D | `language_set`, `pack_download` | Pack failure under 2% of starts (Decision) | B-REQ-003, decision 15 |
 | 7 | Read together | Share of monthly active parents who start Read together; finish rate (no session limit since D-082) | D only | `read_together_started`, `read_together_ended` | Set after first cohorts | C-REQ-034 |
 | 8 | Trial to paid | Offer views to purchases (D); trials, trial to paid, annual share, refunds (ASC) | ASC for money; D for offer views | `plus_offer_viewed`, `plus_offer_closed`, `plan_changed`, `free_allowance_reached`, `keep_gate_shown`, `letter_held`, `plus_started_from_gate`, `offer_code_redeemed` | Trial to paid 40% or more; annual 60% or more; refunds under 3% (C section 9) | C-REQ-034, C-REQ-023 |
-| 9 | Retention | Active writers at week 4 and week 26 of their first-letter cohort | S `retention_cohorts` | `app_opened`, `letter_saved`, `book_opened` | Week 4: 35% or more; month 6: 20% or more (C section 9) | PRD-REQ-016 |
+| 9 | Retention | Active writers at week 4 and week 26 of their first-letter cohort | S `retention_cohorts` | `app_opened`, `letter_saved`, `screen_view` (the Book) | Week 4: 35% or more; month 6: 20% or more (C section 9) | PRD-REQ-016 |
 
 ### 1.3 Guardrails
 
@@ -87,13 +87,12 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 ### 3.1 Events by area
 
 <!-- catalogue:begin (generated from packages/analytics/src/catalog.ts by `npm run plan -w @scribe/analytics`; do not edit by hand) -->
-73 events: 26 sendable (one definition each, in packages/analytics/src/registry.ts) and 47 held. Every event also carries the global properties in 3.2. `?` marks an optional property. Every event and property is L2.
+69 events: 24 sendable (one definition each, in packages/analytics/src/registry.ts) and 45 held. Every event also carries the global properties in 3.2. `?` marks an optional property. Every event and property is L2.
 
 #### app
 
 | Event | Fires when | Properties (type: allowed values) | Serves |
 |---|---|---|---|
-| `app_cold_start` | First frame after a cold start (only once consent exists, so never on first install) | `ttfi_bucket` (enum: lt_1s \| 1_2s \| 2_3s \| gt_3s) | A-NFR-001, PRD-REQ-016 |
 | `app_backgrounded` | App goes to the background; carries the session length bucket | `session_bucket` (enum: lt_1m \| 1_5m \| 5_15m \| gt_15m) | PRD-REQ-016 |
 | `screen_view` | A route is shown. Sent by our router hook from the route template, never by SDK autocapture | `route` (enum: tonight \| book \| family \| listen \| write \| review \| letter_detail \| onboarding \| read_together \| sign_in \| sign_in_email \| sign_in_code \| sign_in_verify \| sign_in_consent \| invite \| invite_new \| settings \| settings_account \| settings_appearance \| settings_reminders \| settings_recordings \| settings_child_detail \| settings_child_new \| settings_privacy \| settings_export \| settings_language \| settings_plus \| settings_storage \| settings_delete_account) | ADR-0008, PRD-REQ-016 |
 | `app_opened` | App comes to the foreground after 30 min or more away, or cold starts | `source` (enum: cold \| warm \| notification \| link)<br>`days_since_last_open` (enum: d0 \| d1 \| d2_7 \| d8_30 \| d31_90 \| d91_plus) | PRD-REQ-016 |
@@ -111,7 +110,6 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 
 | Event | Fires when | Properties (type: allowed values) | Serves |
 |---|---|---|---|
-| `auth_sheet_shown` | Keep the book / sign-in sheet shown | `trigger` (enum: first_letter \| third_letter \| invite \| invite_create \| sign_in \| settings) | PRD-REQ-001, PRD-REQ-016 |
 | `auth_method_selected` | A sign-in method tapped (observed from the auth state) | `method` (enum: apple \| google \| email \| passkey) | PRD-REQ-016 |
 | `auth_failed` | Sign-in failed or was cancelled (observed). An under-18 answer is never sent | `method` (enum: apple \| google \| email \| passkey)<br>`reason` (enum: cancelled \| network \| expired \| wrong_code \| code_paused \| rate_limited \| invalid_email \| not_available \| provider \| session_expired \| consent_unavailable \| unknown) | A-NFR-013 |
 | `auth_email_sent` | Email sign-in link or code sent (observed); attempt counts sends in this sign-in | `attempt` (int 1 to 10) | A-NFR-013 |
@@ -159,8 +157,6 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 | `playback_started` | A recording starts playing | `surface` (enum: letter \| review \| read_together)<br>`author_relation` (enum: self \| other_parent \| family)<br>`version` (enum: listening_copy \| original) | PRD-REQ-016 |
 | `read_together_started` | Read together session starts | `child_ordinal` (enum: first \| second \| third_plus)<br>`access` (enum: plus \| free)<br>`letters_bucket` (enum: 0 \| 1 \| 2_4 \| 5_9 \| 10_49 \| 50_99 \| 100_364 \| 365_plus) | C-REQ-034, PRD-REQ-016 |
 | `read_together_ended` | Read together session ends | `reason` (enum: finished \| stopped \| interrupted)<br>`session_bucket` (enum: lt_1m \| 1_5m \| 5_15m \| gt_15m)<br>`letters_heard` (int 0 to 50) | PRD-REQ-016 |
-| `book_opened` | Book tab shown for a child | `child_ordinal` (enum: first \| second \| third_plus)<br>`letters_bucket` (enum: 0 \| 1 \| 2_4 \| 5_9 \| 10_49 \| 50_99 \| 100_364 \| 365_plus)<br>`member_role` (enum: parent \| contributor) | PRD-REQ-016 |
-| `letter_opened` | A letter is opened to read | `author_relation` (enum: self \| other_parent \| family)<br>`has_audio` (bool) | PRD-REQ-016 |
 
 #### family
 
@@ -232,7 +228,7 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 | `sync_failed` | A sync attempt fails after retries | `reason` (enum: network \| auth \| conflict \| server \| unknown) | PRD-REQ-016 |
 | `error_shown` | A user-facing error from strings `errors.*` is shown | `code` (enum: save_failed \| mic_denied \| transcription_failed \| offline \| backup_failed \| invite_expired \| storage_low \| generic) | PRD-REQ-016 |
 
-Held, not sendable (47; typed in catalog.ts for call sites that still exist, dropped and counted at run time until each gets a registry row with a decision, a plan row and a privacy look, or is removed): `account_deletion`, `app_backgrounded`, `app_cold_start`, `auth_deferred`, `auth_email_sent`, `auth_failed`, `auth_method_selected`, `auth_sheet_shown`, `child_setting_changed`, `child_switched`, `dictionary_term_added`, `export_completed`, `export_failed`, `export_shared`, `export_started`, `family_letter_reviewed`, `goals_set`, `invite_failed`, `invite_opened`, `language_set`, `letter_deleted`, `local_merge_choice`, `machine_edit_rejected`, `machine_edit_reverted`, `make_it_yours_card`, `member_left`, `member_removed`, `moment_shown`, `notification_opened`, `offer_code_redeemed`, `os_permission_result`, `pack_download`, `playback_started`, `read_together_ended`, `read_together_started`, `reminder_prime_result`, `reminder_prime_shown`, `reminder_schedule_set`, `reminder_sent`, `reminder_suppressed`, `restore_result`, `resurface_opened`, `resurface_shown`, `review_action`, `settings_changed`, `signed_out`, `sync_failed`.
+Held, not sendable (45; typed in catalog.ts for call sites that still exist, dropped and counted at run time until each gets a registry row with a decision, a plan row and a privacy look, or is removed): `account_deletion`, `app_backgrounded`, `auth_deferred`, `auth_email_sent`, `auth_failed`, `auth_method_selected`, `child_setting_changed`, `child_switched`, `dictionary_term_added`, `export_completed`, `export_failed`, `export_shared`, `export_started`, `family_letter_reviewed`, `goals_set`, `invite_failed`, `invite_opened`, `language_set`, `letter_deleted`, `local_merge_choice`, `machine_edit_rejected`, `machine_edit_reverted`, `make_it_yours_card`, `member_left`, `member_removed`, `moment_shown`, `notification_opened`, `offer_code_redeemed`, `os_permission_result`, `pack_download`, `playback_started`, `read_together_ended`, `read_together_started`, `reminder_prime_result`, `reminder_prime_shown`, `reminder_schedule_set`, `reminder_sent`, `reminder_suppressed`, `restore_result`, `resurface_opened`, `resurface_shown`, `review_action`, `settings_changed`, `signed_out`, `sync_failed`.
 
 Global properties: `schema_version` (int 1 to 1000), `child_count_bucket`? (enum: none \| one \| two \| three_plus), `sample_pct`? (int 1 to 99).
 <!-- catalogue:end -->
@@ -315,10 +311,10 @@ Inputs: 20 letters per family per month and 2 members per family (co-parent only
 
 | Events | Per month |
 |---|---|
-| `app_opened`, `app_backgrounded`, `app_cold_start` | 45 |
+| `app_opened`, `app_backgrounded` (the 45 was estimated when `app_cold_start` also counted; it is retired, BL-2175) | 45 |
 | `screen_view` | 40 |
 | Capture: `capture_started`, `letter_saved`, `transcription_completed`, `capture_discarded`, `review_action`, `machine_edit_reverted`, `machine_edit_rejected` | 45 |
-| Book: `book_opened`, `letter_opened`, `playback_started`, Read together | 37 |
+| Book: `playback_started`, Read together (the 37 was estimated when `book_opened` and `letter_opened` also counted; they are `screen_view` now, BL-2175) | 37 |
 | Reminders and moments | 16 |
 | Family, languages, settings, Plus, errors, other | 8 |
 | **Total** | **about 190** |
@@ -335,7 +331,7 @@ PostHog's free tier is 1M events a month (ADR 0008). The 100k-family cost is a f
 ### 5.3 Sampling policy (Decision)
 
 - **Launch at 100% for every event.** At 1k families volume is about 15% of the free tier.
-- **Trigger:** when the projected month exceeds 80% of the budget, set rates in remote config (audit-logged): `screen_view` 0.5, `app_backgrounded` 0.5, `letter_opened` 0.5, `playback_started` 0.5.
+- **Trigger:** when the projected month exceeds 80% of the budget, set rates in remote config (audit-logged): `screen_view` 0.5, `app_backgrounded` 0.5, `playback_started` 0.5.
 - **Never sampled:** `analytics_opted_in`, `letter_saved`, capture and transcription events, family, languages, reminders, Plus, settings, children, errors.
 - Sampling is deterministic per analytics id and event name, so a person sends all or none of a sampled event. Kept events carry `sample_pct`.
 - Transport (PRD 7.7): our in-memory queue capped at 1 MB (oldest dropped first), flushed at most every 60 s in the foreground and when the app goes to the background; the SDK runs with `persistence: 'memory'` and `flushInterval: 0`, so it never writes to disk and has no timer of its own.
@@ -403,7 +399,7 @@ Crash reports (Sentry) follow the same switch (LEGAL-REQ-003): the Sentry bootst
 
 | Events | Call site | Owner | Status |
 |---|---|---|---|
-| `app_cold_start`, `app_opened`, `app_backgrounded` | `startAnalytics({ ttfiMs })` in `app/_layout.tsx` after the first frame | coordinator | to wire (one call) |
+| `app_opened`, `app_backgrounded` | `startAnalytics({ ttfiMs })` in `app/_layout.tsx` after the first frame (`ttfiMs` is accepted and not sent: `app_cold_start` is retired and returns as the `cold_start` perf metric) | coordinator | to wire (one call) |
 | `screen_view` | `useScreenViews()` in `app/_layout.tsx` | coordinator | to wire (one hook) |
 | `auth_method_selected`, `auth_succeeded`, `auth_failed`, `auth_email_sent`, `signed_out` | `lib/analytics/observers.ts` (observes `subscribeAuth`) | analytics | wired by `startAnalyticsObservers()` |
 | `invite_accepted` | observers (`onInviteAccepted`) | analytics | wired |
@@ -414,7 +410,7 @@ Crash reports (Sentry) follow the same switch (LEGAL-REQ-003): the Sentry bootst
 | `notification_opened` | observers (expo-notifications response, evening reminders only) | analytics | wired |
 | `analytics_opted_in` | `grantAnalytics()` | analytics | wired |
 | `account_deletion` | `lib/account-deletion/use-account-deletion.ts` | account deletion | wired |
-| `auth_sheet_shown`, `auth_deferred` | `app/(auth)/sign-in/index.tsx`: on show and on Later, with `getSignInTrigger()` | auth | to wire |
+| `auth_deferred` | `app/(auth)/sign-in/index.tsx`: on Later (the sheet being shown is the `sign_in` screen view), with `getSignInTrigger()` | auth | to wire |
 | `local_merge_choice` | sign-in re-ownership step | auth, sync | to wire |
 | `invite_opened` | `lib/family/pending-invite-watcher.tsx` | auth/family | to wire |
 | `invite_created`, `invite_failed` | `app/invite/new.tsx`: `trackInviteCreated({ role: 'parent', channel, shared, childIndex })`; on error `track('invite_failed', { stage, reason: inviteErrorKind(e) })` | family | to wire |
@@ -422,7 +418,7 @@ Crash reports (Sentry) follow the same switch (LEGAL-REQ-003): the Sentry bootst
 | `capture_started`, `capture_discarded` | `app/listen.tsx`, `app/write.tsx` | capture (Mobile A) | to wire |
 | `transcription_completed` | `lib/transcription-queue/index.ts` on finish: `trackTranscriptionCompleted({ engine: 'on_device', modelId, audioMs, latencyMs, outcome })` (`outcome: 'no_speech'` when nobody spoke) | speech | to wire |
 | `letter_saved`, `review_action`, `machine_edit_reverted`, `machine_edit_rejected`, `letter_deleted` | `app/review.tsx`: `trackLetterSaved(...)`, `trackMachineEditsRejected(verifyResult.rejected)` | capture (Mobile A) | to wire |
-| `book_opened`, `letter_opened`, `playback_started{version}`, `read_together_*` | book tab, letter screen, `lib/player`, `app/read-together.tsx` | book, player | to wire |
+| `playback_started{version}`, `read_together_*` | `lib/player`, `app/read-together.tsx` | book, player | to wire |
 | `child_added`, `child_switched`, `child_setting_changed`, `dictionary_term_added`, `goals_set`, `make_it_yours_card` | children screens | children | to wire |
 | `reminder_prime_shown`, `reminder_prime_result`, `os_permission_result`, `reminder_sent`, `reminder_suppressed` | `lib/reminders/priming-sheet.tsx`, `scheduler.ts` | reminders | to wire |
 | `export_started`, `export_completed`, `export_failed`, `export_shared` | `app/settings/export.tsx` around `runExport` and `shareExport` | export | to wire |
@@ -433,6 +429,8 @@ Crash reports (Sentry) follow the same switch (LEGAL-REQ-003): the Sentry bootst
 | `moments_card_impressed`, `moments_card_tapped` | Moments tab, question and look-back slots only: `trackMomentsCard({ action, slot })` (NS-53 section 18, R251) | mobile | not wired: waits for the Moments flag |
 | `error_shown`, `sync_failed` | `components/ui` toast and errors; `lib/sync/engine.ts` after retries | design, sync | to wire |
 | Consent sheet | ask sequencer: show `<AnalyticsConsentSheet>` when `analyticsAskDue(...)`; call `recordAnalyticsOffer()` | coordinator (BL-023) | to wire |
+
+Retired by wire-names step 2a, slice 3a (BL-2175, CR-213), with their call sites: `app_cold_start`, `auth_sheet_shown`, `book_opened` and `letter_opened`. The sign-in sheet, the Book and a letter are reached through `screen_view` (`sign_in`, `book`, `letter_detail`). The reason for each is in `docs/analytics/instrumentation/WIRE-NAMES.md`, under Retired keys.
 
 ---
 

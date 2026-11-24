@@ -40,25 +40,23 @@ export type RowKind =
 const S = '2.9 domain table';
 const ruled = (wire: string, basis: string): RowKind => ({ status: 'ruled', wire, basis });
 const named = (wire: string, basis: string): RowKind => ({ status: 'named', wire, basis });
-const merged = (into: 'screen_view' | 'perf_measured', target: string, basis: string): RowKind => ({ status: 'merged', into, target, basis });
+const merged = (into: 'screen_view' | 'perf_measured', target: string, basis: string): Extract<RowKind, { status: 'merged' }> => ({ status: 'merged', into, target, basis });
 const drop = (basis: string): RowKind => ({ status: 'dropped', basis });
 
 /**
  * Hand-decided rows, in catalogue order then registry-only. The generator checks that this covers every key exactly once.
  * The 39 keys 2.9 left open were ruled on 24 Nov 2026 (BL-1255 step 1b, `infra/exec-rulings-2026-11-24-wire-names.md`):
  * 17 named, 4 merged, 17 dropped, and `sync_failed`, which 2.9 already names. `letter_deleted` was ruled the same day to be
- * the 18th drop (`infra/exec-rulings-2026-11-24-letter-deleted.md`, CR-225). The key is deleted in step 2a (BL-2175), not here.
+ * the 18th drop (`infra/exec-rulings-2026-11-24-letter-deleted.md`, CR-225). Step 2a (BL-2175) deletes the keys in two slices: the 4 merged keys first (slice 3a, now in `RETIRED_ROWS`), then the 18 dropped keys (slice 3b).
  */
 export const WIRE_ROWS: Readonly<Record<string, RowKind>> = {
   // app
-  app_cold_start: merged('perf_measured', 'system:cold_start_measure', '`cold_start` is already a PERF_METRIC; PM1 lists it under the perf pattern; its metric id (area `system`) is registered in the step 2 PR that needs it'),
   app_opened: ruled('system:app_open', `${S}: \`system.app.opened\``),
   app_backgrounded: drop('no PM row and no reader; it is not PM5 `system.session.ended` (which carries clean, fatal or killed), so `system:session_end` stays reserved for that'),
   screen_view: { status: 'pattern', suffix: 'screen_view', idKind: 'screen', basis: '2.9 Basics: `<area>:<screen_id>_screen_view`' },
   // consent
   analytics_opted_in: ruled('system:analytics_consent_accept', `${S}: \`system.consent.granted\` ("duplicates \`analytics_opted_in\`, so one event")`),
   // entry
-  auth_sheet_shown: merged('screen_view', 'onboarding:sign_in_screen_view', 'the sheet is registered screen id `sign_in`; its `trigger` property has no reader'),
   auth_method_selected: drop('inferred from auth state; `auth_succeeded` and `auth_failed` already carry `method`; no PM row, no reader'),
   auth_succeeded: ruled('onboarding:sign_in_complete', `${S}: \`onboarding.sign_in.completed\``),
   auth_failed: ruled('onboarding:sign_in_fail', `${S}: \`onboarding.sign_in.failed\``),
@@ -87,8 +85,6 @@ export const WIRE_ROWS: Readonly<Record<string, RowKind>> = {
   language_set: ruled('me:language_update', `${S}: \`me.language.changed\``),
   pack_download: named('system:pack_download_update', 'PM1 maps four states to this one key and 2.9 only holds `pack_start`; `changed` folds to `update`; the `pack_download` object keeps it from reading as a pack version update'),
   // book
-  book_opened: merged('screen_view', 'book:book_screen_view', 'PM2 deprecates it into the Book screen view ("counts are not wanted"); funnel `f_return_book_read` is re-expressed on the screen names'),
-  letter_opened: merged('screen_view', 'book:letter_detail_screen_view', 'same PM2 line; screen id `letter_detail` is one id for every letter'),
   playback_started: ruled('book:playback_start', `${S}: \`book.playback.started\``),
   read_together_started: ruled('book:read_together_start', `${S}: \`book.read_together.started\``),
   read_together_ended: ruled('book:read_together_end', `${S}: \`book.read_together.ended\``),
@@ -139,6 +135,18 @@ export const WIRE_ROWS: Readonly<Record<string, RowKind>> = {
   perf_measured: { status: 'pattern', suffix: 'measure', idKind: 'metric', basis: '2.9 Basics: `<area>:<metric>_measure` (deviation); tier stays consented until FH-3' },
 };
 
+/**
+ * The keys step 2a (BL-2175) deleted from the catalogue and registry, with the reason each went and, for a merge, where its
+ * signal lives now. They are not keys any more: `WIRE_ROWS` has no row for them, a test fails if one comes back, and the
+ * generated table lists them last so the reasons survive the deletion. Nothing reads this record but the table and its tests.
+ */
+export const RETIRED_ROWS: Readonly<Record<string, Extract<RowKind, { status: 'merged' | 'dropped' }>>> = {
+  app_cold_start: merged('perf_measured', 'system:cold_start_measure', '`cold_start` is already a PERF_METRIC; PM1 lists it under the perf pattern; its metric id (area `system`) is registered in the step 2 PR that needs it'),
+  auth_sheet_shown: merged('screen_view', 'onboarding:sign_in_screen_view', 'the sheet is registered screen id `sign_in`; its `trigger` property has no reader'),
+  book_opened: merged('screen_view', 'book:book_screen_view', 'PM2 deprecates it into the Book screen view ("counts are not wanted"); funnel `f_return_book_read` is re-expressed on the screen names'),
+  letter_opened: merged('screen_view', 'book:letter_detail_screen_view', 'same PM2 line; screen id `letter_detail` is one id for every letter'),
+};
+
 export interface KeyFacts { key: string; where: 'catalogue' | 'registry' | 'both'; tier: string; area: string }
 
 /** Every key of EVENTS and REGISTRY with where it lives and its tier today (the catalogue's, else the registry's). */
@@ -165,6 +173,7 @@ export function renderWireNames(): string {
   const keys = allKeys();
   const count = (s: RowKind['status']) => keys.filter((k) => WIRE_ROWS[k.key]?.status === s).length;
   const live = count('ruled') + count('named');
+  const retired = Object.entries(RETIRED_ROWS);
   const out: string[] = [
     '# Wire names: the mapping table (generated)',
     '',
@@ -172,9 +181,9 @@ export function renderWireNames(): string {
     '',
     'Nothing here renames anything. The catalogue and registry still hold the old names; the rename PRs (step 2) read this table. The tier column is today\'s tier from the catalogue and registry rows, and the basics set stays pinned to `screen_view` by `test/tiers.test.ts`.',
     '',
-    `Counts: ${keys.length} keys: ${count('ruled')} ruled by 2.9, ${count('named')} named by the 24 Nov rulings, ${count('merged')} merged, ${count('dropped')} dropped, ${count('pattern')} patterns generated per registered id, ${count('needs_ruling')} NEEDS RULING. After step 2a the table has ${keys.length - count('merged') - count('dropped')} keys, ${live} with a name of their own.`,
+    `Counts: ${keys.length} keys: ${count('ruled')} ruled by 2.9, ${count('named')} named by the 24 Nov rulings, ${count('dropped')} dropped, ${count('pattern')} patterns generated per registered id, ${count('needs_ruling')} NEEDS RULING. Step 2a (BL-2175) has deleted ${retired.length} keys so far, the merged ones (see Retired keys); the ${count('dropped')} dropped keys go in its next slice, after which the table has ${keys.length - count('dropped')} keys, ${live} with a name of their own.`,
     '',
-    'Reading a row. "Ruled" means 2.9 names this event (a domain row, the seven examples of line 118, or the Basics patterns) and the catalogue meaning matches it. "Named" means 2.9 did not decide and the exec rulings of 24 Nov 2026 (BL-1255 step 1b) assigned the name. "Merged" means the key is folded into another and has no name of its own; its target is shown. "Dropped" means no event: step 2a deletes the key and its call sites. NEEDS RULING (none today) would mean a new key with no decision.',
+    'Reading a row. "Ruled" means 2.9 names this event (a domain row, the seven examples of line 118, or the Basics patterns) and the catalogue meaning matches it. "Named" means 2.9 did not decide and the exec rulings of 24 Nov 2026 (BL-1255 step 1b) assigned the name. "Dropped" means no event: step 2a deletes the key and its call sites. Keys ruled "merged" are no longer keys: step 2a deleted them, and they are listed under Retired keys. NEEDS RULING (none today) would mean a new key with no decision.',
     '',
     '## Keys',
     '',
@@ -199,6 +208,14 @@ export function renderWireNames(): string {
     else out.push(`${names.length} names, one per registered \`${r[1].idKind}\` id (area from \`ids.ts\`):`, '', ...names.map((n) => `- \`${n}\``), '');
   }
   out.push(
+    '## Retired keys',
+    '',
+    `Step 2a (BL-2175; CR-213) deleted these ${retired.length} keys from the catalogue and registry, with the call sites that fired them. None was ever sent: analytics are off in every profile (CR-186). "Merged" means the signal is carried by the target shown. A retired key is not a key: \`wire-names.test.ts\` fails if one reappears in the catalogue or registry. Bringing one back is a new row with a decision.`,
+    '',
+    '| Key | Status | Replaced by | Basis |',
+    '|---|---|---|---|',
+    ...retired.map(([k, r]) => `| \`${k}\` | ${r.status} | ${r.status === 'merged' ? `\`${r.target}\`` : '(none)'} | ${cell(r.basis)} |`),
+    '',
     '## Open items',
     '',
     '1. Privacy advice on the 1.0 candidate list (CPrivO-52, CR-212; advisory, not a decision, no code change here). `ENGINEERING-REQUIREMENTS-21nov.md` ER-B02 lists seven candidate funnel-step names for the basics tier. Advice, ruled on 24 Nov 2026: drop `family:invite_create` and `family:invite_accept` (D-161 and D-162: no 1.0 build has an invite door), and strike `onboarding:first_letter_complete` (a server count, with no key, and opt-in comes after the first letter). That leaves four: `capture:letter_save`, `capture:take_start`, `plus:offer_view`, `keeping:export_complete`, each with counts and enums only. Privacy decides them at step 3, its own PR, which edits the set pinned in `test/tiers.test.ts`; the basics set stays `screen_view` only until then.',

@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { basicsEvents, EVENTS, REGISTRY, tierOf } from '../src';
-import { allKeys, expandPattern, renderWireNames, WIRE_NAME_MAX, WIRE_NAME_RE, WIRE_NAMES_PATH, WIRE_ROWS, type RowKind } from '../src/wire-names';
+import { allKeys, expandPattern, renderWireNames, RETIRED_ROWS, WIRE_NAME_MAX, WIRE_NAME_RE, WIRE_NAMES_PATH, WIRE_ROWS, type RowKind } from '../src/wire-names';
 
 const doc = readFileSync(resolve(__dirname, '../../..', WIRE_NAMES_PATH), 'utf8');
 const keys = allKeys();
@@ -57,33 +57,47 @@ const DROPPED = [
   'dictionary_term_added', 'family_letter_reviewed', 'member_removed', 'member_left', 'reminder_sent', 'moment_shown', 'resurface_shown',
   'resurface_opened', 'export_shared', 'account_deletion', 'letter_deleted',
 ];
+const retired = Object.entries(RETIRED_ROWS);
 
-describe('the 39 rulings of 24 Nov 2026 and the letter_deleted ruling (CR-225)', () => {
-  it('17 keys are named, 4 merged, 18 dropped (letter_deleted is the 18th), sync_failed is ruled; none is left to rule', () => {
+describe('the 39 rulings of 24 Nov 2026 and the letter_deleted ruling (CR-225), after step 2a slice 3a (BL-2175)', () => {
+  it('17 keys are named, 18 are dropped (letter_deleted is the 18th) and not yet deleted, sync_failed is ruled; none is left to rule', () => {
     expect(Object.keys(NAMED)).toHaveLength(17);
     expect(DROPPED).toHaveLength(18);
     for (const [k, w] of Object.entries(NAMED)) expect(WIRE_ROWS[k], k).toMatchObject({ status: 'named', wire: w });
-    for (const [k, t] of Object.entries(MERGED)) expect(WIRE_ROWS[k], k).toMatchObject({ status: 'merged', target: t });
     for (const k of DROPPED) expect(WIRE_ROWS[k]?.status, k).toBe('dropped');
     expect(WIRE_ROWS.sync_failed).toMatchObject({ status: 'ruled', wire: 'system:sync_fail' });
     const n = (s: string) => rows.filter(([, r]) => r.status === s).length;
-    expect([n('ruled'), n('named'), n('merged'), n('dropped'), n('pattern'), n('needs_ruling')]).toEqual([30, 17, 4, 18, 4, 0]);
-    expect(keys).toHaveLength(73);
-    expect(doc).toContain('Counts: 73 keys: 30 ruled by 2.9, 17 named by the 24 Nov rulings, 4 merged, 18 dropped, 4 patterns');
+    expect([n('ruled'), n('named'), n('merged'), n('dropped'), n('pattern'), n('needs_ruling')]).toEqual([30, 17, 0, 18, 4, 0]);
+    expect(keys).toHaveLength(69);
+    expect(doc).toContain('Counts: 69 keys: 30 ruled by 2.9, 17 named by the 24 Nov rulings, 18 dropped, 4 patterns generated per registered id, 0 NEEDS RULING. Step 2a (BL-2175) has deleted 4 keys so far');
   });
 
-  it('a merged row has no name of its own: its target is a screen name generated from ids.ts, or a perf metric name', () => {
+  it('the 4 merged keys are retired: each is recorded once with its target, and is in no catalogue, registry or table row', () => {
+    expect(Object.keys(MERGED)).toHaveLength(4);
+    expect(retired).toHaveLength(4);
+    for (const [k, t] of Object.entries(MERGED)) {
+      expect(RETIRED_ROWS[k], k).toMatchObject({ status: 'merged', target: t });
+      expect(Object.keys(EVENTS), k).not.toContain(k);
+      expect(Object.keys(REGISTRY), k).not.toContain(k);
+      expect(WIRE_ROWS, k).not.toHaveProperty(k);
+      const lines = doc.split('\n').filter((l) => l.startsWith(`| \`${k}\` |`));
+      expect(lines, k).toHaveLength(1);
+      expect(lines[0], k).toMatch(/^\| `[a-z_]+` \| merged \| `[a-z_:]+` \|/);
+    }
+  });
+
+  it('a merged key has no name of its own: its target is a screen name generated from ids.ts, or a perf metric name', () => {
     const screens = expandPattern(WIRE_ROWS.screen_view as Extract<RowKind, { status: 'pattern' }>);
-    for (const [k, r] of rows) if (r.status === 'merged') {
+    for (const [k, r] of retired) if (r.status === 'merged') {
       expect(r.target, k).toMatch(WIRE_NAME_RE);
       if (r.into === 'screen_view') expect(screens, k).toContain(r.target);
       else expect(r.target.endsWith('_measure'), k).toBe(true);
     }
   });
 
-  it('no dropped or merged key keeps a wire name: it appears nowhere as the name of a row, and its table row says (none)', () => {
+  it('no dropped key keeps a wire name, and no live row owns the perf target of a merged key', () => {
     const owned = new Set(rows.flatMap(([, r]) => names(r)));
-    for (const k of [...DROPPED, ...Object.keys(MERGED)]) {
+    for (const k of DROPPED) {
       expect(names(WIRE_ROWS[k]!), k).toEqual([]);
       expect(doc.split('\n').find((l) => l.startsWith(`| \`${k}\` |`)), k).toMatch(/\| \(none\)/);
     }
