@@ -31,7 +31,7 @@ describe('tier on every row', () => {
 describe('tierOf', () => {
   it('reads the row, and a name the catalogue does not hold is consented', () => {
     expect(tierOf('screen_view')).toBe('basics');
-    expect(tierOf('letter_saved')).toBe('consented');
+    expect(tierOf('capture:letter_save')).toBe('consented');
     expect(tierOf('not_an_event')).toBe('consented');
     expect(tierOf('constructor')).toBe('consented');
     expect(tierOf('__proto__')).toBe('consented');
@@ -49,7 +49,7 @@ describe('collect_by_default with the real tierOf', () => {
   it('passes screen_view and nothing else before a yes', async () => {
     const analytics = await started(tierOf as never);
     expect(analytics.track('screen_view', { route: 'family' })).toBe('queued');
-    expect(analytics.track('capture_started', { source: 'tonight' } as never)).toBe('dropped_not_basics');
+    expect(analytics.track('capture:take_start', { source: 'tonight' } as never)).toBe('dropped_not_basics');
     expect(analytics.track('system:error_view', { code: 'sync_failed' } as never)).toBe('dropped_not_basics');
   });
 

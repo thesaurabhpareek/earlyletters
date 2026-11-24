@@ -276,7 +276,7 @@ export function computeInsights(input: InsightsInput): InsightsReport {
       propose({
         id: 'start-to-save', area: 'drop_off', title: 'Fewer letters lost between starting and saving',
         problem: `${pct(1 - saveRate)} of people who started a letter in the week of ${f!.week} did not save one (consenting users).`,
-        evidence: [`device funnel: ${f!.saved} saved of ${f!.started} started`, `discarded at ${[...d.split('capture_discarded', 'stage', f!.week).entries()].map(([k, v]) => `${k} ${v.events}`).join(', ') || 'n/a'}`],
+        evidence: [`device funnel: ${f!.saved} saved of ${f!.started} started`, `discarded at ${[...d.split('capture:take_cancel', 'stage', f!.week).entries()].map(([k, v]) => `${k} ${v.events}`).join(', ') || 'n/a'}`],
         hypothesis: 'Review asks for too much before Save, or the transcript wait feels too long.',
         change: 'Let Save work while words are still coming (the letter waits for its words), and check where discards happen.',
         metric: 'Saved / started people per week (target 80%, A).',
@@ -286,27 +286,27 @@ export function computeInsights(input: InsightsInput): InsightsReport {
 
     // Capture discards
     if (lw) {
-      const started = d.total('capture_started', lw);
-      const discarded = d.total('capture_discarded', lw);
+      const started = d.total('capture:take_start', lw);
+      const discarded = d.total('capture:take_cancel', lw);
       const dr = rate(discarded, started);
-      metrics.push({ key: 'discard_rate', label: 'Captures discarded / started (device)', value: dr, previous: pw ? rate(d.total('capture_discarded', pw), d.total('capture_started', pw)) : null, unit: 'rate', source: 'device', week: lw });
-      const a = detectAnomaly(weeks.map((w) => ({ week: w, value: rate(d.total('capture_discarded', w), d.total('capture_started', w)) })), { metric: 'discard_rate', label: 'Captures discarded / started', source: 'device', minBase: 0, isRate: true });
+      metrics.push({ key: 'discard_rate', label: 'Captures discarded / started (device)', value: dr, previous: pw ? rate(d.total('capture:take_cancel', pw), d.total('capture:take_start', pw)) : null, unit: 'rate', source: 'device', week: lw });
+      const a = detectAnomaly(weeks.map((w) => ({ week: w, value: rate(d.total('capture:take_cancel', w), d.total('capture:take_start', w)) })), { metric: 'discard_rate', label: 'Captures discarded / started', source: 'device', minBase: 0, isRate: true });
       if (a && a.direction === 'up') anomalies.push(a);
     }
 
     // Transcription outcomes by model
-    const outcomes = d.splitOver('transcription_completed', 'outcome', last4);
+    const outcomes = d.splitOver('capture:transcript_complete', 'outcome', last4);
     const tTotal = [...outcomes.values()].reduce((a, b) => a + b, 0);
     const noSpeech = rate(outcomes.get('no_speech') ?? 0, tTotal);
     const failed = rate(outcomes.get('failed') ?? 0, tTotal);
     metrics.push({ key: 'no_speech', label: 'Transcriptions with no speech heard (4 weeks, device)', value: tTotal >= 30 ? noSpeech : null, previous: null, unit: 'rate', source: 'device', week: lw });
     metrics.push({ key: 'transcription_failed', label: 'Transcriptions failed (4 weeks, device)', value: tTotal >= 30 ? failed : null, previous: null, unit: 'rate', source: 'device', week: lw });
     if (tTotal >= 30 && noSpeech !== null && noSpeech > 0.1) {
-      const models = [...d.splitOver('transcription_completed', 'model', last4).entries()].sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(', ');
+      const models = [...d.splitOver('capture:transcript_complete', 'model', last4).entries()].sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(', ');
       propose({
         id: 'no-speech', area: 'quality', title: 'Help people when the microphone hears nothing',
         problem: `${pct(noSpeech)} of transcriptions in the last 4 weeks heard no speech.`,
-        evidence: [`device transcription_completed: ${outcomes.get('no_speech') ?? 0} no_speech of ${tTotal}`, `by model (all outcomes): ${models || 'n/a'}`],
+        evidence: [`device capture:transcript_complete: ${outcomes.get('no_speech') ?? 0} no_speech of ${tTotal}`, `by model (all outcomes): ${models || 'n/a'}`],
         hypothesis: 'Recordings start before people speak and end early, or the phone is far away or covered.',
         change: 'Show a gentle level meter while listening and, after a silent take, offer "Try again" with a short tip instead of an empty Review.',
         metric: 'no_speech share under 5% (A).',
@@ -317,7 +317,7 @@ export function computeInsights(input: InsightsInput): InsightsReport {
       propose({
         id: 'transcription-failures', area: 'quality', title: 'Make on-device transcription fail less',
         problem: `${pct(failed)} of transcriptions in the last 4 weeks failed.`,
-        evidence: [`device transcription_completed: ${outcomes.get('failed') ?? 0} failed of ${tTotal}`],
+        evidence: [`device capture:transcript_complete: ${outcomes.get('failed') ?? 0} failed of ${tTotal}`],
         hypothesis: 'Memory pressure on smaller phones kills the larger model mid-letter.',
         change: 'Move phones with repeated failures to the compact model sooner and keep the letter waiting for its words.',
         metric: 'Failed transcriptions under 1% (A).',

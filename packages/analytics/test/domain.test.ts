@@ -110,9 +110,9 @@ describe('core enums are frozen and have no duplicates', () => {
 describe('analytics uses the core enums (CORE-05)', () => {
   const values = (p: PropSpec) => (p.type === 'enum' ? [...p.values] : []);
 
-  it('capture mode includes mixed, so a mixed letter_saved is not stripped', () => {
+  it('capture mode includes mixed, so a mixed capture:letter_save is not stripped', () => {
     expect(values(CAPTURE_MODE)).toEqual([...CAPTURE_MODES]);
-    expect(values(EVENTS.letter_saved.props.mode)).toContain('mixed');
+    expect(values(EVENTS['capture:letter_save'].props.mode)).toContain('mixed');
   });
 
   it('roles use the DB value `parent`, never `co_parent`', () => {

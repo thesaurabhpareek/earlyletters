@@ -9,7 +9,7 @@ import type { Catalog, Lang } from './catalog';
 import { toV1Lang } from './buckets';
 
 export type PackAnalyticsId = Catalog['system:pack_download_update']['props']['pack']['values'][number];
-export type SpeechModelValue = Catalog['transcription_completed']['props']['model']['values'][number];
+export type SpeechModelValue = Catalog['capture:transcript_complete']['props']['model']['values'][number];
 
 /** Speech model packs by manifest id (src/lib/models/catalog.ts, ADR 0015). */
 const MODEL_PACKS: Readonly<Record<string, { pack: PackAnalyticsId; lang?: Lang; model: SpeechModelValue }>> = {

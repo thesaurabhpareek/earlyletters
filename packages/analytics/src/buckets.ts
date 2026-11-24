@@ -8,16 +8,16 @@ import { V1_LANGUAGES, type Lang } from './catalog';
 
 type PropValues<E extends keyof Catalog, P extends keyof Catalog[E]['props']> = Catalog[E]['props'][P] extends { values: readonly (infer V)[] } ? V : never;
 
-export type AudioBucket = PropValues<'letter_saved', 'audio_bucket'>;
-export type WordsBucket = PropValues<'letter_saved', 'words_bucket'>;
+export type AudioBucket = PropValues<'capture:letter_save', 'audio_bucket'>;
+export type WordsBucket = PropValues<'capture:letter_save', 'words_bucket'>;
 export type LettersBucket = PropValues<'book:read_together_start', 'letters_bucket'>;
-export type LatencyBucket = PropValues<'transcription_completed', 'latency_bucket'>;
+export type LatencyBucket = PropValues<'capture:transcript_complete', 'latency_bucket'>;
 export type DaysBucket = PropValues<'system:app_open', 'days_since_last_open'>;
 export type SessionBucket = PropValues<'book:read_together_end', 'session_bucket'>;
 export type FirstLetterBucket = PropValues<'system:analytics_consent_accept', 'time_to_first_letter'>;
 export type ExportSizeBucket = PropValues<'keeping:export_complete', 'size_bucket'>;
 export type ExportDurationBucket = PropValues<'keeping:export_complete', 'duration_bucket'>;
-export type ChildOrdinal = PropValues<'letter_saved', 'child_ordinal'>;
+export type ChildOrdinal = PropValues<'capture:letter_save', 'child_ordinal'>;
 export type HourBucket = PropValues<'notifications:schedule_update', 'hour_bucket'>;
 
 const SEC = 1000;

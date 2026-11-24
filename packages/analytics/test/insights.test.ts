@@ -161,8 +161,8 @@ describe('HogQL queries and parsing', () => {
       { week: '2026-09-28', event: 'system:pack_download_update', dim: 'failure', value: 'no_space', events: 12, people: 11 },
       { week: '2026-09-28', event: 'system:pack_download_update', dim: 'failure', value: 'other', events: 30, people: 20 },
     ]);
-    expect(parseWeeklyRows([['2026-09-28', 'letter_saved', 40, 12], ['2026-09-28', 'letter_text', 40, 12], ['2026-09-28', 'system:app_open', 9, 9]])).toEqual([
-      { week: '2026-09-28', event: 'letter_saved', events: 40, people: 12 },
+    expect(parseWeeklyRows([['2026-09-28', 'capture:letter_save', 40, 12], ['2026-09-28', 'letter_text', 40, 12], ['2026-09-28', 'system:app_open', 9, 9]])).toEqual([
+      { week: '2026-09-28', event: 'capture:letter_save', events: 40, people: 12 },
     ]);
     expect(parseFunnelRows([['2026-09-28', 40, 20, 12], ['2026-09-21', 5, 2, 1]])).toEqual([{ week: '2026-09-28', opened: 40, started: 20, saved: 12 }]);
   });
@@ -184,7 +184,7 @@ describe('sources', () => {
     const { f, calls } = fakeFetch((_u, body) => {
       const q = (body as { query: { query: string } }).query.query;
       if (q.includes('countIf(opened)')) return { status: 200, json: { results: [['2026-09-28', 50, 30, 20]] } };
-      if (q.includes('GROUP BY week, event')) return { status: 200, json: { results: [['2026-09-28', 'letter_saved', 40, 20]] } };
+      if (q.includes('GROUP BY week, event')) return { status: 200, json: { results: [['2026-09-28', 'capture:letter_save', 40, 20]] } };
       return { status: 200, json: { results: [] } };
     });
     const d = await fetchPostHog({ apiHost: 'https://us.posthog.com/', projectId: '123', apiKey: 'phx_test', weeks: 12 }, f);
@@ -192,7 +192,7 @@ describe('sources', () => {
     expect(calls[0].url).toBe('https://us.posthog.com/api/projects/123/query/');
     expect(calls[0].headers.authorization).toBe('Bearer phx_test');
     expect((calls[0].body as { query: { kind: string } }).query.kind).toBe('HogQLQuery');
-    expect(d.rows).toEqual([{ week: '2026-09-28', event: 'letter_saved', events: 40, people: 20 }]);
+    expect(d.rows).toEqual([{ week: '2026-09-28', event: 'capture:letter_save', events: 40, people: 20 }]);
     expect(d.funnel).toEqual([{ week: '2026-09-28', opened: 50, started: 30, saved: 20 }]);
   });
 

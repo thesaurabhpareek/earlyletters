@@ -74,8 +74,9 @@ export const GLOBAL_PROPS = {
  * 21: wire-names step 2b, slice 7 (BL-2176, CR-212, CR-213): the first half of the `system` area is renamed: `error_shown` to `system:error_view` and `sync_failed` to `system:sync_fail`. No property was added or widened, no tier changed, and no build has sent either (analytics are off in every profile, CR-186).
  * 22: wire-names step 2b, slice 8 (BL-2176, CR-212, CR-213): the rest of the `system` area is renamed: `app_opened` to `system:app_open`, `analytics_opted_in` to `system:analytics_consent_accept`, `pack_download` to `system:pack_download_update`. No property was added or widened, no tier changed (the basics set stays `screen_view`), and no build has sent any of them (analytics are off in every profile, CR-186).
  * 23: wire-names step 2b, slice 9 (BL-2176, CR-212, CR-213): the `plus` area is renamed: `plus_offer_viewed` to `plus:offer_view`, `plus_offer_closed` to `plus:offer_end`, `plan_changed` to `plus:plan_update`, `free_allowance_reached` to `plus:allowance_reach`, `keep_gate_shown` to `plus:keep_gate_view`, `letter_held` to `plus:letter_hold_create`, `plus_started_from_gate` to `plus:keep_gate_plan_start`, `offer_code_redeemed` to `plus:code_submit`, `restore_result` to `plus:restore_complete`. No property was added or widened, no tier changed, and no build has sent any of them (analytics are off in every profile, CR-186).
+ * 24: wire-names step 2b, slice 10 (BL-2176, CR-212, CR-213): the first half of the `capture` area is renamed: `capture_started` to `capture:take_start`, `capture_discarded` to `capture:take_cancel`, `transcription_completed` to `capture:transcript_complete`, `letter_saved` to `capture:letter_save`. No property was added or widened, no tier changed (the basics set stays `screen_view`), and no build has sent any of them (analytics are off in every profile, CR-186).
  */
-export const SCHEMA_VERSION = 23;
+export const SCHEMA_VERSION = 24;
 
 /**
  * SHA-256 of `JSON.stringify(catalogShape())` per schema version. Versions 1
@@ -103,6 +104,7 @@ export const SCHEMA_FINGERPRINTS: Readonly<Record<number, string>> = Object.free
   21: '87de4b13a9a92b91c8097cf62d64acae823645e384cc92a8062abbdb21a1a9e5',
   22: '6735fdea20fb7d2ad6b1011131be795d882f0a1a01f36a96d64485658e48a3f3',
   23: 'ca191bd7fa6bb49a85ee997894aacda24ef023c684e77614cf4679218a8a34d3',
+  24: '84ac0d4c4b22eb6f77bf09d474224535b2ab8bbb203cea90b548e44863ca6049',
 });
 
 // ---------------------------------------------------------------------------

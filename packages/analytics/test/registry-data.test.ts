@@ -121,7 +121,7 @@ describe('registry.ts (P2, data only)', () => {
     for (const n of ['save_a_copy_shown', 'export_shared', 'days_note_added', 'moment_shown', 'email_opened', 'birthday_week_seen', 'reminder_sent']) {
       expect(caught(n), n).toBe(true);
     }
-    expect(caught('letter_saved')).toBe(false);
+    expect(caught('capture:letter_save')).toBe(false);
   });
 
   it('the patterns also catch the wire names of events that were dropped, and the names the retired deletion flows would have had (CR-213, CR-225)', () => {

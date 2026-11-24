@@ -43,11 +43,11 @@ const E = (ev: keyof typeof EVENTS, p: string): string => {
 
 /** One valid input per tracker; the sweep replaces one leaf at a time with each canary. */
 const VALID: Record<string, unknown> = {
-  trackLetterSaved: { mode: 'spoken', inBook: true, childIndex: 0, role: 'parent', promptKind: null, audioMs: 4000, wordCount: 30, machineEdits: 1, editsReverted: 0, editsRejected: 0, engine: E('letter_saved', 'engine'), fromNotificationWithin2h: false },
-  trackCaptureStarted: { mode: 'typed', source: E('capture_started', 'source'), promptKind: null, childIndex: 0, role: 'parent' },
+  trackLetterSaved: { mode: 'spoken', inBook: true, childIndex: 0, role: 'parent', promptKind: null, audioMs: 4000, wordCount: 30, machineEdits: 1, editsReverted: 0, editsRejected: 0, engine: E('capture:letter_save', 'engine'), fromNotificationWithin2h: false },
+  trackCaptureStarted: { mode: 'typed', source: E('capture:take_start', 'source'), promptKind: null, childIndex: 0, role: 'parent' },
   trackMomentsCard: { action: 'tapped', slot: E('book:moments_card_open', 'slot') },
   trackCaptureDiscarded: { mode: 'spoken', stage: 'review', audioMs: 4000 },
-  trackTranscriptionCompleted: { engine: E('transcription_completed', 'engine'), modelId: null, audioMs: 4000, latencyMs: 900, outcome: E('transcription_completed', 'outcome') },
+  trackTranscriptionCompleted: { engine: E('capture:transcript_complete', 'engine'), modelId: null, audioMs: 4000, latencyMs: 900, outcome: E('capture:transcript_complete', 'outcome') },
   trackReadTogetherStarted: { childIndex: 0, access: 'free', letters: 3 },
   trackReadTogetherEnded: { reason: 'finished', durationMs: 60000, lettersHeard: 2 },
   trackInviteCreated: { role: 'parent', channel: E('family:invite_create', 'channel'), shared: true, childIndex: 0 },
@@ -218,7 +218,7 @@ describe('canary sweep (J-N18)', () => {
   });
 
   it('[J-N18] positive control: a violation report that echoes a key turns the sweep red', async () => {
-    const r = await sweep([(c) => void c.trace.push({ kind: 'unknown_property', event: 'letter_saved', property: C.name })]);
+    const r = await sweep([(c) => void c.trace.push({ kind: 'unknown_property', event: 'capture:letter_save', property: C.name })]);
     expect(r.hits(ALL)).toContain('asha');
   });
 });

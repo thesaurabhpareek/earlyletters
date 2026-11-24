@@ -20,7 +20,7 @@ function guardRejects(key: string, p: PropSpec): boolean {
 }
 
 const withMedia: Record<string, Record<string, PropSpec>> = {
-  capture_started: { ...EVENTS.capture_started.props, photo_count: int(0, 50), permission: oneOf('full', 'limited', 'denied') },
+  'capture:take_start': { ...EVENTS['capture:take_start'].props, photo_count: int(0, 50), permission: oneOf('full', 'limited', 'denied') },
 };
 
 describe('the catalogue guard is as wide as the promise (FR-DAT-36, TP 6.2)', () => {
@@ -44,11 +44,11 @@ describe('the catalogue guard is as wide as the promise (FR-DAT-36, TP 6.2)', ()
   }
 
   // FR-DAT-36-g2: a count of pictures is an int far below 1000 and a Photos permission is a plain enum.
-  it.fails('[FR-DAT-36-g2] guard rejects photo_count: int(0, 50) added to capture_started', () => {
-    expect(guardRejects('photo_count', withMedia.capture_started.photo_count)).toBe(true);
+  it.fails('[FR-DAT-36-g2] guard rejects photo_count: int(0, 50) added to capture:take_start', () => {
+    expect(guardRejects('photo_count', withMedia['capture:take_start'].photo_count)).toBe(true);
   });
   it.fails('[FR-DAT-36-g3] guard rejects a Photos permission enum (full, limited, denied)', () => {
-    expect(guardRejects('permission', withMedia.capture_started.permission)).toBe(true);
+    expect(guardRejects('permission', withMedia['capture:take_start'].permission)).toBe(true);
   });
   // TP 6.3 "bounded small: no room for timestamps, ids or birth years": 1000 leaves room for ids and a byte-sized count.
   it.fails('[FR-DAT-36-g4] guard limits an int to 100 or less', () => {
