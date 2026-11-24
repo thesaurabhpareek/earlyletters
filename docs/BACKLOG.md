@@ -3614,7 +3614,7 @@ Written 19 Nov 2026 by Karma with the CPO role, docs only. Source: `docs/roadmap
 - Done when: those tests pass, and `qa` has added one device row to `docs/qa/DEVICE_TEST_PLAN.md` for the VoiceOver and AX5 walk of the three screens.
 
 #### BL-929 Device baseline run sheet for a small phone (N-01)
-- Status: partly done (PR #1155 merged, 5b06b5eb8: `apps/mobile/src/lib/perf/markers.ts`; the SE 3 run sheet is not written: no such file in `docs/qa/run-sheets/`, filed as BL-1862). Mode: agent. Owner: qa engineer. Milestone: M15. Size: S.
+- Status: done (the sheet is `docs/qa/run-sheets/NS-34-SE3-SPEED.md`, written under BL-1862 and merged in PR #1667, `1da24cf22`; the perf markers are PR #1155, `5b06b5eb8`, `apps/mobile/src/lib/perf/markers.ts`; read against the Done-when line on 24 Nov 2026 by `ops`: the sheet is merged. Written, not run: no number on it has been measured on any phone, and a simulator run would stand in for an SE 3 only where the founder owns none, never as an SE 3 result, D-172). Mode: agent. Owner: qa engineer. Milestone: M15. Size: S.
 - Satisfies: `docs/prd/v2/06-nfr.md` rows 42 and 216, as reworded in BL-930.
 - Scope: one run sheet under `docs/qa/` for an iPhone SE (3rd generation): start of the screen hand-offs, time until controls are usable, frames over 16.7 ms on Home, Book scroll and the letter page, the save hand-off, and loops under Reduce Motion. It says how each number is read and where it is written down. No entry text, transcript or child name is recorded; examples use the family Asha.
 - Done when: the sheet is merged. The run itself is the founder's, on his phone, and is not part of this row.
@@ -10305,6 +10305,46 @@ Sources: the Chief Product Officer rulings CPO-66 to CPO-71, the Chief Design Of
 - Scope: the five-parent check carries four small questions: the moon glyph on Home, the "Not much today" wording, the reminder time range, and where the money terms sit on the welcome (a founder question under CR-73, because it is what people are told they pay; held until the check runs); and three more before it runs (BL-1814, `DESIGN-BACKLOG.md` row BL-1814): does the first screen say it is for her baby, now; does being greeted by the sign-off ("Mama") grate; is the microphone primer's last line enough. The check also reads whether Review's fold is quiet enough (spec 14 question 1; CDESO-5 ruled that the fold stands unless this check says otherwise). Product writes the script and records what each parent said, without their names, and puts the count in the findings.
 - Done when: the check has run with the founder's parents and the count is recorded, or the founder has said in this row that it will not run and why; the answers to the questions above are in a findings file, and BL-1739 and the next Moments build rows are set from it.
 
+## Follow-ups from review notes of 24 Nov 2026 (BL-2030 to BL-2033; filed by the product agent, docs only)
+
+Source: review notes on PRs #1869, #1871 and #1872, passed to the product agent without the diffs. Ids BL-2030 to BL-2033 leave a gap after the ids that open PRs #1841, #1851 and #1852 hold (BL-2003 to BL-2027). None of these rows was started when it was filed. Every "Not verified" line says what the filing agent did not open.
+
+#### BL-2030 Reconcile the 18 NS-54 P0 rows that card 29 makes visible before the NS ratchet is turned on in CI
+- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: PR #1871 merged (it makes the trace read card 29).
+- Priority: P2. Gate: accepting untested P0 rows into the baseline is not on the CR-73 list, so Karma rules it by exec review (`docs/DECISIONS.md` D-165, standing rule 2) and records the ruling in the repo; it goes to the founder only if the ruling changes what users are promised. Writing the tests needs no ruling. Lane: qa.
+- Satisfies: gate G0 (BL-964); refines BL-1869; NS-54 (P0 rows).
+- Problem and evidence: the review note on PR #1871 says that once card 29 is read, 18 NS-54 P0 rows show as having no test. The ratchet (`docs/ops/proposed/trace-ns-ratchet.md`, applied by BL-1869) lets the baseline only shrink, so turning it on with 18 new uncovered rows would either fail at once or hide them.
+- Scope: list the 18 rows in the PR body and do one of two things for each: write the NS-54 test and cite its title, or, for rows the exec review agrees to carry, add the id to `docs/ops/trace-ns-baseline.txt`. Order matters: the seed PR merges before BL-1869's step is applied, so the base copy of the baseline (`--ns-base`) already holds the lines. The mechanism is a hand edit in one commit whose message says it is a one-time seed, because `--update-ns-baseline` refuses to grow the baseline and the baseline header says "Do not add a line to make a build pass"; after BL-1869 applies, the step fails any line the base copy lacks (`grown`). The exec ruling is quoted in the PR body. The baseline is never edited to grow after the seed.
+- Done when: `node scripts/trace.mjs --no-write --check` reports no NS-54 P0 row that is neither tested nor named in the one-time seed (the NS lines of its output; the plain `--check` exit code also carries the 5 undefined v2 ids until PR #1843 merges); the PR body lists the 18 rows with their outcome and the quoted exec ruling; BL-1869's Depends on gains this id.
+- Source: the review note on PR #1871. Not verified: the count of 18 is the note's; the diff and the trace output were not read or run.
+
+#### BL-2031 F16-REQ-029a to c and F14-REQ-043b: map the tests that exist, and write the ones that do not
+- Status: ready. Mode: agent. Owner: product manager. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: the product owner confirms the F14-REQ-043b mapping (below). Lane: product.
+- Satisfies: F16-REQ-029a, F16-REQ-029b, F16-REQ-029c; F14-REQ-043b (cited, not changed).
+- Problem and evidence: the review note on PR #1869 says (1) the client half of F16-REQ-029a (phone 1 shows the newer words) maps to WP-F16-15 when a test for it is written; (2) WP-F16-14 and WP-F16-17 show Built but carry no tests for 029a, 029b or 029c; (3) the F14-REQ-043b mapping to WP-F14-15b needs product owner confirmation.
+- Scope: (1) add the 029a client-half mapping to WP-F16-15 in the same PR as the test that shows phone 1 reading the newer words; until then the row names it as untested. (2) For WP-F16-14 and WP-F16-17, either set their status from Built to the honest value (built, no test) or file the test rows for 029a, 029b and 029c; the product agent picks per package after reading each. (3) Put F14-REQ-043b to WP-F14-15b to the product owner as one question in the journal under Founder; do not map it until answered.
+- Done when: no work package shows Built for a requirement it has no test for, or its status says no test; the 029a client half points at WP-F16-15 once its test merges; the 043b answer is recorded.
+- Source: the review note on PR #1869. Not verified: the work-package file and the PR diff were not opened; the package ids are the note's.
+
+#### BL-2032 Decide whether "no name kept" on Apple sign-in is its own NS-54 row
+- Status: ready. Mode: agent. Owner: product manager. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none. Lane: product.
+- Satisfies: NS-54 (cited, not changed); refines BL-2030.
+- Problem and evidence: the review note on PR #1872 says the second test in `auth-apple-fp9.test.ts` shows that no name is kept when she signs in with Apple, and no NS-54 row names that behaviour.
+- Scope: read the test and the NS-54 rows. If the behaviour is a promise (Shown, Records, Never lines under PRIV-R21, per `docs/agents/COORDINATION.md` section 10), draft its row as proposed in the PR body for the founder and cite the test title; if it is covered by an existing row, cite that row on the test; if it is an implementation detail, say so in the row and close it.
+- Done when: the test title maps to one NS-54 row, or the row is closed with the reading.
+- Source: the review note on PR #1872. Not verified: the test file was not opened.
+
+#### BL-2033 Decide how CI runs the NS ratchet while plain `trace.mjs --check` fails on develop
+- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none. Lane: qa.
+- Satisfies: gate G0 (BL-964); refines BL-1869 (the open "plain `--check`" question, founder question 07 Q8).
+- Problem and evidence: in `scripts/trace.mjs` (main, near line 937) `--check` exits 1 on any of: an id defined in two specs, a cited id defined nowhere, or an NS gate failure. So the step in `docs/ops/proposed/trace-ns-ratchet.md` (`--no-write --check` with the base arguments) cannot be "ratchet only": on develop it already exits 1 on the 5 v2 ids cited but defined nowhere (F14-REQ-043a and b, F16-REQ-029a to c, in `docs/prd/v2/11-requirement-rules-and-retro-changes.md`; PR #1843 fixes them). In the NS gate (`nsGate`) a baseline line that is now tested is only logged as "stale baseline line" and does not fail; a line whose row is gone or lowered (`gone`), an open row missing from the baseline (`added`) and a line the base copy lacks (`grown`) do fail. The note's "stale baseline lines" cause is therefore not confirmed as written. The only separate ratchet today is `--scope b1`, which is the build-1 catalog set, not NS.
+- Scope: run `node scripts/trace.mjs --no-write --check` on a full develop checkout and list each failing line by cause (duplicate id, undefined v2 id, NS `added`, `gone` or `grown`). Then write in `trace-ns-ratchet.md` the two ways to get a step that fails only on the NS ratchet, and recommend one: (a) merge PR #1843 first so plain `--check` exits 0 on develop, then the step is as drafted; or (b) add a ratchet-only flag or scope to `scripts/trace.mjs` (a code row, owner qa engineer, with its own test) so CI does not wait on the v2 fix. The product agent's recommendation is (a), because it needs no code and the 5 ids are already in a PR; the founder decides 07 Q8 (whether `--check` blocks merges), and the question is worded as a recommendation, not a ruling.
+- Done when: the document names which failures remain on develop and which of (a) or (b) is recommended; the answer to 07 Q8 is put to the founder as a recommendation; BL-1869's status line says which command the step uses once he answers.
+- Source: the review notes of 24 Nov 2026. Not verified: the filing agent read `trace.mjs` and ran `--no-write --check` on a sparse checkout without test files, so the NS counts it printed are not trusted; the 5 undefined ids and the exit rules are from the script and its output. The full-checkout run is this row's job.
+
 ## Follow-ups from the reviews of 23 Nov 2026 (BL-1957 to BL-1982; filed by the product agent, docs only)
 
 Source: the counted reviews on PRs #1756, #1761, #1763, #1770 to #1773, #1775, #1777, #1778 and #1780, and the PR #1736 "what remains" list, read 23 Nov 2026 (develop `40630be51`). Every "Not verified" line says what the filing agent did not run or open; none of these rows was started when it was filed. A row with a status of `blocked` waits on the PR or step it names, not on an id.
@@ -10558,7 +10598,7 @@ Source: findings of 23 and 24 Nov 2026 handed to the product agent. BL-1983 is t
 - Source: PR #1786. Not verified: the product agent read the commit subject in git history, not the diff, and ran no database test.
 
 #### BL-1991 e2e-web: bring the journey assertions back in line with the current words (about 17 of about 90 fail)
-- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: M (one PR per group of journeys is fine). Depends on: none.
+- Status: partly done (split on 24 Nov 2026: J21 and J22 welcome words, J14 Storage, J02 answered by mistake, J06e and J25 store-build seed, J04h Home tab, and the lost J01, J09b, J18 and J08c assertions moved to BL-2006 to BL-2011; still here: every other failing flow, including the old welcome literal in `j01-first-run.flow.ts`, `j17-family.flow.ts`, `j20-crash.flow.ts` and `support/app.ts`, and the before and after counts). Mode: agent. Owner: qa engineer. Milestone: M15. Size: M (one PR per group of journeys is fine). Depends on: none.
 - Priority: Medium. Gate: none. The check is not required today (`.github/workflows/web-journeys.yml`), so nothing blocks a merge; this row is what lets it become required.
 - Satisfies: refines BL-1673 (e2e-web reviews); journeys J01 to J22 (`apps/mobile/e2e-web`).
 - Problem and evidence: on 23 to 24 Nov about 17 of roughly 90 Playwright journeys fail. Two examples: J01 cannot find "Your first two letters are free." (`apps/mobile/e2e-web/j01-first-run.flow.ts:30`), and J02 finds a button where it expects none (`apps/mobile/e2e-web/j02-under-18.flow.ts:13`, `getByRole('button')` count 0). The words moved in the copy rounds since the flows were written; the J02 case may be a real change in the screen, not only in words.
@@ -10638,6 +10678,101 @@ Source: findings of 23 and 24 Nov 2026 handed to the product agent. BL-1983 is t
 - Scope: in PR #1822, set `marketing` `backlog_owner_names` to `["marketing"]` and cite BL-2001 in its title and CLAIMS row. No other row changes owner here. Later row, not part of this one: once the first marketing-owned row exists, the harness steward reads it before dispatch and `.claude/agents/marketing.md` (Backlog section, line 26 on `9aea2dc9b`: "None by default: you work from standing duties.") is updated to say it has a backlog owner name.
 - Done when: PR #1822 is merged; `agents/roster.json` lists `marketing` as a backlog owner name; `node scripts/agents/check.mjs` and `node --test 'scripts/agents/*.test.mjs'` pass.
 - Source: Karma ruling (T1, D-168) of 24 Nov 2026. Not verified: PR #1822's diff was read by a reviewer and the claims held; the marketing.md line number was read from `9aea2dc9b`.
+
+## Follow-ups filed 24 Nov 2026 (session 017cUpp) (BL-2006 to BL-2015; filed by the product agent, docs only)
+
+Source: the review work of 23 to 24 Nov 2026 (the e2e-web run, PR #1835, PR #1824 and two doc findings). BL-1991 stays the umbrella for the e2e-web rows; these split out what it did not name. Ids BL-1999 to BL-2004 belong to PRs #1826, #1822 and #1841 and develop, and BL-2005 to PR #1851, so these start at BL-2006. BL-1991 is now `partly done` and the rows below carry the journeys it handed over. Every row says what was not verified; the product agent ran none of it.
+
+#### BL-2006 e2e-web J21 and J22 still look for "Begin the book": update both journeys to the current welcome words
+- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
+- Priority: Medium. Gate: none.
+- Satisfies: refines BL-1991 and BL-1673 (e2e-web reviews); journeys J21 and J22.
+- Problem and evidence: on 23 to 24 Nov the two journeys fail with "Begin the book" not found. The old button name is still typed in `apps/mobile/e2e-web/j22-sign-in.flow.ts` (lines 104, 163, 389, 512) and `apps/mobile/e2e-web/j21-coparent.flow.ts` (lines 87, 90, 144, 148, 152, 163, 168, 175, 180, plus the `step` text at 49 and 83). The welcome words moved in the copy rounds.
+- Scope: read the current welcome button and the quiet-wait line from `packages/content` (not typed again), use them in J21 (J21a to J21j) and J22, and fix the step text that quotes the old button. No customer copy changes. If a screen, not a line, changed (for example no button where one is expected), file a separate row for the screen.
+- Done when: `npm run e2e:web -w @scribe/mobile` passes J21 and J22, and no flow under `apps/mobile/e2e-web` types the old welcome button as a literal in those two files.
+- Source: review work of 23 to 24 Nov 2026. Not verified: the failures come from the handoff and from grepping the literal in the two files; the suite was not run, and the current welcome words were not looked up. Other files still hold the literal (`j01-first-run.flow.ts`, `j17-family.flow.ts`, `j20-crash.flow.ts`, `support/app.ts`); BL-1991 owns those.
+
+#### BL-2007 e2e-web J14: the Storage step fails on the web build only (`this.validatePath is not a function`); drop the step or guard it
+- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
+- Priority: Medium. Gate: any product code change (a `Platform` web guard) needs a decision first; the flow-only option does not.
+- Satisfies: refines BL-1991; the Storage page under Settings (Recordings, journey J14).
+- Problem and evidence: on 23 to 24 Nov journey J14 (`apps/mobile/e2e-web/j14-recordings.flow.ts`) opens Storage and sees "This page didn't open" with `this.validatePath is not a function`. Read on 24 Nov 2026: this is web-only and not an iPhone regression. On web `expo-file-system` is a stub with no `validatePath`, and `new Directory()` in `apps/mobile/src/lib/packs/app-support.ts` (line about 28) runs on the Storage page path. Native is unaffected. The e2e index (`apps/mobile/e2e-web/support/build-index.mjs`, about line 173) already lists Storage as not capturable on web.
+- Scope: choose one. (a) Drop the Storage step from `j14-recordings.flow.ts` and say beside it that Storage is not capturable on web (the index already says so); this is flow-only and needs no decision. (b) A `Platform` web guard around the `Directory` use in `app-support.ts`; this is product code, so it waits for a decision and the PR says why web needs it. Default to (a). No customer copy changes.
+- Done when: J14 passes with no error page; the PR body names which option was taken and quotes the lines read.
+- Source: review work of 23 to 24 Nov 2026, finding read on 24 Nov. Not verified: the stub and the two file lines were read in the finding; the suite was not run and `expo-file-system`'s web build was not opened here.
+
+#### BL-2008 e2e-web J02 "I answered by mistake" leaves the stop screen in place
+- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
+- Priority: Medium. Gate: exec-team review before any change to the age gate screen or logic (legal path; the flow-only fix needs none).
+- Satisfies: refines BL-1991; journey J02 (under 18); BL-561 (the age question and a thumb slip, needs-founder, needs counsel) and the `partly done` BL-426 (under-18 stop: the way back is built, the come back tomorrow sentence and register line are missing), both cited and not changed; LEGAL-REQ-002 cases in `apps/mobile/test/age-gate.test.ts`, cited and not changed.
+- Problem and evidence: on 23 to 24 Nov, after "I answered by mistake" is pressed in `apps/mobile/e2e-web/j02-under-18.flow.ts`, the stop screen stays and the flow cannot go on to the age question. BL-1991 notes the J02 button count case may be a real change in the screen; this is the next step of the same journey.
+- Scope: decide in the PR whether the flow or the screen is wrong: read the age-gate logic and its test for what "answered by mistake" must do, then either correct the flow or, if the screen regressed, raise a screen row and stop. The age gate is a legal path: no agent edits its behaviour in this row, and any screen change goes through exec-team review (CLO, CCO and Chief Privacy Officer roles; not legal advice), read against BL-561 and BL-426 first.
+- Done when: J02 passes through "I answered by mistake" back to the age question, or a named screen row exists and the flow carries a comment naming it; the PR body says which.
+- Source: review work of 23 to 24 Nov 2026. Not verified: the symptom is from the handoff; the age-gate logic and the test were not read, and the suite was not run.
+
+#### BL-2009 e2e-web J06e and J25 need the seeded store build, and the seed hook does not work on the store build: say so in the code and find the way
+- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
+- Priority: Medium. Gate: none.
+- Satisfies: refines BL-1991; journeys J06 (J06e), J25 (Plus gate at AX5).
+- Problem and evidence: `apps/mobile/e2e-web/support/builds.ts` (the `store` entry, line 34) and `support/global-setup.ts` (line 17) both say the store build is "seeded" (`EXPO_PUBLIC_WEB_PREVIEW: '1'` with `EXPO_PUBLIC_APP_ENV: 'production'`). On 23 to 24 Nov J06e (`j06-review.flow.ts:74`, Keep needs Plus past the free letters) and the J25 Plus gate case fail, and the handoff says the seed hook (`?seed=asha`) does not work on the store build, so the comments are wrong.
+- Scope: (1) find why the seed hook does not run with the production app env (the preview switch may be off in a production profile). (2) Correct the two comments to say what is true now. (3) Either make the seed work in that build without weakening the store build's checks (and without shipping the switch to a store bundle: the seam guard in `.github/scripts/seam-guard.mjs` stays as is), or give the two flows another way to reach the free-letter limit, such as saving the letters through the screen. No customer copy changes.
+- Done when: J06e and the J25 Plus gate case pass, and the two comments no longer claim the store build is seeded unless it is.
+- Source: review work of 23 to 24 Nov 2026. Not verified: the cause was not found; the comments were read, the suite was not run, and the seam guard was not read.
+
+#### BL-2010 e2e-web J04h: the Home tab click times out (an array buffer failure)
+- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
+- Priority: Medium. Gate: none.
+- Satisfies: refines BL-1991; journey J04 (J04h).
+- Problem and evidence: `[J04h]` (`apps/mobile/e2e-web/j04-tonight.flow.ts:169`, a test build past the free letters) times out clicking the Home tab; the console shows an array buffer failure. J04h needs the store build (BL-1991 comments in `support/builds.ts`), so this may be the same cause as the store-build seed row, or a separate crash.
+- Scope: reproduce, read the console, and say in the PR body whether the array buffer failure is in the app (then a screen row, with the stack) or in how the flow seeds the data (then fix the flow).
+- Done when: J04h passes, or the failure is a named row for a screen change with the stack in it.
+- Source: review work of 23 to 24 Nov 2026. Not verified: the symptom is from the handoff; nothing was reproduced and the cause is not known.
+
+#### BL-2011 e2e-web: restore or replace the lost J01 focus assertion and the J09b, J18 and J08c per-month letter count assertions
+- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
+- Priority: Medium. Gate: none.
+- Satisfies: refines BL-1991; journeys J01, J08, J09, J18.
+- Problem and evidence: when the flows were brought to the current words, assertions were lost: J01 no longer checks `nameField(app)` `toBeFocused()` on the name step (`j01-first-run.flow.ts`, which uses `nameField` at lines 64 to 70), and J09b (`j09-book.flow.ts:25`), J18 (`j18-dark-mode.flow.ts:26`) and J08c (`j08-quiet-day.flow.ts:104`) no longer check the per-month letter count. A flow that checks less proves less.
+- Scope: for each of the four, find the line that went, then restore the check against the current screen, or replace it with the nearest true one, and say in a comment which requirement or rule it proves. A focus check follows the pattern already in `j22-sign-in.flow.ts:146`. If the screen no longer shows a per-month count on purpose, say so and drop the check with the decision named; that is not an agent's call to make silently.
+- Done when: each of J01, J09b, J18 and J08c has the check back or a written reason naming the decision that removed it; the suite passes.
+- Source: review work of 23 to 24 Nov 2026. Not verified: which commit removed each assertion was not looked up; the current screens were not opened.
+
+#### BL-2012 The `production` profile line in `apps/mobile/src/lib/README.md` disagrees with `eas.json` on server features
+- Status: partly done (the README line now matches `eas.json`: PR #1896, `c6b151328`, merged; what is left is the pinning test, which no file under `apps/mobile/test` or `scripts` provides, read on 24 Nov 2026 by searching for a test that reads `apps/mobile/src/lib/README.md`). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Medium. Gate: none.
+- Satisfies: docs hygiene; refines BL-440 (store config follows the build).
+- Problem and evidence: README line 81 (the `capabilities.ts` entry) says server features are "on only in the `preview` alpha profile, off in `testflight`, `production` and `development`". `apps/mobile/eas.json` sets `EXPO_PUBLIC_SERVER_FEATURES` to "on" in `production` (line 61 area; `preview` is also on; `testflight` is off). `scripts/release/store-config.ts:75` reads the production value, and `scripts/release/with-review-contact.ts:65` refuses anything but on or off. On that reading `eas.json` is the true build setting and the README is stale. If a later ruling says the store build ships servers off, `eas.json` is the line that is wrong.
+- Scope: read `eas.json`, `store-config.ts` and the rulings on the store build flags, say in the PR body which of the two is true, then fix the README line to match the build. Do not edit `eas.json` in this row. If the rulings and `eas.json` disagree, stop and make the row about finding out, with the lines side by side.
+- Remaining (the part PR #1896 left): add the source test that reads the README line and `eas.json` and compares the three profiles. Do not reword the README line again.
+- Done when: the README line names each profile's value as `eas.json` sets it; a source test or a short script check pins the README against `eas.json` (required, not optional: it is a few lines that read both files and compare the three profiles); the PR body names the file that is true.
+- Source: review work of 23 to 24 Nov 2026. Not verified: only the two lines named were read; the rulings were not read, so which value is intended for the store build is not confirmed.
+
+#### BL-2013 DATA_CLASSIFICATION: the `discard.failures.<draft id>` row says Planned and has no retention or deletion path
+- Status: ready (PR #1835 merged as `67234ac11` on develop, so the code to document exists; the exec-team review below is still needed before the edit publishes). Mode: agent. Owner: privacy engineer. Milestone: M15. Size: S. Depends on: none.
+- Priority: Medium. Gate: exec-team review before the edit publishes (legal path).
+- Satisfies: refines BL-977; LEGAL-REQ and DATA-REQ cited, not changed; D-172.
+- Problem and evidence: `docs/legal/DATA_CLASSIFICATION.md` (line 822 area) lists "Planned: `discard.failures.<draft id>` (NS-09, BL-977)" with class "L3 key, L2 value" and "A retry count", and no retention or deletion path. PR #1835 builds the counter, so it is no longer planned.
+- Scope: PR #1835 has merged (`67234ac11`), so move the row out of the Planned line into a built row, with the path of the code that writes it, its class (the key holds a draft id), how long it is kept, and how it is deleted (when the draft is kept or let go, on merge-adopt, on Erase everything; use what #1835 and its tests do, not what is hoped). This is a legal path: the PR carries the exec-team review (CLO, CCO and Chief Privacy Officer roles; not legal advice) and merges through D-168.
+- Done when: the row is no longer under Planned, names the writer, retention and deletion path as built, and the exec-team review is recorded in `docs/agents/cto/RULINGS.md`.
+- Source: review work of 23 to 24 Nov 2026. Not verified: #1835's final code was not read, so the deletion paths are not confirmed; the row's class was copied from the existing line.
+
+#### BL-2014 Tests for #1835: merge-adopt deletes the `discard.failures` key, and Erase everything clears it
+- Status: done (already covered by `apps/mobile/test/ns09-let-go-failures-sync.test.ts` (merge adopt, `[NS-09-R15]`) and `apps/mobile/test/ns09-let-go-failures.test.ts` (Erase everything clears every stuck draft's count, `[NS-09-R15]`), which arrived with PR #1835 merged as `67234ac11`; read from the test names on 24 Nov 2026, not re-run and the remove-the-delete-line check not repeated). Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
+- Priority: Medium. Gate: none.
+- Satisfies: refines BL-977; NS-09 (rules `[NS-09-R13]` and the neighbours, cited); the Erase everything rule in `docs/legal/DELETION_AND_EXPORT_SPEC.md`.
+- Problem and evidence: PR #1835 persists a failure counter under `discard.failures.<draft id>`. A counter keyed by a draft id must go when the draft goes. Two paths need a test that names the rule: merge-adopt (the draft is adopted into a book and its key must be deleted, not left to name a draft that is gone) and Erase everything (every `discard.failures.*` key is cleared).
+- Scope (as filed, now met by the tests named in Status): PR #1835 merged as `67234ac11`; the filed scope was one test for merge-adopt that sets a counter, adopts the draft and reads that the key is gone, and one for Erase everything that sets two counters and reads that none is left. Follow the pattern of the existing erase-all and settings tests. Fix the code only if a test finds the key left behind, and say so in the PR body.
+- Done when: both tests exist, name the rule they prove, and pass; one of them fails when the delete line is removed (shown in the PR body).
+- Source: review work of 23 to 24 Nov 2026. Not verified: #1835 was read only through its test names; where merge-adopt and erase-all delete settings keys was not looked up.
+
+#### BL-2015 Device test plan rows DJ-A3 and DJ-A4: corrections from the review of #1824
+- Status: done (all seven points fixed in `docs/qa/DEVICE_TEST_PLAN.md` by PR #1896, `c6b151328`: DJ-A4 now names `[NS-33-R4] no text on the four screens is cut at accessibility sizes` and `[NS-33-R4] no control under 44 pt on the four screens`, both present in `apps/mobile/test/a11y-ax5.test.ts` lines 73 and 94; the optional iOS 17 pass is dropped; 44, 56 and 64 pt are named; DJ-A3 reads "Me, tab, 3 of 3"; the seed is counted from `LETTERS`; the rotor and month-only wording are rewritten; read from the diff on 24 Nov 2026, the plan rows were not re-run). Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
+- Priority: Medium. Gate: none.
+- Satisfies: refines BL-1861 and BL-1928; rows DJ-A3 and DJ-A4 in `docs/qa/DEVICE_TEST_PLAN.md` (lines 1929 and 1953).
+- Problem and evidence: PR #1824 (merged) added the rows. The review found: (1) DJ-A4 cites the wrong test name; (2) the iOS 17 pass is optional where it should be a pass of its own or dropped, say which; (3) the 56 and 64 pt targets are missing from the rows that check tap targets; (4) DJ-A3 does not check the Me tab reads as "tab, 3 of 3"; (5) the seed count the rows rely on is not verified against the Asha fixtures; (6) the rotor order wording is unclear; (7) the "month only" label is not explained.
+- Scope: fix the seven points in `docs/qa/DEVICE_TEST_PLAN.md` only: read the real test name in `apps/mobile/test/a11y-headings.test.ts` and the others the row cites, count the seed letters from the fixture, and word the rotor order and the "month only" label the way the VoiceOver reader will hear them (read `docs/design/` for the target sizes; do not invent one). Rows stay planned, not run. No customer words change.
+- Done when: each of the seven points is fixed or answered in the PR body with the line read; the test name in DJ-A4 exists in the repo; `node scripts/agents/check.mjs` passes.
+- Source: review work of 23 to 24 Nov 2026. Not verified: the seven points are from the review handoff; the rows and tests were not re-read in full here, and the tab count and the label were not checked in the app.
 
 ## Alpha lane split of 24 Nov 2026 (BL-2003, BL-2004, BL-2025 to BL-2027; CR-183 to CR-186)
 
