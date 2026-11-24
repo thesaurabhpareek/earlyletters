@@ -1868,8 +1868,9 @@ Found in the independent reviews of 28 Oct 2026 (#370, #373, #375, #380, #381, #
 - Done when: the mutant is killed.
 
 #### BL-460 Join wait and invite residuals from the #375 review
-- Status: ready. Mode: agent. Owner: family owner (S04), analytics engineer (point 8), qa engineer (points 4 and 6). Milestone: M5. Size: M (one PR per point is fine). Depends on: none.
-- Remaining: points 4 (PR #1370, `458a2bb8d`) and 5 (PR #1438, `1965f6bf1`) are merged; points 1 to 3 and 6 to 8 were not found on develop.
+- Status: partly done. Mode: agent. Owner: family owner (S04), analytics engineer (point 8), qa engineer (points 4 and 6). Milestone: M5. Size: M (one PR per point is fine). Depends on: none.
+- Remaining: points 4 (PR #1370, `458a2bb8d`) and 5 (PR #1438, `1965f6bf1`) are merged; point 3 is built but held PROPOSED (see the Note); points 1, 2 and 6 to 8 were not found on develop.
+- Note (BL-460, 24 Nov 2026): point 3 is built but held PROPOSED: `joinedTitleUnknown` ("You're in the book") exists behind `JOINED_TITLE_UNKNOWN_READ = false` in `join-sheet.logic.ts`, so a nameless join still shows "Join a book" until the exec reading under D-172 (CR-178 item 2) is recorded; then flip the constant to true. Points 1, 2, 6, 7 and 8 remain open: 1 and 7 need the family owner's call on the behaviour, 2 is not located in code, 6 needs a web flow, 8 is the analytics owner's.
 - Priority: Low.
 - Gate: none.
 - Satisfies: none given.
@@ -1960,7 +1961,7 @@ Found in the independent reviews of 28 Oct 2026 (#370, #373, #375, #380, #381, #
 - Done when: a symlinked `node_modules` is ignored; the packed zip has no `INDEX.text-only.md`; `build-index` prints its own message for a `steps` file.
 
 #### BL-467 Pins and guards: recovery export re-entrancy, DrawingBoundary, the prompt library version, Android double announce, mutation survivors
-- Status: ready. Mode: agent. Owner: mobile engineer, qa engineer, content (point 3). Milestone: M11. Size: M (one PR per point is fine). Depends on: none.
+- Status: partly done (points 1 to 3 and plain-screen.tsx of point 4 in this PR; the age gate part of point 4 is in a separate fenced draft PR; point 5 remains: it starts from the reviewer's list, which is not in the repo). Mode: agent. Owner: mobile engineer, qa engineer, content (point 3). Milestone: M11. Size: M (one PR per point is fine). Depends on: none.
 - Priority: Low.
 - Gate: none.
 - Satisfies: none given.
@@ -1972,6 +1973,7 @@ Found in the independent reviews of 28 Oct 2026 (#370, #373, #375, #380, #381, #
   5. Mutation survivors of the "M3h" kind: the list is in the review reports and not in the repo (unverified). Ask the reviewer for it before starting this point.
 - Scope: a guard inside `exportReadable` and a test for point 1; a behaviour test for point 2; a test that pins the version against the library for point 3; point 4 moves each direct call to `announce()` or removes the live region, per spot; point 5 starts from the reviewer's list.
 - Done when: each point is fixed with a test that fails on its mutant, or recorded here as left as it is.
+- Note (BL-467 build): point 1 was already closed on develop: the guard is `exporting` in `createRecoveryActions` (`launch.logic.ts:136-138`), run by `launch-retry.test.ts` "a second tap is ignored"; left as it is. Point 2: `DrawingBoundary` moved to `drawing-boundary.tsx` and run by `apps/mobile/test/drawing-boundary.test.ts`. Point 3: `packages/content/test/prompts.version-pin.test.ts` pins a fingerprint of the library to the version. Point 4 is partly done: the other direct calls named here are gone (`speech-gate.test.ts` allows two files); `plain-screen.tsx` sits beside a live region and now skips the direct call on Android, pinned by `android-double-announce.test.ts`; `age-gate-screen.tsx` is in a separate fenced draft PR (it needs a CCO approval, `components/gate/**`). Point 5 needs the reviewer's list.
 
 #### BL-468 Device and layout checks: a deep arrival on a cold Book, and the stacking threshold
 - Status: ready. Mode: pair (device checks on a phone). Owner: qa engineer, design systems. Milestone: M11. Size: S. Depends on: none.
