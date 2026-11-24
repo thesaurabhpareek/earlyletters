@@ -7336,7 +7336,7 @@ Founder ruling of 21 Nov: the first Moments release ships with the photo library
 - Done when: the goldens, property tests and the import-graph test pass, RSN-SUGGEST and RSN-ALBUM are absent from the enum, and the junk-rate bar of R281 is written before the harness (BL-1449) runs. Acceptance by row ids (spec 26b PR homes, PROPOSED; recomputed from #1314 head 47922c6c): PR 1: NS-53-R12, R42, R203, R267; PR 2: NS-53-R38 to R41, R59, R107, R176, R190, R223, R267, R281; PR 3: NS-53-R41, R44, R51, R190, R281; PR 4: NS-53-R5, R10, R16, R18 to R25, R27, R33, R34, R36, R46 to R48, R50, R58, R66, R130, R173, R199, R201, R202, R207, R253, R254, R258, R267; PR 5: NS-53-R58, R61, R63, R64, R117, R204, R241, R249, R267, R281.
 
 #### BL-1449 NS-53 Moments: the R205 real-library harness (PR 3b)
-- Status: done (PR #1493 merged as `fa69fab48`; read against the Done-when line on 24 Nov 2026 by the product agent from the PR's changed files and subject, no device run). Mode: agent. Owner: qa engineer. Milestone: M15. Size: M. Depends on: BL-1432.
+- Status: done (start-now set, Karma ruling 21 Nov; spec 19.4 PR 3b, CH-ENG-5; PR #1493 merged as `fa69fab48`; read against the Done-when line on 24 Nov 2026 by the product agent from the PR's changed files and subject, no device run). Mode: agent. Owner: qa engineer. Milestone: M15. Size: M. Depends on: BL-1432.
 - Satisfies: NS-53-R40, R205, R281.
 - Scope: PR 3b (about 300 lines, about 6 files: script, README, one test, package script, two fixtures), in the `experiments/` style. It runs `core/moments` on a phone export and prints counts only, reads the parent's junk marks from one local file of day keys (no content), writes nothing else, and sets the values of spec 7.2a by experiment. Fixtures are the fictional family Asha only; no real family library, date or place enters the repo. The run on the founder's export is the founder's and its read-out holds counts and rates only.
 - Done when: the script, its test and the fixtures pass in the existing test commands, and the junk bar of R281 was written before the first run. Acceptance by row ids (spec 26b PR homes, PROPOSED; recomputed from #1314 head 47922c6c): PR 3b: NS-53-R40, R205, R281.
@@ -9278,7 +9278,7 @@ Queue order (the dispatcher takes the first `ready` row an agent owns, in file o
 - Done when: a test starts Read together at a chosen month and at the letter in view.
 
 #### BL-1751 Three Moments token rulings added to tokens with tests
-- Status: done (PR #1808 merged as `094ccfacb`; read against the Done-when line on 24 Nov 2026 by the product agent from the PR's changed files and subject, no device run). Mode: agent. Owner: design systems. Milestone: M15. Size: S. Depends on: none.
+- Status: done (rulings recorded, CDESO-7, 23 Nov 2026; PR #1808 merged as `094ccfacb`; read against the Done-when line on 24 Nov 2026 by the product agent from the PR's changed files and subject, no device run). Mode: agent. Owner: design systems. Milestone: M15. Size: S. Depends on: none.
 - Rulings recorded (CDESO-7): `target.action` 48 (stacks at `target.primary` 56 from AX1; the capture-size principle is about recording and keeping, not browsing); `listRowMin` 52 at default and 56 from the first accessibility size; `sheetTitle` is a `title2`-based role with `maxScale` 2.0 and a test that it never truncates at AX5 (no line limit).
 - Priority: P1. Gate: the CDesO's rulings. Lane: design-systems.
 - Satisfies: CDO-B-021 (P1), CDO-B-022 (P2).
