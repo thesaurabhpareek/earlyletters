@@ -22,7 +22,6 @@ import {
   sessionBucket,
   timeToFirstLetterBucket,
   toV1Lang,
-  ttfiBucket,
   wordsBucket,
 } from './buckets';
 import type { Catalog } from './catalog';
@@ -161,10 +160,6 @@ export function createTrackers(analytics: Pick<Analytics, 'track'>) {
       });
     },
 
-    trackBookOpened(i: { childIndex: number; letters: number; role: MemberRole }): TrackResult {
-      return track('book_opened', { child_ordinal: childOrdinal(i.childIndex), letters_bucket: lettersBucket(i.letters), member_role: i.role });
-    },
-
     trackReadTogetherStarted(i: { childIndex: number; access: 'plus' | 'free'; letters: number }): TrackResult {
       return track('read_together_started', { child_ordinal: childOrdinal(i.childIndex), access: i.access, letters_bucket: lettersBucket(i.letters) });
     },
@@ -226,10 +221,6 @@ export function createTrackers(analytics: Pick<Analytics, 'track'>) {
         .map(({ input, n }) =>
           track('machine_edit_rejected', { edit_type: input.edit.type, source: input.edit.source, reason: input.reason, count: clampInt(n, 1, 500) }),
         );
-    },
-
-    trackColdStart(i: { ttfiMs: number }): TrackResult {
-      return track('app_cold_start', { ttfi_bucket: ttfiBucket(i.ttfiMs) });
     },
 
     /**

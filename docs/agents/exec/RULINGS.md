@@ -2392,6 +2392,12 @@ The entries in this batch (three stacked PRs) record each role's own ruling on t
 - Door: two-way.
 - Founder-only: no. Signed: Chief Privacy Officer (Claude role, not counsel)
 
+### CPrivO-55 `letter_deleted`: collect less; locked at T0 by pattern (24 Nov 2026, CPrivO via Karma's session; Claude role, not counsel)
+- Verdict: RULED (concur with CR-225). Full text: `infra/exec-rulings-2026-11-24-letter-deleted.md`.
+- Ruling: a delete and restore sequence per anonymous id, with `destination` (book or private), is a profile of what a person chose to hide about their own words and whether they changed their mind; two of the call sites also mark that someone left a family book. R-K3 keeps events out of deletion flows. Retire the key, and in step 2a forbid its candidate names (`letter_delete`, `letter_restore`) by pattern so a later registry row cannot bring it back unnoticed. The `me:settings_delete_account_screen_view` basics name is the one deletion-flow screen name still in the table and gets its own ruling before the step 3 signature, default remove. Not counsel; no line is legal advice.
+- Door: two-way.
+- Founder-only: no. Signed: Chief Privacy Officer (Claude role, not counsel)
+
 ### CDO-30 PR 656: `ops_cron_health` returns counts and job names only (24 Nov 2026, CDO via Karma's session; Claude role)
 - Verdict: RULED (concur with CR-209). Full text: `infra/exec-rulings-2026-11-24-held-prs.md` section 8.
 - Ruling: the RPC returns counts and `scribe-*` job names only, within the content-free rule; it needs its own grant row in `supabase/tests/grants.mjs` and an access-matrix test that anon and authenticated cannot call it. Point the watch at production (it holds the deletion promise), with the target as a parameter so staging can run too.
@@ -2410,6 +2416,12 @@ The entries in this batch (three stacked PRs) record each role's own ruling on t
 - Door: two-way.
 - Founder-only: no. Signed: Chief Data Officer (Claude role)
 
+### CDO-33 `letter_deleted`: retire; no consumer (24 Nov 2026, CDO via Karma's session; Claude role)
+- Verdict: RULED (concur with CR-225). Full text: `infra/exec-rulings-2026-11-24-letter-deleted.md`.
+- Ruling: removing a held event is the CDO's own call. No decision reads the key: the insights engine, the registry funnels and the `decision-science.md` guardrails do not, and the three PRD v2 rows ask only a watch-only question. A number that cannot change what we do is not collected. Counts for step 2a: 18 dropped, 51 keys after 2a (47 named); held events 27, registry rows 24. After this nobody can learn from analytics how often people restore from Recently deleted; a later need comes as a new row with a decision.
+- Door: two-way.
+- Founder-only: no. Signed: Chief Data Officer (Claude role)
+
 ### CAIO-16 PR 449: no objection to closing (24 Nov 2026, CAIO via Karma's session; Claude role)
 - Verdict: RULED (concur with CR-202). Full text: `infra/exec-rulings-2026-11-24-held-prs.md` section 1.
 - Ruling: the lane is not switched on and no model account exists for it, so a first switch-on is a spend and account decision that is not before us. Closing loses no guarantee, because the PR itself says its deny list guarantees nothing.
@@ -2421,3 +2433,12 @@ The entries in this batch (three stacked PRs) record each role's own ruling on t
 - Ruling: a two-up "Sounds like me | Not quite" would be a new surface asking a parent to rate the machine's work, and the machine does not add meaning. The screens to capture use the words the app says today and the tab labels Home, Book, Me (D-161).
 - Door: two-way.
 - Founder-only: no. Signed: Chief Design Officer (Claude role)
+
+### CCO-31 PR #2007 age-gate screen stop announce on Android only: passes the compliance fence (CCO-review tier) for merge into develop (24 Nov 2026, CCO via Karma's session; not counsel)
+- Verdict: RULED.
+- Ruling: in `age-gate-screen.tsx` the PR adds `Platform` to the react-native import and guards the one `AccessibilityInfo.announceForAccessibility(g.stopTitle)` call with `Platform.OS !== 'android'`. Android already reads the polite live region around the stop title, so it spoke the title twice (BL-467 point 4). It only removes a repeat on one platform. It cannot clear a stop, pass the gate or change who reaches the stop. The 18+ gate, the 24-hour closure (D-026; LEGAL-REQ-002; CCO-17, CCO-18), the stored data and all copy are unchanged. No new data, no new word, no promise changes.
+- Evidence (read at head 7ebb7653d430a645a229fc6c2a8c6100c263d17e): the fenced file's diff is two lines, the import and the guard at `apps/mobile/src/components/gate/age-gate-screen.tsx:85`; the stop view is entered only at `:110` (`setView('stop')`), untouched. The Android live region exists at `:178` (`accessibilityLiveRegion="polite"` around the `g.stopTitle` heading at `:179-181`). iOS still announces: the guard is `!== 'android'`, so iOS runs the same call as before, and `apps/mobile/test/age-gate-ns40.test.ts:187` still matches `announceForAccessibility(g.stopTitle)`. `apps/mobile/test/android-double-announce.test.ts` pins that the file has the live region, still has the direct call, and has no unguarded direct call (source-regex pins: they prove the text, not what a phone says). The PR also touches `plain-screen.tsx`, `drawing-boundary.tsx`, tests, `docs/BACKLOG.md` and a content test; those are outside the fence and are not ruled here.
+- Not verified: no device, VoiceOver or TalkBack run; this read is of the code and the CI-run tests only. That Android speaks the title once, and that iOS still speaks it, is UNVERIFIED on a phone until the BL-467 device walk says so. No `compliance/` path, store age signal, `policy_acceptances` file or migration is in the diff.
+- Way back: revert the one guard (and the `Platform` import) in `age-gate-screen.tsx`, with its pin in `android-double-announce.test.ts`.
+- Founder-only: no. Counsel has not read this call; it is a delegated default until counsel confirms, and nothing here is counsel-approved. The CCO approval line is not posted by this entry: it goes on PR #2007 against its own head, and a new push needs a new one.
+- Signed: Chief Compliance Officer (Claude role, not counsel)

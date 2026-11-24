@@ -456,6 +456,9 @@ test('[J22j] the pause lifts on its own at 15 minutes: the field comes back and 
   await jumpTo(last + 15 * MIN + 3_000);
   await expectNotPaused(app, '3 s after the pause has ended');
   await expect(app.getByText(/try a code again/), 'the stale paused line is gone').toHaveCount(0);
+  // BL-476 point 1, LEGAL-REQ-051: the end is said once, in words with no count, and the field has the focus.
+  await expect(app.getByText('You can type a code again.', { exact: true }), 'the end of the pause is said').toBeVisible();
+  await expect(app.getByLabel('Code', { exact: true }), 'focus moved to the field').toBeFocused();
   await expect(app.getByText(WRONG)).toHaveCount(0);
   await expect(app.getByText(SAFE, { exact: true }), 'still no book on this phone').toHaveCount(0);
   await expect(btn(app, 'Send a new email')).toBeEnabled();

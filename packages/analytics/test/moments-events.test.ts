@@ -20,7 +20,7 @@ async function setup(grant: boolean) {
 
 describe('Moments events (NS-53-R251, NS-53-R167)', () => {
   it('[NS-53-R251-a] exactly two Moments events exist, each with the single closed property slot = look_back | question', () => {
-    const named = Object.keys(EVENTS).filter((n) => /moments?_/.test(n) && n !== 'moment_shown');
+    const named = Object.keys(EVENTS).filter((n) => /moments?_/.test(n));
     expect(named.sort()).toEqual([...MOMENTS].sort());
     for (const n of MOMENTS) {
       expect(Object.keys(EVENTS[n].props)).toEqual(['slot']);
