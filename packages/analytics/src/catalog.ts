@@ -23,6 +23,7 @@
 import { CAPTURE_MODES, MEMBER_ROLES, OFFER_TRIGGERS } from '@scribe/core';
 import { bool, int, oneOf, opt, type EventSpec, type Level, type PropSpec } from './schema';
 import { MOMENTS_SLOT, REGISTRY } from './registry';
+import type { EventTier } from './contracts';
 
 // ---------------------------------------------------------------------------
 // Shared value sets
@@ -238,8 +239,8 @@ export const SCHEMA_FINGERPRINTS: Readonly<Record<number, string>> = Object.free
 // ---------------------------------------------------------------------------
 
 /** The catalogue view of a registry row: the documentation and shape fields only, never a second copy. */
-function catalogRow<R extends { area: string; when: string; reqs: readonly string[]; level: Level; props: Record<string, PropSpec> }>(r: R): Pick<R, 'area' | 'when' | 'reqs' | 'level' | 'props'> {
-  return { area: r.area, when: r.when, reqs: r.reqs, level: r.level, props: r.props };
+function catalogRow<R extends { area: string; when: string; reqs: readonly string[]; level: Level; tier: EventTier; props: Record<string, PropSpec> }>(r: R): Pick<R, 'area' | 'when' | 'reqs' | 'level' | 'tier' | 'props'> {
+  return { area: r.area, when: r.when, reqs: r.reqs, level: r.level, tier: r.tier, props: r.props };
 }
 
 export const EVENTS = {
@@ -249,6 +250,7 @@ export const EVENTS = {
     when: 'First frame after a cold start (only once consent exists, so never on first install)',
     reqs: ['A-NFR-001', 'PRD-REQ-016'],
     level: 'L2',
+    tier: 'consented',
     props: { ttfi_bucket: oneOf('lt_1s', '1_2s', '2_3s', 'gt_3s') },
   },
   app_opened: {
@@ -256,6 +258,7 @@ export const EVENTS = {
     when: 'App comes to the foreground after 30 min or more away, or cold starts',
     reqs: ['PRD-REQ-016'],
     level: 'L2',
+    tier: 'consented',
     props: {
       source: oneOf('cold', 'warm', 'notification', 'link'),
       days_since_last_open: DAYS_BUCKET,
@@ -266,6 +269,7 @@ export const EVENTS = {
     when: 'App goes to the background; carries the session length bucket',
     reqs: ['PRD-REQ-016'],
     level: 'L2',
+    tier: 'consented',
     props: { session_bucket: SESSION_BUCKET },
   },
   screen_view: {
@@ -273,6 +277,7 @@ export const EVENTS = {
     when: 'A route is shown. Sent by our router hook from the route template, never by SDK autocapture',
     reqs: ['ADR-0008', 'PRD-REQ-016'],
     level: 'L2',
+    tier: 'basics',
     props: { route: ROUTE },
   },
 
@@ -282,6 +287,7 @@ export const EVENTS = {
     when: 'Immediately after the user says yes. Carries a one-time summary of first-run facts the app already stores, because first-run events can never be sent (K-01)',
     reqs: ['PRD-REQ-016', 'K-01'],
     level: 'L2',
+    tier: 'consented',
     props: {
       surface: oneOf('consent_sheet', 'settings'),
       days_since_install: DAYS_BUCKET,
@@ -301,6 +307,7 @@ export const EVENTS = {
     when: 'Keep the book / sign-in sheet shown',
     reqs: ['PRD-REQ-001', 'PRD-REQ-016'],
     level: 'L2',
+    tier: 'consented',
     props: { trigger: SIGN_IN_TRIGGER },
   },
   auth_method_selected: {
@@ -308,6 +315,7 @@ export const EVENTS = {
     when: 'A sign-in method tapped (observed from the auth state)',
     reqs: ['PRD-REQ-016'],
     level: 'L2',
+    tier: 'consented',
     props: { method: AUTH_METHOD },
   },
   auth_succeeded: {
@@ -315,6 +323,7 @@ export const EVENTS = {
     when: 'A new session exists on this phone (observed from the auth state). New accounts are counted on the server',
     reqs: ['A-NFR-013', 'PRD-REQ-016'],
     level: 'L2',
+    tier: 'consented',
     props: { method: AUTH_METHOD, had_local_data: bool() },
   },
   auth_failed: {
@@ -322,6 +331,7 @@ export const EVENTS = {
     when: 'Sign-in failed or was cancelled (observed). An under-18 answer is never sent',
     reqs: ['A-NFR-013'],
     level: 'L2',
+    tier: 'consented',
     props: {
       method: AUTH_METHOD,
       reason: oneOf(
@@ -345,6 +355,7 @@ export const EVENTS = {
     when: 'Email sign-in link or code sent (observed); attempt counts sends in this sign-in',
     reqs: ['A-NFR-013'],
     level: 'L2',
+    tier: 'consented',
     props: { attempt: int(1, 10) },
   },
   auth_deferred: {
@@ -352,6 +363,7 @@ export const EVENTS = {
     when: 'User chose Later on the sign-in sheet',
     reqs: ['PRD-REQ-016'],
     level: 'L2',
+    tier: 'consented',
     props: { trigger: SIGN_IN_TRIGGER },
   },
   signed_out: {
@@ -359,6 +371,7 @@ export const EVENTS = {
     when: 'The session ended on this phone (observed): by the person, Apple revoked it, account switch, or the session was lost',
     reqs: ['A-NFR-013', 'PRD-REQ-016'],
     level: 'L2',
+    tier: 'consented',
     props: { reason: oneOf('user', 'apple_revoked', 'switch_account', 'session_lost') },
   },
   invite_opened: {
@@ -366,6 +379,7 @@ export const EVENTS = {
     when: 'An invite link or code is opened in the app',
     reqs: ['B-REQ-007'],
     level: 'L2',
+    tier: 'consented',
     props: { via: oneOf('link', 'code', 'paste'), signed_in: bool() },
   },
   local_merge_choice: {
@@ -373,6 +387,7 @@ export const EVENTS = {
     when: 'User with local letters picks where they go at sign-in',
     reqs: ['PRD-REQ-016'],
     level: 'L2',
+    tier: 'consented',
     props: { choice: oneOf('existing', 'new') },
   },
 
@@ -382,6 +397,7 @@ export const EVENTS = {
     when: 'A child book is created',
     reqs: ['PRD-REQ-011', 'PRD-REQ-015', 'B-REQ-004'],
     level: 'L2',
+    tier: 'consented',
     props: {
       /**
        * True when a full date (birthday or due date) was entered, false for
@@ -399,6 +415,7 @@ export const EVENTS = {
     when: 'User switches the current book',
     reqs: ['PRD-REQ-012'],
     level: 'L2',
+    tier: 'consented',
     props: { child_ordinal: CHILD_ORDINAL, surface: oneOf('tonight', 'book', 'review', 'listen') },
   },
   child_setting_changed: {
@@ -406,6 +423,7 @@ export const EVENTS = {
     when: 'A per-child setting is changed (which setting only, never the value)',
     reqs: ['PRD-REQ-013'],
     level: 'L2',
+    tier: 'consented',
     props: {
       key: oneOf(
         'display_name',
@@ -429,6 +447,7 @@ export const EVENTS = {
     when: 'A post-first-letter "Make it yours" card is acted on',
     reqs: ['B-REQ-004', 'PRD-REQ-016'],
     level: 'L2',
+    tier: 'consented',
     props: {
       card: oneOf('goals', 'words', 'invite', 'photo'),
       action: oneOf('opened', 'completed', 'skipped'),
@@ -439,6 +458,7 @@ export const EVENTS = {
     when: 'What matters goals saved. Count only: goals are L4 (PRD 7.10), so which goals were picked is never sent',
     reqs: ['B-NFR-001', 'PRD-REQ-010'],
     level: 'L2',
+    tier: 'consented',
     props: { count: int(0, 5) },
   },
   // `languages_set{multilingual}` from B-NFR-001 stays absent. Language usage
@@ -448,6 +468,7 @@ export const EVENTS = {
     when: 'A Names and words term saved (kind only, never the term)',
     reqs: ['PRD-REQ-016'],
     level: 'L2',
+    tier: 'consented',
     props: {
       kind: oneOf('child', 'nickname', 'family', 'word', 'place', 'self'),
       source: oneOf('settings', 'review_correction', 'onboarding'),
@@ -460,6 +481,7 @@ export const EVENTS = {
     when: 'User starts speaking or typing a letter',
     reqs: ['PRD-REQ-016', 'C-REQ-034'],
     level: 'L2',
+    tier: 'consented',
     props: {
       mode: CAPTURE_MODE,
       source: oneOf('tonight', 'book', 'notification', 'make_it_yours', 'resurface'),
@@ -473,6 +495,7 @@ export const EVENTS = {
     when: 'A letter in progress is thrown away before saving',
     reqs: ['PRD-REQ-016'],
     level: 'L2',
+    tier: 'consented',
     props: { mode: CAPTURE_MODE, stage: oneOf('listening', 'review'), audio_bucket: opt(AUDIO_BUCKET) },
   },
   transcription_completed: {
@@ -480,6 +503,7 @@ export const EVENTS = {
     when: 'A spoken letter finishes transcription, hears no speech, fails, or waits for its language model',
     reqs: ['PRD-REQ-016', 'NFR-7.7'],
     level: 'L2',
+    tier: 'consented',
     props: {
       engine: oneOf('on_device', 'server'),
       model: SPEECH_MODEL,
@@ -493,6 +517,7 @@ export const EVENTS = {
     when: 'A letter is saved (to the book or kept private). The core activation and north-star event on device',
     reqs: ['C-REQ-034', 'PRD-REQ-016', 'ADR-0008'],
     level: 'L2',
+    tier: 'consented',
     props: {
       mode: CAPTURE_MODE,
       destination: oneOf('book', 'private'),
@@ -513,6 +538,7 @@ export const EVENTS = {
     when: 'An action on the Review screen',
     reqs: ['PRD-REQ-016', 'PRD-REQ-012'],
     level: 'L2',
+    tier: 'consented',
     props: {
       action: oneOf(
         'show_exactly_said',
@@ -530,6 +556,7 @@ export const EVENTS = {
     when: 'A user undoes one machine edit (type and source only). Fidelity health signal for the constitution',
     reqs: ['PRD-REQ-016'],
     level: 'L2',
+    tier: 'consented',
     props: { edit_type: EDIT_TYPE, source: EDIT_SOURCE },
   },
   machine_edit_rejected: {
@@ -537,6 +564,7 @@ export const EVENTS = {
     when: 'The verifier refused machine edits for a letter: one event per edit type, source and reason, with a count. Never the text or the span',
     reqs: ['PRD-REQ-016', 'B-REQ-003'],
     level: 'L2',
+    tier: 'consented',
     props: { edit_type: EDIT_TYPE, source: EDIT_SOURCE, reason: REJECT_REASON, count: int(1, 500) },
   },
   letter_deleted: {
@@ -544,6 +572,7 @@ export const EVENTS = {
     when: 'Own letter deleted or restored within the undo window',
     reqs: ['PRD-REQ-016'],
     level: 'L2',
+    tier: 'consented',
     props: { action: oneOf('deleted', 'restored'), destination: oneOf('book', 'private') },
   },
 
@@ -555,6 +584,7 @@ export const EVENTS = {
     when: 'An author adds, removes or makes primary one spoken-letter language (observed; one language per event)',
     reqs: ['B-REQ-003', 'PRD-REQ-016'],
     level: 'L2',
+    tier: 'consented',
     props: {
       lang: LANG,
       action: oneOf('added', 'removed', 'made_primary'),
@@ -565,6 +595,7 @@ export const EVENTS = {
     when: 'A language pack or speech model download changes state (observed). Named by analytics pack id and language code only',
     reqs: ['B-REQ-003', 'NFR-7.7'],
     level: 'L2',
+    tier: 'consented',
     props: {
       pack: PACK_ID,
       lang: opt(LANG),
@@ -581,6 +612,7 @@ export const EVENTS = {
     when: 'Book tab shown for a child',
     reqs: ['PRD-REQ-016'],
     level: 'L2',
+    tier: 'consented',
     props: { child_ordinal: CHILD_ORDINAL, letters_bucket: LETTERS_BUCKET, member_role: MEMBER_ROLE },
   },
   letter_opened: {
@@ -588,6 +620,7 @@ export const EVENTS = {
     when: 'A letter is opened to read',
     reqs: ['PRD-REQ-016'],
     level: 'L2',
+    tier: 'consented',
     props: { author_relation: AUTHOR_RELATION, has_audio: bool() },
   },
   playback_started: {
@@ -595,6 +628,7 @@ export const EVENTS = {
     when: 'A recording starts playing',
     reqs: ['PRD-REQ-016'],
     level: 'L2',
+    tier: 'consented',
     props: {
       surface: oneOf('letter', 'review', 'read_together'),
       author_relation: AUTHOR_RELATION,
@@ -606,6 +640,7 @@ export const EVENTS = {
     when: 'Read together session starts',
     reqs: ['C-REQ-034', 'PRD-REQ-016'],
     level: 'L2',
+    tier: 'consented',
     props: { child_ordinal: CHILD_ORDINAL, access: oneOf('plus', 'free'), letters_bucket: LETTERS_BUCKET },
   },
   read_together_ended: {
@@ -613,6 +648,7 @@ export const EVENTS = {
     when: 'Read together session ends',
     reqs: ['PRD-REQ-016'],
     level: 'L2',
+    tier: 'consented',
     props: {
       reason: oneOf('finished', 'stopped', 'interrupted'),
       session_bucket: SESSION_BUCKET,
@@ -626,6 +662,7 @@ export const EVENTS = {
     when: 'A parent creates an invite',
     reqs: ['B-REQ-007', 'B-NFR-001', 'PRD-REQ-014'],
     level: 'L2',
+    tier: 'consented',
     props: {
       role: INVITE_ROLE,
       channel: oneOf('share_sheet', 'copy_link', 'code'),
@@ -638,6 +675,7 @@ export const EVENTS = {
     when: 'An invite is accepted in the app (observed). Server aggregates count every acceptance',
     reqs: ['B-NFR-001'],
     level: 'L2',
+    tier: 'consented',
     props: { role: INVITE_ROLE, surface: oneOf('app') },
   },
   invite_failed: {
@@ -645,6 +683,7 @@ export const EVENTS = {
     when: 'Creating or accepting an invite failed (the reason class only)',
     reqs: ['B-REQ-007'],
     level: 'L2',
+    tier: 'consented',
     props: {
       stage: oneOf('create', 'accept'),
       reason: oneOf(
@@ -668,6 +707,7 @@ export const EVENTS = {
     when: 'A parent decides on a family letter',
     reqs: ['B-REQ-009', 'B-NFR-001'],
     level: 'L2',
+    tier: 'consented',
     props: { decision: oneOf('added', 'kept_aside') },
   },
   member_removed: {
@@ -675,6 +715,7 @@ export const EVENTS = {
     when: 'A parent removes a member',
     reqs: ['B-REQ-010'],
     level: 'L2',
+    tier: 'consented',
     props: { role: INVITE_ROLE },
   },
   member_left: {
@@ -682,6 +723,7 @@ export const EVENTS = {
     when: 'A member leaves a book',
     reqs: ['B-REQ-010'],
     level: 'L2',
+    tier: 'consented',
     props: { role: MEMBER_ROLE, letters: oneOf('keep', 'take_out') },
   },
 
@@ -691,6 +733,7 @@ export const EVENTS = {
     when: 'Reminder priming card shown',
     reqs: ['C-REQ-034', 'PRD-REQ-001'],
     level: 'L2',
+    tier: 'consented',
     props: { source: oneOf('tonight', 'settings', 'family_first_letter', 'first_letter', 'first_month') },
   },
   reminder_prime_result: {
@@ -698,6 +741,7 @@ export const EVENTS = {
     when: 'Priming card answered',
     reqs: ['C-REQ-034'],
     level: 'L2',
+    tier: 'consented',
     props: { choice: oneOf('yes', 'not_now') },
   },
   os_permission_result: {
@@ -705,6 +749,7 @@ export const EVENTS = {
     when: 'OS notification permission answered',
     reqs: ['C-REQ-034'],
     level: 'L2',
+    tier: 'consented',
     props: { granted: bool(), platform: oneOf('ios', 'android') },
   },
   reminder_schedule_set: {
@@ -712,6 +757,7 @@ export const EVENTS = {
     when: 'Reminder cadence, time or pause saved (observed from the stored preferences)',
     reqs: ['C-REQ-034'],
     level: 'L2',
+    tier: 'consented',
     props: {
       cadence: oneOf('off', 'weekly', 'few_times', 'every_evening'),
       hour_bucket: oneOf('morning', 'afternoon', 'evening', 'late_evening'),
@@ -723,6 +769,7 @@ export const EVENTS = {
     when: 'Logged on next foreground for a local evening reminder that fired. Month-age and birthday notes are excluded because their timing reveals the birth date',
     reqs: ['C-REQ-034', 'C-NFR-001'],
     level: 'L2',
+    tier: 'consented',
     props: { type: oneOf('letter_reminder', 'family_digest'), variant_id: opt(int(0, 99)) },
   },
   reminder_suppressed: {
@@ -730,6 +777,7 @@ export const EVENTS = {
     when: 'A scheduled reminder was skipped',
     reqs: ['C-REQ-034'],
     level: 'L2',
+    tier: 'consented',
     props: { reason: oneOf('wrote_recently', 'quiet_window', 'weekly_cap', 'paused') },
   },
   notification_opened: {
@@ -737,6 +785,7 @@ export const EVENTS = {
     when: 'User opens the app from a notification (observed). Month-age and birthday notes are never reported',
     reqs: ['C-REQ-034'],
     level: 'L2',
+    tier: 'consented',
     props: { type: oneOf('letter_reminder', 'family_digest', 'family_letter', 'plan_notice'), variant_id: opt(int(0, 99)) },
   },
 
@@ -746,6 +795,7 @@ export const EVENTS = {
     when: 'A quiet milestone card is shown. Month-chapter and Year One are excluded: they fire on dates set by the birthday',
     reqs: ['C-REQ-034', 'C-REQ-010'],
     level: 'L2',
+    tier: 'consented',
     props: {
       type: oneOf(
         'first_letter',
@@ -763,6 +813,7 @@ export const EVENTS = {
     when: 'An "On this day" card is shown',
     reqs: ['C-REQ-034', 'C-REQ-014'],
     level: 'L2',
+    tier: 'consented',
     props: { kind: oneOf('one_month', 'one_year') },
   },
   resurface_opened: {
@@ -770,6 +821,7 @@ export const EVENTS = {
     when: 'An "On this day" card is opened',
     reqs: ['C-REQ-034'],
     level: 'L2',
+    tier: 'consented',
     props: { kind: oneOf('one_month', 'one_year') },
   },
 
@@ -779,6 +831,7 @@ export const EVENTS = {
     when: 'A person-level setting is changed (which one, never the value)',
     reqs: ['C-REQ-034', 'C-REQ-016'],
     level: 'L2',
+    tier: 'consented',
     props: {
       key: oneOf(
         'reading_size',
@@ -797,6 +850,7 @@ export const EVENTS = {
     when: 'Export everything started (one ZIP made on the phone)',
     reqs: ['C-REQ-034', 'PRD-REQ-009'],
     level: 'L2',
+    tier: 'consented',
     props: { format: oneOf('archive'), letters_bucket: LETTERS_BUCKET },
   },
   export_completed: {
@@ -804,6 +858,7 @@ export const EVENTS = {
     when: 'Export finished and checked',
     reqs: ['C-REQ-034', 'C-NFR-007'],
     level: 'L2',
+    tier: 'consented',
     props: {
       format: oneOf('archive'),
       size_bucket: oneOf('lt_10mb', '10_100mb', '100_500mb', 'gt_500mb'),
@@ -815,6 +870,7 @@ export const EVENTS = {
     when: 'Export stopped before a file was ready',
     reqs: ['C-REQ-034', 'C-NFR-007'],
     level: 'L2',
+    tier: 'consented',
     props: { format: oneOf('archive'), reason: oneOf('cancelled', 'low_space', 'too_large', 'check_failed', 'unknown') },
   },
   export_shared: {
@@ -822,6 +878,7 @@ export const EVENTS = {
     when: 'The share sheet for a finished export closed',
     reqs: ['C-REQ-034'],
     level: 'L2',
+    tier: 'consented',
     props: { result: oneOf('shared', 'dismissed') },
   },
   account_deletion: {
@@ -829,6 +886,7 @@ export const EVENTS = {
     when: 'Account deletion flow step. `confirmed` is the last event ever sent for this id',
     reqs: ['C-REQ-034', 'PRD-REQ-018'],
     level: 'L2',
+    tier: 'consented',
     props: { stage: oneOf('started', 'export_offered', 'confirmed', 'undone') },
   },
 
@@ -839,6 +897,7 @@ export const EVENTS = {
     when: "Apple's subscription store view presented",
     reqs: ['C-REQ-034', 'C-REQ-023'],
     level: 'L2',
+    tier: 'consented',
     props: { trigger: PLUS_TRIGGER },
   },
   plus_offer_closed: {
@@ -846,6 +905,7 @@ export const EVENTS = {
     when: "Apple's subscription store view closed",
     reqs: ['C-REQ-034', 'C-NFR-002'],
     level: 'L2',
+    tier: 'consented',
     props: { trigger: PLUS_TRIGGER, outcome: oneOf('purchased', 'dismissed', 'unavailable') },
   },
   plan_changed: {
@@ -853,6 +913,7 @@ export const EVENTS = {
     when: 'The plan StoreKit reports on this device changed state (observed; production transactions only)',
     reqs: ['C-REQ-034', 'C-NFR-002'],
     level: 'L2',
+    tier: 'consented',
     props: {
       from_state: oneOf('none', 'trial', 'active', 'grace', 'billing_retry', 'expired', 'refunded', 'revoked'),
       to_state: oneOf('none', 'trial', 'active', 'grace', 'billing_retry', 'expired', 'refunded', 'revoked'),
@@ -866,6 +927,7 @@ export const EVENTS = {
     when: 'The last free letter was kept, so the next Keep will ask for Plus (once per phone)',
     reqs: ['C-REQ-034', 'C-REQ-023'],
     level: 'L2',
+    tier: 'consented',
     props: { allowance: int(2, 100) },
   },
   keep_gate_shown: {
@@ -873,6 +935,7 @@ export const EVENTS = {
     when: 'The Keep sheet asked for Plus (the letter is held on the phone)',
     reqs: ['C-REQ-034', 'C-REQ-023'],
     level: 'L2',
+    tier: 'consented',
     props: { letters_kept: int(0, 1000), allowance: int(2, 100), lapsed: int(0, 1) },
   },
   letter_held: {
@@ -880,6 +943,7 @@ export const EVENTS = {
     when: 'The person chose to keep the letter on the phone for now instead of starting Plus',
     reqs: ['C-REQ-034', 'C-REQ-023'],
     level: 'L2',
+    tier: 'consented',
     props: { letters_kept: int(0, 1000) },
   },
   plus_started_from_gate: {
@@ -887,6 +951,7 @@ export const EVENTS = {
     when: 'Plus was on after the Keep sheet (bought, restored, an Ask to Buy approval, or an offer code)',
     reqs: ['C-REQ-034', 'C-REQ-023'],
     level: 'L2',
+    tier: 'consented',
     props: { letters_kept: int(0, 1000) },
   },
   offer_code_redeemed: {
@@ -894,6 +959,7 @@ export const EVENTS = {
     when: "Apple's offer code sheet closed and Plus was on afterwards",
     reqs: ['C-REQ-034'],
     level: 'L2',
+    tier: 'consented',
     props: {},
   },
   restore_result: {
@@ -901,6 +967,7 @@ export const EVENTS = {
     when: 'Restore purchases finished',
     reqs: ['C-REQ-034', 'C-NFR-003'],
     level: 'L2',
+    tier: 'consented',
     props: { outcome: oneOf('restored', 'nothing', 'cancelled', 'failed', 'unavailable') },
   },
 
@@ -916,6 +983,7 @@ export const EVENTS = {
     when: 'A user-facing error from strings `errors.*` is shown',
     reqs: ['PRD-REQ-016'],
     level: 'L2',
+    tier: 'consented',
     props: { code: ERROR_CODE },
   },
   sync_failed: {
@@ -923,6 +991,7 @@ export const EVENTS = {
     when: 'A sync attempt fails after retries',
     reqs: ['PRD-REQ-016'],
     level: 'L2',
+    tier: 'consented',
     props: { reason: oneOf('network', 'auth', 'conflict', 'server', 'unknown') },
   },
 } as const satisfies Record<string, EventSpec>;
