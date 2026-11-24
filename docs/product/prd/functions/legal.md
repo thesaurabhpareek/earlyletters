@@ -223,12 +223,12 @@ Legal text versions (Terms, Privacy, delete-account page, `pages.en.ts`), consen
 ### E. Questions (who answers; default)
 | # | Question | Who | Default | Number |
 |---|---|---|---|---|
-| L-14 | May a child's picture and video leave the phone (Variant B storage, share, export, print) on the parent's act, and is the parent the provider under child-data law (S10 reads a child's image as personal information)? | counsel | Variant A first; flag off in production until read | Q45, Q48 (new sub-question; needs a number from legal) |
-| L-15 | Biometric law: confirm that a design with no face, voice or body measurement is outside BIPA, CUBI, RCW 19.375 and GDPR Article 9 biometric data | counsel | Not built; confirm | needs a number from legal |
-| L-16 | Another adult's voice in a parent's video: recording-consent exposure and who bears it | counsel | Instruction line only | needs a number from legal (with CR-041) |
-| L-17 | Library read on the phone only: is it "collection" under CCPA or any notice-at-collection duty (Apple's label meaning is not the law's) | counsel | Tell the parent in plain words anyway (FR-LEG-21) | Q20 |
-| L-18 | Terms changes: licence to hosted media, retention, deletion clock for media in backups (Variant B) | counsel | Same as letters (D8) | Q51 |
-| L-19 | Print QR video page (see FR-LEG-27) | counsel, founder | Not built | needs a number from legal |
+| L-14 | May a child's picture and video leave the phone (Variant B storage, share, export, print) on the parent's act, and is the parent the provider under child-data law (S10 reads a child's image as personal information)? | counsel | Variant A first; flag off in production until read | Q116 (extends Q45, Q48). Blocks NS-52 Variant B, a video through NS-05 or NS-11, and NS-05 with a picture |
+| L-15 | Biometric law: confirm that a design with no face, voice or body measurement is outside BIPA, CUBI, RCW 19.375 and GDPR Article 9 biometric data | counsel | Not built; confirm | Q117. Blocks nothing now |
+| L-16 | Another adult's voice in a parent's video: recording-consent exposure and who bears it | counsel | Instruction line only | Q118 (with CR-041). Blocks NS-52 video |
+| L-17 | Library read on the phone only: is it "collection" under CCPA or any notice-at-collection duty (Apple's label meaning is not the law's) | counsel | Tell the parent in plain words anyway (FR-LEG-21) | Q119 (extends Q20). Blocks NS-51 (with Q122) |
+| L-18 | Terms changes: licence to hosted media, retention, deletion clock for media in backups (Variant B) | counsel | Same as letters (D8) | Q120 (extends Q51). Blocks NS-52 Variant B only |
+| L-19 | Print QR video page (see FR-LEG-27) | counsel, founder | Not built | Q121. Blocks nothing; not built |
 
 ### F. Cannot assess yet
 The rest of BIPA (consent, retention, damages sections), Texas and Washington biometric laws, GDPR Article 9 and Recital 51 on photographs, state laws on a minor's image, recording-consent statutes, whether Apple's Developer Program License Agreement says anything about Photos library data beyond what `compliance.md` read. Not run: nothing.
