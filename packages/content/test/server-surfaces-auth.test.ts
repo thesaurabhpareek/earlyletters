@@ -255,6 +255,11 @@ describe('[EXPERIENCE_PASS_2026-10 P8a] chapter 7 words in authCopy', () => {
     expect(authCopy.sheet.why).toBe(en.trust.signIn.why);
   });
 
+  it('the Keep the book re-offer says the same two sentences as the first offer (BL-1562, CR-145)', () => {
+    expect(authCopy.sheet.titles.third_letter).toBe(authCopy.sheet.titles.first_letter);
+    expect(authCopy.sheet.bodies.third_letter).toBe(authCopy.sheet.bodies.first_letter);
+  });
+
   it("Account's signed-out body is S52's body, word for word (S56)", () => {
     expect(authCopy.account.signedOutBody).toBe(authCopy.sheet.bodies.first_letter);
     expect(authCopy.sheet.bodies.settings).toBe(authCopy.sheet.bodies.first_letter);

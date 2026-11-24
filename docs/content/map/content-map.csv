@@ -1010,154 +1010,156 @@ features/app-lock.en.ts#appLockLines.beforeSwitch.passcode,app screen,in-app,pac
 features/auth.en.ts#lettersSafe,app screen,in-app,packages/content/src/features/auth.en.ts,11,en,Your letters are still on this phone.,37,,,,,,content,live on develop,content
 features/auth.en.ts#agreeLine,app screen,in-app,packages/content/src/features/auth.en.ts,17,en,"By continuing, you confirm you are 18 or older and agree to the Terms of Service and Privacy Policy.",100,,,,,,content,live on develop,content
 features/auth.en.ts#authCopy.sheet.titles.first_letter,app screen,in-app,packages/content/src/features/auth.en.ts,34,en,Keep {child}'s words on any phone,33,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.sheet.titles.invite,app screen,in-app,packages/content/src/features/auth.en.ts,36,en,Sign in,7,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.sheet.titles.invite_create,app screen,in-app,packages/content/src/features/auth.en.ts,37,en,Sign in,7,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.sheet.titles.sign_in,app screen,in-app,packages/content/src/features/auth.en.ts,38,en,Welcome back,12,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.sheet.titles.settings,app screen,in-app,packages/content/src/features/auth.en.ts,39,en,Sign in,7,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.sheet.bodies.first_letter,app screen,in-app,packages/content/src/features/auth.en.ts,43,en,The words of your letters come with you to a new phone. Recordings are kept on the phone that made them.,104,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.sheet.bodies.invite,app screen,in-app,packages/content/src/features/auth.en.ts,44,en,Sign in on this phone to carry on.,34,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.sheet.bodies.invite_create,app screen,in-app,packages/content/src/features/auth.en.ts,45,en,Sign in on this phone to carry on.,34,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.sheet.bodies.sign_in,app screen,in-app,packages/content/src/features/auth.en.ts,47,en,Sign in the same way as last time to see every letter.,54,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.sheet.bodies.settings,app screen,in-app,packages/content/src/features/auth.en.ts,48,en,The words of your letters come with you to a new phone. Recordings are kept on the phone that made them.,104,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.sheet.bodies.sign_in_first,app screen,in-app,packages/content/src/features/auth.en.ts,52,en,Sign in to begin your book.,27,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.sheet.google,app screen,in-app,packages/content/src/features/auth.en.ts,57,en,Sign in with Google,19,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.sheet.email,app screen,in-app,packages/content/src/features/auth.en.ts,58,en,Sign in with email,18,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.sheet.passkey,app screen,in-app,packages/content/src/features/auth.en.ts,59,en,Use a passkey,13,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.sheet.later,app screen,in-app,packages/content/src/features/auth.en.ts,60,en,Not now,7,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.sheet.lastMethod.apple,app screen,in-app,packages/content/src/features/auth.en.ts,66,en,Last time you used Apple.,25,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.sheet.lastMethod.google,app screen,in-app,packages/content/src/features/auth.en.ts,67,en,Last time you used Google.,26,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.sheet.lastMethod.email,app screen,in-app,packages/content/src/features/auth.en.ts,68,en,Last time you used email.,25,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.sheet.lastMethod.passkey,app screen,in-app,packages/content/src/features/auth.en.ts,69,en,Last time you used a passkey.,29,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.sheet.notConfigured,app screen,in-app,packages/content/src/features/auth.en.ts,72,en,Signing in isn't available right now. Nothing on this phone has changed.,72,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.sheet.busy,app screen,in-app,packages/content/src/features/auth.en.ts,73,en,Signing you in,14,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.email.title,app screen,in-app,packages/content/src/features/auth.en.ts,77,en,Sign in with email,18,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.email.label,app screen,in-app,packages/content/src/features/auth.en.ts,78,en,Email,5,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.email.help,app screen,in-app,packages/content/src/features/auth.en.ts,80,en,A link and a code arrive by email. No password to remember.,59,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.email.send,app screen,in-app,packages/content/src/features/auth.en.ts,81,en,Send link,9,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.code.title,app screen,in-app,packages/content/src/features/auth.en.ts,85,en,Check your email,16,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.code.sentToEmail,app screen,in-app,packages/content/src/features/auth.en.ts,87,en,A link and a code are on their way to {email}.,46,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.code.body,app screen,in-app,packages/content/src/features/auth.en.ts,88,en,"Tap the link on this phone, or type the code here.",50,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.code.emailLabel,app screen,in-app,packages/content/src/features/auth.en.ts,90,en,Your email address,18,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.code.label,app screen,in-app,packages/content/src/features/auth.en.ts,91,en,Code,4,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.code.verify,app screen,in-app,packages/content/src/features/auth.en.ts,92,en,Continue,8,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.code.openMail,app screen,in-app,packages/content/src/features/auth.en.ts,93,en,Open Mail,9,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.code.resend,app screen,in-app,packages/content/src/features/auth.en.ts,94,en,Send a new email,16,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.code.resendWait,app screen,in-app,packages/content/src/features/auth.en.ts,95,en,You can send another in a minute.,33,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.code.resent,app screen,in-app,packages/content/src/features/auth.en.ts,96,en,A new email is on its way.,26,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.code.differentEmail,app screen,in-app,packages/content/src/features/auth.en.ts,97,en,Use a different email,21,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.code.pausedOtherWays,app screen,in-app,packages/content/src/features/auth.en.ts,106,en,"The link in the newest email still works, and so do the other ways to sign in.",78,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.code.noMailHelp,app screen,in-app,packages/content/src/features/auth.en.ts,108,en,"Nothing yet? Look in spam, or send a new email.",47,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.code.announceResend,app screen,in-app,packages/content/src/features/auth.en.ts,109,en,You can send another email.,27,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.firstRun.errors.provider,error,in-app error,packages/content/src/features/auth.en.ts,122,en,"That sign-in didn't finish. Try again, or try another way.",58,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.outage.title,app screen,in-app,packages/content/src/features/auth.en.ts,129,en,Sign-in cannot be reached right now.,36,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.outage.body,app screen,in-app,packages/content/src/features/auth.en.ts,131,en,Try again in a moment.,22,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.outage.retry,app screen,in-app,packages/content/src/features/auth.en.ts,132,en,Try again,9,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.outage.startLocal,app screen,in-app,packages/content/src/features/auth.en.ts,133,en,Start on this phone,19,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.outage.startLocalNote,app screen,in-app,packages/content/src/features/auth.en.ts,134,en,Start the book on this phone for now. You can sign in later and choose to keep your letters in your account.,108,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.outage.backOnline,app screen,in-app,packages/content/src/features/auth.en.ts,136,en,You are back online.,20,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.offline.title,app screen,in-app,packages/content/src/features/auth.en.ts,139,en,Sign-in needs a connection.,27,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.offline.body,app screen,in-app,packages/content/src/features/auth.en.ts,143,en,"Connect to the internet, then tap Try again.",44,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.newPhone.loading,app screen,in-app,packages/content/src/features/auth.en.ts,150,en,Opening your book.,18,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.newPhone.loadingBody,app screen,in-app,packages/content/src/features/auth.en.ts,151,en,Your letters are coming across.,31,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.newPhone.arrivedPlain,app screen,in-app,packages/content/src/features/auth.en.ts,153,en,Your book is here.,18,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.newPhone.slowTitle,app screen,in-app,packages/content/src/features/auth.en.ts,155,en,Your book is taking a while.,28,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.newPhone.slowBody,app screen,in-app,packages/content/src/features/auth.en.ts,156,en,"Check your connection, then try again.",38,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.newPhone.offlineTitle,app screen,in-app,packages/content/src/features/auth.en.ts,158,en,Opening your book needs a connection.,37,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.newPhone.consentBody,app screen,in-app,packages/content/src/features/auth.en.ts,162,en,Finish setting up to open your book here.,41,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.newPhone.recordingsElsewhere,app screen,in-app,packages/content/src/features/auth.en.ts,165,en,Your recordings are on the phone that made them.,48,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.newPhone.recordingsElsewhereDismiss,app screen,in-app,packages/content/src/features/auth.en.ts,166,en,Got it,6,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.newPhone.nothingToCopy,app screen,in-app,packages/content/src/features/auth.en.ts,167,en,"There is nothing on this phone to copy yet. Your letters are in your account, and recordings are on the phone that made them.",125,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.verify.title,app screen,in-app,packages/content/src/features/auth.en.ts,171,en,Signing you in,14,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.verify.refusedTitle,app screen,in-app,packages/content/src/features/auth.en.ts,173,en,This link can't be used here,28,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.verify.typeCode,app screen,in-app,packages/content/src/features/auth.en.ts,174,en,Type the code instead,21,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.verify.newEmail,app screen,in-app,packages/content/src/features/auth.en.ts,175,en,Send a new email,16,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.verify.close,app screen,in-app,packages/content/src/features/auth.en.ts,176,en,Close,5,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.claim.title,app screen,in-app,packages/content/src/features/auth.en.ts,184,en,Keep your letters in this account?,34,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.claim.body,app screen,in-app,packages/content/src/features/auth.en.ts,185,en,Your letters on this phone will be kept in the account {email}.,63,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.claim.noEmail,app screen,in-app,packages/content/src/features/auth.en.ts,186,en,Your letters on this phone will be kept in the account you signed in to.,72,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.claim.help,app screen,in-app,packages/content/src/features/auth.en.ts,187,en,"If this isn't your account, choose Not my account. Nothing on this phone changes.",81,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.claim.keep,app screen,in-app,packages/content/src/features/auth.en.ts,189,en,Keep in this account,20,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.claim.notMine,app screen,in-app,packages/content/src/features/auth.en.ts,190,en,Not my account,14,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.claim.waiting,app screen,in-app,packages/content/src/features/auth.en.ts,191,en,Finish setting up to choose where your letters are kept.,56,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.claim.bodyHasBook,app screen,in-app,packages/content/src/features/auth.en.ts,199,en,This account already has a book. The book on this phone will be added to it as a second book. Nothing is deleted.,113,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.claim.recordingsNote,app screen,in-app,packages/content/src/features/auth.en.ts,202,en,Recordings are kept on the phone that made them.,48,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.claim.keepHint,app screen,in-app,packages/content/src/features/auth.en.ts,203,en,Adds the book on this phone to this account as a second book. Nothing is deleted.,81,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.region.title,app screen,in-app,packages/content/src/features/auth.en.ts,209,en,{app} can't be set up from here.,32,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.region.body,app screen,in-app,packages/content/src/features/auth.en.ts,210,en,"If you think this is wrong, get in touch.",41,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.region.terms,app screen,in-app,packages/content/src/features/auth.en.ts,211,en,Terms,5,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.region.contact,app screen,in-app,packages/content/src/features/auth.en.ts,212,en,Get in touch,12,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.errors.network,error,in-app error,packages/content/src/features/auth.en.ts,219,en,Nothing has changed. Sign in once you're back online.,53,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.errors.expired,error,in-app error,packages/content/src/features/auth.en.ts,220,en,That link has expired. Send a new email for a fresh one.,56,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.errors.wrong_code,error,in-app error,packages/content/src/features/auth.en.ts,221,en,"That code didn't match. Check the newest email, or send a new one.",66,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.errors.code_paused,error,in-app error,packages/content/src/features/auth.en.ts,222,en,Nothing has changed. You can try a code again in 15 minutes.,60,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.errors.email_wait,error,in-app error,packages/content/src/features/auth.en.ts,227,en,"Nothing has changed. Another email can't go out yet. Wait a few minutes, then try again.",88,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.errors.rate_limited,error,in-app error,packages/content/src/features/auth.en.ts,228,en,"Nothing has changed. Too many tries for now. Wait a few minutes, then try again.",80,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.errors.invalid_email,error,in-app error,packages/content/src/features/auth.en.ts,229,en,That email doesn't look quite right.,36,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.errors.not_available,error,in-app error,packages/content/src/features/auth.en.ts,230,en,Nothing has changed. This way of signing in isn't available right now. Try another way.,87,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.errors.provider,error,in-app error,packages/content/src/features/auth.en.ts,231,en,"Nothing has changed. That sign-in didn't finish. Try again, or try another way.",79,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.errors.passkey_expired,error,in-app error,packages/content/src/features/auth.en.ts,236,en,That timed out. Try your passkey again.,39,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.errors.passkey_not_added,error,in-app error,packages/content/src/features/auth.en.ts,237,en,"The passkey didn't get added. Try again, or use another way to sign in.",71,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.errors.passkey_unavailable,error,in-app error,packages/content/src/features/auth.en.ts,238,en,This phone can't add a passkey right now.,41,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.errors.sign_out_others_failed,error,in-app error,packages/content/src/features/auth.en.ts,239,en,The other devices may still be signed in. Try again.,52,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.errors.session_expired,error,in-app error,packages/content/src/features/auth.en.ts,240,en,You were signed out. Sign in again to carry on.,47,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.errors.under_18,error,in-app error,packages/content/src/features/auth.en.ts,241,en,{app} is currently for adults 18 and over.,42,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.errors.consent_unavailable,error,in-app error,packages/content/src/features/auth.en.ts,242,en,Setting up your account did not finish. Try again.,50,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.errors.region_refused,error,in-app error,packages/content/src/features/auth.en.ts,244,en,{app} can't be set up from here.,32,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.errors.unknown,error,in-app error,packages/content/src/features/auth.en.ts,245,en,That didn't go through. Nothing has changed.,44,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.errors.other_phone,error,in-app error,packages/content/src/features/auth.en.ts,247,en,Type the code from the email on this phone instead.,51,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.errors.other_phone_spent,error,in-app error,packages/content/src/features/auth.en.ts,250,en,"This link was opened on a different phone. Send a new email, then use the link or code from it.",95,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.errors.already_signed_in,error,in-app error,packages/content/src/features/auth.en.ts,253,en,"You're already signed in on this phone. To use another account, sign out, then type the code from the email.",108,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.consent.settingUp,legal,consent,packages/content/src/features/auth.en.ts,257,en,Setting up your account,23,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
-features/auth.en.ts#authCopy.consent.terms.title,legal,consent,packages/content/src/features/auth.en.ts,259,en,Before your book syncs,22,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
-features/auth.en.ts#authCopy.consent.terms.body,legal,consent,packages/content/src/features/auth.en.ts,260,en,"Your letters stay yours. We never sell them, use them for ads or use them to train machine learning models.",107,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
-features/auth.en.ts#authCopy.consent.terms.termsLink,legal,consent,packages/content/src/features/auth.en.ts,262,en,Terms of Service,16,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
-features/auth.en.ts#authCopy.consent.terms.privacyLink,legal,consent,packages/content/src/features/auth.en.ts,263,en,Privacy Policy,14,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
-features/auth.en.ts#authCopy.consent.terms.agree,legal,consent,packages/content/src/features/auth.en.ts,264,en,Agree and continue,18,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
-features/auth.en.ts#authCopy.consent.terms.notNow,legal,consent,packages/content/src/features/auth.en.ts,265,en,Not now,7,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
-features/auth.en.ts#authCopy.consent.age.body,legal,consent,packages/content/src/features/auth.en.ts,270,en,Are you 18 or older?,20,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
-features/auth.en.ts#authCopy.consent.age.yes,legal,consent,packages/content/src/features/auth.en.ts,271,en,Yes,3,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
-features/auth.en.ts#authCopy.consent.age.no,legal,consent,packages/content/src/features/auth.en.ts,272,en,No,2,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
-features/auth.en.ts#authCopy.consent.childFallback,legal,consent,packages/content/src/features/auth.en.ts,274,en,your child,10,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
-features/auth.en.ts#authCopy.consent.noBook.title,legal,consent,packages/content/src/features/auth.en.ts,276,en,No book here yet,16,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
-features/auth.en.ts#authCopy.consent.noBook.body,legal,consent,packages/content/src/features/auth.en.ts,277,en,Did you use a different way to sign in last time?,49,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
-features/auth.en.ts#authCopy.consent.noBook.tryAnother,legal,consent,packages/content/src/features/auth.en.ts,278,en,Try another way,15,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
-features/auth.en.ts#authCopy.consent.noBook.startBook,legal,consent,packages/content/src/features/auth.en.ts,279,en,Start a book,12,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
-features/auth.en.ts#authCopy.account.title,app screen,in-app,packages/content/src/features/auth.en.ts,284,en,Account,7,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.account.signedOutTitle,app screen,in-app,packages/content/src/features/auth.en.ts,285,en,Not signed in,13,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.account.signedOutBody,app screen,in-app,packages/content/src/features/auth.en.ts,287,en,The words of your letters come with you to a new phone. Recordings are kept on the phone that made them.,104,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.account.signIn,app screen,in-app,packages/content/src/features/auth.en.ts,288,en,Sign in,7,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.account.signedInWith.apple,app screen,in-app,packages/content/src/features/auth.en.ts,290,en,Signed in with Apple,20,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.account.signedInWith.google,app screen,in-app,packages/content/src/features/auth.en.ts,291,en,Signed in with Google,21,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.account.signedInWith.email,app screen,in-app,packages/content/src/features/auth.en.ts,292,en,Signed in with email,20,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.account.signedInWith.other,app screen,in-app,packages/content/src/features/auth.en.ts,293,en,Signed in,9,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.account.syncTitle,app screen,in-app,packages/content/src/features/auth.en.ts,295,en,Sync,4,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.account.syncLabel,app screen,in-app,packages/content/src/features/auth.en.ts,296,en,Sync across your phones,23,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.account.sync.on,app screen,in-app,packages/content/src/features/auth.en.ts,298,en,On,2,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.account.sync.off,app screen,in-app,packages/content/src/features/auth.en.ts,299,en,"Off, kept on this phone",23,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.account.sync.waiting,app screen,in-app,packages/content/src/features/auth.en.ts,300,en,Not set up yet,14,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.account.sync.unknown,app screen,in-app,packages/content/src/features/auth.en.ts,301,en,Waiting for a connection,24,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.account.gateOffline,app screen,in-app,packages/content/src/features/auth.en.ts,308,en,You're signed in. This needs a connection. Try again in a moment.,65,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.account.finishSetup,app screen,in-app,packages/content/src/features/auth.en.ts,309,en,Finish setting up,17,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.account.passkeysTitle,app screen,in-app,packages/content/src/features/auth.en.ts,310,en,Passkeys,8,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.account.passkeysHelp,app screen,in-app,packages/content/src/features/auth.en.ts,311,en,"Sign in next time with Face ID or Touch ID, on this phone or your other Apple devices.",86,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.account.addPasskey,app screen,in-app,packages/content/src/features/auth.en.ts,312,en,Add a passkey,13,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.account.passkeyAdded,app screen,in-app,packages/content/src/features/auth.en.ts,313,en,Passkey added.,14,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.account.passkeyFallbackName,app screen,in-app,packages/content/src/features/auth.en.ts,314,en,Passkey,7,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.account.removePasskey,app screen,in-app,packages/content/src/features/auth.en.ts,315,en,Remove,6,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.account.removePasskeyTitle,app screen,in-app,packages/content/src/features/auth.en.ts,316,en,Remove this passkey?,20,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.account.removePasskeyBody,app screen,in-app,packages/content/src/features/auth.en.ts,317,en,You can still sign in another way.,34,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.account.devicesTitle,app screen,in-app,packages/content/src/features/auth.en.ts,318,en,Devices,7,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.account.signOutOthers,app screen,in-app,packages/content/src/features/auth.en.ts,319,en,Sign out other devices,22,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.account.signOutOthersHelp,app screen,in-app,packages/content/src/features/auth.en.ts,320,en,Other phones signed in to this account will need to sign in again.,66,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.account.signOutOthersDone,app screen,in-app,packages/content/src/features/auth.en.ts,321,en,Other devices are signed out.,29,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.account.signOut,app screen,in-app,packages/content/src/features/auth.en.ts,322,en,Sign out,8,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.account.signOutTitle,app screen,in-app,packages/content/src/features/auth.en.ts,323,en,Sign out on this phone?,23,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.account.signOutBody,app screen,in-app,packages/content/src/features/auth.en.ts,325,en,Your letters stay on this phone. Sign in again any time.,56,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.account.signOutWaiting,app screen,in-app,packages/content/src/features/auth.en.ts,327,en,Your newest letters are still on their way. This phone signs out once they are sent.,84,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.account.signOutRevokedWaiting,app screen,in-app,packages/content/src/features/auth.en.ts,330,en,"Your newest letters are still on this phone. They're sent first, then this phone signs out.",91,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.account.staySignedIn,app screen,in-app,packages/content/src/features/auth.en.ts,332,en,Stay signed in,14,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.account.signOutEarly,app screen,in-app,packages/content/src/features/auth.en.ts,334,en,Your newest letters are kept on this phone. They are sent the next time you sign in to this account.,100,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.account.cancel,app screen,in-app,packages/content/src/features/auth.en.ts,335,en,Cancel,6,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.sheet.titles.third_letter,app screen,in-app,packages/content/src/features/auth.en.ts,36,en,Keep {child}'s words on any phone,33,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.sheet.titles.invite,app screen,in-app,packages/content/src/features/auth.en.ts,38,en,Sign in,7,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.sheet.titles.invite_create,app screen,in-app,packages/content/src/features/auth.en.ts,39,en,Sign in,7,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.sheet.titles.sign_in,app screen,in-app,packages/content/src/features/auth.en.ts,40,en,Welcome back,12,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.sheet.titles.settings,app screen,in-app,packages/content/src/features/auth.en.ts,41,en,Sign in,7,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.sheet.bodies.first_letter,app screen,in-app,packages/content/src/features/auth.en.ts,45,en,The words of your letters come with you to a new phone. Recordings are kept on the phone that made them.,104,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.sheet.bodies.third_letter,app screen,in-app,packages/content/src/features/auth.en.ts,47,en,The words of your letters come with you to a new phone. Recordings are kept on the phone that made them.,104,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.sheet.bodies.invite,app screen,in-app,packages/content/src/features/auth.en.ts,48,en,Sign in on this phone to carry on.,34,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.sheet.bodies.invite_create,app screen,in-app,packages/content/src/features/auth.en.ts,49,en,Sign in on this phone to carry on.,34,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.sheet.bodies.sign_in,app screen,in-app,packages/content/src/features/auth.en.ts,51,en,Sign in the same way as last time to see every letter.,54,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.sheet.bodies.settings,app screen,in-app,packages/content/src/features/auth.en.ts,52,en,The words of your letters come with you to a new phone. Recordings are kept on the phone that made them.,104,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.sheet.bodies.sign_in_first,app screen,in-app,packages/content/src/features/auth.en.ts,56,en,Sign in to begin your book.,27,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.sheet.google,app screen,in-app,packages/content/src/features/auth.en.ts,61,en,Sign in with Google,19,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.sheet.email,app screen,in-app,packages/content/src/features/auth.en.ts,62,en,Sign in with email,18,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.sheet.passkey,app screen,in-app,packages/content/src/features/auth.en.ts,63,en,Use a passkey,13,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.sheet.later,app screen,in-app,packages/content/src/features/auth.en.ts,64,en,Not now,7,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.sheet.lastMethod.apple,app screen,in-app,packages/content/src/features/auth.en.ts,70,en,Last time you used Apple.,25,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.sheet.lastMethod.google,app screen,in-app,packages/content/src/features/auth.en.ts,71,en,Last time you used Google.,26,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.sheet.lastMethod.email,app screen,in-app,packages/content/src/features/auth.en.ts,72,en,Last time you used email.,25,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.sheet.lastMethod.passkey,app screen,in-app,packages/content/src/features/auth.en.ts,73,en,Last time you used a passkey.,29,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.sheet.notConfigured,app screen,in-app,packages/content/src/features/auth.en.ts,76,en,Signing in isn't available right now. Nothing on this phone has changed.,72,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.sheet.busy,app screen,in-app,packages/content/src/features/auth.en.ts,77,en,Signing you in,14,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.email.title,app screen,in-app,packages/content/src/features/auth.en.ts,81,en,Sign in with email,18,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.email.label,app screen,in-app,packages/content/src/features/auth.en.ts,82,en,Email,5,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.email.help,app screen,in-app,packages/content/src/features/auth.en.ts,84,en,A link and a code arrive by email. No password to remember.,59,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.email.send,app screen,in-app,packages/content/src/features/auth.en.ts,85,en,Send link,9,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.code.title,app screen,in-app,packages/content/src/features/auth.en.ts,89,en,Check your email,16,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.code.sentToEmail,app screen,in-app,packages/content/src/features/auth.en.ts,91,en,A link and a code are on their way to {email}.,46,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.code.body,app screen,in-app,packages/content/src/features/auth.en.ts,92,en,"Tap the link on this phone, or type the code here.",50,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.code.emailLabel,app screen,in-app,packages/content/src/features/auth.en.ts,94,en,Your email address,18,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.code.label,app screen,in-app,packages/content/src/features/auth.en.ts,95,en,Code,4,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.code.verify,app screen,in-app,packages/content/src/features/auth.en.ts,96,en,Continue,8,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.code.openMail,app screen,in-app,packages/content/src/features/auth.en.ts,97,en,Open Mail,9,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.code.resend,app screen,in-app,packages/content/src/features/auth.en.ts,98,en,Send a new email,16,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.code.resendWait,app screen,in-app,packages/content/src/features/auth.en.ts,99,en,You can send another in a minute.,33,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.code.resent,app screen,in-app,packages/content/src/features/auth.en.ts,100,en,A new email is on its way.,26,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.code.differentEmail,app screen,in-app,packages/content/src/features/auth.en.ts,101,en,Use a different email,21,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.code.pausedOtherWays,app screen,in-app,packages/content/src/features/auth.en.ts,110,en,"The link in the newest email still works, and so do the other ways to sign in.",78,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.code.noMailHelp,app screen,in-app,packages/content/src/features/auth.en.ts,112,en,"Nothing yet? Look in spam, or send a new email.",47,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.code.announceResend,app screen,in-app,packages/content/src/features/auth.en.ts,113,en,You can send another email.,27,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.firstRun.errors.provider,error,in-app error,packages/content/src/features/auth.en.ts,126,en,"That sign-in didn't finish. Try again, or try another way.",58,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.outage.title,app screen,in-app,packages/content/src/features/auth.en.ts,133,en,Sign-in cannot be reached right now.,36,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.outage.body,app screen,in-app,packages/content/src/features/auth.en.ts,135,en,Try again in a moment.,22,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.outage.retry,app screen,in-app,packages/content/src/features/auth.en.ts,136,en,Try again,9,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.outage.startLocal,app screen,in-app,packages/content/src/features/auth.en.ts,137,en,Start on this phone,19,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.outage.startLocalNote,app screen,in-app,packages/content/src/features/auth.en.ts,138,en,Start the book on this phone for now. You can sign in later and choose to keep your letters in your account.,108,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.outage.backOnline,app screen,in-app,packages/content/src/features/auth.en.ts,140,en,You are back online.,20,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.offline.title,app screen,in-app,packages/content/src/features/auth.en.ts,143,en,Sign-in needs a connection.,27,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.offline.body,app screen,in-app,packages/content/src/features/auth.en.ts,147,en,"Connect to the internet, then tap Try again.",44,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.newPhone.loading,app screen,in-app,packages/content/src/features/auth.en.ts,154,en,Opening your book.,18,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.newPhone.loadingBody,app screen,in-app,packages/content/src/features/auth.en.ts,155,en,Your letters are coming across.,31,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.newPhone.arrivedPlain,app screen,in-app,packages/content/src/features/auth.en.ts,157,en,Your book is here.,18,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.newPhone.slowTitle,app screen,in-app,packages/content/src/features/auth.en.ts,159,en,Your book is taking a while.,28,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.newPhone.slowBody,app screen,in-app,packages/content/src/features/auth.en.ts,160,en,"Check your connection, then try again.",38,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.newPhone.offlineTitle,app screen,in-app,packages/content/src/features/auth.en.ts,162,en,Opening your book needs a connection.,37,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.newPhone.consentBody,app screen,in-app,packages/content/src/features/auth.en.ts,166,en,Finish setting up to open your book here.,41,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.newPhone.recordingsElsewhere,app screen,in-app,packages/content/src/features/auth.en.ts,169,en,Your recordings are on the phone that made them.,48,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.newPhone.recordingsElsewhereDismiss,app screen,in-app,packages/content/src/features/auth.en.ts,170,en,Got it,6,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.newPhone.nothingToCopy,app screen,in-app,packages/content/src/features/auth.en.ts,171,en,"There is nothing on this phone to copy yet. Your letters are in your account, and recordings are on the phone that made them.",125,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.verify.title,app screen,in-app,packages/content/src/features/auth.en.ts,175,en,Signing you in,14,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.verify.refusedTitle,app screen,in-app,packages/content/src/features/auth.en.ts,177,en,This link can't be used here,28,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.verify.typeCode,app screen,in-app,packages/content/src/features/auth.en.ts,178,en,Type the code instead,21,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.verify.newEmail,app screen,in-app,packages/content/src/features/auth.en.ts,179,en,Send a new email,16,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.verify.close,app screen,in-app,packages/content/src/features/auth.en.ts,180,en,Close,5,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.claim.title,app screen,in-app,packages/content/src/features/auth.en.ts,188,en,Keep your letters in this account?,34,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.claim.body,app screen,in-app,packages/content/src/features/auth.en.ts,189,en,Your letters on this phone will be kept in the account {email}.,63,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.claim.noEmail,app screen,in-app,packages/content/src/features/auth.en.ts,190,en,Your letters on this phone will be kept in the account you signed in to.,72,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.claim.help,app screen,in-app,packages/content/src/features/auth.en.ts,191,en,"If this isn't your account, choose Not my account. Nothing on this phone changes.",81,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.claim.keep,app screen,in-app,packages/content/src/features/auth.en.ts,193,en,Keep in this account,20,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.claim.notMine,app screen,in-app,packages/content/src/features/auth.en.ts,194,en,Not my account,14,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.claim.waiting,app screen,in-app,packages/content/src/features/auth.en.ts,195,en,Finish setting up to choose where your letters are kept.,56,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.claim.bodyHasBook,app screen,in-app,packages/content/src/features/auth.en.ts,203,en,This account already has a book. The book on this phone will be added to it as a second book. Nothing is deleted.,113,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.claim.recordingsNote,app screen,in-app,packages/content/src/features/auth.en.ts,206,en,Recordings are kept on the phone that made them.,48,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.claim.keepHint,app screen,in-app,packages/content/src/features/auth.en.ts,207,en,Adds the book on this phone to this account as a second book. Nothing is deleted.,81,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.region.title,app screen,in-app,packages/content/src/features/auth.en.ts,213,en,{app} can't be set up from here.,32,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.region.body,app screen,in-app,packages/content/src/features/auth.en.ts,214,en,"If you think this is wrong, get in touch.",41,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.region.terms,app screen,in-app,packages/content/src/features/auth.en.ts,215,en,Terms,5,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.region.contact,app screen,in-app,packages/content/src/features/auth.en.ts,216,en,Get in touch,12,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.errors.network,error,in-app error,packages/content/src/features/auth.en.ts,223,en,Nothing has changed. Sign in once you're back online.,53,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.errors.expired,error,in-app error,packages/content/src/features/auth.en.ts,224,en,That link has expired. Send a new email for a fresh one.,56,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.errors.wrong_code,error,in-app error,packages/content/src/features/auth.en.ts,225,en,"That code didn't match. Check the newest email, or send a new one.",66,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.errors.code_paused,error,in-app error,packages/content/src/features/auth.en.ts,226,en,Nothing has changed. You can try a code again in 15 minutes.,60,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.errors.email_wait,error,in-app error,packages/content/src/features/auth.en.ts,231,en,"Nothing has changed. Another email can't go out yet. Wait a few minutes, then try again.",88,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.errors.rate_limited,error,in-app error,packages/content/src/features/auth.en.ts,232,en,"Nothing has changed. Too many tries for now. Wait a few minutes, then try again.",80,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.errors.invalid_email,error,in-app error,packages/content/src/features/auth.en.ts,233,en,That email doesn't look quite right.,36,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.errors.not_available,error,in-app error,packages/content/src/features/auth.en.ts,234,en,Nothing has changed. This way of signing in isn't available right now. Try another way.,87,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.errors.provider,error,in-app error,packages/content/src/features/auth.en.ts,235,en,"Nothing has changed. That sign-in didn't finish. Try again, or try another way.",79,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.errors.passkey_expired,error,in-app error,packages/content/src/features/auth.en.ts,240,en,That timed out. Try your passkey again.,39,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.errors.passkey_not_added,error,in-app error,packages/content/src/features/auth.en.ts,241,en,"The passkey didn't get added. Try again, or use another way to sign in.",71,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.errors.passkey_unavailable,error,in-app error,packages/content/src/features/auth.en.ts,242,en,This phone can't add a passkey right now.,41,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.errors.sign_out_others_failed,error,in-app error,packages/content/src/features/auth.en.ts,243,en,The other devices may still be signed in. Try again.,52,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.errors.session_expired,error,in-app error,packages/content/src/features/auth.en.ts,244,en,You were signed out. Sign in again to carry on.,47,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.errors.under_18,error,in-app error,packages/content/src/features/auth.en.ts,245,en,{app} is currently for adults 18 and over.,42,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.errors.consent_unavailable,error,in-app error,packages/content/src/features/auth.en.ts,246,en,Setting up your account did not finish. Try again.,50,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.errors.region_refused,error,in-app error,packages/content/src/features/auth.en.ts,248,en,{app} can't be set up from here.,32,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.errors.unknown,error,in-app error,packages/content/src/features/auth.en.ts,249,en,That didn't go through. Nothing has changed.,44,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.errors.other_phone,error,in-app error,packages/content/src/features/auth.en.ts,251,en,Type the code from the email on this phone instead.,51,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.errors.other_phone_spent,error,in-app error,packages/content/src/features/auth.en.ts,254,en,"This link was opened on a different phone. Send a new email, then use the link or code from it.",95,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.errors.already_signed_in,error,in-app error,packages/content/src/features/auth.en.ts,257,en,"You're already signed in on this phone. To use another account, sign out, then type the code from the email.",108,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.consent.settingUp,legal,consent,packages/content/src/features/auth.en.ts,261,en,Setting up your account,23,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
+features/auth.en.ts#authCopy.consent.terms.title,legal,consent,packages/content/src/features/auth.en.ts,263,en,Before your book syncs,22,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
+features/auth.en.ts#authCopy.consent.terms.body,legal,consent,packages/content/src/features/auth.en.ts,264,en,"Your letters stay yours. We never sell them, use them for ads or use them to train machine learning models.",107,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
+features/auth.en.ts#authCopy.consent.terms.termsLink,legal,consent,packages/content/src/features/auth.en.ts,266,en,Terms of Service,16,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
+features/auth.en.ts#authCopy.consent.terms.privacyLink,legal,consent,packages/content/src/features/auth.en.ts,267,en,Privacy Policy,14,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
+features/auth.en.ts#authCopy.consent.terms.agree,legal,consent,packages/content/src/features/auth.en.ts,268,en,Agree and continue,18,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
+features/auth.en.ts#authCopy.consent.terms.notNow,legal,consent,packages/content/src/features/auth.en.ts,269,en,Not now,7,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
+features/auth.en.ts#authCopy.consent.age.body,legal,consent,packages/content/src/features/auth.en.ts,274,en,Are you 18 or older?,20,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
+features/auth.en.ts#authCopy.consent.age.yes,legal,consent,packages/content/src/features/auth.en.ts,275,en,Yes,3,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
+features/auth.en.ts#authCopy.consent.age.no,legal,consent,packages/content/src/features/auth.en.ts,276,en,No,2,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
+features/auth.en.ts#authCopy.consent.childFallback,legal,consent,packages/content/src/features/auth.en.ts,278,en,your child,10,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
+features/auth.en.ts#authCopy.consent.noBook.title,legal,consent,packages/content/src/features/auth.en.ts,280,en,No book here yet,16,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
+features/auth.en.ts#authCopy.consent.noBook.body,legal,consent,packages/content/src/features/auth.en.ts,281,en,Did you use a different way to sign in last time?,49,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
+features/auth.en.ts#authCopy.consent.noBook.tryAnother,legal,consent,packages/content/src/features/auth.en.ts,282,en,Try another way,15,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
+features/auth.en.ts#authCopy.consent.noBook.startBook,legal,consent,packages/content/src/features/auth.en.ts,283,en,Start a book,12,held,consent (docs/legal/in-app-disclosures.md),,,,privacy,live on develop,content
+features/auth.en.ts#authCopy.account.title,app screen,in-app,packages/content/src/features/auth.en.ts,288,en,Account,7,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.account.signedOutTitle,app screen,in-app,packages/content/src/features/auth.en.ts,289,en,Not signed in,13,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.account.signedOutBody,app screen,in-app,packages/content/src/features/auth.en.ts,291,en,The words of your letters come with you to a new phone. Recordings are kept on the phone that made them.,104,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.account.signIn,app screen,in-app,packages/content/src/features/auth.en.ts,292,en,Sign in,7,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.account.signedInWith.apple,app screen,in-app,packages/content/src/features/auth.en.ts,294,en,Signed in with Apple,20,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.account.signedInWith.google,app screen,in-app,packages/content/src/features/auth.en.ts,295,en,Signed in with Google,21,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.account.signedInWith.email,app screen,in-app,packages/content/src/features/auth.en.ts,296,en,Signed in with email,20,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.account.signedInWith.other,app screen,in-app,packages/content/src/features/auth.en.ts,297,en,Signed in,9,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.account.syncTitle,app screen,in-app,packages/content/src/features/auth.en.ts,299,en,Sync,4,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.account.syncLabel,app screen,in-app,packages/content/src/features/auth.en.ts,300,en,Sync across your phones,23,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.account.sync.on,app screen,in-app,packages/content/src/features/auth.en.ts,302,en,On,2,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.account.sync.off,app screen,in-app,packages/content/src/features/auth.en.ts,303,en,"Off, kept on this phone",23,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.account.sync.waiting,app screen,in-app,packages/content/src/features/auth.en.ts,304,en,Not set up yet,14,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.account.sync.unknown,app screen,in-app,packages/content/src/features/auth.en.ts,305,en,Waiting for a connection,24,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.account.gateOffline,app screen,in-app,packages/content/src/features/auth.en.ts,312,en,You're signed in. This needs a connection. Try again in a moment.,65,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.account.finishSetup,app screen,in-app,packages/content/src/features/auth.en.ts,313,en,Finish setting up,17,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.account.passkeysTitle,app screen,in-app,packages/content/src/features/auth.en.ts,314,en,Passkeys,8,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.account.passkeysHelp,app screen,in-app,packages/content/src/features/auth.en.ts,315,en,"Sign in next time with Face ID or Touch ID, on this phone or your other Apple devices.",86,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.account.addPasskey,app screen,in-app,packages/content/src/features/auth.en.ts,316,en,Add a passkey,13,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.account.passkeyAdded,app screen,in-app,packages/content/src/features/auth.en.ts,317,en,Passkey added.,14,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.account.passkeyFallbackName,app screen,in-app,packages/content/src/features/auth.en.ts,318,en,Passkey,7,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.account.removePasskey,app screen,in-app,packages/content/src/features/auth.en.ts,319,en,Remove,6,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.account.removePasskeyTitle,app screen,in-app,packages/content/src/features/auth.en.ts,320,en,Remove this passkey?,20,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.account.removePasskeyBody,app screen,in-app,packages/content/src/features/auth.en.ts,321,en,You can still sign in another way.,34,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.account.devicesTitle,app screen,in-app,packages/content/src/features/auth.en.ts,322,en,Devices,7,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.account.signOutOthers,app screen,in-app,packages/content/src/features/auth.en.ts,323,en,Sign out other devices,22,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.account.signOutOthersHelp,app screen,in-app,packages/content/src/features/auth.en.ts,324,en,Other phones signed in to this account will need to sign in again.,66,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.account.signOutOthersDone,app screen,in-app,packages/content/src/features/auth.en.ts,325,en,Other devices are signed out.,29,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.account.signOut,app screen,in-app,packages/content/src/features/auth.en.ts,326,en,Sign out,8,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.account.signOutTitle,app screen,in-app,packages/content/src/features/auth.en.ts,327,en,Sign out on this phone?,23,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.account.signOutBody,app screen,in-app,packages/content/src/features/auth.en.ts,329,en,Your letters stay on this phone. Sign in again any time.,56,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.account.signOutWaiting,app screen,in-app,packages/content/src/features/auth.en.ts,331,en,Your newest letters are still on their way. This phone signs out once they are sent.,84,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.account.signOutRevokedWaiting,app screen,in-app,packages/content/src/features/auth.en.ts,334,en,"Your newest letters are still on this phone. They're sent first, then this phone signs out.",91,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.account.staySignedIn,app screen,in-app,packages/content/src/features/auth.en.ts,336,en,Stay signed in,14,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.account.signOutEarly,app screen,in-app,packages/content/src/features/auth.en.ts,338,en,Your newest letters are kept on this phone. They are sent the next time you sign in to this account.,100,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.account.cancel,app screen,in-app,packages/content/src/features/auth.en.ts,339,en,Cancel,6,,,,,,content,live on develop,content
 features/backup.en.ts#backupCopy.title,app screen,in-app,packages/content/src/features/backup.en.ts,18,en,Back up my recordings,21,,,,,,content,live on develop,content
 features/backup.en.ts#backupCopy.rowOn,app screen,in-app,packages/content/src/features/backup.en.ts,19,en,On,2,,,,,,content,live on develop,content
 features/backup.en.ts#backupCopy.rowOff,app screen,in-app,packages/content/src/features/backup.en.ts,20,en,Off,3,,,,,,content,live on develop,content
