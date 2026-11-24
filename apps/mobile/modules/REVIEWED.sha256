@@ -1,0 +1,31 @@
+# Pins the CURRENT state of the native sources (NSC-01, BL-1045). No security-architect read is recorded here yet.
+# Format: sha256sum, two spaces, path under modules/. Do not edit by hand.
+# Anyone re-pinning (node scripts/native-sources.mjs --write <commit sha>) must have the security read recorded in the PR first.
+# pinned-head: 5d87f1c0dc0488e80b2af34b984a06fe70ced69c
+245bca8696c413b21a394746aeac316eaf9234ab97babd2f23a6c6c4aa683a71  scribe-audio/android/build.gradle
+fd6a87323a386117805a6280c8ff94b0e97b6643cc430ba957abe1be0dae0843  scribe-audio/android/src/main/java/expo/modules/scribeaudio/ScribeAudioModule.kt
+9869d4af1c29e95bf3c101299d29f62e00059d3cd60375bbf692e7f2f0c3fa33  scribe-audio/expo-module.config.json
+2375e5d30b99569e0b6268deb184eb4b38b67e1993ca634de90736f597d264ee  scribe-audio/index.ts
+fba976762b4d0dc661a87330f4f95461d2ff7326ff9514dbebf0edd71b393894  scribe-audio/ios/ScribeAudio.podspec
+c8fb07f88ea5da1736072ca9ce8810b9af724506149455395c77a1b20aa1ff07  scribe-audio/ios/ScribeAudioModule.swift
+53ba3f21c21f2d33a3b190776e3fd66739ccbb388693e2e44503e23597a254ef  scribe-files/expo-module.config.json
+6d6093a065285167a339004c5f1c751e8e5e1375b5a07a8b8849cc7b0dc637b3  scribe-files/index.ts
+51caff3a60f6c4a2207286b87ef11a7d6a9b6578ea2f1af0e06f2e60832de172  scribe-files/ios/ScribeFiles.podspec
+03ba15b709da0f777242d6cfebb51c7f6fc87e3fd64a494fc9d7bcae49ac6314  scribe-files/ios/ScribeFilesModule.swift
+ce5be6d68055e806ee46e7bb7a4797831c52fe0ba4590a61f862028f4be172a2  scribe-keys/expo-module.config.json
+becd009c6ee5cf24f8786cd98017e2f9101d864c2ff5ddc39731448355c4a2e8  scribe-keys/index.ts
+3f0fa24eda3c57a293abcca916694da9d5b74213fb73655e2470c5cc2f9a22df  scribe-keys/ios/ScribeKeys.podspec
+a6ba32a3abd92ede6a59afc1913f509d0382f8b2c2e26a1afd1f51b881a5f4aa  scribe-keys/ios/ScribeKeysModule.swift
+e14fc722df16600454f9d88f2646564b8823a15d9be4e9a2395ccad905316853  scribe-photo/expo-module.config.json
+73c14f85181829dc75dde2a3ecd3dbb34c6eb4408da9fa23e87f64d5f2fa2d14  scribe-photo/index.ts
+382a65a792f7d7c8c655c0cb17cb864822d1acc7dba0f066051b44a31ec17bce  scribe-photo/ios/ScribePhoto.podspec
+46aba79cb7fda41c8061d6fcb0233407b598476cb672029c4689cbebd2b51bbe  scribe-photo/ios/ScribePhotoModule.swift
+c8c14a932fc0e82eb1d732d399006fef0928733dfbc4d15176d733c2e75515b6  scribe-store/android/build.gradle
+571f2735faf5e857752ee057ac8ef63425576a721616c60b86ee5d4c0a2d682f  scribe-store/android/src/main/AndroidManifest.xml
+d9ab2c25117595da7222f905f397d92da76387b6efba946195e04702f98e2be1  scribe-store/android/src/main/java/expo/modules/scribestore/ScribeStoreModule.kt
+777f3eead8ccc731eaed320bcd04d3ccb6318fb6e66e771ab1753b88f7972c33  scribe-store/expo-module.config.json
+b4bcffc5e6179b4c065b82d01de8d3e4d41b3126d5e67cb807a2de2bd9ed2819  scribe-store/index.ts
+3c962ee661f1273df477d23b00ec223bc70485bb1d53f890958b5cae5dc72d9c  scribe-store/ios/PlusStoreSheet.swift
+6fc6622ab59a7524fa3fe053d22303a1a4d627470f3f7ef588c0745da71f5b5c  scribe-store/ios/ScribeStore.podspec
+ce7133139b1ccb58a599c9826c841fdcfbda982d6a879cbcf74590ae22189146  scribe-store/ios/ScribeStoreModule.swift
+e876148b6d84923cc933b5a653f9c2eca3f14d923d6ead3099a5fc9ccf2601ad  scribe-store/types.ts
