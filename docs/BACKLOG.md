@@ -3287,7 +3287,7 @@ Each row adds a `Plan:` line: phase (P0 to P4b of NX-39 v2 section 3), whether i
 #### BL-842 The promise, the permission string and the parent words for each phase (NX-39 section 5)
 - Status: superseded (by the Moments tab spec set, NS-53, R192 and COPY-DRAFTS; the purpose string waits on counsel under CR-146). Mode: agent. Owner: content. Milestone: M15. Size: M. Depends on: BL-841.
 - Who: `content`; review `privacy`, `legal`.
-- Satisfies: NX-39-R1, NX-39-R3, NX-39-R44, NX-39-R56. Also cited: BL-830 pattern, `packages/content/test/rules.test.ts`.
+- Satisfies: NX-39-R1, NX-39-R3, NX-39-R44, NX-39-R56. Also cited: the claims-capabilities profile test (BL-118, BL-1970), `packages/content/test/rules.test.ts`.
 - Scope: `packages/content` keys for the phase lines, the pre-sheets (CS-S1, CS-S4a), the Settings rows, the card and the failure lines; claims registry rows; the `NSPhotoLibraryUsageDescription` text (one active sentence, purpose only, background named only in a P2c build). No string states or implies a frequency. Words need counsel and the founder.
 - Fails on old code: `[NX-39-R1] a promise line shows only when its phase is on, and none denies a read the build does`.
 - Done when: that title, `[NX-39-R56] the plist purpose string equals the content string and names background use only when it exists`, and the content rules pass.
@@ -3476,7 +3476,7 @@ Each row adds a `Plan:` line: phase (P0 to P4b of NX-39 v2 section 3), whether i
 #### BL-863 Claims-capabilities rules for media: capability fields, denial claims, no frequency claim (NX-39-R1, R44, R55)
 - Status: done (PR #1779 merged as `f1f6c3446`; read against the Done-when line on 24 Nov 2026 by the product agent from the PR's changed files and subject, no device run). Mode: agent. Owner: content. Milestone: M15. Size: M.
 - Who: `content`, `compliance-engineer`, `privacy`.
-- Satisfies: NX-39-R1, NX-39-R44, NX-39-R55. Also cited: BL-830 pattern, PRIV-R17, CPO-14, CLO-1.
+- Satisfies: NX-39-R1, NX-39-R44, NX-39-R55. Also cited: the claims-capabilities profile test (BL-118, BL-1970), PRIV-R17, CPO-14, CLO-1.
 - Scope: extend `packages/content/test/claims-capabilities.test.ts`: `Profile` gets `mediaMetadata`, `mediaLibrary`, `mediaBackground`, `occasions` read from `capabilities.ts`, one rule each; denial claims fail while the capability is on; the frequency and freshness patterns (two or three or a few times a day, every day, up to date, in the background, when closed) fail in every profile; "stay on your phone", "stays on this phone" and "nothing is sent to us" fail unless on the registry; new content paths and the occasion notification strings join the read set; a check fails if a `memoryLibrary` subtree exists in `packages/content` and is not listed; `KNOWN_VIOLATIONS` stays capped at today's count. No new content is added.
 - Fails on old code: `[NX-39-R55] a claim ships only with its capability and its proof, and no frequency claim ships at all`.
 - Done when: that title passes and the existing rules still pass.
