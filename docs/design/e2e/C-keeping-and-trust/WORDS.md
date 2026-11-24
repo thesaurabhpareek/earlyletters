@@ -348,6 +348,7 @@ No toast when Quiet changes (DESIGN J-C10: the switch is the feedback; VoiceOver
 | `en.settings.delete.sealedRow` | PROPOSED | A letter hidden until {date} | `.sealed`: the chosen day, no words (B-S22 draws the row; reconcile the key with area B) | NS-06-B25; NS-36 "sealed letter deleted" |
 | `en.settings.delete.bookCardTitle` / `restoreBookButton` / `bookRestoredToast` | EXISTING | {child}'s book / Restore the book / {child}'s book is back. | `.book` | F17 |
 | `en.settings.delete.restoreButton` / `restoredToast` / `restoredToastNoName` / `openButton` | EXISTING | Restore / Back in {child}'s book. / Back in the book. / Open | restore (picture, first and seal return with it) | NS-36-R1b; NS-01-R16b |
+| `en.settings.delete.restoreRefusedToast` | PROPOSED | That letter wasn't restored. Its book is one you left. | Restore or Undo refused for a letter in a left book | BL-1959 |
 | `en.settings.delete.eraseNow` / `eraseNowTitle` | EXISTING | Erase now / Erase this letter now? | - | D-085 |
 | `en.settings.delete.eraseNowBody` | CHANGED (PROPOSED) `CLAIM` | The letter, its recording and its picture are erased for good. | letter with a picture | NS-36-R1c |
 | `en.settings.delete.eraseNowBodyNoPicture` | PROPOSED | The letter and its recording are erased for good. | letter without a picture (today's words) | as built |

@@ -1,3 +1,4 @@
+# BLOCKED (ids the app does not set yet): red by design until they land. `node apps/mobile/e2e/bin/blocked-ids.mjs <this file>` lists them (not-in-app.txt); run-suite.sh and run-p0-nightly.sh skip it and print that list.
 # E2E-03  Speak, review, save offline: a letter waiting for its words.
 # With no speech model on the phone (e2eTranscriber none, offline), Review offers
 # to keep the recording now; its words follow when the language is ready

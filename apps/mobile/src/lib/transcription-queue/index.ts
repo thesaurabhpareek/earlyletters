@@ -72,7 +72,7 @@ import { createWhisperTranscriber } from '../transcribe-whisper';
 import { copyForLetter } from '../audio-enhance';
 import { trackTranscriptionCompleted } from '../analytics/track';
 import { getSpokenLanguages } from '../language';
-import { flagReadItBack } from '../read-it-back';
+import { clearReadItBack, flagReadItBack } from '../read-it-back';
 import { lateArrivingWords } from './clean';
 import { DownloadRetries } from './download-retry';
 import { RUNNING_MARKER, countsAsMemoryKill, runningMarker } from './kill-marker';
@@ -557,7 +557,8 @@ async function runJob(id: string): Promise<void> {
   }
 }
 
-function deliver(id: string, res: TranscribeResult, isSample: boolean): void {
+/** Exported for tests (the read-it-back flag against a refused write). */
+export function deliver(id: string, res: TranscribeResult, isSample: boolean): void {
   if (isSample) {
     sampleWords.set(id, res);
     return;
@@ -574,7 +575,8 @@ function deliver(id: string, res: TranscribeResult, isSample: boolean): void {
     // parent to read them back; the flag is set first so the card is there the moment the words are.
     const late = lateArrivingWords(raw);
     if (late.finalText) flagReadItBack(id);
-    setWordsForWaitingEntry(id, { ...late, engineVersion: ENGINE_VERSION });
+    // Refused (a left book, BL-1959): no words arrived, so no "read it back" card for words that are not there.
+    if (!setWordsForWaitingEntry(id, { ...late, engineVersion: ENGINE_VERSION }) && late.finalText) clearReadItBack(id);
     forgetLetterLanguage(id);
   }
 }
