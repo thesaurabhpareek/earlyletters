@@ -21,7 +21,7 @@
  * - Every property is L2 and every event cites the requirement it serves.
  */
 import { CAPTURE_MODES, MEMBER_ROLES, OFFER_TRIGGERS } from '@scribe/core';
-import { bool, int, oneOf, opt, type EventSpec, type PropSpec } from './schema';
+import { bool, int, oneOf, opt, type EventSpec, type Level, type PropSpec } from './schema';
 import { MOMENTS_SLOT, REGISTRY } from './registry';
 
 // ---------------------------------------------------------------------------
@@ -238,8 +238,8 @@ export const SCHEMA_FINGERPRINTS: Readonly<Record<number, string>> = Object.free
 // ---------------------------------------------------------------------------
 
 /** The catalogue view of a registry row: the documentation and shape fields only, never a second copy. */
-function catalogRow<R extends { area: string; when: string; reqs: readonly string[]; level: 'L1' | 'L2' | 'L3'; props: Record<string, PropSpec> }>(r: R) {
-  return { area: r.area, when: r.when, reqs: r.reqs, level: r.level, props: r.props } as const;
+function catalogRow<R extends { area: string; when: string; reqs: readonly string[]; level: Level; props: Record<string, PropSpec> }>(r: R): Pick<R, 'area' | 'when' | 'reqs' | 'level' | 'props'> {
+  return { area: r.area, when: r.when, reqs: r.reqs, level: r.level, props: r.props };
 }
 
 export const EVENTS = {
