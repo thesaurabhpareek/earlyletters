@@ -11,9 +11,9 @@
  * and judges each one against the production profile: `apps/mobile/eas.json` `build.production.env`, read through
  * `apps/mobile/src/lib/capabilities.ts`, the same code the app runs.
  *
- * Not read: `packages/content/src/site.en.ts` and `pages.en.ts`. Nothing that ships imports them (apps/web depends
- * only on @scribe/brand and @scribe/design-tokens); they are read by the content lint tests alone. BL-556 deletes or
- * rewires them. The emails are not read either: no production build sends them.
+ * The website's words have one source, `apps/web/src/content/site.ts` and the copy under `apps/web/src`: BL-556
+ * removed `packages/content/src/site.en.ts` and `pages.en.ts`, which nothing rendered. The emails are not read: no
+ * production build sends them.
  *
  * A claim is one match of a rule's pattern in one string. `KNOWN_VIOLATIONS` lists today's false claims, each by the
  * string's key, the rule, the claim's words, the change that removes it (`removedBy`) and why. A second claim in a
@@ -449,7 +449,7 @@ describe('public claims match the production profile (RT-REL-03)', () => {
     expect(keys.some((k) => k.startsWith('web:scenes/S04Exact.tsx'))).toBe(true);
     expect(keys.some((k) => k.startsWith('web:lib/legal/privacy-copy.ts'))).toBe(true);
     expect(keys.some((k) => k.startsWith('features.billing.'))).toBe(true);
-    expect(keys.some((k) => k.startsWith('site.')), 'site.en.ts is not shipped, so it is not read').toBe(false);
+    expect(keys.some((k) => k.startsWith('site.')), 'only the website copy apps/web renders is read (BL-556)').toBe(false);
   });
 
   it('makes no new claim the production build cannot keep', () => {

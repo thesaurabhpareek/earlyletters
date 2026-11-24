@@ -1,14 +1,14 @@
 /**
- * Plus prices in public copy (D-082, D-083). `pricing.ts` is the one place the
- * website and the pages take prices and trial wording from; the app never
- * types a price (Apple's own sheet shows the storefront price). The voice
- * rules reach these strings through the website and pages copy that quotes
- * them, so the quoting itself is what is pinned here.
+ * Plus prices in public copy (D-082, D-083). `pricing.ts` holds the prices and trial wording this package
+ * uses; the app never types a price (Apple's own sheet shows the storefront price). earlyletters.com takes
+ * its prices from apps/web/src/content/pricing.ts, and apps/web/test/pricing.test.ts holds every amount on
+ * the site to that file; here the two files are pinned to the same figures (BL-556).
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { en, features, pages, PLUS_PRICE, PLUS_TRIAL, plusPriceLine, site, storeListing } from '../src';
+import { plusPricing as webPricing } from '../../../apps/web/src/content/pricing';
+import { en, features, PLUS_PRICE, PLUS_TRIAL, plusPriceLine, storeListing } from '../src';
 
 type Leaf = { path: string; text: string };
 function leaves(value: unknown, path = ''): Leaf[] {
@@ -18,8 +18,6 @@ function leaves(value: unknown, path = ''): Leaf[] {
   return [];
 }
 
-const SITE = leaves(site, 'site');
-const PAGES = leaves(pages, 'pages');
 const STORE = leaves(storeListing, 'store');
 const IN_APP = [...leaves(en, 'en'), ...leaves(features, 'features')];
 const AMOUNT = /\$\d+(?:\.\d{2})?/g;
@@ -37,15 +35,16 @@ describe('Plus prices (D-082)', () => {
     expect(plusPriceLine.annual).not.toContain(PLUS_PRICE.monthly);
   });
 
-  it('[D-082] the website and the pages quote both price lines word for word, so the copy rules check them there', () => {
-    for (const line of [plusPriceLine.monthly, plusPriceLine.annual]) {
-      expect(SITE.some((l) => l.text.includes(line)), `site quotes "${line}"`).toBe(true);
-      expect(PAGES.some((l) => l.text.includes(line)), `pages quote "${line}"`).toBe(true);
-    }
+  it('[D-082] the website\'s prices and trial lengths are the same figures (apps/web/src/content/pricing.ts)', () => {
+    expect(webPricing.monthly.price).toBe(PLUS_PRICE.monthly);
+    expect(webPricing.annual.price).toBe(PLUS_PRICE.yearly);
+    // PLUS_TRIAL is pinned above to the first month and the first 2 months.
+    expect(webPricing.monthly.trialMonths).toBe(1);
+    expect(webPricing.annual.trialMonths).toBe(2);
   });
 
-  it('[D-082] every amount the public copy names is one of the two prices', () => {
-    const named = [...SITE, ...PAGES, ...STORE].flatMap((l) => [...l.text.matchAll(AMOUNT)].map((m) => `${l.path}: ${m[0]}`));
+  it('[D-082] every amount the store listing names is one of the two prices', () => {
+    const named = STORE.flatMap((l) => [...l.text.matchAll(AMOUNT)].map((m) => `${l.path}: ${m[0]}`));
     expect(named.length).toBeGreaterThan(0);
     expect(named.filter((n) => !n.endsWith(PLUS_PRICE.monthly) && !n.endsWith(PLUS_PRICE.yearly))).toEqual([]);
   });
