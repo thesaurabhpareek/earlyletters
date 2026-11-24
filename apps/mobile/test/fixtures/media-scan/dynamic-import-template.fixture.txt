@@ -1,0 +1,4 @@
+// fixture: dynamic-import-template. Fictional family Asha; not compiled, read by test/media-ast-scan.test.ts as text.
+// as: apps/mobile/src/lib/media/fixture.ts
+// expect: dynamic-module
+export const lib = async (which: string) => import(`expo-${which}`);

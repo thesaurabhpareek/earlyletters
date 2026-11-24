@@ -25,6 +25,7 @@ import {
   getActiveChildId,
   getDraft,
   listOrphanAudio,
+  noteDiscardFailure,
   reattachOrphanAudio,
   rebaseAudioUri,
   reportOrphanAudio,
@@ -175,5 +176,6 @@ function finishLetGo(id: string): void {
       for (const f of erasableFiles(uri, others)) f.delete();
     },
     finishDiscard,
+    onFailure: noteDiscardFailure,
   });
 }

@@ -276,7 +276,7 @@ export function computeInsights(input: InsightsInput): InsightsReport {
       propose({
         id: 'start-to-save', area: 'drop_off', title: 'Fewer letters lost between starting and saving',
         problem: `${pct(1 - saveRate)} of people who started a letter in the week of ${f!.week} did not save one (consenting users).`,
-        evidence: [`device funnel: ${f!.saved} saved of ${f!.started} started`, `discarded at ${[...d.split('capture_discarded', 'stage', f!.week).entries()].map(([k, v]) => `${k} ${v.events}`).join(', ') || 'n/a'}`],
+        evidence: [`device funnel: ${f!.saved} saved of ${f!.started} started`, `discarded at ${[...d.split('capture:take_cancel', 'stage', f!.week).entries()].map(([k, v]) => `${k} ${v.events}`).join(', ') || 'n/a'}`],
         hypothesis: 'Review asks for too much before Save, or the transcript wait feels too long.',
         change: 'Let Save work while words are still coming (the letter waits for its words), and check where discards happen.',
         metric: 'Saved / started people per week (target 80%, A).',
@@ -286,27 +286,27 @@ export function computeInsights(input: InsightsInput): InsightsReport {
 
     // Capture discards
     if (lw) {
-      const started = d.total('capture_started', lw);
-      const discarded = d.total('capture_discarded', lw);
+      const started = d.total('capture:take_start', lw);
+      const discarded = d.total('capture:take_cancel', lw);
       const dr = rate(discarded, started);
-      metrics.push({ key: 'discard_rate', label: 'Captures discarded / started (device)', value: dr, previous: pw ? rate(d.total('capture_discarded', pw), d.total('capture_started', pw)) : null, unit: 'rate', source: 'device', week: lw });
-      const a = detectAnomaly(weeks.map((w) => ({ week: w, value: rate(d.total('capture_discarded', w), d.total('capture_started', w)) })), { metric: 'discard_rate', label: 'Captures discarded / started', source: 'device', minBase: 0, isRate: true });
+      metrics.push({ key: 'discard_rate', label: 'Captures discarded / started (device)', value: dr, previous: pw ? rate(d.total('capture:take_cancel', pw), d.total('capture:take_start', pw)) : null, unit: 'rate', source: 'device', week: lw });
+      const a = detectAnomaly(weeks.map((w) => ({ week: w, value: rate(d.total('capture:take_cancel', w), d.total('capture:take_start', w)) })), { metric: 'discard_rate', label: 'Captures discarded / started', source: 'device', minBase: 0, isRate: true });
       if (a && a.direction === 'up') anomalies.push(a);
     }
 
     // Transcription outcomes by model
-    const outcomes = d.splitOver('transcription_completed', 'outcome', last4);
+    const outcomes = d.splitOver('capture:transcript_complete', 'outcome', last4);
     const tTotal = [...outcomes.values()].reduce((a, b) => a + b, 0);
     const noSpeech = rate(outcomes.get('no_speech') ?? 0, tTotal);
     const failed = rate(outcomes.get('failed') ?? 0, tTotal);
     metrics.push({ key: 'no_speech', label: 'Transcriptions with no speech heard (4 weeks, device)', value: tTotal >= 30 ? noSpeech : null, previous: null, unit: 'rate', source: 'device', week: lw });
     metrics.push({ key: 'transcription_failed', label: 'Transcriptions failed (4 weeks, device)', value: tTotal >= 30 ? failed : null, previous: null, unit: 'rate', source: 'device', week: lw });
     if (tTotal >= 30 && noSpeech !== null && noSpeech > 0.1) {
-      const models = [...d.splitOver('transcription_completed', 'model', last4).entries()].sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(', ');
+      const models = [...d.splitOver('capture:transcript_complete', 'model', last4).entries()].sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(', ');
       propose({
         id: 'no-speech', area: 'quality', title: 'Help people when the microphone hears nothing',
         problem: `${pct(noSpeech)} of transcriptions in the last 4 weeks heard no speech.`,
-        evidence: [`device transcription_completed: ${outcomes.get('no_speech') ?? 0} no_speech of ${tTotal}`, `by model (all outcomes): ${models || 'n/a'}`],
+        evidence: [`device capture:transcript_complete: ${outcomes.get('no_speech') ?? 0} no_speech of ${tTotal}`, `by model (all outcomes): ${models || 'n/a'}`],
         hypothesis: 'Recordings start before people speak and end early, or the phone is far away or covered.',
         change: 'Show a gentle level meter while listening and, after a silent take, offer "Try again" with a short tip instead of an empty Review.',
         metric: 'no_speech share under 5% (A).',
@@ -317,7 +317,7 @@ export function computeInsights(input: InsightsInput): InsightsReport {
       propose({
         id: 'transcription-failures', area: 'quality', title: 'Make on-device transcription fail less',
         problem: `${pct(failed)} of transcriptions in the last 4 weeks failed.`,
-        evidence: [`device transcription_completed: ${outcomes.get('failed') ?? 0} failed of ${tTotal}`],
+        evidence: [`device capture:transcript_complete: ${outcomes.get('failed') ?? 0} failed of ${tTotal}`],
         hypothesis: 'Memory pressure on smaller phones kills the larger model mid-letter.',
         change: 'Move phones with repeated failures to the compact model sooner and keep the letter waiting for its words.',
         metric: 'Failed transcriptions under 1% (A).',
@@ -328,13 +328,13 @@ export function computeInsights(input: InsightsInput): InsightsReport {
     // Pack downloads by pack
     const byPackStarted = new Map<string, number>();
     for (const r of input.device!.rows) {
-      if (r.event === 'pack_download' && r.dim === 'pack' && last4.includes(r.week)) {
+      if (r.event === 'system:pack_download_update' && r.dim === 'pack' && last4.includes(r.week)) {
         // The pack breakdown counts every stage; the stage split gives the shares overall.
         byPackStarted.set(String(r.value), (byPackStarted.get(String(r.value)) ?? 0) + r.events);
       }
     }
-    const stages = d.splitOver('pack_download', 'stage', last4);
-    const failures = [...d.splitOver('pack_download', 'failure', last4).entries()].sort((a, b) => b[1] - a[1]);
+    const stages = d.splitOver('system:pack_download_update', 'stage', last4);
+    const failures = [...d.splitOver('system:pack_download_update', 'failure', last4).entries()].sort((a, b) => b[1] - a[1]);
     const starts = stages.get('started') ?? 0;
     const fails = stages.get('failed') ?? 0;
     const packFail = starts >= 30 ? fails / starts : null;
@@ -345,7 +345,7 @@ export function computeInsights(input: InsightsInput): InsightsReport {
       propose({
         id: `pack-failures-${top}`, area: 'languages', title: 'Make language downloads more reliable',
         problem: `${pct(packFail)} of pack downloads in the last 4 weeks failed; the most common reason was ${top}.`,
-        evidence: [`device pack_download: ${fails} failed of ${starts} started`, `failures by reason: ${failures.map(([k, v]) => `${k} ${v}`).join(', ') || 'n/a'}`, `busiest packs (all stages): ${packs || 'n/a'}`],
+        evidence: [`device system:pack_download_update: ${fails} failed of ${starts} started`, `failures by reason: ${failures.map(([k, v]) => `${k} ${v}`).join(', ') || 'n/a'}`, `busiest packs (all stages): ${packs || 'n/a'}`],
         hypothesis: `Downloads fail mostly for ${top}.`,
         change: PACK_FIX[top] ? `${PACK_FIX[top][0].toUpperCase()}${PACK_FIX[top].slice(1)}.` : 'Look at the failing step in the pack engine.',
         metric: 'Pack failures under 2% of starts (TRACKING_PLAN 1.3).',
@@ -354,16 +354,16 @@ export function computeInsights(input: InsightsInput): InsightsReport {
     }
 
     // Verifier refusals
-    const reasons = [...d.splitOver('machine_edit_rejected', 'reason', last4).entries()].sort((a, b) => b[1] - a[1]);
+    const reasons = [...d.splitOver('capture:edit_decline', 'reason', last4).entries()].sort((a, b) => b[1] - a[1]);
     const rejTotal = reasons.reduce((n, [, v]) => n + v, 0);
     const notVetted = rejTotal ? (reasons.find(([k]) => k === 'not_vetted_for_language')?.[1] ?? 0) / rejTotal : null;
     metrics.push({ key: 'not_vetted_share', label: 'Verifier refusals for language tables not signed off (4 weeks, device)', value: rejTotal >= 30 ? notVetted : null, previous: null, unit: 'rate', source: 'device', week: lw });
     if (rejTotal >= 30 && notVetted !== null && notVetted > 0.2) {
-      const types = [...d.splitOver('machine_edit_rejected', 'edit_type', last4).entries()].sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(', ');
+      const types = [...d.splitOver('capture:edit_decline', 'edit_type', last4).entries()].sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(', ');
       propose({
         id: 'not-vetted-for-language', area: 'quality', title: 'Sign off the language tables the cleaner keeps asking for',
         problem: `${pct(notVetted)} of refused machine edits in the last 4 weeks were refused because a language pack table is not signed off.`,
-        evidence: [`device machine_edit_rejected by reason: ${reasons.slice(0, 5).map(([k, v]) => `${k} ${v}`).join(', ')}`, `by edit type: ${types || 'n/a'}`],
+        evidence: [`device capture:edit_decline by reason: ${reasons.slice(0, 5).map(([k, v]) => `${k} ${v}`).join(', ')}`, `by edit type: ${types || 'n/a'}`],
         hypothesis: 'Letters in a newly added language get fewer slips fixed than English letters, because its filler or agreement tables are still pending review.',
         change: 'Have the language owner review and sign off the pending tables for the edit types above (packs/text-rules), then publish the packs.',
         metric: 'not_vetted_for_language share of refusals under 5%.',
@@ -374,11 +374,11 @@ export function computeInsights(input: InsightsInput): InsightsReport {
 
     // Adoption: Read together, Plus
     if (lw) {
-      const rt = d.total('read_together_started', lw, 'people');
-      const opened = d.total('app_opened', lw, 'people');
+      const rt = d.total('book:read_together_start', lw, 'people');
+      const opened = d.total('system:app_open', lw, 'people');
       const rtRate = rate(rt, opened);
-      metrics.push({ key: 'read_together_adoption', label: 'People who started Read together / opened the app (device)', value: rtRate, previous: pw ? rate(d.total('read_together_started', pw, 'people'), d.total('app_opened', pw, 'people')) : null, unit: 'rate', source: 'device', week: lw });
-      const closes = d.splitOver('plus_offer_closed', 'outcome', last4);
+      metrics.push({ key: 'read_together_adoption', label: 'People who started Read together / opened the app (device)', value: rtRate, previous: pw ? rate(d.total('book:read_together_start', pw, 'people'), d.total('system:app_open', pw, 'people')) : null, unit: 'rate', source: 'device', week: lw });
+      const closes = d.splitOver('plus:offer_end', 'outcome', last4);
       const closed = [...closes.values()].reduce((a, b) => a + b, 0);
       const bought = closed >= 50 ? (closes.get('purchased') ?? 0) / closed : null;
       metrics.push({ key: 'offer_purchase', label: 'Store sheet closes with a purchase (4 weeks, device)', value: bought, previous: null, unit: 'rate', source: 'device', week: lw });
@@ -387,7 +387,7 @@ export function computeInsights(input: InsightsInput): InsightsReport {
         propose({
           id: 'store-unavailable', area: 'plus', title: "Find why Apple's subscription sheet does not open",
           problem: `${pct(unavailable)} of store sheet attempts in the last 4 weeks ended as unavailable.`,
-          evidence: [`device plus_offer_closed: ${closes.get('unavailable') ?? 0} unavailable of ${closed}`],
+          evidence: [`device plus:offer_end: ${closes.get('unavailable') ?? 0} unavailable of ${closed}`],
           hypothesis: 'Phones below the minimum iOS for the subscription store view, or StoreKit not reachable offline.',
           change: 'Hide the offer when the store view cannot open (offline or old iOS) and show the quiet line instead.',
           metric: 'Unavailable under 1% of store sheet attempts.',
@@ -398,13 +398,13 @@ export function computeInsights(input: InsightsInput): InsightsReport {
 
     // Errors: spikes by code
     for (const code of ['save_failed', 'transcription_failed', 'storage_low', 'offline', 'generic']) {
-      const a = detectAnomaly(weeks.map((w) => ({ week: w, value: d.split('error_shown', 'code', w).get(code)?.events ?? null })), { metric: `error_${code}`, label: `Errors shown: ${code}`, source: 'device', minBase: 20 });
+      const a = detectAnomaly(weeks.map((w) => ({ week: w, value: d.split('system:error_view', 'code', w).get(code)?.events ?? null })), { metric: `error_${code}`, label: `Errors shown: ${code}`, source: 'device', minBase: 20 });
       if (a && a.direction === 'up') {
         anomalies.push(a);
         propose({
           id: `error-spike-${code}`, area: 'anomaly', title: `Look into more ${code} errors`,
           problem: `${code} errors rose to ${fmt(a.value)} in the week of ${a.week}, ${pct(a.change)} above the recent average.`,
-          evidence: [`device error_shown{code: ${code}}: ${fmt(a.value)} vs ${fmt(Math.round(a.baseline))}`],
+          evidence: [`device system:error_view{code: ${code}}: ${fmt(a.value)} vs ${fmt(Math.round(a.baseline))}`],
           hypothesis: 'A release or a server change that week.',
           change: 'Match the week against releases and server deploys; reproduce on the oldest supported phone.',
           metric: `${code} errors back to the recent average.`,
@@ -414,7 +414,7 @@ export function computeInsights(input: InsightsInput): InsightsReport {
     }
 
     // Languages on device
-    const langs = [...d.splitOver('language_set', 'lang', last4).entries()].sort((a, b) => b[1] - a[1]);
+    const langs = [...d.splitOver('me:language_update', 'lang', last4).entries()].sort((a, b) => b[1] - a[1]);
     if (langs.length) findings.push({ area: 'languages', source: 'device', text: `Language changes (4 weeks, consenting users, all actions): ${langs.map(([k, v]) => `${k} ${v}`).join(', ')}.` });
     if (starts) findings.push({ area: 'languages', source: 'device', text: `Pack downloads (4 weeks): ${starts} started, ${stages.get('completed') ?? 0} completed, ${fails} failed.` });
   }

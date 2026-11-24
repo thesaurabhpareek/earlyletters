@@ -27,7 +27,7 @@ export async function keepSheetFor(wordsOnScreen: string): Promise<KeepGate | nu
   // hold (RT-PLS-10): Plus is not known yet on this phone. The caller holds the letter and opens no sheet, so nothing
   // was shown and nothing is noted.
   if (g.decision.kind === 'hold') return g;
-  track('keep_gate_shown', {
+  track('plus:keep_gate_view', {
     letters_kept: Math.min(1000, g.lettersKept),
     allowance: Math.min(100, Math.max(2, g.allowance)),
     lapsed: g.decision.lapsed ? 1 : 0,
@@ -41,6 +41,6 @@ export async function countAfterSave(wordsOnScreen: string): Promise<boolean> {
   if (!hasWords(wordsOnScreen)) return false; // never counted (M17): no line, no free_allowance_reached
   const allowance = freeLettersAllowance();
   if (hasPlus() || kept !== allowance) return false;
-  track('free_allowance_reached', { allowance: Math.min(100, allowance) });
+  track('plus:allowance_reach', { allowance: Math.min(100, allowance) });
   return allowance === 2;
 }

@@ -19,7 +19,7 @@ import { brand } from '@scribe/brand';
 import { ListRow, ListSection } from '@/components/ui/list-row';
 import { Text } from '@/components/ui/text';
 import { ownSubscription, planScreen, restoreResult } from '@/components/settings/plan.logic';
-import { useTheme } from '@/lib/a11y';
+import { announce, useTheme } from '@/lib/a11y';
 import { track } from '@/lib/analytics/track';
 import {
   askPlanReminderPermission,
@@ -86,7 +86,7 @@ export default function PlanSettings() {
   useEffect(() => {
     if (plan.plusOn && awaitingCode.current) {
       awaitingCode.current = false;
-      track('offer_code_redeemed', {});
+      track('plus:code_submit', {});
     }
   }, [plan.plusOn]);
 
@@ -122,6 +122,15 @@ export default function PlanSettings() {
   const notifications = useNotificationsAllowed();
   const remindable = plan.plusOn && plan.details.ownership === 'purchased' && plan.details.willAutoRenew !== false && (plan.details.status === 'trial' || plan.details.status === 'active');
   const showNotificationsOff = remindable && notifications.allowed === false;
+
+  // iOS VoiceOver ignores accessibilityLiveRegion, so the restore result and the notice are spoken when they appear (PER4-018).
+  const restoredText = restored?.text ?? null;
+  useEffect(() => {
+    if (restoredText) announce(restoredText);
+  }, [restoredText]);
+  useEffect(() => {
+    if (notice) announce(notice);
+  }, [notice]);
 
   const saveCopy = async () => {
     const c = purchaseConfirmation({
@@ -176,9 +185,9 @@ export default function PlanSettings() {
             testID="plan.seePlans"
             onPress={() =>
               run('store', async () => {
-                track('plus_offer_viewed', { trigger: 'settings' });
+                track('plus:offer_view', { trigger: 'settings' });
                 const outcome = await presentPlusStore();
-                if (outcome !== 'busy') track('plus_offer_closed', { trigger: 'settings', outcome });
+                if (outcome !== 'busy') track('plus:offer_end', { trigger: 'settings', outcome });
                 return outcome === 'purchased' ? billingCopy.gate.isOn : null;
               })
             }
@@ -236,7 +245,7 @@ export default function PlanSettings() {
             onPress={() =>
               run('restore', async () => {
                 const r = await restorePurchases();
-                track('restore_result', { outcome: r });
+                track('plus:restore_complete', { outcome: r });
                 setRestored(restoreResult(r));
                 return null;
               })

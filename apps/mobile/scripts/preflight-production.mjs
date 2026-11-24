@@ -22,7 +22,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { envFileProblems } from './env-file-guard.mjs';
-import { createReport, expo, packManifestPublished, parseJsonOut, privacyManifestDeclared, secretKind, signingKeys, updateChannelMessage, updateChannelProblems } from './preflight-lib.mjs';
+import { activityTypesOutsideAllowlist, createReport, ENTITLEMENT_ALLOWLIST, entitlementKeysOutsideAllowlist, expo, packManifestPublished, parseJsonOut, privacyManifestDeclared, secretKind, signingKeys, updateChannelMessage, updateChannelProblems } from './preflight-lib.mjs';
 
 export const PROFILE = 'production';
 
@@ -274,6 +274,23 @@ export function productionChecks(input) {
           ? `The ${PROFILE} profile has server features on but the evaluated config lacks the Sign in with Apple entitlement or the associated domains, or carries a Google URL scheme or plugin, which build 12 does not offer (found: ${found.join('; ') || 'none'}). app.config.ts signInCapable keeps them whenever server features are on.`
           : `The ${PROFILE} config carries ${found.join('; ')}, but this build offers no sign-in (guideline 2.5.19, "no hidden, dormant, or undocumented features"). app.config.ts signInCapable leaves them out of a production build with server features off.`,
       'sign-in',
+    );
+  }
+
+  // BL-1046 (NSC-02): the store build may carry only the entitlements on ENTITLEMENT_ALLOWLIST and only expo-router's
+  // activity type. Read from the introspected config (what prebuild writes). The plist's transport-security block is
+  // NOT read here: the introspected plist adds dev-client keys that the Release app strips, so it is checked on the
+  // generated Info.plist by preflight-testflight.mjs (forbiddenNativeProblems, id "ats").
+  if (!input.introspected) {
+    unverified(`Entitlement allowlist not checked: \`expo config --type introspect\` did not evaluate with the ${PROFILE} profile's env (the sign-in check says why).`, 'native-allowlist');
+  } else {
+    const extraEnt = entitlementKeysOutsideAllowlist(Object.keys(input.introspected?.ios?.entitlements ?? {}));
+    const extraAct = activityTypesOutsideAllowlist(input.introspected?.ios?.infoPlist?.NSUserActivityTypes ?? []);
+    check(
+      extraEnt.length === 0 && extraAct.length === 0,
+      `entitlements are only ${ENTITLEMENT_ALLOWLIST.map((k) => k.replace('com.apple.developer.', '')).join(', ')}, and the only user activity is expo-router's (NSC-02)`,
+      `The ${PROFILE} config carries ${[...extraEnt.map((k) => `entitlement ${k}`), ...extraAct.map((t) => `user activity ${t}`)].join('; ')}, which is not on the allowlist (ENTITLEMENT_ALLOWLIST in preflight-lib.mjs). A new capability needs security-architect's read first (NSC-02).`,
+      'native-allowlist',
     );
   }
 

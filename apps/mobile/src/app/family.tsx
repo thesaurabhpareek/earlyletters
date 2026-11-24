@@ -17,9 +17,9 @@
  * `killSwitches.invites` is on, Share again says invites are paused and sends nothing, and Cancel invite still
  * works (closing a link is the safe direction). While `killSwitches.sync` is on the list is not asked for, and
  * the rows shown stay. While the book has one parent and no invite is open it offers the invite card
- * (components/family/invite-card.tsx); with two (D-069) it offers nothing more. Build 2 has no Leave row (D-113):
- * a book this phone leaves is not listed anywhere yet, so the leaver's own letters would have no screen
- * (lib/family/entry.logic.ts LEAVE_BOOK_OFFERED). When the other parent leaves, one neutral note fades in once
+ * (components/family/invite-card.tsx); with two (D-069) it offers nothing more. With two parents it ends in one quiet Leave row
+ * (BL-1961, LEAVE_BOOK_OFFERED), plain text in `primary`, not red and not lit: the sheet it opens asks the real question. A
+ * sole parent has no row (`state.canLeave`). When the other parent leaves, one neutral note fades in once
  * and stays until dismissed (F11-REQ-023). Before sign-in the tab shows you alone, and the invite card opens the
  * invite sheet, whose first step is sign-in (trigger invite_create), and which comes back to the invite (PRD A F3.3a).
  *
@@ -57,9 +57,10 @@ import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { ModalHeader } from '@/components/ui/screen-header';
 import { Text } from '@/components/ui/text';
 import { useToast } from '@/components/ui/toast';
+import { announce } from '@/lib/a11y';
 import { PLUS_ALPHA } from '@/lib/billing/alpha';
 import { serverFeaturesEnabled } from '@/lib/capabilities';
-import { inviteDestination } from '@/lib/family/entry.logic';
+import { inviteDestination, LEAVE_BOOK_OFFERED } from '@/lib/family/entry.logic';
 import { useAuth } from '@/lib/auth/session-provider';
 import { ErrorLine, useColors } from '@/lib/auth/ui';
 import { copy, fill } from '@/lib/copy';
@@ -91,6 +92,18 @@ function RowAction({ label, icon, onPress, disabled, testID }: { label: string; 
       {/* shrink: at the largest text sizes the label wraps inside the row instead of running off the edge. */}
       <Text className="shrink text-base font-medium text-primary">{label}</Text>
     </Pressable>
+  );
+}
+
+/** The note that someone left. iOS VoiceOver ignores accessibilityLiveRegion, so the line is also spoken once when it appears (PER4-018). */
+function LeftNoteLine({ text }: { text: string }) {
+  useEffect(() => {
+    announce(text);
+  }, [text]);
+  return (
+    <View accessible accessibilityLiveRegion="polite" className="flex-1">
+      <Text variant="body">{text}</Text>
+    </View>
   );
 }
 
@@ -272,9 +285,7 @@ function FamilyShared() {
 
         {notes.map((m) => (
           <Animated.View key={m.id} entering={NOTE_IN} testID="family.leftNote" className="flex-row items-center gap-2 rounded-md bg-secondary py-2 pl-4 pr-1">
-            <View accessible accessibilityLiveRegion="polite" className="flex-1">
-              <Text variant="body">{m.signsAs.trim() ? fill(f.left.note, { signsAs: m.signsAs.trim(), child }) : fill(f.left.noteUnsigned, { child })}</Text>
-            </View>
+            <LeftNoteLine text={m.signsAs.trim() ? fill(f.left.note, { signsAs: m.signsAs.trim(), child }) : fill(f.left.noteUnsigned, { child })} />
             <IconButton
               testID="family.leftNote.close"
               icon={XIcon}
@@ -325,7 +336,15 @@ function FamilyShared() {
         {/* F11-U10: the inviter's line for a full book is create.full; errors.book_full is the invitee's. */}
         <ErrorLine message={shareNote ?? (error ? fill(error === 'book_full' ? f.create.full : f.errors[error], { child }) : null)} />
 
-        {/* No Leave row in build 2 (D-113): it returns, with left books listed under "Letters to {child}", before build 3. */}
+        {/* BL-1961: the book is listed under "Letters to {child}" once left, so Leave is offered again, with a co-parent only. */}
+        {LEAVE_BOOK_OFFERED && state.canLeave && (
+          <RowAction
+            testID="family.leave"
+            label={fill(familyCopy.leave.row, { child })}
+            icon={null}
+            onPress={() => router.push({ pathname: '/invite/leave', params: { childId: active.id } })}
+          />
+        )}
       </ScrollView>
     </SafeAreaView>
   );

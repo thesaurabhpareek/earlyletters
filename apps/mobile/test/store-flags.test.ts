@@ -4,7 +4,8 @@
  * The first test reads the real eas.json, so turning either flag on in preview, testflight or production fails
  * `npm test`, which runs on every pull request and in the release-ios.yml `checks` job before an RC build.
  */
-import { readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { resolveProfile, STORE_FLAGS, storeFlagMessage, storeFlagProblems, storeProfiles } from '../../../scripts/release/store-flags.mjs';
@@ -30,13 +31,14 @@ describe('photo and Find flags in store profiles (BL-958)', () => {
     expect(storeFlagProblems(realEas())).toEqual([]);
   });
 
-  it('names exactly the five flags, and production is never an allowed profile before G6', () => {
+  it('names exactly the six flags, and production is never an allowed profile before G6', () => {
     expect(STORE_FLAGS.map((f) => [f.env, f.card])).toEqual([
       ['EXPO_PUBLIC_PHOTOS', 'NS-01'],
       ['EXPO_PUBLIC_BOOK_SEARCH', 'NS-02'],
       ['EXPO_PUBLIC_NEW_DEVICE_EMAIL', 'NS-08'],
       ['EXPO_PUBLIC_BACKUP_LINE', 'NS-10'],
       ['EXPO_PUBLIC_SERVER_ERASE', 'BL-1854'],
+      ['EXPO_PUBLIC_ANALYTICS', 'BL-1886'],
     ]);
     for (const f of STORE_FLAGS) expect(f.allowedOn).not.toContain('production');
   });
@@ -73,7 +75,7 @@ describe('photo and Find flags in store profiles (BL-958)', () => {
     expect(resolveProfile({ a: { extends: 'b' }, b: { extends: 'a' } }, 'a')).not.toBeNull();
   });
 
-  it('[BL-1960] EXPO_PUBLIC_SERVER_ERASE is listed with allowedOn empty, so no store profile can turn it on', () => {
+  it('[BL-1987] EXPO_PUBLIC_SERVER_ERASE is listed with allowedOn empty, so no store profile can turn it on', () => {
     const row = STORE_FLAGS.find((f) => f.env === 'EXPO_PUBLIC_SERVER_ERASE');
     expect(row?.allowedOn).toEqual([]);
     for (const profile of ['preview', 'testflight', 'production']) {
@@ -84,6 +86,40 @@ describe('photo and Find flags in store profiles (BL-958)', () => {
     expect(storeFlagProblems(fixture({ development: { EXPO_PUBLIC_SERVER_ERASE: 'on' }, e2e: { EXPO_PUBLIC_SERVER_ERASE: 'on' } }))).toEqual([]);
     // The real eas.json carries it in no store profile (the first test also covers this through the whole table).
     expect(storeFlagProblems(realEas()).filter((p) => p.env === 'EXPO_PUBLIC_SERVER_ERASE')).toEqual([]);
+  });
+
+  it('[CR-178 4a][D-170][BL-1886] EXPO_PUBLIC_ANALYTICS is held: allowedOn is empty and any store profile that sets it on fails', () => {
+    const row = STORE_FLAGS.find((f) => f.env === 'EXPO_PUBLIC_ANALYTICS');
+    expect(row?.card).toBe('BL-1886');
+    expect(row?.allowedOn).toEqual([]);
+    for (const profile of ['preview', 'testflight', 'production']) {
+      const problems = storeFlagProblems(fixture({ [profile]: { EXPO_PUBLIC_ANALYTICS: 'on' } }));
+      expect(problems, profile).toEqual([{ profile, env: 'EXPO_PUBLIC_ANALYTICS', value: 'on', card: 'BL-1886' }]);
+    }
+    expect(storeFlagProblems(fixture({ production: { EXPO_PUBLIC_ANALYTICS: 'off' } }))).toEqual([]);
+    expect(storeFlagProblems(fixture({ development: { EXPO_PUBLIC_ANALYTICS: 'on' }, e2e: { EXPO_PUBLIC_ANALYTICS: 'on' } }))).toEqual([]);
+    // The real eas.json writes "off" in every profile today (BL-1867 turns preview and testflight on, with this row).
+    expect(storeFlagProblems(realEas()).filter((p) => p.env === 'EXPO_PUBLIC_ANALYTICS')).toEqual([]);
+  });
+
+  it('[BL-1886] a mutant that adds production to the analytics row fails the production-never check', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'store-flags-mutant-'));
+    try {
+      const src = readFileSync(join(APP, '..', '..', 'scripts', 'release', 'store-flags.mjs'), 'utf8');
+      const row = "env: 'EXPO_PUBLIC_ANALYTICS', card: 'BL-1886', allowedOn: Object.freeze([])";
+      expect(src).toContain(row);
+      const file = join(dir, 'store-flags.mjs');
+      writeFileSync(file, src.replace(row, "env: 'EXPO_PUBLIC_ANALYTICS', card: 'BL-1886', allowedOn: Object.freeze(['production'])"));
+      const mutant = await import(file);
+      // The mutant table lets a production profile carry the flag, which the real table refuses ...
+      const eas = fixture({ production: { EXPO_PUBLIC_ANALYTICS: 'on' } });
+      expect(mutant.storeFlagProblems(eas)).toEqual([]);
+      expect(storeFlagProblems(eas).map((p) => p.env)).toEqual(['EXPO_PUBLIC_ANALYTICS']);
+      // ... and the invariant the "six flags" test asserts is what turns red on the mutant.
+      expect(mutant.STORE_FLAGS.some((f: { allowedOn: string[] }) => f.allowedOn.includes('production'))).toBe(true);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   it('the TestFlight preflight fails on the same table for every store profile', () => {

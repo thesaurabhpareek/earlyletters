@@ -16,48 +16,53 @@ export const K_MIN = 10;
 
 /** Breakdowns the engine reads: event -> catalogue properties to split by. */
 export const BREAKDOWNS: Readonly<Partial<Record<EventName, readonly string[]>>> = {
-  transcription_completed: ['outcome', 'model'],
-  pack_download: ['stage', 'pack', 'failure', 'lang'],
-  machine_edit_rejected: ['reason', 'edit_type'],
-  machine_edit_reverted: ['edit_type'],
-  letter_saved: ['mode', 'destination'],
-  capture_discarded: ['stage'],
-  plus_offer_closed: ['outcome'],
-  plan_changed: ['to_state'],
-  language_set: ['lang', 'action'],
-  error_shown: ['code'],
-  sync_failed: ['reason'],
-  auth_failed: ['reason'],
-  invite_failed: ['reason'],
-  export_failed: ['reason'],
-  read_together_started: ['access'],
+  'capture:transcript_complete': ['outcome', 'model'],
+  'system:pack_download_update': ['stage', 'pack', 'failure', 'lang'],
+  'capture:edit_decline': ['reason', 'edit_type'],
+  'capture:edit_restore': ['edit_type'],
+  'capture:letter_save': ['mode', 'destination'],
+  'capture:take_cancel': ['stage'],
+  'plus:offer_end': ['outcome'],
+  'plus:plan_update': ['to_state'],
+  'me:language_update': ['lang', 'action'],
+  'system:error_view': ['code'],
+  'system:sync_fail': ['reason'],
+  'onboarding:sign_in_fail': ['reason'],
+  'family:invite_fail': ['reason'],
+  'keeping:export_fail': ['reason'],
+  'book:read_together_start': ['access'],
 };
 
 /** Events counted per week without a breakdown. */
 export const WEEKLY_EVENTS: readonly EventName[] = [
-  'app_opened',
-  'capture_started',
-  'capture_discarded',
-  'letter_saved',
-  'transcription_completed',
-  'pack_download',
-  'machine_edit_rejected',
-  'machine_edit_reverted',
-  'read_together_started',
-  'invite_created',
-  'plus_offer_viewed',
-  'plus_offer_closed',
-  'error_shown',
-  'sync_failed',
-  'export_started',
-  'export_failed',
+  'system:app_open',
+  'capture:take_start',
+  'capture:take_cancel',
+  'capture:letter_save',
+  'capture:transcript_complete',
+  'system:pack_download_update',
+  'capture:edit_decline',
+  'capture:edit_restore',
+  'book:read_together_start',
+  'family:invite_create',
+  'plus:offer_view',
+  'plus:offer_end',
+  'system:error_view',
+  'system:sync_fail',
+  'keeping:export_start',
+  'keeping:export_fail',
 ];
 
 const ident = (s: string) => {
   if (!/^[a-z][a-z0-9_]{0,39}$/.test(s)) throw new Error('hogql: bad identifier');
   return s;
 };
-const list = (xs: readonly string[]) => xs.map((x) => `'${ident(x)}'`).join(', ');
+/** An event name: a bare key, or a wire name `<area>:<object>_<verb>` (BL-2176). Only letters, digits, `_` and one `:`, so it cannot close a string. */
+const eventIdent = (s: string) => {
+  if (!/^(?:[a-z][a-z0-9]*:)?[a-z][a-z0-9_]{0,59}$/.test(s)) throw new Error('hogql: bad event name');
+  return s;
+};
+const list = (xs: readonly string[]) => xs.map((x) => `'${eventIdent(x)}'`).join(', ');
 const weeksBack = (w: number) => Math.min(104, Math.max(1, Math.floor(w)));
 
 export interface HogQLQuery {
@@ -81,10 +86,10 @@ LIMIT 10000`,
 export function breakdownQuery(event: EventName, dim: string, weeks: number): HogQLQuery {
   if (!(dim in EVENTS[event].props)) throw new Error('hogql: property not in catalogue');
   return {
-    name: `insights_${ident(event)}_by_${ident(dim)}`,
+    name: `insights_${eventIdent(event).replace(':', '_')}_by_${ident(dim)}`,
     query: `SELECT toStartOfWeek(timestamp, 1) AS week, toString(properties.${ident(dim)}) AS value, count() AS events, count(DISTINCT distinct_id) AS people
 FROM events
-WHERE timestamp >= now() - INTERVAL ${weeksBack(weeks)} WEEK AND event = '${ident(event)}' AND properties.${ident(dim)} IS NOT NULL
+WHERE timestamp >= now() - INTERVAL ${weeksBack(weeks)} WEEK AND event = '${eventIdent(event)}' AND properties.${ident(dim)} IS NOT NULL
 GROUP BY week, value
 HAVING people >= ${K_MIN}
 ORDER BY week, value
@@ -98,9 +103,9 @@ export function funnelQuery(weeks: number): HogQLQuery {
     query: `SELECT week, countIf(opened) AS opened, countIf(started) AS started, countIf(saved) AS saved
 FROM (
   SELECT toStartOfWeek(timestamp, 1) AS week, distinct_id,
-         max(event = 'app_opened') AS opened, max(event = 'capture_started') AS started, max(event = 'letter_saved') AS saved
+         max(event = 'system:app_open') AS opened, max(event = 'capture:take_start') AS started, max(event = 'capture:letter_save') AS saved
   FROM events
-  WHERE timestamp >= now() - INTERVAL ${weeksBack(weeks)} WEEK AND event IN ('app_opened', 'capture_started', 'letter_saved')
+  WHERE timestamp >= now() - INTERVAL ${weeksBack(weeks)} WEEK AND event IN ('system:app_open', 'capture:take_start', 'capture:letter_save')
   GROUP BY week, distinct_id
 )
 GROUP BY week

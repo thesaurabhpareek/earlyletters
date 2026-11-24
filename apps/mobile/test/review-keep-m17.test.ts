@@ -235,7 +235,7 @@ describe('review.tsx is wired to the M17 gate', () => {
   it('after the save, countAfterSave(finalText) decides the second-free line (the rule, words only, is tested in keep-step.test.ts)', () => {
     expect(save).toMatch(/\bif \(\s*await countAfterSave\(\s*finalText\s*\)\s*\)\s*setSecondFree\(true\)/);
     expect(save.indexOf('countAfterSave(')).toBeGreaterThan(save.indexOf('saveLetterFromDraft('));
-    expect(review).not.toMatch(/noteKept|track\('free_allowance_reached'/); // the note lives in countAfterSave only
+    expect(review).not.toMatch(/noteKept|track\('plus:allowance_reach'/); // the note lives in countAfterSave only
   });
 
   it('keeping the voice without words asks no gate with words, and never notes a free letter it did not count', () => {

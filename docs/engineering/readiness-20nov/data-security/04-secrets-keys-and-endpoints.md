@@ -47,6 +47,7 @@ Class: **S** secret (revoke on leak), **P** public by design, **I** identifier (
 | Name (purpose) | Class | Reads | Rotate | Notes |
 |---|---|---|---|---|
 | `PURGE_WORKER_SECRET` (bearer that lets cron start a purge run) | S | `purge-worker/handler.ts:4` | yearly, on suspicion | a leak can start a run, nothing more |
+| `OPS_HEALTH_TOKEN` (bearer that lets the outside purge watch read two numbers; BL-584, CR-209) | S | `ops-health/handler.ts` (holder 2: GitHub Environment `ops-watch`, secrets `OPS_HEALTH_TOKEN` and `OPS_HEALTH_URL`, read by `scripts/ops/purge-watch.ts` in the proposed `purge-watch.yml`) | yearly, on suspicion (`SECURITY.md` 2.7) | a leak tells an attacker whether purge is stale; no Supabase key is stored in GitHub |
 | `RESEND_API_KEY` (send deletion emails and ops alerts; sending-only) | S | `purge-worker/config.ts:46` | yearly | not the SMTP key; `RESEND_CONTACTS` left unset so no list scope is needed |
 | `POSTHOG_PERSONAL_API_KEY` (delete persons; scope `person:write` only) and `POSTHOG_PROJECT_ID` (I), `POSTHOG_HOST` | S, I | `analytics-forget/handler.ts:83-86` | yearly | the app's PostHog **project** key is P and absent from v1.0 builds |
 | `APPLE_SIGNIN_PRIVATE_KEY` (.p8), `APPLE_SIGNIN_KEY_ID` (I), `APPLE_TEAM_ID` (I), `APPLE_SERVICES_ID` (I, optional) | S, I | `apple-token/handler.ts:106-107`, `purge-worker/config.ts:59-60` | with the key | exchanges the Apple code, revokes tokens on deletion |
@@ -181,6 +182,7 @@ Exposed schemas are `public` only (`SECURITY.md:124`); `ops`, `insights`, `sync_
 | `config` | `GET /` | anyone | none, signed documents | cache policy; GET, HEAD, OPTIONS only (`serve.ts:91-97`) | signed remote config and pack manifest | off, by design |
 | `content` | `GET` | anyone | none, signed documents | same | signed content bundles | off, by design |
 | `purge-worker` | `POST` (`run`, `daily`), `GET /health` | cron only | bearer, constant-time compare (`handler.ts:4`) | body at most 1 KB; answers 202 and works in the background | counts only; health is 200 or 503 and starts nothing | off (the bearer is not a JWT) |
+| `ops-health` | `GET` | the outside purge watch (scheduled GitHub job), once deployed by the founder | bearer `OPS_HEALTH_TOKEN`, constant-time compare, checked first (`handler.ts`) | GET only; no body read; the platform's own limits | `{purge_run_age_minutes, failed_cron_runs}` and nothing else | off, by design; no health route |
 | `escrow` (project `scribe-escrow`) | `POST /escrow/v1/restore-requests`, `.../<id>/release`, `/rotate` | the app, later | the caller's token from the main project, verified against its JWKS (`jwt.ts`); rotate also needs `ESCROW_TASK_SECRET` | switch `ESCROW_SWITCH`, `app.escrow_enabled`, fresh sign-in for a new request, one email per opening | sealed keys, only after the log row exists | off (token comes from another project) |
 
 `NO_VERIFY_JWT = ['config', 'content', 'purge-worker']` in `.github/scripts/functions-deploy.mjs:41`; a test fails if a function's `index.ts` deploy line disagrees (`functions-deploy.test.mjs`). `escrow` is never deployed by CI (`escrow/index.ts:2-5`). [V]

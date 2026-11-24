@@ -10,6 +10,7 @@
     "test:coverage": "vitest run --config vitest.coverage.config.ts",
     "typecheck": "tsc --noEmit",
     "plan": "tsx scripts/plan.ts",
+    "wire-names": "tsx scripts/wire-names.ts",
     "insights": "tsx ../../scripts/insights/run.ts"
   },
   "devDependencies": {

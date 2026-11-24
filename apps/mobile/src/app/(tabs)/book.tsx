@@ -38,6 +38,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { billingCopy } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
 import { BookCover } from '@/components/book/book-cover';
+import { joinLastTwoWords } from '@/components/onboarding/finale-title.logic';
 import { BlurSurface } from '@/components/platform/blur-surface';
 import { CardSource, useHiddenBehindCardPage } from '@/components/motion/card-transition';
 import { Button, IconButton } from '@/components/ui/button';
@@ -46,7 +47,6 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Lamp } from '@/components/ui/lamp';
 import { PinnedActionLayout } from '@/components/ui/pinned-action';
 import { useToast } from '@/components/ui/toast';
-import { childIndexOf, track, trackBookOpened } from '@/lib/analytics/track';
 import { authCopy } from '@/lib/auth/copy';
 import { ARRIVAL_SETTING, ARRIVAL_SHOWN, BACKUP_LINE_DONE, BACKUP_LINE_SETTING, arrivalLineOwed, backupLineOwed } from '@/lib/first-run/new-phone.logic';
 import { backupInBuild } from '@/lib/backup/gate';
@@ -57,7 +57,7 @@ import { downloadingLine } from '@/lib/models/speech-download.logic';
 import { planFor } from '@/lib/models/speech-packs';
 import { springConfig, useMotion } from '@/lib/motion';
 import { isReadItBack } from '@/lib/read-it-back';
-import { deleteEntry, getSetting, listBookEntries, countBookLetters, setSetting, subscribe, todayISO, undeleteEntry, type Entry } from '@/lib/store';
+import { deleteEntry, getSetting, listBookEntries, setSetting, subscribe, todayISO, undeleteEntry, type Entry } from '@/lib/store';
 import { languageFor } from '@/lib/transcription-queue';
 import { useSpeechDownload, useWordsJob } from '@/lib/transcription-queue/use-words';
 import { bookHandoff, createArrivalGate, watchBook, firstBookViewThisSession, firstSeen, parseSeen, secondFreeOnArrival, withLeaving } from '@/components/book/book.logic';
@@ -253,8 +253,8 @@ export default function Book() {
             testID: 'book.undo',
             onPress: () => {
               deleteToastUp.current = false;
-              track('letter_deleted', { action: 'restored', destination: gone.inBook ? 'book' : 'private' });
-              undeleteEntry(gone.id);
+              // BL-1959: Undo is a restore; a left book refuses it, so no wash, and the toast says so. No analytics event (CR-225).
+              if (!undeleteEntry(gone.id)) return toast.show({ message: copy.settings.delete.restoreRefusedToast });
               wash([gone.id]);
             },
           },
@@ -272,15 +272,8 @@ export default function Book() {
     }, [toast, wash]),
   );
 
-  // book_opened each time the Book tab comes into view for a book (bucketed letter count only).
+  // The Book tab coming into view is the `screen_view` of the generated name `book:book_screen_view`, not an event of its own (BL-2175).
   const activeId = active?.id ?? null;
-  useFocusEffect(
-    useCallback(() => {
-      if (!activeId) return;
-      const letters = countBookLetters(activeId);
-      trackBookOpened({ childIndex: childIndexOf(activeId), letters, role: 'parent' });
-    }, [activeId]),
-  );
 
   // Choosing another book cross-fades the Book's content over 200 ms (S25); the first book shows without a fade.
   const shownChild = useRef<string | null>(null);
@@ -381,7 +374,7 @@ export default function Book() {
   const open = (id: string) => router.push({ pathname: '/letter/[id]', params: { id } });
   // Remove a quiet-day mark: reversible, with Undo (COMPONENTS 2.14).
   const removeMark = (id: string) => {
-    deleteEntry(id);
+    if (!deleteEntry(id)) return; // nothing was removed (a left book, BL-1959): no "removed" line, no Undo
     toast.show({ message: copy.book.quietDay.removedToast, action: { label: copy.notMuch.undo, onPress: () => undeleteEntry(id) } });
   };
 
@@ -490,7 +483,7 @@ export default function Book() {
               <View className="items-center">
                 <BookCover name={child} signsAs={active.signsAs} size="lg" animate={false} />
               </View>
-              <EmptyState align="start" title={copy.book.empty.bookTitle} body={fill(copy.book.empty.bookBody, { child })} />
+              <EmptyState align="start" title={joinLastTwoWords(copy.book.empty.bookTitle)} body={fill(copy.book.empty.bookBody, { child })} />
             </PinnedActionLayout>
           </View>
         ) : (

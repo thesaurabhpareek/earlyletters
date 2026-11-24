@@ -6,7 +6,7 @@
  *   trackLetterSaved({ mode: 'spoken', inBook: false, childIndex: 0, ... });
  *
  * Events whose properties are plain enums use `track` directly:
- *   track('error_shown', { code: 'save_failed' });
+ *   track('system:error_view', { code: 'save_failed' });
  *
  * Every helper is a no-op until the person says yes. Where each one is called
  * from is listed in docs/analytics/TRACKING_PLAN.md section 9 ("To wire").
@@ -34,7 +34,6 @@ export const {
   trackCaptureStarted,
   trackCaptureDiscarded,
   trackTranscriptionCompleted,
-  trackBookOpened,
   trackReadTogetherStarted,
   trackReadTogetherEnded,
   trackInviteCreated,
@@ -44,7 +43,6 @@ export const {
   trackExportFailed,
   trackReminderSchedule,
   trackMachineEditsRejected,
-  trackColdStart,
   trackLanguageSet,
   trackPackDownload,
 } = trackers;

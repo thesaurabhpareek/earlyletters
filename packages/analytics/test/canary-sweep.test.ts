@@ -43,25 +43,23 @@ const E = (ev: keyof typeof EVENTS, p: string): string => {
 
 /** One valid input per tracker; the sweep replaces one leaf at a time with each canary. */
 const VALID: Record<string, unknown> = {
-  trackLetterSaved: { mode: 'spoken', inBook: true, childIndex: 0, role: 'parent', promptKind: null, audioMs: 4000, wordCount: 30, machineEdits: 1, editsReverted: 0, editsRejected: 0, engine: E('letter_saved', 'engine'), fromNotificationWithin2h: false },
-  trackCaptureStarted: { mode: 'typed', source: E('capture_started', 'source'), promptKind: null, childIndex: 0, role: 'parent' },
-  trackMomentsCard: { action: 'tapped', slot: E('moments_card_tapped', 'slot') },
+  trackLetterSaved: { mode: 'spoken', inBook: true, childIndex: 0, role: 'parent', promptKind: null, audioMs: 4000, wordCount: 30, machineEdits: 1, editsReverted: 0, editsRejected: 0, engine: E('capture:letter_save', 'engine'), fromNotificationWithin2h: false },
+  trackCaptureStarted: { mode: 'typed', source: E('capture:take_start', 'source'), promptKind: null, childIndex: 0, role: 'parent' },
+  trackMomentsCard: { action: 'tapped', slot: E('book:moments_card_open', 'slot') },
   trackCaptureDiscarded: { mode: 'spoken', stage: 'review', audioMs: 4000 },
-  trackTranscriptionCompleted: { engine: E('transcription_completed', 'engine'), modelId: null, audioMs: 4000, latencyMs: 900, outcome: E('transcription_completed', 'outcome') },
-  trackBookOpened: { childIndex: 0, letters: 3, role: 'parent' },
+  trackTranscriptionCompleted: { engine: E('capture:transcript_complete', 'engine'), modelId: null, audioMs: 4000, latencyMs: 900, outcome: E('capture:transcript_complete', 'outcome') },
   trackReadTogetherStarted: { childIndex: 0, access: 'free', letters: 3 },
   trackReadTogetherEnded: { reason: 'finished', durationMs: 60000, lettersHeard: 2 },
-  trackInviteCreated: { role: 'parent', channel: E('invite_created', 'channel'), shared: true, childIndex: 0 },
+  trackInviteCreated: { role: 'parent', channel: E('family:invite_create', 'channel'), shared: true, childIndex: 0 },
   trackInviteAccepted: { role: 'parent' },
   trackExportStarted: { letters: 3 },
   trackExportCompleted: { bytes: 5000000, durationMs: 9000 },
-  trackExportFailed: { reason: E('export_failed', 'reason') },
+  trackExportFailed: { reason: E('keeping:export_fail', 'reason') },
   trackReminderSchedule: { enabled: true, cadence: 'weekly', hour: 20, paused: false },
-  trackMachineEditsRejected: [{ edit: { type: E('machine_edit_rejected', 'edit_type'), source: E('machine_edit_rejected', 'source') }, reason: E('machine_edit_rejected', 'reason') }],
-  trackColdStart: { ttfiMs: 900 },
+  trackMachineEditsRejected: [{ edit: { type: E('capture:edit_decline', 'edit_type'), source: E('capture:edit_decline', 'source') }, reason: E('capture:edit_decline', 'reason') }],
   trackAnalyticsOptedIn: { surface: 'settings', now: 2e12, firstLaunchAt: 1e12, firstLetterAt: 1.5e12, firstLetterMode: 'typed', letters: 3, signedIn: true, role: 'parent', cameFromInvite: false },
   trackLanguageSet: { lang: 'pt', action: 'added' },
-  trackPackDownload: { packId: 'text-rules.pt', version: 2, stage: 'started', network: E('pack_download', 'network') },
+  trackPackDownload: { packId: 'text-rules.pt', version: 2, stage: 'started', network: E('system:pack_download_update', 'network') },
 };
 
 function leafVariants(v: unknown): unknown[] {
@@ -126,8 +124,8 @@ const REAL: Path[] = [
   },
   (c) => {
     const see = pkg.createPlanObserver(c.analytics);
-    see({ state: E('plan_changed', 'to_state'), period: null, ownership: null, environment: 'production', checked: true } as never);
-    for (const x of S) { see({ state: x, period: x, ownership: x, environment: 'production', checked: true } as never); see({ state: E('plan_changed', 'to_state'), period: null, ownership: null, environment: 'production', checked: true } as never); }
+    see({ state: E('plus:plan_update', 'to_state'), period: null, ownership: null, environment: 'production', checked: true } as never);
+    for (const x of S) { see({ state: x, period: x, ownership: x, environment: 'production', checked: true } as never); see({ state: E('plus:plan_update', 'to_state'), period: null, ownership: null, environment: 'production', checked: true } as never); }
   },
   (c) => {
     const see = pkg.createReminderObserver(c.analytics);
@@ -214,13 +212,13 @@ describe('canary sweep (J-N18)', () => {
   });
 
   it('[J-N18] positive control: a tracker that writes to the provider around the validator turns the sweep red', async () => {
-    const leaky: Path = (c) => exerciseTrackers(c, (x) => ({ ...(createTrackers(x.analytics) as unknown as TrackerSet), trackBookOpened: (i: never) => void x.provider.capture('book_opened', { member_role: (i as { role: string }).role }) }));
+    const leaky: Path = (c) => exerciseTrackers(c, (x) => ({ ...(createTrackers(x.analytics) as unknown as TrackerSet), trackInviteAccepted: (i: never) => void x.provider.capture('family:invite_accept', { role: (i as { role: string }).role }) }));
     const r = await sweep([leaky]);
     expect(r.hits(ALL)).toEqual(expect.arrayContaining(['asha', 'zz-test-album', 'zz-test-file']));
   });
 
   it('[J-N18] positive control: a violation report that echoes a key turns the sweep red', async () => {
-    const r = await sweep([(c) => void c.trace.push({ kind: 'unknown_property', event: 'letter_saved', property: C.name })]);
+    const r = await sweep([(c) => void c.trace.push({ kind: 'unknown_property', event: 'capture:letter_save', property: C.name })]);
     expect(r.hits(ALL)).toContain('asha');
   });
 });

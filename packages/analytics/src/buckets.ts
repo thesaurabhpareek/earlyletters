@@ -8,18 +8,17 @@ import { V1_LANGUAGES, type Lang } from './catalog';
 
 type PropValues<E extends keyof Catalog, P extends keyof Catalog[E]['props']> = Catalog[E]['props'][P] extends { values: readonly (infer V)[] } ? V : never;
 
-export type AudioBucket = PropValues<'letter_saved', 'audio_bucket'>;
-export type WordsBucket = PropValues<'letter_saved', 'words_bucket'>;
-export type LettersBucket = PropValues<'book_opened', 'letters_bucket'>;
-export type LatencyBucket = PropValues<'transcription_completed', 'latency_bucket'>;
-export type DaysBucket = PropValues<'app_opened', 'days_since_last_open'>;
-export type SessionBucket = PropValues<'app_backgrounded', 'session_bucket'>;
-export type TtfiBucket = PropValues<'app_cold_start', 'ttfi_bucket'>;
-export type FirstLetterBucket = PropValues<'analytics_opted_in', 'time_to_first_letter'>;
-export type ExportSizeBucket = PropValues<'export_completed', 'size_bucket'>;
-export type ExportDurationBucket = PropValues<'export_completed', 'duration_bucket'>;
-export type ChildOrdinal = PropValues<'letter_saved', 'child_ordinal'>;
-export type HourBucket = PropValues<'reminder_schedule_set', 'hour_bucket'>;
+export type AudioBucket = PropValues<'capture:letter_save', 'audio_bucket'>;
+export type WordsBucket = PropValues<'capture:letter_save', 'words_bucket'>;
+export type LettersBucket = PropValues<'book:read_together_start', 'letters_bucket'>;
+export type LatencyBucket = PropValues<'capture:transcript_complete', 'latency_bucket'>;
+export type DaysBucket = PropValues<'system:app_open', 'days_since_last_open'>;
+export type SessionBucket = PropValues<'book:read_together_end', 'session_bucket'>;
+export type FirstLetterBucket = PropValues<'system:analytics_consent_accept', 'time_to_first_letter'>;
+export type ExportSizeBucket = PropValues<'keeping:export_complete', 'size_bucket'>;
+export type ExportDurationBucket = PropValues<'keeping:export_complete', 'duration_bucket'>;
+export type ChildOrdinal = PropValues<'capture:letter_save', 'child_ordinal'>;
+export type HourBucket = PropValues<'notifications:schedule_update', 'hour_bucket'>;
 
 const SEC = 1000;
 const MIN = 60 * SEC;
@@ -84,14 +83,6 @@ export function sessionBucket(ms: number): SessionBucket {
   if (v < 5 * MIN) return '1_5m';
   if (v < 15 * MIN) return '5_15m';
   return 'gt_15m';
-}
-
-export function ttfiBucket(ms: number): TtfiBucket {
-  const v = n(ms);
-  if (v < SEC) return 'lt_1s';
-  if (v < 2 * SEC) return '1_2s';
-  if (v < 3 * SEC) return '2_3s';
-  return 'gt_3s';
 }
 
 /** Time from first launch to the first saved letter; `unknown` when either time is missing. */

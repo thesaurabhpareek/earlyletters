@@ -78,7 +78,7 @@ export function AddChildForm() {
     const signsAs = getActiveChild()?.signsAs ?? '';
     const child = addChild({ ...values, signsAs });
     setActiveChildId(child.id);
-    track('child_added', { has_date: true, child_ordinal: ordinalOf(child.id), in_first_run: false, added_together: false });
+    track('onboarding:book_create', { has_date: true, child_ordinal: ordinalOf(child.id), in_first_run: false, added_together: false });
     haptic('success');
     router.dismissTo('/book');
   };

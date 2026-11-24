@@ -18,11 +18,13 @@
  * src/lib/remote) says what exists; nothing unsigned is ever installed.
  */
 import { useEffect, useState } from 'react';
+import { Platform } from 'react-native';
 import { getSetting, setSetting } from '../store';
 import { APP_VERSION, getPackManifest, getRemoteConfig, onManifestUpdated, packManifestDoc } from '../remote';
 import { appSupportDir } from './app-support';
 import { PackManager, type EnsureOptions, type EnsureResult, type InstalledPack, type PackProgress } from './engine';
 import { expoNetwork, expoPackHttp, ExpoPackFs } from './expo-adapter';
+import { WebPackFs } from './web-fs';
 
 export type { EnsureOptions, EnsureResult, InstalledPack, PackFailure, PackPhase, PackProgress } from './engine';
 export { CELLULAR_FREE_BYTES } from './engine';
@@ -32,13 +34,17 @@ let manager: PackManager | null = null;
 function packs(): PackManager {
   if (manager) return manager;
   const root = appSupportDir('packs').dir.uri;
+  // BL-2174: on web there is no pack folder and no signed manifest is fetched; the manager sees an empty, in-memory
+  // phone, so nothing is installed, nothing downloads and `ensurePack` answers `no_manifest` instead of throwing.
+  const web = Platform.OS === 'web';
   manager = new PackManager({
-    fs: new ExpoPackFs(root),
+    fs: web ? new WebPackFs(root) : new ExpoPackFs(root),
     http: expoPackHttp,
     network: expoNetwork,
     settings: { get: getSetting, set: setSetting },
     appVersion: APP_VERSION,
     manifest: async () => {
+      if (web) return null;
       // A manifest older than the refresh interval is refreshed first; failures fall back to the last good copy.
       await packManifestDoc.refresh().catch(() => undefined);
       return getPackManifest();

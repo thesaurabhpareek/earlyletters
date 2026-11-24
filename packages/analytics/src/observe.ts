@@ -20,7 +20,7 @@ type Track = Pick<Analytics, 'track'>;
 // Auth (apps/mobile src/lib/auth machine.logic.ts AuthState)
 // ---------------------------------------------------------------------------
 
-export type AuthMethodValue = V<'auth_method_selected', 'method'>;
+export type AuthMethodValue = V<'onboarding:sign_in_fail', 'method'>;
 
 export type AuthLike =
   | { status: 'restoring' }
@@ -36,8 +36,8 @@ const AUTH_REASONS = new Set<string>([
   'cancelled', 'network', 'expired', 'wrong_code', 'code_paused', 'rate_limited', 'invalid_email',
   'not_available', 'provider', 'session_expired', 'consent_unavailable', 'unknown',
 ]);
-const authReason = (e: string | undefined): V<'auth_failed', 'reason'> =>
-  (e && AUTH_REASONS.has(e) ? e : 'unknown') as V<'auth_failed', 'reason'>;
+const authReason = (e: string | undefined): V<'onboarding:sign_in_fail', 'reason'> =>
+  (e && AUTH_REASONS.has(e) ? e : 'unknown') as V<'onboarding:sign_in_fail', 'reason'>;
 
 const SIGNED_IN = new Set(['checkingConsent', 'needsConsent', 'ready', 'signingOut']);
 
@@ -54,7 +54,6 @@ export interface AuthObserverOptions {
 export function createAuthObserver(a: Track, opts: AuthObserverOptions): (next: AuthLike) => void {
   let prev: AuthLike = { status: 'restoring' };
   let method: AuthMethodValue | null = null;
-  let attempts = 0;
 
   return (next) => {
     const p = prev;
@@ -65,31 +64,27 @@ export function createAuthObserver(a: Track, opts: AuthObserverOptions): (next: 
     }
     if (next.status === 'signingIn' && (p.status !== 'signingIn' || p.method !== next.method)) {
       method = next.method;
-      attempts = 0;
-      a.track('auth_method_selected', { method: next.method });
       return;
     }
     if (next.status === 'awaitingCode') {
-      if (p.status !== 'awaitingCode' || p.sentAt !== next.sentAt) {
-        attempts = Math.min(10, attempts + 1);
-        a.track('auth_email_sent', { attempt: attempts });
-      } else if (next.error && next.error !== p.error) {
-        a.track('auth_failed', { method: 'email', reason: authReason(next.error) });
+      // A code being sent is not an event (`auth_email_sent` is retired, BL-2175); a new error on the same code is.
+      if (p.status === 'awaitingCode' && p.sentAt === next.sentAt && next.error && next.error !== p.error) {
+        a.track('onboarding:sign_in_fail', { method: 'email', reason: authReason(next.error) });
       }
       return;
     }
     if (next.status === 'signedOut' && (p.status === 'signingIn' || p.status === 'awaitingCode')) {
-      a.track('auth_failed', { method: method ?? (p.status === 'awaitingCode' ? 'email' : 'apple'), reason: next.error ? authReason(next.error) : 'cancelled' });
+      a.track('onboarding:sign_in_fail', { method: method ?? (p.status === 'awaitingCode' ? 'email' : 'apple'), reason: next.error ? authReason(next.error) : 'cancelled' });
       return;
     }
     if (next.status === 'checkingConsent' && next.method && !SIGNED_IN.has(p.status)) {
-      a.track('auth_succeeded', { method: next.method, had_local_data: opts.hasLocalLetters() });
+      a.track('onboarding:sign_in_complete', { method: next.method, had_local_data: opts.hasLocalLetters() });
       return;
     }
     if (next.status === 'signedOut' && SIGNED_IN.has(p.status)) {
       // A forced re-sign-in (remote config epoch, BL-597) is the founder ending the session, not the person: counted as lost, so the allowlist gains no value.
       const reason = p.status === 'signingOut' && p.reason !== 'force_reauth' ? p.reason : 'session_lost';
-      a.track('signed_out', { reason });
+      a.track('me:session_end', { reason });
     }
   };
 }
@@ -128,7 +123,7 @@ export interface PackProgressLike {
   id: string;
   version: number | null;
   phase: 'queued' | 'waiting_for_wifi' | 'downloading' | 'verifying' | 'installing' | 'installed' | 'failed' | 'cancelled' | 'removed';
-  failure?: V<'pack_download', 'failure'>;
+  failure?: V<'system:pack_download_update', 'failure'>;
 }
 
 /**
@@ -136,7 +131,7 @@ export interface PackProgressLike {
  * `failed` or `cancelled`; removed: `removed`. Waiting for Wi-Fi is not a
  * failure. Progress ticks are ignored.
  */
-export function createPackObserver(a: Track, network: () => V<'pack_download', 'network'>): (p: PackProgressLike) => void {
+export function createPackObserver(a: Track, network: () => V<'system:pack_download_update', 'network'>): (p: PackProgressLike) => void {
   const t = createTrackers(a);
   const active = new Map<string, number | null>();
   return (p) => {
@@ -163,7 +158,7 @@ export function createPackObserver(a: Track, network: () => V<'pack_download', '
 // Plan (src/lib/billing getPlan: view.state, details.period, details.ownership)
 // ---------------------------------------------------------------------------
 
-export type PlanStateValue = V<'plan_changed', 'to_state'>;
+export type PlanStateValue = V<'plus:plan_update', 'to_state'>;
 
 export interface PlanLike {
   state: PlanStateValue;
@@ -187,7 +182,7 @@ export function createPlanObserver(a: Track): (p: PlanLike) => void {
     const from = prev;
     prev = p.state;
     if (p.environment !== 'production') return;
-    a.track('plan_changed', {
+    a.track('plus:plan_update', {
       from_state: from,
       to_state: p.state,
       period: p.period ?? 'unknown',
@@ -231,7 +226,7 @@ export function createReminderObserver(a: Track): (p: ReminderPrefsLike) => void
  * (`kind` monthAge or birthday) are never reported: their timing reveals the
  * birth date (TRACKING_PLAN 6.4). Unknown payloads send nothing.
  */
-export function notificationOpenedEvent(data: unknown): EventProps<'notification_opened'> | null {
+export function notificationOpenedEvent(data: unknown): EventProps<'notifications:notification_open'> | null {
   if (!data || typeof data !== 'object') return null;
   const d = data as { kind?: unknown; variant?: unknown };
   if (d.kind !== 'evening') return null;
@@ -241,5 +236,5 @@ export function notificationOpenedEvent(data: unknown): EventProps<'notification
 
 export function trackNotificationOpened(a: Track, data: unknown): TrackResult | 'not_sent' {
   const props = notificationOpenedEvent(data);
-  return props ? a.track('notification_opened', props) : 'not_sent';
+  return props ? a.track('notifications:notification_open', props) : 'not_sent';
 }

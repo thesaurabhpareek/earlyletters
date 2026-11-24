@@ -128,7 +128,7 @@ function PlayableRecording({
   const toggle = () => {
     // Only your own recordings play in v1.0, so the author is always you.
     if (!p.playing)
-      track('playback_started', {
+      track('book:playback_start', {
         surface: context === 'readTogether' ? 'read_together' : 'letter',
         author_relation: 'self',
         version: choice.source === 'original' ? 'original' : 'listening_copy',
@@ -137,7 +137,7 @@ function PlayableRecording({
   };
 
   const chooseOriginal = (on: boolean) => {
-    track('settings_changed', { key: 'listening_copy' });
+    track('me:setting_update', { key: 'listening_copy' });
     setHandoff({ at: handoffPosition(p.position, null), play: p.playing });
     setPreferOriginal(on);
     setPrefersOriginal(on);

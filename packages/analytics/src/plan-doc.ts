@@ -4,7 +4,7 @@
  * @scribe/analytics` rewrites the block between the markers; a test fails if
  * the file's block differs from this output.
  */
-import { EVENTS, GLOBAL_PROPS } from './catalog';
+import { EVENTS, GLOBAL_PROPS, HELD_EVENTS } from './catalog';
 import type { EventSpec, PropSpec } from './schema';
 import { AREAS, ID_KINDS, ID_KIND_CAP, ID_ROWS, type IdRow } from './ids';
 
@@ -25,7 +25,11 @@ export function renderProp(name: string, p: PropSpec): string {
 export function renderCatalogue(): string {
   const entries = Object.entries(EVENTS) as [string, EventSpec][];
   const areas = [...new Set([...AREA_ORDER, ...entries.map(([, e]) => e.area)])].filter((a) => entries.some(([, e]) => e.area === a));
-  const out: string[] = [`${entries.length} events. Every event also carries the global properties in 3.2. \`?\` marks an optional property. Every event and property is L2.`, ''];
+  const held = Object.keys(HELD_EVENTS).sort();
+  const out: string[] = [
+    `${entries.length} events: ${entries.length - held.length} sendable (one definition each, in packages/analytics/src/registry.ts) and ${held.length} held. Every event also carries the global properties in 3.2. \`?\` marks an optional property. Every event and property is L2.`,
+    '',
+  ];
   for (const area of areas) {
     out.push(`#### ${area}`, '', '| Event | Fires when | Properties (type: allowed values) | Serves |', '|---|---|---|---|');
     for (const [name, e] of entries.filter(([, x]) => x.area === area)) {
@@ -34,6 +38,10 @@ export function renderCatalogue(): string {
     }
     out.push('');
   }
+  out.push(
+    `Held, not sendable (${held.length}; typed in catalog.ts for call sites that still exist, dropped and counted at run time until each gets a registry row with a decision, a plan row and a privacy look, or is removed): ${held.map((h) => `\`${h}\``).join(', ')}.`,
+    '',
+  );
   out.push('Global properties: ' + Object.entries(GLOBAL_PROPS).map(([k, p]) => renderProp(k, p)).join(', ') + '.');
   return out.join('\n');
 }

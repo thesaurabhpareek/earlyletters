@@ -643,7 +643,7 @@ describe('the wiring that is read off the source (the behaviour is run in accoun
   it('[S-2] the Delete account hook notes the request when the server answers it, before anything that can wait or fail, and notes a cancel', () => {
     const s = read('lib', 'account-deletion', 'use-account-deletion.ts');
     expect(s).toContain('recordRequested(r.value);');
-    expect(s.indexOf('recordRequested(r.value);')).toBeLessThan(s.indexOf("analytics.track('account_deletion'"));
+    expect(s).not.toMatch(/analytics\.track\(/); // no event is sent for the deletion flow (BL-2175)
     expect(s.indexOf('recordRequested(r.value);')).toBeLessThan(s.indexOf('await withdrawAnalytics()'));
     expect(s).toContain('recordCancelled();');
     expect(s.indexOf('const r = await cancelDeletion(client);')).toBeLessThan(s.indexOf('recordCancelled();'));
@@ -656,7 +656,7 @@ describe('the wiring that is read off the source (the behaviour is run in accoun
     const s = read('components', 'settings', 'open-deletion.tsx');
     expect(s).toContain("kind={working ? 'loading' : failure ? 'error' : 'empty'}");
     expect(s).toContain('const failure = press.acted ? failureLine(d.error) : null;');
-    expect(s).toContain('announce(`${c.open.restoringTitle}. ${c.open.restoringBody}`);');
+    expect(s).toContain('ctl.say(`${c.open.restoringTitle}. ${c.open.restoringBody}`);');
     expect(s).toContain('if (press.failedPresses > 0 && failure) announce(failure);');
     expect(s).toContain('cancel: () => ctl.cancel(),');
     expect(s).toContain('retry: () => ctl.retry(),');
@@ -682,7 +682,7 @@ describe('the routes use the gate', () => {
     const s = read('components', 'settings', 'open-deletion.tsx');
     // Scheduled and held say first that the request stays open; executing has nothing to promise and signs out at once.
     expect(s).toContain("signOut: () => (request.state === 'executing' ? void d.signOut() : confirmSignOut(date, () => void d.signOut())),");
-    expect(s).toContain("signIn: () => router.push({ pathname: '/sign-in', params: { trigger: 'settings' } }),");
+    expect(s).toContain("signIn: () => router.push({ pathname: '/sign-in', params: deletionSignInParams(request.state) }),");
     expect(s).not.toMatch(/'\/settings|addChild|\/onboarding|\/book'/);
     expect(s).toContain('<StateScreen');
   });

@@ -1,0 +1,18 @@
+// Positive control for [NS-33-R11] (BL-1915): a typed constant (`const P: typeof Image = withUniwind(Image)`) and the
+// generic call `withUniwind<P>(Image)`, both withUniwind (the real wrapper idiom), plus a typed plain alias. No prop.
+import { Image } from 'react-native';
+import { withUniwind } from 'uniwind';
+const Typed: typeof Image = withUniwind(Image);
+const Generic = withUniwind<{ uri: string }>(Image);
+const Both: typeof Image = withUniwind<{ uri: string }>(Image);
+const Alias: typeof Image = Image;
+export function Bad({ uri }: { uri: string }) {
+  return (
+    <>
+      <Typed source={{ uri }} />
+      <Generic source={{ uri }} />
+      <Both source={{ uri }} />
+      <Alias source={{ uri }} />
+    </>
+  );
+}

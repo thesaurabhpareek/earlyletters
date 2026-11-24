@@ -134,7 +134,7 @@ import { ReviewPhoto } from '@/components/photos/review-photo';
 import { commitPendingPhoto } from '@/lib/photos/hooks';
 import { languageCleanOptions, rulesForLanguage } from '@/lib/language';
 import { clearReadItBack } from '@/lib/read-it-back';
-import { askAfterSave, keepBookTrigger, requestReminderPrime, type NextAsk } from '@/lib/asks';
+import { askAfterSave, fireDelayedAsk, keepBookTrigger, requestReminderPrime, surfaceBusy, type NextAsk } from '@/lib/asks';
 import { useAuth } from '@/lib/auth/session-provider';
 import { afterLetterKept, type KeepGate } from '@/lib/billing';
 import { countAfterSave, keepSheetFor } from '@/lib/billing/keep-step';
@@ -148,6 +148,7 @@ import {
   getSetting,
   beginDiscard,
   finishDiscard,
+  noteDiscardFailure,
   holdDraft,
   keepReviewedWords,
   listChildren,
@@ -170,6 +171,7 @@ import { cleanSpoken, spokenEditLevel } from '@/lib/transcription-queue/clean';
 import { useSpeechDownload, useWordsJob } from '@/lib/transcription-queue/use-words';
 import { announce, useIsAccessibilitySize, useScreenReader, useTheme } from '@/lib/a11y';
 import { footerPlacement } from '@/lib/review-layout.logic';
+import { countRowText, foldApplies, foldedControlsShow, foldHint, foldIsOpen, foldToggledTo, keepLine, keepLinesShow, markCardTiming, type KeepLineKind } from '@/lib/review-fold.logic';
 
 /** Labels per edit; `script` is a punctuation edit that only wrote characters in the author's script (core describeEdit). */
 const EDIT_COPY: Record<EditKind, keyof typeof copy.review.edits> = {
@@ -186,7 +188,8 @@ const EDIT_COPY: Record<EditKind, keyof typeof copy.review.edits> = {
 /**
  * Keep a letter whose words arrived later, after the gate allowed it: the review mark, the count and the place the
  * person chose, in one transaction (store keepReviewedWords). Then the letter page's card goes. Throws when the
- * letter no longer has words waiting (deleted, or kept on another screen), so Review says the save did not work.
+ * letter no longer has words waiting (deleted, or kept on another screen) or sits in a left book (BL-1959: the store
+ * refuses the write), so Review says the save did not work. Both read as `later_words_not_waiting`.
  */
 function keepLaterLetter(id: string, inBook: boolean): void {
   if (!keepReviewedWords(id, inBook)) throw new Error('later_words_not_waiting');
@@ -268,13 +271,11 @@ export default function Review() {
   const [wordsArrived, setWordsArrived] = useState(false);
   const [savedTo, setSavedTo] = useState<'book' | 'private' | null>(null);
   const [firstNote, setFirstNote] = useState(() => !typed && getSetting('review.firstNoteSeen') !== '1');
-  // The fix rows fold behind one disclosure row; every mark is also tappable in the letter (S17).
-  const [fixesOpen, setFixesOpen] = useState(false);
-  // With a screen reader on the rows are the path to every mark, so they start open (P4 critics' pass S3).
+  // The view control, the fix rows and "Change words" fold behind the count row (spec 14, QD-01). `foldToggled` is what the
+  // parent chose on this Review and nothing else: it is never stored, so the next Review opens folded (QD-10).
+  const [foldToggled, setFoldToggled] = useState<boolean | null>(null);
+  // With a screen reader on the rows are the path to every mark, so Review opens unfolded (QD-11; P4 critics' pass S3).
   const screenReader = useScreenReader();
-  useEffect(() => {
-    if (screenReader) setFixesOpen(true);
-  }, [screenReader]);
   // Did Write's "Add to the book" or "Keep private" send this typed letter here a moment ago? (S20) Looked at without
   // spending it, so the first frame already holds the sheet still; spent once, in the effect below.
   // While that one Keep runs, the sheet holds still; once the Plus sheet opens or the save does not work, this is the
@@ -374,7 +375,7 @@ export default function Review() {
 
   // The calm "could not write it down" card counts as a shown error (error_shown, once per failure).
   useEffect(() => {
-    if (job?.phase === 'failed') track('error_shown', { code: 'transcription_failed' });
+    if (job?.phase === 'failed') track('system:error_view', { code: 'transcription_failed' });
   }, [job?.phase]);
 
   // S14: how long the words have been on their way, and since the last sign of progress (a new part or phase).
@@ -421,7 +422,7 @@ export default function Review() {
           haptic('warning');
           let gone = false;
           try {
-            gone = letItGo(id, uri, { beginDiscard, deleteFile: (u) => deleteIfPresent(new File(u)), finishDiscard });
+            gone = letItGo(id, uri, { beginDiscard, deleteFile: (u) => deleteIfPresent(new File(u)), finishDiscard, onFailure: noteDiscardFailure });
           } catch {
             gone = false; // any throw is the same as not removed yet
           }
@@ -444,8 +445,8 @@ export default function Review() {
   const player = useLetterPlayer(draft?.audioUri ?? null, { fallbackDurationMs: draft?.audioDurationMs });
   const togglePlay = () => {
     if (!player.playing) {
-      track('review_action', { action: 'play_back' });
-      track('playback_started', { surface: 'review', author_relation: 'self', version: 'original' });
+      track('capture:review_update', { action: 'play_back' });
+      track('book:playback_start', { surface: 'review', author_relation: 'self', version: 'original' });
     }
     player.toggle();
   };
@@ -481,7 +482,7 @@ export default function Review() {
     const next = withoutEdit(raw, applied, index, rules);
     haptic('tap');
     reverted.current++;
-    track('machine_edit_reverted', { edit_type: edit.type, source: edit.source });
+    track('capture:edit_restore', { edit_type: edit.type, source: edit.source });
     putBacks.current = [...putBacks.current, edit];
     writer.putBack(putBacks.current);
     setApplied(next.applied);
@@ -490,7 +491,7 @@ export default function Review() {
     announce(putBackSpeech({ putBack: pendingCopy.review.putBack, undo: copy.common.undoButton, countText: countTextFor(next.applied.length) }));
     setOpenEdit(null);
     setWash(true);
-    setTimeout(() => setWash(false), 1600);
+    setTimeout(() => setWash(false), tokens.motion.newMarkMs);
   };
 
   const undoPutBack = () => {
@@ -509,7 +510,7 @@ export default function Review() {
   const chooseView = (next: ReviewView) => {
     if (next === view) return;
     haptic('tap');
-    if (next === 'exact') track('review_action', { action: 'show_exactly_said' });
+    if (next === 'exact') track('capture:review_update', { action: 'show_exactly_said' });
     writer.view(next);
     setView(next);
     setRestored(null);
@@ -524,7 +525,7 @@ export default function Review() {
   };
   const chooseChild = (id: string) => {
     if (!draft) return;
-    track('review_action', { action: 'change_child' });
+    track('capture:review_update', { action: 'change_child' });
     setDraftChild(draft.id, id);
     setChildId(id);
   };
@@ -547,13 +548,22 @@ export default function Review() {
     setActiveChildId(child.id);
     router.dismissTo({ pathname: '/book', params: arrivalParams({ entryId: draft.id, secondFree }) });
     if (askAfterLanding.current === 'keep_book') {
-      setTimeout(() => router.push({ pathname: '/sign-in', params: { trigger: keepBookTrigger() } }), signInAfterLandingMs(motion.reduced));
+      // keepBookTrigger() is read inside the show callback, which fireDelayedAsk runs only after it has marked the sheet
+      // shown: that mark is what tells the one re-offer (third_letter) from the first offer (BL-1562, BL-1985).
+      setTimeout(
+        () => fireDelayedAsk('keep_book', () => router.push({ pathname: '/sign-in', params: { trigger: keepBookTrigger() } })),
+        signInAfterLandingMs(motion.reduced),
+      );
     } else if (askAfterLanding.current === 'reminder_prime') {
-      setTimeout(requestReminderPrime, signInAfterLandingMs(motion.reduced));
+      setTimeout(() => fireDelayedAsk('reminder_prime', requestReminderPrime), signInAfterLandingMs(motion.reduced));
     }
   };
   const finishSave = (inBook: boolean, firstLetter: boolean) => {
-    askAfterLanding.current = askAfterSave({ firstLetter, signInOffered: auth.configured && auth.state.status === 'signedOut' });
+    askAfterLanding.current = askAfterSave({
+      firstLetter,
+      signInOffered: auth.configured && auth.state.status === 'signedOut',
+      surfaceBusy: surfaceBusy(), // a take or an export in progress: no ask (BL-1985)
+    });
     haptic('success');
     setSavedTo(inBook ? 'book' : 'private');
     setPhase('saved');
@@ -615,7 +625,7 @@ export default function Review() {
       const firstLetter = !hasAnyLetter();
       // A letter whose words arrived later is already saved: its words count now, at this Keep (later-words.logic).
       if (later) keepLaterLetter(draft.id, inBook);
-      else saveLetterFromDraft(
+      else if (!saveLetterFromDraft(
         draft.id,
         {
           id: draft.id,
@@ -639,7 +649,7 @@ export default function Review() {
           audioBytes: audio.bytes,
         },
         audio.exists,
-      );
+      )) throw new Error('book_left'); // BL-1959: nothing was written and the draft is intact, so Review says the save did not work
       // letter_saved went when the recording was kept; keeping its words later is not a second letter.
       if (!later) trackLetterSaved({
         mode: typed ? 'typed' : 'spoken',
@@ -664,7 +674,7 @@ export default function Review() {
       finishSave(inBook, firstLetter);
     } catch {
       saving.current = false;
-      track('error_shown', { code: 'save_failed' });
+      track('system:error_view', { code: 'save_failed' });
       setSaveFailed(true); // the draft is intact; nothing was half-saved
     }
   };
@@ -779,13 +789,17 @@ export default function Review() {
   }
 
   const line = countLine({ view, applied: applied.length, proposed, hasFixRules: spokenEditLevel(language) === 'clean' });
-  const countText = countTextFor(applied.length);
+  const applies = foldApplies({ typed, userText, editing, proposed });
+  const foldOpen = foldIsOpen({ applies, toggled: foldToggled, screenReader });
+  const foldedShow = foldedControlsShow({ applies, open: foldOpen });
+  const countText = countRowText({ kind: line === 'count' ? 'count' : 'other', applied: applied.length, other: countTextFor(applied.length) });
 
   // The letter sheet's header (S17): the month it files into, from the day it was said.
   const occurredOn = draft.createdAt ? todayISO(new Date(draft.createdAt)) : todayISO();
   const month = monthFor(child, occurredOn);
   const header = letterHeader({ childName: child.name, signsAs: child.signsAs, month });
   const openE = openEdit !== null ? applied[openEdit] : null;
+  const markTiming = markCardTiming(motion.reduced);
   const many = listChildren().length > 1;
 
   // Review before the words are there (S14 to S16): one card, one primary, at most one quiet action.
@@ -855,7 +869,7 @@ export default function Review() {
           // a hold that does not take still closes, uncounted, and Tonight shows the draft as it was.
           const outcome = holdOnce(holding, () => (later ? true : holdDraft(draft.id, { inBookChoice: heldInBook.current })));
           if (outcome === 'again') return;
-          if (outcome === 'held') track('letter_held', { letters_kept: Math.min(1000, gate.lettersKept) });
+          if (outcome === 'held') track('plus:letter_hold_create', { letters_kept: Math.min(1000, gate.lettersKept) });
           router.back();
         }}
         onPlus={() => setGate(null)} // the same Review again; the person taps Keep
@@ -879,6 +893,7 @@ export default function Review() {
   );
   // "Add to Asha's book" (primary; "Add to the book" when the name makes it long) and "Keep private" (quiet). A save
   // that did not work keeps the letter, says so directly above the primary, and the primary reads "Try again" (S17).
+  const lines = keepLinesShow({ saveFailed, editing });
   const footer =
     phase === 'ready' && !isSample
       ? footerShell(
@@ -891,13 +906,21 @@ export default function Review() {
                   {r.saveFailed}
                 </Text>
               )}
-              <Button size="lg" fullWidth onPress={() => keepTo(primaryDestination({ saveFailed, lastInBook: lastDestination.current }))} disabled={!finalText.trim()} testID="review.save.book">
+              <Button
+                size="lg"
+                fullWidth
+                onPress={() => keepTo(primaryDestination({ saveFailed, lastInBook: lastDestination.current }))}
+                disabled={!finalText.trim()}
+                accessibilityHint={lines ? keepLine('add') : undefined}
+                testID="review.save.book">
                 <Text>{savePrimaryLabel({ childName: child.name, saveFailed })}</Text>
               </Button>
+              {lines && <KeepLine kind="add" />}
               {/* Stays after a failed save, so focus is never dropped and the other destination is one tap away (S17). */}
-              <Button variant="quiet" fullWidth onPress={() => keepTo(false)} disabled={!finalText.trim()} testID="review.save.private">
+              <Button variant="quiet" fullWidth onPress={() => keepTo(false)} disabled={!finalText.trim()} accessibilityHint={lines ? keepLine('private') : undefined} testID="review.save.private">
                 <Text>{r.destination.privateButton}</Text>
               </Button>
+              {lines && <KeepLine kind="private" />}
             </>
           ),
         )
@@ -936,7 +959,7 @@ export default function Review() {
   // The open mark's card ("You said / Now it reads", Put it back): it opens under the line the mark ends on (S17,
   // MOTION 5d; P4 critics' pass S8), so on a long letter it is never off screen below the last line.
   const markCard = openE ? (
-    <Animated.View entering={FadeIn.delay(80).duration(160)} className="my-3 gap-2 rounded-2xl bg-muted p-4" testID="review.card">
+    <Animated.View entering={FadeIn.delay(markTiming.delayMs).duration(markTiming.ms).reduceMotion(ReduceMotion.Never)} className="my-3 gap-2 rounded-2xl bg-muted p-4" testID="review.card">
       <Text variant="labelSmall">{labelOf(openE).label}</Text>
       <Text variant="subhead">{labelOf(openE).explain}</Text>
       {/* You said / Now it reads: before and after, in the parent's own words (D-086). */}
@@ -1115,30 +1138,32 @@ export default function Review() {
 
               {!typed && userText === null && !editing && (
                 <View className="gap-3">
-                  {/* One control, both the view and the choice for this letter. Reversible until save. */}
-                  {showViewControl(proposed) && <ViewControl view={view} onChange={chooseView} />}
-                  {line === 'count' ? (
-                    // "2 small fixes": one disclosure row; the rows fold behind it, since every mark is tappable in the letter (S17).
+                  {/* The count row is the one disclosure: the view control, the fix rows and "Change words" sit behind it
+                      (spec 14, QD-01 to QD-04). It stays after "Exactly as said" or after every fix is put back (QD-03). */}
+                  {applies ? (
                     <Pressable
                       onPress={() => {
                         haptic('tap');
-                        setFixesOpen((o) => !o);
+                        setFoldToggled(foldToggledTo(foldOpen));
                       }}
                       accessibilityRole="button"
-                      accessibilityState={{ expanded: fixesOpen }}
+                      accessibilityState={{ expanded: foldOpen }}
+                      accessibilityHint={foldHint(foldOpen)}
                       accessibilityLiveRegion="polite"
                       className="min-h-12 flex-row items-center justify-between gap-3"
                       testID="review.count">
-                      <Text variant="subhead">{countText}</Text>
-                      {fixesOpen ? <CaretDownIcon size={16} color={c.textMuted} weight="bold" /> : <CaretRightIcon size={16} color={c.textMuted} weight="bold" />}
+                      <Text variant="subhead" className="flex-1">{countText}</Text>
+                      {foldOpen ? <CaretDownIcon size={16} color={c.textMuted} weight="bold" /> : <CaretRightIcon size={16} color={c.textMuted} weight="bold" />}
                     </Pressable>
                   ) : (
                     <Text variant="subhead" testID="review.count" accessibilityLiveRegion="polite">
                       {countText}
                     </Text>
                   )}
+                  {/* One control, both the view and the choice for this letter. Reversible until save. */}
+                  {showViewControl(proposed) && foldedShow && <ViewControl view={view} onChange={chooseView} />}
                   {/* Every fix as a row: the VoiceOver path to the marks (COMPONENTS 2.19). */}
-                  {view === 'fixes' && applied.length > 0 && fixesOpen && (
+                  {view === 'fixes' && applied.length > 0 && foldedShow && (
                     <View>
                       {applied.map((e, i) => (
                         <FixRow
@@ -1158,14 +1183,14 @@ export default function Review() {
               )}
 
               {/* A later letter's words are kept as they are stored: keeping them writes no words. */}
-              {!isSample && !editing && !later && (
+              {!isSample && !editing && !later && foldedShow && (
                 <Button
                   variant="quiet"
                   size="sm"
                   className="-ml-4 self-start"
                   testID="review.edit"
                   onPress={() => {
-                    track('review_action', { action: 'edit_text' });
+                    track('capture:review_update', { action: 'edit_text' });
                     // The put-back line speaks about the fixes; once the words are the person's own it is stale (QE-02).
                     setRestored(null);
                     setEditing(true);
@@ -1202,6 +1227,24 @@ export default function Review() {
       />
       {keepSheet}
     </SafeAreaView>
+  );
+}
+
+/**
+ * The one line under a Keep button (spec 14 section 5): footnote size, muted. The button carries the same words once as
+ * its spoken hint, so this visible copy is hidden from VoiceOver and is not read a second time.
+ */
+function KeepLine({ kind }: { kind: KeepLineKind }) {
+  return (
+    <Text
+      variant="footnote"
+      tone="muted"
+      className="px-1 pb-1 text-center"
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      testID={`review.keepLine.${kind}`}>
+      {keepLine(kind)}
+    </Text>
   );
 }
 

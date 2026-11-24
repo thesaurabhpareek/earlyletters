@@ -13,7 +13,7 @@ Totals across 197 rules (2026-10-03 count, adjusted for rules and rows changed s
 | Rule id | Level | Enforced by | Status | Gap id |
 |---|---|---|---|---|
 | CODE-R01 | MUST | review; PR template; CLAUDE.md | enforced on develop (review only) | none |
-| CODE-R02 | MUST | CI PR size check | proposed, not enforced until the founder pastes the workflow (docs/ops/proposed/pr-size.md; script scripts/guards/pr-size.mjs) | CODE-G1 |
+| CODE-R02 | MUST | CI PR size check | proposed, not enforced until the job lands as a workflow change (docs/ops/proposed/pr-size.md; script scripts/guards/pr-size.mjs); workflow changes follow CR-168 (the agents App cannot push workflow files; two independent counted reviews including security; no required check or branch protection change without the founder; reversible by revert) | CODE-G1 |
 | CODE-R03 | MUST NOT | review; OPERATING_MODEL section 4 | enforced on develop (review only) | none |
 | CODE-R04 | MUST | review; CI `required` (`npm test`, `test:db`, typecheck) | enforced on develop | none |
 | CODE-R05 | MUST | PR template; golden test `packages/core/test/golden.test.ts` | enforced on develop (#28) | none |
@@ -170,7 +170,7 @@ Gap ids defined here:
 | SEC-R07 | MUST | licence allowlist check | not yet | TDD 04 8.2 |
 | SEC-R08 | MUST | `security.yml` audit gate, `audit-ignore.json` | pending PR #30 | CI-05 |
 | SEC-R09 | MUST | `dependabot.yml`; repo setting | pending PR #30; setting founder-only | CI-05 |
-| SEC-R10 | MUST | SHA pins | proposed, not enforced until the founder pastes the workflow (docs/ops/proposed/ci-pins.md; test apps/mobile/test/workflow-pins.test.ts is a ratchet over docs/ops/action-pins-allowlist.txt); pending PR #30 (CI files); pinned: `agents-check.yml` on `develop`, `claude.yml` with RA-20-02a (#272); not yet `agents.yml` (`anthropics/claude-code-action@v1`, `actions/create-github-app-token@v3`) | CI-06 |
+| SEC-R10 | MUST | SHA pins | proposed, not enforced until the pins land as a workflow change under CR-168 (the agents App cannot push workflow files; two independent counted reviews including security; no required check or branch protection change without the founder; reversible by revert) (docs/ops/proposed/ci-pins.md; test apps/mobile/test/workflow-pins.test.ts is a ratchet over docs/ops/action-pins-allowlist.txt); pending PR #30 (CI files); pinned: `agents-check.yml` on `develop`, `claude.yml` with RA-20-02a (#272); not yet `agents.yml` (`anthropics/claude-code-action@v1`, `actions/create-github-app-token@v3`) | CI-06 |
 | SEC-R11 | MUST | review | review (pattern present in PR #30) | |
 | SEC-R12 | MUST | branch protection or ruleset | not yet (decided 14 Oct, #127 item 7; founder applies the settings) | CI-01 |
 | SEC-R13 | MUST | `fence.yml` | pending PR #30 (advisory until SEC-R12) | CI-11, BL-122 |
@@ -261,5 +261,12 @@ Gap ids defined here:
 | AIE-R41 | MUST | review | not yet | AIE-G17 |
 | AIE-R42 | MUST | reviewer brief; review | review only | none |
 | AIE-R43 | MUST | review | not yet | AIE-G18 |
+| AIE-R44 | MUST | review; `merge-queue.mjs` NEEDS-UPDATE verdict for the stale-base half (AIE-R40) | review only | AIE-G19 |
+| AIE-R45 | MUST | review | review only | none |
+| AIE-R46 | MUST | review-gate skill section 4; review | review only | AIE-G20 |
+| AIE-R47 | MUST | `append-only-check.mjs` for the listed rulings only; review | partly: the order of merging is review only | AIE-G21 |
+| AIE-R48 | MUST | reviewer brief; review | review only | none |
+| AIE-R49 | SHOULD | review-gate skill section 5; review | review only | none |
+| AIE-R50 | SHOULD | review | review only | AIE-G17 |
 
-Gap ids added 21 Nov (AIE-R32 to R43; AIE-G16 to G18 are defined in `09a-review-and-merge-practice.md`): AIE-G14 `merge-queue.mjs` and any report script read counted-review headers from the first three comment lines, with one test; AIE-G15 a check that fails a ruling PR when `docs/agents`, `.claude`, `agents/*/MEMORY.md` or `docs/engineering` still contain a phrase the ruling retires.
+Gap ids added 24 Nov (AIE-R44 to R50; AIE-G19 to G21 are defined in `09a-review-and-merge-practice.md`). Gap ids added 21 Nov (AIE-R32 to R43; AIE-G16 to G18 are defined in the same file): AIE-G14 `merge-queue.mjs` and any report script read counted-review headers from the first three comment lines, with one test; AIE-G15 a check that fails a ruling PR when `docs/agents`, `.claude`, `agents/*/MEMORY.md` or `docs/engineering` still contain a phrase the ruling retires.

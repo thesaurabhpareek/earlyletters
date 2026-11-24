@@ -5,7 +5,7 @@
  * test scans this file.
  */
 export const consentCopy = {
-  // settings.privacy.analyticsSection
+  // settings.privacy.analyticsSection. PROPOSED (BL-389): usage only, no crash data in v1.0.
   analyticsSection: 'Usage',
   // settings.privacy.sensitiveSection
   sensitiveSection: 'Your letters',

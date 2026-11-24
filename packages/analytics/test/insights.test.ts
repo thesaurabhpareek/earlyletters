@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { EVENTS } from '../src';
+import { LEGACY_EVENT_NAMES } from '../src/wire-names';
 import {
   allQueries,
   assertContentFree,
@@ -12,6 +13,7 @@ import {
   detectAnomaly,
   fetchPostHog,
   fetchServer,
+  funnelQuery,
   parseBreakdownRows,
   parseFunnelRows,
   parseWeeklyRows,
@@ -126,7 +128,7 @@ describe('content guard', () => {
   it('a canary smuggled into raw device rows can never reach a written report', () => {
     const input = syntheticInput(DATE);
     // Bypass the parser on purpose: the guard is the last line.
-    input.device!.rows.push(...[0, 1, 2, 3].map((i) => ({ week: input.device!.funnel[8 + i].week, event: 'machine_edit_rejected', dim: 'reason', value: 'Asha', events: 900, people: 90 })));
+    input.device!.rows.push(...[0, 1, 2, 3].map((i) => ({ week: input.device!.funnel[8 + i].week, event: 'capture:edit_decline', dim: 'reason', value: 'Asha', events: 900, people: 90 })));
     expect(() => assertContentFree(renderReport(computeInsights(input)))).toThrow(ContentGuardError);
   });
 });
@@ -146,23 +148,23 @@ describe('HogQL queries and parsing', () => {
   });
 
   it('keeps only catalogue values; anything else becomes other', () => {
-    expect(catalogueValue('pack_download', 'failure', 'no_space')).toBe('no_space');
-    expect(catalogueValue('pack_download', 'failure', 'Asha')).toBe('other');
-    expect(catalogueValue('machine_edit_rejected', 'count', 3)).toBe('3');
-    expect(catalogueValue('machine_edit_rejected', 'count', 99999)).toBe('other');
-    expect(catalogueValue('invite_created', 'shared', true)).toBe('true');
-    const rows = parseBreakdownRows('pack_download', 'failure', [
+    expect(catalogueValue('system:pack_download_update', 'failure', 'no_space')).toBe('no_space');
+    expect(catalogueValue('system:pack_download_update', 'failure', 'Asha')).toBe('other');
+    expect(catalogueValue('capture:edit_decline', 'count', 3)).toBe('3');
+    expect(catalogueValue('capture:edit_decline', 'count', 99999)).toBe('other');
+    expect(catalogueValue('family:invite_create', 'shared', true)).toBe('true');
+    const rows = parseBreakdownRows('system:pack_download_update', 'failure', [
       ['2026-09-28T00:00:00Z', 'no_space', 12, 11],
       ['2026-09-28T00:00:00Z', 'asha.parent@example.com', 30, 20],
       ['2026-09-28T00:00:00Z', 'hash_mismatch', 4, 3],
       ['not a date', 'no_space', 50, 50],
     ]);
     expect(rows).toEqual([
-      { week: '2026-09-28', event: 'pack_download', dim: 'failure', value: 'no_space', events: 12, people: 11 },
-      { week: '2026-09-28', event: 'pack_download', dim: 'failure', value: 'other', events: 30, people: 20 },
+      { week: '2026-09-28', event: 'system:pack_download_update', dim: 'failure', value: 'no_space', events: 12, people: 11 },
+      { week: '2026-09-28', event: 'system:pack_download_update', dim: 'failure', value: 'other', events: 30, people: 20 },
     ]);
-    expect(parseWeeklyRows([['2026-09-28', 'letter_saved', 40, 12], ['2026-09-28', 'letter_text', 40, 12], ['2026-09-28', 'app_opened', 9, 9]])).toEqual([
-      { week: '2026-09-28', event: 'letter_saved', events: 40, people: 12 },
+    expect(parseWeeklyRows([['2026-09-28', 'capture:letter_save', 40, 12], ['2026-09-28', 'letter_text', 40, 12], ['2026-09-28', 'system:app_open', 9, 9]])).toEqual([
+      { week: '2026-09-28', event: 'capture:letter_save', events: 40, people: 12 },
     ]);
     expect(parseFunnelRows([['2026-09-28', 40, 20, 12], ['2026-09-21', 5, 2, 1]])).toEqual([{ week: '2026-09-28', opened: 40, started: 20, saved: 12 }]);
   });
@@ -184,7 +186,7 @@ describe('sources', () => {
     const { f, calls } = fakeFetch((_u, body) => {
       const q = (body as { query: { query: string } }).query.query;
       if (q.includes('countIf(opened)')) return { status: 200, json: { results: [['2026-09-28', 50, 30, 20]] } };
-      if (q.includes('GROUP BY week, event')) return { status: 200, json: { results: [['2026-09-28', 'letter_saved', 40, 20]] } };
+      if (q.includes('GROUP BY week, event')) return { status: 200, json: { results: [['2026-09-28', 'capture:letter_save', 40, 20]] } };
       return { status: 200, json: { results: [] } };
     });
     const d = await fetchPostHog({ apiHost: 'https://us.posthog.com/', projectId: '123', apiKey: 'phx_test', weeks: 12 }, f);
@@ -192,7 +194,7 @@ describe('sources', () => {
     expect(calls[0].url).toBe('https://us.posthog.com/api/projects/123/query/');
     expect(calls[0].headers.authorization).toBe('Bearer phx_test');
     expect((calls[0].body as { query: { kind: string } }).query.kind).toBe('HogQLQuery');
-    expect(d.rows).toEqual([{ week: '2026-09-28', event: 'letter_saved', events: 40, people: 20 }]);
+    expect(d.rows).toEqual([{ week: '2026-09-28', event: 'capture:letter_save', events: 40, people: 20 }]);
     expect(d.funnel).toEqual([{ week: '2026-09-28', opened: 50, started: 30, saved: 20 }]);
   });
 
@@ -262,6 +264,33 @@ describe('scripts/insights/run.ts', () => {
       expect(JSON.stringify(markdown)).not.toMatch(/phx_read|reader-jwt|sb_publishable/);
     } finally {
       rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('the weekly funnel reads the wire names (BL-2176)', () => {
+  const { query } = funnelQuery(12);
+  const steps = ['app_opened', 'capture_started', 'letter_saved'] as const;
+
+  it('names the three wire names, each a key of the catalogue', () => {
+    for (const wire of ['system:app_open', 'capture:take_start', 'capture:letter_save']) {
+      expect(Object.prototype.hasOwnProperty.call(EVENTS, wire)).toBe(true);
+      expect(query).toContain(`event = '${wire}'`);
+    }
+    expect(query).toContain("event IN ('system:app_open', 'capture:take_start', 'capture:letter_save')");
+  });
+
+  it('reads the wire name the mapping gives each legacy key', () => {
+    for (const old of steps) {
+      expect(query).toContain(`'${LEGACY_EVENT_NAMES[old]}'`);
+      expect(query).not.toContain(`'${old}'`);
+    }
+  });
+
+  it('fails on the old names, which no event is sent under any more', () => {
+    for (const old of steps) {
+      expect(Object.prototype.hasOwnProperty.call(EVENTS, old)).toBe(false);
+      expect(query).not.toMatch(new RegExp(`\\b${old}\\b`));
     }
   });
 });

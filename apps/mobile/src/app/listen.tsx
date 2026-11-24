@@ -49,6 +49,7 @@ import {
   maySpeak,
   startTake,
   promptLine,
+  readyLine,
   reviewParams,
   stableLabels,
   startFailure,
@@ -64,7 +65,8 @@ import { ModalHeader } from '@/components/ui/screen-header';
 import { StateGlyph, StateScreen } from '@/components/ui/state-screen';
 import { STATE_LAYOUT } from '@/components/ui/state-screen.logic';
 import { Text } from '@/components/ui/text';
-import { announce, useFocusOnMount, useIsAccessibilitySize, useTheme } from '@/lib/a11y';
+import { setSurfaceBusy } from '@/lib/asks/surface';
+import { announce, useFocusOnMount, useIsAccessibilitySize, useScreenReader, useTheme } from '@/lib/a11y';
 import { setAudioMode } from '@/lib/audio-mode';
 import {
   CAPTURE_HEARTBEAT_MS,
@@ -80,6 +82,12 @@ import {
   setRecorderProbe,
 } from '@/lib/speech-gate';
 import { copy, fill, pendingCopy } from '@/lib/copy';
+import { typedOfferShown } from '@/components/capture/words-state.logic';
+import type { SpeechLanguage } from '@/lib/models/catalog';
+import { authorSpeechLanguage } from '@/lib/models/author-language';
+import { speechDownloadChoice } from '@/lib/models/speech-consent';
+import { installedPathsFor } from '@/lib/models/speech-packs';
+import { useSpeechDownload } from '@/lib/transcription-queue/use-words';
 import { photos } from '@/lib/photos/copy';
 import { haptic } from '@/lib/haptics';
 import { useMotion, useReducedMotion } from '@/lib/motion';
@@ -87,7 +95,7 @@ import { track, trackCaptureDiscarded } from '@/lib/analytics/track';
 import { freeBytesFrom } from '@/lib/capture/free-space';
 import { deleteIfPresent, letItGo } from '@/lib/capture/let-it-go.logic';
 import { VOICE_RECORDING_OPTIONS, abandonTake, beginTake, finalizeTake, type StopReason } from '@/lib/capture/recorder';
-import { beginDiscard, finishDiscard, getActiveChild, setRecordingProgress } from '@/lib/store';
+import { beginDiscard, finishDiscard, getActiveChild, noteDiscardFailure, setRecordingProgress } from '@/lib/store';
 import { KEEP_AWAKE_TAGS, useKeepAwakeWhile } from '@/lib/resilience/keep-awake';
 import { consumeListenStart } from '@/lib/resilience/start-intent';
 
@@ -100,10 +108,20 @@ function freeBytesNow(): number | null {
   return Platform.OS === 'web' ? null : freeBytesFrom(() => Paths.availableDiskSpace);
 }
 
+/** True when the speech files for the language are on this phone; where they cannot be read (web preview) it is false. */
+function speechOnThisPhone(language: SpeechLanguage): boolean {
+  try {
+    return installedPathsFor(language) !== null;
+  } catch {
+    return false;
+  }
+}
+
 export default function Listen() {
   const { c } = useTheme();
   const t = copy.tonight.states;
   const p = pendingCopy.listen;
+  const screenReader = useScreenReader();
   const motion = useMotion();
   const { promptKey } = useLocalSearchParams<{ promptKey?: string }>();
   // Read once on mount, never per render: the recorder state below re-renders this screen about once a second, and
@@ -138,6 +156,13 @@ export default function Listen() {
   const startTick = useRef(createStartTick(tapped.current)).current;
   const [phase, setPhase] = useState<ListenPhase>(tapped.current ? 'asking' : 'ready');
   const withPhoto = phase === 'ready' && !!pendingPhoto?.source; // a picture chosen on Home waits at Ready
+  // BL-1999 (spec 15): read-only. The language and her choice cannot change while Listen is open; the download state
+  // re-renders this screen on its own ticks. Nothing here starts a download or writes the choice (D-087).
+  const [speechLanguage] = useState(authorSpeechLanguage);
+  const [speechChoice] = useState(speechDownloadChoice);
+  // null outside Ready-with-no-picture: the hook then returns idle before any settings read (use-words.ts), so a live
+  // take's once-a-second renders read nothing (#480). It still subscribes, so a download tick re-renders Listen.
+  const speech = useSpeechDownload(phase === 'ready' && !pendingPhoto?.source ? speechLanguage : null);
   const announcedMinute = useRef(0);
   /** The labels VoiceOver last could hear: they hold still while capturing (listen.logic `stableLabels`, F04-REQ-041). */
   const labelsRef = useRef<RoomLabels | null>(null);
@@ -155,9 +180,17 @@ export default function Listen() {
   useEffect(() => {
     if (isMicProblem(phase)) {
       const code = MIC_ERROR_CODE[phase];
-      if (code) track('error_shown', { code });
+      if (code) track('system:error_view', { code });
     }
   }, [phase]);
+
+  // No setup ask lands on a take: busy from the start of a take until it is kept or let go, and cleared when this
+  // screen goes (BL-1985). Phone memory only.
+  const takeInProgress = phase === 'recording' || phase === 'paused' || phase === 'finishing';
+  useEffect(() => {
+    setSurfaceBusy('recording', takeInProgress);
+  }, [takeInProgress]);
+  useEffect(() => () => setSurfaceBusy('recording', false), []);
 
   // Metering straight into the aura's shared value at 20 Hz (MOTION 5b), never through React state: nothing re-renders
   // for the voice (listening-cue.md 2). No reading (metering off, or a released recorder) is silence: the idle breath.
@@ -440,7 +473,7 @@ export default function Listen() {
           haptic('warning');
           // The one place audio is deleted: the parent confirmed it. Let it go's steps, as in Review (BL-924): a file
           // that will not delete keeps the row, marked and off every list, for the launch sweep to finish.
-          if (id) letItGo(id, uri, { beginDiscard, deleteFile: (u) => deleteIfPresent(new File(u)), finishDiscard });
+          if (id) letItGo(id, uri, { beginDiscard, deleteFile: (u) => deleteIfPresent(new File(u)), finishDiscard, onFailure: noteDiscardFailure });
           discardPendingPhoto(); // The photo goes too: one stored at record start went with the draft above (finishDiscard); this drops the picker's copy
           router.back();
         },
@@ -482,10 +515,16 @@ export default function Listen() {
   }
 
   const room = listenRoom(phase);
+  // Short-circuits: speechOnThisPhone (planFor, deviceTier, settings reads) is evaluated only at Ready with no picture,
+  // never on the once-a-second renders of a live take.
+  const typeOffer =
+    !withPhoto &&
+    room.startControl &&
+    typedOfferShown({ startControl: room.startControl, onThisPhone: speechOnThisPhone(speechLanguage), choice: speechChoice, hold: speech.hold, failure: speech.failure });
   const quiet = phase === 'recording' && (status.metering ?? -160) < -50 && status.durationMillis > 8000;
   const prompt = promptLine(promptKey, PROMPTS);
   // While iOS asks and the take starts there is nothing to tap, so no hint (5.8 row 1: the room arrives at rest).
-  const line = room.line === 'none' ? null : room.line === 'readyHint' ? p.ready.hint : room.line === 'paused' ? t.paused : quiet ? t.stillHere : t.listening;
+  const line = room.line === 'none' ? null : room.line === 'readyHint' ? readyLine(p.ready, screenReader) : room.line === 'paused' ? t.paused : quiet ? t.stillHere : t.listening;
   // While capturing nothing on this screen changes what VoiceOver reads (07 line 276, F04-REQ-041): the live region is
   // off, and every label (the clock, Finish's hint, the line, Pause / Keep talking) holds still; they catch up once
   // capture stops (listen.logic `stableLabels`).
@@ -587,6 +626,21 @@ export default function Listen() {
               who will not speak aloud can still start a letter from the picture. Type keeps the pending picture. */}
           {room.startControl && withPhoto ? (
             <Button variant="quiet" size="md" label={photos.capture.typeButton} onPress={typeInstead} testID="listen.photo.type" />
+          ) : null}
+          {/* BL-1999: no speech model on the phone and no yes in motion, so typing is open before she records. The
+              picture's own Type above already is that offer, so the two never show together. The slot is always held
+              (like listen.discardSlot) so the red circle never moves when the offer comes or goes (5.8 rule 3). The
+              install check is behind room.startControl, so nothing is read while a take is live (#480). */}
+          {!withPhoto ? (
+            <View
+              style={{ opacity: typeOffer ? 1 : 0 }}
+              pointerEvents={typeOffer ? 'auto' : 'none'}
+              accessibilityElementsHidden={!typeOffer}
+              importantForAccessibility={typeOffer ? 'auto' : 'no-hide-descendants'}
+              testID="listen.typeSlot"
+            >
+              <Button variant="quiet" size="md" label={copy.errors.micDenied.typeButton} onPress={typeInstead} disabled={!typeOffer} testID="listen.type" />
+            </View>
           ) : null}
           {!large && clockAndLine}
           <View className="items-center gap-1 px-8">

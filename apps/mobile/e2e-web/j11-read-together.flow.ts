@@ -1,4 +1,4 @@
-import { btn, firstRun, journey } from './support/app';
+import { btn, firstRun, journey, monthOpener } from './support/app';
 import { expect, seeded, test } from './support/journey';
 
 const openRT = async (app: import('@playwright/test').Page) => {
@@ -11,7 +11,7 @@ const at = (app: import('@playwright/test').Page, n: number, count = 5) => app.g
  * zone and the hour) the seeded child is in that month and it reads "This month, Month 6. ...". Keep the alternation: a date
  * window would break in those zones.
  */
-const opener = (app: import('@playwright/test').Page) => app.getByRole('heading', { name: /^(This month, )?Month 6\. / });
+const opener = (app: import('@playwright/test').Page) => monthOpener(app, 6);
 /** The header's Close, not "Done reading" on the end page (which may still be leaving after "Read it again"). */
 const close = (app: import('@playwright/test').Page) => app.getByRole('button', { name: 'Close', exact: true });
 

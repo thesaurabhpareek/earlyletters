@@ -85,7 +85,7 @@ describe('[RT-PLS-10] the Keep gate waits for the first StoreKit read', () => {
     // Through the Keep step: Review gets the hold (it holds the draft), and keep_gate_shown is not noted.
     const step = await keepSheetFor('Asha, you clapped for the bus.');
     expect(step?.decision.kind).toBe('hold');
-    expect(h.events.filter((e) => e.name === 'keep_gate_shown')).toEqual([]);
+    expect(h.events.filter((e) => e.name === 'plus:keep_gate_view')).toEqual([]);
   });
 
   it('free letters never wait on the read: with 1 kept and StoreKit that never answers, the letter keeps at once', async () => {

@@ -19,8 +19,12 @@ import {
   SURFACE,
   type RegistryRow,
 } from '../src/registry';
+import { expandPattern, WIRE_NAME_RE, WIRE_ROWS } from '../src/wire-names';
 
 const rows = Object.entries(REGISTRY) as [string, RegistryRow][];
+
+/** Every name wire-names.ts gives an event to send: a ruled or named name, or a generated per-id name (screen views today). */
+const WIRE_NAMES: string[] = Object.values(WIRE_ROWS).flatMap((r) => (r.status === 'ruled' || r.status === 'named' ? [r.wire] : r.status === 'pattern' ? expandPattern(r) : []));
 const SNAKE = /^[a-z0-9]+(?:_[a-z0-9]+)*$/;
 /** Properties the client adds to every event (catalog.ts GLOBAL_PROPS, moved in P5). */
 const GLOBALS = ['schema_version', 'child_count_bucket', 'sample_pct'];
@@ -33,10 +37,11 @@ describe('registry.ts (P2, data only)', () => {
     expect(barrel.PROP).toBe(PROP);
   });
 
-  it('holds about 25 events, every name snake_case', () => {
+  it('holds about 25 events, every name snake_case or a wire name', () => {
     expect(rows.length).toBeGreaterThanOrEqual(20);
     expect(rows.length).toBeLessThanOrEqual(30);
-    for (const [name] of rows) expect(name).toMatch(SNAKE);
+    // Bare snake_case until the rename reaches a row (BL-2176), then the wire name `<area>:<object>_<verb>`.
+    for (const [name] of rows) expect(name.includes(':') ? WIRE_NAME_RE.test(name) : SNAKE.test(name), name).toBe(true);
   });
 
   it('names one decision per event, and no two rows share it', () => {
@@ -90,12 +95,19 @@ describe('registry.ts (P2, data only)', () => {
     }
   });
 
-  it('names only registered events in every funnel, with at least two steps', () => {
+  it('names only registered events or wire names in every funnel, with at least two steps (V9)', () => {
     for (const [id, steps] of Object.entries(FUNNELS)) {
       expect(id).toMatch(/^f_[a-z]+_[a-z_]+$/);
       expect(steps.length, id).toBeGreaterThanOrEqual(2);
-      for (const s of steps) expect(Object.keys(REGISTRY), `${id}: ${s}`).toContain(s);
+      for (const s of steps as readonly string[]) {
+        const known = s.includes(':') ? WIRE_NAMES : Object.keys(REGISTRY);
+        expect(known, `${id}: ${s}`).toContain(s);
+      }
     }
+  });
+
+  it('the return funnel reads the generated screen views, not events of their own (BL-2175)', () => {
+    expect(FUNNELS.f_return_book_read).toEqual(['system:app_open', 'book:book_screen_view', 'book:letter_detail_screen_view']);
   });
 
   it('has no event for the Save a copy slip, Days notes, email opens, or anything a birthday or due date sets (FR-DAT-27)', () => {
@@ -106,9 +118,31 @@ describe('registry.ts (P2, data only)', () => {
 
   it('the forbidden patterns do catch the names they exist for', () => {
     const caught = (n: string) => FORBIDDEN_EVENT_PATTERNS.some((re) => re.test(n));
-    for (const n of ['save_a_copy_shown', 'export_started', 'days_note_added', 'moment_shown', 'email_opened', 'birthday_week_seen', 'reminder_sent']) {
+    for (const n of ['save_a_copy_shown', 'export_shared', 'days_note_added', 'moment_shown', 'email_opened', 'birthday_week_seen', 'reminder_sent']) {
       expect(caught(n), n).toBe(true);
     }
-    expect(caught('letter_saved')).toBe(false);
+    expect(caught('capture:letter_save')).toBe(false);
+  });
+
+  it('the patterns also catch the wire names of events that were dropped, and the names the retired deletion flows would have had (CR-213, CR-225)', () => {
+    const caught = (n: string) => FORBIDDEN_EVENT_PATTERNS.some((re) => re.test(n));
+    for (const n of [
+      'keeping:export_share_end', 'notifications:reminder_send', 'book:moment_view', 'book:resurface_view', 'book:resurface_open',
+      'keeping:letter_delete', 'keeping:letter_restore', 'keeping:account_delete', 'keeping:account_deletion_start', 'keeping:account_deletion_restore',
+      'keeping:phone_delete', 'keeping:take_delete', 'keeping:version_remove', 'keeping:version_restore', 'keeping:deletion_start', 'keeping:deletion_restore',
+      'keeping:save_a_copy_view', 'family:days_note_open', 'notifications:email_open',
+    ]) {
+      expect(caught(n), n).toBe(true);
+    }
+  });
+
+  it('no name that may be sent is caught: the three export names, the Moments card names, and every ruled, named and generated wire name', () => {
+    const caught = (n: string) => FORBIDDEN_EVENT_PATTERNS.filter((re) => re.test(n));
+    const allowed = [...WIRE_NAMES, ...Object.keys(REGISTRY)];
+    expect(allowed.length).toBeGreaterThan(60);
+    for (const n of ['keeping:export_start', 'keeping:export_complete', 'keeping:export_fail', 'book:moments_card_view', 'book:moments_card_open', 'capture:edit_restore', 'book:letter_detail_screen_view']) {
+      expect(allowed, n).toContain(n);
+    }
+    for (const n of allowed) expect(caught(n), `${n} is caught by ${caught(n).join(' ')}`).toEqual([]);
   });
 });

@@ -22,7 +22,6 @@ import {
   sessionBucket,
   timeToFirstLetterBucket,
   toV1Lang,
-  ttfiBucket,
   wordsBucket,
 } from './buckets';
 import type { Catalog } from './catalog';
@@ -31,12 +30,12 @@ import { packAnalyticsId, speechModelValue } from './packs';
 
 type V<E extends keyof Catalog, P extends keyof Catalog[E]['props']> = Catalog[E]['props'][P] extends { values: readonly (infer X)[] } ? X : never;
 
-export type PromptKindValue = V<'letter_saved', 'prompt_kind'>;
+export type PromptKindValue = V<'capture:letter_save', 'prompt_kind'>;
 export type MemberRole = 'parent' | 'contributor';
 /** A member's role in a book: co-parents are `parent` (B section 6). */
 export type InviteRoleInput = 'parent' | 'contributor';
 
-const inviteRole = (r: InviteRoleInput) => r as V<'invite_created', 'role'>;
+const inviteRole = (r: InviteRoleInput) => r as V<'family:invite_create', 'role'>;
 
 export interface LetterSavedInput {
   mode: 'spoken' | 'typed';
@@ -53,7 +52,7 @@ export interface LetterSavedInput {
   editsReverted: number;
   /** Edits the verifier refused for this letter (optional). */
   editsRejected?: number;
-  engine: V<'letter_saved', 'engine'>;
+  engine: V<'capture:letter_save', 'engine'>;
   /** Saved within 2 hours of opening the app from a reminder. */
   fromNotificationWithin2h: boolean;
 }
@@ -77,15 +76,15 @@ export interface PackDownloadInput {
   packId: string;
   /** Manifest version number of the pack. */
   version: number | null;
-  stage: V<'pack_download', 'stage'>;
-  failure?: V<'pack_download', 'failure'>;
-  network: V<'pack_download', 'network'>;
+  stage: V<'system:pack_download_update', 'stage'>;
+  failure?: V<'system:pack_download_update', 'failure'>;
+  network: V<'system:pack_download_update', 'network'>;
 }
 
 /** The parts of a verifier rejection this helper reads (packages/core RejectedEdit). */
 export interface RejectedEditInput {
-  edit: { type: V<'machine_edit_rejected', 'edit_type'>; source: V<'machine_edit_rejected', 'source'> };
-  reason: V<'machine_edit_rejected', 'reason'>;
+  edit: { type: V<'capture:edit_decline', 'edit_type'>; source: V<'capture:edit_decline', 'source'> };
+  reason: V<'capture:edit_decline', 'reason'>;
 }
 
 /** At most this many `machine_edit_rejected` events per letter (one per type, source and reason). */
@@ -99,7 +98,7 @@ export function createTrackers(analytics: Pick<Analytics, 'track'>) {
 
   return {
     trackLetterSaved(i: LetterSavedInput): TrackResult {
-      return track('letter_saved', {
+      return track('capture:letter_save', {
         mode: i.mode,
         destination: i.inBook ? 'book' : 'private',
         child_ordinal: childOrdinal(i.childIndex),
@@ -117,12 +116,12 @@ export function createTrackers(analytics: Pick<Analytics, 'track'>) {
 
     trackCaptureStarted(i: {
       mode: 'spoken' | 'typed';
-      source: V<'capture_started', 'source'>;
+      source: V<'capture:take_start', 'source'>;
       promptKind: PromptKindValue | null;
       childIndex: number;
       role: MemberRole;
     }): TrackResult {
-      return track('capture_started', {
+      return track('capture:take_start', {
         mode: i.mode,
         source: i.source,
         prompt_kind: i.promptKind ?? 'none',
@@ -132,12 +131,12 @@ export function createTrackers(analytics: Pick<Analytics, 'track'>) {
     },
 
     /** NS-53 R251. Only the slot leaves the phone; wiring and the once-per-slot-per-day rule belong to the Moments flag PR. */
-    trackMomentsCard(i: { action: 'impressed' | 'tapped'; slot: V<'moments_card_tapped', 'slot'> }): TrackResult {
-      return track(i.action === 'tapped' ? 'moments_card_tapped' : 'moments_card_impressed', { slot: i.slot });
+    trackMomentsCard(i: { action: 'impressed' | 'tapped'; slot: V<'book:moments_card_open', 'slot'> }): TrackResult {
+      return track(i.action === 'tapped' ? 'book:moments_card_open' : 'book:moments_card_view', { slot: i.slot });
     },
 
     trackCaptureDiscarded(i: { mode: 'spoken' | 'typed'; stage: 'listening' | 'review'; audioMs?: number | null }): TrackResult {
-      return track('capture_discarded', {
+      return track('capture:take_cancel', {
         mode: i.mode,
         stage: i.stage,
         ...(i.audioMs != null ? { audio_bucket: audioBucket(i.audioMs) } : {}),
@@ -145,14 +144,14 @@ export function createTrackers(analytics: Pick<Analytics, 'track'>) {
     },
 
     trackTranscriptionCompleted(i: {
-      engine: V<'transcription_completed', 'engine'>;
+      engine: V<'capture:transcript_complete', 'engine'>;
       /** Speech model id from src/lib/models/catalog.ts, or null (sample engine). */
       modelId: string | null;
       audioMs: number;
       latencyMs: number;
-      outcome: V<'transcription_completed', 'outcome'>;
+      outcome: V<'capture:transcript_complete', 'outcome'>;
     }): TrackResult {
-      return track('transcription_completed', {
+      return track('capture:transcript_complete', {
         engine: i.engine,
         model: speechModelValue(i.modelId),
         audio_bucket: audioBucket(i.audioMs),
@@ -161,40 +160,36 @@ export function createTrackers(analytics: Pick<Analytics, 'track'>) {
       });
     },
 
-    trackBookOpened(i: { childIndex: number; letters: number; role: MemberRole }): TrackResult {
-      return track('book_opened', { child_ordinal: childOrdinal(i.childIndex), letters_bucket: lettersBucket(i.letters), member_role: i.role });
-    },
-
     trackReadTogetherStarted(i: { childIndex: number; access: 'plus' | 'free'; letters: number }): TrackResult {
-      return track('read_together_started', { child_ordinal: childOrdinal(i.childIndex), access: i.access, letters_bucket: lettersBucket(i.letters) });
+      return track('book:read_together_start', { child_ordinal: childOrdinal(i.childIndex), access: i.access, letters_bucket: lettersBucket(i.letters) });
     },
 
     trackReadTogetherEnded(i: { reason: 'finished' | 'stopped' | 'interrupted'; durationMs: number; lettersHeard: number }): TrackResult {
-      return track('read_together_ended', {
+      return track('book:read_together_end', {
         reason: i.reason,
         session_bucket: sessionBucket(i.durationMs),
         letters_heard: clampInt(i.lettersHeard, 0, 50),
       });
     },
 
-    trackInviteCreated(i: { role: InviteRoleInput; channel: V<'invite_created', 'channel'>; shared: boolean; childIndex: number }): TrackResult {
-      return track('invite_created', { role: inviteRole(i.role), channel: i.channel, shared: i.shared, child_ordinal: childOrdinal(i.childIndex) });
+    trackInviteCreated(i: { role: InviteRoleInput; channel: V<'family:invite_create', 'channel'>; shared: boolean; childIndex: number }): TrackResult {
+      return track('family:invite_create', { role: inviteRole(i.role), channel: i.channel, shared: i.shared, child_ordinal: childOrdinal(i.childIndex) });
     },
 
     trackInviteAccepted(i: { role: InviteRoleInput }): TrackResult {
-      return track('invite_accepted', { role: inviteRole(i.role), surface: 'app' });
+      return track('family:invite_accept', { role: inviteRole(i.role), surface: 'app' });
     },
 
     trackExportStarted(i: { letters: number }): TrackResult {
-      return track('export_started', { format: 'archive', letters_bucket: lettersBucket(i.letters) });
+      return track('keeping:export_start', { format: 'archive', letters_bucket: lettersBucket(i.letters) });
     },
 
     trackExportCompleted(i: { bytes: number; durationMs: number }): TrackResult {
-      return track('export_completed', { format: 'archive', size_bucket: exportSizeBucket(i.bytes), duration_bucket: exportDurationBucket(i.durationMs) });
+      return track('keeping:export_complete', { format: 'archive', size_bucket: exportSizeBucket(i.bytes), duration_bucket: exportDurationBucket(i.durationMs) });
     },
 
-    trackExportFailed(i: { reason: V<'export_failed', 'reason'> }): TrackResult {
-      return track('export_failed', { format: 'archive', reason: i.reason });
+    trackExportFailed(i: { reason: V<'keeping:export_fail', 'reason'> }): TrackResult {
+      return track('keeping:export_fail', { format: 'archive', reason: i.reason });
     },
 
     /** Stored reminder preferences (src/lib/reminders ReminderPrefs) to the schedule event. */
@@ -205,7 +200,7 @@ export function createTrackers(analytics: Pick<Analytics, 'track'>) {
       paused: boolean;
     }): TrackResult {
       const cadence = !i.enabled ? 'off' : i.cadence === 'fewTimes' ? 'few_times' : i.cadence === 'everyEvening' ? 'every_evening' : i.cadence;
-      return track('reminder_schedule_set', { cadence, hour_bucket: hourBucket(i.hour), paused: i.paused });
+      return track('notifications:schedule_update', { cadence, hour_bucket: hourBucket(i.hour), paused: i.paused });
     },
 
     /**
@@ -224,12 +219,8 @@ export function createTrackers(analytics: Pick<Analytics, 'track'>) {
         .sort((a, b) => b.n - a.n)
         .slice(0, MAX_REJECTED_EVENTS_PER_LETTER)
         .map(({ input, n }) =>
-          track('machine_edit_rejected', { edit_type: input.edit.type, source: input.edit.source, reason: input.reason, count: clampInt(n, 1, 500) }),
+          track('capture:edit_decline', { edit_type: input.edit.type, source: input.edit.source, reason: input.reason, count: clampInt(n, 1, 500) }),
         );
-    },
-
-    trackColdStart(i: { ttfiMs: number }): TrackResult {
-      return track('app_cold_start', { ttfi_bucket: ttfiBucket(i.ttfiMs) });
     },
 
     /**
@@ -240,7 +231,7 @@ export function createTrackers(analytics: Pick<Analytics, 'track'>) {
     trackAnalyticsOptedIn(i: OptedInSummaryInput): TrackResult {
       const sinceInstall = i.firstLaunchAt == null ? 0 : i.now - i.firstLaunchAt;
       const ttfl = i.firstLaunchAt != null && i.firstLetterAt != null ? i.firstLetterAt - i.firstLaunchAt : null;
-      return track('analytics_opted_in', {
+      return track('system:analytics_consent_accept', {
         surface: i.surface,
         days_since_install: daysBucket(sinceInstall),
         letters_bucket: lettersBucket(i.letters),
@@ -253,16 +244,16 @@ export function createTrackers(analytics: Pick<Analytics, 'track'>) {
     },
 
     /** One language per event, and only the seven v1.0 languages. */
-    trackLanguageSet(i: { lang: string; action: V<'language_set', 'action'> }): HelperResult {
+    trackLanguageSet(i: { lang: string; action: V<'me:language_update', 'action'> }): HelperResult {
       const lang = toV1Lang(i.lang);
       if (!lang) return 'not_sent';
-      return track('language_set', { lang, action: i.action });
+      return track('me:language_update', { lang, action: i.action });
     },
 
     /** A pack engine progress change, by short analytics pack id and language code only. */
     trackPackDownload(i: PackDownloadInput): HelperResult {
       const { pack, lang } = packAnalyticsId(i.packId);
-      return track('pack_download', {
+      return track('system:pack_download_update', {
         pack,
         ...(lang ? { lang } : {}),
         pack_version: clampInt(i.version ?? 1, 1, 1000),

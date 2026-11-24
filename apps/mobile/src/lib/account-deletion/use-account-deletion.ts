@@ -4,7 +4,7 @@
  * store, analytics and Plus state. Network only on the screen, never at launch.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { analytics, analyticsIdsForDeletion, forgetAnalyticsIds, withdrawAnalytics } from '@/lib/analytics';
+import { analyticsIdsForDeletion, forgetAnalyticsIds, forgetAnalyticsIdsSome, withdrawAnalytics } from '@/lib/analytics';
 import { authUserId } from '@/lib/auth/machine.logic';
 import { useAuth } from '@/lib/auth/session-provider';
 import { usePlan } from '@/lib/billing';
@@ -17,7 +17,7 @@ import { bookImpacts, impactLines, showSubscriptionNotice, type ServerStatus, ty
 import { recordCancelled, recordRequested, recordStatus } from './note-store';
 
 const flags: FlagStore = { get: getSetting, set: setSetting, remove: deleteSetting };
-const ids: AnalyticsIds = { ids: analyticsIdsForDeletion, forget: forgetAnalyticsIds };
+const ids: AnalyticsIds = { ids: analyticsIdsForDeletion, forget: forgetAnalyticsIds, forgetSome: forgetAnalyticsIdsSome };
 
 /** The current person's letters in a book on this phone (local-only letters are theirs too). */
 function myLetterCount(childId: string): number {
@@ -80,9 +80,8 @@ export function useAccountDeletion() {
     // First of all, before anything that can wait or fail: this phone now knows a request is open (open-request.ts).
     // Not under a second account: the note on the phone is the owner's (HO-911, same guard as refresh).
     if (bookVisibleNow()) recordRequested(r.value);
-    // The last event for this analytics id (TRACKING_PLAN), then sharing stops at once (DELETION spec 2.6.1 step 7),
-    // then PostHog deletes this phone's persons through analytics-forget.
-    analytics.track('account_deletion', { stage: 'confirmed' });
+    // Sharing stops at once (DELETION spec 2.6.1 step 7), then PostHog deletes this phone's persons through
+    // analytics-forget. No analytics event is sent for the deletion flow (PM3 IN-K3, R-K3; BL-2175).
     await withdrawAnalytics().catch(() => {});
     await forgetAnalytics(client, ids, flags, 'account_deletion', uuidv7());
     setStatus({ state: 'scheduled', requestId: r.value.requestId, scheduledFor: r.value.scheduledFor });
@@ -102,7 +101,14 @@ export function useAccountDeletion() {
     }
     // A co-parent's book never left, so the note goes. A sole parent's book is on the server again and comes back with
     // the next pull: the note stays as "cancelled" until it does, so the phone never shows the welcome in between.
-    if (bookVisibleNow()) recordCancelled();
+    // The server already cancelled: a note that cannot be written (a locked or full database) must not turn that into a
+    // failed press or an unhandled rejection. The note is only the phone's memory of the request; the next read of the
+    // server's status puts it right (BL-494 follow-up).
+    try {
+      if (bookVisibleNow()) recordCancelled();
+    } catch {
+      /* the screen goes on: the cancel itself went through */
+    }
     setStatus({ state: 'none' });
     setCancelled(true);
     return true;
@@ -120,6 +126,5 @@ export function useAccountDeletion() {
     request,
     cancel,
     signOut: auth.signOut,
-    trackStage: (stage: 'started' | 'export_offered') => analytics.track('account_deletion', { stage }),
   };
 }

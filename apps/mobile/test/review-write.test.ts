@@ -232,9 +232,9 @@ describe('S21: the saved moment (MOTION 5e, 5.8 rows 5 and 5a)', () => {
   // SET-01 (docs/reviews/2026-10-31/setup.md): this test used to pin the sheet to the first letter, which encoded the
   // bug (DR-12 B puts Keep the book on the second letter or session 2). The order is now lib/asks, test/next-ask.test.ts.
   it('5.8 row 5b: the Keep the book sheet rises over the Book after the landing, never in place of Review, when lib/asks says so', () => {
-    expect(review).toMatch(/askAfterLanding\.current = askAfterSave\(\{ firstLetter, signInOffered: auth\.configured && auth\.state\.status === 'signedOut' \}\)/);
+    expect(review).toMatch(/askAfterLanding\.current = askAfterSave\(\{\s*firstLetter,\s*signInOffered: auth\.configured && auth\.state\.status === 'signedOut',\s*surfaceBusy: surfaceBusy\(\),/);
     expect(review).toMatch(/if \(askAfterLanding\.current === 'keep_book'\) \{/);
-    expect(review).toMatch(/setTimeout\(\(\) => router\.push\(\{ pathname: '\/sign-in', params: \{ trigger: keepBookTrigger\(\) \} \}\), signInAfterLandingMs\(motion\.reduced\)\)/);
+    expect(review).toMatch(/fireDelayedAsk\('keep_book', \(\) => router\.push\(\{ pathname: '\/sign-in', params: \{ trigger: keepBookTrigger\(\) \} \}\)\),\s*signInAfterLandingMs\(motion\.reduced\)/);
     expect(review).not.toMatch(/router\.replace\(\{ pathname: '\/sign-in'/);
   });
 
@@ -280,8 +280,8 @@ describe('S17: Review reads as a letter', () => {
   });
 
   it('the fix rows fold behind one disclosure row; every mark stays tappable in the letter', () => {
-    expect(review).toMatch(/accessibilityState=\{\{ expanded: fixesOpen \}\}/);
-    expect(review).toMatch(/view === 'fixes' && applied\.length > 0 && fixesOpen &&/);
+    expect(review).toMatch(/accessibilityState=\{\{ expanded: foldOpen \}\}/);
+    expect(review).toMatch(/view === 'fixes' && applied\.length > 0 && foldedShow &&/);
   });
 
   it('a failed save keeps the letter, relabels the primary and says so directly above it', () => {
@@ -295,7 +295,7 @@ describe('S17: Review reads as a letter', () => {
 
   it('"Keep private" stays after a failed save, so focus is never dropped and the other destination is one tap away', () => {
     const footer = review.slice(review.indexOf('const footer ='), review.indexOf('const keepFooter'));
-    expect(footer).toMatch(/<Button variant="quiet" fullWidth onPress=\{\(\) => keepTo\(false\)\} disabled=\{!finalText\.trim\(\)\} testID="review\.save\.private">/);
+    expect(footer).toMatch(/<Button variant="quiet" fullWidth onPress=\{\(\) => keepTo\(false\)\} disabled=\{!finalText\.trim\(\)\} accessibilityHint=\{lines \? keepLine\('private'\) : undefined\} testID="review\.save\.private">/);
     expect(footer).not.toMatch(/!saveFailed\s*&&/);
   });
 

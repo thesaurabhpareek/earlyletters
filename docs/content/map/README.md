@@ -35,6 +35,24 @@ the same PR as any content change you want mapped.
 CI: `scripts/content/export-content-map.test.mjs` is in the root `npm test` list (BL-1880), so a stale map fails the build.
 Every content PR must regenerate the map.
 
+## When two content PRs conflict in the map (BL-1992)
+Choice: option (a) of the row, a helper script, with the files still committed. The two files are pure output, so a
+conflict in them is noise and the only correct resolution is to regenerate. Cost: one command per rebase, run by the author.
+Not chosen: (b) a CI step that commits the files needs a workflow change and a bot push to PR branches, which agents do not
+make, and Karma owns merge-queue settings; (c) not committing the files would stop reviewers reading the map in the diff
+and would need a CI generate step. If Karma wants (b) or (c) later, this helper stays useful for local rebases.
+
+In the middle of the conflicted `git merge origin/develop` or `git rebase origin/develop`:
+```
+node scripts/content/merge-content-map.mjs
+```
+Fix every other conflicted file first; the helper refuses while any remain, because the generator would read conflict
+markers. It takes either side of the two map files, regenerates them from the tree, and stages them. Then continue the
+merge or rebase. Git can also merge the two files cleanly but wrongly; if the stale-map test fails after a clean merge, run
+`node scripts/content/export-content-map.mjs`. After regenerating, the helper runs the generator's `--check` and stops
+with an error if it fails. A modify/delete conflict on a map file (one side deleted it) also fails with an error from git,
+because there is no side to take; restore or delete the file yourself, then run the helper. The stale-map test is unchanged and still fails on a stale map.
+
 ## Walked
 `packages/content/src/**`, copy files under `apps/mobile/src` (most only re-export content, so they add few rows),
 `apps/web/src/content`, `packages/emails/src/templates` (they read content, so they add none today),

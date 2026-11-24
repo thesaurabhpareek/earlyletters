@@ -272,7 +272,7 @@ Added 20 Nov 2026 after card 27 locked. Read from `docs/product/prd/27-photo-mom
 | FR-CMP-22 | NS-51-R1, NS-51-R3, NS-51-R31, NS-51-R32 | R31 holds the Notes for Review and policy lines |
 | FR-CMP-23 | NS-51-R2, NS-51-R29, NS-51-R32; NS-49-R6 and NS-49-R25 as scoped by E34; NS-01-R22 as scoped by E34 | R2 holds the usage-string rule per profile |
 | FR-CMP-24 | NS-51-R15, NS-51-R16, NS-51-R19 | R16: the card never claims it revoked the phone's permission |
-| FR-CMP-25 | NS-52-R19 (Variant A), NS-52-R21, NS-52-R23 (Variant B) | No row for the age-rating re-answer. Proposed row NS-52-R45 (P0 (b)), part of errata proposal E85 pending the next free erratum number; it is not on the card yet, so until `product` lands it this requirement is the only home (see "Proposed card rows" at the end of this file) |
+| FR-CMP-25 | NS-52-R19 (Variant A), NS-52-R21, NS-52-R23 (Variant B) | No row for the age-rating re-answer. Proposed row NS-52-R45 (P0 (b)), proposed as E87 in `docs/product/prd/18-errata-after-lock.md` (PROPOSED; E85 there is a different erratum); it is not on the card yet, so until `product` lands it this requirement is the only home (see "Proposed card rows" at the end of this file) |
 | FR-CMP-26 | NS-51-R30, NS-51-R31, NS-51-R33, NS-52-R6, NS-52-R23, NS-52-R29 | R33 and R29: no face, person or scene read; R6: sound never analysed |
 | FR-CMP-27 | NS-51-R1, NS-51-R37 | The 18+ gate itself is E-S03 and card 19 |
 | FR-CMP-28 | NS-51-R26, NS-52-R19; Variant B: NS-52-R21, NS-52-R23 | R26: a network fake sees 0 requests |
@@ -354,7 +354,7 @@ FR-CMP-03 (the Notes check also reads `EXPO_PUBLIC_DAYS`, `EXPO_PUBLIC_SUGGESTIO
 Whether App Review treats an optional faith or origin question as a minimisation breach (no source); whether a local day note is inside 4.5.4 (counsel); how the lock screen behaves with a category that has no `hiddenPreviewsShowTitle` (a device walk, J-CUL-01, not run); the DPLA clauses (not read by me); the statutes (not read). Not run: no build, no device, no proxy capture, no test. Backlog row ids were not looked up; the cards carry none.
 
 
-### Proposed card rows (pending the next free erratum number)
-Proposed in errata proposal E85 (PR body of the PR that added this addendum; `product` assigns the number at merge). None is on a card yet, and this file is their only home until they land: NS-46-R50 (P0 (b), Notes for Review section for Days, FR-CMP-39), NS-52-R45 (P0 (b), age-rating questionnaire re-answered and saved when media is on, FR-CMP-25), and a raise of NS-51-R32 from P1 to P0 (b) (FR-CMP-22, 23, 41 rest on it). If `product` rules otherwise, FR-CMP-25 and 39 keep this file as the home.
+### Proposed card rows (E87, PROPOSED)
+Proposed in PR #1056 and carried as E87 in `docs/product/prd/18-errata-after-lock.md`, where it is still PROPOSED (checked 24 Nov 2026: NS-46-R50 and NS-52-R45 are not on cards 21 or 27, and NS-51-R32 has not been raised). None is on a card yet, and this file is their only home until they land: NS-46-R50 (P0 (b), Notes for Review section for Days, FR-CMP-39), NS-52-R45 (P0 (b), age-rating questionnaire re-answered and saved when media is on, FR-CMP-25), and a raise of NS-51-R32 from P1 to P0 (b) (FR-CMP-22, 23, 41 rest on it). If `product` rules otherwise, FR-CMP-25 and 39 keep this file as the home.
 
 Chief Legal Officer (Claude role, not a lawyer), for the compliance lens

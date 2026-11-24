@@ -24,7 +24,7 @@ test('[J14] where your letters live, your words and spoken language', async ({ a
   await step('happy', 'Your words', 'Two named choices for new letters, each with its own line, and an example the real engine cleaned, with the words a small fix took out struck through. Either way, we never rewrite your words.');
   await app.goBack();
 
-  await app.getByText('Storage', { exact: true }).click();
-  await expect(app.getByText('Not on this phone, 575 MB')).toBeVisible();
-  await step('happy', 'Storage, languages', 'Language download lives only here: the language row reads "English, Not on this phone, 575 MB"; on a phone it ends in "Download" (or "Remove" once it is here) and shows a small ring with "Getting ready, 40%" while it downloads. On web there is no model to fetch.');
+  // BL-2007: the Storage page is not opened here. It used to say "This page didn't open" on web, because
+  // `expo-file-system` throws there; BL-2174 made `appSupportDir` and the pack manager web-safe, and the J26 flow
+  // (j26-missing-screens.flow.ts, "[J26] Storage") now opens Storage and proves its empty state, so nothing is added here.
 });

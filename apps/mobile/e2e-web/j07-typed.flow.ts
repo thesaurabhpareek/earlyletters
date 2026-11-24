@@ -1,5 +1,5 @@
 import { btn, firstRun, journey, noRemindersAfterFirstLetter, selectedTab, tab } from './support/app';
-import { expect, test } from './support/journey';
+import { expect, onStore, test } from './support/journey';
 
 /**
  * A frame sampler for the arrival wash (5.8 row 5, S26; P5 critics' pass S1). The wash is an absolutely placed,
@@ -61,6 +61,7 @@ test('[J07] a typed letter: write, autosave, one tap to the book', async ({ app,
 test('[J07d] the free letters: two are kept, the third is held', async ({ app, record }) => {
   test.setTimeout(120_000);
   const step = journey(record, 'J07', 'typed-letter', 8, 'J07-04');
+  await onStore(app); // the store build holds the third letter; the alpha builds do not (BL-1991)
   await firstRun(app);
   const write = async (text: string) => {
     await tab(app, 'Home').click();

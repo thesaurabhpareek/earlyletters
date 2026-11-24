@@ -12,6 +12,7 @@ import {
   type PropSpec,
   withRenderedCatalogue,
 } from '../src';
+import { WIRE_NAME_MAX, WIRE_NAME_RE } from '../src/wire-names';
 
 const entries = Object.entries(EVENTS) as [string, { area: string; reqs: readonly string[]; level: string; props: Record<string, PropSpec> }][];
 
@@ -19,14 +20,19 @@ const entries = Object.entries(EVENTS) as [string, { area: string; reqs: readonl
 const FORBIDDEN_KEY = /(text|transcript|name|note|email|audio_url|birth|due_date|dob|token|query|phone|address|signs_as|language_code|locale|timezone|photo_url|word$|term$)/;
 
 describe('catalogue rules', () => {
-  it('has snake_case event names of 40 characters or fewer', () => {
-    for (const [name] of entries) expect(name).toMatch(/^[a-z][a-z0-9_]{0,39}$/);
+  it('has event names that are a snake_case key of 40 characters or fewer, or a wire name (category:object_action, 60 or fewer)', () => {
+    for (const [name] of entries) {
+      if (name.includes(':')) {
+        expect(name).toMatch(WIRE_NAME_RE);
+        expect(name.length).toBeLessThanOrEqual(WIRE_NAME_MAX);
+      } else expect(name).toMatch(/^[a-z][a-z0-9_]{0,39}$/);
+    }
   });
 
   it('cites at least one requirement per event', () => {
     for (const [name, spec] of entries) {
       expect(spec.reqs.length, name).toBeGreaterThan(0);
-      for (const r of spec.reqs) expect(r, name).toMatch(/^(PRD-REQ-\d{3}|[ABC]-(REQ|NFR)-\d{3}|K-\d{2}|ADR-\d{4}|NFR-7\.\d+|LEGAL-REQ-\d{3})$/);
+      for (const r of spec.reqs) expect(r, name).toMatch(/^(PRD-REQ-\d{3}|[ABC]-(REQ|NFR)-\d{3}|K-\d{2}|ADR-\d{4}|NFR-7\.\d+|LEGAL-REQ-\d{3}|FR-[A-Z]{3}-\d{2})$/);
     }
   });
 
@@ -82,8 +88,8 @@ describe('catalogue rules', () => {
     }
   });
 
-  it('sends goals only as a count and no multilingual flag (PRD 7.10, B-NFR-001)', () => {
-    expect(Object.keys(EVENTS.goals_set.props)).toEqual(['count']);
+  it('sends no goals event (retired, BL-2175) and no multilingual flag (PRD 7.10, B-NFR-001)', () => {
+    expect(Object.keys(EVENTS)).not.toContain('goals_set');
     expect(Object.keys(EVENTS)).not.toContain('languages_set');
     for (const [name, spec] of entries) {
       for (const key of Object.keys(spec.props)) {
@@ -94,9 +100,9 @@ describe('catalogue rules', () => {
 
   it('carries language only as `lang`, only on languages events, only from the seven v1.0 codes', () => {
     const withLang = entries.filter(([, spec]) => 'lang' in spec.props).map(([name]) => name).sort();
-    expect(withLang).toEqual(['language_set', 'pack_download']);
+    expect(withLang).toEqual(['me:language_update', 'system:pack_download_update']);
     for (const name of withLang) {
-      const spec = EVENTS[name as 'language_set'];
+      const spec = EVENTS[name as 'me:language_update'];
       expect(spec.area).toBe('languages');
       expect(spec.props.lang.type).toBe('enum');
       expect([...spec.props.lang.values].sort()).toEqual(['ar', 'en', 'es', 'fr', 'hi', 'pt', 'zh']);

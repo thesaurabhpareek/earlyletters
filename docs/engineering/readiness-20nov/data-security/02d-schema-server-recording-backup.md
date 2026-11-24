@@ -290,6 +290,23 @@ Tables behind the encrypted recording backup (migration `20261023000000_backup_s
 | day | date | no |  | L2 | fn | fn | date |
 | calls | integer | no | 0 | L2 | fn | fn | count |
 
+### ops.forget_quota_retired (table, 3 columns)
+
+- What: Daily call count per person to analytics-forget for the `retired_id` reason, kept apart from `ops.forget_quota` so retired-id cleanup cannot use up the shared bucket. Created at `20261124000000_forget_quota_retired.sql:17`.
+- Levels: L2 x2, L3 x1. RLS: on. Owner agent: ops.
+- Table grants: anon none; au none; svc none. Row scope for au: no role.
+- Written by: ops_consume_forget_quota_retired, ops_retention. Read by: no function.
+- Keys: (profile_id, day); FK (profile_id) -> profiles(id) del cascade. Indexes: primary key only.
+- Retention: 2 days (ops_retention, `20261124010000_ops_retention_forget_quota_retired.sql`); ops_consume_forget_quota_retired also clears that person's rows older than a day.
+- Deletion path: same sweep; cascade from profile.
+- Tests (files that name it): grants, ops_deletion_worker.
+
+| Column | Type | Null | Default | L | Read | Write | Note |
+|---|---|---|---|---|---|---|---|
+| profile_id | uuid | no |  | L3 | fn | fn | person id |
+| day | date | no |  | L2 | fn | fn | date |
+| calls | integer | no | 0 | L2 | fn | fn | count |
+
 
 ## Gaps found in this file
 

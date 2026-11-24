@@ -5,9 +5,16 @@
  *   queued. Declining stores `denied`, which behaves the same.
  * - `granted` creates a fresh random id (never email, Supabase user id or a
  *   device id).
+ * - The id is minted lazily by `ensureId()` the first time the gate allows an
+ *   event, never before (ER-A04, BL-1239). It is a lowercase random id, never
+ *   an account, device or advertising id, and it may exist without a yes (the
+ *   `collect_by_default` policy, once that gate exists).
  * - Revoking retires the id. A later grant gets a new one, so the two
- *   periods cannot be joined. Retired ids are kept locally (capped) only so
- *   account deletion can ask PostHog to delete their events too.
+ *   periods cannot be joined. Retired ids are kept locally only so account
+ *   deletion can ask PostHog to delete their events too. The list is capped
+ *   at 20, but an id is never silently dropped: past the cap the oldest is
+ *   passed to `forgetRetired` and leaves the list only once that call says it
+ *   was acknowledged. With no callback, or a refusal, it stays.
  *
  * This module stores only the choice and ids, which are L2. The legal
  * consent record (`policy_acceptances`, version accepted) is written by the
@@ -31,6 +38,8 @@ export const STORAGE_KEYS = {
   consentMeta: 'scribe.analytics.consent_meta',
   /** Acts not yet uploaded through `record_policy_act` (TDD 05 X-13). */
   pendingActs: 'scribe.analytics.pending_acts',
+  /** `1` once the in-app disclosure of the `collect_by_default` policy has been shown (ER-A03). On-device, no content. */
+  disclosure: 'scribe.analytics.disclosure_shown',
 } as const;
 
 export const CURRENT_CONSENT_VERSION = '1.0';
@@ -64,9 +73,16 @@ export interface ConsentStoreOptions {
   /** The consent version this build asks for. A newer major than the stored answer asks again. */
   currentVersion?: string;
   now?: () => string;
+  /**
+   * Asks the server to forget these retired ids in one `analytics-forget` call (BL-1252, BL-2163). Resolve true only
+   * when the whole batch is acknowledged. Anything else (false, a throw, a rejection, a 429) keeps every id in the list.
+   */
+  forgetRetired?: (ids: string[]) => boolean | Promise<boolean>;
 }
 
 export const MAX_RETIRED_IDS = 20;
+/** The most ids one `analytics-forget` call takes (`ANALYTICS_FORGET_MAX_IDS` in packages/api; a test keeps them equal). */
+export const MAX_FORGET_BATCH = 21;
 
 export function memoryStorage(initial: Record<string, string> = {}): KeyValueStorage & { dump(): Record<string, string> } {
   const data = new Map(Object.entries(initial));
@@ -106,6 +122,17 @@ export class ConsentStore {
   }
 
   private pending: PendingConsentAct[] = [];
+  private disclosed = false;
+
+  /** True once the disclosure has been shown and recorded. Nothing under `collect_by_default` passes before it. */
+  get disclosureShown(): boolean {
+    return this.disclosed;
+  }
+
+  async recordDisclosure(): Promise<void> {
+    this.disclosed = true;
+    await this.storage.set(STORAGE_KEYS.disclosure, '1');
+  }
 
   private get version(): string {
     return this.options.currentVersion ?? CURRENT_CONSENT_VERSION;
@@ -149,8 +176,31 @@ export class ConsentStore {
     return this.snap.status;
   }
 
+  /** The live install id, or null before one is minted and after the person switched off. */
   get id(): string | null {
-    return this.snap.status === 'granted' ? this.snap.id : null;
+    return this.snap.id;
+  }
+
+  private idWrite: Promise<void> = Promise.resolve();
+
+  /**
+   * Mint the install id if there is none, and return it. Call only once the gate has allowed an event: this method
+   * does not check consent. The id is set in memory at once and written to storage right after; `settled()` resolves
+   * when that write is done (and rejects if it failed, so a caller can refuse to send an id it could not keep).
+   */
+  ensureId(): string {
+    if (this.snap.id) return this.snap.id;
+    const id = this.randomId().toLowerCase();
+    this.snap.id = id;
+    const write = Promise.resolve().then(() => this.storage.set(STORAGE_KEYS.id, id));
+    write.catch(() => undefined);
+    this.idWrite = write;
+    return id;
+  }
+
+  /** Resolves when the last id write is stored. */
+  settled(): Promise<void> {
+    return this.idWrite;
   }
 
   /** Current id (if any) plus retired ids, for the deletion request. */
@@ -171,6 +221,7 @@ export class ConsentStore {
       retired = [];
     }
     this.pending = parsePending(await this.storage.get(STORAGE_KEYS.pendingActs));
+    this.disclosed = (await this.storage.get(STORAGE_KEYS.disclosure)) === '1';
     // A major bump re-asks WITHOUT queueing a withdraw act: intended, the person did not act (the uploader spec says so).
     // After an erase (no meta row) a build above major 1 reports unknown where a 1.0 build reports denied: deliberate.
     // A grant or decline from before versions existed counts as major 1.
@@ -178,7 +229,7 @@ export class ConsentStore {
     const currentMajor = majorOf(this.version) ?? 1;
     if (status !== 'unknown' && answeredMajor < currentMajor) {
       // A newer major asks again. A live id is retired, so the two periods cannot be joined.
-      if (id) retired = [id, ...retired].slice(0, MAX_RETIRED_IDS);
+      if (id) retired = [id, ...retired];
       this.snap = { status: 'unknown', id: null, retired };
       if (id) await this.storage.set(STORAGE_KEYS.retired, JSON.stringify(retired));
       await this.storage.remove(STORAGE_KEYS.id);
@@ -186,8 +237,8 @@ export class ConsentStore {
       await this.storage.remove(STORAGE_KEYS.consentMeta);
       return { ...this.snap };
     }
-    // A granted state without an id is repaired with a new id.
-    this.snap = { status, id: status === 'granted' ? id : null, retired };
+    // A granted state without an id is repaired with a new id. An id that exists without a yes is kept (ER-A04).
+    this.snap = { status, id: status === 'denied' ? null : id, retired };
     if (status === 'granted' && !id) await this.newId();
     return { ...this.snap };
   }
@@ -205,7 +256,8 @@ export class ConsentStore {
 
   /** `surface` is given when the answer must reach the legal record; without it no act is queued. */
   async grant(surface?: ConsentSurface): Promise<string> {
-    if (this.snap.status !== 'granted' || !this.snap.id) await this.newId();
+    // An id minted before the yes stays: replacing it would orphan events that could then never be forgotten.
+    if (!this.snap.id) await this.newId();
     this.snap.status = 'granted';
     await this.storage.set(STORAGE_KEYS.consent, 'granted');
     await this.saveMeta();
@@ -216,8 +268,9 @@ export class ConsentStore {
   /** Withdraw (or decline). Retires the id so it is never reused. */
   async revoke(surface?: ConsentSurface): Promise<void> {
     const wasGranted = this.snap.status === 'granted';
+    await this.idWrite.catch(() => undefined);
     if (this.snap.id) {
-      this.snap.retired = [this.snap.id, ...this.snap.retired].slice(0, MAX_RETIRED_IDS);
+      this.snap.retired = [this.snap.id, ...this.snap.retired];
       await this.storage.set(STORAGE_KEYS.retired, JSON.stringify(this.snap.retired));
     }
     this.snap.id = null;
@@ -228,8 +281,52 @@ export class ConsentStore {
     await this.recordAct(wasGranted ? 'withdraw' : 'decline', surface);
   }
 
+  /**
+   * Bring the retired list back to the cap by asking the server to forget every overflow id, oldest first, in one call
+   * (a second only if more than `MAX_FORGET_BATCH` overflow). The ids leave the list only after `forgetRetired`
+   * acknowledges the whole batch; any refusal (a 429 too) stops the loop and removes nothing of that batch, so the next
+   * call retries. Without a callback nothing is removed. The list may be longer than the cap meanwhile: deleting data is
+   * never traded for a tidy list.
+   */
+  async settleRetired(): Promise<void> {
+    const forget = this.options.forgetRetired;
+    if (!forget) return;
+    while (this.snap.retired.length > MAX_RETIRED_IDS) {
+      const overflow = this.snap.retired.slice(MAX_RETIRED_IDS);
+      const batch = overflow.slice(-MAX_FORGET_BATCH);
+      let ok = false;
+      try {
+        ok = (await forget([...batch])) === true;
+      } catch {
+        ok = false;
+      }
+      if (!ok) return;
+      const gone = new Set(batch);
+      this.snap.retired = this.snap.retired.filter((x) => !gone.has(x));
+      await this.storage.set(STORAGE_KEYS.retired, JSON.stringify(this.snap.retired));
+    }
+  }
+
+  /**
+   * Forget only the given ids, the ones the server acknowledged. Every other id stays so a later call can name it
+   * again. Nothing else is wiped: the full wipe is `forgetAllIds`, used once every id is acknowledged.
+   */
+  async forgetSomeIds(ids: string[]): Promise<void> {
+    await this.idWrite.catch(() => undefined);
+    const gone = new Set(ids);
+    this.snap.retired = this.snap.retired.filter((x) => !gone.has(x));
+    await this.storage.set(STORAGE_KEYS.retired, JSON.stringify(this.snap.retired));
+    if (this.snap.id && gone.has(this.snap.id)) {
+      this.snap.id = null;
+      if (this.snap.status === 'granted') this.snap.status = 'denied';
+      await this.storage.remove(STORAGE_KEYS.id);
+      await this.storage.set(STORAGE_KEYS.consent, this.snap.status === 'unknown' ? 'unknown' : 'denied');
+    }
+  }
+
   /** After the deletion request is confirmed, forget every id. */
   async forgetAllIds(): Promise<void> {
+    await this.idWrite.catch(() => undefined);
     this.snap.retired = [];
     this.snap.id = null;
     if (this.snap.status === 'granted') this.snap.status = 'denied';
@@ -237,13 +334,16 @@ export class ConsentStore {
     await this.storage.remove(STORAGE_KEYS.retired);
     this.pending = [];
     await this.storage.remove(STORAGE_KEYS.pendingActs);
+    this.disclosed = false;
+    await this.storage.remove(STORAGE_KEYS.disclosure);
     await this.storage.remove(STORAGE_KEYS.consentMeta);
     await this.storage.set(STORAGE_KEYS.consent, this.snap.status === 'unknown' ? 'unknown' : 'denied');
   }
 
   private async newId(): Promise<void> {
-    this.snap.id = this.randomId();
-    await this.storage.set(STORAGE_KEYS.id, this.snap.id);
+    this.snap.id = null;
+    this.ensureId();
+    await this.idWrite;
   }
 }
 

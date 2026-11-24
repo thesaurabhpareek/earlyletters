@@ -60,6 +60,8 @@ export type SheetProps = {
    * labelled button (for example "Allow" and "Not now"). Default true.
    */
   dismissible?: boolean;
+  /** What the Close button and the scrim say aloud and show; default "Close". */
+  closeLabel?: string;
   /** E2E id on the sheet body. */
   testID?: string;
   /** E2E id on the Close button (for example `switcher.close`). */
@@ -76,7 +78,7 @@ function Grabber() {
   );
 }
 
-export function Sheet({ open, onClose, title, description, children, footer, hideClose, dismissible = true, testID, closeTestID }: SheetProps) {
+export function Sheet({ open, onClose, title, description, children, footer, hideClose, dismissible = true, closeLabel, testID, closeTestID }: SheetProps) {
   const ref = React.useRef<BottomSheetModal>(null);
   const titleRef = React.useRef<RNText>(null);
   const { c, scheme } = useTheme();
@@ -147,13 +149,13 @@ export function Sheet({ open, onClose, title, description, children, footer, hid
           style={fades ? [StyleSheet.absoluteFill, { backgroundColor: c.scrim }] : [props.style, { backgroundColor: c.scrim }]}
           accessible={dismissible}
           accessibilityRole={dismissible ? 'button' : undefined}
-          accessibilityLabel={dismissible ? copy.common.closeButton : undefined}
+          accessibilityLabel={dismissible ? (closeLabel ?? copy.common.closeButton) : undefined}
           accessibilityHint={undefined}
         />
       );
       return fades ? <Animated.View style={[props.style, veilStyle]}>{scrim}</Animated.View> : scrim;
     },
-    [c.scrim, dismissible, fades, close, veilStyle],
+    [c.scrim, dismissible, fades, close, veilStyle, closeLabel],
   );
 
   return (
@@ -198,7 +200,7 @@ export function Sheet({ open, onClose, title, description, children, footer, hid
               {description ? <Text variant="subhead" tone="muted">{description}</Text> : null}
             </View>
             {/* The one modal idiom (lib/navigation.logic.ts): the word "Close", top right, 44 pt. Not a circled X. */}
-            {dismissible && !hideClose && <Button variant="quiet" size="sm" className="-mr-3" label={copy.common.closeButton} onPress={close} testID={closeTestID} />}
+            {dismissible && !hideClose && <Button variant="quiet" size="sm" className="-mr-3" label={closeLabel ?? copy.common.closeButton} onPress={close} testID={closeTestID} />}
           </View>
           {children}
           {footer ? <View className="pt-2">{footer}</View> : null}

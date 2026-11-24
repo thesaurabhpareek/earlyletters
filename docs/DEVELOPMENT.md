@@ -16,6 +16,7 @@ Rules:
 - Website hotfix: PR into `main`, then merge `main` back into `develop` the same day so the lineages never drift again.
 - Release (ADR 0022, D-089; the runbook is `docs/ops/RELEASE.md`): PR `develop` into `main`, then the coordinator cuts `release/<major>.<minor>` from `main` at freeze. Fixes merge to `develop` first and are cherry-picked onto the release branch. The version lives only in `apps/mobile/version.json` (after #109; until then `apps/mobile/app.config.ts:162`); build numbers come only from EAS. Two lanes: preview-lane TestFlight builds come from `develop` (`docs/release/TESTFLIGHT.md`); store builds come only from tags on the release branch, `ios-v<x.y.z>-rc.<n>` for a candidate and `ios-v<x.y.z>` on the candidate Apple approved, pushed after release. Tags never move.
 - Database changes ship as a new migration file. Never edit a migration that has been applied.
+- Conflict in `docs/content/map/content-map.{csv,json}` (generated; BL-1992): after fixing every other conflict, run `node scripts/content/merge-content-map.mjs`, then continue the merge or rebase. Never edit those files by hand. Details: `docs/content/map/README.md`.
 
 ## Definition of Ready
 A task is ready when it has a backlog id (`docs/BACKLOG.md`, FT-## for founder steps), an owner role, a testable outcome, and no open decision. Decisions (the founder's words, and Karma's and the exec team's under D-168) are recorded as `D-###` in `docs/DECISIONS.md` before code depends on them. Ids are never reused, and an id is never renumbered once its entry is on `develop`.

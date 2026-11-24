@@ -143,7 +143,7 @@ export default function Reminders() {
         const res = await turnOnReminders();
         if (res.asked) {
           noteAskShown();
-          track('os_permission_result', { granted: res.permission === 'granted', platform: Platform.OS === 'android' ? 'android' : 'ios' });
+          track('notifications:permission_submit', { granted: res.permission === 'granted', platform: Platform.OS === 'android' ? 'android' : 'ios' });
         }
         seen.current = res.permission;
         setPermission(res.permission);
@@ -325,7 +325,7 @@ export default function Reminders() {
               disabled={lockOn}
               onValueChange={(v) => {
                 update({ namesOnLockScreen: v });
-                track('settings_changed', { key: 'lock_screen_names' });
+                track('me:setting_update', { key: 'lock_screen_names' });
               }}
             />
           </ListSection>

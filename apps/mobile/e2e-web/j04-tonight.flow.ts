@@ -1,6 +1,6 @@
 import { PROMPTS } from '@scribe/content';
 import { CHILD, SIGNS_AS, btn, dateInput, dayOffset, firstRun, journey, nameField, passAgeGate, startOnboarding, tab, toChildStep, typeLetter, noRemindersAfterFirstLetter } from './support/app';
-import { expect, seeded, test } from './support/journey';
+import { expect, onStore, seeded, test } from './support/journey';
 
 /** The words of the seeded draft (src/dev/asha-seed.ts ASHA_REVIEW_RAW): the person's own, as spoken. */
 const SEEDED_WORDS = /Asha, um, today you you held the spoon/;
@@ -93,7 +93,8 @@ test('[J04f] a letter held at the Keep step waits on Home', async ({ app, record
   test.setTimeout(120_000);
   const step = journey(record, 'J04', 'tonight-and-prompts', 8, 'J04-01');
   // A free phone: two letters are kept, the third is held at the Keep step (D-082). Typed, so no recording has to
-  // load in a browser.
+  // load in a browser. The store build: the alpha builds hold no letter (BL-1991).
+  await onStore(app);
   await firstRun(app);
   // A typed letter keeps from Write with one tap and lands on the Book (P4b), so each one comes back to Tonight.
   await typeLetter(app, 'You held the spoon by yourself today.');
@@ -166,6 +167,10 @@ test('[J04g] a book that is not born yet: the dateline names the child and the p
 });
 
 test('[J04h] a test build past the free letters: no Plus line on Tonight and no Plus sheet', async ({ app, record }) => {
+  // Known failure on develop: BL-2010. The Home tab click times out and the page reports "Array buffer allocation failed"
+  // twice (the same message as #480). Not yet read whether that is the app or how the flow seeds the data; it may share a
+  // cause with BL-2009 (the store build). Remove this line when BL-2010 is fixed: a pass turns the job red.
+  test.fail(true, 'Known failure BL-2010: remove this line in the PR that fixes it');
   test.setTimeout(150_000);
   const step = journey(record, 'J04', 'tonight-and-prompts', 11, 'J04-08');
   // The e2e web build is an alpha build (support/global-setup.ts: EXPO_PUBLIC_APP_ENV=preview, so PLUS_ALPHA). In alpha

@@ -1,4 +1,4 @@
-import { btn, firstRun, journey, typeLetter } from './support/app';
+import { btn, firstRun, journey, currentMonthOpener, expectMonthCount, monthOpener, typeLetter } from './support/app';
 import { expect, seeded, test } from './support/journey';
 
 test('[J09] the Book: empty, one letter, many letters', async ({ app, record }) => {
@@ -30,8 +30,9 @@ test('[J09b] the Book with many letters, a private one, a waiting one', async ({
   // The seed's two letters of Month 6 (23 and 4 days ago) stay in it on every day. In some runs (part of the year, around 31 Jan
   // to 27 Feb; the exact days move with leap years, the time zone and the hour) the child is in Month 6 itself, so its opener
   // is the lit one and reads "This month, Month 6. ...". Keep the alternation: a date window would break in those zones.
-  await expect(app.getByRole('heading', { name: /^(This month, )?Month 6\. 2 letters, from Mama\. / })).toBeVisible();
-  await expect(app.getByRole('heading', { name: /^This month, Month \d+\. / })).toBeVisible();
+  await expect(monthOpener(app, 6)).toBeVisible();
+  await expectMonthCount(app, 6, /2 letters, from Mama/);
+  await expect(currentMonthOpener(app)).toBeVisible();
   await expect(app.getByText(/\w+ \d+ to \w+ \d+/).first()).toBeVisible();
   // Excerpts end in a fade, never an ellipsis glyph.
   await expect(app.getByText(/…/)).toHaveCount(0);

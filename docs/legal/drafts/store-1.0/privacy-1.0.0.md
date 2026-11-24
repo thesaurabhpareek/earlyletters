@@ -41,7 +41,7 @@ Early Letters is published by [legal name] ("we", "us"), the Seller named on the
 
 | What | When | Why |
 |---|---|---|
-| **Your account:** your email address; your name, if Apple shares it; the name you sign your letters with; a random account ID; the versions of our Terms and of the health details agreement (section 10) you accepted or declined, and when | When you sign in | To sign you in, keep your book in sync, and keep a record of what you agreed to |
+| **Your account:** your email address; your name, if Apple shares it; the name you sign your letters with; a random account ID; the versions of our Terms and of the health details agreement (section 10) you accepted or declined, and when. With each acceptance or decline the app also sends the document, its version, how you answered, the app version, the platform and your language setting. If you delete your account we keep a record that the deletion happened, and activity records about your account, as section 8 lists [EXEC-TEAM COUNSEL Q C5: the ruling points at "section 7"; in this draft the kept records are in section 8. Field list from the 23 Nov ruling (item 4), not re-read in the migration this session.] | When you sign in | To sign you in, keep your book in sync, and keep a record of what you agreed to |
 | **Sign-in details:** if you use Sign in with Apple, Apple's ID for you and a token Apple gives us, which we store encrypted; if you use an email link or code, the code is sent to your email | When you sign in | To sign you in, and to tell Apple to end the connection when you delete your account (section 8) |
 | **Your book:** for each child, a name or nickname, and a birthday or a due date; your list of names and words | When you sign in and agree to sync | So the book reaches your other iPhone |
 | **Your letters:** the words you speak or type, the original transcript, each small fix the app made, your own changes, the final text, earlier versions of a changed letter, and letters waiting for you to keep them | When you sign in and agree to sync | The same |
@@ -62,7 +62,7 @@ Early Letters is published by [legal name] ("we", "us"), the Seller named on the
 
 ## 3. Without an account
 
-The app starts at a Welcome that asks you to sign in, and offers a local start with no account (`packages/content/src/strings.en.ts` `localStart`; D-160). On the local start your book stays on your iPhone, and we receive nothing about it. Section 6 still applies to the files the app downloads.
+The app starts at a Welcome that asks you to sign in. It offers a local start with no account only on the screens that show when sign-in is paused, you are offline, or sign-in has failed, and only once you have said you are 18 or older (`packages/content/src/strings.en.ts` `localStart`; D-160). On the local start your book stays on your iPhone, and we receive nothing about it. Section 6 still applies to the files the app downloads. [Engineering reading of `apps/mobile/src/lib/first-run/gate.logic.ts` lines 119 to 163, 24 Nov 2026: `localStartAllowed` is true when the age answer is Yes and the compiled switch `LOCAL_START_FALLBACK` is on (it is `true` today). The Welcome offers the local start only in the outage states, and a person who already chose it goes on to the child step. Not run on a device.]
 
 ## 4. Who can see your letters
 
@@ -131,7 +131,7 @@ Letters can mention health, and a due date shows a pregnancy. We treat everythin
 
 Early Letters is for adults. You must be 18 or older to use it. The app asks before first use and stops if the answer is no. When you sign in, you confirm again that you are 18 or older. Children do not use the app or sign in, and we do not knowingly collect information from children.
 
-What we hold about a child comes from a parent: the child's name or nickname, birthday or due date, and the letters written to them. We use it only to keep that child's book for you. We never use it for advertising, profiles or marketing, and we never share it with anyone else, except as section 4 says.
+What we hold about a child comes from a parent: the child's name or nickname, birthday or due date, and the letters written to them. We use it to keep that child's book for you. We never use it for advertising, profiles or marketing, and we never share it with anyone else, except as section 4 says.
 
 If we learn that someone under 18 has an account or joined our list, we will close the account or delete the address. [EXEC-TEAM COUNSEL Q S-10 (packet Q45): engineering reading is that COPPA is not engaged, because the app is for adults and children do not use it, while the app stores a child's details given by a parent. EXEC-TEAM COUNSEL Q S-8 (packet Q46, Q5): Texas SB 2420; founder decision F-3.]
 
@@ -157,7 +157,7 @@ The app is offered on the United States App Store, and your information is store
 
 We publish every version at its own address with its date and what changed. Before a change that matters to how your information is used applies to you, we will tell you in the app, and by email if you have an account, and ask for your agreement where the law requires. [EXEC-TEAM COUNSEL Q S-14: no re-consent screen exists in the app; how 1.0.0 replaces 0.9.0 for testers who accepted 0.9.0.]
 
-If we ever close Early Letters, we will tell you at least 90 days ahead and keep export working the whole time.
+If we ever plan to close Early Letters, we will tell you at least 90 days ahead and keep export working the whole time.
 
 ## 17. Contact
 

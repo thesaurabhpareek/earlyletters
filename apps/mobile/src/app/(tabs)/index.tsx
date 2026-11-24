@@ -83,6 +83,7 @@ import {
   deleteEntry,
   getActiveChild,
   getActiveChildId,
+  getEntry,
   getFamily,
   listDrafts,
   readTonight,
@@ -262,7 +263,8 @@ export default function Tonight() {
   };
 
   const undoNotMuch = () => {
-    if (keptMark) deleteEntry(keptMark);
+    // The mark stays when the store refused the delete (a left book, BL-1959), so the line is not cleared over it.
+    if (keptMark && !deleteEntry(keptMark) && getEntry(keptMark)) return;
     setKeptMark(null);
   };
 

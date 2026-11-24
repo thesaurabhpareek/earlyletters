@@ -30,8 +30,8 @@ A letter whose recording is on another phone, or was never made, says so in data
 YOUR CHOICES ON THIS PHONE
 
 account.json says whether you answered yes to "Are you 18 or older?" on this phone,
-and your choice about sharing usage ("not_answered" if you have
-not answered). These are the answers kept on this phone.
+and your choice about sharing usage ("not_answered" if you have not answered).
+These are the answers kept on this phone.
 
 YOUR CONSENT HISTORY
 

@@ -23,7 +23,6 @@ import { CAPTURE_MODES } from '@scribe/core';
 import { bool, int, oneOf, opt, type EventSpec } from './schema';
 import {
   AUDIO_BUCKET,
-  AUTHOR_RELATION,
   AUTH_METHOD,
   CAPTURE_MODE,
   CHILD_ORDINAL,
@@ -81,27 +80,30 @@ export const REGISTRY = {
     when: 'A route is shown. Sent by our router hook from the route template, never by SDK autocapture',
     reqs: ['ADR-0008', 'PRD-REQ-016'],
     level: 'L2',
+    tier: 'basics',
     props: { route: ROUTE },
   },
-  app_opened: {
+  'system:app_open': {
     stage: 'return',
     decision: "How many weeks a family comes back and how they got in (reminder, link or by hand), so we know whether reminders earn their place.",
     area: 'app',
     when: 'App comes to the foreground after 30 min or more away, or cold starts',
     reqs: ['PRD-REQ-016'],
     level: 'L2',
+    tier: 'consented',
     props: {
       source: oneOf('cold', 'warm', 'notification', 'link'),
       days_since_last_open: DAYS_BUCKET,
     },
   },
-  analytics_opted_in: {
+  'system:analytics_consent_accept': {
     stage: 'activation',
     decision: "How far a family had got when they said yes (first-run facts we could never send before), so we can judge the install to first letter step.",
     area: 'consent',
     when: 'Immediately after the user says yes. Carries a one-time summary of first-run facts the app already stores, because first-run events can never be sent (K-01)',
     reqs: ['PRD-REQ-016', 'K-01'],
     level: 'L2',
+    tier: 'consented',
     props: {
       surface: oneOf('consent_sheet', 'settings'),
       days_since_install: DAYS_BUCKET,
@@ -113,22 +115,24 @@ export const REGISTRY = {
       came_from_invite: bool(),
     },
   },
-  auth_succeeded: {
+  'onboarding:sign_in_complete': {
     stage: 'activation',
     decision: "How many families who start a book go on to keep it with an account, so we decide whether the Keep sheet asks at the right moment.",
     area: 'entry',
     when: 'A new session exists on this phone (observed from the auth state). New accounts are counted on the server',
     reqs: ['A-NFR-013', 'PRD-REQ-016'],
     level: 'L2',
+    tier: 'consented',
     props: { method: AUTH_METHOD, had_local_data: bool() },
   },
-  child_added: {
+  'onboarding:book_create': {
     stage: 'activation',
     decision: "Whether a family finishes setting up a book during first run, so we decide what the first-run flow can drop.",
     area: 'children',
     when: 'A child book is created',
     reqs: ['PRD-REQ-011', 'PRD-REQ-015', 'B-REQ-004'],
     level: 'L2',
+    tier: 'consented',
     props: {
       /**
        * True when a full date (birthday or due date) was entered, false for
@@ -141,13 +145,14 @@ export const REGISTRY = {
       added_together: bool(),
     },
   },
-  capture_started: {
+  'capture:take_start': {
     stage: 'capture',
     decision: "How many families begin a letter by speaking or typing, so we decide which one Home leads with.",
     area: 'capture',
     when: 'User starts speaking or typing a letter',
     reqs: ['PRD-REQ-016', 'C-REQ-034'],
     level: 'L2',
+    tier: 'consented',
     props: {
       mode: CAPTURE_MODE,
       source: oneOf('tonight', 'book', 'notification', 'make_it_yours', 'resurface'),
@@ -156,22 +161,24 @@ export const REGISTRY = {
       member_role: MEMBER_ROLE,
     },
   },
-  capture_discarded: {
+  'capture:take_cancel': {
     stage: 'capture',
     decision: "Where letters are thrown away before saving, so we decide whether the capture screens need fixing.",
     area: 'capture',
     when: 'A letter in progress is thrown away before saving',
     reqs: ['PRD-REQ-016'],
     level: 'L2',
+    tier: 'consented',
     props: { mode: CAPTURE_MODE, stage: oneOf('listening', 'review'), audio_bucket: opt(AUDIO_BUCKET) },
   },
-  transcription_completed: {
+  'capture:transcript_complete': {
     stage: 'capture',
     decision: "Whether spoken letters finish turning into words, so we decide whether to hold other work to fix speech.",
     area: 'capture',
     when: 'A spoken letter finishes transcription, hears no speech, fails, or waits for its language model',
     reqs: ['PRD-REQ-016', 'NFR-7.7'],
     level: 'L2',
+    tier: 'consented',
     props: {
       engine: oneOf('on_device', 'server'),
       model: SPEECH_MODEL,
@@ -180,13 +187,14 @@ export const REGISTRY = {
       outcome: oneOf('ok', 'no_speech', 'failed', 'queued_for_model'),
     },
   },
-  letter_saved: {
+  'capture:letter_save': {
     stage: 'capture',
     decision: "How many families save a letter and how, the count behind weekly making families, so we decide what to build next.",
     area: 'capture',
     when: 'A letter is saved (to the book or kept private). The core activation and north-star event on device',
     reqs: ['C-REQ-034', 'PRD-REQ-016', 'ADR-0008'],
     level: 'L2',
+    tier: 'consented',
     props: {
       mode: CAPTURE_MODE,
       destination: oneOf('book', 'private'),
@@ -202,67 +210,54 @@ export const REGISTRY = {
       from_notification_2h: bool(),
     },
   },
-  free_allowance_reached: {
+  'plus:allowance_reach': {
     stage: 'keep',
     decision: "How many families reach the end of the free letters, so we size the Plus audience.",
     area: 'plus',
     when: 'The last free letter was kept, so the next Keep will ask for Plus (once per phone)',
     reqs: ['C-REQ-034', 'C-REQ-023'],
     level: 'L2',
+    tier: 'consented',
     props: { allowance: int(2, 100) },
   },
-  keep_gate_shown: {
+  'plus:keep_gate_view': {
     stage: 'keep',
     decision: "How many families meet the Keep sheet, so we judge whether the free allowance is set right.",
     area: 'plus',
     when: 'The Keep sheet asked for Plus (the letter is held on the phone)',
     reqs: ['C-REQ-034', 'C-REQ-023'],
     level: 'L2',
+    tier: 'consented',
     props: { letters_kept: int(0, 1000), allowance: int(2, 100), lapsed: int(0, 1) },
   },
-  letter_held: {
+  'plus:letter_hold_create': {
     stage: 'keep',
     decision: "How many families keep a letter on the phone instead of starting Plus, so we judge what the Keep sheet costs in trust.",
     area: 'plus',
     when: 'The person chose to keep the letter on the phone for now instead of starting Plus',
     reqs: ['C-REQ-034', 'C-REQ-023'],
     level: 'L2',
+    tier: 'consented',
     props: { letters_kept: int(0, 1000) },
   },
-  plus_started_from_gate: {
+  'plus:keep_gate_plan_start': {
     stage: 'plus',
     decision: "How many families start Plus from the Keep sheet, so we decide whether to change the sheet or the offer.",
     area: 'plus',
     when: 'Plus was on after the Keep sheet (bought, restored, an Ask to Buy approval, or an offer code)',
     reqs: ['C-REQ-034', 'C-REQ-023'],
     level: 'L2',
+    tier: 'consented',
     props: { letters_kept: int(0, 1000) },
   },
-  book_opened: {
-    stage: 'return',
-    decision: "Whether families come back to read their book, so we decide how much to invest in reading.",
-    area: 'book',
-    when: 'Book tab shown for a child',
-    reqs: ['PRD-REQ-016'],
-    level: 'L2',
-    props: { child_ordinal: CHILD_ORDINAL, letters_bucket: LETTERS_BUCKET, member_role: MEMBER_ROLE },
-  },
-  letter_opened: {
-    stage: 'return',
-    decision: "Whether families read letters, theirs or another parent's, so we decide how much to invest in reading together.",
-    area: 'book',
-    when: 'A letter is opened to read',
-    reqs: ['PRD-REQ-016'],
-    level: 'L2',
-    props: { author_relation: AUTHOR_RELATION, has_audio: bool() },
-  },
-  invite_created: {
+  'family:invite_create': {
     stage: 'return',
     decision: "How many families invite another parent, so we decide whether to invest in the family flow.",
     area: 'family',
     when: 'A parent creates an invite',
     reqs: ['B-REQ-007', 'B-NFR-001', 'PRD-REQ-014'],
     level: 'L2',
+    tier: 'consented',
     props: {
       role: INVITE_ROLE,
       channel: oneOf('share_sheet', 'copy_link', 'code'),
@@ -270,40 +265,44 @@ export const REGISTRY = {
       child_ordinal: CHILD_ORDINAL,
     },
   },
-  invite_accepted: {
+  'family:invite_accept': {
     stage: 'return',
     decision: "How many invites end with a second parent in the book, so we decide whether to fix the invite steps.",
     area: 'family',
     when: 'An invite is accepted in the app (observed). Server aggregates count every acceptance',
     reqs: ['B-NFR-001'],
     level: 'L2',
+    tier: 'consented',
     props: { role: INVITE_ROLE, surface: oneOf('app') },
   },
-  plus_offer_viewed: {
+  'plus:offer_view': {
     stage: 'plus',
     decision: "How many families see Apple's Plus offer and from where, so we decide where the offer should appear.",
     area: 'plus',
     when: "Apple's subscription store view presented",
     reqs: ['C-REQ-034', 'C-REQ-023'],
     level: 'L2',
+    tier: 'consented',
     props: { trigger: PLUS_TRIGGER },
   },
-  plus_offer_closed: {
+  'plus:offer_end': {
     stage: 'plus',
     decision: "How the Plus offer ends (bought, dismissed, unavailable), so we decide whether the offer or its price is the problem.",
     area: 'plus',
     when: "Apple's subscription store view closed",
     reqs: ['C-REQ-034', 'C-NFR-002'],
     level: 'L2',
+    tier: 'consented',
     props: { trigger: PLUS_TRIGGER, outcome: oneOf('purchased', 'dismissed', 'unavailable') },
   },
-  plan_changed: {
+  'plus:plan_update': {
     stage: 'plus',
     decision: "How families move between plan states on this phone, so we check Plus keeps working after a trial or restore.",
     area: 'plus',
     when: 'The plan StoreKit reports on this device changed state (observed; production transactions only)',
     reqs: ['C-REQ-034', 'C-NFR-002'],
     level: 'L2',
+    tier: 'consented',
     props: {
       from_state: oneOf('none', 'trial', 'active', 'grace', 'billing_retry', 'expired', 'refunded', 'revoked'),
       to_state: oneOf('none', 'trial', 'active', 'grace', 'billing_retry', 'expired', 'refunded', 'revoked'),
@@ -311,13 +310,14 @@ export const REGISTRY = {
       ownership: oneOf('purchased', 'family_shared', 'unknown'),
     },
   },
-  error_shown: {
+  'system:error_view': {
     stage: 'basics',
     decision: "Which errors families see, so we decide which one to fix first.",
     area: 'errors',
     when: 'A user-facing error from strings `errors.*` is shown',
     reqs: ['PRD-REQ-016'],
     level: 'L2',
+    tier: 'consented',
     props: { code: ERROR_CODE },
   },
 
@@ -329,6 +329,7 @@ export const REGISTRY = {
     when: 'A registered key control is activated. Sent by our own tap helper, never by SDK touch capture',
     reqs: ['ADR-0008', 'FR-DAT-21'],
     level: 'L2',
+    tier: 'consented',
     props: { control: CONTROL, route: ROUTE },
   },
   surface_impressed: {
@@ -338,24 +339,27 @@ export const REGISTRY = {
     when: 'A registered surface is at least half visible for one second, at most once per surface per foreground session',
     reqs: ['ADR-0008', 'FR-DAT-21'],
     level: 'L2',
+    tier: 'consented',
     props: { surface: SURFACE, route: ROUTE, rank: opt(int(1, 9)) },
   },
-  moments_card_impressed: {
+  'book:moments_card_view': {
     stage: 'return',
     decision: "Whether families see the question and look-back cards on Moments, so we decide which of the two places earns its spot.",
     area: 'moments',
     when: 'A card in the question or look-back slot is drawn on the Moments tab (at most once per slot per local day). Cards dated by the child, a typed day, a tick or the library never send',
-    reqs: ['PRD-REQ-016', 'NS-53-R251'],
+    reqs: ['PRD-REQ-016'],
     level: 'L2',
+    tier: 'consented',
     props: { slot: MOMENTS_SLOT },
   },
-  moments_card_tapped: {
+  'book:moments_card_open': {
     stage: 'return',
     decision: "Whether a Moments card makes a family start a letter, so we decide if the question or look-back card stays on that tab.",
     area: 'moments',
     when: 'A card in the question or look-back slot is tapped. Says nothing about where the letter that follows began',
-    reqs: ['PRD-REQ-016', 'NS-53-R251'],
+    reqs: ['PRD-REQ-016'],
     level: 'L2',
+    tier: 'consented',
     props: { slot: MOMENTS_SLOT },
   },
   perf_measured: {
@@ -365,6 +369,7 @@ export const REGISTRY = {
     when: 'One of five timed steps finishes; the time is bucketed on the phone, never sent as a number',
     reqs: ['ADR-0008', 'A-NFR-001'],
     level: 'L2',
+    tier: 'consented',
     props: { metric: PERF_METRIC, ms_bucket: MS_BUCKET, ok: bool() },
   },
 } as const satisfies Record<string, RegistryRow>;
@@ -374,31 +379,29 @@ export type RegistryName = keyof typeof REGISTRY;
 /** Event names, as constants. The only way call sites name an event. */
 export const EV = {
   screenView: 'screen_view',
-  appOpened: 'app_opened',
-  analyticsOptedIn: 'analytics_opted_in',
-  authSucceeded: 'auth_succeeded',
-  childAdded: 'child_added',
-  captureStarted: 'capture_started',
-  captureDiscarded: 'capture_discarded',
-  transcriptionCompleted: 'transcription_completed',
-  letterSaved: 'letter_saved',
-  freeAllowanceReached: 'free_allowance_reached',
-  keepGateShown: 'keep_gate_shown',
-  letterHeld: 'letter_held',
-  plusStartedFromGate: 'plus_started_from_gate',
-  bookOpened: 'book_opened',
-  letterOpened: 'letter_opened',
-  inviteCreated: 'invite_created',
-  inviteAccepted: 'invite_accepted',
-  plusOfferViewed: 'plus_offer_viewed',
-  plusOfferClosed: 'plus_offer_closed',
-  planChanged: 'plan_changed',
-  errorShown: 'error_shown',
+  appOpened: 'system:app_open',
+  analyticsOptedIn: 'system:analytics_consent_accept',
+  authSucceeded: 'onboarding:sign_in_complete',
+  childAdded: 'onboarding:book_create',
+  captureStarted: 'capture:take_start',
+  captureDiscarded: 'capture:take_cancel',
+  transcriptionCompleted: 'capture:transcript_complete',
+  letterSaved: 'capture:letter_save',
+  freeAllowanceReached: 'plus:allowance_reach',
+  keepGateShown: 'plus:keep_gate_view',
+  letterHeld: 'plus:letter_hold_create',
+  plusStartedFromGate: 'plus:keep_gate_plan_start',
+  inviteCreated: 'family:invite_create',
+  inviteAccepted: 'family:invite_accept',
+  plusOfferViewed: 'plus:offer_view',
+  plusOfferClosed: 'plus:offer_end',
+  planChanged: 'plus:plan_update',
+  errorShown: 'system:error_view',
   controlTapped: 'control_tapped',
   surfaceImpressed: 'surface_impressed',
   perfMeasured: 'perf_measured',
-  momentsCardImpressed: 'moments_card_impressed',
-  momentsCardTapped: 'moments_card_tapped',
+  momentsCardImpressed: 'book:moments_card_view',
+  momentsCardTapped: 'book:moments_card_open',
 } as const satisfies Record<string, RegistryName>;
 
 /** Property names, as constants. The only way call sites name a property. Includes the three global properties the client adds. */
@@ -406,7 +409,6 @@ export const PROP = {
   addedTogether: 'added_together',
   allowance: 'allowance',
   audioBucket: 'audio_bucket',
-  authorRelation: 'author_relation',
   cameFromInvite: 'came_from_invite',
   channel: 'channel',
   childCountBucket: 'child_count_bucket',
@@ -423,7 +425,6 @@ export const PROP = {
   fromNotification2h: 'from_notification_2h',
   fromState: 'from_state',
   hadLocalData: 'had_local_data',
-  hasAudio: 'has_audio',
   hasDate: 'has_date',
   inFirstRun: 'in_first_run',
   lapsed: 'lapsed',
@@ -460,32 +461,48 @@ export const PROP = {
 } as const;
 
 /**
+ * A funnel step is a registered event, or a wire name (`<area>:<object>_<verb>`) from the table in `wire-names.ts`,
+ * which is where the generated screen-view names live. `registry-data.test.ts` checks which (rule V9).
+ */
+export type FunnelStep = RegistryName | `${string}:${string}`;
+
+/**
  * Funnels behind weekly making families (FR-DAT-21). A funnel is a query in
  * PostHog, never code in the app; this list only names the steps, and every
- * step must be a registered event (rule V9). Ids: `f_<area>_<goal>`.
+ * step must be a registered event or a wire name (rule V9). Ids: `f_<area>_<goal>`.
  */
 export const FUNNELS = {
-  f_onboarding_first_letter: ['child_added', 'capture_started', 'letter_saved'],
-  f_capture_letter_saved: ['capture_started', 'transcription_completed', 'letter_saved'],
-  f_keep_plus_started: ['free_allowance_reached', 'keep_gate_shown', 'plus_started_from_gate'],
-  f_plus_offer_converted: ['plus_offer_viewed', 'plus_offer_closed', 'plan_changed'],
-  f_return_book_read: ['app_opened', 'book_opened', 'letter_opened'],
-  f_family_invite_joined: ['invite_created', 'invite_accepted'],
-} as const satisfies Record<string, readonly RegistryName[]>;
+  f_onboarding_first_letter: ['onboarding:book_create', 'capture:take_start', 'capture:letter_save'],
+  f_capture_letter_saved: ['capture:take_start', 'capture:transcript_complete', 'capture:letter_save'],
+  f_keep_plus_started: ['plus:allowance_reach', 'plus:keep_gate_view', 'plus:keep_gate_plan_start'],
+  f_plus_offer_converted: ['plus:offer_view', 'plus:offer_end', 'plus:plan_update'],
+  // Wire names (BL-2175, CR-213): the Book and letter reads are the generated screen views, not events of their own.
+  f_return_book_read: ['system:app_open', 'book:book_screen_view', 'book:letter_detail_screen_view'],
+  f_family_invite_joined: ['family:invite_create', 'family:invite_accept'],
+} as const satisfies Record<string, readonly FunnelStep[]>;
 
 /**
  * Events that must never exist (FR-DAT-27 and the founder's 20 Nov rules). A test fails if a registry name
  * matches one of these patterns: the birthday-week Save a copy slip, Days notes, email opens and clicks, and
  * anything that fires at a time a birthday, due date or seal sets.
+ *
+ * The patterns read a bare key (`moment_shown`) and a wire name (`book:moment_view`, BL-1255) alike, so none is anchored
+ * with `^` on its own: a wire name starts with its area. Three of them also bar the names an event the exec team retired
+ * would have had (CR-213, CR-225): a share's destination, a delivered reminder, Moments and On this day cards by date, a
+ * letter deleted or restored, and the deletion flows PM3 keeps at T0. `export_` is not one of them: the three export names
+ * (`keeping:export_start`, `_complete`, `_fail`) are allowed, and only `export_share` is not.
  */
 export const FORBIDDEN_EVENT_PATTERNS: readonly RegExp[] = [
   /save_a_copy/,
-  /export_/,
+  /export_share/,
   /days?_note/,
-  /^moment_/,
-  /^resurface_/,
+  /(^|:)moment_/,
+  /(^|:)resurface_/,
   /email_(open|click)/,
   /birthday/,
   /month_age/,
-  /reminder_sent/,
+  /reminder_sen[dt]/,
+  /letter_(delete|restore)/,
+  /account_delet/,
+  /(phone_delete|take_delete|version_(remove|restore)|deletion_(start|restore))/,
 ];

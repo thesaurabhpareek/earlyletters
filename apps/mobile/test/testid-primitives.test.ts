@@ -49,7 +49,7 @@ describe('[G-29] primitives forward testID', () => {
   it('Sheet sets it on the body and closeTestID on its Close button', () => {
     const body = fn(read('sheet.tsx'), 'Sheet');
     expect(body).toMatch(/accessibilityViewIsModal\s+testID=\{testID\}/);
-    expect(body).toMatch(/label=\{copy\.common\.closeButton\}[^>]*testID=\{closeTestID\}/);
+    expect(body).toMatch(/label=\{closeLabel \?\? copy\.common\.closeButton\}[^>]*testID=\{closeTestID\}/);
   });
 
   it("Toast forwards the action's testID to its button", () => {

@@ -54,6 +54,22 @@ export function longDate(iso: string, locale?: string): string {
 }
 
 /**
+ * "29 Sep 2026" or "Sep 29, 2026": the date pill's short form (BL-1979). Short month, no weekday, so a long month
+ * name never makes the pill wider than it needs to be. Like every date here it is English (en-GB on a non-English
+ * phone), so es, fr and pt phones get the same short form and nothing is cut.
+ */
+export function shortDate(iso: string, locale?: string): string {
+  const loc = dateLocale(locale);
+  const key = `${loc}|short`;
+  let f = formatters.get(key);
+  if (!f) {
+    f = new Intl.DateTimeFormat(loc, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+    formatters.set(key, f);
+  }
+  return f.format(utcNoon(iso));
+}
+
+/**
  * Full letter dateline: "Tuesday, September 29, 2026. Asha is 7 months old."
  * The age sentence counts only from a birthday. A letter the Book files in Before You (no birthday yet, or a day
  * before it) reads "Before Asha was born.", the same test the Book uses (`isBeforeBirth`). A due date is never an age

@@ -22,7 +22,7 @@ Version 1.0.0. Effective [effective date].
 This is a summary. The full terms below are what count.
 
 - Early Letters is for adults, 18 and over. Your child is who the letters are for, not a user.
-- Your words and recordings are yours. We use them only to run Early Letters for you.
+- Your words and recordings are yours. We use them to run Early Letters for you.
 - We never rewrite your words. The app fixes only small slips, and you can see and undo every fix.
 - You can keep letters on your iPhone without an account. Sign in to sync your book to your other iPhone.
 - Your first 2 letters are free. After that, keeping a new letter needs Plus. Reading, playing and exporting every letter you keep is free, with or without Plus.
@@ -49,7 +49,7 @@ This is a summary. The full terms below are what count.
 
 ## 3. Your account
 
-3.1 You can write and keep letters on your iPhone without an account. To sync your book to a second iPhone, you need one. You can sign in with Apple, or with a link and code we email you. [Google sign-in is off in this build (D-171).]
+3.1 You can write and keep letters on your iPhone without an account, but the app offers that local start only when sign-in is paused, you are offline, or sign-in has failed, and only after you have told the app you are 18 or older. To sync your book to a second iPhone, you need one. You can sign in with Apple, or with a link and code we email you. [Google sign-in is off in this build (D-171).]
 
 3.2 Keep your iPhone and email secure. You are responsible for what happens through your account unless it is our fault. If you think someone else has used your account, tell us right away. You can also turn on the app lock in Settings, Privacy.
 
@@ -145,7 +145,7 @@ Early Letters is new. Features may change, and the app can make mistakes. Tell u
 
 ## 12. If we close Early Letters
 
-If we ever close Early Letters, we will tell you at least 90 days ahead, stop new charges, and keep export working the whole time. If someone else takes over the Service, they must keep sections 5.3, 8.3 and this section, or give you the same notice and export.
+If we ever plan to close Early Letters, we will tell you at least 90 days ahead, stop new charges, and keep export working the whole time. If someone else takes over the Service, they must keep sections 5.3, 8.3 and this section, or give you the same notice and export.
 
 ## 13. Disclaimers
 

@@ -266,13 +266,21 @@ export function flowTags(src, pick = extractIds) {
 
 const SKIP_DIRS = new Set(['node_modules', '.git', '.expo', 'dist', 'build', 'coverage', 'ios', 'android', '.turbo']);
 
-export function walk(dir, keep, acc = []) {
+// Other checkouts of this repo (agent worktrees) hold stale copies of every test and spec; reading them
+// reports findings that are not on this branch. Skip only `<repo>/.claude/worktrees` and a `wt-*` directory
+// directly under the repo root. Anywhere else a `wt-*` directory is ordinary content and is read, so a PR
+// cannot hide a test or a requirement row from trace by naming a folder `wt-x`.
+const isWorktreeDir = (repoRoot, parent, name) => repoRoot != null
+  && ((parent === repoRoot && /^wt-/.test(name)) || (name === 'worktrees' && parent === path.join(repoRoot, '.claude')));
+
+/** `repoRoot` (optional) is the repo root when `dir` is it; pass it so worktree copies are skipped. */
+export function walk(dir, keep, acc = [], repoRoot = null) {
   let entries;
   try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return acc; }
   for (const e of entries) {
     if (e.isSymbolicLink()) continue;
     const p = path.join(dir, e.name);
-    if (e.isDirectory()) { if (!SKIP_DIRS.has(e.name)) walk(p, keep, acc); } else if (keep(p)) acc.push(p);
+    if (e.isDirectory()) { if (!SKIP_DIRS.has(e.name) && !isWorktreeDir(repoRoot, dir, e.name)) walk(p, keep, acc, repoRoot); } else if (keep(p)) acc.push(p);
   }
   return acc.sort();
 }
@@ -352,7 +360,7 @@ export function collect({ repo, docsRoot }) {
   let taggedTitles = 0;
   // This script's own tests hold fixture titles, not traces.
   const self = path.join(path.dirname(fileURLToPath(import.meta.url)), 'trace.test.mjs');
-  for (const f of walk(repo, isTestFile).filter((f) => f !== self)) {
+  for (const f of walk(repo, isTestFile, [], repo).filter((f) => f !== self)) {
     for (const t of testTitles(read(f))) {
       taggedTitles++;
       for (const id of t.ids) {
@@ -529,9 +537,9 @@ export function renderTrace(m) {
 export const NS_SOURCE = String.raw`(?<![A-Za-z0-9-])(?:NS-\d{2}-[A-Z]\d{1,3}(?:-\d{1,2})?[a-z]?|NX-\d{2}[a-z]?-[A-Z]\d{1,3}[a-z]?|X\d{1,2}-R\d{1,2}[a-z]?|FRAME-[A-Z]{2,12})(?![A-Za-z0-9-])`;
 const NS_ONLY = new RegExp(`^${NS_SOURCE}$`);
 const NS_TOK = String.raw`[A-Z]\d{1,2}(?:-\d{1,2})?[a-z]?(?![A-Za-z0-9-])`;
-// Cards 00 to 12, and the three added 20 Nov: 19 (NS-38 to 45), 21 (NS-46 to 50), 27 (NS-51, 52), the
+// Cards 00 to 12, and those added since: 19 (NS-38 to 45), 21 (NS-46 to 50), 27 (NS-51, 52), 28, 29 (NS-54), the
 // cards p0.py reads for NS rows. Other cards above 12 (13 to 18, 20, 22 to 26) stay out: not acceptance cards.
-const CARD_FILE = /^(?:0\d|1[0-2]|19|21|27|28)-[^/\\]*\.md$/;
+const CARD_FILE = /^(?:0\d|1[0-2]|19|21|27|28|29)-[^/\\]*\.md$/;
 const uniq = (a) => [...new Set(a)];
 export const cmpNs = (a, b) => a.localeCompare(b, 'en', { numeric: true });
 
@@ -619,7 +627,7 @@ export function collectNs({ repo, register }) {
   const tests = new Map(), journeys = new Map(), cited = new Map(), jnAt = new Map();
   const pick = (t) => [...nsBracketed(t), ...(t.match(/\[J-N\d+\]/g) || []).map((x) => x.slice(1, -1))];
   let skipped = 0;
-  const titled = walk(repo, isTestFile).filter((f) => f !== self).map((f) => [f, false])
+  const titled = walk(repo, isTestFile, [], repo).filter((f) => f !== self).map((f) => [f, false])
     .concat(walk(path.join(repo, 'apps', 'mobile', 'e2e-web'), (p) => /\.flow\.ts$/.test(p)).map((f) => [f, true]));
   for (const [f, journey] of titled) {
     for (const t of testTitles(read(f), pick)) {

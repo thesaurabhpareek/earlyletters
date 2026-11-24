@@ -21,7 +21,7 @@
     {
       "path": "README.txt",
       "bytes": 3275,
-      "sha256": "e0603a6f20fcae53768a67b73287535579e40e8ed7ff6ca80d92313dc8c04aa3",
+      "sha256": "cfc040fee3ef6921bf7b9e8a95e49ea1cdc53df3a176ee6f636264195894ee4a",
       "media_type": "text/plain; charset=utf-8"
     },
     {
@@ -128,8 +128,8 @@
     },
     {
       "path": "index.html",
-      "bytes": 5879,
-      "sha256": "2956a134ae43a27e5ebbd60ea1b3c655252ecfcd2baec70208a3a9cbb768056f",
+      "bytes": 5887,
+      "sha256": "1105c208eaa101cd7e5190e39cab2aae9c74ea01e0c35601f228a922c9ce1b22",
       "media_type": "text/html; charset=utf-8"
     },
     {

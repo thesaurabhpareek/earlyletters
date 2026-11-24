@@ -165,7 +165,7 @@ describe('[C-REQ-001 Rev, F13 6.2 B row 4c, BL-518] the second reminder prime, a
   });
 });
 
-describe('[C-REQ-034, BL-1429] reminder_prime_shown names which showing it is', () => {
+describe('[C-REQ-034, BL-1429] notifications:reminder_prime_view names which showing it is', () => {
   it('Given no earlier showing, Then the source is first_letter; Given one, Then it is first_month', () => {
     expect(reminderPrimeSource(0)).toBe('first_letter');
     expect(reminderPrimeSource(1)).toBe('first_month');
@@ -180,8 +180,8 @@ describe('[C-REQ-034, BL-1429] reminder_prime_shown names which showing it is', 
 
   it('the card sends the source it is given by the counter, never a fixed string', () => {
     const card = readFileSync(join(__dirname, '..', 'src', 'components/asks/reminder-prime-ask.tsx'), 'utf8');
-    expect(card).toMatch(/track\('reminder_prime_shown', \{ source: noteReminderPrimeShown\(\) \}\)/);
-    expect(card).not.toMatch(/reminder_prime_shown'[^)]*'first_letter'/);
+    expect(card).toMatch(/track\('notifications:reminder_prime_view', \{ source: noteReminderPrimeShown\(\) \}\)/);
+    expect(card).not.toMatch(/notifications:reminder_prime_view'[^)]*'first_letter'/);
   });
 });
 
@@ -300,9 +300,9 @@ describe('wiring (source checks; the card and the sheet are on the device list)'
   const src = (p: string) => readFileSync(join(__dirname, '..', 'src', p), 'utf8');
   it('Review asks the sequencer after the save, and acts after the Book lands', () => {
     const review = src('app/review.tsx');
-    expect(review).toMatch(/askAfterLanding\.current = askAfterSave\(\{ firstLetter, signInOffered: auth\.configured && auth\.state\.status === 'signedOut' \}\)/);
+    expect(review).toMatch(/askAfterLanding\.current = askAfterSave\(\{\s*firstLetter,\s*signInOffered: auth\.configured && auth\.state\.status === 'signedOut',\s*surfaceBusy: surfaceBusy\(\),/);
     expect(review).toMatch(/askAfterLanding\.current === 'keep_book'/);
-    expect(review).toMatch(/askAfterLanding\.current === 'reminder_prime'[\s\S]*?setTimeout\(requestReminderPrime, signInAfterLandingMs\(motion\.reduced\)\)/);
+    expect(review).toMatch(/askAfterLanding\.current === 'reminder_prime'[\s\S]*?setTimeout\(\(\) => fireDelayedAsk\('reminder_prime', requestReminderPrime\), signInAfterLandingMs\(motion\.reduced\)\)/);
     expect(review).not.toMatch(/offerSignIn/);
   });
 

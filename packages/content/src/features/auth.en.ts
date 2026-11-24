@@ -54,6 +54,9 @@ export const authCopy = {
       // Build 12 (red-team): claims nothing about phones, recordings or where letters go; a sign-in does not move anything
       // before the person has agreed. TODO(founder, counsel): approve this line or replace it (placeholder, needs word approval).
       sign_in_first: 'Sign in to begin your book.',
+      // BL-494 point 1: the sheet opened from the signed-out deletion screen while a request can still be cancelled. PROPOSED,
+      // exec-team review of the words (it is about account deletion; D-172). Same way as last time prevents a second account.
+      cancel_deletion: 'Sign in the same way as last time. Then you can cancel the deletion.',
     },
     // NX-36 S2, above the two buttons. The two documents follow it as their own 44 pt links (labels: consent.terms.termsLink and .privacyLink).
     agreeLine,
@@ -111,6 +114,8 @@ export const authCopy = {
     // NX-36 S5, the recovery set after a minute (NX-31-R11). Placeholder words; each needs founder word approval.
     noMailHelp: 'Nothing yet? Look in spam, or send a new email.',
     announceResend: 'You can send another email.',
+    /** BL-476 point 1: said once when the pause after five wrong codes ends. No count, no clock. */
+    pauseEnded: 'You can type a code again.',
   },
 
   /**

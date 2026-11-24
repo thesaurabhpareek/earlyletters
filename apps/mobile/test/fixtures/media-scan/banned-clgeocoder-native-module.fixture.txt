@@ -1,0 +1,5 @@
+// fixture: banned-clgeocoder-native-module. Fictional family Asha; not compiled, read by test/media-ast-scan.test.ts as text.
+// as: apps/mobile/src/lib/media/fixture.ts
+// expect: banned-name
+import { NativeModules } from 'react-native';
+export const ashaTown = (lat: number, lng: number) => NativeModules.CLGeocoder.reverse(lat, lng);

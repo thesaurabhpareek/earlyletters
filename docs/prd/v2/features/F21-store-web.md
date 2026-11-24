@@ -1,5 +1,7 @@
 # F21 App Store listing, website and legal pages
 
+> Dated record, 24 Nov 2026: `plus.promise` named below was retired in #383 (the promise line is `billingCopy.store.promise`); the text is left as written on its date.
+
 | | |
 |---|---|
 | Release | v1.0 gate |

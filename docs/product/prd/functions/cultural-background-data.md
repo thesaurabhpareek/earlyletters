@@ -250,7 +250,7 @@ No em dashes, no emoji, never implies AI writes, `{child}` never gendered, no lo
 
 ## 10. Founder and counsel questions
 
-Each has a recommended default that holds until answered. Counsel numbers are packet 1.5.0; new ones "need a number from legal".
+Each has a recommended default that holds until answered. Counsel numbers are now in `docs/legal/COUNSEL_PACKET.md` (section 8); the rows below carry them.
 
 | # | Question | Who | Recommended default | Counsel number |
 |---|---|---|---|---|
@@ -258,13 +258,13 @@ Each has a recommended default that holds until answered. Counsel numbers are pa
 | CUL-Q2 | Keep a tradition and a country as stored fields (the founder's ask) or only the days the parent ticks (my recommendation)? | Founder | Only the ticked days. The field adds nothing the list does not hold, and is one more sensitive value to protect. If the founder wants fields, each gets a registry row and a Clear control, and counsel's answers CUL-Q6 and Q7 gate the flag | none |
 | CUL-Q3 | At sign-out, clear the store (default) or keep it per account? | Founder | Clear. Matches reminders and typed days; no cross-account risk; makes Delete account reach every phone | none |
 | CUL-Q4 | Exclude the store from the iPhone backup (default), or keep it in `scribe.db` and widen the call-out? | Founder, privacy | Exclude; the short truthful call-out | none |
-| CUL-Q5 | Is the list left out of Save a copy (default)? | Founder, counsel | Yes, left out; one line says so | needs a number from legal (near Q55, access) |
-| CUL-Q6 | Does GDPR Article 9, or a US state sensitive-data rule, reach religion or origin data that is stored only on the user's own phone and never received by us? Is an app maker a controller for it? Does a US-only storefront (compliance.md line 161) change the answer? | Counsel | Design as if it did: explicit, optional, withdrawable, never received; counsel confirms. S3 Art 9(1), 9(2)(a) and S4 are the only texts read | needs a number from legal |
-| CUL-Q7 | Do we leave the privacy label's answer as "not collected" for this data, relying on the on-device rule (S1), and do we add the Privacy Policy sentence? | Counsel, legal | Yes to both; the label is re-run per build (FR-CUL-23) | Q57(f)-adjacent: needs a number from legal |
+| CUL-Q5 | Is the list left out of Save a copy (default)? | Founder, counsel | Yes, left out; one line says so | Q110 (read with Q55, access). Blocks NS-47-R10 in Drop C |
+| CUL-Q6 | Does GDPR Article 9, or a US state sensitive-data rule, reach religion or origin data that is stored only on the user's own phone and never received by us? Is an app maker a controller for it? Does a US-only storefront (compliance.md line 161) change the answer? | Counsel | Design as if it did: explicit, optional, withdrawable, never received; counsel confirms. S3 Art 9(1), 9(2)(a) and S4 are the only texts read | Q109 (widened to inference; also Q-DAY-11). Blocks NS-47 ask slip, tradition browse, tradition days and the day-name switch (Drop C) |
+| CUL-Q7 | Do we leave the privacy label's answer as "not collected" for this data, relying on the on-device rule (S1), and do we add the Privacy Policy sentence? | Counsel, legal | Yes to both; the label is re-run per build (FR-CUL-23) | Q111. Not a counsel gate for Drop B (G5 internal label check); needed for Drop C |
 | CUL-Q8 | Would App Review read an optional faith or origin question as breaching 5.1.1(iii), data minimisation? | Founder (Notes for Review) | Describe the field in the Notes (FR-CMP-03). If a reviewer objects, the fallback is to remove the ask card and keep a plain list of days to browse and tick in Me, with no question about the family at all: the same data, no question. UNVERIFIED | none |
 | CUL-Q9 | Separate switch for the day's name in a note, default off, forced off by App lock? | Founder | Yes. The direction says the faith is named "only when the parent has switched on names in notifications"; a separate switch avoids exposing a faith just because the child's name was switched on | none |
 | CUL-Q10 | Ask after the first kept letter in a later sitting (default), after the first letter in the same sitting, in first run, or only in Me? | Founder (Q-FD-2) | Later sitting; fall back to Me only if more than one tester in five calls the question too personal (FR-CUL-27) | none |
-| CUL-Q11 | Is a note that names a faith day "sensitive personal information" for the purposes of 4.5.4 even though it is local? | Counsel | Treat as yes; neutral by default (FR-CUL-14) | Q41 (compliance C-7) |
+| CUL-Q11 | Is a note that names a faith day "sensitive personal information" for the purposes of 4.5.4 even though it is local? | Counsel | Treat as yes; neutral by default (FR-CUL-14) | Q112 (not Q41; compliance C-7 is plan notices only). Part (c) blocks the Drop B days release; parts (a), (b), (d) block only the day-name switch (Drop C) |
 | CUL-Q12 | The yearly store versus NS-18's "no recurring days": rule (a) separate store, or (b) change NS-18 (section 5)? | Karma | (a) | none |
 
 ## 11. Sources read this session (20 Nov 2026)
@@ -281,7 +281,7 @@ Everything else outside the repo is UNVERIFIED in this file: other US state acts
 
 ## 12. Hand-offs
 
-- To `legal`: Privacy Policy sentence, in-app disclosure line, the 1.1.1 read of library content, counsel questions CUL-Q5 to Q7 and Q11 (numbers).
+- To `legal`: Privacy Policy sentence, in-app disclosure line, the 1.1.1 read of library content, counsel questions CUL-Q5 to Q7 and Q11 (the numbers in `docs/legal/COUNSEL_PACKET.md`: Q110, Q109, Q111, Q112).
 - To `regulatory-affairs`: CUL-Q8 and the Notes for Review section; the 5.1.1(iii) reading.
 - To `data-architect`: the migration lint (FR-CUL-04, 05); no schema change otherwise.
 - To `analytics`: FR-CUL-09 allowlist negative test.
@@ -328,7 +328,7 @@ NS-47, NS-51, NS-52, NS-36; FR-CUL-01, 02, 08, 11, 15 to 17, 19, 20, 27; FR-DAY-
 | Id | Question | Default | Who |
 |---|---|---|---|
 | CUL-Q13 | Place names in suggestions (Q-PM-5) | Off | Founder |
-| CUL-Q14 | Does the moment index (dates, counts, clusters) itself count as sensitive data in a family context, and does a date cluster plus the ticked days list amount to inference? | Keep both on the phone, never joined in storage; counsel must confirm | Counsel (needs a number from legal) |
+| CUL-Q14 | Does the moment index (dates, counts, clusters) itself count as sensitive data in a family context, and does a date cluster plus the ticked days list amount to inference? | Keep both on the phone, never joined in storage; counsel must confirm | Counsel (Q115). Blocks NS-51 (with Q119 and Q122) |
 | CUL-Q15 | Any on-device image analysis beyond metadata (Q-PM-6) | No; and never for belief or origin even if later allowed | Founder, counsel |
 
 ### Cannot assess yet

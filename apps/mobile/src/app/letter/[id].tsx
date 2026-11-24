@@ -44,6 +44,7 @@ import { UIProvider } from '@/components/ui/provider';
 import { BackButton, ModalHeader } from '@/components/ui/screen-header';
 import { letterStartY, topBarHeight } from '@/lib/letter-top-bar.logic';
 import { SIZE_WORD_MAX_SCALE, showsSizeWord } from '@/lib/reader-words.logic';
+import { sizeControlMinHeight, sizeWordStacks } from '@/lib/size-control.logic';
 import { Sheet } from '@/components/ui/sheet';
 import { StateScreen } from '@/components/ui/state-screen';
 import { Text } from '@/components/ui/text';
@@ -60,10 +61,12 @@ import { planFor } from '@/lib/models/speech-packs';
 import { clearReadItBack, isReadItBack } from '@/lib/read-it-back';
 import {
   deleteEntry,
+  deleteLeftBookLetter,
   getActiveChild,
   getChild,
   getEntry,
   listDeleted,
+  listLeftBooks,
   setEntryDate,
   setEntryInBook,
   todayISO,
@@ -91,6 +94,7 @@ import { entryDateline, movedToast } from '@/components/book/date-change.logic';
 import { DateSheet } from '@/components/book/date-sheet';
 import { exactViewAvailable, provenanceLine as provenanceLineOf } from '@/lib/provenance';
 import { ConfirmSheet } from '@/components/book/confirm-sheet';
+import { leftBookDeleteBody } from '@/components/settings/left-books.logic';
 import { CARD_TEXT_GAP, CARD_TEXT_INSET, PrivateChip, excerptOf } from '@/components/book/letter-card';
 import { letterWords } from '@/components/book/letter-words.logic';
 import { wordsCardKind, wordsCardState, type WordsCardKind } from '@/components/book/words-card.logic';
@@ -109,6 +113,11 @@ const MEASURE_MS = 4 * 16;
 const REST_WITHIN_PT = 4;
 /** On Back the rest of the page leaves this fast (six frames), before the words go back: a quick, legible answer. */
 const REST_OUT_MS = 96;
+
+/** Whether the letter is in a book this phone has left (BL-444): read only. Asked through the store's gated list. */
+function isLeftBookLetter(entry: Entry): boolean {
+  return listLeftBooks().some((b) => b.id === entry.childId);
+}
 
 /** UIProvider is a no-op once the root layout mounts it (Sheet and Toast need it). */
 export default function LetterScreen() {
@@ -148,11 +157,7 @@ function Letter() {
     [id],
   );
 
-  // letter_opened once per open (who wrote it, relative to you, and whether it has a recording; never which letter).
-  useEffect(() => {
-    const e = getEntry(id);
-    if (e && !isQuietMark(e)) track('letter_opened', { author_relation: isOwnEntry(e) ? 'self' : 'other_parent', has_audio: !!e.audioUri });
-  }, [id]);
+  // Opening a letter is the `screen_view` of the generated name `book:letter_detail_screen_view` (one id for every letter), not an event of its own (BL-2175).
 
   const child = entry ? ((entry.childId ? getChild(entry.childId) : null) ?? getActiveChild()) : null;
 
@@ -174,7 +179,7 @@ function Letter() {
   // the plain 200 ms fade (the carry moves dateline and words as one rigid block); so does Play under the dateline from AX1 up (carriesWords).
   const hasPicture =
     !!storedPhoto && words !== 'waiting' && photoSurfaces({ build: photosBuildEnabled(), paused: photosPausedNow() }).addActions;
-  const picture = hasPicture ? <LetterPicture entryId={entry.id} own={isOwnEntry(entry)} columnWidth={screenWidth - 2 * CARD_TEXT_INSET} /> : null;
+  const picture = hasPicture ? <LetterPicture entryId={entry.id} own={isOwnEntry(entry) && !isLeftBookLetter(entry)} columnWidth={screenWidth - 2 * CARD_TEXT_INSET} /> : null;
   // From AX1 up Play sits directly under the dateline, above the picture (BL-1789, CDESO-1); the opening draws it, on the page's own copy only.
   const playFirst = playUnderDateline(fontScale) && entry.captureMode !== 'typed';
   const play = playFirst ? <AudioPlayer entryId={entry.id} /> : null;
@@ -190,7 +195,7 @@ function Letter() {
         onSize={(v) => {
           setSize(v);
           setReadingSize(v);
-          track('settings_changed', { key: 'reading_size' });
+          track('me:setting_update', { key: 'reading_size' });
         }}
         showOriginal={showOriginal}
         onToggleOriginal={() => setShowOriginal((v) => !v)}
@@ -354,13 +359,18 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
   const spoken = entry.captureMode !== 'typed';
   const typedWords = provenanceOf(entry) === 'typed'; // typed, or typed for a recording that had no words
   const own = isOwnEntry(entry);
+  // A letter of a book this phone has left (BL-444, D-113) opens to read: no Add to book, Change the date, Delete, words
+  // to write, review or picture controls. Every one of those writes would queue an op for a book the server no longer
+  // lets this person write to. The one write kept is Delete, through its own door (`deleteLeftBookLetter`, BL-1960, BL-1961).
+  const readOnly = isLeftBookLetter(entry);
+  const editable = own && !readOnly;
   const canShowOriginal = exactViewAvailable(entry, { own, hasWords: words === 'words' });
   // One provenance line (S27): "Spoken, with small fixes. Recording kept on this phone." The other parent's
   // recording is on their phone, which the player's place says (D-073), so the line names only how it was made, and
   // only that it was spoken: this phone never holds their raw words, so it cannot know whether any fix was made (S8).
   const provenanceLine = provenanceLineOf(entry, { own, audioUri: entry.audioUri, words: copy.book.provenance, recordingOnPhone: copy.book.recordingOnPhone });
   // The words card: a recording waiting for its words, or one with no words that the store can still take words for (S3).
-  const wordsCard = wordsCardKind({ own, words, canWrite: words === 'nobodySpoke' && canTypeWordsFor(entry.id) });
+  const wordsCard = readOnly ? null : wordsCardKind({ own, words, canWrite: words === 'nobodySpoke' && canTypeWordsFor(entry.id) });
 
   const aa = (
     <Pressable
@@ -370,13 +380,14 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
       {...LARGE_CONTENT(copy.reader.readingSizeA11y)}
       hitSlop={6}
       testID="letter.readingSize"
-      className="mr-1 h-11 min-w-11 items-center justify-center rounded-full px-2 active:bg-secondary">
-      <View className="flex-row items-center gap-1.5">
+      style={{ minHeight: sizeControlMinHeight(fontScale) }}
+      className="mr-1 min-w-11 items-center justify-center rounded-full px-2 active:bg-secondary">
+      <View className={sizeWordStacks(fontScale) ? 'items-center' : 'flex-row flex-wrap items-center justify-center gap-1.5'}>
         <Text variant="title2" tone="accent" maxFontSizeMultiplier={1.3}>
           {copy.reader.readingSizeButton}
         </Text>
         {showsSizeWord(fontScale) ? (
-          <Text variant="labelSmall" tone="accent" maxFontSizeMultiplier={SIZE_WORD_MAX_SCALE} testID="letter.readingSize.word">
+          <Text variant="labelSmall" tone="accent" maxFontSizeMultiplier={SIZE_WORD_MAX_SCALE} className="text-center" testID="letter.readingSize.word">
             {copy.reader.readingSizeWord}
           </Text>
         ) : null}
@@ -386,7 +397,7 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
 
   const toggleInBook = () => {
     const next = !entry.inBook;
-    setEntryInBook(entry.id, next);
+    if (!setEntryInBook(entry.id, next)) return toast.show({ message: copy.errors.generic.title });
     haptic('tap');
     onEntry({ ...entry, inBook: next });
     toast.show({ message: next ? fill(copy.review.destination.addedToast, { child: child.name }) : copy.review.destination.privateToast });
@@ -408,9 +419,15 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
   const remove = () => {
     setConfirmOpen(false);
     const gone = entry;
-    deleteEntry(gone.id); // tombstone; waits 30 days on the Recently deleted shelf
+    // A left book's letter has no Undo: the restore is refused (BL-1959), so the toast offers none.
+    if (readOnly) {
+      if (!deleteLeftBookLetter(gone.id)) return toast.show({ message: copy.errors.generic.title });
+      haptic('warning');
+      toast.show({ message: copy.settings.delete.entryToast });
+      return back();
+    }
+    if (!deleteEntry(gone.id)) return toast.show({ message: copy.errors.generic.title }); // tombstone; waits 30 days on the Recently deleted shelf; false for a left book (BL-1959)
     haptic('warning');
-    track('letter_deleted', { action: 'deleted', destination: gone.inBook ? 'book' : 'private' });
     if (belowIsBook(navigation.getState() as NavState)) bookHandoff.deleted(gone);
     else
       toast.show({
@@ -418,8 +435,8 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
         action: {
           label: copy.common.undoButton,
           onPress: () => {
-            track('letter_deleted', { action: 'restored', destination: gone.inBook ? 'book' : 'private' });
-            undeleteEntry(gone.id);
+            // BL-1959: a left book refuses the restore, and the toast says so. No analytics event (CR-225).
+            if (!undeleteEntry(gone.id)) return toast.show({ message: copy.settings.delete.restoreRefusedToast });
           },
         },
       });
@@ -454,10 +471,10 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
         {spoken && !playFirst && <AudioPlayer entryId={entry.id} />}
         {/* The picture's controls (add, change, words, remove) stay after the words and Play; the picture itself is drawn by the
             opening, between the dateline and the words (CL-116 C-01, ruling NS-01-C01-order): absent when photos are off. */}
-        {words !== 'waiting' ? <LetterPhoto entryId={entry.id} finalText={entry.finalText} own={own} /> : null}
+        {words !== 'waiting' ? <LetterPhoto entryId={entry.id} finalText={entry.finalText} own={editable} /> : null}
 
         {wordsCard && <WaitingCard entry={entry} kind={wordsCard} onWrite={() => setWriting(true)} />}
-        {own && words === 'words' && (unread || entry.wordsUnreviewed) && (
+        {editable && words === 'words' && (unread || entry.wordsUnreviewed) && (
           <ReadItBackCard
             typed={typedWords}
             onRead={() => {
@@ -495,7 +512,7 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
           </View>
         )}
 
-        {own && (
+        {editable && (
           <View style={{ marginHorizontal: 20 - CARD_TEXT_INSET }}>
             <ListSection>
               <ListRow
@@ -514,7 +531,20 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
                 variant="destructive"
                 leading={<TrashIcon size={20} color={c.destructive} />}
                 onPress={() => setConfirmOpen(true)}
-                accessibilityHint={copy.settings.delete.entryConfirm}
+                accessibilityHint={copy.book.entryMenu.deleteHint}
+              />
+            </ListSection>
+          </View>
+        )}
+        {readOnly && own && (
+          <View style={{ marginHorizontal: 20 - CARD_TEXT_INSET }}>
+            <ListSection>
+              <ListRow
+                title={copy.book.entryMenu.deleteButton}
+                variant="destructive"
+                leading={<TrashIcon size={20} color={c.destructive} />}
+                onPress={() => setConfirmOpen(true)}
+                testID="letter.deleteLeftBook"
               />
             </ListSection>
           </View>
@@ -532,14 +562,14 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
       <ConfirmSheet
         open={confirmOpen}
         title={copy.settings.delete.entryTitle}
-        body={copy.settings.delete.entryBody}
+        body={readOnly ? leftBookDeleteBody(entry) : copy.settings.delete.entryBody}
         confirmLabel={copy.settings.delete.entryConfirm}
         keepLabel={copy.settings.delete.keepButton}
         onKeep={() => setConfirmOpen(false)}
         onConfirm={remove}
       />
 
-      {own && (
+      {editable && (
         <DateSheet open={dateOpen} child={child} entry={entry} todayISO={todayISO()} onClose={() => setDateOpen(false)} onSave={changeDate} />
       )}
 

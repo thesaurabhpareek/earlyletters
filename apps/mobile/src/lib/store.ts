@@ -446,6 +446,33 @@ export function addChild(input: NewChild): Child {
   return children.get(c, id)!;
 }
 
+/**
+ * First run's finish with twins or more (NS-43-R9): every book is made in one transaction, so a kill, a full disk or a
+ * throw on the second leaves no first book behind: all of them or none. The first becomes the active book when none is
+ * set. The changes are announced and the outbox is woken once, after the commit, never for a book that was rolled back.
+ * An empty list makes nothing. Reads nothing of the words (names stay out of logs and errors).
+ */
+export function addChildren(inputs: NewChild[]): Child[] {
+  if (inputs.length === 0) return [];
+  const c = ctx();
+  const ids = inputs.map(() => c.newId());
+  const tables: Table[] = ['children'];
+  c.db.transaction(() => {
+    inputs.forEach((input, i) => {
+      children.insert(c, ids[i], input);
+      // After the first sign-in a new book is queued for the server (before it, ownership.ts sends every book at once).
+      enqueueBookCreate(c.db, ids[i], enqueueContext(c));
+    });
+    if (!settings.getSetting(c, 'activeChildId')) {
+      settings.setSetting(c, 'activeChildId', ids[0]);
+      tables.push('settings');
+    }
+  });
+  bus.emit(...tables);
+  signalOutbox();
+  return ids.map((id) => children.get(c, id)!);
+}
+
 export function updateChild(id: string, patch: Partial<Omit<Child, 'id'>>): void {
   const c = ctx();
   const before = children.get(c, id);
@@ -606,14 +633,17 @@ function insertDefaults(e: Entry): entries.InsertDefaults {
  * EntryTombstonedError for a deleted letter. Capture screens use
  * saveLetterFromDraft instead.
  */
-export function saveEntry(e: Entry): void {
+export function saveEntry(e: Entry): boolean {
   const c = ctx();
+  // A left book is read only (BL-1959): an existing letter in one, or a new one aimed at one, is refused with no op.
+  if (entryBookLeft(c, e.id) || (e.childId != null && bookLeft(c, e.childId))) return false;
   c.db.transaction(() => {
     entries.upsert(c, e, insertDefaults(e));
     enqueueEntryUpsert(c.db, e.id, ALL_GROUPS, enqueueContext(c));
   });
   bus.emit('entries');
   signalOutbox();
+  return true;
 }
 
 /**
@@ -622,10 +652,12 @@ export function saveEntry(e: Entry): void {
  * draft, never both and never neither. The audio must already be closed and
  * hashed (`e.audioSha256`, see capture/recorder.ts `ensureAudioHash`); a
  * spoken letter whose file is gone is refused rather than saved pointing at
- * nothing (`audioExists` is checked by the caller just before).
+ * nothing (`audioExists` is checked by the caller just before). False, with nothing written and the draft intact,
+ * when the letter is aimed at a left book (BL-1959): the caller must say the save did not work.
  */
-export function saveLetterFromDraft(draftId: string, e: Entry, audioExists = true): void {
+export function saveLetterFromDraft(draftId: string, e: Entry, audioExists = true): boolean {
   const c = ctx();
+  if (e.childId != null && bookLeft(c, e.childId)) return false;
   // A held draft (v8): its Keep names the held row's last version this phone knew ('0' when none came back),
   // so the server compares the Keep with held words this phone never saw (review K blocking 1).
   const held = drafts.isHeld(c, draftId) ? (getDraftRow(c.db, draftId)?.held_v ?? '0') : null;
@@ -645,6 +677,7 @@ export function saveLetterFromDraft(draftId: string, e: Entry, audioExists = tru
   });
   bus.emit('entries', 'drafts');
   signalOutbox();
+  return true;
 }
 
 /**
@@ -675,7 +708,7 @@ export function saveVoiceOnlyFromDraft(
 ): Entry {
   if (opts.audioExists === false) throw new letters.AudioMissingError();
   const entry = letters.voiceOnlyEntry(draft, { ...opts, occurredOn: todayISO(new Date(draft.createdAt)) });
-  saveLetterFromDraft(draft.id, entry);
+  if (!saveLetterFromDraft(draft.id, entry)) throw new Error('book_left'); // BL-1959: the draft stays, Review says it did not save
   return entry;
 }
 
@@ -697,6 +730,7 @@ export function setWordsForWaitingEntry(
   w: { rawTranscript: string; machineEdits: Edit[]; finalText: string; editLevel: EditLevel; engineVersion: number },
 ): boolean {
   const c = ctx();
+  if (entryBookLeft(c, id)) return false;
   let done = false;
   c.db.transaction(() => {
     done = entries.setWordsOnce(c, id, w);
@@ -720,6 +754,7 @@ export function setWordsForWaitingEntry(
  */
 export function setTypedWordsForWaitingEntry(id: string, text: string): boolean {
   const c = ctx();
+  if (entryBookLeft(c, id)) return false;
   let done = false;
   c.db.transaction(() => {
     done = entries.setTypedWordsOnce(c, id, text);
@@ -749,6 +784,7 @@ export function canTypeWordsFor(id: string): boolean {
  */
 export function keepReviewedWords(id: string, inBook?: boolean): boolean {
   const c = ctx();
+  if (entryBookLeft(c, id)) return false;
   let done = false;
   let moved = false;
   c.db.transaction(() => {
@@ -803,7 +839,7 @@ export function resolveConflict(opId: string, choice: 'mine' | 'theirs'): boolea
       drafts.setTyped(c, copy.entryId, copy.words.final_text);
       enqueueHeldDraft(c.db, copy.entryId, enqueueContext(c));
     } else if (choice === 'mine') {
-      if (!entries.replaceWords(c, copy.entryId, copy.words)) return;
+      if (entryBookLeft(c, copy.entryId) || !entries.replaceWords(c, copy.entryId, copy.words)) return;
       enqueueEntryUpsert(c.db, copy.entryId, ['text'], enqueueContext(c));
     }
     done = removeConflictCopy(c.db, opId);
@@ -894,11 +930,34 @@ export function getEntry(id: string): Entry | null {
   return entries.get(ctx(), id);
 }
 
+/**
+ * Whether this person left the book: `children.server_state = 'left'` and nothing else (BL-1959). It has no hidden,
+ * signed-in-account or has-a-letter filter, unlike `listLeftBooks` (a display list), so a support-hidden book and a
+ * book seen from a second account still answer true. Failure mode if it filtered: a letter there renders editable and
+ * its edit or restore queues an op for a book this person no longer writes to (BL-1959 keeps the book read only).
+ */
+function bookLeft(c: RepoContext, childId: string): boolean {
+  return c.db.get<{ n: number }>("SELECT 1 AS n FROM children WHERE id = ? AND server_state = 'left'", childId) != null;
+}
+/** The same, for the book a letter is filed in (a deleted letter too: its restore is a write as well). */
+function entryBookLeft(c: RepoContext, entryId: string): boolean {
+  return (
+    c.db.get<{ n: number }>(
+      "SELECT 1 AS n FROM entries e JOIN children c ON c.id = e.child_id WHERE e.id = ? AND c.server_state = 'left'",
+      entryId,
+    ) != null
+  );
+}
+export function isBookLeft(childId: string): boolean {
+  return bookLeft(ctx(), childId);
+}
+
 const IN_BOOK: FieldGroup[] = ['in_book'];
 
 /** Add to book / make private. Never touches text. Returns false for a missing or deleted letter. */
 export function setEntryInBook(id: string, inBook: boolean): boolean {
   const c = ctx();
+  if (entryBookLeft(c, id)) return false; // BL-1959
   let done = false;
   c.db.transaction(() => {
     done = entries.setInBook(c, id, inBook);
@@ -922,6 +981,7 @@ const OCCURRED: FieldGroup[] = ['occurred_on'];
  */
 export function setEntryDate(id: string, occurredOn: string, precision: OccurredPrecision): boolean {
   const c = ctx();
+  if (entryBookLeft(c, id)) return false; // BL-1959
   let done = false;
   c.db.transaction(() => {
     done = entries.setOccurred(c, id, occurredOn, precision, syncOwner(c.db));
@@ -934,9 +994,13 @@ export function setEntryDate(id: string, occurredOn: string, precision: Occurred
   return done;
 }
 
-/** Tombstone, never a hard delete (matches the server schema). The server clock sets the real deleted_at. */
-export function deleteEntry(id: string): void {
+/**
+ * Tombstone, never a hard delete (matches the server schema). The server clock sets the real deleted_at. False when
+ * nothing was deleted: a missing letter, or one in a left book (BL-1959; those letters go through `deleteLeftBookLetter`).
+ */
+export function deleteEntry(id: string): boolean {
   const c = ctx();
+  if (entryBookLeft(c, id)) return false;
   let done = false;
   c.db.transaction(() => {
     done = entries.tombstone(c, id);
@@ -946,14 +1010,44 @@ export function deleteEntry(id: string): void {
     bus.emit('entries');
     signalOutbox();
   }
+  return done;
+}
+
+/**
+ * The delete rule's own door for a letter in a book this person left (BL-1960, F11-REQ-011, DATA-REQ-016). `deleteEntry`
+ * refuses such a letter on purpose (BL-1959: a left book is read only, and a delete is not an accident to make by a
+ * generic path). This is the explicit way in: a local tombstone and one `entry.delete`, because the server accepts a
+ * delete from the author who left (`delete_entry` checks only author_id) and the remaining parent's book must lose
+ * the letter within one sync. The letter then waits 30 days on the Recently deleted shelf like any other. Returns false for a letter that is not in a left book, one that is
+ * missing or already deleted, and a letter someone else wrote (a left book holds only the person's own after merge, so
+ * that last case is belt and braces). It cannot be used to delete from a book that is still joined.
+ * It does not restore: `undeleteEntry` still refuses a left book's letter (BL-1959).
+ */
+export function deleteLeftBookLetter(id: string): boolean {
+  const c = ctx();
+  if (!entryBookLeft(c, id)) return false;
+  const me = syncOwner(c.db);
+  const row = getEntryRow(c.db, id);
+  if (!row || (me && row.author_id !== null && row.author_id !== me)) return false;
+  let done = false;
+  c.db.transaction(() => {
+    done = entries.tombstone(c, id);
+    if (done) enqueueEntryDelete(c.db, id, enqueueContext(c));
+  });
+  if (done) {
+    bus.emit('entries');
+    signalOutbox();
+  }
+  return done;
 }
 
 /**
  * Restore from Recently deleted: live here at once; on the server through
  * restore_entry() (never by clearing deleted_at, which the server refuses).
  */
-export function undeleteEntry(id: string): void {
+export function undeleteEntry(id: string): boolean {
   const c = ctx();
+  if (entryBookLeft(c, id)) return false; // BL-1959: a restore is a write too (entry.restore)
   let done = false;
   c.db.transaction(() => {
     done = entries.undelete(c, id);
@@ -963,6 +1057,7 @@ export function undeleteEntry(id: string): void {
     bus.emit('entries');
     signalOutbox();
   }
+  return done;
 }
 
 // ── Recently deleted (D-085) ─────────────────────────────────────────────
@@ -1016,6 +1111,12 @@ export function eraseEntry(id: string, eraseAudio: AudioEraser): boolean {
   let serverMayHold = false;
   let heldOnServer = false;
   let bookId: string | null = null;
+  // BL-1960: a letter in a book this person left queues its entry.erase like any other: the server checks only
+  // author_id (sync_private.erase_entry), so the remaining parent's copy goes too. The local erase never waits on the
+  // answer (missing, deferred under a legal hold, or offline). Read before the row goes, to drop the book row after.
+  const leftBook = entryBookLeft(c, id);
+  const leftBookId = leftBook ? (c.db.get<{ child_id: string | null }>('SELECT child_id FROM entries WHERE id = ?', id)?.child_id ?? '') : '';
+  let bookGone = false;
   // Queueing is local, as every other upload is: a phone that signed in under a server-on build keeps
   // its queue in an off build, so the erase goes when sync returns (final review A-M2).
   const owner = syncOwner(c.db);
@@ -1044,9 +1145,13 @@ export function eraseEntry(id: string, eraseAudio: AudioEraser): boolean {
     // One erase for the letter and for a waiting letter's held row alike: the server erases whichever it
     // holds, and the author's other phones erase their copy (never restorable there).
     if (done && (serverMayHold || heldOnServer)) enqueueEntryErase(c.db, id, bookId, enqueueContext(c));
+    // BL-1960: the book row goes when its last letter goes and no op for the book still waits (same transaction, so a
+    // kill never leaves a half state).
+    if (done && leftBook) bookGone = dropEmptyLeftBook(c, leftBookId);
   });
   if (done) compactAfterErase(c);
   if (done) bus.emit('entries');
+  if (done && bookGone) tellBookErased(leftBookId);
   if (done && (serverMayHold || heldOnServer)) signalOutbox();
   return done;
 }
@@ -1106,11 +1211,24 @@ export function purgeExpired(nowMs: number, eraseAudio: AudioEraser): number {
   // A book erase a kill cut short is finished first, whatever the clock says and even with no readable launch stamp
   // below: the person already asked for it, and it counts no days.
   for (const id of wipe.erasingIds(c)) eraseBook(id, eraseAudio);
+  // BL-1960: a left book with nothing filed in it keeps only its name and birth date; nothing reads it, so it goes.
+  // Not a clock matter (no letter waits on it), so it runs before the launch-stamp guard below.
+  for (const id of children.emptyLeftBookIds(c)) {
+    let gone = false;
+    c.db.transaction(() => {
+      gone = dropEmptyLeftBook(c, id);
+    });
+    if (gone) tellBookErased(id);
+  }
   const last = Date.parse(getSetting(LAST_LAUNCH_SETTING) ?? '');
   if (!Number.isFinite(last) || nowMs < last) return 0;
   const cutoff = new Date(last - SHELF_MS).toISOString();
   let erased = 0;
-  for (const id of capabilities.sync ? entries.expiredLocalOnlyIds(c, cutoff) : entries.expiredIds(c, cutoff)) {
+  // BL-1960: a left book's letters are erased on this phone's clock on a sync build too: this phone no longer pulls
+  // that book, so it never hears the server's purge or an erase from elsewhere, and must erase them itself (eraseEntry
+  // also queues the entry.erase, so the server's copy goes).
+  const due = capabilities.sync ? [...new Set([...entries.expiredLocalOnlyIds(c, cutoff), ...entries.expiredInLeftBooks(c, cutoff)])] : entries.expiredIds(c, cutoff);
+  for (const id of due) {
     if (eraseEntry(id, eraseAudio)) erased += 1;
   }
   // Deleted books whose 30 days are over (F17 6.2 D step 6), by the same guarded cutoff as letters (QE-05).
@@ -1228,6 +1346,27 @@ export function eraseBook(id: string, eraseAudio: AudioEraser): boolean {
   }
   bus.emit('children', 'entries', 'drafts', 'settings');
   return true;
+}
+
+/**
+ * Removes a left book's own row (name, birth date, prefs, sync marks) once nothing is filed in it: no letter, deleted
+ * or not, and no draft (BL-1960). Runs inside the caller's transaction. A book that is not left, or still holds
+ * anything, is untouched. True when the book went.
+ */
+function dropEmptyLeftBook(c: RepoContext, childId: string): boolean {
+  if (!childId || !children.leftBookIsEmpty(c, childId)) return false;
+  wipe.removeBook(c, childId);
+  return true;
+}
+function tellBookErased(childId: string): void {
+  for (const hook of bookErasedHooks) {
+    try {
+      hook(childId);
+    } catch {
+      // a device-file cleanup must never undo an erase that has happened
+    }
+  }
+  bus.emit('children', 'entries', 'settings');
 }
 
 const bookErasedHooks = new Set<(bookId: string) => void>();
@@ -1487,6 +1626,19 @@ export function beginDiscard(id: string): boolean {
   if (done) bus.emit('drafts');
   if (done && held) signalOutbox();
   return done;
+}
+
+/**
+ * A let-go draft's delete failed once more (NS-09-R15). Counts only; no id or count is logged. Emits nothing: no list
+ * shows it yet (Storage, R6, is a separate row).
+ */
+export function noteDiscardFailure(id: string): number {
+  return drafts.noteDiscardFailure(ctx(), id);
+}
+
+/** Failed deletes so far for a draft being let go; 0 when none or the draft is gone. Survives a restart. */
+export function discardFailures(id: string): number {
+  return drafts.discardFailures(ctx(), id);
 }
 
 /**

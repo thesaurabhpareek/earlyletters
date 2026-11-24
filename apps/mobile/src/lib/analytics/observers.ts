@@ -3,7 +3,7 @@
  * modules' public state, so their events need no line in another owner's
  * screen (TRACKING_PLAN section 9, rows marked "wired"):
  *
- *   auth state        auth_method_selected, auth_email_sent, auth_failed, auth_succeeded, signed_out
+ *   auth state        auth_failed, auth_succeeded, signed_out
  *   invite accepted   invite_accepted (co-parent: the only role in the app at v1.0)
  *   spoken languages  language_set
  *   pack engine       pack_download
@@ -114,7 +114,7 @@ export function startAnalyticsObservers(): () => void {
       subscribeSyncStatus((st) =>
         safe(() => {
           if (st.phase !== last && (st.phase === 'offline' || st.phase === 'auth')) {
-            analytics.track('sync_failed', { reason: st.phase === 'offline' ? 'network' : 'auth' });
+            analytics.track('system:sync_fail', { reason: st.phase === 'offline' ? 'network' : 'auth' });
           }
           last = st.phase;
         }),

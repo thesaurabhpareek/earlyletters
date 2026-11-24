@@ -64,6 +64,19 @@ export function failureLine(error: 'offline' | 'failed' | null): string | null {
   return error === 'offline' ? c.errors.offline : c.errors.failed;
 }
 
+/**
+ * The line when the page could not load (its status or its book lines). Nothing was tried, so "nothing has changed"
+ * would be an odd thing to say there (BL-492 point 4); offline keeps its own line, which is true in both places.
+ */
+export function loadFailureLine(error: 'offline' | 'failed' | null): string {
+  return error === 'offline' ? c.errors.offline : c.errors.loadFailed;
+}
+
+/** Where the page goes once a cancel went through: back to Settings, not on to step 1 again (BL-492 point 2). */
+export function afterCancel(canGoBack: boolean): 'back' | 'settings' {
+  return canGoBack ? 'back' : 'settings';
+}
+
 /** "Delete account" is enabled only when the word is typed and no request is on its way. */
 export function canDelete(typed: string, busy: boolean): boolean {
   return confirmationMatches(typed) && !busy;

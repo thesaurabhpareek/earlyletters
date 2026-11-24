@@ -22,6 +22,7 @@ import { createDisk, iosContainer, layOutApp, namesIn, put, recorderDir, type Di
 import { entryMediaStore } from '../src/lib/photos/entry-media';
 import { photosDirectory } from '../src/lib/photos/files';
 import { letItGo } from '../src/lib/capture/let-it-go.logic';
+import { FIRST_RUN_DRAFT_SETTING, parseDraft, serializeDraft } from '../src/lib/first-run/draft.logic';
 import { nodeDb } from './helpers/node-db';
 import { letter } from './helpers/store-fixture';
 
@@ -456,6 +457,9 @@ describe('[DATA-REQ-024][F14-REQ-026] Erase everything on this phone, signed out
     app.store.setSetting('appLock.enabled', 'on');
     app.store.setSetting('appLock.grace', 'immediately');
     app.store.recordLaunch(T0);
+    // BL-1989: a first-run draft (Asha's name, birthday and sign-off, typed and not yet made into a book) is a setting too.
+    app.store.setSetting(FIRST_RUN_DRAFT_SETTING, serializeDraft({ step: 'signsAs', names: ['Asha'], expecting: false, birthday: '2026-03-14', dueDate: null, signsAs: 'Mama' }));
+    expect(parseDraft(app.store.getSetting(FIRST_RUN_DRAFT_SETTING))?.names).toEqual(['Asha']); // the seed took
     const stray = put(h.disk, `${h.disk.documents}recording-5D2E0F11-0000-4000-8000-0000000057A2.m4a`, 8_000);
     const frames = put(h.disk, `${h.disk.caches}whole-frames-abc-1.aac`, 4_000);
     const zip = put(h.disk, `${h.disk.caches}exports/early-letters-2026-10-03.zip`, 9_000);
@@ -497,6 +501,8 @@ describe('[DATA-REQ-024][F14-REQ-026] Erase everything on this phone, signed out
     expect(fetches).toBe(0);
     // The app lock's two settings and the shelf purge's launch stamp went with every other setting.
     for (const k of ['appLock.enabled', 'appLock.grace', 'lastLaunchAt']) expect([k, app.store.getSetting(k)]).toEqual([k, null]);
+    // BL-1989: the half-typed first run (a child's name and birthday) is gone, so first run opens empty.
+    expect(app.store.getSetting(FIRST_RUN_DRAFT_SETTING)).toBeNull();
 
     const next = await launch();
     expect(await next.all.resumeEraseAtLaunch()).toBeNull();
@@ -1683,9 +1689,9 @@ describe('[NS-36] kill during Erase resumes and finishes', () => {
       `${h.disk.caches}whole-frames-abc-1.aac`,
     ];
 
-    // RED TODAY (#1169 gap): erase-everything.ts throws `backupFailure` right after the recordings, before
-    // removeWholeFrameCopies and the CACHE_COPIES loop. The export ZIPs and the print PDF stay until a retry succeeds.
-    it.fails('[NS-36-B5-4] the backup file will not go: the erase throws backup_file_delete AND every export ZIP, print PDF and frame copy is gone', async () => {
+    // BL-1466: erase-everything.ts holds `backupFailure` and throws it after the CACHE_COPIES loop, so the export ZIPs
+    // and the print PDF are gone in the same pass.
+    it('[NS-36][B5-4] the backup file will not go: the erase throws backup_file_delete AND every export ZIP, print PDF and frame copy is gone', async () => {
       const app = await launch();
       for (const u of exportsAndCopies()) put(h.disk, u, 5_000);
       put(h.disk, sqlite(BACKUP), 64);
@@ -1694,7 +1700,36 @@ describe('[NS-36] kill during Erase resumes and finishes', () => {
       expect(exportsAndCopies().filter(has)).toEqual([]);
     });
 
-    it('[NS-36-B5-4] what is green today: the recordings and the days file are cleaned, the erase throws, the mark stays, and the retry finishes the copies', async () => {
+    // BL-1466: when more than one file will not go, every step still runs and the first held failure is thrown in a
+    // fixed order: backup, then days, then moments. Two cases pin the order so a swap turns red.
+    it('[NS-36][B5-4] the backup file and the days file will not go: every copy is gone and the erase throws backup_file_delete first', async () => {
+      const app = await launch();
+      for (const u of exportsAndCopies()) put(h.disk, u, 5_000);
+      put(h.disk, daysFile(), 80);
+      put(h.disk, sqlite(BACKUP), 64);
+      h.disk.undeletable.add(sqlite(BACKUP));
+      h.disk.undeletable.add(daysFile());
+      expect(() => app.all.eraseDeviceFiles()).toThrow('backup_file_delete');
+      expect(exportsAndCopies().filter(has)).toEqual([]);
+      expect(has(daysFile())).toBe(true);
+    });
+
+    it('[NS-36][B5-4] only the days file and the moments file will not go: every copy is gone and the erase throws the days failure first', async () => {
+      h.exclusionSticks = true;
+      const app = await launch();
+      expect(await app.moments.momentsStore.setLabel('2026-10-03', 'Asha at the lake')).toEqual({ ok: true });
+      const momentsUris = [...h.disk.files.keys()].filter((u) => u.includes('/moments/'));
+      expect(momentsUris).toHaveLength(1); // positive control
+      for (const u of exportsAndCopies()) put(h.disk, u, 5_000);
+      put(h.disk, daysFile(), 80);
+      h.disk.undeletable.add(daysFile());
+      h.disk.undeletable.add(momentsUris[0]);
+      expect(() => app.all.eraseDeviceFiles()).toThrow('days_file_not_removed');
+      expect(exportsAndCopies().filter(has)).toEqual([]);
+      expect(has(momentsUris[0])).toBe(true);
+    });
+
+    it('[NS-36][B5-4] what is green today: the recordings and the days file are cleaned, the erase throws, the mark stays, and the retry finishes the copies', async () => {
       const app = await launch();
       const rec = take('A1');
       put(h.disk, daysFile(), 80);
