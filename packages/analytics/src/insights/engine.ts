@@ -378,7 +378,7 @@ export function computeInsights(input: InsightsInput): InsightsReport {
       const opened = d.total('system:app_open', lw, 'people');
       const rtRate = rate(rt, opened);
       metrics.push({ key: 'read_together_adoption', label: 'People who started Read together / opened the app (device)', value: rtRate, previous: pw ? rate(d.total('book:read_together_start', pw, 'people'), d.total('system:app_open', pw, 'people')) : null, unit: 'rate', source: 'device', week: lw });
-      const closes = d.splitOver('plus_offer_closed', 'outcome', last4);
+      const closes = d.splitOver('plus:offer_end', 'outcome', last4);
       const closed = [...closes.values()].reduce((a, b) => a + b, 0);
       const bought = closed >= 50 ? (closes.get('purchased') ?? 0) / closed : null;
       metrics.push({ key: 'offer_purchase', label: 'Store sheet closes with a purchase (4 weeks, device)', value: bought, previous: null, unit: 'rate', source: 'device', week: lw });
@@ -387,7 +387,7 @@ export function computeInsights(input: InsightsInput): InsightsReport {
         propose({
           id: 'store-unavailable', area: 'plus', title: "Find why Apple's subscription sheet does not open",
           problem: `${pct(unavailable)} of store sheet attempts in the last 4 weeks ended as unavailable.`,
-          evidence: [`device plus_offer_closed: ${closes.get('unavailable') ?? 0} unavailable of ${closed}`],
+          evidence: [`device plus:offer_end: ${closes.get('unavailable') ?? 0} unavailable of ${closed}`],
           hypothesis: 'Phones below the minimum iOS for the subscription store view, or StoreKit not reachable offline.',
           change: 'Hide the offer when the store view cannot open (offline or old iOS) and show the quiet line instead.',
           metric: 'Unavailable under 1% of store sheet attempts.',

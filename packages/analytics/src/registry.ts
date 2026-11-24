@@ -210,7 +210,7 @@ export const REGISTRY = {
       from_notification_2h: bool(),
     },
   },
-  free_allowance_reached: {
+  'plus:allowance_reach': {
     stage: 'keep',
     decision: "How many families reach the end of the free letters, so we size the Plus audience.",
     area: 'plus',
@@ -220,7 +220,7 @@ export const REGISTRY = {
     tier: 'consented',
     props: { allowance: int(2, 100) },
   },
-  keep_gate_shown: {
+  'plus:keep_gate_view': {
     stage: 'keep',
     decision: "How many families meet the Keep sheet, so we judge whether the free allowance is set right.",
     area: 'plus',
@@ -230,7 +230,7 @@ export const REGISTRY = {
     tier: 'consented',
     props: { letters_kept: int(0, 1000), allowance: int(2, 100), lapsed: int(0, 1) },
   },
-  letter_held: {
+  'plus:letter_hold_create': {
     stage: 'keep',
     decision: "How many families keep a letter on the phone instead of starting Plus, so we judge what the Keep sheet costs in trust.",
     area: 'plus',
@@ -240,7 +240,7 @@ export const REGISTRY = {
     tier: 'consented',
     props: { letters_kept: int(0, 1000) },
   },
-  plus_started_from_gate: {
+  'plus:keep_gate_plan_start': {
     stage: 'plus',
     decision: "How many families start Plus from the Keep sheet, so we decide whether to change the sheet or the offer.",
     area: 'plus',
@@ -275,7 +275,7 @@ export const REGISTRY = {
     tier: 'consented',
     props: { role: INVITE_ROLE, surface: oneOf('app') },
   },
-  plus_offer_viewed: {
+  'plus:offer_view': {
     stage: 'plus',
     decision: "How many families see Apple's Plus offer and from where, so we decide where the offer should appear.",
     area: 'plus',
@@ -285,7 +285,7 @@ export const REGISTRY = {
     tier: 'consented',
     props: { trigger: PLUS_TRIGGER },
   },
-  plus_offer_closed: {
+  'plus:offer_end': {
     stage: 'plus',
     decision: "How the Plus offer ends (bought, dismissed, unavailable), so we decide whether the offer or its price is the problem.",
     area: 'plus',
@@ -295,7 +295,7 @@ export const REGISTRY = {
     tier: 'consented',
     props: { trigger: PLUS_TRIGGER, outcome: oneOf('purchased', 'dismissed', 'unavailable') },
   },
-  plan_changed: {
+  'plus:plan_update': {
     stage: 'plus',
     decision: "How families move between plan states on this phone, so we check Plus keeps working after a trial or restore.",
     area: 'plus',
@@ -387,15 +387,15 @@ export const EV = {
   captureDiscarded: 'capture_discarded',
   transcriptionCompleted: 'transcription_completed',
   letterSaved: 'letter_saved',
-  freeAllowanceReached: 'free_allowance_reached',
-  keepGateShown: 'keep_gate_shown',
-  letterHeld: 'letter_held',
-  plusStartedFromGate: 'plus_started_from_gate',
+  freeAllowanceReached: 'plus:allowance_reach',
+  keepGateShown: 'plus:keep_gate_view',
+  letterHeld: 'plus:letter_hold_create',
+  plusStartedFromGate: 'plus:keep_gate_plan_start',
   inviteCreated: 'family:invite_create',
   inviteAccepted: 'family:invite_accept',
-  plusOfferViewed: 'plus_offer_viewed',
-  plusOfferClosed: 'plus_offer_closed',
-  planChanged: 'plan_changed',
+  plusOfferViewed: 'plus:offer_view',
+  plusOfferClosed: 'plus:offer_end',
+  planChanged: 'plus:plan_update',
   errorShown: 'system:error_view',
   controlTapped: 'control_tapped',
   surfaceImpressed: 'surface_impressed',
@@ -474,8 +474,8 @@ export type FunnelStep = RegistryName | `${string}:${string}`;
 export const FUNNELS = {
   f_onboarding_first_letter: ['onboarding:book_create', 'capture_started', 'letter_saved'],
   f_capture_letter_saved: ['capture_started', 'transcription_completed', 'letter_saved'],
-  f_keep_plus_started: ['free_allowance_reached', 'keep_gate_shown', 'plus_started_from_gate'],
-  f_plus_offer_converted: ['plus_offer_viewed', 'plus_offer_closed', 'plan_changed'],
+  f_keep_plus_started: ['plus:allowance_reach', 'plus:keep_gate_view', 'plus:keep_gate_plan_start'],
+  f_plus_offer_converted: ['plus:offer_view', 'plus:offer_end', 'plus:plan_update'],
   // Wire names (BL-2175, CR-213): the Book and letter reads are the generated screen views, not events of their own.
   f_return_book_read: ['system:app_open', 'book:book_screen_view', 'book:letter_detail_screen_view'],
   f_family_invite_joined: ['family:invite_create', 'family:invite_accept'],

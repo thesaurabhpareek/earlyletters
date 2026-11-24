@@ -250,12 +250,12 @@ describe('[S22] the held letter on the sheet is the person\'s own, read from thi
   it('nothing is sent to show it: the sheet imports no network, and its analytics carry counts and outcomes only', () => {
     const gate = code('components/child/plus-gate.tsx');
     expect(gate).not.toMatch(/fetch\(|supabase|XMLHttpRequest|WebSocket|lib\/sync/);
-    const calls = [...gate.matchAll(/track\('(\w+)', (\{[^}]*\})\)/g)].map((m) => [m[1], m[2]]);
+    const calls = [...gate.matchAll(/track\('([\w:]+)', (\{[^}]*\})\)/g)].map((m) => [m[1], m[2]]);
     expect(calls).toEqual([
-      ['plus_started_from_gate', '{ letters_kept: Math.min(1000, Math.max(0, lettersKept)) }'],
-      ['offer_code_redeemed', '{}'],
-      ['plus_offer_viewed', "{ trigger: 'keep_letter' }"],
-      ['plus_offer_closed', "{ trigger: 'keep_letter', outcome }"],
+      ['plus:keep_gate_plan_start', '{ letters_kept: Math.min(1000, Math.max(0, lettersKept)) }'],
+      ['plus:code_submit', '{}'],
+      ['plus:offer_view', "{ trigger: 'keep_letter' }"],
+      ['plus:offer_end', "{ trigger: 'keep_letter', outcome }"],
     ]);
     expect(gate).not.toMatch(/track\([^)]*(held|words|childName)/);
   });
@@ -293,11 +293,11 @@ describe('[S22] Keep it here for now: the draft is held, and Tonight shows it wa
     expect(hold.match(/holdDraft\(/g)).toHaveLength(1);
     expect(hold).toMatch(/const outcome = holdOnce\(holding, \(\) => \(later \? true : holdDraft\(draft\.id, \{ inBookChoice: heldInBook\.current \}\)\)\);/);
     // A second tap does nothing more; only a hold that took is counted; the sheet and Review close once.
-    expect(hold).toMatch(/if \(outcome === 'again'\) return;\s*if \(outcome === 'held'\) track\('letter_held', \{ letters_kept: Math\.min\(1000, gate\.lettersKept\) \}\);\s*router\.back\(\);/);
+    expect(hold).toMatch(/if \(outcome === 'again'\) return;\s*if \(outcome === 'held'\) track\('plus:letter_hold_create', \{ letters_kept: Math\.min\(1000, gate\.lettersKept\) \}\);\s*router\.back\(\);/);
     expect(hold.match(/router\.back\(\)/g)).toHaveLength(1);
     expect(review).toMatch(/const holding = useRef\(false\);/);
     // The only analytics on Hold: the existing letter_held count (no words, no name).
-    expect([...hold.matchAll(/track\(([^;]*)\);/g)].map((m) => m[1])).toEqual(["'letter_held', { letters_kept: Math.min(1000, gate.lettersKept) }"]);
+    expect([...hold.matchAll(/track\(([^;]*)\);/g)].map((m) => m[1])).toEqual(["'plus:letter_hold_create', { letters_kept: Math.min(1000, gate.lettersKept) }"]);
     expect(hold.indexOf('holdDraft(')).toBeLessThan(hold.indexOf('router.back()'));
     // Holding never lets the letter go (lens B B1 on #312): no discard, delete or clear on this path.
     expect(hold).not.toMatch(/discard|Discard|delete|Delete|remove|clear|finishDiscard|setGate/);

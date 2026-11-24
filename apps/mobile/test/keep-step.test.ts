@@ -74,13 +74,13 @@ describe('keepSheetFor: the gate before the write', () => {
     expect(h.events).toEqual([]);
   });
 
-  it('words at the allowance without Plus: the sheet, and keep_gate_shown with numbers only', async () => {
+  it('words at the allowance without Plus: the sheet, and plus:keep_gate_view with numbers only', async () => {
     await keepTyped('One.');
     await keepTyped('Two.');
     h.events.length = 0;
     const g = await keepSheetFor('Three.');
     expect(g?.decision).toEqual({ kind: 'offer', trigger: 'keep_letter', needsSignIn: false, lapsed: false });
-    expect(h.events).toEqual([{ name: 'keep_gate_shown', props: { letters_kept: 2, allowance: 2, lapsed: 0 } }]);
+    expect(h.events).toEqual([{ name: 'plus:keep_gate_view', props: { letters_kept: 2, allowance: 2, lapsed: 0 } }]);
   });
 
   it('no words on screen (empty, blank, marks only) never asks and never opens the sheet, even past the allowance', async () => {
@@ -100,11 +100,11 @@ describe('keepSheetFor: the gate before the write', () => {
 });
 
 describe('countAfterSave: the count and the allowance note after the write', () => {
-  it('the save that reaches the allowance notes it once: free_allowance_reached and the second-free line', async () => {
+  it('the save that reaches the allowance notes it once: plus:allowance_reach and the second-free line', async () => {
     expect(await keepTyped('One.')).toBe(false);
     expect(names()).toEqual([]);
     expect(await keepTyped('Two.')).toBe(true);
-    expect(h.events).toEqual([{ name: 'free_allowance_reached', props: { allowance: 2 } }]);
+    expect(h.events).toEqual([{ name: 'plus:allowance_reach', props: { allowance: 2 } }]);
     expect(keychainCount()).toBe(2);
   });
 
@@ -122,6 +122,6 @@ describe('countAfterSave: the count and the allowance note after the write', () 
     await keepTyped('One.');
     h.view = PLUS;
     expect(await keepTyped('Two.')).toBe(false);
-    expect(names()).not.toContain('free_allowance_reached');
+    expect(names()).not.toContain('plus:allowance_reach');
   });
 });

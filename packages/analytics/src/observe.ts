@@ -158,7 +158,7 @@ export function createPackObserver(a: Track, network: () => V<'system:pack_downl
 // Plan (src/lib/billing getPlan: view.state, details.period, details.ownership)
 // ---------------------------------------------------------------------------
 
-export type PlanStateValue = V<'plan_changed', 'to_state'>;
+export type PlanStateValue = V<'plus:plan_update', 'to_state'>;
 
 export interface PlanLike {
   state: PlanStateValue;
@@ -182,7 +182,7 @@ export function createPlanObserver(a: Track): (p: PlanLike) => void {
     const from = prev;
     prev = p.state;
     if (p.environment !== 'production') return;
-    a.track('plan_changed', {
+    a.track('plus:plan_update', {
       from_state: from,
       to_state: p.state,
       period: p.period ?? 'unknown',

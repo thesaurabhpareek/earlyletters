@@ -118,8 +118,8 @@ export function syntheticInput(date: string, opts: { weeks?: number; seed?: numb
     add(w, 'machine_edit_rejected', 160, 45, 'edit_type', 'filler');
     add(w, 'machine_edit_rejected', 200, 60, 'edit_type', 'agreement');
     add(w, 'book:read_together_start', 40, Math.round(opened * 0.1));
-    add(w, 'plus_offer_closed', 30, 25, 'outcome', 'dismissed');
-    add(w, 'plus_offer_closed', 3, 3, 'outcome', 'purchased');
+    add(w, 'plus:offer_end', 30, 25, 'outcome', 'dismissed');
+    add(w, 'plus:offer_end', 3, 3, 'outcome', 'purchased');
     add(w, 'me:language_update', 25, 20, 'lang', 'hi');
     add(w, 'me:language_update', 15, 12, 'lang', 'es');
     add(w, 'system:error_view', w === last ? 120 : jitter(30, 0.1), w === last ? 70 : 20, 'code', 'save_failed');

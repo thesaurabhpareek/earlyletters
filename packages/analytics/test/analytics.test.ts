@@ -175,21 +175,21 @@ describe('allowlist', () => {
     const { analytics, provider } = setup();
     await analytics.init();
     await analytics.grant();
-    analytics.track('keep_gate_shown', { letters_kept: 2.5, allowance: 5, lapsed: 0 });
-    analytics.track('keep_gate_shown', {
+    analytics.track('plus:keep_gate_view', { letters_kept: 2.5, allowance: 5, lapsed: 0 });
+    analytics.track('plus:keep_gate_view', {
       // @ts-expect-error null is never allowed
       letters_kept: null,
       allowance: 5,
       lapsed: 0,
     });
-    analytics.track('keep_gate_shown', {
+    analytics.track('plus:keep_gate_view', {
       letters_kept: 4,
       allowance: 5,
       lapsed: 0,
       // @ts-expect-error nested objects are never allowed
       extra: { a: 1 },
     });
-    analytics.track('keep_gate_shown', {
+    analytics.track('plus:keep_gate_view', {
       // @ts-expect-error arrays are never allowed
       letters_kept: [1],
       allowance: 5,

@@ -188,15 +188,15 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 
 | Event | Fires when | Properties (type: allowed values) | Serves |
 |---|---|---|---|
-| `offer_code_redeemed` | Apple's offer code sheet closed and Plus was on afterwards | (none) | C-REQ-034 |
-| `restore_result` | Restore purchases finished | `outcome` (enum: restored \| nothing \| cancelled \| failed \| unavailable) | C-REQ-034, C-NFR-003 |
-| `free_allowance_reached` | The last free letter was kept, so the next Keep will ask for Plus (once per phone) | `allowance` (int 2 to 100) | C-REQ-034, C-REQ-023 |
-| `keep_gate_shown` | The Keep sheet asked for Plus (the letter is held on the phone) | `letters_kept` (int 0 to 1000)<br>`allowance` (int 2 to 100)<br>`lapsed` (int 0 to 1) | C-REQ-034, C-REQ-023 |
-| `letter_held` | The person chose to keep the letter on the phone for now instead of starting Plus | `letters_kept` (int 0 to 1000) | C-REQ-034, C-REQ-023 |
-| `plus_started_from_gate` | Plus was on after the Keep sheet (bought, restored, an Ask to Buy approval, or an offer code) | `letters_kept` (int 0 to 1000) | C-REQ-034, C-REQ-023 |
-| `plus_offer_viewed` | Apple's subscription store view presented | `trigger` (enum: chapter_complete \| keep_letter \| backup \| themes \| settings) | C-REQ-034, C-REQ-023 |
-| `plus_offer_closed` | Apple's subscription store view closed | `trigger` (enum: chapter_complete \| keep_letter \| backup \| themes \| settings)<br>`outcome` (enum: purchased \| dismissed \| unavailable) | C-REQ-034, C-NFR-002 |
-| `plan_changed` | The plan StoreKit reports on this device changed state (observed; production transactions only) | `from_state` (enum: none \| trial \| active \| grace \| billing_retry \| expired \| refunded \| revoked)<br>`to_state` (enum: none \| trial \| active \| grace \| billing_retry \| expired \| refunded \| revoked)<br>`period` (enum: month \| year \| unknown)<br>`ownership` (enum: purchased \| family_shared \| unknown) | C-REQ-034, C-NFR-002 |
+| `plus:code_submit` | Apple's offer code sheet closed and Plus was on afterwards | (none) | C-REQ-034 |
+| `plus:restore_complete` | Restore purchases finished | `outcome` (enum: restored \| nothing \| cancelled \| failed \| unavailable) | C-REQ-034, C-NFR-003 |
+| `plus:allowance_reach` | The last free letter was kept, so the next Keep will ask for Plus (once per phone) | `allowance` (int 2 to 100) | C-REQ-034, C-REQ-023 |
+| `plus:keep_gate_view` | The Keep sheet asked for Plus (the letter is held on the phone) | `letters_kept` (int 0 to 1000)<br>`allowance` (int 2 to 100)<br>`lapsed` (int 0 to 1) | C-REQ-034, C-REQ-023 |
+| `plus:letter_hold_create` | The person chose to keep the letter on the phone for now instead of starting Plus | `letters_kept` (int 0 to 1000) | C-REQ-034, C-REQ-023 |
+| `plus:keep_gate_plan_start` | Plus was on after the Keep sheet (bought, restored, an Ask to Buy approval, or an offer code) | `letters_kept` (int 0 to 1000) | C-REQ-034, C-REQ-023 |
+| `plus:offer_view` | Apple's subscription store view presented | `trigger` (enum: chapter_complete \| keep_letter \| backup \| themes \| settings) | C-REQ-034, C-REQ-023 |
+| `plus:offer_end` | Apple's subscription store view closed | `trigger` (enum: chapter_complete \| keep_letter \| backup \| themes \| settings)<br>`outcome` (enum: purchased \| dismissed \| unavailable) | C-REQ-034, C-NFR-002 |
+| `plus:plan_update` | The plan StoreKit reports on this device changed state (observed; production transactions only) | `from_state` (enum: none \| trial \| active \| grace \| billing_retry \| expired \| refunded \| revoked)<br>`to_state` (enum: none \| trial \| active \| grace \| billing_retry \| expired \| refunded \| revoked)<br>`period` (enum: month \| year \| unknown)<br>`ownership` (enum: purchased \| family_shared \| unknown) | C-REQ-034, C-NFR-002 |
 
 #### errors
 
@@ -205,7 +205,7 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 | `system:sync_fail` | A sync attempt fails after retries | `reason` (enum: network \| auth \| conflict \| server \| unknown) | PRD-REQ-016 |
 | `system:error_view` | A user-facing error from strings `errors.*` is shown | `code` (enum: save_failed \| mic_denied \| transcription_failed \| offline \| backup_failed \| invite_expired \| storage_low \| generic) | PRD-REQ-016 |
 
-Held, not sendable (27; typed in catalog.ts for call sites that still exist, dropped and counted at run time until each gets a registry row with a decision, a plan row and a privacy look, or is removed): `book:playback_start`, `book:read_together_end`, `book:read_together_start`, `child_switched`, `family:invite_fail`, `family:invite_open`, `keeping:export_complete`, `keeping:export_fail`, `keeping:export_start`, `machine_edit_rejected`, `machine_edit_reverted`, `me:language_update`, `me:session_end`, `me:setting_update`, `notifications:notification_open`, `notifications:permission_submit`, `notifications:reminder_cancel`, `notifications:reminder_prime_submit`, `notifications:reminder_prime_view`, `notifications:schedule_update`, `offer_code_redeemed`, `onboarding:sign_in_dismiss`, `onboarding:sign_in_fail`, `restore_result`, `review_action`, `system:pack_download_update`, `system:sync_fail`.
+Held, not sendable (27; typed in catalog.ts for call sites that still exist, dropped and counted at run time until each gets a registry row with a decision, a plan row and a privacy look, or is removed): `book:playback_start`, `book:read_together_end`, `book:read_together_start`, `child_switched`, `family:invite_fail`, `family:invite_open`, `keeping:export_complete`, `keeping:export_fail`, `keeping:export_start`, `machine_edit_rejected`, `machine_edit_reverted`, `me:language_update`, `me:session_end`, `me:setting_update`, `notifications:notification_open`, `notifications:permission_submit`, `notifications:reminder_cancel`, `notifications:reminder_prime_submit`, `notifications:reminder_prime_view`, `notifications:schedule_update`, `onboarding:sign_in_dismiss`, `onboarding:sign_in_fail`, `plus:code_submit`, `plus:restore_complete`, `review_action`, `system:pack_download_update`, `system:sync_fail`.
 
 Global properties: `schema_version` (int 1 to 1000), `child_count_bucket`? (enum: none \| one \| two \| three_plus), `sample_pct`? (int 1 to 99).
 <!-- catalogue:end -->

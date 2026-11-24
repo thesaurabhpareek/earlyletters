@@ -869,7 +869,7 @@ export default function Review() {
           // a hold that does not take still closes, uncounted, and Tonight shows the draft as it was.
           const outcome = holdOnce(holding, () => (later ? true : holdDraft(draft.id, { inBookChoice: heldInBook.current })));
           if (outcome === 'again') return;
-          if (outcome === 'held') track('letter_held', { letters_kept: Math.min(1000, gate.lettersKept) });
+          if (outcome === 'held') track('plus:letter_hold_create', { letters_kept: Math.min(1000, gate.lettersKept) });
           router.back();
         }}
         onPlus={() => setGate(null)} // the same Review again; the person taps Keep

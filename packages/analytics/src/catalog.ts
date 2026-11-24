@@ -73,8 +73,9 @@ export const GLOBAL_PROPS = {
  * 20: wire-names step 2b, slice 6 (BL-2176, CR-212, CR-213): the `book` area is renamed: `playback_started` to `book:playback_start`, `read_together_started` to `book:read_together_start`, `read_together_ended` to `book:read_together_end`, `moments_card_impressed` to `book:moments_card_view`, `moments_card_tapped` to `book:moments_card_open`. No property was added or widened, no tier changed, and no build has sent any of them (analytics are off in every profile, CR-186).
  * 21: wire-names step 2b, slice 7 (BL-2176, CR-212, CR-213): the first half of the `system` area is renamed: `error_shown` to `system:error_view` and `sync_failed` to `system:sync_fail`. No property was added or widened, no tier changed, and no build has sent either (analytics are off in every profile, CR-186).
  * 22: wire-names step 2b, slice 8 (BL-2176, CR-212, CR-213): the rest of the `system` area is renamed: `app_opened` to `system:app_open`, `analytics_opted_in` to `system:analytics_consent_accept`, `pack_download` to `system:pack_download_update`. No property was added or widened, no tier changed (the basics set stays `screen_view`), and no build has sent any of them (analytics are off in every profile, CR-186).
+ * 23: wire-names step 2b, slice 9 (BL-2176, CR-212, CR-213): the `plus` area is renamed: `plus_offer_viewed` to `plus:offer_view`, `plus_offer_closed` to `plus:offer_end`, `plan_changed` to `plus:plan_update`, `free_allowance_reached` to `plus:allowance_reach`, `keep_gate_shown` to `plus:keep_gate_view`, `letter_held` to `plus:letter_hold_create`, `plus_started_from_gate` to `plus:keep_gate_plan_start`, `offer_code_redeemed` to `plus:code_submit`, `restore_result` to `plus:restore_complete`. No property was added or widened, no tier changed, and no build has sent any of them (analytics are off in every profile, CR-186).
  */
-export const SCHEMA_VERSION = 22;
+export const SCHEMA_VERSION = 23;
 
 /**
  * SHA-256 of `JSON.stringify(catalogShape())` per schema version. Versions 1
@@ -101,6 +102,7 @@ export const SCHEMA_FINGERPRINTS: Readonly<Record<number, string>> = Object.free
   20: '283ff4fd73798260a720e784cc9ecaba2bdc5dbb524c0c06635bfab026418a66',
   21: '87de4b13a9a92b91c8097cf62d64acae823645e384cc92a8062abbdb21a1a9e5',
   22: '6735fdea20fb7d2ad6b1011131be795d882f0a1a01f36a96d64485658e48a3f3',
+  23: 'ca191bd7fa6bb49a85ee997894aacda24ef023c684e77614cf4679218a8a34d3',
 });
 
 // ---------------------------------------------------------------------------
@@ -401,7 +403,7 @@ export const HELD_EVENTS = {
   // (founder decision 3, ADR 0013). No server of ours sees purchases. ----------
   // Membership engine (D-082, D-083): numbers only. Never the letter, its words, the recording or the child.
   // --- Plus: Apple's SubscriptionStoreView and StoreKit on this device only
-  offer_code_redeemed: {
+  'plus:code_submit': {
     area: 'plus',
     when: "Apple's offer code sheet closed and Plus was on afterwards",
     reqs: ['C-REQ-034'],
@@ -409,7 +411,7 @@ export const HELD_EVENTS = {
     tier: 'consented',
     props: {},
   },
-  restore_result: {
+  'plus:restore_complete': {
     area: 'plus',
     when: 'Restore purchases finished',
     reqs: ['C-REQ-034', 'C-NFR-003'],
