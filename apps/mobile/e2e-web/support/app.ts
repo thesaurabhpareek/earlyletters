@@ -1,5 +1,7 @@
 /** Shared moves for the journey flows. Only fictional family data ("Asha"); everything goes through the real screens. */
 import type { Page } from '@playwright/test';
+import { en } from '@scribe/content';
+import { bookCopy } from '../../src/components/book/copy';
 import { canary, expect, type Recorder } from './journey';
 import type { Need } from './saved-moment';
 import { assertUniqueStepId } from './step-id';
@@ -103,3 +105,13 @@ export function dayOffset(days: number, from: Date = new Date()): string {
 
 /** The web date input (the compact iOS picker cannot open on web). Pass its accessible label. */
 export const dateInput = (page: Page, label: string | RegExp) => page.getByLabel(label).and(page.locator('input[type="date"]'));
+
+/**
+ * A month's opener in the Book, found as the one level-2 heading VoiceOver reads: "6 months, October 24 to November 23", with
+ * "This month, " in front when it is the month the child is in. The words come from the app's own copy (book/copy.ts and
+ * content book.thisMonthLabel), so a wording change moves this with it. The count of letters lives in the Months sheet now.
+ */
+export const monthOpener = (page: Page, months: number) =>
+  page.getByRole('heading', { name: new RegExp(`^(${en.book.thisMonthLabel}, )?${bookCopy.chapterAge.replace('{n}', String(months))}, `) });
+/** The opener of the month the child is in today (any age): "This month, 7 months, ..." or "This month, The first weeks, ...". */
+export const currentMonthOpener = (page: Page) => page.getByRole('heading', { name: new RegExp(`^${en.book.thisMonthLabel}, `) });

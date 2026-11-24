@@ -1,18 +1,22 @@
-import { journey } from './support/app';
-import { expect, seeded, test } from './support/journey';
+import { billingCopy } from '@scribe/content';
+import { firstRun, journey } from './support/app';
+import { expect, onStore, test } from './support/journey';
 
 test('[J12] Plus: the Plan screen on a Free book, restore, manage', async ({ app, record }) => {
   const step = journey(record, 'J12', 'plus', 1, 'J11-05');
-  await seeded(app, 'asha', '/settings');
+  // The store build, on a fresh phone: the alpha builds say Plus is not part of the test and show no Plan screen (BL-1991).
+  await onStore(app);
+  await firstRun(app);
+  await app.goto(`${process.env.E2E_WEB_STORE_URL}/settings`); // the phone keeps its book across the reload
   // The Plan row sits under the header card in every build (CCO-9): one tap opens Plan.
   await app.getByTestId('settings.plan').click();
   await expect(app.getByText('Restore purchases')).toBeVisible();
-  // S41: no status card while Plus is off, and the promise is said once, as the section's footer.
-  await expect(app.getByText('Your first two letters are free. Plus lets you keep adding.')).toHaveCount(0);
-  // (Settings home stays in the web page under the stack, so its Plan row's line is not counted here.)
-  const promise = app.getByText('Your first two letters are free. Every letter you keep stays yours to read, play and export, with or without Plus.', { exact: true });
-  await expect(promise).toHaveCount(1);
-  await expect(promise).toBeVisible();
+  // S41: no status card while Plus is off, and the one line about the free letters is the section's footer, said once. It is
+  // read from the content package, not typed again (BL-1991). The promise sentence is for a person who has had Plus.
+  const line = app.getByText(billingCopy.membership.line, { exact: true });
+  await expect(line).toHaveCount(1);
+  await expect(line).toBeVisible();
+  await expect(app.getByText(billingCopy.store.promise, { exact: true })).toHaveCount(0);
   await expect(app.getByText(/Plus lets you keep adding letters\.$/).filter({ visible: true })).toHaveCount(0);
   // No StoreKit on the web: the line that says so in the first row; no Manage subscription without a subscription.
   await expect(app.getByText('Plus is not available on this device yet.')).toBeVisible();

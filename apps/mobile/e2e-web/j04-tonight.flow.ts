@@ -1,6 +1,6 @@
 import { PROMPTS } from '@scribe/content';
 import { CHILD, SIGNS_AS, btn, dateInput, dayOffset, firstRun, journey, nameField, passAgeGate, startOnboarding, tab, toChildStep, typeLetter, noRemindersAfterFirstLetter } from './support/app';
-import { expect, seeded, test } from './support/journey';
+import { expect, onStore, seeded, test } from './support/journey';
 
 /** The words of the seeded draft (src/dev/asha-seed.ts ASHA_REVIEW_RAW): the person's own, as spoken. */
 const SEEDED_WORDS = /Asha, um, today you you held the spoon/;
@@ -93,7 +93,8 @@ test('[J04f] a letter held at the Keep step waits on Home', async ({ app, record
   test.setTimeout(120_000);
   const step = journey(record, 'J04', 'tonight-and-prompts', 8, 'J04-01');
   // A free phone: two letters are kept, the third is held at the Keep step (D-082). Typed, so no recording has to
-  // load in a browser.
+  // load in a browser. The store build: the alpha builds hold no letter (BL-1991).
+  await onStore(app);
   await firstRun(app);
   // A typed letter keeps from Write with one tap and lands on the Book (P4b), so each one comes back to Tonight.
   await typeLetter(app, 'You held the spoon by yourself today.');
