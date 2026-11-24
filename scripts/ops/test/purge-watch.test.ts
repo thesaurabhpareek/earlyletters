@@ -49,6 +49,7 @@ Deno.test('[BL-584] one GET with the bearer token, and nothing else is sent', as
   assert.equal(calls[0].init.method, 'GET');
   assert.equal((calls[0].init.headers as Record<string, string>).authorization, `Bearer ${TOKEN}`);
   assert.equal(calls[0].init.body, undefined);
+  assert.equal(calls[0].init.redirect, 'error', 'a redirect must never carry the bearer token to another place');
 });
 
 Deno.test('[BL-584] not knowing is a failure with a fixed reason: unreachable, refused, not deployed, unavailable, odd status, wrong shape', async () => {

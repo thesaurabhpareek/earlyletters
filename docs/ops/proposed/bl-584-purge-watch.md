@@ -14,7 +14,7 @@ The repository-level service-role secret of closed #656 is refused (CR-209; `doc
 1. Apply `20261124120000_ops_cron_health.sql` to production by the tagged route in FOUNDER_QUEUE row 5. It adds one function and changes nothing else. Rollback: `drop function public.ops_cron_health(integer);`.
 2. In the Supabase console set the function secret `OPS_HEALTH_TOKEN` (`openssl rand -hex 32`). Never paste it anywhere else.
 3. Apply `docs/ops/proposed/ops-health-deploy.md` as one commit (entry point and the two `.github/scripts` edits), then deploy: `npx supabase functions deploy ops-health --no-verify-jwt --use-api`.
-4. In GitHub create Environment `ops-watch` with no required reviewer and the secrets `OPS_HEALTH_URL` and `OPS_HEALTH_TOKEN` (the same token).
+4. In GitHub create Environment `ops-watch` with no required reviewer and the secrets `OPS_HEALTH_URL` and `OPS_HEALTH_TOKEN` (the same token). Deployment branches: main only (recommended; set it to "Selected branches" and allow `main` only), so a workflow on another branch cannot name the Environment and read the two secrets.
 5. Copy `docs/ops/proposed/purge-watch.yml` to `.github/workflows/purge-watch.yml`. Run it once by hand (`workflow_dispatch`); it should be green.
 6. After it ran green once, change `docs/ops/runbooks/purge-failing.md` line 4: a dead worker is now caught by the outside watch within 2 hours.
 

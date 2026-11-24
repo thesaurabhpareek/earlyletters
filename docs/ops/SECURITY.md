@@ -76,6 +76,8 @@ Every script also needs `--project-ref` equal to the ref in `SUPABASE_URL` and a
 | `OPS_HEALTH_URL` | `https://<production project ref>.supabase.co/functions/v1/ops-health` | Not a secret by itself (the function refuses without the token); kept as an Environment secret so logs mask it |
 | `OPS_HEALTH_TOKEN` | the same value as the function secret in 1.1 | No required reviewer on this Environment: a scheduled run would wait for approval every 30 minutes and never alert. Safe because the token reads two numbers. No Supabase key is stored in GitHub (CR-209) |
 
+Deployment branches: main only. Set the Environment's deployment branches to "Selected branches" with `main` only (recommended), so a workflow on another branch cannot name `ops-watch` and read these two secrets.
+
 ## 2. Key rotation
 
 ### 2.1 `PURGE_WORKER_SECRET`
