@@ -3,7 +3,7 @@
  * [NS-08-R6] Sign out never removes a recording (BL-976; ruling D1). With backup off a recording lives only on this
  * phone, so a sign-out that removed one would lose it for good; #847 Q1 puts this row's test before the Build 13 cut.
  * What a sign-out runs today: the provider's finishing effect (session-provider.tsx: Supabase sign-out with
- * scope 'local', forget the Apple user id, forget a pending email request), then the sync engine sees signed in become
+ * scope 'local', then forgetSignOutLeftovers: the Apple user id, a pending email request and the first-run draft, which is a settings row and never a recording), then the sync engine sees signed in become
  * signed out and only forgets the owner of an empty phone (sync/index.ts releaseEmptyPhone, ownership.ts
  * releaseEmptyOwner). Three parts:
  *  1. on a disk laid out as the phone has it (helpers/expo-fs-standin.ts), Asha's letter, a draft and a held draft with
@@ -178,7 +178,7 @@ describe('[NS-08-R6] sign out never removes a recording', () => {
     expect(end).toBeGreaterThan(start);
     const effect = provider.slice(start, end);
     // A new call here is read against NS-08-R6 and ruling D1 first, then added.
-    expect(callsIn(effect)).toEqual(['shouldFinishSignOut', 'useEffect', 'sb.auth.signOut', 'forgetAppleUser', 'clearPendingEmailRequest', 'dispatch']);
+    expect(callsIn(effect)).toEqual(['shouldFinishSignOut', 'useEffect', 'sb.auth.signOut', 'forgetSignOutLeftovers', 'dispatch']);
     expect(effect).toContain("sb.auth.signOut({ scope: 'local' })");
   });
 
