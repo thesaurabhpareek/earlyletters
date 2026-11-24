@@ -25,11 +25,18 @@ import { joinErrorLine, type JoinView } from '@/lib/family/join-flow.logic';
 export const BEFORE_JOIN: readonly JoinView[] = ['loading', 'paste', 'signIn', 'peeking', 'ask', 'account', 'joining', 'failed'];
 
 /** The sheet's title for a view; `joined` is the only one with the child's name. */
-export function joinTitle(view: JoinView, child: string | null): string {
+/**
+ * CR-178 item 2: a parent-read line is not live until the exec reading (D-172) is recorded. `joinedTitleUnknown`
+ * ("You're in the book") is PROPOSED, so a nameless join keeps the old title. Flip to true once the reading is
+ * recorded in docs/agents/cto/RULINGS.md (BL-460 point 3).
+ */
+export const JOINED_TITLE_UNKNOWN_READ = false;
+
+export function joinTitle(view: JoinView, child: string | null, unknownRead: boolean = JOINED_TITLE_UNKNOWN_READ): string {
   const a = familyCopy.accept;
   if (view === 'signIn') return a.invitedTitle;
   if (view === 'ask') return a.askTitle;
-  if (view === 'joined' && child) return fill(a.joinedTitle, { child });
+  if (view === 'joined') return child ? fill(a.joinedTitle, { child }) : (unknownRead ? a.joinedTitleUnknown : a.title);
   return a.title;
 }
 
