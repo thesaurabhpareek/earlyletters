@@ -9412,7 +9412,7 @@ Queue order (the dispatcher takes the first `ready` row an agent owns, in file o
 - Done when: each case is recorded in the findings file.
 
 #### BL-1709 First letter with no speech model on the phone: a calm "words are on the way" state
-- Status: in review (the spec is `docs/design/specs/15-FIRST-LETTER-NO-MODEL-20261124.md`, PR #1826; the mobile build is BL-1999). Mode: agent. Owner: product manager. Milestone: M15. Size: S. Depends on: none.
+- Status: in-review (PR #1826; the spec is `docs/design/specs/15-FIRST-LETTER-NO-MODEL-20261124.md`; the mobile build is BL-1999). Mode: agent. Owner: product manager. Milestone: M15. Size: S. Depends on: none.
 - Picked: CPO-68 (23 Nov 2026, Chief Product Officer, a Claude role): the fallback is a typed first letter, not a smaller first model. Revisit if a real-device reading shows first sessions on cellular ending without a letter even with the typed offer.
 - Priority: P1. Gate: spec. Lane: product, then mobile.
 - Satisfies: NEU-003 (P1); D-087 (the speech model downloads only after an explicit choice).
@@ -9424,8 +9424,8 @@ Queue order (the dispatcher takes the first `ready` row an agent owns, in file o
 - Status: blocked (waits for the BL-1709 spec to merge and for `content` to read its section 6). Mode: agent. Owner: mobile engineer, content. Milestone: M15. Size: S. Depends on: BL-1709.
 - Priority: P1 (stays with BL-1709 in the drop order). Gate: spec merged. Lane: mobile.
 - Satisfies: NEU-003 (P1); D-087 (nothing downloads without an explicit choice); CPO-68 (typed first letter).
-- Problem and evidence: Listen does not read the model state, so a parent on "Not now" or on cellular can record a first letter and end the session with no words on screen (`apps/mobile/src/app/listen.tsx` lines 452 to 464 and 588; `words-state.logic.ts` lines 146 to 184). Read from source only; nothing was run.
-- Scope: build section 3 of `docs/design/specs/15-FIRST-LETTER-NO-MODEL-20261124.md`: a quiet typed offer beside the circle in Listen's ready state when the speech files are not installed and she has not said yes to a download that is moving (the spec's table), reusing the picture "Type" placement and the existing "Type instead" line unless `content` rules otherwise. It opens Write as `typeInstead` does, starts no download and changes no stored choice. Review's cards stay as they are. Any new line is words from `packages/content`, written first, rules test applies.
+- Problem and evidence: Listen does not read the model state, so a parent on "Not now" or on cellular can record a first letter and end the session with no words on screen (`apps/mobile/src/app/listen.tsx`, `typeInstead` and the `listen.photo.type` button; `wordsCard` in `apps/mobile/src/components/capture/words-state.logic.ts`). Read from source only; nothing was run.
+- Scope: build section 3 of `docs/design/specs/15-FIRST-LETTER-NO-MODEL-20261124.md`: a quiet typed offer beside the circle in Listen's ready state when the speech files are not installed and she has not said yes to a download that is moving (the spec's table), reusing the picture "Type" placement and the existing "Type instead" line unless `content` rules otherwise. It opens Write as `typeInstead` does, starts no download and changes no stored choice. Review's cards stay as they are. No new string: the label is the existing "Type instead" unless `content` rules otherwise (then the line comes from `packages/content` first, rules test applies).
 - Done when: tests FL-01 to FL-11 in the spec exist and pass (pure-function or source-text tests; the offer is absent during a take); the PR body says no device ran. Any timing reading is labelled "simulated" (D-172).
 - Test: `apps/mobile/test/listen.test.ts` and a new `apps/mobile/test/first-letter-no-model.test.ts`.
 - Source: BL-1709 spec, 24 Nov 2026. Not verified: whether `useSpeechDownload` is safe to call from Listen was read, not run.
