@@ -1,0 +1,140 @@
+# Release PR carry list (BL-1871)
+
+What the release PR from `develop` into `main` must not carry, and what it may carry only after a check. The PR is BL-1871 (`docs/BACKLOG.md` L9687 to L9691, Mode human, a GitHub write Karma makes under CR-176 item 5). Read this before opening it and again before the merge.
+
+Basis: counted on `develop` at d05e0cee1c9fcc4f8eb4e77907877bd913b8f4e4 against `main` at 702e7df982ba0bf8221623ab2fa0f96bf884e20b, in a fresh shallow clone with both tips fetched and `git diff --name-status` between the two trees. Both tips move, so every number below is a count to redo with the commands given, not a promise. Tags: [READ] read in a repo file (path and line given); [RAN] run in that clone; [UNVERIFIED] not readable from the repo (GitHub settings, vendor consoles, hosted databases).
+
+Nothing here changes a file other than this one. It asks for no approval, review or paste from the founder: the checks are Karma's (CR-176).
+
+## 0. The diff at a glance
+
+| Fact | Value | Command |
+|---|---|---|
+| Files differing | 2054 (1395 added, 655 modified, 3 deleted, 1 renamed) [RAN] | `git diff --name-status origin/main origin/develop \| cut -f1 \| sort \| uniq -c` |
+| Under `docs/`, `.claude/`, `agents/` | 824 [RAN] | `git diff --name-only origin/main origin/develop \| grep -cE '^(docs/\|\.claude/\|agents/)'` |
+| Everything else (code, tests, workflows, migrations) | 1230 [RAN] | same command with `grep -cvE` |
+| Files under `apps/mobile` | 792 [RAN] | `git diff --name-only origin/main origin/develop \| grep -c '^apps/mobile/'` |
+| Files under `.github/` | 21, of which 10 are existing workflows edited and 1 is a new workflow [RAN] | `git diff --name-only origin/main origin/develop -- .github` |
+| Migration files `develop` has and `main` lacks | 16 (develop 47, main 31), all added, none edited or deleted [RAN] | `git diff --name-status origin/main origin/develop -- supabase/migrations` |
+| `docs/ops/proposed/**` | 60 files (59 added, 1 modified) [RAN] | `git diff --name-status origin/main origin/develop -- docs/ops/proposed` |
+
+The earlier audit counted 2047 files at an older `develop` head; the difference is merges since, not a counting error.
+
+Rename and deletions to expect, so nobody reads them as accidents [RAN]: `apps/mobile/src/app/(tabs)/family.tsx` renamed to `apps/mobile/src/app/family.tsx`; deleted `apps/mobile/src/components/family/coparent-soon.tsx`, `apps/mobile/src/components/family/invite-coming-soon.tsx`, `apps/mobile/src/lib/family/coming-soon.logic.ts`.
+
+## 1. Must not carry, or carry only with the check shown
+
+### 1.1 Erase now on a signed-in phone (BL-1854, held-from-store)
+
+- The hold: `docs/BACKLOG.md` L9553 (Release gate) and L9554 (the marker "held-from-store-build"); ruling CR-177 at `docs/agents/cto/RULINGS.md` L1106; `docs/ops/RELEASE.md` L332 (the release check). BL-1871 says the release PR carries BL-1854 and that BL-1987 and BL-1986 merge first (`docs/BACKLOG.md` L9690) [READ].
+- So BL-1854's code is allowed in the PR. What must not happen is a store candidate or TestFlight build that shows Erase now on a signed-in phone. The PR is safe only while all three hold on the commit that will be built (RELEASE.md L332):
+  1. `scripts/release/store-flags.mjs` L27 lists `EXPO_PUBLIC_SERVER_ERASE` with an empty `allowedOn` [READ].
+  2. `apps/mobile/src/lib/capabilities.ts` reads that flag for `serverErase` (type at L162, value at L198, getter at L221 to L222) [READ].
+  3. No store profile (`preview`, `testflight`, `production`) in `apps/mobile/eas.json` sets `EXPO_PUBLIC_SERVER_ERASE`, and no EAS environment variable does.
+- Verify 1 and 3 from the repo [RAN, printed `[]` and the three profile names on this head]:
+  `node -e "import('./scripts/release/store-flags.mjs').then(m=>{const e=JSON.parse(require('fs').readFileSync('apps/mobile/eas.json','utf8'));console.log(JSON.stringify(m.storeFlagProblems(e)),m.storeProfiles(e))})"`
+  and `grep -n "SERVER_ERASE" apps/mobile/eas.json` (no output is the pass; none today). The same test runs in `npm test` (`apps/mobile/test/store-flags.test.ts`).
+- Verify 2: `grep -n "serverErase" apps/mobile/src/lib/capabilities.ts`.
+- Not provable from the repo: that no EAS environment variable sets the flag [UNVERIFIED]; `npm run preflight:testflight` prints it as UNVERIFIED (see the console, EAS project environments).
+- Do not use the ancestor test alone. `git merge-base --is-ancestor ecf3ac1123416a0b4347d91e647f5ae54b8a6a10 <build commit>` exits 0 on any build cut from this release PR, because the BL-1854 commit is in `develop` history; RELEASE.md L332 says so and defines 1 as pass, 0 as fail, 128 or more as "could not run". Use the three conditions.
+- The hold ends only when the founder clears BL-1805 (`docs/BACKLOG.md` L9358); then one PR deletes the store-flags row and the marker and the RELEASE.md line (store-flags.mjs L25 to L26).
+
+### 1.2 Store-flag rows (what stays off in every store profile)
+
+- `scripts/release/store-flags.mjs` L21 to L27 holds five rows, each with `allowedOn` empty: `EXPO_PUBLIC_PHOTOS` (NS-01), `EXPO_PUBLIC_BOOK_SEARCH` (NS-02), `EXPO_PUBLIC_NEW_DEVICE_EMAIL` (NS-08), `EXPO_PUBLIC_BACKUP_LINE` (NS-10), `EXPO_PUBLIC_SERVER_ERASE` (BL-1854) [READ].
+- Main lacks this file and the launch gate (`git ls-tree --name-only origin/main scripts/release/` does not list `store-flags.mjs`; [RAN] it is in the diff as an added file), so the release PR is what brings the guard to `main`. The PR must not change any `allowedOn` list and must not turn any of these five flags on in `apps/mobile/eas.json`. Check: the command in 1.1 prints `[]`, and `git diff origin/main origin/develop -- scripts/release/store-flags.mjs` shows only an added file with the five rows above.
+- `EXPO_PUBLIC_ANALYTICS` is not a row in that file today [READ, L21 to L27]. In `apps/mobile/eas.json` it is `off` in all five profiles that set it [RAN: `grep -n ANALYTICS apps/mobile/eas.json`, lines 18, 36, 50, 64, 80 all "off"]. D-170 holds production analytics off (BL-1886, `docs/BACKLOG.md` L9601). Check before the merge: `grep -n '"EXPO_PUBLIC_ANALYTICS"' apps/mobile/eas.json` shows no `on`.
+- `EXPO_PUBLIC_SERVER_FEATURES` is `on` in two profiles and `off` in the others on this head [RAN: `grep -n SERVER_FEATURES apps/mobile/eas.json`, lines 15, 33, 47, 61, 77]. Which profile is which is read from the profile blocks (`grep -n '^    "[a-z-]*": {' apps/mobile/eas.json`); the BL-1867 change (testflight servers on) is not part of this PR and must not ride in it [READ: `docs/BACKLOG.md` L9601 names BL-1867 as the config change].
+- The founder's hosted G6 row says "open" about servers on or off (`docs/release/FOUNDER_QUEUE.md` L35) while D-170 decided servers on (`docs/BACKLOG.md` L9601). That is a stale queue row, not a diff problem; Karma edits the row (not this PR).
+
+### 1.3 The 0.9.0 test pages (HOLD-FOR-COUNSEL, CR-60)
+
+- The rule: `docs/ops/RELEASE.md` L334: the release PR either has the founder's release of the hold, or does not carry `apps/web/content/legal/*/0.9.0.md` and the versioned routes. CR-60 (`docs/agents/cto/RULINGS.md` L542) holds the deploy to `main` for the founder's facts, and says a develop-to-main release PR "carries all of `develop`", so the hold is a rule with no mechanical gate (same ruling, its Enforcement line) [READ].
+- State [RAN]: `git ls-tree -r --name-only origin/main | grep 0.9.0` already lists six files on `main`: `apps/web/content/legal/privacy/0.9.0.md`, `apps/web/content/legal/terms/0.9.0.md`, `apps/web/src/app/(legal)/legal/[doc]/0.9.0.md/route.ts`, `apps/web/src/app/(legal)/legal/[doc]/0.9.0/page.tsx`, `docs/legal/beta/privacy-0.9.0.md`, `docs/legal/beta/terms-0.9.0.md`. The diff contains no path with `0.9.0` in it. So this PR adds none and changes none of them.
+- Check: `git diff --name-only origin/main origin/develop | grep -E '0\.9\.0|apps/web/content/legal|legal/\[doc\]'` must print nothing. If it prints a path, the PR carries the hold; stop and ask for the exec ruling that releases it.
+- Not answerable from the repo [UNVERIFIED]: how the six files reached `main`, whether the hold was released, and whether the website deploy from `main` serves them. This list does not decide that; it only says the release PR does not add to it.
+- Related, same family: the diff does add `apps/web/src/app/(legal)/support/page.tsx` and `apps/web/src/lib/legal/site-copy.ts` (modified) [RAN]. They are website text; the web deploy is from `main`, so they go live on merge. Counsel sees legal text before it publishes (CLAUDE.md). Check with `git diff origin/main origin/develop -- apps/web/src/lib/legal/site-copy.ts` and route the diff to the exec team's review before the merge; whether that review has happened is [UNVERIFIED] here.
+- Policy rows in the production database are a different gate: FOUNDER_QUEUE G7 (`docs/release/FOUNDER_QUEUE.md` L36) says no ruling yet covers publishing 0.9.0 `terms` and `privacy` rows to production and no 1.0.0 counsel text exists. The PR neither adds rows nor needs them to merge; the row 6 SQL is applied by hand after the tag.
+
+### 1.4 Drafts and proposals that ship as files but must stay inert
+
+- `docs/legal/drafts/store-1.0/` (four files: `privacy-1.0.0.md`, `sensitive-data-1.0.0.md`, `subscription-terms-1.0.0.md`, `terms-1.0.0.md`) is in the diff as added [RAN]. They are drafts for counsel and are not the text the app or the site serves. Check that nothing reads them: `grep -rn "drafts/store-1.0\|legal/drafts" apps packages scripts supabase --include=*.ts --include=*.tsx --include=*.mjs --include=*.sql` printed nothing [RAN]. If it later prints a hit, the drafts have been wired to a surface; stop.
+- `docs/ops/proposed/*.md` carry a `Status:` line saying proposal, not applied (33 files; `grep -n -m1 -i '^Status:' docs/ops/proposed/*.md`) [RAN]. One says applied: `release-ios-launch-gate.md` ("applied on ... in PR #1641", its L3). Several, for example `bl-1887-tester-notice-analytics-servers.md`, `policy-1-0-0-rows.md` and `bl-841-exec-team-checklist.md`, are for exec review and say so on their `Status:` line; shipping the file to `main` publishes nothing, but nobody should cite them as a ruling.
+- Stale draft pull requests are not in the diff (a draft PR's files are not on `develop`). The list is in GitHub, not in the repo [UNVERIFIED].
+
+### 1.5 Proposed workflows must not be applied by this PR
+
+- `docs/ops/proposed/workflows/` holds 19 files: `a11y-evidence.patch`, `ci-docs-lane.patch`, `ci-pins.patch`, `ci-unit-timeout.patch`, `e2e-web.patch`, `founder-ask.yml`, `ios-compile-batch.patch`, `ios-compile-eas-json.patch`, `ios-compile-paths.patch`, `ios-compile-timing.patch`, `label-guard.yml`, `lint-step.yml`, `pr-size.yml`, `release-ios-launch-gate.patch`, `secret-scan-step.yml`, `size-gate-step.yml`, `supabase-backup.yml`, `supabase-free-limits.yml`, `supabase-keepalive.yml` [RAN: `ls docs/ops/proposed/workflows`].
+- These are files under `docs/`, so they are inert: GitHub reads only `.github/workflows/`. The release PR must not copy any of them into `.github/workflows/`. On this head, six of the `.yml` drafts have no live twin [RAN]: `pr-size.yml`, `founder-ask.yml`, `label-guard.yml`, `supabase-backup.yml`, `supabase-free-limits.yml`, `supabase-keepalive.yml` (`ls .github/workflows/<name>` fails for each). Live workflows are exactly: agents-check, agents, ci, claude, compliance-fence, db-cli, deploy-db, deploy-functions, deploy-scripts, ios-compile, kill-harness, migration-guard, nightly, release-ios, testflight, web-e2e, web-journeys, web [RAN: `ls .github/workflows`].
+- Check before opening the PR: `git diff --name-status origin/main origin/develop -- .github/workflows` must show only ten edited files (agents-check, ci, ios-compile, kill-harness, migration-guard, nightly, release-ios, testflight, web-e2e, web) and one added file (`web-journeys.yml`) [RAN]. Any `A` of `pr-size.yml`, `founder-ask.yml`, `label-guard.yml`, `supabase-*.yml` means a draft was applied outside the founder queue rows C1 and C2 (`docs/release/FOUNDER_QUEUE.md` L58 to L59, a copy-commit made on `develop` by hand).
+- Whether the proposed patches that are not the launch gate were already applied by hand into the existing workflows is [UNVERIFIED]; `diff` each patch against the live file if a patch's effect matters. Only the launch gate is stated as applied (`docs/ops/proposed/release-ios-launch-gate.md` L3).
+- A token that can write `.github/workflows` is needed to push a branch that edits them; the Claude GitHub App cannot (`CLAUDE.md`, ops charter). Whether Karma's route to open this PR has that scope is [UNVERIFIED]; if the push is refused, that is a queue row, not a reason to drop the workflow edits (the diff has them already on `develop`).
+
+### 1.6 Migrations ordering (Files 45 to 47 and the 16 files main lacks)
+
+The 16 files, all added [RAN]:
+`20261110000000_photo_bucket_closed`, `20261111000000_insights_reader_not_via_api`, `20261111010000_audit_writers_security_events`, `20261121000000_new_device_sign_in`, `20261121010000_new_device_sender_functions`, `20261121020000_new_device_fill_rekey`, `20261121030000_compliance_gates`, `20261121040000_value_free_validation_triggers`, `20261122000000_value_free_children_shape`, `20261122100000_value_free_cast_errors`, `20261122200000_insights_first_letter_increments`, `20261122300000_invite_redeem_retry_after_success` (File 44), `20261123000000_invite_redeem_retry_live_role` (File 45), `20261123100000_sync_pull_consent_gate` (File 46), `20261123200000_book_entries_no_engine_version` (File 46a), `20261123210000_entry_length_checks_960_480` (File 47).
+
+- Order of the last four: `supabase/APPLY.md` L1344 (File 45, after File 44), L1348 (File 46, after File 45), L1352 (File 46a, "after File 46 and before File 47", L1354), L1356 (File 47, after 46a and 46, L1358) [READ]. Files 44 to 47 are marked "Not applied; the founder applies it from a CI tag run (D-041)" in those same entries.
+- Check the set is complete and nothing is edited: `git diff --name-status origin/main origin/develop -- supabase/migrations` must print sixteen lines, every one starting `A` [RAN: sixteen, all `A`]. An `M`, `D` or `R` there means an applied or applicable file was edited; stop (CLAUDE.md "never edit a migration that has been applied").
+- Check no two files share a version: `ls supabase/migrations | cut -c1-14 | sort | uniq -d` must print nothing [RAN: nothing on this head]. Two files had shared `20261123200000` before the File 47 rename (`FOUNDER_QUEUE.md` L57); the guard now sees one file at that version.
+- Check the migration guard on the PR: `.github/workflows/migration-guard.yml` L6 to L9 runs on every pull request and on pushes to `develop` and `main`, comparing against `origin/<base>`; it fails an edit, rename or delete of a file listed in `.github/migrations-applied.txt` (two lines today) or a new file that sorts before the newest listed one [READ]. All sixteen sort after both listed files [RAN: the listed files are `20260930000000` and `20261001000000`]. The local command is `node .github/scripts/migration-guard.mjs origin/main HEAD` on a full-history checkout; I did not run it (a shallow clone has no merge base) [UNVERIFIED].
+- Gate G2: `git diff --stat origin/main origin/develop -- supabase/migrations` prints nothing only after this PR merges (`docs/release/FOUNDER_QUEUE.md` L31). It is a precondition for the production tag: `.github/workflows/deploy-db.yml` L249 to L255 refuses a `db-v*` tag whose commit is not an ancestor of `origin/main` [READ].
+- Do not merge the release PR with the hosted apply in mind: merging puts files on `main`; applying is the founder's tag run (rows 5, 14, 15, 16 at `docs/release/FOUNDER_QUEUE.md` L46, L55 to L57; row order 14 then 15 then 16). Hosted state of Files 44 to 47 on staging and production is [UNVERIFIED]; row 14 says File 46 is not applied anywhere the repo shows.
+- `deploy-db.yml` pushes only on `develop` and `db-v*` tags (L41 to L42) [READ], so a merge to `main` runs no migration. `main` push triggers `migration-guard` only (migration-guard.yml L9).
+- Functions that ship in the same diff: `supabase/functions/new-device-email/**`, `supabase/functions/new-device-fill/**`, `_shared/device/**` and others [RAN: `git diff --name-only origin/main origin/develop -- supabase/functions`]. Deploying functions is `deploy-functions.yml`, a separate act; the PR deploys nothing.
+
+### 1.7 Docs-only drift
+
+- 824 of 2054 files are under `docs/`, `.claude/` or `agents/` [RAN]. They are safe to carry; the risks are four. (a) Docs that state something as a ruling the exec team has not recorded, such as the Status lines in 1.4. (b) Docs whose numbers go stale the day they merge (the migration counts in `docs/release/FOUNDER_QUEUE.md` L31 say 31 on `main` and 43 on `develop`; this head has 47). (c) Docs that name `main` as ahead of `develop`. (d) Generated docs that must be regenerated, see 1.8.
+- Check counts the PR will show: `git diff --name-only origin/main origin/develop | grep -vE '^(docs/|\.claude/|agents/)' | awk -F/ '{print $1"/"$2}' | sort | uniq -c | sort -rn | head -20`.
+- Not docs, but easy to miss in the 1230: root `package.json`, `CLAUDE.md`, `experiments/package.json` and the `experiments/` Moments harness files are in the diff [RAN]. `CLAUDE.md` is a CODEOWNERS path (1.9).
+
+### 1.8 Content map regeneration
+
+- The map is `docs/content/map/content-map.csv` and `content-map.json`, generated by `scripts/content/export-content-map.mjs` (output directory L11 of that file); both are new on `develop` relative to `main` [RAN: in the diff as added, with the generator and its tests]. Do not edit by hand (its note, L189).
+- Check on the release head: `node scripts/content/export-content-map.mjs --check` prints `content map is current` and exits 0 [RAN on this head]. If it says "stale", run `node scripts/content/export-content-map.mjs` and commit the two files; the test `scripts/content/export-content-map.test.mjs` fails otherwise (it runs in root `npm test`).
+- In a conflict, `node scripts/content/merge-content-map.mjs` regenerates the two files, refuses while another file is conflicted, stages only the two maps and never commits (its header comment, BL-1992). Because `main` has no map, the first release PR has no map conflict; a later one can.
+
+### 1.9 Compliance fence and CODEOWNERS paths
+
+- `main` already has the fence: `compliance/FENCE.json`, `compliance/fence/fence.mjs` and `.github/workflows/compliance-fence.yml` are in `git ls-tree -r --name-only origin/main` [RAN], and the diff does not touch any of the three nor `.github/CODEOWNERS` [RAN: no match in the diff]. The comment at `.github/workflows/compliance-fence.yml` L16 (the fence is "advisory on main, which has no FENCE.json yet") is therefore out of date on this head; whether it is a required check on `main` is [UNVERIFIED] (branch protection is not in the repo; `.github/README.md` and `scripts/release/apply-branch-settings.sh` describe the intent).
+- The fence reads its rules from the PR's base commit (workflow header comment), so it applies `main`'s `FENCE.json` (version 2) to this diff. Paths in the diff that the fence names [RAN]:
+  - protected (assigned agent label, CCO approval and Karma approval, each bound to the head sha): `compliance/README.md` (M), `compliance/scripts/compliance.test.mjs`, `load-geo-ip.mjs`, `regulatory-watch.mjs`, `watch-topics.json` (A), `.claude/skills/regulatory-compliance/SKILL.md` and two files under `references/` (M), `supabase/tests/compliance_gates.test.mjs` (A), `supabase/migrations/20261121030000_compliance_gates.sql` (A).
+  - CCO review: `apps/mobile/src/components/gate/age-gate-screen.tsx` (M), `apps/mobile/src/lib/age-gate.ts` (M).
+  - Content markers: any file under `supabase/migrations`, `supabase/tests`, `supabase/functions` whose diff mentions `restricted_jurisdictions`, `hook_before_user_created`, `compliance_check_counts`, `geo_ip_ranges`, `geo_ip_meta`, `regulatory_watch` (protected) or `policy_acceptances`, `record_policy_act` (CCO review) (`compliance/FENCE.json`). Find them: `git diff origin/main origin/develop -- supabase | grep -nEi 'restricted_jurisdictions|hook_before_user_created|compliance_check_counts|geo_ip_ranges|geo_ip_meta|regulatory_watch|policy_acceptances|record_policy_act' | head` (not run in full by me) [UNVERIFIED].
+- Procedure: approval lines must be exact (`compliance/FENCE.json` "approvals"): `## CCO approval at <40-hex head sha>: APPROVED (CCO-<n>)` and `## Karma approval at <40-hex head sha>: APPROVED (CR-<n>)`, from the repository owner's login, bound to the head sha, so any later commit (a content map regeneration, a rebase) needs both again. After posting, the `karma:approved` label re-runs the check (workflow L22). The workflow takes the assigned-agent label from `agent:<handle>`; a release PR opened by Karma has none, so expect the check to ask for it or to fail closed and plan the CCO and Karma lines before the last commit. How the check treats a non-agent PR is [UNVERIFIED]: read `compliance/fence/fence.mjs` before the PR opens.
+- CODEOWNERS (`.github/CODEOWNERS`) lists a single owner for every path, including `/packages/core/src/{verify,meaning,types,pipeline}.ts`, `/packages/core/src/plan.ts`, `/CLAUDE.md`, `/packages/content/`, `/packages/brand/`, `/packages/analytics/src/`, `/docs/analytics/`, `/supabase/migrations/`, `/supabase/tests/`, `/agents/`, `/.claude/`, `/scripts/agents/`, `/docs/agents/`, `/compliance/`, `/.github/` [READ]. Whether a code-owner review is required on `main` is [UNVERIFIED]. Paths in the diff under those prefixes (list): `git diff --name-only origin/main origin/develop | grep -E '^(packages/core/src/(verify|meaning|types|pipeline|plan)\.ts|CLAUDE\.md|packages/content/|packages/brand/|packages/analytics/src/|docs/analytics/|supabase/migrations/|supabase/tests/|agents/|\.claude/|scripts/agents/|docs/agents/|compliance/|\.github/)'`. The constitution files (`verify.ts`, `meaning.ts`, `types.ts`, `pipeline.ts`) are the ones to read line by line in the diff: `git diff origin/main origin/develop -- packages/core/src/verify.ts packages/core/src/meaning.ts packages/core/src/types.ts packages/core/src/pipeline.ts`. The constitution (CLAUDE.md) says no bypass flag for `verifyEdits`; a diff that adds one stops the release.
+
+### 1.10 ios-compile and the release-ios launch gate
+
+- `ios-compile.yml` runs on a pull request that changes a build path, to any base (L39 to L53, no branch filter on `pull_request`), and on push to `develop` for `apps/mobile/**` and `packages/**` minus tests and docs (L54 to L74) [READ]. The release PR changes build paths, among them `apps/mobile/eas.json` and files under `apps/mobile/modules/` [RAN: `apps/mobile/eas.json` in the diff; `git diff --name-only origin/main origin/develop | grep -E '^(apps/mobile/(ios/|modules/|app\.config|eas\.json|metro\.config\.js|store\.config\.json|version\.json|patches/|src/lib/(privacy-manifest|permission-copy)\.ts)|package-lock\.json)'`], so expect both macOS checks to start on the PR (the same list as `NATIVE_PATHS` at `scripts/agents/merge-queue.mjs` L102 to L106). They are not required status checks: branch protection requires `required`, `compliance-fence` and `applied migrations unchanged` (`.github/workflows/ios-compile.yml` L36 to L38, the sentence "Neither check here is a required status check"; confirm the live list [UNVERIFIED], or read what `merge-queue.mjs` reads at runtime, its header at L30 to L36).
+- The launch gate is the first job of `release-ios.yml`: job `launch-gate` (L51 to L68) runs only on a push of a tag containing `-rc.` (L53) and runs `node scripts/release/launch-gate.mjs --repo "$REPO" --sha "$GITHUB_SHA"`; `classify` has `needs: launch-gate` (L70 to L72) [READ]. It passes only when the newest completed `iOS compile` run on `develop` concluded success on a commit at or after the merge base of the tagged commit and `develop` (`scripts/release/launch-gate.mjs` header L1 to L6, `decideLaunchGate`). A final `ios-v<x.y.z>` tag skips it.
+- Why it matters for this PR: `release/1.0` is cut from `main` after the PR merges (BL-1871, `docs/BACKLOG.md` L9690), so the tag's merge base with `develop` is near `develop`'s tip at the merge. The newest `iOS compile` run on `develop` must be green at or after that point. Check on the day, from the repo side: `gh run list --workflow ios-compile.yml --branch develop --limit 5 --json databaseId,headSha,status,conclusion,event`; the newest non-PR row must be `completed` and `success`. The dry run is a manual `Release iOS` run with `job=checks` on `develop` (release-ios.yml header L1 to L9): green means the RC checks pass without a tag. Both are GitHub reads [UNVERIFIED from the repo alone].
+- Merging this PR into `main` does not run `release-ios.yml` (it triggers on `ios-v*` tags and manual dispatch only, the `on:` block at L26 to L31) [READ].
+- Version: `apps/mobile/version.json` reads `1.0.0` on both `main` and `develop` [RAN], so the release PR does not change it; `ios-v1.0.0-rc.1` reads from it (`docs/release/FOUNDER_QUEUE.md` L48).
+
+## 2. Run before the PR opens (all from a full-history clone)
+
+1. `git fetch origin && git diff --name-status origin/main origin/develop > release-diff.txt` and compare the counts in section 0.
+2. The 0.9.0 grep from 1.3: prints nothing.
+3. The `.github/workflows` check from 1.5: only the edited and added workflows named there.
+4. The migrations check from 1.6: sixteen `A` lines, no duplicate versions.
+5. The store-flag command from 1.1: `[]`; `grep -n "SERVER_ERASE" apps/mobile/eas.json`: no output.
+6. `node scripts/content/export-content-map.mjs --check`: `content map is current`.
+7. The fence path list from 1.9, and the approval lines planned for the final head sha.
+8. `npm test` and `npm run typecheck` on the release head (CLAUDE.md "Commands"). I did not run them for this list [UNVERIFIED].
+9. `node scripts/agents/check.mjs` (the agent consistency check) passes on the branch that adds this doc.
+
+## 3. Run after the merge and before the cut
+
+- `git diff --stat origin/main origin/develop -- supabase/migrations` prints nothing (G2, FOUNDER_QUEUE L31).
+- `git diff --name-only origin/main origin/develop | wc -l` prints 0 right after the merge, or only files merged to `develop` since.
+- Cut `release/1.0` from `main`; fixes are cherry-picked from `develop` (CLAUDE.md "Branches and commits"). Re-run the 1.1 command on the `release/1.0` head, because a cherry-pick can change `eas.json` or `store-flags.mjs`.
+- Then BL-1872: the RC tag on the `release/1.0` head, after the launch gate is green for that exact commit (`docs/BACKLOG.md` L9693 to L9696).
+
+## 4. What this list does not decide
+
+- Which of BL-1871's Depends-on rows are release-blocking is Karma's ruling (`docs/BACKLOG.md` L9688 lists them).
+- Whether the 0.9.0 hold is released, whether Erase now wording is cleared (BL-1805), and which policy versions go to production (G7) are exec rulings, not checks.
+- Hosted state (staging and production databases, EAS environments, branch protection, the `app-store` Environment) is [UNVERIFIED] throughout; `docs/release/FOUNDER_QUEUE.md` rows list the physical acts.
