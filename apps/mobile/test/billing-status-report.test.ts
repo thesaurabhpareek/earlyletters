@@ -313,6 +313,38 @@ describe('the sender', () => {
     expect(h.state().pending).toEqual([]);
   });
 
+  // The order the case above does not prove (BL-2240): the switch is ON when the purchase is
+  // recorded, and only later turned OFF. Invariant: turning the switch off stops sending, never
+  // the record of what this phone showed at the purchase. Failure mode: a switch-off (or the app
+  // restart that follows it) clears or skips the waiting consent facts, so the next report goes
+  // with no D-081 record. The new reporter stands for that restart: the facts must live in device
+  // settings, not in the in-memory retry.
+  it('[F14-REQ-043b] switch on at purchase, then turned off: the next report still carries the consent facts captured at purchase (lost facts: 0)', async () => {
+    const h = harness({ answers: [{ ok: false, code: 'network' }] });
+    const termsAtPurchase = h.deps.termsVersion();
+    h.reporter.recordPurchase({ productId: 'plus.annual', originalPurchasedAt: '2026-10-29T17:59:00.000Z' });
+    expect(await h.reporter.flush()).toBe('retry_later'); // on: the first report carried the facts, but was not stored
+    expect(h.sent).toHaveLength(1);
+    expect(h.sent[0].report.consent).toBeDefined();
+
+    h.off();
+    const afterRestart = createStatusReporter(h.deps);
+    h.tick(2 * 86_400_000);
+    expect(await afterRestart.flush()).toBe('off');
+    expect(await afterRestart.flush()).toBe('off');
+    expect(h.sent).toHaveLength(1);
+    expect(h.state().pending).toHaveLength(1);
+
+    h.on();
+    expect(await afterRestart.flush()).toBe('sent');
+    expect(h.sent).toHaveLength(2);
+    expect(h.sent[1].key).not.toBe(h.sent[0].key); // planned again from device settings, not the in-memory retry
+    expect(h.sent[1].report.reported_at).toBe(new Date(Date.parse(NOW) + 2 * 86_400_000).toISOString());
+    expect(h.sent[1].report.consent).toEqual({ product_id: 'plus.annual', offer_type: 'introductory', terms_shown: termsAtPurchase, shown_at: NOW });
+    expect(h.state().pending).toEqual([]);
+    expect(await afterRestart.flush()).toBe('nothing');
+  });
+
   it('[BL-347] consent facts recorded while one account owned the phone never ride on another account\'s report (review B1)', async () => {
     const h = harness();
     h.ownPhone(ASHA_MAMA);
