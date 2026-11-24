@@ -19,6 +19,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, Share, Text as RNText, View } from 'react-native';
 import { brand } from '@scribe/brand';
 import { Button } from '@/components/ui/button';
+import { PINNED_ACTION } from '@/components/ui/pinned-action.logic';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { Text } from '@/components/ui/text';
 import {
@@ -142,8 +143,8 @@ export default function PlusConfirmed() {
         </View>
       </ScrollView>
       {/* Pinned at every text size (BL-1722): at AX5 the terms are long and a Done at the end of the scroll is below the fold. */}
-      <View className="px-5 pb-3 pt-2" testID="plusConfirmed.doneBar">
-        <Button label={c.done} onPress={done} testID="plusConfirmed.done" />
+      <View style={{ paddingHorizontal: PINNED_ACTION.gutter, paddingTop: PINNED_ACTION.top, paddingBottom: PINNED_ACTION.bottom }} testID="plusConfirmed.doneBar">
+        <Button size="lg" fullWidth label={c.done} onPress={done} testID="plusConfirmed.done" />
       </View>
     </SafeAreaView>
   );
