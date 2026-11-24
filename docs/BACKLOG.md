@@ -9881,7 +9881,7 @@ Source: `docs/product/prd/29-sign-in-methods-and-phone-verification.md` (card NS
 - Done when: a planted stale map fails the check and the message in each over-cap case names its own cap, with a test for each.
 
 #### BL-1881 Apply the pr-size and founder-ask workflows from the base ref (the app cannot write .github/workflows)
-- Status: blocked (BL-1880 and BL-1882 are open). Mode: human. Owner: platform. Milestone: M15. Size: XS. Depends on: BL-1880, BL-1882.
+- Status: ready (BL-1880 and BL-1882 are done: #1688, #1685). Mode: human. Owner: platform. Milestone: M15. Size: XS. Depends on: BL-1880, BL-1882.
 - Satisfies: CODE-R02 (400 lines and 20 files) is enforced by no workflow today; BL-1851 (the founder-ask check); CR-176.
 - Scope: copy `docs/ops/proposed/workflows/pr-size.yml` and `docs/ops/proposed/workflows/founder-ask.yml` to `.github/workflows/` on the base ref, by the account holder's hand; the app token cannot write that path. Listed as session sheet rows C1 and C2 in `docs/release/FOUNDER_QUEUE.md`. No secret is involved. Both workflows stay advisory (not required checks) during the freeze; making either required is a later, separate decision.
 - Done when: both workflows run on a throwaway pull request: an over-cap diff is red and a clean one is green.
