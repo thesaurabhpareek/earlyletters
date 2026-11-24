@@ -17,6 +17,17 @@
 > - Conditional, only if photo gates 1 to 4 are green by Thu 26 Nov 2026: the real-library device rows (photo gate 5, row 13).
 > - Hosted migration applies, in this order, in one CI tag run (D-041): File 46 `20261123100000` (row 14), then `20261123200000_book_entries_no_engine_version.sql` (row 15), then File 47 `20261123210000_entry_length_checks_960_480.sql` (row 16; the name is PR #1786's, open). Check line on each row; BL-1962 gates on row 16.
 
+## Alpha build today (CR-183: the alpha lane, servers off in `testflight`)
+
+Physical acts only, in order. Karma first tries each GitHub step through REST and writes it here only if the proxy or an Environment refuses; the rest are yours. Family members are people you name (CR-184), so nothing here is outside sign-in. Every step below is in `docs/release/TESTFLIGHT.md` unless another file is named.
+
+| # | The exact step | Why only your hands | Check line |
+|---|---|---|---|
+| A1 | **Start the build.** Actions, testflight, Run workflow, branch `develop`, profile `testflight`, upload ticked (Step 5, "From GitHub"); or `gh workflow run testflight.yml --ref develop -f profile=testflight -f submit=true`. If the run waits at Review deployments, Approve the `testflight` Environment (`.github/workflows/testflight.yml`, `environment: testflight`) | The Environment reviewer and the Run workflow button are the account holder's; whether a reviewer is set is [UNVERIFIED] | The run is green through "typecheck", "npm test" and `preflight:testflight`, then EAS build and submit |
+| A2 | **Read Apple's processing email** (the ITMS-91053 note, go/no-go row B1-10 in `docs/qa/ALPHA_GO_NO_GO.md`) and confirm the build is in the Family group (`submit.testflight.ios.groups`; Step 2 item 3 for each member) | Apple sign-in and your mailbox | The build shows under TestFlight, internal group Family, status Ready to Test |
+| A3 | **Install it and do the real-phone checks** ("What to check on a real phone", then `docs/qa/DEVICE_TEST_PLAN.md` DL-06 if the SE 3 is to hand). Paste `whatToTest.build1` from `packages/content/src/release/testflight.en.ts` as the What to Test text (Step 5) | Device tests are only your phone | The list in that section, each line passed or noted |
+| A4 | **Only if `preview` (servers on, staging) is wanted:** row 1 of the session sheet (staging database apply, Review deployments, Approve `staging`), then Step 9 (the staging Supabase URL and publishable key typed into the EAS `preview` environment, no secret in chat) and Step 11 (dispatch profile `preview`, add the build to Family only). Use `whatToTest.build2`, not `build2WithDeleteRow`, unless Step 9 set `EXPO_PUBLIC_ACCOUNT_DELETION` on | Hosted apply, vendor consoles and secrets | Row 1's check line; Step 11's `npx eas-cli@24.10.0 env:list --environment preview` read-back |
+
 ## Founder session sheet: the critical path in one sitting
 
 Written under CR-176 item 4. Work top to bottom; each row is one physical act. Nothing here asks you to approve, merge, comment on or send anything for a pull request: the only clicks are the GitHub Environment deployment buttons and the vendor consoles, because only the account holder's hands can reach them. A secret is never written in this file; you type each one into its own console field and nowhere else. Every path below was checked on `origin/develop`; anything that could not be read from the repo is marked [UNVERIFIED].
