@@ -100,7 +100,7 @@ export function WelcomeSignIn() {
     if (r.ok) router.push('/sign-in/consent');
   };
 
-  // BL-1441: a refused sign-up (Apple, or Google where offered) shows the refused-region screen in place of the Welcome.
+  // BL-1441: a refused provider sign-up shows the refused-region screen in place of the Welcome.
   // After every hook above, so the hook order never changes.
   if (regionRefusedShown(auth.state)) return <RegionRefusedScreen />;
 
