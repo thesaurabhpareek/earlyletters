@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, ScrollView, View } from 'react-native';
+import { announce } from '@/lib/a11y';
 import { Button, ListRow, ListSection, Text, ToggleRow } from '@/components/ui';
 import { fill } from '@/lib/copy';
 import {
@@ -74,6 +75,13 @@ export default function Storage() {
   const inFlight = Object.values(progress).filter(
     (p) => !asLanguages.has(p.id) && ACTIVE.includes(p.phase) && !(installedIds.has(p.id) && (p.phase === 'failed' || p.phase === 'cancelled')),
   );
+
+  // Said when a download changes phase, not on every byte: the line under each pack is a live region only on Android (PER4-018).
+  const phases = inFlight.map((p) => `${p.id}:${p.phase}`).join('|');
+  useEffect(() => {
+    for (const p of inFlight) announce(`${nameFor(p.id)}. ${progressLine({ ...p, bytesDone: 0, bytesTotal: 0 })}`, { queue: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on phases so a byte tick does not speak
+  }, [phases]);
 
   const confirmRemove = (pack: InstalledPack) => {
     Alert.alert(t.confirmTitle, t.confirmBody, [

@@ -89,7 +89,8 @@ describe('VoiceOver hears each lock message once (Review B, #640)', () => {
     it(`${f} never pairs toast.show() with announce()`, () => {
       const body = code(f);
       expect(body).toContain('toast.show(');
-      expect(body).not.toMatch(/\bannounce\(/);
+      // The one allowed announce() is the "no passcode" line, which is not a toast message (BL-1953, PER4-018).
+      expect(body.replace('announce(appLockCopy.noPasscode)', '')).not.toMatch(/\bannounce\(/);
     });
   }
 });

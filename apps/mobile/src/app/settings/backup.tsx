@@ -5,6 +5,7 @@ import { backupCopy } from '@scribe/content';
 import { useHelpLink } from '@/components/settings/help-fallback';
 import { mailTarget } from '@/components/settings/help-links.logic';
 import { Button, ListRow, ListSection, Text, ToggleRow } from '@/components/ui';
+import { announce } from '@/lib/a11y';
 import { loadBackup } from '@/lib/backup/gate';
 import { fill, withBrandName } from '@/lib/copy';
 import { dayDate, isoOf } from '@/lib/dates';
@@ -123,6 +124,14 @@ function BackupScreen({ rt }: { rt: Runtime }) {
   const line = stateLine(view);
   const restore = restoreLine(view);
   const tryAgain = view?.restore?.kind === 'stopped' || status === 'key_stopped';
+
+  // iOS VoiceOver ignores accessibilityLiveRegion (Android only), so the restore line and the turn-on failure are announced (PER4-018).
+  useEffect(() => {
+    if (restore) announce(restore);
+  }, [restore]);
+  useEffect(() => {
+    if (failed) announce(t.turnOnFailed);
+  }, [failed]);
 
   return (
     <ScrollView contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">

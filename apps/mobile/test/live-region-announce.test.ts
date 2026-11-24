@@ -19,10 +19,6 @@ const SRC = join(__dirname, '..', 'src');
 export const BASELINE: readonly string[] = [
   'src/app/family.tsx',
   'src/app/letter/[id].tsx',
-  'src/app/settings/app-lock.tsx',
-  'src/app/settings/backup.tsx',
-  'src/app/settings/plus.tsx',
-  'src/app/settings/storage.tsx',
   'src/components/child/child-editors.tsx',
   'src/components/tonight/quiet-day-inline.tsx',
   'src/components/ui/state-screen.logic.ts',
@@ -73,5 +69,46 @@ describe('[PER4-018] a live region comes with announce()', () => {
     const offenders = findOffenders(readTree());
     const stale = BASELINE.filter((f) => !offenders.includes(f));
     expect(stale, `now announcing or gone, remove from BASELINE: ${stale.join(', ')}`).toEqual([]);
+  });
+});
+
+/**
+ * BL-1953 slice 1: the four settings screens speak their live regions. Each entry is the text the live region
+ * shows; the announce call must sit in a useEffect that is keyed on it, so a change is spoken once and a re-render
+ * is not. A bare announce() somewhere in the file (or an import alone) does not satisfy this.
+ */
+const SPOKEN: Record<string, RegExp[]> = {
+  'src/app/settings/app-lock.tsx': [/useEffect\(\(\) => \{\s*if \(unavailable\) announce\(appLockCopy\.noPasscode\);\s*\}, \[unavailable\]\)/],
+  'src/app/settings/backup.tsx': [
+    /useEffect\(\(\) => \{\s*if \(restore\) announce\(restore\);\s*\}, \[restore\]\)/,
+    /useEffect\(\(\) => \{\s*if \(failed\) announce\(t\.turnOnFailed\);\s*\}, \[failed\]\)/,
+  ],
+  'src/app/settings/plus.tsx': [
+    /useEffect\(\(\) => \{\s*if \(notice\) announce\(notice\);\s*\}, \[notice\]\)/,
+    /useEffect\(\(\) => \{\s*if \(restored\) announce\(restored\.text\);\s*\}, \[restored\]\)/,
+  ],
+  'src/app/settings/storage.tsx': [
+    /for \(const p of inFlight\) announce\(`\$\{nameFor\(p\.id\)\}\. \$\{progressLine\(/,
+    /\}, \[phases\]\)/,
+  ],
+};
+
+describe('[PER4-018] BL-1953 settings screens announce what their live region shows', () => {
+  const tree = readTree();
+  for (const [file, patterns] of Object.entries(SPOKEN)) {
+    it(`${file} imports announce from @/lib/a11y and calls it from an effect on the live text`, () => {
+      expect(tree[file]).toMatch(/import \{[^}]*\bannounce\b[^}]*\} from '@\/lib\/a11y'/);
+      for (const re of patterns) expect(tree[file]).toMatch(re);
+    });
+    it(`${file} is off the baseline and not an offender`, () => {
+      expect(BASELINE).not.toContain(file);
+      expect(findOffenders({ [file]: tree[file] })).toEqual([]);
+    });
+  }
+
+  it('storage speaks on a phase change only, never on a byte tick', () => {
+    const src = tree['src/app/settings/storage.tsx'];
+    expect(src).toMatch(/const phases = inFlight\.map\(\(p\) => `\$\{p\.id\}:\$\{p\.phase\}`\)/);
+    expect(src).toMatch(/progressLine\(\{ \.\.\.p, bytesDone: 0, bytesTotal: 0 \}\)/);
   });
 });

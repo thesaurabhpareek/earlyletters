@@ -9,6 +9,7 @@ import { useToast } from '@/components/ui/toast';
 import { readLockAbility, setGrace, turnOff, turnOn, useAppLock } from '@/lib/app-lock/controller';
 import { appLockCopy } from '@/lib/app-lock/copy';
 import { GRACE_CHOICES, type GraceChoice, type LockAbility } from '@/lib/app-lock/machine';
+import { announce } from '@/lib/a11y';
 import { haptic } from '@/lib/haptics';
 
 /**
@@ -43,6 +44,11 @@ export default function AppLockSettings() {
   const method = ability?.available ? ability.method : 'passcode';
   const unavailable = ability !== null && !ability.available;
   const faceIdDenied = ability?.available === true && ability.faceIdDenied;
+
+  // The "no passcode" line appears after the device is read; iOS VoiceOver ignores accessibilityLiveRegion (PER4-018).
+  useEffect(() => {
+    if (unavailable) announce(appLockCopy.noPasscode);
+  }, [unavailable]);
 
   const onToggle = async (on: boolean) => {
     if (busy || ability === null) return;

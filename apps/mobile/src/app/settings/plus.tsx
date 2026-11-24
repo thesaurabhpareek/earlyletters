@@ -19,7 +19,7 @@ import { brand } from '@scribe/brand';
 import { ListRow, ListSection } from '@/components/ui/list-row';
 import { Text } from '@/components/ui/text';
 import { ownSubscription, planScreen, restoreResult } from '@/components/settings/plan.logic';
-import { useTheme } from '@/lib/a11y';
+import { announce, useTheme } from '@/lib/a11y';
 import { track } from '@/lib/analytics/track';
 import {
   askPlanReminderPermission,
@@ -82,6 +82,14 @@ export default function PlanSettings() {
   // Set when Apple's offer code sheet was shown: a redeemed code arrives as an entitlement update,
   // so Plus turning on afterwards is the redemption (D-053, Apple only). A number-free event, no code is ever read.
   const awaitingCode = useRef(false);
+
+  // iOS VoiceOver does not speak accessibilityLiveRegion (Android only), so the two inline answers are announced (PER4-018).
+  useEffect(() => {
+    if (notice) announce(notice);
+  }, [notice]);
+  useEffect(() => {
+    if (restored) announce(restored.text);
+  }, [restored]);
 
   useEffect(() => {
     if (plan.plusOn && awaitingCode.current) {
