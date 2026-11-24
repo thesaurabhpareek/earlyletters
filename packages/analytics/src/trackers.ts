@@ -200,7 +200,7 @@ export function createTrackers(analytics: Pick<Analytics, 'track'>) {
       paused: boolean;
     }): TrackResult {
       const cadence = !i.enabled ? 'off' : i.cadence === 'fewTimes' ? 'few_times' : i.cadence === 'everyEvening' ? 'every_evening' : i.cadence;
-      return track('reminder_schedule_set', { cadence, hour_bucket: hourBucket(i.hour), paused: i.paused });
+      return track('notifications:schedule_update', { cadence, hour_bucket: hourBucket(i.hour), paused: i.paused });
     },
 
     /**

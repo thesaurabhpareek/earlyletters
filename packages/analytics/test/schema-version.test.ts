@@ -98,12 +98,12 @@ describe('onboarding:book_create never says which kind of date was entered (PPRI
 });
 
 // These events are typed in the catalogue but held off the send path (ER-A00 P4), so they are checked with sanitizeWith.
-describe('reminder_prime_shown.source names each showing (BL-1429, C-REQ-001 Rev)', () => {
+describe('notifications:reminder_prime_view.source names each showing (BL-1429, C-REQ-001 Rev)', () => {
   it('allows first_month beside first_letter, and still rejects anything else', () => {
-    const source = EVENTS.reminder_prime_shown.props.source as unknown as { values: string[] };
+    const source = EVENTS['notifications:reminder_prime_view'].props.source as unknown as { values: string[] };
     expect(source.values).toEqual(expect.arrayContaining(['first_letter', 'first_month']));
-    expect(sanitizeWith(EVENTS, 'reminder_prime_shown', { source: 'first_month', schema_version: SCHEMA_VERSION }).props).toEqual({ source: 'first_month', schema_version: SCHEMA_VERSION });
-    const bad = sanitizeWith(EVENTS, 'reminder_prime_shown', { source: 'second_prime', schema_version: SCHEMA_VERSION });
+    expect(sanitizeWith(EVENTS, 'notifications:reminder_prime_view', { source: 'first_month', schema_version: SCHEMA_VERSION }).props).toEqual({ source: 'first_month', schema_version: SCHEMA_VERSION });
+    const bad = sanitizeWith(EVENTS, 'notifications:reminder_prime_view', { source: 'second_prime', schema_version: SCHEMA_VERSION });
     expect(bad.props).toBeNull();
     expect(bad.violations.length).toBeGreaterThan(0);
   });

@@ -226,7 +226,7 @@ export function createReminderObserver(a: Track): (p: ReminderPrefsLike) => void
  * (`kind` monthAge or birthday) are never reported: their timing reveals the
  * birth date (TRACKING_PLAN 6.4). Unknown payloads send nothing.
  */
-export function notificationOpenedEvent(data: unknown): EventProps<'notification_opened'> | null {
+export function notificationOpenedEvent(data: unknown): EventProps<'notifications:notification_open'> | null {
   if (!data || typeof data !== 'object') return null;
   const d = data as { kind?: unknown; variant?: unknown };
   if (d.kind !== 'evening') return null;
@@ -236,5 +236,5 @@ export function notificationOpenedEvent(data: unknown): EventProps<'notification
 
 export function trackNotificationOpened(a: Track, data: unknown): TrackResult | 'not_sent' {
   const props = notificationOpenedEvent(data);
-  return props ? a.track('notification_opened', props) : 'not_sent';
+  return props ? a.track('notifications:notification_open', props) : 'not_sent';
 }

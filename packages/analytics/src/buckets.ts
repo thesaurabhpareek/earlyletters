@@ -18,7 +18,7 @@ export type FirstLetterBucket = PropValues<'analytics_opted_in', 'time_to_first_
 export type ExportSizeBucket = PropValues<'keeping:export_complete', 'size_bucket'>;
 export type ExportDurationBucket = PropValues<'keeping:export_complete', 'duration_bucket'>;
 export type ChildOrdinal = PropValues<'letter_saved', 'child_ordinal'>;
-export type HourBucket = PropValues<'reminder_schedule_set', 'hour_bucket'>;
+export type HourBucket = PropValues<'notifications:schedule_update', 'hour_bucket'>;
 
 const SEC = 1000;
 const MIN = 60 * SEC;
