@@ -43,11 +43,23 @@ export const NOTIFICATION_CLASSES: readonly NotificationClass[] = [
   { id: 'evening', group: 'budgeted', priority: 5, owner: 'mobile' },
 ];
 
+/** The rank of a registry class: its `priority`, the one place the order is written. */
+function priorityOf(id: NotificationClassId): number {
+  return classRow(id).priority;
+}
+
 /**
  * What a budgeted note comes from. `libraryDay` is a ranked source inside the `typedDay` group (NS-46-R29), so it has a
- * rank and no registry row. Ranks are the priorities above, with 3 between birthday and month.
+ * rank and no registry row: it sits just after birthday, ahead of month. Every other rank is read from the registry
+ * rows, so the order is written once (BL-1152).
  */
-export const SOURCE_RANK = { typedDay: 1, birthday: 2, libraryDay: 3, monthAge: 4, evening: 5 } as const;
+export const SOURCE_RANK = {
+  typedDay: priorityOf('typedDay'),
+  birthday: priorityOf('birthday'),
+  libraryDay: priorityOf('birthday') + 1,
+  monthAge: priorityOf('monthAge'),
+  evening: priorityOf('evening'),
+} as const;
 export type NoteSource = keyof typeof SOURCE_RANK;
 
 /** The registry row for a class; an unregistered id throws, so a class cannot slip in unlisted (NS-32-R2). */
@@ -99,12 +111,18 @@ export function budgetedSlots(planPending: number): number {
   return TOTAL_MAX - plan;
 }
 
+/** What one group may hold. Plan notices are 4; the budgeted notes share the whole total, plan notices inside it. */
+const GROUP_CAPACITY: Record<NotificationGroup, number> = { plan: PLAN_MAX, budgeted: TOTAL_MAX };
+
 /**
- * The most that can be pending with these classes: one total for every group, however many classes there are. A group
- * with no class adds nothing; the total never exceeds `TOTAL_MAX`.
+ * The most that can be pending with these classes: each group present adds its capacity, capped at `TOTAL_MAX`. A group
+ * with no class adds nothing, and a class added to a group already there adds nothing, so the total never rises (R15).
  */
 export function pendingCeiling(classes: readonly NotificationClass[] = NOTIFICATION_CLASSES): number {
-  return classes.length === 0 ? 0 : TOTAL_MAX;
+  const groups = new Set(classes.map((c) => c.group));
+  let sum = 0;
+  for (const g of groups) sum += GROUP_CAPACITY[g];
+  return Math.min(TOTAL_MAX, sum);
 }
 
 /** The registry with one more class. It shares its group's slots; an unknown group or a repeated id throws (NS-32-R15). */
