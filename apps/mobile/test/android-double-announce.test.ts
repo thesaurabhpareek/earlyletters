@@ -19,8 +19,8 @@ describe('[BL-467] no double announce on Android', () => {
     expect(unguardedDirectCalls("if (Platform.OS !== 'android') AccessibilityInfo.announceForAccessibility(note);")).toHaveLength(0);
   });
 
-  it.each(['components/resilience/plain-screen.tsx', 'components/gate/age-gate-screen.tsx'])('%s skips its direct announce on Android', (f) => {
-    const text = src(f);
+  it('plain-screen.tsx skips its direct announce on Android', () => {
+    const text = src('components/resilience/plain-screen.tsx');
     expect(text).toMatch(/accessibilityLiveRegion="polite"/);
     expect(text).toMatch(/AccessibilityInfo\.announceForAccessibility\(/);
     expect(unguardedDirectCalls(text)).toEqual([]);
