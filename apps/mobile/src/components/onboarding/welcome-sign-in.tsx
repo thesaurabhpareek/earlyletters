@@ -38,7 +38,8 @@ import { capabilities } from '@/lib/capabilities';
 import { copy, fill } from '@/lib/copy';
 import { inviteHref } from '@/lib/family/entry.logic';
 import { PLUS_ALPHA } from '@/lib/billing/alpha';
-import { inlineErrorKind, invitedDoorShown, welcomeErrorMessage } from '@/lib/first-run/welcome.logic';
+import { RegionRefusedScreen } from '@/components/onboarding/region-refused-screen';
+import { inlineErrorKind, invitedDoorShown, regionRefusedShown, welcomeErrorMessage } from '@/lib/first-run/welcome.logic';
 
 /** Terms and Privacy open in the in-app browser; a page that will not open changes nothing on this screen. */
 const open = (url: string) => void WebBrowser.openBrowserAsync(url).catch(() => {});
@@ -98,6 +99,10 @@ export function WelcomeSignIn() {
     // Account setup (terms, age, sensitive data) is the existing consent sheet, then it closes over the next step.
     if (r.ok) router.push('/sign-in/consent');
   };
+
+  // BL-1441: a refused provider sign-up shows the refused-region screen in place of the Welcome.
+  // After every hook above, so the hook order never changes.
+  if (regionRefusedShown(auth.state)) return <RegionRefusedScreen />;
 
   const message = welcomeErrorMessage(inlineErrorKind(auth.state));
   const blocked = busy !== null || auth.state.status === 'signingOut';
