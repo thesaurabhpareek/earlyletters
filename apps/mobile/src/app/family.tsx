@@ -57,6 +57,7 @@ import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { ModalHeader } from '@/components/ui/screen-header';
 import { Text } from '@/components/ui/text';
 import { useToast } from '@/components/ui/toast';
+import { announce } from '@/lib/a11y';
 import { PLUS_ALPHA } from '@/lib/billing/alpha';
 import { serverFeaturesEnabled } from '@/lib/capabilities';
 import { inviteDestination, LEAVE_BOOK_OFFERED } from '@/lib/family/entry.logic';
@@ -91,6 +92,18 @@ function RowAction({ label, icon, onPress, disabled, testID }: { label: string; 
       {/* shrink: at the largest text sizes the label wraps inside the row instead of running off the edge. */}
       <Text className="shrink text-base font-medium text-primary">{label}</Text>
     </Pressable>
+  );
+}
+
+/** The note that someone left. iOS VoiceOver ignores accessibilityLiveRegion, so the line is also spoken once when it appears (PER4-018). */
+function LeftNoteLine({ text }: { text: string }) {
+  useEffect(() => {
+    announce(text);
+  }, [text]);
+  return (
+    <View accessible accessibilityLiveRegion="polite" className="flex-1">
+      <Text variant="body">{text}</Text>
+    </View>
   );
 }
 
@@ -272,9 +285,7 @@ function FamilyShared() {
 
         {notes.map((m) => (
           <Animated.View key={m.id} entering={NOTE_IN} testID="family.leftNote" className="flex-row items-center gap-2 rounded-md bg-secondary py-2 pl-4 pr-1">
-            <View accessible accessibilityLiveRegion="polite" className="flex-1">
-              <Text variant="body">{m.signsAs.trim() ? fill(f.left.note, { signsAs: m.signsAs.trim(), child }) : fill(f.left.noteUnsigned, { child })}</Text>
-            </View>
+            <LeftNoteLine text={m.signsAs.trim() ? fill(f.left.note, { signsAs: m.signsAs.trim(), child }) : fill(f.left.noteUnsigned, { child })} />
             <IconButton
               testID="family.leftNote.close"
               icon={XIcon}

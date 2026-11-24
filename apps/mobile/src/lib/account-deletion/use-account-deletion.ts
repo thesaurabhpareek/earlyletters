@@ -4,7 +4,7 @@
  * store, analytics and Plus state. Network only on the screen, never at launch.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { analytics, analyticsIdsForDeletion, forgetAnalyticsIds, withdrawAnalytics } from '@/lib/analytics';
+import { analytics, analyticsIdsForDeletion, forgetAnalyticsIds, forgetAnalyticsIdsSome, withdrawAnalytics } from '@/lib/analytics';
 import { authUserId } from '@/lib/auth/machine.logic';
 import { useAuth } from '@/lib/auth/session-provider';
 import { usePlan } from '@/lib/billing';
@@ -17,7 +17,7 @@ import { bookImpacts, impactLines, showSubscriptionNotice, type ServerStatus, ty
 import { recordCancelled, recordRequested, recordStatus } from './note-store';
 
 const flags: FlagStore = { get: getSetting, set: setSetting, remove: deleteSetting };
-const ids: AnalyticsIds = { ids: analyticsIdsForDeletion, forget: forgetAnalyticsIds };
+const ids: AnalyticsIds = { ids: analyticsIdsForDeletion, forget: forgetAnalyticsIds, forgetSome: forgetAnalyticsIdsSome };
 
 /** The current person's letters in a book on this phone (local-only letters are theirs too). */
 function myLetterCount(childId: string): number {

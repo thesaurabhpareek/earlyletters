@@ -41,6 +41,7 @@ import { installedPathsFor, planFor } from '@/lib/models/speech-packs';
 import { cn } from '@/lib/utils';
 import { languageCopy } from './copy';
 import { languagePickerView } from './language-picker.logic';
+import { nameBlockStyle, nameTextStyle } from './language-text.logic';
 
 /**
  * "Not on this phone, 575 MB" for a language whose speech model this phone does not have yet; null when it is here,
@@ -170,12 +171,12 @@ function LanguageRow({ info, first, checked, speech, disabled, onPress }: { info
       accessibilityLanguage="en"
       accessibilityHint={disabled ? p.chosenA11y : p.rowHint}
       className={cn('min-h-14 flex-row items-center gap-3 ps-4 pe-4 py-3 active:bg-secondary', !first && 'border-t border-border')}>
-      <View className="flex-1 gap-0.5">
+      <View className="flex-1 gap-0.5" style={nameBlockStyle()}>
         <Text
           variant="body"
           tone={disabled ? 'muted' : 'default'}
           accessibilityLanguage={info.bcp47}
-          style={{ writingDirection: info.script.direction }}>
+          style={nameTextStyle(info.script.direction)}>
           {info.native}
         </Text>
         {!sameName && (

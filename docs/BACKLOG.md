@@ -9412,13 +9412,23 @@ Queue order (the dispatcher takes the first `ready` row an agent owns, in file o
 - Done when: each case is recorded in the findings file.
 
 #### BL-1709 First letter with no speech model on the phone: a calm "words are on the way" state
-- Status: ready (fallback picked, CPO-68: a typed first letter, no smaller first model). Mode: agent. Owner: product manager. Milestone: M15. Size: S. Depends on: none.
+- Status: in-review (PR #1826; the spec is `docs/design/specs/15-FIRST-LETTER-NO-MODEL-20261124.md`; the mobile build is BL-1999). Mode: agent. Owner: product manager. Milestone: M15. Size: S. Depends on: none.
 - Picked: CPO-68 (23 Nov 2026, Chief Product Officer, a Claude role): the fallback is a typed first letter, not a smaller first model. Revisit if a real-device reading shows first sessions on cellular ending without a letter even with the typed offer.
 - Priority: P1. Gate: spec. Lane: product, then mobile.
 - Satisfies: NEU-003 (P1); D-087 (the speech model downloads only after an explicit choice).
 - Problem and evidence: if the model is not on the phone, a first session can end with nothing visible.
 - Scope: write the spec (`docs/design/specs/15-FIRST-LETTER-NO-MODEL-*.md`, next free number) for a first session on a phone where the speech model is not downloaded: Listen offers the typed letter at "Not now" and on cellular so a first session always ends with a kept letter; if she records anyway, Review shows the recording playable and the existing words-on-the-way line (WordsStatus, waiting_for_pack), and the recording is kept as a letter waiting for its words. Typed words are never machine-edited. D-087 holds: the model downloads only after an explicit choice. The spec lists what it read in listen.tsx and review.tsx and what it did not run.
 - Done when: the spec names the typed first letter as the fallback with the exact Listen and Review states, lists the words it needs from content, and the mobile build row is filed; any timing reading is labelled "simulated" (D-172).
+
+#### BL-1999 Listen offers "Type instead" when the speech model is not on the phone (build of the BL-1709 spec)
+- Status: blocked (waits for the BL-1709 spec to merge and for `content` to read its section 6). Mode: agent. Owner: mobile engineer, content. Milestone: M15. Size: S. Depends on: BL-1709.
+- Priority: P1 (stays with BL-1709 in the drop order). Gate: spec merged. Lane: mobile.
+- Satisfies: NEU-003 (P1); D-087 (nothing downloads without an explicit choice); CPO-68 (typed first letter).
+- Problem and evidence: Listen does not read the model state, so a parent on "Not now" or on cellular can record a first letter and end the session with no words on screen (`apps/mobile/src/app/listen.tsx`, `typeInstead` and the `listen.photo.type` button; `wordsCard` in `apps/mobile/src/components/capture/words-state.logic.ts`). Read from source only; nothing was run.
+- Scope: build section 3 of `docs/design/specs/15-FIRST-LETTER-NO-MODEL-20261124.md`: a quiet typed offer beside the circle in Listen's ready state when the speech files are not installed and she has not said yes to a download that is moving (the spec's table), reusing the picture "Type" placement and the existing "Type instead" line unless `content` rules otherwise. It opens Write as `typeInstead` does, starts no download and changes no stored choice. Review's cards stay as they are. No new string: the label is the existing "Type instead" unless `content` rules otherwise (then the line comes from `packages/content` first, rules test applies).
+- Done when: tests FL-01 to FL-11 in the spec exist and pass (pure-function or source-text tests; the offer is absent during a take); the PR body says no device ran. Any timing reading is labelled "simulated" (D-172).
+- Test: `apps/mobile/test/listen.test.ts` and a new `apps/mobile/test/first-letter-no-model.test.ts`.
+- Source: BL-1709 spec, 24 Nov 2026. Not verified: whether `useSpeechDownload` is safe to call from Listen was read, not run.
 
 ## Follow-ups from wave 10 (BL-1840 to BL-1852; filed by the product agent, docs only)
 
@@ -9871,7 +9881,7 @@ Source: `docs/product/prd/29-sign-in-methods-and-phone-verification.md` (card NS
 - Done when: a planted stale map fails the check and the message in each over-cap case names its own cap, with a test for each.
 
 #### BL-1881 Apply the pr-size and founder-ask workflows from the base ref (the app cannot write .github/workflows)
-- Status: blocked (BL-1880 and BL-1882 are open). Mode: human. Owner: platform. Milestone: M15. Size: XS. Depends on: BL-1880, BL-1882.
+- Status: ready (BL-1880 and BL-1882 are done: #1688, #1685). Mode: human. Owner: platform. Milestone: M15. Size: XS. Depends on: BL-1880, BL-1882.
 - Satisfies: CODE-R02 (400 lines and 20 files) is enforced by no workflow today; BL-1851 (the founder-ask check); CR-176.
 - Scope: copy `docs/ops/proposed/workflows/pr-size.yml` and `docs/ops/proposed/workflows/founder-ask.yml` to `.github/workflows/` on the base ref, by the account holder's hand; the app token cannot write that path. Listed as session sheet rows C1 and C2 in `docs/release/FOUNDER_QUEUE.md`. No secret is involved. Both workflows stay advisory (not required checks) during the freeze; making either required is a later, separate decision.
 - Done when: both workflows run on a throwaway pull request: an over-cap diff is red and a clean one is green.

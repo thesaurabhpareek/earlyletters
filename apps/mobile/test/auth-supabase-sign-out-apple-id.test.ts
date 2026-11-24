@@ -15,17 +15,19 @@ const provider = readFileSync(join(__dirname, '..', 'src/lib/auth/session-provid
   .replace(/\/\/.*$/gm, '');
 
 describe('[F2] a sign-out Supabase made itself forgets the Apple user id', () => {
-  it('the SIGNED_OUT branch calls forgetAppleUser beside the pending-email clear', () => {
+  it('the SIGNED_OUT branch calls the shared step that forgets the Apple user id, the pending email request and the first-run draft (BL-2002)', () => {
     const branch = provider.match(/else if \(event === 'SIGNED_OUT'\) \{([\s\S]*?)\n      \}\n/)?.[1] ?? '';
-    expect(branch).toContain('void forgetAppleUser();');
-    expect(branch).toContain('void clearPendingEmailRequest();');
+    expect(branch).toContain('void forgetSignOutLeftovers();');
+    const step = readFileSync(join(__dirname, '..', 'src/lib/auth/sign-out-leftovers.ts'), 'utf8');
+    expect(step).toContain('await forgetAppleUser();');
+    expect(step).toContain('await clearPendingEmailRequest();');
     expect(branch).toContain("dispatch({ type: 'SIGNED_OUT' })");
   });
 
   it('[BL-1508] it runs first, so a throw further down the branch cannot skip it', () => {
     const branch = provider.match(/else if \(event === 'SIGNED_OUT'\) \{([\s\S]*?)\n      \}\n/)?.[1] ?? '';
-    expect(branch.indexOf('void forgetAppleUser();')).toBeGreaterThanOrEqual(0);
-    expect(branch.indexOf('void forgetAppleUser();')).toBeLessThan(branch.indexOf("dispatch({ type: 'SIGNED_OUT' })")); // mutant: move it back to the end
+    expect(branch.indexOf('void forgetSignOutLeftovers();')).toBeGreaterThanOrEqual(0);
+    expect(branch.indexOf('void forgetSignOutLeftovers();')).toBeLessThan(branch.indexOf("dispatch({ type: 'SIGNED_OUT' })")); // mutant: move it back to the end
   });
 
   it('the revocation watch still needs a signed-in user, so no id is read after the session is gone', () => {

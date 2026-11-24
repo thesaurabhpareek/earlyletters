@@ -26,8 +26,6 @@ const EXEMPT = new Set(['lib/motion.ts']);
  * the test below fails if a row has nothing left to allow. Every row names its backlog id.
  */
 const ALLOWLIST: Record<string, string> = {
-  // BL-1754: the Review mark card's FadeIn.delay(80).duration(160) (CDO-A-015). Review is being changed by another lane.
-  'app/review.tsx': 'BL-1754 (Review mark card entry; its 1600 ms wash timer is a setTimeout this scan does not see)',
   // BL-1754: the letter page's FadeIn.duration(150), Easing.linear and REST_OUT_MS = 96 (DSR-004, DSR-005). Letter page lane.
   'app/letter/[id].tsx': 'BL-1754 (letter page rest fade and focus swap)',
 };

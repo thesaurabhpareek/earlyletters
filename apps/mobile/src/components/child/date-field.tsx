@@ -26,7 +26,7 @@ import { Button } from '@/components/ui/button';
 import { Sheet } from '@/components/ui/sheet';
 import { useTheme } from '@/lib/a11y';
 import { copy } from '@/lib/copy';
-import { isoOf, longDate } from '@/lib/dates';
+import { isoOf, longDate, shortDate } from '@/lib/dates';
 import { compactBounds, dateOf, sheetBodyMaxHeight, sheetStart } from './date-field.logic';
 
 /** What a screen can ask of the date control. */
@@ -175,7 +175,7 @@ export const DateField = React.forwardRef<DateFieldHandle, DateFieldProps>(funct
   // Android: the system dialog, opened from a button.
   return (
     <View ref={control} className="items-end">
-      <Button variant="secondary" size="sm" label={value ? longDate(value) : chooseLabel} accessibilityLabel={`${label}. ${value ? longDate(value) : chooseLabel}`} onPress={() => setOpen(true)} />
+      <Button variant="secondary" size="sm" label={value ? shortDate(value) : chooseLabel} accessibilityLabel={`${label}. ${value ? longDate(value) : chooseLabel}`} onPress={() => setOpen(true)} />
       {open ? (
         <DateTimePicker
           value={dateOf(sheetStart(value, startISO, min, max))}
