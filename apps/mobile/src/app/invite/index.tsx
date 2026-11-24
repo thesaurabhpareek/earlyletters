@@ -364,7 +364,7 @@ function Joined({ childId, fallbackName, inviter, fade }: { childId: string; fal
   // VoiceOver: focus moves to "You're in {child}'s book" as the joined view shows, as SheetTitle does on every other
   // step, and while the book is still coming the line that says so is spoken once, after it (critics' pass S5).
   const heading = useRef<RNText>(null);
-  const joinedTitle = child ? fill(a.joinedTitle, { child }) : a.title;
+  const joinedTitle = joinTitle('joined', child || null);
   useFocusOnMount(heading, true, joinedTitle);
   // The same words first run's welcome under the sheet shows if Close is tapped (components/family/join-wait.logic.ts).
   const waitingLine = book ? null : joinWaitLine(child || null, 'waiting');
