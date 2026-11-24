@@ -206,6 +206,16 @@ export const en = {
       body: "Say one thing about {child} today. That is a letter.",
       cta: "Write the first one",
     },
+
+    // BL-1657 (PROPOSED, wired by BL-2144): the calm card when making the book fails at the finish step. What
+    // happened, then what's still fine, then one way on. "Still here" and not "on this phone": the answers stay on
+    // the screen, while keeping the first-run draft can itself fail quietly (onboarding.tsx). No {child}: with twins
+    // the line would need "books".
+    finishRetry: {
+      title: "The book isn't open yet",
+      body: "Everything you typed is still here.",
+      tryAgainButton: "Try again",
+    },
   },
 
   tonight: {
