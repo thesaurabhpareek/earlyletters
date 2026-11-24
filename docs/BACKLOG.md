@@ -10508,7 +10508,7 @@ Servers on, decided by the founder (D-170, which confirms D-157, D-160 and D-161
 - Done when: every row cites evidence and the record no longer says sign-in is optional.
 
 #### BL-1869 Apply the trace ratchet step to CI
-- Status: blocked (applying a workflow file is a physical act, listed in `docs/release/FOUNDER_QUEUE.md` when it arrives; the step is written in `docs/ops/proposed/trace-ns-ratchet.md`; the plain `--check` question in it is open with founder question 07 Q8). Mode: human. Owner: platform. Milestone: M15. Size: XS. Depends on: none.
+- Status: blocked (applying a workflow file is a physical act, listed in `docs/release/FOUNDER_QUEUE.md` when it arrives; the step is written in `docs/ops/proposed/trace-ns-ratchet.md`; the plain `--check` question in it is open with founder question 07 Q8). Mode: human. Owner: platform. Milestone: M15. Size: XS. Depends on: BL-2030.
 - Satisfies: gate G0 (BL-964). Remainder of BL-964.
 - Scope: the proposed CI step in `docs/ops/proposed/trace-ns-ratchet.md` is written into the `unit` job of `.github/workflows/ci.yml` by Karma's commit (a GitHub write under CR-176 item 5). Only if the session proxy refuses a workflow-file write does it become the account holder's own edit of that file in the GitHub web editor, and then Karma adds the line to `docs/release/FOUNDER_QUEUE.md`. No secret is involved.
 - Done when: a pull request that drops an NS P0 test title fails the step.
