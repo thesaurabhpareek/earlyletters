@@ -63,6 +63,8 @@ const SERVICE_ONLY = [
   `select public.ops_count_check('web_contribution_region', 'pass')`, `select public.ops_regwatch_record('[]')`,
   `select public.ops_regwatch_triage(1, 'actioned')`, `select public.ops_compliance_report(current_date, current_date)`,
   `select public.ops_compliance_retention(now())`,
+  // 20261124120000 (BL-584, CR-209)
+  `select public.ops_cron_health(120)`,
 ];
 for (const sql of SERVICE_ONLY) {
   const name = sql.match(/public\.(\w+)/)[1];

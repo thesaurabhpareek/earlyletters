@@ -37,6 +37,8 @@ export const SERVICE_ROLE_FUNCTIONS = ['accept_child_invite_by_code(uuid,bytea)'
   'sync_begin_epoch(text,timestamp with time zone)', 'sync_housekeeping(timestamp with time zone,integer)',
   // 20261121030000 (CR-26)
   'ops_compliance_report(date,date)', 'ops_compliance_retention(timestamp with time zone)', 'ops_count_check(text,text,text)',
-  'ops_regwatch_record(jsonb)', 'ops_regwatch_triage(bigint,text,text)'];
+  'ops_regwatch_record(jsonb)', 'ops_regwatch_triage(bigint,text,text)',
+  // 20261124120000 (BL-584, CR-209)
+  'ops_cron_health(integer)'];
 // "role relation letters" rows, sorted, for an exact comparison.
 export const grantRows = () => Object.entries(GRANTS).flatMap(([role, m]) => Object.entries(m).map(([rel, l]) => `${role} ${rel} ${l}`)).sort();
