@@ -33,3 +33,25 @@ Reasons: `no iOS compile run on develop at or after the merge base <sha9>`, `run
 The five new build paths now hold a PR on both macOS checks in `merge-queue.mjs`. The `changes` job in `ios-compile.yml` runs the `compile` job only for `modules/`, `app.config.ts`, `apps/mobile/package.json`, `ios/`, `package-lock.json` and the workflow file (and `eas.json` once `ios-compile-eas-json.patch` is applied). For a PR that touches only `metro.config.js`, `store.config.json`, `version.json`, `privacy-manifest.ts` or `permission-copy.ts`, `compile` is skipped and its conclusion is `skipped`; `verdictFor` in the merge table then returns WATCH-RED for that PR, not READY. Two ways out, for Karma: (1) add those paths to the `changes` pattern (same shape as `ios-compile-eas-json.patch`, costs a Debug compile on those PRs); (2) have the table accept `skipped` for the compile check only when the launch check is green. Recommendation: option 2. These paths cannot change the native project, the launch check is the one that reads them, and option 1 spends macOS minutes for no new evidence. Not done here: neither is in the row's scope.
 
 Limits: the gate proves the tip of `develop`, not the tagged commit; and a writer who can push a tag on a branch carrying an edited gate can bypass it, so the `ios-v*` tag ruleset and the `app-store` approval stay the real controls.
+
+## Tag equals checked commit (BL-1594, proposal, not wired)
+
+Status: PROPOSED. The pure function exists and is tested; no workflow calls it. Karma applies workflow edits.
+
+Why: the gate above proves the tip of `develop` (a green run at or after the merge base). It does not prove the tagged commit. A fix cherry-picked onto `release/<x.y>` makes a new sha that no `iOS compile` run has seen, and that sha can be tagged.
+
+The check: `decideTagCheckedRun({ tagSha, runs })` in `scripts/release/launch-gate.mjs` passes only when the newest `workflow_dispatch` run of `ios-compile.yml` whose `head_sha` equals the tagged sha has status `completed` and conclusion `success`. A `pull_request` run does not count: it builds the merge ref, not its `head_sha`, and its `compile` job can be skipped by the paths filter while the run is green. On refusal the message says to dispatch `iOS compile` on the release branch at the commit to be tagged, not on `develop`. Read by the workflow, `runs` would come from `GET repos/<repo>/actions/workflows/ios-compile.yml/runs?head_sha=<tag sha>`, which needs a dispatch of `iOS compile` on the release branch before the tag is pushed.
+
+| Failure mode | Result | Test in `scripts/release/launch-gate.test.mjs` |
+|---|---|---|
+| Cherry-pick onto the release branch: only the parent was checked | refused, "no iOS compile run checked the tagged commit" | `[BL-1594] a cherry-pick onto the release branch` |
+| A moved or re-made tag: runs exist for the old sha only | refused | `[BL-1594] a moved or re-made tag` |
+| A run for another workflow on the tagged sha, or a run with no `path` | refused (the run's `path` must end in `/ios-compile.yml`) | `[BL-1594] a run of another workflow` |
+| A `pull_request`, `push` or other non-dispatch run on the tagged sha | refused, only `workflow_dispatch` counts | `[BL-1594] only a workflow_dispatch run counts` |
+| A run on the tagged sha with no `created_at` | refused, fails closed whatever the list order | `[BL-1594] a run on the tagged sha with no start time` |
+| A run still queued or in progress | refused, "is <status>, not finished" | `[BL-1594] a run still queued or in progress` |
+| Two runs on one sha, one failed | the newest by `created_at` decides, whatever the list order | `[BL-1594] two runs on one sha` |
+| Red, cancelled, skipped or empty conclusion; missing or malformed tag sha (also when a run carries that same malformed sha) | refused, fails closed | `[BL-1594] a red, cancelled, skipped ...` |
+| A green run on exactly the tagged sha | open | `[BL-1594] a green run on exactly the tagged sha opens` |
+
+Cost if wired: one more macOS run per RC (on the release branch), against the EAS and Actions budgets in `docs/ops/RELEASE.md` 3.4. Way back: remove the call; the function stays pure and unused.
