@@ -5634,7 +5634,7 @@ Written 21 Nov 2026 by the product agent, docs only. Every row is `proposed`: Ka
 - Source: post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176.
 
 #### BL-1184 New-device hook: `when others` misses statement timeout 57014
-- Status: proposed (post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176; Karma or the founder sets it to ready). Mode: agent. Owner: security engineer. Milestone: M15. Size: S.
+- Status: done on the branch, in the PR that carries this row (read 24 Nov 2026 against the Done-when line; written, not applied: `20261124100000_new_device_hook_statement_timeout.sql`; `npm run test:db` green on it; hosted apply is the founder's (APPLY.md File 36b)). Was: proposed (post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176; Karma or the founder sets it to ready). Mode: agent. Owner: security engineer. Milestone: M15. Size: S.
 - Satisfies: NS-08-R21, FR-SEC-36.
 - Blocks: nothing.
 - Scope: `public.hook_new_device_sign_in` swallows errors with `when others`, which does not catch a statement timeout (SQLSTATE 57014); handle it in a new migration (the applied file is never edited), count it as `new_device_hook_failed`, and add a test that a timeout still lets the sign-in through.
@@ -5650,7 +5650,7 @@ Written 21 Nov 2026 by the product agent, docs only. Every row is `proposed`: Ka
 - Source: post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176.
 
 #### BL-1186 `access_matrix` and `explicit_grants` do not guard new objects
-- Status: proposed (post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176; Karma or the founder sets it to ready). Mode: agent. Owner: data architect, qa engineer. Milestone: M15. Size: M.
+- Status: done on the branch, in the PR that carries this row (read 24 Nov 2026 against the Done-when line; tests in `supabase/tests/access_matrix.test.mjs`, `explicit_grants.test.mjs` and `grants.mjs`; scope is schema `ops` (public was already covered)). Was: proposed (post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176; Karma or the founder sets it to ready). Mode: agent. Owner: data architect, qa engineer. Milestone: M15. Size: M.
 - Satisfies: NS-08-R21.
 - Blocks: nothing.
 - Scope: extend the access tests so a new table, view or function in `ops` or `public` with no entry fails, including a grant to an API role the test does not list; today the new-device objects pass only because someone listed them.
@@ -5658,7 +5658,7 @@ Written 21 Nov 2026 by the product agent, docs only. Every row is `proposed`: Ka
 - Source: post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176.
 
 #### BL-1187 A fail-open hook handler that adds a role claim stays green
-- Status: proposed (post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176; Karma or the founder sets it to ready). Mode: agent. Owner: security engineer, qa engineer. Milestone: M15. Size: S.
+- Status: done on the branch, in the PR that carries this row (read 24 Nov 2026 against the Done-when line; tests in `supabase/tests/new_device_sign_in.test.mjs` with four in-file mutants). Was: proposed (post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176; Karma or the founder sets it to ready). Mode: agent. Owner: security engineer, qa engineer. Milestone: M15. Size: S.
 - Satisfies: NS-08-R21, FR-SEC-36.
 - Blocks: nothing.
 - Scope: add a test that the hook's returned claims equal its input claims in every branch, including the failure branch, so a handler that adds a role or other claim is caught.
@@ -5795,7 +5795,7 @@ Written 21 Nov 2026 by the product agent, docs only. Every row is `proposed`: Ka
 - Source: post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176; evidence PR #1182.
 
 #### BL-1204 New-device tokens: a database cap on `expires_at`
-- Status: proposed (post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176; Karma or the founder sets it to ready). Mode: agent. Owner: data architect, security engineer. Milestone: M15. Size: S.
+- Status: done on the branch, in the PR that carries this row (read 24 Nov 2026 against the Done-when line; written, not applied: `20261124110000_new_device_token_expiry_cap.sql`; hosted apply is the founder's (APPLY.md File 36c)). Was: proposed (post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176; Karma or the founder sets it to ready). Mode: agent. Owner: data architect, security engineer. Milestone: M15. Size: S.
 - Satisfies: NS-08-R21.
 - Blocks: nothing.
 - Scope: in a new migration (never edit the applied file) add `check (expires_at <= created_at + interval '7 days')` to `ops.new_device_tokens`, so a direct insert cannot make a long-lived token. The mint function `ops_new_device_token_mint` already refuses a ttl under 1 minute or over 7 days (PR #1182), so this is the table-level backstop; the 48 hour default stays in the mint function. The migration is written, never applied: it waits for `approve-migration` and the founder's apply step.
