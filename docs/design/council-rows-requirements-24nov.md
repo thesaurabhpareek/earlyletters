@@ -70,7 +70,7 @@ What the person sees and hears: Delete opens the confirm sheet with "Keep it" as
 States: loading: none (local); offline: the same (tombstone queues through the outbox; Undo sends the restore); error: if the restore fails the toast stays and says what the existing failure line says.
 Dynamic Type and VoiceOver: the toast stacks its text above its actions from AX1 and never truncates; "Letter deleted. Undo available." is announced; with VoiceOver on the toast is focusable and the 10 s extension in COMPONENTS 2.14 is superseded by "no timer" (rule 11.5); the Undo target is 44 pt. Motion: `enter` y 8 to 0 plus fade; Reduce Motion 200 ms fade; collapse becomes an instant removal.
 Row edit: Done-when line "Undo is a button on the page for as long as the page is open" becomes "Undo is a toast action with no timer until the Book is left (S36)"; Scope line likewise. Words: existing `settings.delete.entryToast` "Letter deleted." and `common.undoButton` "Undo" are unchanged; none proposed.
-Data answer: CPrivO confirms that the tombstone and 30-day purge behaviour in the row is unchanged by the toast form (it is).
+Not verified: the toast having no timer is read from `components/ui/toast.tsx` (lines 10 to 12 and 74: with an action it never times out, and a screen reader is never timed out), not run on a device. Data answer: CPrivO confirms that the tombstone and 30-day purge behaviour in the row is unchanged by the toast form (it is).
 
 ## BL-376 No-speech letter offers no "Record again"
 
@@ -82,11 +82,16 @@ Row edit: Done-when "A no-speech letter offers Record again" becomes "A no-speec
 ## BL-388 Export and recently deleted letters
 
 What the person sees: on the Export screen, a switch row "Include recently deleted", off by default. Off: the export holds the book as it stands. On: letters in Recently deleted are in the ZIP in their own folder and in the manifest, marked as deleted.
-Proposed words (PROPOSED, content and CPrivO to rule): switch label "Include recently deleted letters"; help when off "They're not in the export." ; help when on "They're in a separate folder, marked as deleted. They stay in Recently deleted for 30 days." The help lines state what the file will hold, nothing more.
-States: no recently deleted letters: the row is hidden (nothing to include); building: the existing wait line, no percent; error and offline: the existing export failure line; the switch is not saved between exports.
+What the code does today (read, not run): `include_recently_deleted` is hard-coded `false` in `apps/mobile/src/lib/export/pack.ts:232`, so there is no tick yet. But `scope.logic.ts` and `build.logic.ts` already put the Recently deleted letters in the export while an account-deletion request is open (scheduled, held or executing; DATA-REQ-053, BL-446), and the manifest still says `false` for those exports. So "off by default, matches today" is only half true: the default matches, the exception and the manifest do not.
+Rule for the tick: it must never override DATA-REQ-053. While a request is open the deleted letters are in the export whatever the switch says (the row shows on and cannot be turned off, or is hidden), and the manifest field then says `true`. The tick only adds letters when no request is open.
+Proposed words (PROPOSED, held for content, CPrivO and the exec read; to be checked against `packages/content/WRITING-GUIDE.md`): switch label "Include recently deleted letters". Help line OPEN: an earlier draft said they stay in Recently deleted for 30 days, which is wrong for a letter already partway through its 30 days and says nothing about the copy. A line that is true: "Letters you deleted in the last 30 days are added to the file. The file is a copy, and erasing a letter later does not change it." Content rules on it; if counsel's text on the copy is not ready the help line stays open and the switch does not ship.
+States: no recently deleted letters: the row is hidden; building: the existing wait line, no percent; error and offline: the existing export failure line; the switch is not saved between exports.
 Dynamic Type and VoiceOver: the row is a native switch with its label and the current help as the value; at AX5 the label wraps and the switch moves below it; never truncated. Motion: switch toggle only; Reduce Motion unchanged.
-Split after the ruling: ZIP64, orphan recordings folder and the tick are three rows (the row is L).
-Answers needed: CPrivO and CLO (children's data in export; Privacy Policy section 14 and `DELETION_AND_EXPORT_SPEC.md` 4.1 must say the same; if the policy text changes it goes to counsel and the exec review before it publishes). The words above wait for that answer.
+Before the tick ships (each its own change):
+- `docs/legal/DELETION_AND_EXPORT_SPEC.md` 4.1 already says "only if ticked"; it needs the DATA-REQ-053 exception, a named `deleted` field in the manifest with a schema minor bump (`schema.ts`), and the folder name.
+- Privacy Policy section 7, "How long we keep things, and deleting" (`docs/legal/privacy-policy.md` lines about 113 and 127; the same text is in `docs/legal/beta/privacy-0.9.0.md` at lines 103 and 117), should say that a ZIP you make is a copy outside the 30-day erase. Counsel's text, held for the exec read before it publishes. (An earlier draft of this block cited section 14; that is Contact.)
+- Then split ZIP64, orphan recordings and the tick into three rows (the row is L).
+Answers needed: CPrivO and CLO on the copy line and the policy sentence (legal and data answer).
 
 ## BL-1446 Storage line for a recording still being removed
 
@@ -94,7 +99,7 @@ What the person sees: in Me, Storage, one state line and one button: "A recordin
 Proposed words (PROPOSED, held, BL-925 and content): state line "A recording is still being removed." Button "Remove now" and hint "Tries again to remove this recording." (both already in the strings as PROPOSED). If Remove now does not finish: "That didn't finish. We'll try again when you open the app." The existing placeholder "A recording you let go is still on this phone." says the same fact; the council picks one, and this block recommends the new line because it is shorter and names no storage place.
 States: empty: no line, the screen is as today; loading: the button shows busy and keeps its label as the accessible name; error: the failure line above and the button returns; offline: unchanged (removal is local).
 Dynamic Type and VoiceOver: the line and button stack; the line is read before the button; the button hint is read after a pause; at AX5 the button is full width and grows taller. The line is text, not colour or an icon only. Motion: the line appears and leaves with a 200 ms fade (`fadeMs`); Reduce Motion: instant; no loop.
-Answers needed: CPrivO confirms the line does not promise removal will finish (it says "is still being removed", a state, not a promise) and that the stuck-job counter is not logged with a name or a path.
+Answers needed: CPrivO confirms the line does not promise removal will finish (it says "is still being removed", a state, not a promise). The sweep and the counter log no file path, name or id; a test names that.
 
 ## BL-1487 Lens thumb frame on a load error
 
@@ -107,7 +112,7 @@ Ruling: recorded yes by the B motion owner unless the height move is not accepte
 
 What the person sees: a letter holds one picture in the first Moments door (CPO-58, O-62 default). The pending set stays `PendingPhoto` with one `PhotoSession`. Adding a second picture replaces the first after a confirm, in the words the existing Change flow uses.
 States and access: unchanged from spec 01 (thumbnail at most 160 pt above the Speak control, Change as a 44 pt quiet button). Dynamic Type and VoiceOver: unchanged.
-Ruling: mark BL-1472 deferred to a later release; BL-1447 and BL-1453 do not wait on it unless six pictures are chosen. No words; no legal answer.
+Nothing leaves the phone: the picture stays in the stored copy on the device and is not uploaded, logged or sent to analytics by this row. Ruling: mark BL-1472 deferred to a later release; BL-1447 and BL-1453 do not wait on it unless six pictures are chosen. No words; no legal answer.
 
 ## BL-385b Siblings and birthdays in first run (FT-56, D-087)
 
@@ -116,12 +121,12 @@ What the person sees: on the child step, after a second child is added, each chi
 Proposed words (PROPOSED, held for content and the council): switch label "Same birthday as {child}"; help when off "Each child can have their own date."; the existing "Twins or more? Each child gets their own book." and `needBirthday` "Choose {child}'s birthday to continue." stay. No line says "twin" at a person who did not say it, and none guesses gender or order.
 States: empty: the first child alone shows no switch; error: a missing date uses `needBirthday` naming the child, and Continue shows why it is waiting; offline: nothing needs the network. Changing the first child's date while the switch is on moves the others with it, and a quiet line is not needed.
 Dynamic Type and VoiceOver: the switch row is one element, "Same birthday as {child}, off", with a hint "Turn on to use the same date"; at AX5 the label wraps above the switch. Names are read as typed. Motion: the date row for that child expands and collapses with `LinearTransition` on `standard`; Reduce Motion: instant.
-Answers needed: none legal. Content owner rules the two lines.
+Handling: a birthday is L4 child data (DATA_CLASSIFICATION: child identity columns are L4). It stays in the on-device first-run draft (`firstRun.draft`), is never logged and never put in analytics or a crash report. "Same birthday" only copies the date into each child record at the end of first run; no new field stores the switch. Answers needed: none legal. Content owner rules the two lines.
 
 ## Open questions for the council
 
 1. BL-2005 is not a row on develop (PR #1851 holds the id). Which question does it carry, and does BL-2020's ruling answer it?
-2. BL-388: does the Privacy Policy section 14 text need to change, and does counsel or the exec review see it first? (legal and data answer)
+2. BL-388: Privacy Policy section 7 needs the copy sentence and spec 4.1 needs the DATA-REQ-053 exception; counsel or the exec review sees the text first. (legal and data answer)
 3. BL-1446: CPrivO answer on the "still being removed" state and the counter; which of the two existing lines wins. (data answer)
 4. BL-1856: is the live site showing the old mock (row 1856 asks Karma to record `SITE_MODE`)? It does not change the fix.
 5. BL-1487: does the B motion owner accept one card height change on a load error?
