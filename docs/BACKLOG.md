@@ -195,8 +195,33 @@ Exact steps, time, cost and deadlines are in `docs/FOUNDER_TASKS.md`. This secti
 - Status: done (vitest in `apps/mobile` runs inside root `npm test`, about 1,150 tests across workspaces; integration wave a66376a). Lint rules (banned imports, no `console`) move to BL-117.
 
 #### BL-117 CI security and platform scans [High]
-- Status: partly done (source-scan guards exist; no secret, SDK or dependency scan in CI, PR #806 is the first slice). Mode: agent. Owner: security engineer.
+- Status: partly done (source-scan guards exist and PR #806 is the first slice; the rest is split into BL-2124, BL-2125 and BL-2126; this row closes when all three are done). Mode: agent. Owner: security engineer.
+- Satisfies: SEC-R03, SEC-R08 (`docs/engineering/06-security-engineering.md`); LEGAL-REQ-016 (`docs/legal/ENGINEERING_REQUIREMENTS.md`, the denylist test); PRIV-R13.
 - Scope: SDK and import denylist (ads, attribution, tracking, AdSupport, AppTrackingTransparency, HealthKit, face and diarization libraries, speech synthesis and voice cloning for CVL-04); manifest lint; gitleaks; Semgrep and SQL lint; OSV and npm audit; a release-bundle grep that fails on any dev bypass (from BL-216: `onContinueDev`, `devShortcutsAllowed` must be false in preview and production); placeholder scan (`TODO` publisher values fail release builds only); lint rules from BL-121.
+- Split: BL-2124 secrets and dependency audit; BL-2125 denylist, bundle grep and placeholder scan; BL-2126 Semgrep and SQL lint (needs a decision). Agents cannot edit `.github/workflows/`: each row ships its script, tests and proposed step text, and Karma applies the step.
+
+#### BL-2124 CI scans A: dependency audit gate with a dated ignore list, OSV, and the secret-scan decision (from BL-117)
+- Status: ready. Mode: agent. Owner: security engineer. Milestone: M15. Size: S. Depends on: none.
+- Satisfies: SEC-R03, SEC-R08 (`docs/engineering/06-security-engineering.md`); CODE-R17.
+- Scope: (1) `scripts/ci/audit-gate.mjs`: run `npm audit --omit=dev --json`, fail on any high or critical advisory not on `scripts/ci/audit-ignore.json`; every ignore entry has an advisory id, a reason and an expiry, and an entry with no reason or a past expiry fails the gate (SEC-R08); the report names advisory ids and package names only. (2) The OSV scan is a job text in `docs/ops/proposed/osv-scan.md`, advisory, for Karma to paste; nothing under `.github/` changes. (3) Secrets: record in `docs/ops/proposed/secret-scan.md` that the own scanner (`scripts/packs/secret-scan.mjs`, `apps/mobile/test/secret-scan.test.ts`, runs in `npm test`) is the secret scan and gitleaks is not added (Option A of that file), pending the council answer in the PR body.
+- Wiring: add the new test file to the root `test` script in `package.json` (it lists `node --test` files by name).
+- Done when: the gate passes on a fixture with no advisory, fails on a high advisory, fails on an expired and on a reasonless ignore entry, and passes when the high advisory is on the list with a future expiry; `node --test scripts/ci/audit-gate.test.mjs` passes.
+- Test: `scripts/ci/audit-gate.test.mjs` (new, fixtures under `scripts/ci/fixtures/`).
+
+#### BL-2125 CI scans B: SDK denylist, release-bundle dev-bypass grep and placeholder scan (from BL-117)
+- Status: ready. Mode: agent. Owner: security engineer. Milestone: M15. Size: S. Depends on: none.
+- Satisfies: LEGAL-REQ-016 (`docs/legal/ENGINEERING_REQUIREMENTS.md`); PRIV-R13; BL-216 (dev bypass off in preview and production).
+- Scope: (1) `scripts/guards/sdk-denylist.mjs` with its list in `scripts/guards/sdk-denylist.json`: fails on a package in any `package.json` or in `package-lock.json`, or an import under `apps/` and `packages/`, that matches the LEGAL-REQ-016 names (Meta, AppsFlyer, Adjust, Branch, Google Mobile Ads, AdSupport, AppTrackingTransparency) and the row's other classes (HealthKit, face and diarization libraries, speech synthesis and voice cloning); (2) `scripts/guards/bundle-dev-bypass.mjs <exported bundle>`: fails when `onContinueDev` or a true `devShortcutsAllowed` reaches a preview or production export (the symbols live in `apps/mobile/src/lib/build-env.ts`); the CI step that feeds it the export is proposed text in `docs/ops/proposed/` for Karma; (3) a placeholder scan: fails a preview or production build whose `packages/brand` publisher values still hold `TODO` (`legalName` today), with development builds exempt. Reuse `apps/mobile/test/release-config.test.ts` where it already covers (3) and say so in the PR body.
+- Wiring: add both test files to the root `test` script in `package.json`.
+- Done when: each script fails on a planted case (a denylisted dependency; a bundle holding `onContinueDev`; a `TODO` publisher value under `preview`) and passes on the tree; `npm test` runs the denylist and placeholder cases.
+- Test: `scripts/guards/sdk-denylist.test.mjs`, `scripts/guards/bundle-dev-bypass.test.mjs` (new).
+
+#### BL-2126 CI scans C: Semgrep and SQL lint, or close the item with the guards we have (from BL-117)
+- Status: needs-decision (exec: CTO and CISO, whether to adopt Semgrep and a SQL linter now; recommended default: no, close the item). Mode: agent. Owner: security engineer. Milestone: M15. Size: S. Depends on: none.
+- Satisfies: SEC-R03; CODE-R17 (a new tool is a new dependency: permissive licence, active tracker, read against the installed version).
+- Scope: if adopted: `.semgrep/` rules for the constitution paths (no write to `raw_transcript`, no `verifyEdits` bypass, no analytics call with entry text) with a test that each rule fires on a planted case, and a SQL lint pinned to `supabase/migrations/` (grants in the same file as the object). If not adopted: record in `docs/ops/proposed/` why the existing guards (`supabase/tests/explicit_grants.test.mjs`, `migration-guard.yml`, `scripts/lint/lint.mjs`) cover it, and set this row superseded.
+- Done when: the ruling is in `docs/agents/cto/RULINGS.md` and either the rules and their planted-case tests are merged or this row is superseded with the reason.
+- Test: `.semgrep/` rule tests, only if adopted.
 
 #### BL-122 Agent fence and review rule
 - Status: done (fence: CODEOWNERS, migration guard, required checks; run limit: roster max_runs_per_day_total; label rule retired by D-117).
@@ -985,9 +1010,30 @@ Source: branch `feat/email-brand-library`, the reviews in `docs/reviews/2026-10-
 - Scope: `/email/*`, `/fonts/*` with CORS and cache headers, registry-driven logo and OG image, security headers adapted to Next.js.
 
 #### BL-364 Website legal and account routes
-- Status: partly done (terms, privacy, support, legal docs, auth callback, AASA and `/open` built; `/health-privacy`, `/subprocessors`, `/subscription-terms`, `/delete-account`, `/cancel` and the Android line are missing). Mode: agent. Owner: web lane (E1). Milestone: M9. Size: M.
-- Satisfies: Brief decision 13; D-042; handoff items 3 and 5.
+- Status: partly done (terms, privacy, support, legal docs, auth callback, AASA and `/open` built; the missing routes are split into BL-2127, BL-2128 and BL-2129; `/delete-account/confirm` is BL-513; `/cancel` waits for its feature; `/health-privacy` has no source text and waits for a ruling). Mode: agent. Owner: web lane (E1). Milestone: M9. Size: M.
+- Satisfies: Brief decision 13; D-042; handoff items 3 and 5; FR-MSG-34 and FR-MSG-35 (`docs/product/prd/functions/messaging-and-entry-points.md`).
 - Scope: `/terms`, `/privacy`, `/health-privacy`, `/subprocessors`, `/subscription-terms` from `packages/content/legal` with draft banner, noindex and a build guard against unfilled placeholders; `/delete-account`, `/delete-account/confirm`, `/cancel`, `/auth/callback` (never verifies the token) and the AASA file; "iPhone only for now" on `/open` for Android.
+
+#### BL-2127 Website: /subprocessors and /subscription-terms pages with a draft banner (from BL-364)
+- Status: needs-decision (exec: CLO and CPrivO read of the two drafts for publication, in place of counsel, D-172; recommended default: publish /subprocessors in the store build because the privacy policy and `brand.web.subprocessors` name it, and publish /subscription-terms only when billing emails or Plus ship, FR-MSG-35). Mode: agent. Owner: web lane (E1). Milestone: M9. Size: S. Depends on: none.
+- Satisfies: FR-MSG-34, FR-MSG-35; D-042; LEGAL-REQ-044 (claims) for the draft banner.
+- Scope: serve `docs/legal/subprocessors.md` and `docs/legal/subscription-terms.md` as versioned pages by the rules of `apps/web/src/lib/legal/documents.ts` (bytes copied unchanged to `apps/web/content/legal/<doc>/<version>.md`, a change is a new version, never edited): extend `legalDocs`, add the routes under `apps/web/src/app/(legal)/`, a draft banner while `status` is draft, `robots: noindex` until the ruling above, and the build guard that fails a launch-mode build when a page still holds an unfilled placeholder (`apps/web/src/lib/launch-guard.ts`). No analytics, no third-party script. `/health-privacy` is not here: no source file exists.
+- Done when: each page renders its file, `/legal/<doc>/<version>.md` serves the raw bytes, the sitemap and robots test keep both noindex, and a planted `{{placeholder}}` fails the launch guard test; `npm test -w apps/web` and `npm run test:e2e -w apps/web` (the legal e2e) pass.
+- Test: `apps/web/src/lib/launch-guard` test, `apps/web/e2e/legal-versions.e2e.ts`, `apps/web/e2e/http.e2e.ts`.
+
+#### BL-2128 Website: the /delete-account page (from BL-364)
+- Status: ready. Mode: agent. Owner: web lane (E1). Milestone: M9. Size: S. Depends on: none.
+- Satisfies: FR-MSG-34; D-042; LEGAL-REQ-044 (claims); `brand.web.deleteAccount` in `packages/brand/index.ts`.
+- Scope: build `/delete-account` from the draft in `docs/legal/delete-account-page.md` (each heading is a key of `apps/web/src/lib/legal/delete-account-copy.ts`, a new file; `{brand.name}`, `{brand.storeName}` and `{contact}` filled as the other legal pages do), with noindex, no analytics and no third-party script (FR-MSG-36). The page explains the in-app route as primary and the email route for a person who lost the phone. The words come from the draft unchanged; the exec team reads them before publish (D-172, `docs/legal/COUNSEL_PACKET.md`). `/delete-account/confirm` is BL-513, `/cancel` waits for its feature; neither is built here.
+- Done when: the page renders every key of the draft, the page is absent from the sitemap and noindex, the content rules and copy-rules tests pass on it, and `apps/mobile/test` links to `brand.web.deleteAccount` still pass.
+- Test: `apps/web/e2e/pages.e2e.ts`, `apps/web/e2e/http.e2e.ts` (the sitemap case at line 26), a unit test of `delete-account-copy.ts` keys.
+
+#### BL-2129 Website: "iPhone only for now" on /open for Android (from BL-364)
+- Status: ready. Mode: agent. Owner: content, web lane (E1). Milestone: M9. Size: XS. Depends on: none.
+- Satisfies: D-042; Brief decision 13.
+- Scope: content proposes one line for a person on a non-iPhone phone, as a new key in `site.openApp` in `apps/web/src/content/site.ts`, read against `packages/content/WRITING-GUIDE.md`. Recommended default: the line is always on the page under the existing "Open on your iPhone" line (no user-agent reading, the page stays static, nothing is fingerprinted); the exec team approves the words (CR-176). Then add it to `apps/web/src/app/open/page.tsx`. The AASA file and its test (`apps/web/src/app/.well-known/apple-app-site-association/route.test.ts`) are unchanged and must pass.
+- Done when: the page shows the line, `apps/web/src/content` copy-rules tests pass, and the e2e `links.e2e.ts` and `pages.e2e.ts` cases for `/open` pass.
+- Test: `apps/web/e2e/pages.e2e.ts`; `apps/web/test/copy-rules.test.ts`.
 
 #### BL-365 Counsel review of the legal drafts
 - Status: needs-founder (FT-41). Mode: human. Owner: founder. Milestone: M9. Size: M.
@@ -1246,12 +1292,33 @@ Note on D-051: `docs/DECISIONS.md` on `develop` has D-051 "Standard over custom"
 - Test: Journeys J01 (J01-03), J03 (J03-07), J17 (J17-01 to J17-04: `j17-family.flow.ts` now asserts the tab is absent); `apps/mobile/test/coparent-soon.test.ts`.
 
 #### BL-392 The v1.0 binary carries only what v1.0 uses; size, entitlements and Info.plist are checked in CI [High]
-- Status: partly done (size gate and entitlement guards exist; CI wiring of the size gate and an Info.plist allowlist are unconfirmed). Mode: agent. Owner: platform, mobile engineer. Milestone: M-JR. Size: M.
+- Status: partly done (entitlements are dropped from the store build and pinned in `apps/mobile/test/config.test.ts`; the stale free-space comment in the privacy manifest now reads right; the rest is split into BL-2130, BL-2131 and BL-2132). Mode: agent. Owner: platform, mobile engineer. Milestone: M-JR. Size: M.
 - Severity: major. Raised by: quality (3 findings). Steps: J17-01; system-wide (`_journey` entries).
 - Satisfies: D-065 (download under 40 MB); LEGAL-REQ-007; extends BL-117 and BL-349; BL-283 release checklist.
 - Scope: With server features off, drop or exclude the dormant SDKs and entitlements (Google Sign-In, passkeys, Sign in with Apple entitlement and associated domains if no sign-in ships, Supabase if unused). CI lint of Info.plist and entitlements against a v1.0 allowlist. Fix the stale free-space comment in the privacy manifest. A JS bundle size gate in CI against the 12 MB sub-budget; the App Thinning figure is added to the release checklist after the first native build.
 - Done when: CI fails when Info.plist or the entitlements contain a key that is not on the v1.0 allowlist, or when the JS bundle exceeds 12 MB. The privacy manifest comment matches the code. `docs/ops/APP_SIZE.md` records the thinning figure after the first build.
 - Test: New size and plist steps in `.github/workflows/ci.yml`; entitlement allowlist case in `apps/mobile/test/config.test.ts`.
+
+#### BL-2130 Size gate in CI: the 12 MB hard budget and the baseline (from BL-392)
+- Status: ready. Mode: agent. Owner: platform. Milestone: M-JR. Size: S. Depends on: none.
+- Satisfies: D-065 (download under 40 MB); LEGAL-REQ-007; `docs/ops/proposed/size-gate.md`.
+- Scope: `scripts/size/measure.ts --check` already fails over the hard 12 MB bytecode and 3 MB asset budgets with no waiver (`scripts/size/lib.ts`). Left: (1) re-read `docs/ops/proposed/workflows/size-gate-step.yml` against the current `ci.yml` (its `needs:` job and the paste point exist) and fix the text so Karma can paste it; (2) write the baseline procedure in `size-gate.md`: the first run of the pasted job on develop uploads the measurement, a follow-up PR commits `docs/ops/size-baseline.json` from it (this sandbox cannot export the bundle); (3) add the App Thinning line to the release checklist in `docs/ops/APP_SIZE.md` as a step after the first native build (the figure itself is filled then). Nothing under `.github/` changes in this PR.
+- Done when: the step text applies to `ci.yml` with `git apply --check` or a paste at the named line, the procedure is written, and the size cases in `scripts/size/lib.test.ts` pass (over 12 MB fails with no waiver).
+- Test: `scripts/size/lib.test.ts` (existing hard-budget cases; add one for the paste-point job name).
+
+#### BL-2131 Info.plist allowlist test for every build profile (from BL-392)
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M-JR. Size: S. Depends on: none.
+- Satisfies: LEGAL-REQ-007; D-065.
+- Scope: add to `apps/mobile/test/config.test.ts`, beside the entitlement cases that introspect the prebuild config (about lines 496 to 522), a case per profile (development, preview, testflight, production with servers off, production with servers on) that lists the resolved `infoPlist` keys and fails on any key not on a written allowlist in the test (today: `CADisableMinimumFrameDurationOnPhone` and `LSApplicationQueriesSchemes` from `app.config.ts`, plus the usage-description keys the plugins add and the allowlist names each with the plugin that adds it). A new permission string is then a reviewed change.
+- Done when: the case passes on develop for each profile and fails under a mutant that adds `NSLocationWhenInUseUsageDescription` to `infoPlist`.
+- Test: `apps/mobile/test/config.test.ts`.
+
+#### BL-2132 Unlink the dormant sign-in pods from the store build (from BL-392)
+- Status: needs-decision (exec: CTO and CDesO on App Review guideline 2.5.19 against the cost of a device check per profile; recommended default: no, keep the config-only removal that is built and tested, leave the Google Sign-In and passkey pods autolinked and lazily loaded, and revisit if App Review or the 40 MB budget asks). Mode: pair. Owner: mobile engineer. Milestone: M-JR. Size: S. Depends on: none.
+- Satisfies: D-065; LEGAL-REQ-007; BL-392 scope (dormant SDKs).
+- Scope: only if the ruling is to unlink: exclude `@react-native-google-signin/google-signin` and `react-native-passkey` from autolinking for the store profile (`apps/mobile/app.config.ts`, risk:high), keep their lazy loaders in `src/lib/auth/google.ts` and `passkey.ts` from throwing when the module is absent, and run the build on a device (a person holds the phone; listed in `docs/release/FOUNDER_QUEUE.md`). If the ruling is to keep, set this row superseded with the reason.
+- Done when: the ruling is in `docs/agents/cto/RULINGS.md`; and either a store-profile build has neither pod and signs in nothing, with the size delta read against `docs/ops/APP_SIZE.md`, or this row is superseded.
+- Test: `apps/mobile/test/config.test.ts` (autolinking exclusion per profile), only if unlinking.
 
 #### BL-393 "Word for word" vocabulary replaces "tidy", "lightly tidied" and "Tidying" on every screen (D-074) [High]
 - Status: ready (FT-54 answered by D-074 and D-086; visible strings done per grep; verify journey capture text, then close). Mode: agent. Owner: content, mobile engineer. Milestone: M-JR. Size: M. Depends on: BL-356.
@@ -1384,12 +1451,20 @@ Note on D-051: `docs/DECISIONS.md` on `develop` has D-051 "Standard over custom"
 - Test: `apps/mobile/test/perf.sql.test.ts` (new) and a job in `.github/workflows/ci.yml`.
 
 #### BL-409 Accessibility evidence in CI: AX5 snapshots, RN accessibility lint, VoiceOver names for icon-only controls [High]
-- Status: partly done (PR #1539: AX5 evidence flow, tree export and unnamed-control lint; the CI patch is only proposed and the VoiceOver run is not filed). Mode: agent. Owner: QA engineer, design systems. Milestone: M-JR. Size: L.
+- Status: partly done (PR #1539: AX5 evidence flow, tree export and the unnamed-control lint in `npm test`; the CI patch is only proposed, now BL-2133; the VoiceOver run on a device is BL-1619 and BL-1626). Mode: agent. Owner: QA engineer, design systems. Milestone: M-JR. Size: L.
 - Severity: major. Raised by: design, quality (5 findings). Steps: J06-01, J10-01, J10-04; system-wide (`_journey` entries).
 - Satisfies: LEGAL-REQ-051; BL-279 (manual scripts and evidence).
 - Scope: AX5 screenshot tests in the web journey run (E2E-15). An RN accessibility lint rule in CI. Step JSON exports role, name and order from the accessibility tree. Explicit labels for Aa, gear, X, back, play, Hear it, remove name and the scrubber. The VoiceOver script run is filed in `docs/qa/evidence`.
 - Done when: CI fails on an unlabeled icon-only control. Step JSON includes roles and names. AX5 screenshots exist for Review, Letter, Settings and the Plus gate.
 - Test: a11y assertion in `apps/mobile/e2e-web/support/journey.ts`; accessibility lint job in `.github/workflows/ci.yml`.
+
+#### BL-2133 Accessibility evidence in CI: make the proposed workflow patch apply and pin it (from BL-409)
+- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M-JR. Size: S. Depends on: none.
+- Satisfies: LEGAL-REQ-051; BL-279.
+- Scope: `docs/ops/proposed/workflows/a11y-evidence.patch` creates `.github/workflows/a11y-evidence.yml` (job `ax5`, path filtered, not required, `A11Y_STRICT=1`). (1) Refresh it so `git apply --check` exits 0 against develop, and put the exact apply command at the top of `docs/ops/proposed/ax5-evidence.md`; (2) add `scripts/ci/proposed-patch-applies.test.mjs`, which runs `git apply --check` on this patch in a temp worktree and fails when it no longer applies, so the patch cannot rot while it waits; (3) list in `ax5-evidence.md` what the job does not prove (a browser tree is not VoiceOver; BL-1624 carries the gap list). Karma applies the patch; nothing under `.github/` changes in this PR.
+- Wiring: add the test file to the root `test` script in `package.json`.
+- Done when: the test passes on develop and fails on a patch edited to touch a missing path; the PR that applies the patch cites this id.
+- Test: `scripts/ci/proposed-patch-applies.test.mjs` (new).
 
 #### BL-410 Extend the journey capture: locales, AX5, interruption states, missing screens [High]
 - Status: ready. Mode: agent. Owner: QA engineer. Milestone: M-JR. Size: M.
