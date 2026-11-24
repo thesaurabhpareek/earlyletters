@@ -14,6 +14,7 @@
  *
  * Analytics carry numbers only (letters kept, allowance, lapsed). Never throws.
  */
+import { DEFAULT_FREE_LETTERS } from '@scribe/core';
 import { track } from '../analytics/track';
 import { afterLetterKept, freeLettersAllowance, hasPlus, keepGateFor, type KeepGate } from './gates';
 import { hasWords } from './letter-ledger.logic';
@@ -42,5 +43,7 @@ export async function countAfterSave(wordsOnScreen: string): Promise<boolean> {
   const allowance = freeLettersAllowance();
   if (hasPlus() || kept !== allowance) return false;
   track('plus:allowance_reach', { allowance: Math.min(100, allowance) });
-  return allowance === 2;
+  // The line's words say "second", so it shows only while the allowance is the reviewed default (2, read from
+  // packages/core, the one place the number lives). A raised remote allowance still notes the moment, with no line.
+  return allowance === DEFAULT_FREE_LETTERS;
 }
