@@ -31,6 +31,23 @@ export function decideLaunchGate({ runs, mergeBase, isAncestor }) {
   return { ok: true, message: `launch gate open: ${id} concluded success (merge base ${mergeBase.slice(0, 9)})` };
 }
 
+/**
+ * BL-1594. Pure. Proves the tagged commit itself, not only the tip of develop: a completed, successful `iOS compile`
+ * run whose head_sha is exactly the tagged sha. runs: workflow runs as the Actions API returns them. A run that names
+ * another workflow (by path) does not count. When several runs checked the same sha, the newest decides.
+ * Not wired into any workflow yet (proposal: docs/ops/proposed/release-ios-launch-gate.md, "Tag equals checked commit").
+ */
+export function decideTagCheckedRun({ tagSha, runs }) {
+  if (!SHA.test(tagSha ?? "")) return fail("the tagged commit could not be read");
+  const same = (runs ?? []).filter((r) => r && r.head_sha === tagSha && (r.path === undefined || String(r.path).endsWith(`/${WORKFLOW}`)));
+  const newest = same.reduce((a, r) => (!a || r.created_at > a.created_at || (r.created_at === a.created_at && r.id > a.id) ? r : a), null);
+  if (!newest) return fail(`no iOS compile run checked the tagged commit ${tagSha.slice(0, 9)}`);
+  const id = `run ${newest.id} on ${tagSha.slice(0, 9)}`;
+  if (newest.status !== "completed") return fail(`${id} is ${newest.status}, not finished`);
+  if (newest.conclusion !== "success") return fail(`${id} concluded ${newest.conclusion ?? "with no result"}`);
+  return { ok: true, message: `tagged commit checked: ${id} concluded success` };
+}
+
 /** IO wrapper with injectable readers; any read error fails closed. */
 export async function gate({ listRuns, mergeBase, isAncestor }) {
   try {
