@@ -354,16 +354,16 @@ export function computeInsights(input: InsightsInput): InsightsReport {
     }
 
     // Verifier refusals
-    const reasons = [...d.splitOver('machine_edit_rejected', 'reason', last4).entries()].sort((a, b) => b[1] - a[1]);
+    const reasons = [...d.splitOver('capture:edit_decline', 'reason', last4).entries()].sort((a, b) => b[1] - a[1]);
     const rejTotal = reasons.reduce((n, [, v]) => n + v, 0);
     const notVetted = rejTotal ? (reasons.find(([k]) => k === 'not_vetted_for_language')?.[1] ?? 0) / rejTotal : null;
     metrics.push({ key: 'not_vetted_share', label: 'Verifier refusals for language tables not signed off (4 weeks, device)', value: rejTotal >= 30 ? notVetted : null, previous: null, unit: 'rate', source: 'device', week: lw });
     if (rejTotal >= 30 && notVetted !== null && notVetted > 0.2) {
-      const types = [...d.splitOver('machine_edit_rejected', 'edit_type', last4).entries()].sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(', ');
+      const types = [...d.splitOver('capture:edit_decline', 'edit_type', last4).entries()].sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(', ');
       propose({
         id: 'not-vetted-for-language', area: 'quality', title: 'Sign off the language tables the cleaner keeps asking for',
         problem: `${pct(notVetted)} of refused machine edits in the last 4 weeks were refused because a language pack table is not signed off.`,
-        evidence: [`device machine_edit_rejected by reason: ${reasons.slice(0, 5).map(([k, v]) => `${k} ${v}`).join(', ')}`, `by edit type: ${types || 'n/a'}`],
+        evidence: [`device capture:edit_decline by reason: ${reasons.slice(0, 5).map(([k, v]) => `${k} ${v}`).join(', ')}`, `by edit type: ${types || 'n/a'}`],
         hypothesis: 'Letters in a newly added language get fewer slips fixed than English letters, because its filler or agreement tables are still pending review.',
         change: 'Have the language owner review and sign off the pending tables for the edit types above (packs/text-rules), then publish the packs.',
         metric: 'not_vetted_for_language share of refusals under 5%.',

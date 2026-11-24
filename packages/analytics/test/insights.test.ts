@@ -126,7 +126,7 @@ describe('content guard', () => {
   it('a canary smuggled into raw device rows can never reach a written report', () => {
     const input = syntheticInput(DATE);
     // Bypass the parser on purpose: the guard is the last line.
-    input.device!.rows.push(...[0, 1, 2, 3].map((i) => ({ week: input.device!.funnel[8 + i].week, event: 'machine_edit_rejected', dim: 'reason', value: 'Asha', events: 900, people: 90 })));
+    input.device!.rows.push(...[0, 1, 2, 3].map((i) => ({ week: input.device!.funnel[8 + i].week, event: 'capture:edit_decline', dim: 'reason', value: 'Asha', events: 900, people: 90 })));
     expect(() => assertContentFree(renderReport(computeInsights(input)))).toThrow(ContentGuardError);
   });
 });
@@ -148,8 +148,8 @@ describe('HogQL queries and parsing', () => {
   it('keeps only catalogue values; anything else becomes other', () => {
     expect(catalogueValue('system:pack_download_update', 'failure', 'no_space')).toBe('no_space');
     expect(catalogueValue('system:pack_download_update', 'failure', 'Asha')).toBe('other');
-    expect(catalogueValue('machine_edit_rejected', 'count', 3)).toBe('3');
-    expect(catalogueValue('machine_edit_rejected', 'count', 99999)).toBe('other');
+    expect(catalogueValue('capture:edit_decline', 'count', 3)).toBe('3');
+    expect(catalogueValue('capture:edit_decline', 'count', 99999)).toBe('other');
     expect(catalogueValue('family:invite_create', 'shared', true)).toBe('true');
     const rows = parseBreakdownRows('system:pack_download_update', 'failure', [
       ['2026-09-28T00:00:00Z', 'no_space', 12, 11],

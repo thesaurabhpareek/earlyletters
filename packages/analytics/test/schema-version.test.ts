@@ -68,7 +68,7 @@ describe('property naming', () => {
     for (const [name, spec] of Object.entries(EVENTS)) {
       expect(Object.keys(spec.props), name).not.toContain('ordinal');
     }
-    for (const name of ['onboarding:book_create', 'child_switched'] as const) {
+    for (const name of ['onboarding:book_create', 'capture:child_update'] as const) {
       expect(Object.keys(EVENTS[name].props), name).toContain('child_ordinal');
     }
   });

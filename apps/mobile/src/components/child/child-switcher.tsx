@@ -62,7 +62,7 @@ export function ChildSwitcher() {
           options={children.map((ch) => ({ value: ch.id, label: fill(copy.book.title, { child: ch.name }), description: currentMonthLine(ch) }))}
           onChange={(id) => {
             select(id);
-            track('child_switched', { child_ordinal: ordinalOf(id), surface: 'book' });
+            track('capture:child_update', { child_ordinal: ordinalOf(id), surface: 'book' });
           }}
           onSelect={close}
         />
