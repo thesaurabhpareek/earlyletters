@@ -53,8 +53,8 @@ export interface AnalyticsOptions {
   /** Where consent and the random id persist. Defaults to memory (tests). */
   storage?: KeyValueStorage;
   randomId?: () => string;
-  /** Forget one retired id on the server; true only when acknowledged (ER-A04). Unset keeps every retired id. */
-  forgetRetiredId?: (id: string) => boolean | Promise<boolean>;
+  /** Forget these retired ids on the server in one call; true only when all are acknowledged (ER-A04, BL-2163). Unset keeps every retired id. */
+  forgetRetiredId?: (ids: string[]) => boolean | Promise<boolean>;
   /** Consent version this build asks for ("major.minor"). A newer major asks again (TDD 05 X-13). */
   consentVersion?: string;
   /** Called for every allowlist violation. Throw here in dev builds. */
