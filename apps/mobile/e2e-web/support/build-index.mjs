@@ -171,7 +171,7 @@ These exist in the iOS app and could not be shown by the web build. Where a clos
 - **Add a child form** (empty name error, long name): it sits behind the Plus gate for a second book, which cannot be passed without StoreKit. The empty-name and long-name rules are shown in first run instead (J01-05, J01-06).
 - **Notifications**: the iOS alert straight from the switch, the schedule, delivery and tapping a reminder. Web lands on the "notifications are off" state (J13-02).
 - **Export success**: building the ZIP and the iOS share sheet need the file system; web shows the failure card (J15-02).
-- **Language pack downloads**: web has no pack folder, so nothing downloads and Storage shows the empty line. The Spoken language and Storage screens are captured (J26); the language picker sheet in first run (J01-12) and the Recordings screen (J14-01) are too.
+- **Language pack downloads**: web has no pack folder, so nothing downloads and Storage shows the empty line. The Spoken language and Storage screens render on web and are checked by the J26 flow; the language picker sheet in first run (J01-12) and the two Recordings screens, Where your letters live (J14-01) and Your words (J14-02), are captured.
 - **Sharing sheets and external links**: Terms, Privacy Policy and the Help mail open Safari or Mail.
 - **Haptics, VoiceOver announcements, Dynamic Type, Large Content Viewer, keyboard autocorrect.**
 - **Interruptions and recovery**: a phone call or Siri during recording, the app going to the background, a kill mid-recording and the launch sweep that keeps stray takes.
