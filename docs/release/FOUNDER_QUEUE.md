@@ -11,6 +11,9 @@
 > - Republish the signed content pack with the signing key, so `supabase/functions/content/published.ts` serves the reworded onboarding story lines from `packages/content/src/stories.en.ts` (PR #1644). Only that file of the PR is signed into the pack; its other changed files (`strings.en.ts`, `pages.en.ts`, tests, docs) ship with the app build and the website, not with the pack.
 > - Click Review deployments and Approve on the `app-store` deployment of the `ios-v1.0.0-rc.1` run in Actions, Release iOS, so the TestFlight build starts (row 7).
 > - The four rows above are rows 5, 1, 2 and 7 of "Founder session sheet" below; do them in the sheet's order, with the checks there.
+> - Switch on the before-user-created hook in the hosted Supabase Dashboard (Authentication, Hooks, `public.hook_before_user_created`) (BL-2208).
+> - Type the staging service credentials into the environment that block 8 of the T11 run sheet names for the AL-07 sole-parent drill (BL-2210).
+> - The two rows above are not in the sheet; do the hook first, then the credentials.
 > - When BL-1235 P5 to P8 merge and BL-1886 is met (D-170, CR-186: analytics stays off in every profile until both hold, then BL-2003 turns it on in preview and testflight; date not set, Karma writes it here when both hold): create the PostHog account and one project, choose the US region, and type the project key (`phc_...`) into the vendor console and the EAS variable only (row 10). The US choice is the exec ruling's; D-170 itself leaves the region open as D-163 did, so it is [UNVERIFIED] in `docs/DECISIONS.md`. PR #1086 is no longer the trigger.
 > - Read the hosted auth rate limits in the Supabase console, with row 4 (BL-1551, row 11).
 > - Set the nightly backup secrets in the private backup repository (BL-566, D-159, row 12).
