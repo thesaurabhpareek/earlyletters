@@ -51,13 +51,24 @@ const esc = (s: string): string => s.replace(/\$/g, '\\$');
 
 /**
  * BL-1843: the paths that call `name`, found through aliases and not only by the text `name(`. A caller is seen when it
- * uses the name under another name: a renamed import (`import { name as x }`), a const alias (`const x = name`), a
- * renamed destructure (`const { name: x } = mod`), a namespace call (`mod.name(`), or a name another file re-exports
- * under a new one (`export { name as y }`, `export const y = name`), which is followed across files until nothing new
- * turns up. A call with type arguments (`name<T>(`) and a computed access with a plain string key (`mod['name'](`) are
- * calls too (BL-1879). Not caught, by design: a key built at run time (`mod['apply' + 'Edits'](`, `mod[key](`), because no
- * text scan can know what it holds; the plain-text floor in `guardCallers` and code review stay the backstop. A line that only re-exports is not a call. Files are `{ path, text }` so a planted case can sit beside the
- * real tree without being written to disk.
+ * uses the name under another name: a renamed import (`import { name as x }`), a const alias (`const x = name`, with or
+ * without a semicolon), a renamed destructure (`const { name: x } = mod`), a namespace call (`mod.name(`), or a name
+ * another file re-exports under a new one (`export { name as y }`, `export const y = name`), which is followed across
+ * files until nothing new turns up.
+ *
+ * Also calls (BL-1879, BL-1914): a call with type arguments (`name<T>(`, including a function-typed argument such as
+ * `name<(a: string) => void>(`), a computed access with a plain string key (`mod['name'](`), an optional call
+ * (`name?.(`), a parenthesised callee (`(name)(`), and `name.call(`, `name.apply(` and `name.bind(`.
+ *
+ * Not caught, written as limits: a key built at run time (`mod['apply' + 'Edits'](`, `mod[key](`), because no text
+ * scan can know what it holds; an alias that goes through an object value (`const o = { run: name }` then `o.run(`),
+ * because the name is then used as a value and not called; a type argument longer than 200 characters. The plain-text
+ * floor in `guardCallers` and code review stay the backstop. A line that only re-exports is not a call. Files are
+ * `{ path, text }` so a planted case can sit beside the real tree without being written to disk. Not built: a check on
+ * the import graph of who may import `name` (BL-1914 item 5); the allow-list of callers is the guard for now.
+ *
+ * Every pattern that can run across a long line is capped (`{0,200}`, and the destructure body holds no `{`): without the cap a 200,000 character line of
+ * `const {` took 24 s and could hang CI.
  */
 export function callersOf(files: readonly { path: string; text: string }[], name: string): string[] {
   const code = files.map((f) => ({ path: f.path, text: stripComments(f.text) }));
@@ -85,16 +96,19 @@ export function callersOf(files: readonly { path: string; text: string }[], name
           }
         }
       }
-      grew = grow(new RegExp(`\\b(?:const|let|var)\\s+(${ID})\\s*=\\s*(${ID})\\s*;`, 'g'), f.text, 2, 1) || grew;
-      grew = grow(new RegExp(`\\b(?:const|let|var)\\s*\\{[^}]*?\\b(${ID})\\s*:\\s*(${ID})\\s*[,}]`, 'g'), f.text, 1, 2) || grew;
-      grew = grow(new RegExp(`\\bexport\\s+const\\s+(${ID})\\s*=\\s*(${ID})\\s*;`, 'g'), f.text, 2, 1) || grew;
+      grew = grow(new RegExp(`\\b(?:const|let|var)\\s+(${ID})\\s*=\\s*(${ID})\\s*(?:;|$)`, 'gm'), f.text, 2, 1) || grew;
+      grew = grow(new RegExp(`\\b(?:const|let|var)\\s*\\{[^{}]{0,200}?\\b(${ID})\\s*:\\s*(${ID})\\s*[,}]`, 'g'), f.text, 1, 2) || grew;
+      grew = grow(new RegExp(`\\bexport\\s+const\\s+(${ID})\\s*=\\s*(${ID})\\s*(?:;|$)`, 'gm'), f.text, 2, 1) || grew;
     }
   }
   // BL-1879: a generic call `name<T>(` and a computed access with a plain string key `x['name'](` are calls too.
-  // The type arguments may hold no `;`, `{`, `}` or `=`; a stray `name < a > (b)` comparison is only ever an extra flag.
-  const generic = '(?:\\s*<[^;{}=]*?>)?';
+  // The type arguments may hold no `;`, `{`, `}` or a lone `=` (an arrow `=>` is allowed, BL-1914), and at most 200 characters,
+  // so the scan cannot run away on a long line; a stray `name < a > (b)` comparison is only ever an extra flag.
+  const generic = '(?:\\s*<(?:=>|[^;{}=]){0,200}?>)?';
+  const open = '\\s*(?:\\?\\.\\s*)?\\(';
+  const via = '(?:\\s*\\.\\s*(?:call|apply|bind))?';
   const call = new RegExp(
-    `(?<![\\w$.])(?:${alt()})${generic}\\s*\\(|\\b${ID}\\.(?:${alt()})${generic}\\s*\\(|\\b${ID}\\s*\\[\\s*(['"\`])(?:${alt()})\\1\\s*\\]${generic}\\s*\\(`,
+    `(?<![\\w$.])(?:${alt()})${via}${generic}${open}|\\(\\s*(?:${alt()})\\s*\\)\\s*\\(|\\b${ID}\\.(?:${alt()})${via}${generic}${open}|\\b${ID}\\s*\\[\\s*(['"\`])(?:${alt()})\\1\\s*\\]${generic}${open}`,
   );
   return code.filter((f) => call.test(f.text)).map((f) => f.path);
 }
@@ -214,6 +228,57 @@ describe('[FR-AIS-02] every machine edit goes through the verifier, with no bypa
     expect(guardCallers([...real, ...only('planted/computed.ts'), ...only('planted/generic.ts')], 'applyEdits').sort()).toEqual(
       ['planted/computed.ts', 'planted/generic.ts', ...REAL_ONLY].sort(),
     );
+  });
+
+  // BL-1914: more call shapes, and the written limits. Each caught shape must be flagged; each limit is pinned so a change shows.
+  const IMP = "import { applyEdits } from '@scribe/core';\n";
+  const caught1914: Record<string, string> = {
+    'planted/fn-generic.ts': `${IMP}export const run = (r: string, e: unknown[]) => applyEdits<(a: string) => void>(r, e);`,
+    'planted/optional-call.ts': `${IMP}export const run = (r: string, e: unknown[]) => applyEdits?.(r, e);`,
+    'planted/optional-ns.ts': "import * as core from '@scribe/core';\nexport const run = (r: string, e: unknown[]) => core.applyEdits?.(r, e);",
+    'planted/paren-callee.ts': `${IMP}export const run = (r: string, e: unknown[]) => (applyEdits)(r, e);`,
+    'planted/dot-call.ts': `${IMP}export const run = (r: string, e: unknown[]) => applyEdits.call(null, r, e);`,
+    'planted/dot-bind.ts': `${IMP}export const run = (r: string, e: unknown[]) => applyEdits.bind(null)(r, e);`,
+    'planted/ns-apply.ts': "import * as core from '@scribe/core';\nexport const run = (r: string, e: unknown[]) => core.applyEdits.apply(null, [r, e]);",
+    'planted/alias-no-semicolon.ts': `${IMP}const tweak = applyEdits\nexport const run = (r: string, e: unknown[]) => tweak(r, e)`,
+    'planted/object-shorthand.ts': `${IMP}const o = { applyEdits }\nexport const run = (r: string, e: unknown[]) => o.applyEdits(r, e)`,
+  };
+  const limits1914: Record<string, string> = {
+    // Limit: the name is used as a value inside an object under another key, so no call of the name appears in the text.
+    'planted/object-renamed-value.ts': `${IMP}const o = { run: applyEdits };\nexport const go = (r: string, e: unknown[]) => o.run(r, e);`,
+  };
+  const files1914 = (rec: Record<string, string>) => Object.entries(rec).map(([path, text]) => ({ path, text }));
+
+  it('[BL-1914] a function-typed generic argument, an optional call, a parenthesised callee, .call/.apply/.bind, an alias with no semicolon and an object shorthand are all flagged', () => {
+    for (const f of files1914(caught1914)) expect(callersOf([f], 'applyEdits'), f.path).toEqual([f.path]);
+  });
+
+  it('[BL-1914] the one written limit: an alias through an object value under another key is not seen (only the old plain scan floor remains)', () => {
+    for (const f of files1914(limits1914)) {
+      expect(callersOf([f], 'applyEdits'), f.path).toEqual([]);
+      expect(guardCallers([f], 'applyEdits'), f.path).toEqual([]);
+    }
+  });
+
+  it('[BL-1914] the real tree is still only pipeline.ts and verify.ts with the wider patterns (no false positive)', () => {
+    const real = files.map((f) => ({ path: rel(f), text: read(f) }));
+    expect(callersOf(real, 'applyEdits').sort()).toEqual(REAL_ONLY);
+    expect(guardCallers(real, 'applyEdits').sort()).toEqual(REAL_ONLY);
+  });
+
+  it('[BL-1914] a very long line returns in under a second (the cap on the type-argument and destructure scans)', () => {
+    const lines = [
+      { path: 'planted/long-destructure.ts', text: 'const {'.repeat(200_000) },
+      { path: 'planted/long-generic.ts', text: 'applyEdits<'.repeat(20_000) + 'a'.repeat(100_000) },
+      { path: 'planted/long-generic-ns.ts', text: 'core.applyEdits<' + 'a'.repeat(200_000) },
+      { path: 'planted/long-alias.ts', text: 'const x = ' + ' '.repeat(200_000) },
+    ];
+    for (const f of lines) {
+      const t0 = performance.now();
+      callersOf([f], 'applyEdits');
+      guardCallers([f], 'applyEdits');
+      expect(performance.now() - t0, f.path).toBeLessThan(1000);
+    }
   });
 
   it('[BL-1843] the old text-only scan misses the aliased callers the new scan finds (the defect, shown)', () => {
