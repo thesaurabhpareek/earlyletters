@@ -129,7 +129,7 @@ The optional "From Mama" line at Review (tappable, owner default, typed name, fi
 
 ## 6. Accessibility Nutrition Labels: what a simulated sitting may support
 
-Today's draft (`docs/store/app-store-connect-1.0.md` section 5): Dark Interface is the only one drafted; everything else stays unclaimed until an audit passes. This file changes none of that. It records the most a simulated run could back, for the exec-team review to rule on (not legal advice; Claude roles).
+Today's draft (`docs/store/app-store-connect-1.0.md` section 5) drafts Dark Interface and leaves the rest unclaimed. CDesO-22 is the stricter rule and governs: no label, Dark Interface included, is declared until the device walk passes. This file declares nothing. It records the most a simulated run could back, for the exec-team review to rule on (not legal advice; Claude roles).
 
 | Label | Can the simulator back it | Position |
 |---|---|---|
@@ -145,7 +145,7 @@ The task brief that created this file cites exec rulings 7 and 12; I did not fin
 
 ## 7. Questions the file must answer when it is run
 
-1. The 27 Nov gate question (BL-1700): do the Listen, Review and Keep rows read `simulated: held` at the SE 3 size and AX5? Answer: `not answered, sitting not run`. A `simulated: held` answer is evidence for the exec review only, never a gate result or a release-note word (D-172, CDesO-22).
+1. The 27 Nov gate question (BL-1700): do the Listen, Review and Keep rows read `simulated: held` at the SE 3 size and AX5? Answer: `not answered, sitting not run`. A `simulated: held` answer is evidence for the exec review only, never an SE 3 gate result or a release-note word (D-172).
 2. Does a simulated reading keep DSR-024 at P1 or make it P0? For the exec-team review to rule; named here, not decided. Until then: P1 as filed.
 3. The BL-1794 arrival check (PER4-005): `not reached` in a simulator; stays a device item.
 4. Each failure becomes its own ticket (BL-1700 Scope), with the persona or row id in the title. None yet.
