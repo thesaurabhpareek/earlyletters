@@ -38,6 +38,8 @@ export const STORAGE_KEYS = {
   consentMeta: 'scribe.analytics.consent_meta',
   /** Acts not yet uploaded through `record_policy_act` (TDD 05 X-13). */
   pendingActs: 'scribe.analytics.pending_acts',
+  /** `1` once the in-app disclosure of the `collect_by_default` policy has been shown (ER-A03). On-device, no content. */
+  disclosure: 'scribe.analytics.disclosure_shown',
 } as const;
 
 export const CURRENT_CONSENT_VERSION = '1.0';
@@ -118,6 +120,17 @@ export class ConsentStore {
   }
 
   private pending: PendingConsentAct[] = [];
+  private disclosed = false;
+
+  /** True once the disclosure has been shown and recorded. Nothing under `collect_by_default` passes before it. */
+  get disclosureShown(): boolean {
+    return this.disclosed;
+  }
+
+  async recordDisclosure(): Promise<void> {
+    this.disclosed = true;
+    await this.storage.set(STORAGE_KEYS.disclosure, '1');
+  }
 
   private get version(): string {
     return this.options.currentVersion ?? CURRENT_CONSENT_VERSION;
@@ -206,6 +219,7 @@ export class ConsentStore {
       retired = [];
     }
     this.pending = parsePending(await this.storage.get(STORAGE_KEYS.pendingActs));
+    this.disclosed = (await this.storage.get(STORAGE_KEYS.disclosure)) === '1';
     // A major bump re-asks WITHOUT queueing a withdraw act: intended, the person did not act (the uploader spec says so).
     // After an erase (no meta row) a build above major 1 reports unknown where a 1.0 build reports denied: deliberate.
     // A grant or decline from before versions existed counts as major 1.
@@ -298,6 +312,8 @@ export class ConsentStore {
     await this.storage.remove(STORAGE_KEYS.retired);
     this.pending = [];
     await this.storage.remove(STORAGE_KEYS.pendingActs);
+    this.disclosed = false;
+    await this.storage.remove(STORAGE_KEYS.disclosure);
     await this.storage.remove(STORAGE_KEYS.consentMeta);
     await this.storage.set(STORAGE_KEYS.consent, this.snap.status === 'unknown' ? 'unknown' : 'denied');
   }
