@@ -8,12 +8,13 @@ import { serve } from './server';
 const ROOT = path.resolve(__dirname, '../..'); // apps/mobile
 
 /**
- * Four builds of the same app, each from the env in builds.ts (a test reads that file; nothing here sets an app env):
+ * Five builds of the same app, each from the env in builds.ts (a test reads that file; nothing here sets an app env):
  *  - plain: no seed switch.
  *  - seed: the web design preview switch (`?seed=asha` fills the on-device database with the fictional family), so states
  *    that need many letters or a transcript (the web has no speech model) show on the real screens.
  *  - server-on: server features on (D-100; the TestFlight alpha of D-106) for the co-parent flows (j21-coparent.flow.ts).
  *    It points at a Supabase host nothing listens on; the flows answer with a mocked server (support/mock-server.ts).
+ *  - store (BL-1991): seed with the production app env, so the store app's Plus and free-letter behaviour shows (the others are alpha).
  *  - seam (BL-410): seed plus the web presentation seam (`?e2eFontScale=`, `?e2eLang=`); the only build with the e2e switch.
  * All under .results/ or the two older dist folders, which git ignores.
  */
@@ -38,7 +39,7 @@ export default async function globalSetup() {
     const s = await serve(dist);
     urls.push(`${dist} at ${s.url}`);
     closers.push(s.close);
-    process.env[{ plain: 'E2E_WEB_URL', seed: 'E2E_WEB_SEED_URL', 'server-on': 'E2E_WEB_ON_URL', seam: 'E2E_WEB_SEAM_URL' }[b.name]] = s.url;
+    process.env[{ plain: 'E2E_WEB_URL', seed: 'E2E_WEB_SEED_URL', 'server-on': 'E2E_WEB_ON_URL', seam: 'E2E_WEB_SEAM_URL', store: 'E2E_WEB_STORE_URL' }[b.name]] = s.url;
   }
   console.log(`[e2e-web] serving ${urls.join(', ')} (mock server ${MOCK_SUPABASE_URL})`);
   return async () => {
