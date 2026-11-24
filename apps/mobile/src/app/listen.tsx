@@ -81,6 +81,12 @@ import {
   setRecorderProbe,
 } from '@/lib/speech-gate';
 import { copy, fill, pendingCopy } from '@/lib/copy';
+import { typedOfferShown } from '@/components/capture/words-state.logic';
+import type { SpeechLanguage } from '@/lib/models/catalog';
+import { authorSpeechLanguage } from '@/lib/models/author-language';
+import { speechDownloadChoice } from '@/lib/models/speech-consent';
+import { installedPathsFor } from '@/lib/models/speech-packs';
+import { useSpeechDownload } from '@/lib/transcription-queue/use-words';
 import { photos } from '@/lib/photos/copy';
 import { haptic } from '@/lib/haptics';
 import { useMotion, useReducedMotion } from '@/lib/motion';
@@ -99,6 +105,15 @@ const DISC = AURA_SIZE / 2;
 /** Free space now, or null when unknown. The web preview has no file system, so it never blocks there. */
 function freeBytesNow(): number | null {
   return Platform.OS === 'web' ? null : freeBytesFrom(() => Paths.availableDiskSpace);
+}
+
+/** True when the speech files for the language are on this phone; where they cannot be read (web preview) it is false. */
+function speechOnThisPhone(language: SpeechLanguage): boolean {
+  try {
+    return installedPathsFor(language) !== null;
+  } catch {
+    return false;
+  }
 }
 
 export default function Listen() {
@@ -139,6 +154,11 @@ export default function Listen() {
   const startTick = useRef(createStartTick(tapped.current)).current;
   const [phase, setPhase] = useState<ListenPhase>(tapped.current ? 'asking' : 'ready');
   const withPhoto = phase === 'ready' && !!pendingPhoto?.source; // a picture chosen on Home waits at Ready
+  // BL-1999 (spec 15): read-only. The language and her choice cannot change while Listen is open; the download state
+  // re-renders this screen on its own ticks. Nothing here starts a download or writes the choice (D-087).
+  const [speechLanguage] = useState(authorSpeechLanguage);
+  const [speechChoice] = useState(speechDownloadChoice);
+  const speech = useSpeechDownload(speechLanguage);
   const announcedMinute = useRef(0);
   /** The labels VoiceOver last could hear: they hold still while capturing (listen.logic `stableLabels`, F04-REQ-041). */
   const labelsRef = useRef<RoomLabels | null>(null);
@@ -596,6 +616,18 @@ export default function Listen() {
               who will not speak aloud can still start a letter from the picture. Type keeps the pending picture. */}
           {room.startControl && withPhoto ? (
             <Button variant="quiet" size="md" label={photos.capture.typeButton} onPress={typeInstead} testID="listen.photo.type" />
+          ) : null}
+          {/* BL-1999: no speech model on the phone and no yes in motion, so typing is open before she records. The
+              picture's own Type above already is that offer, so the two never show together. */}
+          {!withPhoto &&
+          typedOfferShown({
+            startControl: room.startControl,
+            onThisPhone: speechOnThisPhone(speechLanguage),
+            choice: speechChoice,
+            hold: speech.hold,
+            failure: speech.failure,
+          }) ? (
+            <Button variant="quiet" size="md" label={copy.errors.micDenied.typeButton} onPress={typeInstead} testID="listen.type" />
           ) : null}
           {!large && clockAndLine}
           <View className="items-center gap-1 px-8">
