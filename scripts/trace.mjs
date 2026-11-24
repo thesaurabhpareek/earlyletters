@@ -267,16 +267,20 @@ export function flowTags(src, pick = extractIds) {
 const SKIP_DIRS = new Set(['node_modules', '.git', '.expo', 'dist', 'build', 'coverage', 'ios', 'android', '.turbo']);
 
 // Other checkouts of this repo (agent worktrees) hold stale copies of every test and spec; reading them
-// reports findings that are not on this branch. Skip `.claude/worktrees` and any `wt-*` directory.
-const isWorktreeDir = (parent, name) => /^wt-/.test(name) || (name === 'worktrees' && path.basename(parent) === '.claude');
+// reports findings that are not on this branch. Skip only `<repo>/.claude/worktrees` and a `wt-*` directory
+// directly under the repo root. Anywhere else a `wt-*` directory is ordinary content and is read, so a PR
+// cannot hide a test or a requirement row from trace by naming a folder `wt-x`.
+const isWorktreeDir = (repoRoot, parent, name) => repoRoot != null
+  && ((parent === repoRoot && /^wt-/.test(name)) || (name === 'worktrees' && parent === path.join(repoRoot, '.claude')));
 
-export function walk(dir, keep, acc = []) {
+/** `repoRoot` (optional) is the repo root when `dir` is it; pass it so worktree copies are skipped. */
+export function walk(dir, keep, acc = [], repoRoot = null) {
   let entries;
   try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return acc; }
   for (const e of entries) {
     if (e.isSymbolicLink()) continue;
     const p = path.join(dir, e.name);
-    if (e.isDirectory()) { if (!SKIP_DIRS.has(e.name) && !isWorktreeDir(dir, e.name)) walk(p, keep, acc); } else if (keep(p)) acc.push(p);
+    if (e.isDirectory()) { if (!SKIP_DIRS.has(e.name) && !isWorktreeDir(repoRoot, dir, e.name)) walk(p, keep, acc, repoRoot); } else if (keep(p)) acc.push(p);
   }
   return acc.sort();
 }
@@ -356,7 +360,7 @@ export function collect({ repo, docsRoot }) {
   let taggedTitles = 0;
   // This script's own tests hold fixture titles, not traces.
   const self = path.join(path.dirname(fileURLToPath(import.meta.url)), 'trace.test.mjs');
-  for (const f of walk(repo, isTestFile).filter((f) => f !== self)) {
+  for (const f of walk(repo, isTestFile, [], repo).filter((f) => f !== self)) {
     for (const t of testTitles(read(f))) {
       taggedTitles++;
       for (const id of t.ids) {
@@ -623,7 +627,7 @@ export function collectNs({ repo, register }) {
   const tests = new Map(), journeys = new Map(), cited = new Map(), jnAt = new Map();
   const pick = (t) => [...nsBracketed(t), ...(t.match(/\[J-N\d+\]/g) || []).map((x) => x.slice(1, -1))];
   let skipped = 0;
-  const titled = walk(repo, isTestFile).filter((f) => f !== self).map((f) => [f, false])
+  const titled = walk(repo, isTestFile, [], repo).filter((f) => f !== self).map((f) => [f, false])
     .concat(walk(path.join(repo, 'apps', 'mobile', 'e2e-web'), (p) => /\.flow\.ts$/.test(p)).map((f) => [f, true]));
   for (const [f, journey] of titled) {
     for (const t of testTitles(read(f), pick)) {
