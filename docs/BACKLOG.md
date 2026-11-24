@@ -10707,7 +10707,7 @@ Source: the review work of 23 to 24 Nov 2026 (the e2e-web run, PR #1835, PR #182
 - Source: review work of 23 to 24 Nov 2026. Not verified: only the two lines named were read; the rulings were not read, so which value is intended for the store build is not confirmed.
 
 #### BL-2013 DATA_CLASSIFICATION: the `discard.failures.<draft id>` row says Planned and has no retention or deletion path
-- Status: blocked (PR #1835 merges first; `product` flips this row to ready after the merge). Mode: agent. Owner: privacy engineer. Milestone: M15. Size: S. Depends on: PR #1835 (not a BL id; the `product` agent reads the merge and sets ready, no one else flips it).
+- Status: ready (PR #1835 merged as `67234ac11` on develop, so the code to document exists; the exec-team review below is still needed before the edit publishes). Mode: agent. Owner: privacy engineer. Milestone: M15. Size: S. Depends on: none.
 - Priority: Medium. Gate: exec-team review before the edit publishes (legal path).
 - Satisfies: refines BL-977; LEGAL-REQ and DATA-REQ cited, not changed; D-172.
 - Problem and evidence: `docs/legal/DATA_CLASSIFICATION.md` (line 822 area) lists "Planned: `discard.failures.<draft id>` (NS-09, BL-977)" with class "L3 key, L2 value" and "A retry count", and no retention or deletion path. PR #1835 builds the counter, so it is no longer planned.
@@ -10716,7 +10716,7 @@ Source: the review work of 23 to 24 Nov 2026 (the e2e-web run, PR #1835, PR #182
 - Source: review work of 23 to 24 Nov 2026. Not verified: #1835's final code was not read, so the deletion paths are not confirmed; the row's class was copied from the existing line.
 
 #### BL-2014 Tests for #1835: merge-adopt deletes the `discard.failures` key, and Erase everything clears it
-- Status: blocked (PR #1835 merges first; `product` flips this row to ready after the merge). Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: PR #1835 (not a BL id; the `product` agent reads the merge and sets ready, no one else flips it).
+- Status: done (already covered by `apps/mobile/test/ns09-let-go-failures-sync.test.ts` (merge adopt, `[NS-09-R15]`) and `apps/mobile/test/ns09-let-go-failures.test.ts` (Erase everything clears every stuck draft's count, `[NS-09-R15]`), which arrived with PR #1835 merged as `67234ac11`; read from the test names on 24 Nov 2026, not re-run and the remove-the-delete-line check not repeated). Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
 - Priority: Medium. Gate: none.
 - Satisfies: refines BL-977; NS-09 (rules `[NS-09-R13]` and the neighbours, cited); the Erase everything rule in `docs/legal/DELETION_AND_EXPORT_SPEC.md`.
 - Problem and evidence: PR #1835 persists a failure counter under `discard.failures.<draft id>`. A counter keyed by a draft id must go when the draft goes. Two paths need a test that names the rule: merge-adopt (the draft is adopted into a book and its key must be deleted, not left to name a draft that is gone) and Erase everything (every `discard.failures.*` key is cleared).
