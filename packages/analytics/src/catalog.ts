@@ -68,8 +68,9 @@ export const GLOBAL_PROPS = {
  * 15: wire-names step 2b, slice 1 (BL-2176, CR-212, CR-213): the `keeping` area is renamed to its wire names: `export_started` to `keeping:export_start`, `export_completed` to `keeping:export_complete`, `export_failed` to `keeping:export_fail`; `LEGACY_EVENT_NAMES` in `wire-names.ts` maps each old key to its new one. No property was added or widened, no tier changed (a snapshot test proves it), and no build has sent any of them (analytics are off in every profile, CR-186).
  * 16: wire-names step 2b, slice 2 (BL-2176, CR-212, CR-213): the `me` area is renamed: `signed_out` to `me:session_end`, `language_set` to `me:language_update`, `settings_changed` to `me:setting_update`. No property was added or widened, no tier changed, and no build has sent any of them (analytics are off in every profile, CR-186).
  * 17: wire-names step 2b, slice 3 (BL-2176, CR-212, CR-213): the `family` area is renamed: `invite_opened` to `family:invite_open`, `invite_created` to `family:invite_create`, `invite_accepted` to `family:invite_accept`, `invite_failed` to `family:invite_fail`. No property was added or widened, no tier changed, and no build has sent any of them (analytics are off in every profile, CR-186).
+ * 18: wire-names step 2b, slice 4 (BL-2176, CR-212, CR-213): the `onboarding` area is renamed: `auth_succeeded` to `onboarding:sign_in_complete`, `auth_failed` to `onboarding:sign_in_fail`, `auth_deferred` to `onboarding:sign_in_dismiss`, `child_added` to `onboarding:book_create`. No property was added or widened, no tier changed, and no build has sent any of them (analytics are off in every profile, CR-186).
  */
-export const SCHEMA_VERSION = 17;
+export const SCHEMA_VERSION = 18;
 
 /**
  * SHA-256 of `JSON.stringify(catalogShape())` per schema version. Versions 1
@@ -91,6 +92,7 @@ export const SCHEMA_FINGERPRINTS: Readonly<Record<number, string>> = Object.free
   15: '8e02055673131c1d4595d2878be8f9b86fa1eb169ad03abb926f6b3adea7e658',
   16: '8200c33bbd03df320a3737a8cd5970daefad669869bb975b52815925a284947a',
   17: '105824cb58b64312c2f6af04515e1ebbf8d530ac62792ecbe657c51a88e254ff',
+  18: 'fd0665de32a9821e6431a3ef21a7d8ca8c7e80f45c7575e4a463c60ccc7795cb',
 });
 
 // ---------------------------------------------------------------------------
@@ -106,7 +108,7 @@ export const SCHEMA_FINGERPRINTS: Readonly<Record<number, string>> = Object.free
 export const HELD_EVENTS = {
   // --- Sign-in (A section 10). Fire only after consent, which in practice
   // means sign-in from Settings, a later invite, or a new session. ----------
-  auth_failed: {
+  'onboarding:sign_in_fail': {
     area: 'entry',
     when: 'Sign-in failed or was cancelled (observed). An under-18 answer is never sent',
     reqs: ['A-NFR-013'],
@@ -130,7 +132,7 @@ export const HELD_EVENTS = {
       ),
     },
   },
-  auth_deferred: {
+  'onboarding:sign_in_dismiss': {
     area: 'entry',
     when: 'User chose Later on the sign-in sheet',
     reqs: ['PRD-REQ-016'],

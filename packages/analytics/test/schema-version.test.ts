@@ -68,22 +68,22 @@ describe('property naming', () => {
     for (const [name, spec] of Object.entries(EVENTS)) {
       expect(Object.keys(spec.props), name).not.toContain('ordinal');
     }
-    for (const name of ['child_added', 'child_switched'] as const) {
+    for (const name of ['onboarding:book_create', 'child_switched'] as const) {
       expect(Object.keys(EVENTS[name].props), name).toContain('child_ordinal');
     }
   });
 });
 
-describe('child_added never says which kind of date was entered (PPRIV-02)', () => {
+describe('onboarding:book_create never says which kind of date was entered (PPRIV-02)', () => {
   it('sends has_date as a boolean and no mode', () => {
-    const props = EVENTS.child_added.props as Record<string, PropSpec>;
+    const props = EVENTS['onboarding:book_create'].props as Record<string, PropSpec>;
     expect(props).not.toHaveProperty('mode');
     expect(props.has_date.type).toBe('bool');
     expect(JSON.stringify(props)).not.toContain('due_date');
   });
 
   it('drops a caller that still passes the old mode', () => {
-    const res = sanitizeEvent('child_added', {
+    const res = sanitizeEvent('onboarding:book_create', {
       has_date: true,
       child_ordinal: 'first',
       in_first_run: true,
@@ -93,7 +93,7 @@ describe('child_added never says which kind of date was entered (PPRIV-02)', () 
     });
     expect(res.props).not.toBeNull();
     expect(res.props).not.toHaveProperty('mode');
-    expect(res.violations).toEqual([{ kind: 'unknown_property', event: 'child_added', property: 'mode' }]);
+    expect(res.violations).toEqual([{ kind: 'unknown_property', event: 'onboarding:book_create', property: 'mode' }]);
   });
 });
 
@@ -115,7 +115,7 @@ describe('the sign-in trigger names the Keep the book re-offer (BL-1464)', () =>
     expect(SCHEMA_FINGERPRINTS[10]).toMatch(/^[0-9a-f]{64}$/);
   });
 
-  it.each(['auth_deferred'] as const)('%s (the one event the sheet sends; auth_sheet_shown is retired, BL-2175) allows third_letter beside first_letter, and still rejects any other value', (event) => {
+  it.each(['onboarding:sign_in_dismiss'] as const)('%s (the one event the sheet sends; auth_sheet_shown is retired, BL-2175) allows third_letter beside first_letter, and still rejects any other value', (event) => {
     const trigger = EVENTS[event].props.trigger as unknown as { values: string[] };
     expect(trigger.values).toEqual(expect.arrayContaining(['first_letter', 'third_letter']));
     const ok = sanitizeWith(EVENTS, event, { trigger: 'third_letter', schema_version: SCHEMA_VERSION });

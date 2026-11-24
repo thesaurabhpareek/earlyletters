@@ -53,11 +53,11 @@ describe('auth observer', () => {
     ];
     for (const s of states) see(s);
     expect(await sent()).toEqual([
-      ['auth_failed', { method: 'email', reason: 'wrong_code' }],
-      ['auth_succeeded', { method: 'email', had_local_data: true }],
+      ['onboarding:sign_in_fail', { method: 'email', reason: 'wrong_code' }],
+      ['onboarding:sign_in_complete', { method: 'email', had_local_data: true }],
       ['me:session_end', { reason: 'user' }],
-      ['auth_failed', { method: 'apple', reason: 'cancelled' }],
-      ['auth_failed', { method: 'google', reason: 'network' }],
+      ['onboarding:sign_in_fail', { method: 'apple', reason: 'cancelled' }],
+      ['onboarding:sign_in_fail', { method: 'google', reason: 'network' }],
       ['me:session_end', { reason: 'session_lost' }],
     ]);
     expect(under18).toEqual([]);

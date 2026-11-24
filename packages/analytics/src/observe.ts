@@ -20,7 +20,7 @@ type Track = Pick<Analytics, 'track'>;
 // Auth (apps/mobile src/lib/auth machine.logic.ts AuthState)
 // ---------------------------------------------------------------------------
 
-export type AuthMethodValue = V<'auth_failed', 'method'>;
+export type AuthMethodValue = V<'onboarding:sign_in_fail', 'method'>;
 
 export type AuthLike =
   | { status: 'restoring' }
@@ -36,8 +36,8 @@ const AUTH_REASONS = new Set<string>([
   'cancelled', 'network', 'expired', 'wrong_code', 'code_paused', 'rate_limited', 'invalid_email',
   'not_available', 'provider', 'session_expired', 'consent_unavailable', 'unknown',
 ]);
-const authReason = (e: string | undefined): V<'auth_failed', 'reason'> =>
-  (e && AUTH_REASONS.has(e) ? e : 'unknown') as V<'auth_failed', 'reason'>;
+const authReason = (e: string | undefined): V<'onboarding:sign_in_fail', 'reason'> =>
+  (e && AUTH_REASONS.has(e) ? e : 'unknown') as V<'onboarding:sign_in_fail', 'reason'>;
 
 const SIGNED_IN = new Set(['checkingConsent', 'needsConsent', 'ready', 'signingOut']);
 
@@ -69,16 +69,16 @@ export function createAuthObserver(a: Track, opts: AuthObserverOptions): (next: 
     if (next.status === 'awaitingCode') {
       // A code being sent is not an event (`auth_email_sent` is retired, BL-2175); a new error on the same code is.
       if (p.status === 'awaitingCode' && p.sentAt === next.sentAt && next.error && next.error !== p.error) {
-        a.track('auth_failed', { method: 'email', reason: authReason(next.error) });
+        a.track('onboarding:sign_in_fail', { method: 'email', reason: authReason(next.error) });
       }
       return;
     }
     if (next.status === 'signedOut' && (p.status === 'signingIn' || p.status === 'awaitingCode')) {
-      a.track('auth_failed', { method: method ?? (p.status === 'awaitingCode' ? 'email' : 'apple'), reason: next.error ? authReason(next.error) : 'cancelled' });
+      a.track('onboarding:sign_in_fail', { method: method ?? (p.status === 'awaitingCode' ? 'email' : 'apple'), reason: next.error ? authReason(next.error) : 'cancelled' });
       return;
     }
     if (next.status === 'checkingConsent' && next.method && !SIGNED_IN.has(p.status)) {
-      a.track('auth_succeeded', { method: next.method, had_local_data: opts.hasLocalLetters() });
+      a.track('onboarding:sign_in_complete', { method: next.method, had_local_data: opts.hasLocalLetters() });
       return;
     }
     if (next.status === 'signedOut' && SIGNED_IN.has(p.status)) {

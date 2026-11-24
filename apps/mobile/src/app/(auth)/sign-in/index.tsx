@@ -107,7 +107,7 @@ export default function SignInSheet() {
           <QuietButton
             label={s.later}
             onPress={() => {
-              track('auth_deferred', { trigger });
+              track('onboarding:sign_in_dismiss', { trigger });
               close();
             }}
             disabled={busy !== null}

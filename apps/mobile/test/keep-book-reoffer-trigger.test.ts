@@ -44,7 +44,7 @@ describe('[BL-1562] the sheet treats third_letter as the same ask as first_lette
   });
   it('reports the trigger and nothing else on the one event the sheet sends', () => {
     expect(sheet).not.toMatch(/auth_sheet_shown/);
-    expect(sheet).toMatch(/track\('auth_deferred', \{ trigger \}\)/);
+    expect(sheet).toMatch(/track\('onboarding:sign_in_dismiss', \{ trigger \}\)/);
   });
 });
 
