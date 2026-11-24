@@ -8622,12 +8622,13 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Done when: grep for 'three builds' in e2e-web and docs/release/journey finds nothing.
 
 #### BL-1594 Launch gate proves the tip of develop, not the tagged commit
-- Status: proposed (review of PR #1495). Mode: agent. Owner: platform. Milestone: M15. Size: XS. Depends on: none.
+- Status: ready. Mode: agent. Owner: platform. Milestone: M15. Size: S. Depends on: none.
 - Priority: Low. Gate: none.
-- Satisfies: none new (review follow-up, not re-read here).
-- Problem and evidence: Review A and B notes on PR #1495; docs/ops/RELEASE.md 3.4 now says the gate proves the develop tip, not the tagged commit.
-- Scope: design a check that the tagged commit is the commit the gate verified (compare the tag sha with the checked sha), as a proposal under docs/ops/proposed/; no workflow file edited.
-- Done when: a proposal with the check, its failure modes and a test table is in docs/ops/proposed/.
+- Satisfies: ADR 0022; `docs/ops/RELEASE.md` section 3.4; BL-1480 (the gate this extends).
+- Problem and evidence: review A and B notes on PR #1495. `scripts/release/launch-gate.mjs` (`decideLaunchGate`) accepts the newest completed `iOS compile` run on develop when its commit is at or after the merge base of the tagged commit and develop. Nothing compares the tagged commit itself with a commit a run checked, so a cherry-pick onto a release branch can be tagged with a sha no run ever saw. `docs/ops/proposed/release-ios-launch-gate.md` holds the merge-base rule only.
+- Scope: (1) add a section "Tag equals checked commit" to that proposal: the check (a completed success run of `ios-compile.yml` whose `head_sha` equals the tagged sha), the failure modes (cherry-pick onto the release branch; a moved or re-made tag; a run for another workflow; a run still in progress; two runs on one sha, one failed, the newest decides) and a test table; (2) add the pure function `decideTagCheckedRun({ tagSha, runs })` beside `decideLaunchGate` in `scripts/release/launch-gate.mjs`, with its table test in `scripts/release/launch-gate.test.mjs`. It is not wired into any workflow: nothing under `.github/` changes (Karma applies workflow edits).
+- Done when: the proposal section and the test table exist; `node --test scripts/release/launch-gate.test.mjs` passes with one case per failure mode above; a mutant that compares the parent commit instead of the tagged sha fails the exact-match case.
+- Test: `scripts/release/launch-gate.test.mjs` (node:test).
 
 #### BL-1595 Verify the ios-v* tag ruleset and app-store approval exist in repo settings
 - Status: proposed (review of PR #1495). Mode: agent. Owner: founder. Milestone: M15. Size: XS. Depends on: none.
@@ -8904,12 +8905,13 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Done when: the case name says what it measures.
 
 #### BL-1631 Pointer: the Book paging remainder is BL-434 (no second row)
-- Status: proposed (review of PR #1541). Mode: agent. Owner: product manager. Milestone: M15. Size: XS. Depends on: none.
+- Status: ready. Mode: agent. Owner: product manager. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Medium. Gate: before the Book reaches a large family book.
-- Satisfies: none new (review follow-up, not re-read here).
-- Problem and evidence: Review A and B on PR #1541: Tonight reads and the Book count are done, but the Book still loads and chapters every letter in memory; J01-14 and J09-03 were not run and switch-child timing was not re-measured. BL-434 is the live row for this remaining work.
-- Scope: no new build work here: when BL-434 is next edited by its owner, its status names the remainder (Book paging by chapter, J01-14 and J09-03, switch-child timing); this row only records the pointer and is closed then.
-- Done when: BL-434 names the three remaining items in its status and this row is superseded by BL-434.
+- Satisfies: none new (a status correction; BL-434 keeps its own `Satisfies`: PRD 7.1 and BL-111).
+- Problem and evidence: review A and B on PR #1541. Tonight reads and the Book count are done, but the Book still loads and chapters every letter in memory; J01-14 and J09-03 were not run and switch-child timing was not re-measured. BL-434 reads `done (PR #1541)`, so its status cannot name a remainder: the premise of this row's old scope was false.
+- Scope: product edits the BL-434 status line to `partly done (Tonight reads and the Book count merged in PR #1541; remaining: Book paging by chapter, the J01-14 and J09-03 runs, switch-child timing)` and splits those three into rows in the same edit (ids from `node scripts/agents/next-id.mjs`, same `Satisfies` as BL-434). Then this row becomes `superseded (by BL-434)`. No build work here.
+- Done when: BL-434 shows partly done with the three items, each item has its own row with a Done-when line, this row reads superseded, and `node scripts/agents/check.mjs` passes.
+- Test: `node scripts/agents/check.mjs` and `node --test 'scripts/agents/*.test.mjs'`.
 
 #### BL-1632 Baseline claim: name the files behind '9 files, 79 tests fail on clean develop', starting with the p5-critics [S6] case
 - Status: proposed (review of PR #1541). Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
@@ -9114,12 +9116,21 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Done when: one test per wire, each with a mutant.
 
 #### BL-1657 Add child: the calm retry card for a failing addChild
-- Status: proposed (needs content row first). Mode: agent. Owner: content. Milestone: M15. Size: XS. Depends on: none.
+- Status: ready. Mode: agent. Owner: content. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
-- Satisfies: Refines BL-378 (PR #1582).
-- Problem and evidence: A failing `addChild` has no calm retry card because the string does not exist.
-- Scope: needs content row for the card words; then the mobile engineer builds the card.
-- Done when: the words are approved and the card shows on a failing addChild.
+- Satisfies: Refines BL-378 (PR #1582); PRD 7.4 durability (cited from BL-378).
+- Problem and evidence: a failing `addChild` has no calm retry card because the words do not exist (no retry key in `packages/content` for the first-run finish step; `apps/mobile/src/app/onboarding.tsx` is where it fails).
+- Scope: content only. Propose the card's words as keys beside the first-run keys in `packages/content/src/features/`: a title or one line, and one button whose label is at most 22 characters. Read `packages/content/WRITING-GUIDE.md` and the BRAND.md glossary first. Say that nothing is lost (what was typed stays on the phone) and offer one way to try again. No fear, guilt or loss language, no "AI", never gender the child, use `{child}`. The words are PROPOSED in the PR body and the exec team approves them (CR-176) before they merge. The card itself is BL-2144.
+- Done when: the keys exist, `packages/content/test/rules.test.ts` passes (button length, banned characters, no gender), `npm run lint:copy` does not grow its baseline, and the PR body lists the proposed words once for approval.
+- Test: `packages/content/test/rules.test.ts`.
+
+#### BL-2144 Add child: show the retry card when addChild fails (from BL-1657)
+- Status: blocked (BL-1657). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: BL-1657.
+- Priority: Low. Gate: none.
+- Satisfies: Refines BL-378 (PR #1582); PRD 7.4 durability (cited from BL-378).
+- Scope: in the first-run finish path (`apps/mobile/src/app/onboarding.tsx` and its logic file) a failing `addChild` shows the card with BL-1657's words and one try-again action; nothing typed is lost; the existing guard that makes `finish()` create one book per name still holds after a retry. No new words here.
+- Done when: a test injects a failing `addChild`, sees the card, presses try again, and ends with exactly one book for the name; a mutant that swallows the error without the card fails the test.
+- Test: `apps/mobile/test/onboarding-finish.test.ts` (extend).
 
 #### BL-1658 Add child twins: a retry remakes the first book, and the wiring test is a source regex
 - Status: done (PR #1600, `96ccb38e4`, merged to develop). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
@@ -9138,12 +9149,21 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Done when: a banned key inside a lazy schema and a same-named key off the path both fail.
 
 #### BL-1660 BL-852 second half: the second phone's photo line
-- Status: proposed (needs content row first). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
+- Status: blocked (BL-2145). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: BL-2145.
 - Priority: Low. Gate: none.
-- Satisfies: Refines BL-852 (second half of its Scope).
-- Problem and evidence: The first half merged in #1578. Left: the second phone's "The photo is on the other phone." line.
-- Scope: needs content row to confirm the words; then show the line where the photo is missing.
-- Done when: the second phone shows the approved line and a test covers it.
+- Satisfies: Refines BL-852 (second half of its Scope); NX-39-R33; NX-33-R16 (cited).
+- Problem and evidence: the first half merged in #1578. Left: the second phone shows a letter whose photo is not on that phone (the sync payload carries no media), and says nothing. `apps/mobile/src/components/photos/letter-photo.tsx` is where the photo shows.
+- Scope: when a letter has a photo record and no local file, show the line from BL-2145 in place of the photo, with the photo's footprint reserved so the letter does not jump; when the file exists, show the photo as today. No download, no request, no new data on the wire.
+- Done when: a test shows the line for a letter with a photo record and no local file, and the photo for one with a file; a mutant that shows the line when the file exists fails.
+- Test: `apps/mobile/test/photos-conformance.test.ts` (extend) or a new `apps/mobile/test/letter-photo-missing.test.ts`.
+
+#### BL-2145 The second phone's photo line: confirm the words and add the key (from BL-1660)
+- Status: ready. Mode: agent. Owner: content. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: Refines BL-852; NX-39-R33; NX-33-R16 (cited).
+- Scope: BL-852 already names the line "The photo is on the other phone." and no key holds it. Read it against `packages/content/WRITING-GUIDE.md` and the BRAND.md glossary; keep it or propose a replacement in the PR body; add one key in the photos feature file under `packages/content/src/features/`. The exec team approves the final words (CR-176) before they merge.
+- Done when: the key exists, the content rules test passes, and the PR body shows the line once for approval.
+- Test: `packages/content/test/rules.test.ts`.
 
 #### BL-1661 Born-early row: pin what the screen passes, and check letters across the new birthday
 - Status: partly done (PR #1598: the test slice only, in `apps/mobile/test/children-settings.test.ts`; the row-hint read-aloud check and the question to sync owner about contributors remain). Mode: agent. Owner: qa engineer. Milestone: M4. Size: XS. Depends on: none.
@@ -10200,10 +10220,18 @@ Rows for notes the reviews of these pull requests left open. Rows BL-1918 to BL-
 - Done when: the three behaviours have a test each that fails under its mutant, and `npm test -w apps/mobile` passes.
 
 #### BL-1919 Sync consent gate: shape, security pack and test hygiene (follow-up to #1676, merged 29ea7945)
-- Status: proposed (review of #1676; start after #1676, merged 29ea7945). Mode: agent. Owner: data architect. Milestone: M15. Size: M. Depends on: none.
-- Satisfies: the consent gate of #1676; `docs/security/` pack text S-1; `packages/api` sync schemas; `supabase/tests/`.
-- Scope: (1) S-1 in the security pack describes the gate before it landed: bring the text to the built behaviour; (2) `SyncBookSchema` is strict and does not describe the closed `sync_books` shape: add a closed-shape schema and use it where a closed row is read; (3) the pending-invites list is empty while a book is closed: check the Family screen does not read that as "no invites" and add a test if it does; (4) the test title near line 1485 of the two-phone sync test still says "and it applies": correct it; (5) the order "gate before reads" is held only by a comment: add a test that reads the function's source with `pg_get_functiondef` and fails if a read of a book table comes before the gate call in source order (mutant: move the gate below the first read); (6) the rate-limit case (121 closed pulls) has no test: add one.
-- Done when: each of the six has its change and test (or a written reason), and `npm run test:db` and `npm test -w packages/api` pass.
+- Status: ready. Mode: agent. Owner: data architect. Milestone: M15. Size: S. Depends on: none.
+- Satisfies: FR-PRV-20 (`docs/product/prd/functions/privacy.md`); the consent gate of #1676; `docs/engineering/readiness-20nov/security/SECURITY-OPEN-QUESTIONS.md` row S-1; `packages/api` sync schemas.
+- Scope: items 1 to 4 of the original six; items 5 and 6 are BL-2146. (1) the S-1 answer in `SECURITY-OPEN-QUESTIONS.md` describes the gate before it landed: bring the text to the built behaviour of `20261123100000_sync_pull_consent_gate.sql` (header lines 5 to 7, body lines 125 to 140): when terms are not current, age is not attested or sensitive-data is not given, `sync_pull` returns one normal empty page, with `withheld: 'consent'`, for the caller's own rows and other members' rows alike; no error, no cursor moves, the held cursor is echoed; export and account deletion stay open. The old S-1 answer (own rows always served) is stale and is the only text to change; (2) `SyncBookSchema` (`packages/api/src/server/sync.ts`, strict) does not describe the closed shape (a book with only id, role, name and members of role, is_me, signs_as): a written reason already exists at `packages/api/src/server/sync.ts` lines 872 to 876 (no caller parses the closed shape strictly), so the work is: add a closed-shape schema next to it and use it where a closed row is read, or keep the reason and say so in the PR body; (3) the pending-invites list is empty while a book is closed: check the Family screen does not read that as "no invites" and add a test if it does; (4) the title near line 1485 of `apps/mobile/test/sync-two-phone.test.ts` still says "and it applies": correct it to what is checked.
+- Done when: each of the four has its change and test (or a written reason in the PR body), and `npm test -w packages/api` and `npm test -w apps/mobile` pass.
+- Test: `packages/api/test/` (a closed-shape case), `apps/mobile/test/sync-two-phone.test.ts`, a Family-screen logic test.
+
+#### BL-2146 Sync consent gate: the gate-before-reads source test and the rate-limit case (from BL-1919)
+- Status: ready. Mode: agent. Owner: data architect. Milestone: M15. Size: S. Depends on: none.
+- Satisfies: FR-PRV-20 (`docs/product/prd/functions/privacy.md`); the consent gate of #1676; SECURITY-OPEN-QUESTIONS.md row S-1.
+- Scope: in `supabase/tests/sync_pull_consent.test.mjs`: (5) the order "gate before reads" is held only by a comment: read the function with `pg_get_functiondef` and fail if a read of a book table comes before the gate call in source order (mutant: move the gate below the first read); (6) the rate-limit case (121 closed pulls) has no test: add one that shows the 121st closed pull is limited and that a limited pull returns no content.
+- Done when: both tests exist, each fails under its mutant, and `npm run test:db` passes.
+- Test: `supabase/tests/sync_pull_consent.test.mjs`.
 
 #### BL-1920 Closed sync_books returns the child's name and every member's signs_as: counsel's reading (follow-up to #1676, merged 29ea7945)
 - Status: proposed (review of #1676; start after #1676, merged 29ea7945). Mode: human. Owner: legal. Milestone: M15. Size: XS. Depends on: none.
@@ -10212,10 +10240,11 @@ Rows for notes the reviews of these pull requests left open. Rows BL-1918 to BL-
 - Done when: counsel's reading is recorded on this row and, if it asks for the tighter shape, a new row is filed for it.
 
 #### BL-1921 Server read surface: engine_version in sync_pull, and a test of what `authenticated` can read or run (follow-up to #1676, merged 29ea7945)
-- Status: proposed (review of #1676; start after #1676, merged 29ea7945). Mode: agent. Owner: security engineer. Milestone: M15. Size: M. Depends on: none.
-- Satisfies: LEGAL-REQ (the other parent sees no raw data); BL-1852 (`coparent_no_raw`); migration `20261016000000` (about line 1498).
-- Scope: (1) the non-author branch of `sync_pull` returns `to_jsonb(be) - 'search'`, which includes `engine_version`: drop it from that branch in a new migration (never edit the applied one), with grants in the same file; (2) add a test that lists every table, view and function the `authenticated` role can read or execute and fails on a new one that is not on a written allowlist, because `coparent_no_raw` would not catch a SECURITY DEFINER function that returns `raw_transcript`.
-- Done when: the non-author pull holds no `engine_version`, the enumeration test fails under a mutant (add a function that returns the raw text), and `npm run test:db` passes.
+- Status: ready (item 1 is done: `supabase/migrations/20261123200000_book_entries_no_engine_version.sql` removes engine_version from the view, via BL-1952; item 2 is what is left). Mode: agent. Owner: security engineer. Milestone: M15. Size: S. Depends on: none.
+- Satisfies: FR-AIS-04 and FR-AIS-08 (the other parent sees no raw data); BL-1852 (`coparent_no_raw`); `supabase/tests/grants.mjs`.
+- Scope: item 2 only. Add `supabase/tests/authenticated_surface.test.mjs`: list every table, view and function the `authenticated` role can read or execute (from `information_schema` and `pg_proc` with `has_function_privilege`), compare with a written allowlist file in `supabase/tests/` (start from what `grants.mjs` already lists, do not copy it twice), and fail on any entry not on the list. First read the non-author branch of `sync_pull` and confirm it returns no `engine_version` after the 20261123200000 view change; if it still does, that fix is a new migration with its grants in the same file, and the PR body says so.
+- Done when: the enumeration test passes on develop and fails under a mutant (a SECURITY DEFINER function that returns `raw_transcript`, granted to `authenticated`); the non-author pull holds no `engine_version`; `npm run test:db` passes.
+- Test: `supabase/tests/authenticated_surface.test.mjs` (new); `supabase/tests/coparent_no_raw.test.mjs` (unchanged, must still pass).
 
 #### BL-1922 Invite claim: a two-connection test on the local stack (follow-up to #1686; extends BL-1885 part 1)
 - Status: proposed (review of #1686). Mode: agent. Owner: qa engineer, data architect. Milestone: M15. Size: M. Depends on: none.
@@ -10224,10 +10253,11 @@ Rows for notes the reviews of these pull requests left open. Rows BL-1918 to BL-
 - Done when: the three cases pass, the mutant fails case 3, and the run is named in `docs/qa/` or the test header with the command.
 
 #### BL-1923 Invite claim lock tests: names that say more than they check, a half-done join, row-lock order (follow-up to #1686)
-- Status: proposed (review of #1686). Mode: agent. Owner: data architect. Milestone: M15. Size: S. Depends on: none.
+- Status: blocked (BL-1922; parts 1, 3 and 4 are in `supabase/tests/invite_redeem_retry_live_role.test.mjs` on develop, tagged BL-1923; part 2 is what is left). Mode: agent. Owner: data architect. Milestone: M15. Size: S. Depends on: BL-1922.
 - Satisfies: `supabase/tests/invite_redeem_retry_live_role.test.mjs`; `accept_child_invite_by_code`.
-- Scope: parts (1), (3) and (4) need nothing from the local-stack test; part (2) needs BL-1922 first, so leave (2) until BL-1922 has merged. (1) the check names "one lock per distinct subject" and "3 not 6" say more than they prove: `pg_locks` shows one row per key, and "distinct" is guarded only by a regex: rename them to what is checked or add the check; (2) a half-done join (the first write done, the second failing) is not tested: add it with a mutant; (3) the audit check only looks for a `member_joined` row: a join that writes another audit kind, or none, passes: assert the full set of audit rows written by one accepted claim; (4) the order of row locks inside `accept_child_invite_by_code` has not been traced: write the trace in the test header (which rows, which order) and add a case if two orders are possible.
-- Done when: names match checks, the half-done join has a test, the trace is written, and `npm run test:db` passes.
+- Scope: part 2 only: a half-done join (the first write done, the second failing) is not tested. Add it with a mutant, using the local-stack harness BL-1922 provides. Parts 1 (check names say what they prove), 3 (full set of audit rows written by one accepted claim) and 4 (row-lock order traced in the test header) are already in the file; the PR re-reads each against its original wording and says so in the body.
+- Done when: the half-done join has a test that fails when the second write is made to succeed alone, and `npm run test:db` passes.
+- Test: `supabase/tests/invite_redeem_retry_live_role.test.mjs`.
 
 #### BL-1924 Founder-ask guard: phrases that still pass, more break tokens, and two false positives (follow-up to #1685)
 - Status: done (PR #1724, `3bcacdc18`, merged to develop). Mode: agent. Owner: platform (ops handle). Milestone: M15. Size: M. Depends on: none.
@@ -10326,15 +10356,16 @@ Rows for notes the reviews of these pull requests left open. Rows BL-1918 to BL-
 - Done when: both claims are written with their evidence in the Sign in with Apple notes, and each difference has a row.
 
 #### BL-1940 Design spec PR #1691: four corrections before it is built (follow-up to #1691)
-- Status: proposed (reviews of #1691; the spec is merged in 112e971d5). Mode: agent. Owner: design systems. Milestone: M15. Size: S. Depends on: none.
-- Satisfies: the #1691 spec (cited, not copied); `packages/content/test/rules.test.ts` (button-length rule).
-- Scope: (1) the button-length test (`packages/content/test/rules.test.ts:279-282`) matches only keys ending in button or cta, so the proposed keys `duplicate.back`, `duplicate.continue`, `ways.removeSheet.confirm` and `phone.prompt.continue` are not covered: name the keys so the test covers them; (2) `Sheet` already draws its own Close unless `hideClose` is set: the spec must say which it uses, on every sheet it names, including the remove-confirm sheet and C-S33 (BL-1941 does not repeat this); (3) the duplicate-line test "never when no other way is plausible" reads like an account lookup: reword it so it cannot be read as a way to find out whether an address has an account; (4) the Notice component is new and PROPOSED: mobile confirms that `ModalHeader` fits the phone steps before the spec calls it a component. Nothing from #1692 yet. The other review notes of #1691 are BL-1941 and BL-1942.
-- Done when: each of the four is answered in the spec and the content tests pass on the new keys.
+- Status: ready (items 1, 2 and 3 already read true in the spec on develop: the button keys are named to end in Button at the "Button-cap note", `hideClose` is stated per sheet in section 1 and in the C-S32 table, and the duplicate-line trigger says it uses no account lookup; item 4 is left). Mode: agent. Owner: design systems. Milestone: M15. Size: XS. Depends on: none.
+- Satisfies: the #1691 spec (cited, not copied); `packages/content/test/rules.test.ts` (button-length rule, lines 279 to 282).
+- Scope: item 4 only. The spec's component line (section 1) says `ModalHeader` is built and names ST-NOTICE `Notice` as new and PROPOSED. Read `apps/mobile/src/components/ui/screen-header.tsx` and say in the spec, in one sentence per phone step (C-S34 number, C-S35 code), whether `ModalHeader` fits (title, back or close, no `hideClose` clash) or what is missing. For items 1 to 3 add nothing; list the three spec lines in the PR body as the read. No new words for a parent.
+- Done when: the spec answers item 4 for both phone steps, and `npm test -w packages/content` passes unchanged.
+- Test: `packages/content/test/rules.test.ts` (unchanged, must pass).
 
 #### BL-1941 Design spec #1691: wording and mark corrections (follow-up to #1691; extends BL-1940)
-- Status: proposed (reviews of #1691, merged in 112e971d5). Mode: agent. Owner: design systems. Milestone: M15. Size: S. Depends on: BL-1940 (same file; lands after it).
+- Status: done (PR #1706 merged as `863d10b41`, "sign-in and phone spec corrections, auto-submit rule and C-S36 states (BL-1941, BL-1949, BL-1950)"; read against the Scope by the product agent from the spec on develop: no `otherWayButton` note remains, `[CLAIM]` is on the nothing-moved lines, the R15 cite names the same-verified-email clause, the Google address claim is marked [UNVERIFIED] with the R16 paragraph saying it depends on it, "Carry on" promises neither a new nor an existing book, "equal-size" is gone, and no "never carries a consequence line" sentence remains). Mode: agent. Owner: design systems. Milestone: M15. Size: S. Depends on: none.
 - Satisfies: the #1691 spec (`docs/design/specs/12-WAYS-TO-SIGN-IN-AND-PHONE-STEPS.md`, cited, not copied); NS-54-R15, R16.
-- Scope: read BL-1940 first and do not repeat its four items. (1) the button-cap note names `phone.code.otherWayButton`, but Phase A has no such button: name the real keys or drop the note; (2) some "nothing moved" lines lack the `[CLAIM]` mark: add it to each; (3) the R15 cite is loose for a returning person on the same provider: cite the clause that says it; (4) "Google always returns an address" is a vendor claim: mark it [UNVERIFIED] (the R16 paragraph depends on it, so say so there); (5) the "Carry on" sentence implies a new book: reword so it does not; (6) line 111 says "equal-size" where it means "equal": fix; (7) section 6.6 says the line "never carries a consequence line" while the spec shows one: reconcile. No new words for a parent: content owns them.
+- Scope: read BL-1940 first and do not repeat its four items. (1) the button-cap note names `phone.code.otherWayButton`, but Phase A has no such button: name the real keys or drop the note; (2) some "nothing moved" lines lack the `[CLAIM]` mark: add it to each; (3) the R15 cite is loose for a returning person on the same provider: cite the clause that says it; (4) "Google always returns an address" is a vendor claim: mark it [UNVERIFIED]; (5) the "Carry on" sentence implies a new book: reword so it does not; (6) line 111 says "equal-size" where it means "equal": fix; (7) section 6.6 says the line "never carries a consequence line" while the spec shows one: reconcile. No new words for a parent: content owns them.
 - Done when: each of the seven reads true in the spec and the content tests pass.
 
 #### BL-1942 R16 duplicate-line trigger: narrow or wide, and the card text edits (follow-up to #1691 and #1693)
@@ -10344,7 +10375,7 @@ Rows for notes the reviews of these pull requests left open. Rows BL-1918 to BL-
 - Done when: both triggers are written with evidence and a recommendation, and each card text edit is listed with its requirement id.
 
 #### BL-1943 Phone-auth spike #1692: six follow-ups (follow-up to #1692)
-- Status: proposed (review of #1692, merged in ab13d6125). Mode: agent. Owner: security engineer. Milestone: M15. Size: S. Depends on: none (every vendor number stays [UNVERIFIED] until BL-1898).
+- Status: done (PR #1707 merged as `0b9ab59c5`, "phone-auth spike corrections, per-IP limit, change notice and recycled-number owner (BL-1943)"; read against the Scope by the product agent from `docs/research/sms-phone-auth-spike.md` on develop: item 1 at line 97 and line 43 (the file shows `phone_changed` off, which the old row text had wrong), item 2 at line 109 (owner proposed), item 3 at line 41 (the number read, vendor values [UNVERIFIED]), item 4 at line 69, item 5 at line 111 as draft card text only, item 6 at line 57). Mode: agent. Owner: security engineer. Milestone: M15. Size: S. Depends on: none.
 - Satisfies: NS-54-R18, R23, R24; `docs/research/sms-phone-auth-spike.md` (cited, not copied).
 - Scope: in the spike: (1) a phone change should also tell the account email; today only `phone_changed` is on: record what is on, and the recommendation; (2) the path that frees a recycled number is support-led and has no named owner: name one; (3) the per-IP limit has no number: give a recommended number marked [UNVERIFIED] or say why none; (4) add the line that spend alerts carry counts only, never a number or a code; (5) the card needs a Conflict line for R18 and R23: draft it in the PR body, never as a changed requirement; (6) low: `auth.sessions.ip` is session-wide (the address of the session, not of one request), so where the spike uses it as a per-request signal, say so.
 - Done when: the six are in the spike, each with evidence or an [UNVERIFIED] mark, and the card line is drafted.
@@ -10373,11 +10404,19 @@ Rows for notes the reviews of these pull requests left open. Rows BL-1918 to BL-
 - Scope: (1) URL-encoded spacing is missed: decode each line before matching, or document the gap; (2) list the shapes the canary does not match: `+1 202 555`, `+91 98765 43210`, `(+44) 7700 900123`, a bare `555-0142` and the UK 3-4-4 form `020 7946 0123`; (3) the doc says the canary "fails closed", which is stronger than the code: reword to what the code does; (4) a partial such as `+1 200` or `+1 100,` at the end of a line is flagged (a retry count, a delta): drop single-digit codes from the partial or require a 4-digit group, if it bites in the run.
 - Done when: each gap has a planted line that is caught or a line in the doc that names it, and the canary tests pass.
 
-#### BL-1948 Before BL-1902: one phone-shape list, a catalogue test and the registered check (follow-up to #1695)
-- Status: proposed (reviews of #1695). Mode: agent. Owner: analytics engineer, privacy engineer. Milestone: M15. Size: M. Depends on: none for items 1 to 3 (they came from the earlier #1695 security review, at its first head, and touch only `packages/analytics`); BL-1947 for items 4 and 5 only, which need the mobile canary and its patterns settled first. BL-1902 waits for this row.
+#### BL-1948 Before BL-1902: a catalogue test and phone-step outcomes (follow-up to #1695; items 2 and 3)
+- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: M15. Size: S. Depends on: none.
 - Satisfies: NS-54-R26; NS-41-R16; `packages/analytics`.
-- Scope: (1) one `PII_PATTERNS` list: `validate.ts:71` and `pii.ts:5` are copies and `pii.test.ts` pins only `pii.ts`: keep one and pin it; (2) a catalogue test that rejects an enum value with a run of 4 or more digits, an int maximum of 10000 or more, and a property name matching phone, number, digit, otp or code; (3) phone-step events carry only enum or bool outcomes; (4) `journey.ts` registers the fixture the registered-event check needs; (5) the registered check matches the national form too: compare the last 10 digits; low: it also matches digits taken across groups (it joins a whole line's digits), so compare within one phone-shaped match only.
-- Done when: each of the five fails under a planted case or a mutant, and `npm test -w packages/analytics` and the mobile canary tests (`apps/mobile/test/log-canary.test.ts` and `apps/mobile/test/phone-never-logged.test.ts`, run with `npm test -w apps/mobile`) pass.
+- Scope: items 2 and 3 of the original five, inside `packages/analytics`; items 4 and 5 (the mobile canary side) are BL-2147. Item 1 (one `PII_PATTERNS` list) is already done on develop: `pii.ts` says it is the only copy, `validate.ts` re-exports `isPiiLike`, and `pii.test.ts` (lines 3 and 4, 43, 82 and 83) pins one list and no second copy. (2) a catalogue test that rejects an enum value with a run of 4 or more digits, an int `max` of 10000 or more, and a property name matching phone, number, digit, otp or code; (3) phone-step events carry only enum or bool outcomes: pin it in the registry data test. The catalogue and registry tests read `REGISTRY` as it is on develop, so a phone event added later is covered without a change here.
+- Done when: each of the two fails under a planted case or a mutant (an enum value `"1234"`; an int property with max 10000; a property named `phoneCode`), and `npm test -w @scribe/analytics` and `npm run typecheck` pass.
+- Test: `packages/analytics/test/pii.test.ts`, `packages/analytics/test/registry-data.test.ts`, `packages/analytics/test/catalog.test.ts`.
+
+#### BL-2147 Before BL-1902: the registered phone check in the mobile canary (from BL-1948; items 4 and 5)
+- Status: blocked (BL-1947). Mode: agent. Owner: privacy engineer. Milestone: M15. Size: S. Depends on: BL-1947.
+- Satisfies: NS-54-R26; NS-41-R16.
+- Scope: items 4 and 5 of BL-1948, after the mobile canary and its patterns are settled by BL-1947. (4) `journey.ts` registers the fixture the registered-event check needs; (5) the registered check matches the national form too (compare the last 10 digits), and compares within one phone-shaped match only, not across the digits of a whole line.
+- Done when: each fails under a planted case (a national-form number; digits spread over groups on one line that must not match) and `npm test -w apps/mobile` passes, including `apps/mobile/test/log-canary.test.ts` and `apps/mobile/test/phone-never-logged.test.ts`.
+- Test: `apps/mobile/test/log-canary.test.ts`, `apps/mobile/test/phone-never-logged.test.ts`.
 
 #### BL-1949 Design spec #1691: three open rules for the duplicate line and the remove sheet (follow-up to #1691; extends BL-1941)
 - Status: proposed (reviews of #1691, merged in 112e971d5). Mode: agent. Owner: design systems. Milestone: M15. Size: S. Depends on: BL-1941 (same file; lands after it).
@@ -10386,7 +10425,7 @@ Rows for notes the reviews of these pull requests left open. Rows BL-1918 to BL-
 - Done when: each of the three is answered in the spec, and (1) names a rule a test can check (a unit test of the submit rule with and without a full-length code).
 
 #### BL-1950 Design spec #1691: C-S36 state table, row or button, and the stale "Continue chosen" (follow-up to #1691; extends BL-1941)
-- Status: proposed (reviews of #1691, merged in 112e971d5). Mode: agent. Owner: design systems. Milestone: M15. Size: S. Depends on: BL-1949 (same file; lands after it).
+- Status: done (PR #1706 merged as `863d10b41`; read against the Scope by the product agent from the spec on develop: section 6.4 has a state table with loading, verified, not added, removing, removed, remove failed, reauth needed and offline; it says the row is text and only its trailing button acts; the E-S40 row now reads "Carry on chosen" and no "Continue chosen" remains). Mode: agent. Owner: design systems. Milestone: M15. Size: S. Depends on: BL-1949.
 - Satisfies: the #1691 spec (cited, not copied); NS-54-R39, R41.
 - Scope: (1) section 6.4 (C-S36) has prose and no state table: add one with rows for loading, verified, not added, removing, remove failed, reauth needed and offline, each with what is shown, what moved and the key (BL-1941 and BL-1940 do not cover C-S36); (2) say whether the whole row opens the detail or only the button acts, and which the VoiceOver and Voice Control rows then describe; (3) the E-S40 state row "Continue chosen" is stale after the button became "Carry on": rename the row to match.
 - Done when: the table exists with every state named above, the row-or-button rule is one sentence, and no "Continue chosen" remains in the spec.
