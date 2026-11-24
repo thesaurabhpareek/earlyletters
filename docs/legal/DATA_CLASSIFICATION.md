@@ -489,6 +489,16 @@ Service only; 12 months; never part of an export (CR-71 C3; privacy confirms the
 | `day` | L2 | date |
 | `calls` | L2 | count |
 
+##### `ops.forget_quota_retired`
+
+Separate daily bucket for the analytics-forget reason `retired_id` (BL-1252), so retired-id cleanup cannot use up the shared bucket. Same columns as `ops.forget_quota`; counts only, never an analytics id.
+
+| Column | Level | Note |
+|---|---|---|
+| `profile_id` | L3 | person id |
+| `day` | L2 | date |
+| `calls` | L2 | count |
+
 #### 4.1.3 Schema `insights` (views; service role and `insights_reader` only)
 
 See 4.9.
