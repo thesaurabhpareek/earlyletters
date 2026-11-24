@@ -10831,7 +10831,7 @@ Rows for notes the reviews of these pull requests left open. Rows BL-1918 to BL-
 - Done when: each case has a planted line that fails or passes as written, and `node --test scripts/guards/founder-ask.test.mjs` passes.
 
 #### BL-1925 Founder-ask guard: do "confirm" and "verify" join the verbs it looks for? (policy call for Karma)
-- Status: in-review (PR #PRN; Karma rules, no guard code until then). Mode: agent. Owner: product. Milestone: M15. Size: XS. Depends on: none.
+- Status: in-review (PR #2025; Karma rules, no guard code until then). Mode: agent. Owner: product. Milestone: M15. Size: XS. Depends on: none.
 - Satisfies: CR-176; D-168.
 - Scope: the guard's look-pattern verbs are approve, comment, merge, review and paste. Five existing doc lines ask the founder to confirm something (find them with the guard run on the current docs). Write the options (add both verbs and fix the five lines; add neither; add them only next to "the founder") with the five lines listed by file, as a short note in the PR for Karma to rule. The ruling lands in `docs/agents/cto/RULINGS.md` by Karma, and BL-1924 follows it.
 - Done when: Karma's ruling is recorded and, if the verbs are added, the five lines are reworded and the guard's test has a case each.
