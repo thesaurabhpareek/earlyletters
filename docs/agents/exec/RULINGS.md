@@ -2392,6 +2392,12 @@ The entries in this batch (three stacked PRs) record each role's own ruling on t
 - Door: two-way.
 - Founder-only: no. Signed: Chief Privacy Officer (Claude role, not counsel)
 
+### CPrivO-55 `letter_deleted`: collect less; locked at T0 by pattern (24 Nov 2026, CPrivO via Karma's session; Claude role, not counsel)
+- Verdict: RULED (concur with CR-225). Full text: `infra/exec-rulings-2026-11-24-letter-deleted.md`.
+- Ruling: a delete and restore sequence per anonymous id, with `destination` (book or private), is a profile of what a person chose to hide about their own words and whether they changed their mind; two of the call sites also mark that someone left a family book. R-K3 keeps events out of deletion flows. Retire the key, and in step 2a forbid its candidate names (`letter_delete`, `letter_restore`) by pattern so a later registry row cannot bring it back unnoticed. The `me:settings_delete_account_screen_view` basics name is the one deletion-flow screen name still in the table and gets its own ruling before the step 3 signature, default remove. Not counsel; no line is legal advice.
+- Door: two-way.
+- Founder-only: no. Signed: Chief Privacy Officer (Claude role, not counsel)
+
 ### CDO-30 PR 656: `ops_cron_health` returns counts and job names only (24 Nov 2026, CDO via Karma's session; Claude role)
 - Verdict: RULED (concur with CR-209). Full text: `infra/exec-rulings-2026-11-24-held-prs.md` section 8.
 - Ruling: the RPC returns counts and `scribe-*` job names only, within the content-free rule; it needs its own grant row in `supabase/tests/grants.mjs` and an access-matrix test that anon and authenticated cannot call it. Point the watch at production (it holds the deletion promise), with the target as a parameter so staging can run too.
@@ -2407,6 +2413,12 @@ The entries in this batch (three stacked PRs) record each role's own ruling on t
 ### CDO-32 Wire names: the 39 rulings (24 Nov 2026, CDO via Karma's session; Claude role)
 - Verdict: RULED (concur with CR-213). Full text and table: `infra/exec-rulings-2026-11-24-wire-names.md`.
 - Ruling: name a key when a PM row, the registry, a guardrail or the insights engine reads it; merge it into `screen_view` or perf when the signal is already a basics row; drop it when the standard, FR-DAT-26, 27 or 38 or the registry's forbidden list says no event, or when it has no emitter and no reader. Result: 18 named, 4 merged, 17 dropped. Held events never send, so naming or dropping them is free. The category list stays at nine. `letter_deleted` is flagged for a separate CDO and CPrivO look in the step 2a PR.
+- Door: two-way.
+- Founder-only: no. Signed: Chief Data Officer (Claude role)
+
+### CDO-33 `letter_deleted`: retire; no consumer (24 Nov 2026, CDO via Karma's session; Claude role)
+- Verdict: RULED (concur with CR-225). Full text: `infra/exec-rulings-2026-11-24-letter-deleted.md`.
+- Ruling: removing a held event is the CDO's own call. No decision reads the key: the insights engine, the registry funnels and the `decision-science.md` guardrails do not, and the three PRD v2 rows ask only a watch-only question. A number that cannot change what we do is not collected. Counts for step 2a: 18 dropped, 51 keys after 2a (47 named); held events 27, registry rows 24. After this nobody can learn from analytics how often people restore from Recently deleted; a later need comes as a new row with a decision.
 - Door: two-way.
 - Founder-only: no. Signed: Chief Data Officer (Claude role)
 
