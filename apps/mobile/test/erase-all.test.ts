@@ -1689,9 +1689,9 @@ describe('[NS-36] kill during Erase resumes and finishes', () => {
       `${h.disk.caches}whole-frames-abc-1.aac`,
     ];
 
-    // RED TODAY (#1169 gap): erase-everything.ts throws `backupFailure` right after the recordings, before
-    // removeWholeFrameCopies and the CACHE_COPIES loop. The export ZIPs and the print PDF stay until a retry succeeds.
-    it.fails('[NS-36][B5-4] the backup file will not go: the erase throws backup_file_delete AND every export ZIP, print PDF and frame copy is gone', async () => {
+    // BL-1466: erase-everything.ts holds `backupFailure` and throws it after the CACHE_COPIES loop, so the export ZIPs
+    // and the print PDF are gone in the same pass.
+    it('[NS-36][B5-4] the backup file will not go: the erase throws backup_file_delete AND every export ZIP, print PDF and frame copy is gone', async () => {
       const app = await launch();
       for (const u of exportsAndCopies()) put(h.disk, u, 5_000);
       put(h.disk, sqlite(BACKUP), 64);
