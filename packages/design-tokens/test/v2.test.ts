@@ -64,6 +64,12 @@ describe('v2 type (T2)', () => {
     expect(t.cardTitle).toMatchObject({ fontFamily: tokens.fontFamily.serifMedium, fontSize: 22, lineHeight: 28, maxScale: 2 });
     expect(t.timer).toMatchObject({ fontSize: 40, lineHeight: 44, dynamicTypeStyle: 'title1', maxScale: 1.6 });
   });
+  it('sheetTitle is title2 with maxScale 2.0, so it never drops below the uncapped body text under it', () => {
+    expect(t.sheetTitle).toEqual(t.title2);
+    expect(t.sheetTitle.maxScale).toBe(2);
+    expect(t.sheetTitle.dynamicTypeStyle).toBe('title2');
+    expect(t.body.maxScale).toBeNull();
+  });
   it('the timer sets tabular figures so digits do not shift each second; kicker text is never capped', () => {
     expect(t.timer.fontVariant).toEqual(['tabular-nums']);
     expect(t.kicker.maxScale).toBeNull();
@@ -122,6 +128,14 @@ describe('v2 spacing (T5)', () => {
     expect(l.sectionGap).toEqual({ compact: tokens.space[9], regular: tokens.space[10] });
     expect(l.listRowMin).toBe(52);
     expect(l.listRowMin).toBeGreaterThanOrEqual(tokens.target.min);
+  });
+  it('list rows are 56 (target.primary) from AX1 and 52 below it, so a big size never gets the small row (CDESO-7)', () => {
+    expect(l.listRowMinAccessibility).toBe(tokens.target.primary);
+    expect(tokens.listRowMinFor(1)).toBe(52);
+    expect(tokens.listRowMinFor(1.353)).toBe(52);
+    expect(tokens.listRowMinFor(1.78)).toBe(52);
+    expect(tokens.listRowMinFor(1.786)).toBe(56);
+    expect(tokens.listRowMinFor(3.571)).toBe(56);
   });
   it('the web CSS carries them, and the committed dist/ files match (regenerated)', () => {
     const web = webCss();

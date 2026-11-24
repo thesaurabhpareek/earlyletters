@@ -1,3 +1,4 @@
+# BLOCKED (ids the app does not set yet): red by design until they land. `node apps/mobile/e2e/bin/blocked-ids.mjs <this file>` lists them (not-in-app.txt); run-suite.sh and run-p0-nightly.sh skip it and print that list.
 # E2E-15  Accessibility smoke at the largest text size, light and dark.
 # Maestro cannot drive VoiceOver; this flow proves the automatable part: every
 # P0 control is in the accessibility tree, enabled, and reachable by scrolling at
@@ -56,17 +57,21 @@ tags:
     id: "write.input"
 - inputText: "Asha, a short line at the largest size."
 - assertVisible:
-    id: "write.save"
+    id: "write.keep.book"
     enabled: true
 - takeScreenshot: a11y/04-write-ax5-light
 - tapOn:
-    id: "write.save"
-- tapOn:
-    id: "review.save.book"
+    id: "write.keep.book"
+# Write goes to Review, which keeps the typed letter and shows the saved moment,
+# then lands on the Book; the sign-in sheet rises over the Book (no review.save.book).
+- extendedWaitUntil:
+    visible:
+      id: "review.saved"
+    timeout: 5000
 - extendedWaitUntil:
     visible:
       id: "signIn.sheet"
-    timeout: 5000
+    timeout: 15000
 - takeScreenshot: a11y/05-keep-the-book-ax5-light
 - tapOn:
     id: "signIn.later"

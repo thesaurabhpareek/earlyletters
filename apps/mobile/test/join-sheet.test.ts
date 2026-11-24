@@ -101,7 +101,7 @@ describe('[S59] the child\'s name first appears on the opening cover', () => {
 
   it('while the book comes down: the line and a thin bar with no count, still under Reduce Motion', () => {
     const bar = code('components/family/join-ask.tsx');
-    expect(bar).toMatch(/if \(reduced \|\| width === 0\) \{\s*cancelAnimation\(x\);\s*x\.value = 0;/);
+    expect(bar).toMatch(/if \(reduced \|\| !active \|\| width === 0\) \{\s*cancelAnimation\(x\);\s*x\.value = 0;/);
     expect(bar).not.toMatch(/percent|%|\{count\}/);
     // The welcome's own words (join-wait.logic.ts joinWaitLine), with the name, or "The book" when it could not be read.
     expect(code(SHEET)).toMatch(/const waitingLine = book \? null : joinWaitLine\(child \|\| null, 'waiting'\);/);

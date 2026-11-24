@@ -15,7 +15,7 @@
  * 5. Violations are reported without values.
  */
 import { EVENTS, SCHEMA_VERSION, type Catalog, type EventName } from './catalog';
-import { ConsentStore, defaultRandomId, memoryStorage, type ConsentStatus, type KeyValueStorage } from './consent';
+import { ConsentStore, defaultRandomId, memoryStorage, type ConsentStatus, type ConsentSurface, type KeyValueStorage, type PendingConsentAct } from './consent';
 import type { AnalyticsProvider } from './provider';
 import type { PropsOf } from './schema';
 import { sanitizeEvent, type Props, type Violation, type ViolationKind } from './validate';
@@ -38,6 +38,8 @@ export interface AnalyticsOptions {
   /** Where consent and the random id persist. Defaults to memory (tests). */
   storage?: KeyValueStorage;
   randomId?: () => string;
+  /** Consent version this build asks for ("major.minor"). A newer major asks again (TDD 05 X-13). */
+  consentVersion?: string;
   /** Called for every allowlist violation. Throw here in dev builds. */
   onViolation?: (v: Violation) => void;
   /**
@@ -61,9 +63,13 @@ export interface Analytics {
   init(): Promise<ConsentStatus>;
   consent(): ConsentStatus;
   /** The user said yes. Opts the provider in and identifies with a random id. */
-  grant(): Promise<void>;
+  grant(surface?: ConsentSurface): Promise<void>;
   /** The user said no, or withdrew in Settings > Privacy. */
-  revoke(): Promise<void>;
+  revoke(surface?: ConsentSurface): Promise<void>;
+  /** Answers not yet uploaded through `record_policy_act`, oldest first (only when a surface was passed). */
+  pendingActs(): PendingConsentAct[];
+  /** Drop the first `count` pending acts after the server has them. */
+  acknowledgeActs(count: number): Promise<void>;
   track<E extends EventName>(name: E, props: EventProps<E>): TrackResult;
   /** Sets `child_count_bucket`, sent on every event (never a person property). */
   setChildCount(count: number): void;
@@ -102,7 +108,7 @@ function hash(s: string): number {
 
 export function createAnalytics(options: AnalyticsOptions): Analytics {
   const provider = options.provider;
-  const store = new ConsentStore(options.storage ?? memoryStorage(), options.randomId ?? defaultRandomId);
+  const store = new ConsentStore(options.storage ?? memoryStorage(), options.randomId ?? defaultRandomId, { currentVersion: options.consentVersion });
   const counts: Partial<Record<ViolationKind, number>> = {};
   const onViolation = options.onViolation;
   const report = (v: Violation) => {
@@ -150,16 +156,16 @@ export function createAnalytics(options: AnalyticsOptions): Analytics {
     return snap.status;
   }
 
-  async function grant() {
-    const id = await store.grant();
+  async function grant(surface?: ConsentSurface) {
+    const id = await store.grant(surface);
     await connect(id);
   }
 
-  async function revoke() {
+  async function revoke(surface?: ConsentSurface) {
     epoch++;
     clearQueue();
     stopTimer();
-    await store.revoke();
+    await store.revoke(surface);
     await provider.optOut();
     await provider.reset();
   }
@@ -217,6 +223,8 @@ export function createAnalytics(options: AnalyticsOptions): Analytics {
     consent: () => store.status,
     grant,
     revoke,
+    pendingActs: () => store.pendingActs(),
+    acknowledgeActs: (count) => store.acknowledgeActs(count),
     track,
     setChildCount: (count) => {
       childBucket = childCountBucket(count);

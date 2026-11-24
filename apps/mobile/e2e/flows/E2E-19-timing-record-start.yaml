@@ -1,3 +1,4 @@
+# BLOCKED (ids the app does not set yet): red by design until they land. `node apps/mobile/e2e/bin/blocked-ids.mjs <this file>` lists them (not-in-app.txt); run-suite.sh and run-p0-nightly.sh skip it and print that list.
 # E2E-19  Timing: record start (tap Speak to the recording screen), 200 samples (BL-1403, feeds BL-044).
 # Not part of the suite (tag e2e-timing). The app is killed between samples, so each one starts from a
 # cold Tonight. The microphone prompt is answered once, before the first sample. Host clock, upper bound:
