@@ -71,8 +71,9 @@ export const GLOBAL_PROPS = {
  * 18: wire-names step 2b, slice 4 (BL-2176, CR-212, CR-213): the `onboarding` area is renamed: `auth_succeeded` to `onboarding:sign_in_complete`, `auth_failed` to `onboarding:sign_in_fail`, `auth_deferred` to `onboarding:sign_in_dismiss`, `child_added` to `onboarding:book_create`. No property was added or widened, no tier changed, and no build has sent any of them (analytics are off in every profile, CR-186).
  * 19: wire-names step 2b, slice 5 (BL-2176, CR-212, CR-213): the `notifications` area is renamed: `reminder_prime_shown` to `notifications:reminder_prime_view`, `reminder_prime_result` to `notifications:reminder_prime_submit`, `os_permission_result` to `notifications:permission_submit`, `reminder_schedule_set` to `notifications:schedule_update`, `reminder_suppressed` to `notifications:reminder_cancel`, `notification_opened` to `notifications:notification_open`. No property was added or widened, no tier changed, and no build has sent any of them (analytics are off in every profile, CR-186).
  * 20: wire-names step 2b, slice 6 (BL-2176, CR-212, CR-213): the `book` area is renamed: `playback_started` to `book:playback_start`, `read_together_started` to `book:read_together_start`, `read_together_ended` to `book:read_together_end`, `moments_card_impressed` to `book:moments_card_view`, `moments_card_tapped` to `book:moments_card_open`. No property was added or widened, no tier changed, and no build has sent any of them (analytics are off in every profile, CR-186).
+ * 21: wire-names step 2b, slice 7 (BL-2176, CR-212, CR-213): the first half of the `system` area is renamed: `error_shown` to `system:error_view` and `sync_failed` to `system:sync_fail`. No property was added or widened, no tier changed, and no build has sent either (analytics are off in every profile, CR-186).
  */
-export const SCHEMA_VERSION = 20;
+export const SCHEMA_VERSION = 21;
 
 /**
  * SHA-256 of `JSON.stringify(catalogShape())` per schema version. Versions 1
@@ -97,6 +98,7 @@ export const SCHEMA_FINGERPRINTS: Readonly<Record<number, string>> = Object.free
   18: 'fd0665de32a9821e6431a3ef21a7d8ca8c7e80f45c7575e4a463c60ccc7795cb',
   19: 'da3f70873564fbf401c13264ba0c6ea2f7946ba6e534e10760011602fd58bab0',
   20: '283ff4fd73798260a720e784cc9ecaba2bdc5dbb524c0c06635bfab026418a66',
+  21: '87de4b13a9a92b91c8097cf62d64acae823645e384cc92a8062abbdb21a1a9e5',
 });
 
 // ---------------------------------------------------------------------------
@@ -416,7 +418,7 @@ export const HELD_EVENTS = {
   // One definition per fact (CODE-R13): these two rows are the registry rows, so slot, area, when,
   // level and reqs cannot drift. Edit them in registry.ts only.
   // --- Errors ---------------------------------------------------------------------
-  sync_failed: {
+  'system:sync_fail': {
     area: 'errors',
     when: 'A sync attempt fails after retries',
     reqs: ['PRD-REQ-016'],

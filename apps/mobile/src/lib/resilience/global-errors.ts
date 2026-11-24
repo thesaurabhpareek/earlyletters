@@ -40,7 +40,7 @@ export function startGlobalErrorHandlers(): void {
     onFatal: (rec) => {
       faults.set(rec);
       try {
-        track('error_shown', { code: 'generic' });
+        track('system:error_view', { code: 'generic' });
       } catch {
         // Analytics never becomes the next fault.
       }

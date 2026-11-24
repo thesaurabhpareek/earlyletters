@@ -79,7 +79,7 @@ describe('[NX-39-R30] the harness can see a leak (positive controls)', () => {
     t.buildCrashPayload(nativeErrorWithCanary());
     expect(new Set(t.hits().map((h) => h.sink))).toEqual(new Set(['crashPayloads']));
     const u = fresh();
-    u.analytics.push({ event: 'error_shown', properties: { code: CANARY.assetId } });
+    u.analytics.push({ event: 'system:error_view', properties: { code: CANARY.assetId } });
     expect(new Set(u.hits().map((h) => h.sink))).toEqual(new Set(['analytics']));
   });
 
@@ -97,7 +97,7 @@ describe('[NX-39-R30] the harness can see a leak (positive controls)', () => {
     console.warn('letter saved', { words: 120 });
     s.addBreadcrumb({ category: 'media', message: 'cancelled' });
     s.buildCrashPayload(new MediaNativeError('timeout'));
-    s.analytics.push({ event: 'error_shown', properties: { code: 'save_failed' } });
+    s.analytics.push({ event: 'system:error_view', properties: { code: 'save_failed' } });
     expect(s.hits()).toEqual([]);
   });
 
@@ -145,11 +145,11 @@ describe('[NX-39-R30] a forced native error leaves no canary in any sink', () =>
       s.buildCrashPayload(wrapped);
       // The analytics client is handed the closed code as the one property it could carry, and then a hostile value.
       // @ts-expect-error not a catalogued code: the client must drop it, whatever it holds
-      analytics.track('error_shown', { code: wrapped.code });
+      analytics.track('system:error_view', { code: wrapped.code });
       // @ts-expect-error a canary smuggled into a property
-      analytics.track('error_shown', { code: CANARY.city });
+      analytics.track('system:error_view', { code: CANARY.city });
       // @ts-expect-error an unknown property
-      analytics.track('error_shown', { code: 'save_failed', place: CANARY.cityKey });
+      analytics.track('system:error_view', { code: 'save_failed', place: CANARY.cityKey });
     }
     await analytics.flush();
     s.analytics.push(...provider.captured());
@@ -176,7 +176,7 @@ describe('[NX-39-R30] a forced native error leaves no canary in any sink', () =>
     }
     expect(calls).toEqual([]);
     // Positive control for the call finder.
-    expect(loggingCalls('x.ts', "console.log(1); logger.warn(2); Sentry.addBreadcrumb({}); track('error_shown', {}); analytics.track('x', {}); process.stderr.write('x');")).toHaveLength(6);
+    expect(loggingCalls('x.ts', "console.log(1); logger.warn(2); Sentry.addBreadcrumb({}); track('system:error_view', {}); analytics.track('x', {}); process.stderr.write('x');")).toHaveLength(6);
     expect(loggingCalls('x.ts', 'const a = items.map((i) => i.id); export const second = a[1];')).toEqual([]);
   });
 });

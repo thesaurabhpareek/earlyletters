@@ -398,13 +398,13 @@ export function computeInsights(input: InsightsInput): InsightsReport {
 
     // Errors: spikes by code
     for (const code of ['save_failed', 'transcription_failed', 'storage_low', 'offline', 'generic']) {
-      const a = detectAnomaly(weeks.map((w) => ({ week: w, value: d.split('error_shown', 'code', w).get(code)?.events ?? null })), { metric: `error_${code}`, label: `Errors shown: ${code}`, source: 'device', minBase: 20 });
+      const a = detectAnomaly(weeks.map((w) => ({ week: w, value: d.split('system:error_view', 'code', w).get(code)?.events ?? null })), { metric: `error_${code}`, label: `Errors shown: ${code}`, source: 'device', minBase: 20 });
       if (a && a.direction === 'up') {
         anomalies.push(a);
         propose({
           id: `error-spike-${code}`, area: 'anomaly', title: `Look into more ${code} errors`,
           problem: `${code} errors rose to ${fmt(a.value)} in the week of ${a.week}, ${pct(a.change)} above the recent average.`,
-          evidence: [`device error_shown{code: ${code}}: ${fmt(a.value)} vs ${fmt(Math.round(a.baseline))}`],
+          evidence: [`device system:error_view{code: ${code}}: ${fmt(a.value)} vs ${fmt(Math.round(a.baseline))}`],
           hypothesis: 'A release or a server change that week.',
           change: 'Match the week against releases and server deploys; reproduce on the oldest supported phone.',
           metric: `${code} errors back to the recent average.`,

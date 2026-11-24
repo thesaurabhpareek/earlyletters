@@ -122,8 +122,8 @@ export function syntheticInput(date: string, opts: { weeks?: number; seed?: numb
     add(w, 'plus_offer_closed', 3, 3, 'outcome', 'purchased');
     add(w, 'me:language_update', 25, 20, 'lang', 'hi');
     add(w, 'me:language_update', 15, 12, 'lang', 'es');
-    add(w, 'error_shown', w === last ? 120 : jitter(30, 0.1), w === last ? 70 : 20, 'code', 'save_failed');
-    add(w, 'error_shown', jitter(40, 0.1), 25, 'code', 'offline');
+    add(w, 'system:error_view', w === last ? 120 : jitter(30, 0.1), w === last ? 70 : 20, 'code', 'save_failed');
+    add(w, 'system:error_view', jitter(40, 0.1), 25, 'code', 'offline');
     return { week: w, opened, started, saved };
   });
 

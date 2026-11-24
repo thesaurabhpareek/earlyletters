@@ -25,7 +25,7 @@ const HELD = [
   'notifications:notification_open', 'offer_code_redeemed', 'notifications:permission_submit', 'pack_download', 'book:playback_start',
   'book:read_together_end', 'book:read_together_start', 'notifications:reminder_prime_submit', 'notifications:reminder_prime_view',
   'notifications:schedule_update', 'notifications:reminder_cancel', 'restore_result', 'review_action', 'me:setting_update',
-  'me:session_end', 'sync_failed',
+  'me:session_end', 'system:sync_fail',
 ];
 
 describe('[PRD-REQ-016] the held catalogue and the send registry cannot drift apart unnoticed', () => {
