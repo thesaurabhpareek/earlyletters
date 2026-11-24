@@ -14,27 +14,27 @@ Owner: `ops`. Opened 21 Nov 2026 for FP-17 (first-run design FS-26, `docs/tdd/ne
 
 | # | Setting (dashboard name) | Repo value now | Code or test that depends on it | Target |
 |---|---|---|---|---|
-| 1 | Email OTP length (Sign In / Providers > Email) | 6 (`config.toml:71`) | App field accepts 6 to 10, falls back to 6: `apps/mobile/src/lib/auth/email.ts:28-29`. Pinned: `auth_config.test.mjs:74`. Templates show `{{ .Token }}` | Target code length 8 (O-6, FS-18); repo and hosted value stay 6; the dashboard flips the same day FP-8 ships, never before |
-| 2 | Email OTP expiration (same page) | 900 s (`config.toml:74`) | Every template and the app say "15 minutes" (`packages/emails/scripts/export-supabase.ts`); pending note is longer on purpose: `apps/mobile/src/lib/auth/email-link.logic.ts:36` (3600 s). Pinned: `auth_config.test.mjs:75` | 900; the pending note drops to 900 s with O-6 (card section 17 gap) |
-| 3 | Minimum interval between emails per address | `max_frequency = "1m"` (`config.toml:70`) | Client wait `RESEND_WAIT_MS = 60_000`: `email.ts:32`. Pinned: `auth_config.test.mjs:78` | 1 minute |
-| 4 | Rate limit: token verifications per IP per 5 min (Rate Limits) | 30 (`config.toml:56`) | No code reads it; the app's wrong-code pause is in memory only: `apps/mobile/src/lib/auth/pending.ts:72`. Pinned: `auth_config.test.mjs:83` | 15 (O-6), with row 1 |
-| 5 | Rate limit: emails per hour, whole project | `email_sent = 100` (`config.toml:54`) | `auth_config.test.mjs:83`. AUTH_SETUP 4.3 says Supabase starts a custom-SMTP project at 30 an hour and to raise it to about 100 | 100 now; raise at launch |
-| 6 | Rate limit: sign-ups and sign-ins per IP per 5 min | 30 (`config.toml:55`) | `auth_config.test.mjs:83` | 30 |
-| 7 | Rate limit: token refresh per IP per 5 min | 150 (`config.toml:57`) | `autoRefreshToken: true`: `apps/mobile/src/lib/supabase/client.ts:106`. `auth_config.test.mjs:83` | 150 |
+| 1 | Email OTP length (Sign In / Providers > Email) | 6 (`config.toml:72`) | App field accepts 6 to 10, falls back to 6: `apps/mobile/src/lib/auth/email.ts:28-29`. Pinned: `auth_config.test.mjs:74`. Templates show `{{ .Token }}` | Target code length 8 (O-6, FS-18); repo and hosted value stay 6; the dashboard flips the same day FP-8 ships, never before |
+| 2 | Email OTP expiration (same page) | 900 s (`config.toml:75`) | Every template and the app say "15 minutes" (`packages/emails/scripts/export-supabase.ts`); pending note is longer on purpose: `apps/mobile/src/lib/auth/email-link.logic.ts:36` (3600 s). Pinned: `auth_config.test.mjs:75` | 900; the pending note drops to 900 s with O-6 (card section 17 gap) |
+| 3 | Minimum interval between emails per address | `max_frequency = "1m"` (`config.toml:71`) | Client wait `RESEND_WAIT_MS = 60_000`: `email.ts:32`. Pinned: `auth_config.test.mjs:78` | 1 minute |
+| 4 | Rate limit: token verifications per IP per 5 min (Rate Limits) | 30 (`config.toml:57`) | No code reads it; the app's wrong-code pause is in memory only: `apps/mobile/src/lib/auth/pending.ts:72`. Pinned: `auth_config.test.mjs:83` | 15 (O-6), with row 1 |
+| 5 | Rate limit: emails per hour, whole project | `email_sent = 100` (`config.toml:55`) | `auth_config.test.mjs:83`. AUTH_SETUP 4.3 says Supabase starts a custom-SMTP project at 30 an hour and to raise it to about 100 | 100 now; raise at launch |
+| 6 | Rate limit: sign-ups and sign-ins per IP per 5 min | 30 (`config.toml:56`) | `auth_config.test.mjs:83` | 30 |
+| 7 | Rate limit: token refresh per IP per 5 min | 150 (`config.toml:58`) | `autoRefreshToken: true`: `apps/mobile/src/lib/supabase/client.ts:106`. `auth_config.test.mjs:83` | 150 |
 | 8 | JWT expiry (Sessions / JWT settings) | 900 s (`config.toml:42`, key `jwt_expiry`) | App refreshes in the foreground (`client.ts:106`). `auth_config.test.mjs:87` | 900 |
 | 9 | Refresh token rotation, reuse interval | on, 10 s (`config.toml:43-44`, keys `enable_refresh_token_rotation`, `refresh_token_reuse_interval`) | `auth_config.test.mjs:90` and `:92` (rotation and the 10 s) | on, 10 s |
 | 10 | Session time-box and inactivity timeout | not in `config.toml` | A forced sign-out would break local-first use and NS-41-R15; AUTH_SETUP section 1 item 3 says leave both off | off |
-| 11 | Allow anonymous sign-ins | false (`config.toml:46`) | The database refuses anonymous sessions (SQLSTATE SCANO). `auth_config.test.mjs:88` | off |
-| 12 | Allow manual linking | false (`config.toml:47`) | `auth_config.test.mjs:89`; card O-21 list | off (AUTH_SETUP said on until this change) |
-| 13 | Allow new users to sign up | true (`config.toml:44`, `:64`) | `shouldCreateUser: true`: `email.ts:36`. `auth_config.test.mjs:79` | on |
-| 14 | Confirm email; secure email change | true; true (`config.toml:66-68`) | `auth_config.test.mjs:76-77` | on; on |
-| 15 | Site URL and redirect allowlist (URL Configuration) | `https://earlyletters.com` and exactly `https://earlyletters.com/auth/callback`, no wildcard (`config.toml:33,39`) | The app sends only this redirect: `email.ts:37`, `links.logic.ts:24`. `auth_config.test.mjs:60-71` | exact, one entry |
-| 16 | Custom SMTP through Resend (Emails > SMTP Settings) | none; `[auth.email.smtp]` is commented out locally (`config.toml:77`); `auth_config.test.mjs:94` | Sender `hello@earlyletters.com`, port 465: AUTH_SETUP 4.2. Without it Supabase's own sender caps and brands the mail | on, sender domain verified in Resend |
+| 11 | Allow anonymous sign-ins | false (`config.toml:47`) | The database refuses anonymous sessions (SQLSTATE SCANO). `auth_config.test.mjs:88` | off |
+| 12 | Allow manual linking | false (`config.toml:48`) | `auth_config.test.mjs:89`; card O-21 list | off (AUTH_SETUP said on until this change) |
+| 13 | Allow new users to sign up | true (`config.toml:45`, `:65`) | `shouldCreateUser: true`: `email.ts:36`. `auth_config.test.mjs:79` | on |
+| 14 | Confirm email; secure email change | true; true (`config.toml:67-69`) | `auth_config.test.mjs:76-77` | on; on |
+| 15 | Site URL and redirect allowlist (URL Configuration) | `https://earlyletters.com` and exactly `https://earlyletters.com/auth/callback`, no wildcard (`config.toml:33,40`) | The app sends only this redirect: `email.ts:37`, `links.logic.ts:24`. `auth_config.test.mjs:60-71` | exact, one entry |
+| 16 | Custom SMTP through Resend (Emails > SMTP Settings) | none; `[auth.email.smtp]` is commented out locally (`config.toml:78`); `auth_config.test.mjs:94` | Sender `hello@earlyletters.com`, port 465: AUTH_SETUP 4.2. Without it Supabase's own sender caps and brands the mail | on, sender domain verified in Resend |
 | 17 | Bot check on email send (Attack Protection, Cloudflare Turnstile) | not in `config.toml` | Nothing sends a `captchaToken` today (grep of `apps`, `packages`, `supabase`: no Turnstile code). With the check on, the server refuses a send without a token, so turning it on before FP-20 ships breaks every email sign-in | on before the public TestFlight link (O-7, CL-070), with FP-20; the Turnstile subprocessor row does not exist yet (`docs/legal/subprocessors.md` has only Cloudflare R2) and is owed by `legal` (FP-20 dependency) |
 | 18 | Hook: before user created | not in `config.toml` | `compliance_gates.test.mjs` (PR #424) | on (O-4) |
-| 19 | Apple provider client ids (every bundle id) | `enabled = false` locally (`config.toml:140`) | `com.earlyletters.scribe` and `.preview`, `.dev`: AUTH_SETUP 2.6 | on, ids listed |
-| 20 | Password sign-in path | no key exists (`config.toml:60-61`) | The app never offers it; card O-21 | cannot be turned off; staging probe (OQ-F8, owner `security`) |
-| 21 | Email templates (Confirm signup, Magic link, Email change, Reauthentication) | `supabase/templates/` via `config.toml:94-108` | Link `https://earlyletters.com/auth/callback#token_hash=...&type=email`; `auth_config.test.mjs:107` | loaded, same body in the first two |
+| 19 | Apple provider client ids (every bundle id) | `enabled = false` locally (`config.toml:145`) | `com.earlyletters.scribe` and `.preview`, `.dev`: AUTH_SETUP 2.6 | on, ids listed |
+| 20 | Password sign-in path | no key exists (`config.toml:61-62`) | The app never offers it; card O-21 | cannot be turned off; staging probe (OQ-F8, owner `security`) |
+| 21 | Email templates (Confirm signup, Magic link, Email change, Reauthentication) | `supabase/templates/` via `config.toml:95-109` | Link `https://earlyletters.com/auth/callback#token_hash=...&type=email`; `auth_config.test.mjs:107` | loaded, same body in the first two |
 
 Rows 1 to 19 follow the design's table (its 14 rows, the three added in round 2, and the rate-limit split into 4 to 7). Rows 20 and 21 are added here because a wrong value breaks sign-in or changes what a person receives.
 
