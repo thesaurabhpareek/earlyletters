@@ -6540,7 +6540,7 @@ Source: `docs/analytics/instrumentation/ENGINEERING-REQUIREMENTS-21nov.md` (#120
 - Test: `packages/analytics/test/registry.test.ts` (rule tests).
 
 #### BL-2122 PostHog adapter P7: basics helper and call-site constants (from BL-1235)
-- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: S. Depends on: none.
+- Status: in-review (PR #2074). Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: S. Depends on: none.
 - Gate: nothing in this row turns analytics on in any build; the default stays `basicsPolicy` `ask_first` (D-163).
 - Satisfies: none claimed: build work for D-163 (ER-A00).
 - Scope: P7 of the plan, read against what is on develop first: `trackers.ts`, `buckets.ts`, `lifecycle.ts`, `observe.ts`, `support.ts`, `helpers.test.ts` and `observe.test.ts` already exist, so the missing piece is `packages/analytics/src/basics.ts` (`createBasics`), its one export line in `index.ts`, and the tests in `consent-crash.test.ts` that call `createBasics` or `createTrackers` (split out of the describe P4 left behind). It needs P2 and P4 only (both merged), so it can land before P5 and P6; the `index.ts` export lines are one line each, so a merge conflict there is resolved by keeping both.
