@@ -295,7 +295,7 @@ apps/web/src/content/site.ts#site.authConfirm.notYou,site,website,apps/web/src/c
 apps/web/src/content/site.ts#site.authConfirm.home,site,website,apps/web/src/content/site.ts,329,en,Back to ${NAME},15,,,,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#site.openApp.title,site,website,apps/web/src/content/site.ts,338,en,Open ${NAME},12,,,,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#site.openApp.line,site,website,apps/web/src/content/site.ts,339,en,Open ${NAME} on your iPhone.,28,,,,,,cmo,live on develop,web-content
-apps/web/src/content/site.ts#site.openApp.body,site,website,apps/web/src/content/site.ts,340,en,"If ${NAME} is on this phone, tap below. If it is not, you can get it from the App Store.",88,,,,,,cmo,live on develop,web-content
+apps/web/src/content/site.ts#site.openApp.body,site,website,apps/web/src/content/site.ts,340,en,"If ${NAME} is on this phone, tap below. If it isn't, you can get it from the App Store.",87,,,,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#site.openApp.bodyPrelaunch,site,website,apps/web/src/content/site.ts,341,en,"If ${NAME} is on this phone, tap below.",39,,,,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#site.openApp.open,site,website,apps/web/src/content/site.ts,342,en,Open ${NAME},12,,,,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#site.openApp.get,site,website,apps/web/src/content/site.ts,343,en,Get ${NAME} on the App Store,28,,,,,,cmo,live on develop,web-content

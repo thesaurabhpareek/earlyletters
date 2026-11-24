@@ -331,13 +331,13 @@ export const site = {
 
   /**
    * The page behind the link at the end of most emails, https://earlyletters.com/open (app/open/page.tsx; BL-510,
-   * TPL-06). It shows only when the app did not open the link. It carries no token and asks for nothing. PROPOSED
-   * words: they need the founder's approval before this page is merged.
+   * TPL-06). It shows only when the app did not open the link. It carries no token and asks for nothing. Exec read
+   * 24 Nov (CMO, CLO, Claude roles, not counsel): approved with this wording.
    */
   openApp: {
     title: `Open ${NAME}`,
     line: `Open ${NAME} on your iPhone.`,
-    body: `If ${NAME} is on this phone, tap below. If it is not, you can get it from the App Store.`,
+    body: `If ${NAME} is on this phone, tap below. If it isn't, you can get it from the App Store.`,
     bodyPrelaunch: `If ${NAME} is on this phone, tap below.`,
     open: `Open ${NAME}`,
     get: `Get ${NAME} on the App Store`,
