@@ -83,7 +83,7 @@ check('rate limits match supabase/auth-email.md 3.6', () => {
   assert.deepEqual(auth.rate_limit, { email_sent: 100, sign_in_sign_ups: 30, token_verifications: 30, token_refresh: 150 });
 });
 
-check('sessions and sign-in switches', () => {
+check('[IAM-R07][IAM-R11] sessions and sign-in switches (BL-727 pins the reuse interval)', () => {
   assert.equal(auth.jwt_expiry, 900);
   assert.equal(auth.enable_anonymous_sign_ins, false);
   assert.equal(auth.enable_manual_linking, false);
