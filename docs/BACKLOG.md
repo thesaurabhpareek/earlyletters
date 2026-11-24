@@ -12141,6 +12141,7 @@ Each item below either got a row here or was linked to the row that already owns
 - Scope: `settleRetired` sends all overflow ids in one call (up to 21, the function's cap) and removes them from the phone only after a 202; a partial failure removes nothing; a 429 stops the loop. `apps/mobile/src/lib/analytics/forget-retired.ts` accepts a list. Counts only in logs, never the ids.
 - Done when: a test shows N overflow ids produce one call with up to 21 ids, a 429 keeps every id, and a 202 clears them; `apps/mobile/test/analytics-forget-retired.test.ts` still passes.
 - Source: the BL-1252 server design of 24 Nov 2026 (scratch note, not in the repo, so its figures are unverifiable until the note is filed in the repo), sections 3 and 6. Not verified: the code lines were read from the design, not re-read here.
+- Note: 24 Nov 2026, from the review of PR #2036, read on develop in `packages/analytics/src/consent.ts` (`revoke`, `load`, `settleRetired`). A batch of retired ids can hold a duplicate for two reasons. One is a crash between the write of the retired list and the removal of the live id (both `revoke` and the major-bump path in `load` write the list first), so the same id is retired twice on the next run. The other is two overlapping `revoke()` calls: the second still sees the live id while the first awaits the write of the list (`consent.ts:269-277`, no guard in `client.ts`), so no crash is needed. If it happens, the server counts fewer ids than were sent, the phone sees a mismatch and retries forever. It fails safe and keeps the ids but never settles: dedupe the retired list on insert (in `revoke` and in `load`), and add a test with two overlapping revokes (and one for a duplicate already stored). Rare, so Owner analytics engineer, P3. The batch order is correct: `retired` is newest first, so the overflow batch is the oldest ids and the comments match the code.
 
 #### BL-2164 BL-1252 PR 4a: a global hourly ceiling table and function for the signed-out withdrawal route
 - Status: blocked (BL-1062 is proposed and waits on FD-4; the hosted apply is a founder item, FT or FH step). Mode: agent. Owner: privacy engineer. Milestone: before the production readiness build. Size: S. Depends on: BL-1062.
@@ -12560,3 +12561,50 @@ Source: reviews of PRs #1999, #2006 and #2011, and the exec-reading rule of D-17
 - Scope: (1) the NS-53 owner (mobile or product) lists which of the 174 NS-53 rows have a test that can honestly carry the id, retitles that test with `[NS-53-Rn]`, and names the rest as unbuilt; the unbuilt rows go to Karma for a ruling like CR-227, never into the baseline without one. (2) Fix NS-21-R12b (cited in `apps/mobile/test/no-system-indexing.test.ts`, defined by no card) at its source: the test title or the card. (3) Fix NS-51-R43 at its source the same way, or name its owner. (4) Delete the 67 stale lines with `--update-ns-baseline`.
 - Done when: `node scripts/trace.mjs --no-write --check` exits 0 on develop.
 - Source: the reconcile run for BL-2030, 24 Nov 2026. Not verified: the NS-53 rows were not read.
+
+
+## Review follow-ups of 24 Nov 2026, fourth batch (BL-2229 to BL-2234; filed by the product agent, docs only; BL-2163 also carries one note from the review of PR #2036)
+
+Source: reviews of merged PRs #1998, #2007, #2008, #2010, #2012, #2024 and #2026. The ids were chosen when the highest id on `develop` (`ed42f393e`) was BL-2224; they start five above it (BL-2229) to leave room for rows in flight. Since then `develop` has added up to BL-2237 and open PR #2040 adds BL-2238; no id here collides (checked 24 Nov 2026). Item 6 of the batch, #1998 (DB-IP link and the tautological mutant), is already BL-2215 and is not filed again. All rows are `proposed`; Karma sets `ready`. Nothing here is run.
+
+#### BL-2229 HogQL name check `eventIdent`: a committed test that a bad event name is refused
+- Status: proposed (found in review of PR #2012; Karma sets `ready`). Mode: agent. Owner: analytics engineer. Milestone: M15. Size: XS. Priority: P3. Depends on: none.
+- Satisfies: none claimed (test cover for the wire-name check added in #2012).
+- Scope: `eventIdent` in `packages/analytics/src/insights/hogql.ts` (line 61, read on develop `ed42f393e`) has no committed test. Add one in `packages/analytics/test/` that a name with a quote, a space or a semicolon is refused, that an allowed wire name passes unchanged, and that a mutant which drops the check fails it.
+- Done when: `npm test -w packages/analytics` passes and the mutant fails the new test.
+- Source: review of PR #2012, 24 Nov 2026.
+
+#### BL-2230 Analytics source-scan `stripComments` mishandles a regex literal: add a test, then fix
+- Status: proposed (found in review of PR #2026; Karma sets `ready`). Mode: agent. Owner: analytics engineer. Milestone: M15. Size: S. Priority: P3. Depends on: none.
+- Satisfies: BL-2168 (source-scan checks see the real calls), cited and not changed.
+- Scope: `stripComments` in `apps/mobile/test/helpers/strip-comments.ts` treats `//` inside a regex literal as a comment start, so `/a\/\//; track(2)` hides the `track(2)` call after the regex from `analytics-tier-wired.test.ts` and `analytics-forget-retired-wired.test.ts`. `lib/analytics/index.ts` has no such pattern today, so nothing is missed now. (1) Add the case to `apps/mobile/test/strip-comments.test.ts` and see it fail. (2) Fix the helper so the call stays visible, without letting a real `//` comment through.
+- Done when: the new case fails before the fix and passes after; `npm test -w apps/mobile` passes for the two wired tests and `strip-comments.test.ts`.
+- Source: review of PR #2026, 24 Nov 2026.
+
+#### BL-2231 BL-467 point 4: name PR #2011 for the age gate, and correct the header of `android-double-announce.test.ts`
+- Status: proposed (found in review of PR #2007; Karma sets `ready`). Mode: agent. Owner: mobile engineer. Milestone: M11. Size: XS. Priority: P3. Depends on: none.
+- Satisfies: BL-467 point 4, cited and not changed.
+- Scope: read both texts on develop first and fix only what is still wrong. (1) The header of `apps/mobile/test/android-double-announce.test.ts` says "the two direct calls left in the app" are skipped on Android; the age gate is not guarded on develop (the guard is in draft PR #2011), so the header overstates the guard. (2) The BL-467 row (Status line and the build Note) says the age gate is "in a separate fenced draft PR" and does not name it; name PR #2011. BL-2222 already holds the approval precondition and is not changed.
+- Done when: the header says which file the test guards and that the age gate is in #2011; the BL-467 row names #2011; `npm test -w apps/mobile` passes for the file.
+- Source: review of PR #2007, 24 Nov 2026.
+
+#### BL-2232 CCO-31: the diff of `age-gate-screen.tsx` is described as two lines; check against the PR and correct
+- Status: proposed (found in review of PR #2010; Karma sets `ready`). Mode: agent. Owner: privacy engineer (the compliance engineer handle has no backlog owner name in `agents/roster.json`). Milestone: M15. Size: XS. Priority: P3. Depends on: none.
+- Satisfies: none claimed (accuracy of a recorded ruling).
+- Scope: the Evidence line of CCO-31 in `docs/agents/exec/RULINGS.md` says the fenced file's diff is two lines (the import and the guard). The reviewer counted three, one of them a comment. Open the head the ruling names and the file in #2011, count, and correct the wording only if it is still wrong. The verdict and the way back are not changed. Entries are not rewritten otherwise; if it is wrong, add a one-line correction under the entry.
+- Done when: CCO-31 states the right count, or the PR body says it was already right.
+- Source: review of PR #2010, 24 Nov 2026.
+
+#### BL-2233 Export README line: the PROPOSED marker, and a crash-mention check that fails a reworded line
+- Status: proposed (found in review of PR #2008; Karma sets `ready`). Mode: agent. Owner: content. Milestone: M15. Size: S. Priority: P3. Depends on: none.
+- Satisfies: D-172 and CR-178 item 2 (words marked PROPOSED until read); PRIV-R21, cited and not changed.
+- Scope: (1) the export README line in `packages/content/src/features/export.en.ts` lacks the `PROPOSED` comment (with D-172) that the other consent lines carry; add it, so the content map shows it as proposed (BL-2219). No word changes. (2) the regex in `packages/content/test/consent-claims.test.ts` would still pass if the crash-report mention were reworded; tighten it to the claim it pins, with a mutant that rewords the mention and must fail.
+- Done when: the comment is present; the mutant fails; `npm test -w packages/content` passes.
+- Source: review of PR #2008, 24 Nov 2026.
+
+#### BL-2234 Journey index: a Storage sentence a regenerate would drop (the stale J14-01 line is BL-2237)
+- Status: proposed (found in review of PR #2024; Karma sets `ready`). Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Priority: P3. Depends on: none.
+- Satisfies: none claimed (accuracy of the journey index).
+- Scope: `docs/release/journey/INDEX.md` is generated by `apps/mobile/e2e-web/support/build-index.mjs` from `steps/*.json`. The stale "Not capturable on web" line about J14-01 is BL-2237 (see BL-2237; not repeated here). This row is only: the J14-01 row's sentence that the language row lives on Storage, which is not captured on web, is in the index and not in the step note, so a regenerate drops it; move it into the J14-01 flow step note. Regenerate by the README procedure and keep the diff to that one sentence.
+- Done when: a regenerate leaves the Storage sentence in place and `node apps/mobile/e2e-web/support/build-index.mjs --check` (or the README's check) passes.
+- Source: review of PR #2024, 24 Nov 2026.
