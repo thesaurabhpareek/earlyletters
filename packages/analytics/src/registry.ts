@@ -342,7 +342,7 @@ export const REGISTRY = {
     tier: 'consented',
     props: { surface: SURFACE, route: ROUTE, rank: opt(int(1, 9)) },
   },
-  moments_card_impressed: {
+  'book:moments_card_view': {
     stage: 'return',
     decision: "Whether families see the question and look-back cards on Moments, so we decide which of the two places earns its spot.",
     area: 'moments',
@@ -352,7 +352,7 @@ export const REGISTRY = {
     tier: 'consented',
     props: { slot: MOMENTS_SLOT },
   },
-  moments_card_tapped: {
+  'book:moments_card_open': {
     stage: 'return',
     decision: "Whether a Moments card makes a family start a letter, so we decide if the question or look-back card stays on that tab.",
     area: 'moments',
@@ -400,8 +400,8 @@ export const EV = {
   controlTapped: 'control_tapped',
   surfaceImpressed: 'surface_impressed',
   perfMeasured: 'perf_measured',
-  momentsCardImpressed: 'moments_card_impressed',
-  momentsCardTapped: 'moments_card_tapped',
+  momentsCardImpressed: 'book:moments_card_view',
+  momentsCardTapped: 'book:moments_card_open',
 } as const satisfies Record<string, RegistryName>;
 
 /** Property names, as constants. The only way call sites name a property. Includes the three global properties the client adds. */

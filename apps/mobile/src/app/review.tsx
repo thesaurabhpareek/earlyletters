@@ -446,7 +446,7 @@ export default function Review() {
   const togglePlay = () => {
     if (!player.playing) {
       track('review_action', { action: 'play_back' });
-      track('playback_started', { surface: 'review', author_relation: 'self', version: 'original' });
+      track('book:playback_start', { surface: 'review', author_relation: 'self', version: 'original' });
     }
     player.toggle();
   };

@@ -6,7 +6,7 @@
 import { describe, expect, it } from 'vitest';
 import { REGISTRY, createAnalytics, createTrackers, EVENTS, memoryStorage, recordingProvider, sanitizeEvent, type Violation } from '../src';
 
-const MOMENTS = ['moments_card_impressed', 'moments_card_tapped'] as const;
+const MOMENTS = ['book:moments_card_view', 'book:moments_card_open'] as const;
 
 async function setup(grant: boolean) {
   const provider = recordingProvider();
@@ -39,7 +39,7 @@ describe('Moments events (NS-53-R251, NS-53-R167)', () => {
 
   it('[NS-53-R251-b] any other Moments event name is rejected and nothing is sent', async () => {
     const { analytics, provider, violations } = await setup(true);
-    for (const n of ['moments_home_viewed', 'moments_ask_impressed', 'moments_first_paint', 'screen.moments_home.viewed', 'ui.moments_card.impressed', 'moments_permission_result', 'moments_card_dismissed']) {
+    for (const n of ['moments_home_viewed', 'moments_ask_impressed', 'moments_first_paint', 'screen.moments_home.viewed', 'ui.moments_card.impressed', 'moments_permission_result', 'moments_card_dismissed', 'book:moments_card_dismiss', 'book:moments_home_view']) {
       expect(sanitizeEvent(n, { slot: 'question' }).props, n).toBeNull();
       analytics.track(n as never, { slot: 'question' } as never);
     }
@@ -85,7 +85,7 @@ describe('Moments events (NS-53-R251, NS-53-R167)', () => {
     expect(t.trackMomentsCard({ action: 'tapped', slot: 'question' })).toBe('queued');
     await analytics.flush();
     const got = provider.captured();
-    expect(got.map((e) => e.event)).toEqual(['moments_card_impressed', 'moments_card_tapped']);
+    expect(got.map((e) => e.event)).toEqual(['book:moments_card_view', 'book:moments_card_open']);
     expect(got.map((e) => e.properties.slot)).toEqual(['look_back', 'question']);
     for (const e of got) expect(Object.keys(e.properties).filter((k) => !['schema_version', 'child_count_bucket', 'sample_pct'].includes(k))).toEqual(['slot']);
   });

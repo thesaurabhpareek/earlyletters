@@ -131,8 +131,8 @@ export function createTrackers(analytics: Pick<Analytics, 'track'>) {
     },
 
     /** NS-53 R251. Only the slot leaves the phone; wiring and the once-per-slot-per-day rule belong to the Moments flag PR. */
-    trackMomentsCard(i: { action: 'impressed' | 'tapped'; slot: V<'moments_card_tapped', 'slot'> }): TrackResult {
-      return track(i.action === 'tapped' ? 'moments_card_tapped' : 'moments_card_impressed', { slot: i.slot });
+    trackMomentsCard(i: { action: 'impressed' | 'tapped'; slot: V<'book:moments_card_open', 'slot'> }): TrackResult {
+      return track(i.action === 'tapped' ? 'book:moments_card_open' : 'book:moments_card_view', { slot: i.slot });
     },
 
     trackCaptureDiscarded(i: { mode: 'spoken' | 'typed'; stage: 'listening' | 'review'; audioMs?: number | null }): TrackResult {
@@ -161,11 +161,11 @@ export function createTrackers(analytics: Pick<Analytics, 'track'>) {
     },
 
     trackReadTogetherStarted(i: { childIndex: number; access: 'plus' | 'free'; letters: number }): TrackResult {
-      return track('read_together_started', { child_ordinal: childOrdinal(i.childIndex), access: i.access, letters_bucket: lettersBucket(i.letters) });
+      return track('book:read_together_start', { child_ordinal: childOrdinal(i.childIndex), access: i.access, letters_bucket: lettersBucket(i.letters) });
     },
 
     trackReadTogetherEnded(i: { reason: 'finished' | 'stopped' | 'interrupted'; durationMs: number; lettersHeard: number }): TrackResult {
-      return track('read_together_ended', {
+      return track('book:read_together_end', {
         reason: i.reason,
         session_bucket: sessionBucket(i.durationMs),
         letters_heard: clampInt(i.lettersHeard, 0, 50),

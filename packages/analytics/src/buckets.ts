@@ -10,10 +10,10 @@ type PropValues<E extends keyof Catalog, P extends keyof Catalog[E]['props']> = 
 
 export type AudioBucket = PropValues<'letter_saved', 'audio_bucket'>;
 export type WordsBucket = PropValues<'letter_saved', 'words_bucket'>;
-export type LettersBucket = PropValues<'read_together_started', 'letters_bucket'>;
+export type LettersBucket = PropValues<'book:read_together_start', 'letters_bucket'>;
 export type LatencyBucket = PropValues<'transcription_completed', 'latency_bucket'>;
 export type DaysBucket = PropValues<'app_opened', 'days_since_last_open'>;
-export type SessionBucket = PropValues<'read_together_ended', 'session_bucket'>;
+export type SessionBucket = PropValues<'book:read_together_end', 'session_bucket'>;
 export type FirstLetterBucket = PropValues<'analytics_opted_in', 'time_to_first_letter'>;
 export type ExportSizeBucket = PropValues<'keeping:export_complete', 'size_bucket'>;
 export type ExportDurationBucket = PropValues<'keeping:export_complete', 'duration_bucket'>;

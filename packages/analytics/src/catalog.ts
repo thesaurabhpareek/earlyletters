@@ -70,8 +70,9 @@ export const GLOBAL_PROPS = {
  * 17: wire-names step 2b, slice 3 (BL-2176, CR-212, CR-213): the `family` area is renamed: `invite_opened` to `family:invite_open`, `invite_created` to `family:invite_create`, `invite_accepted` to `family:invite_accept`, `invite_failed` to `family:invite_fail`. No property was added or widened, no tier changed, and no build has sent any of them (analytics are off in every profile, CR-186).
  * 18: wire-names step 2b, slice 4 (BL-2176, CR-212, CR-213): the `onboarding` area is renamed: `auth_succeeded` to `onboarding:sign_in_complete`, `auth_failed` to `onboarding:sign_in_fail`, `auth_deferred` to `onboarding:sign_in_dismiss`, `child_added` to `onboarding:book_create`. No property was added or widened, no tier changed, and no build has sent any of them (analytics are off in every profile, CR-186).
  * 19: wire-names step 2b, slice 5 (BL-2176, CR-212, CR-213): the `notifications` area is renamed: `reminder_prime_shown` to `notifications:reminder_prime_view`, `reminder_prime_result` to `notifications:reminder_prime_submit`, `os_permission_result` to `notifications:permission_submit`, `reminder_schedule_set` to `notifications:schedule_update`, `reminder_suppressed` to `notifications:reminder_cancel`, `notification_opened` to `notifications:notification_open`. No property was added or widened, no tier changed, and no build has sent any of them (analytics are off in every profile, CR-186).
+ * 20: wire-names step 2b, slice 6 (BL-2176, CR-212, CR-213): the `book` area is renamed: `playback_started` to `book:playback_start`, `read_together_started` to `book:read_together_start`, `read_together_ended` to `book:read_together_end`, `moments_card_impressed` to `book:moments_card_view`, `moments_card_tapped` to `book:moments_card_open`. No property was added or widened, no tier changed, and no build has sent any of them (analytics are off in every profile, CR-186).
  */
-export const SCHEMA_VERSION = 19;
+export const SCHEMA_VERSION = 20;
 
 /**
  * SHA-256 of `JSON.stringify(catalogShape())` per schema version. Versions 1
@@ -95,6 +96,7 @@ export const SCHEMA_FINGERPRINTS: Readonly<Record<number, string>> = Object.free
   17: '105824cb58b64312c2f6af04515e1ebbf8d530ac62792ecbe657c51a88e254ff',
   18: 'fd0665de32a9821e6431a3ef21a7d8ca8c7e80f45c7575e4a463c60ccc7795cb',
   19: 'da3f70873564fbf401c13264ba0c6ea2f7946ba6e534e10760011602fd58bab0',
+  20: '283ff4fd73798260a720e784cc9ecaba2bdc5dbb524c0c06635bfab026418a66',
 });
 
 // ---------------------------------------------------------------------------
@@ -234,7 +236,7 @@ export const HELD_EVENTS = {
     },
   },
   // --- Book and Read together ------------------------------------------------
-  playback_started: {
+  'book:playback_start': {
     area: 'book',
     when: 'A recording starts playing',
     reqs: ['PRD-REQ-016'],
@@ -246,7 +248,7 @@ export const HELD_EVENTS = {
       version: oneOf('listening_copy', 'original'),
     },
   },
-  read_together_started: {
+  'book:read_together_start': {
     area: 'book',
     when: 'Read together session starts',
     reqs: ['C-REQ-034', 'PRD-REQ-016'],
@@ -254,7 +256,7 @@ export const HELD_EVENTS = {
     tier: 'consented',
     props: { child_ordinal: CHILD_ORDINAL, access: oneOf('plus', 'free'), letters_bucket: LETTERS_BUCKET },
   },
-  read_together_ended: {
+  'book:read_together_end': {
     area: 'book',
     when: 'Read together session ends',
     reqs: ['PRD-REQ-016'],

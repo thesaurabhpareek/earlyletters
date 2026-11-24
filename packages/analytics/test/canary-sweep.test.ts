@@ -45,7 +45,7 @@ const E = (ev: keyof typeof EVENTS, p: string): string => {
 const VALID: Record<string, unknown> = {
   trackLetterSaved: { mode: 'spoken', inBook: true, childIndex: 0, role: 'parent', promptKind: null, audioMs: 4000, wordCount: 30, machineEdits: 1, editsReverted: 0, editsRejected: 0, engine: E('letter_saved', 'engine'), fromNotificationWithin2h: false },
   trackCaptureStarted: { mode: 'typed', source: E('capture_started', 'source'), promptKind: null, childIndex: 0, role: 'parent' },
-  trackMomentsCard: { action: 'tapped', slot: E('moments_card_tapped', 'slot') },
+  trackMomentsCard: { action: 'tapped', slot: E('book:moments_card_open', 'slot') },
   trackCaptureDiscarded: { mode: 'spoken', stage: 'review', audioMs: 4000 },
   trackTranscriptionCompleted: { engine: E('transcription_completed', 'engine'), modelId: null, audioMs: 4000, latencyMs: 900, outcome: E('transcription_completed', 'outcome') },
   trackReadTogetherStarted: { childIndex: 0, access: 'free', letters: 3 },
