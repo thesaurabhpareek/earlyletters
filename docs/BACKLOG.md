@@ -12566,8 +12566,8 @@ Source: reviews of PRs #1999, #2006 and #2011, and the exec-reading rule of D-17
 ## Follow-up of CR-227 (BL-2238; filed by the qa agent, docs only)
 
 #### BL-2238 Clear the 176 NS rows that CR-227 did not seed, so `trace.mjs --no-write --check` exits 0 on develop
-- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
-- Priority: P2. Gate: none (CR-227 rules only the 18 NS-54 rows; this row carries no baseline growth). Lane: qa.
+- Status: in review (branch `chore/trace-ns-clear-bl-2238`, 24 Nov 2026: NS-53-R1, R221 and R247 and NS-51-R43 get their ids on the tests that prove them; NS-21-R12b is retitled `[NS-21-R12]` and NS-53-R56's priority cell reads DROPPED; CR-228 seeds the other 170 NS-53 rows once; `--update-ns-baseline` deletes the 67 stale lines; `node scripts/trace.mjs --no-write --check` exits 0 on the branch). Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
+- Priority: P2. Gate: none (CR-227 rules only the 18 NS-54 rows; the 170 NS-53 lines are seeded under CR-228). Lane: qa.
 - Satisfies: gate G0 (BL-964); refines BL-1869 and BL-2030.
 - Problem and evidence: on develop `cf4de7f40` `node scripts/trace.mjs --no-write --check` exits 1 with 194 FAIL lines, all "open and not in docs/ops/trace-ns-baseline.txt": 18 NS-54 (seeded by CR-227), 174 NS-53 (G01, G03, G04, G05 and 170 R rows), NS-21-R12b and NS-51-R43. It also prints 67 "stale baseline line" notices for rows that now have a test.
 - Scope: (1) the NS-53 owner (mobile or product) lists which of the 174 NS-53 rows have a test that can honestly carry the id, retitles that test with `[NS-53-Rn]`, and names the rest as unbuilt; the unbuilt rows go to Karma for a ruling like CR-227, never into the baseline without one. (2) Fix NS-21-R12b (cited in `apps/mobile/test/no-system-indexing.test.ts`, defined by no card) at its source: the test title or the card. (3) Fix NS-51-R43 at its source the same way, or name its owner. (4) Delete the 67 stale lines with `--update-ns-baseline`.
