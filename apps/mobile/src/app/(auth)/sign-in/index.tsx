@@ -6,13 +6,13 @@
  * One title, one body sentence, the providers, the registered privacy line and
  * "Not now", which always closes and changes nothing on this phone (the app is local-first).
  *
- * Opened with `/sign-in?trigger=first_letter|invite|invite_create|sign_in|settings`; the signed-out deletion screen adds
+ * Opened with `/sign-in?trigger=first_letter|third_letter|invite|invite_create|sign_in|settings`; the signed-out deletion screen adds
  * `&reason=cancel_deletion`, which only changes the body (sheet-body.logic.ts).
  * Terms, the age step and sensitive-data consent come after sign-in, on
  * /sign-in/consent (my_sync_gate decides which).
  *
- * Visual (S52): a sheet, no illustration, no lamp. With a book on this phone (first_letter, settings,
- * invite_create) the small closed cover sits at the right of the title row: the sheet is about that
+ * Visual (S52): a sheet, no illustration, no lamp. With a book on this phone (first_letter, third_letter,
+ * settings, invite_create) the small closed cover sits at the right of the title row: the sheet is about that
  * book. It is decorative (the title and body say the same), so it is hidden from VoiceOver, and it
  * steps aside at accessibility sizes so the words keep the width.
  * Motion: no entrance. A provider tap puts that button in its busy state and disables the others;
@@ -41,7 +41,7 @@ import { AppleButton, Busy, ErrorLine, PrivacyLine, ProviderButton, QuietButton,
 import { fill } from '@/lib/copy';
 
 /** The sheet is about the book already on this phone for these entry points (S52 Visual). */
-const ABOUT_THIS_BOOK: readonly SignInTrigger[] = ['first_letter', 'settings', 'invite_create'];
+const ABOUT_THIS_BOOK: readonly SignInTrigger[] = ['first_letter', 'third_letter', 'settings', 'invite_create'];
 
 export default function SignInSheet() {
   const auth = useAuth();
@@ -73,8 +73,9 @@ export default function SignInSheet() {
   useEffect(() => {
     if (signedInAtOpen) return;
     track('auth_sheet_shown', { trigger });
-    // Keep the book (second letter, or the first save of a later session; lib/asks) is this session's one ask (PRD-REQ-001).
-    if (trigger === 'first_letter') noteAskShown();
+    // Keep the book (second letter, or the first save of a later session; lib/asks) and its one re-offer after the third
+    // letter (`third_letter`, same words, BL-1562) are this session's one ask (PRD-REQ-001).
+    if (trigger === 'first_letter' || trigger === 'third_letter') noteAskShown();
   }, [trigger]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const run = async (method: AuthMethod, go: () => Promise<Outcome>) => {

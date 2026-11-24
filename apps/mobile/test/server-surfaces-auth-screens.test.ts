@@ -95,7 +95,7 @@ describe('[S52] the sign-in sheet', () => {
   });
 
   it('the cover sits beside the title only for a sheet about this book, and is not read twice', () => {
-    expect(sheet).toMatch(/const ABOUT_THIS_BOOK: readonly SignInTrigger\[\] = \['first_letter', 'settings', 'invite_create'\]/);
+    expect(sheet).toMatch(/const ABOUT_THIS_BOOK: readonly SignInTrigger\[\] = \['first_letter', 'third_letter', 'settings', 'invite_create'\]/);
     expect(sheet).toMatch(/<BookCover name=\{cover\} size="sm" animate=\{false\} \/>/);
     expect(sheet).not.toMatch(/<BookCover[^>]*accessibilityLabel/);
   });

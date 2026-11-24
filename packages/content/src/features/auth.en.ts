@@ -32,6 +32,8 @@ export const authCopy = {
     titles: {
       // Build 12: the words of a letter sync to the account; recordings stay on the phone that made them (no backup).
       first_letter: "Keep {child}'s words on any phone",
+      // The Keep the book re-offer after the third letter (BL-519, BL-1562): the same ask, the same words (CR-145).
+      third_letter: "Keep {child}'s words on any phone",
       // Build 12 hides co-parent surfaces (BL-604, D-126), so these two name no book, no invite and no co-parent.
       invite: 'Sign in',
       invite_create: 'Sign in',
@@ -41,6 +43,8 @@ export const authCopy = {
     bodies: {
       // What is true, in two short sentences; never "sign in so". account.signedOutBody says the same, word for word.
       first_letter: 'The words of your letters come with you to a new phone. Recordings are kept on the phone that made them.',
+      // Same ask as first_letter, word for word (CR-145); only the analytics trigger differs.
+      third_letter: 'The words of your letters come with you to a new phone. Recordings are kept on the phone that made them.',
       invite: 'Sign in on this phone to carry on.',
       invite_create: 'Sign in on this phone to carry on.',
       // Kept: it prevents a second account (PRD A F4).
