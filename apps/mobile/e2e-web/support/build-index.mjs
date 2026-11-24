@@ -43,6 +43,7 @@ const TITLES = {
   crash: 'Crash (fault injected)',
   'co-parent-sharing': 'Two parents: invite, join, and the Family tab (server features on)',
   'sign-in': 'Sign in and Account (server features on)',
+  'missing-screens': 'Missing screens: spoken language and legal',
 };
 
 const MAX_NAMED = 20;

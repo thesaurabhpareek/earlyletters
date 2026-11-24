@@ -311,3 +311,23 @@ export function lengthA11y(ms: number | null | undefined): string | null {
   const s = Math.round(ms / 1000);
   return fill(copy.listen.elapsedA11y, { minutes: Math.floor(s / 60), seconds: s % 60 });
 }
+
+/**
+ * BL-1999, spec 15 section 3 (NEU-003, CPO-68, D-087): whether Listen offers "Type instead" beside the circle before
+ * she records. It shows while her words cannot appear without a decision from her: the speech files are not on this
+ * phone, and it is not the case that she said yes and the download is moving or queued. A hold (Wi-Fi, space, offline)
+ * or a failure with no retry in flight means words are not coming soon, so the offer shows. It never shows while a
+ * take is live (`startControl` false), so the one-element rule of a live take holds (F04-REQ-040). It reads state only:
+ * it starts no download and changes no stored choice.
+ */
+export function typedOfferShown(i: {
+  startControl: boolean;
+  onThisPhone: boolean;
+  choice: 'yes' | 'later' | null;
+  hold: 'waiting_for_wifi' | 'no_space' | 'offline' | null;
+  failure: string | null;
+}): boolean {
+  if (!i.startControl || i.onThisPhone) return false;
+  const wordsComing = i.choice === 'yes' && i.hold === null && i.failure === null;
+  return !wordsComing;
+}
