@@ -2952,7 +2952,7 @@ Severity: **S0** blocks build 2 or can lose a word or break a promise now; **S1*
   - Given a rule with no test, then it says "not yet".
 
 #### BL-603 Know what Supabase logs about the family on staging, and who can read it (SEC-10)
-- Status: deferred (after the 9 Nov go/no-go, CR-47). Mode: agent. Owner: platform. Severity: S1.
+- Status: ready (CR-188 passed the CR-47 trigger; ruled in CR-210, `infra/exec-rulings-2026-11-24-held-prs.md` section 9: runbook and template re-cut in the 24 Nov PR; the founder readback is queue row FO-2, production first, then staging). Mode: agent. Owner: platform. Severity: S1.
 - Who: `ops`.
 - Problem: the email link token travels in a GET query string (`apps/mobile/src/lib/auth/email.ts:82`); what Supabase logs and for how long is unverified; any session with the Supabase connector can read staging logs, and staging holds the family's data.
 - Acceptance:
