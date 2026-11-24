@@ -2283,3 +2283,141 @@ The entries in this batch (three stacked PRs) record each role's own ruling on t
 - Door: two-way while no vendor account exists and no number is stored; no once numbers are stored (the CLO's and CPrivO's). A vendor account with a card on file is a physical act and a queue row, written only if SMS proceeds. BL-1898's "founder decides spend" is read as: the exec review sets the cap, and the console act is the physical step.
 - Conditions: no vendor account, card, key or `[auth.sms]` setting before a ruling to ship SMS and this cap are both recorded; the Supabase `sms_sent` value is set from the real price and pinned in `supabase/tests/auth_config.test.mjs`; alerts carry counts only, never a number or a code. Challenger: CISO, with the CBO if a phone is ever tied to a plan.
 - Founder-only: no. Signed: Chief Financial Officer (Claude role, not an accountant)
+
+### CPO-89 PR 638 PRD V2: the baseline, not the live log (24 Nov 2026, CPO via Karma's session; Claude role)
+- Verdict: RULED (concur with CR-203). Full text: Project note `infra/exec-rulings-2026-11-24-held-prs.md` section 2.
+- Ruling: PRD V2 is the baseline frozen at D-130; later decisions live in `docs/DECISIONS.md` and later requirements in `docs/product/prd/REGISTRY.md`. The rows worth keeping (refused sign-up, the two-document consent sheet) are carried by BL-553 and the sign-in specs. Optional, not urgent: one banner line at the top of `docs/prd/v2/README.md` by the product agent.
+- Door: two-way.
+- Founder-only: no. Signed: Chief Product Officer (Claude role)
+
+### CPO-90 PR 733 NX-38 trace: evidence, not a requirement source (24 Nov 2026, CPO via Karma's session; Claude role)
+- Verdict: RULED (concur with CR-204). Full text: `infra/exec-rulings-2026-11-24-held-prs.md` section 3.
+- Ruling: land the trace with a banner saying it is a historical record that decides nothing; the NS cards are the requirement source. Do not reopen F1 to F10: they are answered by D-157 to D-172.
+- Door: two-way.
+- Founder-only: no. Signed: Chief Product Officer (Claude role)
+
+### CPO-91 PR 767 co-parent rows: keep BL-883 to BL-889 as proposed (24 Nov 2026, CPO via Karma's session; Claude role)
+- Verdict: RULED (concur with CR-207). Full text: `infra/exec-rulings-2026-11-24-held-prs.md` section 6.
+- Ruling: the real co-parent feature is post-1.0; groomed rows are not "work shipping dark" (CR-178). The PR's recommended defaults for its nine questions are the conservative starting point for BL-883 (collect less, hide more, release later) and bind nothing until BL-883's threat model and the exec read; if BL-883 disagrees, BL-883 wins. The release is a 1.0.x chosen after BL-883 sizes it. The invitee sees nothing about the child before agreeing (D-111 item 8).
+- Door: two-way.
+- Founder-only: no. Signed: Chief Product Officer (Claude role)
+
+### CPO-92 BL-410: the controls to capture are the ones the app says today (24 Nov 2026, CPO via Karma's session; Claude role, with CDesO-45)
+- Verdict: RULED (concur with CR-208). Full text: `infra/exec-rulings-2026-11-24-held-prs.md` section 7.
+- Ruling: Reading A. The BL-410 row is stale, not the app. The controls to capture are Add to {child}'s book, With small fixes, Exactly as said, and the tabs Home, Book, Me. No two-up "Sounds like me | Not quite" is wanted: it would be a new surface asking a parent to rate the machine's work.
+- Door: two-way.
+- Founder-only: no. Signed: Chief Product Officer (Claude role)
+
+### CPO-93 Wire names: no scope change; PM-file rows superseded (24 Nov 2026, CPO via Karma's session; Claude role)
+- Verdict: RULED (concur with CR-213). Full text: `infra/exec-rulings-2026-11-24-wire-names.md`.
+- Ruling: dropping 17 held events changes no release scope, date or promise, so it is not a CPO scope call. Where a PM-file row names an event the table now drops, merges or names differently, the table wins; the PM and standard rows are corrected at their next edit by their owner.
+- Door: two-way.
+- Founder-only: no. Signed: Chief Product Officer (Claude role)
+
+### CLO-42 PR 760 counsel packet addendum: close (24 Nov 2026, CLO via Karma's session; Claude role, not a lawyer)
+- Verdict: RULED (concur with CR-211). Full text: `infra/exec-rulings-2026-11-24-held-prs.md` section 10.
+- Ruling: close. The draft was not read question by question against Q109 to Q132 (stated); the packet's own overlap notes and the topic list map. One pass at retirement catches any topic with no home, each becoming a one-line new row. Q78 to Q106 are retired and never reused. A brief for a feature off in 1.0 would only age; BL-841 is the row that reopens it.
+- Door: two-way.
+- Founder-only: no. Signed: Chief Legal Officer (Claude role, not a lawyer)
+
+### CLO-43 BL-603: docs/legal/evidence accepted as the home (24 Nov 2026, CLO via Karma's session; Claude role, not a lawyer)
+- Verdict: RULED (concur with CR-210). Full text: `infra/exec-rulings-2026-11-24-held-prs.md` section 9.
+- Ruling: `docs/legal/evidence/` is accepted; Karma merges it (D-132, D-168). The triage comment's note on `docs/legal/**` was a limit on a triage session, not on the exec team. If the readback shows tokens or addresses in logs, the CLO drafts a Privacy line then.
+- Door: two-way.
+- Founder-only: no. Signed: Chief Legal Officer (Claude role, not a lawyer)
+
+### CCO-30 NX-38 R2 and R8 need a live check (24 Nov 2026, CCO via Karma's session; Claude role)
+- Verdict: RULED. Full text: `infra/exec-rulings-2026-11-24-held-prs.md` section 3.
+- Ruling: two NX-38 rows have nothing on `develop` and are UNVERIFIED either way: R2 (the "five addresses" the stores and policies name, written down and checked) and R8 (every public contact address receives mail and has a reader). They are claims to the public and must not be assumed; the gap-check PR files a row for each if still missing.
+- Door: two-way.
+- Founder-only: no. Signed: Chief Compliance Officer (Claude role)
+
+### CISO-16 PR 449 agent runner hardening: concur with closing (24 Nov 2026, CISO via Karma's session; Claude role, not an auditor)
+- Verdict: RULED (concur with CR-202). Full text: `infra/exec-rulings-2026-11-24-held-prs.md` section 1.
+- Ruling: CISO-15 already rules that `scripts/agents/**` is edited by an interactive session Karma directs, and that a harness author cannot be its own independent lens. A stack nobody can review inside the limit is a worse control than a small one. The pathguard and open-PR cap gate only labelled bot branches, and every interactive session posts as the founder.
+- Door: two-way.
+- Founder-only: no. Signed: Chief Information Security Officer (Claude role, not an auditor)
+
+### CISO-17 PR 656: the watch reads two numbers through an Edge Function, not a repository secret (24 Nov 2026, CISO via Karma's session; Claude role, not an auditor)
+- Verdict: RULED (concur with CR-209). Full text: `infra/exec-rulings-2026-11-24-held-prs.md` section 8.
+- Ruling: option A. A service-role key stays inside Supabase function secrets; GitHub holds only a function URL and a bearer token in an Environment `ops-watch`. Refused against `SECRETS_REVIEW.md` section 9, SEC-R04 and SK-05. Residual: a leaked token tells an attacker whether purge is stale; revoke is one console click.
+- Door: two-way.
+- Founder-only: no. Signed: Chief Information Security Officer (Claude role, not an auditor)
+
+### CISO-18 PR 759 scanner: one narrow exception, one scanner fix, one code fix (24 Nov 2026, CISO via Karma's session; Claude role, not an auditor)
+- Verdict: RULED (concur with CR-206). Full text: `infra/exec-rulings-2026-11-24-held-prs.md` section 5.
+- Ruling: allow `hiddenPlaces` by name and file (a persisted key; a rename would un-hide places); match network names on the whole identifier with a mutation test; make the error-code catch report a closed code; keep scanning the Moments library seam hard. No CODEOWNERS line for a non-account; pin the lists with a snapshot test. The scanner's "growing a list" rule is met by a named, file-scoped, reasoned exception.
+- Door: two-way.
+- Founder-only: no. Signed: Chief Information Security Officer (Claude role, not an auditor)
+
+### CISO-19 BL-603: run the log readback on production first (24 Nov 2026, CISO via Karma's session; Claude role, not an auditor)
+- Verdict: RULED (concur with CR-210). Full text: `infra/exec-rulings-2026-11-24-held-prs.md` section 9.
+- Ruling: read back the log fields and retention on production, then staging (a founder step, about 10 minutes). If a query-string token is logged with retention over 24 hours, the cheapest fix is the typed-code path, with the link as fallback. Whether `POST /verify` accepts a token hash in a body is UNVERIFIED and nothing is planned on it. Default if not done by the store cut: accept the residual (single use, 15 minutes, PKCE) and record it. What the session's Supabase connector reaches is unknown, so BL-603 acceptance 2 is unproven.
+- Door: two-way.
+- Founder-only: no. Signed: Chief Information Security Officer (Claude role, not an auditor)
+
+### CISO-20 Mail preflight: DMARC at p=none first (24 Nov 2026, CISO via Karma's session; Claude role, not an auditor)
+- Verdict: RULED (concur with CR-205). Full text: `infra/exec-rulings-2026-11-24-held-prs.md` section 4.
+- Ruling: DMARC stays `p=none` with a reporting address at launch and moves to `p=quarantine` only after two weeks of clean reports (the path `docs/ops/DOMAINS.md` gives). An early `reject` drops sign-in codes, a lockout and not a safety gain. Residual: spoofed mail from our domain is not blocked until the ramp ends.
+- Door: two-way.
+- Founder-only: no. Signed: Chief Information Security Officer (Claude role, not an auditor)
+
+### CPrivO-50 PR 759: `hiddenPlaces` is allowed in one file, not renamed (24 Nov 2026, CPrivO via Karma's session; Claude role, not counsel)
+- Verdict: RULED (concur with CR-206). Full text: `infra/exec-rulings-2026-11-24-held-prs.md` section 5.
+- Ruling: it is a persisted on-phone key listing cities a parent chose to hide; renaming it without a migration would un-hide places, a privacy regression. Allow it by name in `store.logic.ts` only, pinned by a snapshot test; the same name elsewhere still fails. The catch in `launch.logic.ts` reports a closed code, never a string taken from an error.
+- Door: two-way.
+- Founder-only: no. Signed: Chief Privacy Officer (Claude role, not counsel)
+
+### CPrivO-51 BL-603: the evidence file holds no personal data (24 Nov 2026, CPrivO via Karma's session; Claude role, not counsel)
+- Verdict: RULED (concur with CR-210). Full text: `infra/exec-rulings-2026-11-24-held-prs.md` section 9.
+- Ruling: the evidence file never holds an email, user id, token, IP or letter text; field names and durations only. If the readback shows tokens or addresses in logs, the Privacy Policy needs a line and the CLO drafts it; until then it gets none.
+- Door: two-way.
+- Founder-only: no. Signed: Chief Privacy Officer (Claude role, not counsel)
+
+### CPrivO-52 BL-1255: privacy signs meaning and properties after the table exists (24 Nov 2026, CPrivO via Karma's session; Claude role, not counsel)
+- Verdict: RULED (concur with CR-212). Full text: `infra/exec-rulings-2026-11-24-held-prs.md` section 12.
+- Ruling: not signing seven strings that do not exist yet. Advisory on the ER-B02 candidate list: drop `family:invite_create` and `family:invite_accept` from the 1.0 set (no 1.0 build has an invite door, D-161 and D-162). The five that remained were `onboarding:first_letter_complete`, `capture:letter_save`, `capture:take_start`, `plus:offer_view`, `keeping:export_complete`; CPrivO-54 later struck the first. Advisory only; the signature is step 3.
+- Door: two-way.
+- Founder-only: no. Signed: Chief Privacy Officer (Claude role, not counsel)
+
+### CPrivO-53 PR 656: the purge freshness check is wanted (24 Nov 2026, CPrivO via Karma's session; Claude role, not counsel)
+- Verdict: RULED (concur with CR-209). Full text: `infra/exec-rulings-2026-11-24-held-prs.md` section 8.
+- Ruling: the purge freshness check is the control behind the 30-day deletion promise. Its output stays numbers and fixed text, which both counted reviews checked.
+- Door: two-way.
+- Founder-only: no. Signed: Chief Privacy Officer (Claude role, not counsel)
+
+### CPrivO-54 Wire names: four basics candidates; `first_letter_complete` struck (24 Nov 2026, CPrivO via Karma's session; Claude role, not counsel)
+- Verdict: RULED (concur with CR-213). Full text: `infra/exec-rulings-2026-11-24-wire-names.md`.
+- Ruling: `invite_created` and `invite_accepted` stay in the registry at `consented`, unchanged, and are not basics candidates until the co-parent work ships. `onboarding:first_letter_complete` is struck: the phone cannot see a synced first letter, opt-in comes after the first letter, and a property on `letter_saved` would widen a row for every user, which is its own privacy ruling. Four candidates remain, advisory input to step 3 and not a signature: `capture:letter_save`, `capture:take_start`, `plus:offer_view`, `keeping:export_complete` (the last needs privacy's call on an export event at step 3). No tier changes; the basics set stays pinned to `screen_view`.
+- Door: two-way.
+- Founder-only: no. Signed: Chief Privacy Officer (Claude role, not counsel)
+
+### CDO-30 PR 656: `ops_cron_health` returns counts and job names only (24 Nov 2026, CDO via Karma's session; Claude role)
+- Verdict: RULED (concur with CR-209). Full text: `infra/exec-rulings-2026-11-24-held-prs.md` section 8.
+- Ruling: the RPC returns counts and `scribe-*` job names only, within the content-free rule; it needs its own grant row in `supabase/tests/grants.mjs` and an access-matrix test that anon and authenticated cannot call it. Point the watch at production (it holds the deletion promise), with the target as a parameter so staging can run too.
+- Door: two-way.
+- Founder-only: no. Signed: Chief Data Officer (Claude role)
+
+### CDO-31 BL-1255: rename first, sign after (24 Nov 2026, CDO via Karma's session; Claude role)
+- Verdict: RULED (concur with CR-212). Full text: `infra/exec-rulings-2026-11-24-held-prs.md` section 12.
+- Ruling: a name that privacy drops costs nothing to remove before the first send; once anything sends, every rename loses history. So: generated table, rename, then the signature PR.
+- Door: two-way.
+- Founder-only: no. Signed: Chief Data Officer (Claude role)
+
+### CDO-32 Wire names: the 39 rulings (24 Nov 2026, CDO via Karma's session; Claude role)
+- Verdict: RULED (concur with CR-213). Full text and table: `infra/exec-rulings-2026-11-24-wire-names.md`.
+- Ruling: name a key when a PM row, the registry, a guardrail or the insights engine reads it; merge it into `screen_view` or perf when the signal is already a basics row; drop it when the standard, FR-DAT-26, 27 or 38 or the registry's forbidden list says no event, or when it has no emitter and no reader. Result: 18 named, 4 merged, 17 dropped. Held events never send, so naming or dropping them is free. The category list stays at nine. `letter_deleted` is flagged for a separate CDO and CPrivO look in the step 2a PR.
+- Door: two-way.
+- Founder-only: no. Signed: Chief Data Officer (Claude role)
+
+### CAIO-16 PR 449: no objection to closing (24 Nov 2026, CAIO via Karma's session; Claude role)
+- Verdict: RULED (concur with CR-202). Full text: `infra/exec-rulings-2026-11-24-held-prs.md` section 1.
+- Ruling: the lane is not switched on and no model account exists for it, so a first switch-on is a spend and account decision that is not before us. Closing loses no guarantee, because the PR itself says its deny list guarantees nothing.
+- Door: two-way.
+- Founder-only: no. Signed: Chief AI Officer (Claude role)
+
+### CDesO-45 BL-410: no rating surface; capture the live controls (24 Nov 2026, CDesO via Karma's session; Claude role)
+- Verdict: RULED (concur with CR-208 and CPO-92). Full text: `infra/exec-rulings-2026-11-24-held-prs.md` section 7.
+- Ruling: a two-up "Sounds like me | Not quite" would be a new surface asking a parent to rate the machine's work, and the machine does not add meaning. The screens to capture use the words the app says today and the tab labels Home, Book, Me (D-161).
+- Door: two-way.
+- Founder-only: no. Signed: Chief Design Officer (Claude role)
