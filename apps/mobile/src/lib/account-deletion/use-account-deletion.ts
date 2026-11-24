@@ -4,7 +4,7 @@
  * store, analytics and Plus state. Network only on the screen, never at launch.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { analytics, analyticsIdsForDeletion, forgetAnalyticsIds, forgetAnalyticsIdsSome, withdrawAnalytics } from '@/lib/analytics';
+import { analyticsIdsForDeletion, forgetAnalyticsIds, forgetAnalyticsIdsSome, withdrawAnalytics } from '@/lib/analytics';
 import { authUserId } from '@/lib/auth/machine.logic';
 import { useAuth } from '@/lib/auth/session-provider';
 import { usePlan } from '@/lib/billing';
@@ -80,9 +80,8 @@ export function useAccountDeletion() {
     // First of all, before anything that can wait or fail: this phone now knows a request is open (open-request.ts).
     // Not under a second account: the note on the phone is the owner's (HO-911, same guard as refresh).
     if (bookVisibleNow()) recordRequested(r.value);
-    // The last event for this analytics id (TRACKING_PLAN), then sharing stops at once (DELETION spec 2.6.1 step 7),
-    // then PostHog deletes this phone's persons through analytics-forget.
-    analytics.track('account_deletion', { stage: 'confirmed' });
+    // Sharing stops at once (DELETION spec 2.6.1 step 7), then PostHog deletes this phone's persons through
+    // analytics-forget. No analytics event is sent for the deletion flow (PM3 IN-K3, R-K3; BL-2175).
     await withdrawAnalytics().catch(() => {});
     await forgetAnalytics(client, ids, flags, 'account_deletion', uuidv7());
     setStatus({ state: 'scheduled', requestId: r.value.requestId, scheduledFor: r.value.scheduledFor });
@@ -127,6 +126,5 @@ export function useAccountDeletion() {
     request,
     cancel,
     signOut: auth.signOut,
-    trackStage: (stage: 'started' | 'export_offered') => analytics.track('account_deletion', { stage }),
   };
 }

@@ -88,7 +88,7 @@ export function AnalyticsConsentSheet({ visible, onClose }: { visible: boolean; 
     onClose(result);
   };
   return (
-    <Sheet open={visible} title={copy.analyticsConsent.title} onClose={() => report('dismissed')}>
+    <Sheet open={visible} title={copy.analyticsConsent.title} closeLabel={copy.analyticsConsent.notNowLabel} onClose={() => report('dismissed')}>
       <AnalyticsConsentContent showTitle={false} onDone={report} />
     </Sheet>
   );

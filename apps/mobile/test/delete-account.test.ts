@@ -167,7 +167,7 @@ describe('[S64] the page', () => {
     expect(card).toContain('{c.exportFirst.heading}');
     expect(card).toContain('{c.exportFirst.body}');
     expect(card).toMatch(/variant="outline"[\s\S]*label=\{c\.exportFirst\.button\}/);
-    expect(card).toMatch(/d\.trackStage\('export_offered'\), router\.push\('\/settings\/export'\)/);
+    expect(card).toMatch(/onPress=\{\(\) => router\.push\('\/settings\/export'\)\}/);
   });
 
   it('step 1: the Plus card, with CreditCard, shows only when Plus will renew', () => {
@@ -283,11 +283,9 @@ describe('[S64] the page', () => {
     expect(s).toContain("{d.configured ? <Button size=\"lg\" className=\"self-start\" label={c.signedOut.button} onPress={() => router.push('/settings/account')} /> : null}");
   });
 
-  it('analytics carry only the stage: started once per visit, and export_offered', () => {
-    const tracked = [...page.matchAll(/trackStage\(([^)]*)\)/g)].map((m) => m[1]);
-    expect(tracked.sort()).toEqual(["'export_offered'", "'started'"]);
-    expect(page).toMatch(/if \(d\.signedIn && first\) d\.trackStage\('started'\);/);
-    expect(page).toMatch(/<DeleteAccountPage key=\{attempt\} first=\{attempt === 0\} onRetry=/);
+  it('the page sends no analytics event (PM3 IN-K3, R-K3): no track call, no stage, and Try again still remounts the page', () => {
+    expect(page).not.toMatch(/track|analytics/i);
+    expect(page).toMatch(/<DeleteAccountPage key=\{attempt\} onRetry=/);
   });
 });
 

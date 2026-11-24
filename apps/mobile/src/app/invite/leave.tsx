@@ -26,7 +26,6 @@ import { LeaveChoices } from '@/components/family/leave-sheet';
 import { leaveButton, leaveChoices, leaveSheetView, type LeaveChoice } from '@/components/family/leave-sheet.logic';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
-import { track } from '@/lib/analytics/track';
 import { useAuth } from '@/lib/auth/session-provider';
 import { AccountGate, ErrorLine, SheetBody, SheetFrame, SheetTitle, useCloseSheet } from '@/lib/auth/ui';
 import { PLUS_ALPHA } from '@/lib/billing/alpha';
@@ -90,7 +89,6 @@ function LeaveBook() {
     const owner = noticeOwner(); // before the await: who left
     try {
       await leaveBook(auth.client, book.id, choice === 'keep');
-      track('member_left', { role: 'parent', letters: choice });
       void syncNow(); // the other parent's letters leave this phone within one sync (F11-REQ-011)
       familyNotice.leave(fill(l.done, { child }), owner);
       close();

@@ -16,7 +16,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { brand } from '@scribe/brand';
 import { familyCopy } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
-import { BEFORE_JOIN, invitedByLine, JOINED_LANDING, joinedBody, joinFailure, joinTitle, openLanding, readPasted, retryKeepsPreview, SPEAK_AFTER_FOCUS_MS } from '../src/components/family/join-sheet.logic';
+import { BEFORE_JOIN, JOINED_TITLE_UNKNOWN_READ, invitedByLine, JOINED_LANDING, joinedBody, joinFailure, joinTitle, openLanding, readPasted, retryKeepsPreview, SPEAK_AFTER_FOCUS_MS } from '../src/components/family/join-sheet.logic';
 import { startJoinedArrival } from '../src/components/family/joined-arrival.logic';
 import { joinedArrival } from '../src/components/family/family-notice';
 import { lampMemory, planLampMount, resolveLamp } from '../src/components/ui/lamp.logic';
@@ -44,8 +44,11 @@ describe('[S59] before sign-in, neither the child\'s name nor the inviter is sho
   });
 
   it('[BL-460 point 3] a join whose name could not be read is titled for the joined view, not "Join a book"', () => {
-    expect(joinTitle('joined', null)).toBe(familyCopy.accept.joinedTitleUnknown);
-    expect(joinTitle('joined', null)).not.toBe(familyCopy.accept.title);
+    // Held PROPOSED (CR-178 item 2): false keeps the old fallback, true uses the new key.
+    expect(joinTitle('joined', null, false)).toBe(familyCopy.accept.title);
+    expect(joinTitle('joined', null, true)).toBe(familyCopy.accept.joinedTitleUnknown);
+    expect(joinTitle('joined', null)).toBe(JOINED_TITLE_UNKNOWN_READ ? familyCopy.accept.joinedTitleUnknown : familyCopy.accept.title);
+    expect(joinTitle('joined', 'Asha', true)).toBe("You're in Asha's book");
     expect(familyCopy.accept.joinedTitleUnknown).not.toContain('{child}');
     // Before the join, an unknown name still gets the generic title.
     expect(joinTitle('ask', null)).toBe(familyCopy.accept.askTitle);

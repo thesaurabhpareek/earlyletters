@@ -28,7 +28,7 @@ import { Redirect, Stack, router } from 'expo-router';
 import { BookOpenIcon } from 'phosphor-react-native/src/icons/BookOpen';
 import { CreditCardIcon } from 'phosphor-react-native/src/icons/CreditCard';
 import { FileTextIcon } from 'phosphor-react-native/src/icons/FileText';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { ActivityIndicator, ScrollView, View, type Text as RNText } from 'react-native';
 import { afterCancel, bookRowKey, bookRowLabel, canDelete, confirmDay, failureLine, HELD, loadFailureLine, scheduledDay, whatHappens } from '@/components/settings/delete-account.logic';
 import { Button } from '@/components/ui/button';
@@ -58,15 +58,15 @@ export default function DeleteAccountRoute() {
   return capabilities.accountDeletion ? <DeleteAccount /> : <Redirect href="/settings" />;
 }
 
-/** Try again opens the page afresh (S14's state reloads with it); the first open is the one counted as started. */
+/** Try again opens the page afresh (S14's state reloads with it). */
 function DeleteAccount() {
   const [attempt, setAttempt] = useState(0);
-  return <DeleteAccountPage key={attempt} first={attempt === 0} onRetry={() => setAttempt((n) => n + 1)} />;
+  return <DeleteAccountPage key={attempt} onRetry={() => setAttempt((n) => n + 1)} />;
 }
 
 const PAGE = 'gap-7 px-5 pb-12 pt-4';
 
-function DeleteAccountPage({ first, onRetry }: { first: boolean; onRetry: () => void }) {
+function DeleteAccountPage({ onRetry }: { onRetry: () => void }) {
   const colors = useTheme().c;
   const toast = useToast();
   const d = useAccountDeletion();
@@ -81,11 +81,6 @@ function DeleteAccountPage({ first, onRetry }: { first: boolean; onRetry: () => 
   const scheduledHeading = useRef<View>(null);
   useFocusOnMount(confirmHeading, step === 'confirm', step);
   useFocusOnMount(scheduledHeading, step === 'scheduled', step);
-
-  useEffect(() => {
-    if (d.signedIn && first) d.trackStage('started');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [d.signedIn]);
 
   const header = <Stack.Screen options={{ title: c.title }} />;
   const failure = <ErrorLine message={failureLine(d.error)} />;
@@ -273,7 +268,7 @@ function DeleteAccountPage({ first, onRetry }: { first: boolean; onRetry: () => 
           size="lg"
           className="self-start"
           label={c.exportFirst.button}
-          onPress={() => (d.trackStage('export_offered'), router.push('/settings/export'))}
+          onPress={() => router.push('/settings/export')}
         />
       </Card>
 
