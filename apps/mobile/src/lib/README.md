@@ -36,7 +36,7 @@ in `test/migrations.test.ts`, and add the column to DATA_CLASSIFICATION 4.5.
 | `listEntries()` | Same, for the active child (unchanged signature). |
 | `getEntry(id)` | |
 | `setEntryInBook(id, inBook)` | Add to book / make private. Never touches text. |
-| `deleteLeftBookLetter(id)` | The delete rule's own door for a letter in a left book (BL-1960): a local tombstone, nothing queued, false for any other letter. `eraseEntry` and the 30-day purge then erase it here with no `entry.erase`, and the book's row goes with its last letter. |
+| `deleteLeftBookLetter(id)` | The delete rule's own door for a letter in a left book (BL-1960): a local tombstone and one `entry.delete` queued (the server takes it from the author who left, so the remaining parent's book loses the letter within one sync), false for any other letter. `eraseEntry` and the 30-day purge then erase it here and queue `entry.erase` like any other letter; the local erase never waits on the server's answer (`missing`, `deferred` under a legal hold, or offline). The book's row goes with its last letter, but stays until the ops queued for that book are answered. |
 | `deleteEntry(id)` / `undeleteEntry(id)` | Tombstone only (the letter waits on the Recently deleted shelf). Each returns false, with nothing queued, for a missing letter or one in a left book (BL-1959). |
 | `listDeleted()` | The shelf, newest deletion first (`deletedAt`). |
 | `eraseEntry(id, eraser)` | Erase a deleted letter for good: the recording file first, then the row, idempotent; false for a live letter, a sync build, or a file that would not go. Native eraser: `capture/erase.ts`. |

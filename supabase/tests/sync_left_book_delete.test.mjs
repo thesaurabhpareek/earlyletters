@@ -71,4 +71,19 @@ const held = await entry(H1);
 check('[BL-1960] under a legal hold the erase from the member who left is deferred: kept and tombstoned',
   r.results[0].ok === true && r.results[0].deferred === true && held && held.deleted_at !== null);
 
+// ── Deny: B, after leaving, cannot delete or erase A's letter in the live book ──
+const AL = id7();
+await push(A, [op('entry.upsert', AL, { ...letter(AL, 'Mama wrote this one.'), author_signs_as: 'Mama' })]);
+const cAL = await lbCursor(A);
+const bDel = (await push(B, [op('entry.delete', AL)])).results[0];
+check('[Review B] B, after leaving, cannot delete A\'s letter: the answer is ok with missing, as for no letter at all',
+  bDel.ok === true && bDel.missing === true);
+check('[Review B] A\'s letter is not tombstoned', (await entry(AL))?.deleted_at === null);
+const bEr = (await push(B, [op('entry.erase', AL)])).results[0];
+check('[Review B] B, after leaving, cannot erase A\'s letter: the answer is missing, as for no letter at all, never erased',
+  bEr.erased !== true && bEr.missing === true);
+check('[Review B] A\'s letter is still there, live, with no erasure record', (await entry(AL))?.deleted_at === null && !(await erasure(AL)));
+check('[Review B] A\'s next pull still carries it', book(await pull(A, {})).rows.some((y) => y.id === AL));
+check('[Review B] A\'s book digest did not change', echoed(await visibleAfter(A, cAL)));
+
 done();
