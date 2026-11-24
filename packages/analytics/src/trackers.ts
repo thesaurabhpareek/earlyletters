@@ -30,7 +30,7 @@ import { packAnalyticsId, speechModelValue } from './packs';
 
 type V<E extends keyof Catalog, P extends keyof Catalog[E]['props']> = Catalog[E]['props'][P] extends { values: readonly (infer X)[] } ? X : never;
 
-export type PromptKindValue = V<'letter_saved', 'prompt_kind'>;
+export type PromptKindValue = V<'capture:letter_save', 'prompt_kind'>;
 export type MemberRole = 'parent' | 'contributor';
 /** A member's role in a book: co-parents are `parent` (B section 6). */
 export type InviteRoleInput = 'parent' | 'contributor';
@@ -52,7 +52,7 @@ export interface LetterSavedInput {
   editsReverted: number;
   /** Edits the verifier refused for this letter (optional). */
   editsRejected?: number;
-  engine: V<'letter_saved', 'engine'>;
+  engine: V<'capture:letter_save', 'engine'>;
   /** Saved within 2 hours of opening the app from a reminder. */
   fromNotificationWithin2h: boolean;
 }
@@ -98,7 +98,7 @@ export function createTrackers(analytics: Pick<Analytics, 'track'>) {
 
   return {
     trackLetterSaved(i: LetterSavedInput): TrackResult {
-      return track('letter_saved', {
+      return track('capture:letter_save', {
         mode: i.mode,
         destination: i.inBook ? 'book' : 'private',
         child_ordinal: childOrdinal(i.childIndex),
@@ -116,12 +116,12 @@ export function createTrackers(analytics: Pick<Analytics, 'track'>) {
 
     trackCaptureStarted(i: {
       mode: 'spoken' | 'typed';
-      source: V<'capture_started', 'source'>;
+      source: V<'capture:take_start', 'source'>;
       promptKind: PromptKindValue | null;
       childIndex: number;
       role: MemberRole;
     }): TrackResult {
-      return track('capture_started', {
+      return track('capture:take_start', {
         mode: i.mode,
         source: i.source,
         prompt_kind: i.promptKind ?? 'none',
@@ -136,7 +136,7 @@ export function createTrackers(analytics: Pick<Analytics, 'track'>) {
     },
 
     trackCaptureDiscarded(i: { mode: 'spoken' | 'typed'; stage: 'listening' | 'review'; audioMs?: number | null }): TrackResult {
-      return track('capture_discarded', {
+      return track('capture:take_cancel', {
         mode: i.mode,
         stage: i.stage,
         ...(i.audioMs != null ? { audio_bucket: audioBucket(i.audioMs) } : {}),
@@ -144,14 +144,14 @@ export function createTrackers(analytics: Pick<Analytics, 'track'>) {
     },
 
     trackTranscriptionCompleted(i: {
-      engine: V<'transcription_completed', 'engine'>;
+      engine: V<'capture:transcript_complete', 'engine'>;
       /** Speech model id from src/lib/models/catalog.ts, or null (sample engine). */
       modelId: string | null;
       audioMs: number;
       latencyMs: number;
-      outcome: V<'transcription_completed', 'outcome'>;
+      outcome: V<'capture:transcript_complete', 'outcome'>;
     }): TrackResult {
-      return track('transcription_completed', {
+      return track('capture:transcript_complete', {
         engine: i.engine,
         model: speechModelValue(i.modelId),
         audio_bucket: audioBucket(i.audioMs),

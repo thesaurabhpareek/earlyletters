@@ -58,7 +58,7 @@ describe('allowlist stems (NS-47-R34, NS-47-R9)', () => {
     for (const planted of ['day_ticked', 'tradition_picked', 'holiday', 'library_day', 'suggestion_title', 'workout_name']) {
       expect(stemOf(planted), planted).toBeDefined();
     }
-    expect(stemOf('letter_saved')).toBeUndefined();
+    expect(stemOf('capture:letter_save')).toBeUndefined();
   });
 
   it('[NS-47-R34] ROUTE holds no Days, Browse, day detail, ask or suggestion route', () => {
@@ -184,13 +184,13 @@ describe('variant_id and age bands (NS-48-R38, A-48-1)', () => {
 });
 
 describe('capture source and slips (NS-49-R36, NS-50-R17)', () => {
-  it('[NS-49-R36] capture_started.source gains at most photo and suggestion', () => {
-    const src = EVENTS.capture_started.props.source;
+  it('[NS-49-R36] capture:take_start.source gains at most photo and suggestion', () => {
+    const src = EVENTS['capture:take_start'].props.source;
     expect(src.type).toBe('enum');
     const values = src.type === 'enum' ? src.values : [];
     const allowed = ['tonight', 'book', 'notification', 'make_it_yours', 'resurface', 'photo', 'suggestion'];
     for (const v of values) expect(allowed, v).toContain(v);
-    expect(Object.keys(EVENTS.capture_started.props).sort()).toEqual(['child_ordinal', 'member_role', 'mode', 'prompt_kind', 'source']);
+    expect(Object.keys(EVENTS['capture:take_start'].props).sort()).toEqual(['child_ordinal', 'member_role', 'mode', 'prompt_kind', 'source']);
   });
 
   it('[NS-49-R36] no property carries a suggestion detail, a photo count or an outcome', () => {

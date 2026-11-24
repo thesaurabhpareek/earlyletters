@@ -8,7 +8,7 @@ import { createAnalytics, EVENTS, memoryStorage, recordingProvider, type EventNa
 // its own row in data-and-measurement.md is about the allowlist, not sampling.
 const NEVER_SAMPLED_AREAS = ['capture', 'family', 'languages', 'reminders', 'plus', 'settings', 'children', 'errors'];
 const P0 = (Object.keys(EVENTS) as EventName[]).filter(
-  (n) => n === 'system:analytics_consent_accept' || n === 'letter_saved' || NEVER_SAMPLED_AREAS.includes(EVENTS[n].area),
+  (n) => n === 'system:analytics_consent_accept' || n === 'capture:letter_save' || NEVER_SAMPLED_AREAS.includes(EVENTS[n].area),
 );
 
 let n = 0;
@@ -29,7 +29,7 @@ async function granted(sampleRates: Partial<Record<EventName, number>>) {
 
 describe('never-sampled events (TRACKING_PLAN 5.3, FR-DAT-36)', () => {
   it('the P0 list is non-empty and includes the two named events', () => {
-    expect(P0).toContain('letter_saved');
+    expect(P0).toContain('capture:letter_save');
     expect(P0).toContain('system:analytics_consent_accept');
     expect(P0.length).toBeGreaterThan(30);
   });

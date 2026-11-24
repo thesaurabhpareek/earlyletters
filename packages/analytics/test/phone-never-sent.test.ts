@@ -83,7 +83,7 @@ describe('[NS-54-R26] the phone number never reaches analytics', () => {
 
   it('[NS-54-R26] the allowlist drops an event for a full number in an unlisted property, and names no value', () => {
     for (const n of [...E164, ...SPACED]) {
-      const r = sanitizeEvent('capture_started', { ...validProps('capture_started'), phone: n });
+      const r = sanitizeEvent('capture:take_start', { ...validProps('capture:take_start'), phone: n });
       expect(r.props, n).toBeNull();
       expect(r.violations.map((v) => v.kind)).toEqual(['pii_like_value']);
       expect(found(JSON.stringify(r))).toEqual([]);
@@ -92,7 +92,7 @@ describe('[NS-54-R26] the phone number never reaches analytics', () => {
 
   it('[NS-54-R26] a partial number or a code as an unlisted property is dropped as unknown, never sent', () => {
     for (const n of [...PARTIAL, CODE]) {
-      const r = sanitizeEvent('capture_started', { ...validProps('capture_started'), phone: n });
+      const r = sanitizeEvent('capture:take_start', { ...validProps('capture:take_start'), phone: n });
       expect(r.props ?? {}, n).not.toHaveProperty('phone');
       expect(found(JSON.stringify(r))).toEqual([]);
     }
@@ -119,7 +119,7 @@ describe('[NS-54-R26] the phone number never reaches analytics', () => {
   });
 
   it('[NS-54-R26] positive control: a violation report that echoes the value turns the scan red', () => {
-    expect(found(JSON.stringify({ kind: 'pii_like_value', event: 'capture_started', property: SPACED[0] }))).toContain('202 555');
+    expect(found(JSON.stringify({ kind: 'pii_like_value', event: 'capture:take_start', property: SPACED[0] }))).toContain('202 555');
   });
 });
 

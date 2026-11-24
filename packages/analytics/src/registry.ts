@@ -145,7 +145,7 @@ export const REGISTRY = {
       added_together: bool(),
     },
   },
-  capture_started: {
+  'capture:take_start': {
     stage: 'capture',
     decision: "How many families begin a letter by speaking or typing, so we decide which one Home leads with.",
     area: 'capture',
@@ -161,7 +161,7 @@ export const REGISTRY = {
       member_role: MEMBER_ROLE,
     },
   },
-  capture_discarded: {
+  'capture:take_cancel': {
     stage: 'capture',
     decision: "Where letters are thrown away before saving, so we decide whether the capture screens need fixing.",
     area: 'capture',
@@ -171,7 +171,7 @@ export const REGISTRY = {
     tier: 'consented',
     props: { mode: CAPTURE_MODE, stage: oneOf('listening', 'review'), audio_bucket: opt(AUDIO_BUCKET) },
   },
-  transcription_completed: {
+  'capture:transcript_complete': {
     stage: 'capture',
     decision: "Whether spoken letters finish turning into words, so we decide whether to hold other work to fix speech.",
     area: 'capture',
@@ -187,7 +187,7 @@ export const REGISTRY = {
       outcome: oneOf('ok', 'no_speech', 'failed', 'queued_for_model'),
     },
   },
-  letter_saved: {
+  'capture:letter_save': {
     stage: 'capture',
     decision: "How many families save a letter and how, the count behind weekly making families, so we decide what to build next.",
     area: 'capture',
@@ -383,10 +383,10 @@ export const EV = {
   analyticsOptedIn: 'system:analytics_consent_accept',
   authSucceeded: 'onboarding:sign_in_complete',
   childAdded: 'onboarding:book_create',
-  captureStarted: 'capture_started',
-  captureDiscarded: 'capture_discarded',
-  transcriptionCompleted: 'transcription_completed',
-  letterSaved: 'letter_saved',
+  captureStarted: 'capture:take_start',
+  captureDiscarded: 'capture:take_cancel',
+  transcriptionCompleted: 'capture:transcript_complete',
+  letterSaved: 'capture:letter_save',
   freeAllowanceReached: 'plus:allowance_reach',
   keepGateShown: 'plus:keep_gate_view',
   letterHeld: 'plus:letter_hold_create',
@@ -472,8 +472,8 @@ export type FunnelStep = RegistryName | `${string}:${string}`;
  * step must be a registered event or a wire name (rule V9). Ids: `f_<area>_<goal>`.
  */
 export const FUNNELS = {
-  f_onboarding_first_letter: ['onboarding:book_create', 'capture_started', 'letter_saved'],
-  f_capture_letter_saved: ['capture_started', 'transcription_completed', 'letter_saved'],
+  f_onboarding_first_letter: ['onboarding:book_create', 'capture:take_start', 'capture:letter_save'],
+  f_capture_letter_saved: ['capture:take_start', 'capture:transcript_complete', 'capture:letter_save'],
   f_keep_plus_started: ['plus:allowance_reach', 'plus:keep_gate_view', 'plus:keep_gate_plan_start'],
   f_plus_offer_converted: ['plus:offer_view', 'plus:offer_end', 'plus:plan_update'],
   // Wire names (BL-2175, CR-213): the Book and letter reads are the generated screen views, not events of their own.
