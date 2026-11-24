@@ -8,6 +8,7 @@ import { writeFileSync, mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
+import { isDeepStrictEqual } from 'node:util';
 import { createDb, users } from './harness.mjs';
 
 // The harness has no supabase_auth_admin role; a file ahead of the migrations makes it, so the migration's own grant runs.
@@ -43,6 +44,64 @@ check('[NS-08-R21 hook] fail open: a failing insert still returns the claims, qu
   && (await sys(`select count(*) n from ops.security_events where kind = 'new_device_hook_failed'`)).rows[0].n == 1);
 check('[NS-08-R21 hook] fail open: garbage input (no session id, bad uuid) does not raise',
   (await fail(() => hook({ user_id: 'x', claims: {} }))) === 'ok' && (await fail(() => hook({}))) === 'ok');
+// BL-1184: a statement timeout (57014, query_canceled) is not caught by `when others`. A trigger that raises it stands in for
+// the timeout; the hook must still let the sign-in through, count one failure, and queue nothing.
+const failures = async () => Number((await sys(`select count(*) n from ops.security_events where kind = 'new_device_hook_failed'`)).rows[0].n);
+await sys(`drop trigger nd_boom on ops.new_device_pending`);
+await db.exec(`create function ops.nd_timeout() returns trigger language plpgsql as $$ begin raise exception 'canceling statement due to statement timeout' using errcode = '57014'; end $$;
+  create trigger nd_timeout before insert on ops.new_device_pending for each row execute function ops.nd_timeout()`);
+const pendingBefore = await cnt('ops.new_device_pending'), failedBefore = await failures();
+const evT = ev(B, SB);
+const rT = await fail(() => hook(evT));
+check('[BL-1184 hook] a statement timeout on the queue insert does not break the sign-in', rT === 'ok');
+r = (await hook(evT)).rows[0].r;
+check('[BL-1184 hook] a statement timeout returns the claims unchanged, queues nothing and counts one failure per sign-in (two sign-ins, two counts)',
+  isDeepStrictEqual(r, { claims: evT.claims }) && (await cnt('ops.new_device_pending')) === pendingBefore && (await failures()) === failedBefore + 2);
+// the counter insert can time out too: still no error, and no count.
+await db.exec(`create function ops.nd_timeout2() returns trigger language plpgsql as $$ begin raise exception 'timeout' using errcode = '57014'; end $$;
+  create trigger nd_timeout2 before insert on ops.security_events for each row execute function ops.nd_timeout2()`);
+r = (await fail(() => hook(evT))) === 'ok' ? (await hook(evT)).rows[0].r : null;
+check('[BL-1184 hook] when the failure counter times out as well, the claims still come back and no count is written',
+  r !== null && isDeepStrictEqual(r, { claims: evT.claims }) && (await failures()) === failedBefore + 2);
+await sys(`drop trigger nd_timeout2 on ops.security_events`);
+await sys(`drop trigger nd_timeout on ops.new_device_pending`);
+await db.exec(`create trigger nd_boom before insert on ops.new_device_pending for each row execute function ops.nd_boom()`);
+
+// BL-1187: in every branch the hook returns exactly { claims } and the claims equal the input claims, key for key. A handler
+// that adds a role (or any) claim in the fail-open branch must turn this red.
+const sameClaims = (event, out) => {
+  const o = out?.rows?.[0]?.r;
+  return o !== undefined && o !== null && isDeepStrictEqual(Object.keys(o), ['claims']) && isDeepStrictEqual(o.claims, event.claims); // jsonb reorders keys, so a deep compare, not a string compare
+};
+const branches = {
+  'sign-in that queues': ev(A, '66666666-6666-4666-8666-666666666666'),
+  'same session again': ev(A, '66666666-6666-4666-8666-666666666666'),
+  'token_refresh': ev(A, SB, 'token_refresh'),
+  'no profile yet': ev('99999999-9999-4999-8999-999999999999', SC),
+  'no authentication_method': { user_id: A, claims: { session_id: SC, sub: A, aal: 'aal1' } },
+  'failing insert (fail open)': ev(B, SC),
+  'bad uuid (outer fail open)': { user_id: 'x', claims: { session_id: 'not-a-uuid', sub: 'x', email: 'asha@example.com' } },
+};
+for (const [name, event] of Object.entries(branches)) {
+  check(`[BL-1187 hook] ${name}: the claims out equal the claims in and nothing else is returned`, sameClaims(event, await hook(event)));
+}
+// mutants of the fail-open branches: each adds a claim and must be caught by sameClaims.
+const planted = async (body) => {
+  await sys(`create or replace function public.hook_new_device_sign_in(event jsonb) returns jsonb language plpgsql security definer
+    set search_path = pg_catalog, public, pg_temp as $$ begin ${body} end $$`);
+};
+const probe = ev(B, SC);
+await planted(`begin raise exception 'boom'; exception when others then return jsonb_build_object('claims', (event->'claims') || '{"role":"service_role"}'::jsonb); end;`);
+check('[BL-1187 hook] mutant: a fail-open branch that adds a role claim is caught', !sameClaims(probe, await hook(probe)));
+await planted(`begin raise exception 'boom'; exception when others then return jsonb_build_object('claims', event->'claims', 'role', 'service_role'); end;`);
+check('[BL-1187 hook] mutant: a fail-open branch that adds a top-level key is caught', !sameClaims(probe, await hook(probe)));
+await planted(`return jsonb_build_object('claims', (event->'claims') - 'email');`);
+check('[BL-1187 hook] mutant: a branch that drops a claim is caught', !sameClaims(probe, await hook(probe)));
+await planted(`return jsonb_build_object('claims', event->'claims');`);
+check('[BL-1187 hook] the checker passes a faithful handler (it is not always red)', sameClaims(probe, await hook(probe)));
+// put the shipped body back for the rest of the file (the mutants below replace it again).
+const shipped = readFileSync(join(import.meta.dirname, '..', 'migrations', '20261124100000_new_device_hook_statement_timeout.sql'), 'utf8');
+await db.exec(shipped.slice(shipped.indexOf('create or replace function')));
 // mutant: a hook without the exception block lets the error reach the sign-in.
 await sys(`create or replace function public.hook_new_device_sign_in(event jsonb) returns jsonb language plpgsql security definer
   set search_path = pg_catalog, public, pg_temp as $$ begin
@@ -97,6 +156,19 @@ await sys(`insert into ops.new_device_tokens (token_hash, profile_id, session_id
 check('[NS-08-R21 token] an expired token answers "unknown" (as an unknown one) and ends nothing', (await press(H2)).rows[0].r === 'unknown' && (await live()).includes(SC));
 await sys(`update ops.new_device_tokens set expires_at = now() + interval '1 hour' where token_hash = $1`, [H2]);
 check('[NS-08-R21 token] mutant: the same token before expiry does end the session', (await press(H2)).rows[0].r === 'ended' && !(await live()).includes(SC));
+// BL-1204: the table itself caps a token's life at 7 days, whatever path inserts it.
+const capFail = (secs) => fail(() => sys(`insert into ops.new_device_tokens (token_hash, profile_id, session_id, created_at, expires_at)
+  values ($1, $2, $3, '2026-11-24T00:00:00Z', timestamp with time zone '2026-11-24T00:00:00Z' + make_interval(secs => $4))`, [sha(`cap${secs}`), A, SA, secs]));
+check('[BL-1204 token] a token that lives 48 hours is accepted', (await capFail(48 * 3600)) === 'ok');
+check('[BL-1204 token] a token that lives exactly 7 days is accepted', (await capFail(7 * 86400)) === 'ok');
+check('[BL-1204 token] a token that lives 7 days and a second is refused (23514)', (await capFail(7 * 86400 + 1)) === '23514');
+check('[BL-1204 token] a token that lives 30 days is refused (23514)', (await capFail(30 * 86400)) === '23514');
+check('[BL-1204 token] the cap is a named table constraint', (await sys(`select 1 from pg_constraint where conname = 'new_device_tokens_expiry_cap' and conrelid = 'ops.new_device_tokens'::regclass`)).rows.length === 1);
+// mutant: without the constraint the 30 day token goes in.
+await sys(`alter table ops.new_device_tokens drop constraint new_device_tokens_expiry_cap`);
+check('[BL-1204 token] mutant: with the cap dropped a 30 day token is accepted', (await capFail(30 * 86400)) === 'ok');
+await sys(`delete from ops.new_device_tokens where token_hash = any($1)`, [[sha(`cap${48 * 3600}`), sha(`cap${7 * 86400}`), sha(`cap${30 * 86400}`)]]);
+await sys(`alter table ops.new_device_tokens add constraint new_device_tokens_expiry_cap check (expires_at <= created_at + interval '7 days')`);
 // bound to one account
 await sys(`insert into auth.sessions (id, user_id) values ($1, $2)`, [SC, B]);
 await sys(`insert into ops.new_device_tokens (token_hash, profile_id, session_id, expires_at) values ($1, $2, $3, now() + interval '1 hour')`, [sha('c'.repeat(43)), A, SC]);
