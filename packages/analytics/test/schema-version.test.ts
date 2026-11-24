@@ -115,7 +115,7 @@ describe('the sign-in trigger names the Keep the book re-offer (BL-1464)', () =>
     expect(SCHEMA_FINGERPRINTS[10]).toMatch(/^[0-9a-f]{64}$/);
   });
 
-  it.each(['auth_sheet_shown', 'auth_deferred'] as const)('%s allows third_letter beside first_letter, and still rejects any other value', (event) => {
+  it.each(['auth_deferred'] as const)('%s (the one event the sheet sends; auth_sheet_shown is retired, BL-2175) allows third_letter beside first_letter, and still rejects any other value', (event) => {
     const trigger = EVENTS[event].props.trigger as unknown as { values: string[] };
     expect(trigger.values).toEqual(expect.arrayContaining(['first_letter', 'third_letter']));
     const ok = sanitizeWith(EVENTS, event, { trigger: 'third_letter', schema_version: SCHEMA_VERSION });

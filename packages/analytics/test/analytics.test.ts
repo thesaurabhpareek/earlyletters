@@ -354,13 +354,13 @@ describe('globals, sampling, queue cap', () => {
   });
 
   it('samples deterministically per id and tags kept events', async () => {
-    const { analytics, provider } = setup({ sampleRates: { screen_view: 0.5, letter_opened: 0 } });
+    const { analytics, provider } = setup({ sampleRates: { screen_view: 0.5, app_opened: 0 } });
     await analytics.init();
     await analytics.grant();
     const results = new Set<string>();
     for (let i = 0; i < 20; i++) results.add(analytics.track('screen_view', { route: 'book' }));
     expect(results.size).toBe(1); // all kept or all dropped for one person
-    expect(analytics.track('letter_opened', { author_relation: 'self', has_audio: true })).toBe('dropped_sampled');
+    expect(analytics.track('app_opened', { source: 'cold', days_since_last_open: 'd0' })).toBe('dropped_sampled');
     await analytics.flush();
     for (const e of provider.captured()) expect(e.properties.sample_pct).toBe(50);
   });

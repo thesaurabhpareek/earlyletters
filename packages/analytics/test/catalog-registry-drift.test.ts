@@ -20,8 +20,8 @@ import { EVENTS, HELD_EVENTS, REGISTRY } from '../src';
  * stay off until the D-163 gate clears (D-170, docs/DECISIONS.md), so a held event is not sent from a production build.
  */
 const HELD = [
-  'account_deletion', 'app_backgrounded', 'app_cold_start', 'auth_deferred', 'auth_email_sent', 'auth_failed',
-  'auth_method_selected', 'auth_sheet_shown', 'child_setting_changed', 'child_switched', 'dictionary_term_added',
+  'account_deletion', 'app_backgrounded', 'auth_deferred', 'auth_email_sent', 'auth_failed',
+  'auth_method_selected', 'child_setting_changed', 'child_switched', 'dictionary_term_added',
   'export_completed', 'export_failed', 'export_shared', 'export_started', 'family_letter_reviewed', 'goals_set',
   'invite_failed', 'invite_opened', 'language_set', 'letter_deleted', 'local_merge_choice', 'machine_edit_rejected',
   'machine_edit_reverted', 'make_it_yours_card', 'member_left', 'member_removed', 'moment_shown',

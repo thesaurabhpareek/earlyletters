@@ -63,8 +63,9 @@ export const GLOBAL_PROPS = {
  * 10: `auth_sheet_shown.trigger` and `auth_deferred.trigger` gain `third_letter` (the Keep the book re-offer after the third letter, BL-519, BL-1464).
  * 11: two Moments card events, `moments_card_impressed` and `moments_card_tapped`, one closed property `slot` (`look_back` | `question`), NS-53 section 18 and R251. Both are registry events (one definition, in registry.ts; the catalogue rows read it). The tracker `trackMomentsCard` exists; the app does not call it until the Moments flag.
  * 12: the catalogue now reads every sendable event from registry.ts (one definition), so the three rows that only the registry held (`control_tapped`, `perf_measured`, `surface_impressed`) join the fingerprint; no event or property that was already in the catalogue changed (BL-2148, P5 of BL-1235). Production analytics stay off.
+ * 13: wire-names step 2a, slice 3a (BL-2175, CR-213): the 4 merged keys are removed: the held rows `app_cold_start` and `auth_sheet_shown`, and the registry rows `book_opened` and `letter_opened`. Their signal is `screen_view` (the `sign_in`, `book` and `letter_detail` screens) and, later, the `cold_start` perf metric. Nothing was added or widened, no tier changed, and no build has sent any of them (analytics are off in every profile, CR-186).
  */
-export const SCHEMA_VERSION = 12;
+export const SCHEMA_VERSION = 13;
 
 /**
  * SHA-256 of `JSON.stringify(catalogShape())` per schema version. Versions 1
@@ -81,6 +82,7 @@ export const SCHEMA_FINGERPRINTS: Readonly<Record<number, string>> = Object.free
   10: '1bc7d06372de546ec176a3fcf3147727d28ac6c9a39bba035902980050f9165b',
   11: 'd5086670df9e315dee3d38561bb79858605f4c247d260b20cc6cd96e44181711',
   12: '936b6de82cf58d00e66e2df7ac327409ac1db2682e05dd4bc841dd5f3cd73fcb',
+  13: 'b819daaaebb8c0430030dfbd31e91a5ae1e331b0d969661b3a14cd776569fb9f',
 });
 
 // ---------------------------------------------------------------------------
@@ -95,14 +97,6 @@ export const SCHEMA_FINGERPRINTS: Readonly<Record<number, string>> = Object.free
  */
 export const HELD_EVENTS = {
   // --- App and navigation -------------------------------------------------
-  app_cold_start: {
-    area: 'app',
-    when: 'First frame after a cold start (only once consent exists, so never on first install)',
-    reqs: ['A-NFR-001', 'PRD-REQ-016'],
-    level: 'L2',
-    tier: 'consented',
-    props: { ttfi_bucket: oneOf('lt_1s', '1_2s', '2_3s', 'gt_3s') },
-  },
   app_backgrounded: {
     area: 'app',
     when: 'App goes to the background; carries the session length bucket',
@@ -111,16 +105,8 @@ export const HELD_EVENTS = {
     tier: 'consented',
     props: { session_bucket: SESSION_BUCKET },
   },
-  // means sign-in from Settings, a later invite, or a new session. ----------
   // --- Sign-in (A section 10). Fire only after consent, which in practice
-  auth_sheet_shown: {
-    area: 'entry',
-    when: 'Keep the book / sign-in sheet shown',
-    reqs: ['PRD-REQ-001', 'PRD-REQ-016'],
-    level: 'L2',
-    tier: 'consented',
-    props: { trigger: SIGN_IN_TRIGGER },
-  },
+  // means sign-in from Settings, a later invite, or a new session. ----------
   auth_method_selected: {
     area: 'entry',
     when: 'A sign-in method tapped (observed from the auth state)',

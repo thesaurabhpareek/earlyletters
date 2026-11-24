@@ -4,17 +4,15 @@ Generated from `packages/analytics/src/wire-names.ts` by `npm run wire-names -w 
 
 Nothing here renames anything. The catalogue and registry still hold the old names; the rename PRs (step 2) read this table. The tier column is today's tier from the catalogue and registry rows, and the basics set stays pinned to `screen_view` by `test/tiers.test.ts`.
 
-Counts: 73 keys: 30 ruled by 2.9, 17 named by the 24 Nov rulings, 4 merged, 18 dropped, 4 patterns generated per registered id, 0 NEEDS RULING. After step 2a the table has 51 keys, 47 with a name of their own.
+Counts: 69 keys: 30 ruled by 2.9, 17 named by the 24 Nov rulings, 18 dropped, 4 patterns generated per registered id, 0 NEEDS RULING. Step 2a (BL-2175) has deleted 4 keys so far, the merged ones (see Retired keys); the 18 dropped keys go in its next slice, after which the table has 51 keys, 47 with a name of their own.
 
-Reading a row. "Ruled" means 2.9 names this event (a domain row, the seven examples of line 118, or the Basics patterns) and the catalogue meaning matches it. "Named" means 2.9 did not decide and the exec rulings of 24 Nov 2026 (BL-1255 step 1b) assigned the name. "Merged" means the key is folded into another and has no name of its own; its target is shown. "Dropped" means no event: step 2a deletes the key and its call sites. NEEDS RULING (none today) would mean a new key with no decision.
+Reading a row. "Ruled" means 2.9 names this event (a domain row, the seven examples of line 118, or the Basics patterns) and the catalogue meaning matches it. "Named" means 2.9 did not decide and the exec rulings of 24 Nov 2026 (BL-1255 step 1b) assigned the name. "Dropped" means no event: step 2a deletes the key and its call sites. Keys ruled "merged" are no longer keys: step 2a deleted them, and they are listed under Retired keys. NEEDS RULING (none today) would mean a new key with no decision.
 
 ## Keys
 
 | Key | Lives in | Area today | Tier | Status | Wire name | Basis or what is missing |
 |---|---|---|---|---|---|---|
-| `app_cold_start` | catalogue | app | consented | merged | (none) merged into `system:cold_start_measure` | `cold_start` is already a PERF_METRIC; PM1 lists it under the perf pattern; its metric id (area `system`) is registered in the step 2 PR that needs it |
 | `app_backgrounded` | catalogue | app | consented | dropped | (none) | no PM row and no reader; it is not PM5 `system.session.ended` (which carries clean, fatal or killed), so `system:session_end` stays reserved for that |
-| `auth_sheet_shown` | catalogue | entry | consented | merged | (none) merged into `onboarding:sign_in_screen_view` | the sheet is registered screen id `sign_in`; its `trigger` property has no reader |
 | `auth_method_selected` | catalogue | entry | consented | dropped | (none) | inferred from auth state; `auth_succeeded` and `auth_failed` already carry `method`; no PM row, no reader |
 | `auth_failed` | catalogue | entry | consented | ruled | `onboarding:sign_in_fail` | 2.9 domain table: `onboarding.sign_in.failed` |
 | `auth_email_sent` | catalogue | entry | consented | dropped | (none) | 2.9 no-event list: sends are counted on the server; the phone sees a request accepted, not a send |
@@ -72,8 +70,6 @@ Reading a row. "Ruled" means 2.9 names this event (a domain row, the seven examp
 | `keep_gate_shown` | both | plus | consented | named | `plus:keep_gate_view` | registry row; I3 and F7 read `letters_kept`, `allowance`, `lapsed`; no Keep sheet screen id exists, and a screen view carries none of those |
 | `letter_held` | both | plus | consented | ruled | `plus:letter_hold_create` | 2.9 domain table: `plus.letter.held` |
 | `plus_started_from_gate` | both | plus | consented | named | `plus:keep_gate_plan_start` | keeps the gate in the name; `plus:plan_start` stays free for the broader PM5 event |
-| `book_opened` | both | book | consented | merged | (none) merged into `book:book_screen_view` | PM2 deprecates it into the Book screen view ("counts are not wanted"); funnel `f_return_book_read` is re-expressed on the screen names |
-| `letter_opened` | both | book | consented | merged | (none) merged into `book:letter_detail_screen_view` | same PM2 line; screen id `letter_detail` is one id for every letter |
 | `invite_created` | both | family | consented | ruled | `family:invite_create` | 2.9 line 118, the seven examples |
 | `invite_accepted` | both | family | consented | ruled | `family:invite_accept` | 2.9 domain table: `family.invite.accepted` |
 | `plus_offer_viewed` | both | plus | consented | ruled | `plus:offer_view` | 2.9 line 118, the seven examples |
@@ -140,6 +136,17 @@ No `element` id is registered yet in `ids.ts`, so no name is generated today.
 ### `perf_measured`
 
 No `metric` id is registered yet in `ids.ts`, so no name is generated today.
+
+## Retired keys
+
+Step 2a (BL-2175; CR-213) deleted these 4 keys from the catalogue and registry, with the call sites that fired them. None was ever sent: analytics are off in every profile (CR-186). "Merged" means the signal is carried by the target shown. A retired key is not a key: `wire-names.test.ts` fails if one reappears in the catalogue or registry. Bringing one back is a new row with a decision.
+
+| Key | Status | Replaced by | Basis |
+|---|---|---|---|
+| `app_cold_start` | merged | `system:cold_start_measure` | `cold_start` is already a PERF_METRIC; PM1 lists it under the perf pattern; its metric id (area `system`) is registered in the step 2 PR that needs it |
+| `auth_sheet_shown` | merged | `onboarding:sign_in_screen_view` | the sheet is registered screen id `sign_in`; its `trigger` property has no reader |
+| `book_opened` | merged | `book:book_screen_view` | PM2 deprecates it into the Book screen view ("counts are not wanted"); funnel `f_return_book_read` is re-expressed on the screen names |
+| `letter_opened` | merged | `book:letter_detail_screen_view` | same PM2 line; screen id `letter_detail` is one id for every letter |
 
 ## Open items
 

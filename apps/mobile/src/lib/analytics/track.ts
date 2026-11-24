@@ -34,7 +34,6 @@ export const {
   trackCaptureStarted,
   trackCaptureDiscarded,
   trackTranscriptionCompleted,
-  trackBookOpened,
   trackReadTogetherStarted,
   trackReadTogetherEnded,
   trackInviteCreated,
@@ -44,7 +43,6 @@ export const {
   trackExportFailed,
   trackReminderSchedule,
   trackMachineEditsRejected,
-  trackColdStart,
   trackLanguageSet,
   trackPackDownload,
 } = trackers;

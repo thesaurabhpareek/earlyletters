@@ -10,7 +10,7 @@
  * because they are local only; they leave the phone only as buckets, after a
  * yes. Pure and tested; the app feeds it AppState changes.
  */
-import { daysBucket, sessionBucket, ttfiBucket } from './buckets';
+import { daysBucket, sessionBucket } from './buckets';
 import type { Analytics } from './client';
 import type { KeyValueStorage } from './consent';
 
@@ -36,6 +36,7 @@ export interface Session {
 
 export interface Lifecycle {
   /** Once per process, after the first frame. */
+  /** `ttfiMs` is accepted and not sent: `app_cold_start` is retired (BL-2175), and the signal returns as the `cold_start` perf metric when that id is registered. */
   launch(i?: { ttfiMs?: number; source?: 'cold' | 'notification' | 'link' }): Promise<void>;
   /** App became active. Returns true when this starts a new session. */
   foreground(source?: 'warm' | 'notification' | 'link'): Promise<boolean>;
@@ -68,7 +69,6 @@ export function createLifecycle(opts: LifecycleOptions): Lifecycle {
       }
       lastActive = parseTime(await storage.get(LIFECYCLE_KEYS.lastActiveAt));
       session = { startedAt: t, index: 1 };
-      if (i.ttfiMs !== undefined) analytics.track('app_cold_start', { ttfi_bucket: ttfiBucket(i.ttfiMs) });
       analytics.track('app_opened', {
         source: i.source ?? 'cold',
         days_since_last_open: lastActive === null ? 'd0' : daysBucket(t - lastActive),
