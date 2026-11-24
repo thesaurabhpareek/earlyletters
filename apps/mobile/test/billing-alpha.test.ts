@@ -147,7 +147,7 @@ describe('the Keep step, through the real gate and ledger', () => {
   it('preview: three letters and more are kept, no Keep sheet, no second-free line', async () => {
     wire('preview');
     for (const t of ['One.', 'Two.', 'Three.', 'Four.', 'Five.']) expect(await keep(t), t).toEqual({ sheet: false, secondFree: false });
-    expect(h.events.map((e) => e.name)).not.toContain('keep_gate_shown');
+    expect(h.events.map((e) => e.name)).not.toContain('plus:keep_gate_view');
   });
 
   it('development: the same as preview', async () => {
@@ -165,7 +165,7 @@ describe('the alpha allowance boundary (PL-1, BL-736)', () => {
       // Letters 1 to 100 are kept free: no sheet, and never the store build's "second free letter" line.
       expect(r, `letter ${n}`).toEqual({ sheet: false, secondFree: false });
     }
-    expect(h.events.map((e) => e.name)).not.toContain('keep_gate_shown');
+    expect(h.events.map((e) => e.name)).not.toContain('plus:keep_gate_view');
     const g = await keepSheetFor('Letter 101.');
     expect(g, 'letter 101 meets the Keep sheet').not.toBeNull();
     expect(g?.decision.kind).toBe('offer');
@@ -175,7 +175,7 @@ describe('the alpha allowance boundary (PL-1, BL-736)', () => {
     const v = keepSheetView({ ...base, alpha: true });
     expect(v.body).toBe(NOTE);
     expect(v.canOpenStore).toBe(false);
-    expect(h.events.filter((e) => e.name === 'keep_gate_shown')).toHaveLength(1);
+    expect(h.events.filter((e) => e.name === 'plus:keep_gate_view')).toHaveLength(1);
   });
 
   it('[PL-1] [NX-08-R7] alpha build: Tonight never shows the needs-Plus line at 99, 100 or 101 letters', () => {

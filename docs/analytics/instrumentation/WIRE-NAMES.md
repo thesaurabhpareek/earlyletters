@@ -2,7 +2,7 @@
 
 Generated from `packages/analytics/src/wire-names.ts` by `npm run wire-names -w @scribe/analytics`; do not edit by hand. `npm run wire-names -w @scribe/analytics -- --check` and `packages/analytics/test/wire-names.test.ts` fail when this file differs from that output. BL-1255 step 1 (CR-212): this is the table `posthog-standard.md` section 2.9 points to as "IN-03".
 
-The rename (step 2b onward, BL-2176) moves one area at a time, each PR on the one below. 30 of 47 keys that own a name hold it now; for the rest the "Key" column is still the old key, and "Was" says so. Where a key was renamed, "Was" is the old key, and `LEGACY_EVENT_NAMES` in `wire-names.ts` maps it to the new one, so a note, funnel or query written against an old name can still be read. Nothing was ever sent under an old name (analytics are off in every profile, CR-186). The tier column is the tier of the catalogue and registry rows, unchanged by the rename, and the basics set stays pinned to `screen_view` by `test/tiers.test.ts`. The four pattern keys keep their keys: their names are generated per registered id.
+The rename (step 2b onward, BL-2176) moves one area at a time, each PR on the one below. 39 of 47 keys that own a name hold it now; for the rest the "Key" column is still the old key, and "Was" says so. Where a key was renamed, "Was" is the old key, and `LEGACY_EVENT_NAMES` in `wire-names.ts` maps it to the new one, so a note, funnel or query written against an old name can still be read. Nothing was ever sent under an old name (analytics are off in every profile, CR-186). The tier column is the tier of the catalogue and registry rows, unchanged by the rename, and the basics set stays pinned to `screen_view` by `test/tiers.test.ts`. The four pattern keys keep their keys: their names are generated per registered id.
 
 Counts: 51 keys: 30 ruled by 2.9, 17 named by the 24 Nov rulings, 4 patterns generated per registered id, 0 NEEDS RULING; 47 have a name of their own. Step 2a (BL-2175) deleted 22 keys: 18 dropped, 4 merged (see Retired keys).
 
@@ -36,8 +36,8 @@ Reading a row. "Ruled" means 2.9 names this event (a domain row, the seven examp
 | `keeping:export_start` | `export_started` | catalogue | settings | consented | named | `keeping:export_start` | the object must agree with `export_complete` and `export_fail`; `download_start` is retired; funnel F9 and the insights engine read it |
 | `keeping:export_complete` | `export_completed` | catalogue | settings | consented | ruled | `keeping:export_complete` | 2.9 line 118, the seven examples |
 | `keeping:export_fail` | `export_failed` | catalogue | settings | consented | ruled | `keeping:export_fail` | 2.9 domain table: `keeping.export.failed` |
-| `offer_code_redeemed` | (not renamed yet) | catalogue | plus | consented | ruled | `plus:code_submit` | 2.9 domain table: `plus.code.redeemed` |
-| `restore_result` | (not renamed yet) | catalogue | plus | consented | ruled | `plus:restore_complete` | 2.9 domain table: `plus.restore.completed` (the catalogue row also carries the failed outcome as a property) |
+| `plus:code_submit` | `offer_code_redeemed` | catalogue | plus | consented | ruled | `plus:code_submit` | 2.9 domain table: `plus.code.redeemed` |
+| `plus:restore_complete` | `restore_result` | catalogue | plus | consented | ruled | `plus:restore_complete` | 2.9 domain table: `plus.restore.completed` (the catalogue row also carries the failed outcome as a property) |
 | `system:sync_fail` | `sync_failed` | catalogue | errors | consented | ruled | `system:sync_fail` | 2.9 domain table: `system.sync.failed` (#1044); the first generated table missed this row |
 | `screen_view` | (pattern, keeps its key) | both | app | basics | pattern | `<area>:<id>_screen_view` (36 today) | 2.9 Basics: `<area>:<screen_id>_screen_view` |
 | `system:app_open` | `app_opened` | both | app | consented | ruled | `system:app_open` | 2.9 domain table: `system.app.opened` |
@@ -48,15 +48,15 @@ Reading a row. "Ruled" means 2.9 names this event (a domain row, the seven examp
 | `capture_discarded` | (not renamed yet) | both | capture | consented | named | `capture:take_cancel` | registry row and insights reader; a drop-off shares its object with its start, and `capture_started` is `capture:take_start`; PM1 `letter_cancel` loses on pairing |
 | `transcription_completed` | (not renamed yet) | both | capture | consented | ruled | `capture:transcript_complete` | 2.9 domain table: `capture.transcript.completed` (this key also carries failed and no-speech outcomes as a property) |
 | `letter_saved` | (not renamed yet) | both | capture | consented | ruled | `capture:letter_save` | 2.9 line 118, the seven examples |
-| `free_allowance_reached` | (not renamed yet) | both | plus | consented | ruled | `plus:allowance_reach` | 2.9 domain table: `plus.allowance.reached` |
-| `keep_gate_shown` | (not renamed yet) | both | plus | consented | named | `plus:keep_gate_view` | registry row; I3 and F7 read `letters_kept`, `allowance`, `lapsed`; no Keep sheet screen id exists, and a screen view carries none of those |
-| `letter_held` | (not renamed yet) | both | plus | consented | ruled | `plus:letter_hold_create` | 2.9 domain table: `plus.letter.held` |
-| `plus_started_from_gate` | (not renamed yet) | both | plus | consented | named | `plus:keep_gate_plan_start` | keeps the gate in the name; `plus:plan_start` stays free for the broader PM5 event |
+| `plus:allowance_reach` | `free_allowance_reached` | both | plus | consented | ruled | `plus:allowance_reach` | 2.9 domain table: `plus.allowance.reached` |
+| `plus:keep_gate_view` | `keep_gate_shown` | both | plus | consented | named | `plus:keep_gate_view` | registry row; I3 and F7 read `letters_kept`, `allowance`, `lapsed`; no Keep sheet screen id exists, and a screen view carries none of those |
+| `plus:letter_hold_create` | `letter_held` | both | plus | consented | ruled | `plus:letter_hold_create` | 2.9 domain table: `plus.letter.held` |
+| `plus:keep_gate_plan_start` | `plus_started_from_gate` | both | plus | consented | named | `plus:keep_gate_plan_start` | keeps the gate in the name; `plus:plan_start` stays free for the broader PM5 event |
 | `family:invite_create` | `invite_created` | both | family | consented | ruled | `family:invite_create` | 2.9 line 118, the seven examples |
 | `family:invite_accept` | `invite_accepted` | both | family | consented | ruled | `family:invite_accept` | 2.9 domain table: `family.invite.accepted` |
-| `plus_offer_viewed` | (not renamed yet) | both | plus | consented | ruled | `plus:offer_view` | 2.9 line 118, the seven examples |
-| `plus_offer_closed` | (not renamed yet) | both | plus | consented | ruled | `plus:offer_end` | 2.9 domain table: `plus.offer.closed` |
-| `plan_changed` | (not renamed yet) | both | plus | consented | ruled | `plus:plan_update` | 2.9 domain table: `plus.plan.changed` |
+| `plus:offer_view` | `plus_offer_viewed` | both | plus | consented | ruled | `plus:offer_view` | 2.9 line 118, the seven examples |
+| `plus:offer_end` | `plus_offer_closed` | both | plus | consented | ruled | `plus:offer_end` | 2.9 domain table: `plus.offer.closed` |
+| `plus:plan_update` | `plan_changed` | both | plus | consented | ruled | `plus:plan_update` | 2.9 domain table: `plus.plan.changed` |
 | `system:error_view` | `error_shown` | both | errors | consented | ruled | `system:error_view` | 2.9 line 118, the seven examples |
 | `control_tapped` | (pattern, keeps its key) | both | app | consented | pattern | `<area>:<id>_click` (0 today) | 2.9 Basics: `<area>:<control_id>_click` |
 | `surface_impressed` | (pattern, keeps its key) | both | app | consented | pattern | `<area>:<id>_view` (0 today) | 2.9 Basics: `<area>:<element_id>_view` |

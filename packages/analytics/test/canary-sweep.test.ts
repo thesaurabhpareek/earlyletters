@@ -124,8 +124,8 @@ const REAL: Path[] = [
   },
   (c) => {
     const see = pkg.createPlanObserver(c.analytics);
-    see({ state: E('plan_changed', 'to_state'), period: null, ownership: null, environment: 'production', checked: true } as never);
-    for (const x of S) { see({ state: x, period: x, ownership: x, environment: 'production', checked: true } as never); see({ state: E('plan_changed', 'to_state'), period: null, ownership: null, environment: 'production', checked: true } as never); }
+    see({ state: E('plus:plan_update', 'to_state'), period: null, ownership: null, environment: 'production', checked: true } as never);
+    for (const x of S) { see({ state: x, period: x, ownership: x, environment: 'production', checked: true } as never); see({ state: E('plus:plan_update', 'to_state'), period: null, ownership: null, environment: 'production', checked: true } as never); }
   },
   (c) => {
     const see = pkg.createReminderObserver(c.analytics);

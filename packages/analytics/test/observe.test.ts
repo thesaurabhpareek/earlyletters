@@ -132,7 +132,7 @@ describe('plan observer', () => {
     see(p('trial'));
     see(p('trial'));
     see(p('active', 'sandbox'));
-    expect(await sent()).toEqual([['plan_changed', { from_state: 'none', to_state: 'trial', period: 'year', ownership: 'family_shared' }]]);
+    expect(await sent()).toEqual([['plus:plan_update', { from_state: 'none', to_state: 'trial', period: 'year', ownership: 'family_shared' }]]);
   });
 });
 

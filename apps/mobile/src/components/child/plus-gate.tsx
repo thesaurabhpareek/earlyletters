@@ -114,8 +114,8 @@ export function PlusGate({ childName, lapsed = false, lettersKept, heldOn = 'ton
     if (continued.current) return;
     continued.current = true;
     haptic('success'); // an outcome: Plus is on
-    track('plus_started_from_gate', { letters_kept: Math.min(1000, Math.max(0, lettersKept)) });
-    if (awaitingCode.current) track('offer_code_redeemed', {});
+    track('plus:keep_gate_plan_start', { letters_kept: Math.min(1000, Math.max(0, lettersKept)) });
+    if (awaitingCode.current) track('plus:code_submit', {});
     onPlus();
   };
 
@@ -163,11 +163,11 @@ export function PlusGate({ childName, lapsed = false, lettersKept, heldOn = 'ton
     setOpening(true);
     setTapNote(null);
     try {
-      track('plus_offer_viewed', { trigger: 'keep_letter' });
+      track('plus:offer_view', { trigger: 'keep_letter' });
       const tap = await sheetTap('seePlus', { offline: offlineNow, open: presentPlusStore });
       // Offline is reported as before, as `unavailable`: Apple's sheet could not be used.
       const outcome = tap.outcome === 'offline' ? 'unavailable' : tap.outcome;
-      if (outcome !== 'busy') track('plus_offer_closed', { trigger: 'keep_letter', outcome });
+      if (outcome !== 'busy') track('plus:offer_end', { trigger: 'keep_letter', outcome });
       setTapNote(tap.note);
       if (outcome === 'purchased') carryOn();
     } finally {
