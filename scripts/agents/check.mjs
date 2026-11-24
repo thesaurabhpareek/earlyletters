@@ -8,6 +8,7 @@
 //   node scripts/agents/check.mjs
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
+import { checkRank } from "./rank-check.mjs";
 import { ROOT, loadRoster, ownerMap, externalOwners, parseBacklog, readText } from "./lib.mjs";
 import { lintCharters, missingScriptCitations } from "./charter-lint.mjs";
 
@@ -95,6 +96,10 @@ export function check(root = ROOT) {
   warnings.push(...lint.warnings);
   // A harness doc that cites scripts/agents/<name>.mjs must cite a file on this branch.
   errors.push(...missingScriptCitations(root));
+
+  const rank = checkRank(root);
+  errors.push(...rank.errors);
+  warnings.push(...rank.warnings);
 
   const daily = roster.agents.reduce((s, a) => s + a.daily_runs, 0);
   const cap = roster.limits.max_runs_per_day_total;
