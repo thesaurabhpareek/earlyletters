@@ -41,6 +41,11 @@ describe('[BL-444] left book copy', () => {
     }
   });
 
+  it('[BL-1960] the lead names what is on the page and makes no storage promise (DATA-REQ-016: a left book\'s letters can be deleted and erased here)', () => {
+    expect(leftBookCopy.lead).toBe("The letters you wrote in {child}'s book.");
+    expect(leftBookCopy.lead).not.toMatch(/\b(kept|keep|keeps|stay|stays|saved|here|phone)\b/i);
+  });
+
   it('says nothing about numbers or counts', () => {
     for (const l of ALL) expect(l.text, l.path).not.toMatch(/\d|\{(n|count|total)\}/);
   });

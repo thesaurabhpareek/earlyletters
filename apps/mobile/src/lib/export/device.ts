@@ -27,7 +27,7 @@ import { currentAuthUserId } from '../auth/auth-store';
 import { dateLocale } from '../dates';
 import { hasPlus } from '../billing';
 import { getSupabaseOrNull } from '../supabase/client';
-import { currentUserId, dictionaryFor, getSetting, listChildren, listConflicts, listEntriesForChild, listHiddenChildren, listWaitingForExport, getDraftReview, myRoleIn, listClosedBooks, listDeletedEntriesForChild, type Entry } from '../store';
+import { currentUserId, dictionaryFor, getSetting, listChildren, listConflicts, listEntriesForChild, listHiddenChildren, listWaitingForExport, getDraftReview, myRoleIn, listClosedBooks, listDeletedEntriesForChild, listLeftBooks, listLeftBookEntries, type Entry } from '../store';
 import { paperFor, phoneConsent, waitingChangedWords, type ExportSnapshot, type SnapshotChild, type SnapshotEntry } from './build.logic';
 import { noConsentHistory, noProfile, postgrestReader, readServerRecords, type PostgrestLike, type ServerRecordsReader } from './server-records.logic';
 import type { ExportDictionaryTerm } from './schema';
@@ -108,7 +108,7 @@ export function exportSnapshot(now = new Date()): ExportSnapshot {
   // closed and the Recently deleted letters (DATA-REQ-053, BL-446; scope.logic.ts).
   const requestOpen = deletionRequestOpen(readOpenRequest({ get: getSetting }), currentAuthUserId(), now.getTime());
   const scope = exportScope(
-    { listed: listChildren, hidden: listHiddenChildren, closedByServer: listClosedBooks, live: listEntriesForChild, deleted: listDeletedEntriesForChild },
+    { listed: listChildren, hidden: listHiddenChildren, closedByServer: listClosedBooks, live: listEntriesForChild, left: listLeftBooks, leftLive: listLeftBookEntries, deleted: listDeletedEntriesForChild },
     requestOpen,
   );
   const children: SnapshotChild[] = scope.map((b) => ({ ...b.book, hidden: b.hidden, role: myRoleIn(b.book.id) }));
