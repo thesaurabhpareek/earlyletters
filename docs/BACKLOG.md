@@ -11680,3 +11680,41 @@ Each item below either got a row here or was linked to the row that already owns
 - Scope: the founder (or a person he names) runs the two passes on an iPhone SE (3rd generation), iOS 17 first, then iOS 26, with the drill identities (Asha only, no real letter), and writes one evidence file per pass from `docs/qa/evidence/TEMPLATE.md`. Agent follow-up once the evidence exists: a row for each failure the sheet records, and the BL-956 and NS-33 status lines read against it. Pointer to add by Karma: one line in `docs/release/FOUNDER_QUEUE.md` and one in the Part 5 settings line of `docs/qa/DEVICE_TEST_PLAN.md`; neither is edited here (the queue is Karma's under CR-176).
 - Done when: both evidence files exist and every row carries a result word from the sheet, or the row says which pass was not run and why.
 - Source: PR #1849 and the sheet's header, read on 24 Nov 2026. Not verified: the sheet was read at its head and its steps only; whether the Plus gate or the Keep sheet is reachable on the alpha build the sheet names was not checked.
+
+## Missing rows from the NX-38 trace check of 24 Nov 2026 (BL-2170 to BL-2171; filed by the product agent, docs only)
+
+Source: CR-204 (`docs/agents/cto/RULINGS.md`), which asked for one line per item R1 to R11 of the historical trace `docs/roadmap/next/03-requirements/NX-38-build12-must-have-gaps-9nov.md` (re-cut of closed PR #733): covered by a row, or missing. Read against `docs/BACKLOG.md` and `scripts/release/` on `develop` at 5d9557777, by `git grep` only; nothing was run.
+
+| Item | Result |
+|---|---|
+| R1 words that are true of the build | covered: BL-118, BL-1970, BL-1855, BL-2056 |
+| R2 the public addresses, written down and checked | missing: BL-2170 |
+| R3 privacy label equals the manifest | covered: BL-231, BL-1265 |
+| R4 age signal and region | covered: BL-1031 (BL-345 superseded), CPO-81, CLO-35, CLO-36 |
+| R5 no co-parent entry point | built: `apps/mobile/test/family-surfaces.test.ts` |
+| R6 local start, claim into an account | built: `apps/mobile/test/first-run-new-account.test.ts` |
+| R7 reviewer deletes the account, then signs in again | partly covered by BL-1317 and BL-1318 (store candidate rows); the second sign-in is not named in either, depth not read. No new row; the owner of BL-1317 reads this line |
+| R8 every public contact address receives mail and has a reader | missing: BL-2171 |
+| R9 deletion proof on production (Apple token revoke, relay address mail) | partly covered by BL-362 (Apple token revoke built) and `docs/ops/runbooks/stuck-deletion.md`; the production drill record is not a row. Not filed: it is a founder drill and the exec team owns whether it is a gate |
+| R10 recoverable production data | covered in part: BL-566 (staging), BL-247, D-159. No production restore row; the Free-plan answer is D-159's |
+| R11 store record complete | covered in part: BL-1317, FT-43 in the setup registry |
+
+R2 and R8 are claims to the public, so they stay UNVERIFIED either way until someone runs them (CCO-30).
+
+#### BL-2170 One written list of the public addresses, and a script that fetches each (NX-38-R2)
+- Status: proposed (CR-204 and CCO-30 say R2 has no row on `develop`; Karma or the founder sets `ready`). Mode: agent. Owner: platform. Milestone: M15. Size: S. Depends on: none.
+- Priority: Medium. Gate: none to write and test; the live run needs the pages deployed and is a founder or ops step.
+- Satisfies: NX-38-R2 (historical trace, not a requirement source); LEGAL-REQ policy versioning (`docs/legal/POLICY_VERSIONING.md`); Apple 5.1.1(i) and 1.5 as the trace read them on 9 Nov (not re-read).
+- Problem and evidence: the store gate named "five addresses" and no file lists them. On 8 Nov the trace recorded `/support`, `/delete-account` and `/subscription-terms` as 404 and `/privacy` as saying the app is not out; nothing on `develop` re-checks that. Not verified: today's live state of any page.
+- Scope: `scripts/release/public-urls.mjs` and `public-urls.test.mjs` (fetch injected in the test). It builds the list from `packages/brand`, the in-app legal link keys, the store config and the Notes for Review text, prints it, and in live mode checks each answers 200 with the policy version the production policy rows hold. Read-only, no credentials, nothing sent. Add the test to the root test list through the T2 route (Karma applies the one-line edit; agents do not touch root `package.json`).
+- Done when: the test passes with a fake fetch for a good page, a 404, a page for another policy version and a page that says the app is not out; the PR body says the live run was not done.
+- Source: NX-38-R2 and CR-204 section 3. Not verified: whether `scripts/release/` already holds a script that does this under another name (none found by name).
+
+#### BL-2171 Every public contact address receives mail and has a named reader (NX-38-R8)
+- Status: proposed (CR-204 and CCO-30 say R8 has no row on `develop`; Karma or the founder sets `ready`). Mode: human. Owner: platform. Milestone: M15. Size: S. Depends on: BL-100.
+- Priority: Medium. Gate: before the first outside person signs in on production; the live mail path is FO-3 of the 24 Nov rulings (`docs/agents/cto/RULINGS.md`).
+- Satisfies: NX-38-R8 (historical trace, not a requirement source); Apple 1.5 and 5.1.1(i) as the trace read them on 9 Nov (not re-read); `docs/ops/DOMAINS.md`.
+- Problem and evidence: the legal texts and the store listing name `hello@`, `privacy@` and `security@`, and DOMAINS.md names `dmarc@`. BL-100 records `hello@` as live; nothing records that the others receive mail or who reads them. An unread privacy address is the channel the policy gives for access and deletion. Not verified: whether any of them receives mail today.
+- Scope: the founder (or a person he names) sends one test message to each address any public text names, confirms it arrives, and writes the address, the date, the named reader and the time to first reply the support page promises in one evidence file under `docs/ops/` (addresses and dates only; no message text). An agent follow-up adds a small test that every address in `packages/brand`, the legal texts and the DMARC record is in one allowlist.
+- Done when: the evidence file lists every public address with a date and a reader, or says which was not tested and why; the allowlist test passes.
+- Source: NX-38-R8 and CR-204 section 3, CCO-30. Not verified: the list of addresses was taken from the trace and DOMAINS.md at 9 Nov, not re-read in every legal text.
