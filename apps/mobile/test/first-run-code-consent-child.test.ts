@@ -351,7 +351,7 @@ describe('[NX-31-R4] a signed-in start hands a returning account\'s book over, a
   it('[NX-31-R4] [D-160] finish asks it first, from the real session state, before it reads the block or makes a book', () => {
     const o = uncomment(onboarding);
     const finish = o.slice(o.indexOf('const finish = () => {'));
-    expect(finish).toMatch(/^const finish = \(\) => \{\s*if \(!finishMayMakeBook\(\{ start, hasSession: hasSessionState\(authState\) \}\)\) return;\s*if \(childBlock\) return;\s*const created = firstRunBookNames\(names\)\.map\(\(n\) =>\s*addChild\(/);
+    expect(finish).toMatch(/^const finish = \(\) => \{\s*if \(!finishMayMakeBook\(\{ start, hasSession: hasSessionState\(authState\) \}\)\) return;\s*if \(childBlock\) return;\s*const created = addChildren\(\s*firstRunBookNames\(names\)\.map\(/);
     expect(o.match(/finishMayMakeBook\(/g)).toHaveLength(1);
   });
   it('[NX-31-R4] the steps ask reportsPastWelcome in the one effect that tells the route', () => {
