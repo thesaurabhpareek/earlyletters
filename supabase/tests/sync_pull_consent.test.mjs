@@ -145,4 +145,69 @@ await as(E, `select public.record_policy_act('terms', '1.0.0', 'accept', 'signin
 const rE = await pull(E, asked);
 check('[FR-PRV-20] consent made current again: rows are served again (own and others\')', ids(rE).includes(LE) && ids(rE).includes(LA) && rE.withheld === undefined);
 
+// ── BL-2146 (6): the rate limit counts closed pulls too ──────────────────
+// rate_hit('pull') (20261015000000 section 0): 120 per minute per person, the 121st raises SCRAT. sync_pull
+// calls it before the consent gate, so a closed pull is counted like any other; a limited pull is an error
+// with no answer at all, so it carries no content whether the caller's gate is open or closed.
+const rawPull = async (uid) => (await one(uid, `select public.sync_pull($1::jsonb, 200) r`, [JSON.stringify(asked)])).r;
+const hitsOf = async (uid) => (await sys(`select hits from sync_rate_windows where profile_id = $1 and bucket = 'pull'`, [uid])).rows[0]?.hits;
+for (const [label, u, served] of [['closed', U, false], ['open', A, true]]) {
+  await sys(`delete from sync_rate_windows where profile_id = $1`, [u]);
+  let last;
+  for (let i = 1; i <= 120; i++) last = await rawPull(u);
+  check(`[BL-2146] rate limit (${label}): the 120th pull in the minute is answered as usual`,
+    served ? ids(last).includes(LA) && last.withheld === undefined : empty(last) && last.withheld === 'consent');
+  check(`[BL-2146] rate limit (${label}): all 120 pulls were counted`, (await hitsOf(u)) === 120);
+  let limited;
+  const code = await codeOf(async () => { limited = await rawPull(u); });
+  check(`[BL-2146] rate limit (${label}): the 121st pull in the minute is limited (SCRAT)`, code === 'SCRAT');
+  check(`[BL-2146] rate limit (${label}): a limited pull returns no content (no answer, no rows, no child name)`,
+    limited === undefined && !nameIn(limited ?? {}) && !wordsIn(limited ?? {}));
+  await sys(`delete from sync_rate_windows where profile_id = $1`, [u]);
+}
+
+// ── BL-2146 (5): the gate comes before every read of a book table, in source order ──
+// The order was held only by the comment in 20261123100000. Read the live function and fail if any read of a
+// book table (FROM or JOIN on one) comes before the content_gate_state call. Comments are stripped first so
+// the comment above the gate cannot count as either.
+const BOOK_TABLES = ['entries', 'children', 'child_members', 'child_member_prefs', 'child_invites', 'book_entries',
+  'profiles', 'sync_private\\.entry_erasures'];
+const READ = new RegExp(String.raw`\b(?:from|join)\s+(?:public\.)?(?:${BOOK_TABLES.join('|')})\b`, 'gi');
+const GATE = /\bpublic\.content_gate_state\s*\(/i;
+const SIG = `'public.sync_pull(jsonb, int)'::regprocedure`;
+const defOf = async () => (await sys(`select pg_get_functiondef(${SIG}) d`)).rows[0].d;
+const gateOrder = (def) => {
+  const src = def.replace(/--[^\n]*/g, '');
+  const gate = src.search(GATE);
+  const reads = [...src.matchAll(READ)].map((m) => m.index);
+  return { gate, reads, before: reads.filter((i) => gate >= 0 && i < gate) };
+};
+const orig = await defOf();
+const o = gateOrder(orig);
+check('[BL-2146] sync_pull source: the consent gate call (content_gate_state) is present', o.gate >= 0);
+check('[BL-2146] sync_pull source: the scan finds the book-table reads (not vacuous)', o.reads.length >= 5);
+check('[BL-2146] sync_pull source: no read of a book table comes before the consent gate', o.gate >= 0 && o.before.length === 0);
+
+// Mutant: the same function with the gate moved below the first book read (the per-book loop's query). It is
+// applied, read back and must fail the order check; then the original is put back and passes again. Skipped
+// when the live function already fails the order check above (that check is the failure to read).
+if (o.gate >= 0 && o.before.length === 0) {
+  const gStart = orig.indexOf('if not coalesce((select g.terms_current');
+  const gEnd = orig.indexOf('end if;', gStart) + 'end if;'.length;
+  const firstRead = orig.slice(gEnd).search(/\bfrom child_members m\s/);
+  const loopAt = firstRead < 0 ? -1 : orig.indexOf('loop', gEnd + firstRead) + 'loop'.length;
+  const built = gStart > 0 && gEnd > gStart && firstRead >= 0 && loopAt > gEnd;
+  check('[BL-2146] mutant built (gate block found and moved below the first book read)', built);
+  if (built) {
+    const mutant = orig.slice(0, gStart) + orig.slice(gEnd, loopAt) + '\n' + orig.slice(gStart, gEnd) + orig.slice(loopAt);
+    await sys(mutant);
+    const m = gateOrder(await defOf());
+    check('[BL-2146] mutant (gate below the first book read): the order check fails', m.gate >= 0 && m.before.length > 0);
+    await sys(orig);
+    check('[BL-2146] original restored: the order check passes again', gateOrder(await defOf()).before.length === 0 && (await defOf()) === orig);
+  }
+} else {
+  console.log('note: in-test gate-order mutant skipped, the live sync_pull already fails the order check');
+}
+
 done();
