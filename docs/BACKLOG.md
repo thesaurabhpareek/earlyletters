@@ -10305,6 +10305,46 @@ Sources: the Chief Product Officer rulings CPO-66 to CPO-71, the Chief Design Of
 - Scope: the five-parent check carries four small questions: the moon glyph on Home, the "Not much today" wording, the reminder time range, and where the money terms sit on the welcome (a founder question under CR-73, because it is what people are told they pay; held until the check runs); and three more before it runs (BL-1814, `DESIGN-BACKLOG.md` row BL-1814): does the first screen say it is for her baby, now; does being greeted by the sign-off ("Mama") grate; is the microphone primer's last line enough. The check also reads whether Review's fold is quiet enough (spec 14 question 1; CDESO-5 ruled that the fold stands unless this check says otherwise). Product writes the script and records what each parent said, without their names, and puts the count in the findings.
 - Done when: the check has run with the founder's parents and the count is recorded, or the founder has said in this row that it will not run and why; the answers to the questions above are in a findings file, and BL-1739 and the next Moments build rows are set from it.
 
+## Follow-ups from review notes of 24 Nov 2026 (BL-2030 to BL-2033; filed by the product agent, docs only)
+
+Source: review notes on PRs #1869, #1871 and #1872, passed to the product agent without the diffs. Ids BL-2030 to BL-2033 leave a gap after the ids that open PRs #1841, #1851 and #1852 hold (BL-2003 to BL-2027). None of these rows was started when it was filed. Every "Not verified" line says what the filing agent did not open.
+
+#### BL-2030 Reconcile the 18 NS-54 P0 rows that card 29 makes visible before the NS ratchet is turned on in CI
+- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: PR #1871 merged (it makes the trace read card 29).
+- Priority: P2. Gate: seeding the baseline needs an explicit founder-visible decision (listed in the PR body and the journal under Founder); writing the tests does not. Lane: qa.
+- Satisfies: gate G0 (BL-964); refines BL-1869; NS-54 (P0 rows).
+- Problem and evidence: the review note on PR #1871 says that once card 29 is read, 18 NS-54 P0 rows show as having no test. The ratchet (`docs/ops/proposed/trace-ns-ratchet.md`, applied by BL-1869) lets the baseline only shrink, so turning it on with 18 new uncovered rows would either fail at once or hide them.
+- Scope: before BL-1869's step is enabled, list the 18 rows in the PR body and do one of two things for each: write the NS-54 test and cite its title, or, for rows the founder agrees to carry, add them to the baseline once, in one commit whose message says it is a one-time seed. No row is added to the baseline without the founder's decision being quoted in the PR body. The baseline is never edited to grow after that.
+- Done when: `node scripts/trace.mjs --no-write` shows no NS-54 P0 row that is neither tested nor named in the one-time seed; the PR body lists the 18 rows with their outcome; BL-1869's Depends on gains this id.
+- Source: the review note on PR #1871. Not verified: the count of 18 is the note's; the diff and the trace output were not read or run.
+
+#### BL-2031 F16-REQ-029a to c and F14-REQ-043b: map the tests that exist, and write the ones that do not
+- Status: ready. Mode: agent. Owner: product manager. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: the product owner confirms the F14-REQ-043b mapping (below). Lane: product.
+- Satisfies: F16-REQ-029a, F16-REQ-029b, F16-REQ-029c; F14-REQ-043b (cited, not changed).
+- Problem and evidence: the review note on PR #1869 says (1) the client half of F16-REQ-029a (phone 1 shows the newer words) maps to WP-F16-15 when a test for it is written; (2) WP-F16-14 and WP-F16-17 show Built but carry no tests for 029a, 029b or 029c; (3) the F14-REQ-043b mapping to WP-F14-15b needs product owner confirmation.
+- Scope: (1) add the 029a client-half mapping to WP-F16-15 in the same PR as the test that shows phone 1 reading the newer words; until then the row names it as untested. (2) For WP-F16-14 and WP-F16-17, either set their status from Built to the honest value (built, no test) or file the test rows for 029a, 029b and 029c; the product agent picks per package after reading each. (3) Put F14-REQ-043b to WP-F14-15b to the product owner as one question in the journal under Founder; do not map it until answered.
+- Done when: no work package shows Built for a requirement it has no test for, or its status says no test; the 029a client half points at WP-F16-15 once its test merges; the 043b answer is recorded.
+- Source: the review note on PR #1869. Not verified: the work-package file and the PR diff were not opened; the package ids are the note's.
+
+#### BL-2032 Decide whether "no name kept" on Apple sign-in is its own NS-54 row
+- Status: ready. Mode: agent. Owner: product manager. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none. Lane: product.
+- Satisfies: NS-54 (cited, not changed); refines BL-2030.
+- Problem and evidence: the review note on PR #1872 says the second test in `auth-apple-fp9.test.ts` shows that no name is kept when she signs in with Apple, and no NS-54 row names that behaviour.
+- Scope: read the test and the NS-54 rows. If the behaviour is a promise (Shown, Records, Never lines under PRIV-R21, per `docs/agents/COORDINATION.md` section 10), draft its row as proposed in the PR body for the founder and cite the test title; if it is covered by an existing row, cite that row on the test; if it is an implementation detail, say so in the row and close it.
+- Done when: the test title maps to one NS-54 row, or the row is closed with the reading.
+- Source: the review note on PR #1872. Not verified: the test file was not opened.
+
+#### BL-2033 Say whether `trace.mjs --check` stays out of CI while develop fails it
+- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none. Lane: qa.
+- Satisfies: gate G0 (BL-964); refines BL-1869 (the open "plain `--check`" question, founder question 07 Q8).
+- Problem and evidence: the note says `node scripts/trace.mjs --check` already fails on develop because of stale baseline lines. `docs/ops/proposed/trace-ns-ratchet.md` already says plain `--check` also fails on 5 v2 ids cited but defined nowhere. The proposed step uses `--no-write --check` with the base arguments.
+- Scope: run `--check` on develop, list each failing line by cause (stale baseline line, undefined v2 id), and write in `trace-ns-ratchet.md` one recommended answer. The product agent's pick: keep plain `--check` out of CI until the stale lines are removed, and run only the ratchet step, which fails on a dropped NS P0 title; the stale lines are fixed in their own PR, which only shrinks the baseline.
+- Done when: the document names which failures remain and the answer to 07 Q8 is written for the founder; BL-1869's status line says which command the step uses.
+- Source: the review notes of 24 Nov 2026. Not verified: `--check` was not run by the filing agent; the failure is the note's.
+
 ## Follow-ups from the reviews of 23 Nov 2026 (BL-1957 to BL-1982; filed by the product agent, docs only)
 
 Source: the counted reviews on PRs #1756, #1761, #1763, #1770 to #1773, #1775, #1777, #1778 and #1780, and the PR #1736 "what remains" list, read 23 Nov 2026 (develop `40630be51`). Every "Not verified" line says what the filing agent did not run or open; none of these rows was started when it was filed. A row with a status of `blocked` waits on the PR or step it names, not on an id.
