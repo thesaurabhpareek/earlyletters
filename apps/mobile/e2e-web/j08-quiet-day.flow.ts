@@ -1,4 +1,4 @@
-import { btn, journey } from './support/app';
+import { btn, journey, monthOpener } from './support/app';
 import { expect, seeded, test } from './support/journey';
 import type { Page } from '@playwright/test';
 
@@ -105,13 +105,13 @@ test('[J08c] marks saved by older builds: the old sentence is never shown, and a
   const step = journey(record, 'J08', 'quiet-day', 5, 'J08-03');
   await seeded(app, 'asha-marks');
   await tab(app, 'Book').click();
-  // The month opener draws "MONTH" and the numeral as separate texts (P5), so it is found by the one VoiceOver header it
-  // is, as j09 and j11 do: "Month 6. ..." (or "This month, Month 6. ...").
-  await expect(app.getByRole('heading', { name: /^(This month, )?Month 6\. / })).toBeVisible();
+  // The month opener is found by the one VoiceOver header it is, as j09 and j11 do ("6 months, October 24 to November 23").
+  await expect(monthOpener(app, 6)).toBeVisible();
   // Two old marks exist: one on a day with a letter (hidden), one on a day without (listed).
   await expect(app.getByText('A quiet day')).toHaveCount(1);
   await expect(app.getByText(/ordinary day|Just Asha, and us/)).toHaveCount(0);
-  await expect(app.getByText(/\d+ letters?/).first()).toBeVisible();
+  // The count of letters moved to the Months sheet; a letter card (named from its sender) shows the day still has its letter.
+  await expect(btn(app, /^From Mama\./).first()).toBeVisible();
   await step('happy', 'An older quiet day, shown as a mark', 'A "Not much today" saved by an older build holds a template sentence in the old row. The Book ignores that text and shows the same small "A quiet day" row; on a day that already has a letter no mark is listed. Counts say letters only. (Seeded fictional family Asha, with older-build rows.)');
   // Long press (touch emulation) or the row's remove action; the web build exposes it as a long press.
   await app.getByText('A quiet day').click({ delay: 900 });

@@ -15,6 +15,7 @@
  * (test/auth-machine.test.ts and supabase/tests). Those are on the phone list (DEVICE_TEST_PLAN S1-06 to S1-08, V-06).
  * Fictional family Asha only; the addresses are example.invalid.
  */
+import { authCopy } from '@scribe/content';
 import type { Page } from '@playwright/test';
 import { btn, CHILD, firstRun, journey, passAgeGate, selectedTab, tab, typeLetter } from './support/app';
 import { allowConsoleError, expect, test } from './support/journey';
@@ -241,7 +242,7 @@ test('[J22c] Account: signed out, then in from Settings, with the age step and w
   await btn(app, 'Keep in this account').click();
   await expect(app.getByText('Signed in with email')).toBeVisible({ timeout: 15_000 });
   await expect(app.getByText(EMAIL)).toBeVisible();
-  await expect(app.getByText('Sync across your phones')).toBeVisible();
+  await expect(app.getByText(authCopy.account.syncTitle, { exact: true }).first()).toBeVisible();
   await expect(app.getByText('Sign out', { exact: true })).toBeVisible();
   await step('happy', 'Account, signed in', 'How the person signed in, with its mark and the address; Sync across your phones; Devices; and Sign out as a plain row, not red: nothing is deleted. The confirm is native (not on the web).');
 });
@@ -251,6 +252,8 @@ test('[J22d] account setup: Terms, then sensitive data declined at the same size
   const step = journey(record, 'J22', 'sign-in', 40, 'J22-31');
   const m = await mockServer(app, { user: MAMA, email: EMAIL });
   consentGate(m, { terms: false, age: false, sensitive: false });
+  // Signing in now asks the server for the account's books; with nothing synced there are none (as in J22c).
+  m.rpc('sync_books', () => ({ body: { epoch: 1, first_run_open: false, books: [] } }));
   await openOn(app, '/?seed=asha');
   await openOn(app, '/settings/account?seed=asha');
   await btn(app, 'Sign in').click();
@@ -296,7 +299,7 @@ test('[J22d] account setup: Terms, then sensitive data declined at the same size
   await expect(app.getByRole('heading', { name: 'Keep your letters in this account?' })).toBeVisible({ timeout: 15_000 });
   expect(acts()).toEqual(['terms:accept', 'sensitive-data:decline', 'sensitive-data:accept']);
   await btn(app, 'Keep in this account').click();
-  await expect(app.getByText('Sync across your phones')).toBeVisible({ timeout: 15_000 });
+  await expect(app.getByText(authCopy.account.syncTitle, { exact: true }).first()).toBeVisible({ timeout: 15_000 });
   await expect(app.getByText('On', { exact: true })).toBeVisible();
 });
 
@@ -306,7 +309,8 @@ test('[J22e] from the family page: sign in to invite', async ({ app, record }) =
   await openOn(app, '/family?seed=asha');
   await btn(app, 'Invite a co-parent').click();
   await btn(app, 'Sign in').click();
-  await expectSheet(app, 'Sign in to invite a co-parent', 'You both sign in, each on your own phone.');
+  // Build 12 hides the co-parent surfaces (D-126): the invite sheets name no book and no co-parent (BL-604).
+  await expectSheet(app, authCopy.sheet.titles.invite_create, authCopy.sheet.bodies.invite_create);
   await step('happy', 'Sign in to invite', 'From the family page\'s invite: you both sign in, each on your own phone. About this book, so its cover sits beside the title.');
   await btn(app, 'Not now').click();
   expect(m.serverCalls(), 'Not now asks nothing of the server').toEqual([]);
@@ -321,7 +325,7 @@ test('[J22f] from an invite: sign in to join the book', async ({ app, record }) 
   await app.getByLabel('Invite link').fill(`https://earlyletters.com/j#t=${TOKEN}`);
   await btn(app, 'Continue').click();
   await btn(app, 'Sign in').click();
-  await expectSheet(app, 'Sign in to join the book', 'You each write from your own phone, in the same book.');
+  await expectSheet(app, authCopy.sheet.titles.invite, authCopy.sheet.bodies.invite);
   await step('happy', 'Sign in to join', 'From an invite: "the book", since a book has at most two parents. Nothing about the invite is shown before sign-in (BL-322).');
 });
 
