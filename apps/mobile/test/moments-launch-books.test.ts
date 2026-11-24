@@ -106,7 +106,7 @@ describe('[BL-1541] a file the cleanup cannot remove is reported by code, throug
     const stop = startMomentsCleanup(true);
     auth.publishAuth({ status: 'signedOut' } as never);
     await new Promise((r) => setTimeout(r, 20));
-    expect(momentsCleanupFailure()).toBe('moments_file_not_removed');
+    expect(momentsCleanupFailure()).toBe('unknown'); // a closed NativeErrorCode (CR-206 slice 3); the store's own code is not on the list
     expect(h.disk.files.has(key)).toBe(true);
     stop();
   });
