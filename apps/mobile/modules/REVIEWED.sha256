@@ -1,6 +1,7 @@
-# Native sources security-architect has read (NSC-01, BL-1045). Format: sha256sum, two spaces, path under modules/.
-# Do not edit by hand. After the reviewer has read a change: node scripts/native-sources.mjs --write <head sha>.
-# reviewed-head: 5d87f1c0dc0488e80b2af34b984a06fe70ced69c
+# Pins the CURRENT state of the native sources (NSC-01, BL-1045). No security-architect read is recorded here yet.
+# Format: sha256sum, two spaces, path under modules/. Do not edit by hand.
+# Anyone re-pinning (node scripts/native-sources.mjs --write <commit sha>) must have the security read recorded in the PR first.
+# pinned-head: 5d87f1c0dc0488e80b2af34b984a06fe70ced69c
 245bca8696c413b21a394746aeac316eaf9234ab97babd2f23a6c6c4aa683a71  scribe-audio/android/build.gradle
 fd6a87323a386117805a6280c8ff94b0e97b6643cc430ba957abe1be0dae0843  scribe-audio/android/src/main/java/expo/modules/scribeaudio/ScribeAudioModule.kt
 9869d4af1c29e95bf3c101299d29f62e00059d3cd60375bbf692e7f2f0c3fa33  scribe-audio/expo-module.config.json

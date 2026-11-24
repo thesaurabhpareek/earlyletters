@@ -4,7 +4,7 @@
  * Swift or Kotlin edit cannot reach a build until security-architect has read it and the manifest changed with it.
  * Each rule has a positive control run on a fixture tree (the bad input is found; the clean one stays clean).
  */
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
@@ -65,10 +65,32 @@ describe('[NSC-01] the pin fails on any edit', () => {
   });
   it('[NSC-01] a manifest with no head, or no files, or garbage fails closed', () => {
     const dir = fixture();
-    const noHead = pinned(dir).replace(/^# reviewed-head:.*\n/m, '');
-    expect(manifestProblems(noHead, hashSources(dir))).toEqual(['the manifest does not name a reviewed head (a line "# reviewed-head: <40 hex>")']);
+    const noHead = pinned(dir).replace(/^# pinned-head:.*\n/m, '');
+    expect(manifestProblems(noHead, hashSources(dir))).toEqual(['the manifest does not name a pinned head (a line "# pinned-head: <40 hex>")']);
     expect(manifestProblems('', hashSources(dir))).toContain('the manifest pins no file');
     expect(manifestProblems('not a manifest', hashSources(dir)).length).toBeGreaterThan(0);
+  });
+  it('[NSC-01] a symlinked file fails closed (the podspec glob would follow it)', () => {
+    const dir = fixture();
+    symlinkSync(join(dir, 'asha-demo', 'ios', 'Demo.swift'), join(dir, 'asha-demo', 'ios', 'Link.swift'));
+    expect(() => hashSources(dir)).toThrow(/symlink under modules\/: asha-demo\/ios\/Link\.swift/);
+  });
+  it('[NSC-01] a symlinked directory fails closed', () => {
+    const dir = fixture();
+    symlinkSync(join(dir, 'asha-demo', 'ios'), join(dir, 'asha-demo', 'ios-link'), 'dir');
+    expect(() => hashSources(dir)).toThrow(/symlink under modules\/: asha-demo\/ios-link/);
+  });
+  it('[NSC-01] a dangling symlink fails closed too', () => {
+    const dir = fixture();
+    symlinkSync(join(dir, 'nowhere'), join(dir, 'asha-demo', 'Gone.swift'));
+    expect(() => hashSources(dir)).toThrow(/symlink under modules\//);
+  });
+  it('[NSC-01] the manifest header says it pins current state and records no security read', () => {
+    const text = readFileSync(join(MODULES, MANIFEST_NAME), 'utf8');
+    expect(text).toMatch(/CURRENT state/);
+    expect(text).toMatch(/No security-architect read is recorded/);
+    expect(text).not.toMatch(/has read/);
+    expect(text).not.toMatch(/reviewed-head/);
   });
   it('[NSC-01] the manifest file itself is not part of the pin (it cannot hash itself)', () => {
     expect(Object.keys(hashSources(MODULES))).not.toContain(MANIFEST_NAME);
