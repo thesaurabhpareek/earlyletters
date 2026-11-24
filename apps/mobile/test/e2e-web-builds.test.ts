@@ -39,6 +39,15 @@ describe('[BL-410] e2e-web builds: the seam is on in exactly one', () => {
     expect(env.EAS_BUILD_PROFILE).toBeUndefined();
   });
 
+  it('[BL-1991] exactly one build is the store app (production app env), and it has no seam, no server features, no store profile marker', () => {
+    const store = BUILDS.filter((b) => buildEnv(b.env).EXPO_PUBLIC_APP_ENV === 'production');
+    expect(store.map((b) => b.name)).toEqual(['store']);
+    const env = buildEnv(store[0]!.env);
+    expect(env.EXPO_PUBLIC_E2E).toBeUndefined();
+    expect(env.EXPO_PUBLIC_SERVER_FEATURES).toBe('off');
+    expect(env.EAS_BUILD_PROFILE).toBeUndefined();
+  });
+
   it('global-setup takes every build env from builds.ts and writes no EXPO_PUBLIC_E2E itself', () => {
     expect(SETUP).not.toMatch(/EXPO_PUBLIC_E2E|EXPO_PUBLIC_APP_ENV/);
     expect(SETUP).toContain('BUILDS');
