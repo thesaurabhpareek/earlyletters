@@ -3614,7 +3614,7 @@ Written 19 Nov 2026 by Karma with the CPO role, docs only. Source: `docs/roadmap
 - Done when: those tests pass, and `qa` has added one device row to `docs/qa/DEVICE_TEST_PLAN.md` for the VoiceOver and AX5 walk of the three screens.
 
 #### BL-929 Device baseline run sheet for a small phone (N-01)
-- Status: partly done (PR #1155 merged, 5b06b5eb8: `apps/mobile/src/lib/perf/markers.ts`; the SE 3 run sheet is not written: no such file in `docs/qa/run-sheets/`, filed as BL-1862). Mode: agent. Owner: qa engineer. Milestone: M15. Size: S.
+- Status: partly done (PR #1155 merged, 5b06b5eb8: `apps/mobile/src/lib/perf/markers.ts`; the SE 3 run sheet is `docs/qa/run-sheets/NS-34-SE3-SPEED.md` (BL-1862, PR #1667, merged 23 Nov)). Mode: agent. Owner: qa engineer. Milestone: M15. Size: S.
 - Satisfies: `docs/prd/v2/06-nfr.md` rows 42 and 216, as reworded in BL-930.
 - Scope: one run sheet under `docs/qa/` for an iPhone SE (3rd generation): start of the screen hand-offs, time until controls are usable, frames over 16.7 ms on Home, Book scroll and the letter page, the save hand-off, and loops under Reduce Motion. It says how each number is read and where it is written down. No entry text, transcript or child name is recorded; examples use the family Asha.
 - Done when: the sheet is merged. The run itself is the founder's, on his phone, and is not part of this row.
@@ -6193,7 +6193,7 @@ Every row is `proposed`: Karma or the founder sets `ready`. Dependencies are the
 Source: `docs/analytics/instrumentation/ENGINEERING-REQUIREMENTS-21nov.md` (#1200; D-163 and E95 are merged). BL-1235 to BL-1268 are used. Rows A00 to A18 are stream A, B01 to B14 stream B, G01 the gate (no shared files, section 4 of the source). Milestone for every row: before the production readiness build. Founder hands FH-n are listed in section 11 of the source. Nothing here turns analytics on; the production value of `analytics.basicsPolicy` stays `ask_first`.
 
 #### BL-1235 Re-cut the PostHog adapter as the P1 to P8 stack of the split plan (ER-A00)
-- Status: partly done (D-163 merged, hold on #1086 lifted; P1 #1228, P2 #1229 and P3 #1232 merged, P4, P4b and P4c are open as #1259 to #1261; P5 to P8 not started [U]). Mode: pair. Owner: analytics engineer. Milestone: before the production readiness build. Size: L. Depends on: none.
+- Status: partly done (D-163 merged, hold on #1086 lifted; P1 #1228, P2 #1229 and P3 #1232 merged, P4, P4b and P4c merged as #1260 and #1261 (21 Nov) and #1259 (23 Nov); P5 to P8 not started [U]). Mode: pair. Owner: analytics engineer. Milestone: before the production readiness build. Size: L. Depends on: none.
 - Satisfies: none claimed: build work for D-163, not a P0 row.
 - Scope: Rebuild the PostHog adapter under the size limit as eight PRs (P1 to P8 of the split plan): values, registry, crash reducer (off), send path, catalog shrink, validators, helpers and canary, from the #1086 head tree, no commit carrying the old name history. The opt-in wording in the #1086 comments is superseded by D-163: the policy is `basicsPolicy`, default `ask_first`. Never: entry text, transcript, audio, child name, autocapture, replay.
 - Done when: each PR passes npm test -w @scribe/analytics and npm run typecheck alone; sizes per adapter-split-plan-20nov.md section 3; the barrel exports every module the other stream needs.
