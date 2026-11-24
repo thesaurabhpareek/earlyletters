@@ -82,14 +82,17 @@ export function listLeft({ db }: RepoContext): Child[] {
 /**
  * A left book that holds nothing: no letter row (live or deleted) and no draft aimed at it (BL-1960). Its `children`
  * row (name, birth date) is all that is left of it, and nothing on the phone reads it, so the delete rule removes it.
- * A draft keeps it: removing the book would drop the row but not the recording's file.
+ * A draft keeps it: removing the book would drop the row but not the recording's file. So does an op still queued for
+ * the book (an entry.delete or entry.erase not yet answered): the queue names the book, and the next launch's purge
+ * drops the row once the queue has drained.
  */
 export function leftBookIsEmpty({ db }: RepoContext, id: string): boolean {
   return (
     db.get<{ n: number }>(
       `SELECT 1 AS n FROM children c WHERE c.id = ? AND c.server_state = 'left'
        AND NOT EXISTS (SELECT 1 FROM entries e WHERE e.child_id = c.id)
-       AND NOT EXISTS (SELECT 1 FROM drafts d WHERE d.child_id = c.id)`,
+       AND NOT EXISTS (SELECT 1 FROM drafts d WHERE d.child_id = c.id)
+       AND NOT EXISTS (SELECT 1 FROM sync_outbox o WHERE o.book_id = c.id)`,
       id,
     ) != null
   );
@@ -101,7 +104,8 @@ export function emptyLeftBookIds({ db }: RepoContext): string[] {
     .all<{ id: string }>(
       `SELECT c.id FROM children c WHERE c.server_state = 'left'
        AND NOT EXISTS (SELECT 1 FROM entries e WHERE e.child_id = c.id)
-       AND NOT EXISTS (SELECT 1 FROM drafts d WHERE d.child_id = c.id) ORDER BY c.id`,
+       AND NOT EXISTS (SELECT 1 FROM drafts d WHERE d.child_id = c.id)
+       AND NOT EXISTS (SELECT 1 FROM sync_outbox o WHERE o.book_id = c.id) ORDER BY c.id`,
     )
     .map((r) => r.id);
 }

@@ -2,8 +2,10 @@
 /**
  * BL-1960 (BL-444 slice 3a; F11-REQ-011, DATA-REQ-016): a left book's letters export, and the delete rule. Real store over
  * node:sqlite, a clock the test moves, a fake audio eraser. Each test names the failure it guards: an `entry.delete`,
- * `entry.restore` or `entry.erase` the server refuses to a member who left, a left book's letter that never leaves a sync
- * build's shelf, and a `children` row (name, birth date) that outlives its last letter. BL-1959's refusals stay.
+ * `entry.restore` or `entry.erase` for a left book that is not queued (the server takes both from the author who left:
+ * supabase/tests/sync_left_book_delete.test.mjs), a left book's letter that never leaves a sync build's shelf, and a
+ * `children` row (name, birth date) that outlives its last letter or an op still queued for the book. BL-1959's
+ * refusals stay.
  * Fictional Asha family only.
  */
 import { readFileSync } from 'node:fs';
@@ -16,6 +18,9 @@ vi.mock('expo-crypto', () => ({ getRandomBytes: (n: number) => new Uint8Array(n)
 vi.mock('../src/lib/db/repos/open-native', () => ({ openNativeDb: () => { throw new Error('native open must not be used in tests'); } }));
 
 import type { AudioEraser } from '../src/lib/store';
+import { applyPushResponse } from '../src/lib/sync/merge';
+import { markSent, takeBatch } from '../src/lib/sync/outbox';
+import type { PushResponse } from '../src/lib/sync/types';
 const store = await import('../src/lib/store');
 const { setServerFeaturesForTests } = await import('../src/lib/capabilities');
 const { exportScope } = await import('../src/lib/export/scope.logic');
@@ -114,16 +119,17 @@ describe('[BL-1960] export reads a left book, read only (DATA-REQ-016)', () => {
   });
 });
 
-describe('[BL-1960] delete: its own door, a local tombstone, no op', () => {
-  it('deletes a left book\'s letter to the shelf and queues nothing; deleteEntry and undeleteEntry still refuse it (BL-1959)', () => {
+describe('[BL-1960] delete: its own door, a local tombstone and one entry.delete', () => {
+  it('deletes a left book\'s letter to the shelf and queues one entry.delete; deleteEntry and undeleteEntry still refuse it (BL-1959)', () => {
     serverHeld(1);
     leave(asha);
     expect(store.deleteEntry(id(1))).toBe(false);
-    expect(store.deleteLeftBookLetter(id(1))).toBe(true);
     expect(outbox()).toEqual([]);
+    expect(store.deleteLeftBookLetter(id(1))).toBe(true);
+    expect(outbox().map((o) => [o.type, o.entity_id])).toEqual([['entry.delete', id(1)]]);
     expect(store.listDeleted().map((e) => e.id)).toEqual([id(1)]);
     expect(store.undeleteEntry(id(1))).toBe(false);
-    expect(outbox()).toEqual([]);
+    expect(outbox().map((o) => o.type)).toEqual(['entry.delete']);
     expect(store.deleteLeftBookLetter(id(1))).toBe(false); // already deleted
   });
 
@@ -146,20 +152,51 @@ describe('[BL-1960] Erase now and the book row', () => {
     expect(store.deleteLeftBookLetter(id(n))).toBe(true);
   };
 
-  it('Erase now removes the letter here and queues no entry.erase and no rejected write; a joined book still queues one (control)', () => {
+  it('Erase now removes the letter here and queues an entry.erase, as a joined book does (control)', () => {
     serverHeld(1);
     serverHeld(9);
     sql().run("UPDATE entries SET deleted_at = ? WHERE id = ?", '2026-10-03T00:00:00.000Z', id(9));
     expect(store.eraseEntry(id(9), eraser)).toBe(true);
-    expect(outbox().map((o) => o.type)).toEqual(['entry.erase']); // control: the mutant that queues for a left book is caught by the next lines
+    expect(outbox().map((o) => o.type)).toEqual(['entry.erase']); // control: a joined book
     sql().run('DELETE FROM sync_outbox');
     serverHeld(2);
     leave(asha);
     deleted(1);
+    sql().run('DELETE FROM sync_outbox');
     expect(store.eraseEntry(id(1), eraser)).toBe(true);
     expect(sql().get('SELECT 1 FROM entries WHERE id = ?', id(1))).toBeNull();
-    expect(outbox()).toEqual([]);
+    expect(outbox().map((o) => [o.type, o.entity_id])).toEqual([['entry.erase', id(1)]]);
     expect(rejected()).toBe(0);
+  });
+
+  it('the local erase never waits on the answer: a queued erase answered missing or deferred leaves the letter erased here, and the book row goes once the op is answered', () => {
+    for (const answer of [{ missing: true }, { deferred: true }]) {
+      const lid = id(Object.keys(answer)[0] === 'missing' ? 1 : 2);
+      const book = store.addChild({ name: `Book ${lid}`, birthday: null, dueDate: null, signsAs: 'Mama' }).id;
+      serverHeld(Object.keys(answer)[0] === 'missing' ? 1 : 2, book);
+      leave(book);
+      expect(store.deleteLeftBookLetter(lid)).toBe(true);
+      sql().run('DELETE FROM sync_outbox');
+      expect(store.eraseEntry(lid, eraser)).toBe(true);
+      expect(sql().get('SELECT 1 FROM entries WHERE id = ?', lid)).toBeNull();
+      expect(bookRow(book)).not.toBeNull(); // the erase is still queued for this book
+      expect(store.purgeExpired(clock, eraser)).toBe(0);
+      expect(bookRow(book)).not.toBeNull();
+      const b = takeBatch(sql(), { now: new Date(clock).toISOString() });
+      expect(b.ops.map((o) => o.type)).toEqual(['entry.erase']);
+      sql().transaction(() => {
+        markSent(sql(), b.rows, new Date(clock).toISOString());
+        applyPushResponse(sql(), b.rows, { results: [{ op: b.ops[0].op, ok: true, ...answer }], paused: false, stopped: false } as unknown as PushResponse, {
+          now: new Date(clock).toISOString(),
+          newId: () => id(950),
+        });
+      });
+      expect(outbox()).toEqual([]);
+      expect(rejected()).toBe(0);
+      expect(sql().get('SELECT 1 FROM entries WHERE id = ?', lid)).toBeNull(); // still erased here
+      expect(store.purgeExpired(clock, eraser)).toBe(0);
+      expect(bookRow(book)).toBeNull(); // the queue has drained: the book row goes at the next purge
+    }
   });
 
   it('the book row goes with the last letter, not before, and a draft keeps it', () => {
@@ -175,6 +212,9 @@ describe('[BL-1960] Erase now and the book row', () => {
     expect(bookRow(asha)).not.toBeNull(); // a draft is still aimed at it
     store.deleteDraft(d.id);
     expect(store.purgeExpired(clock, eraser)).toBe(0);
+    expect(bookRow(asha)).not.toBeNull(); // the delete and erase ops for this book are still queued
+    sql().run('DELETE FROM sync_outbox'); // the server has answered them
+    expect(store.purgeExpired(clock, eraser)).toBe(0);
     expect(bookRow(asha)).toBeNull();
   });
 
@@ -185,6 +225,9 @@ describe('[BL-1960] Erase now and the book row', () => {
     expect(store.listLeftBooks()).toEqual([]); // no live letter: not listed, yet the row is still there
     expect(bookRow(asha)).not.toBeNull();
     expect(store.eraseEntry(id(1), eraser)).toBe(true);
+    expect(bookRow(asha)).not.toBeNull(); // ops for the book still wait in the outbox: the row stays until they are answered
+    sql().run('DELETE FROM sync_outbox');
+    store.purgeExpired(clock, eraser);
     expect(bookRow(asha)).toBeNull();
     expect(sql().get('SELECT 1 FROM child_member_prefs WHERE child_id = ?', asha)).toBeNull();
     expect(store.isBookLeft(asha)).toBe(false);
@@ -204,6 +247,9 @@ describe('[BL-1960] Erase now and the book row', () => {
     const seen: string[] = [];
     const off = store.onBookErased((b) => seen.push(b));
     store.eraseEntry(id(1), eraser);
+    expect(seen).toEqual([]); // ops for the book are still queued
+    sql().run('DELETE FROM sync_outbox');
+    store.purgeExpired(clock, eraser);
     off();
     expect(seen).toEqual([asha]);
   });
@@ -215,7 +261,7 @@ describe('[BL-1960] the 30-day purge, on a sync build', () => {
     return store.purgeExpired(ms, eraser);
   };
 
-  it('erases a left book\'s deleted letter after 30 days with no op, drops the book, and still leaves a joined book\'s server-held letter to the server', () => {
+  it('erases a left book\'s deleted letter after 30 days and queues its entry.erase, drops the book once that is answered, and still leaves a joined book\'s server-held letter to the server', () => {
     setServerFeaturesForTests(true);
     serverHeld(1);
     leave(asha);
@@ -227,9 +273,12 @@ describe('[BL-1960] the 30-day purge, on a sync build', () => {
     expect(bookRow(asha)).not.toBeNull();
     expect(launch(T0 + 31 * DAY)).toBe(1);
     expect(sql().get('SELECT 1 FROM entries WHERE id = ?', id(1))).toBeNull();
+    expect(outbox().map((o) => [o.type, o.entity_id])).toEqual([['entry.erase', id(1)]]); // the erase supersedes the unsent delete
+    expect(bookRow(asha)).not.toBeNull(); // waits for the queue
+    sql().run('DELETE FROM sync_outbox');
+    launch(T0 + 32 * DAY);
     expect(bookRow(asha)).toBeNull();
     expect(sql().get('SELECT 1 FROM entries WHERE id = ?', id(2))).not.toBeNull(); // the server's purge owns it
-    expect(outbox()).toEqual([]);
     expect(rejected()).toBe(0);
   });
 
