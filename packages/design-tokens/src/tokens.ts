@@ -424,7 +424,7 @@ const motion = {
    * percent gone and no edge ever cuts a legible line; on the way back the veil lifts over lamp.returnMs once the
    * paper is within `clearPt` of the card.
    */
-  cardToPage: { contentFrom: 0.6, holdMs: 136, clearPt: 24 },
+  cardToPage: { contentFrom: 0.6, holdMs: 136, clearPt: 24, restOutMs: 96 },
   /** Press feedback (COMPONENTS 0.3): controls scale to 0.97, cards to 0.98, on `snappy`. */
   press: { scale: 0.97, cardScale: 0.98, opacity: 0.9, reducedMs: 90 },
   /** Empty-state illustration breath (MOTION 5j, Calm's slowest pace). */
