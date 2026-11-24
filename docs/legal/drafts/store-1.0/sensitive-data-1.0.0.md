@@ -22,17 +22,17 @@ This is what the sheet shows today, joined the way the phone joins it before it 
 
 > **Before your book syncs**
 >
-> Letters can hold private things, like health details about you or {child}. To sync your book and share it with the family you choose, we store what you write on our servers.
+> Letters can hold private things, like health details about you or {child}. To sync your book across your phones, we store what you write on our servers.
 >
-> We use it only to keep and show your book. We never sell it, use it for ads or use it to train machine learning models.
+> We use it to keep and show your book. We never sell it, use it for ads or use it to train machine learning models.
 >
-> If you keep it on this phone, syncing and sharing stay off.
+> If you keep it on this phone, syncing stays off.
 >
-> You can turn them on later in Settings, Account.
+> You can turn syncing on later in Settings, Account.
 >
 > Buttons: **Agree and sync** and **Keep on this phone**.
 
-[EXEC-TEAM COUNSEL Q SD-1: "share it with the family you choose" says something the store build cannot do. There is no way to invite or join another parent in a store build (D-162; `apps/mobile/src/lib/family/entry.logic.ts`). `in-app-disclosures.md` already lists this line as a gap (G-21) and proposes "your co-parent", which is also not available. Proposed for `content`: "To sync your book to your other iPhone, we store what you write on our servers." and "If you keep it on this phone, syncing stays off." That is a copy change in `packages/content`, not made here. The line "You can turn them on later in Settings, Account." (`sensitiveConsent.changeLater`) refers to "them", meaning syncing and sharing, so it must go to `content` in the same one change as the "share it with the family you choose" line, not separately; then the in-app hash is taken again. [EXEC-TEAM COUNSEL Q SD-1b: confirm the combined wording.] If it is made, the file and its hash in `docs/ops/proposed/policy-1-0-0-rows.md` change and must be taken again before publishing.]
+[EXEC-TEAM COUNSEL Q SD-1 (ported 24 Nov 2026): the words above are the text already in `packages/content/src/strings.en.ts` (`sensitiveConsent.body`, `.use`, `.declineHelp`, `.changeLater`), as ruled on 23 Nov (item 2a). No sharing exists in a store build (D-162), so the draft no longer says "share it with the family you choose", and "use it only" is gone because Privacy section 4 lets us read letters in named cases. Counsel to confirm. The rendered hash in `docs/ops/proposed/policy-1-0-0-rows.md` was taken again for these words. SD-1b: the file must keep matching `strings.en.ts`; a change in either needs the hash taken again.]
 
 ## What this agreement is for
 
