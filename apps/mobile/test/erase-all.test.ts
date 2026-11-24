@@ -1700,6 +1700,35 @@ describe('[NS-36] kill during Erase resumes and finishes', () => {
       expect(exportsAndCopies().filter(has)).toEqual([]);
     });
 
+    // BL-1466: when more than one file will not go, every step still runs and the first held failure is thrown in a
+    // fixed order: backup, then days, then moments. Two cases pin the order so a swap turns red.
+    it('[NS-36][B5-4] the backup file and the days file will not go: every copy is gone and the erase throws backup_file_delete first', async () => {
+      const app = await launch();
+      for (const u of exportsAndCopies()) put(h.disk, u, 5_000);
+      put(h.disk, daysFile(), 80);
+      put(h.disk, sqlite(BACKUP), 64);
+      h.disk.undeletable.add(sqlite(BACKUP));
+      h.disk.undeletable.add(daysFile());
+      expect(() => app.all.eraseDeviceFiles()).toThrow('backup_file_delete');
+      expect(exportsAndCopies().filter(has)).toEqual([]);
+      expect(has(daysFile())).toBe(true);
+    });
+
+    it('[NS-36][B5-4] only the days file and the moments file will not go: every copy is gone and the erase throws the days failure first', async () => {
+      h.exclusionSticks = true;
+      const app = await launch();
+      expect(await app.moments.momentsStore.setLabel('2026-10-03', 'Asha at the lake')).toEqual({ ok: true });
+      const momentsUris = [...h.disk.files.keys()].filter((u) => u.includes('/moments/'));
+      expect(momentsUris).toHaveLength(1); // positive control
+      for (const u of exportsAndCopies()) put(h.disk, u, 5_000);
+      put(h.disk, daysFile(), 80);
+      h.disk.undeletable.add(daysFile());
+      h.disk.undeletable.add(momentsUris[0]);
+      expect(() => app.all.eraseDeviceFiles()).toThrow('days_file_not_removed');
+      expect(exportsAndCopies().filter(has)).toEqual([]);
+      expect(has(momentsUris[0])).toBe(true);
+    });
+
     it('[NS-36][B5-4] what is green today: the recordings and the days file are cleaned, the erase throws, the mark stays, and the retry finishes the copies', async () => {
       const app = await launch();
       const rec = take('A1');
