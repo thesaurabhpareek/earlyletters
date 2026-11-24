@@ -101,7 +101,7 @@ describe('server features switch: off unless a build says on', () => {
   });
 });
 
-describe('[BL-1960] Erase now on a signed-in phone is held by its own build flag', () => {
+describe('[BL-1987] Erase now on a signed-in phone is held by its own build flag', () => {
   afterEach(() => {
     setServerFeaturesForTests(null);
     setBuildFlagForTests('serverErase', null);

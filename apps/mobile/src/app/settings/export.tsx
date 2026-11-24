@@ -17,6 +17,7 @@ import { ListRow, ListSection } from '@/components/ui/list-row';
 import { Button } from '@/components/ui/button';
 import { PinnedActionLayout } from '@/components/ui/pinned-action';
 import { Text } from '@/components/ui/text';
+import { setSurfaceBusy } from '@/lib/asks/surface';
 import { confirmForExport, whileSharing } from '@/lib/app-lock/controller';
 import { trackExportCompleted, trackExportFailed, trackExportStarted } from '@/lib/analytics/track';
 import { copy, fill } from '@/lib/copy';
@@ -114,6 +115,7 @@ export default function ExportScreen() {
     signal.current = { aborted: false };
     setState({ kind: 'running', progress: { phase: 'books', fraction: 0 } });
     void activateKeepAwakeAsync(KEEP_AWAKE).catch(() => {});
+    setSurfaceBusy('export', true); // no setup ask while a book is being packed (BL-1985)
     try {
       const result = await runExport({
         signal: signal.current,
@@ -134,6 +136,7 @@ export default function ExportScreen() {
         setState({ kind: 'failed', reason });
       }
     } finally {
+      setSurfaceBusy('export', false);
       void deactivateKeepAwake(KEEP_AWAKE).catch(() => {});
     }
   };
