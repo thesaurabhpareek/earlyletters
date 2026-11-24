@@ -17,13 +17,8 @@ const SRC = join(__dirname, '..', 'src');
 
 /** Today's offenders at the time of BL-1828. Remove entries; never add. */
 export const BASELINE: readonly string[] = [
-  'src/app/family.tsx',
   'src/app/letter/[id].tsx',
   'src/app/settings/app-lock.tsx',
-  'src/app/settings/backup.tsx',
-  'src/app/settings/plus.tsx',
-  'src/app/settings/storage.tsx',
-  'src/components/child/child-editors.tsx',
   'src/components/tonight/quiet-day-inline.tsx',
   'src/components/ui/state-screen.logic.ts',
   'src/lib/auth/revocation-wait-line.tsx',

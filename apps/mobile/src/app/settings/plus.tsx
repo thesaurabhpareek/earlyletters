@@ -19,7 +19,7 @@ import { brand } from '@scribe/brand';
 import { ListRow, ListSection } from '@/components/ui/list-row';
 import { Text } from '@/components/ui/text';
 import { ownSubscription, planScreen, restoreResult } from '@/components/settings/plan.logic';
-import { useTheme } from '@/lib/a11y';
+import { announce, useTheme } from '@/lib/a11y';
 import { track } from '@/lib/analytics/track';
 import {
   askPlanReminderPermission,
@@ -122,6 +122,15 @@ export default function PlanSettings() {
   const notifications = useNotificationsAllowed();
   const remindable = plan.plusOn && plan.details.ownership === 'purchased' && plan.details.willAutoRenew !== false && (plan.details.status === 'trial' || plan.details.status === 'active');
   const showNotificationsOff = remindable && notifications.allowed === false;
+
+  // iOS VoiceOver ignores accessibilityLiveRegion, so the restore result and the notice are spoken when they appear (PER4-018).
+  const restoredText = restored?.text ?? null;
+  useEffect(() => {
+    if (restoredText) announce(restoredText);
+  }, [restoredText]);
+  useEffect(() => {
+    if (notice) announce(notice);
+  }, [notice]);
 
   const saveCopy = async () => {
     const c = purchaseConfirmation({
