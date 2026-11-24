@@ -12017,3 +12017,14 @@ Each item below either got a row here or was linked to the row that already owns
 - Scope: one small PR: a shared "is this the entry file" check that resolves symlinks (`fs.realpathSync` on both sides), used by each listed entry point, and one test that starts each entry through a symlink and fails if it exits 0 without running. No behaviour change when started directly.
 - Done when: the test passes for every listed script and a mutant that restores the old comparison fails it; `node scripts/agents/check.mjs` and `node --test 'scripts/agents/*.test.mjs'` pass.
 - Source: CR-202 (`docs/agents/cto/RULINGS.md`, 24 Nov 2026) and the closed PR #449, branch `fix/injection-integrated`, head 6986bd82.
+
+## Mail readiness (24 Nov 2026; filed by the ops agent, CR-205)
+
+#### BL-2173 Mail readiness preflight for production sign-in email
+- Status: in-progress (ops, this PR). Mode: agent. Owner: platform. Milestone: before the production readiness build. Size: S. Depends on: none.
+- Priority: High. Gate: email codes are most people's way in (D-171 Google sign-in off, D-160 sign-in required), so a checked mail path comes before the first outside person signs in on production.
+- Satisfies: re-cut of the closed PR #736 (CR-205); `docs/ops/DOMAINS.md` and `docs/ops/AUTH_SETUP.md` give the DNS targets, nothing checked them.
+- Problem and evidence: no automated check reads the SPF, DKIM, DMARC and return-path records, and no runbook gives the order and the proof for Resend, production SMTP, rate limit, code expiry and four test inboxes.
+- Scope: `scripts/release/mail-preflight.mjs` (public DNS only, no credentials, sends nothing), its offline test, `docs/ops/MAIL-PREFLIGHT.md`, one row in `docs/ops/README.md`. DMARC stays `p=none` with a reporting address at launch and moves up only after two weeks of clean reports (CISO-20). Karma adds `scripts/release/mail-preflight.test.mjs` to the root `node --test` list.
+- Done when: the PR is merged, the test is in the root list, and the founder has run the live check (queue row FO-3: preflight script, four-inbox test, production SMTP, DMARC at `p=none`).
+- Source: exec rulings of 24 Nov 2026, section 4 (CR-205). Not verified: no DNS or vendor account was reached; the vendor pages could not be re-read on 24 Nov, so every vendor fact in the runbook is UNVERIFIED.
