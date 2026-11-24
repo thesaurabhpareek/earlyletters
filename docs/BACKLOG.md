@@ -4378,12 +4378,22 @@ Every row is `proposed`: the dispatcher skips it until Karma or the founder sets
 - Done when: the PR merges inside CODE-R02 (about 330 lines, 10 files) with the tests its rows need red on old code and green after; nothing a parent reads ships without an approved word.
 - Source: `docs/tdd/new-scope/12-first-run-5.md` section 2 (PR breakdown) and section 3 (sequencing); map id FP-15, first-run drop D (E43).
 
-#### BL-1036 NS-45: deletion step 1 words, typed-word reason, D1 line (R5, R1) (FP-16a)
-- Status: proposed (docs/tdd/new-scope/12-first-run-5.md; Karma or the founder sets it to ready). Mode: pair. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-961, BL-965.
+#### BL-1036 NS-45: deletion step 1 and typed-word reason wired, D1 line shown (R5, R1) (FP-16a)
+- Status: proposed (docs/tdd/new-scope/12-first-run-5.md; scoped by product, waits on the sheet row, the words row and the new content row; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-961, BL-965, BL-2037.
 - Satisfies: NS-45-R1, NS-45-R5.
-- Scope: NS-45: deletion step 1 words, typed-word reason, D1 line (R5, R1). Lane mobile; review principal-architect / compliance-engineer; design wave 5; about 250 lines, 7 files changed. Waits on: BL-965 words; BL-961 sheet. Founder, counsel or word steps: counsel reads; founder approves words.
-- Done when: the PR merges inside CODE-R02 (about 250 lines, 7 files) with the tests its rows need red on old code and green after; nothing a parent reads ships without an approved word.
+- Scope: wiring only, no new words (the keys come from BL-965 and BL-2037): (1) `apps/mobile/src/app/settings/delete-account.tsx` shows step 1 with its keys and the typed-word reason field; (2) the sign-out sheet shows the D1 line from the keys; (3) tests named for R1 and R5 that fail on the old code. About 250 lines in 7 files, inside CODE-R02.
+- Done when: `[NS-45-R1]` and `[NS-45-R5]` tests are red on develop before the change and green after; a test fails if any string on these two screens is a literal rather than a content key.
+- Test: `apps/mobile/test/delete-account-ns45.test.ts` (unit and source pin).
+
 - Source: `docs/tdd/new-scope/12-first-run-5.md` section 2 (PR breakdown) and section 3 (sequencing); map id FP-16a, first-run drop D (E43).
+
+#### BL-2037 Words for deletion step 1, the typed-word reason and the D1 line (NS-45-R1, R5, split from BL-1036)
+- Status: needs-decision (customer-facing words: the content owner drafts them under `packages/content/WRITING-GUIDE.md` and the exec team approves; the BL-965 packet may already hold some keys, so the content owner lists which are new). Mode: agent. Owner: content. Milestone: M15. Size: S. Depends on: none.
+- Satisfies: NS-45-R1, NS-45-R5.
+- Scope: the keys for deletion step 1, the reason shown when the typed word does not match, and the D1 line on the sign-out sheet, in `packages/content/src`, each marked PROPOSED until approved. No screen wiring.
+- Done when: the keys pass `packages/content/test/rules.test.ts` and `npm run lint:copy`, and a test lists each key as used by BL-1036 once that row merges.
+- Test: `packages/content/test/rules.test.ts` (unit).
+- Source: split from BL-1036, `docs/tdd/new-scope/12-first-run-5.md`.
 
 #### BL-1037 FR-SEC-06 ownerCheck() for Erase everything; NS-45 titles (FP-16b)
 - Status: proposed (docs/tdd/new-scope/12-first-run-5.md; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S.
@@ -5475,10 +5485,13 @@ Ids. The dispatcher reads three-digit ids only. Collision check on 20 Nov 2026: 
 - Source: catalogue A, NS-03 section.
 
 #### BL-138 Review says when a recording is not gone yet: an announce port (NS-09-R4b)
-- Status: proposed (docs/engineering/readiness-20nov/quality catalogue A, row marked GAP; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: BL-181.
-- Closes the test-design gap of 1 P0 row: NS-09-R4b. Builds beside BL-181.
-- Scope: announce through one port `announce(text, delayMs)` so a test with fake timers can assert one announcement after the settle delay and none on mount; keep a device row for the real VoiceOver read. The title is `[NS-09-R4b] Review says when a recording is not gone yet` (fixed in card 08 on 20 Nov).
-- Done when: the unit test passes and the device row is on the next run sheet.
+- Status: proposed (docs/engineering/readiness-20nov/quality catalogue A, row marked GAP; scoped by product, dependency re-pointed from the duplicate BL-181 to its split part; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: BL-926, BL-1181.
+- Closes the test-design gap of 1 P0 row: NS-09-R4b. Builds beside BL-1181.
+- Satisfies: NS-09-R4b.
+- Scope: a port `announce(text, delayMs)` in `apps/mobile/src/lib/announce.ts` that wraps the VoiceOver announcement, and the Review screen's "not gone yet" line (BL-926, existing key) calls it once after the settle delay; none on mount. No new words. The real VoiceOver read stays a device row on the next run sheet (qa adds it).
+- Done when: a fake-timer test asserts one call after the delay and none on mount; the device row is listed in `docs/qa/run-sheets`.
+- Test: `apps/mobile/test/review-announce.test.ts` (unit, fake timers); title `[NS-09-R4b] Review says when a recording is not gone yet`.
+
 - Source: catalogue A, NS-09 section.
 
 #### BL-139 Voice Control and Switch Control scans (NS-33-R9, R10)
@@ -5488,12 +5501,31 @@ Ids. The dispatcher reads three-digit ids only. Collision check on 20 Nov 2026: 
 - Done when: both scans pass with a positive control and a mutant that turns each red.
 - Source: catalogue A, NS-33 section.
 
-#### BL-162 An XCUITest audit target for the accessibility audit (NS-33-R16)
-- Status: proposed (docs/engineering/readiness-20nov/quality catalogue A, row marked GAP; errata E42; Karma or the founder sets it to ready). Mode: pair. Owner: qa engineer, mobile engineer. Milestone: M15. Size: L. Depends on: BL-984.
-- Closes the test-design gap of 1 P0 row: NS-33-R16. Builds beside BL-984.
-- Scope: add an XCUITest target to the e2e profile that runs `performAccessibilityAudit()` at the largest text size on each named screen and fails on a critical violation. No XCUITest target exists in `apps/mobile` today. Engineering's estimate is about 3 engineer-days [E, an estimate, not a commitment]. Until it exists the row is a hand run with Accessibility Inspector recorded `[stand-in]` and is not claimed green.
-- Done when: the target runs in CI on a macOS runner and `[NS-33-R16] automated audit` cites it.
+#### BL-162 An XCUITest target for the accessibility audit (NS-33-R16), part (a)
+- Status: proposed (docs/engineering/readiness-20nov/quality catalogue A, row marked GAP; errata E42; scoped by product, split in three; Karma or the founder sets it to ready). Mode: agent. Owner: qa engineer, mobile engineer. Milestone: M15. Size: M. Depends on: BL-984.
+- Closes the test-design gap of 1 P0 row: NS-33-R16 (with BL-2038 and BL-2039). Builds beside BL-984.
+- Satisfies: NS-33-R16.
+- Scope: part (a) of three: add an XCUITest target to the e2e build profile through an Expo config plugin (no hand-edited Xcode project), with one smoke test that launches the app and runs `performAccessibilityAudit()` on the first screen. About 3 engineer-days for all three parts (an estimate, not a commitment). Until all three land the row stays a hand run with Accessibility Inspector, recorded as a stand-in and not claimed green.
+- Done when: the target builds for the simulator in a local run recorded in the PR body; a Node test pins the plugin entry in the e2e profile and fails when it is removed.
+- Test: `apps/mobile/test/xcuitest-target-config.test.ts` (unit, config pin).
+
 - Source: catalogue A, NS-33 section; `docs/engineering/readiness-20nov/experience/DESIGN-DELTA.md` build item 15.
+
+#### BL-2038 Accessibility audit calls on each named screen at the largest text size (NS-33-R16, part b of BL-162)
+- Status: proposed (split from BL-162 by product; Karma or the founder sets it to ready). Mode: agent. Owner: qa engineer. Milestone: M15. Size: M. Depends on: BL-162.
+- Satisfies: NS-33-R16.
+- Scope: in the XCUITest target, one audit call per screen named in NS-33-R16, run at the largest text size, failing on a critical violation; the screen list lives in one file that a Node test compares to the NS-33 card.
+- Done when: the screen-list test is red when a named screen is missing; a local simulator run is pasted in the PR body.
+- Test: `apps/mobile/test/xcuitest-screen-list.test.ts` (unit).
+- Source: split from BL-162, catalogue A, NS-33 section.
+
+#### BL-2039 CI macOS leg for the accessibility audit (NS-33-R16, part c of BL-162)
+- Status: proposed (split from BL-162 by product; the workflow is a proposal under `docs/ops/proposed/` that Karma applies). Mode: agent. Owner: platform. Milestone: M15. Size: S. Depends on: BL-2038.
+- Satisfies: NS-33-R16.
+- Scope: a workflow patch under `docs/ops/proposed/` that runs the audit target on a macOS runner on a schedule and on release candidates, not on every PR; its cost and minutes are stated in the patch.
+- Done when: the patch file exists and a text test pins its trigger; once applied, `[NS-33-R16] automated audit` cites the run.
+- Test: `scripts/ci` workflow-pin test (unit, text pin).
+- Source: split from BL-162, catalogue A, NS-33 section.
 
 #### BL-163 The pending-notification ceiling test at 60 in total (NS-32-R4b)
 - Status: proposed (docs/engineering/readiness-20nov/quality catalogue A, row marked GAP; Karma or the founder sets it to ready). Mode: agent. Owner: reminders owner. Milestone: M15. Size: S. Depends on: BL-966.
@@ -5502,11 +5534,14 @@ Ids. The dispatcher reads three-digit ids only. Collision check on 20 Nov 2026: 
 - Done when: `[NS-32-R4b] plan notices at the iOS ceiling` passes and a mutant that lets the total reach 64 turns it red.
 - Source: catalogue A, NS-32 section; errata E13.
 
-#### BL-168 A miss holds the feature, and markers carry no content (NS-34-R2, R6)
-- Status: proposed (docs/engineering/readiness-20nov/quality catalogue A, rows marked GAP; Karma or the founder sets it to ready). Mode: agent. Owner: qa engineer, platform. Milestone: M15. Size: M. Depends on: BL-1341, BL-329.
-- Closes the test-design gap of 2 P0 rows: NS-34-R2, NS-34-R6. Builds beside BL-1341, which now carries NS-34-R2 on its Satisfies line (BL-185 is split).
-- Scope: a scripted check in the production preflight that reads `docs/qa/evidence` for a MISS and fails when the feature flag is on in `production`; a typed allowlist `PerfMarker` so marker names and payloads carry no path, text or name, plus a source scan with a positive control and a log canary reading the sink.
-- Done when: both rows have a test that starts with its id in brackets and a mutant that turns it red.
+#### BL-168 A miss holds the feature in the production preflight (NS-34-R2)
+- Status: proposed (docs/engineering/readiness-20nov/quality catalogue A, row marked GAP; scoped by product: R6 is done, only R2 remains; Karma or the founder sets it to ready). Mode: agent. Owner: qa engineer, platform. Milestone: M15. Size: S. Depends on: BL-1341.
+- Closes the test-design gap of 1 P0 row: NS-34-R2. NS-34-R6 is done: `apps/mobile/test/perf-markers.test.ts` (line 42) holds marker payloads content-free. Builds beside BL-1341, which carries NS-34-R2 on its Satisfies line.
+- Satisfies: NS-34-R2.
+- Scope: a check in `apps/mobile/scripts/preflight-production.mjs` that reads the evidence records in `docs/qa/evidence` (format fixed by BL-1341) and fails when any record has a MISS against `docs/qa/NS-34-TARGETS.md` while the feature it holds is on in the `production` profile. A MISS on a feature that is off passes.
+- Done when: a test titled `[NS-34-R2] a miss holds the feature` is green, and a mutant that drops the check turns it red.
+- Test: `apps/mobile/test/preflight-evidence-miss.test.ts` (unit, fixtures).
+
 - Source: catalogue A, NS-34 section; measurement plan H1.
 
 #### BL-254 Data follows the letter: the ADR acceptance record and the inventory check (NS-36-R4, R6)
@@ -5516,11 +5551,14 @@ Ids. The dispatcher reads three-digit ids only. Collision check on 20 Nov 2026: 
 - Done when: both checks run in the sandbox and a mutant (a new column with no row) turns the second red.
 - Source: catalogue A, NS-36 section.
 
-#### BL-287 Writing tools off, or the field stays off in production: one shared test (NS-01-R50, NS-21-R12, NS-06-A22)
-- Status: proposed (docs/engineering/readiness-20nov/quality catalogues B, C, D, rows marked GAP; errata E41; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer, design systems. Milestone: M15. Size: M. Depends on: BL-962.
-- Closes the test-design gap of 3 P0 rows: NS-01-R50, NS-21-R12, NS-06-A22. Builds beside BL-962.
-- Scope: one shared source test with two branches, as the cards now say: the field sets the writing-tools behaviour to none through the native setting of ADR 0039 (PROPOSED), or, while that setting is not built, the field is not shown in any `production` profile and a test fails a `production` profile that shows it (CR-67 AX-1). Titles: `[NS-01-R50]`, `[NS-01-R50b]`, `[NS-21-R12]`, `[NS-21-R12b]`, `[NS-06-A22]`, `[NS-06-A22b]`. The Review editor already ships without the setting; that is reported to the founder, not decided here.
-- Done when: the shared test passes on the default branch and a mutant that shows a field in `production` without the setting turns it red.
+#### BL-287 Writing tools off, or the field stays off in production: one shared test (NS-21-R12, NS-06-A22; NS-01-R50 production branch)
+- Status: ready (scoped by product: build on the production-off branch; the native-setting branch waits on ADR 0039, which is PROPOSED, and is not in this row). Mode: agent. Owner: mobile engineer, design systems. Milestone: M15. Size: M. Depends on: none.
+- Closes the test-design gap of 3 P0 rows: NS-01-R50, NS-21-R12, NS-06-A22. BL-962 is done and its tests exist.
+- Satisfies: NS-01-R50, NS-21-R12, NS-06-A22.
+- Scope: `apps/mobile/test/photos-surfaces.test.ts` already holds the NS-01-R50 production-off test (line 365) and an `it.fails` for the native setting (line 362). Add the missing titles `[NS-21-R12]`, `[NS-21-R12b]`, `[NS-06-A22]`, `[NS-06-A22b]` in one shared source test (in `apps/mobile/test/no-system-indexing.test.ts`) that fails when the words sheet on the letter page (NS-21-R12) or the label field (NS-06-A22) is shown in a `production` profile without the native setting (CR-67 AX-1). The Review editor ships without the setting; that is reported to the exec council in the PR body, not decided here.
+- Done when: the shared test passes on develop; a mutant that shows a field in `production` without the setting turns it red; the `it.fails` for the native setting stays as the marker for ADR 0039.
+- Test: `apps/mobile/test/no-system-indexing.test.ts` and `apps/mobile/test/photos-surfaces.test.ts` (unit, mutant).
+
 - Source: catalogues B (NS-01), C (NS-21), D (NS-06).
 
 #### BL-290 Documentation checks: spike findings, counsel page, flip condition (NS-04-R4, NS-08-R4, NS-08-R9)
@@ -5538,10 +5576,13 @@ Ids. The dispatcher reads three-digit ids only. Collision check on 20 Nov 2026: 
 - Source: catalogue D, NS-07 section.
 
 #### BL-327 English output on other languages is measured (NS-17-R2)
-- Status: proposed (docs/engineering/readiness-20nov/quality catalogue D, row marked GAP; Karma or the founder sets it to ready). Mode: agent. Owner: speech engineer. Milestone: M15. Size: S. Depends on: BL-182.
-- Closes the test-design gap of 1 P0 row: NS-17-R2. Builds beside BL-182.
-- Scope: a test that every offered or unoffered language has a gate evidence row, so the fixture runs of `npm run gate` in each unoffered language are filed and Review always shows words.
+- Status: proposed (docs/engineering/readiness-20nov/quality catalogue D, row marked GAP; scoped by product, dependency re-pointed from the duplicate BL-182 to its split part; Karma or the founder sets it to ready). Mode: agent. Owner: speech engineer. Milestone: M15. Size: S. Depends on: BL-1312.
+- Closes the test-design gap of 1 P0 row: NS-17-R2. Builds beside BL-1312. The store build is English only.
+- Satisfies: NS-17-R2.
+- Scope: a test that every language, offered or not, has a gate evidence row, so a fixture run of `npm run gate` in each unoffered language is filed and Review always shows words; the file the rows live in is the one BL-1312 names. The runs themselves are filed as evidence records by the speech owner.
 - Done when: `[NS-17-R2] English output on other languages is measured` passes and a language with no evidence row turns it red.
+- Test: `packages/core/test/lang.gate-evidence.test.ts` (unit, mutant).
+
 - Source: catalogue D, NS-17 section.
 
 #### BL-329 The perf EAS profile and the marker harness (S19, S20; measurement plan H1)
@@ -5770,13 +5811,23 @@ Written 21 Nov 2026 by the product agent, docs only. Every row is `proposed`: Ka
 - Done when: an oversized or malformed file reads as corrupt and is replaced safely, with a test for each.
 - Source: deferred from PR #1175, https://github.com/thesaurabhpareek/earlyletters/pull/1175.
 
-#### BL-1201 Days file: assert the file protection class
-- Status: proposed (deferred from PR #1175, https://github.com/thesaurabhpareek/earlyletters/pull/1175; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer, security engineer. Milestone: M15. Size: S. Depends on: PR #1175 merged (the days code is not on develop yet).
+#### BL-1201 Days file: pin the file protection class (default path)
+- Status: ready (scoped by product: the default below needs no native code; the native read-back is its own row). Mode: agent. Owner: mobile engineer, security engineer. Milestone: M15. Size: S. Depends on: none.
 - Satisfies: NS-47-R6 (protection class no weaker than SEC-R15's).
 - Blocks: None.
-- Scope: add an assertion and test that the days file is written with the intended iOS file protection class beside the backup exclusion read-back.
-- Done when: a test fails when the protection class is missing or weaker than the one stated in the PR body.
+- Scope: the days code is on develop (`apps/mobile/src/lib/days/store-file.ts`). Default, as the module has no protection API: (1) a source test that the days file lives under the app's own Library/Application Support folder (`daysDirectory()`) and that no code path passes a protection option, so it inherits the app-wide class that `app.config.ts` declares for SEC-R15 (`NSFileProtectionCompleteUntilFirstUserAuthentication`, already pinned at `apps/mobile/test/config.test.ts:104`); (2) the PR body states the accepted class in words. A real read-back of the class on a device is BL-2040.
+- Done when: the tests fail when the days file path leaves the app's own folder or the days code passes a protection option; the declared class is already held by `config.test.ts`.
+- Test: `apps/mobile/test/days-file-protection.test.ts` (unit, source pin).
+
 - Source: deferred from PR #1175, https://github.com/thesaurabhpareek/earlyletters/pull/1175.
+
+#### BL-2040 scribe-files: read back the file protection class on a device (NS-47-R6, split from BL-1201)
+- Status: proposed (split from BL-1201 by product; Karma or the founder sets it to ready). Mode: pair. Owner: mobile engineer, security engineer. Milestone: M15. Size: M. Depends on: BL-1201.
+- Satisfies: NS-47-R6.
+- Scope: (a) a `fileProtectionClass(uri)` method in `apps/mobile/modules/scribe-files` (Swift, beside `isExcludedFromBackup`) and its type in `index.ts`; (b) the days store calls it after write and a test fails when the class is missing or weaker than SEC-R15's. Device-only proof: a run on a Mac with a device is recorded as an evidence record (Asha data only).
+- Done when: a unit test with a fake module fails on a weaker class; the evidence record names the class read on the device.
+- Test: `apps/mobile/test/days-file-protection.test.ts` (unit) plus a device row.
+- Source: split from BL-1201, deferred from PR #1175.
 
 #### BL-1202 DATA_CLASSIFICATION has no row for the days file
 - Status: proposed (deferred from PR #1175, https://github.com/thesaurabhpareek/earlyletters/pull/1175; Karma or the founder sets it to ready). Mode: human. Owner: legal, privacy engineer (legal path: the founder or counsel merges). Milestone: M15. Size: S. Depends on: PR #1175 merged (the days code is not on develop yet).
