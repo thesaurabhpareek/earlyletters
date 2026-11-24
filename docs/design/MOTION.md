@@ -51,7 +51,7 @@ motion: { ...existing,
   lamp: { arriveMs: 1200, breathMs: 9000, breathOpacityMin: 0.88, dimTo: 0.7, leaveMs: 160, returnMs: 280 },   // 5k, 5l
   route: { dissolveMs: 280 },         // the dissolve into and out of Listen, Review and Read together (5l)
   swapMs: 150,                        // words replaced in place: a toast over a toast, Reading Size; also the letter page's rest fades (curve.veil, linear, serves them too)
-  markCard: { delayMs: 80, ms: 160 }, // Review mark card entry; Reduce Motion: no delay, fadeMs. NOT YET IN tokens.ts: added by the Review build row (CDESO-3)
+  markCard: { delayMs: 80, ms: 160 }, // Review mark card entry; Reduce Motion: no delay, fadeMs. In `tokens.ts` (`motion.markCard`); the timing is read by `markCardTiming` in `apps/mobile/src/lib/review-fold.logic.ts`.
   // cardToPage also gains restOutMs: 96 (at most exitMs 160). NOT YET IN tokens.ts: added by BL-1790 (CDESO-3)
   loopCapMs: 30000,                   // the three loops end at rest after this (Loops stop on their own, 4; CDESO-4, BL-1988)
   breath: { dbFloor: -55, dbCeil: -10, gamma: 0.6, attackMs: 80, releaseMs: 400,

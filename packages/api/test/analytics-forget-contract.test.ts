@@ -1,7 +1,7 @@
 /// <reference types="node" />
 /**
- * BL-1252: the analytics-forget contract matches the deployed function, and the one reason the function does not accept
- * yet (`retired_id`) is pinned, so closing the server half changes this test on purpose.
+ * BL-1252: the analytics-forget contract matches the deployed function, and the list of reasons it does not accept yet
+ * is pinned (empty since the server half of `retired_id` landed).
  */
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -29,7 +29,7 @@ describe('analytics-forget contract', () => {
     expect(handler).toContain(`export const MAX_IDS = ${ANALYTICS_FORGET_MAX_IDS};`);
   });
 
-  it('every reason the function accepts is in the contract, and the contract adds only the pending one', () => {
+  it('every reason the function accepts is in the contract, and the contract adds only the pending ones (none)', () => {
     const accepted = [...(handler.match(/const REASONS: readonly Reason\[\] = \[([^\]]*)\]/)?.[1] ?? '').matchAll(/'([a-z_]+)'/g)].map((m) => m[1]);
     expect(accepted.length).toBeGreaterThan(0);
     for (const r of accepted) expect(ANALYTICS_FORGET_REASONS).toContain(r);
