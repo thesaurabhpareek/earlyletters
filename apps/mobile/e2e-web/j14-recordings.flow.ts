@@ -24,8 +24,7 @@ test('[J14] where your letters live, your words and spoken language', async ({ a
   await step('happy', 'Your words', 'Two named choices for new letters, each with its own line, and an example the real engine cleaned, with the words a small fix took out struck through. Either way, we never rewrite your words.');
   await app.goBack();
 
-  // BL-2007: the Storage page is not opened here. On the web build `expo-file-system` is a stub with no `validatePath`,
-  // so `new Directory()` in src/lib/packs/app-support.ts throws on that page's path and the page says "This page didn't
-  // open". Web has no pack storage to show, so there is nothing true to prove in a browser; support/build-index.mjs
-  // already lists Storage as not capturable on web.
+  // BL-2007: the Storage page is not opened here. It used to say "This page didn't open" on web, because
+  // `expo-file-system` throws there; BL-2174 made `appSupportDir` and the pack manager web-safe, and the J26 flow
+  // (j26-missing-screens.flow.ts, "[J26] Storage") now opens Storage and proves its empty state, so nothing is added here.
 });

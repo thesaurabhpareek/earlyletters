@@ -26,8 +26,8 @@ test('[J26] Storage', async ({ app, record }) => {
   const step = journey(record, 'J26', 'missing-screens', 3, 'J16-01');
   await seeded(app, 'asha', '/settings');
   await app.getByText(h.storageLabel, { exact: true }).click();
-  await expect(app.getByText(packsCopy.downloadedTitle, { exact: false })).toBeVisible();
-  await expect(app.getByText(packsCopy.empty, { exact: false })).toBeVisible();
+  await expect(app.getByText(packsCopy.downloadedTitle, { exact: true })).toBeVisible();
+  await expect(app.getByText(packsCopy.empty, { exact: true })).toBeVisible();
   await step('happy', packsCopy.title, 'What is downloaded on this phone. On web nothing is, so the page shows the empty line.');
 });
 
