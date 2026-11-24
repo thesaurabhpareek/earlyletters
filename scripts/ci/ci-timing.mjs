@@ -20,7 +20,7 @@ export const STEPS = [
   ['restore DerivedData', /^Restore DerivedData/],
   ['pod install', /^pod install/],
   ['xcodebuild', /^xcodebuild/],
-  ['simulator and launch', /^(?:Simulator|Launch and stay up)/],
+  ['simulator and launch', /^(?:Simulator|Install and launch|Stay up for 20 s|Launch and stay up)/],
 ];
 const ms = (t) => Date.parse(t);
 const min = (a, b) => (a && b ? Math.round(((ms(b) - ms(a)) / 60000) * 10) / 10 : null);

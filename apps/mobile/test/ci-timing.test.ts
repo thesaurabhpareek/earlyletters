@@ -8,7 +8,7 @@ const t = (m: number) => new Date(Date.UTC(2026, 10, 21, 1, 0, 0) + m * 60000).t
 const launch = (queue: number, prebuild: number, restore: number, xcode: number, conclusion = 'success') => {
   let at = queue;
   const step = (name: string, m: number, c = 'success') => ({ name, started_at: t(at), completed_at: t((at += m)), conclusion: c });
-  const steps = [step('Set up job', 0.1), step('expo prebuild --platform ios --no-install', prebuild), step('pod install', 0.7), step('Restore DerivedData (Release)', restore), step('xcodebuild (iOS Simulator, Release, CODE_SIGNING_ALLOWED=NO)', xcode), step('Launch and stay up for 20 s', 2), step('Why the app stopped (on failure)', 0, 'skipped')];
+  const steps = [step('Set up job', 0.1), step('expo prebuild --platform ios --no-install', prebuild), step('pod install', 0.7), step('Restore DerivedData (Release)', restore), step('xcodebuild (iOS Simulator, Release, CODE_SIGNING_ALLOWED=NO)', xcode), step('Install and launch the app', 1.5), step('Stay up for 20 s', 0.5), step('Why the app stopped (on failure)', 0, 'skipped')];
   return { name: 'store-profile Release launch (testflight env, no seam, 20 s)', created_at: t(0), started_at: t(queue), completed_at: t(at), conclusion, steps };
 };
 const other = { name: 'native files changed?', created_at: t(0), started_at: t(1), completed_at: t(2), conclusion: 'success', steps: [] };
