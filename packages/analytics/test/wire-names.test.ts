@@ -55,21 +55,21 @@ const MERGED: Record<string, string> = {
 const DROPPED = [
   'app_backgrounded', 'auth_method_selected', 'auth_email_sent', 'local_merge_choice', 'child_setting_changed', 'make_it_yours_card', 'goals_set',
   'dictionary_term_added', 'family_letter_reviewed', 'member_removed', 'member_left', 'reminder_sent', 'moment_shown', 'resurface_shown',
-  'resurface_opened', 'export_shared', 'account_deletion',
+  'resurface_opened', 'export_shared', 'account_deletion', 'letter_deleted',
 ];
 
-describe('the 39 rulings of 24 Nov 2026', () => {
-  it('17 keys are named, 4 merged, 17 dropped, sync_failed is ruled; none is left to rule', () => {
+describe('the 39 rulings of 24 Nov 2026 and the letter_deleted ruling (CR-225)', () => {
+  it('17 keys are named, 4 merged, 18 dropped (letter_deleted is the 18th), sync_failed is ruled; none is left to rule', () => {
     expect(Object.keys(NAMED)).toHaveLength(17);
-    expect(DROPPED).toHaveLength(17);
+    expect(DROPPED).toHaveLength(18);
     for (const [k, w] of Object.entries(NAMED)) expect(WIRE_ROWS[k], k).toMatchObject({ status: 'named', wire: w });
     for (const [k, t] of Object.entries(MERGED)) expect(WIRE_ROWS[k], k).toMatchObject({ status: 'merged', target: t });
     for (const k of DROPPED) expect(WIRE_ROWS[k]?.status, k).toBe('dropped');
     expect(WIRE_ROWS.sync_failed).toMatchObject({ status: 'ruled', wire: 'system:sync_fail' });
     const n = (s: string) => rows.filter(([, r]) => r.status === s).length;
-    expect([n('ruled'), n('named'), n('merged'), n('dropped'), n('pattern'), n('needs_ruling')]).toEqual([31, 17, 4, 17, 4, 0]);
+    expect([n('ruled'), n('named'), n('merged'), n('dropped'), n('pattern'), n('needs_ruling')]).toEqual([30, 17, 4, 18, 4, 0]);
     expect(keys).toHaveLength(73);
-    expect(doc).toContain('Counts: 73 keys: 31 ruled by 2.9, 17 named by the 24 Nov rulings, 4 merged, 17 dropped, 4 patterns');
+    expect(doc).toContain('Counts: 73 keys: 30 ruled by 2.9, 17 named by the 24 Nov rulings, 4 merged, 18 dropped, 4 patterns');
   });
 
   it('a merged row has no name of its own: its target is a screen name generated from ids.ts, or a perf metric name', () => {

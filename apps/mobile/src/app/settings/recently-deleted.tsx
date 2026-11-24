@@ -14,7 +14,6 @@ import { UIProvider } from '@/components/ui/provider';
 import { Text } from '@/components/ui/text';
 import { useToast } from '@/components/ui/toast';
 import { useTheme } from '@/lib/a11y';
-import { track } from '@/lib/analytics/track';
 import { capabilities } from '@/lib/capabilities';
 import { eraseDeletedBook, eraseDeletedLetter } from '@/lib/capture/erase';
 import { copy, fill, pendingCopy } from '@/lib/copy';
@@ -66,11 +65,10 @@ function Shelf() {
 
   const restore = (e: DeletedEntry) => {
     haptic('tap');
-    // BL-1959: a letter in a left book is refused. No "restored" event and no "restored" toast; say what is true.
+    // BL-1959: a letter in a left book is refused. No "restored" toast; say what is true. No analytics event here (CR-225, R-K3).
     const restored = undeleteEntry(e.id);
     setRows(read());
     if (!restored) return toast.show({ message: d.restoreRefusedToast });
-    track('letter_deleted', { action: 'restored', destination: e.inBook ? 'book' : 'private' });
     const child = (e.childId ? getChild(e.childId) : null) ?? getActiveChild();
     toast.show({
       message: restoredLine(d, child?.name),

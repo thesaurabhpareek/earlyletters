@@ -108,13 +108,15 @@ describe('a refused restore says so (BL-1959, entry.restore)', () => {
     expect(store.listDeleted().some((e) => e.id === id)).toBe(true);
   });
 
-  it('[BL-1959] Recently deleted fires no restored event and no restored toast on a refusal, and hides Restore for a left book', () => {
+  it('[BL-1959] Recently deleted shows the refusal toast and nothing else on a refusal, and hides Restore for a left book', () => {
     const s = read('app/settings/recently-deleted.tsx');
-    expect(s).toMatch(/const restored = undeleteEntry\(e\.id\);[\s\S]*?if \(!restored\) return toast\.show\(\{ message: d\.restoreRefusedToast \}\);\s*track\('letter_deleted', \{ action: 'restored'/);
+    expect(s).toMatch(/const restored = undeleteEntry\(e\.id\);[\s\S]*?if \(!restored\) return toast\.show\(\{ message: d\.restoreRefusedToast \}\);/);
+    expect(s).not.toMatch(/letter_deleted|analytics\/track/); // the shelf imports no analytics module (CR-225, R-K3)
     expect(s).toMatch(/canRestore=\{!\(e\.childId && isBookLeft\(e\.childId\)\)\}/);
   });
 
-  it.each(['app/(tabs)/book.tsx', 'app/letter/[id].tsx'])('[BL-1959] Undo in %s reads the result before it tracks', (p) => {
-    expect(read(p)).toMatch(/if \(!undeleteEntry\(gone\.id\)\) return toast\.show\(\{ message: copy\.settings\.delete\.restoreRefusedToast \}\);\s*track\('letter_deleted', \{ action: 'restored'/);
+  it.each(['app/(tabs)/book.tsx', 'app/letter/[id].tsx'])('[BL-1959] Undo in %s shows the refusal toast and nothing else when the store refuses', (p) => {
+    expect(read(p)).toMatch(/if \(!undeleteEntry\(gone\.id\)\) return toast\.show\(\{ message: copy\.settings\.delete\.restoreRefusedToast \}\);/);
+    expect(read(p)).not.toMatch(/letter_deleted/);
   });
 });
