@@ -33,7 +33,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { CheckIcon } from 'phosphor-react-native/src/icons/Check';
 import { WarningCircleIcon } from 'phosphor-react-native/src/icons/WarningCircle';
 import { useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Pressable, ScrollView, View, type Text as RNText } from 'react-native';
+import { AccessibilityInfo, Platform, Pressable, ScrollView, View, type Text as RNText } from 'react-native';
 import Animated, { FadeIn, FadeOut, ReduceMotion, runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { tokens } from '@scribe/design-tokens';
 import { AgreementRow } from '@/components/ui/agreement-row';
@@ -81,7 +81,8 @@ export function AgeGateScreen({ decision, refresh }: Props) {
 
   // Announce the stop line (iOS has no live regions in RN; TDD 09 A11Y-F08).
   useEffect(() => {
-    if (view === 'stop') AccessibilityInfo.announceForAccessibility(g.stopTitle);
+    // Android reads the live region around the title; speaking it here as well said it twice (BL-467 point 4).
+    if (view === 'stop' && Platform.OS !== 'android') AccessibilityInfo.announceForAccessibility(g.stopTitle);
   }, [view, g.stopTitle]);
 
   // Accept: the words go up and out, then the gate passes (the lamp keeps its light through persistKey).
