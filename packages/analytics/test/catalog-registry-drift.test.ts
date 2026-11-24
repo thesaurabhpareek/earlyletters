@@ -2,7 +2,7 @@
  * Drift guard between the held catalogue (`catalog.ts` EVENTS) and the send list (`registry.ts` REGISTRY).
  * Only REGISTRY names are sent (validate.ts `isKnownEvent`); the rest of EVENTS is typed and held. The two sets are
  * NOT equal on purpose, so this pins the difference by name: an event added to one file and not decided in the other
- * fails here, and an event in both must agree on its properties and level. Fictional family Asha only; no data.
+ * fails here, and an event in both must agree on its properties, their type and enum values, and level. Fictional family Asha only; no data.
  */
 import { describe, expect, it } from 'vitest';
 import { EVENTS, REGISTRY } from '../src';
@@ -41,6 +41,18 @@ describe('[PRD-REQ-016] the held catalogue and the send registry cannot drift ap
     for (const n of Object.keys(reg).filter((k) => k in cat)) {
       expect([n, Object.keys(reg[n].props).sort()]).toEqual([n, Object.keys(cat[n].props).sort()]);
       expect([n, reg[n].level]).toEqual([n, cat[n].level]);
+    }
+  });
+
+  it('a property named in both has the same type and, for an enum, the same values', () => {
+    type Spec = { type: string; values?: readonly string[] };
+    for (const n of Object.keys(reg).filter((k) => k in cat)) {
+      for (const k of Object.keys(reg[n].props)) {
+        const a = reg[n].props[k] as Spec;
+        const b = cat[n].props[k] as Spec;
+        expect([n, k, a.type]).toEqual([n, k, b.type]);
+        expect([n, k, [...(a.values ?? [])].sort()]).toEqual([n, k, [...(b.values ?? [])].sort()]);
+      }
     }
   });
 });

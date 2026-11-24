@@ -28,6 +28,13 @@ export interface ScopeReaders<B extends { id: string }, E> {
   /** Books the server closed (server_state 'deleted'). */
   closedByServer: () => B[];
   live: (bookId: string) => E[];
+  /**
+   * Books this person left, and their own live letters (BL-1960, D-113, DATA-REQ-016). Read only, and always in: a
+   * left book is no longer pulled, so the phone holds the only copy this person can reach, and it is theirs. Optional
+   * so a caller with no left books to read is unchanged.
+   */
+  left?: () => B[];
+  leftLive?: (bookId: string) => E[];
   deleted: (bookId: string) => E[];
 }
 
@@ -36,9 +43,24 @@ export function exportScope<B extends { id: string }, E>(r: ScopeReaders<B, E>, 
     ...r.listed().map((book) => ({ book, hidden: false })),
     ...r.hidden().map((book) => ({ book, hidden: true })),
   ];
+  const seen = new Set(books.map((b) => b.book.id));
+  const leftIds = new Set<string>();
+  for (const book of r.left?.() ?? []) {
+    if (seen.has(book.id)) continue;
+    seen.add(book.id);
+    leftIds.add(book.id);
+    books.push({ book, hidden: false });
+  }
   if (requestOpen) {
-    const seen = new Set(books.map((b) => b.book.id));
     for (const book of r.closedByServer()) if (!seen.has(book.id)) books.push({ book, hidden: false });
   }
-  return books.map((b) => ({ ...b, letters: requestOpen ? [...r.live(b.book.id), ...r.deleted(b.book.id)] : r.live(b.book.id) }));
+  // A left book's letters come from its own reader (the listed readers return nothing for it), and its Recently deleted
+  // letters follow the same open-request rule as any other book's.
+  return books.map((b) => {
+    if (leftIds.has(b.book.id)) {
+      const live = r.leftLive?.(b.book.id) ?? [];
+      return { ...b, letters: requestOpen ? [...live, ...r.deleted(b.book.id)] : live };
+    }
+    return { ...b, letters: requestOpen ? [...r.live(b.book.id), ...r.deleted(b.book.id)] : r.live(b.book.id) };
+  });
 }

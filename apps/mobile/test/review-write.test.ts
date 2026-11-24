@@ -234,7 +234,7 @@ describe('S21: the saved moment (MOTION 5e, 5.8 rows 5 and 5a)', () => {
   it('5.8 row 5b: the Keep the book sheet rises over the Book after the landing, never in place of Review, when lib/asks says so', () => {
     expect(review).toMatch(/askAfterLanding\.current = askAfterSave\(\{\s*firstLetter,\s*signInOffered: auth\.configured && auth\.state\.status === 'signedOut',\s*surfaceBusy: surfaceBusy\(\),/);
     expect(review).toMatch(/if \(askAfterLanding\.current === 'keep_book'\) \{/);
-    expect(review).toMatch(/fireDelayedAsk\('keep_book', \(\) => router\.push\(\{ pathname: '\/sign-in', params: \{ trigger: 'first_letter' \} \}\)\),\s*signInAfterLandingMs\(motion\.reduced\)/);
+    expect(review).toMatch(/fireDelayedAsk\('keep_book', \(\) => router\.push\(\{ pathname: '\/sign-in', params: \{ trigger: keepBookTrigger\(\) \} \}\)\),\s*signInAfterLandingMs\(motion\.reduced\)/);
     expect(review).not.toMatch(/router\.replace\(\{ pathname: '\/sign-in'/);
   });
 

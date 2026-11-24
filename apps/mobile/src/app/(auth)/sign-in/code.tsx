@@ -40,7 +40,7 @@ import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { authCopy } from '@/lib/auth/copy';
 import { EMAIL_CODE_LENGTH, RESEND_WAIT_MS } from '@/lib/auth/email';
-import { codeEntryPause, looksLikeEmail, normaliseCode } from '@/lib/auth/errors.logic';
+import { codeEntryPause, looksLikeEmail, normaliseCode, shouldAnnouncePauseEnd } from '@/lib/auth/errors.logic';
 import type { AuthErrorKind } from '@/lib/auth/machine.logic';
 import { getPendingEmail, setPendingEmail, wrongCodeTimes } from '@/lib/auth/pending';
 import { authErrorMessage } from '@/lib/auth/messages';
@@ -137,6 +137,20 @@ export default function CodeStep() {
   useEffect(() => {
     if (!paused && error === 'code_paused') setError(null);
   }, [paused, error]);
+  // BL-476, LEGAL-REQ-051: the paused line was the live region, so when it goes nothing is spoken. Say once that a code can be
+  // typed again (spoken on iOS, shown in the polite note line for Android, where announce() does nothing) and move focus to
+  // the field, which has just become editable. No count, never on arrival.
+  const wasPaused = useRef(paused);
+  const wasAddress = useRef(address);
+  useEffect(() => {
+    if (shouldAnnouncePauseEnd(wasPaused.current, paused, wasAddress.current, address)) {
+      announce(k.pauseEnded, { queue: true });
+      setNote(k.pauseEnded);
+      setTimeout(() => field.current?.focus(), 0);
+    }
+    wasPaused.current = paused;
+    wasAddress.current = address;
+  }, [paused, address, k.pauseEnded]);
 
   const verify = async (value: string) => {
     if (busy || inFlight.current || value.length !== EMAIL_CODE_LENGTH || !looksLikeEmail(address)) return;

@@ -197,7 +197,8 @@ describe('[S3] "Write the words" on a recording with no words', () => {
 
   it('the letter page renders the card for both kinds, asks the store first, and opens the same sheet that leads to Review (source)', () => {
     const page = code(src('app/letter/[id].tsx'));
-    expect(page).toMatch(/const wordsCard = wordsCardKind\(\{ own, words, canWrite: words === 'nobodySpoke' && canTypeWordsFor\(entry\.id\) \}\);/);
+    // BL-444: a left book's letter is read only, so it draws no words card.
+    expect(page).toMatch(/const wordsCard = readOnly \? null : wordsCardKind\(\{ own, words, canWrite: words === 'nobodySpoke' && canTypeWordsFor\(entry\.id\) \}\);/);
     expect(page).toMatch(/\{wordsCard && <WaitingCard entry=\{entry\} kind=\{wordsCard\} onWrite=\{\(\) => setWriting\(true\)\} \/>\}/);
     expect(page).not.toMatch(/own && words === 'waiting' && <WaitingCard/);
     expect(page).toMatch(/const state = wordsCardState\(kind, job\);/);

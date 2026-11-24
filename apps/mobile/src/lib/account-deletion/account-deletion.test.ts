@@ -3,8 +3,8 @@
  * steps, the subscription notice, and the server calls against a fake client.
  * Run (from apps/mobile): npx vitest run --config src/lib/account-deletion/vitest.config.ts
  */
-import { describe, expect, it } from 'vitest';
-import { cancelDeletion, FORGET_PENDING_KEY, forgetAnalytics, loadBooks, loadStatus, requestDeletion, retryForget, type DeletionClient, type FlagStore } from './api';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { cancelDeletion, FORGET_PENDING_KEY, READ_TIMEOUT_MS, forgetAnalytics, loadBooks, loadStatus, requestDeletion, retryForget, type DeletionClient, type FlagStore } from './api';
 import { accountDeletionCopy } from './copy';
 import { bookImpacts, confirmationMatches, expectedDeletionDate, impactLines, localDay, parseStatus, showSubscriptionNotice, stepFor, type SyncBook } from './logic';
 
@@ -267,5 +267,69 @@ describe('analytics ids at deletion (TDD 05 X-02)', () => {
     const f = fakeClient();
     expect(await forgetAnalytics(f.client, { ids: () => [], forget: async () => {} }, memoryFlags(), 'account_deletion', 'k')).toBe('nothing');
     expect(f.calls).toEqual([]);
+  });
+});
+
+describe('[BL-492 point 3] a read that never answers ends as offline', () => {
+  beforeEach(() => void vi.useFakeTimers());
+  afterEach(() => void vi.useRealTimers());
+
+  const hangingStatus = (): DeletionClient => {
+    const f = fakeClient({});
+    const never = new Promise<never>(() => undefined);
+    return { ...f.client, from: () => ({ select: () => ({ eq: () => ({ in: () => ({ order: () => ({ limit: () => never }) }) }) }) }) };
+  };
+
+  it('the status read gives up at the timeout, not before, and says offline', async () => {
+    let out: unknown = null;
+    void loadStatus(hangingStatus()).then((r) => (out = r));
+    await vi.advanceTimersByTimeAsync(READ_TIMEOUT_MS - 1);
+    expect(out).toBeNull();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(out).toEqual({ ok: false, reason: 'offline' });
+    expect(READ_TIMEOUT_MS).toBe(15_000);
+  });
+
+  it('the book read gives up the same way', async () => {
+    const client: DeletionClient = { ...fakeClient({}).client, rpc: () => new Promise<never>(() => undefined) };
+    let out: unknown = null;
+    void loadBooks(client).then((r) => (out = r));
+    await vi.advanceTimersByTimeAsync(READ_TIMEOUT_MS);
+    expect(out).toEqual({ ok: false, reason: 'offline' });
+  });
+
+  it('an answer in time is the answer, and leaves no timer behind', async () => {
+    expect(await loadStatus(fakeClient({}).client)).toMatchObject({ ok: true });
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('[BL-492] the status check after a failed write has no clock of its own: a slow answer that finds the request open is a success', async () => {
+    const f = fakeClient({ throwRpc: new Error('network request failed') });
+    const slow = new Promise((res) => setTimeout(() => res(SCHEDULED_ROW), READ_TIMEOUT_MS + 5_000));
+    const client: DeletionClient = { ...f.client, from: () => ({ select: () => ({ eq: () => ({ in: () => ({ order: () => ({ limit: () => slow as never }) }) }) }) }) };
+    let out: unknown = null;
+    void requestDeletion(client, null).then((r) => (out = r));
+    await vi.advanceTimersByTimeAsync(READ_TIMEOUT_MS + 1);
+    expect(out).toBeNull();
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect(out).toMatchObject({ ok: true });
+  });
+
+  it('[BL-492] the same for a cancel whose false answer is checked: the check waits, and finds none open', async () => {
+    const f = fakeClient({ rpc: { cancel_account_deletion: { data: false, error: null } } });
+    const slow = new Promise((res) => setTimeout(() => res({ data: [], error: null }), READ_TIMEOUT_MS + 5_000));
+    const client: DeletionClient = { ...f.client, from: () => ({ select: () => ({ eq: () => ({ in: () => ({ order: () => ({ limit: () => slow as never }) }) }) }) }) };
+    let out: unknown = null;
+    void cancelDeletion(client).then((r) => (out = r));
+    await vi.advanceTimersByTimeAsync(READ_TIMEOUT_MS + 6_000);
+    expect(out).toEqual({ ok: true, value: true });
+  });
+
+  it('a request is not given up on by the clock: it waits for its own answer (the server may still commit it)', async () => {
+    const client: DeletionClient = { ...fakeClient({}).client, rpc: () => new Promise((res) => setTimeout(() => res({ data: [{ request_id: 'r1', scheduled_for: '2026-12-30T00:00:00Z' }], error: null }), 60_000)) };
+    let out: unknown = null;
+    void requestDeletion(client, null).then((r) => (out = r));
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(out).toEqual({ ok: true, value: { requestId: 'r1', scheduledFor: '2026-12-30T00:00:00Z' } });
   });
 });

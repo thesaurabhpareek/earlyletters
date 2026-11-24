@@ -1154,3 +1154,31 @@ Founder standing approval and hard limits are quoted in the Batch 6 section of `
 - Door: two-way. Way back: a later D-entry moving Google earlier or retiring it.
 - Founder-only: no.
 - Signed: Karma
+
+### CR-181 PR #1761: the sign-in line for cancelling a deletion stands as written (24 Nov 2026, Karma and the exec team under D-168 and D-172)
+- Question: may the line `auth.sheet.bodies.cancel_deletion` ship as written? It is shown when the sign-in sheet opens from the signed-out deletion screen: "Sign in the same way as last time. Then you can cancel the deletion."
+- Ruling: the wording stands as written. If the last-used method hint is ever removed from that route, switch to "Sign in the way you did before. Then you can cancel the deletion."
+- Reads ("counsel" here means the exec team, not a lawyer):
+  - Content: approve. Friend-sounding, no fear, guilt or loss wording, no child named, nothing about AI, and it matches the glossary and the "Cancel deletion" button.
+  - Privacy: approve. The line makes no data claim; the 30-day window is left to the deletion screen, which shows the date.
+  - Design: approve. The sign-in screen shows the last-used method hint when one is stored (`(auth)/sign-in/index.tsx` and `welcome-sign-in.tsx`). When none is stored the line is weaker but not false.
+  - Compliance: approve. It matches `docs/legal/delete-account-page.md` and says "can cancel", not "will be restored".
+- UNVERIFIED: identity linking across sign-in methods; the runtime guard on when the deletion screen opens. The reader of this ruling did not run the content tests (the PR reviewers did).
+- Follow-up: the PR body of #1761 (already merged) should mention the try/catch added around `recordCancelled()` in `use-account-deletion.ts`, which is a CR-70 path.
+- Door: two-way. Way back: a later ruling in this log.
+- Founder-only: no.
+- Signed: Karma
+
+### CR-182 PR #1815 (BL-1960): a left member's delete and Erase now are queued like any other (24 Nov 2026, Karma and the exec team under D-168 and D-172)
+- Status: PR #1815 merged at head 70be74ad after the privacy and security-architect reviews passed. The data steward verdict was fix first, then merge.
+- Findings and ruling:
+  - 1. The server accepts `entry.delete` and `entry.erase` from a member who left. `delete_entry` (`supabase/migrations/20261015000000_v1_gate_membership_sync_hardening.sql:829-840`) and `sync_private.erase_entry` (`20261016000000_sync_v1_server.sql:881-915`) check the author only, and `docs/legal/DELETION_AND_EXPORT_SPEC.md:151` says the same. The PR's premise that the server refuses them was wrong.
+  - 2. A left member's Delete and Erase now are queued like any other (Option A). Local-only delete and erase were rejected because they break the third bullet of DATA-REQ-016, F16-REQ-024 and DATA_CLASSIFICATION row 75.
+  - 3. Merge condition, met: a db test through `sync_push` as a former member of a live book, `supabase/tests/sync_left_book_delete.test.mjs`, with 18 checks including deny cases where the leaver cannot delete or erase the other parent's letter.
+  - 4. The lead line "The letters you wrote in {child}'s book." is acceptable for data. It must never say "kept", "stays", "only you", "on this phone" or "safe". The tone read by content and privacy is still open.
+  - 5. Wording constraint for BL-1961: an in_book letter's Delete confirmation must say it also leaves the book {coParent} reads and carry `coParent.cantTakeBack`; a private letter must not say it leaves the other parent's book. Privacy's PRIV-R21 lines: privacy later ruled these are not required before merge for a letter Delete, since it writes no consent row, but they need a content and legal read before a store build.
+  - 6. Classification, legal and wording questions stay with privacy and the exec team.
+- Not verified: no device or two-phone run; the reviewers did not run the full `test:db` or the root `npm test`.
+- Door: two-way. Way back: a later ruling in this log.
+- Founder-only: no.
+- Signed: Karma

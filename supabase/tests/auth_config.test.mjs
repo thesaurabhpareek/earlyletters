@@ -88,6 +88,8 @@ check('sessions and sign-in switches', () => {
   assert.equal(auth.enable_anonymous_sign_ins, false);
   assert.equal(auth.enable_manual_linking, false);
   assert.equal(auth.enable_refresh_token_rotation, true);
+  // The 10 s grace in which a retried refresh token still works; 0 would log a parent out on a flaky network (TDD 04 section 4).
+  assert.equal(auth.refresh_token_reuse_interval, 10);
 });
 
 check('no SMTP block and no secret value is committed', () => {
@@ -145,6 +147,42 @@ check('link templates build the scanner-safe fragment link, never ConfirmationUR
     assert.ok(html.includes('{{ .Token }}'), `${name} lacks the code`);
     assert.ok(html.includes(minutes), `${name} does not say "${minutes}"`);
     assert.ok(!html.includes('{{ .Data'), `${name} renders user metadata`);
+  }
+});
+
+// BL-1995, NX-40-R14: docs/ops/AUTH_SETTINGS.md cites config.toml lines by number. A line added above a
+// key moves it, and the register then sends a reader to the wrong line. Each pin is [row, section, key];
+// the line is found in config.toml itself, so the cite must follow the file. A row with two cites lists both.
+check('AUTH_SETTINGS.md cites the config.toml line that holds each key (BL-1995)', () => {
+  const lines = readFileSync(join(supabaseDir, 'config.toml'), 'utf8').split('\n');
+  const lineOf = (section, key) => {
+    let at = '';
+    for (let i = 0; i < lines.length; i++) {
+      const h = /^\[([A-Za-z0-9_.]+)\]$/.exec(lines[i].trim());
+      if (h) at = h[1];
+      else if (at === section && new RegExp(`^${key}\\s*=`).test(lines[i])) return i + 1;
+    }
+    throw new Error(`config.toml has no ${key} in [${section}]`);
+  };
+  const doc = readFileSync(join(repoRoot, 'docs/ops/AUTH_SETTINGS.md'), 'utf8').split('\n');
+  const rowText = (n) => doc.find((l) => l.startsWith(`| ${n} |`)) ?? assert.fail(`AUTH_SETTINGS.md has no row ${n}`);
+  const pins = [
+    [1, 'auth.email', 'otp_length'], [2, 'auth.email', 'otp_expiry'], [3, 'auth.email', 'max_frequency'],
+    [4, 'auth.rate_limit', 'token_verifications'], [5, 'auth.rate_limit', 'email_sent'],
+    [6, 'auth.rate_limit', 'sign_in_sign_ups'], [7, 'auth.rate_limit', 'token_refresh'],
+    [8, 'auth', 'jwt_expiry'], [9, 'auth', 'enable_refresh_token_rotation'], [9, 'auth', 'refresh_token_reuse_interval'],
+    [11, 'auth', 'enable_anonymous_sign_ins'], [12, 'auth', 'enable_manual_linking'],
+    [13, 'auth', 'enable_signup'], [13, 'auth.email', 'enable_signup'],
+    [14, 'auth.email', 'enable_confirmations'], [14, 'auth.email', 'double_confirm_changes'],
+    [15, 'auth', 'site_url'], [15, 'auth', 'additional_redirect_urls'],
+    [19, 'auth.external.apple', 'enabled'],
+  ];
+  for (const [row, section, key] of pins) {
+    const n = lineOf(section, key);
+    // The cite group runs from "config.toml:" to the closing parenthesis: `config.toml:45`, `:65` is two cites.
+    const group = /config\.toml:([^)]*)\)/.exec(rowText(row))?.[1] ?? '';
+    const cited = new Set(group.match(/\d+/g));
+    assert.ok(cited.has(String(n)), `row ${row}: ${key} is at config.toml:${n}; the row cites ${[...cited].join(', ')}`);
   }
 });
 

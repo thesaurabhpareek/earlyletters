@@ -1,3 +1,4 @@
+# BLOCKED (ids the app does not set yet): red by design until they land. `node apps/mobile/e2e/bin/blocked-ids.mjs <this file>` lists them (not-in-app.txt); run-suite.sh and run-p0-nightly.sh skip it and print that list.
 # E2E-12  Sign in with the email code (and, optionally, the link).
 # Proves: A-REQ-018 (one email with a link and a 6-digit code; the code signs
 # in), PRD-REQ-002 and LEGAL-REQ-001 (Terms with the 18+ line, then the

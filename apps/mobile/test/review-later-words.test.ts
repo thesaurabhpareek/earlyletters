@@ -248,7 +248,10 @@ describe('[#53] the letter page and Review are wired this way', () => {
     const open = card.search(/if \(entry\.wordsUnreviewed\) return router\.push\(\{ pathname: '\/review', params: \{ entryId: entry\.id \} \}\);/);
     expect(open).toBeGreaterThan(-1);
     expect(open).toBeLessThan(card.indexOf('clearReadItBack('));
-    expect(page).toMatch(/own && words === 'words' && \(unread \|\| entry\.wordsUnreviewed\) && \(/);
+    // BL-444: the card is for the reader's own letters in a book still on this phone, so the guard is `editable`, and
+    // `editable` must stay `own` and not a left book. A guard that dropped `own` would offer Review for someone else's words.
+    expect(page).toMatch(/const editable = own && !readOnly;/);
+    expect(page).toMatch(/editable && words === 'words' && \(unread \|\| entry\.wordsUnreviewed\) && \(/);
   });
 
   it('Review reads such a letter by entryId, and its one Keep step keeps it: the gate first, then keepReviewedWords, then countAfterSave', () => {

@@ -9,6 +9,7 @@ import { getAppearance } from '@/components/child/child-store';
 import { useHelpLink } from '@/components/settings/help-fallback';
 import { mailTarget } from '@/components/settings/help-links.logic';
 import { hiddenBooksRow } from '@/components/settings/hidden-books.logic';
+import { LEFT_BOOK_PATH, leftBookRows } from '@/components/settings/left-books.logic';
 import { SignedOutCard } from '@/components/settings/signed-out-card';
 import { headerCard, planRowFor, youTabView } from '@/components/settings/settings-home.logic';
 import { appLockCopy } from '@/lib/app-lock/copy';
@@ -21,7 +22,7 @@ import { capabilities } from '@/lib/capabilities';
 import { copy, fill } from '@/lib/copy';
 import { childRowTitle } from '@/components/child/child-settings.logic';
 import { remindersSummary } from '@/lib/reminders';
-import { currentUserId, getActiveChild, listChildren, listHiddenChildren, localDeletionAllowed, subscribe, type Child } from '@/lib/store';
+import { currentUserId, getActiveChild, listChildren, listHiddenChildren, listLeftBooks, localDeletionAllowed, subscribe, type Child } from '@/lib/store';
 import { backupCopy } from '@scribe/content';
 
 /**
@@ -80,7 +81,7 @@ function backupRowValue(): string | undefined {
 }
 
 export default function Settings() {
-  const read = () => ({ children: listChildren(), hidden: hiddenBooksRow(listHiddenChildren()), appearance: getAppearance(), reminders: remindersSummary() });
+  const read = () => ({ children: listChildren(), hidden: hiddenBooksRow(listHiddenChildren()), left: leftBookRows(listLeftBooks()), appearance: getAppearance(), reminders: remindersSummary() });
   const [s, setS] = useState(read);
   useEffect(() => subscribe(() => setS(read())), []);
   // Reminders and appearance change on their own screens: re-read when Settings comes back.
@@ -147,6 +148,17 @@ export default function Settings() {
         <ListRow title={copy.children.switcher.addButton} trailing="chevron" onPress={() => router.push('/settings/children/new')} />
         {/* The way back from "Hide this book" (P6d), only while a book is hidden on this phone. */}
         {s.hidden ? <ListRow title={s.hidden.title} trailing="chevron" onPress={() => router.push(s.hidden!.href)} testID="settings.hiddenBooks" /> : null}
+        {/* A book this phone has left (BL-444, D-113): its own letters stay readable here. One row per book, only while there is one. */}
+        {s.left.map((b) => (
+          <ListRow
+            key={b.id}
+            title={b.title}
+            trailing="chevron"
+            accessibilityHint={b.hint}
+            onPress={() => router.push({ pathname: LEFT_BOOK_PATH, params: { id: b.id } } as unknown as Href)}
+            testID="settings.leftBook"
+          />
+        ))}
       </ListSection>
 
       <ListSection title={h.sections.writing}>
