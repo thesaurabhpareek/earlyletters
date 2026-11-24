@@ -1,11 +1,11 @@
 # SE 3 simulated sitting: record and run sheet (BL-1700, BL-1705, BL-1786)
 
-Owner: qa. Decision: D-172 (23 Nov 2026), exec ruling 12: run the sitting as a simulation, label every result "simulated", make no on-device claim. Related: `docs/qa/DEVICE_TEST_PLAN.md` (the real-device plan, which this does not replace), `docs/qa/run-sheets/NS-34-SE3-SPEED.md` (the real SE 3 speed sheet, still a device job), `docs/design/review-2026-11-22/` (persona findings BL-1786 re-rates).
+Owner: qa (handle `qa`; the Mac session that fills the cells is the `qa` agent's, and who has the Mac is named under BL-1977, not here). Decision: D-172 (23 Nov 2026), exec ruling 12: run the sitting as a simulation, label every result "simulated", make no on-device claim. Related: `docs/qa/DEVICE_TEST_PLAN.md` (the real-device plan, which this does not replace), `docs/qa/run-sheets/NS-34-SE3-SPEED.md` (the real SE 3 speed sheet, still a device job), `docs/design/review-2026-11-22/` (persona findings BL-1786 re-rates).
 
 ## Read this first
 
 - Every reading in this file is **simulated** or **read from source**. None is an on-device result. A simulator is not an iPhone SE 3: timing, memory, thermal state and speech-model speed read from it are not evidence for the SE 3 gate (D-172).
-- No store listing, screenshot, release note or doc may say the app was "tested on" an iPhone SE 3 or "passed on device". A "pass" below means the layout and flow check held in the simulator at the SE 3 screen size and the stated text size, nothing more.
+- No store listing, screenshot, release note or doc may say the app was "tested on" an iPhone SE 3 or "passed on device". A result of `simulated: held` below means only that the layout and flow check held in the simulator at the SE 3 screen size and the stated text size, nothing more. It is never a release-note word.
 - **State of this file: the sitting has NOT been run.** The runner that wrote this file is Linux and has no Xcode or iOS Simulator (`xcrun` is absent). So the only filled-in numbers are in section 2, and they are read from source code, not from a run. Every result cell in sections 3 to 6 reads `not run` until a Mac agent session fills it in and changes this paragraph.
 - The 27 Nov gate question (BL-1700 Done when) is therefore **not yet answered with this file**. See section 7.
 
@@ -133,15 +133,15 @@ Today's draft (`docs/store/app-store-connect-1.0.md` section 5): Dark Interface 
 
 | Label | Can the simulator back it | Position |
 |---|---|---|
-| Dark Interface | yes, the layout in Dark appearance | may be declared if section 3 rows hold in Dark, labelled simulated in the evidence |
-| Reduced Motion | yes, the setting exists in the simulator | candidate, only if the Reduce Motion rows hold |
-| Sufficient Contrast | yes, Accessibility Inspector audit | candidate, only if S1-10 holds in light and dark |
-| Differentiate Without Color | partly (setting yes, whole-app audit is a read) | candidate, only after an audit read of every common task |
+| Dark Interface | yes, the layout in Dark appearance (if section 3 rows hold in Dark) | not declared until the device walk passes (CDesO-22); a simulated reading is evidence for the exec review only |
+| Reduced Motion | yes, the setting exists in the simulator (if the Reduce Motion rows hold) | not declared until the device walk passes (CDesO-22); a simulated reading is evidence for the exec review only |
+| Sufficient Contrast | yes, Accessibility Inspector audit (if S1-10 holds in light and dark) | not declared until the device walk passes (CDesO-22); a simulated reading is evidence for the exec review only |
+| Differentiate Without Color | partly (setting yes, whole-app audit is a read; only after an audit read of every common task) | not declared until the device walk passes (CDesO-22); a simulated reading is evidence for the exec review only |
 | VoiceOver | no | not declared: the simulator does not run it |
 | Voice Control | no | not declared |
 | **Larger Text** | not declared from a simulation | **Not declared (exec ruling 7).** An AX5 layout run in a simulator does not back it; it waits for a device sighting |
 
-The task brief that created this file cites exec rulings 7 and 12; I did not find a repo copy of either in `docs/agents/exec/RULINGS.md` or `docs/DECISIONS.md` (D-172 is the closest text). The Larger Text line follows the brief. A ruling at `docs/agents/exec/RULINGS.md` line 1228 says no label is declared until the device walk passes (BL-948); this file does not override it. Whether a simulated reading may carry any label at all is the exec-team review's call, and it is named here as open.
+The task brief that created this file cites exec rulings 7 and 12; I did not find a repo copy of either in `docs/agents/exec/RULINGS.md` or `docs/DECISIONS.md` (D-172 is the closest text). The Larger Text line follows the brief. Ruling CDesO-22 in `docs/agents/exec/RULINGS.md` says no label is declared until the device walk passes (BL-948); this file does not override it, and no row above reads softer. A simulated reading is evidence for the exec review only.
 
 ## 7. Questions the file must answer when it is run
 
