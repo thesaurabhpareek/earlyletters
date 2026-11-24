@@ -52,7 +52,7 @@ beforeEach(() => {
   setServerFeaturesForTests(false);
 });
 
-describe('[NS-41-O8] Apple email only, no name kept', () => {
+describe('[NS-54-R2] Apple email only, no name kept', () => {
   it('asks Apple for the email scope and nothing else', async () => {
     signInAsync.mockResolvedValue({ identityToken: 'tok', user: 'apple-user-asha', fullName: { givenName: 'Asha' }, authorizationCode: null });
     await signInWithApple(sb);
