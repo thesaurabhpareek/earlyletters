@@ -44,6 +44,7 @@ import { UIProvider } from '@/components/ui/provider';
 import { BackButton, ModalHeader } from '@/components/ui/screen-header';
 import { letterStartY, topBarHeight } from '@/lib/letter-top-bar.logic';
 import { SIZE_WORD_MAX_SCALE, showsSizeWord } from '@/lib/reader-words.logic';
+import { sizeControlMinHeight, sizeWordStacks } from '@/lib/size-control.logic';
 import { Sheet } from '@/components/ui/sheet';
 import { StateScreen } from '@/components/ui/state-screen';
 import { Text } from '@/components/ui/text';
@@ -383,13 +384,14 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
       {...LARGE_CONTENT(copy.reader.readingSizeA11y)}
       hitSlop={6}
       testID="letter.readingSize"
-      className="mr-1 h-11 min-w-11 items-center justify-center rounded-full px-2 active:bg-secondary">
-      <View className="flex-row items-center gap-1.5">
+      style={{ minHeight: sizeControlMinHeight(fontScale) }}
+      className="mr-1 min-w-11 items-center justify-center rounded-full px-2 active:bg-secondary">
+      <View className={sizeWordStacks(fontScale) ? 'items-center' : 'flex-row flex-wrap items-center justify-center gap-1.5'}>
         <Text variant="title2" tone="accent" maxFontSizeMultiplier={1.3}>
           {copy.reader.readingSizeButton}
         </Text>
         {showsSizeWord(fontScale) ? (
-          <Text variant="labelSmall" tone="accent" maxFontSizeMultiplier={SIZE_WORD_MAX_SCALE} testID="letter.readingSize.word">
+          <Text variant="labelSmall" tone="accent" maxFontSizeMultiplier={SIZE_WORD_MAX_SCALE} className="text-center" testID="letter.readingSize.word">
             {copy.reader.readingSizeWord}
           </Text>
         ) : null}

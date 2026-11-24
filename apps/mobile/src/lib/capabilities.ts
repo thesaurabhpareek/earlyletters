@@ -152,7 +152,7 @@ const STATUS_REPORT_BUILD_VALUE: boolean = parseServerFeatures(process.env.EXPO_
 /** Delete account (founder, 30 Oct 2026). Same rule: only `on` is on, so a build with the variable unset hides the row. */
 const ACCOUNT_DELETION_BUILD_VALUE: boolean = parseServerFeatures(process.env.EXPO_PUBLIC_ACCOUNT_DELETION);
 /**
- * Erase now on a signed-in phone (BL-1854), held from every store profile until BL-1805's wording is cleared (BL-1960; CLO-22,
+ * Erase now on a signed-in phone (BL-1854), held from every store profile until BL-1805's wording is cleared (BL-1987; CLO-22,
  * CR-177). Same rule: only `on` is on. It is listed in scripts/release/store-flags.mjs with `allowedOn` empty, so a store
  * profile in eas.json that writes it on fails `npm test` and the TestFlight preflight. Development and e2e builds may write it on.
  */
@@ -216,7 +216,7 @@ export const capabilities = {
   /**
    * Erase now reaches the server (BL-1854, WP-F16-13, F16-REQ-024): `store.eraseEntry` queues one id-only `entry.erase`
    * and the server purges its copy. It needs the server switch and its own build flag `EXPO_PUBLIC_SERVER_ERASE=on`, which
-   * no store profile may carry until the founder clears BL-1805 (BL-1960). Off: a signed-in phone shows no Erase now.
+   * no store profile may carry until the founder clears BL-1805 (BL-1987). Off: a signed-in phone shows no Erase now.
    */
   get serverErase(): boolean {
     return buildFlagEnabled('serverErase');

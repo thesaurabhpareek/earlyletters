@@ -102,6 +102,17 @@ export function findUnboundedLoops(source: string): string[] {
   return out;
 }
 
+/**
+ * [BL-1753 part c] The CSS form of the same loop: Reanimated's `animationIterationCount: 'infinite'` is not a
+ * `withRepeat`, so `findUnboundedLoops` cannot see it. It must be a finite count (`loopReps`, lib/loop.logic.ts).
+ */
+export function findInfiniteCssAnimations(source: string): string[] {
+  const code = stripComments(source);
+  return [...code.matchAll(/animationIterationCount\s*:\s*['"]infinite['"]/g)].map(
+    (m) => `line ${code.slice(0, m.index).split('\n').length}: animationIterationCount: 'infinite'`,
+  );
+}
+
 function walk(dir: string, acc: string[] = []): string[] {
   for (const name of readdirSync(dir)) {
     const p = join(dir, name);
@@ -150,6 +161,22 @@ describe('[BL-1753 c] no loop runs without end', () => {
     }
     expect(loops).toBeGreaterThanOrEqual(2);
     expect(bad).toEqual([]);
+  });
+});
+
+describe('[BL-1753 part c] the CSS loop (the lamp) is finite too', () => {
+  it('fails on a planted offender and passes a counted loop', () => {
+    expect(findInfiniteCssAnimations(`const a = { animationIterationCount: 'infinite' };`)).toHaveLength(1);
+    expect(findInfiniteCssAnimations(`const a = { animationIterationCount: "infinite" };`)).toHaveLength(1);
+    expect(findInfiniteCssAnimations(`const a = { animationIterationCount: loopReps(9000) };`)).toEqual([]);
+    expect(findInfiniteCssAnimations(`// animationIterationCount: 'infinite'`)).toEqual([]);
+  });
+  it('finds none under apps/mobile/src, and the lamp counts its breaths from loopReps', () => {
+    const bad = walk(SRC).flatMap((p) => findInfiniteCssAnimations(readFileSync(p, 'utf8')).map((o) => `${relative(SRC, p)} ${o}`));
+    expect(bad).toEqual([]);
+    expect(stripComments(readFileSync(join(SRC, 'components/ui/lamp.tsx'), 'utf8'))).toMatch(
+      /animationIterationCount:\s*loopReps\(tokens\.motion\.lamp\.breathMs\)/,
+    );
   });
 });
 

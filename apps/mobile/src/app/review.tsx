@@ -134,7 +134,7 @@ import { ReviewPhoto } from '@/components/photos/review-photo';
 import { commitPendingPhoto } from '@/lib/photos/hooks';
 import { languageCleanOptions, rulesForLanguage } from '@/lib/language';
 import { clearReadItBack } from '@/lib/read-it-back';
-import { askAfterSave, keepBookTrigger, requestReminderPrime, type NextAsk } from '@/lib/asks';
+import { askAfterSave, fireDelayedAsk, keepBookTrigger, requestReminderPrime, surfaceBusy, type NextAsk } from '@/lib/asks';
 import { useAuth } from '@/lib/auth/session-provider';
 import { afterLetterKept, type KeepGate } from '@/lib/billing';
 import { countAfterSave, keepSheetFor } from '@/lib/billing/keep-step';
@@ -549,13 +549,22 @@ export default function Review() {
     setActiveChildId(child.id);
     router.dismissTo({ pathname: '/book', params: arrivalParams({ entryId: draft.id, secondFree }) });
     if (askAfterLanding.current === 'keep_book') {
-      setTimeout(() => router.push({ pathname: '/sign-in', params: { trigger: keepBookTrigger() } }), signInAfterLandingMs(motion.reduced));
+      // keepBookTrigger() is read inside the show callback, which fireDelayedAsk runs only after it has marked the sheet
+      // shown: that mark is what tells the one re-offer (third_letter) from the first offer (BL-1562, BL-1985).
+      setTimeout(
+        () => fireDelayedAsk('keep_book', () => router.push({ pathname: '/sign-in', params: { trigger: keepBookTrigger() } })),
+        signInAfterLandingMs(motion.reduced),
+      );
     } else if (askAfterLanding.current === 'reminder_prime') {
-      setTimeout(requestReminderPrime, signInAfterLandingMs(motion.reduced));
+      setTimeout(() => fireDelayedAsk('reminder_prime', requestReminderPrime), signInAfterLandingMs(motion.reduced));
     }
   };
   const finishSave = (inBook: boolean, firstLetter: boolean) => {
-    askAfterLanding.current = askAfterSave({ firstLetter, signInOffered: auth.configured && auth.state.status === 'signedOut' });
+    askAfterLanding.current = askAfterSave({
+      firstLetter,
+      signInOffered: auth.configured && auth.state.status === 'signedOut',
+      surfaceBusy: surfaceBusy(), // a take or an export in progress: no ask (BL-1985)
+    });
     haptic('success');
     setSavedTo(inBook ? 'book' : 'private');
     setPhase('saved');

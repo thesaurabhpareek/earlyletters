@@ -21,8 +21,8 @@
  * - Every property is L2 and every event cites the requirement it serves.
  */
 import { CAPTURE_MODES, MEMBER_ROLES, OFFER_TRIGGERS } from '@scribe/core';
-import { bool, int, oneOf, opt, type EventSpec, type PropSpec } from './schema';
-import { MOMENTS_SLOT } from './registry';
+import { bool, int, oneOf, opt, type EventSpec, type Level, type PropSpec } from './schema';
+import { MOMENTS_SLOT, REGISTRY } from './registry';
 
 // ---------------------------------------------------------------------------
 // Shared value sets
@@ -213,7 +213,7 @@ export const GLOBAL_PROPS = {
  * 8: `coparent_soon_opened` and `coparent_soon_notify` removed: there is no co-parent coming-soon screen any more (founder, 11 Nov 2026).
  * 9: `reminder_prime_shown.source` gains `first_month` (the second reminder card, after the first month chapter, BL-518, BL-1429).
  * 10: `auth_sheet_shown.trigger` and `auth_deferred.trigger` gain `third_letter` (the Keep the book re-offer after the third letter, BL-519, BL-1464).
- * 11: two Moments card events, `moments_card_impressed` and `moments_card_tapped`, one closed property `slot` (`look_back` | `question`), NS-53 section 18 and R251. Nothing is wired: the app sends neither until the Moments flag and a later PR.
+ * 11: two Moments card events, `moments_card_impressed` and `moments_card_tapped`, one closed property `slot` (`look_back` | `question`), NS-53 section 18 and R251. Both are registry events (one definition, in registry.ts; the catalogue rows read it). The tracker `trackMomentsCard` exists; the app does not call it until the Moments flag.
  */
 export const SCHEMA_VERSION = 11;
 
@@ -236,6 +236,11 @@ export const SCHEMA_FINGERPRINTS: Readonly<Record<number, string>> = Object.free
 // ---------------------------------------------------------------------------
 // Events
 // ---------------------------------------------------------------------------
+
+/** The catalogue view of a registry row: the documentation and shape fields only, never a second copy. */
+function catalogRow<R extends { area: string; when: string; reqs: readonly string[]; level: Level; props: Record<string, PropSpec> }>(r: R): Pick<R, 'area' | 'when' | 'reqs' | 'level' | 'props'> {
+  return { area: r.area, when: r.when, reqs: r.reqs, level: r.level, props: r.props };
+}
 
 export const EVENTS = {
   // --- App and navigation -------------------------------------------------
@@ -900,24 +905,10 @@ export const EVENTS = {
   },
 
   // --- Moments (NS-53 section 18, R251) -------------------------------------------
-  // Slot is position (a card in the question or look-back place), never source: no card dated by a
-  // child, a typed day, a tick or the library has an event, because its presence would disclose the
-  // date. `look_back` is limited to letters. No ids, dates, counts, places, pictures or permission
-  // results. At most one impression per slot per local day is a wiring rule for the app PR.
-  moments_card_impressed: {
-    area: 'moments',
-    when: 'A card in the question or look-back slot is drawn on the Moments tab (at most once per slot per local day). Cards dated by the child, a typed day, a tick or the library never send',
-    reqs: ['PRD-REQ-016'],
-    level: 'L2',
-    props: { slot: MOMENTS_SLOT },
-  },
-  moments_card_tapped: {
-    area: 'moments',
-    when: 'A card in the question or look-back slot is tapped. Says nothing about where the letter that follows began',
-    reqs: ['PRD-REQ-016'],
-    level: 'L2',
-    props: { slot: MOMENTS_SLOT },
-  },
+  // One definition per fact (CODE-R13): these two rows are the registry rows, so slot, area, when,
+  // level and reqs cannot drift. Edit them in registry.ts only.
+  moments_card_impressed: catalogRow(REGISTRY.moments_card_impressed),
+  moments_card_tapped: catalogRow(REGISTRY.moments_card_tapped),
 
   // --- Errors ---------------------------------------------------------------------
   error_shown: {

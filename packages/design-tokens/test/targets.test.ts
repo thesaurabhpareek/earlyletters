@@ -55,10 +55,19 @@ describe('sheetTitle (CDESO-7)', () => {
     expect(Object.keys(tokens.type.sheetTitle)).not.toContain('numberOfLines');
     expect(tokens.type.sheetTitle.maxScale).toBeGreaterThanOrEqual(tokens.type.title2.maxScale as number);
   });
-  it('at AX5 the title is scaled to its cap (2.0), not clipped, and stays above the body line it sits over', () => {
+  it('at AX5 the title is scaled to its cap (2.0) and not clipped; at AX1 it stays above the body line it sits over, both scaled', () => {
     const t = tokens.type.sheetTitle;
-    const scaled = t.fontSize * Math.min(FONT_SCALE.ax5, t.maxScale as number);
-    expect(scaled).toBe(44);
-    expect(t.fontSize * Math.min(FONT_SCALE.ax1, t.maxScale as number)).toBeGreaterThan(tokens.type.body.fontSize);
+    const body = tokens.type.body;
+    const at = (s: { fontSize: number; maxScale: number | null }, scale: number) => s.fontSize * Math.min(scale, s.maxScale ?? scale);
+    expect(at(t, FONT_SCALE.ax5)).toBe(44);
+    expect(at(t, FONT_SCALE.ax1)).toBeGreaterThan(at(body, FONT_SCALE.ax1));
+  });
+  it('where the capped title meets the uncapped body: body overtakes it above 2.44x (a finding, not a pass)', () => {
+    const t = tokens.type.sheetTitle;
+    const body = tokens.type.body;
+    expect(body.maxScale).toBeNull();
+    const crossover = (t.fontSize * (t.maxScale as number)) / body.fontSize;
+    expect(crossover).toBeCloseTo(2.44, 2);
+    expect(crossover).toBeLessThan(FONT_SCALE.ax3);
   });
 });
