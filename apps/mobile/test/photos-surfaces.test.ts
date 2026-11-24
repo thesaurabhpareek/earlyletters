@@ -458,11 +458,11 @@ describe('[NS-01-R20a][NS-01-R20b] new controls', () => {
     expect(page.match(/<ErrorLine message=\{failed \|\| pick\.failed \? photos\.capture\.openFailed : null\} \/>/g)).toHaveLength(2);
     expect(page).not.toMatch(/>\{photos\.capture\.openFailed\}</);
   });
-  it('[review B on #838] no photo screen imports lib/auth/ui (it loads expo-apple-authentication); Listen\'s Type has its own key; nothing registers in a render body', () => {
+  it('[review B on #838] no photo screen imports lib/auth/ui (it loads expo-apple-authentication); the picture Type on Listen has its own key (the listen.type offer may reuse the mic-denied line, BL-1999); nothing registers in a render body', () => {
     for (const f of ['photo-start.tsx', 'pending-photo-thumb.tsx']) {
       expect(readFileSync(join(SRC, 'components', 'photos', f), 'utf8'), f).not.toMatch(/lib\/auth\/ui/);
     }
-    expect(readFileSync(join(SRC, 'app', 'listen.tsx'), 'utf8')).not.toMatch(/listen\.photo\.type[\s\S]{0,0}micDenied|micDenied\.typeButton\} onPress=\{typeInstead\}/);
+    expect(readFileSync(join(SRC, 'app', 'listen.tsx'), 'utf8')).not.toMatch(/micDenied\.typeButton[^\n]*listen\.photo\.type|listen\.photo\.type[^\n]*micDenied\.typeButton/);
     for (const f of ['use-photo-start.ts', 'use-photo-pick.ts']) {
       const src = readFileSync(join(SRC, 'lib', 'photos', f), 'utf8');
       expect(src, f).not.toMatch(/registerPhotoDevice\(\)/);

@@ -81,8 +81,9 @@ describe('"You can start now" is said only where it is true', () => {
     expect(machine).toMatch(/isReady\(s, lang\) \? 'queued' : 'waiting_for_pack'/);
     const review = src('app/review.tsx');
     expect(review).toMatch(/keep: \(\) => void keepRecordingOnly\(\)/);
-    // Listen does not wait for the speech download.
-    expect(src('app/listen.tsx')).not.toMatch(/installedPathsFor|speechDownload/);
+    // Listen never starts or waits for the speech download. It only reads state (BL-1999: installedPathsFor, the
+    // stored choice and useSpeechDownload, to offer typing); Karma's ruling narrowed this pin from any mention.
+    expect(src('app/listen.tsx')).not.toMatch(/startSpeechDownload|requestWords|retryWords|setSpeechDownloadChoice|(await|\.then\()[^;\n]*(speechDownload|SpeechDownload)/);
   });
 
   it('the card draws it from showsStartNow, one still line, no rotation', () => {
