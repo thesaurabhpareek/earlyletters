@@ -4542,13 +4542,13 @@ Every row is `proposed`: the dispatcher skips it until Karma or the founder sets
 #### BL-1059 Analytics deny-list test and literal-argument lint (IN-DS-05)
 - Status: proposed (docs/analytics/instrumentation/data-steward.md; scoped by product; Karma or the founder sets it to ready). Mode: agent. Owner: analytics engineer. Milestone: M15. Size: S. Depends on: BL-1255.
 - Satisfies: none claimed: build work for the instrumentation design, not a P0 row. Cited: D-163; CLAUDE.md privacy rules (no entry text, transcript, audio or child name in analytics).
-- Scope: (1) a deny-list test in `packages/analytics/test/deny-list.test.ts` that walks every event, property and id in `packages/analytics/src/catalog.ts` and `ids.ts` and fails on a name or value shape for entry text, transcript, audio or child name; (2) a literal-argument lint, `scripts/lint/analytics-literal-args.mjs` with its `.test.mjs`, that fails when an analytics call in `apps/mobile/src` passes a template string, a concatenation or a variable as an event or property name instead of a registry constant. Not in this row: the generated lists (BL-1254 is done, BL-1256 and BL-1258 hold the typed helpers and click wiring), the one-module import lint (BL-1243), and the egress spy (BL-2034).
+- Scope: (1) a deny-list test in `packages/analytics/test/deny-list.test.ts` that walks every event, property and id in `packages/analytics/src/catalog.ts` and `ids.ts` and fails on a name or value shape for entry text, transcript, audio or child name; (2) a literal-argument lint, `scripts/lint/analytics-literal-args.mjs` with its `.test.mjs`, that fails when an analytics call in `apps/mobile/src` passes a template string, a concatenation or a variable as an event or property name instead of a registry constant. Not in this row: the generated lists (BL-1254 is done, BL-1256 and BL-1258 hold the typed helpers and click wiring), the one-module import lint (BL-1243), and the egress spy (BL-2150).
 - Done when: the deny-list test is red on a planted catalog row named for a transcript and green on develop; the lint test is red on a planted fixture that passes a built string and green on the app source; both run in `npm test`.
 - Test: `packages/analytics/test/deny-list.test.ts` (unit, planted-violation mutant) and `scripts/lint/analytics-literal-args.test.mjs` (unit, fixture).
 
 - Source: `docs/analytics/instrumentation/data-steward.md`, row IN-DS-05; chain: instrumentation, IN (phase 1) (readiness map PR #1079, section 2.11).
 
-#### BL-2034 Analytics egress spy: nothing leaves before consent, and no payload carries a denied value (IN-DS-05, split from BL-1059)
+#### BL-2150 Analytics egress spy: nothing leaves before consent, and no payload carries a denied value (IN-DS-05, split from BL-1059)
 - Status: proposed (split from BL-1059 by product; Karma or the founder sets it to ready). Mode: agent. Owner: analytics engineer. Milestone: M15. Size: S. Depends on: BL-1240, BL-1255.
 - Satisfies: none claimed: build work for the instrumentation design, not a P0 row. Cited: D-163.
 - Scope: a test in `packages/analytics/test/egress-spy.test.ts` that replaces the transport used by the one PostHog adapter module (BL-1240) with a recording spy, drives each catalog event through the client, and asserts (1) zero calls before the consent gate allows, (2) zero calls after the off switch, and (3) every recorded payload passes the deny-list shapes of BL-1059. No new SDK call and no network.
@@ -5078,13 +5078,13 @@ Every row is `proposed`: the dispatcher skips it until Karma or the founder sets
 #### BL-1133 Withdrawal route: ops.forget_quota_anon migration (6a) (IN-DA-10)
 - Status: proposed (docs/analytics/instrumentation/data-architect.md (PR #1052); scoped by product, narrowed to part (a); waits on the rulings of the founder-rules row; Karma or the founder sets it to ready). Mode: pair. Owner: data architect. Milestone: M15. Size: S. Depends on: BL-1128.
 - Satisfies: none claimed: build work for the instrumentation design, not a P0 row. Cited: D-163; the withdrawal erratum and F-1, F-3 once ruled (BL-1128).
-- Scope: one new migration for `ops.forget_quota_anon` with its own grants, an opening comment (purpose, rollback, ordering) and its grant line in `supabase/tests/grants.mjs`; no edit to an applied migration. The withdrawal reason in the analytics-forget function is BL-2035 and the legal text is BL-2036. Applying it to a hosted project is a founder step (approve-migration and apply).
+- Scope: one new migration for `ops.forget_quota_anon` with its own grants, an opening comment (purpose, rollback, ordering) and its grant line in `supabase/tests/grants.mjs`; no edit to an applied migration. The withdrawal reason in the analytics-forget function is BL-2151 and the legal text is BL-2152. Applying it to a hosted project is a founder step (approve-migration and apply).
 - Done when: `npm run test:db` passes with a test for the function's grants and its quota behaviour; the migration is not listed in `.github/migrations-applied.txt` by this PR.
 - Test: `supabase/tests` (new access-rule test, embedded Postgres).
 
 - Source: `docs/analytics/instrumentation/data-architect.md (PR #1052)`, row IN-DA-10; chain: instrumentation, IN (phase 1) (readiness map PR #1079, section 2.11).
 
-#### BL-2035 analytics-forget: a withdrawal reason (IN-DA-10, split from BL-1133)
+#### BL-2151 analytics-forget: a withdrawal reason (IN-DA-10, split from BL-1133)
 - Status: proposed (split by product; waits on the migration row; Karma or the founder sets it to ready). Mode: agent. Owner: data architect. Milestone: M15. Size: S. Depends on: BL-1133.
 - Satisfies: none claimed: build work for the instrumentation design, not a P0 row. Cited: D-163.
 - Scope: `supabase/functions/analytics-forget` accepts a closed `reason` enum (consent withdrawn, erase) and records only the enum, never free text; Deno test for the new input and for rejecting any other value. No migration.
@@ -5092,7 +5092,7 @@ Every row is `proposed`: the dispatcher skips it until Karma or the founder sets
 - Test: `supabase/functions/analytics-forget` Deno test.
 - Source: split from BL-1133, row IN-DA-10, `docs/analytics/instrumentation/data-architect.md`.
 
-#### BL-2036 Withdrawal text for the privacy notice and label (IN-DA-10, split from BL-1133)
+#### BL-2152 Withdrawal text for the privacy notice and label (IN-DA-10, split from BL-1133)
 - Status: needs-decision (customer-facing and legal words: content writes, the exec team counsel reads before it publishes). Mode: agent. Owner: content. Milestone: M15. Size: S. Depends on: BL-1128.
 - Satisfies: none claimed: build work for the instrumentation design, not a P0 row. Cited: D-163, D-172.
 - Scope: the words that say what happens to usage numbers when a parent turns sharing off or erases, written in the key files of `packages/content`, after the withdrawal erratum is ruled. No words are written by product; this row is the content owner's. It rides its own PR.
