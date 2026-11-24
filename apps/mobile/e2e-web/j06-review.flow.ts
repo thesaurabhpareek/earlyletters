@@ -72,6 +72,10 @@ test('[J06c] close Review without saving: the recording is kept as a draft', asy
 });
 
 test('[J06e] Keep needs Plus past the free letters: the letter is held, never lost', async ({ app, record }) => {
+  // Known failure on develop: BL-2009. The sheet "Keep adding to Asha's book" never opens: the flow reaches the free-letter
+  // limit through the seed hook (?seed=asha), and the reading is that the hook does not run on the store build. The cause
+  // is not confirmed. Remove this line when BL-2009 is fixed: a pass turns the job red.
+  test.fail(true, 'Known failure BL-2009: remove this line in the PR that fixes it');
   const step = journey(record, 'J06', 'review-and-edits', 14, 'J06-02');
   // Free phone with five letters already: past the first two.
   await openReview(app, 'asha');
