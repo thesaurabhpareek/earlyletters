@@ -38,6 +38,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { billingCopy } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
 import { BookCover } from '@/components/book/book-cover';
+import { joinLastTwoWords } from '@/components/onboarding/finale-title.logic';
 import { BlurSurface } from '@/components/platform/blur-surface';
 import { CardSource, useHiddenBehindCardPage } from '@/components/motion/card-transition';
 import { Button, IconButton } from '@/components/ui/button';
@@ -491,7 +492,7 @@ export default function Book() {
               <View className="items-center">
                 <BookCover name={child} signsAs={active.signsAs} size="lg" animate={false} />
               </View>
-              <EmptyState align="start" title={copy.book.empty.bookTitle} body={fill(copy.book.empty.bookBody, { child })} />
+              <EmptyState align="start" title={joinLastTwoWords(copy.book.empty.bookTitle)} body={fill(copy.book.empty.bookBody, { child })} />
             </PinnedActionLayout>
           </View>
         ) : (

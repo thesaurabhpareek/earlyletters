@@ -69,6 +69,7 @@ import { useAuth } from '@/lib/auth/session-provider';
 import { useAnotherBusy } from '@/lib/first-run/account-books.logic';
 import { SignedInNote } from '@/components/onboarding/signed-in-note';
 import { capabilities, serverFeaturesEnabled } from '@/lib/capabilities';
+import { clearFirstRunDraft as clearDraft } from '@/lib/first-run/draft'; // BL-2002: the one delete, shared with sign-out
 import { FIRST_RUN_DRAFT_SETTING, draftIsEmpty, parseDraft, resumeStep, serializeDraft } from '@/lib/first-run/draft.logic';
 import { backShown, childNameFieldWords, dateBlockShown, finishMayMakeBook, firstRunStartStep, hasSessionState, reportsPastWelcome, resumeBooks, runFinishOnce, sameBookInput, welcomeHandoffStep } from '@/lib/first-run/handoff.logic';
 import { RECENTLY_DELETED_HREF, recentlyDeletedRowShown } from '@/lib/first-run/recently-deleted-row.logic';
@@ -88,7 +89,7 @@ import { haptic } from '@/lib/haptics';
 import { useMotion } from '@/lib/motion';
 import { ensureTextRules } from '@/lib/language/packs';
 import { useSpokenLanguage } from '@/lib/language/spoken-language';
-import { addChild as addChildToStore, deleteSetting, getActiveChildId, getSetting, listChildren, listDeletedBooks, setActiveChildId, setSetting, subscribe, subscribeTo, todayISO } from '@/lib/store';
+import { addChild as addChildToStore, getActiveChildId, getSetting, listChildren, listDeletedBooks, setActiveChildId, setSetting, subscribe, subscribeTo, todayISO } from '@/lib/store';
 import { firstRunWelcome, welcomeMayLeave } from '@/components/family/welcome-handoff.logic';
 import { CheckingScreen, OpenDeletionScreen } from '@/components/settings/open-deletion';
 import { useFirstRunGate } from '@/lib/account-deletion';
@@ -112,14 +113,6 @@ function readDraft() {
     return parseDraft(getSetting(FIRST_RUN_DRAFT_SETTING));
   } catch {
     return null;
-  }
-}
-
-function clearDraft(): void {
-  try {
-    if (getSetting(FIRST_RUN_DRAFT_SETTING) !== null) deleteSetting(FIRST_RUN_DRAFT_SETTING);
-  } catch {
-    // Nothing to clear.
   }
 }
 

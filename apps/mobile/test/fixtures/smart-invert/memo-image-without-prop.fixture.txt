@@ -1,0 +1,14 @@
+// Positive control for [NS-33-R11] (BL-1915): React.memo(Image) and memo(Image). Not used in src today but a plausible
+// form for a later picture component. Neither sets the prop.
+import React, { memo } from 'react';
+import { Image } from 'react-native';
+const Still = React.memo(Image);
+const Quiet = memo(Image);
+export function Bad({ uri }: { uri: string }) {
+  return (
+    <>
+      <Still source={{ uri }} />
+      <Quiet source={{ uri }} />
+    </>
+  );
+}

@@ -111,3 +111,6 @@ apps/web/next-env.d.ts
 apps/web/*.tsbuildinfo
 apps/web/e2e/.results/
 __pycache__/
+
+# content map check scratch dirs (scripts/content/export-content-map.test.mjs); left behind only if a run is killed
+.map-check-*/

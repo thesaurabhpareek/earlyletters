@@ -355,7 +355,7 @@ describe('[BL-924] Discard on Listen runs Let it go, as Review does', () => {
     const c = code(listen);
     const onConfirm = c.slice(c.indexOf('const discard = () =>'), c.indexOf('const typeInstead ='));
     // Behaviour of these exact steps (a delete that throws, a file already gone): test/sweep.disk.test.ts [BL-924].
-    expect(onConfirm).toContain('if (id) letItGo(id, uri, { beginDiscard, deleteFile: (u) => deleteIfPresent(new File(u)), finishDiscard });');
+    expect(onConfirm).toContain('if (id) letItGo(id, uri, { beginDiscard, deleteFile: (u) => deleteIfPresent(new File(u)), finishDiscard, onFailure: noteDiscardFailure });');
     expect(c.match(/\bletItGo\(/g)).toHaveLength(1);
     expect(c.match(/deleteIfPresent\(/g)).toHaveLength(1);
     expect(c).not.toMatch(/\.delete\(\)|deleteDraft/);

@@ -1,0 +1,9 @@
+// Positive control for [NS-33-R11] (BL-1915): a class component Avatar, `export default class Avatar extends ...`, that
+// renders an Image and drops the prop. Fictional family only.
+import React from 'react';
+import { Image } from 'react-native';
+export default class Avatar extends React.Component<{ uri: string }> {
+  render() {
+    return <Image source={{ uri: this.props.uri }} accessibilityLabel="Asha" />;
+  }
+}

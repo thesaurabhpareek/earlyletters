@@ -101,6 +101,8 @@ export interface Analytics {
   analyticsIds(): string[];
   /** After deletion is requested upstream: forget all ids locally. */
   forgetIds(): Promise<void>;
+  /** Forget only these ids locally (the ones the server acknowledged); the rest stay for a retry. */
+  forgetSomeIds(ids: string[]): Promise<void>;
   /**
    * Allowlist violations seen this session, by kind (PDATA-03). Counts only,
    * never values, so a dev screen or health check can show them safely.
@@ -202,7 +204,8 @@ export function createAnalytics(options: AnalyticsOptions): Analytics {
   }
 
   function track<E extends EventName>(name: E, props: EventProps<E>): TrackResult {
-    const decision = gate.decide(name, tierOf(name));
+    // Only the exact string 'basics' is basics: an undefined, misspelt or missing tier is consented (ER-B02).
+    const decision = gate.decide(name, tierOf(name) === 'basics' ? 'basics' : 'consented');
     if (!decision.allow) {
       drops[decision.reason] = (drops[decision.reason] ?? 0) + 1;
       return decision.reason as Exclude<TrackResult, 'queued' | 'dropped_invalid' | 'dropped_sampled'>;
@@ -283,6 +286,7 @@ export function createAnalytics(options: AnalyticsOptions): Analytics {
     queueLength: () => queue.length,
     analyticsIds: () => store.allIds(),
     forgetIds: () => store.forgetAllIds(),
+    forgetSomeIds: (ids) => store.forgetSomeIds(ids),
     violationCounts: () => ({ ...counts }),
   };
 }

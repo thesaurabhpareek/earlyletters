@@ -1,10 +1,10 @@
 # Policy Versioning and Consent Records
 
-Version 1.4.1, 24 Nov 2026 (changelog at the end). Status: draft for counsel.
+Version 1.4.2, 24 Nov 2026 (changelog at the end). Status: draft for counsel.
 
 > **AI-drafted for counsel review. Not legal advice.** Drafted 2 Oct 2026. This file defines process and data structures; the exec-team review (D-172: CLO, CCO and Chief Privacy Officer, Claude roles, not licensed lawyers) decides whether any particular change is material. Statements marked **Unverified** were not checked against an opened source.
 
-Owner: founder. Approver for every published legal text: the exec-team review (D-172: Claude roles, not licensed lawyers), then the founder. Implements register rows CR-011, CR-019, CR-050, CR-004 and engineering requirements LEGAL-REQ-001, -006, -009, -049 (see `compliance-register.md`, `ENGINEERING_REQUIREMENTS.md`).
+Owner: founder. Approver for every published legal text: the exec-team review (D-172: Claude roles, not licensed lawyers); Karma merges once the counted reviews hold (D-168). Counsel still reads legal text before it publishes. Implements register rows CR-011, CR-019, CR-050, CR-004 and engineering requirements LEGAL-REQ-001, -006, -009, -049 (see `compliance-register.md`, `ENGINEERING_REQUIREMENTS.md`).
 
 ---
 
@@ -67,7 +67,7 @@ Typos, formatting, broken links, contact details formatting, translation fixes t
 
 - **When in doubt, it is major.** The classification and its one-paragraph rationale are written in the changelog and read by the exec-team review (D-172).
 - A version number is never reused, even for an unpublished draft that leaked.
-- The `version` in the frontmatter of a draft in `docs/legal/` is an internal revision number, not a published version. The published sequence for each document lives in `packages/content/legal/<key>/` and starts at `0.9.0` for the TestFlight beta text (DEBATES Q-009) and `1.0.0` for the first text the exec-team review (D-172) has read and the founder has approved, which is published as `major` with `requires_reconsent = true` and short notice for beta testers agreed in that review.
+- The `version` in the frontmatter of a draft in `docs/legal/` is an internal revision number, not a published version. The published sequence for each document lives in `packages/content/legal/<key>/` and starts at `0.9.0` for the TestFlight beta text (DEBATES Q-009) and `1.0.0` for the first text the exec-team review (D-172) has read, which is published as `major` with `requires_reconsent = true` and short notice for beta testers agreed in that review.
 - The 0.9.0 test texts for `terms` and `privacy` are kept in `docs/legal/beta/<key>-0.9.0.md` (BL-565, D-138 item 1), because `packages/content/legal/` does not exist yet. That file is the published source: the website serves it byte for byte at `/legal/<key>/0.9.0.md`, renders it at `/legal/<key>/0.9.0`, and `policy_versions.content_sha256` is its sha256, pinned in `packages/content/test/legal-beta.test.ts`. When `packages/content/legal/` is built, the files move there unchanged (same bytes, same hash).
 - Translations (en-US, en-IN, Hindi later) share the version of the English source. A translation-only fix is a patch on that locale file; the English file is unchanged and the manifest records per-locale hashes.
 - Consent texts (`sensitive-data`, `ai-processing`, `analytics`) are versioned like any other document. Changing a consent's scope is major and needs fresh consent; the old consent does not cover the new scope.
@@ -479,6 +479,7 @@ Roles: **Owner** (founder) keeps the register and calendar; **Approver** (the ex
 
 | Version | Date | Change |
 |---|---|---|
+| 1.4.2 | 2026-11-24 | Patch, wording only. Removes the founder approval step from the owner line and the published-sequence note: D-172 says legal text follows D-168 (Karma merges once the counted reviews hold), and a merge is not a publish, so counsel still reads legal text before it publishes. "Owner: founder" and the roles line are unchanged. No change to what is versioned or to any consent rule. |
 | 1.4.1 | 2026-11-24 | Patch, wording only. The remaining "counsel" approver wording in the owner line, the published-sequence note and the roles line follows D-172 (no licensed lawyer has reviewed this file). No change to what is versioned or to any consent rule. |
 | 1.4.0 | 2026-11-08 | Minor, process only. Section 2.4 says where the 0.9.0 test texts live (`docs/legal/beta/`), how the website serves them and where their hash is pinned (BL-565). No change to what is versioned or to any consent rule. |
 | 1.3.0 | 2026-10-31 | Patch, links only. Notes that /health-privacy, /subprocessors and /delete-account are no longer served by the website (content moved into /privacy, #169) so the floating-URL list and the delete-account row do not point readers at dead pages. No change to what is versioned or how. Version 1.3.0 because 1.2.0 is used (POLICY_VERSIONING 2.4). |

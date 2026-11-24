@@ -325,7 +325,9 @@
       "paused_reason": "alpha stabilisation; launch plans wait for a stable build",
       "title": "Growth and Marketing Lead",
       "department": "growth",
-      "backlog_owner_names": [],
+      "backlog_owner_names": [
+        "marketing"
+      ],
       "daily_runs": 1,
       "wip_limit": 1
     },
