@@ -266,13 +266,17 @@ export function flowTags(src, pick = extractIds) {
 
 const SKIP_DIRS = new Set(['node_modules', '.git', '.expo', 'dist', 'build', 'coverage', 'ios', 'android', '.turbo']);
 
+// Other checkouts of this repo (agent worktrees) hold stale copies of every test and spec; reading them
+// reports findings that are not on this branch. Skip `.claude/worktrees` and any `wt-*` directory.
+const isWorktreeDir = (parent, name) => /^wt-/.test(name) || (name === 'worktrees' && path.basename(parent) === '.claude');
+
 export function walk(dir, keep, acc = []) {
   let entries;
   try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return acc; }
   for (const e of entries) {
     if (e.isSymbolicLink()) continue;
     const p = path.join(dir, e.name);
-    if (e.isDirectory()) { if (!SKIP_DIRS.has(e.name)) walk(p, keep, acc); } else if (keep(p)) acc.push(p);
+    if (e.isDirectory()) { if (!SKIP_DIRS.has(e.name) && !isWorktreeDir(dir, e.name)) walk(p, keep, acc); } else if (keep(p)) acc.push(p);
   }
   return acc.sort();
 }
