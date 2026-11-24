@@ -1561,3 +1561,15 @@ Challenge record for CR-215 to CR-224 (24 Nov, afternoon): self-challenged only 
 - Why: it makes the ratchet usable without hiding the 18 and without writing tests for features that do not exist.
 - UNVERIFIED: the NS-53 rows were not read; whether existing tests can honestly carry the id of NS-54-R10, R11 and R21 was not checked.
 - Door: two-way. Way back: delete the 18 lines from `docs/ops/trace-ns-baseline.txt` and run `node scripts/trace.mjs --no-write --check`; the 18 rows show as FAIL again.
+
+### CR-229 BL-2033 and 07 Q8: plain `trace.mjs --check` is the CI step, and it blocks merges once develop exits 0 (24 Nov 2026, Karma via the BL-2033 trace session, under CR-176 and D-168)
+- Verdict: RULED. Founder-only: no (required checks are Karma's under the skill's section 2 and CR-176; 07 Q8 in `docs/prd/v2/07-quality-bar.md` predates D-168). Signed: Karma.
+- Decision group: harness hygiene. Cites CR-176, CR-227, CR-228, D-168, BL-964, BL-1869, BL-2030, BL-2033, BL-2238, PR #1843, PR #2050.
+- Question: should the CI step run plain `node scripts/trace.mjs --no-write --check` with `--ns-base` as drafted in `docs/ops/proposed/trace-ns-ratchet.md` (a), or wait for a ratchet-only flag in `scripts/trace.mjs` (b); and does `--check` block merges (07 Q8)?
+- Tier and type: T1, clear. Door: two-way.
+- Options considered: (a) clear develop, then apply the step as drafted; (b) a ratchet-only flag or scope, a code row with its own test; (c) do nothing and keep the check advisory, which leaves gate G0 enforced by nobody; (d) apply the step now with `continue-on-error`, which reports and enforces nothing.
+- Ruling: (a), and yes, `--check` blocks merges through that step. A full-checkout run on develop `89ccadd1` exits 1 on 176 NS `added` lines and nothing else: 0 duplicate ids, 0 undefined v2 ids (PR #1843 merged on 24 Nov 2026 and defined the five), 0 `gone`, 0 `grown`, and 67 stale notices that do not fail. PR #2050 (BL-2238, CR-228) clears all 176, and on its branch the command exits 0. BL-1869 applies the step as drafted once #2050 merges, never before, because the step would fail every PR until then.
+- Why: (a) needs no code and the blockers are already in two PRs, one merged. (b) builds a second path through `main` for a problem that is gone, and a ratchet-only step would let a duplicate or undefined v2 id merge unseen. Return: gate G0 enforced by a machine, not prose (CR-227's "only shrinks" rule stops being prose the day it lands). Risk: a PR that legitimately drops a test title fails until its author edits the baseline (likelihood 3, impact 1, caught at once in CI with the id named).
+- UNVERIFIED: the step was not run in GitHub Actions; the shallow fetch of the base branch in the step was read, not run.
+- Way back: remove the step from `ci.yml`, or mark it `continue-on-error: true`, in one commit.
+- Revisit when: the step blocks a PR for a reason none of the five causes in the proposal names, or the v2 specs are retired.
