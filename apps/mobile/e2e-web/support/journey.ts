@@ -48,6 +48,16 @@ export async function seeded(page: Page, kind: 'asha' | 'asha-waiting' | 'asha-q
   if (path !== '/') await page.goto(`${base}${path}${path.includes('?') ? '&' : '?'}seed=${kind}`);
 }
 
+/**
+ * Open the store build (BL-1991): the same app with the production app env, so the free letters, the Keep step that asks for
+ * Plus and the Plan screen's store words are the ones a store customer sees. The other builds are alpha (Plus is not part of
+ * the test there). Use it for a flow that begins with firstRun. The seed switch does not work on it yet (every `?seed=` shows "This page didn't open" there), so no flow seeds a family on it.
+ */
+export async function onStore(page: Page) {
+  await page.goto(`${process.env.E2E_WEB_STORE_URL}/`);
+  await expect(page.locator('body')).not.toBeEmpty();
+}
+
 const TYPED = new WeakMap<Page, string[]>();
 /** BL-415: tell the log canary a letter this journey typed, so it is searched for in the captured logs. */
 export function canary(page: Page, text: string): void {
