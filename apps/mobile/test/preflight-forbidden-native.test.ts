@@ -96,6 +96,55 @@ describe('[NX-39-R51] no widget, share extension, notification extension or app 
   });
 });
 
+describe('[NSC-02] the plist and entitlement allowlist (BL-1046)', () => {
+  const ent = (...k: string[]) => `<plist><dict>${k.map((x) => `<key>${x}</key><string>v</string>`).join('')}</dict></plist>`;
+  const ATS_OK = '<key>NSAppTransportSecurity</key><dict><key>NSAllowsArbitraryLoads</key><false/><key>NSAllowsLocalNetworking</key><true/></dict>';
+  const ROUTER = '$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route';
+  it('[NSC-02] the three entitlements the build uses pass', () => {
+    expect(ids({ entitlements: ent('com.apple.developer.default-data-protection', 'com.apple.developer.applesignin', 'com.apple.developer.associated-domains') })).toEqual([]);
+  });
+  it('[NSC-02] any other entitlement fails, naming it (push, iCloud, keychain group, Siri)', () => {
+    for (const k of ['aps-environment', 'com.apple.developer.icloud-services', 'keychain-access-groups', 'com.apple.developer.siri']) {
+      const out = forbiddenNativeProblems({ plist: CLEAN, entitlements: ent('com.apple.developer.applesignin', k), pbxproj: PBX_OK });
+      expect(out.map((p: { id: string }) => p.id)).toEqual(['entitlement']);
+      expect(out[0].text).toContain(k);
+    }
+  });
+  it('[NSC-02] an app group is reported once, by its own rule', () => {
+    expect(ids({ entitlements: ent('com.apple.security.application-groups') })).toEqual(['app-group']);
+  });
+  it('[NSC-02] NSUserActivityTypes passes with expo-router\'s entry alone, fails with any other', () => {
+    const acts = (...t: string[]) => wrap(`<key>NSUserActivityTypes</key><array>${t.map((x) => `<string>${x}</string>`).join('')}</array>`);
+    expect(ids({ plist: acts(ROUTER) })).toEqual([]);
+    expect(ids({ plist: acts(ROUTER, 'com.example.asha.open-letter') })).toEqual(['user-activity']);
+    expect(ids({ plist: acts('com.example.asha.open-letter') })).toEqual(['user-activity']);
+  });
+  it('[NSC-02] NSUserActivityTypes that is not a readable array fails closed', () => {
+    expect(ids({ plist: wrap('<key>NSUserActivityTypes</key><string>x</string>') })).toEqual(['user-activity']);
+  });
+  it('[NSC-02] a camera usage string fails with its own id', () => {
+    expect(ids({ plist: wrap('<key>NSCameraUsageDescription</key><string>x</string>') })).toEqual(['camera']);
+  });
+  it('[SEC-R16] the transport-security block passes when arbitrary loads is false and local networking is the only other key', () => {
+    expect(ids({ plist: wrap(ATS_OK) })).toEqual([]);
+    expect(ids({ plist: wrap('<key>NSAppTransportSecurity</key><dict><key>NSAllowsArbitraryLoads</key><false/></dict>') })).toEqual([]);
+  });
+  it('[SEC-R16] arbitrary loads true, an exception domain, or web-content loads fail', () => {
+    const t = (inner: string) => wrap(`<key>NSAppTransportSecurity</key><dict>${inner}</dict>`);
+    expect(ids({ plist: t('<key>NSAllowsArbitraryLoads</key><true/>') })).toEqual(['ats']);
+    expect(ids({ plist: t('<key>NSAllowsArbitraryLoads</key><false/><key>NSExceptionDomains</key><dict><key>localhost</key><dict><key>NSExceptionAllowsInsecureHTTPLoads</key><true/></dict></dict>') })).toEqual(['ats']);
+    expect(ids({ plist: t('<key>NSAllowsArbitraryLoadsInWebContent</key><true/>') })).toEqual(['ats']);
+    expect(ids({ plist: t('<key>NSAllowsArbitraryLoads</key><string>NO</string>') })).toEqual(['ats']);
+  });
+  it('[SEC-R16] a transport-security key that is not a dict fails closed', () => {
+    expect(ids({ plist: wrap('<key>NSAppTransportSecurity</key><string>x</string>') })).toEqual(['ats']);
+  });
+  it('[NSC-02] the production preflight and the allowlist export agree on the list (change the list only with security-architect)', async () => {
+    const { ENTITLEMENT_ALLOWLIST } = await import('../scripts/preflight-lib.mjs');
+    expect([...ENTITLEMENT_ALLOWLIST].sort()).toEqual(['com.apple.developer.applesignin', 'com.apple.developer.associated-domains', 'com.apple.developer.default-data-protection']);
+  });
+});
+
 describe('[NX-39-R4] the lint fails closed on an input it cannot read', () => {
   const bad: unknown[] = [undefined, null, '', '   ', 42, 'not a plist'];
   for (const [field, id] of [['plist', 'missing-plist'], ['entitlements', 'missing-entitlements'], ['pbxproj', 'missing-pbxproj']] as const) {
