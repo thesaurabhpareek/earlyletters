@@ -1,12 +1,12 @@
 /**
- * Forget one retired analytics id on the server (BL-1252 phone half, ER-A04 and ER-A17). This is the `forgetRetiredId`
- * the analytics client asks for when the list of retired ids is over its cap. The id leaves the phone only when this
+ * Forget retired analytics ids on the server in one call (BL-1252 phone half, BL-2163, ER-A04 and ER-A17). This is the `forgetRetiredId`
+ * the analytics client asks for when the list of retired ids is over its cap. The ids leave the phone only when this
  * returns true, so every doubt answers false:
- *  - no signed-in session: the function needs a real session, so the id stays and a later call tries again;
- *  - any error, a timeout or a thrown exception: the id stays;
- *  - the answer is not the contract's 202 shape: the id stays.
+ *  - no signed-in session: the function needs a real session, so every id stays and a later call tries again;
+ *  - any error, a timeout or a thrown exception (a 429 too): every id stays;
+ *  - the answer is not the contract's 202 shape, or counts fewer ids than were sent: every id stays.
  *
- * Nothing here is logged, and the id goes nowhere but this one call (contract: packages/api analytics-forget.ts).
+ * Nothing here is logged, and the ids go nowhere but this one call (contract: packages/api analytics-forget.ts).
  * Pure: the client and the key maker are passed in, so no React Native and no network in tests.
  */
 import { ANALYTICS_FORGET_FUNCTION, parseAnalyticsForgetRequest, type AnalyticsForgetRequest } from '@scribe/api';
@@ -24,10 +24,10 @@ export interface ForgetRetiredDeps {
   idempotencyKey: () => string;
 }
 
-export function makeForgetRetiredId(deps: ForgetRetiredDeps): (id: string) => Promise<boolean> {
-  return async (id) => {
+export function makeForgetRetiredId(deps: ForgetRetiredDeps): (ids: string[]) => Promise<boolean> {
+  return async (ids) => {
     try {
-      const request = parseAnalyticsForgetRequest({ ids: [id], reason: 'retired_id' });
+      const request = parseAnalyticsForgetRequest({ ids, reason: 'retired_id' });
       if (!request) return false;
       const client = await deps.client();
       if (!client) return false;
@@ -40,7 +40,8 @@ export function makeForgetRetiredId(deps: ForgetRetiredDeps): (id: string) => Pr
       });
       if (error) return false;
       const accepted = (answer as { data?: { accepted?: unknown } } | null)?.data?.accepted;
-      return typeof accepted === 'number' && accepted >= 1;
+      // A partial count is a failure: nothing leaves the phone unless every id was taken.
+      return typeof accepted === 'number' && accepted >= ids.length;
     } catch {
       return false;
     }

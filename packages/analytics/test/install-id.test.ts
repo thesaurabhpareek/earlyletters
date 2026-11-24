@@ -4,7 +4,7 @@
  * Fictional family Asha only: no event data is involved.
  */
 import { describe, expect, it } from 'vitest';
-import { ConsentStore, MAX_RETIRED_IDS, STORAGE_KEYS, createAnalytics, memoryStorage, recordingProvider } from '../src';
+import { ConsentStore, MAX_FORGET_BATCH, MAX_RETIRED_IDS, STORAGE_KEYS, createAnalytics, memoryStorage, recordingProvider } from '../src';
 
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 function ids() {
@@ -124,7 +124,7 @@ describe('install id (ER-A04)', () => {
 });
 
 describe('retired ids past the cap (ER-A04)', () => {
-  async function toggled(times: number, forgetRetired?: (id: string) => boolean | Promise<boolean>) {
+  async function toggled(times: number, forgetRetired?: (ids: string[]) => boolean | Promise<boolean>) {
     const storage = memoryStorage();
     const store = new ConsentStore(storage, ids(), { forgetRetired });
     await store.load();
@@ -138,7 +138,7 @@ describe('retired ids past the cap (ER-A04)', () => {
 
   it('keeps 20 with no call up to the cap', async () => {
     const calls: string[] = [];
-    const { store } = await toggled(MAX_RETIRED_IDS, (id) => (calls.push(id), true));
+    const { store } = await toggled(MAX_RETIRED_IDS, (ids) => (calls.push(...ids), true));
     await store.settleRetired();
     expect(store.allIds()).toHaveLength(MAX_RETIRED_IDS);
     expect(calls).toEqual([]);
@@ -148,8 +148,8 @@ describe('retired ids past the cap (ER-A04)', () => {
     const order: string[] = [];
     let listAtCall: string[] = [];
     const holder: { store?: ConsentStore } = {};
-    const { store, minted } = await toggled(MAX_RETIRED_IDS + 1, (id) => {
-      order.push(id);
+    const { store, minted } = await toggled(MAX_RETIRED_IDS + 1, (ids) => {
+      order.push(...ids);
       listAtCall = holder.store?.allIds() ?? [];
       return true;
     }).then((r) => ((holder.store = r.store), r));
@@ -171,12 +171,38 @@ describe('retired ids past the cap (ER-A04)', () => {
     }
     const retry: string[] = [];
     let up = false;
-    const { store, minted } = await toggled(MAX_RETIRED_IDS + 1, (id) => (retry.push(id), up));
+    const { store, minted } = await toggled(MAX_RETIRED_IDS + 1, (ids) => (retry.push(...ids), up));
     await store.settleRetired();
     up = true;
     await store.settleRetired();
     expect(retry).toEqual([minted[0], minted[0]]);
     expect(store.allIds()).not.toContain(minted[0]);
+  });
+
+  it('BL-2163: N overflow ids make one call with all of them, oldest first, and a 202 clears them', async () => {
+    const calls: string[][] = [];
+    const { store, minted } = await toggled(MAX_RETIRED_IDS + 5, (ids) => (calls.push(ids), true));
+    await store.settleRetired();
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toEqual([minted[4], minted[3], minted[2], minted[1], minted[0]]);
+    expect(store.allIds()).toHaveLength(MAX_RETIRED_IDS);
+  });
+
+  it('BL-2163: a refusal (a 429 is one) keeps every id and ends the loop after one call', async () => {
+    const calls: string[][] = [];
+    const { store, storage } = await toggled(MAX_RETIRED_IDS + 5, (ids) => (calls.push(ids), false));
+    await store.settleRetired();
+    expect(calls).toHaveLength(1);
+    expect(store.allIds()).toHaveLength(MAX_RETIRED_IDS + 5);
+    expect(JSON.parse(storage.dump()[STORAGE_KEYS.retired] as string)).toHaveLength(MAX_RETIRED_IDS + 5);
+  });
+
+  it('BL-2163: no call carries more than 21 ids; the rest follow in a second call, and a failure there keeps them', async () => {
+    const calls: string[][] = [];
+    const { store } = await toggled(MAX_RETIRED_IDS + MAX_FORGET_BATCH + 4, (ids) => (calls.push(ids), calls.length === 1));
+    await store.settleRetired();
+    expect(calls.map((c) => c.length)).toEqual([MAX_FORGET_BATCH, 4]);
+    expect(store.allIds()).toHaveLength(MAX_RETIRED_IDS + 4);
   });
 
   it('never drops an id when there is no forget callback at all', async () => {
@@ -193,9 +219,8 @@ describe('retired ids past the cap (ER-A04)', () => {
       provider,
       randomId: ids(),
       flushIntervalMs: 0,
-      forgetRetiredId: (id) => {
+      forgetRetiredId: () => {
         calls.push(`forget:${provider.calls.map((c) => c.method).at(-1)}`);
-        void id;
         return true;
       },
     });

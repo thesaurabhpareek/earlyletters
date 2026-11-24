@@ -74,13 +74,15 @@ export interface ConsentStoreOptions {
   currentVersion?: string;
   now?: () => string;
   /**
-   * Asks the server to forget one retired id (the `analytics-forget` call; its wiring is BL-1252). Resolve true only
-   * when the id is acknowledged. Anything else (false, a throw, a rejection) keeps the id in the list.
+   * Asks the server to forget these retired ids in one `analytics-forget` call (BL-1252, BL-2163). Resolve true only
+   * when the whole batch is acknowledged. Anything else (false, a throw, a rejection, a 429) keeps every id in the list.
    */
-  forgetRetired?: (id: string) => boolean | Promise<boolean>;
+  forgetRetired?: (ids: string[]) => boolean | Promise<boolean>;
 }
 
 export const MAX_RETIRED_IDS = 20;
+/** The most ids one `analytics-forget` call takes (`ANALYTICS_FORGET_MAX_IDS` in packages/api; a test keeps them equal). */
+export const MAX_FORGET_BATCH = 21;
 
 export function memoryStorage(initial: Record<string, string> = {}): KeyValueStorage & { dump(): Record<string, string> } {
   const data = new Map(Object.entries(initial));
@@ -280,24 +282,27 @@ export class ConsentStore {
   }
 
   /**
-   * Bring the retired list back to the cap by asking the server to forget the oldest ids. Each id is removed only after
-   * `forgetRetired` acknowledges it, oldest first; the first refusal stops the loop and everything not acknowledged
-   * stays, so the next call retries. Without a callback nothing is removed. The list may be longer than the cap
-   * meanwhile: deleting data is never traded for a tidy list.
+   * Bring the retired list back to the cap by asking the server to forget every overflow id, oldest first, in one call
+   * (a second only if more than `MAX_FORGET_BATCH` overflow). The ids leave the list only after `forgetRetired`
+   * acknowledges the whole batch; any refusal (a 429 too) stops the loop and removes nothing of that batch, so the next
+   * call retries. Without a callback nothing is removed. The list may be longer than the cap meanwhile: deleting data is
+   * never traded for a tidy list.
    */
   async settleRetired(): Promise<void> {
     const forget = this.options.forgetRetired;
     if (!forget) return;
     while (this.snap.retired.length > MAX_RETIRED_IDS) {
-      const oldest = this.snap.retired[this.snap.retired.length - 1] as string;
+      const overflow = this.snap.retired.slice(MAX_RETIRED_IDS);
+      const batch = overflow.slice(-MAX_FORGET_BATCH);
       let ok = false;
       try {
-        ok = (await forget(oldest)) === true;
+        ok = (await forget([...batch])) === true;
       } catch {
         ok = false;
       }
       if (!ok) return;
-      this.snap.retired = this.snap.retired.filter((x) => x !== oldest);
+      const gone = new Set(batch);
+      this.snap.retired = this.snap.retired.filter((x) => !gone.has(x));
       await this.storage.set(STORAGE_KEYS.retired, JSON.stringify(this.snap.retired));
     }
   }
