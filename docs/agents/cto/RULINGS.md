@@ -1372,3 +1372,12 @@ Founder standing approval and hard limits are quoted in the Batch 6 section of `
 - D-33 (BL-1976): not a decision; a supply act. Karma supplies the text of rulings 7 and 12 (the source Project doc is unreadable to agents); it is not available here, so nothing is recorded: OPEN. The CDESO-7 text, cited in BL-1840, BL-2020 and spec 15 but absent from the log, is likewise to be supplied.
 - Not decisions, status corrections for product (pack open items): BL-983 says PR #767 merged but it is open; BL-2003 says BL-1867 merged but `eas.json` says otherwise (UNVERIFIED which is right); BL-931 reads in-progress though BL-939 says done; BL-1709 reads in-review though #1826 is merged.
 - Door: two-way for each. Physical acts named here sit in FOUNDER_QUEUE only (the AUTH_SETUP 11.10 device check, the PR #1924 hand application, the restore drill run).
+
+### CR-214 Release PR #1979: the servers-on profile, the /open and /support read, the AASA path, the merge method (24 Nov 2026, Karma and the exec team under D-168 and D-172)
+- Verdict: RULED. Founder-only: no. Signed: Karma.
+- Decision group: G2, G6, D-170, CR-178. Cites CCO, CMO, CLO, CISO.
+- `apps/mobile/eas.json` production keeps `EXPO_PUBLIC_SERVER_FEATURES` on. D-170, CR-178 and gate G6 (the G6 row in `docs/release/FOUNDER_QUEUE.md`) rule it. Condition (CCO): no store submission until the BL-553 refusal screen and the account-deletion drill are verified. Until both are, a servers-on build stays out of any store submission.
+- The /open and /support copy was read by the CMO, CLO and CISO roles on 24 Nov 2026. These are Claude roles, not counsel; the text is not described as counsel-approved. The /open wording is the one in #1968. The /support header comment is corrected to say so; no copy changes.
+- The AASA change to the exact `/open` path is approved, with the test added in #1967.
+- Method: the release PR #1979 (snapshot branch `release-candidate/develop-23cba3ec`, `develop` into `main`) merges as a merge commit, not a squash. `main` is already an ancestor of `develop` since #1950.
+- Door: two-way for the comment and the record; the merge itself is one-way on `main`. Physical acts named here stay in FOUNDER_QUEUE only.
