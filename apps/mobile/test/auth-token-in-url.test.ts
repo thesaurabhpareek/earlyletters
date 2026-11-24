@@ -25,14 +25,14 @@ function sources(dir: string, out: string[] = []): string[] {
 
 describe('[BL-603] the token in a query string', () => {
   it('the email link verify call carries the token hash in the query string, and says so', () => {
-    const u = verifyUrl('https://x.supabase.co/', 'abc', 'email', 'https://earlyletters.com/auth/callback');
-    expect(u.startsWith('https://x.supabase.co/auth/v1/verify?token=abc&type=email&redirect_to=')).toBe(true);
+    const u = verifyUrl('https://x.supabase.co/', 'abc', 'magiclink', 'https://earlyletters.com/auth/callback');
+    expect(u.startsWith('https://x.supabase.co/auth/v1/verify?token=abc&type=magiclink&redirect_to=')).toBe(true);
   });
   it('no other app source builds an address with token= or token_hash= in its query string', () => {
     const hits = sources(join(APP, 'src'))
       .filter((f) => /[?&]token(_hash)?=/.test(readFileSync(f, 'utf8')))
       .map((f) => relative(APP, f));
-    expect(hits.filter((f) => !f.endsWith('email-link.logic.ts') && !f.endsWith('links.logic.ts') && !f.endsWith('+native-intent.tsx') && !f.endsWith('email.ts'))).toEqual([]);
+    expect(hits.filter((f) => !f.endsWith('email-link.logic.ts'))).toEqual([]);
   });
   it('the 6-digit code path sends the code to verifyOtp (a body), not into an address', () => {
     const email = readFileSync(join(APP, 'src/lib/auth/email.ts'), 'utf8');

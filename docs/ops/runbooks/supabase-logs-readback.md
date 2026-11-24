@@ -11,7 +11,7 @@ Why: production will hold every family's letters, and staging holds the alpha's.
 - The 6-digit code path (`verifyEmailCode`, `verifyOtp`) sends the code in a request body, not in an address.
 - No other place in `apps/mobile/src` builds an address with a token in its query string (pinned by the `[BL-603]` test `apps/mobile/test/auth-token-in-url.test.ts`).
 
-## 2. What the vendor says (pages read 8 Nov 2026; nothing here was checked on our project)
+## 2. What the vendor says (pages read 8 Nov 2026, UNVERIFIED as of today; nothing here was checked on our project)
 
 | Fact | Source |
 |---|---|
@@ -40,7 +40,7 @@ Unverified, so the read-back must settle them: whether `request.search` holds th
 Context (CR-210, CISO-19): the link token is single use and at most 15 minutes old (CISO-12) and sign-in uses PKCE (CISO-13), so a token that reached a log is not enough to sign in as someone. That caps severity; it does not answer whether Supabase logs the query string. If it is logged with a retention over 24 hours, the cheapest fix is the code path (the typed code), with the link kept as the fallback. Whether `POST /verify` accepts a token hash in a body is UNVERIFIED; do not plan on it. Default if the readback is not done by the store cut: the CISO accepts the residual above and records it.
 
 - The token hash is one-time. Write in section A how long it lives on that project.
-- If the answer is "too long" or the log can be read by someone beyond the founder, open an issue labelled `from:security-architect`; the lever is to steer sign-in to the 6-digit code (request body) before outside testers join. Do not ship that change tonight: it touches sign-in screens.
+- If the answer is "too long" or the log can be read by someone beyond the founder, open an issue labelled `from:security-architect`; the lever is to steer sign-in to the 6-digit code (request body) before outside testers join. It touches sign-in screens, so it waits for the readback.
 - Whether the privacy notice needs to say anything is a question for `legal` and the founder.
 
 ## 5. What this does not cover
