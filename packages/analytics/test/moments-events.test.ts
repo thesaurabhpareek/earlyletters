@@ -4,7 +4,7 @@
  * fictional family Asha only.
  */
 import { describe, expect, it } from 'vitest';
-import { createAnalytics, createTrackers, EVENTS, memoryStorage, recordingProvider, sanitizeEvent, type Violation } from '../src';
+import { REGISTRY, createAnalytics, createTrackers, EVENTS, memoryStorage, recordingProvider, sanitizeEvent, type Violation } from '../src';
 
 const MOMENTS = ['moments_card_impressed', 'moments_card_tapped'] as const;
 
@@ -26,6 +26,14 @@ describe('Moments events (NS-53-R251, NS-53-R167)', () => {
       expect(Object.keys(EVENTS[n].props)).toEqual(['slot']);
       expect(EVENTS[n].props.slot).toMatchObject({ type: 'enum', values: ['look_back', 'question'] });
       expect(EVENTS[n].level).toBe('L2');
+    }
+  });
+
+  it('[CODE-R13] the catalogue and the registry hold one definition of each Moments event: slot, area, when, level and reqs cannot differ', () => {
+    for (const n of MOMENTS) {
+      const c = EVENTS[n];
+      const r = REGISTRY[n];
+      expect({ area: c.area, when: c.when, level: c.level, reqs: c.reqs, props: c.props }, n).toEqual({ area: r.area, when: r.when, level: r.level, reqs: r.reqs, props: r.props });
     }
   });
 
