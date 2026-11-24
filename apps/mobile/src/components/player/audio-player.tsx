@@ -128,7 +128,7 @@ function PlayableRecording({
   const toggle = () => {
     // Only your own recordings play in v1.0, so the author is always you.
     if (!p.playing)
-      track('playback_started', {
+      track('book:playback_start', {
         surface: context === 'readTogether' ? 'read_together' : 'letter',
         author_relation: 'self',
         version: choice.source === 'original' ? 'original' : 'listening_copy',

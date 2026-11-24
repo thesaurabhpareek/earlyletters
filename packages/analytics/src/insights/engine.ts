@@ -374,10 +374,10 @@ export function computeInsights(input: InsightsInput): InsightsReport {
 
     // Adoption: Read together, Plus
     if (lw) {
-      const rt = d.total('read_together_started', lw, 'people');
+      const rt = d.total('book:read_together_start', lw, 'people');
       const opened = d.total('app_opened', lw, 'people');
       const rtRate = rate(rt, opened);
-      metrics.push({ key: 'read_together_adoption', label: 'People who started Read together / opened the app (device)', value: rtRate, previous: pw ? rate(d.total('read_together_started', pw, 'people'), d.total('app_opened', pw, 'people')) : null, unit: 'rate', source: 'device', week: lw });
+      metrics.push({ key: 'read_together_adoption', label: 'People who started Read together / opened the app (device)', value: rtRate, previous: pw ? rate(d.total('book:read_together_start', pw, 'people'), d.total('app_opened', pw, 'people')) : null, unit: 'rate', source: 'device', week: lw });
       const closes = d.splitOver('plus_offer_closed', 'outcome', last4);
       const closed = [...closes.values()].reduce((a, b) => a + b, 0);
       const bought = closed >= 50 ? (closes.get('purchased') ?? 0) / closed : null;

@@ -2,7 +2,7 @@
 
 Generated from `packages/analytics/src/wire-names.ts` by `npm run wire-names -w @scribe/analytics`; do not edit by hand. `npm run wire-names -w @scribe/analytics -- --check` and `packages/analytics/test/wire-names.test.ts` fail when this file differs from that output. BL-1255 step 1 (CR-212): this is the table `posthog-standard.md` section 2.9 points to as "IN-03".
 
-The rename (step 2b onward, BL-2176) moves one area at a time, each PR on the one below. 20 of 47 keys that own a name hold it now; for the rest the "Key" column is still the old key, and "Was" says so. Where a key was renamed, "Was" is the old key, and `LEGACY_EVENT_NAMES` in `wire-names.ts` maps it to the new one, so a note, funnel or query written against an old name can still be read. Nothing was ever sent under an old name (analytics are off in every profile, CR-186). The tier column is the tier of the catalogue and registry rows, unchanged by the rename, and the basics set stays pinned to `screen_view` by `test/tiers.test.ts`. The four pattern keys keep their keys: their names are generated per registered id.
+The rename (step 2b onward, BL-2176) moves one area at a time, each PR on the one below. 25 of 47 keys that own a name hold it now; for the rest the "Key" column is still the old key, and "Was" says so. Where a key was renamed, "Was" is the old key, and `LEGACY_EVENT_NAMES` in `wire-names.ts` maps it to the new one, so a note, funnel or query written against an old name can still be read. Nothing was ever sent under an old name (analytics are off in every profile, CR-186). The tier column is the tier of the catalogue and registry rows, unchanged by the rename, and the basics set stays pinned to `screen_view` by `test/tiers.test.ts`. The four pattern keys keep their keys: their names are generated per registered id.
 
 Counts: 51 keys: 30 ruled by 2.9, 17 named by the 24 Nov rulings, 4 patterns generated per registered id, 0 NEEDS RULING; 47 have a name of their own. Step 2a (BL-2175) deleted 22 keys: 18 dropped, 4 merged (see Retired keys).
 
@@ -22,9 +22,9 @@ Reading a row. "Ruled" means 2.9 names this event (a domain row, the seven examp
 | `machine_edit_rejected` | (not renamed yet) | catalogue | capture | consented | named | `capture:edit_decline` | PM1 `capture.edit.declined`; `decline` is "from us" (the verifier); same guardrail and reader |
 | `me:language_update` | `language_set` | catalogue | languages | consented | ruled | `me:language_update` | 2.9 domain table: `me.language.changed` |
 | `pack_download` | (not renamed yet) | catalogue | languages | consented | named | `system:pack_download_update` | PM1 maps four states to this one key and 2.9 only holds `pack_start`; `changed` folds to `update`; the `pack_download` object keeps it from reading as a pack version update |
-| `playback_started` | (not renamed yet) | catalogue | book | consented | ruled | `book:playback_start` | 2.9 domain table: `book.playback.started` |
-| `read_together_started` | (not renamed yet) | catalogue | book | consented | ruled | `book:read_together_start` | 2.9 domain table: `book.read_together.started` |
-| `read_together_ended` | (not renamed yet) | catalogue | book | consented | ruled | `book:read_together_end` | 2.9 domain table: `book.read_together.ended` |
+| `book:playback_start` | `playback_started` | catalogue | book | consented | ruled | `book:playback_start` | 2.9 domain table: `book.playback.started` |
+| `book:read_together_start` | `read_together_started` | catalogue | book | consented | ruled | `book:read_together_start` | 2.9 domain table: `book.read_together.started` |
+| `book:read_together_end` | `read_together_ended` | catalogue | book | consented | ruled | `book:read_together_end` | 2.9 domain table: `book.read_together.ended` |
 | `family:invite_fail` | `invite_failed` | catalogue | family | consented | ruled | `family:invite_fail` | 2.9 domain table: `family.invite.failed` |
 | `notifications:reminder_prime_view` | `reminder_prime_shown` | catalogue | reminders | consented | named | `notifications:reminder_prime_view` | the denominator of the reminder-fatigue guardrail; an impression of our own card |
 | `notifications:reminder_prime_submit` | `reminder_prime_result` | catalogue | reminders | consented | named | `notifications:reminder_prime_submit` | `answered` folds to `submit`, as `os_permission_result` is `permission_submit` |
@@ -60,8 +60,8 @@ Reading a row. "Ruled" means 2.9 names this event (a domain row, the seven examp
 | `error_shown` | (not renamed yet) | both | errors | consented | ruled | `system:error_view` | 2.9 line 118, the seven examples |
 | `control_tapped` | (pattern, keeps its key) | both | app | consented | pattern | `<area>:<id>_click` (0 today) | 2.9 Basics: `<area>:<control_id>_click` |
 | `surface_impressed` | (pattern, keeps its key) | both | app | consented | pattern | `<area>:<id>_view` (0 today) | 2.9 Basics: `<area>:<element_id>_view` |
-| `moments_card_impressed` | (not renamed yet) | both | moments | consented | named | `book:moments_card_view` | CDO-25 allows exactly two `moments_` names; Moments sits under Book |
-| `moments_card_tapped` | (not renamed yet) | both | moments | consented | named | `book:moments_card_open` | `click` is reserved for control ids (V2); `open` fits a card opened from the tab |
+| `book:moments_card_view` | `moments_card_impressed` | both | moments | consented | named | `book:moments_card_view` | CDO-25 allows exactly two `moments_` names; Moments sits under Book |
+| `book:moments_card_open` | `moments_card_tapped` | both | moments | consented | named | `book:moments_card_open` | `click` is reserved for control ids (V2); `open` fits a card opened from the tab |
 | `perf_measured` | (pattern, keeps its key) | both | app | consented | pattern | `<area>:<id>_measure` (0 today) | 2.9 Basics: `<area>:<metric>_measure` (deviation); tier stays consented until FH-3 |
 
 ## Generated names

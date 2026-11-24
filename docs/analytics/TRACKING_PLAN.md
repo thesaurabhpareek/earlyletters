@@ -145,9 +145,9 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 
 | Event | Fires when | Properties (type: allowed values) | Serves |
 |---|---|---|---|
-| `playback_started` | A recording starts playing | `surface` (enum: letter \| review \| read_together)<br>`author_relation` (enum: self \| other_parent \| family)<br>`version` (enum: listening_copy \| original) | PRD-REQ-016 |
-| `read_together_started` | Read together session starts | `child_ordinal` (enum: first \| second \| third_plus)<br>`access` (enum: plus \| free)<br>`letters_bucket` (enum: 0 \| 1 \| 2_4 \| 5_9 \| 10_49 \| 50_99 \| 100_364 \| 365_plus) | C-REQ-034, PRD-REQ-016 |
-| `read_together_ended` | Read together session ends | `reason` (enum: finished \| stopped \| interrupted)<br>`session_bucket` (enum: lt_1m \| 1_5m \| 5_15m \| gt_15m)<br>`letters_heard` (int 0 to 50) | PRD-REQ-016 |
+| `book:playback_start` | A recording starts playing | `surface` (enum: letter \| review \| read_together)<br>`author_relation` (enum: self \| other_parent \| family)<br>`version` (enum: listening_copy \| original) | PRD-REQ-016 |
+| `book:read_together_start` | Read together session starts | `child_ordinal` (enum: first \| second \| third_plus)<br>`access` (enum: plus \| free)<br>`letters_bucket` (enum: 0 \| 1 \| 2_4 \| 5_9 \| 10_49 \| 50_99 \| 100_364 \| 365_plus) | C-REQ-034, PRD-REQ-016 |
+| `book:read_together_end` | Read together session ends | `reason` (enum: finished \| stopped \| interrupted)<br>`session_bucket` (enum: lt_1m \| 1_5m \| 5_15m \| gt_15m)<br>`letters_heard` (int 0 to 50) | PRD-REQ-016 |
 
 #### family
 
@@ -172,8 +172,8 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 
 | Event | Fires when | Properties (type: allowed values) | Serves |
 |---|---|---|---|
-| `moments_card_impressed` | A card in the question or look-back slot is drawn on the Moments tab (at most once per slot per local day). Cards dated by the child, a typed day, a tick or the library never send | `slot` (enum: look_back \| question) | PRD-REQ-016 |
-| `moments_card_tapped` | A card in the question or look-back slot is tapped. Says nothing about where the letter that follows began | `slot` (enum: look_back \| question) | PRD-REQ-016 |
+| `book:moments_card_view` | A card in the question or look-back slot is drawn on the Moments tab (at most once per slot per local day). Cards dated by the child, a typed day, a tick or the library never send | `slot` (enum: look_back \| question) | PRD-REQ-016 |
+| `book:moments_card_open` | A card in the question or look-back slot is tapped. Says nothing about where the letter that follows began | `slot` (enum: look_back \| question) | PRD-REQ-016 |
 
 #### settings
 
@@ -205,7 +205,7 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 | `sync_failed` | A sync attempt fails after retries | `reason` (enum: network \| auth \| conflict \| server \| unknown) | PRD-REQ-016 |
 | `error_shown` | A user-facing error from strings `errors.*` is shown | `code` (enum: save_failed \| mic_denied \| transcription_failed \| offline \| backup_failed \| invite_expired \| storage_low \| generic) | PRD-REQ-016 |
 
-Held, not sendable (27; typed in catalog.ts for call sites that still exist, dropped and counted at run time until each gets a registry row with a decision, a plan row and a privacy look, or is removed): `child_switched`, `family:invite_fail`, `family:invite_open`, `keeping:export_complete`, `keeping:export_fail`, `keeping:export_start`, `machine_edit_rejected`, `machine_edit_reverted`, `me:language_update`, `me:session_end`, `me:setting_update`, `notifications:notification_open`, `notifications:permission_submit`, `notifications:reminder_cancel`, `notifications:reminder_prime_submit`, `notifications:reminder_prime_view`, `notifications:schedule_update`, `offer_code_redeemed`, `onboarding:sign_in_dismiss`, `onboarding:sign_in_fail`, `pack_download`, `playback_started`, `read_together_ended`, `read_together_started`, `restore_result`, `review_action`, `sync_failed`.
+Held, not sendable (27; typed in catalog.ts for call sites that still exist, dropped and counted at run time until each gets a registry row with a decision, a plan row and a privacy look, or is removed): `book:playback_start`, `book:read_together_end`, `book:read_together_start`, `child_switched`, `family:invite_fail`, `family:invite_open`, `keeping:export_complete`, `keeping:export_fail`, `keeping:export_start`, `machine_edit_rejected`, `machine_edit_reverted`, `me:language_update`, `me:session_end`, `me:setting_update`, `notifications:notification_open`, `notifications:permission_submit`, `notifications:reminder_cancel`, `notifications:reminder_prime_submit`, `notifications:reminder_prime_view`, `notifications:schedule_update`, `offer_code_redeemed`, `onboarding:sign_in_dismiss`, `onboarding:sign_in_fail`, `pack_download`, `restore_result`, `review_action`, `sync_failed`.
 
 Global properties: `schema_version` (int 1 to 1000), `child_count_bucket`? (enum: none \| one \| two \| three_plus), `sample_pct`? (int 1 to 99).
 <!-- catalogue:end -->

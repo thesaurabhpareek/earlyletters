@@ -30,7 +30,7 @@ export const BREAKDOWNS: Readonly<Partial<Record<EventName, readonly string[]>>>
   'onboarding:sign_in_fail': ['reason'],
   'family:invite_fail': ['reason'],
   'keeping:export_fail': ['reason'],
-  read_together_started: ['access'],
+  'book:read_together_start': ['access'],
 };
 
 /** Events counted per week without a breakdown. */
@@ -43,7 +43,7 @@ export const WEEKLY_EVENTS: readonly EventName[] = [
   'pack_download',
   'machine_edit_rejected',
   'machine_edit_reverted',
-  'read_together_started',
+  'book:read_together_start',
   'family:invite_create',
   'plus_offer_viewed',
   'plus_offer_closed',

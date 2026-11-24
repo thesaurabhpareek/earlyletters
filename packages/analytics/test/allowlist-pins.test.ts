@@ -18,7 +18,7 @@ export const DAY_STEMS = [
  * Exact (event.property=value) pairs only; a new one needs a reviewed edit here.
  */
 export const STEM_EXEMPT: readonly string[] = [
-  'playback_started.version=original', // the saved-original toggle, "origin" is a prefix of "original"
+  'book:playback_start.version=original', // the saved-original toggle, "origin" is a prefix of "original"
   'machine_edit_rejected.reason=original_mismatch', // a verifier outcome
 ];
 
