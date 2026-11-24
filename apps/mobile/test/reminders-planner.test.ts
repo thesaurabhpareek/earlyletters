@@ -48,6 +48,11 @@ function plan(p: Omit<Partial<PlanInput>, 'prefs'> & { prefs?: Partial<ReminderP
   });
 }
 
+const formatShift = (iso: string, days: number): string => {
+  const d = addDays(parseIsoDate(iso)!, days);
+  return `${d.y}-${String(d.m).padStart(2, '0')}-${String(d.d).padStart(2, '0')}`;
+};
+
 const local = (n: PlannedNotification, tz = LA) => {
   const p = zonedParts(n.fireAt, tz);
   return `${p.y}-${String(p.m).padStart(2, '0')}-${String(p.d).padStart(2, '0')} ${String(p.hh).padStart(2, '0')}:${String(p.mm).padStart(2, '0')}`;
@@ -211,6 +216,50 @@ describe('daylight saving and time zones', () => {
     expect(p.map((n) => local(n))).toEqual(['2026-10-30 20:30', '2026-10-31 20:30', '2026-11-01 20:30', '2026-11-02 20:30']);
     expect(p.slice(1).map((n, i) => (n.fireAt - p[i].fireAt) / HOUR)).toEqual([24, 25, 24]);
   });
+
+  // BL-1191 (NS-32-R1, R6): on the two days a zone changes its clock, a reminder keeps its local clock time and the day
+  // still holds one note. Three zones, both hemispheres: a fixed 24 hour step lands an hour off on every day after the change.
+  const CHANGES = [
+    { tz: LA, spring: '2026-03-08', fall: '2026-11-01', springBirth: ['2025-03-08', '2025-10-08'], fallBirth: ['2025-11-01', '2026-06-01'] },
+    { tz: 'Europe/London', spring: '2026-03-29', fall: '2026-10-25', springBirth: ['2025-03-29', '2025-10-29'], fallBirth: ['2025-10-25', '2026-05-25'] },
+    { tz: 'Australia/Sydney', spring: '2026-10-04', fall: '2026-04-05', springBirth: ['2025-10-04', '2026-05-04'], fallBirth: ['2025-04-05', '2025-11-05'] },
+  ];
+  const DAY_STEP = 24 * HOUR;
+  for (const { tz, spring, fall, springBirth, fallBirth } of CHANGES) {
+    for (const [label, date, births] of [['spring-forward', spring, springBirth], ['fall-back', fall, fallBirth]] as const) {
+      const before = formatShift(date, -3);
+      const days = Array.from({ length: 7 }, (_, i) => formatShift(date, i - 3));
+      const everyEvening = { cadence: 'everyEvening' as const, monthNotes: true };
+
+      it(`${tz} ${label} (${date}): every evening nudge is 20:30 local and each day has one note`, () => {
+        const p = plan({ now: at(before, 12, 0, tz), timeZone: tz, prefs: { cadence: 'everyEvening', monthNotes: false }, horizonDays: 7 });
+        expect(p.map((n) => local(n, tz))).toEqual(days.map((d) => `${d} 20:30`));
+        expect(new Set(p.map((n) => n.date)).size).toBe(p.length);
+        // The change day is 23 or 25 hours from the day before; the days either side are 24.
+        const hours = p.slice(1).map((n, i) => (n.fireAt - p[i].fireAt) / HOUR);
+        expect(hours.filter((h) => h !== 24)).toHaveLength(1);
+        expect(hours[2]).toBe(label === 'spring-forward' ? 23 : 25);
+        // Name the mutant: a fixed 24 hour step from the first nudge puts the days after the change an hour off the clock.
+        const stepped = days.map((_, i) => p[0].fireAt + i * DAY_STEP);
+        expect(stepped.map((t) => local({ fireAt: t } as PlannedNotification, tz).slice(11))).not.toEqual(days.map(() => '20:30'));
+      });
+
+      it(`${tz} ${label}: a birthday on the change day is the day's one note, at 09:00 local`, () => {
+        const child: PlannerChild = { id: 'child-asha', name: 'Asha', birthday: births[0], included: true };
+        const p = plan({ now: at(before, 12, 0, tz), timeZone: tz, children: [child], prefs: everyEvening, horizonDays: 7, monthHorizonDays: 7 });
+        const onDay = p.filter((n) => n.date === date);
+        expect(onDay.map((n) => [n.kind, local(n, tz)])).toEqual([['birthday', `${date} 09:00`]]);
+        expect(p.filter((n) => n.kind === 'evening').map((n) => local(n, tz).slice(11))).toEqual(days.filter((d) => d !== date).map(() => '20:30'));
+      });
+
+      it(`${tz} ${label}: a month note on the change day is the day's one note, at the reminder time`, () => {
+        const child: PlannerChild = { id: 'child-asha', name: 'Asha', birthday: births[1], included: true };
+        const p = plan({ now: at(before, 12, 0, tz), timeZone: tz, children: [child], prefs: everyEvening, horizonDays: 7, monthHorizonDays: 7 });
+        expect(p.filter((n) => n.date === date).map((n) => [n.kind, local(n, tz)])).toEqual([['monthAge', `${date} 20:30`]]);
+        expect(p.map((n) => n.date)).toEqual(days);
+      });
+    }
+  }
 
   it('[C-REQ-003] after a flight from Los Angeles to New York the nudge is still at 8:30 PM local', () => {
     const now = at('2026-10-05', 12, 0, LA);

@@ -87,16 +87,19 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 ### 3.1 Events by area
 
 <!-- catalogue:begin (generated from packages/analytics/src/catalog.ts by `npm run plan -w @scribe/analytics`; do not edit by hand) -->
-70 events. Every event also carries the global properties in 3.2. `?` marks an optional property. Every event and property is L2.
+73 events: 26 sendable (one definition each, in packages/analytics/src/registry.ts) and 47 held. Every event also carries the global properties in 3.2. `?` marks an optional property. Every event and property is L2.
 
 #### app
 
 | Event | Fires when | Properties (type: allowed values) | Serves |
 |---|---|---|---|
 | `app_cold_start` | First frame after a cold start (only once consent exists, so never on first install) | `ttfi_bucket` (enum: lt_1s \| 1_2s \| 2_3s \| gt_3s) | A-NFR-001, PRD-REQ-016 |
-| `app_opened` | App comes to the foreground after 30 min or more away, or cold starts | `source` (enum: cold \| warm \| notification \| link)<br>`days_since_last_open` (enum: d0 \| d1 \| d2_7 \| d8_30 \| d31_90 \| d91_plus) | PRD-REQ-016 |
 | `app_backgrounded` | App goes to the background; carries the session length bucket | `session_bucket` (enum: lt_1m \| 1_5m \| 5_15m \| gt_15m) | PRD-REQ-016 |
 | `screen_view` | A route is shown. Sent by our router hook from the route template, never by SDK autocapture | `route` (enum: tonight \| book \| family \| listen \| write \| review \| letter_detail \| onboarding \| read_together \| sign_in \| sign_in_email \| sign_in_code \| sign_in_verify \| sign_in_consent \| invite \| invite_new \| settings \| settings_account \| settings_appearance \| settings_reminders \| settings_recordings \| settings_child_detail \| settings_child_new \| settings_privacy \| settings_export \| settings_language \| settings_plus \| settings_storage \| settings_delete_account) | ADR-0008, PRD-REQ-016 |
+| `app_opened` | App comes to the foreground after 30 min or more away, or cold starts | `source` (enum: cold \| warm \| notification \| link)<br>`days_since_last_open` (enum: d0 \| d1 \| d2_7 \| d8_30 \| d31_90 \| d91_plus) | PRD-REQ-016 |
+| `control_tapped` | A registered key control is activated. Sent by our own tap helper, never by SDK touch capture | `control` (enum: tonight_speak \| tonight_write \| review_keep \| review_play_back \| book_read_together \| keep_sheet_start_plus \| keep_sheet_hold \| invite_share)<br>`route` (enum: tonight \| book \| family \| listen \| write \| review \| letter_detail \| onboarding \| read_together \| sign_in \| sign_in_email \| sign_in_code \| sign_in_verify \| sign_in_consent \| invite \| invite_new \| settings \| settings_account \| settings_appearance \| settings_reminders \| settings_recordings \| settings_child_detail \| settings_child_new \| settings_privacy \| settings_export \| settings_language \| settings_plus \| settings_storage \| settings_delete_account) | ADR-0008, FR-DAT-21 |
+| `surface_impressed` | A registered surface is at least half visible for one second, at most once per surface per foreground session | `surface` (enum: tonight_prompt \| keep_sheet \| reminder_card \| invite_card)<br>`route` (enum: tonight \| book \| family \| listen \| write \| review \| letter_detail \| onboarding \| read_together \| sign_in \| sign_in_email \| sign_in_code \| sign_in_verify \| sign_in_consent \| invite \| invite_new \| settings \| settings_account \| settings_appearance \| settings_reminders \| settings_recordings \| settings_child_detail \| settings_child_new \| settings_privacy \| settings_export \| settings_language \| settings_plus \| settings_storage \| settings_delete_account)<br>`rank`? (int 1 to 9) | ADR-0008, FR-DAT-21 |
+| `perf_measured` | One of five timed steps finishes; the time is bucketed on the phone, never sent as a number | `metric` (enum: cold_start \| speak_to_mic \| save_commit \| book_first_render \| transcription_ready)<br>`ms_bucket` (enum: lt_100ms \| 100_300ms \| 300ms_1s \| 1_3s \| 3_10s \| gt_10s)<br>`ok` (bool) | ADR-0008, A-NFR-001 |
 
 #### consent
 
@@ -110,37 +113,37 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 |---|---|---|---|
 | `auth_sheet_shown` | Keep the book / sign-in sheet shown | `trigger` (enum: first_letter \| third_letter \| invite \| invite_create \| sign_in \| settings) | PRD-REQ-001, PRD-REQ-016 |
 | `auth_method_selected` | A sign-in method tapped (observed from the auth state) | `method` (enum: apple \| google \| email \| passkey) | PRD-REQ-016 |
-| `auth_succeeded` | A new session exists on this phone (observed from the auth state). New accounts are counted on the server | `method` (enum: apple \| google \| email \| passkey)<br>`had_local_data` (bool) | A-NFR-013, PRD-REQ-016 |
 | `auth_failed` | Sign-in failed or was cancelled (observed). An under-18 answer is never sent | `method` (enum: apple \| google \| email \| passkey)<br>`reason` (enum: cancelled \| network \| expired \| wrong_code \| code_paused \| rate_limited \| invalid_email \| not_available \| provider \| session_expired \| consent_unavailable \| unknown) | A-NFR-013 |
 | `auth_email_sent` | Email sign-in link or code sent (observed); attempt counts sends in this sign-in | `attempt` (int 1 to 10) | A-NFR-013 |
 | `auth_deferred` | User chose Later on the sign-in sheet | `trigger` (enum: first_letter \| third_letter \| invite \| invite_create \| sign_in \| settings) | PRD-REQ-016 |
 | `signed_out` | The session ended on this phone (observed): by the person, Apple revoked it, account switch, or the session was lost | `reason` (enum: user \| apple_revoked \| switch_account \| session_lost) | A-NFR-013, PRD-REQ-016 |
 | `invite_opened` | An invite link or code is opened in the app | `via` (enum: link \| code \| paste)<br>`signed_in` (bool) | B-REQ-007 |
 | `local_merge_choice` | User with local letters picks where they go at sign-in | `choice` (enum: existing \| new) | PRD-REQ-016 |
+| `auth_succeeded` | A new session exists on this phone (observed from the auth state). New accounts are counted on the server | `method` (enum: apple \| google \| email \| passkey)<br>`had_local_data` (bool) | A-NFR-013, PRD-REQ-016 |
 
 #### children
 
 | Event | Fires when | Properties (type: allowed values) | Serves |
 |---|---|---|---|
-| `child_added` | A child book is created | `has_date` (bool)<br>`child_ordinal` (enum: first \| second \| third_plus)<br>`in_first_run` (bool)<br>`added_together` (bool) | PRD-REQ-011, PRD-REQ-015, B-REQ-004 |
 | `child_switched` | User switches the current book | `child_ordinal` (enum: first \| second \| third_plus)<br>`surface` (enum: tonight \| book \| review \| listen) | PRD-REQ-012 |
 | `child_setting_changed` | A per-child setting is changed (which setting only, never the value) | `key` (enum: display_name \| nickname \| date \| photo \| book_look \| family_can_read \| hidden \| deleted \| signs_as \| include_in_reminders \| pause_celebrations \| auto_add)<br>`child_ordinal` (enum: first \| second \| third_plus) | PRD-REQ-013 |
 | `make_it_yours_card` | A post-first-letter "Make it yours" card is acted on | `card` (enum: goals \| words \| invite \| photo)<br>`action` (enum: opened \| completed \| skipped) | B-REQ-004, PRD-REQ-016 |
 | `goals_set` | What matters goals saved. Count only: goals are L4 (PRD 7.10), so which goals were picked is never sent | `count` (int 0 to 5) | B-NFR-001, PRD-REQ-010 |
 | `dictionary_term_added` | A Names and words term saved (kind only, never the term) | `kind` (enum: child \| nickname \| family \| word \| place \| self)<br>`source` (enum: settings \| review_correction \| onboarding) | PRD-REQ-016 |
+| `child_added` | A child book is created | `has_date` (bool)<br>`child_ordinal` (enum: first \| second \| third_plus)<br>`in_first_run` (bool)<br>`added_together` (bool) | PRD-REQ-011, PRD-REQ-015, B-REQ-004 |
 
 #### capture
 
 | Event | Fires when | Properties (type: allowed values) | Serves |
 |---|---|---|---|
-| `capture_started` | User starts speaking or typing a letter | `mode` (enum: spoken \| typed \| mixed)<br>`source` (enum: tonight \| book \| notification \| make_it_yours \| resurface)<br>`prompt_kind` (enum: opening \| gap \| hard \| family \| together \| none)<br>`child_ordinal` (enum: first \| second \| third_plus)<br>`member_role` (enum: parent \| contributor) | PRD-REQ-016, C-REQ-034 |
-| `capture_discarded` | A letter in progress is thrown away before saving | `mode` (enum: spoken \| typed \| mixed)<br>`stage` (enum: listening \| review)<br>`audio_bucket`? (enum: lt_15s \| 15_60s \| 1_2m \| 2_5m \| gt_5m) | PRD-REQ-016 |
-| `transcription_completed` | A spoken letter finishes transcription, hears no speech, fails, or waits for its language model | `engine` (enum: on_device \| server)<br>`model` (enum: turbo \| small \| hindi_small \| zh_turbo \| server_default \| none)<br>`audio_bucket` (enum: lt_15s \| 15_60s \| 1_2m \| 2_5m \| gt_5m)<br>`latency_bucket` (enum: lt_5s \| 5_15s \| 15_30s \| 30_60s \| gt_60s)<br>`outcome` (enum: ok \| no_speech \| failed \| queued_for_model) | PRD-REQ-016, NFR-7.7 |
-| `letter_saved` | A letter is saved (to the book or kept private). The core activation and north-star event on device | `mode` (enum: spoken \| typed \| mixed)<br>`destination` (enum: book \| private)<br>`child_ordinal` (enum: first \| second \| third_plus)<br>`member_role` (enum: parent \| contributor)<br>`prompt_kind` (enum: opening \| gap \| hard \| family \| together \| none)<br>`audio_bucket`? (enum: lt_15s \| 15_60s \| 1_2m \| 2_5m \| gt_5m)<br>`words_bucket` (enum: lt_25 \| 25_99 \| 100_299 \| 300_plus)<br>`machine_edit_count` (int 0 to 500)<br>`edits_reverted_count` (int 0 to 500)<br>`edits_rejected_count`? (int 0 to 500)<br>`engine` (enum: on_device \| server \| none \| pending)<br>`from_notification_2h` (bool) | C-REQ-034, PRD-REQ-016, ADR-0008 |
 | `review_action` | An action on the Review screen | `action` (enum: show_exactly_said \| edit_text \| say_again \| play_back \| change_child \| change_destination \| undo_all_edits) | PRD-REQ-016, PRD-REQ-012 |
 | `machine_edit_reverted` | A user undoes one machine edit (type and source only). Fidelity health signal for the constitution | `edit_type` (enum: filler \| false_start \| repeat \| stt_fix \| punctuation \| agreement \| paragraph)<br>`source` (enum: rule \| model) | PRD-REQ-016 |
 | `machine_edit_rejected` | The verifier refused machine edits for a letter: one event per edit type, source and reason, with a count. Never the text or the span | `edit_type` (enum: filler \| false_start \| repeat \| stt_fix \| punctuation \| agreement \| paragraph)<br>`source` (enum: rule \| model)<br>`reason` (enum: original_mismatch \| changes_invisible \| out_of_bounds \| overlaps_protected \| overlaps_other_edit \| type_not_allowed_at_level \| removal_only \| not_a_filler \| not_a_repeat \| false_start_not_repeated \| stt_fix_not_dictionary \| punctuation_changed_letters \| agreement_not_single_word \| agreement_stem_mismatch \| agreement_limit_per_sentence \| paragraph_not_whitespace \| inserted_content_word \| change_ceiling_exceeded \| splits_word \| removal_adds_punctuation \| changes_negation \| changes_tense \| changes_modal \| changes_word \| changes_number \| changes_sentence_type \| changes_quotes \| case_change_not_allowed \| case_change_not_sentence_start \| removes_negation \| repeat_is_emphasis \| false_start_complete_phrase \| stt_fix_protected_word \| stt_fix_not_heard_as \| not_vetted_for_language)<br>`count` (int 1 to 500) | PRD-REQ-016, B-REQ-003 |
 | `letter_deleted` | Own letter deleted or restored within the undo window | `action` (enum: deleted \| restored)<br>`destination` (enum: book \| private) | PRD-REQ-016 |
+| `capture_started` | User starts speaking or typing a letter | `mode` (enum: spoken \| typed \| mixed)<br>`source` (enum: tonight \| book \| notification \| make_it_yours \| resurface)<br>`prompt_kind` (enum: opening \| gap \| hard \| family \| together \| none)<br>`child_ordinal` (enum: first \| second \| third_plus)<br>`member_role` (enum: parent \| contributor) | PRD-REQ-016, C-REQ-034 |
+| `capture_discarded` | A letter in progress is thrown away before saving | `mode` (enum: spoken \| typed \| mixed)<br>`stage` (enum: listening \| review)<br>`audio_bucket`? (enum: lt_15s \| 15_60s \| 1_2m \| 2_5m \| gt_5m) | PRD-REQ-016 |
+| `transcription_completed` | A spoken letter finishes transcription, hears no speech, fails, or waits for its language model | `engine` (enum: on_device \| server)<br>`model` (enum: turbo \| small \| hindi_small \| zh_turbo \| server_default \| none)<br>`audio_bucket` (enum: lt_15s \| 15_60s \| 1_2m \| 2_5m \| gt_5m)<br>`latency_bucket` (enum: lt_5s \| 5_15s \| 15_30s \| 30_60s \| gt_60s)<br>`outcome` (enum: ok \| no_speech \| failed \| queued_for_model) | PRD-REQ-016, NFR-7.7 |
+| `letter_saved` | A letter is saved (to the book or kept private). The core activation and north-star event on device | `mode` (enum: spoken \| typed \| mixed)<br>`destination` (enum: book \| private)<br>`child_ordinal` (enum: first \| second \| third_plus)<br>`member_role` (enum: parent \| contributor)<br>`prompt_kind` (enum: opening \| gap \| hard \| family \| together \| none)<br>`audio_bucket`? (enum: lt_15s \| 15_60s \| 1_2m \| 2_5m \| gt_5m)<br>`words_bucket` (enum: lt_25 \| 25_99 \| 100_299 \| 300_plus)<br>`machine_edit_count` (int 0 to 500)<br>`edits_reverted_count` (int 0 to 500)<br>`edits_rejected_count`? (int 0 to 500)<br>`engine` (enum: on_device \| server \| none \| pending)<br>`from_notification_2h` (bool) | C-REQ-034, PRD-REQ-016, ADR-0008 |
 
 #### languages
 
@@ -153,22 +156,22 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 
 | Event | Fires when | Properties (type: allowed values) | Serves |
 |---|---|---|---|
-| `book_opened` | Book tab shown for a child | `child_ordinal` (enum: first \| second \| third_plus)<br>`letters_bucket` (enum: 0 \| 1 \| 2_4 \| 5_9 \| 10_49 \| 50_99 \| 100_364 \| 365_plus)<br>`member_role` (enum: parent \| contributor) | PRD-REQ-016 |
-| `letter_opened` | A letter is opened to read | `author_relation` (enum: self \| other_parent \| family)<br>`has_audio` (bool) | PRD-REQ-016 |
 | `playback_started` | A recording starts playing | `surface` (enum: letter \| review \| read_together)<br>`author_relation` (enum: self \| other_parent \| family)<br>`version` (enum: listening_copy \| original) | PRD-REQ-016 |
 | `read_together_started` | Read together session starts | `child_ordinal` (enum: first \| second \| third_plus)<br>`access` (enum: plus \| free)<br>`letters_bucket` (enum: 0 \| 1 \| 2_4 \| 5_9 \| 10_49 \| 50_99 \| 100_364 \| 365_plus) | C-REQ-034, PRD-REQ-016 |
 | `read_together_ended` | Read together session ends | `reason` (enum: finished \| stopped \| interrupted)<br>`session_bucket` (enum: lt_1m \| 1_5m \| 5_15m \| gt_15m)<br>`letters_heard` (int 0 to 50) | PRD-REQ-016 |
+| `book_opened` | Book tab shown for a child | `child_ordinal` (enum: first \| second \| third_plus)<br>`letters_bucket` (enum: 0 \| 1 \| 2_4 \| 5_9 \| 10_49 \| 50_99 \| 100_364 \| 365_plus)<br>`member_role` (enum: parent \| contributor) | PRD-REQ-016 |
+| `letter_opened` | A letter is opened to read | `author_relation` (enum: self \| other_parent \| family)<br>`has_audio` (bool) | PRD-REQ-016 |
 
 #### family
 
 | Event | Fires when | Properties (type: allowed values) | Serves |
 |---|---|---|---|
-| `invite_created` | A parent creates an invite | `role` (enum: parent \| contributor)<br>`channel` (enum: share_sheet \| copy_link \| code)<br>`shared` (bool)<br>`child_ordinal` (enum: first \| second \| third_plus) | B-REQ-007, B-NFR-001, PRD-REQ-014 |
-| `invite_accepted` | An invite is accepted in the app (observed). Server aggregates count every acceptance | `role` (enum: parent \| contributor)<br>`surface` (enum: app) | B-NFR-001 |
 | `invite_failed` | Creating or accepting an invite failed (the reason class only) | `stage` (enum: create \| accept)<br>`reason` (enum: expired \| used \| revoked \| already_member \| not_found \| not_parent \| rate_limited \| consent_needed \| book_deleted \| signed_out \| network \| unknown) | B-REQ-007 |
 | `family_letter_reviewed` | A parent decides on a family letter | `decision` (enum: added \| kept_aside) | B-REQ-009, B-NFR-001 |
 | `member_removed` | A parent removes a member | `role` (enum: parent \| contributor) | B-REQ-010 |
 | `member_left` | A member leaves a book | `role` (enum: parent \| contributor)<br>`letters` (enum: keep \| take_out) | B-REQ-010 |
+| `invite_created` | A parent creates an invite | `role` (enum: parent \| contributor)<br>`channel` (enum: share_sheet \| copy_link \| code)<br>`shared` (bool)<br>`child_ordinal` (enum: first \| second \| third_plus) | B-REQ-007, B-NFR-001, PRD-REQ-014 |
+| `invite_accepted` | An invite is accepted in the app (observed). Server aggregates count every acceptance | `role` (enum: parent \| contributor)<br>`surface` (enum: app) | B-NFR-001 |
 
 #### reminders
 
@@ -212,22 +215,24 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 
 | Event | Fires when | Properties (type: allowed values) | Serves |
 |---|---|---|---|
-| `plus_offer_viewed` | Apple's subscription store view presented | `trigger` (enum: chapter_complete \| keep_letter \| backup \| themes \| settings) | C-REQ-034, C-REQ-023 |
-| `plus_offer_closed` | Apple's subscription store view closed | `trigger` (enum: chapter_complete \| keep_letter \| backup \| themes \| settings)<br>`outcome` (enum: purchased \| dismissed \| unavailable) | C-REQ-034, C-NFR-002 |
-| `plan_changed` | The plan StoreKit reports on this device changed state (observed; production transactions only) | `from_state` (enum: none \| trial \| active \| grace \| billing_retry \| expired \| refunded \| revoked)<br>`to_state` (enum: none \| trial \| active \| grace \| billing_retry \| expired \| refunded \| revoked)<br>`period` (enum: month \| year \| unknown)<br>`ownership` (enum: purchased \| family_shared \| unknown) | C-REQ-034, C-NFR-002 |
+| `offer_code_redeemed` | Apple's offer code sheet closed and Plus was on afterwards | (none) | C-REQ-034 |
+| `restore_result` | Restore purchases finished | `outcome` (enum: restored \| nothing \| cancelled \| failed \| unavailable) | C-REQ-034, C-NFR-003 |
 | `free_allowance_reached` | The last free letter was kept, so the next Keep will ask for Plus (once per phone) | `allowance` (int 2 to 100) | C-REQ-034, C-REQ-023 |
 | `keep_gate_shown` | The Keep sheet asked for Plus (the letter is held on the phone) | `letters_kept` (int 0 to 1000)<br>`allowance` (int 2 to 100)<br>`lapsed` (int 0 to 1) | C-REQ-034, C-REQ-023 |
 | `letter_held` | The person chose to keep the letter on the phone for now instead of starting Plus | `letters_kept` (int 0 to 1000) | C-REQ-034, C-REQ-023 |
 | `plus_started_from_gate` | Plus was on after the Keep sheet (bought, restored, an Ask to Buy approval, or an offer code) | `letters_kept` (int 0 to 1000) | C-REQ-034, C-REQ-023 |
-| `offer_code_redeemed` | Apple's offer code sheet closed and Plus was on afterwards | (none) | C-REQ-034 |
-| `restore_result` | Restore purchases finished | `outcome` (enum: restored \| nothing \| cancelled \| failed \| unavailable) | C-REQ-034, C-NFR-003 |
+| `plus_offer_viewed` | Apple's subscription store view presented | `trigger` (enum: chapter_complete \| keep_letter \| backup \| themes \| settings) | C-REQ-034, C-REQ-023 |
+| `plus_offer_closed` | Apple's subscription store view closed | `trigger` (enum: chapter_complete \| keep_letter \| backup \| themes \| settings)<br>`outcome` (enum: purchased \| dismissed \| unavailable) | C-REQ-034, C-NFR-002 |
+| `plan_changed` | The plan StoreKit reports on this device changed state (observed; production transactions only) | `from_state` (enum: none \| trial \| active \| grace \| billing_retry \| expired \| refunded \| revoked)<br>`to_state` (enum: none \| trial \| active \| grace \| billing_retry \| expired \| refunded \| revoked)<br>`period` (enum: month \| year \| unknown)<br>`ownership` (enum: purchased \| family_shared \| unknown) | C-REQ-034, C-NFR-002 |
 
 #### errors
 
 | Event | Fires when | Properties (type: allowed values) | Serves |
 |---|---|---|---|
-| `error_shown` | A user-facing error from strings `errors.*` is shown | `code` (enum: save_failed \| mic_denied \| transcription_failed \| offline \| backup_failed \| invite_expired \| storage_low \| generic) | PRD-REQ-016 |
 | `sync_failed` | A sync attempt fails after retries | `reason` (enum: network \| auth \| conflict \| server \| unknown) | PRD-REQ-016 |
+| `error_shown` | A user-facing error from strings `errors.*` is shown | `code` (enum: save_failed \| mic_denied \| transcription_failed \| offline \| backup_failed \| invite_expired \| storage_low \| generic) | PRD-REQ-016 |
+
+Held, not sendable (47; typed in catalog.ts for call sites that still exist, dropped and counted at run time until each gets a registry row with a decision, a plan row and a privacy look, or is removed): `account_deletion`, `app_backgrounded`, `app_cold_start`, `auth_deferred`, `auth_email_sent`, `auth_failed`, `auth_method_selected`, `auth_sheet_shown`, `child_setting_changed`, `child_switched`, `dictionary_term_added`, `export_completed`, `export_failed`, `export_shared`, `export_started`, `family_letter_reviewed`, `goals_set`, `invite_failed`, `invite_opened`, `language_set`, `letter_deleted`, `local_merge_choice`, `machine_edit_rejected`, `machine_edit_reverted`, `make_it_yours_card`, `member_left`, `member_removed`, `moment_shown`, `notification_opened`, `offer_code_redeemed`, `os_permission_result`, `pack_download`, `playback_started`, `read_together_ended`, `read_together_started`, `reminder_prime_result`, `reminder_prime_shown`, `reminder_schedule_set`, `reminder_sent`, `reminder_suppressed`, `restore_result`, `resurface_opened`, `resurface_shown`, `review_action`, `settings_changed`, `signed_out`, `sync_failed`.
 
 Global properties: `schema_version` (int 1 to 1000), `child_count_bucket`? (enum: none \| one \| two \| three_plus), `sample_pct`? (int 1 to 99).
 <!-- catalogue:end -->
@@ -236,7 +241,7 @@ Global properties: `schema_version` (int 1 to 1000), `child_count_bucket`? (enum
 
 | Property | Type and values | Level | Why |
 |---|---|---|---|
-| `schema_version` | int 1 to 1000 (currently 5; required; a test pins the catalogue fingerprint, so a changed event needs a new version) | L2 | Lets queries span catalogue changes |
+| `schema_version` | int 1 to 1000 (currently 12; required; a test pins the catalogue fingerprint, so a changed event needs a new version) | L2 | Lets queries span catalogue changes |
 | `child_count_bucket`? | enum: none, one, two, three_plus | L2 | K-01 asks for it as a user property; LEGAL-REQ-017 forbids person properties beyond the id. Decision: send it as an event property, which satisfies both |
 | `sample_pct`? | int 1 to 99 | L2 | Present only on sampled events, so counts can be re-weighted |
 

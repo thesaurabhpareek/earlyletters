@@ -1,0 +1,4 @@
+// fixture: library-reexport-not-on-allowlist. Fictional family Asha; not compiled, read by test/media-ast-scan.test.ts as text.
+// as: apps/mobile/src/lib/media/fixture.ts
+// expect: library-call-not-allowed
+export { getAssetInfoAsync } from 'expo-media-library';

@@ -1,5 +1,6 @@
 export * from './schema';
 export * from './catalog';
+export * from './values';
 export * from './tiers';
 export * from './registry';
 export * from './validate';
