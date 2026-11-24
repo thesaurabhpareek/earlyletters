@@ -47,7 +47,7 @@ test('[BL-1883] build-dependent privacy lines name the build they are true for',
     'strings.en.ts#en.settings.privacy.keptOnPhone': 'servers off', 'strings.en.ts#en.settings.privacy.keptSynced': 'servers on',
     'strings.en.ts#en.whereLive.onPhone': 'servers off', 'strings.en.ts#en.whereLive.onPhoneSynced': 'servers on',
     'strings.en.ts#en.settings.erase.onThisPhone': 'servers off', 'features/account-deletion.en.ts#accountDeletionCopy.what.intro': 'servers on',
-    'store.en.ts#storeListing.reviewNotes': 'servers off', 'release/app-review.en.ts#notesServersOn': 'servers on',
+    'store.en.ts#storeListing.reviewNotes': 'servers on', 'release/app-review.en.ts#notesServersOn': 'servers on',
   };
   for (const [id, v] of Object.entries(want)) assert.equal(bdOf(byId(id)), v, id);
   // a flag does not replace a hold: the erase line is both
