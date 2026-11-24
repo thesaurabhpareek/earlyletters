@@ -1551,3 +1551,13 @@ Challenge record for CR-215 to CR-224 (24 Nov, afternoon): self-challenged only 
 - Why: (c) catches the six true asks without making every edit to a standing flag loud.
 - UNVERIFIED: the guard was not run on open PR text.
 - Door: two-way. Way back: revert the one regex change and its test in BL-2224.
+
+### CR-227 BL-2030: the 18 open NS-54 P0 rows are seeded into the NS baseline once (24 Nov 2026, Karma under CR-176, D-165 standing rule 2)
+- Verdict: RULED. Founder-only: no. Signed: Karma.
+- Decision group: harness hygiene. Cites CR-176, D-165, D-168, BL-964, BL-1869, BL-1888 to BL-1910, BL-2030.
+- Ruling: T1, reversible. Seed all 18 open NS-54 P0 rows (R6, R8, R10, R11, R13, R15, R16, R18, R19, R21, R24, R25, R27, R31, R34, R35, R38, R40) into `docs/ops/trace-ns-baseline.txt` as a one-time seed, in one commit whose message says so. Card 29 is PROPOSED and the features are unbuilt, so a test written now would test nothing and would be dishonest. Each row already has an owning backlog row (BL-1888 to BL-1910). A baseline line records a gap and promises no one anything.
+- Rule that goes with it: each line leaves the baseline in the PR that adds its `[NS-54-Rn]` test. Nobody adds a baseline line to make a build pass any other way. The seed merges before BL-1869's step is applied, so the base copy (`--ns-base`) already holds the lines.
+- Not ruled here: the 170 NS-53 rows, NS-21-R12b (a test cites an id no card defines: fix the test title or the card, not the baseline) and NS-51-R43 are not seeded. The 67 stale baseline lines may be deleted (the baseline may shrink) but not in this change. These stay open in the follow-up row filed with this ruling.
+- Why: it makes the ratchet usable without hiding the 18 and without writing tests for features that do not exist.
+- UNVERIFIED: the NS-53 rows were not read; whether existing tests can honestly carry the id of NS-54-R10, R11 and R21 was not checked.
+- Door: two-way. Way back: delete the 18 lines from `docs/ops/trace-ns-baseline.txt` and run `node scripts/trace.mjs --no-write --check`; the 18 rows show as FAIL again.
