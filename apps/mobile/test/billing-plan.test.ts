@@ -3,7 +3,7 @@
  * PlanView -> decide(). Pure logic only; the native module and Apple's sheets
  * are checked on a device (docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md, sandbox list).
  */
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { decideKeepLetter, planActive, type PlanView } from '@scribe/core';
 import { describe, expect, it } from 'vitest';
@@ -410,3 +410,33 @@ describe('what the store view promises', () => {
     expect(all).not.toMatch(/\$\d|\d+(\.\d+)? ?(USD|dollars)|1 month free|2 months free/i);
   });
 });
+
+describe('Read together meets no paywall (BL-407, D-051 edge 5, D-082, D-083, F14-REQ-029, J11-05)', () => {
+  const root = join(__dirname, '..');
+  const screen = readFileSync(join(root, 'src', 'app', 'read-together.tsx'), 'utf8');
+  // Strip comments so the explanation of the rule cannot satisfy or trip the check.
+  const bare = (t: string) => t.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  const code = bare(screen);
+
+  it('[D-083] the screen never opens a Plus gate, the sheet, a purchase or a decide() call', () => {
+    expect(code).not.toMatch(/plus-gate|PlusGate|plus\/|presentPlus|purchase|decide[A-Za-z]*\(/);
+    // hasPlus() is read once, for the content-free analytics `access` field only.
+    expect(code.match(/@\/lib\/billing/g)?.length).toBe(1);
+    expect(code).toMatch(/import \{ hasPlus \} from '@\/lib\/billing'/);
+  });
+
+  it('[D-082] no session counter is kept, so a fourth opening is the same as the first', () => {
+    const everything = readdirTree(join(root, 'src')).map((f) => bare(readFileSync(f, 'utf8'))).join('\n');
+    expect(everything).not.toMatch(/readTogether\.sessions|READ_TOGETHER_SESSIONS_KEY/);
+  });
+
+  it('[D-051 edge 5] no gate line says how many times a free family has read together', () => {
+    expect(JSON.stringify(billingCopy)).not.toMatch(/read together[^"]{0,30}\d+ times|\d+ (free )?sessions/i);
+  });
+});
+
+function readdirTree(dir: string): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+    e.isDirectory() ? readdirTree(join(dir, e.name)) : /\.(ts|tsx)$/.test(e.name) ? [join(dir, e.name)] : [],
+  );
+}
