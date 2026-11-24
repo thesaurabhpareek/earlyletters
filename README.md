@@ -21,7 +21,7 @@ At the end of the day, you say a few words to your child. A first laugh, a long 
 
 - **Your words stay yours.** It never adds a word, and it never rewrites what you said.
 - **Only small fixes.** An um, an accidental repeat, a name spelled the way you spell it, a capital letter, a full stop. A microphone can mishear, so you read each letter before you keep it.
-- **Every change is marked.** You can see each fix, and put any of them back.
+- **Every word we change is marked.** You can see each fix, and put any of them back.
 - **Your voice is kept.** Each letter you speak keeps its original recording, unchanged.
 - **Typed letters stay as typed.** Letters you type stay exactly as you typed them.
 - **Nothing keeps score.** Some days you have a sentence, some days a long letter. Speak or type when you have something to say.

@@ -12,7 +12,7 @@ Early Letters: Memory Book
 
 Letters to your child, in your own words and voice. It stays in your words.
 
-### Full description (2623/4000)
+### Full description (2631/4000)
 
 ```text
 Early Letters: letters to your child, in your own words and voice.
@@ -20,7 +20,7 @@ Early Letters: letters to your child, in your own words and voice.
 Say a few words to your child at the end of the day. A first laugh, a long night, a song you made up in the car. Early Letters keeps it as a letter, in your words and in your voice, and files it by month of age. Over time it becomes a book your child can read, and hear, for years.
 
 IT STAYS IN YOUR WORDS
-Your speech is written down on your phone. Early Letters fixes only small slips: an um, an accidental repeat, a name spelled the way you spell it, a capital letter, a full stop. It never adds a word. Every change is marked, and you can put any of them back. A microphone can mishear, so read each letter before you keep it. Letters you type stay exactly as you typed them.
+Your speech is written down on your phone. Early Letters fixes only small slips: an um, an accidental repeat, a name spelled the way you spell it, a capital letter, a full stop. It never adds a word. Every word we change is marked, and you can put any of them back. A microphone can mishear, so read each letter before you keep it. Letters you type stay exactly as you typed them.
 
 YOUR VOICE, KEPT
 Each letter you speak keeps its original recording, unchanged. It stays on your phone. Years from now, your child can hear how you sounded when you said it.
