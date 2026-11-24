@@ -15,6 +15,5 @@ This is a 10-row seed in the current file order, so merging it changes nothing. 
 | 5 | BL-372 | T2 | Seed row: first ready agent rows in file order |
 | 6 | BL-373 | T2 | Seed row: first ready agent rows in file order |
 | 7 | BL-374 | T2 | Seed row: first ready agent rows in file order |
-| 8 | BL-384 | T2 | Seed row: first ready agent rows in file order |
 | 9 | BL-385 | T2 | Seed row: first ready agent rows in file order |
 | 10 | BL-390 | T2 | Seed row: first ready agent rows in file order |
