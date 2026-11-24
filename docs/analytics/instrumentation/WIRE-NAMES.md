@@ -4,7 +4,7 @@ Generated from `packages/analytics/src/wire-names.ts` by `npm run wire-names -w 
 
 Nothing here renames anything. The catalogue and registry still hold the old names; the rename PRs (step 2) read this table. The tier column is today's tier from the catalogue and registry rows, and the basics set stays pinned to `screen_view` by `test/tiers.test.ts`.
 
-Counts: 73 keys: 31 ruled by 2.9, 17 named by the 24 Nov rulings, 4 merged, 17 dropped, 4 patterns generated per registered id, 0 NEEDS RULING. After step 2a the table has 52 keys, 48 with a name of their own.
+Counts: 73 keys: 30 ruled by 2.9, 17 named by the 24 Nov rulings, 4 merged, 18 dropped, 4 patterns generated per registered id, 0 NEEDS RULING. After step 2a the table has 51 keys, 47 with a name of their own.
 
 Reading a row. "Ruled" means 2.9 names this event (a domain row, the seven examples of line 118, or the Basics patterns) and the catalogue meaning matches it. "Named" means 2.9 did not decide and the exec rulings of 24 Nov 2026 (BL-1255 step 1b) assigned the name. "Merged" means the key is folded into another and has no name of its own; its target is shown. "Dropped" means no event: step 2a deletes the key and its call sites. NEEDS RULING (none today) would mean a new key with no decision.
 
@@ -30,7 +30,7 @@ Reading a row. "Ruled" means 2.9 names this event (a domain row, the seven examp
 | `review_action` | catalogue | capture | consented | named | `capture:review_update` | PM1 `capture.review.selected`, a step of funnel F2; `selected` folds to `update`; `submit` is for forms |
 | `machine_edit_reverted` | catalogue | capture | consented | named | `capture:edit_restore` | the 2.4 `restore` row names "a reverted machine edit"; PM1 `edit_cancel` loses; constitution guardrail and insights reader |
 | `machine_edit_rejected` | catalogue | capture | consented | named | `capture:edit_decline` | PM1 `capture.edit.declined`; `decline` is "from us" (the verifier); same guardrail and reader |
-| `letter_deleted` | catalogue | capture | consented | ruled | `keeping:letter_delete` | 2.9 domain table: `keeping.letter.deleted` (the catalogue row also covers restore, which 2.9 names `keeping:letter_restore`; any split is a property question for the rename PR) |
+| `letter_deleted` | catalogue | capture | consented | dropped | (none) | retired under CR-225: no decision reads it, PM3 section 8 and R-K1 to R-K3 keep it at T0 (a per-id trace of what a family deleted, fired inside the deletion flows), and it was held, so it has no history; `keeping:letter_delete` and `keeping:letter_restore` are never assigned and are barred by pattern |
 | `language_set` | catalogue | languages | consented | ruled | `me:language_update` | 2.9 domain table: `me.language.changed` |
 | `pack_download` | catalogue | languages | consented | named | `system:pack_download_update` | PM1 maps four states to this one key and 2.9 only holds `pack_start`; `changed` folds to `update`; the `pack_download` object keeps it from reading as a pack version update |
 | `playback_started` | catalogue | book | consented | ruled | `book:playback_start` | 2.9 domain table: `book.playback.started` |
@@ -144,5 +144,4 @@ No `metric` id is registered yet in `ids.ts`, so no name is generated today.
 ## Open items
 
 1. Privacy advice on the 1.0 candidate list (CPrivO-52, CR-212; advisory, not a decision, no code change here). `ENGINEERING-REQUIREMENTS-21nov.md` ER-B02 lists seven candidate funnel-step names for the basics tier. Advice, ruled on 24 Nov 2026: drop `family:invite_create` and `family:invite_accept` (D-161 and D-162: no 1.0 build has an invite door), and strike `onboarding:first_letter_complete` (a server count, with no key, and opt-in comes after the first letter). That leaves four: `capture:letter_save`, `capture:take_start`, `plus:offer_view`, `keeping:export_complete`, each with counts and enums only. Privacy decides them at step 3, its own PR, which edits the set pinned in `test/tiers.test.ts`; the basics set stays `screen_view` only until then.
-2. Not decided here: whether `letter_deleted` (ruled at `keeping:letter_delete`) survives PM3 R-K1 to R-K3, which propose retiring it. It needs the same exec look as `account_deletion` before step 2a.
-3. The registry-only keys `control_tapped`, `surface_impressed`, `perf_measured` stand for names generated per id; no control, element or metric id is registered yet, so none is generated today.
+2. The registry-only keys `control_tapped`, `surface_impressed`, `perf_measured` stand for names generated per id; no control, element or metric id is registered yet, so none is generated today.

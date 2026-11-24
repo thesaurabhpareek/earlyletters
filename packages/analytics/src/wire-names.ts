@@ -46,7 +46,8 @@ const drop = (basis: string): RowKind => ({ status: 'dropped', basis });
 /**
  * Hand-decided rows, in catalogue order then registry-only. The generator checks that this covers every key exactly once.
  * The 39 keys 2.9 left open were ruled on 24 Nov 2026 (BL-1255 step 1b, `infra/exec-rulings-2026-11-24-wire-names.md`):
- * 17 named, 4 merged, 17 dropped, and `sync_failed`, which 2.9 already names. Nothing is renamed or deleted here (step 2).
+ * 17 named, 4 merged, 17 dropped, and `sync_failed`, which 2.9 already names. `letter_deleted` was ruled the same day to be
+ * the 18th drop (`infra/exec-rulings-2026-11-24-letter-deleted.md`, CR-225). The key is deleted in step 2a (BL-2175), not here.
  */
 export const WIRE_ROWS: Readonly<Record<string, RowKind>> = {
   // app
@@ -81,7 +82,7 @@ export const WIRE_ROWS: Readonly<Record<string, RowKind>> = {
   review_action: named('capture:review_update', 'PM1 `capture.review.selected`, a step of funnel F2; `selected` folds to `update`; `submit` is for forms'),
   machine_edit_reverted: named('capture:edit_restore', 'the 2.4 `restore` row names "a reverted machine edit"; PM1 `edit_cancel` loses; constitution guardrail and insights reader'),
   machine_edit_rejected: named('capture:edit_decline', 'PM1 `capture.edit.declined`; `decline` is "from us" (the verifier); same guardrail and reader'),
-  letter_deleted: ruled('keeping:letter_delete', `${S}: \`keeping.letter.deleted\` (the catalogue row also covers restore, which 2.9 names \`keeping:letter_restore\`; any split is a property question for the rename PR)`),
+  letter_deleted: drop('retired under CR-225: no decision reads it, PM3 section 8 and R-K1 to R-K3 keep it at T0 (a per-id trace of what a family deleted, fired inside the deletion flows), and it was held, so it has no history; `keeping:letter_delete` and `keeping:letter_restore` are never assigned and are barred by pattern'),
   // languages
   language_set: ruled('me:language_update', `${S}: \`me.language.changed\``),
   pack_download: named('system:pack_download_update', 'PM1 maps four states to this one key and 2.9 only holds `pack_start`; `changed` folds to `update`; the `pack_download` object keeps it from reading as a pack version update'),
@@ -201,8 +202,7 @@ export function renderWireNames(): string {
     '## Open items',
     '',
     '1. Privacy advice on the 1.0 candidate list (CPrivO-52, CR-212; advisory, not a decision, no code change here). `ENGINEERING-REQUIREMENTS-21nov.md` ER-B02 lists seven candidate funnel-step names for the basics tier. Advice, ruled on 24 Nov 2026: drop `family:invite_create` and `family:invite_accept` (D-161 and D-162: no 1.0 build has an invite door), and strike `onboarding:first_letter_complete` (a server count, with no key, and opt-in comes after the first letter). That leaves four: `capture:letter_save`, `capture:take_start`, `plus:offer_view`, `keeping:export_complete`, each with counts and enums only. Privacy decides them at step 3, its own PR, which edits the set pinned in `test/tiers.test.ts`; the basics set stays `screen_view` only until then.',
-    '2. Not decided here: whether `letter_deleted` (ruled at `keeping:letter_delete`) survives PM3 R-K1 to R-K3, which propose retiring it. It needs the same exec look as `account_deletion` before step 2a.',
-    '3. The registry-only keys `control_tapped`, `surface_impressed`, `perf_measured` stand for names generated per id; no control, element or metric id is registered yet, so none is generated today.',
+    '2. The registry-only keys `control_tapped`, `surface_impressed`, `perf_measured` stand for names generated per id; no control, element or metric id is registered yet, so none is generated today.',
     '',
   );
   return out.join('\n');

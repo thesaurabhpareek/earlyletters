@@ -643,7 +643,7 @@ describe('the wiring that is read off the source (the behaviour is run in accoun
   it('[S-2] the Delete account hook notes the request when the server answers it, before anything that can wait or fail, and notes a cancel', () => {
     const s = read('lib', 'account-deletion', 'use-account-deletion.ts');
     expect(s).toContain('recordRequested(r.value);');
-    expect(s.indexOf('recordRequested(r.value);')).toBeLessThan(s.indexOf("analytics.track('account_deletion'"));
+    expect(s).not.toMatch(/analytics\.track\(/); // no event is sent for the deletion flow (BL-2175)
     expect(s.indexOf('recordRequested(r.value);')).toBeLessThan(s.indexOf('await withdrawAnalytics()'));
     expect(s).toContain('recordCancelled();');
     expect(s.indexOf('const r = await cancelDeletion(client);')).toBeLessThan(s.indexOf('recordCancelled();'));
