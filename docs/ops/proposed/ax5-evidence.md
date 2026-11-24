@@ -1,6 +1,6 @@
 # Proposed: AX5 screens and accessibility-tree evidence job (BL-409)
 
-Apply it from the repo root (Karma; it changes `.github/`, so the CR-22 and D-124 rule on workflow edits applies, and the PR that applies it cites BL-2133):
+Apply it from the repo root. It writes `.github/workflows/`, which agent sessions cannot push (see Status below), so whoever applies it uses an account that can; the commit that applies it cites BL-2133:
 
 ```
 git apply --check docs/ops/proposed/workflows/a11y-evidence.patch && git apply docs/ops/proposed/workflows/a11y-evidence.patch

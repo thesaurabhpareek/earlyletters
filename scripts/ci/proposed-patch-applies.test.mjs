@@ -137,3 +137,56 @@ test('[BL-2133] paths that leave the repo are a problem, not a write', () => {
   const evil = MODIFY.replaceAll('w.yml', '../w.yml');
   assert.match(check(evil, { '../w.yml': 'a\nb\nc\nd\n' })[0], /leaves the repo or is malformed/);
 });
+
+test('[BL-2133] parser: git apply anchors, a hunk at line 1 matches only at the top, one with no trailing context only at the end', () => {
+  const file = { 'w.yml': 'a\nb\nc\nd\ne\nf\n' };
+  const top = ['--- a/w.yml', '+++ b/w.yml', '@@ -1,2 +1,3 @@', ' c', '+X', ' d', ''].join('\n');
+  assert.match(check(top, file)[0], /hunk at line 1 does not match/, 'context found lower down is not the top');
+  const notEnd = ['--- a/w.yml', '+++ b/w.yml', '@@ -2,2 +2,2 @@', ' b', '-c', '+C', ''].join('\n');
+  assert.match(check(notEnd, file)[0], /hunk at line 2 does not match/, 'no trailing context must sit at the end');
+  const atEnd = ['--- a/w.yml', '+++ b/w.yml', '@@ -5,2 +5,2 @@', ' e', '-f', '+F', ''].join('\n');
+  assert.deepEqual(check(atEnd, file), []);
+});
+
+test('[BL-2133] parser: the final newline must agree with the "No newline at end of file" marker', () => {
+  const noNl = { 'n.yml': 'a\nb\nc' };
+  const withNl = { 'n.yml': 'a\nb\nc\n' };
+  const marked = ['--- a/n.yml', '+++ b/n.yml', '@@ -2,2 +2,2 @@', ' b', '-c', '\\ No newline at end of file', '+C', '\\ No newline at end of file', ''].join('\n');
+  const unmarked = ['--- a/n.yml', '+++ b/n.yml', '@@ -2,2 +2,2 @@', ' b', '-c', '+C', ''].join('\n');
+  assert.deepEqual(check(marked, noNl), []);
+  assert.match(check(marked, withNl)[0], /does not match/);
+  assert.deepEqual(check(unmarked, withNl), []);
+  assert.match(check(unmarked, noNl)[0], /does not match/);
+});
+
+test('[BL-2133] parser: hunks must come in file order, and a short hunk header is an error, not a skipped line', () => {
+  const file = { 'w.yml': 'a\nb\nc\nd\ne\nf\n' };
+  const h1 = ['@@ -1,2 +1,2 @@', '-a', '+A', ' b'];
+  const h2 = ['@@ -4,3 +4,3 @@', ' d', '-e', '+E', ' f'];
+  const head = ['--- a/w.yml', '+++ b/w.yml'];
+  assert.deepEqual(check([...head, ...h1, ...h2, ''].join('\n'), file), []);
+  assert.equal(check([...head, ...h2, ...h1, ''].join('\n'), file).length, 1, 'out of order fails closed');
+  assert.throws(() => parsePatch([...head, '@@ -4,2 +4,2 @@', ' d', '-e', '+E', ' f', ''].join('\n')), /outside any hunk/);
+});
+
+test('[BL-2133] every bad file in a patch is reported, not only the first', () => {
+  const two = [
+    'diff --git a/../x b/../x', '--- a/../x', '+++ b/../x', '@@ -1 +1 @@', '-a', '+b',
+    'diff --git a/gone.yml b/gone.yml', '--- a/gone.yml', '+++ b/gone.yml', '@@ -1 +1 @@', '-a', '+b', '',
+  ].join('\n');
+  const problems = check(two, {});
+  assert.equal(problems.length, 2);
+  assert.match(problems[0], /leaves the repo/);
+  assert.match(problems[1], /gone\.yml: the patch changes it, but it does not exist/);
+});
+
+test('[BL-2133] unsafe paths never reach git: the tracked tree treats them as absent', () => {
+  const tree = trackedTree(['../outside.yml', '/etc/passwd', '--output=x', 'package.json']);
+  try {
+    assert.equal(tree.exists('../outside.yml'), false);
+    assert.equal(tree.exists('/etc/passwd'), false);
+    assert.equal(tree.exists('package.json'), true);
+  } finally {
+    tree.dispose();
+  }
+});

@@ -112,6 +112,9 @@ export function parsePatch(text) {
       cur.hunks.push(hunk);
       continue;
     }
+    if (/^[ +-]/.test(line) && !line.startsWith('--- ') && !line.startsWith('+++ ')) {
+      throw new Error(`diff line outside any hunk in ${cur.newPath ?? cur.oldPath}: a hunk header undercounts its lines`);
+    }
     i++;
   }
   if (files.length === 0) throw new Error('no file diffs found in the patch');
@@ -119,7 +122,7 @@ export function parsePatch(text) {
 }
 
 /** A path the patch names must stay inside the repo: relative, no `..`, no backslash, no empty segment. */
-function unsafePath(p) {
+export function unsafePath(p) {
   return path.isAbsolute(p) || p.includes('\\') || p.split('/').some((s) => s === '..' || s === '' || s === '.');
 }
 
@@ -139,17 +142,21 @@ function matchesAt(fileArr, pre, at) {
 /**
  * Check parsed files against a tree: { exists(path) -> boolean, read(path) -> string }. Returns a list of problems,
  * one string each; an empty list means every path and every context line is consistent with the tree. Like `git apply`
- * without fuzz: a hunk may sit at another line (an offset) but its context must match exactly, and hunks go in order.
+ * without fuzz: a hunk may sit at another line (an offset) but its context must match exactly, a hunk at line 0 or 1
+ * must match at the top and one with no trailing context at the end, and the final newline must agree. One deliberate
+ * difference: hunks must come in file order (git accepts them out of order; no diff tool writes them that way), so this
+ * check is stricter than `git apply --check`, never looser.
  */
 export function checkPatch(files, tree) {
   const problems = [];
   const seen = new Set();
   for (const f of files) {
     const target = f.kind === 'delete' ? f.oldPath : f.newPath;
-    for (const p of [f.oldPath, f.newPath]) {
-      if (p && unsafePath(p)) problems.push(`${p}: path leaves the repo or is malformed`);
+    const bad = [f.oldPath, f.newPath].filter((p) => p && unsafePath(p));
+    if (bad.length) {
+      for (const p of new Set(bad)) problems.push(`${p}: path leaves the repo or is malformed`);
+      continue; // this file only; later files are still checked and reported
     }
-    if (problems.length) continue;
     if (seen.has(target)) problems.push(`${target}: changed twice in one patch`);
     seen.add(target);
 
@@ -178,19 +185,31 @@ export function checkPatch(files, tree) {
     let from = 0;
     for (const h of f.hunks) {
       const pre = h.lines.filter((l) => l.op !== '+').map((l) => l.text);
+      // git apply's anchors (apply.c, match_beginning and match_end): a hunk that starts at line 0 or 1 must match at
+      // the top of the file, and a hunk with no trailing context line must match at its end.
+      let trailing = 0;
+      for (let k = h.lines.length - 1; k >= 0 && h.lines[k].op === ' '; k--) trailing++;
+      const mustStart = h.oldStart <= 1;
+      const mustEnd = trailing === 0;
+      const fits = (at) => {
+        if (at < from || !matchesAt(fileArr, pre, at)) return false;
+        if (mustStart && at !== 0) return false;
+        const atEnd = at + pre.length === fileArr.length;
+        if (mustEnd && !atEnd) return false;
+        // The last preimage line carries a newline unless the hunk says "\ No newline"; the file's last line must agree.
+        if (atEnd && pre.length > 0 && h.oldNoNewline === endsWithNewline) return false;
+        return true;
+      };
       const want = Math.max(0, h.oldStart - 1);
       let at = -1;
-      // Nearest match to the stated line first, then outward, never before the previous hunk's end.
+      // Nearest fit to the stated line first, then outward, never before the previous hunk's end.
       for (let d = 0; d <= fileArr.length; d++) {
-        if (want - d >= from && matchesAt(fileArr, pre, want - d)) { at = want - d; break; }
-        if (matchesAt(fileArr, pre, want + d) && want + d >= from) { at = want + d; break; }
+        if (fits(want - d)) { at = want - d; break; }
+        if (fits(want + d)) { at = want + d; break; }
       }
       if (at < 0) {
-        problems.push(`${f.oldPath}: hunk at line ${h.oldStart} does not match the file (context or removed lines changed)`);
+        problems.push(`${f.oldPath}: hunk at line ${h.oldStart} does not match the file (context, removed lines, position or final newline)`);
         continue;
-      }
-      if (h.oldNoNewline && (at + pre.length !== fileArr.length || endsWithNewline)) {
-        problems.push(`${f.oldPath}: hunk at line ${h.oldStart} expects no newline at end of file`);
       }
       from = at + pre.length;
     }
@@ -199,7 +218,7 @@ export function checkPatch(files, tree) {
 }
 
 function git(args, opts = {}) {
-  const r = spawnSync('git', args, { cwd: REPO_ROOT, encoding: opts.encoding ?? 'utf8', maxBuffer: 256 * 1024 * 1024, input: opts.input });
+  const r = spawnSync('git', ['--literal-pathspecs', ...args], { cwd: REPO_ROOT, encoding: opts.encoding ?? 'utf8', maxBuffer: 256 * 1024 * 1024, input: opts.input });
   if (r.status !== 0) throw new Error(`git ${args.join(' ')} failed: ${r.stderr}`);
   return r.stdout;
 }
@@ -210,15 +229,21 @@ function git(args, opts = {}) {
  * ignored on purpose: the question is whether the patch applies to what is committed.
  */
 export function trackedTree(paths, rev = 'HEAD') {
-  const wanted = [...new Set(paths.filter(Boolean))];
+  // Unsafe paths never reach git; checkPatch reports them.
+  const wanted = [...new Set(paths.filter((p) => p && !unsafePath(p)))];
   const existing = new Set(
     wanted.length ? git(['ls-tree', '-r', '--name-only', '-z', rev, '--', ...wanted]).split('\0').filter(Boolean) : [],
   );
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'proposed-patch-'));
-  if (existing.size) {
-    const tarball = git(['archive', '--format=tar', rev, '--', ...existing], { encoding: 'buffer' });
-    const r = spawnSync('tar', ['-x', '-f', '-', '-C', dir], { input: tarball });
-    if (r.status !== 0) throw new Error(`tar failed: ${r.stderr}`);
+  try {
+    if (existing.size) {
+      const tarball = git(['archive', '--format=tar', rev, '--', ...existing], { encoding: 'buffer' });
+      const r = spawnSync('tar', ['-x', '-f', '-', '-C', dir], { input: tarball });
+      if (r.status !== 0) throw new Error(`tar failed: ${r.stderr}`);
+    }
+  } catch (e) {
+    fs.rmSync(dir, { recursive: true, force: true });
+    throw e;
   }
   return {
     dir,
