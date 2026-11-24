@@ -29,7 +29,7 @@ export const BREAKDOWNS: Readonly<Partial<Record<EventName, readonly string[]>>>
   sync_failed: ['reason'],
   auth_failed: ['reason'],
   invite_failed: ['reason'],
-  export_failed: ['reason'],
+  'keeping:export_fail': ['reason'],
   read_together_started: ['access'],
 };
 
@@ -49,15 +49,20 @@ export const WEEKLY_EVENTS: readonly EventName[] = [
   'plus_offer_closed',
   'error_shown',
   'sync_failed',
-  'export_started',
-  'export_failed',
+  'keeping:export_start',
+  'keeping:export_fail',
 ];
 
 const ident = (s: string) => {
   if (!/^[a-z][a-z0-9_]{0,39}$/.test(s)) throw new Error('hogql: bad identifier');
   return s;
 };
-const list = (xs: readonly string[]) => xs.map((x) => `'${ident(x)}'`).join(', ');
+/** An event name: a bare key, or a wire name `<area>:<object>_<verb>` (BL-2176). Only letters, digits, `_` and one `:`, so it cannot close a string. */
+const eventIdent = (s: string) => {
+  if (!/^(?:[a-z][a-z0-9]*:)?[a-z][a-z0-9_]{0,59}$/.test(s)) throw new Error('hogql: bad event name');
+  return s;
+};
+const list = (xs: readonly string[]) => xs.map((x) => `'${eventIdent(x)}'`).join(', ');
 const weeksBack = (w: number) => Math.min(104, Math.max(1, Math.floor(w)));
 
 export interface HogQLQuery {
@@ -81,10 +86,10 @@ LIMIT 10000`,
 export function breakdownQuery(event: EventName, dim: string, weeks: number): HogQLQuery {
   if (!(dim in EVENTS[event].props)) throw new Error('hogql: property not in catalogue');
   return {
-    name: `insights_${ident(event)}_by_${ident(dim)}`,
+    name: `insights_${eventIdent(event).replace(':', '_')}_by_${ident(dim)}`,
     query: `SELECT toStartOfWeek(timestamp, 1) AS week, toString(properties.${ident(dim)}) AS value, count() AS events, count(DISTINCT distinct_id) AS people
 FROM events
-WHERE timestamp >= now() - INTERVAL ${weeksBack(weeks)} WEEK AND event = '${ident(event)}' AND properties.${ident(dim)} IS NOT NULL
+WHERE timestamp >= now() - INTERVAL ${weeksBack(weeks)} WEEK AND event = '${eventIdent(event)}' AND properties.${ident(dim)} IS NOT NULL
 GROUP BY week, value
 HAVING people >= ${K_MIN}
 ORDER BY week, value

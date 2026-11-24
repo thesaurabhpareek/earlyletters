@@ -5,8 +5,8 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { basicsEvents, EVENTS, REGISTRY, tierOf } from '../src';
-import { allKeys, expandPattern, renderWireNames, RETIRED_ROWS, WIRE_NAME_MAX, WIRE_NAME_RE, WIRE_NAMES_PATH, WIRE_ROWS, type RowKind } from '../src/wire-names';
+import { basicsEvents, catalogShape, EVENTS, REGISTRY, tierOf } from '../src';
+import { allKeys, expandPattern, LEGACY_EVENT_NAMES, legacyNameOf, renderWireNames, RETIRED_ROWS, WIRE_NAME_MAX, WIRE_NAME_RE, WIRE_NAMES_PATH, WIRE_ROWS, wireNameOf, type RowKind } from '../src/wire-names';
 
 const doc = readFileSync(resolve(__dirname, '../../..', WIRE_NAMES_PATH), 'utf8');
 const keys = allKeys();
@@ -19,8 +19,9 @@ function names(r: RowKind): string[] {
 
 describe('every key has exactly one row', () => {
   it('covers the union of EVENTS and REGISTRY, and holds no row for a key that does not exist', () => {
+    // A row is keyed by the key it had before the rename (BL-2176), so a renamed key is looked up by what it was.
     const union = [...new Set([...Object.keys(EVENTS), ...Object.keys(REGISTRY)])].sort();
-    expect(Object.keys(WIRE_ROWS).sort()).toEqual(union);
+    expect(Object.keys(WIRE_ROWS).sort()).toEqual(union.map(legacyNameOf).sort());
     expect(keys.map((k) => k.key).sort()).toEqual(union);
   });
 
@@ -153,7 +154,7 @@ describe('tier column', () => {
     for (const k of keys) {
       expect(k.tier, k.key).toBe(tierOf(k.key) === 'basics' ? 'basics' : 'consented');
       const line = doc.split('\n').find((l) => l.startsWith(`| \`${k.key}\` |`))!;
-      expect(line.split('|')[4]!.trim(), k.key).toBe(k.tier);
+      expect(line.split('|')[5]!.trim(), k.key).toBe(k.tier);
     }
     expect(basicsEvents()).toEqual(['screen_view']);
     expect(keys.filter((k) => k.tier === 'basics').map((k) => k.key)).toEqual(['screen_view']);
@@ -164,5 +165,50 @@ describe('tier column', () => {
 describe('the generated file is current', () => {
   it('WIRE-NAMES.md equals the render (run `npm run wire-names -w @scribe/analytics` to refresh)', () => {
     expect(doc).toBe(renderWireNames());
+  });
+});
+
+/** The rename (BL-2176, CR-212 step 2): a key is either still the old key or already its wire name, never both, never neither. */
+describe('the rename', () => {
+  const owned = rows.flatMap(([key, r]) => (r.status === 'ruled' || r.status === 'named' ? [{ key, wire: r.wire }] : []));
+  const live = new Set([...Object.keys(EVENTS), ...Object.keys(REGISTRY)]);
+
+  it('every row that owns a name is held under exactly one of its two names', () => {
+    expect(owned).toHaveLength(47);
+    for (const { key, wire } of owned) expect([live.has(key), live.has(wire)].filter(Boolean), `${key} / ${wire}`).toHaveLength(1);
+  });
+
+  it('the mapping covers all 47 and reads both ways, so an old name still resolves', () => {
+    expect(Object.keys(LEGACY_EVENT_NAMES).sort()).toEqual(owned.map((o) => o.key).sort());
+    for (const { key, wire } of owned) {
+      expect(wireNameOf(key), key).toBe(wire);
+      expect(wireNameOf(wire), wire).toBe(wire);
+      expect(legacyNameOf(wire), wire).toBe(key);
+      expect(legacyNameOf(key), key).toBe(key);
+    }
+    for (const p of ['screen_view', 'control_tapped', 'surface_impressed', 'perf_measured']) {
+      expect(wireNameOf(p), p).toBe(p);
+      expect(live.has(p), p).toBe(true);
+    }
+    expect(wireNameOf('not_an_event')).toBe('not_an_event');
+    expect(wireNameOf('constructor')).toBe('constructor');
+  });
+
+  it('no property was added or widened, no tier or area changed, no row appeared or went: every pre-rename key still equals its snapshot (test/fixtures/catalog-before-rename.json)', () => {
+    const before = JSON.parse(readFileSync(resolve(__dirname, 'fixtures/catalog-before-rename.json'), 'utf8')) as Record<string, Record<string, unknown>>;
+    const shape = catalogShape() as { events: [string, string, unknown][] };
+    const now = new Map(shape.events.map(([name, level, props]) => {
+      const tier = (EVENTS as Record<string, { tier: string; area: string }>)[name]!;
+      const reg = (REGISTRY as Record<string, { stage: string; decision: string }>)[name];
+      return [legacyNameOf(name), { level, tier: tier.tier, area: tier.area, props, registry: reg ? { stage: reg.stage, decision: reg.decision } : null }];
+    }));
+    // A row added after the rename is not in the snapshot and is not this test's business; a row that went missing is.
+    for (const legacy of Object.keys(before)) expect(now.has(legacy), `${legacy} is gone`).toBe(true);
+    for (const [legacy, snap] of Object.entries(before)) expect(JSON.parse(JSON.stringify(now.get(legacy))), legacy).toEqual(snap);
+  });
+
+  it('perf stays consented and the basics set stays screen_view, whatever has been renamed', () => {
+    expect(tierOf('perf_measured')).toBe('consented');
+    expect(basicsEvents()).toEqual(['screen_view']);
   });
 });
