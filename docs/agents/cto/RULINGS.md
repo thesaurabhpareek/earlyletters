@@ -1373,6 +1373,8 @@ Founder standing approval and hard limits are quoted in the Batch 6 section of `
 - Not decisions, status corrections for product (pack open items): BL-983 says PR #767 merged but it is open; BL-2003 says BL-1867 merged but `eas.json` says otherwise (UNVERIFIED which is right); BL-931 reads in-progress though BL-939 says done; BL-1709 reads in-review though #1826 is merged.
 - Door: two-way for each. Physical acts named here sit in FOUNDER_QUEUE only (the AUTH_SETUP 11.10 device check, the PR #1924 hand application, the restore drill run).
 
+Challenge record for CR-202 to CR-212 (the held-PR rulings): self-challenged only (CTO skill section 10a), as the held-PRs note says; no separate challenger agent read them.
+
 ### CR-202 PR 449 agent runner hardening: close, keep the branch (24 Nov 2026, Karma and the exec team under D-168 and D-172)
 - Verdict: RULED close; branch `fix/injection-integrated` kept. Founder-only: no. Signed: Karma. Full text: Project note `infra/exec-rulings-2026-11-24-held-prs.md` section 1.
 - Decision group: lane stays off (CR-5, D-127). Cites CAIO-16, CISO-16, CISO-15.
@@ -1442,6 +1444,6 @@ Founder standing approval and hard limits are quoted in the Batch 6 section of `
 ### CR-213 The 39 wire names PR 1962 left as NEEDS RULING (BL-1255 step 1) (24 Nov 2026, Karma and the exec team under D-168 and D-172)
 - Verdict: RULED. Founder-only: no. Signed: Karma. Full text and the 39-row table: Project note `infra/exec-rulings-2026-11-24-wire-names.md`. Self-challenged only; a real challenger should still read rows 15, 17, 20, 21 and 34.
 - Decision group: analytics wire names. Cites CDO-32, CPrivO-54, CPO-93, CR-212, CDO-25.
-- Ruling: of the 39 keys, 18 are named, 4 merge into `screen_view` or perf, and 17 are dropped (held events have no history, so dropping before first send is free). No tier changes: the basics set stays pinned to `['screen_view']`. The nine categories stay closed. Conditions: step 1b corrects and re-renders the table on PR 1962 with `dropped` and `merged` statuses; step 2a deletes the dropped and merged rows and call sites in one PR cut on PR 1957 and re-expresses the return-to-book funnel; `FORBIDDEN_EVENT_PATTERNS` is re-expressed against wire names in the same step or the guard silently stops matching; `posthog-standard.md` gets a one-time edit by its owner afterwards. The `letter_deleted` key is flagged for a separate exec look.
+- Ruling: of the 39 keys, 18 are named, 4 merge into `screen_view` or perf, and 17 are dropped (held events have no history, so dropping before first send is free). No tier changes: the basics set stays pinned to `['screen_view']`. The nine categories stay closed. Conditions: step 1b (merged, PR 1972) corrected and re-rendered the table with `dropped` and `merged` statuses; step 2a deletes the dropped and merged rows and call sites in one PR cut on PR 1957 and re-expresses the return-to-book funnel; `FORBIDDEN_EVENT_PATTERNS` is re-expressed against wire names in the same step or the guard silently stops matching; `posthog-standard.md` gets a one-time edit by its owner afterwards. The `letter_deleted` key is flagged for a separate exec look.
 - UNVERIFIED: PostHog colon names in funnels and HogQL (standard 2.8).
 - Door: two-way. Way back: revert the step 2 PRs; re-add a key by a new row with a decision.
