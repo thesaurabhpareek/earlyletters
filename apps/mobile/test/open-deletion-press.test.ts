@@ -206,3 +206,66 @@ describe('Try again', () => {
     expect(t.ctl.get().notYet).toBe(false);
   });
 });
+
+describe('[BL-494 point 5] the controller holds up on its edges', () => {
+  it('(b) dispose clears the cap timer, so a screen that is gone leaves nothing waiting', () => {
+    const t = setup();
+    t.ctl.cancel();
+    expect(vi.getTimerCount()).toBe(1);
+    t.ctl.dispose();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('(a) attach after dispose lets a press through again, as React\'s development mount, cleanup and mount does', () => {
+    const t = setup();
+    t.ctl.dispose();
+    t.ctl.cancel();
+    expect(t.calls.cancel).toBe(0);
+    t.ctl.attach();
+    t.ctl.cancel();
+    expect(t.calls.cancel).toBe(1);
+  });
+
+  it('(d) a cancel that throws is a failed press, with the buttons back at once and no unhandled rejection', async () => {
+    const unhandled: unknown[] = [];
+    const seen = (e: unknown) => void unhandled.push(e);
+    process.on('unhandledRejection', seen);
+    try {
+      const t = setup({ cancel: () => Promise.reject(new Error('record_failed')) });
+      t.ctl.cancel();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(t.ctl.get()).toMatchObject({ working: null, failedPresses: 1, acted: true });
+      expect(unhandled).toEqual([]);
+    } finally {
+      process.off('unhandledRejection', seen);
+    }
+  });
+});
+
+describe('[BL-494 point 2] the lines the screen speaks also reach a live-region node (TalkBack)', () => {
+  it('say speaks the line and keeps it for the node; the same line said twice is a new one, and a screen that is gone says nothing', () => {
+    const t = setup();
+    expect(t.ctl.get().said).toBeNull();
+    t.ctl.say('Deletion cancelled.');
+    const first = t.ctl.get().said;
+    expect(first).toMatchObject({ text: 'Deletion cancelled.' });
+    t.ctl.say('Deletion cancelled.');
+    expect(t.ctl.get().said?.n).toBe((first?.n ?? 0) + 1);
+    expect(t.calls.announce).toEqual(['Deletion cancelled.', 'Deletion cancelled.']);
+    t.ctl.dispose();
+    t.ctl.say('Later.');
+    expect(t.calls.announce).toHaveLength(2);
+  });
+
+  it('the cancelling line and the Try again line go through say', async () => {
+    const t = setup();
+    t.ctl.cancel();
+    expect(t.ctl.get().said).toMatchObject({ text: c.open.cancelling });
+    t.finishCancel(true);
+    await settle();
+    t.ctl.retry();
+    t.finishPull();
+    await settle();
+    expect(t.ctl.get().said).toMatchObject({ text: c.open.notYet });
+  });
+});

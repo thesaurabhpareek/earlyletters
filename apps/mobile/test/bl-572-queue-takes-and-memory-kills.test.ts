@@ -45,7 +45,7 @@ vi.mock('../src/lib/capture/adts-file', () => ({ removeWholeFrameCopies: () => {
 vi.mock('../src/lib/audio-enhance', () => ({ copyForLetter: async () => {} }));
 vi.mock('../src/lib/analytics/track', () => ({ trackTranscriptionCompleted: () => {} }));
 vi.mock('../src/lib/language', () => ({ getSpokenLanguages: () => ({ languages: [] }) }));
-vi.mock('../src/lib/read-it-back', () => ({ flagReadItBack: () => {} }));
+vi.mock('../src/lib/read-it-back', () => ({ flagReadItBack: () => {}, clearReadItBack: () => {} }));
 vi.mock('../src/lib/transcribe-sample', () => ({ createSampleTranscriber: () => ({ id: 'sample', isSample: true, availability: async () => 'native-module-missing', transcribe: async () => { throw new Error('no sample'); } }) }));
 vi.mock('../src/lib/models/whisper-runtime', () => ({
   whisperModule: () => ({}),

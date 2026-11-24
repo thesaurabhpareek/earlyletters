@@ -36,12 +36,12 @@ in `test/migrations.test.ts`, and add the column to DATA_CLASSIFICATION 4.5.
 | `listEntries()` | Same, for the active child (unchanged signature). |
 | `getEntry(id)` | |
 | `setEntryInBook(id, inBook)` | Add to book / make private. Never touches text. |
-| `deleteEntry(id)` / `undeleteEntry(id)` | Tombstone only (the letter waits on the Recently deleted shelf). |
+| `deleteEntry(id)` / `undeleteEntry(id)` | Tombstone only (the letter waits on the Recently deleted shelf). Each returns false, with nothing queued, for a missing letter or one in a left book (BL-1959). |
 | `listDeleted()` | The shelf, newest deletion first (`deletedAt`). |
 | `eraseEntry(id, eraser)` | Erase a deleted letter for good: the recording file first, then the row, idempotent; false for a live letter, a sync build, or a file that would not go. Native eraser: `capture/erase.ts`. |
 | `purgeExpired(nowMs, eraser)` / `recordLaunch(nowMs)` | Launch purge of letters deleted 30 days ago or more (D-085). Counts time by the last recorded launch, not the clock now, so a clock that jumps ahead erases nothing at that launch (QE-05). No purge at a launch with no readable earlier launch, or whose clock is earlier than the last one (DL-04); the recorded launch follows the clock both ways. `purgeThenRecordLaunch` keeps the order (purge, then record) in one place. The server rules letters it holds when sync is on. |
-| `saveEntry(entry)` | Entries without a draft (Not much today, dev seed). `raw_transcript`, `captured_at` and audio never change after insert; `child_id` never changes once synced. |
-| `saveLetterFromDraft(draftId, entry, audioExists)` | Review's save: insert the letter and delete the draft in **one transaction** (DATA-REQ-048). Hash the audio first (`capture/recorder.ts` `ensureAudioHash`). Throws `AudioMissingError` for a spoken letter whose file is gone. |
+| `saveEntry(entry)` | Entries without a draft (Not much today, dev seed). False, nothing queued, for a letter in or aimed at a left book (BL-1959). `raw_transcript`, `captured_at` and audio never change after insert; `child_id` never changes once synced. |
+| `saveLetterFromDraft(draftId, entry, audioExists)` | Review's save: insert the letter and delete the draft in **one transaction** (DATA-REQ-048). Hash the audio first (`capture/recorder.ts` `ensureAudioHash`). Throws `AudioMissingError` for a spoken letter whose file is gone. Returns false, draft intact, for a letter aimed at a left book (BL-1959). |
 | `saveVoiceOnlyFromDraft(draft, opts)` | Keep a recording as a letter **waiting for its words**: `raw_transcript = final_text = ''`, `transcriptStatus = 'waiting'`, private by default. |
 | `listWaitingForWords(childId)` / `setWordsForWaitingEntry(id, words)` | For the transcription queue (BL-063). Words are set once; the first transcript becomes the immutable raw. |
 

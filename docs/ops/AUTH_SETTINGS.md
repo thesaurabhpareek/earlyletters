@@ -21,8 +21,8 @@ Owner: `ops`. Opened 21 Nov 2026 for FP-17 (first-run design FS-26, `docs/tdd/ne
 | 5 | Rate limit: emails per hour, whole project | `email_sent = 100` (`config.toml:54`) | `auth_config.test.mjs:83`. AUTH_SETUP 4.3 says Supabase starts a custom-SMTP project at 30 an hour and to raise it to about 100 | 100 now; raise at launch |
 | 6 | Rate limit: sign-ups and sign-ins per IP per 5 min | 30 (`config.toml:55`) | `auth_config.test.mjs:83` | 30 |
 | 7 | Rate limit: token refresh per IP per 5 min | 150 (`config.toml:57`) | `autoRefreshToken: true`: `apps/mobile/src/lib/supabase/client.ts:106`. `auth_config.test.mjs:83` | 150 |
-| 8 | JWT expiry (Sessions / JWT settings) | 900 s (`config.toml:41`) | App refreshes in the foreground (`client.ts:106`). `auth_config.test.mjs:87` | 900 |
-| 9 | Refresh token rotation, reuse interval | on, 10 s (`config.toml:42-43`) | `auth_config.test.mjs:90` (rotation only; the 10 s is not pinned) | on, 10 s |
+| 8 | JWT expiry (Sessions / JWT settings) | 900 s (`config.toml:42`, key `jwt_expiry`) | App refreshes in the foreground (`client.ts:106`). `auth_config.test.mjs:87` | 900 |
+| 9 | Refresh token rotation, reuse interval | on, 10 s (`config.toml:43-44`, keys `enable_refresh_token_rotation`, `refresh_token_reuse_interval`) | `auth_config.test.mjs:90` and `:92` (rotation and the 10 s) | on, 10 s |
 | 10 | Session time-box and inactivity timeout | not in `config.toml` | A forced sign-out would break local-first use and NS-41-R15; AUTH_SETUP section 1 item 3 says leave both off | off |
 | 11 | Allow anonymous sign-ins | false (`config.toml:46`) | The database refuses anonymous sessions (SQLSTATE SCANO). `auth_config.test.mjs:88` | off |
 | 12 | Allow manual linking | false (`config.toml:47`) | `auth_config.test.mjs:89`; card O-21 list | off (AUTH_SETUP said on until this change) |

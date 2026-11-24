@@ -79,7 +79,8 @@ describe('a letter deleted from its page (S36)', () => {
     expect(book).toMatch(/const gone = bookHandoff\.take\(\)/);
     // A toast with an action has no timer (components/ui/toast); Undo puts the card back with the wash.
     expect(book).toMatch(/message: copy\.settings\.delete\.entryToast,\s*action: \{/);
-    expect(book).toMatch(/undeleteEntry\(gone\.id\);\s*wash\(\[gone\.id\]\)/);
+    // BL-1959: a left book refuses the restore (no wash); otherwise Undo restores, then the wash.
+    expect(book).toMatch(/if \(!undeleteEntry\(gone\.id\)\) return [^;]*;[\s\S]*?wash\(\[gone\.id\]\)/);
     // Leaving the Book takes the toast away.
     expect(book).toMatch(/if \(deleteToastUp\.current\) \{\s*deleteToastUp\.current = false;\s*toast\.hide\(\);/);
   });

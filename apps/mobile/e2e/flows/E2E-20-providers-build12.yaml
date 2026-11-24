@@ -1,3 +1,4 @@
+# BLOCKED (ids the app does not set yet): red by design until they land. `node apps/mobile/e2e/bin/blocked-ids.mjs <this file>` lists them (not-in-app.txt); run-suite.sh and run-p0-nightly.sh skip it and print that list.
 # E2E-20  The sign-in sheet offers only the providers the build has (NX-40 H5, NX-40-R7).
 # Proves: in the Build 12 profile the sheet shows Apple and email and no Google
 # button and no passkey link (Google needs both client ids, passkeys need
