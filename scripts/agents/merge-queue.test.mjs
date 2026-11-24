@@ -2,7 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { STALE_UNKNOWN_MINUTES, securityLensHits, touchesSecurityLens, namedLenses, SECURITY_LENS_NAMES, SECURITY_LENS_CLASSES, buildQueue, workspaceOf, staleBase, parseReview, parseClaims, parseArgs, formatTable, suiteState, passOverRedSuite, hotFileHits, hotFileGroups, reviewState, touchesNative, clean, TRUSTED_ASSOCIATIONS } from "./merge-queue.mjs";
+import { STALE_UNKNOWN_MINUTES, securityLensHits, touchesSecurityLens, namedLenses, SECURITY_LENS_NAMES, SECURITY_LENS_CLASSES, buildQueue, workspaceOf, staleBase, parseReview, parseClaims, parseArgs, formatTable, suiteState, passOverRedSuite, hotFileHits, hotFileGroups, reviewState, touchesNative, clean, TRUSTED_ASSOCIATIONS, filesSince, UNREADABLE, parseCodeowners, protectedPathHits, touchesProtectedPath, classifyPr } from "./merge-queue.mjs";
 
 const OLD = "c5cfa0cfaa96a0ba97ca5f34629747ab0badf438";
 const HEAD = "a83634ced2a5ecf32717bf833f941b892fc660b9";
@@ -669,4 +669,101 @@ test("counted-review trust rule (BL-1537): line-1 header, agent marker on line 2
   assert.equal(reviewState([mk(`${hdr("A", "PASS WITH NOTES")}\nnotes`, "OWNER")], HEAD).A, false, "no Must fix: none line");
   // The pinned list itself.
   assert.deepEqual(TRUSTED_ASSOCIATIONS, ["OWNER", "MEMBER", "COLLABORATOR"]);
+});
+
+// BL-1570: the CR-149 checks as pure functions. One test per rule; each names the rule it proves. No verdict uses them yet.
+const CODEOWNERS = readFileSync(new URL("../../.github/CODEOWNERS", import.meta.url), "utf8");
+const rulesFor = (path, files = [path], owners = CODEOWNERS) => protectedPathHits(files, owners).find((h) => h.path === path)?.rules ?? [];
+
+test("CR-149 rule 1, shared file: filesSince returns the files both the PR and develop changed since the merge base", () => {
+  assert.deepEqual(filesSince(["apps/mobile/src/a.ts", "docs/x.md"], [{ filename: "docs/x.md" }, { filename: "packages/core/src/b.ts" }]), ["docs/x.md"]);
+  assert.deepEqual(filesSince([{ filename: "docs/x.md" }], [{ filename: "docs/y.md" }]), [], "no shared file: no overlap");
+});
+
+test("CR-149 rule 1, rename on one side counts on both sides (filename and previous_filename)", () => {
+  // The PR renames a file that develop edited under its old name.
+  assert.deepEqual(filesSince([{ filename: "docs/new.md", previous_filename: "docs/old.md" }], [{ filename: "docs/old.md" }]), ["docs/old.md"]);
+  // Develop renamed a file that the PR edits under its old name.
+  assert.deepEqual(filesSince([{ filename: "docs/old.md" }], [{ filename: "docs/new.md", previous_filename: "docs/old.md" }]), ["docs/old.md"]);
+});
+
+test("CR-149 rule 1 fails closed: an input that cannot prove no overlap counts as overlap", () => {
+  const capped = Object.assign([{ filename: "docs/y.md" }], { capped: true });
+  for (const [a, b] of [[null, []], [[], undefined], [[{ filename: "docs/x.md" }], capped], [[{ filename: 7 }], []], [[{}], []], [[""], []]]) {
+    assert.deepEqual(filesSince(a, b), [UNREADABLE]);
+  }
+});
+
+test("CR-149 rule 4, CODEOWNERS path: packages/core/src/verify.ts is protected through the CODEOWNERS file text (correction 1, BL-1569)", () => {
+  assert.ok(rulesFor("packages/core/src/verify.ts").includes("CODEOWNERS /packages/core/src/verify.ts"));
+  assert.equal(touchesProtectedPath(["packages/core/src/verify.ts"], CODEOWNERS), true);
+  // A path added to CODEOWNERS later is covered with no change to the script, including unanchored and ** patterns.
+  const later = `${CODEOWNERS}\n/apps/mobile/src/components/keepsake/ @owner\n*.pem @owner\ndocs/**/secret-*.md @owner\n`;
+  assert.deepEqual(rulesFor("apps/mobile/src/components/keepsake/row.tsx", undefined, later), ["CODEOWNERS /apps/mobile/src/components/keepsake/"]);
+  assert.deepEqual(rulesFor("apps/web/certs/a.pem", undefined, later), ["CODEOWNERS *.pem"]);
+  assert.deepEqual(rulesFor("docs/ops/deep/secret-plan.md", undefined, later), ["CODEOWNERS docs/**/secret-*.md"]);
+  assert.equal(touchesProtectedPath(["apps/mobile/src/components/keepsake/row.tsx"], CODEOWNERS), false, "not owned before the line was added");
+  // The `*` catch-all line is not an entry of its own (correction 1), so an ordinary app file is not protected.
+  assert.deepEqual(parseCodeowners("*  @owner\n/**  @owner\n").patterns, []);
+  assert.equal(touchesProtectedPath(["apps/mobile/src/components/letter/row.tsx", "docs/ops/notes.md"], CODEOWNERS), false);
+  // Fail closed: missing text, or a pattern GitHub does not support, protects every path.
+  assert.deepEqual(rulesFor("docs/ops/notes.md", undefined, null), ["CODEOWNERS text missing"]);
+  assert.ok(rulesFor("docs/ops/notes.md", undefined, "!docs/ @owner\n")[0].startsWith("CODEOWNERS pattern not supported"));
+});
+
+test("CR-149 rule 4 and CR-70: a .env file anywhere in the tree is protected", () => {
+  for (const p of [".env", "apps/mobile/.env.development", "apps/web/.env.local", "infra/.env.d/staging.json"]) assert.ok(rulesFor(p).includes(".env file"), p);
+});
+
+test("CR-149 rule 4: a lockfile anywhere is protected, not only the root package-lock.json", () => {
+  for (const p of ["package-lock.json", "apps/web/package-lock.json", "tools/pnpm-lock.yaml", "yarn.lock"]) assert.ok(rulesFor(p).includes("lockfile"), p);
+});
+
+test("CR-149 rule 4: any package.json change counts as a dependency change (no patch is given, so none is proved safe)", () => {
+  for (const p of ["package.json", "apps/web/package.json", "packages/core/package.json"]) assert.ok(rulesFor(p).includes("package.json dependency change"), p);
+});
+
+test("CR-149 rule 4 and CR-74: a native path (NATIVE_PATHS) is protected, through either name of a rename", () => {
+  assert.ok(rulesFor("apps/mobile/ios/Scribe/AppDelegate.swift").includes("native path (CR-74)"));
+  assert.ok(rulesFor("apps/mobile/patches/expo-av.patch").includes("native path (CR-74)"));
+  const moved = [{ filename: "apps/mobile/src/lib/delegate.ts", previous_filename: "apps/mobile/ios/Scribe/Delegate.swift" }];
+  assert.ok(rulesFor("apps/mobile/ios/Scribe/Delegate.swift", moved).includes("native path (CR-74)"));
+  assert.equal(touchesProtectedPath(moved, CODEOWNERS), true);
+  assert.ok(rulesFor("apps/mobile/IOS/Scribe/AppDelegate.swift").includes("native path (CR-74)"), "case-insensitive checkout");
+});
+
+test("CR-149 rule 4: a migration is protected, under supabase/migrations and any other migrations folder", () => {
+  assert.ok(rulesFor("supabase/migrations/20261124000000_x.sql").includes("migration"));
+  assert.ok(rulesFor("packages/api/migrations/0001.sql").includes("migration"));
+});
+
+test("CR-149 rule 4 and CR-70: the CR-70 list beyond CODEOWNERS (auth, billing, legal, build inputs) is protected", () => {
+  for (const p of ["apps/mobile/src/lib/auth/apple.ts", "apps/mobile/src/app/(auth)/sign-in/email.tsx", "apps/mobile/src/lib/billing/gates.ts",
+    "apps/mobile/src/lib/db/schema.ts", "scripts/release/cut.mjs", "apps/mobile/src/lib/build-env.ts", "docs/legal/terms.md", "docs/DECISIONS.md"]) {
+    assert.ok(rulesFor(p).includes("CR-70 path"), p);
+  }
+});
+
+test("CR-149 rule 4 fails closed: an unreadable list, entry or path counts as protected", () => {
+  for (const files of [null, "apps/x.ts", [], Object.assign(["docs/x.md"], { capped: true }), [{}], [{ filename: 3 }], ["../etc/passwd"], ["/abs/x.ts"], ["a\\b.ts"], ["apps/./x.ts"]]) {
+    assert.equal(touchesProtectedPath(files, CODEOWNERS), true, JSON.stringify(files));
+  }
+});
+
+test("CR-149 class, docs-only PR: every changed path is Markdown or text outside agent and CI folders", () => {
+  assert.equal(classifyPr([{ filename: "docs/ops/proposed/merge-queue-docs-file-overlap.md" }, "README.md", "docs/notes.txt"]), "docs");
+  assert.equal(classifyPr([".claude/agents/ops.md"]), "source", "an agent identity file is an instruction, not docs");
+  assert.equal(classifyPr(["docs/x.md", "docs/x.json"]), "source");
+});
+
+test("CR-149 class, test-only PR: every changed path is a test file or sits in a test folder", () => {
+  assert.equal(classifyPr(["apps/mobile/test/asks-keep-book-store.test.ts", "apps/mobile/e2e-web/j13-reminders.flow.ts", "scripts/agents/merge-queue.test.mjs"]), "test");
+  assert.equal(classifyPr([".github/workflows/tests/run.yml"]), "source", "a workflow is never a test");
+});
+
+test("CR-149 class, source PR: anything else, from paths only; mixed, renamed out of source or unreadable is source", () => {
+  assert.equal(classifyPr(["apps/mobile/src/lib/dates.ts"]), "source");
+  assert.equal(classifyPr(["apps/mobile/test/a.test.ts", "docs/a.md"]), "source", "test plus docs is neither test-only nor docs-only");
+  assert.equal(classifyPr([{ filename: "apps/mobile/test/a.test.ts", previous_filename: "apps/mobile/src/a.ts" }]), "source");
+  for (const files of [null, [], [{}], ["../docs/a.md"], Object.assign(["docs/a.md"], { capped: true })]) assert.equal(classifyPr(files), "source", JSON.stringify(files));
 });
