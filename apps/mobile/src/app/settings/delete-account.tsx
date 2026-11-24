@@ -30,7 +30,7 @@ import { CreditCardIcon } from 'phosphor-react-native/src/icons/CreditCard';
 import { FileTextIcon } from 'phosphor-react-native/src/icons/FileText';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, ScrollView, View, type Text as RNText } from 'react-native';
-import { bookRowKey, bookRowLabel, canDelete, confirmDay, failureLine, HELD, scheduledDay, whatHappens } from '@/components/settings/delete-account.logic';
+import { afterCancel, bookRowKey, bookRowLabel, canDelete, confirmDay, failureLine, HELD, loadFailureLine, scheduledDay, whatHappens } from '@/components/settings/delete-account.logic';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Text } from '@/components/ui/text';
@@ -89,6 +89,8 @@ function DeleteAccountPage({ first, onRetry }: { first: boolean; onRetry: () => 
 
   const header = <Stack.Screen options={{ title: c.title }} />;
   const failure = <ErrorLine message={failureLine(d.error)} />;
+  // The page could not load: nothing was tried, so it does not say that nothing has changed.
+  const loadFailure = <ErrorLine message={loadFailureLine(d.error)} />;
   const tryAgain = <Button variant="outline" size="lg" className="self-start" label={copy.common.tryAgainButton} onPress={onRetry} />;
 
   // Each state's ScrollView has its own key, so a new step starts at its top instead of keeping the last one's offset.
@@ -108,11 +110,11 @@ function DeleteAccountPage({ first, onRetry }: { first: boolean; onRetry: () => 
         {header}
         {d.error ? (
           <>
-            {failure}
+            {loadFailure}
             {tryAgain}
           </>
         ) : (
-          <ActivityIndicator color={colors.accent} />
+          <ActivityIndicator color={colors.accent} accessibilityLabel={c.open.checking} />
         )}
       </ScrollView>
     );
@@ -155,6 +157,9 @@ function DeleteAccountPage({ first, onRetry }: { first: boolean; onRetry: () => 
               if (await d.cancel()) {
                 haptic('success');
                 toast.show({ message: c.scheduled.cancelled });
+                // The page underneath would otherwise fall back to "What happens ... Continue".
+                if (afterCancel(router.canGoBack()) === 'back') router.back();
+                else router.replace('/settings');
               }
             }}
           />
@@ -209,8 +214,9 @@ function DeleteAccountPage({ first, onRetry }: { first: boolean; onRetry: () => 
             testID="deleteAccount.confirm.button"
             className={ready ? 'bg-destructive' : 'border border-input'}
             onPress={async () => {
+              // Once per visit to this step: an offline retry does not play it again (BL-492 point 5).
+              if (!tried) haptic('warning');
               setTried(true);
-              haptic('warning');
               if (await d.request()) keep();
             }}>
             <Text tone={ready ? 'onDestructive' : 'muted'}>{c.confirm.button}</Text>
@@ -288,7 +294,7 @@ function DeleteAccountPage({ first, onRetry }: { first: boolean; onRetry: () => 
 
       {list.known ? null : (
         <>
-          <ErrorLine message={c.errors.failed} />
+          {loadFailure}
           {tryAgain}
         </>
       )}

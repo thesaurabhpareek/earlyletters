@@ -109,5 +109,8 @@ export const accountDeletionCopy = {
   errors: {
     offline: 'Nothing has changed. Deleting an account needs a connection.',
     failed: 'That did not go through. Nothing has changed.',
+    // The page could not load its own lines or status. Nothing was tried, so it must not say "nothing has changed"
+    // (BL-492 point 4). Offline keeps `offline` above, which is true there too.
+    loadFailed: "That didn't load. Try again in a moment.",
   },
 } as const;
