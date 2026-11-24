@@ -29,7 +29,7 @@ describe('[BL-418][E4] headings and sentences start-align; pictures stay centred
   });
   it('Book empty: the cover is centred, the heading and body start-align', () => {
     const f = code('app/(tabs)/book.tsx');
-    expect(f).toMatch(/<EmptyState align="start" title=\{copy\.book\.empty\.bookTitle\}/);
+    expect(f).toMatch(/<EmptyState align="start" title=\{joinLastTwoWords\(copy\.book\.empty\.bookTitle\)\}/);
     expect(f).toMatch(/contentContainerClassName="gap-8 px-5"/);
     expect(f).toMatch(/<View className="items-center">\s*<BookCover/);
   });
