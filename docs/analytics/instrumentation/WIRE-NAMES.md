@@ -2,7 +2,7 @@
 
 Generated from `packages/analytics/src/wire-names.ts` by `npm run wire-names -w @scribe/analytics`; do not edit by hand. `npm run wire-names -w @scribe/analytics -- --check` and `packages/analytics/test/wire-names.test.ts` fail when this file differs from that output. BL-1255 step 1 (CR-212): this is the table `posthog-standard.md` section 2.9 points to as "IN-03".
 
-The rename (step 2b onward, BL-2176) moves one area at a time, each PR on the one below. 10 of 47 keys that own a name hold it now; for the rest the "Key" column is still the old key, and "Was" says so. Where a key was renamed, "Was" is the old key, and `LEGACY_EVENT_NAMES` in `wire-names.ts` maps it to the new one, so a note, funnel or query written against an old name can still be read. Nothing was ever sent under an old name (analytics are off in every profile, CR-186). The tier column is the tier of the catalogue and registry rows, unchanged by the rename, and the basics set stays pinned to `screen_view` by `test/tiers.test.ts`. The four pattern keys keep their keys: their names are generated per registered id.
+The rename (step 2b onward, BL-2176) moves one area at a time, each PR on the one below. 14 of 47 keys that own a name hold it now; for the rest the "Key" column is still the old key, and "Was" says so. Where a key was renamed, "Was" is the old key, and `LEGACY_EVENT_NAMES` in `wire-names.ts` maps it to the new one, so a note, funnel or query written against an old name can still be read. Nothing was ever sent under an old name (analytics are off in every profile, CR-186). The tier column is the tier of the catalogue and registry rows, unchanged by the rename, and the basics set stays pinned to `screen_view` by `test/tiers.test.ts`. The four pattern keys keep their keys: their names are generated per registered id.
 
 Counts: 51 keys: 30 ruled by 2.9, 17 named by the 24 Nov rulings, 4 patterns generated per registered id, 0 NEEDS RULING; 47 have a name of their own. Step 2a (BL-2175) deleted 22 keys: 18 dropped, 4 merged (see Retired keys).
 
@@ -12,8 +12,8 @@ Reading a row. "Ruled" means 2.9 names this event (a domain row, the seven examp
 
 | Key | Was | Lives in | Area | Tier | Status | Wire name | Basis or what is missing |
 |---|---|---|---|---|---|---|---|
-| `auth_failed` | (not renamed yet) | catalogue | entry | consented | ruled | `onboarding:sign_in_fail` | 2.9 domain table: `onboarding.sign_in.failed` |
-| `auth_deferred` | (not renamed yet) | catalogue | entry | consented | named | `onboarding:sign_in_dismiss` | PM1 `onboarding.sign_in.dismissed` names this key; `dismiss` is the verb for closing a slip without acting |
+| `onboarding:sign_in_fail` | `auth_failed` | catalogue | entry | consented | ruled | `onboarding:sign_in_fail` | 2.9 domain table: `onboarding.sign_in.failed` |
+| `onboarding:sign_in_dismiss` | `auth_deferred` | catalogue | entry | consented | named | `onboarding:sign_in_dismiss` | PM1 `onboarding.sign_in.dismissed` names this key; `dismiss` is the verb for closing a slip without acting |
 | `me:session_end` | `signed_out` | catalogue | entry | consented | named | `me:session_end` | PM1 `me.session.closed` names this key; `reason` already carries the four causes |
 | `family:invite_open` | `invite_opened` | catalogue | entry | consented | ruled | `family:invite_open` | 2.9 domain table: `family.invite.opened` (phone side) |
 | `child_switched` | (not renamed yet) | catalogue | children | consented | named | `capture:child_update` | PM1 `capture.child.selected` ("active book changed") lists this key as its Was; `selected` folds to `update` |
@@ -42,8 +42,8 @@ Reading a row. "Ruled" means 2.9 names this event (a domain row, the seven examp
 | `screen_view` | (pattern, keeps its key) | both | app | basics | pattern | `<area>:<id>_screen_view` (36 today) | 2.9 Basics: `<area>:<screen_id>_screen_view` |
 | `app_opened` | (not renamed yet) | both | app | consented | ruled | `system:app_open` | 2.9 domain table: `system.app.opened` |
 | `analytics_opted_in` | (not renamed yet) | both | consent | consented | ruled | `system:analytics_consent_accept` | 2.9 domain table: `system.consent.granted` ("duplicates `analytics_opted_in`, so one event") |
-| `auth_succeeded` | (not renamed yet) | both | entry | consented | ruled | `onboarding:sign_in_complete` | 2.9 domain table: `onboarding.sign_in.completed` |
-| `child_added` | (not renamed yet) | both | children | consented | named | `onboarding:book_create` | registry row whose decision is first-run completion; `create` is the verb of "a child book is created"; `book_save` is not used because PM1 makes `onboarding.book.saved` a server count |
+| `onboarding:sign_in_complete` | `auth_succeeded` | both | entry | consented | ruled | `onboarding:sign_in_complete` | 2.9 domain table: `onboarding.sign_in.completed` |
+| `onboarding:book_create` | `child_added` | both | children | consented | named | `onboarding:book_create` | registry row whose decision is first-run completion; `create` is the verb of "a child book is created"; `book_save` is not used because PM1 makes `onboarding.book.saved` a server count |
 | `capture_started` | (not renamed yet) | both | capture | consented | ruled | `capture:take_start` | 2.9 line 118, the seven examples: `capture_started` to `capture:take_start` (note: the table also holds `capture.letter.started`, `capture:letter_start`) |
 | `capture_discarded` | (not renamed yet) | both | capture | consented | named | `capture:take_cancel` | registry row and insights reader; a drop-off shares its object with its start, and `capture_started` is `capture:take_start`; PM1 `letter_cancel` loses on pairing |
 | `transcription_completed` | (not renamed yet) | both | capture | consented | ruled | `capture:transcript_complete` | 2.9 domain table: `capture.transcript.completed` (this key also carries failed and no-speech outcomes as a property) |

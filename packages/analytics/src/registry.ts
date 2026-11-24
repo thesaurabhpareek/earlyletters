@@ -115,7 +115,7 @@ export const REGISTRY = {
       came_from_invite: bool(),
     },
   },
-  auth_succeeded: {
+  'onboarding:sign_in_complete': {
     stage: 'activation',
     decision: "How many families who start a book go on to keep it with an account, so we decide whether the Keep sheet asks at the right moment.",
     area: 'entry',
@@ -125,7 +125,7 @@ export const REGISTRY = {
     tier: 'consented',
     props: { method: AUTH_METHOD, had_local_data: bool() },
   },
-  child_added: {
+  'onboarding:book_create': {
     stage: 'activation',
     decision: "Whether a family finishes setting up a book during first run, so we decide what the first-run flow can drop.",
     area: 'children',
@@ -381,8 +381,8 @@ export const EV = {
   screenView: 'screen_view',
   appOpened: 'app_opened',
   analyticsOptedIn: 'analytics_opted_in',
-  authSucceeded: 'auth_succeeded',
-  childAdded: 'child_added',
+  authSucceeded: 'onboarding:sign_in_complete',
+  childAdded: 'onboarding:book_create',
   captureStarted: 'capture_started',
   captureDiscarded: 'capture_discarded',
   transcriptionCompleted: 'transcription_completed',
@@ -472,7 +472,7 @@ export type FunnelStep = RegistryName | `${string}:${string}`;
  * step must be a registered event or a wire name (rule V9). Ids: `f_<area>_<goal>`.
  */
 export const FUNNELS = {
-  f_onboarding_first_letter: ['child_added', 'capture_started', 'letter_saved'],
+  f_onboarding_first_letter: ['onboarding:book_create', 'capture_started', 'letter_saved'],
   f_capture_letter_saved: ['capture_started', 'transcription_completed', 'letter_saved'],
   f_keep_plus_started: ['free_allowance_reached', 'keep_gate_shown', 'plus_started_from_gate'],
   f_plus_offer_converted: ['plus_offer_viewed', 'plus_offer_closed', 'plan_changed'],

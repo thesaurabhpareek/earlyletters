@@ -243,7 +243,7 @@ describe('free text and PII', () => {
     await analytics.init();
     await analytics.grant();
     // @ts-expect-error free text
-    analytics.track('child_added', { has_date: true, child_ordinal: 'Asha', in_first_run: true, added_together: false });
+    analytics.track('onboarding:book_create', { has_date: true, child_ordinal: 'Asha', in_first_run: true, added_together: false });
     // @ts-expect-error free text
     analytics.track('error_shown', { code: 'She laughed at the dog today' });
     // @ts-expect-error too long

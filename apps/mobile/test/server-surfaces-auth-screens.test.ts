@@ -46,7 +46,7 @@ describe('[P8a] every word comes from packages/content', () => {
 
   it('analytics carry only the entry point: never an address, a name or a code', () => {
     for (const [name, src] of Object.entries(SCREENS)) {
-      for (const m of src.matchAll(/track\(([^)]*)\)/g)) expect(m[1], name).toMatch(/^'auth_(?:sheet_shown|deferred)', \{ trigger \}$/);
+      for (const m of src.matchAll(/track\(([^)]*)\)/g)) expect(m[1], name).toMatch(/^'onboarding:sign_in_dismiss', \{ trigger \}$/);
     }
   });
 });
@@ -62,7 +62,7 @@ describe('[S52] the sign-in sheet', () => {
 
   it('"Not now" only notes the deferral and closes: it changes nothing on this phone', () => {
     const notNow = between(sheet, 'label={s.later}', '/>');
-    expect(notNow).toMatch(/onPress=\{\(\) => \{\s*track\('auth_deferred', \{ trigger \}\);\s*close\(\);\s*\}\}/);
+    expect(notNow).toMatch(/onPress=\{\(\) => \{\s*track\('onboarding:sign_in_dismiss', \{ trigger \}\);\s*close\(\);\s*\}\}/);
     // track() stores and sends nothing before analytics consent (packages/analytics client; off in v1.0, D-088,
     // test/analytics-off-v1.test.ts), and close() is navigation. The sheet reaches no local store at all.
     expect(sheet).not.toMatch(/from '@\/lib\/(?:store|db)|setSetting|secureStorage/);

@@ -27,7 +27,7 @@ export const BREAKDOWNS: Readonly<Partial<Record<EventName, readonly string[]>>>
   'me:language_update': ['lang', 'action'],
   error_shown: ['code'],
   sync_failed: ['reason'],
-  auth_failed: ['reason'],
+  'onboarding:sign_in_fail': ['reason'],
   'family:invite_fail': ['reason'],
   'keeping:export_fail': ['reason'],
   read_together_started: ['access'],
