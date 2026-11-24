@@ -271,6 +271,14 @@ export function stableLabels(next: RoomLabels, prev: RoomLabels | null, speakabl
   return { clock: prev.clock, line: prev.line ?? next.line, toggle: prev.toggle };
 }
 
+/**
+ * The ready line (BL-1954, PER4-019): with a screen reader on the red circle is not seen, so the line names the control
+ * to double tap; sighted, it is the line it always was. Only the ready line changes; the choice is made here, not in the screen.
+ */
+export function readyLine(ready: { hint: string; hintScreenReader: string }, screenReader: boolean): string {
+  return screenReader ? ready.hintScreenReader : ready.hint;
+}
+
 /** Before the microphone goes live (S13): permission off first, then a phone with no room for a take. */
 export function startBlocker(s: { granted: boolean; freeBytes: number | null }): MicProblem | null {
   if (!s.granted) return 'denied';

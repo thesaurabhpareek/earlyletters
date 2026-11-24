@@ -49,6 +49,7 @@ import {
   maySpeak,
   startTake,
   promptLine,
+  readyLine,
   reviewParams,
   stableLabels,
   startFailure,
@@ -65,7 +66,7 @@ import { StateGlyph, StateScreen } from '@/components/ui/state-screen';
 import { STATE_LAYOUT } from '@/components/ui/state-screen.logic';
 import { Text } from '@/components/ui/text';
 import { setSurfaceBusy } from '@/lib/asks/surface';
-import { announce, useFocusOnMount, useIsAccessibilitySize, useTheme } from '@/lib/a11y';
+import { announce, useFocusOnMount, useIsAccessibilitySize, useScreenReader, useTheme } from '@/lib/a11y';
 import { setAudioMode } from '@/lib/audio-mode';
 import {
   CAPTURE_HEARTBEAT_MS,
@@ -120,6 +121,7 @@ export default function Listen() {
   const { c } = useTheme();
   const t = copy.tonight.states;
   const p = pendingCopy.listen;
+  const screenReader = useScreenReader();
   const motion = useMotion();
   const { promptKey } = useLocalSearchParams<{ promptKey?: string }>();
   // Read once on mount, never per render: the recorder state below re-renders this screen about once a second, and
@@ -522,7 +524,7 @@ export default function Listen() {
   const quiet = phase === 'recording' && (status.metering ?? -160) < -50 && status.durationMillis > 8000;
   const prompt = promptLine(promptKey, PROMPTS);
   // While iOS asks and the take starts there is nothing to tap, so no hint (5.8 row 1: the room arrives at rest).
-  const line = room.line === 'none' ? null : room.line === 'readyHint' ? p.ready.hint : room.line === 'paused' ? t.paused : quiet ? t.stillHere : t.listening;
+  const line = room.line === 'none' ? null : room.line === 'readyHint' ? readyLine(p.ready, screenReader) : room.line === 'paused' ? t.paused : quiet ? t.stillHere : t.listening;
   // While capturing nothing on this screen changes what VoiceOver reads (07 line 276, F04-REQ-041): the live region is
   // off, and every label (the clock, Finish's hint, the line, Pause / Keep talking) holds still; they catch up once
   // capture stops (listen.logic `stableLabels`).
