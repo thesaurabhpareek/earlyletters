@@ -17,7 +17,7 @@ export const K_MIN = 10;
 /** Breakdowns the engine reads: event -> catalogue properties to split by. */
 export const BREAKDOWNS: Readonly<Partial<Record<EventName, readonly string[]>>> = {
   transcription_completed: ['outcome', 'model'],
-  pack_download: ['stage', 'pack', 'failure', 'lang'],
+  'system:pack_download_update': ['stage', 'pack', 'failure', 'lang'],
   machine_edit_rejected: ['reason', 'edit_type'],
   machine_edit_reverted: ['edit_type'],
   letter_saved: ['mode', 'destination'],
@@ -35,12 +35,12 @@ export const BREAKDOWNS: Readonly<Partial<Record<EventName, readonly string[]>>>
 
 /** Events counted per week without a breakdown. */
 export const WEEKLY_EVENTS: readonly EventName[] = [
-  'app_opened',
+  'system:app_open',
   'capture_started',
   'capture_discarded',
   'letter_saved',
   'transcription_completed',
-  'pack_download',
+  'system:pack_download_update',
   'machine_edit_rejected',
   'machine_edit_reverted',
   'book:read_together_start',
@@ -103,9 +103,9 @@ export function funnelQuery(weeks: number): HogQLQuery {
     query: `SELECT week, countIf(opened) AS opened, countIf(started) AS started, countIf(saved) AS saved
 FROM (
   SELECT toStartOfWeek(timestamp, 1) AS week, distinct_id,
-         max(event = 'app_opened') AS opened, max(event = 'capture_started') AS started, max(event = 'letter_saved') AS saved
+         max(event = 'system:app_open') AS opened, max(event = 'capture_started') AS started, max(event = 'letter_saved') AS saved
   FROM events
-  WHERE timestamp >= now() - INTERVAL ${weeksBack(weeks)} WEEK AND event IN ('app_opened', 'capture_started', 'letter_saved')
+  WHERE timestamp >= now() - INTERVAL ${weeksBack(weeks)} WEEK AND event IN ('system:app_open', 'capture_started', 'letter_saved')
   GROUP BY week, distinct_id
 )
 GROUP BY week

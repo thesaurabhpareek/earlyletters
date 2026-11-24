@@ -247,7 +247,7 @@ describe('route map', () => {
 });
 
 describe('lifecycle', () => {
-  it('sends app_opened at launch and after 30 minutes away, and nothing on background or cold start (app_backgrounded and app_cold_start are retired, BL-2175)', async () => {
+  it('sends system:app_open at launch and after 30 minutes away, and nothing on background or cold start (app_backgrounded and app_cold_start are retired, BL-2175)', async () => {
     const { analytics, sent } = await granted();
     const storage = memoryStorage();
     let t = Date.UTC(2026, 9, 3, 18);
@@ -264,8 +264,8 @@ describe('lifecycle', () => {
     expect(lc.session().index).toBe(2);
     const events = (await sent()).map((e) => [e.event, e.properties]);
     expect(events).toEqual([
-      ['app_opened', { source: 'cold', days_since_last_open: 'd0', schema_version: SCHEMA_VERSION }],
-      ['app_opened', { source: 'notification', days_since_last_open: 'd2_7', schema_version: SCHEMA_VERSION }],
+      ['system:app_open', { source: 'cold', days_since_last_open: 'd0', schema_version: SCHEMA_VERSION }],
+      ['system:app_open', { source: 'notification', days_since_last_open: 'd2_7', schema_version: SCHEMA_VERSION }],
     ]);
     expect(Number(storage.dump()[LIFECYCLE_KEYS.firstLaunchAt])).toBe(Date.UTC(2026, 9, 3, 18));
   });

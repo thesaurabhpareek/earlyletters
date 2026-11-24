@@ -328,13 +328,13 @@ export function computeInsights(input: InsightsInput): InsightsReport {
     // Pack downloads by pack
     const byPackStarted = new Map<string, number>();
     for (const r of input.device!.rows) {
-      if (r.event === 'pack_download' && r.dim === 'pack' && last4.includes(r.week)) {
+      if (r.event === 'system:pack_download_update' && r.dim === 'pack' && last4.includes(r.week)) {
         // The pack breakdown counts every stage; the stage split gives the shares overall.
         byPackStarted.set(String(r.value), (byPackStarted.get(String(r.value)) ?? 0) + r.events);
       }
     }
-    const stages = d.splitOver('pack_download', 'stage', last4);
-    const failures = [...d.splitOver('pack_download', 'failure', last4).entries()].sort((a, b) => b[1] - a[1]);
+    const stages = d.splitOver('system:pack_download_update', 'stage', last4);
+    const failures = [...d.splitOver('system:pack_download_update', 'failure', last4).entries()].sort((a, b) => b[1] - a[1]);
     const starts = stages.get('started') ?? 0;
     const fails = stages.get('failed') ?? 0;
     const packFail = starts >= 30 ? fails / starts : null;
@@ -345,7 +345,7 @@ export function computeInsights(input: InsightsInput): InsightsReport {
       propose({
         id: `pack-failures-${top}`, area: 'languages', title: 'Make language downloads more reliable',
         problem: `${pct(packFail)} of pack downloads in the last 4 weeks failed; the most common reason was ${top}.`,
-        evidence: [`device pack_download: ${fails} failed of ${starts} started`, `failures by reason: ${failures.map(([k, v]) => `${k} ${v}`).join(', ') || 'n/a'}`, `busiest packs (all stages): ${packs || 'n/a'}`],
+        evidence: [`device system:pack_download_update: ${fails} failed of ${starts} started`, `failures by reason: ${failures.map(([k, v]) => `${k} ${v}`).join(', ') || 'n/a'}`, `busiest packs (all stages): ${packs || 'n/a'}`],
         hypothesis: `Downloads fail mostly for ${top}.`,
         change: PACK_FIX[top] ? `${PACK_FIX[top][0].toUpperCase()}${PACK_FIX[top].slice(1)}.` : 'Look at the failing step in the pack engine.',
         metric: 'Pack failures under 2% of starts (TRACKING_PLAN 1.3).',
@@ -375,9 +375,9 @@ export function computeInsights(input: InsightsInput): InsightsReport {
     // Adoption: Read together, Plus
     if (lw) {
       const rt = d.total('book:read_together_start', lw, 'people');
-      const opened = d.total('app_opened', lw, 'people');
+      const opened = d.total('system:app_open', lw, 'people');
       const rtRate = rate(rt, opened);
-      metrics.push({ key: 'read_together_adoption', label: 'People who started Read together / opened the app (device)', value: rtRate, previous: pw ? rate(d.total('book:read_together_start', pw, 'people'), d.total('app_opened', pw, 'people')) : null, unit: 'rate', source: 'device', week: lw });
+      metrics.push({ key: 'read_together_adoption', label: 'People who started Read together / opened the app (device)', value: rtRate, previous: pw ? rate(d.total('book:read_together_start', pw, 'people'), d.total('system:app_open', pw, 'people')) : null, unit: 'rate', source: 'device', week: lw });
       const closes = d.splitOver('plus_offer_closed', 'outcome', last4);
       const closed = [...closes.values()].reduce((a, b) => a + b, 0);
       const bought = closed >= 50 ? (closes.get('purchased') ?? 0) / closed : null;

@@ -59,7 +59,7 @@ const VALID: Record<string, unknown> = {
   trackMachineEditsRejected: [{ edit: { type: E('machine_edit_rejected', 'edit_type'), source: E('machine_edit_rejected', 'source') }, reason: E('machine_edit_rejected', 'reason') }],
   trackAnalyticsOptedIn: { surface: 'settings', now: 2e12, firstLaunchAt: 1e12, firstLetterAt: 1.5e12, firstLetterMode: 'typed', letters: 3, signedIn: true, role: 'parent', cameFromInvite: false },
   trackLanguageSet: { lang: 'pt', action: 'added' },
-  trackPackDownload: { packId: 'text-rules.pt', version: 2, stage: 'started', network: E('pack_download', 'network') },
+  trackPackDownload: { packId: 'text-rules.pt', version: 2, stage: 'started', network: E('system:pack_download_update', 'network') },
 };
 
 function leafVariants(v: unknown): unknown[] {

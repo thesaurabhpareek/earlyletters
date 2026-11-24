@@ -93,7 +93,7 @@ export function syntheticInput(date: string, opts: { weeks?: number; seed?: numb
     const opened = Math.round(families[i] * 0.8);
     const started = Math.round(opened * 0.7);
     const saved = Math.round(started * 0.62);
-    add(w, 'app_opened', opened * 4, opened);
+    add(w, 'system:app_open', opened * 4, opened);
     add(w, 'capture_started', Math.round(started * 1.6), started);
     add(w, 'letter_saved', Math.round(saved * 1.5), saved);
     add(w, 'capture_discarded', Math.round(started * 0.5), Math.round(started * 0.35));
@@ -106,12 +106,12 @@ export function syntheticInput(date: string, opts: { weeks?: number; seed?: numb
     add(w, 'transcription_completed', Math.round(t * 0.06), Math.round(saved * 0.06), 'outcome', 'queued_for_model');
     add(w, 'transcription_completed', Math.round(t * 0.85), Math.round(saved * 0.85), 'model', 'turbo');
     add(w, 'transcription_completed', Math.round(t * 0.15), Math.round(saved * 0.15), 'model', 'hindi_small');
-    add(w, 'pack_download', 60, 40, 'stage', 'started');
-    add(w, 'pack_download', 48, 35, 'stage', 'completed');
-    add(w, 'pack_download', 12, 10, 'stage', 'failed');
-    add(w, 'pack_download', 12, 10, 'failure', 'no_space');
-    add(w, 'pack_download', 70, 30, 'pack', 'rules_hi');
-    add(w, 'pack_download', 50, 25, 'pack', 'model_hindi_small');
+    add(w, 'system:pack_download_update', 60, 40, 'stage', 'started');
+    add(w, 'system:pack_download_update', 48, 35, 'stage', 'completed');
+    add(w, 'system:pack_download_update', 12, 10, 'stage', 'failed');
+    add(w, 'system:pack_download_update', 12, 10, 'failure', 'no_space');
+    add(w, 'system:pack_download_update', 70, 30, 'pack', 'rules_hi');
+    add(w, 'system:pack_download_update', 50, 25, 'pack', 'model_hindi_small');
     add(w, 'machine_edit_rejected', 120, 40, 'reason', 'not_vetted_for_language');
     add(w, 'machine_edit_rejected', 150, 50, 'reason', 'not_a_filler');
     add(w, 'machine_edit_rejected', 90, 30, 'reason', 'changes_word');

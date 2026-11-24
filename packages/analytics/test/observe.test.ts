@@ -111,12 +111,12 @@ describe('pack observer', () => {
     see({ id: 'speech-model.whisper-small-q5_1', version: null, phase: 'cancelled' });
     see({ id: 'text-rules.pt', version: null, phase: 'removed' });
     expect(await sent()).toEqual([
-      ['pack_download', { pack: 'rules_pt', lang: 'pt', pack_version: 4, stage: 'started', network: 'wifi' }],
-      ['pack_download', { pack: 'rules_pt', lang: 'pt', pack_version: 4, stage: 'completed', network: 'wifi' }],
-      ['pack_download', { pack: 'model_hindi_small', lang: 'hi', pack_version: 2, stage: 'started', network: 'wifi' }],
-      ['pack_download', { pack: 'model_hindi_small', lang: 'hi', pack_version: 2, stage: 'failed', failure: 'no_space', network: 'wifi' }],
-      ['pack_download', { pack: 'model_small', pack_version: 1, stage: 'failed', failure: 'cancelled', network: 'wifi' }],
-      ['pack_download', { pack: 'rules_pt', lang: 'pt', pack_version: 1, stage: 'removed', network: 'wifi' }],
+      ['system:pack_download_update', { pack: 'rules_pt', lang: 'pt', pack_version: 4, stage: 'started', network: 'wifi' }],
+      ['system:pack_download_update', { pack: 'rules_pt', lang: 'pt', pack_version: 4, stage: 'completed', network: 'wifi' }],
+      ['system:pack_download_update', { pack: 'model_hindi_small', lang: 'hi', pack_version: 2, stage: 'started', network: 'wifi' }],
+      ['system:pack_download_update', { pack: 'model_hindi_small', lang: 'hi', pack_version: 2, stage: 'failed', failure: 'no_space', network: 'wifi' }],
+      ['system:pack_download_update', { pack: 'model_small', pack_version: 1, stage: 'failed', failure: 'cancelled', network: 'wifi' }],
+      ['system:pack_download_update', { pack: 'rules_pt', lang: 'pt', pack_version: 1, stage: 'removed', network: 'wifi' }],
     ]);
   });
 });

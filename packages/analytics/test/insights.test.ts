@@ -146,22 +146,22 @@ describe('HogQL queries and parsing', () => {
   });
 
   it('keeps only catalogue values; anything else becomes other', () => {
-    expect(catalogueValue('pack_download', 'failure', 'no_space')).toBe('no_space');
-    expect(catalogueValue('pack_download', 'failure', 'Asha')).toBe('other');
+    expect(catalogueValue('system:pack_download_update', 'failure', 'no_space')).toBe('no_space');
+    expect(catalogueValue('system:pack_download_update', 'failure', 'Asha')).toBe('other');
     expect(catalogueValue('machine_edit_rejected', 'count', 3)).toBe('3');
     expect(catalogueValue('machine_edit_rejected', 'count', 99999)).toBe('other');
     expect(catalogueValue('family:invite_create', 'shared', true)).toBe('true');
-    const rows = parseBreakdownRows('pack_download', 'failure', [
+    const rows = parseBreakdownRows('system:pack_download_update', 'failure', [
       ['2026-09-28T00:00:00Z', 'no_space', 12, 11],
       ['2026-09-28T00:00:00Z', 'asha.parent@example.com', 30, 20],
       ['2026-09-28T00:00:00Z', 'hash_mismatch', 4, 3],
       ['not a date', 'no_space', 50, 50],
     ]);
     expect(rows).toEqual([
-      { week: '2026-09-28', event: 'pack_download', dim: 'failure', value: 'no_space', events: 12, people: 11 },
-      { week: '2026-09-28', event: 'pack_download', dim: 'failure', value: 'other', events: 30, people: 20 },
+      { week: '2026-09-28', event: 'system:pack_download_update', dim: 'failure', value: 'no_space', events: 12, people: 11 },
+      { week: '2026-09-28', event: 'system:pack_download_update', dim: 'failure', value: 'other', events: 30, people: 20 },
     ]);
-    expect(parseWeeklyRows([['2026-09-28', 'letter_saved', 40, 12], ['2026-09-28', 'letter_text', 40, 12], ['2026-09-28', 'app_opened', 9, 9]])).toEqual([
+    expect(parseWeeklyRows([['2026-09-28', 'letter_saved', 40, 12], ['2026-09-28', 'letter_text', 40, 12], ['2026-09-28', 'system:app_open', 9, 9]])).toEqual([
       { week: '2026-09-28', event: 'letter_saved', events: 40, people: 12 },
     ]);
     expect(parseFunnelRows([['2026-09-28', 40, 20, 12], ['2026-09-21', 5, 2, 1]])).toEqual([{ week: '2026-09-28', opened: 40, started: 20, saved: 12 }]);

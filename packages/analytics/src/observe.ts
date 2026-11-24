@@ -123,7 +123,7 @@ export interface PackProgressLike {
   id: string;
   version: number | null;
   phase: 'queued' | 'waiting_for_wifi' | 'downloading' | 'verifying' | 'installing' | 'installed' | 'failed' | 'cancelled' | 'removed';
-  failure?: V<'pack_download', 'failure'>;
+  failure?: V<'system:pack_download_update', 'failure'>;
 }
 
 /**
@@ -131,7 +131,7 @@ export interface PackProgressLike {
  * `failed` or `cancelled`; removed: `removed`. Waiting for Wi-Fi is not a
  * failure. Progress ticks are ignored.
  */
-export function createPackObserver(a: Track, network: () => V<'pack_download', 'network'>): (p: PackProgressLike) => void {
+export function createPackObserver(a: Track, network: () => V<'system:pack_download_update', 'network'>): (p: PackProgressLike) => void {
   const t = createTrackers(a);
   const active = new Map<string, number | null>();
   return (p) => {
