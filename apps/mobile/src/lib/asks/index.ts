@@ -29,7 +29,7 @@ import { getSetting, listChildren, listEntriesForChild, listHiddenChildren, setS
 import { readPrefs } from '@/lib/reminders/prefs';
 import { createKeptSessionCounter } from './kept-sessions';
 import { recordDayAsk, todayCounts } from './day-store';
-import { firstMonthDone, nextAsk, reminderPrimeSource, sessionAfterForeground, type AskKind, type NextAsk } from './next-ask.logic';
+import { firstMonthDone, keepBookTrigger as keepBookTriggerFor, nextAsk, reminderPrimeSource, sessionAfterForeground, type AskKind, type NextAsk } from './next-ask.logic';
 
 type ReminderPrimeSource = ReturnType<typeof reminderPrimeSource>;
 
@@ -148,6 +148,18 @@ export function askAfterSave(input: { firstLetter: boolean; signInOffered: boole
     return ask;
   } catch {
     return null; // an ask is never worth an error after a save
+  }
+}
+
+/**
+ * The sign-in trigger for the Keep the book sheet `askAfterSave` just returned: `third_letter` for the one re-offer,
+ * `first_letter` for the first offer (BL-1562). Reads the mark `askAfterSave` set; an unreadable store gives `first_letter`.
+ */
+export function keepBookTrigger(): 'first_letter' | 'third_letter' {
+  try {
+    return keepBookTriggerFor(getSetting(K.keepBookReoffer) === 'on');
+  } catch {
+    return 'first_letter';
   }
 }
 

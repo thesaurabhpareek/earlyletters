@@ -102,7 +102,14 @@ export function useAccountDeletion() {
     }
     // A co-parent's book never left, so the note goes. A sole parent's book is on the server again and comes back with
     // the next pull: the note stays as "cancelled" until it does, so the phone never shows the welcome in between.
-    if (bookVisibleNow()) recordCancelled();
+    // The server already cancelled: a note that cannot be written (a locked or full database) must not turn that into a
+    // failed press or an unhandled rejection. The note is only the phone's memory of the request; the next read of the
+    // server's status puts it right (BL-494 follow-up).
+    try {
+      if (bookVisibleNow()) recordCancelled();
+    } catch {
+      /* the screen goes on: the cancel itself went through */
+    }
     setStatus({ state: 'none' });
     setCancelled(true);
     return true;

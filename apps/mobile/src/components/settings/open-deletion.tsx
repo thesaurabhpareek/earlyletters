@@ -15,8 +15,9 @@
  */
 import { router } from 'expo-router';
 import { useEffect, useRef, useSyncExternalStore } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Platform, View } from 'react-native';
 import { StateScreen } from '@/components/ui/state-screen';
+import { Text } from '@/components/ui/text';
 import { announce, useTheme } from '@/lib/a11y';
 import { accountDeletionCopy as c, deletionView, localDay, useAccountDeletion, type DeletionAction, type OpenRequest } from '@/lib/account-deletion';
 import { confirmSignOut } from '@/lib/account-deletion/confirm-sign-out';
@@ -26,7 +27,7 @@ import { haptic } from '@/lib/haptics';
 import { listChildren } from '@/lib/store';
 import { syncNow } from '@/lib/sync';
 import { failureLine } from './delete-account.logic';
-import { createPressController, type PressController } from './open-deletion.logic';
+import { createPressController, deletionSignInParams, type PressController } from './open-deletion.logic';
 
 export function OpenDeletionScreen({ request }: { request: OpenRequest }) {
   const d = useAccountDeletion();
@@ -62,12 +63,12 @@ export function OpenDeletionScreen({ request }: { request: OpenRequest }) {
 
   // VoiceOver is told what changed: the screen becoming the "your letters are on their way back" state, and a failed
   // cancel (a live region alone is not spoken on iOS). The cancel on its way and a Try again that found nothing are
-  // spoken by the controller. Android: announce() does nothing there yet (lib/a11y.ts).
+  // spoken by the controller (say). Android: announce() does nothing there (lib/a11y.ts), so those lines also go to the live-region node below.
   const before = useRef(request.state);
   useEffect(() => {
-    if (before.current !== 'cancelled' && request.state === 'cancelled') announce(`${c.open.restoringTitle}. ${c.open.restoringBody}`);
+    if (before.current !== 'cancelled' && request.state === 'cancelled') ctl.say(`${c.open.restoringTitle}. ${c.open.restoringBody}`);
     before.current = request.state;
-  }, [request.state]);
+  }, [request.state, ctl]);
   useEffect(() => {
     if (press.failedPresses > 0 && failure) announce(failure);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -77,7 +78,7 @@ export function OpenDeletionScreen({ request }: { request: OpenRequest }) {
     cancel: () => ctl.cancel(),
     // Executing has nothing to promise about cancelling, so it signs out at once; a scheduled request says first that it stays open.
     signOut: () => (request.state === 'executing' ? void d.signOut() : confirmSignOut(date, () => void d.signOut())),
-    signIn: () => router.push({ pathname: '/sign-in', params: { trigger: 'settings' } }),
+    signIn: () => router.push({ pathname: '/sign-in', params: deletionSignInParams(request.state) }),
     // Try again is a pull for the book; the screen answers it, with the loading state while it runs and a line after it.
     retry: () => ctl.retry(),
   };
@@ -86,14 +87,24 @@ export function OpenDeletionScreen({ request }: { request: OpenRequest }) {
   const lines = [view.body, request.state === 'cancelled' && press.notYet && !working ? c.open.notYet : null, failure].filter(Boolean);
 
   return (
-    <StateScreen
-      kind={working ? 'loading' : failure ? 'error' : 'empty'}
-      art="page"
-      title={view.title}
-      body={lines.join('\n\n')}
-      primary={first ? act(first) : undefined}
-      quiet={rest.map(act)}
-    />
+    <View className="flex-1">
+      <StateScreen
+        kind={working ? 'loading' : failure ? 'error' : 'empty'}
+        art="page"
+        title={view.title}
+        body={lines.join('\n\n')}
+        primary={first ? act(first) : undefined}
+        quiet={rest.map(act)}
+      />
+      {/* TalkBack: announce() does nothing on Android, and the empty state has no live region of its own, so the spoken lines
+          (cancelling, restoring, still on their way) are read from this node. One pixel, not hidden from the tree. A failed
+          press is not here: the error state's own live region reads its line. iOS speaks through announce. */}
+      {Platform.OS === 'android' && press.said ? (
+        <Text key={press.said.n} accessibilityLiveRegion="polite" style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden' }} testID="open-deletion.said">
+          {press.said.text}
+        </Text>
+      ) : null}
+    </View>
   );
 }
 
