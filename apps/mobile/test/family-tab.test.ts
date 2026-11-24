@@ -98,13 +98,13 @@ describe('[S57] people are signatures, and never more than two parents (D-069)',
 });
 
 describe('[S57] the invite card, the privacy line, and what shows with two parents', () => {
-  it('one parent and no open invite: the card; two parents: no card, and no Leave row in build 2 (D-113)', () => {
+  it('one parent and no open invite: the card; two parents: no card, and the quiet Leave row (BL-1961)', () => {
     expect(familyTabState({ role: 'parent', members: [], openInvites: 0 }).showInviteCard).toBe(true);
     expect(familyTabState({ role: 'parent', members: [], openInvites: 1 }).showInviteCard).toBe(false);
     expect(familyTabState({ role: 'parent', members: [PAPA], openInvites: 0 })).toMatchObject({ showInviteCard: false, full: true });
     expect(code(TAB)).toMatch(/\{state\.showInviteCard && <InviteCard /);
-    expect(LEAVE_BOOK_OFFERED).toBe(false);
-    expect(code(TAB)).not.toMatch(/invite\/leave|leave\.row|LeaveRow/);
+    expect(LEAVE_BOOK_OFFERED).toBe(true);
+    expect(code(TAB)).toMatch(/LEAVE_BOOK_OFFERED && state\.canLeave &&[\s\S]*?familyCopy\.leave\.row/);
   });
 
   it('the privacy line reads "Shared only with the other parent, if you invite them.", with LockSimple, in the card', () => {

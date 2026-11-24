@@ -60,6 +60,7 @@ import { planFor } from '@/lib/models/speech-packs';
 import { clearReadItBack, isReadItBack } from '@/lib/read-it-back';
 import {
   deleteEntry,
+  deleteLeftBookLetter,
   getActiveChild,
   getChild,
   getEntry,
@@ -92,6 +93,7 @@ import { entryDateline, movedToast } from '@/components/book/date-change.logic';
 import { DateSheet } from '@/components/book/date-sheet';
 import { exactViewAvailable, provenanceLine as provenanceLineOf } from '@/lib/provenance';
 import { ConfirmSheet } from '@/components/book/confirm-sheet';
+import { leftBookDeleteBody } from '@/components/settings/left-books.logic';
 import { CARD_TEXT_GAP, CARD_TEXT_INSET, PrivateChip, excerptOf } from '@/components/book/letter-card';
 import { letterWords } from '@/components/book/letter-words.logic';
 import { wordsCardKind, wordsCardState, type WordsCardKind } from '@/components/book/words-card.logic';
@@ -362,7 +364,7 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
   const own = isOwnEntry(entry);
   // A letter of a book this phone has left (BL-444, D-113) opens to read: no Add to book, Change the date, Delete, words
   // to write, review or picture controls. Every one of those writes would queue an op for a book the server no longer
-  // lets this person write to. Export and Delete for these letters are later slices.
+  // lets this person write to. The one write kept is Delete, through its own door (`deleteLeftBookLetter`, BL-1960, BL-1961).
   const readOnly = isLeftBookLetter(entry);
   const editable = own && !readOnly;
   const canShowOriginal = exactViewAvailable(entry, { own, hasWords: words === 'words' });
@@ -419,6 +421,14 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
   const remove = () => {
     setConfirmOpen(false);
     const gone = entry;
+    // A left book's letter has no Undo: the restore is refused (BL-1959), so the toast offers none.
+    if (readOnly) {
+      if (!deleteLeftBookLetter(gone.id)) return toast.show({ message: copy.errors.generic.title });
+      haptic('warning');
+      track('letter_deleted', { action: 'deleted', destination: gone.inBook ? 'book' : 'private' });
+      toast.show({ message: copy.settings.delete.entryToast });
+      return back();
+    }
     if (!deleteEntry(gone.id)) return toast.show({ message: copy.errors.generic.title }); // tombstone; waits 30 days on the Recently deleted shelf; false for a left book (BL-1959)
     haptic('warning');
     track('letter_deleted', { action: 'deleted', destination: gone.inBook ? 'book' : 'private' });
@@ -531,6 +541,19 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
             </ListSection>
           </View>
         )}
+        {readOnly && own && (
+          <View style={{ marginHorizontal: 20 - CARD_TEXT_INSET }}>
+            <ListSection>
+              <ListRow
+                title={copy.book.entryMenu.deleteButton}
+                variant="destructive"
+                leading={<TrashIcon size={20} color={c.destructive} />}
+                onPress={() => setConfirmOpen(true)}
+                testID="letter.deleteLeftBook"
+              />
+            </ListSection>
+          </View>
+        )}
         </Animated.View>
       </ScrollView>
 
@@ -544,7 +567,7 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
       <ConfirmSheet
         open={confirmOpen}
         title={copy.settings.delete.entryTitle}
-        body={copy.settings.delete.entryBody}
+        body={readOnly ? leftBookDeleteBody(entry) : copy.settings.delete.entryBody}
         confirmLabel={copy.settings.delete.entryConfirm}
         keepLabel={copy.settings.delete.keepButton}
         onKeep={() => setConfirmOpen(false)}

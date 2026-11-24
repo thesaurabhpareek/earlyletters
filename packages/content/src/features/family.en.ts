@@ -2,8 +2,7 @@
 /**
  * Words for the family page (a pushed page, not a tab) and co-parent sharing (PRD V2 F11; PRD B F5). Co-parent only at
  * launch (B1), so Family roles stay hidden. With server features on (D-100, drafted as D-089)
- * these drive invite, join and leave; with them off, `soon` is the one presentation (the kill
- * path). The content rules test scans this file. Placeholders: {child}, {signsAs}, {inviter},
+ * these drive invite, join and leave; with them off, the family routes send the person Home. The content rules test scans this file. Placeholders: {child}, {signsAs}, {inviter},
  * {coParent}, {date}.
  *
  * F11 names some keys in a `coParent.*` namespace; they live here: coParent.invite.fullNote is
@@ -146,8 +145,6 @@ export const familyCopy = {
     leaving: 'Leaving the book',
     done: "You left {child}'s book. Your own letters stay yours.",
     coParentFallback: 'your co-parent',
-    /** /invite/leave in a build with sharing on, while D-113 holds Leave back. */
-    later: 'Leaving a shared book is coming in a later update.',
   },
 
   /** F11-REQ-023: the one neutral note the remaining parent sees. */
@@ -155,15 +152,6 @@ export const familyCopy = {
     note: "{signsAs} has left {child}'s book.",
     /** The same note for a co-parent who never set a sign-off. */
     noteUnsigned: "Your co-parent has left {child}'s book.",
-  },
-
-  /**
-   * Only the leave sheet's title is drawn now (invite/leave.tsx). The rest of the old coming-soon words
-   * (title, lead, notify, quiet, close, Settings row and help) were deleted: D-161 has no "coming soon" line
-   * in any build, and BL-1834 ruled that no line promises a later update.
-   */
-  soon: {
-    status: 'Coming soon',
   },
 
   errors: {
