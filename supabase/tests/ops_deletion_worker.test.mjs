@@ -214,6 +214,15 @@ check('the retired bucket clears the person\'s rows older than a day', await (as
   await sys(`select public.ops_consume_forget_quota_retired($1, 10)`, [B]);
   return (await sys(`select count(*)::int n from ops.forget_quota_retired where profile_id = $1 and day < current_date - 1`, [B])).rows[0].n === 0;
 })());
+// BL-2166 boundary: ops_consume_forget_quota_retired deletes `day < current_date - 1`.
+// Asserts: yesterday (current_date - 1) is kept, two days back (current_date - 2) is deleted.
+check('the retired bucket keeps yesterday and clears two days back (consume boundary)', await (async () => {
+  await sys(`delete from ops.forget_quota_retired where profile_id = $1`, [B]);
+  await sys(`insert into ops.forget_quota_retired values ($1, current_date - 1, 3), ($1, current_date - 2, 3)`, [B]);
+  await sys(`select public.ops_consume_forget_quota_retired($1, 10)`, [B]);
+  const left = (await sys(`select (current_date - day)::int age from ops.forget_quota_retired where profile_id = $1 order by 1`, [B])).rows.map((r) => r.age);
+  return JSON.stringify(left) === JSON.stringify([0, 1]);
+})());
 await sys(`select public.ops_consume_forget_quota_retired($1, 10)`, [C]);
 
 // ── Apple refresh tokens ──────────────────────────────────────────────────
@@ -247,6 +256,17 @@ const ret2 = await j(`select public.ops_retention(now()) v`);
 check('retention clears retired_id quota rows older than 2 days and keeps today', ret2.forget_quota_retired === 2
   && (await sys(`select count(*)::int n from ops.forget_quota_retired where profile_id = $1 and day < current_date - 2`, [A])).rows[0].n === 0
   && (await sys(`select count(*)::int n from ops.forget_quota_retired where profile_id = $1 and day = current_date`, [A])).rows[0].n === 1);
+
+// BL-2166 boundary: ops_retention deletes `day < (p_now - interval '2 days')::date`.
+// With p_now = now(): current_date - 1 and current_date - 2 are both kept (2 days back is still inside the rule);
+// moving p_now one day on makes current_date - 2 the first deleted day while current_date - 1 stays.
+await sys(`delete from ops.forget_quota_retired where profile_id = $1`, [A]);
+await sys(`insert into ops.forget_quota_retired values ($1, current_date - 1, 1), ($1, current_date - 2, 1), ($1, current_date - 3, 1)`, [A]);
+const retDays = async () => (await sys(`select (current_date - day)::int age from ops.forget_quota_retired where profile_id = $1 order by 1`, [A])).rows.map((r) => r.age);
+await j(`select public.ops_retention(now()) v`);
+check('retention keeps rows 1 and 2 days old and clears 3 days old (p_now = now)', JSON.stringify(await retDays()) === JSON.stringify([1, 2]));
+await j(`select public.ops_retention(now() + interval '1 day') v`);
+check('retention with p_now a day later clears the 2 day old row and keeps the 1 day old row', JSON.stringify(await retDays()) === JSON.stringify([1]));
 
 // ── Incident scope (LEGAL-REQ-039) ────────────────────────────────────────
 const S2 = '88888888-8888-8888-8888-888888888888';
