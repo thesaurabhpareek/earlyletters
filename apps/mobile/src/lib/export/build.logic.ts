@@ -392,6 +392,17 @@ function chaptersOf(child: SnapshotChild, entries: SnapshotEntry[]): { month: nu
   return [...groups.values()].sort((a, b) => (a.month ?? -1) - (b.month ?? -1));
 }
 
+/**
+ * ` lang="xx"` for a letter written in another language (D-056), so the reader and the print
+ * engine pick the right font and line breaking per letter. The page itself stays lang="en".
+ * Only a well-formed BCP-47 tag is written; anything else (or no language) adds nothing, so a
+ * stored value can never break out of the attribute.
+ */
+export function langAttr(e: { language?: string | null }): string {
+  const tag = e.language?.trim();
+  return tag && /^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$/.test(tag) ? ` lang="${tag}"` : '';
+}
+
 // ── The offline reader (index.html) ──────────────────────────────────────
 
 function indexHtml(snapshot: ExportSnapshot, folders: Map<string, string>): string {
@@ -419,7 +430,7 @@ function indexHtml(snapshot: ExportSnapshot, folders: Map<string, string>): stri
                     ? `<p class="note">${escapeHtml(r.recordingNotHere)}</p>`
                     : '';
               const body = waiting(e) ? `<p class="note">${escapeHtml(exportCopy.letterFile.waitingForWords)}</p>` : paragraphs(e.finalText);
-              return `<article>
+              return `<article${langAttr(e)}>
 <p class="date">${escapeHtml(entryDayDate(child, e, snapshot.locale))}${e.inBook ? '' : ` <span class="tag">${escapeHtml(r.privateLabel)}</span>`}</p>
 ${body}
 <p class="sig" dir="auto">${escapeHtml(fill(copy.book.signature, { signsAs: signsAsOf(e, child) }))}</p>
@@ -445,7 +456,7 @@ body{margin:0 auto;max-width:42rem;padding:2rem 1.25rem 4rem;background:${c.pape
 h1,h2,h3{font-weight:500;line-height:1.25}h1{font-size:2rem}h2{font-size:1.6rem;margin-top:3rem}h3{font-size:1.2rem;color:${c.accent};margin-top:2.5rem}
 article{border-top:1px solid ${c.line};padding:1.25rem 0}article.mark{padding:.5rem 0}article.mark p{margin:.15rem 0}
 .date,.note,.file,.intro{font-family:${SANS};font-size:.85rem;color:${c.inkMuted}}
-.tag{border:1px solid ${c.line};border-radius:999px;padding:0 .5rem;margin-left:.5rem}
+.tag{border:1px solid ${c.line};border-radius:999px;padding:0 .5rem;margin-inline-start:.5rem}
 .sig{text-align:end;font-style:italic}
 audio{width:100%;margin:.5rem 0}
 a{color:${c.accent}}
@@ -494,7 +505,7 @@ export function bookHtml(child: SnapshotChild, entries: SnapshotEntry[], locale:
       lastYear = year;
       const letters = ch.entries
         .map(
-          (e) => `<article>
+          (e) => `<article${langAttr(e)}>
 <p class="date">${escapeHtml(entryLetterDateline(child, e, locale))}</p>
 ${paragraphs(e.finalText)}
 <p class="sig" dir="auto">${escapeHtml(fill(copy.book.signature, { signsAs: signsAsOf(e, child) }))}</p>
