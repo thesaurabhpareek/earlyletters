@@ -196,6 +196,12 @@ export async function forgetAnalyticsIds(): Promise<void> {
   notify();
 }
 
+/** After some of the ids were acknowledged upstream: forget those and keep the rest for a retry. */
+export async function forgetAnalyticsIdsSome(ids: string[]): Promise<void> {
+  await analytics.forgetSomeIds(ids);
+  notify();
+}
+
 // ---------------------------------------------------------------------------
 // Startup
 // ---------------------------------------------------------------------------
