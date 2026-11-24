@@ -6,12 +6,13 @@
  * Stateless by design: the ids are used for one PostHog call and dropped. They
  * are never written to Postgres, never logged and never joined to the person,
  * which keeps the store label "not linked to you" true. The only state is a
- * per-person daily call count (ops.forget_quota) for the rate limit.
+ * per-person daily call count (ops.forget_quota, and ops.forget_quota_retired for retired_id) for the rate limit.
  *
  * POST /functions/v1/analytics-forget/v1
  *   Authorization: Bearer <the signed-in user's access token>
  *   Idempotency-Key: <uuid> (optional; the call is idempotent by nature)
- *   {"ids": ["<uuid>", ...1 to 21], "reason": "account_deletion" | "device_after_deletion"}
+ *   {"ids": ["<uuid>", ...1 to 21], "reason": "account_deletion" | "device_after_deletion" | "retired_id"}
+ *   retired_id (a phone forgetting an id it retired, ER-A04) uses its own daily quota bucket (ops.forget_quota_retired).
  * 202 {ok: true, data: {accepted: n}, requestId}; errors use the packages/api envelope.
  * GET /functions/v1/analytics-forget/health: 200 when its secrets are set, 503 otherwise
  * (RA-07-06; _shared/health). The gateway's JWT check runs first.
@@ -33,8 +34,10 @@ export type EnvGetter = (name: string) => string | undefined;
 
 export const MAX_IDS = 21;
 export const DAILY_CALLS = 5;
+/** Calls a day for `retired_id` cleanup, in its own bucket so it can never starve account deletion (BL-1252). */
+export const DAILY_RETIRED_CALLS = 10;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const REASONS: readonly Reason[] = ['account_deletion', 'device_after_deletion'];
+const REASONS: readonly Reason[] = ['account_deletion', 'device_after_deletion', 'retired_id'];
 const ROUTE_RE = /\/analytics-forget\/v1\/?$/;
 const LOG_CODE: Partial<Record<ApiErrorCode, ErrorCode>> = {
   bad_request: 'invalid_input', rate_limited: 'quota', unauthorized: 'unauthorized', forbidden: 'forbidden',
@@ -144,11 +147,13 @@ export function makeForgetHandler(env: EnvGetter, opts: ForgetOptions = {}): (re
       return fail('unauthorized', false);
     }
 
-    // Rate limit: DAILY_CALLS per person per day. Counts only; the ids are not stored.
-    const q = await timed(fetchFn, `${supabaseUrl}/rest/v1/rpc/ops_consume_forget_quota`, {
+    // Rate limit per person per day. Counts only; the ids are not stored. `retired_id` has its own bucket: a cleanup
+    // reason must never spend the calls account deletion needs (refused calls still count, so a shared one would starve).
+    const retired = reason === 'retired_id';
+    const q = await timed(fetchFn, `${supabaseUrl}/rest/v1/rpc/${retired ? 'ops_consume_forget_quota_retired' : 'ops_consume_forget_quota'}`, {
       method: 'POST',
       headers: { ...serviceHeaders(serviceKey), 'Content-Type': 'application/json' },
-      body: JSON.stringify({ p_profile: profileId, p_limit: DAILY_CALLS }),
+      body: JSON.stringify({ p_profile: profileId, p_limit: retired ? DAILY_RETIRED_CALLS : DAILY_CALLS }),
     }, timeoutMs);
     if (!q || !q.ok) {
       await discard(q);
