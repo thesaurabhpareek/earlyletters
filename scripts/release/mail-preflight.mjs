@@ -3,7 +3,7 @@
 // it only looks up public DNS records for the sender domain and prints PASS, FAIL or MANUAL per row.
 // It sends no mail, calls no vendor API and changes nothing. Node built-ins only.
 //
-//   node scripts/release/mail-preflight.mjs --policy quarantine            # check earlyletters.com
+//   node scripts/release/mail-preflight.mjs --policy none                  # check earlyletters.com
 //   node scripts/release/mail-preflight.mjs --domain example.com --policy none --json
 //
 // Exit codes: 0 every DNS check passed (MANUAL rows still need a human, see docs/ops/MAIL-PREFLIGHT.md),

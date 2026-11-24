@@ -28,7 +28,7 @@ Sign-in codes may go to real users only when every row of this table is green, w
 
 ```bash
 node scripts/release/mail-preflight.mjs --policy <none|quarantine|reject>
-node scripts/release/mail-preflight.mjs --policy quarantine --json     # for the release record
+node scripts/release/mail-preflight.mjs --policy none --json           # for the release record
 ```
 
 It looks up public DNS only (Node's built-in resolver). It sends no mail, calls no vendor API and changes nothing. Exit 0 means every DNS row passed, 1 means one failed, 2 means a usage mistake. The `MANUAL` rows are what DNS cannot show (rows 1, 4 to 9 above); the script never turns one into a pass, and a run with `MANUAL` rows left is not "ready".
