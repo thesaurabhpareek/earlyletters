@@ -21,7 +21,7 @@ This is the full list of email the product sends, will send later, and will neve
 |---|---|---|
 | E-1 | **No `{child}` placeholder in any email body or subject.** Emails say "your book", "the book you write to", or "one of your books". | The child's name is L4 (PRD 7.10, DATA_CLASSIFICATION). D-025 already keeps it out of every server-sent push. Resend stores message content by default (turning storage off is a paid add-on with eligibility rules: resend.com/docs/knowledge-base/how-do-i-ensure-sensitive-data-isnt-stored-on-resend, opened 3 Oct 2026), and Privacy Policy section 15 lists the email provider as receiving identifiers only, not information about a child. Putting the name in email would make that table wrong. |
 | E-2 | Adult display names (`{parentName}`, `{signsAs}`) are allowed only in emails to members of the same book. | They are L3, already shared with that person inside the app. |
-| E-3 | Family invites are not emailed by us. The parent shares the link from their own Messages or WhatsApp (`en.family.shareMessage`). One exception, ported from develop: `coparent-invite`, sent only when a parent types their co-parent's address in the app (D-055). | A note from Nani's own child beats a brand email; we would otherwise email an address whose owner never asked to hear from us. |
+| E-3 | Family invites are not emailed by us. The parent shares the link from their own Messages or WhatsApp (`en.family.shareMessage`). One exception, ported from develop: `coparent-invite`, sent only when a parent types their co-parent's address in the app (D-055). **Not built in v1 (FR-MSG-14, `docs/product/prd/functions/messaging-and-entry-points.md`):** no email goes to an address a parent types for someone else. The co-parent invite is a link the parent shares from their own messages (`familyCopy.create.share`, `apps/mobile/src/lib/family/invites.ts` `createCoParentInvite`, which makes a link and sends no email), and `coparent-invite` and `welcome-coparent` are marked not built in sections 5 and 6. D-055 itself is unchanged. | A note from Nani's own child beats a brand email; we would otherwise email an address whose owner never asked to hear from us. |
 | E-4 | Contributors and co-parents who join by invite get a role-specific welcome (`welcome-family`, `welcome-coparent`) **instead of** C1's `welcome`. | C1's welcome is written for a parent starting a book; Nani is joining one. Needs the sender to branch on how the account was created (see section 9). |
 | E-5 | Removing a family member, a member leaving, a declined invite and a letter kept aside send **no email**. One exception: when a co-parent asks to delete their account, the remaining parent gets `coparent-left` (founder instruction, 3 Oct 2026), because letters in the shared book disappear and silence would read as a fault. | PRD B F5 and F7: silence beats a rejection notice inside a family. |
 | E-6 | Billing problems, renewal receipts and refunds send **no email from us**. Apple sends its own; the app shows Apple's in-app billing message. | Two emails about one charge confuse people and can read as a phishing pattern. |
@@ -59,7 +59,7 @@ There is deliberately almost nothing here. No drips, no tips series, no re-engag
 | id | Trigger | Sender | Kind | Channels | Priority | Cap | Owner |
 |---|---|---|---|---|---|---|---|
 | `welcome-family` | First sign-in that came from accepting a Family (contributor) invite. Replaces `welcome` | Fn | T? | Email only (the app shows the contributor welcome screen) | 1.1 (v1.0 family is co-parent only, founder decision 5) | Once per account, ever | C2 / D2 / backend |
-| `welcome-coparent` | First sign-in that came from accepting a Co-parent invite. Replaces `welcome` | Fn | T? | Email only | 1.0 | Once per account, ever | C2 / D2 / backend |
+| `welcome-coparent` | **Not built in v1 (FR-MSG-14): no sender calls this id.** The template and its copy stay in `packages/emails` and `lifecycle.en.ts`. Was: first sign-in that came from accepting a Co-parent invite, replacing `welcome` | none (not built) | T? | Email only | not built in v1 | Once per account, ever | C2 / D2 / backend |
 | `news-confirm` | Opt-in to a future newsletter (double opt-in) | Fn on `news.` subdomain | C | Email only | later | Once per opt-in | C2 / D2 / L2 |
 | `book-printed` | A printed book (Year One) ships | Fn | T | Email + card | later (D-010) | Per order | C2 / D2 / print |
 
@@ -67,7 +67,7 @@ There is deliberately almost nothing here. No drips, no tips series, no re-engag
 
 | id | Trigger | Sender | Kind | Channels | Priority | Cap | Owner |
 |---|---|---|---|---|---|---|---|
-| `coparent-invite` | A parent enters their co-parent's email address in the app (develop's CoParentInvite, D-055). The link works once, for 7 days (D-020) | Fn | T | Email | 1.0 | 1 per invite | C2 / D2 / backend |
+| `coparent-invite` | **Not built in v1 (FR-MSG-14): no sender calls this id, and the app has no field for a co-parent's email address.** The template and its copy stay in `packages/emails` and `family.en.ts`. Was: a parent enters their co-parent's email address in the app (develop's CoParentInvite, D-055); the link works once, for 7 days (D-020) | none (not built) | T | Email | not built in v1 | 1 per invite | C2 / D2 / backend |
 | `family-book-closing` | A sole parent deletes a book that has contributors (B-REQ-016, DATA-REQ-053). Sent to each contributor within 1 hour. This is the only contributor notice: purge-worker's off-catalog `contributorNotice` was removed (TPL-05, 31 Oct 2026); until this id is wired, that step fails with `config` and raises an alert. From v1.1 it sends this id through `generated/resend.ts` | Fn | T | Email + card (no push) | 1.1 (no contributors at v1.0, D-055) | 1 per contributor per deletion request | C2 / D2 / privacy engineer |
 | `family-book-restored` | The parent cancels that deletion within 30 days. Sent only to people who got `family-book-closing` | Fn | T | Email + card | 1.1 | 1 per contributor per request | C2 / D2 / privacy engineer |
 | `family-letter` | A family letter waits for approval | push (`en.notifications.familyLetter`) | n/a | **Push and in-app only. No email.** | n/a | C owns timing | C |
@@ -75,7 +75,7 @@ There is deliberately almost nothing here. No drips, no tips series, no re-engag
 | `family-digest` | Opt-in weekly email of new family letters for parents who do not use push | Fn | T? | Email, opt-in only, off by default | later | 1 per week, only when something arrived; no counts in the subject | C2 / D2 / backend |
 | `family-export-ready` | Server export link for contributors whose book is being deleted (DATA-REQ-054, server export) | Fn | T | Email + card | 1.1 (BL-309) | Per export | C2 / D2 / privacy engineer |
 
-Not sent, by decision E-3 and E-5: invite emails other than `coparent-invite`, invite reminders, invite expired, invite declined, member removed, member left, letter kept aside.
+Not sent, by decision E-3 and E-5: invite emails (`coparent-invite` included: not built in v1, FR-MSG-14), invite reminders, invite expired, invite declined, member removed, member left, letter kept aside.
 
 ## 7. Billing and subscription (copy: C2, `billing.en.ts`)
 
@@ -190,7 +190,7 @@ Conflict to resolve (PM): DATA-REQ-053 promises contributors "a server export li
 
 ## Reconciliation with founder decisions of Oct 3 (docs/agents/BRIEF-2026-10-03.md)
 - Decision 4: Google sign-in is v1.0. `google-account-linked` moves to v1.0. Sign-in copy says "sign-in link", never "magic link" (VOICE.md).
-- Decision 5: family at launch is co-parent only. `welcome-family` moves to v1.1; `welcome-coparent` stays v1.0.
+- Decision 5: family at launch is co-parent only. `welcome-family` moves to v1.1; `welcome-coparent` stays v1.0 (since overtaken: not built in v1, FR-MSG-14, section 5).
 - Decision 3: payments are Apple only. Billing emails were PARKED because no server of ours saw purchases. **Un-parked by D-080 (founder, 3 Oct 2026, 19:30 UTC):** the app reports subscription status only (plan, trial end date, renewal date, cancelled flag) so the D-022 reminders can be sent; see the trigger note in section 7. Apple still processes payments; no RevenueCat; no App Store Server Notifications. Prices are $4.99/month (1-month trial) and $49.99/year (2-month trial) (raised on 4 Oct 2026, D-082).
 - Decision 13: the health data policy lives at /health-privacy.
 
