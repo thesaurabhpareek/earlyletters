@@ -4539,12 +4539,22 @@ Every row is `proposed`: the dispatcher skips it until Karma or the founder sets
 - Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done.
 - Source: `docs/analytics/instrumentation/data-steward.md`, row IN-DS-01; chain: instrumentation, IN (phase 1) (readiness map PR #1079, section 2.11).
 
-#### BL-1059 Closed screen, control, surface and marker lists generated into catalog.ts; deny-list (IN-DS-05)
-- Status: proposed (docs/analytics/instrumentation/data-steward.md; Karma or the founder sets it to ready). Mode: agent. Owner: analytics engineer. Milestone: M15. Size: L.
-- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
-- Scope: Closed screen, control, surface and marker lists generated into `catalog.ts`; deny-list test; literal-argument lint; egress spy test; import-boundary test (layers 6, 7, 9, 11). Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
-- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done. Founder or counsel step it waits on: IA-FINAL is merged (#1033).
+#### BL-1059 Analytics deny-list test and literal-argument lint (IN-DS-05)
+- Status: proposed (docs/analytics/instrumentation/data-steward.md; scoped by product; Karma or the founder sets it to ready). Mode: agent. Owner: analytics engineer. Milestone: M15. Size: S. Depends on: BL-1255.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row. Cited: D-163; CLAUDE.md privacy rules (no entry text, transcript, audio or child name in analytics).
+- Scope: (1) a deny-list test in `packages/analytics/test/deny-list.test.ts` that walks every event, property and id in `packages/analytics/src/catalog.ts` and `ids.ts` and fails on a name or value shape for entry text, transcript, audio or child name; (2) a literal-argument lint, `scripts/lint/analytics-literal-args.mjs` with its `.test.mjs`, that fails when an analytics call in `apps/mobile/src` passes a template string, a concatenation or a variable as an event or property name instead of a registry constant. Not in this row: the generated lists (BL-1254 is done, BL-1256 and BL-1258 hold the typed helpers and click wiring), the one-module import lint (BL-1243), and the egress spy (BL-2150). Production analytics stays off until the production gate clears: the PostHog adapter stack (BL-1235 points P5 to P8) and BL-1886 (CR-186); nothing here turns it on.
+- Done when: the deny-list test is red on a planted catalog row named for a transcript and green on develop; the lint test is red on a planted fixture that passes a built string and green on the app source; both run in `npm test`.
+- Test: `packages/analytics/test/deny-list.test.ts` (unit, planted-violation mutant) and `scripts/lint/analytics-literal-args.test.mjs` (unit, fixture).
+
 - Source: `docs/analytics/instrumentation/data-steward.md`, row IN-DS-05; chain: instrumentation, IN (phase 1) (readiness map PR #1079, section 2.11).
+
+#### BL-2150 Analytics egress spy: nothing leaves before consent, and no payload carries a denied value (IN-DS-05, split from BL-1059)
+- Status: proposed (split from BL-1059 by product; Karma or the founder sets it to ready). Mode: agent. Owner: analytics engineer. Milestone: M15. Size: S. Depends on: BL-1240, BL-1255.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row. Cited: D-163.
+- Scope: a test in `packages/analytics/test/egress-spy.test.ts` that replaces the transport used by the one PostHog adapter module (BL-1240) with a recording spy, drives each catalog event through the client, and asserts (1) zero calls before the consent gate allows, (2) zero calls after the off switch, and (3) every recorded payload passes the deny-list shapes of BL-1059. No new SDK call and no network. Production analytics stays off until the production gate clears: the PostHog adapter stack (BL-1235 points P5 to P8) and BL-1886 (CR-186); nothing here turns it on.
+- Done when: the spy records zero calls with consent off and fails when a planted payload carries a transcript-shaped property.
+- Test: `packages/analytics/test/egress-spy.test.ts` (unit, planted-violation mutant).
+- Source: split from BL-1059, row IN-DS-05, `docs/analytics/instrumentation/data-steward.md`.
 
 #### BL-1060 Staging deletion drill on a throwaway project: send events under a bootstrapped id, call (IN-DS-06)
 - Status: proposed (docs/analytics/instrumentation/data-steward.md; Karma or the founder sets it to ready). Mode: pair. Owner: qa engineer. Milestone: M15. Size: S.
@@ -4623,11 +4633,13 @@ Every row is `proposed`: the dispatcher skips it until Karma or the founder sets
 - Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done.
 - Source: `docs/analytics/instrumentation/decision-science.md`, row IN-DS4/sci; chain: instrumentation, IN (phase 2) (readiness map PR #1079, section 2.11).
 
-#### BL-1071 Reconcile TRACKING_PLAN 1.1 and FR-DAT-16 text (Proposed E83) (IN-DS5/sci)
-- Status: proposed (docs/analytics/instrumentation/decision-science.md; Karma or the founder sets it to ready). Mode: pair. Owner: analytics engineer. Milestone: M15. Size: S.
-- Satisfies: FR-DAT-16.
-- Scope: Reconcile TRACKING_PLAN 1.1 and FR-DAT-16 text (Proposed E83). Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
-- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done. Founder or counsel step it waits on: founder reading.
+#### BL-1071 Reconcile TRACKING_PLAN 1.1 (WMF for WKF) and the FR-DAT-16 gate letter (Proposed erratum E99) (IN-DS5/sci)
+- Status: needs-decision (a new erratum number, E99, is reserved by this row and is PROPOSED; the council rules on it; the FR-DAT-16 wording is a requirement change, so no requirement text is edited before then). Mode: agent. Owner: analytics engineer. Milestone: M15. Size: S. Depends on: BL-1264.
+- Satisfies: FR-DAT-16. Cited: FR-DAT-21 and `docs/product/prd/03-goals` 4.1 (WMF is the north star, WKF beside it), `14-test-plan.md` line 104 (G5 is the privacy label and claims match), `docs/analytics/instrumentation/decision-science.md` (the former E83 box and the G5 finding), D-163. The former E83 collided with NS-08-R21 at `docs/product/prd/18-errata-after-lock.md:136`, and E95 there is the consent and basics-default-on erratum, which is a different matter, so neither number is used.
+- Scope: reserve E99, the next free number in `docs/product/prd/18-errata-after-lock.md` (highest used there is E98; product confirms it is still free when the row starts), for two doc catch-ups that move no lock: (1) `docs/analytics/TRACKING_PLAN.md` section 1.1 ("North-star metric") names Weekly keeping families (WKF) as the north star where FR-DAT-21 and 03-goals 4.1 name Weekly making families (WMF) with WKF beside it, so it says WMF; this is done in the render source of BL-1264, because that row generates the plan; (2) FR-DAT-16 gives the 99.8 percent crash-free target to "G5", which `14-test-plan.md` defines as the privacy label and claims match, so the gate letter is corrected. Product drafts the erratum row; no requirement text is edited by this row before the council rules on E99. If the council declines, the row is dropped.
+- Done when: the TRACKING_PLAN section 1.1 text says WMF with WKF beside it and the rendered doc still equals the registry render; the FR-DAT-16 gate letter is corrected only after the E99 ruling, and the erratum row for E99 exists in `docs/product/prd/18-errata-after-lock.md`.
+- Test: `packages/analytics/test/catalog.test.ts` (unit).
+
 - Source: `docs/analytics/instrumentation/decision-science.md`, row IN-DS5/sci; chain: instrumentation, IN (phase 1) (readiness map PR #1079, section 2.11).
 
 #### BL-1072 First real read-out once P1 data exists (IN-DS6/sci)
@@ -4680,10 +4692,12 @@ Every row is `proposed`: the dispatcher skips it until Karma or the founder sets
 - Source: `docs/product/instrumentation/02-book-reading-find-photos.md`, row IN-206; chain: instrumentation, IN (phase 2) (readiness map PR #1079, section 2.11).
 
 #### BL-1079 Share events and error codes; test shared text carries no footer (IN-207)
-- Status: proposed (docs/product/instrumentation/02-book-reading-find-photos.md; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: BL-1075.
-- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
-- Scope: Share events and error codes; test shared text carries no footer. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
-- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done.
+- Status: proposed (docs/product/instrumentation/02-book-reading-find-photos.md; scoped by product; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: BL-1255, BL-1261.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row. Cited: D-163.
+- Scope: share events are not named in BL-1258, BL-1259 or BL-1261, so this row keeps them: (1) add the share started, shared and failed rows (with a closed error-code enum) to the registry from BL-1255, named in IN-207 of the Source file; (2) fire them from the share call sites in `apps/mobile/src/lib/family/share.ts` through the typed helpers of BL-1256; (3) a test that pins the current shared text (the exact string the share call sites hand to the system share sheet today) and fails if a footer, link tracking or app name is appended to it. No new customer-facing word. Production analytics stays off until the production gate clears: the PostHog adapter stack (BL-1235 points P5 to P8) and BL-1886 (CR-186); nothing here turns it on.
+- Done when: the registry has the three rows and `catalog-registry-drift.test.ts` passes; a test fails when a share call site passes a literal event name; a test fails when the shared text ends with a footer line.
+- Test: `apps/mobile/test/share-events.test.ts` (unit) and `packages/analytics/test/catalog-registry-drift.test.ts`.
+
 - Source: `docs/product/instrumentation/02-book-reading-find-photos.md`, row IN-207; chain: instrumentation, IN (phase 2) (readiness map PR #1079, section 2.11).
 
 #### BL-1080 perf.*.measured markers mapped to budget ratio for Book, Find, playback (IN-208)
@@ -4911,10 +4925,12 @@ Every row is `proposed`: the dispatcher skips it until Karma or the founder sets
 - Source: `docs/product/instrumentation/01-capture-and-first-run.md (PR #1040)`, row IN-08/pm1; chain: instrumentation, IN (phase 1) (readiness map PR #1079, section 2.11).
 
 #### BL-1112 onboarding.summary.sent, with E-INSTR-2 parts held until counsel (IN-09/pm1)
-- Status: proposed (docs/product/instrumentation/01-capture-and-first-run.md (PR #1040); Karma or the founder sets it to ready). Mode: pair. Owner: analytics engineer. Milestone: M15. Size: S.
-- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
-- Scope: onboarding.summary.sent, with E-INSTR-2 parts held until counsel. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
-- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done. Founder or counsel step it waits on: counsel.
+- Status: needs-decision (two rulings: FQ-01 on reading server aggregates, and the E-INSTR-2 read by the exec team counsel; questions in the PR body of the scoping PR). Mode: agent. Owner: analytics engineer. Milestone: M15. Size: S. Depends on: BL-1261.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row. Cited: D-163, D-172 (counsel means the exec team counsel).
+- Scope: when both rulings land, add the `onboarding.summary.sent` registry row and fire it from the registry constant wired by BL-1261; the E-INSTR-2 parts stay out until the read. If FQ-01 keeps server aggregates unread for 1.0, the row folds into BL-1261 as a held row and this id is closed.
+- Done when: the registry row exists with its tier, `catalog-registry-drift.test.ts` passes, and a test shows no event before the consent gate.
+- Test: `packages/analytics/test/catalog-registry-drift.test.ts` and `packages/analytics/test/consent-gate.test.ts`.
+
 - Source: `docs/product/instrumentation/01-capture-and-first-run.md (PR #1040)`, row IN-09/pm1; chain: instrumentation, IN (phase 1) (readiness map PR #1079, section 2.11).
 
 #### BL-1113 Perf markers (H1) and the three perf.*.measured events (confirm owner with ops) (IN-10/pm1)
@@ -4939,10 +4955,12 @@ Every row is `proposed`: the dispatcher skips it until Karma or the founder sets
 - Source: `docs/product/instrumentation/01-capture-and-first-run.md (PR #1040)`, row IN-12/pm1; chain: instrumentation, IN (phase 1) (readiness map PR #1079, section 2.11).
 
 #### BL-1116 Dashboards as code for section 7 (IN-13/pm1)
-- Status: proposed (docs/product/instrumentation/01-capture-and-first-run.md (PR #1040); Karma or the founder sets it to ready). Mode: agent. Owner: analytics engineer. Milestone: M15. Size: M. Depends on: BL-1108, BL-1109, BL-1110, BL-1111.
-- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
-- Scope: Dashboards as code for section 7. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
-- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done. Founder or counsel step it waits on: host decision.
+- Status: proposed (docs/product/instrumentation/01-capture-and-first-run.md (PR #1040); scoped by product; Karma or the founder sets it to ready). Mode: agent. Owner: analytics engineer. Milestone: M15. Size: M. Depends on: BL-1262, BL-1108, BL-1109, BL-1110, BL-1111.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row. Cited: D-163.
+- Scope: what is code here: insight and dashboard definitions for section 7 of the Source file, written as typed registry rows beside the funnel rows of BL-1262 and rendered to the query text (HogQL) in `scripts/insights`, checked in and reviewed as code. What is not code: creating them in a PostHog project needs an API key typed by the founder (FH-1); that apply step is not in this row and BL-1262 is the row that waits on it. No event or property that the registry does not hold.
+- Done when: a unit test renders each section 7 definition to text and fails when a definition names an event or property that is not in the registry; the rendered files are listed in one index file.
+- Test: `packages/analytics/test/insights.test.ts` (unit, extended) and `scripts/insights` render snapshot.
+
 - Source: `docs/product/instrumentation/01-capture-and-first-run.md (PR #1040)`, row IN-13/pm1; chain: instrumentation, IN (phase 2) (readiness map PR #1079, section 2.11).
 
 #### BL-1117 Consent wording, label, D-### superseding D-095 and D-124, host and subprocessor entries, (IN-14/pm1)
@@ -5057,12 +5075,30 @@ Every row is `proposed`: the dispatcher skips it until Karma or the founder sets
 - Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done. Founder or counsel step it waits on: E-INSTR-1; approve-migration.
 - Source: `docs/analytics/instrumentation/data-architect.md (PR #1052)`, row IN-DA-05; chain: instrumentation, IN (phase 2) (readiness map PR #1079, section 2.11).
 
-#### BL-1133 Withdrawal route: ops.forget_quota_anon migration (6a), withdrawal reason in ana (IN-DA-10)
-- Status: proposed (docs/analytics/instrumentation/data-architect.md (PR #1052); Karma or the founder sets it to ready). Mode: pair. Owner: data architect. Milestone: M15. Size: M.
-- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
-- Scope: Withdrawal route: ops.forget_quota_anon migration (6a), withdrawal reason in ana. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
-- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done. Founder or counsel step it waits on: founder F-1, F-3; withdrawal erratum; legal text; approve-migration.
+#### BL-1133 Withdrawal route: ops.forget_quota_anon migration (6a) (IN-DA-10)
+- Status: proposed (docs/analytics/instrumentation/data-architect.md (PR #1052); scoped by product, narrowed to part (a); waits on the rulings of the founder-rules row; Karma or the founder sets it to ready). Mode: pair. Owner: data architect. Milestone: M15. Size: S. Depends on: BL-1128.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row. Cited: D-163; data-architect.md row IN-DA-10 lists F-1, F-3 and the withdrawal erratum as its upstream, and BL-1128 holds F-1, F-2, F-3 and F-10; the withdrawal erratum number is named in the PR body of its own row once reserved.
+- Scope: one new migration for `ops.forget_quota_anon` with its own grants, an opening comment (purpose, rollback, ordering) and its grant line in `supabase/tests/grants.mjs`; no edit to an applied migration. The withdrawal reason in the analytics-forget function is BL-2151 and the legal text is BL-2152. Applying it to a hosted project is a founder step (approve-migration and apply).
+- Done when: `npm run test:db` passes with a test for the function's grants and its quota behaviour; the migration is not listed in `.github/migrations-applied.txt` by this PR.
+- Test: `supabase/tests` (new access-rule test, embedded Postgres).
+
 - Source: `docs/analytics/instrumentation/data-architect.md (PR #1052)`, row IN-DA-10; chain: instrumentation, IN (phase 1) (readiness map PR #1079, section 2.11).
+
+#### BL-2151 analytics-forget: a withdrawal reason (IN-DA-10, split from BL-1133)
+- Status: proposed (split by product; waits on the migration row; Karma or the founder sets it to ready). Mode: agent. Owner: data architect. Milestone: M15. Size: S. Depends on: BL-1133.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row. Cited: D-163.
+- Scope: `supabase/functions/analytics-forget` accepts a closed `reason` enum (consent withdrawn, erase) and records only the enum, never free text; Deno test for the new input and for rejecting any other value. No migration.
+- Done when: `npm run test:functions` passes with the enum test red on a planted free-text reason.
+- Test: `supabase/functions/analytics-forget` Deno test.
+- Source: split from BL-1133, row IN-DA-10, `docs/analytics/instrumentation/data-architect.md`.
+
+#### BL-2152 Withdrawal text for the privacy notice and label (IN-DA-10, split from BL-1133)
+- Status: needs-decision (customer-facing and legal words: content writes, the exec team counsel reads before it publishes). Mode: agent. Owner: content. Milestone: M15. Size: S. Depends on: BL-1128.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row. Cited: D-163, D-172.
+- Scope: the words that say what happens to usage numbers when a parent turns sharing off or erases, written in the key files of `packages/content`, after the withdrawal erratum is ruled. No words are written by product; this row is the content owner's. It rides its own PR.
+- Done when: the lines pass `packages/content/test/rules.test.ts` and `npm run lint:copy`, and the counsel read is recorded in the PR.
+- Test: `packages/content/test/rules.test.ts` (unit).
+- Source: split from BL-1133, row IN-DA-10, `docs/analytics/instrumentation/data-architect.md`.
 
 #### BL-1134 Release gate: the staging deletion drill passes and the policy retention number equals (IN-DA-11)
 - Status: proposed (docs/analytics/instrumentation/data-architect.md (PR #1052); Karma or the founder sets it to ready). Mode: pair. Owner: qa engineer. Milestone: M15. Size: S. Depends on: BL-1133, BL-1060.
@@ -5120,11 +5156,13 @@ Every row is `proposed`: the dispatcher skips it until Karma or the founder sets
 - Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done.
 - Source: `docs/analytics/instrumentation/ops.md (PR #1044)`, row IN-ops-03; chain: instrumentation, IN (phase 1) (readiness map PR #1079, section 2.11).
 
-#### BL-1142 Gate tests OG-1, OG-2, OG-7 (seam-guard extension, proposed as a patch under (IN-ops-04)
-- Status: proposed (docs/analytics/instrumentation/ops.md (PR #1044); Karma or the founder sets it to ready). Mode: pair. Owner: platform. Milestone: M15. Size: S.
-- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
-- Scope: Gate tests OG-1, OG-2, OG-7 (seam-guard extension, proposed as a patch under `docs/ops/proposed/`). Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
-- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done. Founder or counsel step it waits on: founder applies the patch.
+#### BL-1142 Gate tests OG-2 and OG-7: no analytics or crash SDK and no perf markers in a store bundle (IN-ops-04)
+- Status: needs-decision (question in the PR body of the scoping PR: does OG-2 hold for the production profile once D-163 allows analytics there). Mode: agent. Owner: platform. Milestone: M15. Size: S. Depends on: none.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row. Cited: D-163.
+- Scope: OG-1 is dropped, because BL-2004 already puts `EXPO_PUBLIC_ANALYTICS` into the store-flags gate. This row keeps OG-2 and OG-7 as one guard script, `scripts/release/bundle-guard.mjs`. OG-2: in a store profile where `EXPO_PUBLIC_ANALYTICS` is off, the iOS bundle holds no `@sentry/*`, `posthog*` or `glitchtip` module; in the production profile, once D-163 allows the SDK, the check is instead that the PostHog adapter module is the only importer (BL-1243), so the guard never fails the production build for carrying the SDK. OG-7: perf markers are absent from every store bundle. A test plants each forbidden module name in a fixture bundle (analytics off) and a clean fixture, and a production-profile fixture with the adapter only. The workflow step that runs it is written as a patch under `docs/ops/proposed/` and applied by Karma.
+- Done when: the guard test is red on each planted name in an analytics-off fixture, green on the clean fixture and on the production-profile fixture that holds only the adapter, and red on a production fixture with the SDK imported elsewhere; the patch file exists under `docs/ops/proposed/`.
+- Test: `scripts/release/bundle-guard.test.mjs` (unit, fixtures).
+
 - Source: `docs/analytics/instrumentation/ops.md (PR #1044)`, row IN-ops-04; chain: instrumentation, IN (phase 1) (readiness map PR #1079, section 2.11).
 
 #### BL-1143 Perf marker module and registry rows for perf.*.measured (with H1 of MEASUREMENT (IN-ops-05)
@@ -5148,11 +5186,13 @@ Every row is `proposed`: the dispatcher skips it until Karma or the founder sets
 - Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done.
 - Source: `docs/analytics/instrumentation/ops.md (PR #1044)`, row IN-ops-07; chain: instrumentation, IN (phase 2) (readiness map PR #1079, section 2.11).
 
-#### BL-1146 Evidence file template and no-real-family-data scan for docs/ops/evidence/ (IN-ops-08)
-- Status: proposed (docs/analytics/instrumentation/ops.md (PR #1044); Karma or the founder sets it to ready). Mode: agent. Owner: platform. Milestone: M15. Size: S.
-- Satisfies: none claimed: build work for the instrumentation design, not a P0 row.
-- Scope: Evidence file template and no-real-family-data scan for docs/ops/evidence/. Built dark: no event is sent before the consent gate, and no entry text, transcript, audio or child name is ever an event or a property.
-- Done when: the item above is merged, its tests (where it names any) pass, and the instrumentation file in Source can mark it done.
+#### BL-1146 Evidence records live in docs/qa/evidence: scan them for real family data (IN-ops-08)
+- Status: proposed (docs/analytics/instrumentation/ops.md (PR #1044); scoped by product; the location is a question for the exec council, default below; Karma or the founder sets it to ready). Mode: agent. Owner: platform. Milestone: M15. Size: S. Depends on: none.
+- Satisfies: none claimed: build work for the instrumentation design, not a P0 row. Cited: CLAUDE.md privacy rules (Asha only), LEGAL-REQ-014.
+- Scope: default: reuse `docs/qa/evidence` (it already holds `README.md` and `TEMPLATE.md`) and do not create `docs/ops/evidence/`. `packages/content/test/no-real-family-data.test.ts` already scans every tracked path, so evidence records are covered today. (1) Add a planted-violation case to that test for a path under `docs/qa/evidence/` so the coverage is pinned and cannot be narrowed unnoticed; (2) add one line to `docs/qa/evidence/README.md` saying an evidence record for an ops or analytics check uses the same template and the Asha family only. Path and date rules for trace belong to BL-1341, not here.
+- Done when: the new case fails when a real-name fixture sits under `docs/qa/evidence/` and the test passes on develop; the README line exists.
+- Test: `packages/content/test/no-real-family-data.test.ts` (unit, planted-violation case).
+
 - Source: `docs/analytics/instrumentation/ops.md (PR #1044)`, row IN-ops-08; chain: instrumentation, IN (phase 2) (readiness map PR #1079, section 2.11).
 
 #### BL-1147 Crash client wrapper, dark: scrubber, consent gate, per-class caps, tests at a mocked transport (IN-ops-09)
