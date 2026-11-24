@@ -1,6 +1,6 @@
 # SE3 small phone: largest text, Smart Invert and Reduce Motion in one sitting
 
-> **Drill identities first.** Follow `README.md` "Drill identities": drill child Asha, no real letter on the phone, and do the drill-phone check (`README.md` rule 3) before step SP.0. This sheet only taps, scrolls and looks. It keeps no letter and deletes nothing.
+> **Drill identities first.** Follow `README.md` "Drill identities": drill child Asha, no real letter on the phone, and do the drill-phone check (`README.md` rule 3) before step SP.0. This sheet only taps, scrolls and looks. It keeps no letter and deletes nothing, with one exception: the SP.4 brand-mark reinstall removes the three Asha letters from the phone, so do SP.0a again after it (or run SP.4 after SP.6, before SP.7).
 
 | | |
 |---|---|
@@ -34,7 +34,7 @@ Do SP.1 to SP.3 in order, then SP.4 to SP.6. At the start of each step the setti
 | SP.4 | **Smart Invert, light mode.** AX5 off (default size). Smart Invert on. Open the Book, a letter with a picture and the Photos lens. Then the brand mark: the welcome lockup shows only on first run, so it is not reachable after SP.0a and About has none. To see it, delete the app and reinstall with Smart Invert already on (fresh-install pattern of `DEVICE_TEST_PLAN.md`; the Keychain can survive a delete, so see its reinstall caveat, BL-460), look at the first screen, then redo SP.0a. If you do not reinstall, write "brand mark: not reached". | Pictures keep their true colours (not negative). Text and surfaces invert as the phone does for any app. The brand mark is not inverted (NS-33-R11). Any picture that shows as a negative is a fail, S2. A lockup that inverts is a known gap (BL-984, blocked; the lockup has no ignore-invert flag): record fail, S3, and cite BL-984 instead of opening a new issue | Per screen: picture true or negative; brand mark true or inverted. Screenshots |
 | SP.5 | **Smart Invert, dark mode.** Smart Invert on, then Dark mode on (Settings > Display & Brightness). Open the Book and a letter. | Nothing becomes unreadable: no text vanishes into its background; pictures stay true. Write down anything that looks doubled (dark app, inverted again) | pass or fail, what looked wrong |
 | SP.6 | **Reduce Motion.** Smart Invert off, Dark off. Reduce Motion on. Visit Home, Listen (start a take, stay quiet 10 s, stop it and let it go), the Book, an empty-state screen, an error or state screen, the invite screen (n/a if the build has no invite entry, as a servers-off build may not; that is not a fail). Watch each for 10 s. This is the short form of row DJ-N15; the loop timings are SE3.8 of `NS-34-SE3-SPEED.md`. | Nothing loops: no breathing lamp, no sweeping bar, no spinning wheel. A system spinner may still turn: write it down | Per screen: moving yes or no, and what moved in words (no letter text) |
-| SP.7 | **Put it back.** Return every setting noted in SP.0c. Do not delete the Asha letters. | Phone as found | done or not |
+| SP.7 | **Put it back.** Return every setting noted in SP.0c. If SP.4 reinstalled the app, redo SP.0a first (the Asha letters are gone until then), or run SP.4 after SP.6 so the letters are not needed once it is done. Delete nothing else. | Phone as found | done or not |
 
 ## Result words and failures
 
