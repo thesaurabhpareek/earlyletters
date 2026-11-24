@@ -49,7 +49,9 @@ node scripts/content/merge-content-map.mjs
 Fix every other conflicted file first; the helper refuses while any remain, because the generator would read conflict
 markers. It takes either side of the two map files, regenerates them from the tree, and stages them. Then continue the
 merge or rebase. Git can also merge the two files cleanly but wrongly; if the stale-map test fails after a clean merge, run
-`node scripts/content/export-content-map.mjs`. The stale-map test is unchanged and still fails on a stale map.
+`node scripts/content/export-content-map.mjs`. After regenerating, the helper runs the generator's `--check` and stops
+with an error if it fails. A modify/delete conflict on a map file (one side deleted it) also fails with an error from git,
+because there is no side to take; restore or delete the file yourself, then run the helper. The stale-map test is unchanged and still fails on a stale map.
 
 ## Walked
 `packages/content/src/**`, copy files under `apps/mobile/src` (most only re-export content, so they add few rows),

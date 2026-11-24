@@ -34,8 +34,16 @@ const quiet = { log: () => {} };
 test('[BL-1992] a merge conflict in the map is resolved by regenerating it', () => {
   const d = repo();
   assert.notEqual(sh(d, 'merge', 'b').status, 0, 'the scratch branches must conflict in the map');
-  const r = resolveContentMap({ cwd: d, regenerate: stub, ...quiet });
+  const head = sh(d, 'rev-parse', 'HEAD').stdout;
+  writeFileSync(join(d, 'stray.txt'), 'untracked\n');
+  let checked = 0;
+  const r = resolveContentMap({ cwd: d, regenerate: stub, check: () => { checked++; }, ...quiet });
   assert.equal(r.status, 'resolved');
+  assert.equal(checked, 1, 'the generator check runs once after regenerating');
+  assert.equal(sh(d, 'rev-parse', 'HEAD').stdout, head, 'it never commits');
+  // src.txt was already staged by git's own clean merge; the helper must add the two map files and nothing else (stray.txt).
+  const staged = sh(d, 'diff', '--cached', '--name-only').stdout.split('\n').filter(Boolean).filter((f) => f !== 'src.txt');
+  assert.deepEqual(staged.sort(), [...MAP_FILES].sort(), 'only the two map files are staged, not git add -A');
   assert.equal(sh(d, 'diff', '--name-only', '--diff-filter=U').stdout, '');
   assert.equal(sh(d, 'commit', '-qm', 'merge').status, 0);
   assert.equal(readFileSync(join(d, MAP_FILES[0]), 'utf8'), '1\n2\n3\n4\nalpha one\nbeta one\n');
