@@ -244,6 +244,14 @@ export function parseReview(body) {
   return m ? { lens: m[1], sha: m[2], word: effectiveVerdict(m[3], body), stated: m[3] } : null;
 }
 
+// BL-1537 (ruling: Karma, T2 under CR-176): reviewState is deliberately NOT on the `<!-- founder -->`
+// marker rule that isFounderComment uses (lib.mjs). That rule decides whose words are INSTRUCTIONS. A
+// counted review is a VERDICT: Karma's interactive session posts it from the founder's login with the
+// `## Review A|B at <sha>: PASS` header on line 1 and `<!-- agent:<handle> -->` on line 2 (OPERATING_MODEL
+// "agent marker" bullet, form b), so a line-1 marker would make every counted review unreadable. Sessions and agents share
+// that login, so a marker would add no proof of who typed it; the real fix is a separate agent identity,
+// which is not built. What does bind a verdict: the exact line-1 header, the full head sha, an exact PASS
+// word, a clean Must fix line, and author_association in TRUSTED_ASSOCIATIONS. Pinned in merge-queue.test.mjs.
 export const TRUSTED_ASSOCIATIONS = ["OWNER", "MEMBER", "COLLABORATOR"];
 
 /**

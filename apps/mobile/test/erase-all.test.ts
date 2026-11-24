@@ -1689,15 +1689,44 @@ describe('[NS-36] kill during Erase resumes and finishes', () => {
       `${h.disk.caches}whole-frames-abc-1.aac`,
     ];
 
-    // RED TODAY (#1169 gap): erase-everything.ts throws `backupFailure` right after the recordings, before
-    // removeWholeFrameCopies and the CACHE_COPIES loop. The export ZIPs and the print PDF stay until a retry succeeds.
-    it.fails('[NS-36][B5-4] the backup file will not go: the erase throws backup_file_delete AND every export ZIP, print PDF and frame copy is gone', async () => {
+    // BL-1466: erase-everything.ts holds `backupFailure` and throws it after the CACHE_COPIES loop, so the export ZIPs
+    // and the print PDF are gone in the same pass.
+    it('[NS-36][B5-4] the backup file will not go: the erase throws backup_file_delete AND every export ZIP, print PDF and frame copy is gone', async () => {
       const app = await launch();
       for (const u of exportsAndCopies()) put(h.disk, u, 5_000);
       put(h.disk, sqlite(BACKUP), 64);
       h.disk.undeletable.add(sqlite(BACKUP));
       expect(() => app.all.eraseDeviceFiles()).toThrow('backup_file_delete');
       expect(exportsAndCopies().filter(has)).toEqual([]);
+    });
+
+    // BL-1466: when more than one file will not go, every step still runs and the first held failure is thrown in a
+    // fixed order: backup, then days, then moments. Two cases pin the order so a swap turns red.
+    it('[NS-36][B5-4] the backup file and the days file will not go: every copy is gone and the erase throws backup_file_delete first', async () => {
+      const app = await launch();
+      for (const u of exportsAndCopies()) put(h.disk, u, 5_000);
+      put(h.disk, daysFile(), 80);
+      put(h.disk, sqlite(BACKUP), 64);
+      h.disk.undeletable.add(sqlite(BACKUP));
+      h.disk.undeletable.add(daysFile());
+      expect(() => app.all.eraseDeviceFiles()).toThrow('backup_file_delete');
+      expect(exportsAndCopies().filter(has)).toEqual([]);
+      expect(has(daysFile())).toBe(true);
+    });
+
+    it('[NS-36][B5-4] only the days file and the moments file will not go: every copy is gone and the erase throws the days failure first', async () => {
+      h.exclusionSticks = true;
+      const app = await launch();
+      expect(await app.moments.momentsStore.setLabel('2026-10-03', 'Asha at the lake')).toEqual({ ok: true });
+      const momentsUris = [...h.disk.files.keys()].filter((u) => u.includes('/moments/'));
+      expect(momentsUris).toHaveLength(1); // positive control
+      for (const u of exportsAndCopies()) put(h.disk, u, 5_000);
+      put(h.disk, daysFile(), 80);
+      h.disk.undeletable.add(daysFile());
+      h.disk.undeletable.add(momentsUris[0]);
+      expect(() => app.all.eraseDeviceFiles()).toThrow('days_file_not_removed');
+      expect(exportsAndCopies().filter(has)).toEqual([]);
+      expect(has(momentsUris[0])).toBe(true);
     });
 
     it('[NS-36][B5-4] what is green today: the recordings and the days file are cleaned, the erase throws, the mark stays, and the retry finishes the copies', async () => {
