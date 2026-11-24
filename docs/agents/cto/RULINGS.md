@@ -1457,3 +1457,79 @@ Challenge record for CR-202 to CR-212 (the held-PR rulings): self-challenged onl
 - The AASA change to the exact `/open` path is approved, with the test added in #1967.
 - Method: the release PR #1979 (snapshot branch `release-candidate/develop-23cba3ec`, `develop` into `main`) merges as a merge commit, not a squash. `main` is already an ancestor of `develop` since #1950.
 - Door: two-way for the comment and the record; the merge itself is one-way on `main`. Physical acts named here stay in FOUNDER_QUEUE only.
+
+Challenge record for CR-215 to CR-224 (24 Nov, afternoon): self-challenged only (CTO skill section 10a). Each is a call on a merged change or a process rule, and none changes a word a parent reads. Facts were re-read on `develop` at eab8156 and from the GitHub API on 24 Nov; where a fact could not be re-read it says UNVERIFIED.
+
+### CR-215 BL-1999: two source-scan pins narrowed so Listen can offer Type instead (24 Nov 2026, Karma under CR-176)
+- Verdict: RULED, after the fact (#1956 merged). Founder-only: no. Signed: Karma.
+- Decision group: test pins. Cites BL-1999, BL-2194, D-087.
+- Ruling: I accept the narrowing. To let Listen show a read-only "Type instead" offer when the speech model is missing, `apps/mobile/test/first-run-wait.test.ts` no longer bans any mention of `installedPathsFor` or `speechDownload` in `listen.tsx`. It bans the download starters (`startSpeechDownload`, `requestWords`, `retryWords`, `setSpeechDownloadChoice`) and an `await` or `.then(` on a download call. `apps/mobile/test/photos-surfaces.test.ts` bans the mic-denied key (`micDenied.typeButton`) only on the same line as the picture Type button (`listen.photo.type`), so the two never share a label.
+- Why: the offer has to read the model state, and reading starts nothing. D-087 (nothing downloads without an explicit choice) is still held by the starter ban.
+- Trade-off accepted: gating or waiting on a read is no longer caught by the first pin. BL-2194 (proposed) adds the missing starters (`requestSpeechFor`, `ensureSpeechFor`, `startTranscriptionQueue`, `removeSpeechPack`) and a confinement pin; it stays the way to close this gap.
+- Door: two-way. Way back: revert #1956.
+- Revisit when: BL-2194 lands, or a Listen change reads the model state to gate the red circle.
+
+### CR-216 #1957: size exception under CODE-R02 accepted for the analytics catalog shrink (24 Nov 2026, Karma under CR-176)
+- Verdict: RULED, after the fact (#1957 merged). Founder-only: no. Signed: Karma.
+- Decision group: size limit (CODE-R02). Cites BL-1235, BL-2148, CR-186, CR-194.
+- Ruling: I accept the exception. The PR changes 562 lines (93 added, 469 deleted, 7 files). Its body says about 430 of the 467 removed lines are rows or enums that moved to `registry.ts` or `values.ts`, and the hand-written rest is under 100 lines. I applied the `size:accepted` label myself. That count is the author's; I did not recount it.
+- The PR keeps production analytics off (CR-186, CR-194): no flag, build setting, consent or send path is touched.
+- Door: two-way. Way back: revert #1957; the old catalog, plan block and schema version 11 come back together.
+
+### CR-217 #1980, #1982, #1983, #1991, #1993: tests only, no word changed (24 Nov 2026, Karma under CR-176)
+- Verdict: RULED, after the fact (all merged). Founder-only: no. Signed: Karma.
+- Decision group: tests that pin existing decisions. Cites BL-1168, BL-1169, BL-1170, BL-1171, BL-1312, BL-1313, BL-287, BL-407, D-051, D-082, D-083.
+- Ruling: these five add tests that assert decisions already made. No parent-facing word changed, so no exec reading was needed.
+- #1993 specifically: the deprecated `readTogetherFreeSessions` key (default 3) in `packages/api/src/remote-config.ts` stays. Nothing under `apps/` reads it; only the file itself (`effectiveFreeSessions`) and its own tests use it. Removing it changes a signed remote-config schema, which is not a cleanup to slip into a test PR. It is filed as its own row, in the 24 Nov status-sync PR (no id yet). The same PR deleted the unused `READ_TOGETHER_SESSIONS_KEY` constant.
+- Door: two-way. Way back: revert the PR.
+
+### CR-218 #1970: six rows set ready under CR-176 (24 Nov 2026, Karma under CR-176)
+- Verdict: RULED, after the fact (#1970 merged). Founder-only: no. Signed: Karma.
+- Decision group: backlog order. Cites BL-1168, BL-1169, BL-1170, BL-1171, BL-1312, BL-1313, BL-965, BL-958, BL-1867.
+- Ruling: BL-1168, BL-1169, BL-1170, BL-1171, BL-1312 and BL-1313 are `ready`. Their only open dependencies are BL-965 (word approval of the PROPOSED keys) and BL-958 (the `eas.json` photo flags, now BL-1867), and neither touches their tests: the rows say tests first, and the tests run on code and words already on `develop`.
+- Condition: any word a builder needs must be written as PROPOSED. An approved word is never changed to make a test pass.
+- Door: two-way. Way back: set the rows back to `proposed`.
+
+### CR-219 BL-1157 and BL-1183 stay proposed (24 Nov 2026, Karma under CR-176)
+- Verdict: RULED. Founder-only: no. Signed: Karma.
+- Decision group: data classification. Cites BL-1157, BL-1183, PRIV-R01.
+- Ruling: neither row becomes `ready` yet. BL-1183 adds levels and retention for `ops.account_sessions_seen`, `ops.new_device_pending` and `ops.new_device_tokens` to `docs/legal/DATA_CLASSIFICATION.md`; the privacy and exec reading of those levels and that retention has not been recorded. Both rows also edit that file, and PR #37 (open, "privacy data map, claims register and checker") edits its changelog, so they wait until #37 merges and are then cut on the result.
+- Why: two PRs writing one classification file is how a level gets decided by whichever merges last.
+- Door: two-way. Revisit when: the reading is recorded and #37 has merged or been closed.
+
+### CR-220 ios-compile launch failure of run 45360500465: infra, no revert (24 Nov 2026, Karma under CR-176)
+- Verdict: RULED. Founder-only: no. Signed: Karma.
+- Decision group: CI. Cites BL-1594, BL-2193.
+- Ruling: the red `store-profile` launch step on `develop` at bbfaabbe was infrastructure, not the app. In the log of that run, `xcrun simctl install` ran from 09:21:52 and the app launched at 09:31:01; the "app is up 20 s after launch, no fatal exception" notice printed at 09:31:54; and the step was then cut by its 10 minute limit at 09:31:55. The checks passed. No revert.
+- #1977 (merged, 7136a6ce) split the step: "Install and launch the app" now has 15 minutes and "Stay up for 20 s" has 3. Every assertion is unchanged. First green run of the split step: run 45375973209 on `develop` at 7136a6ce (install and launch 1 min 23 s, stay-up 45 s).
+- Follow-up: BL-2193 adds a source-scan test that the stay-up step keeps its checks and fails closed.
+- UNVERIFIED: why that install took about 9 minutes (a slow runner is the reading, not a measured cause).
+- Door: two-way. Way back: revert #1977.
+
+### CR-221 Transient red on develop on 24 Nov: two analytics PRs in flight (24 Nov 2026, Karma under CR-176)
+- Verdict: RULED (process note). Founder-only: no. Signed: Karma.
+- Decision group: merge order. Cites BL-1255, CR-212.
+- Ruling: #1957 (merged 09:42 UTC) changed the analytics catalog before #1972 (merged 09:56 UTC) regenerated `docs/analytics/WIRE-NAMES.md`, so `wire-names.test.ts` failed ("WIRE-NAMES.md equals the render") on the `develop` push run for #1970's merge, and on merge refs, until #1972 landed: about 14 minutes. The cause of the second red push run at 7c97a288 (09:55) was not read and is UNVERIFIED.
+- Rule: when two analytics PRs are open, the second merges after the first has regenerated the generated files. The way out used: update the branch from `develop` for a fresh merge ref.
+- Door: two-way. Way back: none needed, nothing to undo.
+
+### CR-222 A whole-suite run is required for any PR that touches source that tests scan (24 Nov 2026, Karma under CR-176)
+- Verdict: RULED. Founder-only: no. Signed: Karma.
+- Decision group: review depth. Cites CR-73, D-107, BL-2200.
+- Ruling: a counted review of a PR that changes source scanned by a test must include a whole-suite run: root `npm ci`, then the whole `apps/mobile` vitest. Running only the touched files' tests is no longer enough. #1956 and #1957 each passed reviews that ran only touched-file tests and then failed CI in source-scan tests.
+- Known load timeouts pass alone and are not a failure: `e2e-lint-flows` (`run-p0-nightly`, 5000 ms), `preflight-planted-env` (`afterAll`, 60000 ms) and, under heavy load, `qa-kill-harness`, `asha-book-plan`, `find-rebuild`, `label-effect`, `review-persist.replay`, `backup-leak-scan` and `book-page`. The reviewer reruns a timed-out file alone and compares it with `develop`, and says so in the review. BL-2200 (proposed) raises those timeouts.
+- Door: two-way. Revisit when: BL-2200 lands, or the suite stops timing out under load.
+
+### CR-223 Disk: at most three heavy clones at once (24 Nov 2026, Karma under CR-176)
+- Verdict: RULED. Founder-only: no. Signed: Karma.
+- Decision group: harness hygiene. Cites CR-222.
+- Ruling: parallel `npm ci` clones filled the session disk twice on 24 Nov. For the harness and for interactive sessions I direct: at most 3 heavy clones (ones that run `npm ci`) at once; reviews of docs PRs are API-only, with no clone and no install; every clone, and every `/tmp/bl506-*` test temp directory, older than 30 minutes is deleted.
+- Why: a full disk fails the next session at a random step, which costs more than a slower review. This sits beside CR-222: the whole-suite run is the heavy case, so it gets the slots.
+- Door: two-way. Revisit when: the disk is larger or the install is cheaper.
+
+### CR-224 BL-422: the listening-screen line `listen.audience` is kept unchanged (24 Nov 2026, Karma under CR-176)
+- Verdict: RULED. Founder-only: no. Signed: Karma.
+- Decision group: words kept. Cites BL-422, BL-1788, BL-1984, D-061.
+- Ruling: `listen.audience` ("Only you, until you add it to the book.", `packages/content/src/strings.en.ts` line 298) stays. It is true today. `docs/design/specs/14-REVIEW-QUIET-DEFAULT-23nov.md` line 84 says it stays, and `docs/design/EXPERIENCE_PASS_2026-10.md` line 468 lists it under KEEP. BL-422's scope says "remove the warning on the listening screen if it has no consequence"; I rule it has one, so that clause is not done. No word changes, so no exec reading is needed.
+- The rest of BL-422 is met, as I read it: the explanation lines are keys from BL-1788 (#1804, with `review-keep-lines.test.ts`); Read together skips private letters; export keeps them tagged Private. UNVERIFIED here: those last two behaviours were not re-read in code today, and BACKLOG.md still shows BL-1984 (wiring the two lines in Review) as partly done, so BL-422's "done when" is not proven until it is.
+- Door: two-way. Way back: edit the key in `packages/content` with an exec reading. Revisit when: v1.0 has a case where the line is false (for example a letter shared before the parent adds it to the book).
