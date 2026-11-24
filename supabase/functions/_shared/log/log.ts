@@ -91,7 +91,7 @@ export const ALERT_KINDS = [
 ] as const;
 export type AlertKind = (typeof ALERT_KINDS)[number];
 
-export const REASONS = ['account_deletion', 'device_after_deletion'] as const;
+export const REASONS = ['account_deletion', 'device_after_deletion', 'retired_id'] as const;
 export type Reason = (typeof REASONS)[number];
 
 /** Every function or script that logs. `config` and `content` are the platform owner's document functions. */
