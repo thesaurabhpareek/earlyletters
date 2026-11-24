@@ -9589,7 +9589,7 @@ Source: the design requirements review of 24 Nov 2026 after the executive review
   - Once per book on this phone, kept on the phone only; never a push or an email. No sound, no extra haptic (Keep already gave `success`).
   - There is no count milestone: PRD 12 C-42 refuses it ("counts are banned. Never."). A relative's letter note waits for the co-parent build (D-162) and is specified there.
   - RM: drawing shown complete, 200 ms text fade.
-- Done when: Given `en.moments` has 5 keys that start with `first` or `letters`, When the change lands and the rule walks `en.moments`, Then 0 keys match `^letters[0-9]+$` (was 4), `firstLetter` is still 1, and `MOTION.md` has 0 hits for "100 letters" and 0 for "Nani wrote"; `RT-CNT-01` is no longer `gap`.
+- Done when: Given `en.moments` has 8 keys that start with `first` or `letters`, When the change lands and the rule walks `en.moments`, Then 0 keys match `^letters[0-9]+$` (was 4), `firstLetter` is still 1, and `MOTION.md` has 0 hits for "100 letters" and 0 for "Nani wrote"; `RT-CNT-01` is no longer `gap`.
 - Test: a new case in `packages/content/test/rules.test.ts` titled `[RT-CNT-01] no letters-count moment key`: counts keys matching the pattern in `en.moments` and scans `apps/mobile/src` source for `moments.letters[0-9]`; a planted offender (a copy of the moments object with a `letters100` key) must be flagged 1 time and the real object 0 times. If a content rule fails, fix the copy, not the test.
 - Source: design review of 24 Nov 2026 (R1, M1). Not verified: nothing was run; the export script was not run.
 
