@@ -85,6 +85,39 @@ describe('[NSC-01] the pin fails on any edit', () => {
     symlinkSync(join(dir, 'nowhere'), join(dir, 'asha-demo', 'Gone.swift'));
     expect(() => hashSources(dir)).toThrow(/symlink under modules\//);
   });
+  it('[NSC-01] a directory named REVIEWED.sha256 holding Swift is pinned, not skipped (the podspec globs it)', () => {
+    const dir = fixture();
+    mkdirSync(join(dir, 'asha-demo', 'REVIEWED.sha256'));
+    writeFileSync(join(dir, 'asha-demo', 'REVIEWED.sha256', 'Evil.swift'), 'let e = 1\n');
+    expect(Object.keys(hashSources(dir))).toContain('asha-demo/REVIEWED.sha256/Evil.swift');
+  });
+  it('[NSC-01] a symlink named REVIEWED.sha256 fails closed', () => {
+    const dir = fixture();
+    symlinkSync(join(dir, 'asha-demo', 'ios'), join(dir, 'REVIEWED.sha256'), 'dir');
+    expect(() => hashSources(dir)).toThrow(/symlink under modules\/: REVIEWED\.sha256/);
+  });
+  it('[NSC-01] a nested file named REVIEWED.sha256 is pinned; only the top-level one is the manifest', () => {
+    const dir = fixture();
+    writeFileSync(join(dir, 'asha-demo', 'REVIEWED.sha256'), 'x\n');
+    writeFileSync(join(dir, 'REVIEWED.sha256'), 'the manifest\n');
+    const files = Object.keys(hashSources(dir));
+    expect(files).toContain('asha-demo/REVIEWED.sha256');
+    expect(files).not.toContain('REVIEWED.sha256');
+  });
+  it('[NSC-01] a directory named .DS_Store holding Swift is pinned; a .DS_Store file is the only one skipped', () => {
+    const dir = fixture();
+    mkdirSync(join(dir, 'asha-demo', '.DS_Store'));
+    writeFileSync(join(dir, 'asha-demo', '.DS_Store', 'Evil.swift'), 'let e = 1\n');
+    writeFileSync(join(dir, 'asha-demo', 'ios', '.DS_Store'), 'junk');
+    const files = Object.keys(hashSources(dir));
+    expect(files).toContain('asha-demo/.DS_Store/Evil.swift');
+    expect(files).not.toContain('asha-demo/ios/.DS_Store');
+  });
+  it('[NSC-01] a symlink named .DS_Store fails closed', () => {
+    const dir = fixture();
+    symlinkSync(join(dir, 'asha-demo', 'ios', 'Demo.swift'), join(dir, 'asha-demo', '.DS_Store'));
+    expect(() => hashSources(dir)).toThrow(/symlink under modules\/: asha-demo\/\.DS_Store/);
+  });
   it('[NSC-01] the manifest header says it pins current state and records no security read', () => {
     const text = readFileSync(join(MODULES, MANIFEST_NAME), 'utf8');
     expect(text).toMatch(/CURRENT state/);

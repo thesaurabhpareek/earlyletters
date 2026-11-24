@@ -20,7 +20,6 @@ import { dirname, join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const MANIFEST_NAME = 'REVIEWED.sha256';
-const IGNORED = new Set([MANIFEST_NAME, '.DS_Store']);
 const HEADER = [
   '# Pins the CURRENT state of the native sources (NSC-01, BL-1045). No security-architect read is recorded here yet.',
   '# Format: sha256sum, two spaces, path under modules/. Do not edit by hand.',
@@ -32,14 +31,17 @@ export function listSources(dir) {
   const out = [];
   const walk = (d) => {
     for (const e of readdirSync(d, { withFileTypes: true })) {
-      if (IGNORED.has(e.name)) continue;
       const p = join(d, e.name);
       const rel = relative(dir, p).split(sep).join('/');
       // Fail closed: a symlink (to a file or a folder) or any other non-regular entry is refused, never skipped.
       if (e.isSymbolicLink()) throw new Error(`symlink under modules/: ${rel} (not allowed: the podspec globs follow it, so its target would build unpinned)`);
       if (e.isDirectory()) walk(p);
-      else if (e.isFile()) out.push(rel);
-      else throw new Error(`not a regular file under modules/: ${rel}`);
+      else if (e.isFile()) {
+        // Skipped by exact name, only as a regular FILE, and the manifest only at the top of modules/. A directory,
+        // a symlink or a nested file with these names was refused or hashed above/below, never skipped.
+        if (rel === MANIFEST_NAME || e.name === '.DS_Store') continue;
+        out.push(rel);
+      } else throw new Error(`not a regular file under modules/: ${rel}`);
     }
   };
   walk(dir);
