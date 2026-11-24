@@ -24,6 +24,7 @@ in `test/migrations.test.ts`, and add the column to DATA_CLASSIFICATION 4.5.
 | `getActiveChildId(): string \| null` | Falls back to the first visible child. |
 | `setActiveChildId(id)` | Fires `subscribe` listeners (Tonight re-renders). |
 | `addChild({ name, birthday, dueDate, signsAs }): Child` | `birthday` or `dueDate`, the other `null`. |
+| `addChildren([{ name, birthday, dueDate, signsAs }, ...]): Child[]` | First run's finish: every book in one transaction, all or none (NS-43-R9). |
 | `updateChild(id, patch)` | Any of `name, birthday, dueDate, signsAs, remindersOn, familyCanRead`. Expecting to born = set `birthday`, clear `dueDate`. |
 | `hideChild(id)` / `unhideChild(id)` / `listHiddenChildren()` | "Hide this book" (B-REQ-014). |
 
