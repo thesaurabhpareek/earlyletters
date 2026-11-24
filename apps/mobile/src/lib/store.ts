@@ -91,6 +91,7 @@ import {
   type ConflictCopy,
   type EnqueueContext,
 } from './sync/outbox';
+import { claimRestoredBook } from './sync/ownership';
 import { signalOutbox } from './sync/signal';
 import { ALL_GROUPS, type FieldGroup } from './sync/types';
 
@@ -1298,10 +1299,22 @@ export function deleteBook(id: string): boolean {
   return done;
 }
 
-/** Restore the book from Recently deleted: every letter, draft and choice comes back as it was. */
+/**
+ * Restore the book from Recently deleted: every letter, draft and choice comes back as it was. On a phone that has
+ * signed in since the book was deleted, the first sign-in left it on the phone (BL-559); restoring it claims it for the
+ * account now, in the same transaction (sync/ownership.ts claimRestoredBook).
+ */
 export function restoreBook(id: string): boolean {
-  const done = wipe.unmarkDeleted(ctx(), id);
-  if (done) bus.emit('children', 'entries', 'drafts', 'settings');
+  const c = ctx();
+  let done = false;
+  c.db.transaction(() => {
+    done = wipe.unmarkDeleted(c, id);
+    if (done) claimRestoredBook(c.db, id, enqueueContext(c));
+  });
+  if (done) {
+    bus.emit('children', 'entries', 'drafts', 'settings');
+    signalOutbox();
+  }
   return done;
 }
 
