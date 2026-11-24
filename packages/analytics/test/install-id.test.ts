@@ -80,12 +80,37 @@ describe('install id (ER-A04)', () => {
     expect(store.allIds()).toEqual([second, first]);
   });
 
-  it('an off straight after a mint still removes the id from storage (the write is awaited first)', async () => {
-    const storage = memoryStorage();
+  // A storage whose write of the id key lands late (~30 ms), like a slow disk. The plain
+  // memoryStorage completes writes in order, so it cannot show a missing await.
+  function slowIdStorage() {
+    const base = memoryStorage();
+    return {
+      ...base,
+      set: async (k: string, v: string) => {
+        if (k === STORAGE_KEYS.id) await new Promise((r) => setTimeout(r, 30));
+        await base.set(k, v);
+      },
+    };
+  }
+  const settle = () => new Promise((r) => setTimeout(r, 80));
+
+  it('an off straight after a mint still removes the id from storage (the slow write is awaited first)', async () => {
+    const storage = slowIdStorage();
     const store = new ConsentStore(storage, ids());
     await store.load();
     store.ensureId();
     await store.revoke();
+    await settle();
+    expect(storage.dump()[STORAGE_KEYS.id]).toBeUndefined();
+  });
+
+  it('an Erase straight after a mint still removes the id from storage (the slow write is awaited first)', async () => {
+    const storage = slowIdStorage();
+    const store = new ConsentStore(storage, ids());
+    await store.load();
+    store.ensureId();
+    await store.forgetAllIds();
+    await settle();
     expect(storage.dump()[STORAGE_KEYS.id]).toBeUndefined();
   });
 
