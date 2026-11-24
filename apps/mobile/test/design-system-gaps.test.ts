@@ -61,7 +61,7 @@ describe('(3) one back/close idiom per context', () => {
   it('the Sheet closes with the word Close, not a circled X', () => {
     const sheet = code(read('components/ui/sheet.tsx'));
     expect(sheet).not.toMatch(/XIcon/);
-    expect(sheet).toMatch(/label=\{copy\.common\.closeButton\}/);
+    expect(sheet).toMatch(/label=\{closeLabel \?\? copy\.common\.closeButton\}/);
   });
 
   it('onboarding steps use BackButton (the native back, drawn)', () => {
