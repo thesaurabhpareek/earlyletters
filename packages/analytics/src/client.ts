@@ -202,7 +202,8 @@ export function createAnalytics(options: AnalyticsOptions): Analytics {
   }
 
   function track<E extends EventName>(name: E, props: EventProps<E>): TrackResult {
-    const decision = gate.decide(name, tierOf(name));
+    // Only the exact string 'basics' is basics: an undefined, misspelt or missing tier is consented (ER-B02).
+    const decision = gate.decide(name, tierOf(name) === 'basics' ? 'basics' : 'consented');
     if (!decision.allow) {
       drops[decision.reason] = (drops[decision.reason] ?? 0) + 1;
       return decision.reason as Exclude<TrackResult, 'queued' | 'dropped_invalid' | 'dropped_sampled'>;

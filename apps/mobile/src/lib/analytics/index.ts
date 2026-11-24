@@ -29,6 +29,7 @@ import {
   createLifecycle,
   createTrackers,
   noopProvider,
+  tierOf,
   type ConsentStatus,
   type KeyValueStorage,
   type PostHogLike,
@@ -76,6 +77,8 @@ export const analytics = createAnalytics({
   provider,
   storage: settingsStorage,
   randomId: Crypto.randomUUID,
+  // The real tier of each event (ER-B02). The policy is not passed here: the default stays ask_first (D-163, D-170).
+  tierOf,
   onViolation,
   // Sampling rates come from remote config when volume needs it (TRACKING_PLAN 5.3); empty at launch.
   sampleRates: {},

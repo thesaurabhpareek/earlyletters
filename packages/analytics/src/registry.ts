@@ -81,6 +81,7 @@ export const REGISTRY = {
     when: 'A route is shown. Sent by our router hook from the route template, never by SDK autocapture',
     reqs: ['ADR-0008', 'PRD-REQ-016'],
     level: 'L2',
+    tier: 'basics',
     props: { route: ROUTE },
   },
   app_opened: {
@@ -90,6 +91,7 @@ export const REGISTRY = {
     when: 'App comes to the foreground after 30 min or more away, or cold starts',
     reqs: ['PRD-REQ-016'],
     level: 'L2',
+    tier: 'consented',
     props: {
       source: oneOf('cold', 'warm', 'notification', 'link'),
       days_since_last_open: DAYS_BUCKET,
@@ -102,6 +104,7 @@ export const REGISTRY = {
     when: 'Immediately after the user says yes. Carries a one-time summary of first-run facts the app already stores, because first-run events can never be sent (K-01)',
     reqs: ['PRD-REQ-016', 'K-01'],
     level: 'L2',
+    tier: 'consented',
     props: {
       surface: oneOf('consent_sheet', 'settings'),
       days_since_install: DAYS_BUCKET,
@@ -120,6 +123,7 @@ export const REGISTRY = {
     when: 'A new session exists on this phone (observed from the auth state). New accounts are counted on the server',
     reqs: ['A-NFR-013', 'PRD-REQ-016'],
     level: 'L2',
+    tier: 'consented',
     props: { method: AUTH_METHOD, had_local_data: bool() },
   },
   child_added: {
@@ -129,6 +133,7 @@ export const REGISTRY = {
     when: 'A child book is created',
     reqs: ['PRD-REQ-011', 'PRD-REQ-015', 'B-REQ-004'],
     level: 'L2',
+    tier: 'consented',
     props: {
       /**
        * True when a full date (birthday or due date) was entered, false for
@@ -148,6 +153,7 @@ export const REGISTRY = {
     when: 'User starts speaking or typing a letter',
     reqs: ['PRD-REQ-016', 'C-REQ-034'],
     level: 'L2',
+    tier: 'consented',
     props: {
       mode: CAPTURE_MODE,
       source: oneOf('tonight', 'book', 'notification', 'make_it_yours', 'resurface'),
@@ -163,6 +169,7 @@ export const REGISTRY = {
     when: 'A letter in progress is thrown away before saving',
     reqs: ['PRD-REQ-016'],
     level: 'L2',
+    tier: 'consented',
     props: { mode: CAPTURE_MODE, stage: oneOf('listening', 'review'), audio_bucket: opt(AUDIO_BUCKET) },
   },
   transcription_completed: {
@@ -172,6 +179,7 @@ export const REGISTRY = {
     when: 'A spoken letter finishes transcription, hears no speech, fails, or waits for its language model',
     reqs: ['PRD-REQ-016', 'NFR-7.7'],
     level: 'L2',
+    tier: 'consented',
     props: {
       engine: oneOf('on_device', 'server'),
       model: SPEECH_MODEL,
@@ -187,6 +195,7 @@ export const REGISTRY = {
     when: 'A letter is saved (to the book or kept private). The core activation and north-star event on device',
     reqs: ['C-REQ-034', 'PRD-REQ-016', 'ADR-0008'],
     level: 'L2',
+    tier: 'consented',
     props: {
       mode: CAPTURE_MODE,
       destination: oneOf('book', 'private'),
@@ -209,6 +218,7 @@ export const REGISTRY = {
     when: 'The last free letter was kept, so the next Keep will ask for Plus (once per phone)',
     reqs: ['C-REQ-034', 'C-REQ-023'],
     level: 'L2',
+    tier: 'consented',
     props: { allowance: int(2, 100) },
   },
   keep_gate_shown: {
@@ -218,6 +228,7 @@ export const REGISTRY = {
     when: 'The Keep sheet asked for Plus (the letter is held on the phone)',
     reqs: ['C-REQ-034', 'C-REQ-023'],
     level: 'L2',
+    tier: 'consented',
     props: { letters_kept: int(0, 1000), allowance: int(2, 100), lapsed: int(0, 1) },
   },
   letter_held: {
@@ -227,6 +238,7 @@ export const REGISTRY = {
     when: 'The person chose to keep the letter on the phone for now instead of starting Plus',
     reqs: ['C-REQ-034', 'C-REQ-023'],
     level: 'L2',
+    tier: 'consented',
     props: { letters_kept: int(0, 1000) },
   },
   plus_started_from_gate: {
@@ -236,6 +248,7 @@ export const REGISTRY = {
     when: 'Plus was on after the Keep sheet (bought, restored, an Ask to Buy approval, or an offer code)',
     reqs: ['C-REQ-034', 'C-REQ-023'],
     level: 'L2',
+    tier: 'consented',
     props: { letters_kept: int(0, 1000) },
   },
   book_opened: {
@@ -245,6 +258,7 @@ export const REGISTRY = {
     when: 'Book tab shown for a child',
     reqs: ['PRD-REQ-016'],
     level: 'L2',
+    tier: 'consented',
     props: { child_ordinal: CHILD_ORDINAL, letters_bucket: LETTERS_BUCKET, member_role: MEMBER_ROLE },
   },
   letter_opened: {
@@ -254,6 +268,7 @@ export const REGISTRY = {
     when: 'A letter is opened to read',
     reqs: ['PRD-REQ-016'],
     level: 'L2',
+    tier: 'consented',
     props: { author_relation: AUTHOR_RELATION, has_audio: bool() },
   },
   invite_created: {
@@ -263,6 +278,7 @@ export const REGISTRY = {
     when: 'A parent creates an invite',
     reqs: ['B-REQ-007', 'B-NFR-001', 'PRD-REQ-014'],
     level: 'L2',
+    tier: 'consented',
     props: {
       role: INVITE_ROLE,
       channel: oneOf('share_sheet', 'copy_link', 'code'),
@@ -277,6 +293,7 @@ export const REGISTRY = {
     when: 'An invite is accepted in the app (observed). Server aggregates count every acceptance',
     reqs: ['B-NFR-001'],
     level: 'L2',
+    tier: 'consented',
     props: { role: INVITE_ROLE, surface: oneOf('app') },
   },
   plus_offer_viewed: {
@@ -286,6 +303,7 @@ export const REGISTRY = {
     when: "Apple's subscription store view presented",
     reqs: ['C-REQ-034', 'C-REQ-023'],
     level: 'L2',
+    tier: 'consented',
     props: { trigger: PLUS_TRIGGER },
   },
   plus_offer_closed: {
@@ -295,6 +313,7 @@ export const REGISTRY = {
     when: "Apple's subscription store view closed",
     reqs: ['C-REQ-034', 'C-NFR-002'],
     level: 'L2',
+    tier: 'consented',
     props: { trigger: PLUS_TRIGGER, outcome: oneOf('purchased', 'dismissed', 'unavailable') },
   },
   plan_changed: {
@@ -304,6 +323,7 @@ export const REGISTRY = {
     when: 'The plan StoreKit reports on this device changed state (observed; production transactions only)',
     reqs: ['C-REQ-034', 'C-NFR-002'],
     level: 'L2',
+    tier: 'consented',
     props: {
       from_state: oneOf('none', 'trial', 'active', 'grace', 'billing_retry', 'expired', 'refunded', 'revoked'),
       to_state: oneOf('none', 'trial', 'active', 'grace', 'billing_retry', 'expired', 'refunded', 'revoked'),
@@ -318,6 +338,7 @@ export const REGISTRY = {
     when: 'A user-facing error from strings `errors.*` is shown',
     reqs: ['PRD-REQ-016'],
     level: 'L2',
+    tier: 'consented',
     props: { code: ERROR_CODE },
   },
 
@@ -329,6 +350,7 @@ export const REGISTRY = {
     when: 'A registered key control is activated. Sent by our own tap helper, never by SDK touch capture',
     reqs: ['ADR-0008', 'FR-DAT-21'],
     level: 'L2',
+    tier: 'consented',
     props: { control: CONTROL, route: ROUTE },
   },
   surface_impressed: {
@@ -338,6 +360,7 @@ export const REGISTRY = {
     when: 'A registered surface is at least half visible for one second, at most once per surface per foreground session',
     reqs: ['ADR-0008', 'FR-DAT-21'],
     level: 'L2',
+    tier: 'consented',
     props: { surface: SURFACE, route: ROUTE, rank: opt(int(1, 9)) },
   },
   moments_card_impressed: {
@@ -347,6 +370,7 @@ export const REGISTRY = {
     when: 'A card in the question or look-back slot is drawn on the Moments tab (at most once per slot per local day). Cards dated by the child, a typed day, a tick or the library never send',
     reqs: ['PRD-REQ-016'],
     level: 'L2',
+    tier: 'consented',
     props: { slot: MOMENTS_SLOT },
   },
   moments_card_tapped: {
@@ -356,6 +380,7 @@ export const REGISTRY = {
     when: 'A card in the question or look-back slot is tapped. Says nothing about where the letter that follows began',
     reqs: ['PRD-REQ-016'],
     level: 'L2',
+    tier: 'consented',
     props: { slot: MOMENTS_SLOT },
   },
   perf_measured: {
@@ -365,6 +390,7 @@ export const REGISTRY = {
     when: 'One of five timed steps finishes; the time is bucketed on the phone, never sent as a number',
     reqs: ['ADR-0008', 'A-NFR-001'],
     level: 'L2',
+    tier: 'consented',
     props: { metric: PERF_METRIC, ms_bucket: MS_BUCKET, ok: bool() },
   },
 } as const satisfies Record<string, RegistryRow>;
