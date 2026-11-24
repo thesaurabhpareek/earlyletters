@@ -2,7 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { STALE_UNKNOWN_MINUTES, securityLensHits, touchesSecurityLens, namedLenses, SECURITY_LENS_NAMES, SECURITY_LENS_CLASSES, buildQueue, workspaceOf, staleBase, parseReview, parseClaims, parseArgs, formatTable, suiteState, passOverRedSuite, hotFileHits, hotFileGroups, reviewState, touchesNative, clean } from "./merge-queue.mjs";
+import { STALE_UNKNOWN_MINUTES, securityLensHits, touchesSecurityLens, namedLenses, SECURITY_LENS_NAMES, SECURITY_LENS_CLASSES, buildQueue, workspaceOf, staleBase, parseReview, parseClaims, parseArgs, formatTable, suiteState, passOverRedSuite, hotFileHits, hotFileGroups, reviewState, touchesNative, clean, TRUSTED_ASSOCIATIONS } from "./merge-queue.mjs";
 
 const OLD = "c5cfa0cfaa96a0ba97ca5f34629747ab0badf438";
 const HEAD = "a83634ced2a5ecf32717bf833f941b892fc660b9";
@@ -645,4 +645,28 @@ test("AIE-G21: buildQueue records hotFiles for a reviewed PR even when CI is not
   assert.deepEqual(r.hotFiles, ["docs/BACKLOG.md"]);
   assert.equal(r.verdict, "WAIT-CI");
   assert.ok(calls.every((c) => c.method === "GET"));
+});
+
+// BL-1537: reviewState is a verdict reader, not an instruction reader (no founder marker needed or wanted).
+test("counted-review trust rule (BL-1537): line-1 header, agent marker on line 2, OWNER MEMBER COLLABORATOR only, PASS words only", () => {
+  const mk = (body, author_association, n = 1) => ({ body, author_association, created_at: `2026-11-24T00:00:0${n}Z`, id: n });
+  const hdr = (lens, word = "PASS") => `## Review ${lens} at ${HEAD}: ${word}`;
+  // Accepted: header on line 1, agent marker on line 2, no founder marker, from each trusted association.
+  for (const who of ["OWNER", "MEMBER", "COLLABORATOR"]) {
+    assert.equal(reviewState([mk(`${hdr("A")}\n<!-- agent:karma -->\nLens: security`, who)], HEAD).A, true, who);
+  }
+  // Not counted: no line-1 header (a founder marker or the agent marker on line 1 pushes it down).
+  assert.equal(reviewState([mk(`<!-- agent:karma -->\n${hdr("A")}`, "OWNER")], HEAD).A, false);
+  assert.equal(reviewState([mk(`<!-- founder -->\n${hdr("A")}`, "OWNER")], HEAD).A, false);
+  // Not counted: an association outside the three; it is listed as untrusted, never as a pass.
+  for (const who of ["CONTRIBUTOR", "FIRST_TIME_CONTRIBUTOR", "NONE", undefined]) {
+    const s = reviewState([mk(hdr("A"), who)], HEAD);
+    assert.equal(s.A, false, String(who));
+    assert.deepEqual(s.untrusted, ["A"], String(who));
+  }
+  // Not counted: a verdict word that is not PASS or PASS WITH NOTES with a Must fix: none line.
+  for (const word of ["BLOCKED", "CHANGES", "PASS.", "pass"]) assert.equal(reviewState([mk(hdr("A", word), "OWNER")], HEAD).A, false, word);
+  assert.equal(reviewState([mk(`${hdr("A", "PASS WITH NOTES")}\nnotes`, "OWNER")], HEAD).A, false, "no Must fix: none line");
+  // The pinned list itself.
+  assert.deepEqual(TRUSTED_ASSOCIATIONS, ["OWNER", "MEMBER", "COLLABORATOR"]);
 });
