@@ -75,8 +75,8 @@ describe('allowlist stems (NS-47-R34, NS-47-R9)', () => {
     }
   });
 
-  it('[NS-47-R34] settings_changed.key gains no day-names switch', () => {
-    const key = EVENTS.settings_changed.props.key;
+  it('[NS-47-R34] me:setting_update.key gains no day-names switch', () => {
+    const key = EVENTS['me:setting_update'].props.key;
     expect(key.type).toBe('enum');
     for (const v of key.type === 'enum' ? key.values : []) expect(v, v).not.toMatch(/day|names_in|tradition/);
     // `lock_screen_names` is the built reminder setting; the day-names switch must not join it.

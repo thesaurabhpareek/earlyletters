@@ -217,7 +217,7 @@ describe('lazy adapter', () => {
     await analytics.grant();
     for (const c of CANARIES) {
       // @ts-expect-error deliberate misuse
-      analytics.track('language_set', { lang: c, action: 'added', surface: 'settings' });
+      analytics.track('me:language_update', { lang: c, action: 'added', surface: 'settings' });
       // @ts-expect-error deliberate misuse
       analytics.track('pack_download', { lang: 'pt', pack_kind: 'text_rules', pack_version: 3, stage: 'started', network: 'wifi', note: c });
     }

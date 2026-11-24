@@ -244,10 +244,10 @@ export function createTrackers(analytics: Pick<Analytics, 'track'>) {
     },
 
     /** One language per event, and only the seven v1.0 languages. */
-    trackLanguageSet(i: { lang: string; action: V<'language_set', 'action'> }): HelperResult {
+    trackLanguageSet(i: { lang: string; action: V<'me:language_update', 'action'> }): HelperResult {
       const lang = toV1Lang(i.lang);
       if (!lang) return 'not_sent';
-      return track('language_set', { lang, action: i.action });
+      return track('me:language_update', { lang, action: i.action });
     },
 
     /** A pack engine progress change, by short analytics pack id and language code only. */

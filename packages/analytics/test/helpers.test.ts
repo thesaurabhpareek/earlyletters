@@ -109,7 +109,7 @@ describe('trackers', () => {
     t.trackPackDownload({ packId: 'speech-model.whisper-large-v3-turbo-q5_0', version: 5000, stage: 'completed', failure: 'offline', network: 'wifi' });
     t.trackPackDownload({ packId: 'text-rules.de', version: null, stage: 'started', network: 'unknown' });
     const [lang, failed, done, other] = await sent();
-    expect(lang).toEqual({ event: 'language_set', properties: { lang: 'pt', action: 'added', schema_version: SCHEMA_VERSION } });
+    expect(lang).toEqual({ event: 'me:language_update', properties: { lang: 'pt', action: 'added', schema_version: SCHEMA_VERSION } });
     expect(failed.properties).toEqual({ pack: 'rules_hi', lang: 'hi', pack_version: 3, stage: 'failed', failure: 'hash_mismatch', network: 'cellular', schema_version: SCHEMA_VERSION });
     expect(done.properties).toEqual({ pack: 'model_turbo', pack_version: 1000, stage: 'completed', network: 'wifi', schema_version: SCHEMA_VERSION });
     expect(other.properties).toMatchObject({ pack: 'other', pack_version: 1 });

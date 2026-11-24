@@ -137,7 +137,7 @@ function PlayableRecording({
   };
 
   const chooseOriginal = (on: boolean) => {
-    track('settings_changed', { key: 'listening_copy' });
+    track('me:setting_update', { key: 'listening_copy' });
     setHandoff({ at: handoffPosition(p.position, null), play: p.playing });
     setPreferOriginal(on);
     setPrefersOriginal(on);

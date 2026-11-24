@@ -55,10 +55,10 @@ describe('auth observer', () => {
     expect(await sent()).toEqual([
       ['auth_failed', { method: 'email', reason: 'wrong_code' }],
       ['auth_succeeded', { method: 'email', had_local_data: true }],
-      ['signed_out', { reason: 'user' }],
+      ['me:session_end', { reason: 'user' }],
       ['auth_failed', { method: 'apple', reason: 'cancelled' }],
       ['auth_failed', { method: 'google', reason: 'network' }],
-      ['signed_out', { reason: 'session_lost' }],
+      ['me:session_end', { reason: 'session_lost' }],
     ]);
     expect(under18).toEqual([]);
   });
@@ -67,7 +67,7 @@ describe('auth observer', () => {
     const { analytics, sent } = await granted();
     const see = createAuthObserver(analytics, { hasLocalLetters: () => true, onUnder18: () => undefined });
     for (const s of [{ status: 'ready' }, { status: 'signingOut', reason: 'force_reauth' }, { status: 'signedOut' }] as AuthLike[]) see(s);
-    expect((await sent()).filter(([e]) => e === 'signed_out')).toEqual([['signed_out', { reason: 'session_lost' }]]);
+    expect((await sent()).filter(([e]) => e === 'me:session_end')).toEqual([['me:session_end', { reason: 'session_lost' }]]);
   });
 
   it('never sends an under-18 answer, and asks the app to stop analytics', async () => {
@@ -90,9 +90,9 @@ describe('language observer', () => {
     see(['hi', 'en']);
     see(['hi', 'ta']); // ta is not a v1.0 language: its add is not sent
     expect(await sent()).toEqual([
-      ['language_set', { lang: 'hi', action: 'added' }],
-      ['language_set', { lang: 'hi', action: 'made_primary' }],
-      ['language_set', { lang: 'en', action: 'removed' }],
+      ['me:language_update', { lang: 'hi', action: 'added' }],
+      ['me:language_update', { lang: 'hi', action: 'made_primary' }],
+      ['me:language_update', { lang: 'en', action: 'removed' }],
     ]);
   });
 });

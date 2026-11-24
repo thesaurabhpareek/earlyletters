@@ -414,7 +414,7 @@ export function computeInsights(input: InsightsInput): InsightsReport {
     }
 
     // Languages on device
-    const langs = [...d.splitOver('language_set', 'lang', last4).entries()].sort((a, b) => b[1] - a[1]);
+    const langs = [...d.splitOver('me:language_update', 'lang', last4).entries()].sort((a, b) => b[1] - a[1]);
     if (langs.length) findings.push({ area: 'languages', source: 'device', text: `Language changes (4 weeks, consenting users, all actions): ${langs.map(([k, v]) => `${k} ${v}`).join(', ')}.` });
     if (starts) findings.push({ area: 'languages', source: 'device', text: `Pack downloads (4 weeks): ${starts} started, ${stages.get('completed') ?? 0} completed, ${fails} failed.` });
   }

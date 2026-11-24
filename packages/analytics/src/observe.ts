@@ -84,7 +84,7 @@ export function createAuthObserver(a: Track, opts: AuthObserverOptions): (next: 
     if (next.status === 'signedOut' && SIGNED_IN.has(p.status)) {
       // A forced re-sign-in (remote config epoch, BL-597) is the founder ending the session, not the person: counted as lost, so the allowlist gains no value.
       const reason = p.status === 'signingOut' && p.reason !== 'force_reauth' ? p.reason : 'session_lost';
-      a.track('signed_out', { reason });
+      a.track('me:session_end', { reason });
     }
   };
 }
