@@ -942,7 +942,7 @@ describe('[DATA-REQ-024] Erase everything, design 2.12: final strings, the confi
     expect(e.confirmBody).toBe('This cannot be undone.');
     expect(e.confirmButton).toBe('Erase');
     expect(e.busy).toBe('Erasing');
-    expect(e.doneA11y).toBe('Everything on this phone is erased.');
+    expect(e.doneA11y).toBe('Your books, letters, recordings and settings are erased from this phone.'); // BL-777, CPrivO-20 (replaces 4.11's line)
   });
 
   it('the confirm: Keep everything first as cancel, Erase second and destructive; the screen shows it with a warning haptic, and no typed word', async () => {
