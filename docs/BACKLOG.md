@@ -9412,7 +9412,7 @@ Queue order (the dispatcher takes the first `ready` row an agent owns, in file o
 - Done when: each case is recorded in the findings file.
 
 #### BL-1709 First letter with no speech model on the phone: a calm "words are on the way" state
-- Status: in review (the spec is `docs/design/specs/15-FIRST-LETTER-NO-MODEL-20261124.md`, PR on branch docs/spec-first-letter-no-model; the mobile build is BL-1999). Mode: agent. Owner: product manager. Milestone: M15. Size: S. Depends on: none.
+- Status: in review (the spec is `docs/design/specs/15-FIRST-LETTER-NO-MODEL-20261124.md`, PR #1826; the mobile build is BL-1999). Mode: agent. Owner: product manager. Milestone: M15. Size: S. Depends on: none.
 - Picked: CPO-68 (23 Nov 2026, Chief Product Officer, a Claude role): the fallback is a typed first letter, not a smaller first model. Revisit if a real-device reading shows first sessions on cellular ending without a letter even with the typed offer.
 - Priority: P1. Gate: spec. Lane: product, then mobile.
 - Satisfies: NEU-003 (P1); D-087 (the speech model downloads only after an explicit choice).
