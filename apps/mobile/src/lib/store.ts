@@ -446,6 +446,33 @@ export function addChild(input: NewChild): Child {
   return children.get(c, id)!;
 }
 
+/**
+ * First run's finish with twins or more (NS-43-R9): every book is made in one transaction, so a kill, a full disk or a
+ * throw on the second leaves no first book behind: all of them or none. The first becomes the active book when none is
+ * set. The changes are announced and the outbox is woken once, after the commit, never for a book that was rolled back.
+ * An empty list makes nothing. Reads nothing of the words (names stay out of logs and errors).
+ */
+export function addChildren(inputs: NewChild[]): Child[] {
+  if (inputs.length === 0) return [];
+  const c = ctx();
+  const ids = inputs.map(() => c.newId());
+  const tables: Table[] = ['children'];
+  c.db.transaction(() => {
+    inputs.forEach((input, i) => {
+      children.insert(c, ids[i], input);
+      // After the first sign-in a new book is queued for the server (before it, ownership.ts sends every book at once).
+      enqueueBookCreate(c.db, ids[i], enqueueContext(c));
+    });
+    if (!settings.getSetting(c, 'activeChildId')) {
+      settings.setSetting(c, 'activeChildId', ids[0]);
+      tables.push('settings');
+    }
+  });
+  bus.emit(...tables);
+  signalOutbox();
+  return ids.map((id) => children.get(c, id)!);
+}
+
 export function updateChild(id: string, patch: Partial<Omit<Child, 'id'>>): void {
   const c = ctx();
   const before = children.get(c, id);
@@ -1599,6 +1626,19 @@ export function beginDiscard(id: string): boolean {
   if (done) bus.emit('drafts');
   if (done && held) signalOutbox();
   return done;
+}
+
+/**
+ * A let-go draft's delete failed once more (NS-09-R15). Counts only; no id or count is logged. Emits nothing: no list
+ * shows it yet (Storage, R6, is a separate row).
+ */
+export function noteDiscardFailure(id: string): number {
+  return drafts.noteDiscardFailure(ctx(), id);
+}
+
+/** Failed deletes so far for a draft being let go; 0 when none or the draft is gone. Survives a restart. */
+export function discardFailures(id: string): number {
+  return drafts.discardFailures(ctx(), id);
 }
 
 /**

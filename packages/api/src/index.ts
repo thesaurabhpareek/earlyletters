@@ -18,3 +18,4 @@ export * from './content';
 export * from './envelope';
 export * from './standards';
 export { TRUSTED_SIGNING_KEYS } from './keys';
+export * from './analytics-forget';

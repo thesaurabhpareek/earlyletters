@@ -37,6 +37,3 @@ export const SUBSCRIPTION_TERMS_DOC_VERSION = '4.1.0';
 
 /** Device settings key for the last entitlement snapshot (L2: product id, dates, flags; no ids). */
 export const PLAN_CACHE_KEY = 'plus.cache';
-
-/** Device settings key prefix for Read together sessions used in try mode, per book. */
-export const READ_TOGETHER_SESSIONS_KEY = 'readTogether.sessions';

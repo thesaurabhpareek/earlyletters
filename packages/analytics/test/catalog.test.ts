@@ -26,7 +26,7 @@ describe('catalogue rules', () => {
   it('cites at least one requirement per event', () => {
     for (const [name, spec] of entries) {
       expect(spec.reqs.length, name).toBeGreaterThan(0);
-      for (const r of spec.reqs) expect(r, name).toMatch(/^(PRD-REQ-\d{3}|[ABC]-(REQ|NFR)-\d{3}|K-\d{2}|ADR-\d{4}|NFR-7\.\d+|LEGAL-REQ-\d{3})$/);
+      for (const r of spec.reqs) expect(r, name).toMatch(/^(PRD-REQ-\d{3}|[ABC]-(REQ|NFR)-\d{3}|K-\d{2}|ADR-\d{4}|NFR-7\.\d+|LEGAL-REQ-\d{3}|FR-[A-Z]{3}-\d{2})$/);
     }
   });
 

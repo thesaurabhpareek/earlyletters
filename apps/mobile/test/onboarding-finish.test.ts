@@ -57,7 +57,7 @@ describe('[BL-378] finish makes one book per name', () => {
   });
 
   it('the screen sets the latch after the books are made and sends the button through the guard', () => {
-    expect(onboarding).toMatch(/const created = firstRunBookNames\(names\)\.map\([\s\S]*?\);\s*booksMade\.current = true;/);
+    expect(onboarding).toMatch(/const created = addChildren\([\s\S]*?\);\s*booksMade\.current = true;/);
     expect(onboarding).toMatch(/const finishOnce = \(\) => runFinishOnce\(booksMade, finish\);/);
     expect(onboarding).toMatch(/onPress=\{step === 'finish' \? finishOnce : next\}/);
     expect(onboarding).not.toMatch(/onPress=\{step === 'finish' \? finish :/);

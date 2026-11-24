@@ -27,6 +27,7 @@ import {
 } from '@scribe/core';
 import * as React from 'react';
 import { View } from 'react-native';
+import { announce } from '@/lib/a11y';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Text } from '@/components/ui/text';
@@ -51,6 +52,10 @@ function Actions({ canSave, onSave, onCancel, saveLabel }: { canSave: boolean; o
 }
 
 function Hint({ children }: { children?: string | null }) {
+  // iOS VoiceOver ignores accessibilityLiveRegion, so the line is spoken when it appears or changes (PER4-018).
+  React.useEffect(() => {
+    if (children) announce(children);
+  }, [children]);
   return children ? (
     <Text variant="footnote" accessibilityLiveRegion="polite">
       {children}

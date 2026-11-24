@@ -1,6 +1,6 @@
 /** Shared moves for the journey flows. Only fictional family data ("Asha"); everything goes through the real screens. */
 import type { Page } from '@playwright/test';
-import { en } from '@scribe/content';
+import { authCopy, en } from '@scribe/content';
 import { bookCopy } from '../../src/components/book/copy';
 import { canary, expect, type Recorder } from './journey';
 import type { Need } from './saved-moment';
@@ -20,6 +20,20 @@ export async function passAgeGate(page: Page) {
   await agreeBox(page).click();
   await btn(page, 'Continue').click();
   await expect(btn(page, 'Begin the book')).toBeVisible();
+}
+
+/**
+ * The same gate on the server-on build (NX-31 R17, NX-36 S2): with no session and no book the first screen is the account-first
+ * welcome, not "Begin the book". It offers Sign in with email and, where the build shows it, "I was invited". The words are
+ * read from packages/content, so a copy round moves the flow with the screen.
+ */
+export async function passAgeGateToSignIn(page: Page) {
+  await page.getByRole('radio', { name: 'Yes' }).click();
+  await agreeBox(page).click();
+  await btn(page, 'Continue').click();
+  await expect(btn(page, authCopy.sheet.email)).toBeVisible();
+  await expect(page.getByText(authCopy.sheet.bodies.sign_in_first)).toBeVisible();
+  await expect(btn(page, 'Begin the book')).toHaveCount(0);
 }
 
 export async function startOnboarding(page: Page) {
@@ -115,3 +129,18 @@ export const monthOpener = (page: Page, months: number) =>
   page.getByRole('heading', { name: new RegExp(`^(${en.book.thisMonthLabel}, )?${bookCopy.chapterAge.replace('{n}', String(months))}, `) });
 /** The opener of the month the child is in today (any age): "This month, 7 months, ..." or "This month, The first weeks, ...". */
 export const currentMonthOpener = (page: Page) => page.getByRole('heading', { name: new RegExp(`^${en.book.thisMonthLabel}, `) });
+
+/**
+ * The count line of a month, as the Months sheet says it ("2 letters, from Mama"): the Book's opener no longer carries it.
+ * Opens the sheet, reads that month's row, closes the sheet. Restores what J09b, J18 and J08c proved before the opener
+ * dropped the count (BL-1991): the number of letters and who wrote them.
+ */
+export async function expectMonthCount(page: Page, months: number, line: RegExp) {
+  await page.getByTestId('book.months').click();
+  const sheet = page.getByTestId('book.monthsSheet');
+  await expect(sheet).toBeVisible();
+  const row = sheet.locator('[data-testid^="book.month."]').filter({ hasText: bookCopy.chapterAge.replace('{n}', String(months)) });
+  await expect(row).toContainText(line);
+  await sheet.getByRole('button', { name: 'Close' }).click();
+  await expect(sheet).toBeHidden();
+}

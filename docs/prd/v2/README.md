@@ -1,5 +1,7 @@
 # PRD V2: index
 
+> Baseline frozen at D-130 (31 Oct). Later decisions: `docs/DECISIONS.md`. Later requirements: `docs/product/prd/REGISTRY.md`.
+
 Status: 13 Oct 2026, revised after critique round 1; delivery and traceability revised 15 Oct after critique round 2 (`reviews/DISPOSITION-R2-delivery.md`). Spec of record since PR #124 merged on 16 Oct (D-105); kept current by the daily PRD update (last: Sat 31 Oct 2026, decisions to D-130). Owner: PM lane, with the delivery lead for `08-delivery.md`. This file says what PRD V2 is, how to read it, what each file holds, which source wins, and where each spec stands.
 
 ## What V2 is

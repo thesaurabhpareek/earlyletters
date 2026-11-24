@@ -240,6 +240,7 @@ export function createSyncEngine(deps: SyncEngineDeps): SyncEngine {
   async function pullAll(report: SyncReport, verify: boolean): Promise<void> {
     let resetDone = false;
     let idsRounds = 0;
+    let withheld = false;
     for (let page = 0; page < MAX_PULL_PAGES; page++) {
       if (killed()) return;
       const since = buildPullRequest(db, { verify });
@@ -253,6 +254,12 @@ export function createSyncEngine(deps: SyncEngineDeps): SyncEngine {
       }
       lastFailure = null;
       const data = res.data;
+      // FR-PRV-20: the server answered with an empty page because consent is not current. It is not "nothing changed":
+      // write nothing from it, and below stamp no finished pull and let no held letter lapse.
+      if (data.withheld) {
+        withheld = true;
+        break;
+      }
       if (data.reset) {
         if (resetDone) return;
         resetDone = true;
@@ -273,13 +280,21 @@ export function createSyncEngine(deps: SyncEngineDeps): SyncEngine {
       }
       break;
     }
-    const dropped = tx(() => dropStaleHeld(db, now()));
-    if (dropped > 0) changed();
+    if (withheld) {
+      // Held letters cannot come back while the server serves nothing: the 30 days count from the first pull it answers.
+      tx(() => {
+        if (readSetting(db, SYNC_SETTING.restoreAt)) writeSetting(db, SYNC_SETTING.restoreAt, iso());
+      });
+    } else {
+      const dropped = tx(() => dropStaleHeld(db, now()));
+      if (dropped > 0) changed();
+    }
     try {
       deps.afterPull?.();
     } catch {
       // The next pull or the next launch finishes it; a pull never fails for it.
     }
+    if (withheld) return;
     tx(() => {
       writeSetting(db, SYNC_SETTING.lastSyncedAt, iso());
       if (verify) writeSetting(db, SYNC_SETTING.lastVerifyAt, iso());

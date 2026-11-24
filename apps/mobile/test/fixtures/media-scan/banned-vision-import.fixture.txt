@@ -1,0 +1,5 @@
+// fixture: banned-vision-import. Fictional family Asha; not compiled, read by test/media-ast-scan.test.ts as text.
+// as: apps/mobile/src/lib/media/fixture.ts
+// expect: banned-module
+import Vision from 'expo-vision';
+export const ashaScan = (uri: string) => Vision.run(uri);

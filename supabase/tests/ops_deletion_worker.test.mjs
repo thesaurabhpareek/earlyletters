@@ -41,7 +41,7 @@ const SERVICE_ONLY = [
   `select public.ops_storage_residue('${A}', 10)`, `select public.ops_deletion_residue('${A}', 'before_finalize')`,
   `select public.ops_deletion_contributors('${A}')`, `select public.ops_set_child_photo_path('${SHARED}', 'a', 'b')`,
   `select public.ops_deletion_sla(now())`, `select public.ops_alert_claim('x', 1)`, `select public.ops_alert_reset('x')`,
-  `select public.ops_consume_forget_quota('${A}', 5)`, `select public.ops_apple_token_put('${A}', 'v1.AAAAAAAAAAAAAAAA.AAAAAAAAAAAAAAAAAAAAAAAA', 1, 'com.earlyletters.scribe')`,
+  `select public.ops_consume_forget_quota('${A}', 5)`, `select public.ops_consume_forget_quota_retired('${A}', 10)`, `select public.ops_apple_token_put('${A}', 'v1.AAAAAAAAAAAAAAAA.AAAAAAAAAAAAAAAAAAAAAAAA', 1, 'com.earlyletters.scribe')`,
   `select public.ops_apple_token_get('${A}')`, `select public.ops_apple_token_delete('${A}')`,
   `select public.ops_ledger_between(now(), now(), 10)`, `select public.ops_retention(now())`,
   `select public.ops_audit_write('op', 'deletion', 'test', 'T-1')`, `select public.ops_incident_scope('{}')`,
@@ -63,6 +63,8 @@ const SERVICE_ONLY = [
   `select public.ops_count_check('web_contribution_region', 'pass')`, `select public.ops_regwatch_record('[]')`,
   `select public.ops_regwatch_triage(1, 'actioned')`, `select public.ops_compliance_report(current_date, current_date)`,
   `select public.ops_compliance_retention(now())`,
+  // 20261124120000 (BL-584, CR-209)
+  `select public.ops_cron_health(120)`,
 ];
 for (const sql of SERVICE_ONLY) {
   const name = sql.match(/public\.(\w+)/)[1];
@@ -78,7 +80,7 @@ check('every ops_* function is security definer with a pinned search_path', (awa
   where n.nspname = 'public' and p.proname like 'ops\\_%' and not (p.prosecdef and array_to_string(p.proconfig, ',') ~ 'search_path=')`)).rows[0].n === 0);
 
 // ── The ops schema is invisible to clients, has RLS and classified columns ─
-for (const t of ['audit_log', 'alert_state', 'forget_quota', 'apple_tokens']) {
+for (const t of ['audit_log', 'alert_state', 'forget_quota', 'forget_quota_retired', 'apple_tokens']) {
   check(`ops.${t}: a signed-in user cannot read it`, (await codeOf(() => as(A, `select * from ops.${t}`))) === '42501');
   check(`ops.${t}: anon cannot read it`, (await codeOf(() => asAnon(`select * from ops.${t}`))) === '42501');
 }
@@ -194,6 +196,26 @@ check('analytics-forget allows 5 calls a day per person, then refuses', JSON.str
 check('the quota keeps counts only (no analytics ids)', (await sys(`select column_name from information_schema.columns where table_schema='ops' and table_name='forget_quota' order by 1`)).rows
   .map((r) => r.column_name).join(',') === 'calls,day,profile_id');
 
+// ── analytics-forget retired_id quota (BL-1252): its own bucket ───────────
+const rq = [];
+for (let i = 0; i < 12; i++) rq.push(await j(`select public.ops_consume_forget_quota_retired($1, 10) v`, [B]));
+check('retired_id allows 10 calls a day per person, then keeps refusing',
+  JSON.stringify(rq) === JSON.stringify([...Array(10).fill(true), false, false]));
+check('exhausting retired_id leaves the shared bucket untouched (account deletion still passes)',
+  (await j(`select public.ops_consume_forget_quota($1, 5) v`, [B])) === true);
+const sq = [];
+for (let i = 0; i < 6; i++) sq.push(await j(`select public.ops_consume_forget_quota($1, 5) v`, [N]));
+check('exhausting the shared bucket leaves retired_id untouched',
+  JSON.stringify(sq) === JSON.stringify([true, true, true, true, true, false]) && (await j(`select public.ops_consume_forget_quota_retired($1, 10) v`, [N])) === true);
+check('the retired bucket keeps counts only (no analytics ids)', (await sys(`select column_name from information_schema.columns where table_schema='ops' and table_name='forget_quota_retired' order by 1`)).rows
+  .map((r) => r.column_name).join(',') === 'calls,day,profile_id');
+check('the retired bucket clears the person\'s rows older than a day', await (async () => {
+  await sys(`insert into ops.forget_quota_retired values ($1, current_date - 3, 9)`, [B]);
+  await sys(`select public.ops_consume_forget_quota_retired($1, 10)`, [B]);
+  return (await sys(`select count(*)::int n from ops.forget_quota_retired where profile_id = $1 and day < current_date - 1`, [B])).rows[0].n === 0;
+})());
+await sys(`select public.ops_consume_forget_quota_retired($1, 10)`, [C]);
+
 // ── Apple refresh tokens ──────────────────────────────────────────────────
 const ct = 'v1.AAAAAAAAAAAAAAAA.' + 'B'.repeat(40);
 await sys(`select public.ops_apple_token_put($1, $2, 1, 'com.earlyletters.scribe')`, [B, ct]);
@@ -204,6 +226,7 @@ check('after revocation the row is deleted', (await j(`select public.ops_apple_t
 await sys(`select public.ops_apple_token_put($1, $2, 1, 'com.earlyletters.scribe')`, [C, ct]);
 await sys(`delete from auth.users where id = $1`, [C]);
 check('a stored token goes with the profile (cascade)', (await sys(`select count(*)::int n from ops.apple_tokens`)).rows[0].n === 0);
+check('retired_id quota rows go with the profile (cascade)', (await sys(`select count(*)::int n from ops.forget_quota_retired where profile_id = $1`, [C])).rows[0].n === 0);
 
 // ── Ledger, audit log and retention ───────────────────────────────────────
 const led = await j(`select public.ops_ledger_between(now() - interval '1 day', now() + interval '1 day', 1000) v`);
@@ -217,6 +240,13 @@ check('runbook names are a closed list', (await codeOf(() => sys(`select public.
 await sys(`insert into ops.audit_log (at, operator, runbook, reason_code, ticket) values (now() - interval '13 months', 'f', 'deletion', 'old', 'T-0')`);
 const ret = await j(`select public.ops_retention(now()) v`);
 check('retention removes runbook rows older than 12 months only', ret.audit_log === 1 && (await sys(`select count(*)::int n from ops.audit_log`)).rows[0].n === 1);
+await sys(`insert into ops.forget_quota_retired values ($1, current_date - 5, 4)`, [A]);
+await sys(`insert into ops.forget_quota_retired values ($1, current_date - 3, 2)`, [B]);
+await sys(`insert into ops.forget_quota_retired values ($1, current_date, 1) on conflict (profile_id, day) do nothing`, [A]);
+const ret2 = await j(`select public.ops_retention(now()) v`);
+check('retention clears retired_id quota rows older than 2 days and keeps today', ret2.forget_quota_retired === 2
+  && (await sys(`select count(*)::int n from ops.forget_quota_retired where profile_id = $1 and day < current_date - 2`, [A])).rows[0].n === 0
+  && (await sys(`select count(*)::int n from ops.forget_quota_retired where profile_id = $1 and day = current_date`, [A])).rows[0].n === 1);
 
 // ── Incident scope (LEGAL-REQ-039) ────────────────────────────────────────
 const S2 = '88888888-8888-8888-8888-888888888888';

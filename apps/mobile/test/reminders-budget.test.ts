@@ -2,6 +2,7 @@
  * The notification budget registry and chooser (NS-32-R2, R3, R5, R7, R15; CR-69 A1, E13, CL-115).
  * Fixtures: the fictional family "Asha".
  */
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { reminderCopy } from '../src/lib/reminders/copy';
 import { DEFAULT_PREFS, planReminders, type PlanInput, type PlannerChild, type ReminderPrefs } from '../src/lib/reminders/planner';
@@ -86,6 +87,14 @@ describe('[NS-32-R5] registry rows', () => {
   it('keeps row priorities in step with the source ranks', () => {
     for (const c of NOTIFICATION_CLASSES.filter((x) => x.group === 'budgeted')) expect(c.priority).toBe(SOURCE_RANK[c.id as keyof typeof SOURCE_RANK]);
   });
+  it('writes each priority once: the ranks are read from the rows, and libraryDay sits between birthday and month (BL-1152)', () => {
+    expect(SOURCE_RANK.libraryDay).toBeGreaterThan(SOURCE_RANK.birthday);
+    expect(SOURCE_RANK.libraryDay).toBeLessThan(SOURCE_RANK.monthAge);
+    expect(SOURCE_RANK.typedDay).toBeLessThan(SOURCE_RANK.birthday);
+    // No second table of numbers: the ranks are expressions over the rows, not literals.
+    const block = /export const SOURCE_RANK = \{([^}]*)\}/.exec(readFileSync(new URL('../src/lib/reminders/budget.ts', import.meta.url), 'utf8'))![1]!;
+    expect(block).not.toMatch(/:\s*\d/);
+  });
 });
 
 describe('[NS-32-R7] pending ceilings', () => {
@@ -115,8 +124,19 @@ describe('[NS-32-R15] a class cannot raise the total', () => {
     const base = NOTIFICATION_CLASSES.filter((c) => c.id !== 'evening');
     const grown = addNotificationClass(base, extra);
     expect(grown).toHaveLength(base.length + 1);
-    expect(pendingCeiling(grown)).toBe(pendingCeiling(base));
-    expect(pendingCeiling(grown)).toBe(TOTAL_MAX);
+    // Literals, not the constant read back: a ceiling that counted classes (5 rows, 6 rows) would not be 60.
+    expect(pendingCeiling(base)).toBe(60);
+    expect(pendingCeiling(grown)).toBe(60);
+    expect(grown.length).toBeGreaterThan(base.length);
+  });
+  it('earns its argument: it follows the groups present, never the number of classes', () => {
+    const planOnly = NOTIFICATION_CLASSES.filter((c) => c.group === 'plan');
+    const budgetedOnly = NOTIFICATION_CLASSES.filter((c) => c.group === 'budgeted');
+    expect(pendingCeiling([])).toBe(0);
+    expect(pendingCeiling(planOnly)).toBe(PLAN_MAX);
+    expect(pendingCeiling(budgetedOnly)).toBe(TOTAL_MAX);
+    expect(pendingCeiling(NOTIFICATION_CLASSES)).toBe(TOTAL_MAX);
+    expect(pendingCeiling([...budgetedOnly, ...budgetedOnly.map((c) => ({ ...c, id: `${c.id}2` as NotificationClass['id'] }))])).toBe(TOTAL_MAX);
   });
   it('refuses a repeated id and a group nobody owns', () => {
     expect(() => addNotificationClass(NOTIFICATION_CLASSES, extra)).toThrow(/already registered/);

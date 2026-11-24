@@ -25,6 +25,11 @@ export const STORE_FLAGS = Object.freeze([
   // Erase now on a signed-in phone (BL-1854): held until the founder clears BL-1805's wording (CLO-22, CR-177; gate row
   // BL-1805, owner founder, CR-178 item 1). The same diff that clears it deletes this row (BL-1805's apply step).
   Object.freeze({ env: 'EXPO_PUBLIC_SERVER_ERASE', card: 'BL-1854', allowedOn: Object.freeze([]) }),
+  // Usage analytics (CR-178 item 4a, D-170 item 4a): off in every store profile today. Production stays off behind
+  // D-163's production gate (counsel's answer, LEGAL-REQ-043, deletion drill), which BL-1886 closes; preview and
+  // testflight join allowedOn only in BL-1867's eas.json PR, after the tester notice (BL-1887) and the SDK and adapter
+  // (BL-1235 P5 to P8). That PR edits this row in the same diff; BL-1886 adds production last.
+  Object.freeze({ env: 'EXPO_PUBLIC_ANALYTICS', card: 'BL-1886', allowedOn: Object.freeze([]) }),
 ]);
 
 /**

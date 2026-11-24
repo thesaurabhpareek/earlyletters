@@ -18,10 +18,10 @@
 import { appendFileSync } from "node:fs";
 import { join } from "node:path";
 import {
-  ROOT, loadRoster, ownerMap, parseBacklog, eligibility, primaryOwner, takenIds,
+  ROOT, loadRoster, ownerMap, parseBacklog, takenIds,
   readState, writeState, repoSlug, gh, ghAll, labelNames, agentOfPR, readText, todayUTC,
   isFounderComment, isFounderChangesRequest, standingChanged, trustContext, isTrusted, pendingTargets, handoffSettled,
-  matchingPaths, stewardVerdict, startsWithMarker,
+  matchingPaths, stewardVerdict, startsWithMarker, queueFor, loadRank,
 } from "./lib.mjs";
 import { needsIndependentReview, d041Pool, oneLine } from "./hardening.mjs";
 import * as lane from "./lane.mjs";
@@ -72,6 +72,8 @@ state.standing ??= {};
 const tasks = parseBacklog(readText(join(ROOT, "docs", "BACKLOG.md")));
 const byId = new Map(tasks.map((t) => [t.id, t]));
 const owners = ownerMap(roster);
+// docs/backlog/RANK.md orders the queue only (ranked rows first, then file order); eligibility is unchanged.
+const rankRows = loadRank().rows;
 
 const openPRs = ghAll(`/repos/${repo}/pulls?state=open`);
 const taken = takenIds(openPRs);
@@ -241,9 +243,7 @@ const only = env.ONLY_AGENT ? new Set(env.ONLY_AGENT.split(",").map((s) => s.tri
 for (const agent of roster.agents) {
   const h = agent.handle;
   const mine = openPRs.filter((pr) => agentOfPR(pr) === h);
-  const queue = tasks.filter(
-    (t) => primaryOwner(t, owners) === h && !taken.has(t.id) && !claimedTasks.has(t.id) && eligibility(t, byId).ok,
-  );
+  const queue = queueFor(h, tasks, owners, taken, claimedTasks, rankRows);
   const row = { agent, open: mine.length, queue: queue.length, inbox: inbox(h).length, now: "" };
   rows.push(row);
 

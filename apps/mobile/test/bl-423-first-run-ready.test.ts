@@ -45,7 +45,7 @@ describe('[BL-423] the finish step ends on Tonight and never starts capture', ()
       'finishMayMakeBook',
       'clearDraft', // BL-1816: deletes the kept first-run answers; opens nothing
       'hasSessionState',
-      'addChild',
+      'addChildren',
       'firstRunBookNames',
       'setActiveChildId',
       'getActiveChildId',

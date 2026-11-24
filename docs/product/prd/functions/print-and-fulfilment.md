@@ -337,7 +337,7 @@ None of this is built or scheduled. Every row is "new row needed" (BL ids are as
 
 ## 8. Founder and counsel questions, with recommended defaults
 
-Counsel numbers are from `docs/legal/COUNSEL_PACKET.md` 1.5.0 where one exists (Q11 processors; Q47 publisher identity; Q30 "Later features", row printed books). New questions say "needs a number from legal". Claude roles are not licensed professionals; every legal reading here needs counsel.
+Counsel numbers are in `docs/legal/COUNSEL_PACKET.md` (Q11 and Q30 in section 5, Q47 in section 2; the print mapping is in section 7); the rows below carry them where one exists (Q11 processors; Q47 publisher identity; Q30 "Later features", row printed books). A row with no packet question says so or cites a register or finance id instead. Claude roles are not licensed professionals; every legal reading here needs counsel.
 
 | Id | Question | Recommended default | Who | Counsel number |
 |---|---|---|---|---|
@@ -402,7 +402,7 @@ New rows needed: (1) layout engine support for several pictures per letter with 
 ### P5. Questions, with defaults
 | Id | Question | Default | Who answers |
 |---|---|---|---|
-| Q-PRT-P1 | QR to a video in the printed book | No; counsel, finance and the print partner each answer in writing before it is scoped (FR-PRT-51) | Founder, with counsel (needs a number from legal) CLOSED 20 Nov, see GAP-LOG Closures CL-055 |
+| Q-PRT-P1 | QR to a video in the printed book | No; counsel, finance and the print partner each answer in writing before it is scoped (FR-PRT-51) | Founder, with counsel (Q121) CLOSED 20 Nov, see GAP-LOG Closures CL-055 |
 | Q-PRT-P2 | Maximum pictures per printed book and per page | The partner's limit; 6 per letter as in NS-52; layout by FR-PRT-48 | Founder, print, design CLOSED 20 Nov, see GAP-LOG Closures CL-097 |
 | Q-PRT-P3 | Can a parent choose a still from a video for print? | Yes, parent-chosen frame only | Founder with design CLOSED 20 Nov, see GAP-LOG Closures CL-056 |
 | Q-PRT-P4 | Does a printed picture carry the parent's picture words and place? | Yes, exactly as written, only if the parent wrote them | Founder with design and content CLOSED 20 Nov, see GAP-LOG Closures CL-097 |

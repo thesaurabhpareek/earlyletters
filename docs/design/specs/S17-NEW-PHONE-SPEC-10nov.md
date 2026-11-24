@@ -12,7 +12,7 @@ Sources read, with the heads I read them at (re-read through the REST API on 10 
 | NX-36 screen specs, S17 and sections 2, 8, 10 to 12 (`docs/roadmap/next/03-requirements/NX-36-build-12-screen-specs.md` and `NX-36-wireframes.html`, branch `docs/nx-36-screen-specs-9nov`) | `1a30be2cd` (read from the branch tip) |
 | #731 returning and new phone words, RW-01 to RW-44 | `e8108504b7347633b3180e90ff6df96f18a6b05e` |
 | #732 You tab states (`docs/design/specs/YOU-TAB-STATES-9nov.md`) | `3d3498a200a4d88f35f17bc1df5e51a7130f7a23` |
-| #733 NX-38 gaps R1 to R11 (`docs/requirements/NX-38-build12-must-have-gaps-9nov.md`) | `e1b0abeb5e7ddd50a210bae3869c0d63b1f50e96` |
+| #733 NX-38 gaps R1 to R11 (`docs/roadmap/next/03-requirements/NX-38-build12-must-have-gaps-9nov.md`, a historical copy of the text at that head) | `e1b0abeb5e7ddd50a210bae3869c0d63b1f50e96` |
 | #724 welcome and sign in | `d4a9983b22fcd121fcf0bd43736d91246a643d11` |
 | #728 code, consent, child | `3da02d5fb920cd57f03eb5f99d528de581b9a69b` |
 | #737 new account and claim (`lib/first-run/*`, `(auth)/sign-in/consent.tsx`) | `cf7e107c6ae77accd285bd2cadc4c0617a69c6b3` |
