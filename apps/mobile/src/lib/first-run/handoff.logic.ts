@@ -111,51 +111,12 @@ export function finishMayMakeBook(input: { start: FirstRunStepId; hasSession: bo
 /**
  * The last step's button can be tapped (or called) twice before the route has changed. The first call that makes the
  * books sets `latch.current`; a second call after that does nothing, so twins make two books once, never four (BL-378).
- * A call that made nothing (blocked, or addChild threw) leaves the latch open so a retry still works.
+ * A call that made nothing (blocked, or addChildren threw and rolled every book back, NS-43-R9) leaves the latch open so a
+ * retry still works and starts clean.
  */
 export function runFinishOnce(latch: { current: boolean }, finish: () => void): void {
   if (latch.current) return;
   finish();
-}
-
-/**
- * Whether two book inputs from first run's finish are the same book: every field finish passes to the store counts, so
- * a name, birthday, due date or "signs as" edited between tries is made again (resumeBooks `same`).
- */
-export function sameBookInput(
-  a: { name: string; birthday?: string | null; dueDate?: string | null; signsAs?: string },
-  b: { name: string; birthday?: string | null; dueDate?: string | null; signsAs?: string },
-): boolean {
-  return a.name === b.name && a.birthday === b.birthday && a.dueDate === b.dueDate && a.signsAs === b.signsAs;
-}
-
-/**
- * Makes a book per call, remembering the ones already made so a retry after a throw keeps them (BL-1658). `finish` maps
- * one call per name in order; if the second throws, the first is already in the store, and the retry must not make it
- * again. A call at a position that already has a book of the same make (`same`) returns that book; a throw sends the next
- * call back to position 0 (the retry starts the list again); `total()` calls in a row complete a run and do the same.
- * A position whose remembered book is for something else (the names were edited between tries) is forgotten from there.
- * `made` is the caller's memory (a ref's array), so it outlives renders. Makes nothing but what `make` makes.
- */
-export function resumeBooks<A, T>(made: { arg: A; book: T }[], make: (arg: A) => T, same: (a: A, b: A) => boolean, total: () => number): (arg: A) => T {
-  let at = 0;
-  return (arg) => {
-    const kept = made[at];
-    if (kept && same(kept.arg, arg)) {
-      at = (at + 1) % Math.max(total(), 1);
-      return kept.book;
-    }
-    made.length = at;
-    try {
-      const book = make(arg);
-      made.push({ arg, book });
-      at = (at + 1) % Math.max(total(), 1);
-      return book;
-    } catch (e) {
-      at = 0;
-      throw e;
-    }
-  };
 }
 
 /**
