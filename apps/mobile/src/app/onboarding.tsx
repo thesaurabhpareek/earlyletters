@@ -69,7 +69,7 @@ import { useAuth } from '@/lib/auth/session-provider';
 import { useAnotherBusy } from '@/lib/first-run/account-books.logic';
 import { SignedInNote } from '@/components/onboarding/signed-in-note';
 import { capabilities, serverFeaturesEnabled } from '@/lib/capabilities';
-import { clearFirstRunDraft } from '@/lib/first-run/draft';
+import { clearFirstRunDraft as clearDraft } from '@/lib/first-run/draft'; // BL-2002: the one delete, shared with sign-out
 import { FIRST_RUN_DRAFT_SETTING, draftIsEmpty, parseDraft, resumeStep, serializeDraft } from '@/lib/first-run/draft.logic';
 import { backShown, childNameFieldWords, dateBlockShown, finishMayMakeBook, firstRunStartStep, hasSessionState, reportsPastWelcome, resumeBooks, runFinishOnce, sameBookInput, welcomeHandoffStep } from '@/lib/first-run/handoff.logic';
 import { RECENTLY_DELETED_HREF, recentlyDeletedRowShown } from '@/lib/first-run/recently-deleted-row.logic';
@@ -159,7 +159,7 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
       // A sign-out that is still waiting on uploads, or that failed, leaves the session and the steps as they are.
       .then((outcome) => {
         if (outcome === 'done') {
-          clearFirstRunDraft(); // the answers belonged to the account that left (BL-1816)
+          clearDraft(); // the answers belonged to the account that left (BL-1816)
           onSignedOut?.();
         }
       })
@@ -257,7 +257,7 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
     if (booksMade.current) return;
     const draft = { step, names, expecting, birthday, dueDate, signsAs };
     try {
-      if (draftIsEmpty(draft)) clearFirstRunDraft();
+      if (draftIsEmpty(draft)) clearDraft();
       else setSetting(FIRST_RUN_DRAFT_SETTING, serializeDraft(draft));
     } catch {
       // A draft that cannot be kept never blocks first run.
@@ -332,7 +332,7 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
       }),
     );
     booksMade.current = true;
-    clearFirstRunDraft();
+    clearDraft();
     if (created[0] && getActiveChildId() !== created[0].id) setActiveChildId(created[0].id);
     // Dropped unless analytics is already a yes (it never is in first run; K-01). Kept for a reinstall that kept consent.
     for (const c of created) track('child_added', { has_date: true, child_ordinal: ordinalOf(c.id), in_first_run: true, added_together: created.length > 1 });
