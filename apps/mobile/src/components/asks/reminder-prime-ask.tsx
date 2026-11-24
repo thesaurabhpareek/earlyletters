@@ -46,7 +46,7 @@ export function ReminderPrimeAsk() {
   useEffect(() => {
     const take = () => {
       if (!takeReminderPrimeRequest()) return;
-      track('reminder_prime_shown', { source: noteReminderPrimeShown() });
+      track('notifications:reminder_prime_view', { source: noteReminderPrimeShown() });
       setOpen(true);
     };
     take();
@@ -71,13 +71,13 @@ function ReminderPrimeCard({ onClose }: { onClose: () => void }) {
     haptic('tap');
     if (chosen) writePrefs({ time: chosen });
     noteReminderPrimeYes();
-    track('reminder_prime_result', { choice: 'yes' });
+    track('notifications:reminder_prime_submit', { choice: 'yes' });
     onClose();
     // The choice is saved either way; then one line says what came of it (reminders-settings.md 3).
     void turnOnReminders()
       .then((res) => {
         // The card already counted itself as this session's ask (noteReminderPrimeShown).
-        if (res.asked) track('os_permission_result', { granted: res.permission === 'granted', platform: Platform.OS === 'android' ? 'android' : 'ios' });
+        if (res.asked) track('notifications:permission_submit', { granted: res.permission === 'granted', platform: Platform.OS === 'android' ? 'android' : 'ios' });
         const o = turnOnOutcome(res, nextLine({ on: true, permission: res.permission, next: nextReminder(), formatTime: formatReminderTime }));
         const s = reminderCopy.settings;
         const action =
@@ -91,7 +91,7 @@ function ReminderPrimeCard({ onClose }: { onClose: () => void }) {
       .catch(() => {});
   };
   const none = () => {
-    track('reminder_prime_result', { choice: 'not_now' });
+    track('notifications:reminder_prime_submit', { choice: 'not_now' });
     onClose();
     toast.show({ message: r.noneHelp });
   };

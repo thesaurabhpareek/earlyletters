@@ -22,9 +22,9 @@ import { EVENTS, HELD_EVENTS, REGISTRY } from '../src';
 const HELD = [
   'onboarding:sign_in_dismiss', 'onboarding:sign_in_fail', 'child_switched', 'keeping:export_complete', 'keeping:export_fail', 'keeping:export_start',
   'family:invite_fail', 'family:invite_open', 'me:language_update', 'machine_edit_rejected', 'machine_edit_reverted',
-  'notification_opened', 'offer_code_redeemed', 'os_permission_result', 'pack_download', 'playback_started',
-  'read_together_ended', 'read_together_started', 'reminder_prime_result', 'reminder_prime_shown',
-  'reminder_schedule_set', 'reminder_suppressed', 'restore_result', 'review_action', 'me:setting_update',
+  'notifications:notification_open', 'offer_code_redeemed', 'notifications:permission_submit', 'pack_download', 'playback_started',
+  'read_together_ended', 'read_together_started', 'notifications:reminder_prime_submit', 'notifications:reminder_prime_view',
+  'notifications:schedule_update', 'notifications:reminder_cancel', 'restore_result', 'review_action', 'me:setting_update',
   'me:session_end', 'sync_failed',
 ];
 

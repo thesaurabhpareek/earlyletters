@@ -144,7 +144,7 @@ describe('reminder observer', () => {
     see(base);
     see({ ...base, time: { hour: 20, minute: 45 } }); // same part of day: nothing
     see({ ...base, paused: true });
-    expect(await sent()).toEqual([['reminder_schedule_set', { cadence: 'few_times', hour_bucket: 'evening', paused: true }]]);
+    expect(await sent()).toEqual([['notifications:schedule_update', { cadence: 'few_times', hour_bucket: 'evening', paused: true }]]);
   });
 });
 

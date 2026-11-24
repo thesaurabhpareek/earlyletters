@@ -130,7 +130,7 @@ describe('[CDesO-3, CCO-10] Settings, Reminders: the switch goes straight to the
   it('no sheet in front of the alert anywhere: the priming sheet and its "A few evenings a week" title are gone', () => {
     expect(existsSync(join(SRC, 'lib/reminders/priming-sheet.tsx'))).toBe(false);
     const screen = code('app/settings/reminders.tsx');
-    expect(screen).not.toMatch(/ReminderPrimingSheet|needsPriming|reminder_prime_shown|setPriming/);
+    expect(screen).not.toMatch(/ReminderPrimingSheet|needsPriming|notifications:reminder_prime_view|setPriming/);
     expect(screen).toMatch(/await turnOnReminders\(\)/);
     expect((en.onboarding.reminder as Record<string, unknown>).permissionTitle).toBeUndefined();
     expect('needsPriming' in reminders).toBe(false);

@@ -69,8 +69,9 @@ export const GLOBAL_PROPS = {
  * 16: wire-names step 2b, slice 2 (BL-2176, CR-212, CR-213): the `me` area is renamed: `signed_out` to `me:session_end`, `language_set` to `me:language_update`, `settings_changed` to `me:setting_update`. No property was added or widened, no tier changed, and no build has sent any of them (analytics are off in every profile, CR-186).
  * 17: wire-names step 2b, slice 3 (BL-2176, CR-212, CR-213): the `family` area is renamed: `invite_opened` to `family:invite_open`, `invite_created` to `family:invite_create`, `invite_accepted` to `family:invite_accept`, `invite_failed` to `family:invite_fail`. No property was added or widened, no tier changed, and no build has sent any of them (analytics are off in every profile, CR-186).
  * 18: wire-names step 2b, slice 4 (BL-2176, CR-212, CR-213): the `onboarding` area is renamed: `auth_succeeded` to `onboarding:sign_in_complete`, `auth_failed` to `onboarding:sign_in_fail`, `auth_deferred` to `onboarding:sign_in_dismiss`, `child_added` to `onboarding:book_create`. No property was added or widened, no tier changed, and no build has sent any of them (analytics are off in every profile, CR-186).
+ * 19: wire-names step 2b, slice 5 (BL-2176, CR-212, CR-213): the `notifications` area is renamed: `reminder_prime_shown` to `notifications:reminder_prime_view`, `reminder_prime_result` to `notifications:reminder_prime_submit`, `os_permission_result` to `notifications:permission_submit`, `reminder_schedule_set` to `notifications:schedule_update`, `reminder_suppressed` to `notifications:reminder_cancel`, `notification_opened` to `notifications:notification_open`. No property was added or widened, no tier changed, and no build has sent any of them (analytics are off in every profile, CR-186).
  */
-export const SCHEMA_VERSION = 18;
+export const SCHEMA_VERSION = 19;
 
 /**
  * SHA-256 of `JSON.stringify(catalogShape())` per schema version. Versions 1
@@ -93,6 +94,7 @@ export const SCHEMA_FINGERPRINTS: Readonly<Record<number, string>> = Object.free
   16: '8200c33bbd03df320a3737a8cd5970daefad669869bb975b52815925a284947a',
   17: '105824cb58b64312c2f6af04515e1ebbf8d530ac62792ecbe657c51a88e254ff',
   18: 'fd0665de32a9821e6431a3ef21a7d8ca8c7e80f45c7575e4a463c60ccc7795cb',
+  19: 'da3f70873564fbf401c13264ba0c6ea2f7946ba6e534e10760011602fd58bab0',
 });
 
 // ---------------------------------------------------------------------------
@@ -290,7 +292,7 @@ export const HELD_EVENTS = {
     },
   },
   // --- Reminders (C-REQ-034) -----------------------------------------------------
-  reminder_prime_shown: {
+  'notifications:reminder_prime_view': {
     area: 'reminders',
     when: 'Reminder priming card shown',
     reqs: ['C-REQ-034', 'PRD-REQ-001'],
@@ -298,7 +300,7 @@ export const HELD_EVENTS = {
     tier: 'consented',
     props: { source: oneOf('tonight', 'settings', 'family_first_letter', 'first_letter', 'first_month') },
   },
-  reminder_prime_result: {
+  'notifications:reminder_prime_submit': {
     area: 'reminders',
     when: 'Priming card answered',
     reqs: ['C-REQ-034'],
@@ -306,7 +308,7 @@ export const HELD_EVENTS = {
     tier: 'consented',
     props: { choice: oneOf('yes', 'not_now') },
   },
-  os_permission_result: {
+  'notifications:permission_submit': {
     area: 'reminders',
     when: 'OS notification permission answered',
     reqs: ['C-REQ-034'],
@@ -314,7 +316,7 @@ export const HELD_EVENTS = {
     tier: 'consented',
     props: { granted: bool(), platform: oneOf('ios', 'android') },
   },
-  reminder_schedule_set: {
+  'notifications:schedule_update': {
     area: 'reminders',
     when: 'Reminder cadence, time or pause saved (observed from the stored preferences)',
     reqs: ['C-REQ-034'],
@@ -326,7 +328,7 @@ export const HELD_EVENTS = {
       paused: bool(),
     },
   },
-  reminder_suppressed: {
+  'notifications:reminder_cancel': {
     area: 'reminders',
     when: 'A scheduled reminder was skipped',
     reqs: ['C-REQ-034'],
@@ -334,7 +336,7 @@ export const HELD_EVENTS = {
     tier: 'consented',
     props: { reason: oneOf('wrote_recently', 'quiet_window', 'weekly_cap', 'paused') },
   },
-  notification_opened: {
+  'notifications:notification_open': {
     area: 'reminders',
     when: 'User opens the app from a notification (observed). Month-age and birthday notes are never reported',
     reqs: ['C-REQ-034'],

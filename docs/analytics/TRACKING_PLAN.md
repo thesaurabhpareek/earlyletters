@@ -161,12 +161,12 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 
 | Event | Fires when | Properties (type: allowed values) | Serves |
 |---|---|---|---|
-| `reminder_prime_shown` | Reminder priming card shown | `source` (enum: tonight \| settings \| family_first_letter \| first_letter \| first_month) | C-REQ-034, PRD-REQ-001 |
-| `reminder_prime_result` | Priming card answered | `choice` (enum: yes \| not_now) | C-REQ-034 |
-| `os_permission_result` | OS notification permission answered | `granted` (bool)<br>`platform` (enum: ios \| android) | C-REQ-034 |
-| `reminder_schedule_set` | Reminder cadence, time or pause saved (observed from the stored preferences) | `cadence` (enum: off \| weekly \| few_times \| every_evening)<br>`hour_bucket` (enum: morning \| afternoon \| evening \| late_evening)<br>`paused` (bool) | C-REQ-034 |
-| `reminder_suppressed` | A scheduled reminder was skipped | `reason` (enum: wrote_recently \| quiet_window \| weekly_cap \| paused) | C-REQ-034 |
-| `notification_opened` | User opens the app from a notification (observed). Month-age and birthday notes are never reported | `type` (enum: letter_reminder \| family_digest \| family_letter \| plan_notice)<br>`variant_id`? (int 0 to 99) | C-REQ-034 |
+| `notifications:reminder_prime_view` | Reminder priming card shown | `source` (enum: tonight \| settings \| family_first_letter \| first_letter \| first_month) | C-REQ-034, PRD-REQ-001 |
+| `notifications:reminder_prime_submit` | Priming card answered | `choice` (enum: yes \| not_now) | C-REQ-034 |
+| `notifications:permission_submit` | OS notification permission answered | `granted` (bool)<br>`platform` (enum: ios \| android) | C-REQ-034 |
+| `notifications:schedule_update` | Reminder cadence, time or pause saved (observed from the stored preferences) | `cadence` (enum: off \| weekly \| few_times \| every_evening)<br>`hour_bucket` (enum: morning \| afternoon \| evening \| late_evening)<br>`paused` (bool) | C-REQ-034 |
+| `notifications:reminder_cancel` | A scheduled reminder was skipped | `reason` (enum: wrote_recently \| quiet_window \| weekly_cap \| paused) | C-REQ-034 |
+| `notifications:notification_open` | User opens the app from a notification (observed). Month-age and birthday notes are never reported | `type` (enum: letter_reminder \| family_digest \| family_letter \| plan_notice)<br>`variant_id`? (int 0 to 99) | C-REQ-034 |
 
 #### moments
 
@@ -205,7 +205,7 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 | `sync_failed` | A sync attempt fails after retries | `reason` (enum: network \| auth \| conflict \| server \| unknown) | PRD-REQ-016 |
 | `error_shown` | A user-facing error from strings `errors.*` is shown | `code` (enum: save_failed \| mic_denied \| transcription_failed \| offline \| backup_failed \| invite_expired \| storage_low \| generic) | PRD-REQ-016 |
 
-Held, not sendable (27; typed in catalog.ts for call sites that still exist, dropped and counted at run time until each gets a registry row with a decision, a plan row and a privacy look, or is removed): `child_switched`, `family:invite_fail`, `family:invite_open`, `keeping:export_complete`, `keeping:export_fail`, `keeping:export_start`, `machine_edit_rejected`, `machine_edit_reverted`, `me:language_update`, `me:session_end`, `me:setting_update`, `notification_opened`, `offer_code_redeemed`, `onboarding:sign_in_dismiss`, `onboarding:sign_in_fail`, `os_permission_result`, `pack_download`, `playback_started`, `read_together_ended`, `read_together_started`, `reminder_prime_result`, `reminder_prime_shown`, `reminder_schedule_set`, `reminder_suppressed`, `restore_result`, `review_action`, `sync_failed`.
+Held, not sendable (27; typed in catalog.ts for call sites that still exist, dropped and counted at run time until each gets a registry row with a decision, a plan row and a privacy look, or is removed): `child_switched`, `family:invite_fail`, `family:invite_open`, `keeping:export_complete`, `keeping:export_fail`, `keeping:export_start`, `machine_edit_rejected`, `machine_edit_reverted`, `me:language_update`, `me:session_end`, `me:setting_update`, `notifications:notification_open`, `notifications:permission_submit`, `notifications:reminder_cancel`, `notifications:reminder_prime_submit`, `notifications:reminder_prime_view`, `notifications:schedule_update`, `offer_code_redeemed`, `onboarding:sign_in_dismiss`, `onboarding:sign_in_fail`, `pack_download`, `playback_started`, `read_together_ended`, `read_together_started`, `restore_result`, `review_action`, `sync_failed`.
 
 Global properties: `schema_version` (int 1 to 1000), `child_count_bucket`? (enum: none \| one \| two \| three_plus), `sample_pct`? (int 1 to 99).
 <!-- catalogue:end -->

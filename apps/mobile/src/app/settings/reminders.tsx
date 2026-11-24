@@ -143,7 +143,7 @@ export default function Reminders() {
         const res = await turnOnReminders();
         if (res.asked) {
           noteAskShown();
-          track('os_permission_result', { granted: res.permission === 'granted', platform: Platform.OS === 'android' ? 'android' : 'ios' });
+          track('notifications:permission_submit', { granted: res.permission === 'granted', platform: Platform.OS === 'android' ? 'android' : 'ios' });
         }
         seen.current = res.permission;
         setPermission(res.permission);
