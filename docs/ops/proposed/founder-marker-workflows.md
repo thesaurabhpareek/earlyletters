@@ -16,7 +16,7 @@ Add one more clause to each of the two branches: the first non-blank line of the
       (github.event_name == 'issues' && contains(format('{0} {1}', github.event.issue.title, github.event.issue.body), '@claude') && github.event.issue.author_association == 'OWNER' && github.event.issue.performed_via_github_app == null && startsWith(github.event.issue.body, '<!-- founder -->'))
 ```
 
-An `if: expression cannot skip blank lines, so this is stricter than the harness (marker at byte 0, not first non-blank line). Stricter is the safe side for a job that holds write tokens and the Anthropic secrets. Cost: a founder comment that starts with a blank line no longer starts the job; he retypes it.
+An `if:` expression cannot skip blank lines, so this is stricter than the harness (marker at byte 0, not first non-blank line). Stricter is the safe side for a job that holds write tokens and the Anthropic secrets. Cost: a founder comment that starts with a blank line no longer starts the job; he retypes it.
 
 ## Considered and rejected: the marker in `compliance-fence.yml`
 
