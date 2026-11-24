@@ -7,6 +7,8 @@
  * in analytics (CLAUDE.md privacy rules, ADR 0008, LEGAL-REQ-017).
  */
 
+import type { EventTier } from './contracts';
+
 /**
  * Data classification level (PRD section 7.10). Analytics may only carry L1
  * (public) or L2 (internal, no personal content). L3 and L4 are not
@@ -72,6 +74,11 @@ export type PropsOf<P> = { [K in RequiredKeys<P>]: ValueOf<P[K]> } & {
 };
 
 export interface EventSpec {
+  /**
+   * Who may send it before a yes (ER-B02, BL-1255). `basics` is content-free and listed in `BASICS_EVENTS` (pinned by a
+   * test); everything else is `consented`. Required, so a row without a tier does not compile.
+   */
+  readonly tier: EventTier;
   /** Product area, used to group the catalogue in TRACKING_PLAN.md. */
   readonly area: string;
   /** One line: when it fires. Never describes content. */

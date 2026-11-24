@@ -29,6 +29,7 @@ import {
   createLifecycle,
   createTrackers,
   noopProvider,
+  tierOf,
   type ConsentStatus,
   type KeyValueStorage,
   type PostHogLike,
@@ -77,6 +78,8 @@ export const analytics = createAnalytics({
   provider,
   storage: settingsStorage,
   randomId: Crypto.randomUUID,
+  // The real tier of each event (ER-B02). The policy is not passed here: the default stays ask_first (D-163, D-170).
+  tierOf,
   // Forgets one retired id on the server; the id stays on the phone until the answer is yes (BL-1252, ER-A04).
   forgetRetiredId: makeForgetRetiredId({
     client: async () => (await import('@/lib/supabase/client')).getSupabaseOrNull(),

@@ -84,7 +84,7 @@ export const pages = {
         heading: "Who makes it",
         paragraphs: [
           `${brand.name} is made and run by an independent maker in California, not a large company. Because it is published by an individual, the maker's legal name appears where the law asks for it: on the App Store listing and in the Terms and Privacy Policy.`,
-          `If ${brand.name} ever closes, you'll hear at least 90 days ahead, and export will keep working the whole time.`,
+          "If we ever plan to close, we will tell you at least 90 days ahead and keep export working the whole time.",
           "Questions, ideas or a kind word are all welcome at hello@earlyletters.com. A person reads every message.",
         ],
       },
