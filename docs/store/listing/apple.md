@@ -14,9 +14,9 @@ Early Letters: Memory Book
 
 Baby memory book in your voice
 
-### Promotional text (163/170)
+### Promotional text (151/170)
 
-Tell your child about today in a minute. It stays in your words. Every change is marked, and your original recording is kept unchanged. Read it together for years.
+Tell your child about today. A minute is plenty. It stays in your words. Every word we change is marked, and your original recording is kept unchanged.
 
 ### Keywords (87/100)
 

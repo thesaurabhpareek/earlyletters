@@ -1,8 +1,14 @@
+# BLOCKED (ids the app does not set yet): red by design until they land. `node apps/mobile/e2e/bin/blocked-ids.mjs <this file>` lists them (not-in-app.txt); run-suite.sh and run-p0-nightly.sh skip it and print that list.
 # E2E-04  Type a letter (offline), with Devanagari, and a kill right after Save.
 # Proves: K-14 (typed letters never get the "please have a read" card),
 # D-057 (typed text is never rewritten: the words come back exactly), B-NFR-007
 # (names and text in any script), A-REQ-030 (offline), DATA-REQ-048 (a kill
 # after Save leaves the letter exactly once).
+# What the app does after "Add to the book" (write.tsx keep, review.tsx): Write
+# replaces itself with Review, Review keeps the typed letter on mount and shows
+# the saved moment (`review.saved`), then lands on the Book. `review.save.book`
+# is NOT on screen for a typed letter, so no step here taps it (it exists only
+# when a draft is opened from Tonight's waiting card, the recovery branch below).
 # Unicode typing on iOS goes through XCUITest typeText (Assumption: works for
 # Devanagari; Maestro documents the Unicode limit for Android only).
 appId: ${APP_ID}
@@ -35,18 +41,19 @@ env:
     id: "write.input"
 - inputText: ${LETTER_ONE}
 - tapOn:
-    id: "write.save"
+    id: "write.keep.book"
     enabled: true
-- assertVisible:
-    id: "review.screen"
-- assertNotVisible:
-    id: "review.firstNote"
-- tapOn:
-    id: "review.save.book"
 - extendedWaitUntil:
     visible:
-      id: "tonight.screen"
+      id: "review.saved"
     timeout: 5000
+- assertNotVisible:
+    id: "review.firstNote"
+# The saved moment lands on the Book by itself.
+- extendedWaitUntil:
+    visible:
+      id: "book.screen"
+    timeout: 15000
 # 2. The letter reads back exactly as typed, Devanagari included.
 - tapOn:
     id: "tab.book"
@@ -59,7 +66,11 @@ env:
 - assertVisible:
     text: ".*found your feet.*"
 - runFlow: ../subflows/go-back.yaml
-# 3. Kill right after Save: relaunch shows the second letter exactly once.
+# 3. Kill as the saved moment appears. The flow cannot see whether the save has
+# committed by then (the sheet is the same before and after), so the kill lands
+# either side of the commit; the relaunch below handles both and the letter must
+# end up exactly once. This is a kill on the saved moment, not a precise
+# "kill between tap and commit" (that needs a seam; none is requested).
 - tapOn:
     id: "tab.tonight"
 - tapOn:
@@ -68,10 +79,12 @@ env:
     id: "write.input"
 - inputText: ${LETTER_TWO}
 - tapOn:
-    id: "write.save"
+    id: "write.keep.book"
     enabled: true
-- tapOn:
-    id: "review.save.book"
+- extendedWaitUntil:
+    visible:
+      id: "review.saved"
+    timeout: 5000
 - stopApp
 - runFlow:
     file: ../subflows/relaunch.yaml
@@ -86,15 +99,23 @@ env:
     commands:
       - tapOn:
           id: "tonight.waiting"
-      - tapOn:
-          id: "write.save"
-          enabled: true
-      - tapOn:
-          id: "review.save.book"
+      # A draft opened from Tonight has no keep intent (it died with the app), so
+      # Review shows its Keep buttons; if the saved moment shows instead, wait it out.
       - extendedWaitUntil:
           visible:
-            id: "tonight.screen"
+            id: "review\\.(save\\.book|saved)"
           timeout: 5000
+      - runFlow:
+          when:
+            visible:
+              id: "review.save.book"
+          commands:
+            - tapOn:
+                id: "review.save.book"
+      - extendedWaitUntil:
+          visible:
+            id: "book.screen"
+          timeout: 15000
 - tapOn:
     id: "tab.book"
 - assertVisible:

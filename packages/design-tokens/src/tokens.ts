@@ -424,6 +424,12 @@ const motion = {
    * and the moment the wait ends (BL-1753). Never a number or a percent.
    */
   sweepMs: 1400,
+  /**
+   * The most a looping animation runs on its own (ms): Breathe and the waiting bar end at rest after this, with no
+   * timer, by a finite even `withRepeat` count (`loopReps`). No in-app pause control; Reduce Motion stays the
+   * person's switch (CDESO-4, BL-1988). WCAG 2.2.2 reading UNVERIFIED against the W3C page.
+   */
+  loopCapMs: 30000,
   /** A sheet that must not travel lands in this many ms and a fade carries the change (Sheet, Reduce Motion; MOTION 5l). */
   instantMs: 1,
   /** A toast dragged down and let go leaves this far (pt) over `exitMs`. */
