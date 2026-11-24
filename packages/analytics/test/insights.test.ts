@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { EVENTS } from '../src';
+import { LEGACY_EVENT_NAMES } from '../src/wire-names';
 import {
   allQueries,
   assertContentFree,
@@ -12,6 +13,7 @@ import {
   detectAnomaly,
   fetchPostHog,
   fetchServer,
+  funnelQuery,
   parseBreakdownRows,
   parseFunnelRows,
   parseWeeklyRows,
@@ -262,6 +264,33 @@ describe('scripts/insights/run.ts', () => {
       expect(JSON.stringify(markdown)).not.toMatch(/phx_read|reader-jwt|sb_publishable/);
     } finally {
       rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('the weekly funnel reads the wire names (BL-2176)', () => {
+  const { query } = funnelQuery(12);
+  const steps = ['app_opened', 'capture_started', 'letter_saved'] as const;
+
+  it('names the three wire names, each a key of the catalogue', () => {
+    for (const wire of ['system:app_open', 'capture:take_start', 'capture:letter_save']) {
+      expect(Object.prototype.hasOwnProperty.call(EVENTS, wire)).toBe(true);
+      expect(query).toContain(`event = '${wire}'`);
+    }
+    expect(query).toContain("event IN ('system:app_open', 'capture:take_start', 'capture:letter_save')");
+  });
+
+  it('reads the wire name the mapping gives each legacy key', () => {
+    for (const old of steps) {
+      expect(query).toContain(`'${LEGACY_EVENT_NAMES[old]}'`);
+      expect(query).not.toContain(`'${old}'`);
+    }
+  });
+
+  it('fails on the old names, which no event is sent under any more', () => {
+    for (const old of steps) {
+      expect(Object.prototype.hasOwnProperty.call(EVENTS, old)).toBe(false);
+      expect(query).not.toMatch(new RegExp(`\\b${old}\\b`));
     }
   });
 });
