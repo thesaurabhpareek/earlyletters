@@ -1542,3 +1542,12 @@ Challenge record for CR-215 to CR-224 (24 Nov, afternoon): self-challenged only 
 - Found outside the question: `me:settings_delete_account_screen_view` is a generated basics name that PM3 section 8 says breaks R-K3; recommended as its own row, ruled before the step 3 signature, default remove.
 - UNVERIFIED: PostHog colon names in funnels and HogQL (standard 2.8; no name is assigned here); that no server view outside the insights aggregates migration counts deletes or restores; that open PR #1086 does not conflict. No test suite or device was run for the ruling.
 - Door: two-way. Nothing was ever sent. Way back: revert the step 2a commit for this key, or add it back as a new registry row with a named decision, a TRACKING_PLAN row and a CPrivO look.
+
+### CR-226 BL-1925: "confirm" and "verify" join the founder-ask guard only inside `ask-founder-to` and `ask-him-to` (24 Nov 2026, Karma under CR-176)
+- Verdict: RULED. Founder-only: no. Signed: Karma.
+- Decision group: harness hygiene. Cites CR-176, D-168, BL-1851, BL-1924, BL-1925.
+- Ruling: option (c). "confirm", "confirming", "verify" and "verifying" are added to the verbs of `ask-founder-to` and `ask-him-to` in `scripts/guards/founder-ask.mjs`, and to no other pattern. `founder-must` stays as it is, so the standing "founder to confirm" flag in PRDs and runbooks, and the relayed-chat lines in `docs/DECISIONS.md`, do not trip. The guard change and the five rewordings are BL-2224.
+- Measurement: the product agent ran the guard over 644,355 tracked lines with the verbs added to the shared verb list. Failing lines went from 91 to 130: 6 true asks (the five existing "ask the founder to confirm" lines and the BL-1925 row itself) and 33 standing flags. The last 100 PRs merged into develop (3,878 lines) gave the same 2 failures with and without the verbs. Options were (a) both verbs everywhere, (b) neither, (c) only in the two ask patterns.
+- Why: (c) catches the six true asks without making every edit to a standing flag loud.
+- UNVERIFIED: the guard was not run on open PR text.
+- Door: two-way. Way back: revert the one regex change and its test in BL-2224.

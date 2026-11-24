@@ -10831,10 +10831,11 @@ Rows for notes the reviews of these pull requests left open. Rows BL-1918 to BL-
 - Done when: each case has a planted line that fails or passes as written, and `node --test scripts/guards/founder-ask.test.mjs` passes.
 
 #### BL-1925 Founder-ask guard: do "confirm" and "verify" join the verbs it looks for? (policy call for Karma)
-- Status: ready (Karma rules; no code until then). Mode: agent. Owner: product. Milestone: M15. Size: XS. Depends on: none.
+- Status: partly done (the question is answered and ruled, CR-226; the guard change and the five rewordings are BL-2224). Mode: agent. Owner: product. Milestone: M15. Size: XS. Depends on: none.
 - Satisfies: CR-176; D-168.
 - Scope: the guard's look-pattern verbs are approve, comment, merge, review and paste. Five existing doc lines ask the founder to confirm something (find them with the guard run on the current docs). Write the options (add both verbs and fix the five lines; add neither; add them only next to "the founder") with the five lines listed by file, as a short note in the PR for Karma to rule. The ruling lands in `docs/agents/cto/RULINGS.md` by Karma, and BL-1924 follows it.
 - Done when: Karma's ruling is recorded and, if the verbs are added, the five lines are reworded and the guard's test has a case each.
+- Note: 24 Nov 2026, product for Karma. Measured on `develop` (`1060f8b8e`): the guard run over 644,355 tracked lines gives 91 failing lines today and 130 with the verbs added to the shared verb list; 6 of the 39 new ones are true asks (the five existing lines and this row's Scope) and 33 are the standing "founder to confirm" flag. The last 100 PRs merged into develop (3,878 lines) fail the same 2 lines with and without the verbs. Ruled by Karma 24 Nov 2026 as CR-226 (`docs/agents/cto/RULINGS.md`): option (c), the verbs only inside `ask-founder-to` and `ask-him-to`. The remainder (guard change, test, five rewordings) is BL-2224. Done-when stays open until BL-2224 merges.
 
 #### BL-1926 Words packet: the "recordings elsewhere" line and packet row 10 disagree (follow-up to #1672)
 - Status: proposed (review of #1672). Mode: agent. Owner: content. Milestone: M15. Size: XS. Depends on: none.
@@ -12429,7 +12430,7 @@ Source: reviewer findings on #1956, #1977 and #1980, and the NS-17 and FR-LOC ro
 - Source: review of PR #1994, 24 Nov 2026.
 
 
-## Review follow-ups of 24 Nov 2026, third batch (BL-2219 to BL-2223; filed by the product agent, docs only)
+## Review follow-ups of 24 Nov 2026, third batch (BL-2219 to BL-2224; filed by the product agent, docs only)
 
 Source: reviews of PRs #1999, #2006 and #2011, and the exec-reading rule of D-172 and CR-178 item 2. Ids BL-2219 to BL-2223 were the next free on `develop` and in every open PR on 24 Nov (`next-id.mjs` printed BL-2219; no open PR patch adds a BACKLOG row). All rows are `proposed` except BL-2222, which is `blocked`; Karma sets `ready`. Nothing here is run. Not filed as new: the load timeouts, which are a Note on BL-2200.
 
@@ -12482,3 +12483,10 @@ Source: reviews of PRs #1999, #2006 and #2011, and the exec-reading rule of D-17
 - Done when: eleven mutants are listed, each failing its own [QD-nn] test, and the file is green on the unmutated code; `npm test -w apps/mobile` passes for the file; the diff changes tests only. Then BL-1984's status moves to `done` except for the BL-1786 device and AX5 reading, which stays named.
 - Test: `apps/mobile/test/review-quiet-default.test.ts` (strengthen where a mutant survives).
 - Source: Review A of PR #2023, 24 Nov 2026.
+
+#### BL-2224 Founder-ask guard: add "confirm" and "verify" to the two ask patterns, and reword five lines (ruling CR-226)
+- Status: ready. Mode: pair. Owner: product. Milestone: M15. Size: S. Depends on: none.
+- Satisfies: CR-176; D-168; CR-226; BL-1925 (remainder).
+- Scope: (1) in `scripts/guards/founder-ask.mjs` add `confirm|confirming|verify|verifying` to the verbs of `ask-founder-to` and `ask-him-to` only, and not to the shared `VERB` list, so `founder-must` is unchanged. (2) In `scripts/guards/founder-ask.test.mjs` change the case at line 233 ("Needs the founder to confirm that reading" passes) to fail, add a planted line that fails for each of the two patterns, and a planted "founder to confirm" line that still passes; each case has a mutant. (3) Reword the five lines so none asks the founder to confirm anything: `docs/design/specs/04-FIRSTS-AND-SEALED-11nov.md:229`, `docs/engineering/readiness-20nov/data-security/council/cpo-design.md:91`, `docs/legal/ENGINEERING_REQUIREMENTS.md:353`, `docs/product/proposed/moments-pictures-on-home-2026-11-22.md:178`, `docs/store/compliance/age-rating.md:27` (legal text: counsel sees it before it publishes; reword to who decides, never to a request of the founder). (4) `docs/ops/PRODUCTION_VARIABLES.md` lines 54 and 66 are physical acts (check the hosted database, the EAS `production` values); move them to `docs/release/FOUNDER_QUEUE.md` as one entry and leave a pointer. This row is risk:med (a guard under `scripts/`) and needs a security-lens Review B.
+- Done when: the guard run over the tree fails none of the five lines, `node --test scripts/guards/founder-ask.test.mjs` passes, and BL-1925 moves to `done`.
+- Source: ruling CR-226, BL-1925.
