@@ -16,7 +16,8 @@
 //     the store build, B12-5);
 //   - the notes are `appReviewCopy.notesServersOn` with the two placeholders filled.
 // UNVERIFIED: how App Review treats a demo account whose sign-in goes through a mailbox.
-// A servers-off build keeps `storeListing.reviewNotes`, so the 5.1.1(ix) positioning (D-004) is always sent.
+// A servers-off build is not a shipping build (D-170) and falls back to `storeListing.reviewNotes`, which now says sign-in
+// is required (BL-1968), so it is not true for servers off. Out of scope here: no guard is added.
 // The demo credentials exist only in the secret and in the CI copy of store.config.json, never in the repository, a log
 // or an error message.
 // Errors never echo the secret: a parse failure reports a fixed message, and missing fields are named, not shown.

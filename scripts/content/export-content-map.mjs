@@ -78,7 +78,7 @@ const BUILD_KEYS = [
   [/^en\.settings\.privacy\.keptOnPhone$/, 'servers off'], [/^en\.settings\.privacy\.keptSynced$/, 'servers on'],
   [/^en\.whereLive\.onPhone$/, 'servers off'], [/^en\.whereLive\.onPhoneSynced$/, 'servers on'],
   [/^en\.settings\.erase\.onThisPhone$/, 'servers off'], [/^accountDeletionCopy\.what\.intro$/, 'servers on'],
-  [/^storeListing\.reviewNotes$/, 'servers off'], [/^notesServersOn$/, 'servers on'],
+  [/^storeListing\.reviewNotes$/, 'servers on'], [/^notesServersOn$/, 'servers on'],
 ];
 function buildDependent(r) {
   const key = r.path.join('.');
