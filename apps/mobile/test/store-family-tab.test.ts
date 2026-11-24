@@ -119,7 +119,7 @@ describe('[11 Nov] servers off changes nothing a person can see, against servers
 
 describe('alpha builds keep the real flow, on routes and rows and not on a tab', () => {
   it('every alpha build with servers on: the flow, the join door, the row, a kept token', () => {
-    for (const e of INVITE_ENTRIES) expect(inviteDestination(e, true, true), e).toBe(e === 'invite_leave' ? 'coming_soon' : 'flow');
+    for (const e of INVITE_ENTRIES) expect(inviteDestination(e, true, true), e).toBe('flow');
     expect(visibleCoParentDoors(true, true).joinButton).toBe(true);
     expect(familySurfacesShown({ alpha: true, coParent: true })).toBe(true);
     expect(bookRow({ serverFeatures: true, alpha: true, coParent: null, invite: '/invite/new?childId=c' })).toEqual({ href: '/invite/new?childId=c' });

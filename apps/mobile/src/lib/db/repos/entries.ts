@@ -470,6 +470,21 @@ export function expiredLocalOnlyIds({ db }: RepoContext, cutoffIso: string): str
     .map((r) => r.id);
 }
 
+/**
+ * Tombstoned letters in a left book that have waited out the shelf (BL-1960). A left book is no longer pulled, so the
+ * server's purge never reaches its letters for this person, and `expiredLocalOnlyIds` skips them (they have a server
+ * version): without this, a left book's deleted letters would wait on the shelf for ever on a sync build.
+ */
+export function expiredInLeftBooks({ db }: RepoContext, cutoffIso: string): string[] {
+  return db
+    .all<{ id: string }>(
+      `SELECT e.id FROM entries e JOIN children c ON c.id = e.child_id
+       WHERE e.deleted_at IS NOT NULL AND e.deleted_at <= ? AND c.server_state = 'left' ORDER BY e.deleted_at, e.id`,
+      cutoffIso,
+    )
+    .map((r) => r.id);
+}
+
 /** The audio path of a tombstoned letter (null for typed ones). `undefined` when no such tombstone exists. */
 export function deletedAudioUri({ db }: RepoContext, id: string): string | null | undefined {
   const r = db.get<{ audio_uri: string | null }>('SELECT audio_uri FROM entries WHERE id = ? AND deleted_at IS NOT NULL', id);

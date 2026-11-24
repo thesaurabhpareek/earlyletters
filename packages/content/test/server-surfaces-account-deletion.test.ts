@@ -89,7 +89,12 @@ describe('[P8c S64] accountDeletionCopy changes, word for word', () => {
   });
 
   it('says in every failure that nothing has changed, and first when offline', () => {
-    for (const [key, text] of Object.entries(accountDeletionCopy.errors)) expect(text, key).toContain('Nothing has changed.');
+    // `loadFailed` is the one line for a page that could not load: nothing was tried there (BL-492 point 4).
+    for (const [key, text] of Object.entries(accountDeletionCopy.errors)) {
+      if (key === 'loadFailed') expect(text, key).not.toMatch(/nothing has changed/i);
+      else expect(text, key).toContain('Nothing has changed.');
+    }
+    expect(accountDeletionCopy.errors.loadFailed).toBe("That didn't load. Try again in a moment.");
     expect(accountDeletionCopy.errors.offline.startsWith('Nothing has changed.')).toBe(true);
     // No blame on the person: the line says what the request needs, never "you are offline".
     expect(ALL.filter((l) => /\byou are offline\b|\bplease try again\b/i.test(l.text)).map((l) => l.path)).toEqual([]);
