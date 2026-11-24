@@ -58,7 +58,7 @@ describe('[BL-1541] the launch cleanup runs once the owner is settled', () => {
     expect(r.cleanup).toHaveBeenCalledWith(null);
   });
 
-  it('a cleanup that rejects never throws, and its error code (only) goes to failed()', async () => {
+  it('a cleanup that rejects never throws, and only a closed code (never the error text or its own code) goes to failed()', async () => {
     const failed = vi.fn();
     const auth: LaunchAuthPort = { userId: () => 'a', settledSignedOut: () => false, subscribe: () => () => {}, onSignedIn: () => () => {} };
     let stop: () => void = () => {};
@@ -67,8 +67,14 @@ describe('[BL-1541] the launch cleanup runs once the owner is settled', () => {
     }).not.toThrow();
     await new Promise((r) => setTimeout(r, 0));
     expect(failed).toHaveBeenCalledTimes(1);
-    expect(failed).toHaveBeenCalledWith('moments_file_not_removed'); // the code, never the message
+    expect(failed).toHaveBeenCalledWith('unknown'); // a closed NativeErrorCode: neither the message nor an unlisted code string passes (CR-206 slice 3)
+    expect(JSON.stringify(failed.mock.calls)).not.toMatch(/secret|moments_file_not_removed/);
     stop();
+    const known = vi.fn();
+    const stop2 = startMomentsLaunchCleanup({ on: true, auth, cleanup: () => Promise.reject(Object.assign(new Error('path /secret'), { name: 'AbortError' })), failed: known, liveBooks: () => [] });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(known).toHaveBeenCalledWith('cancelled');
+    stop2();
     const noHook = startMomentsLaunchCleanup({ on: true, auth, cleanup: () => Promise.reject(new Error('x')), liveBooks: () => [] });
     await new Promise((r) => setTimeout(r, 0)); // no failed(): still no unhandled rejection (vitest fails the run on one)
     noHook();
@@ -85,7 +91,9 @@ describe('[BL-1541] boot wiring (source)', () => {
   it('the boot wiring reports a failed cleanup by code', () => {
     expect(src('lib/moments/launch.ts')).toMatch(/failed: report/);
   });
-  it('the pure part imports nothing', () => {
-    expect(src('lib/moments/launch.logic.ts')).not.toMatch(/^import /m);
+  it('the pure part imports only the closed error codes, which import nothing (CR-206 slice 3)', () => {
+    const imports = src('lib/moments/launch.logic.ts').match(/^import .*$/gm) ?? [];
+    expect(imports).toEqual(["import { toNativeErrorCode, type NativeErrorCode } from '../media/native-error';"]);
+    expect(src('lib/media/native-error.ts')).not.toMatch(/^import /m);
   });
 });

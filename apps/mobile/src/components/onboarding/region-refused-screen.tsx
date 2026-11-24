@@ -6,6 +6,7 @@
  * The words are PROPOSED (`authCopy.region`, system.region.*; counsel reads them). Cannot be checked on a device here.
  */
 import { brand } from '@scribe/brand';
+import { licences } from '@scribe/content';
 import * as WebBrowser from 'expo-web-browser';
 import { Linking, View } from 'react-native';
 import { useRef } from 'react';
@@ -30,6 +31,8 @@ export function RegionRefusedScreen() {
           { label: t.terms, // A page that will not open changes nothing on this screen (the same rule as the Welcome's links): deliberate, not silent.
           onPress: () => void WebBrowser.openBrowserAsync(brand.web.terms).catch(() => undefined), testID: 'region.terms' },
           { label: t.contact, onPress: () => void openHelpTarget(mailTarget(), Linking), testID: 'region.contact' },
+          // DB-IP's CC BY 4.0 licence asks for a link back wherever its lookup is used (BL-553). PROPOSED: CCO and CLO read it.
+          { label: licences.geoAttribution.text, onPress: () => void WebBrowser.openBrowserAsync(licences.geoAttribution.href).catch(() => undefined), testID: 'region.attribution' },
         ]}
       />
     </View>

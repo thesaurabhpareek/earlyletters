@@ -120,7 +120,7 @@ export function scanSource(fileName: string, text: string, opts: ScanOptions = {
   }
 
   function checkName(node: ts.Node, name: string) {
-    if (NAME_EXCEPTIONS[name]?.includes(path)) return;
+    if (Object.prototype.hasOwnProperty.call(NAME_EXCEPTIONS, name) && NAME_EXCEPTIONS[name].includes(path)) return;
     const rule = nameProblem(name);
     if (rule) add(node, rule, name);
   }

@@ -56,6 +56,9 @@ describe('[NS-40-R9] a refused sign-up is calm and stores nothing', () => {
     expect(screen).not.toMatch(/primary=|retry|tryAgain|setItem|secureStorage|setSetting|analytics|track\(/i);
     expect(screen).toContain('region.terms');
     expect(screen).toContain('region.contact');
+    // DB-IP's CC BY 4.0 licence asks for a link back where its lookup is used (BL-553); it is not part of authCopy.region.
+    expect(screen).toContain('region.attribution');
+    expect(src('app/settings/licenses.tsx')).toContain('licences.geoAttribution');
     // Shown after the code step (E62), in place of the sheet's field and line.
     expect(src('app/(auth)/sign-in/code.tsx')).toMatch(/if \(error === 'region_refused'\) return <RegionRefusedScreen \/>;/);
   });
