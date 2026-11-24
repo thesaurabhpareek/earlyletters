@@ -180,9 +180,9 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 | Event | Fires when | Properties (type: allowed values) | Serves |
 |---|---|---|---|
 | `settings_changed` | A person-level setting is changed (which one, never the value) | `key` (enum: reading_size \| theme \| reminders \| languages \| lock_screen_names \| sensitive_data \| pack_cellular \| listening_copy) | C-REQ-034, C-REQ-016 |
-| `export_started` | Export everything started (one ZIP made on the phone) | `format` (enum: archive)<br>`letters_bucket` (enum: 0 \| 1 \| 2_4 \| 5_9 \| 10_49 \| 50_99 \| 100_364 \| 365_plus) | C-REQ-034, PRD-REQ-009 |
-| `export_completed` | Export finished and checked | `format` (enum: archive)<br>`size_bucket` (enum: lt_10mb \| 10_100mb \| 100_500mb \| gt_500mb)<br>`duration_bucket` (enum: lt_30s \| 30s_2m \| gt_2m) | C-REQ-034, C-NFR-007 |
-| `export_failed` | Export stopped before a file was ready | `format` (enum: archive)<br>`reason` (enum: cancelled \| low_space \| too_large \| check_failed \| unknown) | C-REQ-034, C-NFR-007 |
+| `keeping:export_start` | Export everything started (one ZIP made on the phone) | `format` (enum: archive)<br>`letters_bucket` (enum: 0 \| 1 \| 2_4 \| 5_9 \| 10_49 \| 50_99 \| 100_364 \| 365_plus) | C-REQ-034, PRD-REQ-009 |
+| `keeping:export_complete` | Export finished and checked | `format` (enum: archive)<br>`size_bucket` (enum: lt_10mb \| 10_100mb \| 100_500mb \| gt_500mb)<br>`duration_bucket` (enum: lt_30s \| 30s_2m \| gt_2m) | C-REQ-034, C-NFR-007 |
+| `keeping:export_fail` | Export stopped before a file was ready | `format` (enum: archive)<br>`reason` (enum: cancelled \| low_space \| too_large \| check_failed \| unknown) | C-REQ-034, C-NFR-007 |
 
 #### plus
 
@@ -205,7 +205,7 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 | `sync_failed` | A sync attempt fails after retries | `reason` (enum: network \| auth \| conflict \| server \| unknown) | PRD-REQ-016 |
 | `error_shown` | A user-facing error from strings `errors.*` is shown | `code` (enum: save_failed \| mic_denied \| transcription_failed \| offline \| backup_failed \| invite_expired \| storage_low \| generic) | PRD-REQ-016 |
 
-Held, not sendable (27; typed in catalog.ts for call sites that still exist, dropped and counted at run time until each gets a registry row with a decision, a plan row and a privacy look, or is removed): `auth_deferred`, `auth_failed`, `child_switched`, `export_completed`, `export_failed`, `export_started`, `invite_failed`, `invite_opened`, `language_set`, `machine_edit_rejected`, `machine_edit_reverted`, `notification_opened`, `offer_code_redeemed`, `os_permission_result`, `pack_download`, `playback_started`, `read_together_ended`, `read_together_started`, `reminder_prime_result`, `reminder_prime_shown`, `reminder_schedule_set`, `reminder_suppressed`, `restore_result`, `review_action`, `settings_changed`, `signed_out`, `sync_failed`.
+Held, not sendable (27; typed in catalog.ts for call sites that still exist, dropped and counted at run time until each gets a registry row with a decision, a plan row and a privacy look, or is removed): `auth_deferred`, `auth_failed`, `child_switched`, `invite_failed`, `invite_opened`, `keeping:export_complete`, `keeping:export_fail`, `keeping:export_start`, `language_set`, `machine_edit_rejected`, `machine_edit_reverted`, `notification_opened`, `offer_code_redeemed`, `os_permission_result`, `pack_download`, `playback_started`, `read_together_ended`, `read_together_started`, `reminder_prime_result`, `reminder_prime_shown`, `reminder_schedule_set`, `reminder_suppressed`, `restore_result`, `review_action`, `settings_changed`, `signed_out`, `sync_failed`.
 
 Global properties: `schema_version` (int 1 to 1000), `child_count_bucket`? (enum: none \| one \| two \| three_plus), `sample_pct`? (int 1 to 99).
 <!-- catalogue:end -->

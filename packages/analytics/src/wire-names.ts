@@ -3,10 +3,12 @@
  * wire name `docs/analytics/instrumentation/posthog-standard.md` section 2.9 decides for it, or marking the row
  * NEEDS RULING with the options when 2.9 does not decide. Renders `docs/analytics/instrumentation/WIRE-NAMES.md`.
  *
- * This file renames nothing. No call site, catalogue row, registry row or property reads it; it is a bridge for the
- * rename PRs (step 2) and for privacy's review (step 3). A key with no row here fails `test/wire-names.test.ts`, so a
- * new event cannot be added without a decision about its wire name. Keep this module out of `index.ts`: the app has
- * no use for it.
+ * This file renames nothing itself. `WIRE_ROWS` is keyed by the key a row had before the rename (BL-2176, CR-212 step 2), and
+ * `LEGACY_EVENT_NAMES` is that key to its wire name. Each rename PR moves one area of the catalogue and registry to the wire
+ * names here; a row whose wire name is a key of `EVENTS` or `REGISTRY` has been renamed, the rest still hold the old key.
+ * No call site, catalogue row, registry row or property reads this file at run time. A key with no row here fails
+ * `test/wire-names.test.ts`, so a new event cannot be added without a decision about its wire name. Keep this module out
+ * of `index.ts`: the app has no use for it.
  */
 import { EVENTS } from './catalog';
 import { AREAS, ID_ROWS } from './ids';
@@ -148,15 +150,40 @@ export const RETIRED_ROWS: Readonly<Record<string, Extract<RowKind, { status: 'm
   account_deletion: drop('PM3 section 8 and IN-K3 retire it (deletion is never measured on the phone); the server RPC holds the count'),
 };
 
-export interface KeyFacts { key: string; where: 'catalogue' | 'registry' | 'both'; tier: string; area: string }
+/**
+ * The mapping that keeps every old name readable (BL-2176, CR-212 step 2). `WIRE_ROWS` is keyed by the key the catalogue and
+ * registry held before the rename; this is that key to its wire name, for the 47 rows that own a name. A pattern row has no
+ * single name (its names are generated per registered id), so it keeps its key. Nothing in the app reads it: it is for the
+ * docs, the tests and anyone holding a note, a funnel or a query written against an old name.
+ */
+export const LEGACY_EVENT_NAMES: Readonly<Record<string, string>> = Object.fromEntries(
+  Object.entries(WIRE_ROWS).flatMap(([key, r]) => (r.status === 'ruled' || r.status === 'named' ? [[key, r.wire]] : [])),
+);
+const LEGACY_OF_WIRE: Readonly<Record<string, string>> = Object.fromEntries(Object.entries(LEGACY_EVENT_NAMES).map(([k, w]) => [w, k]));
 
-/** Every key of EVENTS and REGISTRY with where it lives and its tier today (the catalogue's, else the registry's). */
+/** The wire name for a legacy key; a name that is already a wire name, or a pattern key, comes back unchanged. */
+export function wireNameOf(name: string): string {
+  return Object.prototype.hasOwnProperty.call(LEGACY_EVENT_NAMES, name) ? LEGACY_EVENT_NAMES[name]! : name;
+}
+
+/** The key a row had before the rename (`WIRE_ROWS` is keyed by it); a key that was never renamed comes back unchanged. */
+export function legacyNameOf(name: string): string {
+  return Object.prototype.hasOwnProperty.call(LEGACY_OF_WIRE, name) ? LEGACY_OF_WIRE[name]! : name;
+}
+
+export interface KeyFacts { key: string; was: string; where: 'catalogue' | 'registry' | 'both'; tier: string; area: string }
+
+/**
+ * Every key of EVENTS and REGISTRY with where it lives and its tier today (the catalogue's, else the registry's). `key` is the
+ * key as it is now: a wire name once the rename has reached it, the old key until then. `was` is the key `WIRE_ROWS` holds.
+ */
 export function allKeys(): KeyFacts[] {
   const ev = EVENTS as Record<string, { tier: string; area: string }>;
   const rg = REGISTRY as Record<string, { tier: string; area: string }>;
   const names = [...Object.keys(ev), ...Object.keys(rg).filter((k) => !(k in ev))];
   return names.map((key) => ({
     key,
+    was: legacyNameOf(key),
     where: key in ev && key in rg ? 'both' : key in ev ? 'catalogue' : 'registry',
     tier: (ev[key] ?? rg[key]!).tier,
     area: (ev[key] ?? rg[key]!).area,
@@ -172,8 +199,9 @@ const cell = (s: string) => s.replace(/\|/g, '\\|');
 
 export function renderWireNames(): string {
   const keys = allKeys();
-  const count = (s: RowKind['status']) => keys.filter((k) => WIRE_ROWS[k.key]?.status === s).length;
+  const count = (s: RowKind['status']) => keys.filter((k) => WIRE_ROWS[k.was]?.status === s).length;
   const live = count('ruled') + count('named');
+  const renamed = keys.filter((k) => k.key !== k.was).length;
   const retired = Object.entries(RETIRED_ROWS);
   const nRetired = (s: string) => retired.filter(([, r]) => r.status === s).length;
   const out: string[] = [
@@ -181,7 +209,7 @@ export function renderWireNames(): string {
     '',
     'Generated from `packages/analytics/src/wire-names.ts` by `npm run wire-names -w @scribe/analytics`; do not edit by hand. `npm run wire-names -w @scribe/analytics -- --check` and `packages/analytics/test/wire-names.test.ts` fail when this file differs from that output. BL-1255 step 1 (CR-212): this is the table `posthog-standard.md` section 2.9 points to as "IN-03".',
     '',
-    'Nothing here renames anything. The catalogue and registry still hold the old names; the rename PRs (step 2b onward) read this table. The tier column is today\'s tier from the catalogue and registry rows, and the basics set stays pinned to `screen_view` by `test/tiers.test.ts`.',
+    `The rename (step 2b onward, BL-2176) moves one area at a time, each PR on the one below. ${renamed} of ${live} keys that own a name hold it now; for the rest the "Key" column is still the old key, and "Was" says so. Where a key was renamed, "Was" is the old key, and \`LEGACY_EVENT_NAMES\` in \`wire-names.ts\` maps it to the new one, so a note, funnel or query written against an old name can still be read. Nothing was ever sent under an old name (analytics are off in every profile, CR-186). The tier column is the tier of the catalogue and registry rows, unchanged by the rename, and the basics set stays pinned to \`screen_view\` by \`test/tiers.test.ts\`. The four pattern keys keep their keys: their names are generated per registered id.`,
     '',
     `Counts: ${keys.length} keys: ${count('ruled')} ruled by 2.9, ${count('named')} named by the 24 Nov rulings, ${count('pattern')} patterns generated per registered id, ${count('needs_ruling')} NEEDS RULING; ${live} have a name of their own. Step 2a (BL-2175) deleted ${retired.length} keys: ${nRetired('dropped')} dropped, ${nRetired('merged')} merged (see Retired keys).`,
     '',
@@ -189,13 +217,14 @@ export function renderWireNames(): string {
     '',
     '## Keys',
     '',
-    '| Key | Lives in | Area today | Tier | Status | Wire name | Basis or what is missing |',
-    '|---|---|---|---|---|---|---|',
+    '| Key | Was | Lives in | Area | Tier | Status | Wire name | Basis or what is missing |',
+    '|---|---|---|---|---|---|---|---|',
   ];
   for (const k of keys) {
-    const r = WIRE_ROWS[k.key];
+    const r = WIRE_ROWS[k.was];
     if (!r) throw new Error(`wire-names: no row for ${k.key}`);
-    const common = `| \`${k.key}\` | ${k.where} | ${k.area} | ${k.tier}`;
+    const was = k.was !== k.key ? `\`${k.was}\`` : r.status === 'pattern' ? '(pattern, keeps its key)' : '(not renamed yet)';
+    const common = `| \`${k.key}\` | ${was} | ${k.where} | ${k.area} | ${k.tier}`;
     if (r.status === 'ruled' || r.status === 'named') out.push(`${common} | ${r.status} | \`${r.wire}\` | ${cell(r.basis)} |`);
     else if (r.status === 'merged') out.push(`${common} | merged | (none) merged into \`${r.target}\` | ${cell(r.basis)} |`);
     else if (r.status === 'dropped') out.push(`${common} | dropped | (none) | ${cell(r.basis)} |`);

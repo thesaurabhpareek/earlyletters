@@ -15,8 +15,8 @@ export type LatencyBucket = PropValues<'transcription_completed', 'latency_bucke
 export type DaysBucket = PropValues<'app_opened', 'days_since_last_open'>;
 export type SessionBucket = PropValues<'read_together_ended', 'session_bucket'>;
 export type FirstLetterBucket = PropValues<'analytics_opted_in', 'time_to_first_letter'>;
-export type ExportSizeBucket = PropValues<'export_completed', 'size_bucket'>;
-export type ExportDurationBucket = PropValues<'export_completed', 'duration_bucket'>;
+export type ExportSizeBucket = PropValues<'keeping:export_complete', 'size_bucket'>;
+export type ExportDurationBucket = PropValues<'keeping:export_complete', 'duration_bucket'>;
 export type ChildOrdinal = PropValues<'letter_saved', 'child_ordinal'>;
 export type HourBucket = PropValues<'reminder_schedule_set', 'hour_bucket'>;
 

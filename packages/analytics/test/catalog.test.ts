@@ -12,6 +12,7 @@ import {
   type PropSpec,
   withRenderedCatalogue,
 } from '../src';
+import { WIRE_NAME_MAX, WIRE_NAME_RE } from '../src/wire-names';
 
 const entries = Object.entries(EVENTS) as [string, { area: string; reqs: readonly string[]; level: string; props: Record<string, PropSpec> }][];
 
@@ -19,8 +20,13 @@ const entries = Object.entries(EVENTS) as [string, { area: string; reqs: readonl
 const FORBIDDEN_KEY = /(text|transcript|name|note|email|audio_url|birth|due_date|dob|token|query|phone|address|signs_as|language_code|locale|timezone|photo_url|word$|term$)/;
 
 describe('catalogue rules', () => {
-  it('has snake_case event names of 40 characters or fewer', () => {
-    for (const [name] of entries) expect(name).toMatch(/^[a-z][a-z0-9_]{0,39}$/);
+  it('has event names that are a snake_case key of 40 characters or fewer, or a wire name (category:object_action, 60 or fewer)', () => {
+    for (const [name] of entries) {
+      if (name.includes(':')) {
+        expect(name).toMatch(WIRE_NAME_RE);
+        expect(name.length).toBeLessThanOrEqual(WIRE_NAME_MAX);
+      } else expect(name).toMatch(/^[a-z][a-z0-9_]{0,39}$/);
+    }
   });
 
   it('cites at least one requirement per event', () => {

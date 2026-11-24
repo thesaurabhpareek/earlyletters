@@ -181,15 +181,15 @@ export function createTrackers(analytics: Pick<Analytics, 'track'>) {
     },
 
     trackExportStarted(i: { letters: number }): TrackResult {
-      return track('export_started', { format: 'archive', letters_bucket: lettersBucket(i.letters) });
+      return track('keeping:export_start', { format: 'archive', letters_bucket: lettersBucket(i.letters) });
     },
 
     trackExportCompleted(i: { bytes: number; durationMs: number }): TrackResult {
-      return track('export_completed', { format: 'archive', size_bucket: exportSizeBucket(i.bytes), duration_bucket: exportDurationBucket(i.durationMs) });
+      return track('keeping:export_complete', { format: 'archive', size_bucket: exportSizeBucket(i.bytes), duration_bucket: exportDurationBucket(i.durationMs) });
     },
 
-    trackExportFailed(i: { reason: V<'export_failed', 'reason'> }): TrackResult {
-      return track('export_failed', { format: 'archive', reason: i.reason });
+    trackExportFailed(i: { reason: V<'keeping:export_fail', 'reason'> }): TrackResult {
+      return track('keeping:export_fail', { format: 'archive', reason: i.reason });
     },
 
     /** Stored reminder preferences (src/lib/reminders ReminderPrefs) to the schedule event. */

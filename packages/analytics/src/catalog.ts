@@ -65,8 +65,9 @@ export const GLOBAL_PROPS = {
  * 12: the catalogue now reads every sendable event from registry.ts (one definition), so the three rows that only the registry held (`control_tapped`, `perf_measured`, `surface_impressed`) join the fingerprint; no event or property that was already in the catalogue changed (BL-2148, P5 of BL-1235). Production analytics stay off.
  * 13: wire-names step 2a, slice 3a (BL-2175, CR-213): the 4 merged keys are removed: the held rows `app_cold_start` and `auth_sheet_shown`, and the registry rows `book_opened` and `letter_opened`. Their signal is `screen_view` (the `sign_in`, `book` and `letter_detail` screens) and, later, the `cold_start` perf metric. Nothing was added or widened, no tier changed, and no build has sent any of them (analytics are off in every profile, CR-186).
  * 14: wire-names step 2a, slice 3b (BL-2175, CR-213, CR-225): 18 held events deleted (`app_backgrounded`, `auth_method_selected`, `auth_email_sent`, `local_merge_choice`, `child_setting_changed`, `make_it_yours_card`, `goals_set`, `dictionary_term_added`, `family_letter_reviewed`, `member_removed`, `member_left`, `reminder_sent`, `moment_shown`, `resurface_shown`, `resurface_opened`, `export_shared`, `account_deletion`, `letter_deleted`). Nothing was added or widened, no tier changed, and no build has sent any of them (analytics are off in every profile, CR-186).
+ * 15: wire-names step 2b, slice 1 (BL-2176, CR-212, CR-213): the `keeping` area is renamed to its wire names: `export_started` to `keeping:export_start`, `export_completed` to `keeping:export_complete`, `export_failed` to `keeping:export_fail`; `LEGACY_EVENT_NAMES` in `wire-names.ts` maps each old key to its new one. No property was added or widened, no tier changed (a snapshot test proves it), and no build has sent any of them (analytics are off in every profile, CR-186).
  */
-export const SCHEMA_VERSION = 14;
+export const SCHEMA_VERSION = 15;
 
 /**
  * SHA-256 of `JSON.stringify(catalogShape())` per schema version. Versions 1
@@ -85,6 +86,7 @@ export const SCHEMA_FINGERPRINTS: Readonly<Record<number, string>> = Object.free
   12: '936b6de82cf58d00e66e2df7ac327409ac1db2682e05dd4bc841dd5f3cd73fcb',
   13: 'b819daaaebb8c0430030dfbd31e91a5ae1e331b0d969661b3a14cd776569fb9f',
   14: '8fe40547df2caaa2b3cf903ad5410f9125f2a36a2a37f6657cfcf0adab245013',
+  15: '8e02055673131c1d4595d2878be8f9b86fa1eb169ad03abb926f6b3adea7e658',
 });
 
 // ---------------------------------------------------------------------------
@@ -354,7 +356,7 @@ export const HELD_EVENTS = {
       ),
     },
   },
-  export_started: {
+  'keeping:export_start': {
     area: 'settings',
     when: 'Export everything started (one ZIP made on the phone)',
     reqs: ['C-REQ-034', 'PRD-REQ-009'],
@@ -362,7 +364,7 @@ export const HELD_EVENTS = {
     tier: 'consented',
     props: { format: oneOf('archive'), letters_bucket: LETTERS_BUCKET },
   },
-  export_completed: {
+  'keeping:export_complete': {
     area: 'settings',
     when: 'Export finished and checked',
     reqs: ['C-REQ-034', 'C-NFR-007'],
@@ -374,7 +376,7 @@ export const HELD_EVENTS = {
       duration_bucket: oneOf('lt_30s', '30s_2m', 'gt_2m'),
     },
   },
-  export_failed: {
+  'keeping:export_fail': {
     area: 'settings',
     when: 'Export stopped before a file was ready',
     reqs: ['C-REQ-034', 'C-NFR-007'],

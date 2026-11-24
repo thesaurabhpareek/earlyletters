@@ -54,7 +54,7 @@ const VALID: Record<string, unknown> = {
   trackInviteAccepted: { role: 'parent' },
   trackExportStarted: { letters: 3 },
   trackExportCompleted: { bytes: 5000000, durationMs: 9000 },
-  trackExportFailed: { reason: E('export_failed', 'reason') },
+  trackExportFailed: { reason: E('keeping:export_fail', 'reason') },
   trackReminderSchedule: { enabled: true, cadence: 'weekly', hour: 20, paused: false },
   trackMachineEditsRejected: [{ edit: { type: E('machine_edit_rejected', 'edit_type'), source: E('machine_edit_rejected', 'source') }, reason: E('machine_edit_rejected', 'reason') }],
   trackAnalyticsOptedIn: { surface: 'settings', now: 2e12, firstLaunchAt: 1e12, firstLetterAt: 1.5e12, firstLetterMode: 'typed', letters: 3, signedIn: true, role: 'parent', cameFromInvite: false },
