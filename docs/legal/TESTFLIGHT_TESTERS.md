@@ -1,6 +1,6 @@
 ---
 title: TestFlight testers, who sees their feedback, and what they are told
-version: 1.1.1
+version: 1.1.2
 status: draft-for-counsel
 last_updated: 2026-11-24
 owner: founder
@@ -114,7 +114,7 @@ Where it appears: the beta app description (required for Friends, shown in the T
 | Build | Also say | Never say |
 |---|---|---|
 | Build 1 (`testflight`) **while its servers switch is off, as it is today** | There is no account in this build; your letters stay on this phone. Nothing to say about deleting an account | "Everything stays on your phone" (feedback and crash reports leave it); anything about sync or backup |
-| Build 2 (`preview`, servers on, staging) | If you sign in, your letters and your child's details are stored on our test server so they reach your other phone and your co-parent; the Privacy Policy and Terms you agree to in the app apply to this test; recordings are not uploaded in this test (recording backup is not in build 2: the build flag `EXPO_PUBLIC_BACKUP` is off in `apps/mobile/eas.json`, #145); what happens to letters on the test server when the test ends (founder fact, below); export a copy now and then (Settings, Your data); to delete your account and its letters: use Settings, Delete account (its own row, below Your data) **only where the build shows that row**; where it does not, email hello@earlyletters.com from the address on the account; we confirm your request and write back within 45 days with where it stands | "Stays only on this phone"; that letters will carry over to the App Store version, unless the founder decides they will |
+| Build 2 (`preview`, servers on, staging) | If you sign in, your letters and your child's details are stored on our test server so they reach your other phone and your co-parent; the Privacy Policy and Terms you agree to in the app apply to this test; recordings are not uploaded in this test (recording backup is not in build 2: the build flag `EXPO_PUBLIC_BACKUP` is off in `apps/mobile/eas.json`, #145); what happens to letters on the test server when the test ends (founder fact, below); export a copy now and then (Settings, Your data); to delete your account and its letters: use Settings, Delete account (its own row, below Your data) **only where the build shows that row**; where it does not, email hello@earlyletters.com from the address on the account; we confirm your request and write back within 45 days to tell you where it stands | "Stays only on this phone"; that letters will carry over to the App Store version, unless the founder decides they will |
 
 | `testflight` **once its servers switch is on** (BL-1867, after this update) | The Build 2 line above, with "This build has an account now" in place of "This build can sync"; what a tester can do about deleting the account (Build 2 line above, by whether the Delete account row shows) | "This build has no account" |
 | Any build **with the usage switch on** (BL-1887; `preview` and `testflight` only, never `production`) | The 5.1 item 9 facts, in the 5.4 text | That usage is never collected or that a build "sends nothing"; any claim about the PostHog region or account; that Erase deletes counts already sent |
