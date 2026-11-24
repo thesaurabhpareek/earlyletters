@@ -86,8 +86,8 @@ describe('PlainScreen look (S50, S51)', () => {
     expect(src).toMatch(/<PageDrawing wash=\{c\.accentSoft\} line=\{c\.textMuted\}/);
     // The drawing is the one part allowed to fail: a boundary around it renders nothing instead.
     expect(src).toMatch(/<DrawingBoundary>\s*<PageDrawing/);
-    expect(src).toMatch(/static getDerivedStateFromError\(\) \{\s*return \{ failed: true \};/);
-    expect(src).toMatch(/return this\.state\.failed \? null : this\.props\.children;/);
+    // The boundary itself is in its own file and is run in drawing-boundary.test.ts.
+    expect(src).toMatch(/from '\.\/drawing-boundary'/);
   });
 
   it('the title is a header, and a busy button cannot be pressed twice', () => {
@@ -100,7 +100,7 @@ describe('PlainScreen look (S50, S51)', () => {
     const src = code(read('components/resilience/plain-screen.tsx'));
     const effect = src.slice(src.indexOf('useEffect(() => {\n    if (!note) return;'), src.indexOf('}, [note, noteKey]);'));
     expect(effect.length).toBeGreaterThan(0);
-    expect(effect).toMatch(/setTimeout\(\(\) => \{\s*try \{\s*scroll\.current\?\.scrollToEnd\(\{ animated: false \}\);\s*AccessibilityInfo\.announceForAccessibility\(note\);\s*\} catch/);
+    expect(effect).toMatch(/setTimeout\(\(\) => \{\s*try \{\s*scroll\.current\?\.scrollToEnd\(\{ animated: false \}\);\s*if \(Platform\.OS !== 'android'\) AccessibilityInfo\.announceForAccessibility\(note\);\s*\} catch/);
     expect(effect).toMatch(/return \(\) => clearTimeout\(id\);/);
     expect(src).toMatch(/<ScrollView\s+ref=\{scroll\}/);
     // The note is copy from packages/content (LaunchRecovery passes stillClosed, exportNothing or exportFailed), never an error.
@@ -164,9 +164,10 @@ describe('nothing that can throw before render (S50)', () => {
     '@/components/ui/state-screen.logic',
     '@/lib/a11y.logic', // pure: the font-scale thresholds, no imports
     './plain-screen',
+    './drawing-boundary', // react only
     './plain-screen.styles',
   ]);
-  const FILES = ['components/resilience/plain-screen.tsx', 'components/resilience/plain-screen.styles.ts', 'components/resilience/error-boundary.tsx', 'components/resilience/launch-recovery.tsx'];
+  const FILES = ['components/resilience/plain-screen.tsx', 'components/resilience/plain-screen.styles.ts', 'components/resilience/error-boundary.tsx', 'components/resilience/launch-recovery.tsx', 'components/resilience/drawing-boundary.tsx'];
 
   it('imports only plain modules: no theme provider, no motion, no design-system components', () => {
     for (const f of FILES) {
