@@ -210,7 +210,7 @@ Full text is in this file's 1.0.0 version (git history). Only the change is show
 
 **What the reviewers are asked (counsel, read as the exec-team review under D-172).** Each question gives the facts, the questions, the default the product follows until counsel answers, what changes if counsel says no, and what it blocks. Where a card and a design disagree, the card wins, and the entry says so.
 
-**How the numbers work.** A topic that already has a 1.5.0 number keeps it, and its new parts continue its letters. Where a 1.5.0 question has unlettered parts, they count as (a), (b) and so on in the order written. For example, Q46's parts are old Q5, the stored age signal and AB 1043 for earlier installs, so its new part is (d). The two new questions take Q107 and Q108. The numbers in between are claimed by open drafts: Q58 to Q74 by #598, Q75 to Q77 by BL-780, and Q78 to Q106 by #760. A search of every remote branch on 20 Nov found no Q107 or higher.
+**How the numbers work.** A topic that already has a 1.5.0 number keeps it, and its new parts continue its letters. Where a 1.5.0 question has unlettered parts, they count as (a), (b) and so on in the order written. For example, Q46's parts are old Q5, the stored age signal and AB 1043 for earlier installs, so its new part is (d). The two new questions take Q107 and Q108. The numbers in between were claimed by drafts: Q58 to Q74 by #598 and Q75 to Q77 by BL-780. Q78 to Q106 were reserved for a closed draft (#760, closed under CR-211 on 24 Nov 2026; kept on its branch) and are retired, not reused. A search of every remote branch on 20 Nov found no Q107 or higher.
 
 **"Q6" means two things.** In the seal designs and in #847 Q3, "Q6" is ADR 0028's Q6 (`docs/adr/0028-photo-seal-find-on-device-data.md:254`), not this packet's Q6 (deferred analytics). The counsel part of ADR 0028 Q6 is Q107 and Q50(e) below. Whether to build the sealed letter is the founder's decision (#847 Q3).
 
@@ -446,7 +446,7 @@ Twelve more questions are cited by the cards but need no new text. They are list
 | Q42 | The NS-08 flip; NS-16 (another adult's voice, (c)); NS-28 | NS-08, NS-16, NS-28 |
 | Q53 | NS-25 store build (D11 until answered; with Q50(f)) | NS-25 section 17; security OQ-S8 |
 
-Questions not for counsel are in section 6, items 9 to 12. #760 (open draft) asks about typed occasions and the wording of local reminders for the Memory Library (its Q103 to Q105). NS-18 raises the same facts, so counsel can answer them together.
+Questions not for counsel are in section 6, items 9 to 12. The closed #760 draft asked about typed occasions and the wording of local reminders for the Memory Library (its Q103 to Q105). Those topics now sit in Q109 (a ticked or typed day on the phone), Q112 (a local day note, with a parent's typed day in (d)), Q124 (picture-timed reminders) and Q51(f) (typed days and the export). NS-18 raises the same facts, so counsel can answer them together.
 
 ## 8. Questions from the days, cultural background and media cards (20 Nov 2026)
 
@@ -454,7 +454,7 @@ Questions not for counsel are in section 6, items 9 to 12. #760 (open draft) ask
 - **Cards.** `docs/product/prd/21-days-cultural-photos-home.md` (NS-46 days we mark, NS-47 cultural background, NS-48 notification catalogue, NS-49 picture suggestions, NS-50 Home today) and `docs/product/prd/27-photo-moments-and-media.md` (NS-51 photo moments, NS-52 pictures and videos), read on `develop` 9e4757459dc3, 20 Nov 2026. Function reviews: `functions/cultural-background-data.md` (CUL-Q5 to Q7, Q11, Q14), `functions/days-library.md` (FR-DAY-23, Q-DAY-10, Q-DAY-11), `functions/legal.md` (L-14 to L-19), `functions/compliance.md` (C-9 to C-11 and the second addendum).
 - **Why these were stuck.** Each of those files said "needs a number from legal". CUL-Q11 was mapped to Q41, which is about plan notices (NS-32), not about a day note that names a faith day. The card 21 gate ("counsel answers CUL-Q5 to Q7 and Q11 before production; the flag stays off") could not close without numbers.
 - **How the numbers work.** These are new questions, Q109 to Q122, because no existing number covers them. Where one extends an earlier question, it says so; counsel may answer them together. Q107 and Q108 are taken (section 7). Open drafts claim Q61 to Q74 (#598) and Q78 to Q106 (#760); nothing open claims Q109 or above (checked 20 Nov 2026).
-- **Overlap with #760.** Its Q103 to Q105 ask about the wording of local reminders for the Memory Library. Q112 asks about a day note. Counsel can answer them together.
+- **The closed #760 draft.** Its Q103 to Q105 asked about the wording of local reminders for the Memory Library. That topic is carried by Q112 (a day note) and Q124 (picture-timed reminders). Counsel can answer them together.
 - **"Deadline."** The cards give order and gates, never dates (ruling T5). So each question's deadline is the gate it blocks: the answer is needed before that flag turns on in `production`. No calendar date is invented here. The dated milestones of section 0 (T30, 23 Apr 2027) still apply to the packet as a whole.
 - **Not legal advice.** Every reading below is an engineering reading; counsel must confirm. Facts are tagged V (read this session in a named file or page) or U (not read).
 
@@ -753,6 +753,17 @@ No eleventh question (EXH-LEG-13). The picker door's questions are lettered sub-
 ### 9.12 Q132 (spec Q10). Place data licence and any later geocoder
 - **Questions.** Does the chosen offline dataset's licence permit bundling in a paid app, and what attribution or share-alike duty follows? If Apple's geocoder is ever wanted, may results be cached, what consent text and label change follow, and does it conflict with Apple's one-request-per-action rule (Attachment 6 UNVERIFIED)?
 - **Default.** Offline table only; geocoder not built. **Blocks** G11b.
+
+### 9.12a Topics from the closed #760 draft that had no home (Q139 to Q141)
+Added on 24 Nov 2026 under CR-211, after a check of the closed draft's tier A list (Q78 to Q91, Q103) against Q109 to Q132. This is the exec team's own review under D-172, not a lawyer's. The check read the draft's tier A headings and "Ask" lines only; nobody read the whole 513-line draft question by question. Q133 to Q138 are taken by the open print-questions PR (#1923), so these rows start at Q139. Each row is a topic only; the facts, default and "if no" lines are written when counsel asks for them. Topics that do have a home are listed under the table.
+
+| Q | Topic | From the closed draft | Nearest existing question |
+|---|---|---|---|
+| Q139 | Read together showing a parent's pictures to a child; a future adult's request for childhood images; the 18+ gate | Q85 | Q116 and Q45 (pictures leaving the phone; not showing them) |
+| Q140 | Places carried as text in the export, and a print order sending a letter's content to a print processor: does "stays on your phone" survive | Q90 | Q11, Q47 (print), Q121 (a printed QR code) |
+| Q141 | The Terms sentence on reports to NCMEC, and whether it stays accurate for an app that keeps pictures on the phone | Q83 (second part) | Q128(c) (any knowledge duty) |
+
+Topics from the closed tier A list that already have a home: Q78 in Q123(a), Q129 and Q130; Q79 in Q123(a); Q80 in Q130; Q81 and Q82 in Q123(b); Q83 (right to add) and Q84 in Q128(a) and (b) and Q117; Q86 in Q118; Q87 in Q125 and Q126; Q88 in Q119; Q89 in Q132; Q91 in Q122; Q103 in Q109, Q112(d) and Q51(f). These mappings are from titles and ask lines; counsel may find a gap.
 
 ### 9.13 Capped brief ordering (a proposal for the founder; the cap and the engagement are the founder's, O-40)
 Counsel cost is UNVERIFIED and the founder sets the cap. Silence is not a pass: any part counsel does not answer stays dark. If the cap forces cuts, the order below keeps the questions that gate the most shipping first and cuts last the ones whose default is already "off".

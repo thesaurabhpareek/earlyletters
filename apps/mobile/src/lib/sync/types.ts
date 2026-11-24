@@ -369,6 +369,8 @@ export interface PullResponse {
   /** v1 (WP-F16-17): this author's own held drafts after the held cursor. */
   held?: { rows: (PulledHeld | PulledHeldGone)[]; cursor: string | null; more: boolean };
   more?: boolean;
+  /** FR-PRV-20: an empty page because consent is not current; not "nothing changed". */
+  withheld?: 'consent';
 }
 
 // ── Engine state ───────────────────────────────────────────────────────────

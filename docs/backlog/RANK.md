@@ -4,7 +4,7 @@ The order the dispatcher gives agents their tasks. One row per ranked backlog id
 
 Rules: ranks are 1..N, each used once, no gaps. Tier is T0, T1, T2 or T3 (T0 first). An id must be in `docs/BACKLOG.md` and not done or superseded. A ready agent row with no rank still runs, after the ranked rows, in file order.
 
-This is a 10-row seed in the current file order, so merging it changes nothing. A later PR replaces it with the full ranking.
+This is a 9-row seed in the current file order, so merging it changes nothing. A later PR replaces it with the full ranking.
 
 | Rank | Id | Tier | Why |
 |---|---|---|---|
@@ -15,6 +15,5 @@ This is a 10-row seed in the current file order, so merging it changes nothing. 
 | 5 | BL-372 | T2 | Seed row: first ready agent rows in file order |
 | 6 | BL-373 | T2 | Seed row: first ready agent rows in file order |
 | 7 | BL-374 | T2 | Seed row: first ready agent rows in file order |
-| 8 | BL-384 | T2 | Seed row: first ready agent rows in file order |
-| 9 | BL-385 | T2 | Seed row: first ready agent rows in file order |
-| 10 | BL-390 | T2 | Seed row: first ready agent rows in file order |
+| 8 | BL-385 | T2 | Seed row: first ready agent rows in file order |
+| 9 | BL-390 | T2 | Seed row: first ready agent rows in file order |
