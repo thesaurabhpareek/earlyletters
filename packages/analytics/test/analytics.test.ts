@@ -49,7 +49,7 @@ describe('consent gate', () => {
     const { analytics, provider } = setup();
     await analytics.init();
     expect(analytics.consent()).toBe('unknown');
-    expect(analytics.track('letter_saved', validLetter)).toBe('dropped_no_consent');
+    expect(analytics.track('capture:letter_save', validLetter)).toBe('dropped_no_consent');
     expect(analytics.track('screen_view', { route: 'tonight' })).toBe('dropped_no_consent');
     expect(analytics.queueLength()).toBe(0);
     await analytics.flush();
@@ -60,7 +60,7 @@ describe('consent gate', () => {
   it('does not backfill events tracked before consent once consent is granted', async () => {
     const { analytics, provider } = setup();
     await analytics.init();
-    analytics.track('letter_saved', validLetter);
+    analytics.track('capture:letter_save', validLetter);
     await analytics.grant();
     await analytics.flush();
     expect(provider.captured()).toHaveLength(0);
@@ -83,10 +83,10 @@ describe('consent gate', () => {
     const identify = provider.calls.find((c) => c.method === 'identify')!;
     expect(identify.args).toHaveLength(1);
     expect(identify.args[0]).toMatch(/^[0-9a-f-]{36}$/);
-    expect(analytics.track('letter_saved', validLetter)).toBe('queued');
+    expect(analytics.track('capture:letter_save', validLetter)).toBe('queued');
     await analytics.flush();
     const [evt] = provider.captured();
-    expect(evt.event).toBe('letter_saved');
+    expect(evt.event).toBe('capture:letter_save');
     expect(evt.properties).toMatchObject({ ...validLetter, schema_version: SCHEMA_VERSION });
   });
 
@@ -130,7 +130,7 @@ describe('allowlist', () => {
     await analytics.init();
     await analytics.grant();
     expect(
-      analytics.track('letter_saved', {
+      analytics.track('capture:letter_save', {
         ...validLetter,
         // @ts-expect-error not an allowed value
         destination: 'everyone',
@@ -139,8 +139,8 @@ describe('allowlist', () => {
     ).toBe('dropped_invalid');
     await analytics.flush();
     expect(provider.captured()).toHaveLength(0);
-    expect(violations).toContainEqual({ kind: 'invalid_value', event: 'letter_saved', property: 'destination' });
-    expect(violations).toContainEqual({ kind: 'invalid_value', event: 'letter_saved', property: 'machine_edit_count' });
+    expect(violations).toContainEqual({ kind: 'invalid_value', event: 'capture:letter_save', property: 'destination' });
+    expect(violations).toContainEqual({ kind: 'invalid_value', event: 'capture:letter_save', property: 'machine_edit_count' });
     expect(analytics.violationCounts()).toEqual({ invalid_value: 2 });
   });
 
@@ -149,12 +149,12 @@ describe('allowlist', () => {
     await analytics.init();
     await analytics.grant();
     // @ts-expect-error not an allowed value
-    expect(analytics.track('letter_saved', { ...validLetter, audio_bucket: 'forever' })).toBe('queued');
+    expect(analytics.track('capture:letter_save', { ...validLetter, audio_bucket: 'forever' })).toBe('queued');
     await analytics.flush();
     const props = provider.captured()[0].properties;
     expect(props).not.toHaveProperty('audio_bucket');
     expect(props.mode).toBe('spoken');
-    expect(violations).toEqual([{ kind: 'invalid_value', event: 'letter_saved', property: 'audio_bucket' }]);
+    expect(violations).toEqual([{ kind: 'invalid_value', event: 'capture:letter_save', property: 'audio_bucket' }]);
   });
 
   it('drops the event and counts a violation when a required property is missing (PDATA-03)', async () => {
@@ -164,10 +164,10 @@ describe('allowlist', () => {
     const { destination: _omit, ...partial } = validLetter;
     void _omit;
     // @ts-expect-error destination is required
-    expect(analytics.track('letter_saved', partial)).toBe('dropped_invalid');
+    expect(analytics.track('capture:letter_save', partial)).toBe('dropped_invalid');
     await analytics.flush();
     expect(provider.captured()).toHaveLength(0);
-    expect(violations).toEqual([{ kind: 'missing_property', event: 'letter_saved', property: 'destination' }]);
+    expect(violations).toEqual([{ kind: 'missing_property', event: 'capture:letter_save', property: 'destination' }]);
     expect(analytics.violationCounts()).toEqual({ missing_property: 1 });
   });
 
@@ -175,21 +175,21 @@ describe('allowlist', () => {
     const { analytics, provider } = setup();
     await analytics.init();
     await analytics.grant();
-    analytics.track('keep_gate_shown', { letters_kept: 2.5, allowance: 5, lapsed: 0 });
-    analytics.track('keep_gate_shown', {
+    analytics.track('plus:keep_gate_view', { letters_kept: 2.5, allowance: 5, lapsed: 0 });
+    analytics.track('plus:keep_gate_view', {
       // @ts-expect-error null is never allowed
       letters_kept: null,
       allowance: 5,
       lapsed: 0,
     });
-    analytics.track('keep_gate_shown', {
+    analytics.track('plus:keep_gate_view', {
       letters_kept: 4,
       allowance: 5,
       lapsed: 0,
       // @ts-expect-error nested objects are never allowed
       extra: { a: 1 },
     });
-    analytics.track('keep_gate_shown', {
+    analytics.track('plus:keep_gate_view', {
       // @ts-expect-error arrays are never allowed
       letters_kept: [1],
       allowance: 5,
@@ -243,11 +243,11 @@ describe('free text and PII', () => {
     await analytics.init();
     await analytics.grant();
     // @ts-expect-error free text
-    analytics.track('child_added', { has_date: true, child_ordinal: 'Asha', in_first_run: true, added_together: false });
+    analytics.track('onboarding:book_create', { has_date: true, child_ordinal: 'Asha', in_first_run: true, added_together: false });
     // @ts-expect-error free text
-    analytics.track('error_shown', { code: 'She laughed at the dog today' });
+    analytics.track('system:error_view', { code: 'She laughed at the dog today' });
     // @ts-expect-error too long
-    analytics.track('error_shown', { code: 'a'.repeat(41) });
+    analytics.track('system:error_view', { code: 'a'.repeat(41) });
     await analytics.flush();
     expect(provider.captured()).toHaveLength(0);
     expect(violations.map((v) => v.kind)).toEqual(['free_text', 'free_text', 'string_too_long']);
@@ -271,7 +271,7 @@ describe('free text and PII', () => {
     await analytics.grant();
     for (const c of CANARIES) {
       // @ts-expect-error deliberate misuse
-      analytics.track('letter_saved', { ...validLetter, child_ordinal: c, note: c, [c]: true });
+      analytics.track('capture:letter_save', { ...validLetter, child_ordinal: c, note: c, [c]: true });
       // @ts-expect-error deliberate misuse
       analytics.track(c, { route: 'book' });
     }
@@ -354,13 +354,13 @@ describe('globals, sampling, queue cap', () => {
   });
 
   it('samples deterministically per id and tags kept events', async () => {
-    const { analytics, provider } = setup({ sampleRates: { screen_view: 0.5, app_opened: 0 } });
+    const { analytics, provider } = setup({ sampleRates: { screen_view: 0.5, 'system:app_open': 0 } });
     await analytics.init();
     await analytics.grant();
     const results = new Set<string>();
     for (let i = 0; i < 20; i++) results.add(analytics.track('screen_view', { route: 'book' }));
     expect(results.size).toBe(1); // all kept or all dropped for one person
-    expect(analytics.track('app_opened', { source: 'cold', days_since_last_open: 'd0' })).toBe('dropped_sampled');
+    expect(analytics.track('system:app_open', { source: 'cold', days_since_last_open: 'd0' })).toBe('dropped_sampled');
     await analytics.flush();
     for (const e of provider.captured()) expect(e.properties.sample_pct).toBe(50);
   });

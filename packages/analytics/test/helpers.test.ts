@@ -109,7 +109,7 @@ describe('trackers', () => {
     t.trackPackDownload({ packId: 'speech-model.whisper-large-v3-turbo-q5_0', version: 5000, stage: 'completed', failure: 'offline', network: 'wifi' });
     t.trackPackDownload({ packId: 'text-rules.de', version: null, stage: 'started', network: 'unknown' });
     const [lang, failed, done, other] = await sent();
-    expect(lang).toEqual({ event: 'language_set', properties: { lang: 'pt', action: 'added', schema_version: SCHEMA_VERSION } });
+    expect(lang).toEqual({ event: 'me:language_update', properties: { lang: 'pt', action: 'added', schema_version: SCHEMA_VERSION } });
     expect(failed.properties).toEqual({ pack: 'rules_hi', lang: 'hi', pack_version: 3, stage: 'failed', failure: 'hash_mismatch', network: 'cellular', schema_version: SCHEMA_VERSION });
     expect(done.properties).toEqual({ pack: 'model_turbo', pack_version: 1000, stage: 'completed', network: 'wifi', schema_version: SCHEMA_VERSION });
     expect(other.properties).toMatchObject({ pack: 'other', pack_version: 1 });
@@ -247,7 +247,7 @@ describe('route map', () => {
 });
 
 describe('lifecycle', () => {
-  it('sends app_opened at launch and after 30 minutes away, and nothing on background or cold start (app_backgrounded and app_cold_start are retired, BL-2175)', async () => {
+  it('sends system:app_open at launch and after 30 minutes away, and nothing on background or cold start (app_backgrounded and app_cold_start are retired, BL-2175)', async () => {
     const { analytics, sent } = await granted();
     const storage = memoryStorage();
     let t = Date.UTC(2026, 9, 3, 18);
@@ -264,8 +264,8 @@ describe('lifecycle', () => {
     expect(lc.session().index).toBe(2);
     const events = (await sent()).map((e) => [e.event, e.properties]);
     expect(events).toEqual([
-      ['app_opened', { source: 'cold', days_since_last_open: 'd0', schema_version: SCHEMA_VERSION }],
-      ['app_opened', { source: 'notification', days_since_last_open: 'd2_7', schema_version: SCHEMA_VERSION }],
+      ['system:app_open', { source: 'cold', days_since_last_open: 'd0', schema_version: SCHEMA_VERSION }],
+      ['system:app_open', { source: 'notification', days_since_last_open: 'd2_7', schema_version: SCHEMA_VERSION }],
     ]);
     expect(Number(storage.dump()[LIFECYCLE_KEYS.firstLaunchAt])).toBe(Date.UTC(2026, 9, 3, 18));
   });

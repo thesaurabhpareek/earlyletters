@@ -6,6 +6,8 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { removeEverything } from '../src/lib/db/repos/wipe';
+import { nodeDb } from './helpers/node-db';
 import {
   DRAFT_STEPS,
   FIRST_RUN_DRAFT_SETTING,
@@ -117,5 +119,20 @@ describe('[BL-1816] wiring: kept on this phone, in the same device settings, and
 
   it('no date is chosen for her: the birthday state still starts empty when there is no draft', () => {
     expect(onboarding).toMatch(/useState<string \| null>\(saved\?\.birthday \?\? null\)/);
+  });
+});
+
+describe('[BL-1989, DATA-REQ-001] Erase everything takes the first-run draft, even beside an active 18+ stop', () => {
+  it('the rows step of the erase deletes firstRun.draft and keeps only the pending mark and the stop it was told to keep', () => {
+    const { db, close } = nodeDb();
+    db.exec('CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)');
+    const seeded = serializeDraft({ ...draftAt('signsAs') });
+    for (const [k, v] of [[FIRST_RUN_DRAFT_SETTING, seeded], ['ageGate.stoppedAt', '2026-10-03T09:00:00.000Z'], ['appearance', 'dark'], ['erase.everything.pending', 'x']]) {
+      db.run('INSERT INTO settings (key, value) VALUES (?, ?)', k, v);
+    }
+    expect(parseDraft(db.all<{ value: string }>('SELECT value FROM settings WHERE key = ?', FIRST_RUN_DRAFT_SETTING)[0]?.value)?.names).toEqual(['Asha']); // the seed took
+    removeEverything({ db } as never, ['ageGate.stoppedAt']);
+    expect(db.all<{ key: string }>('SELECT key FROM settings').map((r) => r.key).sort()).toEqual(['ageGate.stoppedAt', 'erase.everything.pending']);
+    close();
   });
 });

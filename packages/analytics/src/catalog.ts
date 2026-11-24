@@ -66,8 +66,18 @@ export const GLOBAL_PROPS = {
  * 13: wire-names step 2a, slice 3a (BL-2175, CR-213): the 4 merged keys are removed: the held rows `app_cold_start` and `auth_sheet_shown`, and the registry rows `book_opened` and `letter_opened`. Their signal is `screen_view` (the `sign_in`, `book` and `letter_detail` screens) and, later, the `cold_start` perf metric. Nothing was added or widened, no tier changed, and no build has sent any of them (analytics are off in every profile, CR-186).
  * 14: wire-names step 2a, slice 3b (BL-2175, CR-213, CR-225): 18 held events deleted (`app_backgrounded`, `auth_method_selected`, `auth_email_sent`, `local_merge_choice`, `child_setting_changed`, `make_it_yours_card`, `goals_set`, `dictionary_term_added`, `family_letter_reviewed`, `member_removed`, `member_left`, `reminder_sent`, `moment_shown`, `resurface_shown`, `resurface_opened`, `export_shared`, `account_deletion`, `letter_deleted`). Nothing was added or widened, no tier changed, and no build has sent any of them (analytics are off in every profile, CR-186).
  * 15: wire-names step 2b, slice 1 (BL-2176, CR-212, CR-213): the `keeping` area is renamed to its wire names: `export_started` to `keeping:export_start`, `export_completed` to `keeping:export_complete`, `export_failed` to `keeping:export_fail`; `LEGACY_EVENT_NAMES` in `wire-names.ts` maps each old key to its new one. No property was added or widened, no tier changed (a snapshot test proves it), and no build has sent any of them (analytics are off in every profile, CR-186).
+ * 16: wire-names step 2b, slice 2 (BL-2176, CR-212, CR-213): the `me` area is renamed: `signed_out` to `me:session_end`, `language_set` to `me:language_update`, `settings_changed` to `me:setting_update`. No property was added or widened, no tier changed, and no build has sent any of them (analytics are off in every profile, CR-186).
+ * 17: wire-names step 2b, slice 3 (BL-2176, CR-212, CR-213): the `family` area is renamed: `invite_opened` to `family:invite_open`, `invite_created` to `family:invite_create`, `invite_accepted` to `family:invite_accept`, `invite_failed` to `family:invite_fail`. No property was added or widened, no tier changed, and no build has sent any of them (analytics are off in every profile, CR-186).
+ * 18: wire-names step 2b, slice 4 (BL-2176, CR-212, CR-213): the `onboarding` area is renamed: `auth_succeeded` to `onboarding:sign_in_complete`, `auth_failed` to `onboarding:sign_in_fail`, `auth_deferred` to `onboarding:sign_in_dismiss`, `child_added` to `onboarding:book_create`. No property was added or widened, no tier changed, and no build has sent any of them (analytics are off in every profile, CR-186).
+ * 19: wire-names step 2b, slice 5 (BL-2176, CR-212, CR-213): the `notifications` area is renamed: `reminder_prime_shown` to `notifications:reminder_prime_view`, `reminder_prime_result` to `notifications:reminder_prime_submit`, `os_permission_result` to `notifications:permission_submit`, `reminder_schedule_set` to `notifications:schedule_update`, `reminder_suppressed` to `notifications:reminder_cancel`, `notification_opened` to `notifications:notification_open`. No property was added or widened, no tier changed, and no build has sent any of them (analytics are off in every profile, CR-186).
+ * 20: wire-names step 2b, slice 6 (BL-2176, CR-212, CR-213): the `book` area is renamed: `playback_started` to `book:playback_start`, `read_together_started` to `book:read_together_start`, `read_together_ended` to `book:read_together_end`, `moments_card_impressed` to `book:moments_card_view`, `moments_card_tapped` to `book:moments_card_open`. No property was added or widened, no tier changed, and no build has sent any of them (analytics are off in every profile, CR-186).
+ * 21: wire-names step 2b, slice 7 (BL-2176, CR-212, CR-213): the first half of the `system` area is renamed: `error_shown` to `system:error_view` and `sync_failed` to `system:sync_fail`. No property was added or widened, no tier changed, and no build has sent either (analytics are off in every profile, CR-186).
+ * 22: wire-names step 2b, slice 8 (BL-2176, CR-212, CR-213): the rest of the `system` area is renamed: `app_opened` to `system:app_open`, `analytics_opted_in` to `system:analytics_consent_accept`, `pack_download` to `system:pack_download_update`. No property was added or widened, no tier changed (the basics set stays `screen_view`), and no build has sent any of them (analytics are off in every profile, CR-186).
+ * 23: wire-names step 2b, slice 9 (BL-2176, CR-212, CR-213): the `plus` area is renamed: `plus_offer_viewed` to `plus:offer_view`, `plus_offer_closed` to `plus:offer_end`, `plan_changed` to `plus:plan_update`, `free_allowance_reached` to `plus:allowance_reach`, `keep_gate_shown` to `plus:keep_gate_view`, `letter_held` to `plus:letter_hold_create`, `plus_started_from_gate` to `plus:keep_gate_plan_start`, `offer_code_redeemed` to `plus:code_submit`, `restore_result` to `plus:restore_complete`. No property was added or widened, no tier changed, and no build has sent any of them (analytics are off in every profile, CR-186).
+ * 24: wire-names step 2b, slice 10 (BL-2176, CR-212, CR-213): the first half of the `capture` area is renamed: `capture_started` to `capture:take_start`, `capture_discarded` to `capture:take_cancel`, `transcription_completed` to `capture:transcript_complete`, `letter_saved` to `capture:letter_save`. No property was added or widened, no tier changed (the basics set stays `screen_view`), and no build has sent any of them (analytics are off in every profile, CR-186).
+ * 25: wire-names step 2b, slice 11 (BL-2176, CR-212, CR-213): the rest of the `capture` area is renamed, the last slice: `review_action` to `capture:review_update`, `machine_edit_reverted` to `capture:edit_restore`, `machine_edit_rejected` to `capture:edit_decline`, `child_switched` to `capture:child_update`. All 47 rows that own a name now hold it. No property was added or widened, no tier changed (the basics set stays `screen_view`), and no build has sent any of them (analytics are off in every profile, CR-186).
  */
-export const SCHEMA_VERSION = 15;
+export const SCHEMA_VERSION = 25;
 
 /**
  * SHA-256 of `JSON.stringify(catalogShape())` per schema version. Versions 1
@@ -87,6 +97,16 @@ export const SCHEMA_FINGERPRINTS: Readonly<Record<number, string>> = Object.free
   13: 'b819daaaebb8c0430030dfbd31e91a5ae1e331b0d969661b3a14cd776569fb9f',
   14: '8fe40547df2caaa2b3cf903ad5410f9125f2a36a2a37f6657cfcf0adab245013',
   15: '8e02055673131c1d4595d2878be8f9b86fa1eb169ad03abb926f6b3adea7e658',
+  16: '8200c33bbd03df320a3737a8cd5970daefad669869bb975b52815925a284947a',
+  17: '105824cb58b64312c2f6af04515e1ebbf8d530ac62792ecbe657c51a88e254ff',
+  18: 'fd0665de32a9821e6431a3ef21a7d8ca8c7e80f45c7575e4a463c60ccc7795cb',
+  19: 'da3f70873564fbf401c13264ba0c6ea2f7946ba6e534e10760011602fd58bab0',
+  20: '283ff4fd73798260a720e784cc9ecaba2bdc5dbb524c0c06635bfab026418a66',
+  21: '87de4b13a9a92b91c8097cf62d64acae823645e384cc92a8062abbdb21a1a9e5',
+  22: '6735fdea20fb7d2ad6b1011131be795d882f0a1a01f36a96d64485658e48a3f3',
+  23: 'ca191bd7fa6bb49a85ee997894aacda24ef023c684e77614cf4679218a8a34d3',
+  24: '84ac0d4c4b22eb6f77bf09d474224535b2ab8bbb203cea90b548e44863ca6049',
+  25: 'e2b2e4e17ba534fd0421c2de6f1ffbadab573cc686bc3210ccd50a56be208274',
 });
 
 // ---------------------------------------------------------------------------
@@ -102,7 +122,7 @@ export const SCHEMA_FINGERPRINTS: Readonly<Record<number, string>> = Object.free
 export const HELD_EVENTS = {
   // --- Sign-in (A section 10). Fire only after consent, which in practice
   // means sign-in from Settings, a later invite, or a new session. ----------
-  auth_failed: {
+  'onboarding:sign_in_fail': {
     area: 'entry',
     when: 'Sign-in failed or was cancelled (observed). An under-18 answer is never sent',
     reqs: ['A-NFR-013'],
@@ -126,7 +146,7 @@ export const HELD_EVENTS = {
       ),
     },
   },
-  auth_deferred: {
+  'onboarding:sign_in_dismiss': {
     area: 'entry',
     when: 'User chose Later on the sign-in sheet',
     reqs: ['PRD-REQ-016'],
@@ -134,7 +154,7 @@ export const HELD_EVENTS = {
     tier: 'consented',
     props: { trigger: SIGN_IN_TRIGGER },
   },
-  signed_out: {
+  'me:session_end': {
     area: 'entry',
     when: 'The session ended on this phone (observed): by the person, Apple revoked it, account switch, or the session was lost',
     reqs: ['A-NFR-013', 'PRD-REQ-016'],
@@ -142,7 +162,7 @@ export const HELD_EVENTS = {
     tier: 'consented',
     props: { reason: oneOf('user', 'apple_revoked', 'switch_account', 'session_lost') },
   },
-  invite_opened: {
+  'family:invite_open': {
     area: 'entry',
     when: 'An invite link or code is opened in the app',
     reqs: ['B-REQ-007'],
@@ -151,7 +171,7 @@ export const HELD_EVENTS = {
     props: { via: oneOf('link', 'code', 'paste'), signed_in: bool() },
   },
   // --- Children (K-12) -----------------------------------------------------
-  child_switched: {
+  'capture:child_update': {
     area: 'children',
     when: 'User switches the current book',
     reqs: ['PRD-REQ-012'],
@@ -162,7 +182,7 @@ export const HELD_EVENTS = {
   // `languages_set{multilingual}` from B-NFR-001 stays absent. Language usage
   // is measured only by the `languages` events below (one language per event).
   // --- Capture and review ---------------------------------------------------
-  review_action: {
+  'capture:review_update': {
     area: 'capture',
     when: 'An action on the Review screen',
     reqs: ['PRD-REQ-016', 'PRD-REQ-012'],
@@ -180,7 +200,7 @@ export const HELD_EVENTS = {
       ),
     },
   },
-  machine_edit_reverted: {
+  'capture:edit_restore': {
     area: 'capture',
     when: 'A user undoes one machine edit (type and source only). Fidelity health signal for the constitution',
     reqs: ['PRD-REQ-016'],
@@ -188,7 +208,7 @@ export const HELD_EVENTS = {
     tier: 'consented',
     props: { edit_type: EDIT_TYPE, source: EDIT_SOURCE },
   },
-  machine_edit_rejected: {
+  'capture:edit_decline': {
     area: 'capture',
     when: 'The verifier refused machine edits for a letter: one event per edit type, source and reason, with a count. Never the text or the span',
     reqs: ['PRD-REQ-016', 'B-REQ-003'],
@@ -199,7 +219,7 @@ export const HELD_EVENTS = {
   // The only events that carry `lang`. Never add `lang` to letter, capture,
   // book or family events: that would tie a language to letter behaviour.
   // --- Languages and on-demand packs (founder decisions 6 and 15) -----------
-  language_set: {
+  'me:language_update': {
     area: 'languages',
     when: 'An author adds, removes or makes primary one spoken-letter language (observed; one language per event)',
     reqs: ['B-REQ-003', 'PRD-REQ-016'],
@@ -210,7 +230,7 @@ export const HELD_EVENTS = {
       action: oneOf('added', 'removed', 'made_primary'),
     },
   },
-  pack_download: {
+  'system:pack_download_update': {
     area: 'languages',
     when: 'A language pack or speech model download changes state (observed). Named by analytics pack id and language code only',
     reqs: ['B-REQ-003', 'NFR-7.7'],
@@ -226,7 +246,7 @@ export const HELD_EVENTS = {
     },
   },
   // --- Book and Read together ------------------------------------------------
-  playback_started: {
+  'book:playback_start': {
     area: 'book',
     when: 'A recording starts playing',
     reqs: ['PRD-REQ-016'],
@@ -238,7 +258,7 @@ export const HELD_EVENTS = {
       version: oneOf('listening_copy', 'original'),
     },
   },
-  read_together_started: {
+  'book:read_together_start': {
     area: 'book',
     when: 'Read together session starts',
     reqs: ['C-REQ-034', 'PRD-REQ-016'],
@@ -246,7 +266,7 @@ export const HELD_EVENTS = {
     tier: 'consented',
     props: { child_ordinal: CHILD_ORDINAL, access: oneOf('plus', 'free'), letters_bucket: LETTERS_BUCKET },
   },
-  read_together_ended: {
+  'book:read_together_end': {
     area: 'book',
     when: 'Read together session ends',
     reqs: ['PRD-REQ-016'],
@@ -259,7 +279,7 @@ export const HELD_EVENTS = {
     },
   },
   // --- Family (co-parent only at v1.0, founder decision 5) -------------------
-  invite_failed: {
+  'family:invite_fail': {
     area: 'family',
     when: 'Creating or accepting an invite failed (the reason class only)',
     reqs: ['B-REQ-007'],
@@ -284,7 +304,7 @@ export const HELD_EVENTS = {
     },
   },
   // --- Reminders (C-REQ-034) -----------------------------------------------------
-  reminder_prime_shown: {
+  'notifications:reminder_prime_view': {
     area: 'reminders',
     when: 'Reminder priming card shown',
     reqs: ['C-REQ-034', 'PRD-REQ-001'],
@@ -292,7 +312,7 @@ export const HELD_EVENTS = {
     tier: 'consented',
     props: { source: oneOf('tonight', 'settings', 'family_first_letter', 'first_letter', 'first_month') },
   },
-  reminder_prime_result: {
+  'notifications:reminder_prime_submit': {
     area: 'reminders',
     when: 'Priming card answered',
     reqs: ['C-REQ-034'],
@@ -300,7 +320,7 @@ export const HELD_EVENTS = {
     tier: 'consented',
     props: { choice: oneOf('yes', 'not_now') },
   },
-  os_permission_result: {
+  'notifications:permission_submit': {
     area: 'reminders',
     when: 'OS notification permission answered',
     reqs: ['C-REQ-034'],
@@ -308,7 +328,7 @@ export const HELD_EVENTS = {
     tier: 'consented',
     props: { granted: bool(), platform: oneOf('ios', 'android') },
   },
-  reminder_schedule_set: {
+  'notifications:schedule_update': {
     area: 'reminders',
     when: 'Reminder cadence, time or pause saved (observed from the stored preferences)',
     reqs: ['C-REQ-034'],
@@ -320,7 +340,7 @@ export const HELD_EVENTS = {
       paused: bool(),
     },
   },
-  reminder_suppressed: {
+  'notifications:reminder_cancel': {
     area: 'reminders',
     when: 'A scheduled reminder was skipped',
     reqs: ['C-REQ-034'],
@@ -328,7 +348,7 @@ export const HELD_EVENTS = {
     tier: 'consented',
     props: { reason: oneOf('wrote_recently', 'quiet_window', 'weekly_cap', 'paused') },
   },
-  notification_opened: {
+  'notifications:notification_open': {
     area: 'reminders',
     when: 'User opens the app from a notification (observed). Month-age and birthday notes are never reported',
     reqs: ['C-REQ-034'],
@@ -337,7 +357,7 @@ export const HELD_EVENTS = {
     props: { type: oneOf('letter_reminder', 'family_digest', 'family_letter', 'plan_notice'), variant_id: opt(int(0, 99)) },
   },
   // --- Settings, data, privacy --------------------------------------------------------
-  settings_changed: {
+  'me:setting_update': {
     area: 'settings',
     when: 'A person-level setting is changed (which one, never the value)',
     reqs: ['C-REQ-034', 'C-REQ-016'],
@@ -387,7 +407,7 @@ export const HELD_EVENTS = {
   // (founder decision 3, ADR 0013). No server of ours sees purchases. ----------
   // Membership engine (D-082, D-083): numbers only. Never the letter, its words, the recording or the child.
   // --- Plus: Apple's SubscriptionStoreView and StoreKit on this device only
-  offer_code_redeemed: {
+  'plus:code_submit': {
     area: 'plus',
     when: "Apple's offer code sheet closed and Plus was on afterwards",
     reqs: ['C-REQ-034'],
@@ -395,7 +415,7 @@ export const HELD_EVENTS = {
     tier: 'consented',
     props: {},
   },
-  restore_result: {
+  'plus:restore_complete': {
     area: 'plus',
     when: 'Restore purchases finished',
     reqs: ['C-REQ-034', 'C-NFR-003'],
@@ -406,7 +426,7 @@ export const HELD_EVENTS = {
   // One definition per fact (CODE-R13): these two rows are the registry rows, so slot, area, when,
   // level and reqs cannot drift. Edit them in registry.ts only.
   // --- Errors ---------------------------------------------------------------------
-  sync_failed: {
+  'system:sync_fail': {
     area: 'errors',
     when: 'A sync attempt fails after retries',
     reqs: ['PRD-REQ-016'],

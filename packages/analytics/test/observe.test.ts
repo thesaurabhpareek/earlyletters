@@ -53,12 +53,12 @@ describe('auth observer', () => {
     ];
     for (const s of states) see(s);
     expect(await sent()).toEqual([
-      ['auth_failed', { method: 'email', reason: 'wrong_code' }],
-      ['auth_succeeded', { method: 'email', had_local_data: true }],
-      ['signed_out', { reason: 'user' }],
-      ['auth_failed', { method: 'apple', reason: 'cancelled' }],
-      ['auth_failed', { method: 'google', reason: 'network' }],
-      ['signed_out', { reason: 'session_lost' }],
+      ['onboarding:sign_in_fail', { method: 'email', reason: 'wrong_code' }],
+      ['onboarding:sign_in_complete', { method: 'email', had_local_data: true }],
+      ['me:session_end', { reason: 'user' }],
+      ['onboarding:sign_in_fail', { method: 'apple', reason: 'cancelled' }],
+      ['onboarding:sign_in_fail', { method: 'google', reason: 'network' }],
+      ['me:session_end', { reason: 'session_lost' }],
     ]);
     expect(under18).toEqual([]);
   });
@@ -67,7 +67,7 @@ describe('auth observer', () => {
     const { analytics, sent } = await granted();
     const see = createAuthObserver(analytics, { hasLocalLetters: () => true, onUnder18: () => undefined });
     for (const s of [{ status: 'ready' }, { status: 'signingOut', reason: 'force_reauth' }, { status: 'signedOut' }] as AuthLike[]) see(s);
-    expect((await sent()).filter(([e]) => e === 'signed_out')).toEqual([['signed_out', { reason: 'session_lost' }]]);
+    expect((await sent()).filter(([e]) => e === 'me:session_end')).toEqual([['me:session_end', { reason: 'session_lost' }]]);
   });
 
   it('never sends an under-18 answer, and asks the app to stop analytics', async () => {
@@ -90,9 +90,9 @@ describe('language observer', () => {
     see(['hi', 'en']);
     see(['hi', 'ta']); // ta is not a v1.0 language: its add is not sent
     expect(await sent()).toEqual([
-      ['language_set', { lang: 'hi', action: 'added' }],
-      ['language_set', { lang: 'hi', action: 'made_primary' }],
-      ['language_set', { lang: 'en', action: 'removed' }],
+      ['me:language_update', { lang: 'hi', action: 'added' }],
+      ['me:language_update', { lang: 'hi', action: 'made_primary' }],
+      ['me:language_update', { lang: 'en', action: 'removed' }],
     ]);
   });
 });
@@ -111,12 +111,12 @@ describe('pack observer', () => {
     see({ id: 'speech-model.whisper-small-q5_1', version: null, phase: 'cancelled' });
     see({ id: 'text-rules.pt', version: null, phase: 'removed' });
     expect(await sent()).toEqual([
-      ['pack_download', { pack: 'rules_pt', lang: 'pt', pack_version: 4, stage: 'started', network: 'wifi' }],
-      ['pack_download', { pack: 'rules_pt', lang: 'pt', pack_version: 4, stage: 'completed', network: 'wifi' }],
-      ['pack_download', { pack: 'model_hindi_small', lang: 'hi', pack_version: 2, stage: 'started', network: 'wifi' }],
-      ['pack_download', { pack: 'model_hindi_small', lang: 'hi', pack_version: 2, stage: 'failed', failure: 'no_space', network: 'wifi' }],
-      ['pack_download', { pack: 'model_small', pack_version: 1, stage: 'failed', failure: 'cancelled', network: 'wifi' }],
-      ['pack_download', { pack: 'rules_pt', lang: 'pt', pack_version: 1, stage: 'removed', network: 'wifi' }],
+      ['system:pack_download_update', { pack: 'rules_pt', lang: 'pt', pack_version: 4, stage: 'started', network: 'wifi' }],
+      ['system:pack_download_update', { pack: 'rules_pt', lang: 'pt', pack_version: 4, stage: 'completed', network: 'wifi' }],
+      ['system:pack_download_update', { pack: 'model_hindi_small', lang: 'hi', pack_version: 2, stage: 'started', network: 'wifi' }],
+      ['system:pack_download_update', { pack: 'model_hindi_small', lang: 'hi', pack_version: 2, stage: 'failed', failure: 'no_space', network: 'wifi' }],
+      ['system:pack_download_update', { pack: 'model_small', pack_version: 1, stage: 'failed', failure: 'cancelled', network: 'wifi' }],
+      ['system:pack_download_update', { pack: 'rules_pt', lang: 'pt', pack_version: 1, stage: 'removed', network: 'wifi' }],
     ]);
   });
 });
@@ -132,7 +132,7 @@ describe('plan observer', () => {
     see(p('trial'));
     see(p('trial'));
     see(p('active', 'sandbox'));
-    expect(await sent()).toEqual([['plan_changed', { from_state: 'none', to_state: 'trial', period: 'year', ownership: 'family_shared' }]]);
+    expect(await sent()).toEqual([['plus:plan_update', { from_state: 'none', to_state: 'trial', period: 'year', ownership: 'family_shared' }]]);
   });
 });
 
@@ -144,7 +144,7 @@ describe('reminder observer', () => {
     see(base);
     see({ ...base, time: { hour: 20, minute: 45 } }); // same part of day: nothing
     see({ ...base, paused: true });
-    expect(await sent()).toEqual([['reminder_schedule_set', { cadence: 'few_times', hour_bucket: 'evening', paused: true }]]);
+    expect(await sent()).toEqual([['notifications:schedule_update', { cadence: 'few_times', hour_bucket: 'evening', paused: true }]]);
   });
 });
 

@@ -332,7 +332,7 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
     clearDraft();
     if (created[0] && getActiveChildId() !== created[0].id) setActiveChildId(created[0].id);
     // Dropped unless analytics is already a yes (it never is in first run; K-01). Kept for a reinstall that kept consent.
-    for (const c of created) track('child_added', { has_date: true, child_ordinal: ordinalOf(c.id), in_first_run: true, added_together: created.length > 1 });
+    for (const c of created) track('onboarding:book_create', { has_date: true, child_ordinal: ordinalOf(c.id), in_first_run: true, added_together: created.length > 1 });
     router.replace('/');
   };
 

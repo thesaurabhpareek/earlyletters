@@ -83,7 +83,7 @@ export const REGISTRY = {
     tier: 'basics',
     props: { route: ROUTE },
   },
-  app_opened: {
+  'system:app_open': {
     stage: 'return',
     decision: "How many weeks a family comes back and how they got in (reminder, link or by hand), so we know whether reminders earn their place.",
     area: 'app',
@@ -96,7 +96,7 @@ export const REGISTRY = {
       days_since_last_open: DAYS_BUCKET,
     },
   },
-  analytics_opted_in: {
+  'system:analytics_consent_accept': {
     stage: 'activation',
     decision: "How far a family had got when they said yes (first-run facts we could never send before), so we can judge the install to first letter step.",
     area: 'consent',
@@ -115,7 +115,7 @@ export const REGISTRY = {
       came_from_invite: bool(),
     },
   },
-  auth_succeeded: {
+  'onboarding:sign_in_complete': {
     stage: 'activation',
     decision: "How many families who start a book go on to keep it with an account, so we decide whether the Keep sheet asks at the right moment.",
     area: 'entry',
@@ -125,7 +125,7 @@ export const REGISTRY = {
     tier: 'consented',
     props: { method: AUTH_METHOD, had_local_data: bool() },
   },
-  child_added: {
+  'onboarding:book_create': {
     stage: 'activation',
     decision: "Whether a family finishes setting up a book during first run, so we decide what the first-run flow can drop.",
     area: 'children',
@@ -145,7 +145,7 @@ export const REGISTRY = {
       added_together: bool(),
     },
   },
-  capture_started: {
+  'capture:take_start': {
     stage: 'capture',
     decision: "How many families begin a letter by speaking or typing, so we decide which one Home leads with.",
     area: 'capture',
@@ -161,7 +161,7 @@ export const REGISTRY = {
       member_role: MEMBER_ROLE,
     },
   },
-  capture_discarded: {
+  'capture:take_cancel': {
     stage: 'capture',
     decision: "Where letters are thrown away before saving, so we decide whether the capture screens need fixing.",
     area: 'capture',
@@ -171,7 +171,7 @@ export const REGISTRY = {
     tier: 'consented',
     props: { mode: CAPTURE_MODE, stage: oneOf('listening', 'review'), audio_bucket: opt(AUDIO_BUCKET) },
   },
-  transcription_completed: {
+  'capture:transcript_complete': {
     stage: 'capture',
     decision: "Whether spoken letters finish turning into words, so we decide whether to hold other work to fix speech.",
     area: 'capture',
@@ -187,7 +187,7 @@ export const REGISTRY = {
       outcome: oneOf('ok', 'no_speech', 'failed', 'queued_for_model'),
     },
   },
-  letter_saved: {
+  'capture:letter_save': {
     stage: 'capture',
     decision: "How many families save a letter and how, the count behind weekly making families, so we decide what to build next.",
     area: 'capture',
@@ -210,7 +210,7 @@ export const REGISTRY = {
       from_notification_2h: bool(),
     },
   },
-  free_allowance_reached: {
+  'plus:allowance_reach': {
     stage: 'keep',
     decision: "How many families reach the end of the free letters, so we size the Plus audience.",
     area: 'plus',
@@ -220,7 +220,7 @@ export const REGISTRY = {
     tier: 'consented',
     props: { allowance: int(2, 100) },
   },
-  keep_gate_shown: {
+  'plus:keep_gate_view': {
     stage: 'keep',
     decision: "How many families meet the Keep sheet, so we judge whether the free allowance is set right.",
     area: 'plus',
@@ -230,7 +230,7 @@ export const REGISTRY = {
     tier: 'consented',
     props: { letters_kept: int(0, 1000), allowance: int(2, 100), lapsed: int(0, 1) },
   },
-  letter_held: {
+  'plus:letter_hold_create': {
     stage: 'keep',
     decision: "How many families keep a letter on the phone instead of starting Plus, so we judge what the Keep sheet costs in trust.",
     area: 'plus',
@@ -240,7 +240,7 @@ export const REGISTRY = {
     tier: 'consented',
     props: { letters_kept: int(0, 1000) },
   },
-  plus_started_from_gate: {
+  'plus:keep_gate_plan_start': {
     stage: 'plus',
     decision: "How many families start Plus from the Keep sheet, so we decide whether to change the sheet or the offer.",
     area: 'plus',
@@ -250,7 +250,7 @@ export const REGISTRY = {
     tier: 'consented',
     props: { letters_kept: int(0, 1000) },
   },
-  invite_created: {
+  'family:invite_create': {
     stage: 'return',
     decision: "How many families invite another parent, so we decide whether to invest in the family flow.",
     area: 'family',
@@ -265,7 +265,7 @@ export const REGISTRY = {
       child_ordinal: CHILD_ORDINAL,
     },
   },
-  invite_accepted: {
+  'family:invite_accept': {
     stage: 'return',
     decision: "How many invites end with a second parent in the book, so we decide whether to fix the invite steps.",
     area: 'family',
@@ -275,7 +275,7 @@ export const REGISTRY = {
     tier: 'consented',
     props: { role: INVITE_ROLE, surface: oneOf('app') },
   },
-  plus_offer_viewed: {
+  'plus:offer_view': {
     stage: 'plus',
     decision: "How many families see Apple's Plus offer and from where, so we decide where the offer should appear.",
     area: 'plus',
@@ -285,7 +285,7 @@ export const REGISTRY = {
     tier: 'consented',
     props: { trigger: PLUS_TRIGGER },
   },
-  plus_offer_closed: {
+  'plus:offer_end': {
     stage: 'plus',
     decision: "How the Plus offer ends (bought, dismissed, unavailable), so we decide whether the offer or its price is the problem.",
     area: 'plus',
@@ -295,7 +295,7 @@ export const REGISTRY = {
     tier: 'consented',
     props: { trigger: PLUS_TRIGGER, outcome: oneOf('purchased', 'dismissed', 'unavailable') },
   },
-  plan_changed: {
+  'plus:plan_update': {
     stage: 'plus',
     decision: "How families move between plan states on this phone, so we check Plus keeps working after a trial or restore.",
     area: 'plus',
@@ -310,7 +310,7 @@ export const REGISTRY = {
       ownership: oneOf('purchased', 'family_shared', 'unknown'),
     },
   },
-  error_shown: {
+  'system:error_view': {
     stage: 'basics',
     decision: "Which errors families see, so we decide which one to fix first.",
     area: 'errors',
@@ -342,7 +342,7 @@ export const REGISTRY = {
     tier: 'consented',
     props: { surface: SURFACE, route: ROUTE, rank: opt(int(1, 9)) },
   },
-  moments_card_impressed: {
+  'book:moments_card_view': {
     stage: 'return',
     decision: "Whether families see the question and look-back cards on Moments, so we decide which of the two places earns its spot.",
     area: 'moments',
@@ -352,7 +352,7 @@ export const REGISTRY = {
     tier: 'consented',
     props: { slot: MOMENTS_SLOT },
   },
-  moments_card_tapped: {
+  'book:moments_card_open': {
     stage: 'return',
     decision: "Whether a Moments card makes a family start a letter, so we decide if the question or look-back card stays on that tab.",
     area: 'moments',
@@ -379,29 +379,29 @@ export type RegistryName = keyof typeof REGISTRY;
 /** Event names, as constants. The only way call sites name an event. */
 export const EV = {
   screenView: 'screen_view',
-  appOpened: 'app_opened',
-  analyticsOptedIn: 'analytics_opted_in',
-  authSucceeded: 'auth_succeeded',
-  childAdded: 'child_added',
-  captureStarted: 'capture_started',
-  captureDiscarded: 'capture_discarded',
-  transcriptionCompleted: 'transcription_completed',
-  letterSaved: 'letter_saved',
-  freeAllowanceReached: 'free_allowance_reached',
-  keepGateShown: 'keep_gate_shown',
-  letterHeld: 'letter_held',
-  plusStartedFromGate: 'plus_started_from_gate',
-  inviteCreated: 'invite_created',
-  inviteAccepted: 'invite_accepted',
-  plusOfferViewed: 'plus_offer_viewed',
-  plusOfferClosed: 'plus_offer_closed',
-  planChanged: 'plan_changed',
-  errorShown: 'error_shown',
+  appOpened: 'system:app_open',
+  analyticsOptedIn: 'system:analytics_consent_accept',
+  authSucceeded: 'onboarding:sign_in_complete',
+  childAdded: 'onboarding:book_create',
+  captureStarted: 'capture:take_start',
+  captureDiscarded: 'capture:take_cancel',
+  transcriptionCompleted: 'capture:transcript_complete',
+  letterSaved: 'capture:letter_save',
+  freeAllowanceReached: 'plus:allowance_reach',
+  keepGateShown: 'plus:keep_gate_view',
+  letterHeld: 'plus:letter_hold_create',
+  plusStartedFromGate: 'plus:keep_gate_plan_start',
+  inviteCreated: 'family:invite_create',
+  inviteAccepted: 'family:invite_accept',
+  plusOfferViewed: 'plus:offer_view',
+  plusOfferClosed: 'plus:offer_end',
+  planChanged: 'plus:plan_update',
+  errorShown: 'system:error_view',
   controlTapped: 'control_tapped',
   surfaceImpressed: 'surface_impressed',
   perfMeasured: 'perf_measured',
-  momentsCardImpressed: 'moments_card_impressed',
-  momentsCardTapped: 'moments_card_tapped',
+  momentsCardImpressed: 'book:moments_card_view',
+  momentsCardTapped: 'book:moments_card_open',
 } as const satisfies Record<string, RegistryName>;
 
 /** Property names, as constants. The only way call sites name a property. Includes the three global properties the client adds. */
@@ -472,13 +472,13 @@ export type FunnelStep = RegistryName | `${string}:${string}`;
  * step must be a registered event or a wire name (rule V9). Ids: `f_<area>_<goal>`.
  */
 export const FUNNELS = {
-  f_onboarding_first_letter: ['child_added', 'capture_started', 'letter_saved'],
-  f_capture_letter_saved: ['capture_started', 'transcription_completed', 'letter_saved'],
-  f_keep_plus_started: ['free_allowance_reached', 'keep_gate_shown', 'plus_started_from_gate'],
-  f_plus_offer_converted: ['plus_offer_viewed', 'plus_offer_closed', 'plan_changed'],
+  f_onboarding_first_letter: ['onboarding:book_create', 'capture:take_start', 'capture:letter_save'],
+  f_capture_letter_saved: ['capture:take_start', 'capture:transcript_complete', 'capture:letter_save'],
+  f_keep_plus_started: ['plus:allowance_reach', 'plus:keep_gate_view', 'plus:keep_gate_plan_start'],
+  f_plus_offer_converted: ['plus:offer_view', 'plus:offer_end', 'plus:plan_update'],
   // Wire names (BL-2175, CR-213): the Book and letter reads are the generated screen views, not events of their own.
   f_return_book_read: ['system:app_open', 'book:book_screen_view', 'book:letter_detail_screen_view'],
-  f_family_invite_joined: ['invite_created', 'invite_accepted'],
+  f_family_invite_joined: ['family:invite_create', 'family:invite_accept'],
 } as const satisfies Record<string, readonly FunnelStep[]>;
 
 /**

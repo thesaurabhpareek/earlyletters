@@ -69,7 +69,7 @@ export function createLifecycle(opts: LifecycleOptions): Lifecycle {
       }
       lastActive = parseTime(await storage.get(LIFECYCLE_KEYS.lastActiveAt));
       session = { startedAt: t, index: 1 };
-      analytics.track('app_opened', {
+      analytics.track('system:app_open', {
         source: i.source ?? 'cold',
         days_since_last_open: lastActive === null ? 'd0' : daysBucket(t - lastActive),
       });
@@ -83,7 +83,7 @@ export function createLifecycle(opts: LifecycleOptions): Lifecycle {
       const fresh = awaySince === null || t - awaySince >= SESSION_GAP_MS;
       if (fresh) {
         session = { startedAt: t, index: session.index + 1 };
-        analytics.track('app_opened', {
+        analytics.track('system:app_open', {
           source,
           days_since_last_open: lastActive === null ? 'd0' : daysBucket(t - lastActive),
         });

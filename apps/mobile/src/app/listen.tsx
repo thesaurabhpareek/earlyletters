@@ -178,7 +178,7 @@ export default function Listen() {
   useEffect(() => {
     if (isMicProblem(phase)) {
       const code = MIC_ERROR_CODE[phase];
-      if (code) track('error_shown', { code });
+      if (code) track('system:error_view', { code });
     }
   }, [phase]);
 

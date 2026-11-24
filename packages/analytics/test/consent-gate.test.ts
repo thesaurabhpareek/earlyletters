@@ -30,7 +30,7 @@ describe('ask_first (the default): nothing before a yes', () => {
       await analytics.init();
       await analytics.recordDisclosureShown();
       expect(analytics.track('screen_view', { route: 'family' })).toBe('dropped_no_consent');
-      expect(analytics.track('letter_saved', letter)).toBe('dropped_no_consent');
+      expect(analytics.track('capture:letter_save', letter)).toBe('dropped_no_consent');
       await analytics.flush();
       expect(provider.captured()).toHaveLength(0);
       expect(analytics.queueLength()).toBe(0);
@@ -47,7 +47,7 @@ describe('ask_first (the default): nothing before a yes', () => {
     await analytics.init();
     await analytics.grant();
     expect(analytics.track('screen_view', { route: 'family' })).toBe('queued');
-    expect(analytics.track('letter_saved', letter)).toBe('queued');
+    expect(analytics.track('capture:letter_save', letter)).toBe('queued');
     await analytics.flush();
     expect(provider.captured()).toHaveLength(2);
     await analytics.revoke();
@@ -60,7 +60,7 @@ describe('collect_by_default', () => {
     const { analytics, provider, storage } = setup('collect_by_default');
     await analytics.init();
     expect(analytics.track('screen_view', { route: 'family' })).toBe('dropped_disclosure_pending');
-    expect(analytics.track('letter_saved', letter)).toBe('dropped_disclosure_pending');
+    expect(analytics.track('capture:letter_save', letter)).toBe('dropped_disclosure_pending');
     await analytics.flush();
     expect(provider.captured()).toHaveLength(0);
     expect(analytics.queueLength()).toBe(0);
@@ -75,7 +75,7 @@ describe('collect_by_default', () => {
     await analytics.recordDisclosureShown();
     expect(storage.dump()[STORAGE_KEYS.id]).toBeUndefined();
     expect(analytics.track('screen_view', { route: 'family' })).toBe('queued');
-    expect(analytics.track('letter_saved', letter)).toBe('dropped_not_basics');
+    expect(analytics.track('capture:letter_save', letter)).toBe('dropped_not_basics');
     await analytics.flush();
     const id = storage.dump()[STORAGE_KEYS.id];
     expect(id).toMatch(/^[0-9a-f-]{36}$/);
@@ -119,9 +119,9 @@ describe('collect_by_default', () => {
     await analytics.flush();
     await analytics.revoke();
     await analytics.grant();
-    expect(analytics.track('letter_saved', letter)).toBe('queued');
+    expect(analytics.track('capture:letter_save', letter)).toBe('queued');
     await analytics.flush();
-    expect(provider.captured().map((c) => c.event)).toEqual(['screen_view', 'letter_saved']);
+    expect(provider.captured().map((c) => c.event)).toEqual(['screen_view', 'capture:letter_save']);
     expect(new Set(analytics.analyticsIds()).size).toBe(2);
   });
 

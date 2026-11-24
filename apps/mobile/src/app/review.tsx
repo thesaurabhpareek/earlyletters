@@ -375,7 +375,7 @@ export default function Review() {
 
   // The calm "could not write it down" card counts as a shown error (error_shown, once per failure).
   useEffect(() => {
-    if (job?.phase === 'failed') track('error_shown', { code: 'transcription_failed' });
+    if (job?.phase === 'failed') track('system:error_view', { code: 'transcription_failed' });
   }, [job?.phase]);
 
   // S14: how long the words have been on their way, and since the last sign of progress (a new part or phase).
@@ -445,8 +445,8 @@ export default function Review() {
   const player = useLetterPlayer(draft?.audioUri ?? null, { fallbackDurationMs: draft?.audioDurationMs });
   const togglePlay = () => {
     if (!player.playing) {
-      track('review_action', { action: 'play_back' });
-      track('playback_started', { surface: 'review', author_relation: 'self', version: 'original' });
+      track('capture:review_update', { action: 'play_back' });
+      track('book:playback_start', { surface: 'review', author_relation: 'self', version: 'original' });
     }
     player.toggle();
   };
@@ -482,7 +482,7 @@ export default function Review() {
     const next = withoutEdit(raw, applied, index, rules);
     haptic('tap');
     reverted.current++;
-    track('machine_edit_reverted', { edit_type: edit.type, source: edit.source });
+    track('capture:edit_restore', { edit_type: edit.type, source: edit.source });
     putBacks.current = [...putBacks.current, edit];
     writer.putBack(putBacks.current);
     setApplied(next.applied);
@@ -510,7 +510,7 @@ export default function Review() {
   const chooseView = (next: ReviewView) => {
     if (next === view) return;
     haptic('tap');
-    if (next === 'exact') track('review_action', { action: 'show_exactly_said' });
+    if (next === 'exact') track('capture:review_update', { action: 'show_exactly_said' });
     writer.view(next);
     setView(next);
     setRestored(null);
@@ -525,7 +525,7 @@ export default function Review() {
   };
   const chooseChild = (id: string) => {
     if (!draft) return;
-    track('review_action', { action: 'change_child' });
+    track('capture:review_update', { action: 'change_child' });
     setDraftChild(draft.id, id);
     setChildId(id);
   };
@@ -674,7 +674,7 @@ export default function Review() {
       finishSave(inBook, firstLetter);
     } catch {
       saving.current = false;
-      track('error_shown', { code: 'save_failed' });
+      track('system:error_view', { code: 'save_failed' });
       setSaveFailed(true); // the draft is intact; nothing was half-saved
     }
   };
@@ -869,7 +869,7 @@ export default function Review() {
           // a hold that does not take still closes, uncounted, and Tonight shows the draft as it was.
           const outcome = holdOnce(holding, () => (later ? true : holdDraft(draft.id, { inBookChoice: heldInBook.current })));
           if (outcome === 'again') return;
-          if (outcome === 'held') track('letter_held', { letters_kept: Math.min(1000, gate.lettersKept) });
+          if (outcome === 'held') track('plus:letter_hold_create', { letters_kept: Math.min(1000, gate.lettersKept) });
           router.back();
         }}
         onPlus={() => setGate(null)} // the same Review again; the person taps Keep
@@ -1190,7 +1190,7 @@ export default function Review() {
                   className="-ml-4 self-start"
                   testID="review.edit"
                   onPress={() => {
-                    track('review_action', { action: 'edit_text' });
+                    track('capture:review_update', { action: 'edit_text' });
                     // The put-back line speaks about the fixes; once the words are the person's own it is stale (QE-02).
                     setRestored(null);
                     setEditing(true);

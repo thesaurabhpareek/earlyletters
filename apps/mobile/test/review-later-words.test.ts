@@ -148,7 +148,7 @@ describe('[F14-REQ-037] Review\'s Keep step runs for a letter whose words arrive
     expect(await reviewKeep(b, false)).toEqual({ outcome: 'kept', noted: true, wordsOnScreen: 'You clapped.' });
     expect(store.getEntry(b)).toMatchObject({ inBook: false, wordsUnreviewed: false });
     expect(counted()).toBe(2);
-    expect(h.events).toEqual([{ name: 'free_allowance_reached', props: { allowance: 2 } }]);
+    expect(h.events).toEqual([{ name: 'plus:allowance_reach', props: { allowance: 2 } }]);
   });
 
   it('3 voice-only letters, 0 counted; their words arrive or are typed, and 3 are kept from Review: 2 free, the third opens the Keep sheet', async () => {
@@ -162,7 +162,7 @@ describe('[F14-REQ-037] Review\'s Keep step runs for a letter whose words arrive
     expect((await reviewKeep(ids[1], true)).outcome).toBe('kept');
     h.events.length = 0;
     expect((await reviewKeep(ids[2], true)).outcome).toBe('sheet');
-    expect(h.events).toEqual([{ name: 'keep_gate_shown', props: { letters_kept: 2, allowance: 2, lapsed: 0 } }]);
+    expect(h.events).toEqual([{ name: 'plus:keep_gate_view', props: { letters_kept: 2, allowance: 2, lapsed: 0 } }]);
     // Nothing written: the words wait on the letter, uncounted, and the card stays for the next try.
     expect(store.getEntry(ids[2])).toMatchObject({ wordsUnreviewed: true, finalText: 'You said ba.', inBook: false });
     expect(isReadItBack(ids[2])).toBe(true);
@@ -285,7 +285,7 @@ describe('[#53] the letter page and Review are wired this way', () => {
     }
   });
 
-  it('Review shows such a letter\'s words as stored: no Change words, no other book, and no second letter_saved', () => {
+  it('Review shows such a letter\'s words as stored: no Change words, no other book, and no second capture:letter_save', () => {
     expect(review).toMatch(/\{!isSample && !editing && !later && foldedShow && \(/);
     expect(review).toMatch(/if \(listChildren\(\)\.length < 2 \|\| !draft \|\| later\) return;/);
     expect(review).toMatch(/onChangeBook=\{many && !later \? pickChild : undefined\}/); // no dead control for VoiceOver

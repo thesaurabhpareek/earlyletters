@@ -2,7 +2,7 @@
 
 Generated from `packages/analytics/src/wire-names.ts` by `npm run wire-names -w @scribe/analytics`; do not edit by hand. `npm run wire-names -w @scribe/analytics -- --check` and `packages/analytics/test/wire-names.test.ts` fail when this file differs from that output. BL-1255 step 1 (CR-212): this is the table `posthog-standard.md` section 2.9 points to as "IN-03".
 
-The rename (step 2b onward, BL-2176) moves one area at a time, each PR on the one below. 3 of 47 keys that own a name hold it now; for the rest the "Key" column is still the old key, and "Was" says so. Where a key was renamed, "Was" is the old key, and `LEGACY_EVENT_NAMES` in `wire-names.ts` maps it to the new one, so a note, funnel or query written against an old name can still be read. Nothing was ever sent under an old name (analytics are off in every profile, CR-186). The tier column is the tier of the catalogue and registry rows, unchanged by the rename, and the basics set stays pinned to `screen_view` by `test/tiers.test.ts`. The four pattern keys keep their keys: their names are generated per registered id.
+The rename (step 2b onward, BL-2176) moves one area at a time, each PR on the one below. 47 of 47 keys that own a name hold it now; for the rest the "Key" column is still the old key, and "Was" says so. Where a key was renamed, "Was" is the old key, and `LEGACY_EVENT_NAMES` in `wire-names.ts` maps it to the new one, so a note, funnel or query written against an old name can still be read. Nothing was ever sent under an old name (analytics are off in every profile, CR-186). The tier column is the tier of the catalogue and registry rows, unchanged by the rename, and the basics set stays pinned to `screen_view` by `test/tiers.test.ts`. The four pattern keys keep their keys: their names are generated per registered id.
 
 Counts: 51 keys: 30 ruled by 2.9, 17 named by the 24 Nov rulings, 4 patterns generated per registered id, 0 NEEDS RULING; 47 have a name of their own. Step 2a (BL-2175) deleted 22 keys: 18 dropped, 4 merged (see Retired keys).
 
@@ -12,56 +12,56 @@ Reading a row. "Ruled" means 2.9 names this event (a domain row, the seven examp
 
 | Key | Was | Lives in | Area | Tier | Status | Wire name | Basis or what is missing |
 |---|---|---|---|---|---|---|---|
-| `auth_failed` | (not renamed yet) | catalogue | entry | consented | ruled | `onboarding:sign_in_fail` | 2.9 domain table: `onboarding.sign_in.failed` |
-| `auth_deferred` | (not renamed yet) | catalogue | entry | consented | named | `onboarding:sign_in_dismiss` | PM1 `onboarding.sign_in.dismissed` names this key; `dismiss` is the verb for closing a slip without acting |
-| `signed_out` | (not renamed yet) | catalogue | entry | consented | named | `me:session_end` | PM1 `me.session.closed` names this key; `reason` already carries the four causes |
-| `invite_opened` | (not renamed yet) | catalogue | entry | consented | ruled | `family:invite_open` | 2.9 domain table: `family.invite.opened` (phone side) |
-| `child_switched` | (not renamed yet) | catalogue | children | consented | named | `capture:child_update` | PM1 `capture.child.selected` ("active book changed") lists this key as its Was; `selected` folds to `update` |
-| `review_action` | (not renamed yet) | catalogue | capture | consented | named | `capture:review_update` | PM1 `capture.review.selected`, a step of funnel F2; `selected` folds to `update`; `submit` is for forms |
-| `machine_edit_reverted` | (not renamed yet) | catalogue | capture | consented | named | `capture:edit_restore` | the 2.4 `restore` row names "a reverted machine edit"; PM1 `edit_cancel` loses; constitution guardrail and insights reader |
-| `machine_edit_rejected` | (not renamed yet) | catalogue | capture | consented | named | `capture:edit_decline` | PM1 `capture.edit.declined`; `decline` is "from us" (the verifier); same guardrail and reader |
-| `language_set` | (not renamed yet) | catalogue | languages | consented | ruled | `me:language_update` | 2.9 domain table: `me.language.changed` |
-| `pack_download` | (not renamed yet) | catalogue | languages | consented | named | `system:pack_download_update` | PM1 maps four states to this one key and 2.9 only holds `pack_start`; `changed` folds to `update`; the `pack_download` object keeps it from reading as a pack version update |
-| `playback_started` | (not renamed yet) | catalogue | book | consented | ruled | `book:playback_start` | 2.9 domain table: `book.playback.started` |
-| `read_together_started` | (not renamed yet) | catalogue | book | consented | ruled | `book:read_together_start` | 2.9 domain table: `book.read_together.started` |
-| `read_together_ended` | (not renamed yet) | catalogue | book | consented | ruled | `book:read_together_end` | 2.9 domain table: `book.read_together.ended` |
-| `invite_failed` | (not renamed yet) | catalogue | family | consented | ruled | `family:invite_fail` | 2.9 domain table: `family.invite.failed` |
-| `reminder_prime_shown` | (not renamed yet) | catalogue | reminders | consented | named | `notifications:reminder_prime_view` | the denominator of the reminder-fatigue guardrail; an impression of our own card |
-| `reminder_prime_result` | (not renamed yet) | catalogue | reminders | consented | named | `notifications:reminder_prime_submit` | `answered` folds to `submit`, as `os_permission_result` is `permission_submit` |
-| `os_permission_result` | (not renamed yet) | catalogue | reminders | consented | ruled | `notifications:permission_submit` | 2.9 domain table: `notifications.permission.answered` |
-| `reminder_schedule_set` | (not renamed yet) | catalogue | reminders | consented | ruled | `notifications:schedule_update` | 2.9 domain table: `notifications.schedule.changed` |
-| `reminder_suppressed` | (not renamed yet) | catalogue | reminders | consented | ruled | `notifications:reminder_cancel` | 2.9 domain table: `notifications.reminder.suppressed` |
-| `notification_opened` | (not renamed yet) | catalogue | reminders | consented | named | `notifications:notification_open` | one key with four types; 2.9 `reminder_open` and `plan_notice_open` have no key of their own and stay unassigned |
-| `settings_changed` | (not renamed yet) | catalogue | settings | consented | ruled | `me:setting_update` | 2.9 domain table: `me.setting.changed` |
+| `onboarding:sign_in_fail` | `auth_failed` | catalogue | entry | consented | ruled | `onboarding:sign_in_fail` | 2.9 domain table: `onboarding.sign_in.failed` |
+| `onboarding:sign_in_dismiss` | `auth_deferred` | catalogue | entry | consented | named | `onboarding:sign_in_dismiss` | PM1 `onboarding.sign_in.dismissed` names this key; `dismiss` is the verb for closing a slip without acting |
+| `me:session_end` | `signed_out` | catalogue | entry | consented | named | `me:session_end` | PM1 `me.session.closed` names this key; `reason` already carries the four causes |
+| `family:invite_open` | `invite_opened` | catalogue | entry | consented | ruled | `family:invite_open` | 2.9 domain table: `family.invite.opened` (phone side) |
+| `capture:child_update` | `child_switched` | catalogue | children | consented | named | `capture:child_update` | PM1 `capture.child.selected` ("active book changed") lists this key as its Was; `selected` folds to `update` |
+| `capture:review_update` | `review_action` | catalogue | capture | consented | named | `capture:review_update` | PM1 `capture.review.selected`, a step of funnel F2; `selected` folds to `update`; `submit` is for forms |
+| `capture:edit_restore` | `machine_edit_reverted` | catalogue | capture | consented | named | `capture:edit_restore` | the 2.4 `restore` row names "a reverted machine edit"; PM1 `edit_cancel` loses; constitution guardrail and insights reader |
+| `capture:edit_decline` | `machine_edit_rejected` | catalogue | capture | consented | named | `capture:edit_decline` | PM1 `capture.edit.declined`; `decline` is "from us" (the verifier); same guardrail and reader |
+| `me:language_update` | `language_set` | catalogue | languages | consented | ruled | `me:language_update` | 2.9 domain table: `me.language.changed` |
+| `system:pack_download_update` | `pack_download` | catalogue | languages | consented | named | `system:pack_download_update` | PM1 maps four states to this one key and 2.9 only holds `pack_start`; `changed` folds to `update`; the `pack_download` object keeps it from reading as a pack version update |
+| `book:playback_start` | `playback_started` | catalogue | book | consented | ruled | `book:playback_start` | 2.9 domain table: `book.playback.started` |
+| `book:read_together_start` | `read_together_started` | catalogue | book | consented | ruled | `book:read_together_start` | 2.9 domain table: `book.read_together.started` |
+| `book:read_together_end` | `read_together_ended` | catalogue | book | consented | ruled | `book:read_together_end` | 2.9 domain table: `book.read_together.ended` |
+| `family:invite_fail` | `invite_failed` | catalogue | family | consented | ruled | `family:invite_fail` | 2.9 domain table: `family.invite.failed` |
+| `notifications:reminder_prime_view` | `reminder_prime_shown` | catalogue | reminders | consented | named | `notifications:reminder_prime_view` | the denominator of the reminder-fatigue guardrail; an impression of our own card |
+| `notifications:reminder_prime_submit` | `reminder_prime_result` | catalogue | reminders | consented | named | `notifications:reminder_prime_submit` | `answered` folds to `submit`, as `os_permission_result` is `permission_submit` |
+| `notifications:permission_submit` | `os_permission_result` | catalogue | reminders | consented | ruled | `notifications:permission_submit` | 2.9 domain table: `notifications.permission.answered` |
+| `notifications:schedule_update` | `reminder_schedule_set` | catalogue | reminders | consented | ruled | `notifications:schedule_update` | 2.9 domain table: `notifications.schedule.changed` |
+| `notifications:reminder_cancel` | `reminder_suppressed` | catalogue | reminders | consented | ruled | `notifications:reminder_cancel` | 2.9 domain table: `notifications.reminder.suppressed` |
+| `notifications:notification_open` | `notification_opened` | catalogue | reminders | consented | named | `notifications:notification_open` | one key with four types; 2.9 `reminder_open` and `plan_notice_open` have no key of their own and stay unassigned |
+| `me:setting_update` | `settings_changed` | catalogue | settings | consented | ruled | `me:setting_update` | 2.9 domain table: `me.setting.changed` |
 | `keeping:export_start` | `export_started` | catalogue | settings | consented | named | `keeping:export_start` | the object must agree with `export_complete` and `export_fail`; `download_start` is retired; funnel F9 and the insights engine read it |
 | `keeping:export_complete` | `export_completed` | catalogue | settings | consented | ruled | `keeping:export_complete` | 2.9 line 118, the seven examples |
 | `keeping:export_fail` | `export_failed` | catalogue | settings | consented | ruled | `keeping:export_fail` | 2.9 domain table: `keeping.export.failed` |
-| `offer_code_redeemed` | (not renamed yet) | catalogue | plus | consented | ruled | `plus:code_submit` | 2.9 domain table: `plus.code.redeemed` |
-| `restore_result` | (not renamed yet) | catalogue | plus | consented | ruled | `plus:restore_complete` | 2.9 domain table: `plus.restore.completed` (the catalogue row also carries the failed outcome as a property) |
-| `sync_failed` | (not renamed yet) | catalogue | errors | consented | ruled | `system:sync_fail` | 2.9 domain table: `system.sync.failed` (#1044); the first generated table missed this row |
+| `plus:code_submit` | `offer_code_redeemed` | catalogue | plus | consented | ruled | `plus:code_submit` | 2.9 domain table: `plus.code.redeemed` |
+| `plus:restore_complete` | `restore_result` | catalogue | plus | consented | ruled | `plus:restore_complete` | 2.9 domain table: `plus.restore.completed` (the catalogue row also carries the failed outcome as a property) |
+| `system:sync_fail` | `sync_failed` | catalogue | errors | consented | ruled | `system:sync_fail` | 2.9 domain table: `system.sync.failed` (#1044); the first generated table missed this row |
 | `screen_view` | (pattern, keeps its key) | both | app | basics | pattern | `<area>:<id>_screen_view` (36 today) | 2.9 Basics: `<area>:<screen_id>_screen_view` |
-| `app_opened` | (not renamed yet) | both | app | consented | ruled | `system:app_open` | 2.9 domain table: `system.app.opened` |
-| `analytics_opted_in` | (not renamed yet) | both | consent | consented | ruled | `system:analytics_consent_accept` | 2.9 domain table: `system.consent.granted` ("duplicates `analytics_opted_in`, so one event") |
-| `auth_succeeded` | (not renamed yet) | both | entry | consented | ruled | `onboarding:sign_in_complete` | 2.9 domain table: `onboarding.sign_in.completed` |
-| `child_added` | (not renamed yet) | both | children | consented | named | `onboarding:book_create` | registry row whose decision is first-run completion; `create` is the verb of "a child book is created"; `book_save` is not used because PM1 makes `onboarding.book.saved` a server count |
-| `capture_started` | (not renamed yet) | both | capture | consented | ruled | `capture:take_start` | 2.9 line 118, the seven examples: `capture_started` to `capture:take_start` (note: the table also holds `capture.letter.started`, `capture:letter_start`) |
-| `capture_discarded` | (not renamed yet) | both | capture | consented | named | `capture:take_cancel` | registry row and insights reader; a drop-off shares its object with its start, and `capture_started` is `capture:take_start`; PM1 `letter_cancel` loses on pairing |
-| `transcription_completed` | (not renamed yet) | both | capture | consented | ruled | `capture:transcript_complete` | 2.9 domain table: `capture.transcript.completed` (this key also carries failed and no-speech outcomes as a property) |
-| `letter_saved` | (not renamed yet) | both | capture | consented | ruled | `capture:letter_save` | 2.9 line 118, the seven examples |
-| `free_allowance_reached` | (not renamed yet) | both | plus | consented | ruled | `plus:allowance_reach` | 2.9 domain table: `plus.allowance.reached` |
-| `keep_gate_shown` | (not renamed yet) | both | plus | consented | named | `plus:keep_gate_view` | registry row; I3 and F7 read `letters_kept`, `allowance`, `lapsed`; no Keep sheet screen id exists, and a screen view carries none of those |
-| `letter_held` | (not renamed yet) | both | plus | consented | ruled | `plus:letter_hold_create` | 2.9 domain table: `plus.letter.held` |
-| `plus_started_from_gate` | (not renamed yet) | both | plus | consented | named | `plus:keep_gate_plan_start` | keeps the gate in the name; `plus:plan_start` stays free for the broader PM5 event |
-| `invite_created` | (not renamed yet) | both | family | consented | ruled | `family:invite_create` | 2.9 line 118, the seven examples |
-| `invite_accepted` | (not renamed yet) | both | family | consented | ruled | `family:invite_accept` | 2.9 domain table: `family.invite.accepted` |
-| `plus_offer_viewed` | (not renamed yet) | both | plus | consented | ruled | `plus:offer_view` | 2.9 line 118, the seven examples |
-| `plus_offer_closed` | (not renamed yet) | both | plus | consented | ruled | `plus:offer_end` | 2.9 domain table: `plus.offer.closed` |
-| `plan_changed` | (not renamed yet) | both | plus | consented | ruled | `plus:plan_update` | 2.9 domain table: `plus.plan.changed` |
-| `error_shown` | (not renamed yet) | both | errors | consented | ruled | `system:error_view` | 2.9 line 118, the seven examples |
+| `system:app_open` | `app_opened` | both | app | consented | ruled | `system:app_open` | 2.9 domain table: `system.app.opened` |
+| `system:analytics_consent_accept` | `analytics_opted_in` | both | consent | consented | ruled | `system:analytics_consent_accept` | 2.9 domain table: `system.consent.granted` ("duplicates `analytics_opted_in`, so one event") |
+| `onboarding:sign_in_complete` | `auth_succeeded` | both | entry | consented | ruled | `onboarding:sign_in_complete` | 2.9 domain table: `onboarding.sign_in.completed` |
+| `onboarding:book_create` | `child_added` | both | children | consented | named | `onboarding:book_create` | registry row whose decision is first-run completion; `create` is the verb of "a child book is created"; `book_save` is not used because PM1 makes `onboarding.book.saved` a server count |
+| `capture:take_start` | `capture_started` | both | capture | consented | ruled | `capture:take_start` | 2.9 line 118, the seven examples: `capture_started` to `capture:take_start` (note: the table also holds `capture.letter.started`, `capture:letter_start`) |
+| `capture:take_cancel` | `capture_discarded` | both | capture | consented | named | `capture:take_cancel` | registry row and insights reader; a drop-off shares its object with its start, and `capture_started` is `capture:take_start`; PM1 `letter_cancel` loses on pairing |
+| `capture:transcript_complete` | `transcription_completed` | both | capture | consented | ruled | `capture:transcript_complete` | 2.9 domain table: `capture.transcript.completed` (this key also carries failed and no-speech outcomes as a property) |
+| `capture:letter_save` | `letter_saved` | both | capture | consented | ruled | `capture:letter_save` | 2.9 line 118, the seven examples |
+| `plus:allowance_reach` | `free_allowance_reached` | both | plus | consented | ruled | `plus:allowance_reach` | 2.9 domain table: `plus.allowance.reached` |
+| `plus:keep_gate_view` | `keep_gate_shown` | both | plus | consented | named | `plus:keep_gate_view` | registry row; I3 and F7 read `letters_kept`, `allowance`, `lapsed`; no Keep sheet screen id exists, and a screen view carries none of those |
+| `plus:letter_hold_create` | `letter_held` | both | plus | consented | ruled | `plus:letter_hold_create` | 2.9 domain table: `plus.letter.held` |
+| `plus:keep_gate_plan_start` | `plus_started_from_gate` | both | plus | consented | named | `plus:keep_gate_plan_start` | keeps the gate in the name; `plus:plan_start` stays free for the broader PM5 event |
+| `family:invite_create` | `invite_created` | both | family | consented | ruled | `family:invite_create` | 2.9 line 118, the seven examples |
+| `family:invite_accept` | `invite_accepted` | both | family | consented | ruled | `family:invite_accept` | 2.9 domain table: `family.invite.accepted` |
+| `plus:offer_view` | `plus_offer_viewed` | both | plus | consented | ruled | `plus:offer_view` | 2.9 line 118, the seven examples |
+| `plus:offer_end` | `plus_offer_closed` | both | plus | consented | ruled | `plus:offer_end` | 2.9 domain table: `plus.offer.closed` |
+| `plus:plan_update` | `plan_changed` | both | plus | consented | ruled | `plus:plan_update` | 2.9 domain table: `plus.plan.changed` |
+| `system:error_view` | `error_shown` | both | errors | consented | ruled | `system:error_view` | 2.9 line 118, the seven examples |
 | `control_tapped` | (pattern, keeps its key) | both | app | consented | pattern | `<area>:<id>_click` (0 today) | 2.9 Basics: `<area>:<control_id>_click` |
 | `surface_impressed` | (pattern, keeps its key) | both | app | consented | pattern | `<area>:<id>_view` (0 today) | 2.9 Basics: `<area>:<element_id>_view` |
-| `moments_card_impressed` | (not renamed yet) | both | moments | consented | named | `book:moments_card_view` | CDO-25 allows exactly two `moments_` names; Moments sits under Book |
-| `moments_card_tapped` | (not renamed yet) | both | moments | consented | named | `book:moments_card_open` | `click` is reserved for control ids (V2); `open` fits a card opened from the tab |
+| `book:moments_card_view` | `moments_card_impressed` | both | moments | consented | named | `book:moments_card_view` | CDO-25 allows exactly two `moments_` names; Moments sits under Book |
+| `book:moments_card_open` | `moments_card_tapped` | both | moments | consented | named | `book:moments_card_open` | `click` is reserved for control ids (V2); `open` fits a card opened from the tab |
 | `perf_measured` | (pattern, keeps its key) | both | app | consented | pattern | `<area>:<id>_measure` (0 today) | 2.9 Basics: `<area>:<metric>_measure` (deviation); tier stays consented until FH-3 |
 
 ## Generated names

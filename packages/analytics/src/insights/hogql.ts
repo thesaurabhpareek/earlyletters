@@ -16,39 +16,39 @@ export const K_MIN = 10;
 
 /** Breakdowns the engine reads: event -> catalogue properties to split by. */
 export const BREAKDOWNS: Readonly<Partial<Record<EventName, readonly string[]>>> = {
-  transcription_completed: ['outcome', 'model'],
-  pack_download: ['stage', 'pack', 'failure', 'lang'],
-  machine_edit_rejected: ['reason', 'edit_type'],
-  machine_edit_reverted: ['edit_type'],
-  letter_saved: ['mode', 'destination'],
-  capture_discarded: ['stage'],
-  plus_offer_closed: ['outcome'],
-  plan_changed: ['to_state'],
-  language_set: ['lang', 'action'],
-  error_shown: ['code'],
-  sync_failed: ['reason'],
-  auth_failed: ['reason'],
-  invite_failed: ['reason'],
+  'capture:transcript_complete': ['outcome', 'model'],
+  'system:pack_download_update': ['stage', 'pack', 'failure', 'lang'],
+  'capture:edit_decline': ['reason', 'edit_type'],
+  'capture:edit_restore': ['edit_type'],
+  'capture:letter_save': ['mode', 'destination'],
+  'capture:take_cancel': ['stage'],
+  'plus:offer_end': ['outcome'],
+  'plus:plan_update': ['to_state'],
+  'me:language_update': ['lang', 'action'],
+  'system:error_view': ['code'],
+  'system:sync_fail': ['reason'],
+  'onboarding:sign_in_fail': ['reason'],
+  'family:invite_fail': ['reason'],
   'keeping:export_fail': ['reason'],
-  read_together_started: ['access'],
+  'book:read_together_start': ['access'],
 };
 
 /** Events counted per week without a breakdown. */
 export const WEEKLY_EVENTS: readonly EventName[] = [
-  'app_opened',
-  'capture_started',
-  'capture_discarded',
-  'letter_saved',
-  'transcription_completed',
-  'pack_download',
-  'machine_edit_rejected',
-  'machine_edit_reverted',
-  'read_together_started',
-  'invite_created',
-  'plus_offer_viewed',
-  'plus_offer_closed',
-  'error_shown',
-  'sync_failed',
+  'system:app_open',
+  'capture:take_start',
+  'capture:take_cancel',
+  'capture:letter_save',
+  'capture:transcript_complete',
+  'system:pack_download_update',
+  'capture:edit_decline',
+  'capture:edit_restore',
+  'book:read_together_start',
+  'family:invite_create',
+  'plus:offer_view',
+  'plus:offer_end',
+  'system:error_view',
+  'system:sync_fail',
   'keeping:export_start',
   'keeping:export_fail',
 ];
@@ -103,9 +103,9 @@ export function funnelQuery(weeks: number): HogQLQuery {
     query: `SELECT week, countIf(opened) AS opened, countIf(started) AS started, countIf(saved) AS saved
 FROM (
   SELECT toStartOfWeek(timestamp, 1) AS week, distinct_id,
-         max(event = 'app_opened') AS opened, max(event = 'capture_started') AS started, max(event = 'letter_saved') AS saved
+         max(event = 'system:app_open') AS opened, max(event = 'capture:take_start') AS started, max(event = 'capture:letter_save') AS saved
   FROM events
-  WHERE timestamp >= now() - INTERVAL ${weeksBack(weeks)} WEEK AND event IN ('app_opened', 'capture_started', 'letter_saved')
+  WHERE timestamp >= now() - INTERVAL ${weeksBack(weeks)} WEEK AND event IN ('system:app_open', 'capture:take_start', 'capture:letter_save')
   GROUP BY week, distinct_id
 )
 GROUP BY week

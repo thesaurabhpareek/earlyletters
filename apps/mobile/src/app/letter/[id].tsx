@@ -195,7 +195,7 @@ function Letter() {
         onSize={(v) => {
           setSize(v);
           setReadingSize(v);
-          track('settings_changed', { key: 'reading_size' });
+          track('me:setting_update', { key: 'reading_size' });
         }}
         showOriginal={showOriginal}
         onToggleOriginal={() => setShowOriginal((v) => !v)}
