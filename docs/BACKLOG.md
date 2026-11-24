@@ -10712,12 +10712,12 @@ Source: findings of 23 and 24 Nov 2026 handed to the product agent. BL-1983 is t
 
 ## Follow-up from the review of PR #1828 (24 Nov 2026; filed by design systems, docs only)
 
-#### BL-2020 Sheet title and body text meet at AX3 and AX5: the title is capped, the body is not
+#### BL-2020 Sheet title and body text meet from AX3 up: the title is capped, the body is not
 - Status: needs-decision (the Chief Design Officer role rules whether a capped sheet title may be overtaken by body text at the largest text sizes, or the cap is lifted; a role ruling, not a legal one). Mode: agent. Owner: design systems. Milestone: M15. Size: S. Priority: P2. Depends on: none.
-- Problem and evidence: the sheet title is capped at 44 pt and the body text is 18 pt before scaling. Dynamic Type scales the body past 2.44 times (44 / 18), which is reached at AX3 and AX5, while the title stops at its cap. From there the body text is larger than the title above it, and the title no longer reads as the heading. Found in the reviews of #1828; the 44 and 18 are the reviewers' figures and were not re-checked against the type tokens here; not seen on a device, no Dynamic Type run was made.
+- Problem and evidence: the sheet title is capped at 44 pt and the body text is 18 pt before scaling. Dynamic Type scales the body past 2.44 times (44 / 18), which is reached from AX3 up (FONT_SCALE in `apps/mobile/src/lib/a11y.logic.ts` lists AX3 2.643 and AX5 3.571; AX4 is not listed there; it lies between AX3 (2.643) and AX5 (3.571), so it is also above 2.44), while the title stops at its cap. From there the body text is larger than the title above it, and the title no longer reads as the heading. Found in the reviews of #1828; the 44 pt is the title2 size of 22 pt times its 2.0 cap and the 18 pt is body, checked against the type tokens, so the 2.44 ratio holds; not seen on a device, no Dynamic Type run was made.
 - Scope: a ruling only. Options for the Chief Design Officer to choose from: keep the cap and accept the overtake (letter text is never truncated either way, D-027); lift or raise the title cap at AX3 and up; or cap the body in the sheet. No token change is made by this row; any change follows the ruling as its own row.
 - Done when: the ruling is written into `docs/design/COMPONENTS.md` under the sheet, with the numbers above, and this row is flipped to `ready` or `done`.
-- Source: reviews of #1828, 24 Nov 2026. Not verified: the 2.44 ratio is arithmetic on those two figures; no device or simulator run.
+- Source: reviews of #1828, 24 Nov 2026. Not verified: no device or simulator run.
 
 #### BL-2001 Give the marketing agent a backlog owner name in the roster
 - Status: in review (PR #1822). Mode: agent. Owner: platform (the backlog owner name of the `ops` agent; the roster change itself is Karma's). Milestone: M15. Size: S. Depends on: none.

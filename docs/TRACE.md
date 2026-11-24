@@ -1235,7 +1235,7 @@ Card says P0, register does not list: NS-08-R21, NS-17-R11, NS-17-R12, NS-38-R1,
 | NS-09-R11 | tested | `apps/mobile/test/ns09-let-go-queue.test.ts:153`, `apps/mobile/test/ns09-let-go-queue.test.ts:154` |  |  | BL-977 |
 | NS-09-R12 | tested | `apps/mobile/test/ns09-let-go-queue.test.ts:173`, `apps/mobile/test/ns09-let-go-queue.test.ts:176` |  |  | BL-977 |
 | NS-09-R14 | tested | `supabase/tests/sync_v1_server.test.mjs:344`, `supabase/tests/sync_v1_server.test.mjs:347`, `supabase/tests/sync_v1_server.test.mjs:350` |  |  | BL-977 |
-| NS-09-R15 | tested | `apps/mobile/test/ns09-let-go-failures-sync.test.ts:33`, `apps/mobile/test/ns09-let-go-failures-sync.test.ts:34`, `apps/mobile/test/ns09-let-go-failures-sync.test.ts:53` and 9 more |  |  | BL-977 |
+| NS-09-R15 | tested | `apps/mobile/test/ns09-let-go-failures-sync.test.ts:33`, `apps/mobile/test/ns09-let-go-failures-sync.test.ts:34`, `apps/mobile/test/ns09-let-go-failures-sync.test.ts:53` and 9 more |  |  | BL-977, BL-2014 |
 | NS-10-R0 | tested | `apps/mobile/test/held-screen-routes.test.ts:29`, `apps/mobile/test/held-screen-routes.test.ts:30`, `apps/mobile/test/held-screen-routes.test.ts:39` and 5 more |  |  | BL-978, BL-1859 |
 | NS-10-R1 | device |  | device row S1-204 |  | BL-978 |
 | NS-10-R3 | tested | `apps/mobile/test/account-deletion-second-account.test.ts:85`, `apps/mobile/test/account-gate.test.ts:38`, `apps/mobile/test/account-layer.test.ts:19` and 3 more |  |  | BL-978, BL-1863 |
@@ -1344,7 +1344,7 @@ Card says P0, register does not list: NS-08-R21, NS-17-R11, NS-17-R12, NS-38-R1,
 | NS-33-R1 | tested | `apps/mobile/test/a11y-headings.test.ts:35` |  |  | BL-184, BL-1172, BL-1861, BL-1928 |
 | NS-33-R2 | tested | `apps/mobile/test/a11y-headings.test.ts:56` |  |  | BL-184, BL-1172, BL-1861, BL-1928 |
 | NS-33-R3 | tested | `apps/mobile/test/photos-surfaces.test.ts:558`, `apps/mobile/test/photos-surfaces.test.ts:559`, `apps/mobile/test/photos-surfaces.test.ts:573` |  |  | BL-931 |
-| NS-33-R4 | tested | `apps/mobile/test/a11y-ax5.test.ts:73`, `apps/mobile/test/a11y-ax5.test.ts:94`, `apps/mobile/test/a11y-ax5.test.ts:158` and 2 more | device |  | BL-184, BL-1172, BL-1860, BL-1861, BL-1864, BL-1928 |
+| NS-33-R4 | tested | `apps/mobile/test/a11y-ax5.test.ts:73`, `apps/mobile/test/a11y-ax5.test.ts:94`, `apps/mobile/test/a11y-ax5.test.ts:158` and 2 more | device |  | BL-184, BL-1172, BL-1860, BL-1861, BL-1864, BL-1928, BL-2015 |
 | NS-33-R5 | device |  | device |  | BL-184, BL-1173 |
 | NS-33-R6 | device |  | device |  | BL-184, BL-1172 |
 | NS-33-R7 | device |  | device |  | BL-184, BL-1173 |
