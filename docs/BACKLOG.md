@@ -10670,6 +10670,229 @@ Source: findings of 23 and 24 Nov 2026 handed to the product agent. BL-1983 is t
 - Second pass (24 Nov 2026): 25 rows flipped to done and 9 to partly done, each from the merged PR's changed files and subject against the row's Done-when line. Rows left as they are because a Done-when clause could not be checked from the files: BL-251, BL-410, BL-419, BL-422, BL-460, BL-462, BL-463, BL-476, BL-478, BL-483, BL-492, BL-493, BL-494, BL-495, BL-775, BL-841, BL-867, BL-930, BL-963, BL-982, BL-1001, BL-1434, BL-1527 (stays open by its own text), BL-1531, BL-1533, BL-1561, BL-1562, BL-1788, BL-1790, BL-1853, BL-1855, BL-1987, BL-1991. BL-1961 stays in review (PR #1816 is open). BL-1983 was already done.
 - Source: findings of 23 to 24 Nov 2026. Not verified: diffs were not read; only commit subjects.
 
+## Compliance requirement rows from the exec review of 24 Nov 2026 (BL-2040 to BL-2058; filed by the compliance engineer, docs only)
+
+Written by the compliance engineer (a Claude role, not a lawyer; nothing here is legal advice or a statement that anything complies). Source: the final compliance requirements file of 24 Nov 2026, which applies the exec review of 24 Nov (the Claude exec roles, D-172) to the first draft. All rows are `proposed`; Karma sets `ready` after the ranking. Parent-visible words below are PROPOSED and held (content owns the final words; legal text and promises stay the founder's, CR-73). Owner names marked "nearest roster name" are kept as the source wrote them. Not verified by the author: the policy's retention numbers, the CLAIMS-1.0 row counts (47 rows; 7 `no automated proof`), every Apple and statute statement, PR #1906 state, whether Supabase keeps sign-up addresses in its own logs, hosted backup retention. Row BL-2058 is the geo loader child row that BL-2040 names; the source asked for it but did not number it.
+
+#### BL-2040 Release check: sign-up region hook live and read back (R1)
+- Status: proposed (compliance requirements final of 24 Nov 2026). Mode: pair (the hosted read-back is a physical founder step queued in `docs/release/FOUNDER_QUEUE.md`). Owner: security engineer (nearest roster name). Milestone: M15. Size: M. Priority: unranked (Karma sets it at ranking). Depends on: BL-553, BL-1944, BL-554, BL-2058.
+- Gate: first store build with servers on (D-170); the hook switch-on stays a founder physical act. Protected path: CCO plus Karma approval.
+- Satisfies: the compliance-gates sign-up check (CR-26); BL-1944 item 2 (this row puts numbers on it).
+- Problem and evidence: `supabase/config.toml` lines 138 to 140 say the hook is not configured locally, so "in force" is true of the repo, not of the hosted project; `20261121030000_compliance_gates.sql:268` blocks only `scope = 'country'` and `status = 'block'` rows. Nothing in `scripts/release/launch-gate.mjs` reads whether the hosted hook is on, the age of the address data, or the jurisdiction rows. Terms 2.4 (`docs/legal/terms-of-service.md:44`) is the embargo and restricted-party confirmation only; it does not say "not available in every country" and must not be cited for that.
+- Scope: `scripts/release/launch-gate.mjs` fails unless 3 conditions hold, and prints the three read-backs into the release evidence file: (1) the before-user-created hook is enabled (Management API read-back, needs a token, run by a scheduled job only after the founder adds the secret); (2) `ops.geo_ip_meta.loaded_at` is within 45 days; (3) `ops.restricted_jurisdictions` has all 6 country rows with `scope = 'country'` and `status = 'block'`. The 4 region rows (Crimea, Sevastopol, Donetsk, Luhansk) are not a condition: the hook never reads them (web page only). The daily report alerts the founder outside Supabase on any `error` count above 0, and on `geo_unknown` only when the day has at least 20 attempts and more than 5 percent are unknown (iCloud Private Relay will probably raise `geo_unknown`; UNVERIFIED). Parent words: BL-553's existing PROPOSED `authCopy.region` lines only.
+- Recorded: daily counts (day, check, outcome, jurisdiction code on a block). Never recorded by us: the address, a place name, a person. Supabase's own auth or edge logs likely hold the address (UNVERIFIED), so no "we keep nothing about where you are" sentence is made.
+- Open questions the row answers: the hook fails open on an unknown address, missing data and any error; state the number of undetected blocked-country sign-ups that is acceptable, who is woken, and why a stale `loaded_at` blocks a release while a stale runtime count is only a counter. What blocks submission if the founder has not done the read-back? Proposed answer: the gate stays red.
+- Done when: given the hosted project at release time, the gate fails unless all 3 conditions hold (a mutant for each); given a synthetic event JSON with a blocked-country test address, `public.hook_before_user_created` called as the owner role (it is revoked from `service_role`, so a service-role call is not the test) returns the refusal for 1 of 1 blocked and `{}` for 1 of 1 allowed. A real blocked-region sign-up from a VPN is a one-time physical device row, not a CI test.
+- Test: `compliance/scripts/compliance.test.mjs` extended, plus a new `launch-gate` test with a mutant for each of the 3 conditions.
+- Founder item F1: region refusal wording and any "we keep nothing about where you are" sentence. Recommendation: use BL-553's PROPOSED words; drop the "keep nothing" claim until a log read-back. Default: words stay PROPOSED and held.
+- Source: compliance requirements final, TBD-1 (R1), conflict rulings C1, C4, C9. Not verified: the hosted hook state, Supabase's own logs.
+
+#### BL-2041 No-signal age gate behaviour and tests (R2a)
+- Status: proposed (compliance requirements final of 24 Nov 2026; approved by the exec review). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Priority: unranked (Karma sets it at ranking). Depends on: BL-1031.
+- Gate: first store build.
+- Satisfies: LEGAL-REQ-002; BL-1031 (BL-345 is already superseded by BL-1031, this row supersedes nothing new).
+- Problem and evidence: `apps/mobile/src/lib/age-gate.logic.ts` holds the neutral 18+ question and `BLOCK_MS` (24 hours, line 15). The three behaviours that matter (nothing preselected, a No blocks for 24 hours, a clock moved back does not shorten the stop) are not each pinned by a mutant in `apps/mobile/test/age-gate.test.ts`.
+- Scope: 3 mutants fail (preselected yes, stored age, shortened stop). The logic test simulates "no age-range API" by input, not by OS version (no device claim). A content test checks that the gate text and the stored keys match. Honest limit, stated in the row: state lives on the phone, so a No survives a clock change but not a reinstall. Parent words (shown on the gate, true by `age-gate.logic.ts`): "We keep a yes or no on your phone, never an age."
+- Recorded: `ageGate.passed` (boolean), `ageGate.stoppedAt` after a No. Never recorded: a birth date, an age range, a raw signal.
+- Done when: given the neutral 18+ question and no platform age signal, nothing is preselected, a No blocks for 24 hours, and a clock moved back does not shorten the stop (3 of 3 mutants fail the build); the text-and-keys test passes.
+- Test: extend `apps/mobile/test/age-gate.test.ts` with the 3 mutants plus the text-and-keys content test.
+- Source: compliance requirements final, TBD-2 (R2a).
+
+#### BL-2042 Age-signal intake (R2b): needs an exec ruling first
+- Status: proposed (compliance requirements final of 24 Nov 2026; NOT READY, needs an exec ruling by Karma plus a challenger first). Mode: decision. Owner: mobile engineer (with security engineer, nearest roster name, for the server handler). Milestone: M15. Size: M or L (native module, EAS build, server notification handler; not S). Priority: unranked (Karma sets it at ranking). Depends on: BL-2041.
+- Gate: the ruling. It adds a data intake and a policy sentence (age-assurance design class, packet Q5; policy conditions in the Privacy skill: use only for the purpose, delete promptly, clear notice).
+- Satisfies: LEGAL-REQ-002 (extends it).
+- Problem and evidence: BL-345 planned a platform age signal for the 1 Jan 2027 laws and is superseded by BL-1031. The exec review notes the draft's "before 1 Jan 2027" ignores that Apple says Texas is in force for new accounts since 4 June 2026 (CCO skill, read 31 Oct). State both dates; both UNVERIFIED (no Apple page or statute re-read). If the first store build is available in Texas, 1 Jan 2027 is the wrong clock.
+- Scope (draft, for the ruling): where a platform minor signal exists, the device blocks, the account closes through the `under_18_closure` deletion reason (the support deletion path is BL-551), and the raw signal is held in memory only. Given a signal says minor, the device blocks and 1 closure is queued with reason `under_18_closure`; given a signal says adult and the person already answered No, the No stands for its 24 hours.
+- Open question for the ruling: when a minor signal arrives for an account that already answered Yes, we hold actual knowledge of a minor; who closes it, within what time, and what does the child's family see?
+- Recorded: a count of `under_18_closure`. Never recorded: a birth date, an age range, the raw signal.
+- Done when: the ruling is written into `docs/DECISIONS.md` by Karma, and this row is flipped to `ready`, split, or `declined`. Test (set by the ruling): at minimum 1 mutant per branch above.
+- Founder item F4: age-signal intake and its policy line. Recommendation: no-signal behaviour now (BL-2041); decide intake after the Apple and statute pages are re-read. Default: the first store build ships without intake, with the neutral question and the under-18 runbook.
+- Source: compliance requirements final, TBD-2b (R2b). Not verified: Apple and statute dates.
+
+#### BL-2043 Retention numbers equal published numbers (R3)
+- Status: proposed (compliance requirements final of 24 Nov 2026). Mode: agent (the page merge is founder-held). Owner: data architect. Milestone: M15. Size: M. Priority: unranked (Karma sets it at ranking). Depends on: BL-584.
+- Gate: first store build with servers on.
+- Satisfies: DSR-R13 (enforced by review only today); PRIV-R17 (claims touched).
+- Problem and evidence: the published retention numbers (30 days Recently deleted, 24 months, 12 months, 7 day invite links, 90 days shutdown notice, 30 day change notice) have no test tying them to the constants that run them. The clocks sit in `supabase/migrations/20261002020000_data_governance.sql:883-893` and `20260930000000_scribe_core.sql:8`, not in `purge-worker/config.ts`. 31, 38 and 45 days are added only after the policy states them; today DSR-R13 is their only home.
+- Scope: single source `docs/legal/retention-clocks.yaml` (clock, number, unit, the policy line that states it, the migration or function that runs it). The test reads that file, the policy text and the SQL constants. The yaml also lists the Resend 30 day sent-mail record (`supabase/functions/purge-worker/account.ts:151`) and the 90 day invite-hash clock, each marked "not in the policy" where true. Backup retention is NOT a CI value (a dashboard setting, not readable offline): it is a physical founder read-back before release, recorded in the evidence file. On mismatch the code changes by default (collect less, keep less); a change to a published number is exec-review class and a promise change. Open question: "up to 30 days" and "30 days" are different promises; the row names which words the page uses.
+- Recorded: `purge_run` audit rows (content-free). Never recorded: letter content, names.
+- Done when: a changed clock constant with an unchanged policy line fails CI, and the reverse (a mutant per clock); each published number equals the constant that runs it.
+- Test: new `supabase/tests/retention_numbers.test.mjs` plus a read of the policy text by `packages/content`.
+- Founder item F2: publishing any retention table. Recommendation: publish only numbers the code runs, after the backup read-back. Default: hold.
+- Source: compliance requirements final, TBD-3 (R3). Not verified: the policy numbers, the Resend 30 days, the migration clocks.
+
+#### BL-2044 Label, manifest and build switches agree (R4)
+- Status: proposed (compliance requirements final of 24 Nov 2026). Mode: agent. Owner: privacy engineer. Milestone: M15. Size: M. Priority: unranked (Karma sets it at ranking). Depends on: BL-231, BL-1886, BL-1887.
+- Gate: first store build. The decision owner for Linked or Not linked is the Chief Privacy Officer role (packet Q7); default Linked (the stricter reading). The test cannot pass until it is ruled.
+- Satisfies: LEGAL-REQ-042; PRIV-R18; `docs/ops/proposed/label-guard-activation.md`.
+- Problem and evidence: the privacy manifest is not checked per profile against the build switches, and the label file is not checked against the production profile. The 7 cards missing a `Label effect.` line are fixed first (that is what turns the guard from red); the owner of today's red guard is the privacy engineer, and the rule it enforces is the label-effect rule this row also uses; this row adds the profile matrix only.
+- Scope: the privacy manifest is checked per profile (production, preview, testflight); the label file is checked against the production profile only; tester notices (BL-1887) cover preview and testflight. Given backup flips on, Audio Data (linked) must appear in the same PR or the check fails. Given BL-1886 flips production analytics, the label changes in the same PR or the gate fails. A production build with analytics off declares no usage-data type.
+- Recorded: an evidence file per version, with the label rows and the manifest types side by side so the founder can read what the store shows before submit. Never recorded: content.
+- Done when: for each of 3 profiles the manifest's collected types match the build switches (3 of 3); each production manifest type has a row in the label file; one mutant per type fails.
+- Test: profile-matrix test in `apps/mobile/test/privacy-manifest.test.ts`.
+- Source: compliance requirements final, TBD-4 (R4). Not verified: packet Q7 wording and the Apple label rules.
+
+#### BL-2045 Analytics-off proof on the production binary (R5)
+- Status: proposed (compliance requirements final of 24 Nov 2026). Mode: agent. Owner: qa engineer (with analytics engineer). Milestone: M15. Size: M. Priority: unranked (Karma sets it at ranking). Depends on: BL-275, BL-1886, BL-1887.
+- Gate: before the production flip (BL-1886); preview and testflight with BL-1887. A named gate row with an empty `allowedOn` in `scripts/release/store-flags.mjs` until it clears. A source-level test lands now; the proxy test waits on BL-275 (Maestro harness, in progress; qa engineer owns).
+- Satisfies: PRIV-R10; D-170 (no SDK, `createClient` null); LEGAL-REQ-043.
+- Problem and evidence: nothing proves that a production build sends no analytics request or lists no analytics domain in its manifest. D-163's second instruction versus LEGAL-REQ-043 is open, so this row does not choose what preview and testflight do before consent.
+- Scope: given the production profile, one launch, one capture and a close with a recording proxy, 0 requests in 60 seconds go to any analytics host and the manifest lists 0 analytics domains. Given a preview or testflight build with `EXPO_PUBLIC_ANALYTICS` on (after BL-1887), events follow the consent state the build ships with. Any event carries no text, transcript, audio, child name, birth date or account id. The Settings line "Right now this build sends no usage counts." is a new sentence: PROPOSED and held (CR-178 item 2), shown only when true, flipped by the same `privacyPage()` input as `EXPO_PUBLIC_ANALYTICS`. Open questions to answer before the production flag moves: what the label and the line say if D-163 stands, and whether Apple 5.1.1(ii) allows it (UNVERIFIED).
+- Recorded: nothing new. Never recorded: any content. If declined: nothing is sent and Early Letters works fully.
+- Done when: the production-profile proof passes (0 requests, 0 domains); a source-level test lands now.
+- Test: new journey test with the Asha fixtures; mutants: autocapture on, session replay on, a host not in the registry. Optional tester view (live list of event names from the typed allowlist) is a neighbour note, not sized; it needs BL-1887 first.
+- Founder item F3: D-163 consent default and the Settings "no usage counts" line. Recommendation: a plain in-app ask before any usage counts in production; content-free counts only; the line shown only when true. Default: production analytics stays off behind BL-1886.
+- Source: compliance requirements final, TBD-5 (R5).
+
+#### BL-2046 Subprocessor parity test (R6)
+- Status: proposed (compliance requirements final of 24 Nov 2026). Mode: agent. Owner: security engineer (nearest roster name; with privacy engineer). Milestone: M15. Size: M (not S). Priority: unranked (Karma sets it at ranking). Depends on: BL-1477.
+- Gate: first store build.
+- Satisfies: PRIV-R12, PRIV-R13; `docs/legal/subprocessors.md` section 5.
+- Problem and evidence: no test ties a new network host, SDK or dependency to a subprocessor row. This row does not duplicate the PR #806 denylist slice or `apps/mobile/test/sync-outbox-allowlist.test.ts`.
+- Scope: new machine-readable `docs/legal/subprocessors.map.yaml` (company name as in the legal doc, hosts, SDK package names, data class; the legal doc stays untouched and founder-held). Every network host and SDK in code maps to a company row, and every row maps to code or is marked `non-code` (Apple, Hugging Face downloads from code, Vercel as the web app). A new `package.json` dependency with network capability and no row fails the build. Hugging Face and Cloudflare R2 see an IP address: each row states that, and the test checks the stated "what it handles", not only that the row exists. No in-app "services we use" list exists, so none is generated.
+- Recorded: nothing.
+- Done when: a new host, a removed row and an unmapped dependency each fail (3 mutants).
+- Test: new `apps/mobile/test/subprocessor-parity.test.ts`.
+- Source: compliance requirements final, TBD-6 (R6).
+
+#### BL-2047 Claims registry per-line hash test (R7)
+- Status: proposed (compliance requirements final of 24 Nov 2026). Mode: agent (wording changes founder-held, CR-73). Owner: content (with privacy engineer). Milestone: M15. Size: S. Priority: unranked (Karma sets it at ranking). Depends on: BL-867.
+- Gate: first store build.
+- Satisfies: LEGAL-REQ-044; PRIV-R17.
+- Problem and evidence: `docs/legal/CLAIMS-1.0.md` carries 47 rows per the exec review (7 backed, 20 partly backed, 7 no automated proof, 1 false today, 6 flag, 6 held; counts UNVERIFIED, confirm before writing the ratchet number: a grep for the phrase returned 9 lines that may include the legend). Nothing fails when a claim line in `packages/content` or `docs/legal` changes without the registry row.
+- Scope: a claim line changed by 1 character fails CI until the row is touched in the same PR, unless the change carries an `unchanged-meaning` marker co-signed by the privacy engineer (typo fixes do not become registry PRs). The count of `no automated proof` rows may not rise (ratchet) and each gets a date; CI does not fail on the 7 existing rows today. S-18 ("false today", the store review notes) stays a submission blocker. Open question: which of the 7 are promises about data leaving the phone or being deleted, and why is any still without a test (feeds BL-2056).
+- Recorded and never recorded: content-free.
+- Done when: a one-character reword (mutant) fails until the registry row's hash and backing test change.
+- Test: new `packages/content/test/claims-hash.test.ts`.
+- Founder item: any wording change stays the founder's (CR-73); no default change.
+- Source: compliance requirements final, TBD-7 (R7). Not verified: the row counts.
+
+#### BL-2048 Privacy request table and overdue query (R8)
+- Status: proposed (compliance requirements final of 24 Nov 2026). Mode: pair (a `supabase/**` change: independent red-team review D-041 and a grant line in `supabase/tests/grants.mjs`). Owner: platform (nearest roster name for ops; the schema is the data architect's). Milestone: M15. Size: M. Priority: unranked (Karma sets it at ranking). Depends on: BL-237.
+- Gate: before any sign-in outside the family (D-129, D-170).
+- Satisfies: DSR-R05 (TDD 05 7.8); DSR-R12.
+- Problem and evidence: no `privacy_requests` table exists in `supabase/migrations` and no query finds a request open past its due date. This builds the minimal table designed in DSR-R05, not a second log in `ops.audit_log`.
+- Scope: columns for received date, verified yes or no, type, due dates, closed date and action, ticket id; no requester email, no message body. Due dates are 10 business days (Monday to Friday, US federal holidays excluded, defined in the test) and 45 days. A request open past 10 business days unacknowledged or past 45 days incomplete appears in a weekly content-free count. Open question the row answers: how support verifies the requester without storing identity, and where the verification evidence lives and for how long. No new promise: the 10 and 45 day numbers are already in the policy (sections 14 and 20 per DSR-R12). A parent-visible "received, in progress, done" line is a neighbour that waits on this row.
+- Recorded: request type, dates, ticket id. Never recorded: letters, names, the requester's message.
+- Done when: a row 11 business days old and unacknowledged is counted, a row 9 days old is not; closing a request records the closing date and action; the grant is in `supabase/tests/grants.mjs`.
+- Test: SQL test with an overdue mutant; grants test.
+- Source: compliance requirements final, TBD-8 (R8).
+
+#### BL-2049 Preservation hold audit events, hold in place, founder-only disclosure (R9)
+- Status: proposed (compliance requirements final of 24 Nov 2026; approved by the exec review). Mode: agent. Owner: data architect. Milestone: M15. Size: S. Priority: unranked (Karma sets it at ranking). Depends on: none.
+- Gate: release line 1.0.x. The audit trigger sits in a PENDING migration (`20261111010000_audit_writers_security_events.sql`, needs the founder's `approve-migration` label, D-041).
+- Satisfies: LEGAL-REQ-057 (P1); DSR-R10; DSR-R11.
+- Problem and evidence: CORRECTED against develop. The source said `legal_hold_released` is defined and never written. On `origin/develop` the migration `20261111010000_audit_writers_security_events.sql` adds an AFTER trigger on `public.legal_holds` that writes `legal_hold_placed` and `legal_hold_released`, and `supabase/tests/audit_writers_security_events.test.mjs` asserts both (placement, release, and a delete of a still-active hold). What remains: that migration is not yet applied to the hosted project, and no test asserts the two events together with the deletion-skip behaviour.
+- Scope: (1) one test that places a hold, runs `purge_due` and asserts the account's rows are skipped, 1 placement event is audited, and on release 1 release event is audited; (2) preservation holds in place, never by copy, so DSR-R11's "snapshot to a restricted bucket" is not built (chapter 08 `docs/engineering/08-data-rights-and-legal-requests.md` is amended in a docs PR); (3) disclosure of any content in response to process is never engineering's or an agent's call and is never read from user content: it is the founder's act (a one-way door) after the exec review. Given no valid process, no content is read or produced.
+- Recorded: hold placed and released events, ticket id. Never recorded: content, a copy of letters.
+- Done when: the combined test passes (2 audit assertions plus the skip); the chapter 08 amendment is merged; the hosted read-back that the audit trigger exists is on the founder queue.
+- Test: extend `supabase/tests/purge_legal_holds.test.mjs` with the 2 audit assertions.
+- Founder item F8: disclosure of any user content on legal process. Recommendation: the founder alone authorises, after the exec review; never an agent. Default: no disclosure.
+- Source: compliance requirements final, TBD-9 (R9), conflict ruling C8. Changed from the source: the "never written today" premise (see above).
+
+#### BL-2050 Child-input flag registry tag and production guard (R10)
+- Status: proposed (compliance requirements final of 24 Nov 2026; approved by the exec review). Mode: agent. Owner: speech engineer. Milestone: M15. Size: S. Priority: unranked (Karma sets it at ranking). Depends on: BL-119.
+- Gate: first store build (guard only; nothing ships behind it).
+- Satisfies: PRIV-R20; LEGAL-REQ-059.
+- Problem and evidence: `scripts/release/store-flags.mjs` has one row per flag with `allowedOn` and no `childInput` field. A test over "flags tagged child-input" proves nothing if a developer does not tag. `SelectInput.childInput` already exists (`packages/core/test/prompts.selection.test.ts`), so prompts never invite a child when it is absent.
+- Scope: every flag in `scripts/release/store-flags.mjs` declares `childInput: true|false`; an undeclared flag fails the check; a flag with `childInput: true` that is on in the production profile fails the build (1 of 1). Open question stated in the row: a baby's cooing in a parent's recording is a child's voice (FTC FAQ F.6 per the skills, UNVERIFIED); the row says which side of packet Q4 the build is on (default proposed: the stricter side).
+- Recorded and never recorded: nothing new.
+- Done when: a mutant for an undeclared flag and a mutant for `childInput: true` on in production both fail.
+- Test: store-flags test under `scripts/release/`. Child-addressed prompt words: a prompt-copy test (no prompt or button text addresses a child, using the child-term patterns in `packages/content/test/rules.test.ts`, LEGAL-REQ-045 per the registry) is a neighbour S row if wanted after this one; not opened by the author.
+- Source: compliance requirements final, TBD-10 (R10).
+
+#### BL-2051 Privacy page lines carry data-map row ids (T1)
+- Status: proposed (compliance requirements final of 24 Nov 2026). Mode: agent. Owner: privacy engineer. Milestone: M15. Size: M. Priority: unranked (Karma sets it at ranking). Depends on: BL-1058, BL-231.
+- Gate: first store build, behind a named gate row with an empty `allowedOn` in `scripts/release/store-flags.mjs` (CR-178 item 1) until cleared. BL-1058 (the data map, proposed) is a hard dependency: `docs/legal/data-map.yaml` does not exist yet.
+- Satisfies: PRIV-R01; PRIV-R17.
+- Problem and evidence: the Settings > Privacy lines are not tied to any data-map row, so a line can drift from what the build does.
+- Scope: when `privacyPage()` builds the lines, 100 percent of fact lines carry a row id and 0 rows disagree with the build switches. When the map and the code differ, the page shows the code's truth for the build, the check fails, and the privacy engineer is notified in the check output (this answers "which source wins"). Parent words: "What this build keeps, where, and for how long." The extra sentence "Each line below is checked every time we build the app." is a new public promise, true only after the test runs green on the release tag: PROPOSED, held, not shown by default; content picks the final form (avoiding "the app").
+- Recorded: category names, never values; no child name.
+- Done when: a line without a row id fails; a row whose "leaves the phone" flag disagrees with the build's switches fails (mutants: a line without a row; a row saying server while the build says phone).
+- Test: extend `apps/mobile/test/privacy-page.test.ts`.
+- Founder item F5: the sentence "checked every time we build". Recommendation: show it only once this row is merged and green on the release tag. Default: not shown.
+- Source: compliance requirements final, TBD-11 (T1).
+
+#### BL-2052 On-device contact receipt (T2)
+- Status: proposed (compliance requirements final of 24 Nov 2026). Mode: pair. Owner: mobile engineer. Milestone: M15. Size: L (the row first creates or enumerates the network sites). Priority: unranked (Karma sets it at ranking). Depends on: BL-1477, BL-862, BL-2055.
+- Gate: behind a named gate row, empty `allowedOn` until cleared.
+- Satisfies: PRIV-R17; PRIV-R10.
+- Problem and evidence: the premise "one network wrapper" is false. Four files make `fetch(` calls: `apps/mobile/src/lib/backup/runtime.ts:352,364`, `lib/backup/wire.ts:196`, `lib/remote/expo-adapter.ts:52`, `lib/supabase/client.ts:88` (five lines). `expo-web-browser` and `Linking.openURL` open the system browser and Apple pages. No download call was found in `apps/mobile/src` by grep; check the native module for the speech-model download.
+- Scope: step 1 creates one wrapper or wraps each of the 4. With servers off and a full capture, edit and read session, the receipt shows 0 for every destination kind; with sync on it shows only "our server". A request that bypasses the wrapper fails the allowlist test (BL-1477). Parent words (one safe sentence, PROPOSED and held): "These are requests this app made in the last 7 days." The page says "requests Early Letters makes through its own code" and does not say "contacted nobody else" (the system browser, Apple's own services and the model download path are not all counted). Open question: the wording for a large number, for example 400 sync calls; the row proposes showing "synced" rather than a request count.
+- Recorded: counts per day for 7 days, per destination kind, on the phone only. Never recorded: a URL, path, payload size, text. Never exported, never in analytics, never sent; cleared on sign-out and on account deletion (test for the clearing).
+- Done when: servers off gives 0 of every kind; sync on gives only "our server" above 0; the clearing test passes.
+- Test: new `apps/mobile/test/contact-receipt.test.ts` with a log canary of Asha strings (BL-862) asserting 0 hits in the stored counts, plus the clearing test.
+- Founder item F6: contact receipt wording and gate. Recommendation: ship behind a named gate row with one safe sentence. Default: PROPOSED and held.
+- Source: compliance requirements final, TBD-12 (T2). Not verified: the speech-model download path.
+
+#### BL-2053 Deletion and export receipt (T3)
+- Status: proposed (compliance requirements final of 24 Nov 2026). Mode: pair (waits on counsel Q51, which here means the exec team's review of Q51). Owner: data architect (with content). Milestone: M15. Size: M. Priority: unranked (Karma sets it at ranking). Depends on: BL-1857.
+- Gate: gate row with empty `allowedOn` for the kept-list sentence. Counts and dates first; the kept list after Q51.
+- Satisfies: DSR-R08 (live Resend sender unverified); DSR-R13; D-116; D-111 item 7.
+- Problem and evidence: no receipt states what a deletion removed and what stays. "Kept: nothing about you" would be false against D-116, audit rows and the Resend record (struck).
+- Scope: given a completed purge, each category count equals the verification step's count (N of N) and the kept list equals the rows the code keeps: D-116 rows for a former member's letters (the child's name and dates for labels), erasure markers until the book or account is deleted (D-111 item 7), `audit_events` for 24 months without name or email (policy lines 122 and 124), and the receipt email's address for the 30 day Resend window (`supabase/functions/purge-worker/account.ts:151`), stated. The "backups by {date, 38 days}" line is held until hosted backup retention is read back (physical) and the policy states it. When a sole parent deletes and a co-parent is left, the receipt says plainly what stays for the other person (BL-1857, Q51) and says nothing it cannot prove. The receipt also appears in Settings, not only the email, with the same counts from the same test.
+- Recorded: counts per category, dates. Never recorded: content or names in the email.
+- Done when: each category count equals the verification count; a kept row missing from the words fails.
+- Test: extend `supabase/tests/ops_deletion_worker.test.mjs` for counts; a second test for kept list equals code.
+- Founder item F7: deletion receipt kept list and backup date. Recommendation: counts and dates now; the kept list after Q51. Default: counts only.
+- Source: compliance requirements final, TBD-13 (T3). Not verified: the Resend 30 days, policy lines 122 and 124.
+
+#### BL-2054 Per-release proof sheet
+- Status: proposed (compliance requirements final of 24 Nov 2026; a BOLDER row, review section 9 item 1). Mode: pair (publishing is founder-held). Owner: privacy engineer (with content). Milestone: M15. Size: M. Priority: unranked (Karma sets it at ranking). Depends on: BL-2040, BL-2043, BL-2044, BL-2047.
+- Gate: after the first store build; the first sheet is for the first tag. Generation is internal first.
+- Satisfies: PRIV-R17.
+- Problem and evidence: no single page shows, per release, which privacy checks held.
+- Scope: for each release tag, one generated page lists the claims registry status counts, the retention clocks, the label and manifest side by side, the three gate read-backs, the git tag and the check run ids. 100 percent of its numbers are read from BL-2040, BL-2043, BL-2044 and BL-2047 outputs, and the job fails if any source is missing (4 of 4 present).
+- Recorded: counts, hashes, run ids. Never recorded: content, counts per country.
+- Done when: the generator test passes with a mutant for a missing source.
+- Test: generator test.
+- Founder item (an addition, not one of the review's eight): publishing the proof sheet is a promise surface. Recommendation: internal only until the founder rules. Default: internal only.
+- Source: compliance requirements final, TBD-14.
+
+#### BL-2055 Destination-kind registry
+- Status: proposed (compliance requirements final of 24 Nov 2026; a BOLDER row, T2). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Priority: unranked (Karma sets it at ranking). Depends on: BL-2052.
+- Gate: with BL-2052.
+- Satisfies: PRIV-R12.
+- Problem and evidence: the contact receipt (BL-2052) needs a closed list of destination kinds, or "Show me" cannot say anything honest.
+- Scope: a closed registry of 4 to 6 kinds (for example our server, language download host, none). Code that adds a request to a host whose kind is not in the registry fails the check (1 of 1 mutant). The receipt's "Show me" lists kinds only.
+- Recorded: kind names. Never recorded: hosts per call, URLs.
+- Done when: the mutant for a new kind fails the build.
+- Test: registry test with a mutant for a new kind.
+- Source: compliance requirements final, TBD-15.
+
+#### BL-2056 Zero "no automated proof" privacy claims before submission
+- Status: proposed (compliance requirements final of 24 Nov 2026; a BOLDER row, R7). Mode: agent. Owner: content (with privacy engineer and qa engineer). Milestone: M15. Size: M (depends on how many of the 7 are data promises). Priority: unranked (Karma sets it at ranking). Depends on: BL-2047.
+- Gate: before the first store submission.
+- Satisfies: PRIV-R17; LEGAL-REQ-044.
+- Problem and evidence: the registry has 7 `no automated proof` rows (UNVERIFIED count); some are promises about data (W-04, W-08 and others whose subject is data).
+- Scope: before the first store submission, the count of `no automated proof` rows whose subject is a privacy promise is 0; each is backed by a test or its sentence is held (a wording change is a founder item). The other rows keep the BL-2047 ratchet and dates.
+- Recorded and never recorded: content-free.
+- Done when: the submission check finds 0 privacy-promise rows reading `no automated proof`.
+- Test: a submission-check rule in the registry test.
+- Source: compliance requirements final, TBD-16.
+
+#### BL-2057 Build number and git hash on the Privacy page
+- Status: proposed (compliance requirements final of 24 Nov 2026; a BOLDER row, T1). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Priority: unranked (Karma sets it at ranking). Depends on: BL-2051.
+- Gate: with BL-2051, behind the same gate row.
+- Satisfies: PRIV-R17.
+- Problem and evidence: a parent or reviewer cannot tie the Privacy page to the exact build.
+- Scope: Settings > Privacy shows the build number and the git short hash next to its lines: 1 build number and 1 short hash equal to the values of `apps/mobile/version.json` and the tag's commit (the EAS build number only from EAS).
+- Recorded: nothing; values are already in the binary. Never recorded: device id.
+- Done when: the page shows both values on a release build; a mutant for a hash that is not the tag fails.
+- Test: extend `apps/mobile/test/privacy-page.test.ts`.
+- Source: compliance requirements final, TBD-17.
+
+#### BL-2058 Run the geo address loader monthly and record its date (child of BL-2040)
+- Status: proposed (compliance requirements final of 24 Nov 2026; the child row BL-2040 asks for; the source did not number it). Mode: agent. Owner: platform. Milestone: M15. Size: S. Priority: unranked (Karma sets it at ranking). Depends on: none.
+- Gate: first store build with servers on.
+- Satisfies: the compliance-gates sign-up check (CR-26).
+- Problem and evidence: no BACKLOG row runs `compliance/scripts/load-geo-ip.mjs` (0 hits for `load-geo-ip` in `docs/BACKLOG.md` at filing). The script is run monthly "from a machine that can reach db-ip.com and the database" (its header); BL-2040's freshness condition (`ops.geo_ip_meta.loaded_at` within 45 days) needs a named owner and a schedule. Claude sessions cannot reach either host.
+- Scope: a runbook line and a scheduled workflow or a founder-queue item that runs the loader monthly (dry run first), and records the version and date. Whether it is a workflow with the database secret or a founder step is a founder call on secrets (CR-73); proposed default: a founder-queue item until the secret exists.
+- Done when: a named monthly owner and schedule exist, and `loaded_at` is within 45 days at the release check in BL-2040.
+- Test: the BL-2040 gate condition (2) is the check.
+- Source: compliance requirements final, TBD-1 (child row note). Not verified: the loader's hosted run.
+
 ## Follow-up from the review of PR #1828 (24 Nov 2026; filed by design systems, docs only)
 
 #### BL-2020 Sheet title and body text meet from AX3 up: the title is capped, the body is not
