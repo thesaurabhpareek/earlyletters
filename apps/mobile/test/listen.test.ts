@@ -115,7 +115,7 @@ describe('one room, five moments (S11, S12)', () => {
   const all: RoomPhase[] = ['ready', 'asking', 'recording', 'paused', 'finishing'];
 
   it('ready: the red circle at rest is the start control, no aura, no clock, the hint, Close', () => {
-    expect(listenRoom('ready')).toEqual({ close: true, startControl: true, aura: 'ready', clock: false, line: 'readyHint', controls: false, discard: false });
+    expect(listenRoom('ready')).toEqual({ close: true, startControl: true, aura: 'ready', clock: false, line: 'readyHint', lockNote: false, controls: false, discard: false });
   });
 
   it('asking: the same room while iOS asks and the take starts, with no second start control and no Close', () => {
@@ -136,6 +136,12 @@ describe('one room, five moments (S11, S12)', () => {
     expect(listenRoom('recording')).toMatchObject({ close: false, aura: 'listening', clock: true, line: 'listening', controls: true, discard: true });
     expect(listenRoom('paused')).toMatchObject({ close: false, aura: 'paused', clock: true, line: 'paused', controls: true, discard: true });
     expect(listenRoom('finishing')).toMatchObject({ close: false, aura: 'processing', clock: true, controls: false });
+  });
+
+  it('BL-1787: only the paused screen says a lock ends the take, in words that promise nothing', () => {
+    expect(all.filter((p) => listenRoom(p).lockNote)).toEqual(['paused']);
+    expect(en.tonight.states.pausedLock).toBe('If the phone locks while paused, the recording ends.');
+    expect(en.tonight.states.pausedLock).not.toMatch(/kept|safe/i);
   });
 
   it('only one moment offers the circle as a start: the microphone is untouched until it is tapped (S12)', () => {
@@ -218,8 +224,9 @@ describe('the screen uses them (source)', () => {
     expect(c).not.toMatch(/scale=\{1\.75\}/);
   });
 
-  it('S11: the prompt is the literary line in `prompt`, textMuted, at most 3 lines; whole at accessibility sizes (P4 critics S5)', () => {
-    expect(c).toMatch(/<Text variant="prompt" tone="muted" numberOfLines=\{large \? undefined : 3\}/);
+  it('S11: the prompt is the literary line in `prompt`, textMuted, and is shown whole at every text size (no line cap; P4 critics S5)', () => {
+    expect(c).toMatch(/<Text variant="prompt" tone="muted" className="mt-3 text-center" testID="listen\.prompt">/);
+    expect(c).not.toMatch(/variant="prompt"[^>]*numberOfLines/);
     expect(c).toMatch(/const large = useIsAccessibilitySize\(\);/);
   });
 
@@ -340,6 +347,18 @@ describe('a long take does not grow memory (#480)', () => {
     const reads = storeFns.filter((f) => /^(get|list|count|find|read)/.test(f));
     expect(reads.length).toBeGreaterThan(0);
     for (const f of reads) expect(topLevel, f).not.toMatch(new RegExp(`\\b${f}\\(`));
+  });
+});
+
+describe('[BL-924] Discard on Listen runs Let it go, as Review does', () => {
+  it('[NS-09-R3][BL-924] the confirmed Discard calls letItGo with the steps the disk test runs, and nothing else in Listen deletes a file or a draft', () => {
+    const c = code(listen);
+    const onConfirm = c.slice(c.indexOf('const discard = () =>'), c.indexOf('const typeInstead ='));
+    // Behaviour of these exact steps (a delete that throws, a file already gone): test/sweep.disk.test.ts [BL-924].
+    expect(onConfirm).toContain('if (id) letItGo(id, uri, { beginDiscard, deleteFile: (u) => deleteIfPresent(new File(u)), finishDiscard, onFailure: noteDiscardFailure });');
+    expect(c.match(/\bletItGo\(/g)).toHaveLength(1);
+    expect(c.match(/deleteIfPresent\(/g)).toHaveLength(1);
+    expect(c).not.toMatch(/\.delete\(\)|deleteDraft/);
   });
 });
 

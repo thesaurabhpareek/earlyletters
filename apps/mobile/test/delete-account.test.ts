@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { accountDeletionCopy as c } from '@scribe/content';
-import { bookRowKey, bookRowLabel, canDelete, confirmDay, failureLine, HELD, scheduledDay, whatHappens } from '@/components/settings/delete-account.logic';
+import { afterCancel, bookRowKey, bookRowLabel, canDelete, confirmDay, failureLine, HELD, loadFailureLine, scheduledDay, whatHappens } from '@/components/settings/delete-account.logic';
 import { bookImpacts, impactLines, localDay, type SyncBook } from '@/lib/account-deletion/logic';
 
 const SRC = join(__dirname, '..', 'src');
@@ -119,9 +119,9 @@ describe('[S64] failures and the typed word', () => {
 });
 
 describe('[S64] held for counsel (C8)', () => {
-  it('the page shows today\'s intro until the one-line switch, and never the proposal before it', () => {
+  it('the page shows the intro Build 12 can stand behind, and no proposal exists beside it', () => {
     expect(HELD.intro).toBe(c.what.intro);
-    expect(HELD.intro).not.toBe(c.what.introProposed);
+    expect('introProposed' in c.what).toBe(false);
     expect(STATE.review()).toContain('{HELD.intro}');
     expect(page).not.toMatch(/c\.what\.intro\b|introProposed/);
   });
@@ -179,8 +179,8 @@ describe('[S64] the page', () => {
 
 
   it('step 1: Continue opens step 2, only once every book\'s outcome is on the page; a page that could not list them says so', () => {
-    expect(STATE.review()).toContain("<Button variant=\"outline\" size=\"lg\" fullWidth disabled={!list.known} label={c.continueButton} onPress={() => setWanted('confirm')} />");
-    expect(between('{list.known ? null : (', ')}')).toMatch(/<ErrorLine message=\{c\.errors\.failed\} \/>\s*\{tryAgain\}/);
+    expect(STATE.review()).toContain("<Button variant=\"outline\" size=\"lg\" fullWidth disabled={!list.known} label={c.continueButton} testID=\"deleteAccount.continue\" onPress={() => setWanted('confirm')} />");
+    expect(between('{list.known ? null : (', ')}')).toMatch(/\{loadFailure\}\s*\{tryAgain\}/);
   });
 
   it('step 1: each book is one element, read as its line and note, keyed by its place (logic pinned above)', () => {
@@ -216,10 +216,10 @@ describe('[S64] the page', () => {
     expect(button).toContain("<Text tone={ready ? 'onDestructive' : 'muted'}>{c.confirm.button}</Text>");
   });
 
-  it('step 2: the final confirm plays warning once, and a request that went through leaves step 2 behind', () => {
+  it('step 2: the final confirm plays warning once per visit (an offline retry stays quiet, BL-492 point 5), and a request that went through leaves step 2 behind', () => {
     expect(page.match(/haptic\('warning'\)/g)).toHaveLength(1);
     const press = between('variant="destructive"', '</Button>');
-    expect(press).toMatch(/setTried\(true\);\s*haptic\('warning'\);\s*if \(await d\.request\(\)\) keep\(\);/);
+    expect(press).toMatch(/if \(!tried\) haptic\('warning'\);\s*setTried\(true\);\s*if \(await d\.request\(\)\) keep\(\);/);
     expect(STATE.confirm()).toContain("const keep = () => (setWanted('review'), setTyped(''), setTried(false));");
   });
 
@@ -246,16 +246,17 @@ describe('[S64] the page', () => {
     expect(s).toContain('{c.scheduled.emailNote}');
     expect(s).toMatch(/variant="outline"\s+size="lg"\s+fullWidth\s+loading=\{d\.busy\}\s+label=\{c\.scheduled\.cancelButton\}/);
     // Sign out is confirmed first, and the confirm says the request stays open (critics' pass S3).
-    expect(s).toContain('<Button variant="quiet" fullWidth disabled={d.busy} label={c.scheduled.doneButton} onPress={() => confirmSignOut(date, () => void d.signOut())} />');
+    expect(s).toContain('<Button variant="quiet" fullWidth disabled={d.busy} label={c.scheduled.doneButton} testID="deleteAccount.signOut" onPress={() => confirmSignOut(date, () => void d.signOut())} />');
     expect(s.match(/d\.signOut\(\)/g)).toHaveLength(1); // the only call is the confirm's button
     // After the request, the phone's next sync leaves Export without the person's own letters: no export line or row here.
     expect(s).not.toMatch(/exportNote|exportFirst|\/settings\/export/);
     expect(page).not.toMatch(/c\.scheduled\.exportNote/);
   });
 
-  it('cancelled: a toast says so once the cancel went through, with the success haptic', () => {
+  it('cancelled: a toast says so once the cancel went through, with the success haptic, and the page goes back to Settings (BL-492 point 2)', () => {
     const s = STATE.scheduled();
-    expect(s).toMatch(/if \(await d\.cancel\(\)\) \{\s*haptic\('success'\);\s*toast\.show\(\{ message: c\.scheduled\.cancelled \}\);\s*\}/);
+    expect(s).toMatch(/if \(await d\.cancel\(\)\) \{\s*haptic\('success'\);\s*toast\.show\(\{ message: c\.scheduled\.cancelled \}\);/);
+    expect(s).toMatch(/if \(afterCancel\(router\.canGoBack\(\)\) === 'back'\) router\.back\(\);\s*else router\.replace\('\/settings'\);/);
     expect(page).not.toMatch(/\bd\.cancelled\b/);
   });
 
@@ -273,7 +274,7 @@ describe('[S64] the page', () => {
     expect(page).toContain('const failure = <ErrorLine message={failureLine(d.error)} />;');
     expect(page).not.toMatch(/text-destructive|tone="destructive"/);
     expect(STATE.scheduled()).toContain('{failure}');
-    expect(STATE.loading()).toMatch(/\{d\.error \? \(\s*<>\s*\{failure\}\s*\{tryAgain\}/);
+    expect(STATE.loading()).toMatch(/\{d\.error \? \(\s*<>\s*\{loadFailure\}\s*\{tryAgain\}/);
   });
 
   it('the kill path says only its line; signed out offers Sign in, which opens Account', () => {
@@ -287,5 +288,49 @@ describe('[S64] the page', () => {
     expect(tracked.sort()).toEqual(["'export_offered'", "'started'"]);
     expect(page).toMatch(/if \(d\.signedIn && first\) d\.trackStage\('started'\);/);
     expect(page).toMatch(/<DeleteAccountPage key=\{attempt\} first=\{attempt === 0\} onRetry=/);
+  });
+});
+
+// BL-455 point 3: the ids the E2E-09 Maestro flow taps and asserts (e2e/TESTID_REQUESTS.md, "Delete account").
+describe('[BL-455] the test ids the E2E-09 flow needs', () => {
+  const raw = readFileSync(join(SRC, 'app', 'settings', 'delete-account.tsx'), 'utf8');
+  const ids = ['screen', 'signedOut', 'exportFirst', 'subscription', 'continue', 'confirm.input', 'confirm.button', 'scheduled', 'cancel', 'signOut'];
+  it.each(ids)('the page carries deleteAccount.%s', (id) => {
+    expect(raw).toContain(`testID="deleteAccount.${id}"`);
+  });
+  it('every deleteAccount id the flow uses is on the page', () => {
+    const flow = readFileSync(join(__dirname, '..', 'e2e', 'flows', 'E2E-09-account-deletion.yaml'), 'utf8');
+    const used = new Set([...flow.matchAll(/"(deleteAccount\.[\w.]+)"/g)].map((m) => m[1]));
+    expect(used.size).toBeGreaterThan(0);
+    for (const id of used) expect(raw, id).toContain(`testID="${id}"`);
+  });
+  it('the cancel and sign out buttons are in the scheduled state, the typed field and button in confirm', () => {
+    expect(STATE.scheduled()).toContain('testID="deleteAccount.cancel"');
+    expect(STATE.scheduled()).toContain('testID="deleteAccount.signOut"');
+    expect(STATE.confirm()).toContain('testID="deleteAccount.confirm.input"');
+    expect(STATE.confirm()).toContain('testID="deleteAccount.confirm.button"');
+  });
+});
+
+describe('[BL-492] the Later items of the 30 Oct critics\' pass', () => {
+  it('point 2: after a cancel the page goes back to Settings, or to Settings when there is nothing to go back to', () => {
+    expect(afterCancel(true)).toBe('back');
+    expect(afterCancel(false)).toBe('settings');
+  });
+
+  it('point 3: the loading spinner has a name a screen reader reads', () => {
+    expect(STATE.loading()).toContain('<ActivityIndicator color={colors.accent} accessibilityLabel={c.open.checking} />');
+  });
+
+  it('point 4: a page that could not load says so, and does not say that nothing has changed (nothing was tried)', () => {
+    expect(loadFailureLine('failed')).toBe(c.errors.loadFailed);
+    expect(loadFailureLine(null)).toBe(c.errors.loadFailed);
+    expect(loadFailureLine('failed')).not.toMatch(/nothing has changed/i);
+    // Offline keeps its own line, which is true on a page that loads too.
+    expect(loadFailureLine('offline')).toBe(c.errors.offline);
+    // Step 1 with no book lines uses it; a failed press on step 2 and on the scheduled page still uses `failure`.
+    expect(STATE.review()).toContain('{loadFailure}');
+    expect(STATE.review()).not.toContain('c.errors.failed');
+    expect(failureLine('failed')).toBe(c.errors.failed);
   });
 });

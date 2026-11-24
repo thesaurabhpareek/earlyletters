@@ -48,6 +48,11 @@ function plan(p: Omit<Partial<PlanInput>, 'prefs'> & { prefs?: Partial<ReminderP
   });
 }
 
+const formatShift = (iso: string, days: number): string => {
+  const d = addDays(parseIsoDate(iso)!, days);
+  return `${d.y}-${String(d.m).padStart(2, '0')}-${String(d.d).padStart(2, '0')}`;
+};
+
 const local = (n: PlannedNotification, tz = LA) => {
   const p = zonedParts(n.fireAt, tz);
   return `${p.y}-${String(p.m).padStart(2, '0')}-${String(p.d).padStart(2, '0')} ${String(p.hh).padStart(2, '0')}:${String(p.mm).padStart(2, '0')}`;
@@ -212,6 +217,50 @@ describe('daylight saving and time zones', () => {
     expect(p.slice(1).map((n, i) => (n.fireAt - p[i].fireAt) / HOUR)).toEqual([24, 25, 24]);
   });
 
+  // BL-1191 (NS-32-R1, R6): on the two days a zone changes its clock, a reminder keeps its local clock time and the day
+  // still holds one note. Three zones, both hemispheres: a fixed 24 hour step lands an hour off on every day after the change.
+  const CHANGES = [
+    { tz: LA, spring: '2026-03-08', fall: '2026-11-01', springBirth: ['2025-03-08', '2025-10-08'], fallBirth: ['2025-11-01', '2026-06-01'] },
+    { tz: 'Europe/London', spring: '2026-03-29', fall: '2026-10-25', springBirth: ['2025-03-29', '2025-10-29'], fallBirth: ['2025-10-25', '2026-05-25'] },
+    { tz: 'Australia/Sydney', spring: '2026-10-04', fall: '2026-04-05', springBirth: ['2025-10-04', '2026-05-04'], fallBirth: ['2025-04-05', '2025-11-05'] },
+  ];
+  const DAY_STEP = 24 * HOUR;
+  for (const { tz, spring, fall, springBirth, fallBirth } of CHANGES) {
+    for (const [label, date, births] of [['spring-forward', spring, springBirth], ['fall-back', fall, fallBirth]] as const) {
+      const before = formatShift(date, -3);
+      const days = Array.from({ length: 7 }, (_, i) => formatShift(date, i - 3));
+      const everyEvening = { cadence: 'everyEvening' as const, monthNotes: true };
+
+      it(`${tz} ${label} (${date}): every evening nudge is 20:30 local and each day has one note`, () => {
+        const p = plan({ now: at(before, 12, 0, tz), timeZone: tz, prefs: { cadence: 'everyEvening', monthNotes: false }, horizonDays: 7 });
+        expect(p.map((n) => local(n, tz))).toEqual(days.map((d) => `${d} 20:30`));
+        expect(new Set(p.map((n) => n.date)).size).toBe(p.length);
+        // The change day is 23 or 25 hours from the day before; the days either side are 24.
+        const hours = p.slice(1).map((n, i) => (n.fireAt - p[i].fireAt) / HOUR);
+        expect(hours.filter((h) => h !== 24)).toHaveLength(1);
+        expect(hours[2]).toBe(label === 'spring-forward' ? 23 : 25);
+        // Name the mutant: a fixed 24 hour step from the first nudge puts the days after the change an hour off the clock.
+        const stepped = days.map((_, i) => p[0].fireAt + i * DAY_STEP);
+        expect(stepped.map((t) => local({ fireAt: t } as PlannedNotification, tz).slice(11))).not.toEqual(days.map(() => '20:30'));
+      });
+
+      it(`${tz} ${label}: a birthday on the change day is the day's one note, at 09:00 local`, () => {
+        const child: PlannerChild = { id: 'child-asha', name: 'Asha', birthday: births[0], included: true };
+        const p = plan({ now: at(before, 12, 0, tz), timeZone: tz, children: [child], prefs: everyEvening, horizonDays: 7, monthHorizonDays: 7 });
+        const onDay = p.filter((n) => n.date === date);
+        expect(onDay.map((n) => [n.kind, local(n, tz)])).toEqual([['birthday', `${date} 09:00`]]);
+        expect(p.filter((n) => n.kind === 'evening').map((n) => local(n, tz).slice(11))).toEqual(days.filter((d) => d !== date).map(() => '20:30'));
+      });
+
+      it(`${tz} ${label}: a month note on the change day is the day's one note, at the reminder time`, () => {
+        const child: PlannerChild = { id: 'child-asha', name: 'Asha', birthday: births[1], included: true };
+        const p = plan({ now: at(before, 12, 0, tz), timeZone: tz, children: [child], prefs: everyEvening, horizonDays: 7, monthHorizonDays: 7 });
+        expect(p.filter((n) => n.date === date).map((n) => [n.kind, local(n, tz)])).toEqual([['monthAge', `${date} 20:30`]]);
+        expect(p.map((n) => n.date)).toEqual(days);
+      });
+    }
+  }
+
   it('[C-REQ-003] after a flight from Los Angeles to New York the nudge is still at 8:30 PM local', () => {
     const now = at('2026-10-05', 12, 0, LA);
     const inLA = plan({ now, timeZone: LA, prefs: { cadence: 'everyEvening', monthNotes: false }, horizonDays: 5 });
@@ -306,8 +355,9 @@ describe('month notes and birthdays (C-REQ-011)', () => {
     const twin = { ...asha, id: 'child-twin', name: 'Dev' };
     const p = plan({ children: [asha, twin], prefs: { cadence: 'off' }, monthHorizonDays: 40 });
     expect(p.map((n) => n.date)).toEqual(['2026-10-08', '2026-11-08']);
-    expect(p[0].title).toBe('Month 7 begins');
-    expect(p[0].body).toBe(reminderCopy.together.monthBodyNeutral);
+    // Names off: no month number on a lock screen (E82).
+    expect(p[0].title).toBe(reminderCopy.neutral.monthOpen.title);
+    expect(p[0].body).toBe(reminderCopy.neutral.lockBody);
     const named = plan({ children: [asha, twin], prefs: { cadence: 'off', namesOnLockScreen: true }, monthHorizonDays: 40 });
     expect(named[0].body).toBe('A new month is open for Asha and Dev.');
   });
@@ -316,7 +366,7 @@ describe('month notes and birthdays (C-REQ-011)', () => {
 describe('names on the lock screen (C-REQ-009, D-025)', () => {
   const names = ['Asha', 'Dev'];
   const lots = (namesOnLockScreen: boolean) =>
-    plan({ children: [asha, dev], prefs: { cadence: 'everyEvening', namesOnLockScreen }, horizonDays: 21, monthHorizonDays: 400, maxNotifications: 200, now: at('2026-12-20', 12, 0) });
+    plan({ children: [asha, dev], prefs: { cadence: 'everyEvening', namesOnLockScreen }, horizonDays: 21, monthHorizonDays: 400, now: at('2026-12-20', 12, 0) });
 
   it('by default no notification names a child', () => {
     const p = lots(false);
@@ -325,7 +375,7 @@ describe('names on the lock screen (C-REQ-009, D-025)', () => {
   });
 
   it('with names on, evening nudges name each included child in turn', () => {
-    const evenings = plan({ children: [asha, dev], prefs: { cadence: 'everyEvening', namesOnLockScreen: true, monthNotes: false }, horizonDays: 56, maxNotifications: 200 });
+    const evenings = plan({ children: [asha, dev], prefs: { cadence: 'everyEvening', namesOnLockScreen: true, monthNotes: false }, horizonDays: 56 });
     // Every variant but "Tonight's letter" names a child.
     const named = evenings.map((n) => names.find((name) => `${n.title} ${n.body}`.includes(name))).filter(Boolean);
     expect(named.length).toBe(evenings.length - evenings.filter((n) => n.variant === 1).length);
@@ -336,7 +386,7 @@ describe('names on the lock screen (C-REQ-009, D-025)', () => {
   });
 
   it('never names a child left out of reminders', () => {
-    const p = plan({ children: [asha, { ...dev, included: false }], prefs: { cadence: 'everyEvening', namesOnLockScreen: true }, monthHorizonDays: 400, maxNotifications: 200 });
+    const p = plan({ children: [asha, { ...dev, included: false }], prefs: { cadence: 'everyEvening', namesOnLockScreen: true }, monthHorizonDays: 400 });
     for (const n of p) expect(`${n.title} ${n.body}`).not.toContain('Dev');
   });
 
@@ -361,6 +411,38 @@ describe('copy rotation (C-REQ-006)', () => {
       for (let i = 0; i + 4 <= variants.length; i++) expect(new Set(variants.slice(i, i + 4)).size).toBe(4);
       for (let i = 1; i < p.length; i++) expect(p[i].title).not.toBe(p[i - 1].title);
     });
+  }
+
+  // NX-10-R2 (docs/roadmap/next/03-requirements/10-reminders-that-fit.md): the check above runs on one plan. This one
+  // walks a year the way the phone does: re-plan every morning, keep the nudge that fires that day, and read the
+  // reminders that were actually delivered, across the November and March clock changes and the new year.
+  const delivered = (prefs: Partial<ReminderPrefs>, start: string, days: number): PlannedNotification[] => {
+    const out: PlannedNotification[] = [];
+    for (let i = 0; i < days; i++) {
+      const day = addDays(parseIsoDate(start)!, i);
+      const iso = `${day.y}-${String(day.m).padStart(2, '0')}-${String(day.d).padStart(2, '0')}`;
+      const today = plan({ now: at(iso, 6, 0), prefs, children: [asha, dev] }).filter((n) => n.date === iso);
+      out.push(...today);
+    }
+    return out;
+  };
+
+  for (const [label, prefs] of patterns) {
+    for (const namesOnLockScreen of [false, true]) {
+      it(`[NX-10-R2] 30 reminders in a row, across seasons: no text twice in a row, no variant twice within 4 (${label}, names ${namesOnLockScreen ? 'on' : 'off'})`, () => {
+        for (const start of ['2026-10-05', '2026-12-15', '2027-02-20']) {
+          const run = delivered({ ...prefs, namesOnLockScreen }, start, 150);
+          expect(run.length, start).toBeGreaterThan(30 * (label === 'weekly' ? 0.5 : 1));
+          for (let i = 1; i < run.length; i++) {
+            expect(`${run[i].title}|${run[i].body}`, `${start} #${i} ${run[i].date}`).not.toBe(`${run[i - 1].title}|${run[i - 1].body}`);
+          }
+          const evenings = run.filter((n) => n.kind === 'evening');
+          for (let i = 0; i + 4 <= evenings.length; i++) {
+            expect(new Set(evenings.slice(i, i + 4).map((n) => n.variant)).size, `${start} window ${i}`).toBe(4);
+          }
+        }
+      });
+    }
   }
 
   it('a date keeps its variant when the plan is made again later', () => {

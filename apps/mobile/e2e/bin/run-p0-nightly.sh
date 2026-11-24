@@ -7,6 +7,7 @@
 #
 #   apps/mobile/e2e/bin/run-p0-nightly.sh --udid-a <UDID> [--udid-b <UDID>] [--app <path/to/App.app>] [--junit]
 #
+# A flow that taps an id still on not-in-app.txt is skipped with that reason (bin/blocked.sh).
 # Without --udid-b, or without the e2e backend env (MAESTRO_E2E_SUPABASE_URL,
 # TESTID_REQUESTS.md section 5), E2E-12 and E2E-13 are reported as skipped and
 # the exit code says so: 0 all ran and passed, 1 a flow failed, 3 nothing failed
@@ -32,6 +33,8 @@ done
 export OUT="${OUT:-$HOME/.maestro/scribe-e2e/p0-$(date -u +%Y%m%dT%H%M%SZ)}"
 mkdir -p "$OUT"
 
+# shellcheck source=blocked.sh
+source "$HERE/blocked.sh"
 SKIPPED=0
 FAILED=0
 
@@ -45,7 +48,15 @@ status=${PIPESTATUS[0]}
 grep -q '^  SKIP ' "$OUT/single.log" && SKIPPED=1
 
 # Two simulators: E2E-13a, 13b, 13c.
-if [[ -n "$B" && -n "${MAESTRO_E2E_SUPABASE_URL:-}" ]]; then
+CO_BLOCKED=""
+for f in E2E-13a-invite-create E2E-13b-invite-accept E2E-13c-invite-confirm; do
+  r="$(blocked_reason "$f")"
+  [[ -n "$r" ]] && CO_BLOCKED="$CO_BLOCKED $f ($r);"
+done
+if [[ -n "$CO_BLOCKED" ]]; then
+  echo "SKIP E2E-13 (blocked: the app does not set the ids these flows tap, see not-in-app.txt:$CO_BLOCKED)"
+  SKIPPED=1
+elif [[ -n "$B" && -n "${MAESTRO_E2E_SUPABASE_URL:-}" ]]; then
   OUT="$OUT/coparent" "$HERE/run-coparent.sh" "$A" "$B" ${APP_ARGS[@]+"${APP_ARGS[@]}"} || FAILED=1
 else
   echo "SKIP E2E-13 (needs --udid-b and the e2e backend)"

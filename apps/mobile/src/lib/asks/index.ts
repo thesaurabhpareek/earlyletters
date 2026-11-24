@@ -9,9 +9,15 @@
  * | Key | Value |
  * |---|---|
  * | `asks.reminderPrimes` | times the reminder prime was shown, from any source (cap MAX_REMINDER_PRIMES) |
+ * | `asks.reminderPrimeYes` | `on` once the person said Yes to the reminder prime; they are never primed again (BL-1430). Device only, L2, no text or names; the erase-all path clears every settings row |
  * | `asks.keepBookOffered` | `on` once the Keep the book sheet was offered after a letter |
+ * | `asks.keepBookReoffered` | `on` once the one re-offer of Keep the book was made (after the third letter, BL-519) |
  * | `asks.firstLetterSession` | session key (ms epoch) in which the first letter was saved |
- * | `asks.lastAskDay` | local day (YYYY-MM-DD) of the last ask, for one ask per calendar day |
+ * | `asks.firstLetterAt` | time (ms epoch) of the first letter, for the second prime after the first month (BL-518) |
+ * | `asks.lastAskDay` | local day (YYYY-MM-DD) the two counts below belong to; a different day means both are 0 (reset at local midnight) |
+ * | `asks.asksToday` | setup asks shown on that day (cap MAX_ASKS_PER_DAY, BL-1784) |
+ * | `asks.osAsksToday` | OS-alert or consent asks shown on that day (cap MAX_OS_ASKS_PER_DAY, BL-1784) |
+ * | `asks.keptLetterSessions`, `asks.lastKeptSession` | sessions that ended in a kept letter (./kept-sessions; stays on the phone) |
  *
  * Sessions are tracked here, not by the analytics lifecycle, because analytics is off in the whole 1.0 line
  * (D-124 item 3) and its lifecycle never starts then. A session is a process start, or a return to the
@@ -21,15 +27,24 @@ import { AppState } from 'react-native';
 import { noteAskShown } from '@/lib/analytics/ask';
 import { getSetting, listChildren, listEntriesForChild, listHiddenChildren, setSetting } from '@/lib/store';
 import { readPrefs } from '@/lib/reminders/prefs';
-import { localDay, nextAsk, sessionAfterForeground, type NextAsk } from './next-ask.logic';
+import { createKeptSessionCounter } from './kept-sessions';
+import { recordDayAsk, todayCounts } from './day-store';
+import { surfaceBusy } from './surface';
+import { firstMonthDone, keepBookTrigger as keepBookTriggerFor, nextAsk, reminderPrimeSource, sessionAfterForeground, type AskKind, type NextAsk } from './next-ask.logic';
 
-export { MAX_REMINDER_PRIMES, nextAsk, primeAllowed, type AskFacts, type NextAsk } from './next-ask.logic';
+type ReminderPrimeSource = ReturnType<typeof reminderPrimeSource>;
+
+export { setSurfaceBusy, surfaceBusy, type BusySurface } from './surface';
+export { KEPT_SESSIONS_KEY, LAST_KEPT_SESSION_KEY, type KeptSessionCounter } from './kept-sessions';
+export { MAX_ASKS_PER_DAY, MAX_OS_ASKS_PER_DAY, MAX_REMINDER_PRIMES, nextAsk, primeAllowed, type AskFacts, type NextAsk } from './next-ask.logic';
 
 const K = {
   primes: 'asks.reminderPrimes',
+  primeYes: 'asks.reminderPrimeYes',
   keepBook: 'asks.keepBookOffered',
+  keepBookReoffer: 'asks.keepBookReoffered',
   firstLetterSession: 'asks.firstLetterSession',
-  lastAskDay: 'asks.lastAskDay',
+  firstLetterAt: 'asks.firstLetterAt',
 } as const;
 
 let session = Date.now();
@@ -57,46 +72,116 @@ function lettersOnPhone(): number {
   return n;
 }
 
-/** Any ask appeared now: no other ask this session or this calendar day. */
-export function noteAsked(now = Date.now()): void {
-  askSession = session;
-  setSetting(K.lastAskDay, localDay(now));
-  noteAskShown(); // the analytics consent sequencer reads the same rule
+const keptSessions = createKeptSessionCounter({ get: getSetting, set: setSetting });
+
+/**
+ * Sessions that ended in at least one kept letter, counted on this phone only (NX-31-R14). For the lock and reminder
+ * sequencer to come; nothing reads it yet, and nothing about it is sent or tracked.
+ */
+export function keptLetterSessions(): number {
+  try {
+    return keptSessions.keptLetterSessions();
+  } catch {
+    return 0;
+  }
 }
 
-/** The reminder prime appeared (after the first letter, or from Settings): counts toward the cap of 2. */
-export function noteReminderPrimeShown(): void {
+/** Any ask appeared now: no other ask this session, and it counts toward the day totals (BL-1784). */
+export function noteAsked(kind: AskKind, now = Date.now()): void {
+  askSession = session;
+  recordDayAsk(kind, now);
+  noteAskShown(); // the analytics consent sequencer reads the session rule
+}
+
+/**
+ * The reminder prime appeared: counts toward the cap of 2. Returns the analytics `source` for this showing
+ * (`first_letter` for the first, `first_month` for the second), read before the count moves (BL-1429).
+ */
+export function noteReminderPrimeShown(): ReminderPrimeSource {
+  const source = reminderPrimeSource(count(K.primes));
   setSetting(K.primes, String(count(K.primes) + 1));
-  noteAsked();
+  noteAsked('reminder_prime');
+  return source;
+}
+
+/** The person said Yes to the reminder prime (either Yes button): it never shows again, even if they turn reminders off later (BL-1430). */
+export function noteReminderPrimeYes(): void {
+  setSetting(K.primeYes, 'on');
 }
 
 /**
  * Call once right after a letter is kept, with `firstLetter` true when the phone had no letter before it.
- * Returns the one ask due, and records it as shown when it is the account sheet (the card records itself when it appears).
+ * Returns the one ask due. Nothing is recorded here: the card records itself when it appears, and the account sheet is
+ * recorded by `fireDelayedAsk` when it is actually opened, so an ask skipped because a take or an export began is not
+ * counted as shown and comes back at the next save (BL-1985).
+ * `surfaceBusy` defaults to the phone's own read (a take recording or an export running), so a caller cannot forget it.
  */
-export function askAfterSave(input: { firstLetter: boolean; signInOffered: boolean }, now = Date.now()): NextAsk {
+export function askAfterSave(input: { firstLetter: boolean; signInOffered: boolean; surfaceBusy?: boolean }, now = Date.now()): NextAsk {
+  try {
+    keptSessions.noteLetterKept(session);
+  } catch {
+    // a count is never worth an error after a save
+  }
   try {
     if (input.firstLetter && getSetting(K.firstLetterSession) === null) setSetting(K.firstLetterSession, String(session));
+    if (input.firstLetter && getSetting(K.firstLetterAt) === null) setSetting(K.firstLetterAt, String(now));
+    const at = Number(getSetting(K.firstLetterAt));
     const stored = Number(getSetting(K.firstLetterSession));
+    const today = todayCounts(now);
     const ask = nextAsk({
       lettersSaved: lettersOnPhone(),
       firstLetter: input.firstLetter,
       primesShown: count(K.primes),
+      primeAnsweredYes: getSetting(K.primeYes) === 'on',
       remindersOn: readPrefs().enabled,
       signInOffered: input.signInOffered,
       keepBookOffered: getSetting(K.keepBook) === 'on',
+      keepBookReoffered: getSetting(K.keepBookReoffer) === 'on',
       firstLetterSession: Number.isFinite(stored) && stored > 0 ? stored : null,
       session,
       askShownThisSession: askSession === session,
-      askShownToday: getSetting(K.lastAskDay) === localDay(now),
+      asksShownToday: today.asks,
+      osAsksShownToday: today.osAsks,
+      surfaceBusy: input.surfaceBusy ?? surfaceBusy(),
+      firstMonthDone: firstMonthDone(Number.isFinite(at) && at > 0 ? at : null, now),
     });
-    if (ask === 'keep_book') {
-      setSetting(K.keepBook, 'on');
-      noteAsked(now);
-    }
     return ask;
   } catch {
     return null; // an ask is never worth an error after a save
+  }
+}
+
+/**
+ * The account sheet is about to open: records it as shown (and the one re-offer, BL-519), as it was when the ask was decided.
+ * Called from `fireDelayedAsk` only.
+ */
+function noteKeepBookShown(now = Date.now()): void {
+  if (getSetting(K.keepBook) === 'on') setSetting(K.keepBookReoffer, 'on');
+  setSetting(K.keepBook, 'on');
+  noteAsked('keep_book', now);
+}
+
+/**
+ * Review's delayed ask fires (the timer after the Book lands). Re-reads the busy surfaces: if a take started or an
+ * export began in the delay, nothing shows and nothing is counted (BL-1985). Returns whether the ask was shown.
+ */
+export function fireDelayedAsk(kind: 'keep_book' | 'reminder_prime', show: () => void, now = Date.now()): boolean {
+  if (surfaceBusy()) return false;
+  if (kind === 'keep_book') noteKeepBookShown(now);
+  show();
+  return true;
+}
+
+/**
+ * The sign-in trigger for the Keep the book sheet `askAfterSave` returned: `third_letter` for the one re-offer,
+ * `first_letter` for the first offer (BL-1562). Reads the mark `noteKeepBookShown` sets, so call it only after
+ * `fireDelayedAsk` has marked the sheet shown (inside its `show` callback). An unreadable store gives `first_letter`.
+ */
+export function keepBookTrigger(): 'first_letter' | 'third_letter' {
+  try {
+    return keepBookTriggerFor(getSetting(K.keepBookReoffer) === 'on');
+  } catch {
+    return 'first_letter';
   }
 }
 

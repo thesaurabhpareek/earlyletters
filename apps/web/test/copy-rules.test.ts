@@ -18,7 +18,7 @@ import * as siteModule from '../src/content/site';
 type Leaf = { path: string; text: string; lang?: string; meta?: boolean };
 
 const WEB_ROOT = fileURLToPath(new URL('..', import.meta.url));
-const COPY_ROOTS = ['src/scenes/parts', 'src/lib/legal'];
+const COPY_ROOTS = ['src/scenes/parts', 'src/lib/legal', 'src/lib/support'];
 const COPY_FILE = /(^|[-.])copy\.tsx?$/;
 const META_KEYS = new Set(['lang', 'dir', 'href']);
 const NON_PROSE = /^(\/|#|https?:|mailto:|ltr$|rtl$|[a-z]{2}(-[A-Za-z]{2,4})?$)/;
@@ -176,6 +176,8 @@ describe('site vocabulary', () => {
   // repeats and adds capitals and full stops, so a promise of exactness is not true of the words. What is true: it stays in your
   // words, every change is marked, the original recording is kept unchanged. "Never adds a word" is deliberately NOT banned: the
   // ruling kept it as true (verifyEdits rejects inserted_content_word), so do not widen this rule to it.
+  // Scope: site copy and the share image alt only. The edit feature's name ("Word for word") and the Review view ("Exactly as said") are product
+  // terms that live in packages/content (BRAND.md glossary, VOICE.md), which this test never reads, so they are not caught here.
   it('makes no "exactly as you said it" or "word for word" promise, in the site copy or the share image alt text', () => {
     const HELD = /\b(exactly as (you|they|i|we|it was|they were) (said|spoke|say)\b(?: it)?|exactly as said|word[\s-]+for[\s-]+word|every word exactly)/i;
     expect(offenders(PROSE, HELD)).toEqual([]);

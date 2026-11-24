@@ -7,6 +7,7 @@
 // Fictional family "Asha" only (CLAUDE.md).
 import { readFileSync } from 'node:fs';
 import { createDb, users, uuid7 } from './harness.mjs';
+import { legacyPhotoPath } from './legacy_photo.mjs';
 
 const files = process.argv.slice(2);
 const h = await createDb(files);
@@ -203,7 +204,7 @@ check('[M17] the mark travels with the text group only', new Date((await entry(L
 const E1 = id7();
 await push(A, [op('entry.upsert', E1, letter(E1, { text: 'The day you threw the spoon.' }))]);
 const photo = `${CHILD}/${A}/${E1}.jpg`;
-await as(A, `update entries set photo_path = $1 where id = $2`, [photo, E1]);
+await legacyPhotoPath(sys, E1, photo);
 await push(A, [op('entry.upsert', E1, letter(E1, { text: 'The day you threw the spoon, twice.' }), { changed: ['text'] })]);
 const before = book(await pull(B));
 const haveB = before.visible;
@@ -338,9 +339,18 @@ const cursorBefore = (await pull(A, { held: { cursor: null } })).held.cursor;
 r = await push(A, [op('held.discard', H1, {}, { base: staleBase })]);
 check('[#197, final review B-2] a let-go older than the newest words keeps the row ({ kept: true })', r.results[0].kept === true && (await heldRow(H1)));
 hr = await heldRow(H1);
+const letGoWords = hr.typed_text;
 r = await push(A, [op('held.discard', H1, {}, { base: hr.t })]);
-check('[#197] a let-go on the newest words removes the row and leaves a discarded marker', r.results[0].ok && !(await heldRow(H1))
+check('[NS-09-R14] [#197] a let-go held draft is purged on the server: the row goes and leaves a discarded marker', r.results[0].ok && !(await heldRow(H1))
   && (await marker(H1)) === 'discarded');
+// R14 mutant: keep the row and only blank its text. The row count and the words are checked apart, so that mutant fails both.
+check('[NS-09-R14] the let-go leaves no row at all (not a row with blank words) and the words are in no held row',
+  (await sys(`select count(*)::int n from held_drafts where id = $1`, [H1])).rows[0].n === 0
+  && (await sys(`select count(*)::int n from held_drafts where typed_text = $1 or final_text = $1`, [letGoWords])).rows[0].n === 0);
+check('[NS-09-R14] the marker, the ledger row and the author\'s next pull carry ids and times, never the words',
+  !JSON.stringify((await sys(`select to_jsonb(g) j from held_drafts_gone g where id = $1`, [H1])).rows).includes(letGoWords)
+  && !JSON.stringify((await sys(`select to_jsonb(l) j from purge_ledger l where entity_id = $1`, [H1])).rows).includes(letGoWords)
+  && !JSON.stringify(await pull(A, { held: { cursor: cursorBefore } })).includes(letGoWords));
 check('[F16 6.2 I] the let-go is ledgered as held_draft', await ledger('held_draft', H1));
 const afterGo = await pull(A, { held: { cursor: cursorBefore } });
 check('[ADR 0025 s9] a phone that pulled before gets the marker (ids and times only)',

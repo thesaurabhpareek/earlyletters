@@ -71,7 +71,7 @@
       "handle": "product",
       "title": "Product Manager",
       "department": "product",
-      "backlog_owner_names": [],
+      "backlog_owner_names": ["product manager", "product"],
       "kind": "planner",
       "daily_runs": 3,
       "wip_limit": 2
@@ -230,7 +230,7 @@
       "handle": "security-architect",
       "title": "Identity and Security Architect",
       "department": "standards",
-      "backlog_owner_names": [],
+      "backlog_owner_names": ["security architect"],
       "kind": "steward",
       "daily_runs": 2,
       "wip_limit": 1,
@@ -325,7 +325,9 @@
       "paused_reason": "alpha stabilisation; launch plans wait for a stable build",
       "title": "Growth and Marketing Lead",
       "department": "growth",
-      "backlog_owner_names": [],
+      "backlog_owner_names": [
+        "marketing"
+      ],
       "daily_runs": 1,
       "wip_limit": 1
     },

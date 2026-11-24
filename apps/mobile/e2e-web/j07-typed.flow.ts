@@ -1,5 +1,5 @@
 import { btn, firstRun, journey, noRemindersAfterFirstLetter, selectedTab, tab } from './support/app';
-import { expect, test } from './support/journey';
+import { expect, onStore, test } from './support/journey';
 
 /**
  * A frame sampler for the arrival wash (5.8 row 5, S26; P5 critics' pass S1). The wash is an absolutely placed,
@@ -61,9 +61,10 @@ test('[J07] a typed letter: write, autosave, one tap to the book', async ({ app,
 test('[J07d] the free letters: two are kept, the third is held', async ({ app, record }) => {
   test.setTimeout(120_000);
   const step = journey(record, 'J07', 'typed-letter', 8, 'J07-04');
+  await onStore(app); // the store build holds the third letter; the alpha builds do not (BL-1991)
   await firstRun(app);
   const write = async (text: string) => {
-    await tab(app, 'Tonight').click();
+    await tab(app, 'Home').click();
     await btn(app, /^Type/).click();
     await app.getByRole('textbox').first().fill(text);
     await expect(btn(app, /^Add to .*book/)).toBeEnabled();
@@ -87,10 +88,10 @@ test('[J07d] the free letters: two are kept, the third is held', async ({ app, r
   await step('unhappy', 'The third letter is held', 'The third Keep, from Write, opens the Plus sheet instead of saving. The typed words are still on the phone as a draft; nothing was lost. (Plus itself needs a real iPhone: Apple\'s store view does not exist on web.)');
   await btn(app, 'Keep it here for now').click();
   await expect(app.getByText('You waved at the dog.')).toBeVisible();
-  await step('happy', 'The held letter waits on Tonight', 'Tonight shows the waiting letter with its words as typed (5.8 row 5c).');
+  await step('happy', 'The held letter waits on Home', 'Home shows the waiting letter with its words as typed (5.8 row 5c).');
 });
 
-test('[J07b] close a half-written letter: the draft waits on Tonight', async ({ app, record }) => {
+test('[J07b] close a half-written letter: the draft waits on Home', async ({ app, record }) => {
   const step = journey(record, 'J07', 'typed-letter', 5, 'J07-01');
   await firstRun(app);
   await btn(app, /^Type/).click();
@@ -110,6 +111,6 @@ test('[J07c] a typed letter kept private', async ({ app, record }) => {
   await btn(app, /^Type/).click();
   await app.getByRole('textbox').first().fill('A private one, only for us.');
   await btn(app, 'Keep private').click();
-  await expect(app.getByText(/Kept just for you/)).toBeVisible();
-  await step('happy', 'Kept private', 'Keep private, from Write, keeps the letter outside the book with the lock chip, then lands on the Book with its Private chip. It can be added to the book later.', undefined, { settle: 120 });
+  await expect(app.getByText(/Kept private/)).toBeVisible();
+  await step('happy', 'Kept private', 'Keep private, from Write, keeps the letter outside the book with the lock chip, then lands on the Book with its Private chip. It can be added to the book later.', undefined, { settle: 120, needs: ['Kept private.'] });
 });

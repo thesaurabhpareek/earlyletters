@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { btn, journey, selectedTab, tab } from './support/app';
+import { btn, expectMonthCount, journey, monthOpener, selectedTab, tab } from './support/app';
 import { expect, seeded, test } from './support/journey';
 
 /**
@@ -42,7 +42,8 @@ test('[J18] dark mode: the same screens at night', async ({ app, record }) => {
   await tab(app, 'Book').click();
   await expect(selectedTab(app, 'Book')).toBeVisible();
   // "This month, " in front in some runs, when the seeded child is in Month 6 itself (see j09; keep the alternation).
-  await expect(app.getByRole('heading', { name: /^(This month, )?Month 6\. 2 letters, from Mama\. / })).toBeVisible();
+  await expect(monthOpener(app, 6)).toBeVisible();
+  await expectMonthCount(app, 6, /2 letters, from Mama/);
   await expectDark(app);
   await step('happy', 'Book, dark', 'The Book at night: each month opened by its kicker, numeral and dates, with the letters as cards under it, on the dark page. (Seeded fictional family Asha.)');
 
@@ -53,7 +54,7 @@ test('[J18] dark mode: the same screens at night', async ({ app, record }) => {
   await step('happy', 'A letter, dark', 'The letter page at night: the words in the letter face, signed "From Mama", the pill player ("Hear Mama" and its length), the provenance line and the actions.');
 
   await app.goBack();
-  await tab(app, 'Tonight').click();
+  await tab(app, 'Home').click();
   await expect(btn(app, 'Speak')).toBeVisible();
   await app.getByText('Read it back', { exact: true }).click();
   await expect(app.getByRole('heading', { name: 'Read it back' })).toBeVisible();

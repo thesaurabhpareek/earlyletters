@@ -3,8 +3,8 @@
  * steps, the subscription notice, and the server calls against a fake client.
  * Run (from apps/mobile): npx vitest run --config src/lib/account-deletion/vitest.config.ts
  */
-import { describe, expect, it } from 'vitest';
-import { cancelDeletion, FORGET_PENDING_KEY, forgetAnalytics, loadBooks, loadStatus, requestDeletion, retryForget, type DeletionClient, type FlagStore } from './api';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { cancelDeletion, FORGET_PENDING_KEY, READ_TIMEOUT_MS, forgetAnalytics, loadBooks, loadStatus, requestDeletion, retryForget, type DeletionClient, type FlagStore } from './api';
 import { accountDeletionCopy } from './copy';
 import { bookImpacts, confirmationMatches, expectedDeletionDate, impactLines, localDay, parseStatus, showSubscriptionNotice, stepFor, type SyncBook } from './logic';
 
@@ -162,6 +162,11 @@ describe('server calls', () => {
     for (const data of [false, null, 'true']) expect(await cancelAnswering(data), String(data)).toEqual({ ok: false, reason: 'failed' });
   });
 
+  it('a false answer while the request is held is a failure: only a status of none counts as cancelled (BL-455 point 4)', async () => {
+    const held: Answer = { data: [{ id: 'req-1', status: 'held', scheduled_for: '2026-11-29T09:00:00Z' }], error: null };
+    expect(await cancelAnswering(false, held)).toEqual({ ok: false, reason: 'failed' });
+  });
+
   it('a false answer whose status read fails says why the read failed', async () => {
     expect(await cancelAnswering(false, { data: null, error: { message: 'Network request failed' } })).toEqual({ ok: false, reason: 'offline' });
     expect(await cancelAnswering(false, { data: null, error: { message: 'SCDEL' } })).toEqual({ ok: false, reason: 'failed' });
@@ -258,9 +263,146 @@ describe('analytics ids at deletion (TDD 05 X-02)', () => {
     expect(await retryForget(fakeClient().client, a, flags, 'k3')).toBe('none_pending');
   });
 
+  describe('more ids than one call takes (batches of 21)', () => {
+    const many = Array.from({ length: 30 }, (_, i) => `9a9a9a9a-0000-4000-8000-${String(i).padStart(12, '0')}`);
+    function store(list: string[]) {
+      const state = { list: [...list], wiped: false };
+      return {
+        state,
+        a: {
+          ids: () => [...state.list],
+          forget: async () => void ((state.wiped = true), (state.list = [])),
+          forgetSome: async (gone: string[]) => void (state.list = state.list.filter((x) => !gone.includes(x))),
+        },
+      };
+    }
+    function invokeOnly(failOn: number[]): { client: DeletionClient; bodies: string[][] } {
+      const bodies: string[][] = [];
+      const client = {
+        functions: { invoke: async (_n: string, o: { body: { ids: string[] } }) => (bodies.push(o.body.ids), { data: null, error: failOn.includes(bodies.length) ? new Error('x') : null }) },
+      } as unknown as DeletionClient;
+      return { client, bodies };
+    }
+
+    it('names every id: 30 ids go as 21 then 9, and all acknowledged clears everything', async () => {
+      const s = store(many);
+      const c = invokeOnly([]);
+      const flags = memoryFlags();
+      expect(await forgetAnalytics(c.client, s.a, flags, 'account_deletion', 'k')).toBe('done');
+      expect(c.bodies.map((b) => b.length)).toEqual([21, 9]);
+      expect(c.bodies.flat()).toEqual(many);
+      expect(s.state.wiped).toBe(true);
+      expect(s.state.list).toEqual([]);
+      expect(flags.map.size).toBe(0);
+    });
+
+    it('one failing batch keeps only the unacknowledged ids, flags a retry, and the retry finishes', async () => {
+      const s = store(many);
+      const flags = memoryFlags();
+      const c = invokeOnly([2]);
+      expect(await forgetAnalytics(c.client, s.a, flags, 'account_deletion', 'k')).toBe('pending');
+      expect(s.state.wiped).toBe(false);
+      expect(s.state.list).toEqual(many.slice(21));
+      expect(flags.map.get(FORGET_PENDING_KEY)).toBe('account_deletion');
+      const again = invokeOnly([]);
+      expect(await retryForget(again.client, s.a, flags, 'k2')).toBe('done');
+      expect(again.bodies).toEqual([many.slice(21)]);
+      expect(s.state.list).toEqual([]);
+    });
+
+    it('a first batch that fails keeps every id', async () => {
+      const s = store(many);
+      expect(await forgetAnalytics(invokeOnly([1]).client, s.a, memoryFlags(), 'account_deletion', 'k')).toBe('pending');
+      expect(s.state.list).toEqual(many);
+    });
+
+    it('a call that throws or a local clear that throws still ends as pending, never as a throw (the deletion flow carries on)', async () => {
+      const s = store(many);
+      const throwing = { functions: { invoke: async () => { throw new Error('offline'); } } } as unknown as DeletionClient;
+      expect(await forgetAnalytics(throwing, s.a, memoryFlags(), 'account_deletion', 'k')).toBe('pending');
+      const half = invokeOnly([2]);
+      const bad = { ...s.a, forgetSome: async () => { throw new Error('disk'); } };
+      expect(await forgetAnalytics(half.client, bad, memoryFlags(), 'account_deletion', 'k')).toBe('pending');
+      expect(s.state.list).toEqual(many);
+    });
+
+    it('never puts an id in anything it throws or logs', async () => {
+      const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+      await forgetAnalytics(invokeOnly([2]).client, store(many).a, memoryFlags(), 'account_deletion', 'k');
+      for (const m of [spy, warn, log]) expect(m).not.toHaveBeenCalled();
+      vi.restoreAllMocks();
+    });
+  });
+
   it('with no ids (analytics never on), nothing is sent', async () => {
     const f = fakeClient();
     expect(await forgetAnalytics(f.client, { ids: () => [], forget: async () => {} }, memoryFlags(), 'account_deletion', 'k')).toBe('nothing');
     expect(f.calls).toEqual([]);
+  });
+});
+
+describe('[BL-492 point 3] a read that never answers ends as offline', () => {
+  beforeEach(() => void vi.useFakeTimers());
+  afterEach(() => void vi.useRealTimers());
+
+  const hangingStatus = (): DeletionClient => {
+    const f = fakeClient({});
+    const never = new Promise<never>(() => undefined);
+    return { ...f.client, from: () => ({ select: () => ({ eq: () => ({ in: () => ({ order: () => ({ limit: () => never }) }) }) }) }) };
+  };
+
+  it('the status read gives up at the timeout, not before, and says offline', async () => {
+    let out: unknown = null;
+    void loadStatus(hangingStatus()).then((r) => (out = r));
+    await vi.advanceTimersByTimeAsync(READ_TIMEOUT_MS - 1);
+    expect(out).toBeNull();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(out).toEqual({ ok: false, reason: 'offline' });
+    expect(READ_TIMEOUT_MS).toBe(15_000);
+  });
+
+  it('the book read gives up the same way', async () => {
+    const client: DeletionClient = { ...fakeClient({}).client, rpc: () => new Promise<never>(() => undefined) };
+    let out: unknown = null;
+    void loadBooks(client).then((r) => (out = r));
+    await vi.advanceTimersByTimeAsync(READ_TIMEOUT_MS);
+    expect(out).toEqual({ ok: false, reason: 'offline' });
+  });
+
+  it('an answer in time is the answer, and leaves no timer behind', async () => {
+    expect(await loadStatus(fakeClient({}).client)).toMatchObject({ ok: true });
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('[BL-492] the status check after a failed write has no clock of its own: a slow answer that finds the request open is a success', async () => {
+    const f = fakeClient({ throwRpc: new Error('network request failed') });
+    const slow = new Promise((res) => setTimeout(() => res(SCHEDULED_ROW), READ_TIMEOUT_MS + 5_000));
+    const client: DeletionClient = { ...f.client, from: () => ({ select: () => ({ eq: () => ({ in: () => ({ order: () => ({ limit: () => slow as never }) }) }) }) }) };
+    let out: unknown = null;
+    void requestDeletion(client, null).then((r) => (out = r));
+    await vi.advanceTimersByTimeAsync(READ_TIMEOUT_MS + 1);
+    expect(out).toBeNull();
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect(out).toMatchObject({ ok: true });
+  });
+
+  it('[BL-492] the same for a cancel whose false answer is checked: the check waits, and finds none open', async () => {
+    const f = fakeClient({ rpc: { cancel_account_deletion: { data: false, error: null } } });
+    const slow = new Promise((res) => setTimeout(() => res({ data: [], error: null }), READ_TIMEOUT_MS + 5_000));
+    const client: DeletionClient = { ...f.client, from: () => ({ select: () => ({ eq: () => ({ in: () => ({ order: () => ({ limit: () => slow as never }) }) }) }) }) };
+    let out: unknown = null;
+    void cancelDeletion(client).then((r) => (out = r));
+    await vi.advanceTimersByTimeAsync(READ_TIMEOUT_MS + 6_000);
+    expect(out).toEqual({ ok: true, value: true });
+  });
+
+  it('a request is not given up on by the clock: it waits for its own answer (the server may still commit it)', async () => {
+    const client: DeletionClient = { ...fakeClient({}).client, rpc: () => new Promise((res) => setTimeout(() => res({ data: [{ request_id: 'r1', scheduled_for: '2026-12-30T00:00:00Z' }], error: null }), 60_000)) };
+    let out: unknown = null;
+    void requestDeletion(client, null).then((r) => (out = r));
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(out).toEqual({ ok: true, value: { requestId: 'r1', scheduledFor: '2026-12-30T00:00:00Z' } });
   });
 });

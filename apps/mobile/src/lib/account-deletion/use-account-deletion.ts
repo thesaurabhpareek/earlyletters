@@ -4,11 +4,11 @@
  * store, analytics and Plus state. Network only on the screen, never at launch.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { analytics, analyticsIdsForDeletion, forgetAnalyticsIds, withdrawAnalytics } from '@/lib/analytics';
+import { analytics, analyticsIdsForDeletion, forgetAnalyticsIds, forgetAnalyticsIdsSome, withdrawAnalytics } from '@/lib/analytics';
 import { authUserId } from '@/lib/auth/machine.logic';
 import { useAuth } from '@/lib/auth/session-provider';
 import { usePlan } from '@/lib/billing';
-import { currentUserId, deleteSetting, getSetting, listEntriesForChild, setSetting, uuidv7 } from '@/lib/store';
+import { bookVisibleNow, currentUserId, deleteSetting, getSetting, listEntriesForChild, setSetting, uuidv7 } from '@/lib/store';
 import {
   cancelDeletion, forgetAnalytics, loadBooks, loadStatus, requestDeletion, retryForget,
   type AnalyticsIds, type DeletionClient, type FlagStore,
@@ -17,7 +17,7 @@ import { bookImpacts, impactLines, showSubscriptionNotice, type ServerStatus, ty
 import { recordCancelled, recordRequested, recordStatus } from './note-store';
 
 const flags: FlagStore = { get: getSetting, set: setSetting, remove: deleteSetting };
-const ids: AnalyticsIds = { ids: analyticsIdsForDeletion, forget: forgetAnalyticsIds };
+const ids: AnalyticsIds = { ids: analyticsIdsForDeletion, forget: forgetAnalyticsIds, forgetSome: forgetAnalyticsIdsSome };
 
 /** The current person's letters in a book on this phone (local-only letters are theirs too). */
 function myLetterCount(childId: string): number {
@@ -50,7 +50,10 @@ export function useAccountDeletion() {
       // What the server says about the open request is remembered on this phone, so a phone that lists no book
       // (a sole parent's book goes with the request) shows the deletion screen and never the welcome (open-request.ts).
       // For the account that asked: an answer that lands after another account has signed in is dropped.
-      recordStatus(s.value, userId);
+      // Not while another account is signed in on a phone that holds the owner's book (HO-911, E49, E54): this screen is
+      // B's own (B can still delete B's account), but the note on the phone is A's, and "none" for B would write it away.
+      // bookVisibleNow() is false when the owner cannot be read, so an unreadable owner writes nothing either.
+      if (bookVisibleNow()) recordStatus(s.value, userId);
     } else setError(s.reason);
     if (b.ok) setBooks(b.value);
     // A forget that failed earlier (offline at request time) is finished here.
@@ -75,7 +78,8 @@ export function useAccountDeletion() {
       return false;
     }
     // First of all, before anything that can wait or fail: this phone now knows a request is open (open-request.ts).
-    recordRequested(r.value);
+    // Not under a second account: the note on the phone is the owner's (HO-911, same guard as refresh).
+    if (bookVisibleNow()) recordRequested(r.value);
     // The last event for this analytics id (TRACKING_PLAN), then sharing stops at once (DELETION spec 2.6.1 step 7),
     // then PostHog deletes this phone's persons through analytics-forget.
     analytics.track('account_deletion', { stage: 'confirmed' });
@@ -98,7 +102,14 @@ export function useAccountDeletion() {
     }
     // A co-parent's book never left, so the note goes. A sole parent's book is on the server again and comes back with
     // the next pull: the note stays as "cancelled" until it does, so the phone never shows the welcome in between.
-    recordCancelled();
+    // The server already cancelled: a note that cannot be written (a locked or full database) must not turn that into a
+    // failed press or an unhandled rejection. The note is only the phone's memory of the request; the next read of the
+    // server's status puts it right (BL-494 follow-up).
+    try {
+      if (bookVisibleNow()) recordCancelled();
+    } catch {
+      /* the screen goes on: the cancel itself went through */
+    }
     setStatus({ state: 'none' });
     setCancelled(true);
     return true;

@@ -46,6 +46,8 @@ type Profile = {
   sync: boolean;
   coParent: boolean;
   backup: boolean;
+  /** The photo switch (`EXPO_PUBLIC_PHOTOS`), read through lib/photos/flag.ts (NS-01-R19, NX-39-R37; BL-863). Off in production. */
+  photos: boolean;
   /**
    * Not a build switch, a fact of the edit engine: the default Word for word view removes ums and repeats, and the
    * speech model can mishear, so "every word exactly as you said it" is not true of the words (D-086; D-133 item 2,
@@ -57,6 +59,15 @@ type Profile = {
 let profile: Profile;
 const savedEnv = { ...process.env };
 
+let capabilityCoParent = false;
+
+/** Does the store build (servers on, alpha off) let a person both invite and join? The join door is `joinButton`. */
+function storeCoParentFlow(entry: typeof import('../../../apps/mobile/src/lib/family/entry.logic')): boolean {
+  // Build 12 (founder ruling, 11 Nov 2026): one rule, servers on AND an alpha build. The store build is alpha false, so it has no flow.
+  const keeps = entry.planIncomingLink({ kind: 'invite', token: 't' }, { serverFeatures: true, gateStopped: false, alpha: false, path: '/' }).keepInviteToken;
+  return coParentFlowInStoreBuild((e) => entry.inviteDestination(e as never, true, false), keeps, entry.visibleCoParentDoors(true, false).joinButton);
+}
+
 beforeAll(async () => {
   const eas = JSON.parse(readFileSync(EAS_JSON, 'utf8')) as { build: Record<string, { env?: Record<string, string> }> };
   const env = eas.build.production?.env;
@@ -67,6 +78,8 @@ beforeAll(async () => {
   // capabilities.ts reads its switches when it loads, so it is loaded after the env is set.
   const { capabilities } = await import('../../../apps/mobile/src/lib/capabilities');
   const { heardLanguagesForBuild, hearsOnlyEnglish } = await import('../../../apps/mobile/src/lib/language/heard-languages');
+  const entry = await import('../../../apps/mobile/src/lib/family/entry.logic');
+  const { photosBuildEnabled } = await import('../../../apps/mobile/src/lib/photos/flag');
   const heard = heardLanguagesForBuild();
   profile = {
     // English only by either switch: ENGLISH_ONLY on, or a spoken-language list of English alone (D-125 item 2).
@@ -74,10 +87,14 @@ beforeAll(async () => {
     heard: [...heard],
     signIn: capabilities.signIn,
     sync: capabilities.sync,
-    coParent: capabilities.coParent,
+    // Co-parent claims are judged against what the store build can do, not the server switch alone: the switch is on, but the
+    // store build hides "I was invited" (B12-5, visibleCoParentDoors with alpha false), so an invited person cannot join.
+    coParent: capabilities.coParent && storeCoParentFlow(entry),
     backup: capabilities.backup,
+    photos: photosBuildEnabled(),
     wordsExactlyAsSaid: false,
   };
+  capabilityCoParent = capabilities.coParent;
   // Read every surface once (the web source is parsed with the TypeScript compiler); the tests below share it.
   cachedSurfaces(profile);
 }, 60_000);
@@ -91,7 +108,7 @@ afterAll(() => {
 // The rules: claim patterns and the capability that has to be on for the claim to be true.
 // ---------------------------------------------------------------------------
 
-type RuleId = 'languages' | 'coParent' | 'sync' | 'backup' | 'exactWords';
+type RuleId = 'languages' | 'coParent' | 'sync' | 'backup' | 'exactWords' | 'photos' | 'readFrequency';
 
 type Rule = {
   id: RuleId;
@@ -203,6 +220,29 @@ const RULES: readonly Rule[] = [
     trueWhen: (p) => p.wordsExactlyAsSaid,
     needs: 'words kept exactly as said, which the default Word for word view does not do (D-133)',
   },
+  {
+    id: 'photos',
+    // Starting a letter from a photo, or adding one to a letter: the surfaces `photoSurfaces` draws only with the switch on.
+    claims: [
+      /\b(?:add|attach|start from|begin with) (?:a|an|your|the|one or more) (?:photo|picture)s?\b/i,
+      /\bphotos? (?:with|beside|next to) (?:a|each|every|your) letters?\b/i,
+      /\b(?:photos|pictures) lens\b/i,
+    ],
+    trueWhen: (p) => p.photos,
+    needs: 'the photo switch (EXPO_PUBLIC_PHOTOS on, lib/photos/flag.ts)',
+  },
+  {
+    id: 'readFrequency',
+    // BL-863, NX-39-R55: no string says how often the app looks at anything. iOS decides when work runs, and a number is a promise.
+    claims: [
+      /\b(?:\d+|two|three|four|five|a few|several|many)(?: (?:or|to) (?:\d+|two|three|four|five))? times (?:a|each|per|every) (?:day|week|hour)\b/i,
+      /\b(?:once|twice) (?:a|each|per|every) (?:day|week|hour)\b/i,
+      /\b(?:checks?|looks?|reads?|scans?|updates?|refreshes) (?:every|each) (?:day|hour|night|morning)\b/i,
+      /\balways up to date\b/i,
+    ],
+    trueWhen: () => false,
+    needs: 'nothing: no claim of how often the app looks ships in any profile',
+  },
 ];
 
 const global = (re: RegExp) => new RegExp(re.source, re.flags.includes('g') ? re.flags : `${re.flags}g`);
@@ -232,6 +272,8 @@ const IN_APP_PROMISES = [
   'en.trust.short',
   'en.trust.voice',
   'en.trust.firstRecording',
+  'en.trust.signIn',
+  'en.trust.settings',
   'en.settings.recordings.onPhoneTitle',
   'en.settings.recordings.onPhoneBody',
   'en.plus',
@@ -266,10 +308,12 @@ function surfaces(p: Profile): Leaf[] {
     (leaf) => !(leaf.path in SWITCHED_LINES) || SWITCHED_LINES[leaf.path].shownWhen(p),
   );
   // The packaged deck is the fallback the app shows with no signed server bundle; keyed by card id, which never moves.
+  // The photo copy is drawn only with the photo switch on (photoSurfaces), so it is read only in a profile that has it.
+  const photoCopy = p.photos ? leaves(features.photos, 'features.photos') : [];
   const stories = onboardingStories.flatMap((card) =>
     (['headline', 'line'] as const).map((field) => ({ path: `stories.${card.id}.${field}`, text: card[field] })),
   );
-  return [...store, ...webContent, ...webSource, ...inApp, ...stories];
+  return [...store, ...webContent, ...webSource, ...inApp, ...photoCopy, ...stories];
 }
 
 type Claim = { key: string; rule: RuleId; claim: string };
@@ -296,15 +340,9 @@ function claims(p: Profile): Claim[] {
 type KnownViolation = Claim & { removedBy: string; reason: string };
 
 const KNOWN_VIOLATIONS: readonly KnownViolation[] = [
-  // "Exactly as you said it" in the store build's first run (D-133 decision 2). PR #502 changes both lines.
-  { key: 'en.onboarding.promise.title', rule: 'exactWords', claim: 'exactly as you said', removedBy: '#502', reason: 'First-run headline; D-133 says the store build uses the true line.' },
-  { key: 'stories.story.exact.v2.headline', rule: 'exactWords', claim: 'exactly as you said', removedBy: '#502', reason: 'Packaged first-run card headline "Exactly as you said it." (D-133).' },
 
-  // "Only you and the people you invite": nobody can be invited in production.
-  { key: 'stories.story.private.v1.line', rule: 'coParent', claim: 'invite', removedBy: 'BL-557', reason: 'The packaged first-run card promises invites production lacks.' },
-
-  // The website's /j invite page and /auth/confirm page: only a build with server features sends links to them.
-  { key: 'web.site.authConfirm.title', rule: 'sync', claim: 'signing in', removedBy: 'BL-558', reason: '"Finish signing in": production has no sign-in.' },
+  // Co-parent lines about a person being invited or joining: the switch is on in the store build, but "I was invited" is hidden
+  // there (B12-5), so nobody can join. They become true when the join door is shown, or the copy changes (BL-557, BL-558).
   { key: 'web.site.invite.title', rule: 'coParent', claim: 'invite', removedBy: 'BL-558', reason: '"An invite to share a book": production cannot invite.' },
   { key: 'web.site.invite.line', rule: 'coParent', claim: 'invited', removedBy: 'BL-558', reason: '"Someone invited you to share a book": production cannot invite.' },
   { key: 'web.site.invite.body', rule: 'coParent', claim: 'invite', removedBy: 'BL-558', reason: 'Says the invite opens in the app; production has no invites.' },
@@ -320,8 +358,13 @@ const KNOWN_VIOLATIONS: readonly KnownViolation[] = [
   { key: 'web.site.invite.notYou', rule: 'coParent', claim: 'invite', removedBy: 'BL-558', reason: '"If you were not expecting an invite": production has no invites.' },
 ];
 
-/** Today's count. Lower it when rows go; never raise it: a new false claim is fixed in the copy, not listed. */
-const KNOWN_VIOLATIONS_CAP = 17;
+/**
+ * Today's count. Lower it when rows go; never raise it: a new false claim is fixed in the copy, not listed. It was 17 before
+ * PR #698. Servers on made the sign-in and sync rows true (the authConfirm row went); the co-parent rows stay because the store
+ * build hides the join door. PR #502 removed the two exactWords rows (D-133).
+ * STORE_BUILD_CLAIMS below says which claims the store build may make and why.
+ */
+const KNOWN_VIOLATIONS_CAP = 13;
 
 const id = (c: Claim) => `${c.key} [${c.rule}] "${c.claim}"`;
 
@@ -372,7 +415,18 @@ describe('public claims match the production profile (RT-REL-03)', () => {
   it('reads the production profile from eas.json through capabilities.ts', () => {
     // The profile the claims are judged against. If a switch here changes on purpose, update this line and remove the
     // KNOWN_VIOLATIONS rows the change makes true.
-    expect(profile).toEqual({ englishOnly: true, heard: ['en'], signIn: false, sync: false, coParent: false, backup: false, wordsExactlyAsSaid: false });
+    // Build 12 (founder, 8 Nov 2026) is servers on: sign-in and sync are true; backup stays off.
+    // Co-parent is false here although the switch is on: the store build hides "I was invited" (see storeCoParentFlow).
+    expect(profile).toEqual({ englishOnly: true, heard: ['en'], signIn: true, sync: true, coParent: false, backup: false, photos: false, wordsExactlyAsSaid: false });
+  });
+
+  it('keeps the sign-in and Settings privacy lines in the read set (CLAIMS-1.0 F-05, LEGAL-REQ-044)', () => {
+    // Sign-in is on in production and Settings, Privacy is a screen families open; dropping either path would let a
+    // promise like "keeps your book safe" go unread while backup is off.
+    expect(IN_APP_PROMISES).toContain('en.trust.signIn');
+    expect(IN_APP_PROMISES).toContain('en.trust.settings');
+    expect(leaves(get(IN_APP_ROOT, 'en.trust.signIn'), 'en.trust.signIn').length).toBeGreaterThan(0);
+    expect(leaves(get(IN_APP_ROOT, 'en.trust.settings'), 'en.trust.settings').length).toBeGreaterThan(0);
   });
 
   it('reads every in-app promise path, every switched line and every web exclusion', () => {
@@ -381,6 +435,12 @@ describe('public claims match the production profile (RT-REL-03)', () => {
     const switched = Object.keys(SWITCHED_LINES).filter((path) => typeof get(IN_APP_ROOT, path) !== 'string');
     expect(switched, 'SWITCHED_LINES paths that no longer resolve to a string').toEqual([]);
     expect(staleWebExclusions(), 'WEB_NOT_READ paths that no longer exist').toEqual([]);
+  });
+
+  it('LEGAL-REQ-044: the sign-in and settings trust lines are read as in-app promises', () => {
+    const keys = cachedSurfaces(profile).map((l) => l.path);
+    expect(keys.some((k) => k.startsWith('en.trust.signIn'))).toBe(true);
+    expect(keys.some((k) => k.startsWith('en.trust.settings'))).toBe(true);
   });
 
   it('reads the copy earlyletters.com renders, not only the content package', () => {
@@ -419,8 +479,102 @@ describe('public claims match the production profile (RT-REL-03)', () => {
   });
 });
 
+/**
+ * What the store build (the `production` profile, App Store) may claim, and why (PR #698 turned servers on). One row per
+ * rule. `allowed` is what the test expects of the profile; `why` is the fact that makes it so. A row changes only with the fact.
+ *
+ * The co-parent row needs care. `capabilities.coParent` follows the server switch alone, and it is on. But the store build
+ * hides "I was invited" (`visibleCoParentDoors(coParent, alpha).joinButton` is `coParent && alpha`; B12-5), so a person who
+ * is invited cannot join. "Write it together" and "someone invited you" are true only if a person can do it, so the profile
+ * the claims are judged against has coParent on only while the store build has the whole flow: send, receive and join.
+ */
+const STORE_BUILD_CLAIMS: Readonly<Record<RuleId, { allowed: boolean | 'with the invite flow'; why: string }>> = {
+  languages: { allowed: false, why: 'The first store build hears English only (D-121 item 1): no other language is named, and "more languages come later" is the one true line.' },
+  coParent: { allowed: 'with the invite flow', why: 'True only while the store build can invite and join. It hides "I was invited" (B12-5), so co-parent claims are false in it.' },
+  sync: { allowed: true, why: 'Servers are on in production (Build 12, founder, 8 Nov 2026): sign-in and sync work against scribe-prod.' },
+  backup: { allowed: false, why: 'EXPO_PUBLIC_BACKUP is off in production until the restore drill passes (T27).' },
+  exactWords: { allowed: false, why: 'The default view removes ums and repeats and the speech model can mishear (D-086, D-133 item 2): never true in any profile.' },
+  photos: { allowed: false, why: 'EXPO_PUBLIC_PHOTOS is written in no store profile (store-flags.test.ts): the photo start, lens and add actions are not drawn (NS-01-R19).' },
+  readFrequency: { allowed: false, why: 'No string says how often the app looks at anything: iOS decides when work runs (NX-39-R55). Never true in any profile.' },
+};
+
+/**
+ * Does the store build have the co-parent flow? `destination` is `inviteDestination(entry, true, false)` (servers on, store build);
+ * `keepsInviteToken` is `planIncomingLink(invite, { serverFeatures: true, ... }).keepInviteToken`; `joinDoorShown` is
+ * `visibleCoParentDoors(true, false).joinButton` (alpha off). Sending, receiving and joining must all work for
+ * "invite your co-parent" to be true.
+ */
+export function coParentFlowInStoreBuild(destination: (entry: string) => string, keepsInviteToken: boolean, joinDoorShown: boolean): boolean {
+  return destination('settings_child') === 'flow' && destination('invite_link') === 'flow' && keepsInviteToken && joinDoorShown;
+}
+
+/** Why the capability and the flow disagree, or null when the tie holds. */
+export function coParentTie(capabilityCoParent: boolean, flowInStoreBuild: boolean): string | null {
+  if (capabilityCoParent === flowInStoreBuild) return null;
+  return capabilityCoParent
+    ? 'capabilities.coParent is on but the store build cannot complete the invite flow (the join door is hidden): the claims profile must have coParent off and the co-parent rows listed.'
+    : 'the store build has the whole invite flow but capabilities.coParent is off: the true co-parent lines are being treated as false. Update the capability.';
+}
+
+describe('what the store build may claim (RT-REL-03; PR #698)', () => {
+  const rule = (id: RuleId) => RULES.find((r) => r.id === id)!;
+
+  async function storeFlow(): Promise<boolean> {
+    return storeCoParentFlow(await import('../../../apps/mobile/src/lib/family/entry.logic'));
+  }
+
+  it('judges co-parent claims by the store build\'s flow: the profile is the switch and the flow together', async () => {
+    const flow = await storeFlow();
+    expect(profile.coParent).toBe(capabilityCoParent && flow);
+    // The switch is on and the flow is not whole today (join door hidden): the tie reports it, and the claims follow the flow.
+    if (capabilityCoParent !== flow) expect(coParentTie(capabilityCoParent, flow)).not.toBeNull();
+    expect(profile.coParent).toBe(flow && capabilityCoParent);
+  });
+
+  it('shows the store build hides the join door and has no co-parent flow, while an alpha build with servers on keeps it', async () => {
+    const entry = await import('../../../apps/mobile/src/lib/family/entry.logic');
+    expect(entry.visibleCoParentDoors(true, false).joinButton).toBe(false);
+    expect(entry.visibleCoParentDoors(true, true).joinButton).toBe(true);
+    // One rule (founder, 11 Nov 2026): the flow is servers on AND alpha. A store build (alpha false) has none, so no co-parent claim is true of it.
+    expect(entry.inviteDestination('settings_child', true, true)).toBe('flow');
+    expect(entry.inviteDestination('settings_child', true, false)).toBe('coming_soon');
+    expect(entry.inviteDestination('invite_link', true, false)).toBe('coming_soon');
+    expect(entry.inviteDestination('settings_child', false, true)).toBe('coming_soon');
+  });
+
+  it('fails when the capability and the flow disagree, either way', () => {
+    const all = () => 'flow';
+    expect(coParentFlowInStoreBuild(all, true, true)).toBe(true);
+    // Each part missing makes half a flow, which is no flow.
+    expect(coParentFlowInStoreBuild(all, true, false)).toBe(false);
+    expect(coParentFlowInStoreBuild(all, false, true)).toBe(false);
+    expect(coParentFlowInStoreBuild((e) => (e === 'settings_child' ? 'flow' : 'coming_soon'), true, true)).toBe(false);
+    expect(coParentFlowInStoreBuild(() => 'coming_soon', true, true)).toBe(false);
+    expect(coParentTie(true, false)).toMatch(/join door is hidden/);
+    expect(coParentTie(false, true)).toMatch(/treated as false/);
+    expect(coParentTie(true, true)).toBeNull();
+    expect(coParentTie(false, false)).toBeNull();
+  });
+
+  it('judges the store build rule by rule against the table of what it may claim', async () => {
+    const flow = await storeFlow();
+    for (const r of RULES) {
+      const row = STORE_BUILD_CLAIMS[r.id];
+      expect(row.why.trim(), r.id).not.toBe('');
+      const expected = row.allowed === 'with the invite flow' ? flow && capabilityCoParent : row.allowed;
+      expect(r.trueWhen(profile), `${r.id}: ${row.why}`).toBe(expected);
+    }
+    expect(Object.keys(STORE_BUILD_CLAIMS).sort()).toEqual(RULES.map((r) => r.id).sort());
+  });
+
+  it('lists as false only claims tied to a missing store-build fact: exact words, and the join door', () => {
+    expect(KNOWN_VIOLATIONS.filter((v) => v.rule !== 'exactWords' && v.rule !== 'coParent')).toEqual([]);
+    expect(rule('exactWords').trueWhen(profile)).toBe(false);
+  });
+});
+
 describe('the claim rules', () => {
-  const offEverything: Profile = { englishOnly: true, heard: ['en'], signIn: false, sync: false, coParent: false, backup: false, wordsExactlyAsSaid: false };
+  const offEverything: Profile = { englishOnly: true, heard: ['en'], signIn: false, sync: false, coParent: false, backup: false, photos: false, wordsExactlyAsSaid: false };
   const falseIn = (r: Rule, p: Profile, text: string) => claimsOf(r, text).filter((c) => !claimTrue(r, p, c));
   const hits = (text: string) => RULES.filter((r) => falseIn(r, offEverything, text).length > 0).map((r) => r.id);
   const claimed = (rule: RuleId, text: string) => claimsOf(RULES.find((r) => r.id === rule)!, text);
@@ -499,7 +653,7 @@ describe('the claim rules', () => {
   });
 
   it('drops a rule once its capability is on', () => {
-    const on: Profile = { englishOnly: false, heard: ['en', 'hi', 'es', 'zh', 'fr', 'ar', 'pt'], signIn: true, sync: true, coParent: true, backup: true, wordsExactlyAsSaid: false };
+    const on: Profile = { englishOnly: false, heard: ['en', 'hi', 'es', 'zh', 'fr', 'ar', 'pt'], signIn: true, sync: true, coParent: true, backup: true, photos: true, wordsExactlyAsSaid: false };
     const text = 'Hindi; invite your co-parent; sign in to sync; backed up to iCloud; exactly as you said it';
     expect(RULES.filter((r) => falseIn(r, on, text).length > 0).map((r) => r.id)).toEqual(['exactWords']);
   });
@@ -525,5 +679,60 @@ describe('the claim rules', () => {
       expect(LANGUAGE_NAMES.map((n) => n.toLowerCase()), name).toContain(name);
       expect(['hi', 'es', 'zh', 'fr', 'ar', 'pt'], name).toContain(code);
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The photo switch and the read-frequency ban (BL-863, NX-39-R55; rescoped from #757 onto lib/photos/flag.ts).
+// The Memory Library switches of #757 are not here: those rows are parked (BL-849, NS-49-R25), and 1.x has no photo
+// usage string or PhotoKit. Nothing in this block adds or changes content.
+// ---------------------------------------------------------------------------
+
+describe('[NX-39-R55] a photo claim ships only with the photo switch, and no frequency claim ships at all', () => {
+  const off: Profile = { englishOnly: true, heard: ['en'], signIn: false, sync: false, coParent: false, backup: false, photos: false, wordsExactlyAsSaid: false };
+  const on: Profile = { ...off, photos: true };
+  const ruleOf = (id: RuleId) => RULES.find((r) => r.id === id)!;
+  const falseIn = (p: Profile, text: string) => RULES.filter((r) => claimsOf(r, text).some((c) => !claimTrue(r, p, c))).map((r) => r.id);
+
+  it('reads the photo switch through lib/photos/flag.ts and is off in the production profile', async () => {
+    const { parsePhotosFlag } = await import('../../../apps/mobile/src/lib/photos/flag');
+    expect(profile.photos).toBe(false);
+    expect(['on', ' ON ', 'On'].map(parsePhotosFlag)).toEqual([true, true, true]);
+    expect(['true', '1', 'off', '', undefined, null].map(parsePhotosFlag)).toEqual([false, false, false, false, false, false]);
+  });
+
+  it('fails a photo claim while the switch is off, and passes it with the switch on', () => {
+    for (const text of ['Start from a photo.', 'Add a photo to a letter.', 'Attach your photo.', 'A photo with each letter.', 'Switch to the Photos lens.']) {
+      expect(falseIn(off, text), text).toEqual(['photos']);
+      expect(falseIn(on, text), text).toEqual([]);
+    }
+  });
+
+  it('fails every read-frequency and freshness line in every profile, the photo switch on included', () => {
+    for (const text of ['It looks two or three times a day.', 'Checks 2 to 3 times a day.', 'We look a few times a day.', 'It checks every day.', 'Always up to date.', 'Looks twice a day.']) {
+      for (const p of [off, on]) expect(falseIn(p, text), text).toContain('readFrequency');
+    }
+    expect(ruleOf('readFrequency').trueWhen(on)).toBe(false);
+  });
+
+  it('leaves true lines alone', () => {
+    for (const text of ['Reminders stay quiet from 9:30 PM to 7 AM.', 'Choose the days you want a reminder for.', 'Every year', 'Keep the app current via the App Store.', 'Never your letters, recordings, photos or anyone else.']) {
+      expect(falseIn(off, text), text).toEqual([]);
+    }
+  });
+
+  it('reads no photo or frequency claim on any shipped surface in the production profile', () => {
+    const rules = new Set<RuleId>(['photos', 'readFrequency']);
+    expect(claims(profile).filter((c) => rules.has(c.rule)).map(id)).toEqual([]);
+  });
+
+  it('reads the photo copy once the switch is on, and finds no frequency claim and no promise of where a picture is kept in it', () => {
+    const leavesOn = cachedSurfaces(on).filter((l) => l.path.startsWith('features.photos.'));
+    expect(leavesOn.length, 'the photo copy is read when the switch is on').toBeGreaterThan(20);
+    expect(cachedSurfaces(off).some((l) => l.path.startsWith('features.photos.'))).toBe(false);
+    expect(claims(on).filter((c) => c.key.startsWith('features.photos.')).map(id)).toEqual([]);
+    // The photo copy waits for the counsel-cleared label (NX-39-R1): it says nothing about where a picture is kept or sent.
+    const kept = /\b(?:stays?|kept|stored|saved|lives?) (?:only )?on (?:this|your|the) (?:phone|iphone)\b|\bnever leaves\b|\bnothing (?:is sent|leaves)\b|\bsent to us\b|\bicloud\b/i;
+    expect(leavesOn.filter((l) => kept.test(l.text)).map((l) => l.path)).toEqual([]);
   });
 });

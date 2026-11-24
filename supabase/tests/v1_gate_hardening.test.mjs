@@ -209,7 +209,7 @@ await join(N, 'contributor', child, A);
 {
   const own = await newChild(C, 'Kiran', '2025-03-03');
   const foreign = await newChild(S, 'Dev', '2025-04-04');
-  await as(C, `insert into storage.objects (bucket_id, name) values ('entry-photos', $1)`, [`${own}/${C}/x.jpg`]);
+  await sys(`insert into storage.objects (bucket_id, name) values ('entry-photos', $1)`, [`${own}/${C}/x.jpg`]);
   const code = await codeOf(() => as(C, `update storage.objects set name = $1 where name = $2`, [`${foreign}/${C}/x.jpg`, `${own}/${C}/x.jpg`]));
   const moved = (await sys(`select count(*)::int n from storage.objects where name = $1`, [`${foreign}/${C}/x.jpg`])).rows[0].n;
   check(`[F6] an object cannot be moved into another family's book folder (${code})`, moved === 0);
@@ -227,7 +227,7 @@ await join(N, 'contributor', child, A);
   const upd = await codeOf(() => as(B, `update public.book_entries set final_text = 'Other words' where id = $1`, [id]));
   const del = await codeOf(() => as(B, `delete from public.book_entries where id = $1`, [id]));
   const ins = await codeOf(() => as(B, `insert into public.book_entries (id, child_id, author_id, kind, occurred_on, captured_at, capture_mode,
-      engine_version, final_text) values ($1, $2, $3, 'letter', '2026-01-01', now(), 'typed', 1, 'x')`, [uuid7(), child, B]));
+      final_text) values ($1, $2, $3, 'letter', '2026-01-01', now(), 'typed', 'x')`, [uuid7(), child, B]));
   check(`[F11-REQ-082] the other parent cannot update, delete or insert through book_entries (${upd}, ${del}, ${ins})`,
     upd === '42501' && del === '42501' && ins === '42501');
   check('the author\'s words are unchanged', (await sys(`select final_text from entries where id = $1`, [id])).rows[0].final_text === 'Her own words.');

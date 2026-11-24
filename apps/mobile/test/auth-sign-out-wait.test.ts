@@ -15,6 +15,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   authReducer,
   canSync,
+  endWaitIfDrained,
   initialAuthState,
   isSignedIn,
   readGateInOrder,
@@ -272,9 +273,9 @@ describe('S01: the session provider wiring', () => {
     );
   });
 
-  it('the whole wait effect: drained or polled, the poll re-reads a gate never read, both stop with the wait', () => {
+  it('the whole wait effect: drained or polled, the poll re-reads a gate never read, both stop with the wait, and a read still in flight cannot end the next one (BL-478)', () => {
     expect(provider()).toMatch(
-      /const waiting = state\.status === 'signingOut' && state\.waitingForUploads;\s*useEffect\(\(\) => \{\s*if \(!waiting\) return;\s*const done = \(\) => dispatch\(\{ type: 'UPLOADS_DRAINED' \}\);\s*const off = onUploadsDrained\(done\);\s*const poll = setInterval\(\(\) => \{\s*if \(shouldRecheckGate\(stateRef\.current, false\)\) void checkGate\(\);\s*void pendingUploads\(\)\.then\(\(n\) => n === 0 && done\(\)\);\s*\}, 10_000\);\s*return \(\) => \{\s*off\(\);\s*clearInterval\(poll\);\s*\};\s*\}, \[waiting, checkGate\]\);/,
+      /const waiting = state\.status === 'signingOut' && state\.waitingForUploads;\s*useEffect\(\(\) => \{\s*if \(!waiting\) return;\s*const alive = \{ current: true \};\s*const done = \(\) => dispatch\(\{ type: 'UPLOADS_DRAINED' \}\);\s*const off = onUploadsDrained\(done\);\s*const poll = setInterval\(\(\) => \{\s*if \(shouldRecheckGate\(stateRef\.current, false\)\) void checkGate\(\);\s*void endWaitIfDrained\(pendingUploads, alive, done\);\s*\}, 10_000\);\s*return \(\) => \{\s*alive\.current = false;\s*off\(\);\s*clearInterval\(poll\);\s*\};\s*\}, \[waiting, checkGate\]\);/,
     );
   });
 
@@ -351,5 +352,37 @@ describe('S01: the typed address is forgotten after a link sign-in and after sig
     await clearPendingEmailRequest();
     expect(getPendingEmail()).toBeNull();
     expect(secure.removeItem).not.toHaveBeenCalled();
+  });
+});
+
+describe('BL-478 point 1: a stale poll cannot end a second sign-out wait (A-REQ-033)', () => {
+  const later = () => {
+    let release: (n: number) => void = () => {};
+    const read = () => new Promise<number>((res) => (release = res));
+    return { read, release: (n: number) => release(n) };
+  };
+
+  it('the mutant: a read begun in wait one, answered after "Stay signed in" and a second sign-out, ends nothing', async () => {
+    const done = vi.fn();
+    const waitOne = { current: true };
+    const r = later();
+    const inFlight = endWaitIfDrained(r.read, waitOne, done);
+    waitOne.current = false; // wait one's cleanup ran: the person cancelled
+    r.release(0); // the queue looked empty when the read began; the answer lands in wait two
+    await inFlight;
+    expect(done).not.toHaveBeenCalled();
+  });
+
+  it('a read in the wait that is still open ends it when the queue is empty, and only then', async () => {
+    const done = vi.fn();
+    const alive = { current: true };
+    await endWaitIfDrained(async () => 2, alive, done);
+    expect(done).not.toHaveBeenCalled();
+    await endWaitIfDrained(async () => 0, alive, done);
+    expect(done).toHaveBeenCalledTimes(1);
+    await endWaitIfDrained(async () => ({ kind: 'count', n: 0 }), alive, done);
+    expect(done).toHaveBeenCalledTimes(2);
+    await endWaitIfDrained(async () => ({ kind: 'unknown' }), alive, done); // BL-1425: unknown is not empty
+    expect(done).toHaveBeenCalledTimes(2);
   });
 });

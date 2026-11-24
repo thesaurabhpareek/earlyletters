@@ -30,7 +30,7 @@ import { CreditCardIcon } from 'phosphor-react-native/src/icons/CreditCard';
 import { FileTextIcon } from 'phosphor-react-native/src/icons/FileText';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, ScrollView, View, type Text as RNText } from 'react-native';
-import { bookRowKey, bookRowLabel, canDelete, confirmDay, failureLine, HELD, scheduledDay, whatHappens } from '@/components/settings/delete-account.logic';
+import { afterCancel, bookRowKey, bookRowLabel, canDelete, confirmDay, failureLine, HELD, loadFailureLine, scheduledDay, whatHappens } from '@/components/settings/delete-account.logic';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Text } from '@/components/ui/text';
@@ -89,14 +89,16 @@ function DeleteAccountPage({ first, onRetry }: { first: boolean; onRetry: () => 
 
   const header = <Stack.Screen options={{ title: c.title }} />;
   const failure = <ErrorLine message={failureLine(d.error)} />;
+  // The page could not load: nothing was tried, so it does not say that nothing has changed.
+  const loadFailure = <ErrorLine message={loadFailureLine(d.error)} />;
   const tryAgain = <Button variant="outline" size="lg" className="self-start" label={copy.common.tryAgainButton} onPress={onRetry} />;
 
   // Each state's ScrollView has its own key, so a new step starts at its top instead of keeping the last one's offset.
   if (!d.configured || !d.signedIn) {
     return (
-      <ScrollView key="signed-out" contentContainerClassName={PAGE} contentInsetAdjustmentBehavior="automatic">
+      <ScrollView key="signed-out" testID="deleteAccount.screen" contentContainerClassName={PAGE} contentInsetAdjustmentBehavior="automatic">
         {header}
-        <Text variant="body">{d.configured ? c.signedOut.body : c.notConfigured}</Text>
+        <Text variant="body" testID="deleteAccount.signedOut">{d.configured ? c.signedOut.body : c.notConfigured}</Text>
         {d.configured ? <Button size="lg" className="self-start" label={c.signedOut.button} onPress={() => router.push('/settings/account')} /> : null}
       </ScrollView>
     );
@@ -104,15 +106,15 @@ function DeleteAccountPage({ first, onRetry }: { first: boolean; onRetry: () => 
 
   if (step === 'loading') {
     return (
-      <ScrollView key="loading" contentContainerClassName={cn(PAGE, 'flex-grow justify-center')} contentInsetAdjustmentBehavior="automatic">
+      <ScrollView key="loading" testID="deleteAccount.screen" contentContainerClassName={cn(PAGE, 'flex-grow justify-center')} contentInsetAdjustmentBehavior="automatic">
         {header}
         {d.error ? (
           <>
-            {failure}
+            {loadFailure}
             {tryAgain}
           </>
         ) : (
-          <ActivityIndicator color={colors.accent} />
+          <ActivityIndicator color={colors.accent} accessibilityLabel={c.open.checking} />
         )}
       </ScrollView>
     );
@@ -120,7 +122,7 @@ function DeleteAccountPage({ first, onRetry }: { first: boolean; onRetry: () => 
 
   if (step === 'executing') {
     return (
-      <ScrollView key="executing" contentContainerClassName={PAGE} contentInsetAdjustmentBehavior="automatic">
+      <ScrollView key="executing" testID="deleteAccount.screen" contentContainerClassName={PAGE} contentInsetAdjustmentBehavior="automatic">
         {header}
         <Text variant="body">{c.executing}</Text>
       </ScrollView>
@@ -130,10 +132,10 @@ function DeleteAccountPage({ first, onRetry }: { first: boolean; onRetry: () => 
   if (step === 'scheduled' && d.status && d.status.state !== 'none' && d.status.state !== 'executing') {
     const date = longDate(scheduledDay(d.status));
     return (
-      <ScrollView key="scheduled" contentContainerClassName={PAGE} contentInsetAdjustmentBehavior="automatic">
+      <ScrollView key="scheduled" testID="deleteAccount.screen" contentContainerClassName={PAGE} contentInsetAdjustmentBehavior="automatic">
         {header}
         <View className="gap-2">
-          <View ref={scheduledHeading} accessible accessibilityRole="header" className="gap-1">
+          <View ref={scheduledHeading} accessible accessibilityRole="header" className="gap-1" testID="deleteAccount.scheduled">
             <Text variant="subhead" tone="muted">
               {c.scheduled.heading}
             </Text>
@@ -150,14 +152,18 @@ function DeleteAccountPage({ first, onRetry }: { first: boolean; onRetry: () => 
             fullWidth
             loading={d.busy}
             label={c.scheduled.cancelButton}
+            testID="deleteAccount.cancel"
             onPress={async () => {
               if (await d.cancel()) {
                 haptic('success');
                 toast.show({ message: c.scheduled.cancelled });
+                // The page underneath would otherwise fall back to "What happens ... Continue".
+                if (afterCancel(router.canGoBack()) === 'back') router.back();
+                else router.replace('/settings');
               }
             }}
           />
-          <Button variant="quiet" fullWidth disabled={d.busy} label={c.scheduled.doneButton} onPress={() => confirmSignOut(date, () => void d.signOut())} />
+          <Button variant="quiet" fullWidth disabled={d.busy} label={c.scheduled.doneButton} testID="deleteAccount.signOut" onPress={() => confirmSignOut(date, () => void d.signOut())} />
         </View>
       </ScrollView>
     );
@@ -170,6 +176,7 @@ function DeleteAccountPage({ first, onRetry }: { first: boolean; onRetry: () => 
     return (
       <ScrollView
         key="confirm"
+        testID="deleteAccount.screen"
         contentContainerClassName={PAGE}
         contentInsetAdjustmentBehavior="automatic"
         keyboardShouldPersistTaps="handled"
@@ -183,6 +190,7 @@ function DeleteAccountPage({ first, onRetry }: { first: boolean; onRetry: () => 
         </View>
         <TextField
           label={c.confirm.typeLabel}
+          testID="deleteAccount.confirm.input"
           value={typed}
           onChangeText={setTyped}
           autoCapitalize="none"
@@ -203,10 +211,12 @@ function DeleteAccountPage({ first, onRetry }: { first: boolean; onRetry: () => 
             disabled={!ready}
             loading={d.busy}
             accessibilityLabel={c.confirm.button}
+            testID="deleteAccount.confirm.button"
             className={ready ? 'bg-destructive' : 'border border-input'}
             onPress={async () => {
+              // Once per visit to this step: an offline retry does not play it again (BL-492 point 5).
+              if (!tried) haptic('warning');
               setTried(true);
-              haptic('warning');
               if (await d.request()) keep();
             }}>
             <Text tone={ready ? 'onDestructive' : 'muted'}>{c.confirm.button}</Text>
@@ -219,7 +229,7 @@ function DeleteAccountPage({ first, onRetry }: { first: boolean; onRetry: () => 
 
   const list = whatHappens(d.lines);
   return (
-    <ScrollView key="review" contentContainerClassName={PAGE} contentInsetAdjustmentBehavior="automatic">
+    <ScrollView key="review" testID="deleteAccount.screen" contentContainerClassName={PAGE} contentInsetAdjustmentBehavior="automatic">
       {header}
       <View className="gap-4">
         <Text variant="title2" asHeading>
@@ -248,7 +258,7 @@ function DeleteAccountPage({ first, onRetry }: { first: boolean; onRetry: () => 
         ) : null}
       </View>
 
-      <Card variant="raised" radius="md" padding={4}>
+      <Card variant="raised" radius="md" padding={4} testID="deleteAccount.exportFirst">
         <View className="flex-row items-center gap-3">
           <FileTextIcon size={24} color={colors.accent} />
           <Text variant="headline" asHeading className="flex-1">
@@ -268,7 +278,7 @@ function DeleteAccountPage({ first, onRetry }: { first: boolean; onRetry: () => 
       </Card>
 
       {d.subscriptionNotice ? (
-        <Card variant="raised" radius="md" padding={4}>
+        <Card variant="raised" radius="md" padding={4} testID="deleteAccount.subscription">
           <View className="flex-row items-center gap-3">
             <CreditCardIcon size={24} color={colors.accent} />
             <Text variant="headline" asHeading className="flex-1">
@@ -284,11 +294,11 @@ function DeleteAccountPage({ first, onRetry }: { first: boolean; onRetry: () => 
 
       {list.known ? null : (
         <>
-          <ErrorLine message={c.errors.failed} />
+          {loadFailure}
           {tryAgain}
         </>
       )}
-      <Button variant="outline" size="lg" fullWidth disabled={!list.known} label={c.continueButton} onPress={() => setWanted('confirm')} />
+      <Button variant="outline" size="lg" fullWidth disabled={!list.known} label={c.continueButton} testID="deleteAccount.continue" onPress={() => setWanted('confirm')} />
     </ScrollView>
   );
 }

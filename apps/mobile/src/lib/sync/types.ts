@@ -294,7 +294,8 @@ export interface PulledRow {
   capture_mode: string;
   edit_level: string;
   prompt_key: string | null;
-  engine_version: number;
+  /** Own rows only (FR-AIS-08, 20261123200000): book_entries no longer carries it, so another member's row has none. */
+  engine_version?: number;
   raw_transcript?: string;
   machine_edits?: unknown[];
   final_text: string;
@@ -368,6 +369,8 @@ export interface PullResponse {
   /** v1 (WP-F16-17): this author's own held drafts after the held cursor. */
   held?: { rows: (PulledHeld | PulledHeldGone)[]; cursor: string | null; more: boolean };
   more?: boolean;
+  /** FR-PRV-20: an empty page because consent is not current; not "nothing changed". */
+  withheld?: 'consent';
 }
 
 // ── Engine state ───────────────────────────────────────────────────────────
@@ -414,6 +417,11 @@ export interface SyncReport {
   /** Word conflicts found (a conflict copy was kept for each). */
   conflicts: number;
   pulled: number;
+  /**
+   * Pulled rows a local column guard refused (raw_transcript, BL-412; captured_at, engine_version, author_id,
+   * child_id, BL-1497): undone and skipped, a count only. Never part of `rejected`, which is refused uploads (BL-1498).
+   */
+  pulledRefused: number;
   reset: boolean;
   phase: SyncPhase;
 }

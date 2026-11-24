@@ -92,7 +92,7 @@ One term per concept. Banned synonyms must not appear in user-facing copy (app, 
 | What the product makes | memory book; "the book" or "{child}'s book" after first mention | journal, diary, baby book (except when describing paper competitors), album, scrapbook | Store keywords may keep search terms. |
 | Printed product | Early Letters: Year One (from `brand.printTitle`) | yearbook, photo book | Not promised in v1.0. |
 | Longer piece someone makes | letter | entry, post, memory, story, journal entry, message | |
-| Short piece someone makes | note | quick entry, moment | Never use "note" for anything we send (CA-031). |
+| Short piece someone makes | note | quick entry, moment | Never use "note" for anything we send (CA-031). Moment is still banned as the name of something a person makes; since 21 Nov 2026 it is allowed as the name of the fourth tab and its place (BRAND.md glossary, which now governs). |
 | What we send about billing | reminder | note | |
 | A month section of the book | month, "Month 4" | chapter (in copy), page | "chapter" may stay in code and design docs. |
 | The spoken audio | recording; "your voice" in headlines | voice note, audio file, clip | |

@@ -27,12 +27,14 @@ import {
 } from '@scribe/core';
 import * as React from 'react';
 import { View } from 'react-native';
+import { announce } from '@/lib/a11y';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { copy, fill } from '@/lib/copy';
 import { todayISO, type Child } from '@/lib/store';
+import { nameEditorError } from './child-settings.logic';
 import { DateField } from './date-field';
 import { dateRange } from './date-field.logic';
 
@@ -50,6 +52,10 @@ function Actions({ canSave, onSave, onCancel, saveLabel }: { canSave: boolean; o
 }
 
 function Hint({ children }: { children?: string | null }) {
+  // iOS VoiceOver ignores accessibilityLiveRegion, so the line is spoken when it appears or changes (PER4-018).
+  React.useEffect(() => {
+    if (children) announce(children);
+  }, [children]);
   return children ? (
     <Text variant="footnote" accessibilityLiveRegion="polite">
       {children}
@@ -73,7 +79,7 @@ export function NameEditor({ child, onSave, onCancel }: EditorProps) {
         autoCorrect={false}
         textContentType="givenName"
         returnKeyType="done"
-        error={check.ok ? null : e.nameEmpty}
+        error={nameEditorError(child.name, draft)}
         helper={nearLimit(textLength(draft), CHILD_NAME_MAX) ? fill(e.nameTooLong, { n: CHILD_NAME_MAX }) : undefined}
       />
       <Actions canSave={changed} onCancel={onCancel} onSave={() => check.ok && onSave({ name: check.value })} />

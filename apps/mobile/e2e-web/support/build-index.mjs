@@ -43,6 +43,7 @@ const TITLES = {
   crash: 'Crash (fault injected)',
   'co-parent-sharing': 'Two parents: invite, join, and the Family tab (server features on)',
   'sign-in': 'Sign in and Account (server features on)',
+  'missing-screens': 'Missing screens: spoken language and legal',
 };
 
 const MAX_NAMED = 20;
@@ -123,6 +124,8 @@ function main(argv) {
   const shots = steps.filter((s) => s.shot).length;
   const fulls = steps.filter((s) => s.full).length;
   const esc = (t) => String(t ?? '').replace(/\|/g, '\\|').replace(/\n/g, ' ');
+  // A title already ending in ?, ! or . keeps its own mark (BL-1644: "What does Asha call you?." read wrong).
+  const titleLine = (t) => { const e = esc(t); return /[.?!]$/.test(e) ? e : e + '.'; };
 
   let md = '';
   if (noShot.length > 0) {
@@ -150,7 +153,7 @@ Generated from the web end-to-end flows (\`apps/mobile/e2e-web/*.flow.ts\`) by \
     md += `## ${code} ${TITLES[j] ?? j}\n\n| Step | Kind | What the person sees and does | From | Screen |\n|---|---|---|---|---|\n`;
     for (const s of list) {
       const img = s.shot ? `[png](${s.shot})${s.full ? ` [full](${s.full})` : ''}` : '';
-      md += `| ${s.id} | ${s.kind} | **${esc(s.title)}.** ${esc(s.note)} | ${s.from ?? ''} | ${img} |\n`;
+      md += `| ${s.id} | ${s.kind} | **${titleLine(s.title)}** ${esc(s.note)} | ${s.from ?? ''} | ${img} |\n`;
     }
     md += '\n';
   }

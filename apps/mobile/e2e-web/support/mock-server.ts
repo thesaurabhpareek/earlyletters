@@ -14,7 +14,12 @@
  */
 import type { Page, Route } from '@playwright/test';
 
-export const MOCK_SUPABASE_URL = 'http://127.0.0.1:54321';
+/**
+ * https on purpose (BL-600): the server-on web build is a `preview` build, and `parseSupabaseEnv` refuses plain http there,
+ * which would leave every server-on flow without a Supabase client. Nothing listens here; Playwright answers the requests
+ * before they leave the browser, so no certificate is needed.
+ */
+export const MOCK_SUPABASE_URL = 'https://127.0.0.1:54321';
 
 export const MAMA = '11111111-1111-4111-8111-111111111111';
 export const PAPA = '22222222-2222-4222-8222-222222222222';

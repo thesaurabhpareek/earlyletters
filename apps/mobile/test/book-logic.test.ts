@@ -79,7 +79,8 @@ describe('a letter deleted from its page (S36)', () => {
     expect(book).toMatch(/const gone = bookHandoff\.take\(\)/);
     // A toast with an action has no timer (components/ui/toast); Undo puts the card back with the wash.
     expect(book).toMatch(/message: copy\.settings\.delete\.entryToast,\s*action: \{/);
-    expect(book).toMatch(/undeleteEntry\(gone\.id\);\s*wash\(\[gone\.id\]\)/);
+    // BL-1959: a left book refuses the restore (no wash); otherwise Undo restores, then the wash.
+    expect(book).toMatch(/if \(!undeleteEntry\(gone\.id\)\) return [^;]*;[\s\S]*?wash\(\[gone\.id\]\)/);
     // Leaving the Book takes the toast away.
     expect(book).toMatch(/if \(deleteToastUp\.current\) \{\s*deleteToastUp\.current = false;\s*toast\.hide\(\);/);
   });
@@ -109,7 +110,7 @@ describe('the letter page while the card\'s words travel in (MOTION 5f)', () => 
 
   it('the page holds its rest until then, and Back sends it first (source)', () => {
     const page = code(src('app/letter/[id].tsx'));
-    expect(page).toMatch(/carried: !!r && !reduced && canCarry\(r\.text, column\)/);
+    expect(page).toMatch(/carried: carriesWords\(\{ hasPicture, fontScale \}\) && !!r && !reduced && canCarry\(r\.text, column\)/);
     expect(page).toMatch(/withDelay\(rest\.showAtMs, withTiming\(1/);
     expect(page).toMatch(/<Animated\.View style=\{\[\{ gap: 28 \}, restBody\]\}>/);
     expect(page).toMatch(/withTiming\(0, \{ duration: REST_OUT_MS[^}]*\}\);\s*leaveTimer\.current = setTimeout\(leave, REST_OUT_MS\);/);
@@ -173,7 +174,7 @@ describe('the letter page (S27, S28, source)', () => {
 
   it('opens in the card\'s column and type, so the carried words never reflow', () => {
     expect(page).toMatch(/paddingHorizontal: CARD_TEXT_INSET/);
-    expect(page).toMatch(/<PageOpening lineHeight=\{openingLineHeight\} \/>/);
+    expect(page).toMatch(/<PageOpening lineHeight=\{openingLineHeight\} carry=\{carriesWords\(\{ hasPicture, fontScale \}\)\} \/>/);
     expect(page).toMatch(/<View style=\{\{ gap: CARD_TEXT_GAP \}\}>/);
     expect(src('components/book/letter-card.tsx')).toMatch(/style=\{\{ gap: CARD_TEXT_GAP \}\}/);
   });
@@ -219,7 +220,7 @@ describe('the letter page (S27, S28, source)', () => {
 
   it('one provenance line, no lamp, no "Record again" on a letter with no words', () => {
     // The line is composed in lib/provenance.ts (provenanceLine, tested in p5-critics.test.ts) so the other parent's phone claims no fixes.
-    expect(page).toMatch(/provenanceLineOf\(entry, \{ own, words: copy\.book\.provenance, recordingOnPhone: copy\.book\.recordingOnPhone \}\)/);
+    expect(page).toMatch(/provenanceLineOf\(entry, \{ own, audioUri: entry\.audioUri, words: copy\.book\.provenance, recordingOnPhone: copy\.book\.recordingOnPhone \}\)/);
     expect(src('lib/provenance.ts')).toMatch(/`\$\{how\}\. \$\{o\.recordingOnPhone\}\.`/);
     expect(page).toMatch(/useUnlitRoom\(\)/);
     expect(page).not.toMatch(/<Lamp/);

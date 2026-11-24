@@ -91,18 +91,19 @@ describe('[S40] Settings home', () => {
     expect(home).toMatch(/onPress=\{card\.route \? go\(ROUTES\.account\) : undefined\}/);
     expect(headerCard({ signIn: false, status: 'ready', provider: 'apple', signsAs: 'Mama' }).route).toBeNull();
     expect(home).toMatch(/\{backupInBuild\(\) \? <ListRow title=\{backupCopy\.title\}/);
-    expect(home).toMatch(/\{capabilities\.accountDeletion && auth\.signedIn \? \(\s*<ListSection>\s*<ListRow title=\{h\.deleteAccountLabel\}/);
+    expect(home).toMatch(/\{capabilities\.accountDeletion && auth\.signedIn && you\.accountReady \? \(\s*<ListSection>\s*<ListRow title=\{h\.deleteAccountLabel\}/);
   });
 
   it('shows Delete account only while signed in, and only in a build with the Delete account switch on (#358 review; founder, 30 Oct 2026)', () => {
     // The row's own condition, read from the screen and run for each case, so a change to it fails here.
     const m = home.match(/\{([^{}?]+)\?\s*\(\s*<ListSection>\s*<ListRow title=\{h\.deleteAccountLabel\}/);
     expect(m, 'the Delete account row and its condition').not.toBeNull();
-    const shown = new Function('capabilities', 'auth', `return Boolean(${m![1]});`) as (c: { accountDeletion: boolean }, a: { signedIn: boolean }) => boolean;
-    expect(shown({ accountDeletion: true }, { signedIn: true })).toBe(true); // switched on, signed in: the row
-    expect(shown({ accountDeletion: true }, { signedIn: false })).toBe(false); // signed out: no row
-    expect(shown({ accountDeletion: false }, { signedIn: true })).toBe(false); // switch off (the alpha default), even signed in: no row
-    expect(shown({ accountDeletion: false }, { signedIn: false })).toBe(false);
+    const shown = new Function('capabilities', 'auth', 'you', `return Boolean(${m![1]});`) as (c: { accountDeletion: boolean }, a: { signedIn: boolean }, y?: { accountReady: boolean }) => boolean;
+    // `you.accountReady` (YOU-TAB-STATES-9nov, GAP 2) only ever narrows the row further; test/you-tab-states.test.ts covers it. Here it is settled.
+    expect(shown({ accountDeletion: true }, { signedIn: true }, { accountReady: true })).toBe(true); // switched on, signed in: the row
+    expect(shown({ accountDeletion: true }, { signedIn: false }, { accountReady: true })).toBe(false); // signed out: no row
+    expect(shown({ accountDeletion: false }, { signedIn: true }, { accountReady: true })).toBe(false); // switch off (the alpha default), even signed in: no row
+    expect(shown({ accountDeletion: false }, { signedIn: false }, { accountReady: true })).toBe(false);
     // `auth` is the session the screen already reads for the Account row.
     expect(home).toMatch(/const auth = useAuth\(\);/);
     // The row reads the capability itself, which includes the server switch (test/account-deletion-switch.test.ts runs it against the real one).
@@ -120,7 +121,8 @@ describe('[CCO-9, CDesO-1] Settings home regroup (settings-ia.md 3; SETTINGS_AND
     expect(en.settingsHome.planLabel).toBe('Plan');
     expect(home).toMatch(/plan: '\/settings\/plus'/);
     // The Plan row is the only way to Plan from home, and nothing else names it.
-    expect(home.match(/ROUTES\.plan\b/g)?.length).toBe(1);
+    // Two places in the source, one rendered: with the Sign in card above (B, C) the Plan row sits in its own section (YOU-TAB-STATES-9nov 3).
+    expect(home.match(/ROUTES\.plan\b/g)?.length).toBe(2);
   });
 
   it('without sign-in (store and testflight builds) the card is the name and "On this phone", with no plan words, and opens nothing', () => {

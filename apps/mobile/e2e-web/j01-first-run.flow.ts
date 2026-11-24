@@ -1,5 +1,6 @@
+import { billingCopy, en } from '@scribe/content';
 import { agreeBox, btn, dateInput, dayOffset, firstRun, journey, nameField, passAgeGate, startOnboarding, toChildStep } from './support/app';
-import { expect, test } from './support/journey';
+import { expect, onStore, test } from './support/journey';
 
 test('[J01] first run: the age question, the promise, the child, the signature, the first letter', async ({ app, record }) => {
   const step = journey(record, 'J01', 'first-run', 1, 'J00-open');
@@ -27,10 +28,11 @@ test('[J01] first run: the age question, the promise, the child, the signature, 
 
   await expect(btn(app, 'Begin the book')).toBeVisible();
   await expect(app.getByText('Letters to your child, in your own words and voice.')).toBeVisible();
-  await expect(app.getByText('Your first two letters are free.')).toBeVisible();
+  // This web build is an alpha build (preview app env), where Plus is not part of the test; the store's own line is [J01b].
+  await expect(app.getByText(billingCopy.alpha.note)).toBeVisible();
   // S03: the stacked lockup is the one logo (an image named for VoiceOver); the name is never typed on the screen.
   await expect(app.getByRole('img').first()).toBeVisible();
-  await step('happy', 'Welcome', 'The light rises from the gate: the stacked lockup, one serif line of what the book is, one line about how it fills, and "Your first two letters are free." (D-082). One button: Begin the book. ("I already have a book" and "I was invited" sit under it in builds with sign-in; this build has server features off, so both are hidden.)');
+  await step('happy', 'Welcome', 'The light rises from the gate: the stacked lockup, one serif line of what the book is, one line about how it fills, and, in a test build, "Plus is not part of this test. Every letter is free while you test." (the store build says the two free letters: J01b). One button: Begin the book. ("I already have a book" and "I was invited" sit under it in builds with sign-in; this build has server features off, so both are hidden.)');
   await expect(btn(app, 'I was invited')).toHaveCount(0);
   await expect(btn(app, 'I already have a book')).toHaveCount(0);
   await startOnboarding(app);
@@ -39,7 +41,7 @@ test('[J01] first run: the age question, the promise, the child, the signature, 
   await expect(app.getByText('For example')).toBeVisible();
   await expect(app.getByTestId('promise.mark')).toHaveCount(2);
   await expect(app.getByText('We can mishear')).toHaveCount(0);
-  await step('happy', 'The promise', 'One promise and one sample: "Exactly as you said it." over a sentence the engine has fixed, with its two small fixes struck through the Review way. The voice is kept on this phone, and the book is private by default.');
+  await step('happy', 'The promise', 'One promise and one sample: "It stays in your words." over a sentence the engine has fixed, with its two small fixes struck through the Review way. The voice is kept on this phone, and the book is private by default.');
   await app.getByTestId('promise.mark').first().click();
   await expect(app.getByText('Put back.')).toBeVisible();
   await expect(app.getByTestId('promise.mark')).toHaveCount(1);
@@ -49,14 +51,14 @@ test('[J01] first run: the age question, the promise, the child, the signature, 
 
   await toChildStep(app);
   await expect(btn(app, 'Continue')).toBeDisabled();
-  await expect(app.getByText('Add a name to continue.')).toBeVisible();
-  await expect(app.getByText('You can add a nickname later.')).toHaveCount(0);
-  await step('unhappy', 'Child step with no name', 'Nothing typed yet. Continue waits, and a quiet line above it says why: "Add a name to continue." The book cover beside the heading is blank. An empty name can never be saved.', undefined, { settle: 700 });
+  // The name is optional now (NX-36 S7): the reason Continue waits is the birthday, said with "your child" until a name is typed.
+  const o = en.onboarding;
+  await expect(app.getByText(o.child.needBirthday.replace('{child}', o.childFallback))).toBeVisible();
+  await step('unhappy', 'Child step with no name', 'Nothing typed yet. Continue waits, and a quiet line above it says why: "Choose your child\'s birthday to continue." The name can be left empty. The book cover beside the heading is blank.', undefined, { settle: 700 });
 
   // S05: a tap on the waiting Continue raises the reason with its warning mark and moves focus to the empty field.
   await btn(app, 'Continue').click({ force: true });
   await expect(app.getByTestId('onboarding.reason.raised')).toBeVisible();
-  await expect(nameField(app)).toBeFocused();
 
   const long = 'A'.repeat(90);
   await nameField(app).fill(long);
@@ -69,8 +71,12 @@ test('[J01] first run: the age question, the promise, the child, the signature, 
   // The cover draws the name on its front (and, unseen until it opens, on its flyleaf).
   await expect(app.getByText('Asha', { exact: true }).first()).toBeVisible();
   await expect(btn(app, 'Continue')).toBeDisabled();
-  await expect(app.getByText("Choose Asha's birthday to continue.")).toBeVisible();
+  await expect(app.getByText(o.child.needBirthday.replace('{child}', 'Asha'))).toBeVisible();
   await expect(dateInput(app, 'Birthday')).toHaveValue('');
+  // S05 focus (onboarding.tsx nudge): a tap on the waiting Continue moves focus to what is missing. With one child and the name
+  // optional that is the birthday, whose field arrives with the first letter of the name, so it is proved here, not before.
+  await btn(app, 'Continue').click({ force: true });
+  await expect(dateInput(app, 'Birthday')).toBeFocused();
   await expect(app.getByText("We sort letters by Asha's month of age.")).toHaveCount(0);
   await step('unhappy', 'Name entered, no birthday chosen yet', 'The cover takes the name as typed. The date block arrives with the first letter, empty: on a phone it says "Choose a date", and "Born today" is a chip beside it. Continue waits, with a line saying what is needed. A seven-month-old can no longer be saved as "0 days" by an unseen default.', 'J01-05');
 
@@ -160,4 +166,12 @@ test('[J01d] twins: the title and the reason agree in number (S06)', async ({ ap
   await btn(app, 'Continue').click();
   await expect(app.getByText('What do Asha and Nila call you?')).toBeVisible();
   await expect(app.getByText('Add what Asha and Nila call you to continue.')).toBeVisible();
+});
+
+test('[J01e] the store build says the first two letters are free, on the welcome', async ({ app }) => {
+  await onStore(app);
+  await passAgeGate(app);
+  await expect(btn(app, 'Begin the book')).toBeVisible();
+  await expect(app.getByText(en.onboarding.welcome.freeLine)).toBeVisible();
+  await expect(app.getByText(billingCopy.alpha.note)).toHaveCount(0);
 });

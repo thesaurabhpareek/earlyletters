@@ -1,19 +1,23 @@
-import { router, Stack, useLocalSearchParams, type Href } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { router, Stack, useFocusEffect, useLocalSearchParams, type Href } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert, ScrollView, View } from 'react-native';
+import { useAuth } from '@/lib/auth/session-provider';
+import { listPendingInvites } from '@/lib/family/invites';
 import { PLUS_ALPHA } from '@/lib/billing/alpha';
-import { capabilities, serverFeaturesEnabled } from '@/lib/capabilities';
-import { copy, fill } from '@/lib/copy';
+import { serverFeaturesEnabled } from '@/lib/capabilities';
+import { childLabel, copy, fill } from '@/lib/copy';
 import { familyCopy } from '@/lib/family/copy';
-import { familySurfacesShown, inviteHref, visibleCoParentDoors } from '@/lib/family/entry.logic';
+import { inviteHref, visibleCoParentDoors } from '@/lib/family/entry.logic';
 import { longDate as formatDate } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
-import { deleteSetting, getChild, getSetting, hideChild, listChildren, listMembers, localDeletionAllowed, setSetting, subscribe, todayISO, updateChild } from '@/lib/store';
+import { deleteSetting, getChild, getSetting, hideChild, listChildren, listMembers, localDeletionAllowed, setChildQuiet, setSetting, subscribe, todayISO, updateChild } from '@/lib/store';
 import { BornEditor, DateEditor, NameEditor, SignsAsEditor, type ChildPatch } from '@/components/child/child-editors';
-import { bookRow, bornCard, bornCardHiddenKey, bornCardShown, coParentOf, hideFooter } from '@/components/child/child-settings.logic';
+import { familyNotice } from '@/components/family/family-notice';
+import { asksPendingInvites, bookRow, bornCard, bornCardHiddenKey, bornCardShown, childRowTitle, coParentOf, hereRowShown, hereRowTitle, hideFooter } from '@/components/child/child-settings.logic';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Text } from '@/components/ui/text';
+import { useToast } from '@/components/ui/toast';
 import { ListRow, ListSection, ToggleRow } from '@/components/ui/list-row';
 import { ordinalOf, track } from '@/lib/analytics/track';
 
@@ -38,6 +42,38 @@ export default function ChildSettings() {
       }),
     [id],
   );
+  // Pending invites stay reachable: while the server lists one for this book, the row opens the family page (Share again, Cancel invite).
+  // Asked only where the row can exist (child-settings.logic.ts asksPendingInvites), never in a servers-on store build.
+  // Every hook sits above the early return below, so the order of hooks never changes if the book goes (delete-book.tsx).
+  const auth = useAuth();
+  const coParent = coParentOf(members);
+  const childId = child?.id;
+  const asksInvites = asksPendingInvites({ serverFeatures: serverFeaturesEnabled(), alpha: PLUS_ALPHA, signedIn: auth.canSync, coParent });
+  const [pendingInvites, setPendingInvites] = useState(false);
+  useEffect(() => {
+    let live = true;
+    if (!asksInvites || !auth.client || !childId) {
+      setPendingInvites(false);
+      return;
+    }
+    listPendingInvites(auth.client, childId).then(
+      (rows) => live && setPendingInvites(rows.length > 0),
+      () => live && setPendingInvites(false),
+    );
+    return () => {
+      live = false;
+    };
+  }, [asksInvites, auth.client, childId]);
+  // The invite sheet opened from the row closes back onto this page: its one closing line ("The invite waits until
+  // they join.", invite/new.tsx) shows here as the toast, once, the way the family page shows it when the sheet was
+  // opened from there (components/family/family-notice.ts). The same word; nothing new is said.
+  const toast = useToast();
+  useFocusEffect(
+    useCallback(() => {
+      const note = familyNotice.take();
+      if (note) toast.show({ message: note });
+    }, [toast]),
+  );
 
   if (!child) return null;
   const s = copy.children.settings;
@@ -58,8 +94,8 @@ export default function ChildSettings() {
   };
   const born = bornCard(name);
   const showBorn = bornCardShown({ birthday: child.birthday, dueDate: child.dueDate, today: todayISO(), hiddenFor });
-  const coParent = coParentOf(members);
-  const row = bookRow({ serverFeatures: serverFeaturesEnabled(), coParent, invite: inviteHref('settings_child', serverFeaturesEnabled(), child.id) });
+  const showHere = hereRowShown({ birthday: child.birthday, dueDate: child.dueDate, today: todayISO(), hiddenFor });
+  const row = bookRow({ serverFeatures: serverFeaturesEnabled(), alpha: PLUS_ALPHA, coParent, invite: inviteHref('settings_child', serverFeaturesEnabled(), PLUS_ALPHA, child.id), pendingInvites });
 
   /** "Hide": the card goes away on this phone until the Due date row is opened again (S46). Nothing is sent. */
   const hideBornCard = () => {
@@ -93,7 +129,8 @@ export default function ChildSettings() {
 
   return (
     <ScrollView contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
-      <Stack.Screen options={{ title: fill(s.title, { child: name }) }} />
+      {/* A book with no name yet reads "Your child" (develop's childRowTitle), not "'s book" (GAP 6). */}
+      <Stack.Screen options={{ title: name.trim() ? fill(s.title, { child: name }) : childRowTitle(name) }} />
 
       {/* The due-date card: never presumes a birth, never celebrates, never counts days (S46). */}
       {showBorn && editing !== 'born' ? (
@@ -113,8 +150,9 @@ export default function ChildSettings() {
       {editing === 'born' ? <BornEditor child={child} onSave={save('date')} onCancel={() => setEditing(null)} /> : null}
 
       <ListSection title={s.detailsLabel}>
-        <ListRow title={x.edit.nameLabel} trailing={name} onPress={() => setEditing('name')} accessibilityHint={x.edit.rowHint} />
+        <ListRow title={x.edit.nameLabel} trailing={childLabel(name)} onPress={() => setEditing('name')} accessibilityHint={x.edit.rowHint} />
         <ListRow title={dateRow.title} trailing={dateRow.value} onPress={openDate} accessibilityHint={x.edit.rowHint} />
+        {showHere ? <ListRow title={hereRowTitle(name)} trailing="chevron" onPress={() => setEditing('born')} accessibilityHint={x.edit.rowHint} testID="child.hereRow" /> : null}
         <ListRow title={fill(s.signsAsLabel, { child: name })} trailing={child.signsAs} onPress={() => setEditing('signsAs')} accessibilityHint={x.edit.rowHint} />
       </ListSection>
       {editing === 'name' ? <NameEditor child={child} onSave={save('display_name')} onCancel={() => setEditing(null)} /> : null}
@@ -132,13 +170,12 @@ export default function ChildSettings() {
         />
       </ListSection>
 
-      {/* "Write this book together": coming soon with server features off; the invite with one parent, the Family tab
-          with two (child-settings.logic.ts bookRow). The label is familyCopy.bookRow.label with server features on, and
-          the kill path's familyCopy.soon.settingsRow with them off (the same words, S46). */}
-      {/* D-126 (BL-604): the store build with server features off has no such row; every alpha build keeps it. */}
-      {familySurfacesShown({ alpha: PLUS_ALPHA, coParent: capabilities.coParent }) && (
-        <ListSection footer={row.footer}>
-          <ListRow title={serverFeaturesEnabled() ? familyCopy.bookRow.label : familyCopy.soon.settingsRow} value={row.value} trailing="chevron" onPress={() => router.push(row.href as Href)} testID="child.bookRow" />
+      {/* "Write this book together": only where this build has the flow (child-settings.logic.ts bookRow): the invite with
+          one parent, the family page with two. Everywhere else there is no row, no caption and no coming-soon screen
+          (founder, 11 Nov 2026). */}
+      {row && (
+        <ListSection>
+          <ListRow title={familyCopy.bookRow.label} value={row.value} trailing="chevron" onPress={() => router.push(row.href as Href)} testID="child.bookRow" />
         </ListSection>
       )}
 
@@ -148,6 +185,22 @@ export default function ChildSettings() {
           <ToggleRow title={fill(s.familyCanReadLabel, { child: name })} value={child.familyCanRead} onValueChange={() => {}} disabled />
         </ListSection>
       )}
+
+      {/* Quiet this book (BL-985, F12-REQ-011): beside Hide, and offered with one book too. Only the label and the toggle:
+          children.quiet.help is held back until Home's prompt, the Save a copy slip and Read together read Child.quiet
+          (test/children-quiet-control.test.ts fails the day this page or any screen mentions it before then). */}
+      <ListSection>
+        <ToggleRow
+          title={copy.children.quiet.label}
+          value={child.quiet === true}
+          onValueChange={(on) => {
+            setChildQuiet(child.id, on);
+            haptic('success');
+            toast.show({ message: fill(on ? copy.children.quiet.quietedToast : copy.children.quiet.offToast, { child: name }) });
+          }}
+          testID="child.quiet"
+        />
+      </ListSection>
 
       {listChildren().length > 1 && (
         <ListSection footer={hideFooter(name, coParent)}>

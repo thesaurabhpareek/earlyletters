@@ -6,6 +6,7 @@
 // records Terms (with age) and sensitive-data consent before writing content.
 // Requires: npm i @electric-sql/pglite (dev only).
 import { createDb, users, uuid7 } from './harness.mjs';
+import { legacyPhotoPath } from './legacy_photo.mjs';
 
 const { db, check, as, sys, fails, codeOf, done, publishPolicies, consent, invite } = await createDb(process.argv.slice(2));
 const { A, B, C } = users;
@@ -81,9 +82,9 @@ check('full-text search works', (await as(A, `select id from entries where searc
 
 // Storage: {child_id}/{author_id}/{entry_id}.jpg
 const photo = `${CHILD}/${A}/${PRIVATE}.jpg`;
-await as(A, `insert into storage.objects (bucket_id, name) values ('entry-photos', '${photo}')`);
+await sys(`insert into storage.objects (bucket_id, name) values ('entry-photos', '${photo}')`);
 check('author can read own photo', (await as(A, 'select name from storage.objects')).rows.length === 1);
-await as(A, `update entries set photo_path='${photo}' where id='${PRIVATE}'`);
+await legacyPhotoPath(sys, PRIVATE, photo);
 check('co-parent cannot read the photo of a private entry', (await as(B, 'select name from storage.objects')).rows.length === 0);
 await as(A, `update entries set in_book=true where id='${PRIVATE}'`);
 check('co-parent can read the photo once it is in the book', (await as(B, 'select name from storage.objects')).rows.length === 1);

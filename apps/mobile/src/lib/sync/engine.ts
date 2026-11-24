@@ -11,6 +11,7 @@
  * one follow-up cycle.
  */
 import type { SqlDb } from '../db/sql';
+import { reconcileSearch } from '../find/lifecycle';
 import { backoffMs, classifyCallError, type CallFailure } from './errors';
 import {
   applyPullPage,
@@ -92,7 +93,7 @@ const FOREGROUND_MIN_GAP_MS = 5_000;
 const MAX_PUSH_ROUNDS = 40;
 const MAX_PULL_PAGES = 100;
 
-const EMPTY: SyncReport = { pushed: 0, rejected: 0, conflicts: 0, pulled: 0, reset: false, phase: 'idle' };
+const EMPTY: SyncReport = { pushed: 0, rejected: 0, conflicts: 0, pulled: 0, pulledRefused: 0, reset: false, phase: 'idle' };
 
 export function createSyncEngine(deps: SyncEngineDeps): SyncEngine {
   const { db, supabase, userId } = deps;
@@ -117,6 +118,10 @@ export function createSyncEngine(deps: SyncEngineDeps): SyncEngine {
     let out!: T;
     db.transaction(() => {
       out = fn();
+      // Every sync write commits here. A pulled letter, a delete or restore from the other parent, a conflict choice
+      // or a held letter coming back moves the Find index in the same transaction (find/lifecycle.ts); with no index
+      // this is one cheap check.
+      reconcileSearch(db);
     });
     return out;
   };
@@ -180,6 +185,10 @@ export function createSyncEngine(deps: SyncEngineDeps): SyncEngine {
       if (batch.rows.length === 0) break;
       tx(() => markSent(db, batch.rows, iso()));
       const res = await call<PushResponse>('sync_push', { p_ops: batch.ops });
+      // Stopped while the request was out (the session ended): the answer is not applied. The ops stay queued, marked sent,
+      // exactly as if the answer had been lost on the way, and go again under the same op ids (the server answers a repeat
+      // from its receipt).
+      if (stopped) return 'stop';
       if ('failure' in res) {
         if (res.failure === 'bad_request') {
           if (batch.rows.length > 1) {
@@ -231,16 +240,26 @@ export function createSyncEngine(deps: SyncEngineDeps): SyncEngine {
   async function pullAll(report: SyncReport, verify: boolean): Promise<void> {
     let resetDone = false;
     let idsRounds = 0;
+    let withheld = false;
     for (let page = 0; page < MAX_PULL_PAGES; page++) {
       if (killed()) return;
       const since = buildPullRequest(db, { verify });
       const res = await call<PullResponse>('sync_pull', { p_since: since, p_limit: pageSize });
+      // Stopped while the request was out (the session ended, sync/index.ts releaseEmptyPhone): a page that arrives now belongs
+      // to the account that left. Nothing is written, nothing is recorded; the next engine pulls afresh from its own cursor.
+      if (stopped) return;
       if ('failure' in res) {
         lastFailure = res.failure;
         return;
       }
       lastFailure = null;
       const data = res.data;
+      // FR-PRV-20: the server answered with an empty page because consent is not current. It is not "nothing changed":
+      // write nothing from it, and below stamp no finished pull and let no held letter lapse.
+      if (data.withheld) {
+        withheld = true;
+        break;
+      }
       if (data.reset) {
         if (resetDone) return;
         resetDone = true;
@@ -252,6 +271,7 @@ export function createSyncEngine(deps: SyncEngineDeps): SyncEngine {
       }
       const out = tx(() => applyPullPage(db, data, iso()));
       report.pulled += out.pulled;
+      report.pulledRefused += out.refused;
       if (out.pulled > 0 || (data.gone?.length ?? 0) > 0 || (data.books ?? []).some((b) => b.meta)) changed();
       if (data.more) continue;
       if (out.wantIds && idsRounds < 1) {
@@ -260,13 +280,21 @@ export function createSyncEngine(deps: SyncEngineDeps): SyncEngine {
       }
       break;
     }
-    const dropped = tx(() => dropStaleHeld(db, now()));
-    if (dropped > 0) changed();
+    if (withheld) {
+      // Held letters cannot come back while the server serves nothing: the 30 days count from the first pull it answers.
+      tx(() => {
+        if (readSetting(db, SYNC_SETTING.restoreAt)) writeSetting(db, SYNC_SETTING.restoreAt, iso());
+      });
+    } else {
+      const dropped = tx(() => dropStaleHeld(db, now()));
+      if (dropped > 0) changed();
+    }
     try {
       deps.afterPull?.();
     } catch {
       // The next pull or the next launch finishes it; a pull never fails for it.
     }
+    if (withheld) return;
     tx(() => {
       writeSetting(db, SYNC_SETTING.lastSyncedAt, iso());
       if (verify) writeSetting(db, SYNC_SETTING.lastVerifyAt, iso());

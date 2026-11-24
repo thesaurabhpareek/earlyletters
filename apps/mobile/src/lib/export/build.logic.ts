@@ -9,7 +9,9 @@
  *   hidden ones. Recently deleted letters are left out for now: whether they
  *   belong in an export, always or only when ticked (spec 4.1), is BL-388's
  *   to settle (CR-35). D-085 sets up the 30-day shelf; it does not decide
- *   this. (`listDeleted` exists; export does not read it.)
+ *   this. (`listDeleted` exists; export does not read it.) One exception: while an account-deletion
+ *   request is open, the snapshot also holds the books the server closed and the Recently deleted letters
+ *   (DATA-REQ-053, BL-446; scope.logic.ts). This planner does not care: it plans what it is given.
  * - Own letters carry raw transcript, its SHA-256, machine edits and engine
  *   version. Other people's letters carry only what the book shows (4.1).
  * - Original recordings, byte for byte, each named and labelled by its own
@@ -31,7 +33,7 @@ import { brand } from '@scribe/brand';
 import { book as bookWords } from '@scribe/content';
 import { ageOn, chapterOf, renderTemplate } from '@scribe/core';
 import { containerOfRecording, RECORDING_FILES } from '../capture/recording-file';
-import { copy } from '../copy';
+import { childLabel, copy } from '../copy';
 import { pageProvenanceKey } from '../provenance';
 import { dayDate, entryDayDate, entryLetterDateline, isMonthOnly, isoOf } from '../dates';
 import { restorable, type ReviewSaved } from '../capture/review-persist.logic';
@@ -172,7 +174,9 @@ export const MEDIA = {
   pdf: 'application/pdf',
 } as const;
 
-const fill = (text: string, values: Record<string, string | number>) => renderTemplate(text, { app: brand.name, ...values });
+// A book with no name reads "your child" (NX-31-R3); the stored name stays empty.
+const fill = (text: string, values: Record<string, string | number>) =>
+  renderTemplate(text, { app: brand.name, ...values, ...(typeof values.child === 'string' ? { child: childLabel(values.child) } : {}) });
 
 // ── Names and paths ──────────────────────────────────────────────────────
 
@@ -272,7 +276,7 @@ function letterText(e: SnapshotEntry, child: SnapshotChild, locale: string): str
   // A quiet-day mark: the date and the label only. No author, no words, no signature (D-084).
   if (quiet(e)) return `${l.date}: ${entryLetterDateline(child, e, locale)}\n\n${copy.book.quietDay.label}\n`;
   const lines = [
-    `${l.to}: ${child.name}`,
+    `${l.to}: ${childLabel(child.name)}`,
     `${l.from}: ${signsAsOf(e, child)}`,
     `${l.date}: ${entryLetterDateline(child, e, locale)}`,
   ];
@@ -344,7 +348,7 @@ function waitingText(d: SnapshotWaiting, child: SnapshotChild, locale: string): 
   const l = exportCopy.letterFile;
   const w = exportCopy.waitingFile;
   const lines = [
-    `${l.to}: ${child.name}`,
+    `${l.to}: ${childLabel(child.name)}`,
     `${l.from}: ${child.signsAs}`,
     `${l.date}: ${entryLetterDateline(child, { occurredOn: waitingDay(d), occurredPrecision: d.occurredPrecision ?? 'day' }, locale)}`,
   ];
@@ -388,6 +392,17 @@ function chaptersOf(child: SnapshotChild, entries: SnapshotEntry[]): { month: nu
   return [...groups.values()].sort((a, b) => (a.month ?? -1) - (b.month ?? -1));
 }
 
+/**
+ * ` lang="xx"` for a letter written in another language (D-056), so the reader and the print
+ * engine pick the right font and line breaking per letter. The page itself stays lang="en".
+ * Only a well-formed BCP-47 tag is written; anything else (or no language) adds nothing, so a
+ * stored value can never break out of the attribute.
+ */
+export function langAttr(e: { language?: string | null }): string {
+  const tag = e.language?.trim();
+  return tag && /^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$/.test(tag) ? ` lang="${tag}"` : '';
+}
+
 // ── The offline reader (index.html) ──────────────────────────────────────
 
 function indexHtml(snapshot: ExportSnapshot, folders: Map<string, string>): string {
@@ -415,7 +430,7 @@ function indexHtml(snapshot: ExportSnapshot, folders: Map<string, string>): stri
                     ? `<p class="note">${escapeHtml(r.recordingNotHere)}</p>`
                     : '';
               const body = waiting(e) ? `<p class="note">${escapeHtml(exportCopy.letterFile.waitingForWords)}</p>` : paragraphs(e.finalText);
-              return `<article>
+              return `<article${langAttr(e)}>
 <p class="date">${escapeHtml(entryDayDate(child, e, snapshot.locale))}${e.inBook ? '' : ` <span class="tag">${escapeHtml(r.privateLabel)}</span>`}</p>
 ${body}
 <p class="sig" dir="auto">${escapeHtml(fill(copy.book.signature, { signsAs: signsAsOf(e, child) }))}</p>
@@ -426,7 +441,7 @@ ${audio}
             .join('\n')}`,
         )
         .join('\n');
-      return `<section>\n<h2 dir="auto">${escapeHtml(fill(r.title, { child: child.name }))}</h2>\n${chapters}\n</section>`;
+      return `<section>\n<h2 dir="auto">${escapeHtml(child.name.trim() ? fill(r.title, { child: child.name }) : bookWords.indexTitleNoName)}</h2>\n${chapters}\n</section>`;
     })
     .filter(Boolean)
     .join('\n');
@@ -441,7 +456,7 @@ body{margin:0 auto;max-width:42rem;padding:2rem 1.25rem 4rem;background:${c.pape
 h1,h2,h3{font-weight:500;line-height:1.25}h1{font-size:2rem}h2{font-size:1.6rem;margin-top:3rem}h3{font-size:1.2rem;color:${c.accent};margin-top:2.5rem}
 article{border-top:1px solid ${c.line};padding:1.25rem 0}article.mark{padding:.5rem 0}article.mark p{margin:.15rem 0}
 .date,.note,.file,.intro{font-family:${SANS};font-size:.85rem;color:${c.inkMuted}}
-.tag{border:1px solid ${c.line};border-radius:999px;padding:0 .5rem;margin-left:.5rem}
+.tag{border:1px solid ${c.line};border-radius:999px;padding:0 .5rem;margin-inline-start:.5rem}
 .sig{text-align:end;font-style:italic}
 audio{width:100%;margin:.5rem 0}
 a{color:${c.accent}}
@@ -473,8 +488,14 @@ export function bookHtml(child: SnapshotChild, entries: SnapshotEntry[], locale:
   const inBook = entries.filter(printable);
   const chapters = chaptersOf(child, inBook);
   const years = [...new Set(chapters.map((ch) => yearOf(ch.month)))];
-  const subtitle =
-    years.length === 1 ? fill(bookWords.coverSubtitle, { child: child.name, n: years[0] }) : fill(exportCopy.pdf.coverSubtitleAll, { child: child.name });
+  const named = child.name.trim() !== '';
+  const subtitle = named
+    ? years.length === 1
+      ? fill(bookWords.coverSubtitle, { child: child.name, n: years[0] })
+      : fill(exportCopy.pdf.coverSubtitleAll, { child: child.name })
+    : years.length === 1
+      ? fill(bookWords.coverSubtitleNoName, { n: years[0] })
+      : bookWords.coverSubtitleAllNoName;
   const about = bookWords.aboutThisBook;
   let lastYear = 0;
   const body = chapters
@@ -484,7 +505,7 @@ export function bookHtml(child: SnapshotChild, entries: SnapshotEntry[], locale:
       lastYear = year;
       const letters = ch.entries
         .map(
-          (e) => `<article>
+          (e) => `<article${langAttr(e)}>
 <p class="date">${escapeHtml(entryLetterDateline(child, e, locale))}</p>
 ${paragraphs(e.finalText)}
 <p class="sig" dir="auto">${escapeHtml(fill(copy.book.signature, { signsAs: signsAsOf(e, child) }))}</p>
@@ -522,11 +543,11 @@ article p{margin:0 0 8pt;orphans:3;widows:3}
 <div class="cover">
 <h1>${escapeHtml(brand.name)}</h1>
 <p class="sub" dir="auto">${escapeHtml(subtitle)}</p>
-<p class="ded" dir="auto">${escapeHtml(fill(bookWords.dedication, { child: child.name }))}</p>
+<p class="ded" dir="auto">${escapeHtml(named ? fill(bookWords.dedication, { child: child.name }) : bookWords.dedicationNoName)}</p>
 </div>
 <div class="about">
 <h2>${escapeHtml(about.title)}</h2>
-<p dir="auto">${escapeHtml(fill(about.body, { child: child.name }))}</p>
+<p dir="auto">${escapeHtml(named ? fill(about.body, { child: child.name }) : about.bodyNoName)}</p>
 </div>
 ${body}
 <p class="colophon">${escapeHtml(fill(bookWords.colophon, {}))}</p>

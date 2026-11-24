@@ -1,3 +1,4 @@
+# BLOCKED (ids the app does not set yet): red by design until they land. `node apps/mobile/e2e/bin/blocked-ids.mjs <this file>` lists them (not-in-app.txt); run-suite.sh and run-p0-nightly.sh skip it and print that list.
 # E2E-01a  18+ entry gate: No, then the 24-hour stop.
 # Proves: PRD-REQ-019 (gate before any first-run screen, nothing preselected,
 # No closes the app for 24 hours, a clock set back keeps it closed), LEGAL-REQ-002,
@@ -40,8 +41,8 @@ tags:
     id: "gate.continue"
 - assertVisible:
     id: "gate.stop"
-- assertNotVisible:
-    id: "gate.stop.mistake"
+- runFlow:
+    file: ../subflows/assert-stop-mistake-hidden.yaml
 - assertNotVisible:
     id: "tonight.speak"
 - assertNotVisible:
@@ -61,8 +62,8 @@ tags:
       E2E_CLOCK_OFFSET_HOURS: "23"
 - assertVisible:
     id: "gate.stop"
-- assertNotVisible:
-    id: "gate.stop.mistake"
+- runFlow:
+    file: ../subflows/assert-stop-mistake-hidden.yaml
 # 5. Clock set back two hours: still stopped. This runs last because
 #    age-gate.logic.ts repairs the stored stop time to "now" when the clock is
 #    behind it, which restarts the 24 hours from (real time - 2 h).
@@ -73,6 +74,6 @@ tags:
       E2E_CLOCK_OFFSET_HOURS: "-2"
 - assertVisible:
     id: "gate.stop"
-- assertNotVisible:
-    id: "gate.stop.mistake"
+- runFlow:
+    file: ../subflows/assert-stop-mistake-hidden.yaml
 - stopApp

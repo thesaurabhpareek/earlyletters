@@ -157,3 +157,102 @@ export function purposeStringProblem(value) {
   if (/\{app\}|TODO|example\.com|\$\(PRODUCT_NAME\)/.test(v)) return 'holds a placeholder or a library default';
   return null;
 }
+
+/**
+ * NSC-02 (BL-1046): the only entitlements a store build may carry. Data protection (app.config.ts), Sign in with Apple
+ * and associated domains for email sign-in (the servers-on build). Anything else, an app group, push, iCloud, Siri,
+ * HealthKit, a keychain group, is a new capability: a change to this list needs security-architect's read.
+ */
+export const ENTITLEMENT_ALLOWLIST = Object.freeze([
+  'com.apple.developer.default-data-protection',
+  'com.apple.developer.applesignin',
+  'com.apple.developer.associated-domains',
+]);
+
+/** The one activity type expo-router's config plugin always declares (it opens the app; publishing one needs expo-router/head, which no-system-indexing.test.ts forbids). */
+export const ALLOWED_ACTIVITY_TYPES = Object.freeze(['$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route']);
+
+/** The entitlement keys not on ENTITLEMENT_ALLOWLIST, sorted. `keys` is an array of names (what an evaluated config holds). */
+export function entitlementKeysOutsideAllowlist(keys) {
+  return [...new Set((keys ?? []).map(String))].filter((k) => !ENTITLEMENT_ALLOWLIST.includes(k)).sort();
+}
+
+/** The NSUserActivityTypes entries that are not ALLOWED_ACTIVITY_TYPES, sorted. */
+export function activityTypesOutsideAllowlist(types) {
+  return [...new Set((types ?? []).map(String))].filter((t) => !ALLOWED_ACTIVITY_TYPES.includes(t)).sort();
+}
+
+const BG_MODES_KEY = /<key>UIBackgroundModes<\/key>/;
+const EXTENSION_PRODUCT = /productType\s*=\s*"?com\.apple\.product-type\.(?:app-extension|extensionkit-extension|watchkit2?-extension)[^";\s]*|com\.apple\.widgetkit-extension|com\.apple\.usernotifications\.service|com\.apple\.share-services/;
+
+/**
+ * BL-864 (NX-39-R4, R51): what the generated native project must not hold, from the text of its Info.plist,
+ * its entitlements file and its project.pbxproj. Returns one problem per broken rule, `{ id, text }`, empty when
+ * clean. `library` is `{ flagOn, content }`: the photo-library key is allowed only when its flag is on and its
+ * value equals the content string (a null `content` means no string is agreed yet, so the key is never allowed).
+ * Lines 575-576 era rule stays: any UIBackgroundModes, even an empty one, fails (R46: a founder ruling after counsel).
+ *
+ * @param {{ plist?: unknown, entitlements?: unknown, pbxproj?: unknown, library?: { flagOn: unknown, content: string | null } }} [inputs]
+ * @returns {{ id: string, text: string }[]}
+ */
+export function forbiddenNativeProblems({ plist, entitlements, pbxproj, library = { flagOn: false, content: null } } = {}) {
+  const out = [];
+  const add = (id, text) => out.push({ id, text });
+  // Fail closed: an input that is missing, not text, empty or not the file it should be proves nothing.
+  const unreadable = [
+    ['plist', plist, '<dict', 'Info.plist'],
+    ['entitlements', entitlements, '<dict', 'entitlements file'],
+    ['pbxproj', pbxproj, 'PBXProject', 'project.pbxproj'],
+  ].filter(([, v, marker]) => typeof v !== 'string' || !v.includes(marker));
+  for (const [id, , , name] of unreadable) add(`missing-${id}`, `The generated ${name} is missing, unreadable or empty, so the lint proves nothing (BL-864).`);
+  if (typeof plist !== 'string') plist = '';
+  if (typeof entitlements !== 'string') entitlements = '';
+  if (typeof pbxproj !== 'string') pbxproj = '';
+  const keys = [...plist.matchAll(/<key>([^<]+)<\/key>/g)].map((m) => m[1]);
+  if (BG_MODES_KEY.test(plist)) add('background-modes', 'Info.plist declares UIBackgroundModes; LEGAL-REQ-011 says none until a recorded founder ruling.');
+  if (keys.includes('BGTaskSchedulerPermittedIdentifiers')) add('bg-task-identifiers', 'Info.plist declares BGTaskSchedulerPermittedIdentifiers; no background task runs until a recorded founder ruling.');
+  const loc = keys.filter((k) => /^NSLocation/.test(k));
+  if (loc.length) add('location', `Info.plist holds location keys (${loc.join(', ')}); the app never asks for location (NX-39-R4).`);
+  if (keys.includes('NSPhotoLibraryAddUsageDescription')) add('photo-add', 'Info.plist holds NSPhotoLibraryAddUsageDescription; the app never writes to the photo library (NX-39-R4).');
+  if (keys.includes('NSPhotoLibraryUsageDescription')) {
+    const value = new RegExp('<key>NSPhotoLibraryUsageDescription</key>\\s*<string>([\\s\\S]*?)</string>').exec(plist)?.[1];
+    const ok = library.flagOn === true && typeof library.content === 'string' && library.content !== '' && value === library.content;
+    if (!ok) add('photo-library', 'Info.plist holds NSPhotoLibraryUsageDescription, but only a build with its flag on and the content string verbatim may (NX-39-R4).');
+  }
+  const alertKey = 'PHPhotoLibraryPreventAutomaticLimitedAccessAlert';
+  if ((keys.includes(alertKey) || keys.includes('NSPhotoLibraryUsageDescription')) && plistBool(plist, alertKey) !== 'true') add('limited-alert', `${alertKey} must be true whenever it or the library key exists (NX-39-R4).`);
+  // BL-1414 (MEDIA_THREAT_MODEL P8, P9): either key set true shows Documents (the recordings) in the Files app.
+  // Only an explicit false is clean; present with any other value fails closed. The text never echoes the value.
+  for (const [key, id] of [['UIFileSharingEnabled', 'file-sharing'], ['LSSupportsOpeningDocumentsInPlace', 'open-in-place']]) {
+    if (keys.includes(key) && plistBool(plist, key) !== 'false') add(id, `Info.plist sets ${key} to something other than false; that would show recordings in the Files app (MEDIA_THREAT_MODEL P8, P9).`);
+  }
+  // BL-1046 (NSC-02): camera, user activities, the transport-security block and every entitlement not on the list.
+  if (keys.includes('NSCameraUsageDescription')) add('camera', 'Info.plist holds NSCameraUsageDescription; the app never opens the camera (NSC-02).');
+  const acts = /<key>NSUserActivityTypes<\/key>\s*<array\s*>([\s\S]*?)<\/array>/.exec(plist)?.[1];
+  if (acts !== undefined) {
+    const extra = activityTypesOutsideAllowlist([...acts.matchAll(/<string>([^<]*)<\/string>/g)].map((m) => m[1]));
+    if (extra.length) add('user-activity', `Info.plist NSUserActivityTypes holds ${extra.join(', ')}; only expo-router's own entry is allowed, nothing publishes an activity (NSC-02).`);
+  } else if (keys.includes('NSUserActivityTypes')) add('user-activity', 'Info.plist NSUserActivityTypes is not a readable array of strings, so it cannot be shown to hold only expo-router\'s entry (NSC-02).');
+  // The ATS block may only keep what makes it stricter: NSAllowsArbitraryLoads false, and the local-network exemption the
+  // React Native template writes. Any other key (an exception domain, arbitrary loads in web content or media, a true
+  // arbitrary-loads value) loosens HTTPS-only and fails (SEC-R16).
+  if (keys.includes('NSAppTransportSecurity')) {
+    const ats = /<key>NSAppTransportSecurity<\/key>\s*<dict\s*>([\s\S]*?)<\/dict>/.exec(plist)?.[1];
+    const inner = ats === undefined ? null : [...ats.matchAll(/<key>([^<]+)<\/key>/g)].map((m) => m[1]);
+    const loose = inner === null ? ['unreadable'] : inner.filter((k) => !['NSAllowsArbitraryLoads', 'NSAllowsLocalNetworking'].includes(k));
+    if (inner !== null && inner.includes('NSAllowsArbitraryLoads') && plistBool(ats, 'NSAllowsArbitraryLoads') !== 'false') loose.push('NSAllowsArbitraryLoads is not false');
+    if (loose.length) add('ats', `Info.plist NSAppTransportSecurity loosens HTTPS-only (${loose.join(', ')}); only NSAllowsArbitraryLoads false and NSAllowsLocalNetworking may stay (NSC-02, SEC-R16).`);
+  }
+  const entKeys = [...entitlements.matchAll(/<key>([^<]+)<\/key>/g)].map((m) => m[1]);
+  // An app group has its own id below (NX-39-R51); it is not reported twice.
+  const entExtra = entitlementKeysOutsideAllowlist(entKeys).filter((k) => k !== 'com.apple.security.application-groups');
+  if (entExtra.length) add('entitlement', `Entitlements hold ${entExtra.join(', ')}, which is not on the allowlist (ENTITLEMENT_ALLOWLIST in preflight-lib.mjs); a change to the list needs security-architect's read (NSC-02).`);
+  if (/com\.apple\.security\.application-groups/.test(entitlements)) add('app-group', 'Entitlements hold com.apple.security.application-groups; no app group exists (NX-39-R51).');
+  if (EXTENSION_PRODUCT.test(pbxproj)) add('extension-target', 'The native project has a widget, share, notification or other app-extension target (NX-39-R51).');
+  if (/CoreLocation/.test(pbxproj)) add('core-location', 'The native project links CoreLocation (NX-39-R4).');
+  return out.filter((p, i) => out.findIndex((q) => q.id === p.id) === i);
+}
+
+function plistBool(text, key) {
+  return new RegExp(`<key>${key}</key>\\s*<(true|false)\\s*/>`).exec(text)?.[1] ?? null;
+}

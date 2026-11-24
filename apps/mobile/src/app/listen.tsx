@@ -30,10 +30,11 @@ import { WarningCircleIcon } from 'phosphor-react-native/src/icons/WarningCircle
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Alert, AppState, Linking, Platform, Pressable, ScrollView, View, type Text as RNText } from 'react-native';
 import Animated, { useSharedValue } from 'react-native-reanimated';
-import { renderTemplate } from '@scribe/core';
 import { PROMPTS } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
 import { ListeningAura } from '@/components/capture/listening-aura';
+import { PendingPhotoThumb } from '@/components/photos/pending-photo-thumb';
+import { adoptPendingPhoto, discardPendingPhoto, usePendingPhoto } from '@/lib/photos/hooks';
 import { METER_MS, METER_SILENT, meterDb, progressMark } from '@/components/capture/listen-meter.logic';
 import { useRecorderClock } from '@/components/capture/use-recorder-clock';
 import {
@@ -44,6 +45,7 @@ import {
   finishWithin,
   isMicProblem,
   listenRoom,
+  longTakeNotice,
   maySpeak,
   startTake,
   promptLine,
@@ -62,6 +64,7 @@ import { ModalHeader } from '@/components/ui/screen-header';
 import { StateGlyph, StateScreen } from '@/components/ui/state-screen';
 import { STATE_LAYOUT } from '@/components/ui/state-screen.logic';
 import { Text } from '@/components/ui/text';
+import { setSurfaceBusy } from '@/lib/asks/surface';
 import { announce, useFocusOnMount, useIsAccessibilitySize, useTheme } from '@/lib/a11y';
 import { setAudioMode } from '@/lib/audio-mode';
 import {
@@ -78,12 +81,20 @@ import {
   setRecorderProbe,
 } from '@/lib/speech-gate';
 import { copy, fill, pendingCopy } from '@/lib/copy';
+import { typedOfferShown } from '@/components/capture/words-state.logic';
+import type { SpeechLanguage } from '@/lib/models/catalog';
+import { authorSpeechLanguage } from '@/lib/models/author-language';
+import { speechDownloadChoice } from '@/lib/models/speech-consent';
+import { installedPathsFor } from '@/lib/models/speech-packs';
+import { useSpeechDownload } from '@/lib/transcription-queue/use-words';
+import { photos } from '@/lib/photos/copy';
 import { haptic } from '@/lib/haptics';
 import { useMotion, useReducedMotion } from '@/lib/motion';
 import { track, trackCaptureDiscarded } from '@/lib/analytics/track';
 import { freeBytesFrom } from '@/lib/capture/free-space';
+import { deleteIfPresent, letItGo } from '@/lib/capture/let-it-go.logic';
 import { VOICE_RECORDING_OPTIONS, abandonTake, beginTake, finalizeTake, type StopReason } from '@/lib/capture/recorder';
-import { deleteDraft, getActiveChild, setRecordingProgress } from '@/lib/store';
+import { beginDiscard, finishDiscard, getActiveChild, noteDiscardFailure, setRecordingProgress } from '@/lib/store';
 import { KEEP_AWAKE_TAGS, useKeepAwakeWhile } from '@/lib/resilience/keep-awake';
 import { consumeListenStart } from '@/lib/resilience/start-intent';
 
@@ -94,6 +105,15 @@ const DISC = AURA_SIZE / 2;
 /** Free space now, or null when unknown. The web preview has no file system, so it never blocks there. */
 function freeBytesNow(): number | null {
   return Platform.OS === 'web' ? null : freeBytesFrom(() => Paths.availableDiskSpace);
+}
+
+/** True when the speech files for the language are on this phone; where they cannot be read (web preview) it is false. */
+function speechOnThisPhone(language: SpeechLanguage): boolean {
+  try {
+    return installedPathsFor(language) !== null;
+  } catch {
+    return false;
+  }
 }
 
 export default function Listen() {
@@ -111,6 +131,7 @@ export default function Listen() {
   // At accessibility text sizes the room scrolls; the clock and "Listening." then sit with Pause and Finish, so the
   // screen always says it is recording, and the prompt is shown whole (P4 critics' pass S5).
   const large = useIsAccessibilitySize();
+  const pendingPhoto = usePendingPhoto();
   const takeId = useRef<string | null>(null);
   const ended = useRef(false);
   const seenLive = useRef(false);
@@ -132,6 +153,14 @@ export default function Listen() {
   // Continue included; a start after a blocker or a failure is a new tap and plays it.
   const startTick = useRef(createStartTick(tapped.current)).current;
   const [phase, setPhase] = useState<ListenPhase>(tapped.current ? 'asking' : 'ready');
+  const withPhoto = phase === 'ready' && !!pendingPhoto?.source; // a picture chosen on Home waits at Ready
+  // BL-1999 (spec 15): read-only. The language and her choice cannot change while Listen is open; the download state
+  // re-renders this screen on its own ticks. Nothing here starts a download or writes the choice (D-087).
+  const [speechLanguage] = useState(authorSpeechLanguage);
+  const [speechChoice] = useState(speechDownloadChoice);
+  // null outside Ready-with-no-picture: the hook then returns idle before any settings read (use-words.ts), so a live
+  // take's once-a-second renders read nothing (#480). It still subscribes, so a download tick re-renders Listen.
+  const speech = useSpeechDownload(phase === 'ready' && !pendingPhoto?.source ? speechLanguage : null);
   const announcedMinute = useRef(0);
   /** The labels VoiceOver last could hear: they hold still while capturing (listen.logic `stableLabels`, F04-REQ-041). */
   const labelsRef = useRef<RoomLabels | null>(null);
@@ -152,6 +181,14 @@ export default function Listen() {
       if (code) track('error_shown', { code });
     }
   }, [phase]);
+
+  // No setup ask lands on a take: busy from the start of a take until it is kept or let go, and cleared when this
+  // screen goes (BL-1985). Phone memory only.
+  const takeInProgress = phase === 'recording' || phase === 'paused' || phase === 'finishing';
+  useEffect(() => {
+    setSurfaceBusy('recording', takeInProgress);
+  }, [takeInProgress]);
+  useEffect(() => () => setSurfaceBusy('recording', false), []);
 
   // Metering straight into the aura's shared value at 20 Hz (MOTION 5b), never through React state: nothing re-renders
   // for the voice (listening-cue.md 2). No reading (metering off, or a released recorder) is silence: the idle breath.
@@ -295,6 +332,8 @@ export default function Listen() {
     if (out.kind === 'gone') return;
     takeId.current = out.draftId;
     setPhase('recording');
+    // A picture chosen before recording goes with the draft now, so a kill during recording keeps it (NS-01-R43).
+    void adoptPendingPhoto(out.draftId, '', false);
     // The take is live, so the gate drops this: the red circle and the system microphone indicator say it instead.
     announcer.say(t.listening, { phase: 'recording', capturing: capturingNow() });
   };
@@ -430,13 +469,10 @@ export default function Listen() {
           // Only once the person has confirmed (MOTION 6, 5.8 row 2), and after the session has stopped: iOS mutes
           // haptics while recording.
           haptic('warning');
-          // The one place audio is deleted: the parent confirmed it.
-          if (uri) {
-            try {
-              new File(uri).delete();
-            } catch {}
-          }
-          if (id) deleteDraft(id);
+          // The one place audio is deleted: the parent confirmed it. Let it go's steps, as in Review (BL-924): a file
+          // that will not delete keeps the row, marked and off every list, for the launch sweep to finish.
+          if (id) letItGo(id, uri, { beginDiscard, deleteFile: (u) => deleteIfPresent(new File(u)), finishDiscard, onFailure: noteDiscardFailure });
+          discardPendingPhoto(); // The photo goes too: one stored at record start went with the draft above (finishDiscard); this drops the picker's copy
           router.back();
         },
       },
@@ -445,7 +481,11 @@ export default function Listen() {
 
   // "Type instead" carries the prompt over as Write's line (5.8 row 3).
   const typeInstead = () => router.replace({ pathname: '/write', params: promptKey ? { promptKey } : {} });
-  const close = () => (router.canGoBack() ? router.back() : router.replace('/'));
+  const close = () => {
+    discardPendingPhoto(); // closing at rest leaves nothing behind, the picker's copy included
+    if (router.canGoBack()) router.back();
+    else router.replace('/');
+  };
 
   if (!child) return null;
 
@@ -473,6 +513,12 @@ export default function Listen() {
   }
 
   const room = listenRoom(phase);
+  // Short-circuits: speechOnThisPhone (planFor, deviceTier, settings reads) is evaluated only at Ready with no picture,
+  // never on the once-a-second renders of a live take.
+  const typeOffer =
+    !withPhoto &&
+    room.startControl &&
+    typedOfferShown({ startControl: room.startControl, onThisPhone: speechOnThisPhone(speechLanguage), choice: speechChoice, hold: speech.hold, failure: speech.failure });
   const quiet = phase === 'recording' && (status.metering ?? -160) < -50 && status.durationMillis > 8000;
   const prompt = promptLine(promptKey, PROMPTS);
   // While iOS asks and the take starts there is nothing to tap, so no hint (5.8 row 1: the room arrives at rest).
@@ -502,6 +548,11 @@ export default function Listen() {
           {elapsedClock(status.durationMillis)}
         </Text>
       )}
+      {longTakeNotice(phase, status.durationMillis) ? (
+        <Text variant="footnote" tone="muted" className="px-8 text-center" testID="listen.longTake">
+          {t.longTake}
+        </Text>
+      ) : null}
       <View className="items-center px-8" accessibilityLiveRegion={speakable ? 'polite' : 'none'}>
         {line !== null ? (
           <Text variant="callout" tone={room.line === 'readyHint' ? 'muted' : undefined} className="text-center" accessibilityLabel={labels.line ?? line}>
@@ -509,6 +560,11 @@ export default function Listen() {
           </Text>
         ) : null}
       </View>
+      {room.lockNote ? (
+        <Text variant="footnote" tone="muted" className="mt-2 text-center" testID="listen.lockNote">
+          {t.pausedLock}
+        </Text>
+      ) : null}
     </View>
   );
 
@@ -539,10 +595,12 @@ export default function Listen() {
               {p.audience}
             </Text>
           </View>
+          {/* Ready with a picture chosen on Home (NS-01-R3): the thumbnail, then the prompt. Absent otherwise. */}
+          {phase === 'ready' ? <PendingPhotoThumb /> : null}
           {/* The prompt, only when the take started from one (S11): the one literary line, quiet. */}
           {prompt && (
-            <Text variant="prompt" tone="muted" numberOfLines={large ? undefined : 3} className="mt-3 text-center" testID="listen.prompt">
-              {renderTemplate(prompt, { child: child.name })}
+            <Text variant="prompt" tone="muted" className="mt-3 text-center" testID="listen.prompt">
+              {fill(prompt, { child: child.name })}
             </Text>
           )}
         </Animated.View>
@@ -562,6 +620,26 @@ export default function Listen() {
               />
             )}
           </View>
+          {/* Ready with a picture (NS-01 section 4 steps 3-4, R20b): Speak is the circle above, Type is here, so a parent
+              who will not speak aloud can still start a letter from the picture. Type keeps the pending picture. */}
+          {room.startControl && withPhoto ? (
+            <Button variant="quiet" size="md" label={photos.capture.typeButton} onPress={typeInstead} testID="listen.photo.type" />
+          ) : null}
+          {/* BL-1999: no speech model on the phone and no yes in motion, so typing is open before she records. The
+              picture's own Type above already is that offer, so the two never show together. The slot is always held
+              (like listen.discardSlot) so the red circle never moves when the offer comes or goes (5.8 rule 3). The
+              install check is behind room.startControl, so nothing is read while a take is live (#480). */}
+          {!withPhoto ? (
+            <View
+              style={{ opacity: typeOffer ? 1 : 0 }}
+              pointerEvents={typeOffer ? 'auto' : 'none'}
+              accessibilityElementsHidden={!typeOffer}
+              importantForAccessibility={typeOffer ? 'auto' : 'no-hide-descendants'}
+              testID="listen.typeSlot"
+            >
+              <Button variant="quiet" size="md" label={copy.errors.micDenied.typeButton} onPress={typeInstead} disabled={!typeOffer} testID="listen.type" />
+            </View>
+          ) : null}
           {!large && clockAndLine}
           <View className="items-center gap-1 px-8">
             {room.line === 'listening' && (

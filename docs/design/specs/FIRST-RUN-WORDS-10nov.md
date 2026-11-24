@@ -12,26 +12,29 @@ Read: BRIEF (first-run programme), `CLAUDE.md`, `VOICE.md`, `BRAND.md` (glossary
 | `capabilities.signIn`, `.sync` and `.coParent` all follow the one server switch | `capabilities.ts` | With servers on, the claims test calls a co-parent claim TRUE, but Build 12 shows "coming soon" (BL-882). The test cannot protect us here. A human must keep co-parent claims out of the story cards |
 | Email uses `shouldCreateUser: true`: new and returning people look the same | `lib/auth/email.ts` | There is no separate "sign up" in the code. First sign-in creates the account. The words must not promise two doors that are one |
 | Providers in the repo: Apple, Google, email, passkey | `lib/auth/apple.ts`, `google.ts`, `email.ts`, `passkey.ts` | Apple is offered, so the Apple-must-be-offered rule (guideline 4.8) is met on our side; the rule itself is UNVERIFIED |
-| The app lock is a lock on opening the book (Face ID or passcode), offered once at the end of first run. A signed-in session persists | `lock-offer.tsx`, `machine.ts` | "Face ID next time" is true of the lock. It is not true of signing in, except with a passkey. Never say Face ID signs you in unless a passkey exists |
+| The app lock is a lock on opening the book (Face ID or passcode), offered once at the end of first run in the code on develop today; the ruling (NX-31-R14, 11 Nov) moves it to session 3 and out of first run. A signed-in session persists | `lock-offer.tsx`, `machine.ts` | "Face ID next time" is true of the lock. It is not true of signing in, except with a passkey. Never say Face ID signs you in unless a passkey exists |
 | Glossary bans "log in", "login", "Continue with Google", "Continue with email" | `BRAND.md` | Buttons are the glossary's: Sign in with Apple, Google, email |
 
 Rules held (applied by hand; I could not run vitest): no em or en dash, curly quote, ellipsis character or emoji; no fear, guilt, loss word; none of the words the AI rule bans (AI, smart, magic, generate, polish, perfect, enhance); "rewrite" only inside a "never"; no gendered word; `{child}` only; no count of gaps, no streak; no "stays on your phone" line; no exclamation mark (the in-app budget is 2 and the baseline may already use them); placeholders only from the test's list (`child`, `app`, `email`, `n`, `count`, `date`). A separate node check (section 10) re-reads the file's strings.
 
 Flags. COUNSEL-READ: counsel and the founder read these exact words before they ship. It does not mean counsel wrote or cleared them. REUSE: the string already exists in `packages/content` or in a feature `copy.ts`; the key shown is the existing one. NEW: proposed under `firstRun.` in a new `features/first-run.en.ts`. HOLD: do not ship, the code for the state does not exist.
 
-## 1. Story cards (scope tier B, behind a flag; 4 cards)
+## 1. Story cards (scope tier B, behind a flag; 3 cards for Build 12, CTO ruling 11 Nov)
+
+Ruling 11 Nov (Karma, CTO, relayed by `product`): the deck is three cards with the journey spec's ids (`FIRST-RUN-AND-SIGN-IN-JOURNEY-10nov.md` section 4.2). The Private card (`story.private.v3`) is withheld until counsel reads it. Card 2 is the journey spec's `story.exact.v3`; `story.words.v1` below is withdrawn (it was never placed in code; the id is not reused). This file's text is changed in place to match; the struck rows are kept only as a record.
 
 Shape from `stories.en.ts`: headline 80 or fewer, line 200 or fewer, `visual` one of `envelope-fold`, `letter-underline`, `moon`, `two-hands` (a new visual is a schema change in `packages/api`, so these four are reused). Ids match `story.<letters-and-hyphens>.v<n>` (no digit in the middle). A placed card needs only `{child}`, `{app}`, `{signsAs}`; none is used, because no child is named yet. Never reuse an id for new wording.
 
 | # | Id | Headline | One line | Visual | Screen-reader text (said in order) | Flag |
 |---|---|---|---|---|---|---|
-| 1 | `story.talk.v1` (REUSE, unchanged) | Talk for a minute. | Tell your child about today. It becomes a letter in their book. | `envelope-fold` | "Card 1 of 4. Talk for a minute. Tell your child about today. It becomes a letter in their book." | none |
-| 2 | `story.words.v1` (NEW; replaces `story.exact.v2`) | Your words stay yours. | We only fix small slips, like an um, a repeat or a misheard word, and mark each one. We never rewrite your words. | `letter-underline` | "Card 2 of 4. Your words stay yours. We only fix small slips ... mark each one. We never rewrite your words." | COUNSEL-READ |
-| 3 | `story.voice.v1` (REUSE, unchanged) | Read together, in your voice. | Years from now, your child can hear how you sounded tonight. | `moon` | "Card 3 of 4. Read together, in your voice. Years from now, your child can hear how you sounded tonight." | none |
-| 4 | `story.private.v3` (NEW; replaces `story.private.v1`, and the alternate `v2`) | Private by default. | You choose what goes in the book. Never sold, never used for ads. | `two-hands` | "Card 4 of 4. Private by default. You choose what goes in the book. Never sold, never used for ads." | COUNSEL-READ |
+| 1 | `story.talk.v1` (REUSE, unchanged) | Talk for a minute. | Tell your child about today. It becomes a letter in their book. | `envelope-fold` | "Card 1 of 3. Talk for a minute. Tell your child about today. It becomes a letter in their book." | none |
+| 2 | `story.exact.v3` (NEW wording from the journey spec, chosen 11 Nov over `story.words.v1`; replaces `story.exact.v2`) | It stays in your words. | We only fix small slips, like an um, a repeat or a misheard word. We never rewrite your words. | `letter-underline` | "Card 2 of 3. It stays in your words. We only fix small slips, like an um, a repeat or a misheard word. We never rewrite your words." | COUNSEL-READ |
+| 3 | `story.voice.v1` (REUSE, unchanged) | Read together, in your voice. | Years from now, your child can hear how you sounded tonight. | `moon` | "Card 3 of 3. Read together, in your voice. Years from now, your child can hear how you sounded tonight." | none |
 
-Why these:
-- Card 2: the old headline "Exactly as you said it." is a known false claim (`exactWords` row, D-133, removed by #502). The new headline makes no claim about exactness. The line is the glossary's one sentence about small fixes, plus "mark each one", which is true of Word for word (each fix is a mark that can be undone). "Rewrite" sits inside "never", so the rewrite rule passes.
+Withheld, not in the Build 12 deck: card 4 `story.private.v3` ("Private by default. You choose what goes in the book. Never sold, never used for ads.", `two-hands`). It stays in this file as a draft for counsel and ships only after counsel reads it and the founder approves. The journey spec's optional `story.account.v1` is also not in the deck.
+
+Why these (the card 4 and old card 2 notes below describe the withdrawn drafts; they are history, not the deck):
+- Card 2 (withdrawn draft `story.words.v1`, "Your words stay yours.", with "and mark each one"): replaced by `story.exact.v3` on 11 Nov. The reasoning about the old headline follows. The old headline "Exactly as you said it." is a known false claim (`exactWords` row, D-133, removed by #502). The new headline makes no claim about exactness. The line is the glossary's one sentence about small fixes, plus "mark each one", which is true of Word for word (each fix is a mark that can be undone). "Rewrite" sits inside "never", so the rewrite rule passes.
 - Card 4: the old line says "the people you invite", a co-parent claim Build 12 cannot keep while it shows "coming soon". The new line has three promises: "you choose" (true: a letter is kept or kept private at the destination step), "never sold" and "never used for ads" (registered text, `in-app-disclosures.md`). It leaves out "never used to train models" to stay short; add it only if counsel prefers all three of D-061.
 - Card 3 keeps "tonight": the recording is kept with the letter (BRAND pillar 2). "Read together" is two words, capital R only.
 - No card says "on your phone", "free", a price, a language count, or "co-parent". A fifth card about accounts ("your letters come with you to a new phone") is true only with servers on; it is not drafted. The sign-in screen says it (section 3), where the person acts on it.
@@ -39,14 +42,14 @@ Why these:
 | Key | String | Where | Max | Notes |
 |---|---|---|---|---|
 | `firstRun.story.position` | Card {n} of {count} | Spoken with each card (VoiceOver), and the dots' label | 20 | `{n}`, `{count}` are in the test's list. Not a story-card field, so the story placeholder rule does not apply. Never shown as text with a "gap" feel |
-| `firstRun.story.skipButton` | Skip | Top corner of every card | 22 | VoiceOver: "Skip the introduction". Glossary bans "skip" only for the quiet-day action ("Not much today"); I will add a glossary row for the intro so the two do not collide |
-| `firstRun.story.nextButton` | Next | Cards 1 to 3, bottom | 22 | VoiceOver: "Next card" |
-| `firstRun.story.startButton` | Start your book | Card 4, replaces Next | 22 | Leads to the auth entry (section 3). The founder's order: stories, skip, then sign in or up |
+| `firstRun.story.skipButton` | Skip | Top right of every card, 48 pt minimum target (11 Nov ruling) | 22 | VoiceOver: "Skip the introduction". Glossary bans "skip" only for the quiet-day action ("Not much today"); I will add a glossary row for the intro so the two do not collide |
+| `firstRun.story.nextButton` | Next | Cards 1 to 2, bottom | 22 | VoiceOver: "Next card" |
+| `firstRun.story.startButton` | Start your book | Card 3, replaces Next (the journey spec's label for this button is "Get started"; one of the two is chosen by `content`, not here) | 22 | Leads to the auth entry (section 3). The founder's order: stories, skip, then sign in or up |
 | `firstRun.story.backA11y` | Previous card | Swipe or control for VoiceOver | 30 | Optional if the deck supports a swipe back; VoiceOver users need it |
 
 ## 2. Skip and where it lands
 
-Skip and Start your book go to the same place, the auth entry, so a person who skips loses nothing they need. Nothing on card 1 to 4 is required reading. No key states how many cards a person missed (no gap counting). Reduce Motion and screen-reader users see the same words with no animation timing in the text.
+Skip and Start your book go to the same place, the auth entry (after the age question: the story intro comes AFTER the age gate, Karma's standing ruling, 11 Nov), so a person who skips loses nothing they need. Nothing on card 1 to 3 is required reading. No key states how many cards a person missed (no gap counting). Reduce Motion and screen-reader users see the same words with no animation timing in the text.
 
 ## 3. Auth entry (scope tier A)
 
@@ -61,9 +64,11 @@ Existing keys are reused wherever they say the right thing. The consent and age 
 | `authCopy.sheet.email` (REUSE) | Sign in with email | Provider button | Exists | none |
 | `firstRun.auth.appleButton` | Sign in with Apple | Provider button, first in the list | Exists (`apple.ts`). Rendered with Apple's own system button where possible, so this string is the accessibility label. Order and prominence rule: UNVERIFIED (guideline 4.8) | none |
 | `authCopy.sheet.passkey` (REUSE) | Use a passkey | Only when this phone has one | Exists | none |
-| `authCopy.sheet.privacy` (REUSE, `en.trust.signIn.privacy`) | Only you and the people you invite can read your letters. We never sell them or use them for ads. | Under the buttons | Registered text, but "the people you invite" is a co-parent claim while Build 12 shows "coming soon". Recommend counsel replace it with the card 4 line | COUNSEL-READ |
+| `authCopy.sheet.privacy` (REUSE, `en.trust.signIn.privacy`) | Only you and the people you invite can read your letters. We never sell them or use them for ads. | Under the buttons | Registered text, but "the people you invite" is a co-parent claim while Build 12 shows "coming soon". Recommend counsel replace it with a line that names no invitation (the withheld card 4 line is one draft) | COUNSEL-READ |
 | `authCopy.sheet.emailUse` (REUSE) | We use your email only to sign you in and to write to you about your account. | Under the email field | Registered | COUNSEL-READ |
 | `firstRun.auth.haveBookButton` | I already have a book | Optional second door, for a founder who wants two doors | 21 characters. Same destination as the buttons; do not add it unless the journey lead wants two doors. Existing: `onboarding.welcome.signInButton` | none |
+
+CONFLICT, OPEN (11 Nov, for `content` and the founder; no copy is invented here). This section lists Google and passkey buttons and bans "Create account", "Sign up" and "Log in". NX-40 R7 and the Build 12 profile show Apple and email only (Google and passkey are built but off: no Google client id or `EXPO_PUBLIC_PASSKEYS` in `eas.json`, NX-40 section 3), and the journey spec's Option A heading is "Create your account or sign in", which uses the banned word. Content decides: (a) drop the Google and passkey rows from the Build 12 list, keeping them for later; (b) rule on the heading, either by a glossary exception for "account" in a heading or by a heading that avoids it. The founder is needed only for journey open question 1 (Option A or B), whose default is A.
 
 Do not use "Create account", "Sign up", "Log in" or "Continue with" anywhere. "Sign up" is not in the glossary; it is only in an email line ("Did not sign up?"). Recommendation: keep one verb, "sign in", so Apple, Google and email read the same on the button and in the email (LNG-13).
 
@@ -113,7 +118,7 @@ The Tonight screen after sign-in says nothing about this being the second visit.
 
 ## 5. Face ID and the lock (scope tier A: correct, not new)
 
-The lock offer exists and stays as the end of first run. The words below are the existing `appLockCopy` strings plus failure states that the code does not name today. Distinction to hold in every line: the lock opens the book; a passkey signs in.
+The lock offer exists in code. It is offered in session 3, not at the end of first run (NX-31-R14, Karma 11 Nov); this file previously said it stays at the end of first run, which is corrected. NOTE: `onboarding.tsx` on develop (checked 11 Nov) still mounts `LockOffer` on "The book is open.", so the move is not built; NX-40 U16 ("lock cannot be on before session 3") is not yet true of the binary. The words below are the existing `appLockCopy` strings plus failure states that the code does not name today. Distinction to hold in every line: the lock opens the book; a passkey signs in.
 
 | Key | String | Where | Truth check | Flag |
 |---|---|---|---|---|
@@ -151,7 +156,7 @@ Recommendation: keep the single line for Build 12 and ship nothing else. One mor
 |---|---|---|---|
 | `authCopy.sheet.bodies.first_letter`, `.settings`, `account.signedOutBody` | "... and {child}'s other parent can write in the same book." | Co-parent writing is "coming soon" | "Your letters come with you to a new phone." (the three keys are word for word one sentence; change all three) |
 | `authCopy.sheet.titles.invite`, `invite_create` | Sign in to join / invite | The doors are hidden or "coming soon" | Leave in code; they cannot be reached. Do not show |
-| `en.onboarding.promise.title` | Exactly as you said it. | Known false (`exactWords`, #502) | The card 2 headline above; #502 owns the change |
+| `en.onboarding.promise.title` | Exactly as you said it. | Known false (`exactWords`, #502) | The card 2 headline above ("It stays in your words."); #502 owns the change |
 | `en.trust.firstRecording.body` | "Your words are written down on this phone, and the recording stays with your letter." | "On this phone" is true of where the words are made, but a reader hears "stays here" | COUNSEL-READ; suggest "Your words are written down as you talk, and the recording stays with your letter." |
 
 ## 8. Claims-ledger rows and the rules-test risks (for the engineers)
@@ -166,7 +171,7 @@ What the tests check and what will surprise:
 | `rules.test.ts` fear | Bans too late, don't miss, you haven't, you forgot, streak, regret, die, dead, ... | None used |
 | `rules.test.ts` exclamations | 2 in all in-app copy, 3 in all copy | Zero here, so nothing is taken from the budget |
 | `rules.test.ts` placeholders | Fixed list; story cards only `child`, `app`, `signsAs` | `{n}`, `{count}` in `firstRun.story.position` only |
-| `rules.test.ts` story schema | headline 80, line 200, id `story.[a-z-]+.v\d+`, `order` equals position, visual in `STORY_VISUALS` | Four existing visuals only; new ids; `order` 1 to 4 in the deck |
+| `rules.test.ts` story schema | headline 80, line 200, id `story.[a-z-]+.v\d+`, `order` equals position, visual in `STORY_VISUALS` | Existing visuals only; new ids; `order` 1 to 3 in the deck (three cards, CTO ruling 11 Nov) |
 | `rules.test.ts` store listing | No "sign in" or "co-parent" in `storeListing` | Do not copy section 3 or 6 lines into the store listing |
 | `rules.test.ts` CR-25 | No "entry", "draft" (noun), "take" as a recording, "language pack" | None used |
 | `rules.test.ts` brand name | The public name only through `{app}` | `{app}` used in two lines, never typed |
@@ -178,15 +183,15 @@ Claims-ledger rows (the new promise lines; counsel owns the ledger text):
 
 | Id (proposed) | Line | Says | Backed by | State |
 |---|---|---|---|---|
-| FR-C1 | `story.private.v3` line | You choose what is kept; never sold; never used for ads | Destination step, registered text | Needs counsel read |
-| FR-C2 | `story.words.v1` line | Only small slips are fixed, each marked; never rewritten | `verifyEdits`, Word for word marks | Needs counsel read |
+| FR-C1 | `story.private.v3` line (WITHHELD from the Build 12 deck, 11 Nov) | You choose what is kept; never sold; never used for ads | Destination step, registered text | Needs counsel read before it can be added |
+| FR-C2 | `story.exact.v3` line (was `story.words.v1`) | Only small slips are fixed; never rewritten | `verifyEdits`, Word for word marks | Needs counsel read |
 | FR-C3 | `firstRun.auth.body` | Letters come with you to a new phone after sign-in | Sync, servers on only | Counsel; blocked until Build 12 flips the switch |
 | FR-C4 | `familyCopy.soon.lead` | Other parent can add letters in a later update | A plan | Counsel; no date |
 | FR-C5 | `appLock.offer.body.*` | Others see a cover | `layer.logic.ts` | Counsel; registry row pending per `copy.ts` |
 
 ## 9. Cross-check with the other team docs (not yet read)
 
-When the journey lead, product, motion and qa docs land, check: (a) the journey lead's placeholder strings against section 1 to 5, where mine win; (b) any "log in" or "sign up" word, which the glossary bans; (c) any "stays on your phone" or "private" line; (d) any story count other than 4 and any `visual` outside the four; (e) NX requirements that need a state this file marks HOLD (region blocked) or UNVERIFIED (email already used, account deleted).
+When the journey lead, product, motion and qa docs land, check: (a) the journey lead's placeholder strings against section 1 to 5, where mine win; (b) any "log in" or "sign up" word, which the glossary bans; (c) any "stays on your phone" or "private" line; (d) any story count other than 3 and any `visual` outside the four; (e) NX requirements that need a state this file marks HOLD (region blocked) or UNVERIFIED (email already used, account deleted).
 
 ## 10. Check script
 

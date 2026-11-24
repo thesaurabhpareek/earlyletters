@@ -16,7 +16,7 @@
  *  - remote documents never fall back to the Supabase URL (lib/remote);
  *  - sign-in screens, Account and Delete account rows are not offered, and every
  *    co-parent entry point shows the "coming soon" presentation instead
- *    (components/family/coparent-soon.tsx, lib/family/entry.logic.ts).
+ *    (lib/family/entry.logic.ts; nothing is drawn, 11 Nov 2026).
  *
  * Remote config can never turn this on (BRIEF decision 16: nothing server-driven
  * may change what is collected). The value is read from the bundle only; this
@@ -151,9 +151,15 @@ const BACKUP_BUILD_VALUE: boolean = parseServerFeatures(process.env.EXPO_PUBLIC_
 const STATUS_REPORT_BUILD_VALUE: boolean = parseServerFeatures(process.env.EXPO_PUBLIC_STATUS_REPORT);
 /** Delete account (founder, 30 Oct 2026). Same rule: only `on` is on, so a build with the variable unset hides the row. */
 const ACCOUNT_DELETION_BUILD_VALUE: boolean = parseServerFeatures(process.env.EXPO_PUBLIC_ACCOUNT_DELETION);
+/**
+ * Erase now on a signed-in phone (BL-1854), held from every store profile until BL-1805's wording is cleared (BL-1987; CLO-22,
+ * CR-177). Same rule: only `on` is on. It is listed in scripts/release/store-flags.mjs with `allowedOn` empty, so a store
+ * profile in eas.json that writes it on fails `npm test` and the TestFlight preflight. Development and e2e builds may write it on.
+ */
+const SERVER_ERASE_BUILD_VALUE: boolean = parseServerFeatures(process.env.EXPO_PUBLIC_SERVER_ERASE);
 
 /** The build flags that sit on top of the server switch. */
-export type BuildFlag = 'backup' | 'statusReport' | 'accountDeletion';
+export type BuildFlag = 'backup' | 'statusReport' | 'accountDeletion' | 'serverErase';
 
 let buildFlagTestOverride: Partial<Record<BuildFlag, boolean>> = {};
 
@@ -189,6 +195,7 @@ export function buildFlagEnabled(flag: BuildFlag): boolean {
     backup: BACKUP_BUILD_VALUE,
     statusReport: STATUS_REPORT_BUILD_VALUE,
     accountDeletion: ACCOUNT_DELETION_BUILD_VALUE,
+    serverErase: SERVER_ERASE_BUILD_VALUE,
   };
   return buildFlagTestOverride[flag] ?? built[flag];
 }
@@ -205,6 +212,14 @@ export const capabilities = {
   /** Letters upload and download (D-023). */
   get sync(): boolean {
     return serverFeaturesEnabled();
+  },
+  /**
+   * Erase now reaches the server (BL-1854, WP-F16-13, F16-REQ-024): `store.eraseEntry` queues one id-only `entry.erase`
+   * and the server purges its copy. It needs the server switch and its own build flag `EXPO_PUBLIC_SERVER_ERASE=on`, which
+   * no store profile may carry until the founder clears BL-1805 (BL-1987). Off: a signed-in phone shows no Erase now.
+   */
+  get serverErase(): boolean {
+    return buildFlagEnabled('serverErase');
   },
   /** Invite and join a co-parent. Off: the coming-soon presentation. */
   get coParent(): boolean {

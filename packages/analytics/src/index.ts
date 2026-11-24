@@ -1,5 +1,8 @@
 export * from './schema';
 export * from './catalog';
+export * from './values';
+export * from './tiers';
+export * from './registry';
 export * from './validate';
 export * from './consent';
 export * from './provider';
@@ -15,3 +18,7 @@ export * from './plan-doc';
 export * from './observe';
 // The insights engine (src/insights) is deliberately not exported here: it is
 // for scripts/insights only and must never be bundled into the app.
+export * from './crash';
+export * from './contracts';
+export * from './policy';
+export * from './gate';

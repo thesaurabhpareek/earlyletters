@@ -7,6 +7,7 @@
  * both, so screens see one object as before.
  */
 import type { RepoContext } from './context';
+import { reconcileSearch } from '../../find/lifecycle';
 import type { Child, NewChild } from './types';
 import { BOOK_NOT_DELETED_SQL } from './wipe';
 
@@ -57,6 +58,65 @@ export function listVisible({ db }: RepoContext): Child[] {
 
 export function listHidden({ db }: RepoContext): Child[] {
   return db.all<ChildRow>(`SELECT ${COLS} FROM ${FROM} WHERE ${HIDDEN} AND ${LISTED} ORDER BY c.created_at ASC, c.id ASC`).map(fromRow);
+}
+
+/**
+ * Books this person left or was removed from (server_state 'left'), which `LISTED` leaves out: the leaver's own letters
+ * stay on the phone and these are the books they wait in (D-113, BL-444: listed under "Letters to {child}" with read,
+ * export and delete). Merge (sync/merge.ts closeBook) has already dropped other people's letters, so only the person's own
+ * remain. A book deleted on this phone waits in Recently deleted and is not here; one the server deleted ('deleted') is
+ * `listClosedByServer`. Only books that still hold a live letter are listed: a left book with nothing in it has nothing to read.
+ * A book the support path hid for everyone (`c.hidden_at`, F12 6.2 D) stays hidden after a leave; the person's own hide (`p.hidden_at`) does not
+ * apply, because a left book has no Hidden books page to come back from.
+ */
+export function listLeft({ db }: RepoContext): Child[] {
+  return db
+    .all<ChildRow>(
+      `SELECT ${COLS} FROM ${FROM} WHERE c.server_state = 'left' AND ${BOOK_NOT_DELETED_SQL} AND c.hidden_at IS NULL
+       AND EXISTS (SELECT 1 FROM entries e WHERE e.child_id = c.id AND e.deleted_at IS NULL)
+       ORDER BY c.created_at ASC, c.id ASC`,
+    )
+    .map(fromRow);
+}
+
+/**
+ * A left book that holds nothing: no letter row (live or deleted) and no draft aimed at it (BL-1960). Its `children`
+ * row (name, birth date) is all that is left of it, and nothing on the phone reads it, so the delete rule removes it.
+ * A draft keeps it: removing the book would drop the row but not the recording's file. So does an op still queued for
+ * the book (an entry.delete or entry.erase not yet answered): the queue names the book, and the next launch's purge
+ * drops the row once the queue has drained.
+ */
+export function leftBookIsEmpty({ db }: RepoContext, id: string): boolean {
+  return (
+    db.get<{ n: number }>(
+      `SELECT 1 AS n FROM children c WHERE c.id = ? AND c.server_state = 'left'
+       AND NOT EXISTS (SELECT 1 FROM entries e WHERE e.child_id = c.id)
+       AND NOT EXISTS (SELECT 1 FROM drafts d WHERE d.child_id = c.id)
+       AND NOT EXISTS (SELECT 1 FROM sync_outbox o WHERE o.book_id = c.id)`,
+      id,
+    ) != null
+  );
+}
+
+/** Every left book that holds nothing (see `leftBookIsEmpty`). */
+export function emptyLeftBookIds({ db }: RepoContext): string[] {
+  return db
+    .all<{ id: string }>(
+      `SELECT c.id FROM children c WHERE c.server_state = 'left'
+       AND NOT EXISTS (SELECT 1 FROM entries e WHERE e.child_id = c.id)
+       AND NOT EXISTS (SELECT 1 FROM drafts d WHERE d.child_id = c.id)
+       AND NOT EXISTS (SELECT 1 FROM sync_outbox o WHERE o.book_id = c.id) ORDER BY c.id`,
+    )
+    .map((r) => r.id);
+}
+
+/**
+ * Books the server closed for good ('deleted'), which `LISTED` leaves out. A sole parent's account-deletion request
+ * closes hers, and the phone keeps her letters in Recently deleted for the grace period. Export reads these while a
+ * request is open (DATA-REQ-053, BL-446); nothing else lists them.
+ */
+export function listClosedByServer({ db }: RepoContext): Child[] {
+  return db.all<ChildRow>(`SELECT ${COLS} FROM ${FROM} WHERE c.server_state = 'deleted' ORDER BY c.created_at ASC, c.id ASC`).map(fromRow);
 }
 
 export function get({ db }: RepoContext, id: string): Child | null {
@@ -132,10 +192,12 @@ function setPrefTime(ctx: RepoContext, id: string, column: 'hidden_at' | 'quiet_
 /** "Hide this book" for this person (F12-REQ-005 Rev): stops prompts for this child; restorable. */
 export function hide(ctx: RepoContext, id: string): void {
   setPrefTime(ctx, id, 'hidden_at', true);
+  reconcileSearch(ctx.db); // a hidden book's letters are not found (NS-02 section 6; Find index lifecycle)
 }
 
 export function unhide(ctx: RepoContext, id: string): void {
   setPrefTime(ctx, id, 'hidden_at', false);
+  reconcileSearch(ctx.db);
 }
 
 /** "Quiet this book" for this person (F12-REQ-011): letters untouched; no reason asked; reversible. */

@@ -1,9 +1,10 @@
-import { btn, journey, selectedTab, tab } from './support/app';
-import { expect, seeded, test } from './support/journey';
+import { billingCopy } from '@scribe/content';
+import { btn, CHILD, firstRun, journey, noRemindersAfterFirstLetter, selectedTab, tab, typeLetter } from './support/app';
+import { expect, onStore, seeded, test } from './support/journey';
 
 const NOTE_SEED = 'Words come from the seeded fictional family Asha (the web build has no speech model, so a real recording never gets words).';
 
-/** Plus on (the seeded cache), so Keep is not gated: these flows are about the words. The gate has its own flow, J06e. */
+/** Plus on (the seeded cache), so Keep is not gated: these flows are about the words. The gate has its own flow, J06e, on the store build. */
 async function openReview(app: import('@playwright/test').Page, kind: 'asha' | 'asha-plus' = 'asha-plus') {
   await seeded(app, kind);
   await app.getByText('Read it back').first().click();
@@ -34,7 +35,7 @@ test('[J06] review: the small fixes, put back, word for word, save to the book',
   await step('happy', 'Undo the put-back', 'Undo re-applies the small fix. Every edit is reversible both ways.');
 
   await app.getByRole('radio', { name: 'Exactly as said' }).click();
-  await expect(app.getByText('Exactly as you said it.')).toBeVisible();
+  await expect(app.getByText('Nothing was changed.')).toBeVisible();
   await step('happy', 'Exactly as said', 'One tap shows the words exactly as spoken, with their "um" and repeats; the screen says so. This is the view and the choice for this letter, until it is saved.');
   await app.getByRole('radio', { name: 'With small fixes' }).click();
   await expect(app.getByText(/small fixes/i).first()).toBeVisible();
@@ -47,7 +48,7 @@ test('[J06] review: the small fixes, put back, word for word, save to the book',
   await btn(app, /^Add to .*book/).click();
   await expect(app.getByTestId('review.saved.chip')).toHaveText(/^Kept in /);
   await expect(app.getByText("Added to Asha's book.")).toBeVisible();
-  await step('happy', 'Saved: kept in its month', 'The save commits first, then the sheet files into its month: "Kept in Month N" under it and "Added to Asha\'s book." with a check, never ghosted words (S21).', undefined, { settle: 120 });
+  await step('happy', 'Saved: kept in its month', 'The save commits first, then the sheet files into its month: "Kept in Month N" under it and "Added to Asha\'s book." with a check, never ghosted words (S21).', undefined, { settle: 120, needs: [/^Kept in /, "Added to Asha's book."] });
   await expect(selectedTab(app, 'Book')).toBeVisible({ timeout: 6000 });
   await expect(app.getByText('Read it back', { exact: true })).toHaveCount(0);
   await step('happy', 'On the Book, on the new letter', 'Review dissolves onto the Book, which is already on the new letter under its month, with the arrival wash. Tonight is never seen in between (5.8 row 5).', undefined, { settle: 400 });
@@ -58,8 +59,8 @@ test('[J06b] keep the letter private', async ({ app, record }) => {
   await openReview(app);
   await btn(app, 'Got it').click();
   await btn(app, 'Keep private').click();
-  await expect(app.getByText(/Kept just for you/)).toBeVisible();
-  await step('happy', 'Kept private', 'The letter is saved outside the book, with the lock chip "Kept just for you.", then lands on the Book with its Private chip, as a kept letter does (S21).', undefined, { settle: 120 });
+  await expect(app.getByText(/Kept private/)).toBeVisible();
+  await step('happy', 'Kept private', 'The letter is saved outside the book, with the lock chip "Kept private.", then lands on the Book with its Private chip, as a kept letter does (S21).', undefined, { settle: 120, needs: ['Kept private.'] });
 });
 
 test('[J06c] close Review without saving: the recording is kept as a draft', async ({ app, record }) => {
@@ -72,18 +73,27 @@ test('[J06c] close Review without saving: the recording is kept as a draft', asy
 });
 
 test('[J06e] Keep needs Plus past the free letters: the letter is held, never lost', async ({ app, record }) => {
+  test.setTimeout(120_000);
   const step = journey(record, 'J06', 'review-and-edits', 14, 'J06-02');
-  // Free phone with five letters already: past the first two.
-  await openReview(app, 'asha');
-  await btn(app, 'Got it').click();
-  await btn(app, /^Add to .*book/).click();
-  await expect(app.getByText("Keep adding to Asha's book")).toBeVisible();
-  await expect(app.getByText('This letter waits on Tonight, on this phone, exactly as it is. Keep it whenever you like.')).toBeVisible();
+  // The Plus gate is the store app's alone: the other builds are alpha (no letter limit, PL-1). The store build cannot seed a
+  // family (see onStore), so the two free letters are typed through first run, as J07d does, and the third is the held one.
+  await onStore(app);
+  await firstRun(app);
+  await typeLetter(app, 'You held the spoon by yourself today.');
+  await noRemindersAfterFirstLetter(app);
+  await tab(app, 'Home').click();
+  await typeLetter(app, 'You laughed at the rain.');
+  await expect(app.getByText(/Added to/)).toBeVisible();
+  await tab(app, 'Home').click();
+  await typeLetter(app, 'You waved at the dog on the corner.');
+  await expect(app.getByText(billingCopy.keepGate.title.replace('{child}', CHILD))).toBeVisible();
+  await expect(app.getByText(billingCopy.keepGate.heldNote)).toBeVisible();
   await expect(app.getByText(/\$\d|free trial|email you/i)).toHaveCount(0);
-  await step('unhappy', 'Keep needs Plus', 'Pressing Keep after the first two letters opens one calm sheet: "Keep adding to Asha\'s book", that the first two letters are kept and always will be, that this letter is safe on the phone, and a way to start Plus. No price, no trial length and no countdown (Apple\'s own sheet shows those). Nothing was saved yet. On web there is no StoreKit, so the sheet says Plus is not available on this device and has no "See Plus" or "Redeem a code" button. NEEDS A REAL IPHONE: See Plus, Redeem a code, Ask to Buy, offline.');
-  await btn(app, 'Keep it here for now').click();
+  await step('unhappy', 'Keep needs Plus', 'Pressing Keep after the first two letters opens one calm sheet: "Keep adding to Asha\'s book", that the first two letters are free, that this letter is safe on the phone, and a way to start Plus. No price, no trial length and no countdown (Apple\'s own sheet shows those). Nothing was saved yet. On web there is no StoreKit. This runs on the store build and reaches the sheet from the write page; reaching it from Review needs a seeded draft, which the store build cannot hold. NEEDS A REAL IPHONE: See Plus, Redeem a code, Ask to Buy, offline.');
+  await btn(app, billingCopy.keepGate.holdButton).click();
   // S22: the draft is marked held (store.holdDraft), so Tonight's card says so (S09), with its words as they were.
   await expect(app.getByText('Waiting to be kept.').first()).toBeVisible();
+  await expect(app.getByText('You waved at the dog on the corner.')).toBeVisible();
   await expect(btn(app, /Keep it/).first()).toBeVisible();
   await step('happy', 'Kept here for now', 'The letter stays a draft, marked held: its card on Tonight says "Waiting to be kept." with the words exactly as they were and "Keep it". It can be played, read and exported from there, and kept once Plus is on (5.8 row 5c).');
 });

@@ -199,8 +199,11 @@ describe('auth and account security', () => {
   });
 
   it('every auth email carries a safety line', () => {
-    for (const { email } of secure.filter((e) => e.email.category === 'auth')) {
-      expect(email.safety, email.id).toBeTruthy();
+    const auth = secure.filter((e) => e.email.category === 'auth');
+    expect(auth.length).toBeGreaterThan(0);
+    for (const { email } of auth) {
+      expect(typeof email.safety, email.id).toBe('string'); // BL-442: a real line, not just something truthy
+      expect((email.safety as string).trim().length, email.id).toBeGreaterThan(0);
     }
   });
 

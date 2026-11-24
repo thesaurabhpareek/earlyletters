@@ -22,7 +22,7 @@ import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
 import { AppState, Platform } from 'react-native';
 import { longDate } from '../dates';
-import { getReminderPermission, type ReminderPermission } from '../reminders/scheduler';
+import { getReminderPermission, rescheduleReminders, type ReminderPermission } from '../reminders/scheduler';
 import { billingCopy } from './copy';
 import type { PlanState } from './plan.logic';
 import { PLAN_ID_PREFIX, planPlanReminders, planReminderSignature, subjectOf, type PlannedPlanReminder } from './plan-reminders.logic';
@@ -91,6 +91,9 @@ async function apply(): Promise<void> {
       trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: p.fireAt, ...(Platform.OS === 'android' ? { channelId: 'reminders' } : {}) },
     });
   }
+  // The re-plan hook (CR-69 A1): plan notices were scheduled or cancelled, so the evening reminders re-plan and the total stays at 60 or fewer.
+  await rescheduleReminders();
+  // Only after the re-plan finished: if it threw, the next call plans again (BL-1190).
   lastSignature = signature;
 }
 

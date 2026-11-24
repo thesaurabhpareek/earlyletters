@@ -18,7 +18,11 @@ vi.mock('../src/lib/db/repos/open-native', () => ({
 
 import type { AudioEraser } from '../src/lib/store';
 const store = await import('../src/lib/store');
-const { setServerFeaturesForTests } = await import('../src/lib/capabilities');
+const { setServerFeaturesForTests, setBuildFlagForTests } = await import('../src/lib/capabilities');
+const require_shelf = () => shelfLogic;
+const require_caps = () => capsMod;
+const shelfLogic = await import('../src/components/book/shelf.logic');
+const capsMod = await import('../src/lib/capabilities');
 const { planLaunchSweep } = await import('../src/lib/capture/sweep.logic');
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -52,6 +56,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   setServerFeaturesForTests(null);
+  setBuildFlagForTests('serverErase', null);
   store.closeStore();
   close();
 });
@@ -287,6 +292,30 @@ describe('the 30 day purge', () => {
     const d = disk([`file:///Documents/${id1}.m4a`]);
     expect(store.eraseEntry(id1, d.eraser)).toBe(true);
     expect(db.all<{ type: string }>('SELECT type FROM sync_outbox').map((r) => r.type)).toEqual(['entry.erase']);
+  });
+
+  it('[BL-1854] a signed-in phone Erase now: the shelf offers it with the server capability, and one id-only entry.erase is queued, with the rest of the book untouched', () => {
+    const { shelfActions } = require_shelf();
+    setServerFeaturesForTests(true);
+    setBuildFlagForTests('serverErase', true); // BL-1987: held from store profiles, on in a test build
+    const { capabilities } = require_caps();
+    expect(shelfActions({ sync: capabilities.sync, serverErase: capabilities.serverErase }).eraseNow).toBe(true);
+    const db = store.localSqlDb();
+    const owner = '11111111-1111-1111-1111-111111111111';
+    db.run("INSERT INTO settings (key, value) VALUES ('sync.ownerId', ?)", owner);
+    save(id1);
+    save(id2);
+    db.run("UPDATE entries SET server_version = '100', author_id = ? WHERE id IN (?, ?)", owner, id1, id2);
+    store.deleteEntry(id1);
+    const d = disk([`file:///Documents/${id1}.m4a`]);
+    expect(store.eraseEntry(id1, d.eraser)).toBe(true);
+    const ops = db.all<{ type: string; entity_id: string; payload: string }>('SELECT type, entity_id, payload FROM sync_outbox WHERE type = ?', 'entry.erase');
+    expect(ops).toHaveLength(1);
+    expect(ops[0]!.entity_id).toBe(id1);
+    expect(JSON.parse(ops[0]!.payload)).toMatchObject({ type: 'entry.erase', id: id1, data: {} });
+    // Only that letter went: the other letter and the book are still here.
+    expect(db.get<{ n: number }>('SELECT COUNT(*) AS n FROM entries WHERE id = ?', id2)!.n).toBe(1);
+    expect(db.get<{ n: number }>('SELECT COUNT(*) AS n FROM children WHERE id = ?', asha)!.n).toBe(1);
   });
 
   it('a purged letter never comes back: no row, no file, nothing for the sweep to re-attach', () => {

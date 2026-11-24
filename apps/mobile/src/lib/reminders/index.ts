@@ -12,26 +12,15 @@ import { reminderCopy } from './copy';
 import type { ReminderPrefs, ReminderTime } from './planner';
 import { readPrefs } from './prefs';
 
+// Only what other modules import (BL-1152). The planner, the budget and the session key are reached by their own files.
 export { reminderCopy } from './copy';
+export { clampReminderTime, type Cadence, type PlannedNotification, type ReminderPrefs, type ReminderTime } from './planner';
+export { lockScreenNamesOn, plannerChildren, readPrefs, writeOnSince, REMINDER_SETTING_KEYS, writePrefs } from './prefs';
+export { endReminderSession, sessionEnded, settleReminderSession } from './session';
 export {
-  clampReminderTime,
-  DEFAULT_PREFS,
-  DEFAULT_WINDOW,
-  isQuietTime,
-  planReminders,
-  type Cadence,
-  type PlannedNotification,
-  type ReminderPrefs,
-  type ReminderTime,
-  type ReminderWindow,
-} from './planner';
-export { LOCK_SCREEN_NAMES_DEFAULT, lockScreenNamesOn, plannerChildren, readPrefs, writePrefs } from './prefs';
-export {
-  currentPlan,
   disableReminders,
   enableReminders,
   forgetReminders,
-  getReminderPermission,
   getReminderPermissionDetail,
   intendedPlan,
   lastScheduleResult,
@@ -41,8 +30,6 @@ export {
   subscribeScheduleResult,
   turnOnReminders,
   type ReminderPermission,
-  type ScheduleResult,
-  type TurnOnResult,
 } from './scheduler';
 
 /** "8:30 PM" (en-US) or "20:30" (en-GB), in the device's English locale. */

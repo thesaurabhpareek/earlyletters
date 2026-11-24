@@ -1,0 +1,26 @@
+// fixture: clean-adapter. Fictional family Asha; not compiled, read by test/media-ast-scan.test.ts as text.
+// as: apps/mobile/src/lib/media/asset-record.ts
+// expect: none
+export type PixelSize = { readonly width: number; readonly height: number };
+export type AssetRecord = {
+  readonly opaqueId: string;
+  readonly capturedAt: string | null;
+  readonly kind: 'photo' | 'video';
+  readonly durationMs: number | null;
+  readonly pixelSize: PixelSize | null;
+  readonly cityKey: string | null;
+};
+export function toAssetRecord(raw: Record<string, unknown>): AssetRecord | null {
+  const id = raw.id;
+  if (typeof id !== 'string' || id === '') return null;
+  const width = Number(raw.width);
+  const height = Number(raw.height);
+  return {
+    opaqueId: id,
+    capturedAt: typeof raw.takenAt === 'string' ? raw.takenAt : null,
+    kind: raw.mediaType === 'video' ? 'video' : 'photo',
+    durationMs: null,
+    pixelSize: width > 0 && height > 0 ? { width, height } : null,
+    cityKey: typeof raw.cityKey === 'string' ? raw.cityKey : null,
+  };
+}

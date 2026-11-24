@@ -49,7 +49,9 @@ export function externalOwners(roster) {
 
 // ---------- backlog ----------
 
-const BL_RE = /\bBL-\d{3}\b/g;
+// Backlog ids have 3 or 4 digits (BL-001 to BL-9999), the same width id-collisions.mjs and hardening.mjs accept.
+// The trailing \b keeps a 5-digit number like BL-12345 from matching as BL-1234.
+const BL_RE = /\bBL-\d{3,4}\b/g;
 
 /** Parse docs/BACKLOG.md into task records. Unknown fields are left undefined. */
 export function parseBacklog(text) {
@@ -71,7 +73,7 @@ export function parseBacklog(text) {
       section = line.replace(/^## /, "").trim();
       continue;
     }
-    const h = line.match(/^#### (BL-\d{3})\s+(.*)$/);
+    const h = line.match(/^#### (BL-\d{3,4})\s+(.*)$/);
     if (h) {
       flush(i);
       cur = { id: h[1], title: h[2].trim(), section, start: i, line: i + 1 };
@@ -138,21 +140,72 @@ export function takenIds(openPRs) {
   const taken = new Set();
   for (const pr of openPRs) {
     for (const s of [pr.head?.ref ?? "", pr.title ?? ""]) {
-      for (const m of s.matchAll(/bl-(\d{3})/gi)) taken.add(`BL-${m[1]}`);
+      for (const m of s.matchAll(/bl-(\d{3,4})\b/gi)) taken.add(`BL-${m[1]}`);
     }
   }
   return taken;
 }
 
-export function queueFor(handle, tasks, owners, taken, claimed = new Set()) {
+export function queueFor(handle, tasks, owners, taken, claimed = new Set(), rankRows = []) {
   const byId = new Map(tasks.map((t) => [t.id, t]));
-  return tasks.filter(
+  const eligible = tasks.filter(
     (t) =>
       primaryOwner(t, owners) === handle &&
       !taken.has(t.id) &&
       !claimed.has(t.id) &&
       eligibility(t, byId).ok,
   );
+  return orderByRank(eligible, rankRows);
+}
+
+// ---------- rank (docs/backlog/RANK.md) ----------
+
+export const RANK_TIERS = ["T0", "T1", "T2", "T3"];
+
+/**
+ * Parse docs/backlog/RANK.md: a markdown table with the header `| Rank | Id | Tier | Why |`.
+ * Returns the rows in file order and a list of shape problems (a row that is not
+ * `| <whole number> | BL-nnn | <tier> | <why> |`). The meaning checks (unique, contiguous,
+ * known ids) live in rank-check.mjs. Text before the header is ignored.
+ */
+export function parseRank(text) {
+  const rows = [];
+  const errors = [];
+  let inTable = false;
+  (text ?? "").split("\n").forEach((line, i) => {
+    if (!/^\s*\|/.test(line)) {
+      inTable = false;
+      return;
+    }
+    const cells = line.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map((c) => c.trim());
+    if (/^rank$/i.test(cells[0]) && /^id$/i.test(cells[1] ?? "")) { inTable = true; return; }
+    if (!inTable || cells.every((c) => /^:?-+:?$/.test(c))) return;
+    const [rank, id, tier, ...why] = cells;
+    if (!/^[1-9]\d*$/.test(rank ?? "") || !/^BL-\d{3,4}$/.test(id ?? "")) {
+      errors.push(`RANK.md line ${i + 1}: expected "| <rank> | BL-nnn | <tier> | <why> |", got "${line.trim().slice(0, 60)}"`);
+      return;
+    }
+    rows.push({ rank: Number(rank), id, tier: tier ?? "", why: why.join(" | ").trim(), line: i + 1 });
+  });
+  return { rows, errors };
+}
+
+export function loadRank(root = ROOT) {
+  const p = join(root, "docs", "backlog", "RANK.md");
+  return existsSync(p) ? parseRank(readFileSync(p, "utf8")) : { rows: [], errors: [], missing: true };
+}
+
+/**
+ * Order tasks for dispatch: ranked tasks first, in rank order, then every other task in its
+ * input (file) order. Ranking only orders; it never makes a task eligible. A rank row for an
+ * id that is not in `tasks` is ignored; a repeated id keeps its lowest rank.
+ */
+export function orderByRank(tasks, rankRows = []) {
+  if (!rankRows.length) return tasks;
+  const rankOf = new Map();
+  for (const r of rankRows) if (!rankOf.has(r.id) || r.rank < rankOf.get(r.id)) rankOf.set(r.id, r.rank);
+  const ranked = tasks.filter((t) => rankOf.has(t.id)).sort((a, b) => rankOf.get(a.id) - rankOf.get(b.id));
+  return [...ranked, ...tasks.filter((t) => !rankOf.has(t.id))];
 }
 
 // ---------- board state (hidden JSON in the board issue body) ----------
@@ -247,11 +300,71 @@ export function todayUTC(now = new Date()) {
   return now.toISOString().slice(0, 10);
 }
 
+/**
+ * A founder instruction (BL-1529). Sessions and agents post from the founder's
+ * account too, so the account alone proves nothing. A comment is an instruction
+ * only when all of these hold:
+ * - it comes from the founder's account or the repository OWNER, as a person (not a bot);
+ * - its first non-blank line is exactly `<!-- founder -->`, which the founder types;
+ * - no GitHub App posted it on his behalf (performed_via_github_app is empty).
+ * Anything else from that account is "unverified author" (see trustLabel).
+ */
 export function isFounderComment(c, roster) {
-  // Machine posts (receipts, journal entries, reviews, board state) made from
-  // the founder's account in interactive sessions are not instructions.
-  if (/^\s*<!-- (receipt|journal|red-team|steward|agents-state|handoff|handoff-reply|agent)[\s:]/.test(c?.body ?? "")) return false;
-  return c?.user?.login === roster.founder || c?.author_association === "OWNER";
+  if (!isFounderAccount(c, roster?.founder)) return false;
+  if (c.performed_via_github_app) return false;
+  return hasFounderMarker(c.body);
+}
+
+/**
+ * A founder "Request changes" review holds a PR even with an empty body: it
+ * fails closed. Same person test as isFounderComment (founder login or OWNER,
+ * type User, no GitHub App) but no marker. The marker gates instructions only.
+ */
+export function isFounderChangesRequest(r, roster) {
+  return isFounderAccount(r, roster?.founder) && !r.performed_via_github_app && r.state === "CHANGES_REQUESTED";
+}
+
+export const FOUNDER_MARKER = "<!-- founder -->";
+const FOUNDER_LINE_RE = /^[ \t]*<!-- founder -->[ \t]*$/;
+
+/** True when the first non-blank line is the founder marker and nothing else. */
+export function hasFounderMarker(body) {
+  // No String.trim(): it strips NBSP and BOM, which must not prefix the marker.
+  const first = String(body ?? "").split(/\r?\n/).find((l) => !/^[ \t]*$/.test(l));
+  return first !== undefined && FOUNDER_LINE_RE.test(first);
+}
+
+function isFounderAccount(c, founder) {
+  const login = c?.user?.login ?? "";
+  if (!login || c.user.type !== "User") return false;
+  return (!!founder && login === founder) || c.author_association === "OWNER";
+}
+
+function isAgentIdentity(c, trust) {
+  if (c?.user?.type !== "Bot" || !c.user.login) return false;
+  const app = c.performed_via_github_app;
+  if (trust.appClientId && app?.client_id && String(app.client_id) === trust.appClientId) return true;
+  return trust.bots.has(c.user.login);
+}
+
+/** "agent", "founder-account" or "outsider", from GitHub's fields, never the text. */
+export function authorKind(c, trust) {
+  if (isAgentIdentity(c, trust)) return "agent";
+  if (isFounderAccount(c, trust.founder)) return "founder-account";
+  return "outsider";
+}
+
+/**
+ * How far a comment can be believed about who wrote it: "agent" (the agents App
+ * or a trusted bot), "founder" (isFounderComment), "unverified author" (the
+ * founder's account without the marker: the founder or any session; show the
+ * label, never obey it), or "untrusted" (anyone else).
+ */
+export function trustLabel(c, trust) {
+  const kind = authorKind(c, trust);
+  if (kind === "agent") return "agent";
+  if (kind === "outsider") return "untrusted";
+  return isFounderComment(c, { founder: trust.founder }) ? "founder" : "unverified author";
 }
 
 /**

@@ -1,8 +1,8 @@
 ---
 title: TestFlight testers, who sees their feedback, and what they are told
-version: 1.0.1
+version: 1.1.2
 status: draft-for-counsel
-last_updated: 2026-10-23
+last_updated: 2026-11-24
 owner: founder
 prepared_by: AI (Claude), legal drafting support (stream S17); not legal advice
 package: RA-17-04 (docs/release/AUTOMATION.md section 5), with S16's RA-16-01; due Mon 19 Oct 2026 for AF-09 and AF-11
@@ -10,7 +10,7 @@ package: RA-17-04 (docs/release/AUTOMATION.md section 5), with S16's RA-16-01; d
 
 # TestFlight testers: who sees their feedback, and what they are told
 
-Version 1.0.1. Drafting support, not legal advice. This file covers the alpha on TestFlight (D-106; builds 1 and 2 of `docs/release/ALPHA_PLAN.md` on #152) and stays valid for C1. It does three things:
+Version 1.1.2. Drafting support, not legal advice. "Counsel" in this file means the exec team's own review (CLO, CCO, Chief Privacy Officer; Claude roles, not licensed lawyers, D-172), and each applicability call below is for exec-team counsel to confirm. This file covers the alpha on TestFlight (D-106; builds 1 and 2 of `docs/release/ALPHA_PLAN.md` on #152) and stays valid for C1. It does three things:
 - states, from Apple's own pages, who can see a tester's identity and feedback;
 - sets out the founder's choices for the "Family" and "Friends" groups (AF-09, AF-11), with a recommendation;
 - lists what the tester notice must say. The words are S16's (`packages/content/src/release/testflight.en.ts`, RA-16-01); section 5 gives a draft for S16 to adopt or rewrite.
@@ -107,13 +107,19 @@ Where it appears: the beta app description (required for Friends, shown in the T
 6. Who can see it, by group (5.3).
 7. How to send feedback by email, and to which address.
 8. You can stop testing at any time in TestFlight, and ask us to delete your feedback.
+9. **Only for a build made with the usage switch (`EXPO_PUBLIC_ANALYTICS`) on (BL-1887, D-170):** that the build can count how the app is used, with PostHog as the provider and no region named here; that the counts are content-free (no letters, recordings, child name or anyone's names); that nothing is shared unless the tester says yes when the app asks; how to turn it off (Settings, Privacy); and what Erase and Delete account do about it (5.4). A build made with the switch off says none of this. Today every profile in `apps/mobile/eas.json` has the switch off, and the SDK and adapter are not built (BL-1235 P5 to P8), so no tester text says a build collects usage yet.
 
 ### 5.2 Must say, by build
 
 | Build | Also say | Never say |
 |---|---|---|
-| Build 1 (`testflight`, servers off) | There is no account in this build; your letters stay on this phone | "Everything stays on your phone" (feedback and crash reports leave it); anything about sync or backup |
-| Build 2 (`preview`, servers on, staging) | If you sign in, your letters and your child's details are stored on our test server so they reach your other phone and your co-parent; the Privacy Policy and Terms you agree to in the app apply to this test; recordings are not uploaded in this test (recording backup is not in build 2: the build flag `EXPO_PUBLIC_BACKUP` is off in `apps/mobile/eas.json`, #145); what happens to letters on the test server when the test ends (founder fact, below); export a copy now and then (Settings, Your data); delete your account and its letters in Settings, Delete account (its own row, below Your data) | "Stays only on this phone"; that letters will carry over to the App Store version, unless the founder decides they will |
+| Build 1 (`testflight`) **while its servers switch is off, as it is today** | There is no account in this build; your letters stay on this phone. Nothing to say about deleting an account | "Everything stays on your phone" (feedback and crash reports leave it); anything about sync or backup |
+| Build 2 (`preview`, servers on, staging) | If you sign in, your letters and your child's details are stored on our test server so they reach your other phone and your co-parent; the Privacy Policy and Terms you agree to in the app apply to this test; recordings are not uploaded in this test (recording backup is not in build 2: the build flag `EXPO_PUBLIC_BACKUP` is off in `apps/mobile/eas.json`, #145); what happens to letters on the test server when the test ends (founder fact, below); export a copy now and then (Settings, Your data); to delete your account and its letters: use Settings, Delete account (its own row, below Your data) **only where the build shows that row**; where it does not, email hello@earlyletters.com from the address on the account; we confirm your request and write back within 45 days to tell you where it stands | "Stays only on this phone"; that letters will carry over to the App Store version, unless the founder decides they will |
+
+| `testflight` **once its servers switch is on** (BL-1867, after this update) | The Build 2 line above, with "This build has an account now" in place of "This build can sync"; what a tester can do about deleting the account (Build 2 line above, by whether the Delete account row shows) | "This build has no account" |
+| Any build **with the usage switch on** (BL-1887; `preview` and `testflight` only, never `production`) | The 5.1 item 9 facts, in the 5.4 text | That usage is never collected or that a build "sends nothing"; any claim about the PostHog region or account; that Erase deletes counts already sent |
+
+**Deleting an account, build by build (BL-1887 asks for this before BL-1867 lands).** Today's `testflight` build has no account. Today's `preview` build has the Delete account row hidden unless the EAS `preview` environment sets `EXPO_PUBLIC_ACCOUNT_DELETION` on (D-129; `eas.json` does not set it for `preview` or `testflight`), so its text offers the email route unless the row is on. The rule is the same in every build with an account: a tester is told to use Settings, Delete account only where the row shows, and otherwise to email hello@earlyletters.com from the address on the account; we confirm the request and write back within 45 days with where it stands (BL-2026, CR-185 fix 2). The notice promises only that: today nobody can run a deletion from an email, because `request_account_deletion` refuses the source `support`, the ops function for it (BL-551) is in no migration, and `docs/ops/runbooks/data-requests-by-email.md` says Route 1 cannot be run. BL-1867 turns the switch on in both profiles only when the staging purge worker secrets exist (`docs/release/TESTFLIGHT.md` Step 12); the text then uses the row sentence. Open question for exec-team counsel: is an email that we confirm and answer within 45 days an adequate route for a tester who wants an account deleted until then? Carrying out the deletion from that email needs BL-551 and BL-1867, which are not built.
 
 Founder fact the build 2 text needs: what happens to the test server's letters at the end of the alpha (default for the draft: we tell testers before the test server is closed, and Export keeps a copy). The recovery key question (the alpha plan names a drill escrow key on Mon 26) applies only to a build with backup on; build 2 has none today. If a later test build turns backup on and its key is not held the way Privacy Policy section 4 describes, that build's text says the test uses a test recovery key.
 
@@ -139,6 +145,14 @@ Founder fact the build 2 text needs: what happens to the test server's letters a
 **Build 2 opening (What to Test):**
 > Thank you for testing. This build can sync. If you sign in, your letters and your child's details are stored on our test server, so they reach your other phone and your co-parent. The Privacy Policy and Terms you agree to in the app apply to this test. Recordings are not uploaded in this test. Please export a copy of your book now and then in Settings, Your data.
 
+**Usage analytics paragraph (only a build with the usage switch on):**
+> This test build can count how the app is used, so we can fix what is confusing. It counts things like which screens open, which buttons are tapped and how long a step takes. It never includes your letters, your recordings, your child's name or anyone's names. The counts go to PostHog, a service we use for this. Nothing is shared unless you say yes when the app asks "Help us make it better?". Saying no changes nothing else. To change your answer, open Settings, Privacy, and use "Share usage and crash reports". Turning it off stops sharing right away.
+
+**Turning it off, and Erase (same builds):**
+> To stop sharing, open Settings, Privacy, and turn off "Share usage and crash reports". The Erase row, the last row of Your letters in Settings, removes every book, letter and recording from this phone, and your settings, and also stops sharing and forgets this phone's random sharing ID. Erase sends nothing anywhere, so it does not ask PostHog to delete counts already sent, and because the ID is forgotten, we could not tell which counts were yours. The Erase row shows only on a phone that never signed in. If you signed in, use Delete account (or email us): that asks PostHog to delete the counts sent under your sharing ID if you had turned sharing on.
+
+These two are drafts, with the checks against the code and the open points, in `docs/ops/proposed/bl-1887-tester-notice-analytics-servers.md`. The existing consent default is kept: nothing is shared until the tester says yes. D-163's second instruction and D-170 item 2 leave that default open. The PostHog region, account and key are not decided here (founder hands).
+
 Each text then adds the group line from 5.3 and S16's list of what to try.
 
 ## 6. Requests to other owners
@@ -152,7 +166,8 @@ Each text then adds the group line from 5.3 and S16's list of what to try.
 ## 7. Questions for counsel (Q57 to Q59, to join COUNSEL_PACKET after #163)
 
 - **Q57 (A, before Friends get build 1).** Is the notice in section 5 adequate notice for what TestFlight passes to us about a tester (A6)? Does showing friends' names and email addresses to the family members who test (A4) need the friends' consent, or is notice enough? **Default:** notice as in 5.3; Friends' in-app feedback off.
-- **Q58 (A, before Friends get build 2).** Is an external TestFlight group a public launch for LEGAL-REQ purposes (PRD V2 `07-quality-bar.md` Q4)? With Q44 (draft texts for real families), may friends sign in on build 2 under texts counsel has not commented on? **Default:** PRD V2's rule, R4 PT-31: no.
+- **Q58 (A, before Friends get build 2).** Is an external TestFlight group a public launch for LEGAL-REQ purposes (PRD V2 `07-quality-bar.md` Q4)? With Q44 (draft texts for real families), may friends sign in on build 2 under texts the exec-team review (D-172) has not read? **Default:** PRD V2's rule, R4 PT-31: no.
+- **Q58 and Q44, BL-1887 note.** Both now also cover a build with accounts (`testflight`) and with usage analytics (`preview`, `testflight`): may friends in an external group receive such a build under test texts the exec team has not commented on, and does an external friend need the usage notice in the invitation as well as in What to Test? **Default if unanswered:** friends keep a build with no account and no analytics. Exec-team counsel must confirm.
 - **Q59 (B).** How long may we keep TestFlight feedback and the feedback mailbox, and must we delete a departing tester's feedback on request? **Default:** delete on request, and within 30 days after the alpha ends (4.5).
 
 ## 8. Sources
@@ -169,5 +184,8 @@ Read on 16 Oct 2026 unless marked:
 
 | Version | Date | Change |
 |---|---|---|
+| 1.1.2 | 2026-11-24 | BL-2026 amendment (CR-60, CR-176): the build 2 row and the paragraph under it no longer say we carry out the deletion ourselves from an email, because nobody can today. They say: email from the address on the account; we confirm the request and write back within 45 days with where it stands. Settings, Delete account stays only where the build shows that row. The open question for counsel now names BL-551 and BL-1867. The `testflight` once-on row points to the Build 2 row above (it said below). `docs/legal/beta/*` is unchanged (Privacy 0.9.1 is BL-2025). Draft for counsel review; not legal advice. |
+| 1.1.1 | 2026-11-24 | BL-2026, CR-185 fix 2: the build 2 row of 5.2 and the paragraph under it say the same thing: Settings, Delete account only where the row shows, otherwise email hello@earlyletters.com from the address on the account (Privacy 0.9.0 section 7). The `testflight` once-on row points at that line. No change to `docs/legal/beta/*`, Apple's facts or the counsel questions. Draft for counsel review; not legal advice. |
+| 1.1.0 | 2026-11-23 | BL-1887, D-170: 5.1 item 9 and 5.2 say what a build with the usage switch on must tell testers (switch off in every profile today, so nothing says a build collects usage yet); 5.2 keys the account text to the switch state and says what a tester can do about deleting an account in each build before BL-1867; 5.4 adds the usage and Erase drafts; section 7 adds the Q58 and Q44 note. No change to Apple's facts. "Counsel" read as the exec team's review (D-172); not legal advice. |
 | 1.0.1 | 2026-10-23 | Matched to develop 8d2d3dc before merge: build 2 has no recording backup (`EXPO_PUBLIC_BACKUP` off in the `preview` profile, #145), so 5.2 and the 5.4 build 2 opening say recordings are not uploaded, and the recovery key fact applies only to a build with backup on; Delete account is its own Settings row, not inside Your data (`apps/mobile/src/app/settings/index.tsx`). No change to Apple's facts, the recommendations or the counsel questions. |
 | 1.0.0 | 2026-10-16 | First version (RA-17-04): Apple's facts on tester identity and feedback visibility, the alpha's who-sees-what table, the founder's choices for Family and Friends with recommendations, the tester notice requirements and draft text for S16, and three counsel questions. |

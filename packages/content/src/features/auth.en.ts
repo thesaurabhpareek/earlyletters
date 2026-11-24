@@ -1,8 +1,20 @@
 // Moved from apps/mobile/src/lib/auth/copy.ts on 3 Oct 2026; that file now re-exports this one.
 import { en } from '../strings.en';
 
-/** errors.network's first sentence, also said under the code field while the email is on its way (S54, P8a critics S2). */
-const lettersSafe = 'Your letters are safe on this phone.';
+/**
+ * Said under the code field while the email is on its way (S54, P8a critics S2), and only where this phone holds a book:
+ * the code screen draws it only when a book exists (`useChildren().active`). It is NOT in any error line, because an error
+ * is also read on a fresh install or a restored phone, where there are no letters here to be "still" anywhere.
+ * Build 12: it says where the letters are, not that they are "safe" (VOICE.md, "safe"): there is no recording backup, so
+ * a promise of safety is one the build does not make. The key keeps its name (`code.lettersSafe`) so the screen is untouched.
+ */
+const lettersSafe = 'Your letters are still on this phone.';
+
+/**
+ * Registered (docs/legal/in-app-disclosures.md): the agreement line, word for word. The consent screen (`consent.terms.agreeLine`)
+ * and the Welcome (`sheet.agreeLine`, NX-36 S2) say the same sentence, so it is typed once and neither can drift from the other.
+ */
+const agreeLine = 'By continuing, you confirm you are 18 or older and agree to the Terms of Service and Privacy Policy.';
 
 /**
  * Words for sign-in, consent and the Account screen (PRD A sections 7 and 9,
@@ -18,22 +30,36 @@ const lettersSafe = 'Your letters are safe on this phone.';
 export const authCopy = {
   sheet: {
     titles: {
-      first_letter: "Keep {child}'s book on any phone",
-      // A book has at most two parents in v1.0, so "the book", not "the family book".
-      invite: 'Sign in to join the book',
-      invite_create: 'Sign in to invite a co-parent',
+      // Build 12: the words of a letter sync to the account; recordings stay on the phone that made them (no backup).
+      first_letter: "Keep {child}'s words on any phone",
+      // The Keep the book re-offer after the third letter (BL-519, BL-1562): the same ask, the same words (CR-145).
+      third_letter: "Keep {child}'s words on any phone",
+      // Build 12 hides co-parent surfaces (BL-604, D-126), so these two name no book, no invite and no co-parent.
+      invite: 'Sign in',
+      invite_create: 'Sign in',
       sign_in: 'Welcome back',
       settings: 'Sign in',
     },
     bodies: {
-      // What is true, in one sentence; never "sign in so". account.signedOutBody says the same, word for word.
-      first_letter: "Your letters come with you to a new phone, and {child}'s other parent can write in the same book.",
-      invite: 'You each write from your own phone, in the same book.',
-      invite_create: 'You both sign in, each on your own phone.',
+      // What is true, in two short sentences; never "sign in so". account.signedOutBody says the same, word for word.
+      first_letter: 'The words of your letters come with you to a new phone. Recordings are kept on the phone that made them.',
+      // Same ask as first_letter, word for word (CR-145); only the analytics trigger differs.
+      third_letter: 'The words of your letters come with you to a new phone. Recordings are kept on the phone that made them.',
+      invite: 'Sign in on this phone to carry on.',
+      invite_create: 'Sign in on this phone to carry on.',
       // Kept: it prevents a second account (PRD A F4).
       sign_in: 'Sign in the same way as last time to see every letter.',
-      settings: "Your letters come with you to a new phone, and {child}'s other parent can write in the same book.",
+      settings: 'The words of your letters come with you to a new phone. Recordings are kept on the phone that made them.',
+      // NX-36 S2: the Welcome line under the subtitle.
+      // Build 12 (red-team): claims nothing about phones, recordings or where letters go; a sign-in does not move anything
+      // before the person has agreed. TODO(founder, counsel): approve this line or replace it (placeholder, needs word approval).
+      sign_in_first: 'Sign in to begin your book.',
+      // BL-494 point 1: the sheet opened from the signed-out deletion screen while a request can still be cancelled. PROPOSED,
+      // exec-team review of the words (it is about account deletion; D-172). Same way as last time prevents a second account.
+      cancel_deletion: 'Sign in the same way as last time. Then you can cancel the deletion.',
     },
+    // NX-36 S2, above the two buttons. The two documents follow it as their own 44 pt links (labels: consent.terms.termsLink and .privacyLink).
+    agreeLine,
     // BRAND.md glossary, Sign-in buttons: the same words the emails tell people to tap (LNG-13).
     google: 'Sign in with Google',
     email: 'Sign in with email',
@@ -50,7 +76,7 @@ export const authCopy = {
       passkey: 'Last time you used a passkey.',
     },
     // The kill path only (a build with no project settings).
-    notConfigured: 'Signing in is not available right now. Your letters are safe on this phone.',
+    notConfigured: "Signing in isn't available right now. Nothing on this phone has changed.",
     busy: 'Signing you in',
   },
 
@@ -76,7 +102,7 @@ export const authCopy = {
     resendWait: 'You can send another in a minute.',
     resent: 'A new email is on its way.',
     differentEmail: 'Use a different email',
-    /** Under the code field while waiting for the email: errors.network's first sentence, the same words (P8a critics S2). */
+    /** Under the code field while waiting for the email, drawn only when a book is on this phone (P8a critics S2). */
     lettersSafe,
     /**
      * With `errors.code_paused`, in the same line, while the pause after five wrong codes holds (P8a critics S1, F02-U14):
@@ -85,6 +111,69 @@ export const authCopy = {
      */
     // Names no provider: a build may offer neither Apple nor Google (SIGN-01, BL-475 point 3).
     pausedOtherWays: 'The link in the newest email still works, and so do the other ways to sign in.',
+    // NX-36 S5, the recovery set after a minute (NX-31-R11). Placeholder words; each needs founder word approval.
+    noMailHelp: 'Nothing yet? Look in spam, or send a new email.',
+    announceResend: 'You can send another email.',
+    /** BL-476 point 1: said once when the pause after five wrong codes ends. No count, no clock. */
+    pauseEnded: 'You can type a code again.',
+  },
+
+  /**
+   * Account-first first run (NX-36 S2 and S3), behind the server-features switch. The key names are NX-36's own and the
+   * words are placeholders: each needs founder word approval (the PR body lists them). The Apple button is Apple's
+   * (ASAuthorizationAppleIDButton, "Sign in with Apple"). No line here says a recording is kept safe or backed up, or
+   * says where the book opens. Without "Your letters are safe": a brand-new install has no letters (NX-36 2.6).
+   * Only the one failure that stays on the Welcome has a first-run line. A 429, "not available" and a lost connection
+   * go to the outage screen through the gate, so they have none here (they used to; nothing could reach them).
+   */
+  firstRun: {
+    errors: {
+      provider: "That sign-in didn't finish. Try again, or try another way.",
+    },
+  },
+  // S3, sign-in cannot be reached. The button is the 22-character form; its sentence is the note, and it shows only where
+  // the button does. The body says one thing, so the shown paragraph (body, then note) repeats nothing.
+  outage: {
+    // Differs from NX-36 ("We can't reach sign-in right now."): the content rules allow no "we" outside registered lines.
+    title: 'Sign-in cannot be reached right now.',
+    // Differs from NX-36 (which also named the local start here, and so said it when the button was not there).
+    body: 'Try again in a moment.',
+    retry: 'Try again',
+    startLocal: 'Start on this phone',
+    startLocalNote: 'Start the book on this phone for now. You can sign in later and choose to keep your letters in your account.',
+    // Announcement only, when the connection comes back under the outage screen.
+    backOnline: 'You are back online.',
+  },
+  offline: {
+    title: 'Sign-in needs a connection.',
+    // Differs from NX-36 ("We will try again when you are back online."): no "we", and the screen does not try to sign
+    // anyone in by itself. It reads the connection when Try again is tapped, and it goes back to sign in on its own when
+    // the connection returns, so the line says what the person does.
+    body: 'Connect to the internet, then tap Try again.',
+  },
+  // NX-36-S17 Tier 0 (docs/design/specs/S17-NEW-PHONE-SPEC-10nov.md section 4.2): a signed-in phone with no book, on an
+  // account that has one. None of these is a registered row. Words are the spec's, pending the founder's approval of
+  // each row. Not here on purpose: arrivedWords and the recording sentence (Tier 1 and 2, counsel-read).
+  newPhone: {
+    // State A: the heading, then one sentence. States no place and no count.
+    loading: 'Opening your book.',
+    loadingBody: 'Your letters are coming across.',
+    // The arrival line on the first Book after arrival (D4: one place), and for an empty book.
+    arrivedPlain: 'Your book is here.',
+    // State C. The buttons reuse outage.retry and consent.noBook.tryAnother.
+    slowTitle: 'Your book is taking a while.',
+    slowBody: 'Check your connection, then try again.',
+    // State D. Its sentence reuses offline.body.
+    offlineTitle: 'Opening your book needs a connection.',
+    // BL-922a, NS-10-R0 and R4b: the held screen for an account with consent still to give. PROPOSED (words packet 20 Nov rows
+    // 6 and 7, option A of each); the founder has not approved them and `content` owns the final words. Its buttons reuse
+    // account.finishSetup, consent.noBook.tryAnother, settingsHome.deleteAccountLabel and settingsHome.exportLabel.
+    consentBody: 'Finish setting up to open your book here.',
+    // BL-1865, NS-10-R13: the one Book-level line on a new phone with backup off. PROPOSED, needs word approval (docs/content/words-packet-20nov.md: counsel has not read the recording sentence; the line is behind EXPO_PUBLIC_BACKUP_LINE, off); the
+    // words are the second half of `nothingToCopy`, kept to what that line already says. No per-letter version exists.
+    recordingsElsewhere: 'Your recordings are on the phone that made them.',
+    recordingsElsewhereDismiss: 'Got it',
+    nothingToCopy: 'There is nothing on this phone to copy yet. Your letters are in your account, and recordings are on the phone that made them.',
   },
 
   verify: {
@@ -103,35 +192,66 @@ export const authCopy = {
   claim: {
     title: 'Keep your letters in this account?',
     body: 'Your letters on this phone will be kept in the account {email}.',
-    noEmail: 'Your letters on this phone will be kept in the account you just signed in to.',
+    noEmail: 'Your letters on this phone will be kept in the account you signed in to.',
     help: "If this isn't your account, choose Not my account. Nothing on this phone changes.",
     // BL-488: 'Keep them here' read as this phone; the choice is this account. Names it, 20 characters (a button may have 22).
     keep: 'Keep in this account',
     notMine: 'Not my account',
     waiting: 'Finish setting up to choose where your letters are kept.',
+    // Account-first slice 4a (exec council decision, 9 Nov 2026, D). Shown when the account already has a book and this phone
+    // holds a book or letters: "Keep in this account" adds the phone's book to it as a second book, and nothing is merged or
+    // deleted (the recordings stay on the phone that made them). Each says where letters go, so counsel reads it, and each
+    // needs founder word approval. What is true: every book the server accepts is added as its own book; one it would refuse
+    // (no birthday or due date, or an id the phone did not make) stays on the phone and is not added. The screen cannot know
+    // that before the tap. Nothing is deleted either way (apps/mobile/test/first-run-new-account.test.ts runs the claim on a
+    // real phone database).
+    bodyHasBook: 'This account already has a book. The book on this phone will be added to it as a second book. Nothing is deleted.',
+    // Not new words: the registered sentence of `sheet.bodies.settings` (and `first_letter`, `account.signedOutBody`), word for
+    // word. A test pins that it is the second sentence of `sheet.bodies.settings`.
+    recordingsNote: 'Recordings are kept on the phone that made them.',
+    keepHint: 'Adds the book on this phone to this account as a second book. Nothing is deleted.',
+  },
+
+  // FP-6 (NS-40-R9, R14), PROPOSED, HOLD for counsel and the founder: the refused-region screen (system.region.*). No reason is
+  // given, and nothing here says where the person is or why. Terms and Get in touch are its two quiet actions (not "Contact us": rules.test.ts allows "us" only in registered disclosures).
+  region: {
+    title: "{app} can't be set up from here.",
+    body: 'If you think this is wrong, get in touch.',
+    terms: 'Terms',
+    contact: 'Get in touch',
   },
 
   errors: {
     // As the S52 table in docs/design/EXPERIENCE_PASS_2026-10.md words them (amended 28 Oct, #360): service- or
-    // network-caused errors say the letters are safe first (VOICE, the Error row); input errors (wrong_code,
+    // network-caused errors say nothing has changed first (VOICE, the Error row); input errors (wrong_code,
     // expired, invalid_email) keep their words; unknown says it second.
-    network: `${lettersSafe} Sign in once you are back online.`,
+    network: "Nothing has changed. Sign in once you're back online.",
     expired: 'That link has expired. Send a new email for a fresh one.',
     wrong_code: "That code didn't match. Check the newest email, or send a new one.",
-    code_paused: 'Your letters are safe. You can try a code again in 15 minutes.',
+    code_paused: 'Nothing has changed. You can try a code again in 15 minutes.',
     // SIGN-01. A 429 has more than one cause (the per-address wait between emails, the project's hourly email cap, the
     // per-IP verify limit), and the app cannot tell them apart from the answer, so neither line names a length it cannot
     // know, and neither names a provider the build may not offer. `email_wait`: a 429 while sending an email.
     // `rate_limited`: a 429 anywhere else (checking a code or a link), where no email was being sent.
-    email_wait: "Your letters are safe. Another email can't be sent just yet. Wait a few minutes, then try again.",
-    rate_limited: 'Your letters are safe. Too many tries for now. Wait a few minutes, then try again.',
+    email_wait: "Nothing has changed. Another email can't go out yet. Wait a few minutes, then try again.",
+    rate_limited: 'Nothing has changed. Too many tries for now. Wait a few minutes, then try again.',
     invalid_email: "That email doesn't look quite right.",
-    not_available: "Your letters are safe. This way of signing in isn't available right now. Try another way.",
-    provider: 'Your letters are safe. That sign-in did not finish. Try again, or try another way.',
-    session_expired: 'Your letters are safe on this phone. Sign in again to keep sharing them.',
+    not_available: "Nothing has changed. This way of signing in isn't available right now. Try another way.",
+    provider: "Nothing has changed. That sign-in didn't finish. Try again, or try another way.",
+    // BL-452. PLACEHOLDER words, locked by Karma under delegation (not founder-approved, replaceable by him). They show for a
+    // passkey and for Account actions. `passkey_not_added` and `sign_out_others_failed` claim only what the app knows: the
+    // action did not finish, and for the second, that the other devices may still be signed in. `passkey_unavailable` is
+    // for a phone or project that cannot make a passkey at all (not_available in the passkey_add context).
+    passkey_expired: 'That timed out. Try your passkey again.',
+    passkey_not_added: "The passkey didn't get added. Try again, or use another way to sign in.",
+    passkey_unavailable: "This phone can't add a passkey right now.",
+    sign_out_others_failed: 'The other devices may still be signed in. Try again.',
+    session_expired: 'You were signed out. Sign in again to carry on.',
     under_18: '{app} is currently for adults 18 and over.',
-    consent_unavailable: 'Your letters are safe on this phone. Setting up your account did not finish. Try again.',
-    unknown: 'That did not go through. Your letters are safe on this phone.',
+    consent_unavailable: 'Setting up your account did not finish. Try again.',
+    // FP-6, PROPOSED (E-S04.refused-region; the full screen is `region` below). Never names a reason, a place or a rule.
+    region_refused: "{app} can't be set up from here.",
+    unknown: "That didn't go through. Nothing has changed.",
     // BL-347: F02-U11 (`auth.link.otherDevice`) and F02-U27, worded as the spec gives them.
     other_phone: 'Type the code from the email on this phone instead.',
     // SIGN-06: the same refusal, reached after the link was already checked with the server (verify started), so the
@@ -146,8 +266,8 @@ export const authCopy = {
     settingUp: 'Setting up your account',
     terms: {
       title: 'Before your book syncs',
-      body: 'Your letters stay private to you and the family you invite. We never sell them, use them for ads or use them to train machine learning models.',
-      agreeLine: 'By continuing, you confirm you are 18 or older and agree to the Terms of Service and Privacy Policy.',
+      body: 'Your letters stay yours. We never sell them, use them for ads or use them to train machine learning models.',
+      agreeLine,
       termsLink: 'Terms of Service',
       privacyLink: 'Privacy Policy',
       agree: 'Agree and continue',
@@ -172,8 +292,8 @@ export const authCopy = {
   account: {
     title: 'Account',
     signedOutTitle: 'Not signed in',
-    // S52's body, word for word.
-    signedOutBody: "Your letters come with you to a new phone, and {child}'s other parent can write in the same book.",
+    // `sheet.bodies.first_letter`, word for word (Build 12: no co-parent, recordings stay on the phone).
+    signedOutBody: 'The words of your letters come with you to a new phone. Recordings are kept on the phone that made them.',
     signIn: 'Sign in',
     signedInWith: {
       apple: 'Signed in with Apple',
@@ -182,7 +302,7 @@ export const authCopy = {
       other: 'Signed in',
     },
     syncTitle: 'Sync',
-    syncLabel: 'Sync and sharing',
+    syncLabel: 'Sync across your phones',
     sync: {
       on: 'On',
       off: 'Off, kept on this phone',
@@ -214,6 +334,9 @@ export const authCopy = {
     signOutBody: 'Your letters stay on this phone. Sign in again any time.',
     // Shown while the outbox drains (F16, A-REQ-033): sign-out never drops a queued letter.
     signOutWaiting: 'Your newest letters are still on their way. This phone signs out once they are sent.',
+    // BL-1461: while the wait runs after Apple revoked the sign-in at launch (A-REQ-033). Shown after a short delay.
+    // COUNCIL-LOCKED under the founder's delegation (21 Nov), replaceable by the founder; not founder-approved.
+    signOutRevokedWaiting: "Your newest letters are still on this phone. They're sent first, then this phone signs out.",
     // BL-451: while that wait runs, for a sign-out the person asked for: back to signed in, nothing deleted or sent.
     staySignedIn: 'Stay signed in',
     // BL-451: on the signed-out page when the wait ended before they were sent (sync turned off, or the session lost).

@@ -1,3 +1,4 @@
+# BLOCKED (ids the app does not set yet): red by design until they land. `node apps/mobile/e2e/bin/blocked-ids.mjs <this file>` lists them (not-in-app.txt); run-suite.sh and run-p0-nightly.sh skip it and print that list.
 # E2E-02  First run with twins, offline.
 # Proves: B-REQ-001 (only a name and a birthday or due date are required),
 # B-REQ-004 and PRD-REQ-015 (every child added in first run gets a free book;

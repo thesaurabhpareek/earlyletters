@@ -15,10 +15,11 @@
  * Route: /plus/confirmed (a pushed screen; Done goes back).
  */
 import { router, Stack } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
-import { ScrollView, Share, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ScrollView, Share, Text as RNText, View } from 'react-native';
 import { brand } from '@scribe/brand';
 import { Button } from '@/components/ui/button';
+import { PINNED_ACTION } from '@/components/ui/pinned-action.logic';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { Text } from '@/components/ui/text';
 import {
@@ -30,6 +31,8 @@ import {
   trialDaysOf,
   usePlan,
 } from '@/lib/billing';
+import { saveCopyLine } from '@/lib/billing/confirmed.logic';
+import { announce, useFocusOnMount } from '@/lib/a11y';
 import { longDate } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
 
@@ -47,6 +50,10 @@ export default function PlusConfirmed() {
   const plan = usePlan();
   const [askable, setAskable] = useState(false);
   const [reminders, setReminders] = useState<'on' | 'off' | null>(null);
+  const [saveLine, setSaveLine] = useState<string | null>(null);
+  // On arrival VoiceOver lands on the title, which reads "Thank you. Plus is on" (BL-1722); once, not on re-render.
+  const heading = useRef<RNText>(null);
+  useFocusOnMount(heading);
 
   useEffect(() => {
     let live = true;
@@ -80,10 +87,14 @@ export default function PlusConfirmed() {
 
   const save = async () => {
     haptic('tap');
+    setSaveLine(null);
     try {
       await Share.share({ message: confirmation.summary, title: c.title });
     } catch {
-      // The share sheet could not open; Settings, Plan offers the same copy.
+      // The share sheet could not open: one plain line, spoken too (iOS ignores live regions). Settings, Plan offers the same copy.
+      const line = saveCopyLine('failed', c);
+      setSaveLine(line);
+      if (line) announce(line);
     }
   };
 
@@ -103,7 +114,7 @@ export default function PlusConfirmed() {
     <SafeAreaView className="flex-1 bg-background" edges={['top', 'bottom']}>
       <Stack.Screen options={{ headerShown: false, gestureEnabled: true }} />
       <ScrollView testID="plusConfirmed.screen" contentContainerClassName="gap-5 px-5 pb-10 pt-8">
-        <Text role="heading" variant="title1">
+        <Text ref={heading} role="heading" variant="title1">
           {c.title}
         </Text>
         <Text variant="headline">{confirmation.planName}</Text>
@@ -118,15 +129,23 @@ export default function PlusConfirmed() {
         <View className="gap-3 pt-2">
           <Button variant="secondary" label={c.saveCopy} onPress={save} accessibilityHint={c.saveCopyHelp} testID="plusConfirmed.saveCopy" />
           <Text variant="footnote">{c.saveCopyHelp}</Text>
+          {saveLine ? (
+            <Text variant="footnote" accessibilityLiveRegion="polite" testID="plusConfirmed.saveFailed">
+              {saveLine}
+            </Text>
+          ) : null}
           {askable && plan.details.ownership === 'purchased' && <Button variant="outline" label={remindLabel} onPress={remind} />}
           {reminders && (
             <Text variant="footnote" accessibilityLiveRegion="polite">
               {reminders === 'on' ? c.remindOn : c.remindOff}
             </Text>
           )}
-          <Button label={c.done} onPress={done} testID="plusConfirmed.done" />
         </View>
       </ScrollView>
+      {/* Pinned at every text size (BL-1722): at AX5 the terms are long and a Done at the end of the scroll is below the fold. */}
+      <View style={{ paddingHorizontal: PINNED_ACTION.gutter, paddingTop: PINNED_ACTION.top, paddingBottom: PINNED_ACTION.bottom }} testID="plusConfirmed.doneBar">
+        <Button size="lg" fullWidth label={c.done} onPress={done} testID="plusConfirmed.done" />
+      </View>
     </SafeAreaView>
   );
 }
