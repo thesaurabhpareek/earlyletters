@@ -10548,7 +10548,7 @@ Source: findings of 23 and 24 Nov 2026 handed to the product agent. BL-1983 is t
 - Source: PR #1786. Not verified: the product agent read the commit subject in git history, not the diff, and ran no database test.
 
 #### BL-1991 e2e-web: bring the journey assertions back in line with the current words (about 17 of about 90 fail)
-- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: M (one PR per group of journeys is fine). Depends on: none.
+- Status: partly done (split on 24 Nov 2026: J21 and J22 welcome words, J14 Storage, J02 answered by mistake, J06e and J25 store-build seed, J04h Home tab, and the lost J01, J09b, J18 and J08c assertions moved to BL-2006 to BL-2011; still here: every other failing flow, including the old welcome literal in `j01-first-run.flow.ts`, `j17-family.flow.ts`, `j20-crash.flow.ts` and `support/app.ts`, and the before and after counts). Mode: agent. Owner: qa engineer. Milestone: M15. Size: M (one PR per group of journeys is fine). Depends on: none.
 - Priority: Medium. Gate: none. The check is not required today (`.github/workflows/web-journeys.yml`), so nothing blocks a merge; this row is what lets it become required.
 - Satisfies: refines BL-1673 (e2e-web reviews); journeys J01 to J22 (`apps/mobile/e2e-web`).
 - Problem and evidence: on 23 to 24 Nov about 17 of roughly 90 Playwright journeys fail. Two examples: J01 cannot find "Your first two letters are free." (`apps/mobile/e2e-web/j01-first-run.flow.ts:30`), and J02 finds a button where it expects none (`apps/mobile/e2e-web/j02-under-18.flow.ts:13`, `getByRole('button')` count 0). The words moved in the copy rounds since the flows were written; the J02 case may be a real change in the screen, not only in words.
@@ -10629,38 +10629,38 @@ Source: findings of 23 and 24 Nov 2026 handed to the product agent. BL-1983 is t
 - Done when: PR #1822 is merged; `agents/roster.json` lists `marketing` as a backlog owner name; `node scripts/agents/check.mjs` and `node --test 'scripts/agents/*.test.mjs'` pass.
 - Source: Karma ruling (T1, D-168) of 24 Nov 2026. Not verified: PR #1822's diff was read by a reviewer and the claims held; the marketing.md line number was read from `9aea2dc9b`.
 
-## Follow-ups filed 24 Nov 2026 (session 017cUpp) (BL-2005 to BL-2014; filed by the product agent, docs only)
+## Follow-ups filed 24 Nov 2026 (session 017cUpp) (BL-2006 to BL-2015; filed by the product agent, docs only)
 
-Source: the review work of 23 to 24 Nov 2026 (the e2e-web run, PR #1835, PR #1824 and two doc findings). BL-1991 stays the umbrella for the e2e-web rows; these split out what it did not name. Ids BL-1999 to BL-2004 belong to PRs #1826, #1822 and #1841 and develop, so these start at BL-2005. Every row says what was not verified; the product agent ran none of it.
+Source: the review work of 23 to 24 Nov 2026 (the e2e-web run, PR #1835, PR #1824 and two doc findings). BL-1991 stays the umbrella for the e2e-web rows; these split out what it did not name. Ids BL-1999 to BL-2004 belong to PRs #1826, #1822 and #1841 and develop, and BL-2005 to PR #1851, so these start at BL-2006. BL-1991 is now `partly done` and the rows below carry the journeys it handed over. Every row says what was not verified; the product agent ran none of it.
 
-#### BL-2005 e2e-web J21 and J22 still look for "Begin the book": update both journeys to the current welcome words
+#### BL-2006 e2e-web J21 and J22 still look for "Begin the book": update both journeys to the current welcome words
 - Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
 - Priority: Medium. Gate: none.
 - Satisfies: refines BL-1991 and BL-1673 (e2e-web reviews); journeys J21 and J22.
-- Problem and evidence: on 23 to 24 Nov the two journeys fail with "Begin the book" not found. The old button name is still typed in `apps/mobile/e2e-web/j22-sign-in.flow.ts` (lines 104, 163, 389, 512) and `apps/mobile/e2e-web/j21-coparent.flow.ts` (lines 87, 148, 163, 168, 175, 180, plus the `step` text at 49 and 83). The welcome words moved in the copy rounds.
+- Problem and evidence: on 23 to 24 Nov the two journeys fail with "Begin the book" not found. The old button name is still typed in `apps/mobile/e2e-web/j22-sign-in.flow.ts` (lines 104, 163, 389, 512) and `apps/mobile/e2e-web/j21-coparent.flow.ts` (lines 87, 90, 144, 148, 152, 163, 168, 175, 180, plus the `step` text at 49 and 83). The welcome words moved in the copy rounds.
 - Scope: read the current welcome button and the quiet-wait line from `packages/content` (not typed again), use them in J21 (J21a to J21j) and J22, and fix the step text that quotes the old button. No customer copy changes. If a screen, not a line, changed (for example no button where one is expected), file a separate row for the screen.
 - Done when: `npm run e2e:web -w @scribe/mobile` passes J21 and J22, and no flow under `apps/mobile/e2e-web` types the old welcome button as a literal in those two files.
 - Source: review work of 23 to 24 Nov 2026. Not verified: the failures come from the handoff and from grepping the literal in the two files; the suite was not run, and the current welcome words were not looked up. Other files still hold the literal (`j01-first-run.flow.ts`, `j17-family.flow.ts`, `j20-crash.flow.ts`, `support/app.ts`); BL-1991 owns those.
 
-#### BL-2006 e2e-web J14 Storage shows "This page didn't open" with `this.validatePath is not a function`: find out whether it is a real regression
-- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: none.
-- Priority: High. Gate: none. A real regression here would be release relevant.
-- Satisfies: refines BL-1991; the Storage page under Settings (Recordings, journey J14).
-- Problem and evidence: on 23 to 24 Nov journey J14 (`apps/mobile/e2e-web/j14-recordings.flow.ts`) opens Storage and sees the error page, "This page didn't open", with the console text `this.validatePath is not a function`. That text is not from this repo (a search of `apps/mobile` source for `validatePath` found nothing), so it points at a library call on the web build, and could be a real regression that also affects the phone. It is release relevant until shown otherwise.
-- Scope: (1) reproduce on the web seed build and read the stack to name the library and the call. (2) Say in the PR body whether the same code runs on iOS (a native module or a web-only shim). (3) Fix it, or make the flow skip the call it cannot run with the reason written beside it, and only if it is shown web-only. (4) A test names the screen and the failure. No customer copy changes.
-- Done when: Storage opens in the web journey with no error page and J14 passes; the PR body says whether the iOS app was affected, with the evidence read.
-- Source: review work of 23 to 24 Nov 2026. Not verified: the error text is from the handoff; nothing was reproduced here, and the library behind `validatePath` was not identified.
-
-#### BL-2007 e2e-web J02 "I answered by mistake" leaves the stop screen in place
+#### BL-2007 e2e-web J14: the Storage step fails on the web build only (`this.validatePath is not a function`); drop the step or guard it
 - Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
-- Priority: Medium. Gate: none.
-- Satisfies: refines BL-1991; journey J02 (under 18); LEGAL-REQ-002 cases in `apps/mobile/test/age-gate.test.ts`, cited and not changed.
+- Priority: Medium. Gate: any product code change (a `Platform` web guard) needs a decision first; the flow-only option does not.
+- Satisfies: refines BL-1991; the Storage page under Settings (Recordings, journey J14).
+- Problem and evidence: on 23 to 24 Nov journey J14 (`apps/mobile/e2e-web/j14-recordings.flow.ts`) opens Storage and sees "This page didn't open" with `this.validatePath is not a function`. Read on 24 Nov 2026: this is web-only and not an iPhone regression. On web `expo-file-system` is a stub with no `validatePath`, and `new Directory()` in `apps/mobile/src/lib/packs/app-support.ts` (line about 28) runs on the Storage page path. Native is unaffected. The e2e index (`apps/mobile/e2e-web/support/build-index.mjs`, about line 173) already lists Storage as not capturable on web.
+- Scope: choose one. (a) Drop the Storage step from `j14-recordings.flow.ts` and say beside it that Storage is not capturable on web (the index already says so); this is flow-only and needs no decision. (b) A `Platform` web guard around the `Directory` use in `app-support.ts`; this is product code, so it waits for a decision and the PR says why web needs it. Default to (a). No customer copy changes.
+- Done when: J14 passes with no error page; the PR body names which option was taken and quotes the lines read.
+- Source: review work of 23 to 24 Nov 2026, finding read on 24 Nov. Not verified: the stub and the two file lines were read in the finding; the suite was not run and `expo-file-system`'s web build was not opened here.
+
+#### BL-2008 e2e-web J02 "I answered by mistake" leaves the stop screen in place
+- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
+- Priority: Medium. Gate: exec-team review before any change to the age gate screen or logic (legal path; the flow-only fix needs none).
+- Satisfies: refines BL-1991; journey J02 (under 18); BL-561 (the age question and a thumb slip, needs-founder, needs counsel) and the `partly done` BL-426 (under-18 stop: the way back is built, the come back tomorrow sentence and register line are missing), both cited and not changed; LEGAL-REQ-002 cases in `apps/mobile/test/age-gate.test.ts`, cited and not changed.
 - Problem and evidence: on 23 to 24 Nov, after "I answered by mistake" is pressed in `apps/mobile/e2e-web/j02-under-18.flow.ts`, the stop screen stays and the flow cannot go on to the age question. BL-1991 notes the J02 button count case may be a real change in the screen; this is the next step of the same journey.
-- Scope: decide in the PR whether the flow or the screen is wrong: read the age-gate logic and its test for what "answered by mistake" must do, then either correct the flow or, if the screen regressed, raise a screen row and stop (the age gate is a legal path, so no agent edits its behaviour in this row).
+- Scope: decide in the PR whether the flow or the screen is wrong: read the age-gate logic and its test for what "answered by mistake" must do, then either correct the flow or, if the screen regressed, raise a screen row and stop. The age gate is a legal path: no agent edits its behaviour in this row, and any screen change goes through exec-team review (CLO, CCO and Chief Privacy Officer roles; not legal advice), read against BL-561 and BL-426 first.
 - Done when: J02 passes through "I answered by mistake" back to the age question, or a named screen row exists and the flow carries a comment naming it; the PR body says which.
 - Source: review work of 23 to 24 Nov 2026. Not verified: the symptom is from the handoff; the age-gate logic and the test were not read, and the suite was not run.
 
-#### BL-2008 e2e-web J06e and J25 need the seeded store build, and the seed hook does not work on the store build: say so in the code and find the way
+#### BL-2009 e2e-web J06e and J25 need the seeded store build, and the seed hook does not work on the store build: say so in the code and find the way
 - Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
 - Priority: Medium. Gate: none.
 - Satisfies: refines BL-1991; journeys J06 (J06e), J25 (Plus gate at AX5).
@@ -10669,7 +10669,7 @@ Source: the review work of 23 to 24 Nov 2026 (the e2e-web run, PR #1835, PR #182
 - Done when: J06e and the J25 Plus gate case pass, and the two comments no longer claim the store build is seeded unless it is.
 - Source: review work of 23 to 24 Nov 2026. Not verified: the cause was not found; the comments were read, the suite was not run, and the seam guard was not read.
 
-#### BL-2009 e2e-web J04h: the Home tab click times out (an array buffer failure)
+#### BL-2010 e2e-web J04h: the Home tab click times out (an array buffer failure)
 - Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
 - Priority: Medium. Gate: none.
 - Satisfies: refines BL-1991; journey J04 (J04h).
@@ -10678,7 +10678,7 @@ Source: the review work of 23 to 24 Nov 2026 (the e2e-web run, PR #1835, PR #182
 - Done when: J04h passes, or the failure is a named row for a screen change with the stack in it.
 - Source: review work of 23 to 24 Nov 2026. Not verified: the symptom is from the handoff; nothing was reproduced and the cause is not known.
 
-#### BL-2010 e2e-web: restore or replace the lost J01 focus assertion and the J09b, J18 and J08c per-month letter count assertions
+#### BL-2011 e2e-web: restore or replace the lost J01 focus assertion and the J09b, J18 and J08c per-month letter count assertions
 - Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
 - Priority: Medium. Gate: none.
 - Satisfies: refines BL-1991; journeys J01, J08, J09, J18.
@@ -10687,17 +10687,17 @@ Source: the review work of 23 to 24 Nov 2026 (the e2e-web run, PR #1835, PR #182
 - Done when: each of J01, J09b, J18 and J08c has the check back or a written reason naming the decision that removed it; the suite passes.
 - Source: review work of 23 to 24 Nov 2026. Not verified: which commit removed each assertion was not looked up; the current screens were not opened.
 
-#### BL-2011 The `production` profile line in `apps/mobile/src/lib/README.md` disagrees with `eas.json` on server features
+#### BL-2012 The `production` profile line in `apps/mobile/src/lib/README.md` disagrees with `eas.json` on server features
 - Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Medium. Gate: none.
 - Satisfies: docs hygiene; refines BL-440 (store config follows the build).
 - Problem and evidence: README line 81 (the `capabilities.ts` entry) says server features are "on only in the `preview` alpha profile, off in `testflight`, `production` and `development`". `apps/mobile/eas.json` sets `EXPO_PUBLIC_SERVER_FEATURES` to "on" in `production` (line 61 area; `preview` is also on; `testflight` is off). `scripts/release/store-config.ts:75` reads the production value, and `scripts/release/with-review-contact.ts:65` refuses anything but on or off. On that reading `eas.json` is the true build setting and the README is stale. If a later ruling says the store build ships servers off, `eas.json` is the line that is wrong.
 - Scope: read `eas.json`, `store-config.ts` and the rulings on the store build flags, say in the PR body which of the two is true, then fix the README line to match the build. Do not edit `eas.json` in this row. If the rulings and `eas.json` disagree, stop and make the row about finding out, with the lines side by side.
-- Done when: the README line names each profile's value as `eas.json` sets it; a source test or a short script check pins the README against `eas.json` if one is cheap; the PR body names the file that is true.
+- Done when: the README line names each profile's value as `eas.json` sets it; a source test or a short script check pins the README against `eas.json` (required, not optional: it is a few lines that read both files and compare the three profiles); the PR body names the file that is true.
 - Source: review work of 23 to 24 Nov 2026. Not verified: only the two lines named were read; the rulings were not read, so which value is intended for the store build is not confirmed.
 
-#### BL-2012 DATA_CLASSIFICATION: the `discard.failures.<draft id>` row says Planned and has no retention or deletion path
-- Status: blocked (PR #1835 merges first). Mode: agent. Owner: privacy engineer. Milestone: M15. Size: S. Depends on: none.
+#### BL-2013 DATA_CLASSIFICATION: the `discard.failures.<draft id>` row says Planned and has no retention or deletion path
+- Status: blocked (PR #1835 merges first; `product` flips this row to ready after the merge). Mode: agent. Owner: privacy engineer. Milestone: M15. Size: S. Depends on: PR #1835 (not a BL id; the `product` agent reads the merge and sets ready, no one else flips it).
 - Priority: Medium. Gate: exec-team review before the edit publishes (legal path).
 - Satisfies: refines BL-977; LEGAL-REQ and DATA-REQ cited, not changed; D-172.
 - Problem and evidence: `docs/legal/DATA_CLASSIFICATION.md` (line 822 area) lists "Planned: `discard.failures.<draft id>` (NS-09, BL-977)" with class "L3 key, L2 value" and "A retry count", and no retention or deletion path. PR #1835 builds the counter, so it is no longer planned.
@@ -10705,8 +10705,8 @@ Source: the review work of 23 to 24 Nov 2026 (the e2e-web run, PR #1835, PR #182
 - Done when: the row is no longer under Planned, names the writer, retention and deletion path as built, and the exec-team review is recorded in `docs/agents/cto/RULINGS.md`.
 - Source: review work of 23 to 24 Nov 2026. Not verified: #1835's final code was not read, so the deletion paths are not confirmed; the row's class was copied from the existing line.
 
-#### BL-2013 Tests for #1835: merge-adopt deletes the `discard.failures` key, and Erase everything clears it
-- Status: blocked (PR #1835 merges first). Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
+#### BL-2014 Tests for #1835: merge-adopt deletes the `discard.failures` key, and Erase everything clears it
+- Status: blocked (PR #1835 merges first; `product` flips this row to ready after the merge). Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: PR #1835 (not a BL id; the `product` agent reads the merge and sets ready, no one else flips it).
 - Priority: Medium. Gate: none.
 - Satisfies: refines BL-977; NS-09 (rules `[NS-09-R13]` and the neighbours, cited); the Erase everything rule in `docs/legal/DELETION_AND_EXPORT_SPEC.md`.
 - Problem and evidence: PR #1835 persists a failure counter under `discard.failures.<draft id>`. A counter keyed by a draft id must go when the draft goes. Two paths need a test that names the rule: merge-adopt (the draft is adopted into a book and its key must be deleted, not left to name a draft that is gone) and Erase everything (every `discard.failures.*` key is cleared).
@@ -10714,7 +10714,7 @@ Source: the review work of 23 to 24 Nov 2026 (the e2e-web run, PR #1835, PR #182
 - Done when: both tests exist, name the rule they prove, and pass; one of them fails when the delete line is removed (shown in the PR body).
 - Source: review work of 23 to 24 Nov 2026. Not verified: #1835 was not read past its title; where merge-adopt and erase-all delete settings keys was not looked up.
 
-#### BL-2014 Device test plan rows DJ-A3 and DJ-A4: corrections from the review of #1824
+#### BL-2015 Device test plan rows DJ-A3 and DJ-A4: corrections from the review of #1824
 - Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
 - Priority: Medium. Gate: none.
 - Satisfies: refines BL-1861 and BL-1928; rows DJ-A3 and DJ-A4 in `docs/qa/DEVICE_TEST_PLAN.md` (lines 1929 and 1953).
