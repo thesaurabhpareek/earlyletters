@@ -12624,7 +12624,7 @@ Source: reviews of merged PRs #1998, #2007, #2008, #2010, #2012, #2024 and #2026
 ## Follow-ups of the status sync of 24 Nov 2026, third batch (BL-2239 to BL-2241; filed by the product agent, docs only)
 
 #### BL-2239 Before batching retired analytics ids, drop duplicates and malformed ids from the stored list
-- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: XS. Depends on: none.
+- Status: in-review (PR #2049). Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: XS. Depends on: none.
 - Priority: Low. Gate: none. Ships dark: analytics stays off in every profile (CR-194). The analytics engineer reviews (the seam rule on `packages/analytics/src/consent.ts`).
 - Satisfies: refines BL-2163; ER-A17.
 - Problem and evidence: `settleRetired` in `packages/analytics/src/consent.ts` now sends up to 21 overflow ids in one call (PR #2036, BL-2163). The server dedupes ids and rejects a body with a malformed id, so one repeated or non-UUID id in a stored batch makes `accepted` fewer than `sent` (or the whole call fail), every id is kept, and the same batch is sent again at the next settle. Retired ids are random UUIDs, so this is unlikely. Read from Review A and Review B on PR #2036; the code was not re-read here.
