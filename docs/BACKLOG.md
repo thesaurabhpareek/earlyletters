@@ -12549,3 +12549,50 @@ Source: reviews of PRs #1999, #2006 and #2011, and the exec-reading rule of D-17
 - Scope: change the generator line so it says Where your letters live (J14-01) and Your words (J14-02) are captured, and Storage and Spoken language are not; make the INDEX line match (regenerated, or edited by hand to the generator's exact output). Change no other line.
 - Done when: the generator line and the INDEX line agree with each other and with `apps/mobile/e2e-web/j14-recordings.flow.ts`.
 - Source: Review A of PR #2035, 24 Nov 2026. Not verified: the flow was not run.
+
+
+## Review follow-ups of 24 Nov 2026, fourth batch (BL-2229 to BL-2234; filed by the product agent, docs only)
+
+Source: reviews of merged PRs #1998, #2007, #2008, #2010, #2012, #2024 and #2026. The highest id on `develop` (`ed42f393e`) is BL-2224 and no open PR adds a row (open PRs touching this file: #806, #809, #1952); ids start five above it (BL-2229) to leave room for rows in flight. Item 6 of the batch, #1998 (DB-IP link and the tautological mutant), is already BL-2215 and is not filed again. All rows are `proposed`; Karma sets `ready`. Nothing here is run.
+
+#### BL-2229 HogQL name check `eventIdent`: a committed test that a bad event name is refused
+- Status: proposed (found in review of PR #2012; Karma sets `ready`). Mode: agent. Owner: analytics engineer. Milestone: M15. Size: XS. Priority: P3. Depends on: none.
+- Satisfies: none claimed (test cover for the wire-name check added in #2012).
+- Scope: `eventIdent` in `packages/analytics/src/insights/hogql.ts` (line 61, read on develop `ed42f393e`) has no committed test. Add one in `packages/analytics/test/` that a name with a quote, a space or a semicolon is refused, that an allowed wire name passes unchanged, and that a mutant which drops the check fails it.
+- Done when: `npm test -w packages/analytics` passes and the mutant fails the new test.
+- Source: review of PR #2012, 24 Nov 2026.
+
+#### BL-2230 Analytics source-scan `stripComments` mishandles a regex literal: add a test, then fix
+- Status: proposed (found in review of PR #2026; Karma sets `ready`). Mode: agent. Owner: analytics engineer. Milestone: M15. Size: S. Priority: P3. Depends on: none.
+- Satisfies: BL-2168 (source-scan checks see the real calls), cited and not changed.
+- Scope: `stripComments` in `apps/mobile/test/helpers/strip-comments.ts` treats `//` inside a regex literal as a comment start, so `/a\/\//; track(2)` hides the `track(2)` call after the regex from `analytics-tier-wired.test.ts` and `analytics-forget-retired-wired.test.ts`. `lib/analytics/index.ts` has no such pattern today, so nothing is missed now. (1) Add the case to `apps/mobile/test/strip-comments.test.ts` and see it fail. (2) Fix the helper so the call stays visible, without letting a real `//` comment through.
+- Done when: the new case fails before the fix and passes after; `npm test -w apps/mobile` passes for the two wired tests and `strip-comments.test.ts`.
+- Source: review of PR #2026, 24 Nov 2026.
+
+#### BL-2231 BL-467 point 4: name PR #2011 for the age gate, and correct the header of `android-double-announce.test.ts`
+- Status: proposed (found in review of PR #2007; Karma sets `ready`). Mode: agent. Owner: mobile engineer. Milestone: M11. Size: XS. Priority: P3. Depends on: none.
+- Satisfies: BL-467 point 4, cited and not changed.
+- Scope: read both texts on develop first and fix only what is still wrong. (1) The header of `apps/mobile/test/android-double-announce.test.ts` says "the two direct calls left in the app" are skipped on Android; the age gate is not guarded on develop (the guard is in draft PR #2011), so the header overstates the guard. (2) The BL-467 row (Status line and the build Note) says the age gate is "in a separate fenced draft PR" and does not name it; name PR #2011. BL-2222 already holds the approval precondition and is not changed.
+- Done when: the header says which file the test guards and that the age gate is in #2011; the BL-467 row names #2011; `npm test -w apps/mobile` passes for the file.
+- Source: review of PR #2007, 24 Nov 2026.
+
+#### BL-2232 CCO-31: the diff of `age-gate-screen.tsx` is described as two lines; check against the PR and correct
+- Status: proposed (found in review of PR #2010; Karma sets `ready`). Mode: agent. Owner: privacy engineer (the compliance engineer handle has no backlog owner name in `agents/roster.json`). Milestone: M15. Size: XS. Priority: P3. Depends on: none.
+- Satisfies: none claimed (accuracy of a recorded ruling).
+- Scope: the Evidence line of CCO-31 in `docs/agents/exec/RULINGS.md` says the fenced file's diff is two lines (the import and the guard). The reviewer counted three, one of them a comment. Open the head the ruling names and the file in #2011, count, and correct the wording only if it is still wrong. The verdict and the way back are not changed. Entries are not rewritten otherwise; if it is wrong, add a one-line correction under the entry.
+- Done when: CCO-31 states the right count, or the PR body says it was already right.
+- Source: review of PR #2010, 24 Nov 2026.
+
+#### BL-2233 Export README line: the PROPOSED marker, and a crash-mention check that fails a reworded line
+- Status: proposed (found in review of PR #2008; Karma sets `ready`). Mode: agent. Owner: content. Milestone: M15. Size: S. Priority: P3. Depends on: none.
+- Satisfies: D-172 and CR-178 item 2 (words marked PROPOSED until read); PRIV-R21, cited and not changed.
+- Scope: (1) the export README line in `packages/content/src/features/export.en.ts` lacks the `PROPOSED` comment (with D-172) that the other consent lines carry; add it, so the content map shows it as proposed (BL-2219). No word changes. (2) the regex in `packages/content/test/consent-claims.test.ts` would still pass if the crash-report mention were reworded; tighten it to the claim it pins, with a mutant that rewords the mention and must fail.
+- Done when: the comment is present; the mutant fails; `npm test -w packages/content` passes.
+- Source: review of PR #2008, 24 Nov 2026.
+
+#### BL-2234 Journey index: a stale line about J14-01, and a Storage sentence a regenerate would drop
+- Status: proposed (found in review of PR #2024; Karma sets `ready`). Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Priority: P3. Depends on: none.
+- Satisfies: none claimed (accuracy of the journey index).
+- Scope: `docs/release/journey/INDEX.md` is generated by `apps/mobile/e2e-web/support/build-index.mjs` from `steps/*.json`. (1) The "Not capturable on web" section (line 341) is stale about J14-01 (the Recordings screen), which is captured; correct it in the generator's source text. (2) The J14-01 row's sentence that the language row lives on Storage, which is not captured on web, is in the index and not in the step note, so a regenerate drops it; move it into the J14-01 flow step note. Regenerate by the README procedure and keep the diff to these two lines.
+- Done when: a regenerate leaves both statements in place and `node apps/mobile/e2e-web/support/build-index.mjs --check` (or the README's check) passes.
+- Source: review of PR #2024, 24 Nov 2026.
