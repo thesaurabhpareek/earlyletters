@@ -12,8 +12,8 @@
  * throws and nothing waits for it. Reads the saved appearance when it can and falls back to the system scheme.
  * It never shows an error message, code or stack. Dynamic Type works (no fixed heights on text).
  */
-import { Component, useEffect, useRef, type ReactNode } from 'react';
-import { AccessibilityInfo, Pressable, ScrollView, Text, View, useColorScheme, useWindowDimensions } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { AccessibilityInfo, Platform, Pressable, ScrollView, Text, View, useColorScheme, useWindowDimensions } from 'react-native';
 import { initialWindowMetrics } from 'react-native-safe-area-context';
 import Svg, { Circle, Path } from 'react-native-svg';
 import * as SplashScreen from 'expo-splash-screen';
@@ -21,6 +21,7 @@ import * as SystemUI from 'expo-system-ui';
 import { tokens } from '@scribe/design-tokens';
 import { loadFonts } from '@/components/ui/fonts';
 import { getSettingIfOpen } from '@/lib/store';
+import { DrawingBoundary } from './drawing-boundary';
 import { PLAIN_LAYOUT, PLAIN_TYPE, plainActionsInline, plainArt, plainButton } from './plain-screen.styles';
 
 export type PlainAction = { label: string; onPress: () => void; kind?: 'primary' | 'quiet'; busy?: boolean };
@@ -37,20 +38,6 @@ export function useSchemeSafely(): 'light' | 'dark' {
 }
 
 const ART = plainArt();
-
-/**
- * The last resort on the one screen that must always draw: if the drawing itself throws (react-native-svg missing or
- * failing), the screen goes on without it. The words and the buttons never depend on it.
- */
-class DrawingBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
-  state = { failed: false };
-  static getDerivedStateFromError() {
-    return { failed: true };
-  }
-  render() {
-    return this.state.failed ? null : this.props.children;
-  }
-}
 
 /** The page drawing, complete and still, in the scheme's own colours. Decorative. */
 function PageDrawing({ wash, line }: { wash: string; line: string }) {
@@ -110,7 +97,8 @@ export function PlainScreen({ title, body, hint, note, noteKey, actions }: { tit
     const id = setTimeout(() => {
       try {
         scroll.current?.scrollToEnd({ animated: false });
-        AccessibilityInfo.announceForAccessibility(note);
+        // Android reads the live region on the note; speaking it here as well said it twice (BL-467 point 4).
+        if (Platform.OS !== 'android') AccessibilityInfo.announceForAccessibility(note);
       } catch {
         // the note is still on the page, in reading order
       }
