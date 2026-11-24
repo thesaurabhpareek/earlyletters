@@ -82,8 +82,8 @@ describe('catalogue rules', () => {
     }
   });
 
-  it('sends goals only as a count and no multilingual flag (PRD 7.10, B-NFR-001)', () => {
-    expect(Object.keys(EVENTS.goals_set.props)).toEqual(['count']);
+  it('sends no goals event (retired, BL-2175) and no multilingual flag (PRD 7.10, B-NFR-001)', () => {
+    expect(Object.keys(EVENTS)).not.toContain('goals_set');
     expect(Object.keys(EVENTS)).not.toContain('languages_set');
     for (const [name, spec] of entries) {
       for (const key of Object.keys(spec.props)) {

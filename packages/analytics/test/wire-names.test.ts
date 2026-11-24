@@ -59,30 +59,36 @@ const DROPPED = [
 ];
 const retired = Object.entries(RETIRED_ROWS);
 
-describe('the 39 rulings of 24 Nov 2026 and the letter_deleted ruling (CR-225), after step 2a slice 3a (BL-2175)', () => {
-  it('17 keys are named, 18 are dropped (letter_deleted is the 18th) and not yet deleted, sync_failed is ruled; none is left to rule', () => {
+describe('the 39 rulings of 24 Nov 2026 and the letter_deleted ruling (CR-225), after step 2a (BL-2175)', () => {
+  it('17 keys are named and sync_failed is ruled; none is left to rule', () => {
     expect(Object.keys(NAMED)).toHaveLength(17);
-    expect(DROPPED).toHaveLength(18);
     for (const [k, w] of Object.entries(NAMED)) expect(WIRE_ROWS[k], k).toMatchObject({ status: 'named', wire: w });
-    for (const k of DROPPED) expect(WIRE_ROWS[k]?.status, k).toBe('dropped');
     expect(WIRE_ROWS.sync_failed).toMatchObject({ status: 'ruled', wire: 'system:sync_fail' });
     const n = (s: string) => rows.filter(([, r]) => r.status === s).length;
-    expect([n('ruled'), n('named'), n('merged'), n('dropped'), n('pattern'), n('needs_ruling')]).toEqual([30, 17, 0, 18, 4, 0]);
-    expect(keys).toHaveLength(69);
-    expect(doc).toContain('Counts: 69 keys: 30 ruled by 2.9, 17 named by the 24 Nov rulings, 18 dropped, 4 patterns generated per registered id, 0 NEEDS RULING. Step 2a (BL-2175) has deleted 4 keys so far');
+    expect([n('ruled'), n('named'), n('merged'), n('dropped'), n('pattern'), n('needs_ruling')]).toEqual([30, 17, 0, 0, 4, 0]);
+    expect(keys).toHaveLength(51);
+    expect(rows.flatMap(([, r]) => names(r).length === 1 && r.status !== 'pattern' ? [1] : [])).toHaveLength(47);
+    expect(doc).toContain('Counts: 51 keys: 30 ruled by 2.9, 17 named by the 24 Nov rulings, 4 patterns generated per registered id, 0 NEEDS RULING; 47 have a name of their own.');
+    expect(doc).toContain('Step 2a (BL-2175) deleted 22 keys: 18 dropped, 4 merged');
   });
 
-  it('the 4 merged keys are retired: each is recorded once with its target, and is in no catalogue, registry or table row', () => {
+  it('22 keys are retired: 18 dropped (letter_deleted is the 18th) and 4 merged, each recorded once with its reason', () => {
+    expect(DROPPED).toHaveLength(18);
     expect(Object.keys(MERGED)).toHaveLength(4);
-    expect(retired).toHaveLength(4);
-    for (const [k, t] of Object.entries(MERGED)) {
-      expect(RETIRED_ROWS[k], k).toMatchObject({ status: 'merged', target: t });
+    expect(retired).toHaveLength(22);
+    for (const k of DROPPED) expect(RETIRED_ROWS[k]?.status, k).toBe('dropped');
+    for (const [k, t] of Object.entries(MERGED)) expect(RETIRED_ROWS[k], k).toMatchObject({ status: 'merged', target: t });
+    for (const [k, r] of retired) expect(r.basis.length, k).toBeGreaterThan(20);
+  });
+
+  it('a retired key is not a key: it is in no catalogue, registry or table row, and the document lists it once, as retired, under no name', () => {
+    for (const [k] of retired) {
       expect(Object.keys(EVENTS), k).not.toContain(k);
       expect(Object.keys(REGISTRY), k).not.toContain(k);
       expect(WIRE_ROWS, k).not.toHaveProperty(k);
       const lines = doc.split('\n').filter((l) => l.startsWith(`| \`${k}\` |`));
       expect(lines, k).toHaveLength(1);
-      expect(lines[0], k).toMatch(/^\| `[a-z_]+` \| merged \| `[a-z_:]+` \|/);
+      expect(lines[0], k).toMatch(/^\| `[a-z_]+` \| (dropped|merged) \| (\(none\)|`[a-z_:]+`) \|/);
     }
   });
 
@@ -95,13 +101,11 @@ describe('the 39 rulings of 24 Nov 2026 and the letter_deleted ruling (CR-225), 
     }
   });
 
-  it('no dropped key keeps a wire name, and no live row owns the perf target of a merged key', () => {
+  it('no retired key keeps a wire name: no live row owns a perf target, and a dropped key is not named by any row', () => {
     const owned = new Set(rows.flatMap(([, r]) => names(r)));
-    for (const k of DROPPED) {
-      expect(names(WIRE_ROWS[k]!), k).toEqual([]);
-      expect(doc.split('\n').find((l) => l.startsWith(`| \`${k}\` |`)), k).toMatch(/\| \(none\)/);
-    }
     for (const t of Object.values(MERGED).filter((x) => !x.includes('_screen_view'))) expect(owned.has(t), t).toBe(false);
+    const olds = ['keeping:letter_delete', 'keeping:letter_restore', 'keeping:export_share_end', 'notifications:reminder_send', 'book:moment_view', 'book:resurface_view'];
+    for (const n of olds) expect(owned.has(n), n).toBe(false);
   });
 });
 

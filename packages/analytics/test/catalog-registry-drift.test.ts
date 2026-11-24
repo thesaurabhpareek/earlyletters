@@ -20,15 +20,12 @@ import { EVENTS, HELD_EVENTS, REGISTRY } from '../src';
  * stay off until the D-163 gate clears (D-170, docs/DECISIONS.md), so a held event is not sent from a production build.
  */
 const HELD = [
-  'account_deletion', 'app_backgrounded', 'auth_deferred', 'auth_email_sent', 'auth_failed',
-  'auth_method_selected', 'child_setting_changed', 'child_switched', 'dictionary_term_added',
-  'export_completed', 'export_failed', 'export_shared', 'export_started', 'family_letter_reviewed', 'goals_set',
-  'invite_failed', 'invite_opened', 'language_set', 'letter_deleted', 'local_merge_choice', 'machine_edit_rejected',
-  'machine_edit_reverted', 'make_it_yours_card', 'member_left', 'member_removed', 'moment_shown',
+  'auth_deferred', 'auth_failed', 'child_switched', 'export_completed', 'export_failed', 'export_started',
+  'invite_failed', 'invite_opened', 'language_set', 'machine_edit_rejected', 'machine_edit_reverted',
   'notification_opened', 'offer_code_redeemed', 'os_permission_result', 'pack_download', 'playback_started',
-  'read_together_ended', 'read_together_started', 'reminder_prime_result', 'reminder_prime_shown', 'reminder_schedule_set',
-  'reminder_sent', 'reminder_suppressed', 'restore_result', 'resurface_opened', 'resurface_shown', 'review_action',
-  'settings_changed', 'signed_out', 'sync_failed',
+  'read_together_ended', 'read_together_started', 'reminder_prime_result', 'reminder_prime_shown',
+  'reminder_schedule_set', 'reminder_suppressed', 'restore_result', 'review_action', 'settings_changed',
+  'signed_out', 'sync_failed',
 ];
 
 describe('[PRD-REQ-016] the held catalogue and the send registry cannot drift apart unnoticed', () => {

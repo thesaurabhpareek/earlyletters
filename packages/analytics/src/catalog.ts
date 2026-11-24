@@ -22,7 +22,7 @@
  */
 import { bool, int, oneOf, opt, type EventSpec, type PropSpec } from './schema';
 import { MOMENTS_SLOT, REGISTRY } from './registry';
-import { CHILD_COUNT_BUCKET, CHILD_ORDINAL, MEMBER_ROLE, INVITE_ROLE, AUTHOR_RELATION, LETTERS_BUCKET, SESSION_BUCKET, EDIT_TYPE, EDIT_SOURCE, REJECT_REASON, AUTH_METHOD, SIGN_IN_TRIGGER, NETWORK, LANG, PACK_ID, PACK_FAILURE } from './values';
+import { CHILD_COUNT_BUCKET, CHILD_ORDINAL, AUTHOR_RELATION, LETTERS_BUCKET, SESSION_BUCKET, EDIT_TYPE, EDIT_SOURCE, REJECT_REASON, AUTH_METHOD, SIGN_IN_TRIGGER, NETWORK, LANG, PACK_ID, PACK_FAILURE } from './values';
 
 // The shared value sets live in values.ts and are defined there once (CODE-R13). This re-export keeps
 // every `from './catalog'` import working; a test pins that no name is redefined here.
@@ -64,8 +64,9 @@ export const GLOBAL_PROPS = {
  * 11: two Moments card events, `moments_card_impressed` and `moments_card_tapped`, one closed property `slot` (`look_back` | `question`), NS-53 section 18 and R251. Both are registry events (one definition, in registry.ts; the catalogue rows read it). The tracker `trackMomentsCard` exists; the app does not call it until the Moments flag.
  * 12: the catalogue now reads every sendable event from registry.ts (one definition), so the three rows that only the registry held (`control_tapped`, `perf_measured`, `surface_impressed`) join the fingerprint; no event or property that was already in the catalogue changed (BL-2148, P5 of BL-1235). Production analytics stay off.
  * 13: wire-names step 2a, slice 3a (BL-2175, CR-213): the 4 merged keys are removed: the held rows `app_cold_start` and `auth_sheet_shown`, and the registry rows `book_opened` and `letter_opened`. Their signal is `screen_view` (the `sign_in`, `book` and `letter_detail` screens) and, later, the `cold_start` perf metric. Nothing was added or widened, no tier changed, and no build has sent any of them (analytics are off in every profile, CR-186).
+ * 14: wire-names step 2a, slice 3b (BL-2175, CR-213, CR-225): 18 held events deleted (`app_backgrounded`, `auth_method_selected`, `auth_email_sent`, `local_merge_choice`, `child_setting_changed`, `make_it_yours_card`, `goals_set`, `dictionary_term_added`, `family_letter_reviewed`, `member_removed`, `member_left`, `reminder_sent`, `moment_shown`, `resurface_shown`, `resurface_opened`, `export_shared`, `account_deletion`, `letter_deleted`). Nothing was added or widened, no tier changed, and no build has sent any of them (analytics are off in every profile, CR-186).
  */
-export const SCHEMA_VERSION = 13;
+export const SCHEMA_VERSION = 14;
 
 /**
  * SHA-256 of `JSON.stringify(catalogShape())` per schema version. Versions 1
@@ -83,6 +84,7 @@ export const SCHEMA_FINGERPRINTS: Readonly<Record<number, string>> = Object.free
   11: 'd5086670df9e315dee3d38561bb79858605f4c247d260b20cc6cd96e44181711',
   12: '936b6de82cf58d00e66e2df7ac327409ac1db2682e05dd4bc841dd5f3cd73fcb',
   13: 'b819daaaebb8c0430030dfbd31e91a5ae1e331b0d969661b3a14cd776569fb9f',
+  14: '8fe40547df2caaa2b3cf903ad5410f9125f2a36a2a37f6657cfcf0adab245013',
 });
 
 // ---------------------------------------------------------------------------
@@ -96,25 +98,8 @@ export const SCHEMA_FINGERPRINTS: Readonly<Record<number, string>> = Object.free
  * in registry.ts, and is not repeated here.
  */
 export const HELD_EVENTS = {
-  // --- App and navigation -------------------------------------------------
-  app_backgrounded: {
-    area: 'app',
-    when: 'App goes to the background; carries the session length bucket',
-    reqs: ['PRD-REQ-016'],
-    level: 'L2',
-    tier: 'consented',
-    props: { session_bucket: SESSION_BUCKET },
-  },
   // --- Sign-in (A section 10). Fire only after consent, which in practice
   // means sign-in from Settings, a later invite, or a new session. ----------
-  auth_method_selected: {
-    area: 'entry',
-    when: 'A sign-in method tapped (observed from the auth state)',
-    reqs: ['PRD-REQ-016'],
-    level: 'L2',
-    tier: 'consented',
-    props: { method: AUTH_METHOD },
-  },
   auth_failed: {
     area: 'entry',
     when: 'Sign-in failed or was cancelled (observed). An under-18 answer is never sent',
@@ -138,14 +123,6 @@ export const HELD_EVENTS = {
         'unknown',
       ),
     },
-  },
-  auth_email_sent: {
-    area: 'entry',
-    when: 'Email sign-in link or code sent (observed); attempt counts sends in this sign-in',
-    reqs: ['A-NFR-013'],
-    level: 'L2',
-    tier: 'consented',
-    props: { attempt: int(1, 10) },
   },
   auth_deferred: {
     area: 'entry',
@@ -171,14 +148,6 @@ export const HELD_EVENTS = {
     tier: 'consented',
     props: { via: oneOf('link', 'code', 'paste'), signed_in: bool() },
   },
-  local_merge_choice: {
-    area: 'entry',
-    when: 'User with local letters picks where they go at sign-in',
-    reqs: ['PRD-REQ-016'],
-    level: 'L2',
-    tier: 'consented',
-    props: { choice: oneOf('existing', 'new') },
-  },
   // --- Children (K-12) -----------------------------------------------------
   child_switched: {
     area: 'children',
@@ -188,62 +157,8 @@ export const HELD_EVENTS = {
     tier: 'consented',
     props: { child_ordinal: CHILD_ORDINAL, surface: oneOf('tonight', 'book', 'review', 'listen') },
   },
-  child_setting_changed: {
-    area: 'children',
-    when: 'A per-child setting is changed (which setting only, never the value)',
-    reqs: ['PRD-REQ-013'],
-    level: 'L2',
-    tier: 'consented',
-    props: {
-      key: oneOf(
-        'display_name',
-        'nickname',
-        'date',
-        'photo',
-        'book_look',
-        'family_can_read',
-        'hidden',
-        'deleted',
-        'signs_as',
-        'include_in_reminders',
-        'pause_celebrations',
-        'auto_add',
-      ),
-      child_ordinal: CHILD_ORDINAL,
-    },
-  },
-  make_it_yours_card: {
-    area: 'children',
-    when: 'A post-first-letter "Make it yours" card is acted on',
-    reqs: ['B-REQ-004', 'PRD-REQ-016'],
-    level: 'L2',
-    tier: 'consented',
-    props: {
-      card: oneOf('goals', 'words', 'invite', 'photo'),
-      action: oneOf('opened', 'completed', 'skipped'),
-    },
-  },
-  goals_set: {
-    area: 'children',
-    when: 'What matters goals saved. Count only: goals are L4 (PRD 7.10), so which goals were picked is never sent',
-    reqs: ['B-NFR-001', 'PRD-REQ-010'],
-    level: 'L2',
-    tier: 'consented',
-    props: { count: int(0, 5) },
-  },
   // `languages_set{multilingual}` from B-NFR-001 stays absent. Language usage
   // is measured only by the `languages` events below (one language per event).
-  dictionary_term_added: {
-    area: 'children',
-    when: 'A Names and words term saved (kind only, never the term)',
-    reqs: ['PRD-REQ-016'],
-    level: 'L2',
-    tier: 'consented',
-    props: {
-      kind: oneOf('child', 'nickname', 'family', 'word', 'place', 'self'),
-      source: oneOf('settings', 'review_correction', 'onboarding'),
-    },
-  },
   // --- Capture and review ---------------------------------------------------
   review_action: {
     area: 'capture',
@@ -278,14 +193,6 @@ export const HELD_EVENTS = {
     level: 'L2',
     tier: 'consented',
     props: { edit_type: EDIT_TYPE, source: EDIT_SOURCE, reason: REJECT_REASON, count: int(1, 500) },
-  },
-  letter_deleted: {
-    area: 'capture',
-    when: 'Own letter deleted or restored within the undo window',
-    reqs: ['PRD-REQ-016'],
-    level: 'L2',
-    tier: 'consented',
-    props: { action: oneOf('deleted', 'restored'), destination: oneOf('book', 'private') },
   },
   // The only events that carry `lang`. Never add `lang` to letter, capture,
   // book or family events: that would tie a language to letter behaviour.
@@ -374,30 +281,6 @@ export const HELD_EVENTS = {
       ),
     },
   },
-  family_letter_reviewed: {
-    area: 'family',
-    when: 'A parent decides on a family letter',
-    reqs: ['B-REQ-009', 'B-NFR-001'],
-    level: 'L2',
-    tier: 'consented',
-    props: { decision: oneOf('added', 'kept_aside') },
-  },
-  member_removed: {
-    area: 'family',
-    when: 'A parent removes a member',
-    reqs: ['B-REQ-010'],
-    level: 'L2',
-    tier: 'consented',
-    props: { role: INVITE_ROLE },
-  },
-  member_left: {
-    area: 'family',
-    when: 'A member leaves a book',
-    reqs: ['B-REQ-010'],
-    level: 'L2',
-    tier: 'consented',
-    props: { role: MEMBER_ROLE, letters: oneOf('keep', 'take_out') },
-  },
   // --- Reminders (C-REQ-034) -----------------------------------------------------
   reminder_prime_shown: {
     area: 'reminders',
@@ -435,14 +318,6 @@ export const HELD_EVENTS = {
       paused: bool(),
     },
   },
-  reminder_sent: {
-    area: 'reminders',
-    when: 'Logged on next foreground for a local evening reminder that fired. Month-age and birthday notes are excluded because their timing reveals the birth date',
-    reqs: ['C-REQ-034', 'C-NFR-001'],
-    level: 'L2',
-    tier: 'consented',
-    props: { type: oneOf('letter_reminder', 'family_digest'), variant_id: opt(int(0, 99)) },
-  },
   reminder_suppressed: {
     area: 'reminders',
     when: 'A scheduled reminder was skipped',
@@ -458,41 +333,6 @@ export const HELD_EVENTS = {
     level: 'L2',
     tier: 'consented',
     props: { type: oneOf('letter_reminder', 'family_digest', 'family_letter', 'plan_notice'), variant_id: opt(int(0, 99)) },
-  },
-  // --- Celebrate ---------------------------------------------------------------------
-  moment_shown: {
-    area: 'celebrate',
-    when: 'A quiet milestone card is shown. Month-chapter and Year One are excluded: they fire on dates set by the birthday',
-    reqs: ['C-REQ-034', 'C-REQ-010'],
-    level: 'L2',
-    tier: 'consented',
-    props: {
-      type: oneOf(
-        'first_letter',
-        'letters_10',
-        'letters_50',
-        'letters_100',
-        'letters_365',
-        'first_family_letter',
-        'first_read_together',
-      ),
-    },
-  },
-  resurface_shown: {
-    area: 'celebrate',
-    when: 'An "On this day" card is shown',
-    reqs: ['C-REQ-034', 'C-REQ-014'],
-    level: 'L2',
-    tier: 'consented',
-    props: { kind: oneOf('one_month', 'one_year') },
-  },
-  resurface_opened: {
-    area: 'celebrate',
-    when: 'An "On this day" card is opened',
-    reqs: ['C-REQ-034'],
-    level: 'L2',
-    tier: 'consented',
-    props: { kind: oneOf('one_month', 'one_year') },
   },
   // --- Settings, data, privacy --------------------------------------------------------
   settings_changed: {
@@ -541,22 +381,6 @@ export const HELD_EVENTS = {
     level: 'L2',
     tier: 'consented',
     props: { format: oneOf('archive'), reason: oneOf('cancelled', 'low_space', 'too_large', 'check_failed', 'unknown') },
-  },
-  export_shared: {
-    area: 'settings',
-    when: 'The share sheet for a finished export closed',
-    reqs: ['C-REQ-034'],
-    level: 'L2',
-    tier: 'consented',
-    props: { result: oneOf('shared', 'dismissed') },
-  },
-  account_deletion: {
-    area: 'settings',
-    when: 'Account deletion flow step. `confirmed` is the last event ever sent for this id',
-    reqs: ['C-REQ-034', 'PRD-REQ-018'],
-    level: 'L2',
-    tier: 'consented',
-    props: { stage: oneOf('started', 'export_offered', 'confirmed', 'undone') },
   },
   // (founder decision 3, ADR 0013). No server of ours sees purchases. ----------
   // Membership engine (D-082, D-083): numbers only. Never the letter, its words, the recording or the child.

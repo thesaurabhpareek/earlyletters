@@ -18,7 +18,6 @@ export const DAY_STEMS = [
  * Exact (event.property=value) pairs only; a new one needs a reviewed edit here.
  */
 export const STEM_EXEMPT: readonly string[] = [
-  'dictionary_term_added.kind=place', // a Names and words kind, not a place the parent named
   'playback_started.version=original', // the saved-original toggle, "origin" is a prefix of "original"
   'machine_edit_rejected.reason=original_mismatch', // a verifier outcome
 ];
@@ -52,7 +51,7 @@ describe('allowlist stems (NS-47-R34, NS-47-R9)', () => {
   it('[NS-47-R34] every exemption names a real enum value, so the list cannot rot into a blanket pass', () => {
     const live = allowlistStrings().map((s) => s.where);
     for (const e of STEM_EXEMPT) expect(live, e).toContain(e);
-    expect(STEM_EXEMPT.length).toBe(3);
+    expect(STEM_EXEMPT.length).toBe(2);
   });
 
   it('[NS-47-R34] the stem matcher catches a planted event, key and value', () => {
@@ -134,7 +133,7 @@ describe('never-reported notification kinds (NS-46-R34, NS-48-R2)', () => {
 
   it('[NS-46-R34] no reminder or notification enum value names a day, birthday or month note', () => {
     const named = /day|birthday|month|typed|library|occasion|anniversary/;
-    for (const ev of ['reminder_sent', 'notification_opened', 'reminder_suppressed'] as const) {
+    for (const ev of ['notification_opened', 'reminder_suppressed'] as const) {
       for (const [key, p] of Object.entries(EVENTS[ev].props)) {
         if (p.type === 'enum') for (const v of p.values) expect(v, `${ev}.${key}`).not.toMatch(named);
       }
@@ -153,8 +152,8 @@ describe('never-reported notification kinds (NS-46-R34, NS-48-R2)', () => {
 describe('variant_id and age bands (NS-48-R38, A-48-1)', () => {
   const withVariant = entries.filter(([, s]) => 'variant_id' in s.props).map(([n]) => n).sort();
 
-  it('[NS-48-R38] variant_id lives only on reminder_sent and notification_opened, optional, from 0, never above 399', () => {
-    expect(withVariant).toEqual(['notification_opened', 'reminder_sent']);
+  it('[NS-48-R38] variant_id lives only on notification_opened (reminder_sent is retired, BL-2175), optional, from 0, never above 399', () => {
+    expect(withVariant).toEqual(['notification_opened']);
     for (const name of withVariant) {
       const p = (EVENTS as unknown as Record<string, Spec>)[name].props.variant_id;
       expect(p.type, name).toBe('int');
@@ -166,9 +165,9 @@ describe('variant_id and age bands (NS-48-R38, A-48-1)', () => {
     }
   });
 
-  it('[NS-48-R38] variant_id is held: the validator drops both events outright, and the observer still refuses a variant_id outside the range', () => {
+  it('[NS-48-R38] variant_id is held: the validator drops the event outright (and the retired reminder_sent as unknown), and the observer still refuses a variant_id outside the range', () => {
     const max = (EVENTS.notification_opened.props.variant_id as { max: number }).max;
-    // Neither event is in the registry (registry.ts), so nothing carrying a variant_id can be sent (V11).
+    // notification_opened is not in the registry (registry.ts) and reminder_sent no longer exists, so nothing carrying a variant_id can be sent (V11).
     expect(sanitizeEvent('notification_opened', { type: 'letter_reminder', variant_id: max, schema_version: SCHEMA_VERSION }).props).toBeNull();
     expect(sanitizeEvent('reminder_sent', { type: 'letter_reminder', variant_id: max, schema_version: SCHEMA_VERSION }).props).toBeNull();
     for (const v of [max + 1, 400, -1, 1.5, '3', null]) {

@@ -41,37 +41,30 @@ const S = '2.9 domain table';
 const ruled = (wire: string, basis: string): RowKind => ({ status: 'ruled', wire, basis });
 const named = (wire: string, basis: string): RowKind => ({ status: 'named', wire, basis });
 const merged = (into: 'screen_view' | 'perf_measured', target: string, basis: string): Extract<RowKind, { status: 'merged' }> => ({ status: 'merged', into, target, basis });
-const drop = (basis: string): RowKind => ({ status: 'dropped', basis });
+const drop = (basis: string): Extract<RowKind, { status: 'dropped' }> => ({ status: 'dropped', basis });
 
 /**
  * Hand-decided rows, in catalogue order then registry-only. The generator checks that this covers every key exactly once.
  * The 39 keys 2.9 left open were ruled on 24 Nov 2026 (BL-1255 step 1b, `infra/exec-rulings-2026-11-24-wire-names.md`):
  * 17 named, 4 merged, 17 dropped, and `sync_failed`, which 2.9 already names. `letter_deleted` was ruled the same day to be
- * the 18th drop (`infra/exec-rulings-2026-11-24-letter-deleted.md`, CR-225). Step 2a (BL-2175) deletes the keys in two slices: the 4 merged keys first (slice 3a, now in `RETIRED_ROWS`), then the 18 dropped keys (slice 3b).
+ * the 18th drop (`infra/exec-rulings-2026-11-24-letter-deleted.md`, CR-225). Step 2a (BL-2175) deleted the 22 dropped and
+ * merged keys: they moved to `RETIRED_ROWS` below, so this record is the 51 keys that remain.
  */
 export const WIRE_ROWS: Readonly<Record<string, RowKind>> = {
   // app
   app_opened: ruled('system:app_open', `${S}: \`system.app.opened\``),
-  app_backgrounded: drop('no PM row and no reader; it is not PM5 `system.session.ended` (which carries clean, fatal or killed), so `system:session_end` stays reserved for that'),
   screen_view: { status: 'pattern', suffix: 'screen_view', idKind: 'screen', basis: '2.9 Basics: `<area>:<screen_id>_screen_view`' },
   // consent
   analytics_opted_in: ruled('system:analytics_consent_accept', `${S}: \`system.consent.granted\` ("duplicates \`analytics_opted_in\`, so one event")`),
   // entry
-  auth_method_selected: drop('inferred from auth state; `auth_succeeded` and `auth_failed` already carry `method`; no PM row, no reader'),
   auth_succeeded: ruled('onboarding:sign_in_complete', `${S}: \`onboarding.sign_in.completed\``),
   auth_failed: ruled('onboarding:sign_in_fail', `${S}: \`onboarding.sign_in.failed\``),
-  auth_email_sent: drop('2.9 no-event list: sends are counted on the server; the phone sees a request accepted, not a send'),
   auth_deferred: named('onboarding:sign_in_dismiss', 'PM1 `onboarding.sign_in.dismissed` names this key; `dismiss` is the verb for closing a slip without acting'),
   signed_out: named('me:session_end', 'PM1 `me.session.closed` names this key; `reason` already carries the four causes'),
   invite_opened: ruled('family:invite_open', `${S}: \`family.invite.opened\` (phone side)`),
-  local_merge_choice: drop('no emitter (F18), no PM row, no reader; needs server features'),
   // children
   child_added: named('onboarding:book_create', 'registry row whose decision is first-run completion; `create` is the verb of "a child book is created"; `book_save` is not used because PM1 makes `onboarding.book.saved` a server count'),
   child_switched: named('capture:child_update', 'PM1 `capture.child.selected` ("active book changed") lists this key as its Was; `selected` folds to `update`'),
-  child_setting_changed: drop('no PM row, no reader, overlaps `settings_changed`; its `key` values name child-level acts: collect less'),
-  make_it_yours_card: drop('no emitter; FR-DAT-26 lists it as stale, to be removed before any profile turns analytics on'),
-  goals_set: drop('no emitter, no reader; goals are L4 and only a count was ever defined'),
-  dictionary_term_added: drop('no emitter, no reader'),
   // capture
   capture_started: ruled('capture:take_start', '2.9 line 118, the seven examples: `capture_started` to `capture:take_start` (note: the table also holds `capture.letter.started`, `capture:letter_start`)'),
   capture_discarded: named('capture:take_cancel', 'registry row and insights reader; a drop-off shares its object with its start, and `capture_started` is `capture:take_start`; PM1 `letter_cancel` loses on pairing'),
@@ -80,7 +73,6 @@ export const WIRE_ROWS: Readonly<Record<string, RowKind>> = {
   review_action: named('capture:review_update', 'PM1 `capture.review.selected`, a step of funnel F2; `selected` folds to `update`; `submit` is for forms'),
   machine_edit_reverted: named('capture:edit_restore', 'the 2.4 `restore` row names "a reverted machine edit"; PM1 `edit_cancel` loses; constitution guardrail and insights reader'),
   machine_edit_rejected: named('capture:edit_decline', 'PM1 `capture.edit.declined`; `decline` is "from us" (the verifier); same guardrail and reader'),
-  letter_deleted: drop('retired under CR-225: no decision reads it, PM3 section 8 and R-K1 to R-K3 keep it at T0 (a per-id trace of what a family deleted, fired inside the deletion flows), and it was held, so it has no history; `keeping:letter_delete` and `keeping:letter_restore` are never assigned and are barred by pattern'),
   // languages
   language_set: ruled('me:language_update', `${S}: \`me.language.changed\``),
   pack_download: named('system:pack_download_update', 'PM1 maps four states to this one key and 2.9 only holds `pack_start`; `changed` folds to `update`; the `pack_download` object keeps it from reading as a pack version update'),
@@ -92,21 +84,14 @@ export const WIRE_ROWS: Readonly<Record<string, RowKind>> = {
   invite_created: ruled('family:invite_create', '2.9 line 118, the seven examples'),
   invite_accepted: ruled('family:invite_accept', `${S}: \`family.invite.accepted\``),
   invite_failed: ruled('family:invite_fail', `${S}: \`family.invite.failed\``),
-  family_letter_reviewed: drop('PM4: "1.1, no rows now"; no emitter; the co-parent work (BL-883 to BL-889) has not shipped'),
-  member_removed: drop('PM4 CPO-3: no phone events, server counts only; no emitter'),
-  member_left: drop('same as `member_removed`; its one emitter is a leave sheet that D-113 keeps unoffered'),
   // reminders (category: notifications)
   reminder_prime_shown: named('notifications:reminder_prime_view', 'the denominator of the reminder-fatigue guardrail; an impression of our own card'),
   reminder_prime_result: named('notifications:reminder_prime_submit', '`answered` folds to `submit`, as `os_permission_result` is `permission_submit`'),
   os_permission_result: ruled('notifications:permission_submit', `${S}: \`notifications.permission.answered\``),
   reminder_schedule_set: ruled('notifications:schedule_update', `${S}: \`notifications.schedule.changed\``),
-  reminder_sent: drop('the registry forbids `reminder_sent` (20 Nov founder rules); the phone cannot observe delivery; 2.9 says (none); PM4 versus PM5 is settled as no delivered event'),
   reminder_suppressed: ruled('notifications:reminder_cancel', `${S}: \`notifications.reminder.suppressed\``),
   notification_opened: named('notifications:notification_open', 'one key with four types; 2.9 `reminder_open` and `plan_notice_open` have no key of their own and stay unassigned'),
   // celebrate and moments (neither is a category)
-  moment_shown: drop('no emitter; FR-DAT-26 (stale letter-count types); the registry `^moment_` pin; area `celebrate` is not a category'),
-  resurface_shown: drop('no emitter; the registry `^resurface_` pin; PM2 replaces it by an impression; a one_year card lands on the anniversary of a letter date (timing leak, TRACKING_PLAN 6.4)'),
-  resurface_opened: drop('same as `resurface_shown`'),
   moments_card_impressed: named('book:moments_card_view', 'CDO-25 allows exactly two `moments_` names; Moments sits under Book'),
   moments_card_tapped: named('book:moments_card_open', '`click` is reserved for control ids (V2); `open` fits a card opened from the tab'),
   // settings
@@ -114,8 +99,6 @@ export const WIRE_ROWS: Readonly<Record<string, RowKind>> = {
   export_started: named('keeping:export_start', 'the object must agree with `export_complete` and `export_fail`; `download_start` is retired; funnel F9 and the insights engine read it'),
   export_completed: ruled('keeping:export_complete', '2.9 line 118, the seven examples'),
   export_failed: ruled('keeping:export_fail', `${S}: \`keeping.export.failed\``),
-  export_shared: drop('2.9 no-event list and FR-DAT-27 (no event on a share destination); no emitter; PM3 says fold it away'),
-  account_deletion: drop('PM3 section 8 and IN-K3 retire it (deletion is never measured on the phone); the server RPC holds the count'),
   // plus
   plus_offer_viewed: ruled('plus:offer_view', '2.9 line 118, the seven examples'),
   plus_offer_closed: ruled('plus:offer_end', `${S}: \`plus.offer.closed\``),
@@ -136,15 +119,33 @@ export const WIRE_ROWS: Readonly<Record<string, RowKind>> = {
 };
 
 /**
- * The keys step 2a (BL-2175) deleted from the catalogue and registry, with the reason each went and, for a merge, where its
+ * The 22 keys step 2a (BL-2175) deleted from the catalogue and registry, with the reason each went and, for a merge, where its
  * signal lives now. They are not keys any more: `WIRE_ROWS` has no row for them, a test fails if one comes back, and the
  * generated table lists them last so the reasons survive the deletion. Nothing reads this record but the table and its tests.
  */
 export const RETIRED_ROWS: Readonly<Record<string, Extract<RowKind, { status: 'merged' | 'dropped' }>>> = {
   app_cold_start: merged('perf_measured', 'system:cold_start_measure', '`cold_start` is already a PERF_METRIC; PM1 lists it under the perf pattern; its metric id (area `system`) is registered in the step 2 PR that needs it'),
+  app_backgrounded: drop('no PM row and no reader; it is not PM5 `system.session.ended` (which carries clean, fatal or killed), so `system:session_end` stays reserved for that'),
   auth_sheet_shown: merged('screen_view', 'onboarding:sign_in_screen_view', 'the sheet is registered screen id `sign_in`; its `trigger` property has no reader'),
+  auth_method_selected: drop('inferred from auth state; `auth_succeeded` and `auth_failed` already carry `method`; no PM row, no reader'),
+  auth_email_sent: drop('2.9 no-event list: sends are counted on the server; the phone sees a request accepted, not a send'),
+  local_merge_choice: drop('no emitter (F18), no PM row, no reader; needs server features'),
+  child_setting_changed: drop('no PM row, no reader, overlaps `settings_changed`; its `key` values name child-level acts: collect less'),
+  make_it_yours_card: drop('no emitter; FR-DAT-26 lists it as stale, to be removed before any profile turns analytics on'),
+  goals_set: drop('no emitter, no reader; goals are L4 and only a count was ever defined'),
+  dictionary_term_added: drop('no emitter, no reader'),
+  letter_deleted: drop('retired under CR-225: no decision reads it, PM3 section 8 and R-K1 to R-K3 keep it at T0 (a per-id trace of what a family deleted, fired inside the deletion flows), and it was held, so it has no history; `keeping:letter_delete` and `keeping:letter_restore` are never assigned and are barred by pattern'),
   book_opened: merged('screen_view', 'book:book_screen_view', 'PM2 deprecates it into the Book screen view ("counts are not wanted"); funnel `f_return_book_read` is re-expressed on the screen names'),
   letter_opened: merged('screen_view', 'book:letter_detail_screen_view', 'same PM2 line; screen id `letter_detail` is one id for every letter'),
+  family_letter_reviewed: drop('PM4: "1.1, no rows now"; no emitter; the co-parent work (BL-883 to BL-889) has not shipped'),
+  member_removed: drop('PM4 CPO-3: no phone events, server counts only; no emitter'),
+  member_left: drop('same as `member_removed`; its one emitter is a leave sheet that D-113 keeps unoffered'),
+  reminder_sent: drop('the registry forbids `reminder_sent` (20 Nov founder rules); the phone cannot observe delivery; 2.9 says (none); PM4 versus PM5 is settled as no delivered event'),
+  moment_shown: drop('no emitter; FR-DAT-26 (stale letter-count types); the registry `^moment_` pin; area `celebrate` is not a category'),
+  resurface_shown: drop('no emitter; the registry `^resurface_` pin; PM2 replaces it by an impression; a one_year card lands on the anniversary of a letter date (timing leak, TRACKING_PLAN 6.4)'),
+  resurface_opened: drop('same as `resurface_shown`'),
+  export_shared: drop('2.9 no-event list and FR-DAT-27 (no event on a share destination); no emitter; PM3 says fold it away'),
+  account_deletion: drop('PM3 section 8 and IN-K3 retire it (deletion is never measured on the phone); the server RPC holds the count'),
 };
 
 export interface KeyFacts { key: string; where: 'catalogue' | 'registry' | 'both'; tier: string; area: string }
@@ -174,16 +175,17 @@ export function renderWireNames(): string {
   const count = (s: RowKind['status']) => keys.filter((k) => WIRE_ROWS[k.key]?.status === s).length;
   const live = count('ruled') + count('named');
   const retired = Object.entries(RETIRED_ROWS);
+  const nRetired = (s: string) => retired.filter(([, r]) => r.status === s).length;
   const out: string[] = [
     '# Wire names: the mapping table (generated)',
     '',
     'Generated from `packages/analytics/src/wire-names.ts` by `npm run wire-names -w @scribe/analytics`; do not edit by hand. `npm run wire-names -w @scribe/analytics -- --check` and `packages/analytics/test/wire-names.test.ts` fail when this file differs from that output. BL-1255 step 1 (CR-212): this is the table `posthog-standard.md` section 2.9 points to as "IN-03".',
     '',
-    'Nothing here renames anything. The catalogue and registry still hold the old names; the rename PRs (step 2) read this table. The tier column is today\'s tier from the catalogue and registry rows, and the basics set stays pinned to `screen_view` by `test/tiers.test.ts`.',
+    'Nothing here renames anything. The catalogue and registry still hold the old names; the rename PRs (step 2b onward) read this table. The tier column is today\'s tier from the catalogue and registry rows, and the basics set stays pinned to `screen_view` by `test/tiers.test.ts`.',
     '',
-    `Counts: ${keys.length} keys: ${count('ruled')} ruled by 2.9, ${count('named')} named by the 24 Nov rulings, ${count('dropped')} dropped, ${count('pattern')} patterns generated per registered id, ${count('needs_ruling')} NEEDS RULING. Step 2a (BL-2175) has deleted ${retired.length} keys so far, the merged ones (see Retired keys); the ${count('dropped')} dropped keys go in its next slice, after which the table has ${keys.length - count('dropped')} keys, ${live} with a name of their own.`,
+    `Counts: ${keys.length} keys: ${count('ruled')} ruled by 2.9, ${count('named')} named by the 24 Nov rulings, ${count('pattern')} patterns generated per registered id, ${count('needs_ruling')} NEEDS RULING; ${live} have a name of their own. Step 2a (BL-2175) deleted ${retired.length} keys: ${nRetired('dropped')} dropped, ${nRetired('merged')} merged (see Retired keys).`,
     '',
-    'Reading a row. "Ruled" means 2.9 names this event (a domain row, the seven examples of line 118, or the Basics patterns) and the catalogue meaning matches it. "Named" means 2.9 did not decide and the exec rulings of 24 Nov 2026 (BL-1255 step 1b) assigned the name. "Dropped" means no event: step 2a deletes the key and its call sites. Keys ruled "merged" are no longer keys: step 2a deleted them, and they are listed under Retired keys. NEEDS RULING (none today) would mean a new key with no decision.',
+    'Reading a row. "Ruled" means 2.9 names this event (a domain row, the seven examples of line 118, or the Basics patterns) and the catalogue meaning matches it. "Named" means 2.9 did not decide and the exec rulings of 24 Nov 2026 (BL-1255 step 1b) assigned the name. NEEDS RULING (none today) would mean a new key with no decision. Keys ruled "merged" or "dropped" are no longer keys: step 2a deleted them and their call sites, and they are listed under Retired keys.',
     '',
     '## Keys',
     '',
@@ -210,7 +212,7 @@ export function renderWireNames(): string {
   out.push(
     '## Retired keys',
     '',
-    `Step 2a (BL-2175; CR-213) deleted these ${retired.length} keys from the catalogue and registry, with the call sites that fired them. None was ever sent: analytics are off in every profile (CR-186). "Merged" means the signal is carried by the target shown. A retired key is not a key: \`wire-names.test.ts\` fails if one reappears in the catalogue or registry. Bringing one back is a new row with a decision.`,
+    `Step 2a (BL-2175; CR-213 and, for \`letter_deleted\`, CR-225) deleted these ${retired.length} keys from the catalogue and registry, with the call sites that fired them. None was ever sent: analytics are off in every profile (CR-186). "Dropped" means no event; "merged" means the signal is carried by the target shown. A retired key is not a key: \`wire-names.test.ts\` fails if one reappears in the catalogue or registry, and \`FORBIDDEN_EVENT_PATTERNS\` bars the wire names a dropped event would have had. Bringing one back is a new row with a decision.`,
     '',
     '| Key | Status | Replaced by | Basis |',
     '|---|---|---|---|',

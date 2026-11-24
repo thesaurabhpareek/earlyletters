@@ -119,7 +119,7 @@ describe('analytics uses the core enums (CORE-05)', () => {
     expect(values(MEMBER_ROLE)).toEqual([...MEMBER_ROLES]);
     expect(values(INVITE_ROLE)).toEqual([...MEMBER_ROLES]);
     expect(JSON.stringify(EVENTS)).not.toContain('co_parent');
-    for (const name of ['invite_created', 'invite_accepted', 'member_removed', 'member_left'] as const) {
+    for (const name of ['invite_created', 'invite_accepted'] as const) {
       expect(values(EVENTS[name].props.role), name).toEqual([...MEMBER_ROLES]);
     }
   });
