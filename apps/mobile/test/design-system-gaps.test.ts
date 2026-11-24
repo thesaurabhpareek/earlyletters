@@ -64,6 +64,15 @@ describe('(3) one back/close idiom per context', () => {
     expect(sheet).toMatch(/label=\{closeLabel \?\? copy\.common\.closeButton\}/);
   });
 
+  it('[BL-389] the scrim speaks the same words as the Close button, so the two cannot diverge', () => {
+    const sheet = code(read('components/ui/sheet.tsx'));
+    const words = /\(closeLabel \?\? copy\.common\.closeButton\)/.exec(sheet);
+    expect(sheet).toMatch(/accessibilityLabel=\{dismissible \? \(closeLabel \?\? copy\.common\.closeButton\) : undefined\}/);
+    expect(sheet).toMatch(/label=\{closeLabel \?\? copy\.common\.closeButton\}/);
+    expect(words).not.toBeNull();
+    expect(read('components/consent/analytics-consent-sheet.tsx')).toContain('closeLabel={copy.analyticsConsent.notNowLabel}');
+  });
+
   it('onboarding steps use BackButton (the native back, drawn)', () => {
     expect(read('app/onboarding.tsx')).toMatch(/<BackButton /);
     expect(code(read('app/onboarding.tsx'))).not.toMatch(/icon=\{CaretLeftIcon\}/);

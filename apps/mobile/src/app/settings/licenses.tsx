@@ -16,6 +16,7 @@
  * version and copyright, which are the authors' (lib/licences.ts). No drawing, no lamp, no motion.
  */
 import { Stack } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import { CaretDownIcon } from 'phosphor-react-native/src/icons/CaretDown';
 import { CaretRightIcon } from 'phosphor-react-native/src/icons/CaretRight';
 import { useMemo, useState } from 'react';
@@ -79,6 +80,17 @@ export default function LicensesScreen() {
             <Text variant="body">{licences.intro}</Text>
             <Text variant="subhead">{licences.libraries}</Text>
           </View>
+        }
+        ListFooterComponent={
+          // DB-IP's licence (CC BY 4.0) asks for this link wherever its country lookup is used (BL-553).
+          <Pressable
+            onPress={() => void WebBrowser.openBrowserAsync(licences.geoAttribution.href).catch(() => undefined)}
+            role="link"
+            accessibilityLabel={licences.geoAttribution.text}
+            testID="licences.geo"
+            className="mt-6 min-h-11 justify-center px-4">
+            <Text variant="footnote">{licences.geoAttribution.text}</Text>
+          </Pressable>
         }
         renderSectionHeader={({ section }) => (
           <View className="gap-1 px-4 pb-2 pt-6">

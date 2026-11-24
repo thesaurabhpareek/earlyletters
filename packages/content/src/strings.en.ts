@@ -1052,9 +1052,10 @@ export const en = {
     // Settings > Privacy (PRD.md K-01, K-17). Each consent is visible and changeable here.
     privacy: {
       title: "Privacy",
-      // PROPOSED (BL-389): usage only; no crash reporter exists in v1.0 (claims test: consent-claims.test.ts). Needs an exec-team reading.
+      // PROPOSED (BL-389): usage only; no crash reporter exists in v1.0 (claims test: consent-claims.test.ts). Needs an exec-team reading (D-172).
       analyticsLabel: "Share usage",
-      analyticsHelp: "Which screens you open and when. Never your letters, recordings or anyone's names.",
+      // PROPOSED (BL-389): "like" so the line does not read as the full list of what is sent (the registry has more than screens). Needs an exec-team reading (D-172).
+      analyticsHelp: "How you use the app, like which screens you open. Never your letters, recordings or anyone's names.",
       analyticsOffNote: "Turning this off stops sharing right away. Nothing else changes.",
       sensitiveLabel: "Sync across your phones",
       // Names the health category, as Washington and Connecticut consent requires (lawyer-2 H4, CHD policy HN-4).

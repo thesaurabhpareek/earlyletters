@@ -9,7 +9,10 @@ import { en } from '../src';
 const pkg = JSON.parse(readFileSync(fileURLToPath(new URL('../../../apps/mobile/package.json', import.meta.url)), 'utf8'));
 const deps = Object.keys({ ...pkg.dependencies, ...pkg.devDependencies });
 const CRASH_SDK = /sentry|bugsnag|crashlytics|datadog|instabug|appcenter|raygun|rollbar/i;
-const reporterConfigured = deps.some((d) => CRASH_SDK.test(d));
+// Fail closed: a crash SDK dependency, or the capture flag on (packages/analytics/src/crash.ts), ends the "no crash" rule.
+const crashSource = readFileSync(fileURLToPath(new URL('../../analytics/src/crash.ts', import.meta.url)), 'utf8');
+const crashFlagOn = /CRASH_REPORTING\s*=\s*\{[^}]*?enabled:\s*true/s.test(crashSource);
+const reporterConfigured = deps.some((d) => CRASH_SDK.test(d)) || crashFlagOn;
 
 const consentLines: Record<string, string> = {
   'analyticsConsent.title': en.analyticsConsent.title,
@@ -32,6 +35,9 @@ describe('[BL-389, LEGAL-REQ-044] consent copy claims only what v1.0 does', () =
   });
   it.skipIf(reporterConfigured)('says "crash" nowhere while no crash reporter is configured', () => {
     for (const [key, line] of Object.entries({ ...consentLines, 'consentCopy.analyticsSection': section })) expect(line, key).not.toMatch(/crash/i);
+  });
+  it('reads the crash flag it checks', () => {
+    expect(/CRASH_REPORTING\s*=\s*\{[^}]*?enabled:\s*(true|false)/s.test(crashSource)).toBe(true);
   });
   it('says "photos" nowhere (v1.0 has none)', () => {
     for (const [key, line] of Object.entries({ ...consentLines, 'consentCopy.analyticsSection': section })) expect(line, key).not.toMatch(/photo/i);

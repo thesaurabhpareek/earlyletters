@@ -9,6 +9,8 @@
  * owner is 'local' and stays so; a signed-in session never starts it from there (its file would read as foreign).
  * `cleanupAtLaunch` itself keeps a 'local' file and deletes a file of any other owner.
  */
+import { toNativeErrorCode, type NativeErrorCode } from '../media/native-error';
+
 export interface LaunchAuthPort {
   /** The released user id, or null (signed out, still consenting, or waiting on the claim screen). */
   userId(): string | null;
@@ -22,8 +24,8 @@ export interface LaunchDeps {
   on: boolean;
   auth: LaunchAuthPort;
   cleanup(liveBooks: readonly string[] | null): Promise<void>;
-  /** Called with the error code when the cleanup could not remove a file it had to. No data. launch.ts holds the code in memory; nothing is logged or sent. */
-  failed?(code: string): void;
+  /** Called with one of the closed NativeErrorCode values when the cleanup could not remove a file it had to. No data. launch.ts holds the code in memory; nothing is logged or sent. */
+  failed?(code: NativeErrorCode): void;
   /** The books this phone lists, or null when the list cannot be read (books are then left alone). */
   liveBooks(): readonly string[] | null;
 }
@@ -45,7 +47,7 @@ export function startMomentsLaunchCleanup(d: LaunchDeps): () => void {
       // unreadable: books are left alone
     }
     // never awaited, never throws: the next launch tries again; a file that would not go is reported by code only
-    void d.cleanup(books).catch((e: unknown) => d.failed?.((e as { code?: string })?.code ?? 'unknown'));
+    void d.cleanup(books).catch((e: unknown) => d.failed?.(toNativeErrorCode(e)));
   };
   offs.push(
     d.auth.subscribe(() => {
