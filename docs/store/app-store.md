@@ -10,6 +10,9 @@ What the store build does and does not do, as this file reads it:
 - There is no co-parent entry point in any store build: no tab, no Settings row, no invite screen and no join route, and no stand-in screen for a feature the build lacks (D-126, D-161, D-162). Three tabs: Home, Book and Me (D-161). The listing and the review notes therefore carry no co-parent steps. Sharing a book returns here only in the release that ships it.
 - Recordings stay on the phone that made them: no recording upload, no backup of our own and no word highlight in Read together (D-059).
 - Analytics is off in the production build until D-163's production gate clears (BL-1886; D-170 item 1 keeps it off in production behind that row). Nothing in this file says the build collects usage. The privacy label, the Privacy Policy and the in-app disclosure change with that gate, each by its owner, and this file follows them.
+- Sign-in is Sign in with Apple, or an emailed link and 6-digit code. There is no Google sign-in in the first build (D-171): Google ships after it, behind linking and its public text, and no line here or in the Notes for Review names it until then.
+- Photos are off in the store build (`EXPO_PUBLIC_PHOTOS` is not set in the `production` profile), so nothing here mentions photos or a photo library.
+- Erase now on a signed-in phone is held (BL-1854, BL-1805). The listing and the Notes for Review do not describe it; "Delete one and it waits in Recently deleted for 30 days" is the only deletion line, and the account line is Settings, Delete account.
 - Each later 1.0.x release adds its feature back here in the same pull request that turns it on.
 
 ## Fields
@@ -28,7 +31,7 @@ What the store build does and does not do, as this file reads it:
 
 Keywords repeat no word from the name or subtitle (Apple already indexes those), use no spaces, and name no competitor or other platform.
 
-## Description (3603 / 4000)
+## Description (3589 / 4000)
 
 ```text
 Early Letters: letters to your child, in your own words and voice.
@@ -68,7 +71,7 @@ IN ENGLISH
 This version writes down letters spoken in English. The speech model is a one-time download, on Wi-Fi unless you turn on cellular data, 575 MB on most iPhones and smaller on some, and you choose when it starts. Until it is ready, your recordings are kept and the words follow.
 
 PLUS
-Your first two letters are free, so you can see how it feels. To keep adding letters, choose Plus: $4.99 a month with the first month free, or $49.99 a year with the first 2 months free. The free months are for people new to Plus. One plan covers every child's book and works with Family Sharing. A new letter past the free two waits on your phone until you decide. Every letter you have kept stays yours to read, play and export, with or without Plus.
+Your first two letters are free, so you can see how it feels. To keep adding letters, choose Plus: $4.99 a month with the first month free, or $49.99 a year with the first 2 months free. The free months are for people new to Plus. One plan covers every child's book and works with Family Sharing. A new letter past the free two waits until you decide. Every letter you have kept stays yours to read, play and export, with or without Plus.
 
 Payment is charged to your Apple Account. Plus renews automatically unless you turn off renewal at least 24 hours before the end of the current period. Manage or cancel any time in your Apple Account settings.
 

@@ -37,6 +37,9 @@ What the store build does and does not do, as this file reads it:
 - There is no co-parent entry point in any store build: no tab, no Settings row, no invite screen and no join route, and no stand-in screen for a feature the build lacks (D-126, D-161, D-162). Three tabs: Home, Book and Me (D-161). The listing and the review notes therefore carry no co-parent steps. Sharing a book returns here only in the release that ships it.
 - Recordings stay on the phone that made them: no recording upload, no backup of our own and no word highlight in Read together (D-059).
 - Analytics is off in the production build until D-163's production gate clears (BL-1886; D-170 item 1 keeps it off in production behind that row). Nothing in this file says the build collects usage. The privacy label, the Privacy Policy and the in-app disclosure change with that gate, each by its owner, and this file follows them.
+- Sign-in is Sign in with Apple, or an emailed link and 6-digit code. There is no Google sign-in in the first build (D-171): Google ships after it, behind linking and its public text, and no line here or in the Notes for Review names it until then.
+- Photos are off in the store build (\`EXPO_PUBLIC_PHOTOS\` is not set in the \`production\` profile), so nothing here mentions photos or a photo library.
+- Erase now on a signed-in phone is held (BL-1854, BL-1805). The listing and the Notes for Review do not describe it; "Delete one and it waits in Recently deleted for 30 days" is the only deletion line, and the account line is Settings, Delete account.
 - Each later 1.0.x release adds its feature back here in the same pull request that turns it on.
 
 ## Fields
