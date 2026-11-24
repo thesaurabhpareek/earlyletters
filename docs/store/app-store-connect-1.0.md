@@ -100,7 +100,7 @@ founder keeps the standard EULA, the review lane also suggests the line
 |---|---|---|
 | Sign-in required | Yes (D-160). App Review needs a demo sign-in: see `notes-for-review-1.0.txt` (NX-05) and `proposals/app-review-demo-signin.md`. Turn the switch on and enter the demo user name and password | FOUNDER, supplies the demo account; never in the repo |
 | Contact | Founder's name, email, phone in "+1 ..." form | FOUNDER, never in the repo |
-| Notes | `notes-for-review-1.0.txt` (under 4000 bytes); resolve the three brackets | FOUNDER |
+| Notes | The servers-on Notes for Review, `appReviewCopy.notesServersOn` in `packages/content/src/release/app-review.en.ts`, shown in `app-store.md` (2216 of 4,000 bytes before the demo email and password are filled). `notes-for-review-1.0.txt` is the servers-off text and is superseded for this build; do not paste it | FOUNDER fills the demo sign-in at push time |
 | Attachment | 60 to 90 s screen recording on a real iPhone with demo child "Asha": age question, setup, typed letter, Speak, the download prompt with its size, the Plus sheet | FOUNDER |
 
 ## 8. Subscriptions (group "Plus")
@@ -137,7 +137,7 @@ Quotes and detail are in the review lane's register; fix-by dates are Pacific ti
 |---|---|---|---|---|
 | R1 | 2.1(a) completeness, links | High | Low | Publish app Privacy Policy and Terms by Fri 20 Nov; build `/support` or use the homepage; D-126 in the build or its fallback |
 | R2 | 2.3, 2.3.1 accurate metadata | High | Low | This change: new description without "delete everything"; one listing source |
-| R3 | 2.5.19 dormant code | Medium | Medium | Notes name every switched-off flag. Optional: drop `usesAppleSignIn` and associated domains from `production` (engineering lead's call). Accepted in D-121 |
+| R3 | 2.5.19 dormant code | Medium | Medium | Sign in with Apple is used in the store build, so `usesAppleSignIn` stays. Backup, status report, analytics, photos and the Google button (D-171) are off in the build. The servers-on Notes do not yet name those switched-off features the way the servers-off text did: store lane to decide before submission whether they must (UNVERIFIED against Apple's text). Accepted in D-121 |
 | R4 | 3.1.2 subscription info, Terms and Privacy links | High | Low | R1, plus the description lines above |
 | R5 | 3.1.1 restore, 2.1(b) purchases reachable | Low | Low | Sandbox buy, restore, cancel on the release build; multiseat No |
 | R6 | 3.1.2(a) ongoing value | Low to medium | Low to medium | Notes say exactly what Plus adds; promise no future features |
@@ -187,7 +187,7 @@ Draft Helpful Details:
 
 ```text
 Accessibility: built to Dynamic Type, Reduce Motion and dark mode, with VoiceOver labels on the recording flow. [FOUNDER: keep only the items an on-device audit confirms; the Accessibility Nutrition Labels draft must say the same.]
-Privacy: speech-to-text runs entirely on the iPhone; the only network requests are signed settings files, the one-time speech model download (shown with its size, on Wi-Fi, after the parent agrees) and StoreKit.
+Privacy: speech-to-text runs on the iPhone, and recordings stay on the phone that made them. Signing in is required. The one-time speech model download is shown with its size, on Wi-Fi, and starts when the parent chooses.
 Team: made by an independent developer. [FOUNDER: add one line about yourself if you want it; no child's name or family detail.]
 Priority: this is our first and only app; the launch is our highest priority.
 Coming later in 1.0.x updates: more spoken languages, each when its native reviewer signs off. [FOUNDER: keep or delete. It describes plans, not the build.]
