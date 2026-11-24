@@ -1,13 +1,13 @@
 # Moments measurement note
 
-Owner: analytics engineer. Status: Draft 1, 21 Nov 2026, docs only. For `privacy`, `product` and Karma to read.
+Owner: analytics engineer. Status: Draft 2, 24 Nov 2026, docs and one guard test. For `privacy`, `product` and Karma to read. Draft 2 records the PR 7 decision of spec 19.4 (BL-1452) in section 11 and corrects two facts of Draft 1 that later merges made stale (section 1 items 1 and 2, section 3.1).
 Reads: `docs/product/prd/28-moments-tab.md` (sections 18, 20, 20.1; rows R87, R167, R251, R252, R282, R284, R289; open questions O-18, O-38, O-49), `packages/analytics/src/catalog.ts`, `packages/analytics/src/registry.ts`, `docs/DECISIONS.md` (D-095, D-124, D-163), `docs/legal/app-store-privacy-labels.md`, `apps/mobile/src/lib/capture/start-capture.ts`.
-Changes: this file only. The catalog, the registry, the tracking plan and the allowlist are not edited.
+Changes (Draft 1): this file only. Draft 2 adds section 11, one line in `docs/analytics/TRACKING_PLAN.md` section 9 and `packages/analytics/test/moments-no-change.test.ts`. The catalog, the registry and the allowlist are not edited by either draft.
 
 ## 1. The short answer
 
-1. Decision O-49 is "analytics enum no": no closed enum for how a letter was started (picker, card, capture) is sent. `picker_unavailable`, `library_unreadable` and `fallback_used` stay local codes with no wire code and no catalog row.
-2. Today Moments emits nothing. The catalog has no Moments event, and every shipping profile in `apps/mobile/eas.json` sets `EXPO_PUBLIC_ANALYTICS` to `off`.
+1. O-49 (a closed enum for how a letter was started: picker, card, capture) has no entry in `docs/agents/exec/RULINGS.md` and the spec still lists it with its default, do not send (spec section 23). `docs/agents/exec/proposed/moments-rulings-product-data.md` section 2 records the same answer as a relayed ruling that has not been merged into the rulings log. Either way the result is the default: no such enum is sent. `picker_unavailable`, `library_unreadable` and `fallback_used` stay local codes with no wire code and no catalog row.
+2. Today Moments emits nothing. Every shipping profile in `apps/mobile/eas.json` sets `EXPO_PUBLIC_ANALYTICS` to `off`. Since Draft 1 the catalog holds the two card events of R251 (`book:moments_card_view` and `book:moments_card_open`, one closed property `slot`: `look_back` or `question`; `SCHEMA_VERSION` 11, renamed at 20); the app does not call their tracker until the Moments flag, and nothing else of Moments is in the catalog.
 3. The spec's section 18 lists a set of events that Moments might send later. None of them is built, none is in the catalog, and the spec itself says each waits on D-163 and its gates. This note says which of those rows are allowed on paper and what has to be true before any of them can exist.
 4. Moments is measured at 1.0 by App Store Connect cohorts, the five-parent checks and the two-week diary, as spec section 20 already says.
 
@@ -27,7 +27,7 @@ Two things D-163 leaves in force that matter here: the closed allowlist with the
 
 ### 3.1 Today, under any profile
 
-May emit: nothing of its own.
+May emit: nothing of its own while analytics is off. With it on, only the two card events of R251 for the `question` and `look_back` slots (row 2 of section 4); nothing for the picker, the host sheet, a pick or the library read (section 11).
 
 May not emit, by any route (events, properties, logs, breadcrumbs, crash fields, URLs, route params):
 - a picture, a thumbnail, a picture or album identifier, a filename, a caption, a title or EXIF text;
@@ -46,7 +46,7 @@ May not emit, by any route (events, properties, logs, breadcrumbs, crash fields,
 
 ### 3.3 A name clash to know about
 
-The catalog has an unrelated event `moment_shown` (celebrate area, a quiet milestone card with types such as `first_letter` and `letters_10`). It is the milestone card of C-REQ-034, not the Moments tab. The registry's `FORBIDDEN_EVENT_PATTERNS` blocks any registry name matching `^moment_`, and `registry-data.test.ts` checks that. Two consequences: no Moments event may be named `moment_*`, and nobody should read `moment_shown` as Moments tab telemetry.
+The catalog has an unrelated event `moment_shown` (celebrate area, a quiet milestone card with types such as `first_letter` and `letters_10`). It is the milestone card of C-REQ-034, not the Moments tab. The registry's `FORBIDDEN_EVENT_PATTERNS` blocks any registry name matching `(^|:)moment_` (a bare key or a wire name), and `registry-data.test.ts` checks that. Two consequences: no Moments event may be named `moment_*`, and nobody should read `moment_shown` as Moments tab telemetry.
 
 ## 4. Every Moments event idea in the spec
 
@@ -160,3 +160,30 @@ Proof
 | `product`, `mobile` | Align the dotted event names in section 18 with catalog naming when a row is first proposed (flag A) |
 | `privacy` | Read flags B and C and the `via` values of `screen.moments_home.viewed` |
 | `analytics engineer` | When section 8 holds, add the rows and tests in one PR; until then, nothing |
+
+## 11. The PR 7 decision (BL-1452): no change
+
+Spec 19.4 row 7 is "Analytics decision for `source` (or the no-change note)". This is that note. It satisfies NS-53-R83, R87, R167, R227, R251, R282 and R284 (spec 26b homes R227, R251 and R284 to PR 7 and R83 to 7 and 19; R227 keeps only its analytics note here, the tab-jobs and N-test part is PR 6).
+
+Decision: Moments v3 adds no analytics event, no property, no enum value, no wire code and no catalog or registry row. `SCHEMA_VERSION` stays 25. In detail:
+
+1. The picker door, the host sheet, a pick and the library read send nothing (R167, R282). No host-sheet view event exists, so nothing varies by library access state, and no attach or photo event carries a picker-or-library source.
+2. `picker_unavailable`, `library_unreadable` and `fallback_used` stay local closed codes: no wire code and no catalog row (R282, R251 read with flag D above). `system:error_view.code` keeps its eight values.
+3. A Moments start sends nothing that says so (R83, R87, R227). `moment` is a local value of the closed source list in `start-capture.ts` only; `capture:take_start.source` gains no `moment`, `card`, `picker` or `library` value, and the track call keeps the literal `tonight` (O-38 default).
+4. No enum for how a letter was started (picker, card, capture) is sent in the first release (R284, O-49 default). The two diary questions of R284 replace it and are read as x of n, never a percentage under 20.
+5. The only Moments events stay the two card events of R251, each with `slot` alone (R251).
+6. No entry text, transcript, audio, child name, date, place, picture identifier or count goes into analytics, logs or crash reports from any Moments path (R167; CLAUDE.md privacy rules).
+
+Reversible: a later value is a catalog change with a `SCHEMA_VERSION` bump, the founder's answer to O-49 (and O-38 for a Moments start value), and the conditions of section 8. A value that was sent cannot be unsent, so the default is the safe side.
+
+Proof, by row (`packages/analytics` unless named):
+
+| Row | Proved by |
+|---|---|
+| R83 | `apps/mobile/test/start-capture.test.ts` (the one start function; the track call sends the literal `tonight`); `moments-no-change.test.ts` (no `moment`, `card`, `picker` or `library` enum value) |
+| R87 | `moments-no-change.test.ts` (no start-origin value on the wire); `allowlist-pins.test.ts` `[NS-49-R36]` (the `capture:take_start.source` set) |
+| R167 | `moments-no-change.test.ts` (no picker, library, album, asset, picture or access-state name, key or value); `moments-events.test.ts` `[NS-53-R251-c]` and `[NS-53-R251-d]`; `canary-sweep.test.ts` (album, asset and date canaries) |
+| R227 | analytics note only: `moments-no-change.test.ts` (no `moment` source value); the list itself is PR 6 |
+| R251 | `moments-events.test.ts` `[NS-53-R251-a]` to `[NS-53-R251-f]`; `moments-no-change.test.ts` (no local failure code on the wire) |
+| R282 | `moments-no-change.test.ts` (no wire code in `src`, no access-state property, no picker or library vocabulary) |
+| R284 | `moments-no-change.test.ts` (no `capture` or `picker` start value); the diary questions are a manual read, not code |
