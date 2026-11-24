@@ -13,7 +13,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { nodeDb } from './helpers/node-db';
 import { letItGo } from '../src/lib/capture/let-it-go.logic';
 import { planLaunchSweep } from '../src/lib/capture/sweep.logic';
-import { removeBook } from '../src/lib/db/repos/wipe';
+import { removeBook, removeEverything } from '../src/lib/db/repos/wipe';
 import type { SqlDb } from '../src/lib/db/sql';
 
 vi.mock('expo-crypto', () => ({ getRandomBytes: (n: number) => new Uint8Array(n).fill(7) }));
@@ -96,6 +96,15 @@ describe('[NS-09-R15] the failure count lives in settings key discard.failures.<
     stuckLetGo(d.id, d.audioUri);
     db.transaction(() => removeBook({ db, now: () => '2026-10-03T09:00:00.000Z', newId }, d.childId));
     expect(keys()).toEqual([]);
+  });
+
+  it('[NS-09-R15] Erase everything clears the count of every stuck draft', () => {
+    const a = spokenDraft();
+    stuckLetGo(a.id, a.audioUri);
+    expect(keys()).toEqual([`discard.failures.${a.id}`]);
+    db.transaction(() => removeEverything({ db, now: () => '2026-10-03T09:00:00.000Z', newId }));
+    expect(keys()).toEqual([]); // mutant: removeEverything keeps settings rows by prefix
+    expect(db.all('SELECT id FROM drafts')).toEqual([]);
   });
 
   it('[NS-09-R15] a draft that is not being let go keeps no count, and a failed picture counts like a failed file', () => {

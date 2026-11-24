@@ -602,7 +602,9 @@ function applyHeldRows(db: SqlDb, rows: (PulledHeld | PulledHeldGone)[], owner: 
       // compared against what this phone last saw, never a version it has not taken; final review B-2).
       if (pending) continue;
       // Not pending and still marked for the sweep: the server kept the row (this phone's let-go met newer
-      // words), so the draft comes back with them.
+      // words), so the draft comes back with them. The let-go is over, so its failure count (NS-09-R15) ends too:
+      // a later let-go of the same draft starts again from none.
+      if (draft.state === 'discarding') db.run('DELETE FROM settings WHERE key = ?', `discard.failures.${h.id}`);
       db.run(
         `UPDATE drafts SET child_id = ?, occurred_on = ?, occurred_precision = ?, language = COALESCE(?, language),
            base_direction = ?, prompt_key = ?, in_book_choice = ?, typed_text = ?, held_typed = ?,
