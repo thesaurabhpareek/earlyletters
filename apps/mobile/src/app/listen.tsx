@@ -81,6 +81,12 @@ import {
   setRecorderProbe,
 } from '@/lib/speech-gate';
 import { copy, fill, pendingCopy } from '@/lib/copy';
+import { typedOfferShown } from '@/components/capture/words-state.logic';
+import type { SpeechLanguage } from '@/lib/models/catalog';
+import { authorSpeechLanguage } from '@/lib/models/author-language';
+import { speechDownloadChoice } from '@/lib/models/speech-consent';
+import { installedPathsFor } from '@/lib/models/speech-packs';
+import { useSpeechDownload } from '@/lib/transcription-queue/use-words';
 import { photos } from '@/lib/photos/copy';
 import { haptic } from '@/lib/haptics';
 import { useMotion, useReducedMotion } from '@/lib/motion';
@@ -99,6 +105,15 @@ const DISC = AURA_SIZE / 2;
 /** Free space now, or null when unknown. The web preview has no file system, so it never blocks there. */
 function freeBytesNow(): number | null {
   return Platform.OS === 'web' ? null : freeBytesFrom(() => Paths.availableDiskSpace);
+}
+
+/** True when the speech files for the language are on this phone; where they cannot be read (web preview) it is false. */
+function speechOnThisPhone(language: SpeechLanguage): boolean {
+  try {
+    return installedPathsFor(language) !== null;
+  } catch {
+    return false;
+  }
 }
 
 export default function Listen() {
@@ -139,6 +154,13 @@ export default function Listen() {
   const startTick = useRef(createStartTick(tapped.current)).current;
   const [phase, setPhase] = useState<ListenPhase>(tapped.current ? 'asking' : 'ready');
   const withPhoto = phase === 'ready' && !!pendingPhoto?.source; // a picture chosen on Home waits at Ready
+  // BL-1999 (spec 15): read-only. The language and her choice cannot change while Listen is open; the download state
+  // re-renders this screen on its own ticks. Nothing here starts a download or writes the choice (D-087).
+  const [speechLanguage] = useState(authorSpeechLanguage);
+  const [speechChoice] = useState(speechDownloadChoice);
+  // null outside Ready-with-no-picture: the hook then returns idle before any settings read (use-words.ts), so a live
+  // take's once-a-second renders read nothing (#480). It still subscribes, so a download tick re-renders Listen.
+  const speech = useSpeechDownload(phase === 'ready' && !pendingPhoto?.source ? speechLanguage : null);
   const announcedMinute = useRef(0);
   /** The labels VoiceOver last could hear: they hold still while capturing (listen.logic `stableLabels`, F04-REQ-041). */
   const labelsRef = useRef<RoomLabels | null>(null);
@@ -491,6 +513,12 @@ export default function Listen() {
   }
 
   const room = listenRoom(phase);
+  // Short-circuits: speechOnThisPhone (planFor, deviceTier, settings reads) is evaluated only at Ready with no picture,
+  // never on the once-a-second renders of a live take.
+  const typeOffer =
+    !withPhoto &&
+    room.startControl &&
+    typedOfferShown({ startControl: room.startControl, onThisPhone: speechOnThisPhone(speechLanguage), choice: speechChoice, hold: speech.hold, failure: speech.failure });
   const quiet = phase === 'recording' && (status.metering ?? -160) < -50 && status.durationMillis > 8000;
   const prompt = promptLine(promptKey, PROMPTS);
   // While iOS asks and the take starts there is nothing to tap, so no hint (5.8 row 1: the room arrives at rest).
@@ -596,6 +624,21 @@ export default function Listen() {
               who will not speak aloud can still start a letter from the picture. Type keeps the pending picture. */}
           {room.startControl && withPhoto ? (
             <Button variant="quiet" size="md" label={photos.capture.typeButton} onPress={typeInstead} testID="listen.photo.type" />
+          ) : null}
+          {/* BL-1999: no speech model on the phone and no yes in motion, so typing is open before she records. The
+              picture's own Type above already is that offer, so the two never show together. The slot is always held
+              (like listen.discardSlot) so the red circle never moves when the offer comes or goes (5.8 rule 3). The
+              install check is behind room.startControl, so nothing is read while a take is live (#480). */}
+          {!withPhoto ? (
+            <View
+              style={{ opacity: typeOffer ? 1 : 0 }}
+              pointerEvents={typeOffer ? 'auto' : 'none'}
+              accessibilityElementsHidden={!typeOffer}
+              importantForAccessibility={typeOffer ? 'auto' : 'no-hide-descendants'}
+              testID="listen.typeSlot"
+            >
+              <Button variant="quiet" size="md" label={copy.errors.micDenied.typeButton} onPress={typeInstead} disabled={!typeOffer} testID="listen.type" />
+            </View>
           ) : null}
           {!large && clockAndLine}
           <View className="items-center gap-1 px-8">
