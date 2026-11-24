@@ -1263,6 +1263,14 @@ describe('[EXPERIENCE_PASS_2026-10 P8] every feature copy file has per-surface r
     }
   });
 
+  // BL-462 point 4, reminders: BL-474 took its one "we" line out, and reminder-copy-no-we.test.ts guards only the
+  // lock-screen paths. A "we" anywhere else in the opt-out file (the Settings screen words) must be named in the reason too.
+  it('names any "we" line of the reminders opt-out in its reason (none today, BL-474)', () => {
+    const weLines = leaves(features.reminders).filter((l) => /\b(?:we|our|us)\b/i.test(l.text));
+    const reason = SURFACE_OPT_OUT.reminders!;
+    expect(weLines.map((l) => l.path).filter((p) => !reason.includes(p))).toEqual([]);
+  });
+
   // BL-462 point 5 (mutant B07): the deletion screen names the child where the book stays.
   it('keeps {child} in the deletion "stays" line when no letters leave it', () => {
     expect(features.accountDeletion.what.staysNone).toContain('{child}');
