@@ -64,7 +64,7 @@ test('[J10] a letter: the page, the original words, reading size, make private, 
 
 /** From the Book: Settings, Recently deleted. */
 const toShelf = async (app: import('@playwright/test').Page) => {
-  await app.getByRole('button', { name: 'Settings' }).click();
+  await app.getByRole('button', { name: 'Settings' }).last().click();
   await app.getByText('Recently deleted', { exact: true }).first().click();
 };
 

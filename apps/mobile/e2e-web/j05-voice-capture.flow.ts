@@ -1,3 +1,4 @@
+import { en } from '@scribe/content';
 import { btn, firstRun, journey } from './support/app';
 import { allowConsoleError, expect, test } from './support/journey';
 
@@ -110,10 +111,12 @@ test('[J05g] Review while the words are on their way: read it back later', async
   await app.waitForTimeout(1500);
   await btn(app, 'Finish').click();
   await expect(app.getByText('Writing down what you said.')).toBeVisible();
-  await expect(app.getByText('Long recordings take a little more time.')).toBeVisible({ timeout: 12_000 });
-  await expect(btn(app, 'Read it back later')).toBeVisible({ timeout: 12_000 });
-  await step('happy', 'Read it back later', 'The moon breathes over "Writing down what you said." and the recording\'s length. After 8 seconds one line says long recordings take a little more time; after 15 seconds with no progress a quiet "Read it back later" appears (S14). ' + NOTE_WEB);
-  await btn(app, 'Read it back later').click();
+  // Read from the content package (BL-1991): the wait says it is working at once, and after 15 s says it is taking longer.
+  await expect(app.getByText(en.review.waitingBody)).toBeVisible();
+  await expect(app.getByText(en.review.waitingSlow)).toBeVisible({ timeout: 20_000 });
+  await expect(btn(app, en.review.voiceOnlyButton)).toBeVisible();
+  await step('happy', 'Still writing, the way out', 'The moon breathes over "Writing down what you said." and the recording\'s length. The wait says at once that the voice is kept; after 15 seconds with no progress it says it is taking longer than usual and "Keep the recording" and "Type it instead" appear, with Close still there (S14). ' + NOTE_WEB);
+  await btn(app, 'Close').click();
   await expect(app.getByText('A recording, waiting for its words.')).toBeVisible();
   await step('happy', 'Back on Tonight, waiting for its words', 'Review closes and the queue carries on. Tonight shows the recording as a card waiting for its words, with Open.');
 });

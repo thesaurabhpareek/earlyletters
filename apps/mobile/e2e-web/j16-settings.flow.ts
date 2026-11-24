@@ -1,3 +1,4 @@
+import { authCopy } from '@scribe/content';
 import { btn, journey } from './support/app';
 import { expect, seeded, test } from './support/journey';
 import { MAMA, mockServer } from './support/mock-server';
@@ -78,7 +79,7 @@ test('[J16b] settings with server features on, signed out: Account, and no Delet
   await expect(app.locator('body')).not.toBeEmpty();
   await app.goto(`${process.env.E2E_WEB_ON_URL}/settings?seed=asha`);
   // The header card opens Account with sign-in in the build, and a Plan row sits right under it (CCO-9).
-  await expect(app.getByTestId('settings.headerCard').getByText('Not signed in', { exact: true })).toBeVisible();
+  await expect(app.getByRole('heading', { level: 1, name: authCopy.account.signedOutTitle, exact: true })).toBeVisible();
   await expect(app.getByTestId('settings.plan')).toBeVisible();
   // Signed out there is no account here to delete, so the row waits for sign-in (#358 review; settings-home.test.ts
   // runs the row's condition for signed in, signed out and server features off).
