@@ -101,6 +101,8 @@ export interface Analytics {
   analyticsIds(): string[];
   /** After deletion is requested upstream: forget all ids locally. */
   forgetIds(): Promise<void>;
+  /** Forget only these ids locally (the ones the server acknowledged); the rest stay for a retry. */
+  forgetSomeIds(ids: string[]): Promise<void>;
   /**
    * Allowlist violations seen this session, by kind (PDATA-03). Counts only,
    * never values, so a dev screen or health check can show them safely.
@@ -284,6 +286,7 @@ export function createAnalytics(options: AnalyticsOptions): Analytics {
     queueLength: () => queue.length,
     analyticsIds: () => store.allIds(),
     forgetIds: () => store.forgetAllIds(),
+    forgetSomeIds: (ids) => store.forgetSomeIds(ids),
     violationCounts: () => ({ ...counts }),
   };
 }

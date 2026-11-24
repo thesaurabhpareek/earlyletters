@@ -96,8 +96,16 @@ export function findUnboundedLoops(source: string): string[] {
       else args[args.length - 1] += c;
     }
     const reps = (args[1] ?? '').trim();
-    if (/^(?:-\s*1|Infinity|Number\.POSITIVE_INFINITY|-\s*Infinity)$/.test(reps) || /^-/.test(reps))
+    if (/^-/.test(reps) || /\b(?:Infinity|POSITIVE_INFINITY|MAX_SAFE_INTEGER|MAX_VALUE)\b/.test(reps))
       out.push(`line ${code.slice(0, m.index).split('\n').length}: withRepeat(..., ${reps})`);
+  }
+  // The same loop under another name, or the core Animated API, which loops for ever unless `iterations` is finite.
+  for (const m of code.matchAll(/\bwithRepeat\s+as\s+\w+/g))
+    out.push(`line ${code.slice(0, m.index).split('\n').length}: withRepeat imported under another name (the scan cannot see its count)`);
+  for (const m of code.matchAll(/\bAnimated\s*\.\s*loop\s*\(/g)) {
+    const stmt = statementAt(code, m.index!);
+    if (!/\biterations\s*:\s*(?!-|Infinity)[\w.(]/.test(stmt))
+      out.push(`line ${code.slice(0, m.index).split('\n').length}: Animated.loop with no finite iterations`);
   }
   return out;
 }
@@ -108,9 +116,15 @@ export function findUnboundedLoops(source: string): string[] {
  */
 export function findInfiniteCssAnimations(source: string): string[] {
   const code = stripComments(source);
-  return [...code.matchAll(/animationIterationCount\s*:\s*['"]infinite['"]/g)].map(
-    (m) => `line ${code.slice(0, m.index).split('\n').length}: animationIterationCount: 'infinite'`,
-  );
+  const lineOf = (i: number) => code.slice(0, i).split('\n').length;
+  const out: string[] = [];
+  // The property, whatever the quotes, `Infinity`, `-1` or an array holding one of them.
+  for (const m of code.matchAll(/animationIterationCount\s*:\s*([^,}\n]*)/g))
+    if (/infinite|Infinity|^\s*\[?\s*-/i.test(m[1])) out.push(`line ${lineOf(m.index!)}: animationIterationCount: ${m[1].trim()}`);
+  // The shorthand: `animation: 'name 2s ease infinite'`.
+  for (const m of code.matchAll(/\banimation\s*:\s*([`'"])[^`'"]*\binfinite\b[^`'"]*\1/g))
+    out.push(`line ${lineOf(m.index!)}: animation shorthand with infinite`);
+  return out;
 }
 
 function walk(dir: string, acc: string[] = []): string[] {
@@ -146,6 +160,13 @@ describe('[BL-1753 c] no loop runs without end', () => {
     expect(findUnboundedLoops(`x.value = withRepeat(withTiming(1, { duration: tokens.motion.sweepMs }), Infinity, true);`)).toHaveLength(1);
     expect(findUnboundedLoops(`x.value = withRepeat(\n  withTiming(1, { duration: f(1, 2) }),\n  - 1,\n  true,\n);`)).toHaveLength(1);
   });
+  it('also fails a huge count, an aliased import and an Animated.loop with no finite iterations', () => {
+    expect(findUnboundedLoops(`x.value = withRepeat(a, Number.MAX_SAFE_INTEGER, true);`)).toHaveLength(1);
+    expect(findUnboundedLoops(`import { withRepeat as repeat } from 'react-native-reanimated';`)).toHaveLength(1);
+    expect(findUnboundedLoops(`Animated.loop(Animated.timing(v, { toValue: 1 })).start();`)).toHaveLength(1);
+    expect(findUnboundedLoops(`Animated.loop(seq, { iterations: -1 }).start();`)).toHaveLength(1);
+    expect(findUnboundedLoops(`Animated.loop(seq, { iterations: loopReps(8000) / 2 }).start();`)).toEqual([]);
+  });
   it('passes a finite count and ignores a comment', () => {
     expect(findUnboundedLoops(`o.value = withRepeat(withTiming(1), loopReps(8000), true);`)).toEqual([]);
     expect(findUnboundedLoops(`// withRepeat(x, -1)\nconst a = 1;`)).toEqual([]);
@@ -171,12 +192,42 @@ describe('[BL-1753 part c] the CSS loop (the lamp) is finite too', () => {
     expect(findInfiniteCssAnimations(`const a = { animationIterationCount: loopReps(9000) };`)).toEqual([]);
     expect(findInfiniteCssAnimations(`// animationIterationCount: 'infinite'`)).toEqual([]);
   });
+  it('also fails Infinity, -1, an array and the animation shorthand', () => {
+    expect(findInfiniteCssAnimations(`const a = { animationIterationCount: Infinity };`)).toHaveLength(1);
+    expect(findInfiniteCssAnimations(`const a = { animationIterationCount: -1 };`)).toHaveLength(1);
+    expect(findInfiniteCssAnimations(`const a = { animationIterationCount: ['infinite'] };`)).toHaveLength(1);
+    expect(findInfiniteCssAnimations(`const a = { animation: 'breath 9s ease-in-out infinite' };`)).toHaveLength(1);
+    expect(findInfiniteCssAnimations(`const a = { animation: 'breath 9s ease-in-out 4' };`)).toEqual([]);
+  });
   it('finds none under apps/mobile/src, and the lamp counts its breaths from loopReps', () => {
     const bad = walk(SRC).flatMap((p) => findInfiniteCssAnimations(readFileSync(p, 'utf8')).map((o) => `${relative(SRC, p)} ${o}`));
     expect(bad).toEqual([]);
     expect(stripComments(readFileSync(join(SRC, 'components/ui/lamp.tsx'), 'utf8'))).toMatch(
       /animationIterationCount:\s*loopReps\(tokens\.motion\.lamp\.breathMs\)/,
     );
+  });
+});
+
+describe('[BL-1753 c] mutants: put each real loop back to infinite and the guard must fail', () => {
+  const read = (f: string) => readFileSync(join(SRC, f), 'utf8');
+  it('the lamp, with its count turned into infinite, fails findInfiniteCssAnimations', () => {
+    const src = read('components/ui/lamp.tsx');
+    const mutant = src.replace(/animationIterationCount:\s*loopReps\([^)]*\)/, `animationIterationCount: 'infinite'`);
+    expect(mutant).not.toBe(src);
+    expect(findInfiniteCssAnimations(src)).toEqual([]);
+    expect(findInfiniteCssAnimations(mutant)).toHaveLength(1);
+  });
+  it.each(['components/motion/breathe.tsx', 'components/family/join-ask.tsx'])('%s, with its count turned into -1, fails findUnboundedLoops', (f) => {
+    const src = read(f);
+    const mutant = src.replace(/loopReps\([^)]*\)(?:\s*\*\s*\d+)?\s*,\s*true\)/, '-1, true)');
+    expect(mutant).not.toBe(src);
+    expect(findUnboundedLoops(src)).toEqual([]);
+    expect(findUnboundedLoops(mutant)).toHaveLength(1);
+  });
+  it('the lamp, with its hook removed and a raw timing added, fails findOffenders', () => {
+    const src = read('components/ui/lamp.tsx');
+    const mutant = `${src.replace(/useReducedMotion/g, 'useSomethingElse')}\nconst o = withTiming(1);`;
+    expect(findOffenders(mutant).length).toBeGreaterThan(0);
   });
 });
 

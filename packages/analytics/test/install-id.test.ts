@@ -208,3 +208,14 @@ describe('retired ids past the cap (ER-A04)', () => {
     expect(analytics.analyticsIds()).toHaveLength(MAX_RETIRED_IDS);
   });
 });
+
+describe('forgetSomeIds keeps what was not acknowledged', () => {
+  it('removes only the named retired ids and leaves the rest in storage', async () => {
+    const storage = memoryStorage({ [STORAGE_KEYS.retired]: JSON.stringify(['a', 'b', 'c']) });
+    const store = new ConsentStore(storage, ids());
+    await store.load();
+    await store.forgetSomeIds(['a', 'c']);
+    expect(store.allIds()).toEqual(['b']);
+    expect(JSON.parse(storage.dump()[STORAGE_KEYS.retired] as string)).toEqual(['b']);
+  });
+});
