@@ -75,8 +75,9 @@ export const GLOBAL_PROPS = {
  * 22: wire-names step 2b, slice 8 (BL-2176, CR-212, CR-213): the rest of the `system` area is renamed: `app_opened` to `system:app_open`, `analytics_opted_in` to `system:analytics_consent_accept`, `pack_download` to `system:pack_download_update`. No property was added or widened, no tier changed (the basics set stays `screen_view`), and no build has sent any of them (analytics are off in every profile, CR-186).
  * 23: wire-names step 2b, slice 9 (BL-2176, CR-212, CR-213): the `plus` area is renamed: `plus_offer_viewed` to `plus:offer_view`, `plus_offer_closed` to `plus:offer_end`, `plan_changed` to `plus:plan_update`, `free_allowance_reached` to `plus:allowance_reach`, `keep_gate_shown` to `plus:keep_gate_view`, `letter_held` to `plus:letter_hold_create`, `plus_started_from_gate` to `plus:keep_gate_plan_start`, `offer_code_redeemed` to `plus:code_submit`, `restore_result` to `plus:restore_complete`. No property was added or widened, no tier changed, and no build has sent any of them (analytics are off in every profile, CR-186).
  * 24: wire-names step 2b, slice 10 (BL-2176, CR-212, CR-213): the first half of the `capture` area is renamed: `capture_started` to `capture:take_start`, `capture_discarded` to `capture:take_cancel`, `transcription_completed` to `capture:transcript_complete`, `letter_saved` to `capture:letter_save`. No property was added or widened, no tier changed (the basics set stays `screen_view`), and no build has sent any of them (analytics are off in every profile, CR-186).
+ * 25: wire-names step 2b, slice 11 (BL-2176, CR-212, CR-213): the rest of the `capture` area is renamed, the last slice: `review_action` to `capture:review_update`, `machine_edit_reverted` to `capture:edit_restore`, `machine_edit_rejected` to `capture:edit_decline`, `child_switched` to `capture:child_update`. All 47 rows that own a name now hold it. No property was added or widened, no tier changed (the basics set stays `screen_view`), and no build has sent any of them (analytics are off in every profile, CR-186).
  */
-export const SCHEMA_VERSION = 24;
+export const SCHEMA_VERSION = 25;
 
 /**
  * SHA-256 of `JSON.stringify(catalogShape())` per schema version. Versions 1
@@ -105,6 +106,7 @@ export const SCHEMA_FINGERPRINTS: Readonly<Record<number, string>> = Object.free
   22: '6735fdea20fb7d2ad6b1011131be795d882f0a1a01f36a96d64485658e48a3f3',
   23: 'ca191bd7fa6bb49a85ee997894aacda24ef023c684e77614cf4679218a8a34d3',
   24: '84ac0d4c4b22eb6f77bf09d474224535b2ab8bbb203cea90b548e44863ca6049',
+  25: 'e2b2e4e17ba534fd0421c2de6f1ffbadab573cc686bc3210ccd50a56be208274',
 });
 
 // ---------------------------------------------------------------------------
@@ -169,7 +171,7 @@ export const HELD_EVENTS = {
     props: { via: oneOf('link', 'code', 'paste'), signed_in: bool() },
   },
   // --- Children (K-12) -----------------------------------------------------
-  child_switched: {
+  'capture:child_update': {
     area: 'children',
     when: 'User switches the current book',
     reqs: ['PRD-REQ-012'],
@@ -180,7 +182,7 @@ export const HELD_EVENTS = {
   // `languages_set{multilingual}` from B-NFR-001 stays absent. Language usage
   // is measured only by the `languages` events below (one language per event).
   // --- Capture and review ---------------------------------------------------
-  review_action: {
+  'capture:review_update': {
     area: 'capture',
     when: 'An action on the Review screen',
     reqs: ['PRD-REQ-016', 'PRD-REQ-012'],
@@ -198,7 +200,7 @@ export const HELD_EVENTS = {
       ),
     },
   },
-  machine_edit_reverted: {
+  'capture:edit_restore': {
     area: 'capture',
     when: 'A user undoes one machine edit (type and source only). Fidelity health signal for the constitution',
     reqs: ['PRD-REQ-016'],
@@ -206,7 +208,7 @@ export const HELD_EVENTS = {
     tier: 'consented',
     props: { edit_type: EDIT_TYPE, source: EDIT_SOURCE },
   },
-  machine_edit_rejected: {
+  'capture:edit_decline': {
     area: 'capture',
     when: 'The verifier refused machine edits for a letter: one event per edit type, source and reason, with a count. Never the text or the span',
     reqs: ['PRD-REQ-016', 'B-REQ-003'],

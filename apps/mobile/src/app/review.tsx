@@ -445,7 +445,7 @@ export default function Review() {
   const player = useLetterPlayer(draft?.audioUri ?? null, { fallbackDurationMs: draft?.audioDurationMs });
   const togglePlay = () => {
     if (!player.playing) {
-      track('review_action', { action: 'play_back' });
+      track('capture:review_update', { action: 'play_back' });
       track('book:playback_start', { surface: 'review', author_relation: 'self', version: 'original' });
     }
     player.toggle();
@@ -482,7 +482,7 @@ export default function Review() {
     const next = withoutEdit(raw, applied, index, rules);
     haptic('tap');
     reverted.current++;
-    track('machine_edit_reverted', { edit_type: edit.type, source: edit.source });
+    track('capture:edit_restore', { edit_type: edit.type, source: edit.source });
     putBacks.current = [...putBacks.current, edit];
     writer.putBack(putBacks.current);
     setApplied(next.applied);
@@ -510,7 +510,7 @@ export default function Review() {
   const chooseView = (next: ReviewView) => {
     if (next === view) return;
     haptic('tap');
-    if (next === 'exact') track('review_action', { action: 'show_exactly_said' });
+    if (next === 'exact') track('capture:review_update', { action: 'show_exactly_said' });
     writer.view(next);
     setView(next);
     setRestored(null);
@@ -525,7 +525,7 @@ export default function Review() {
   };
   const chooseChild = (id: string) => {
     if (!draft) return;
-    track('review_action', { action: 'change_child' });
+    track('capture:review_update', { action: 'change_child' });
     setDraftChild(draft.id, id);
     setChildId(id);
   };
@@ -1190,7 +1190,7 @@ export default function Review() {
                   className="-ml-4 self-start"
                   testID="review.edit"
                   onPress={() => {
-                    track('review_action', { action: 'edit_text' });
+                    track('capture:review_update', { action: 'edit_text' });
                     // The put-back line speaks about the fixes; once the words are the person's own it is stale (QE-02).
                     setRestored(null);
                     setEditing(true);

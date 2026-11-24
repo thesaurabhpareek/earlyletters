@@ -173,6 +173,15 @@ describe('the rename', () => {
   const owned = rows.flatMap(([key, r]) => (r.status === 'ruled' || r.status === 'named' ? [{ key, wire: r.wire }] : []));
   const live = new Set([...Object.keys(EVENTS), ...Object.keys(REGISTRY)]);
 
+  it('the rename is complete (BL-2176): each of the 47 holds its wire name, no old key is left, and the doc says so', () => {
+    for (const { key, wire } of owned) {
+      expect(live.has(wire), wire).toBe(true);
+      expect(live.has(key), `${key} is still a key`).toBe(false);
+    }
+    expect(keys.filter((k) => k.key !== k.was)).toHaveLength(47);
+    expect(doc).toContain('47 of 47 keys that own a name hold it now');
+  });
+
   it('every row that owns a name is held under exactly one of its two names', () => {
     expect(owned).toHaveLength(47);
     for (const { key, wire } of owned) expect([live.has(key), live.has(wire)].filter(Boolean), `${key} / ${wire}`).toHaveLength(1);

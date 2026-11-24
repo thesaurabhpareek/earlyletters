@@ -19,7 +19,7 @@ export const DAY_STEMS = [
  */
 export const STEM_EXEMPT: readonly string[] = [
   'book:playback_start.version=original', // the saved-original toggle, "origin" is a prefix of "original"
-  'machine_edit_rejected.reason=original_mismatch', // a verifier outcome
+  'capture:edit_decline.reason=original_mismatch', // a verifier outcome
 ];
 
 export function stemOf(s: string): string | undefined {

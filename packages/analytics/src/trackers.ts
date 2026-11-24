@@ -83,8 +83,8 @@ export interface PackDownloadInput {
 
 /** The parts of a verifier rejection this helper reads (packages/core RejectedEdit). */
 export interface RejectedEditInput {
-  edit: { type: V<'machine_edit_rejected', 'edit_type'>; source: V<'machine_edit_rejected', 'source'> };
-  reason: V<'machine_edit_rejected', 'reason'>;
+  edit: { type: V<'capture:edit_decline', 'edit_type'>; source: V<'capture:edit_decline', 'source'> };
+  reason: V<'capture:edit_decline', 'reason'>;
 }
 
 /** At most this many `machine_edit_rejected` events per letter (one per type, source and reason). */
@@ -219,7 +219,7 @@ export function createTrackers(analytics: Pick<Analytics, 'track'>) {
         .sort((a, b) => b.n - a.n)
         .slice(0, MAX_REJECTED_EVENTS_PER_LETTER)
         .map(({ input, n }) =>
-          track('machine_edit_rejected', { edit_type: input.edit.type, source: input.edit.source, reason: input.reason, count: clampInt(n, 1, 500) }),
+          track('capture:edit_decline', { edit_type: input.edit.type, source: input.edit.source, reason: input.reason, count: clampInt(n, 1, 500) }),
         );
     },
 

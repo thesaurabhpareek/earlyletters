@@ -112,11 +112,11 @@ export function syntheticInput(date: string, opts: { weeks?: number; seed?: numb
     add(w, 'system:pack_download_update', 12, 10, 'failure', 'no_space');
     add(w, 'system:pack_download_update', 70, 30, 'pack', 'rules_hi');
     add(w, 'system:pack_download_update', 50, 25, 'pack', 'model_hindi_small');
-    add(w, 'machine_edit_rejected', 120, 40, 'reason', 'not_vetted_for_language');
-    add(w, 'machine_edit_rejected', 150, 50, 'reason', 'not_a_filler');
-    add(w, 'machine_edit_rejected', 90, 30, 'reason', 'changes_word');
-    add(w, 'machine_edit_rejected', 160, 45, 'edit_type', 'filler');
-    add(w, 'machine_edit_rejected', 200, 60, 'edit_type', 'agreement');
+    add(w, 'capture:edit_decline', 120, 40, 'reason', 'not_vetted_for_language');
+    add(w, 'capture:edit_decline', 150, 50, 'reason', 'not_a_filler');
+    add(w, 'capture:edit_decline', 90, 30, 'reason', 'changes_word');
+    add(w, 'capture:edit_decline', 160, 45, 'edit_type', 'filler');
+    add(w, 'capture:edit_decline', 200, 60, 'edit_type', 'agreement');
     add(w, 'book:read_together_start', 40, Math.round(opened * 0.1));
     add(w, 'plus:offer_end', 30, 25, 'outcome', 'dismissed');
     add(w, 'plus:offer_end', 3, 3, 'outcome', 'purchased');

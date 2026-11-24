@@ -20,11 +20,11 @@ import { EVENTS, HELD_EVENTS, REGISTRY } from '../src';
  * stay off until the D-163 gate clears (D-170, docs/DECISIONS.md), so a held event is not sent from a production build.
  */
 const HELD = [
-  'onboarding:sign_in_dismiss', 'onboarding:sign_in_fail', 'child_switched', 'keeping:export_complete', 'keeping:export_fail', 'keeping:export_start',
-  'family:invite_fail', 'family:invite_open', 'me:language_update', 'machine_edit_rejected', 'machine_edit_reverted',
+  'onboarding:sign_in_dismiss', 'onboarding:sign_in_fail', 'capture:child_update', 'keeping:export_complete', 'keeping:export_fail', 'keeping:export_start',
+  'family:invite_fail', 'family:invite_open', 'me:language_update', 'capture:edit_decline', 'capture:edit_restore',
   'notifications:notification_open', 'plus:code_submit', 'notifications:permission_submit', 'system:pack_download_update', 'book:playback_start',
   'book:read_together_end', 'book:read_together_start', 'notifications:reminder_prime_submit', 'notifications:reminder_prime_view',
-  'notifications:schedule_update', 'notifications:reminder_cancel', 'plus:restore_complete', 'review_action', 'me:setting_update',
+  'notifications:schedule_update', 'notifications:reminder_cancel', 'plus:restore_complete', 'capture:review_update', 'me:setting_update',
   'me:session_end', 'system:sync_fail',
 ];
 
