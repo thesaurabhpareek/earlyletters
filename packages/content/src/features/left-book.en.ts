@@ -20,3 +20,17 @@ export const leftBookCopy = {
   // The empty page: no book to show for this link.
   empty: 'There are no letters to show here.',
 } as const;
+
+// BL-1961 (BL-444 slice 3b; F11-REQ-011, DATA-REQ-016): the confirmation before a letter of a left book is deleted.
+// PROPOSED, every key, and they need a privacy and content read: PRIV-R21 asks a Shown, Records, Never and Decline line
+// for anything a person agrees to, and none is written for this delete yet. Data steward ruling: an `in_book` letter
+// says it also leaves the book the other parent reads and the sheet adds `familyCopy.leave.cantTakeBack`; a private
+// letter never names the other parent's book. No line says kept, stays, only you, on this phone or safe.
+// What these do not say: nothing about the 30-day shelf (a left book's letter cannot be restored, BL-1959) and nothing about export.
+// Registered as `leftBookDelete`. Placeholder: {coParent} (the app fills "your co-parent" when no sign-off is known).
+export const leftBookDeleteCopy = {
+  /** A letter that is in the book the other parent reads (`inBook`). The sheet adds `familyCopy.leave.cantTakeBack` under it. */
+  bodyInBook: "This deletes the letter. It leaves the book {coParent} reads too. It can't be restored.",
+  /** A private letter: it was never in the other parent's book, so the line does not name it. */
+  bodyPrivate: "This deletes the letter. It can't be restored.",
+} as const;

@@ -27,10 +27,10 @@ describe('every invite entry point has no flow when server features are off (not
     expect([...INVITE_ENTRIES].sort()).toEqual(['family_tab', 'invite_join', 'invite_leave', 'invite_link', 'invite_new', 'onboarding_join', 'settings_child']);
   });
 
-  it('off: coming soon, every one; on: the real flow (leave waits for D-113)', () => {
+  it('off: coming soon, every one; on: the real flow (BL-1961: leave is offered with the rest)', () => {
     for (const e of INVITE_ENTRIES) {
       expect(inviteDestination(e, false, true), e).toBe('coming_soon');
-      expect(inviteDestination(e, true, true), e).toBe(e === 'invite_leave' ? 'coming_soon' : 'flow');
+      expect(inviteDestination(e, true, true), e).toBe('flow');
     }
   });
 
@@ -48,7 +48,7 @@ describe('every invite entry point has no flow when server features are off (not
     expect(src('app/family.tsx')).toMatch(/inviteDestination\('family_tab', serverFeaturesEnabled\(\), PLUS_ALPHA\) === 'flow' \? <FamilyShared \/> : <Redirect href="\/" \/>/);
     expect(src('app/invite/index.tsx')).toMatch(/inviteDestination\('invite_join', serverFeaturesEnabled\(\), PLUS_ALPHA\) === 'flow' \? <JoinBook \/> : <Redirect href="\/" \/>/);
     expect(src('app/invite/new.tsx')).toMatch(/inviteDestination\('invite_new', serverFeaturesEnabled\(\), PLUS_ALPHA\) === 'flow' \? <InviteCoParent \/> : <Redirect href="\/" \/>/);
-    expect(src('app/invite/leave.tsx')).toMatch(/inviteDestination\('invite_leave', serverFeaturesEnabled\(\), PLUS_ALPHA\) === 'flow' \? <LeaveBook \/> : serverFeaturesEnabled\(\) && PLUS_ALPHA \? <LeaveLater \/> : <Redirect href="\/" \/>/);
+    expect(src('app/invite/leave.tsx')).toMatch(/inviteDestination\('invite_leave', serverFeaturesEnabled\(\), PLUS_ALPHA\) === 'flow' \? <LeaveBook \/> : <Redirect href="\/" \/>/);
     expect(src('app/settings/children/[id].tsx')).toMatch(/inviteHref\('settings_child', serverFeaturesEnabled\(\), PLUS_ALPHA, child\.id\)/);
     expect(src('app/onboarding.tsx')).toMatch(/inviteHref\('onboarding_join', capabilities\.coParent, PLUS_ALPHA\)/);
   });
@@ -154,15 +154,10 @@ describe('the co-parent coming-soon presentation is gone (founder, 11 Nov 2026)'
   });
 });
 
-describe('familyCopy.soon keeps only the leave sheet title; the other coming-soon words are deleted (D-161, BL-1834)', () => {
-  const s = familyCopy.soon as Record<string, unknown>;
-  it('names the status plainly and promises no date', () => {
-    expect(s.status).toBe('Coming soon');
-    expect(JSON.stringify(s)).not.toMatch(/\b(January|February|March|April|May|June|July|August|September|October|November|December|20\d\d|weeks?|months?|days?|beta)\b/i);
-  });
-
-  it('no title, lead, notify, quiet, close, Settings row, badge, points or footer is left', () => {
-    expect(Object.keys(s)).toEqual(['status']);
+describe('[BL-1961] familyCopy.soon is gone: no line says Leave is coming later', () => {
+  it('no soon block and no leave.later line is left in the family words', () => {
+    expect(Object.keys(familyCopy)).not.toContain('soon');
+    expect(Object.keys(familyCopy.leave)).not.toContain('later');
   });
 });
 
@@ -228,21 +223,16 @@ describe('server features on: the shared flows are live (D-100; option B for the
     expect(src('app/invite/new.tsx')).toMatch(/<AccountGate trigger="invite_create"/);
   });
 
-  it('[D-113] build 2 offers no Leave: no row on the Family tab or in a child\'s settings, and /invite/leave shows coming soon', () => {
-    expect(LEAVE_BOOK_OFFERED).toBe(false);
-    for (const serverFeatures of [false, true]) expect(inviteDestination('invite_leave', serverFeatures, true)).toBe('coming_soon');
-    for (const screen of ['app/family.tsx', 'app/settings/children/[id].tsx']) {
-      const code = src(screen).replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
-      expect(code, screen).not.toMatch(/\/invite\/leave|testID="family\.leave"|state\.canLeave|leave\.row/);
-    }
-    // The route stays, behind the same switch as every invite route, so the sheet returns with left books.
-    // With sharing on it says only that leaving comes later: the co-parent teaser's "letters stay on this
-    // phone" would not be true once a book is shared.
+  it('[BL-1961, F11-REQ-011] Leave is offered again: a row on the Family tab, /invite/leave opens the sheet, and nothing says coming soon', () => {
+    expect(LEAVE_BOOK_OFFERED).toBe(true);
+    expect(inviteDestination('invite_leave', true, true)).toBe('flow');
+    for (const [features, alpha] of [[false, true], [true, false], [false, false]] as const) expect(inviteDestination('invite_leave', features, alpha)).toBe('coming_soon');
+    const tab = src('app/family.tsx');
+    expect(tab).toMatch(/LEAVE_BOOK_OFFERED && state\.canLeave &&/);
+    expect(tab).toMatch(/pathname: '\/invite\/leave', params: \{ childId: active\.id \}/);
     const leave = src('app/invite/leave.tsx');
-    expect(leave).toMatch(/inviteDestination\('invite_leave', serverFeaturesEnabled\(\), PLUS_ALPHA\) === 'flow' \? <LeaveBook \/> : serverFeaturesEnabled\(\) && PLUS_ALPHA \? <LeaveLater \/> : <Redirect href="\/" \/>/);
-    expect(leave).toMatch(/familyCopy\.leave\.later/);
-    expect(familyCopy.leave.later).toBe('Leaving a shared book is coming in a later update.');
-    expect(leave).toMatch(/D-113/);
+    expect(leave).toMatch(/inviteDestination\('invite_leave', serverFeaturesEnabled\(\), PLUS_ALPHA\) === 'flow' \? <LeaveBook \/> : <Redirect href="\/" \/>/);
+    expect(leave).not.toMatch(/LeaveLater|familyCopy\.soon|leave\.later/);
   });
 
   it('a child\'s settings row opens the invite itself, not a sign-in sheet or coming soon', () => {

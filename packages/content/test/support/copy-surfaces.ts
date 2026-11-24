@@ -399,14 +399,14 @@ export const SURFACES: readonly Surface[] = [
     buttons: FAMILY_BUTTONS,
     placeholders: ['child', 'signsAs', 'inviter', 'coParent', 'date'],
     // The share message is the parent's own voice, which they see and can change in the share sheet before they send
-    // it (S58 KEEP, D-113 item 3): its "we" is the two parents, never the app. `soon.*` is the kill path (S48, S57).
-    we: { re: /\b(?:we|our)\b/i, allowed: ['create.shareMessage', 'create.shareMessageNamed', 'create.shareMessageNoName', 'create.shareMessageNamedNoName', 'create.shareTitleNoName'], allowedPrefixes: ['soon.'] },
+    // it (S58 KEEP, D-113 item 3): its "we" is the two parents, never the app. The `soon.*` kill path words are gone (BL-1961).
+    we: { re: /\b(?:we|our)\b/i, allowed: ['create.shareMessage', 'create.shareMessageNamed', 'create.shareMessageNoName', 'create.shareMessageNamedNoName', 'create.shareTitleNoName'] },
     banned: [
       PHOTOS,
       E2E_OR_FAMILY_KEYS,
       ONLY_YOU,
       // The three keys where it is true are in the auth and backup files, not here (option B, D-100).
-      { ...STAYS_ON_PHONE, allowedPrefixes: ['soon.'] },
+      { ...STAYS_ON_PHONE },
       { name: 'the child named before joining', re: /\{child\}/, only: FAMILY_BEFORE_JOIN },
     ],
     uk: UK_SHORT,
@@ -452,6 +452,7 @@ export const SURFACE_OPT_OUT: Partial<Record<keyof typeof features, string>> = {
   export: 'P6b; its screen is pinned in apps/mobile/test/settings-p6b.test.ts; no per-file rule set written yet',
   find: 'NS-02 Find words, PROPOSED until the founder approves; pinned in test/find-copy.test.ts (R3, R23, R39); no per-file rule set written yet',
   language: 'the language picker; no per-file rule set written yet',
+  leftBookDelete: 'BL-1961: the Delete confirmation for a left book letter; PROPOSED words (PRIV-R21 lines need a privacy and content read); its rules are pinned in test/left-book-copy.test.ts; the global rules read it through features',
   leftBook: 'BL-444 slice 2 (D-113): Letters to {child}, the page of a book this phone has left; PROPOSED words; its rules are pinned in test/left-book-copy.test.ts; the global rules read it through features',
   licences: 'attribution lines and library names; the licences rules in rules.test.ts read it',
   momentsTab: 'PROPOSED (PR 12a, spec 28-moments-tab.md): the Moments tab plain strings, off behind a flag; its rules are pinned in test/moments-tab-copy.test.ts',
