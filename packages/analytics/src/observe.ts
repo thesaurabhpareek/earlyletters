@@ -20,7 +20,7 @@ type Track = Pick<Analytics, 'track'>;
 // Auth (apps/mobile src/lib/auth machine.logic.ts AuthState)
 // ---------------------------------------------------------------------------
 
-export type AuthMethodValue = V<'auth_method_selected', 'method'>;
+export type AuthMethodValue = V<'auth_failed', 'method'>;
 
 export type AuthLike =
   | { status: 'restoring' }
@@ -54,7 +54,6 @@ export interface AuthObserverOptions {
 export function createAuthObserver(a: Track, opts: AuthObserverOptions): (next: AuthLike) => void {
   let prev: AuthLike = { status: 'restoring' };
   let method: AuthMethodValue | null = null;
-  let attempts = 0;
 
   return (next) => {
     const p = prev;
@@ -65,15 +64,11 @@ export function createAuthObserver(a: Track, opts: AuthObserverOptions): (next: 
     }
     if (next.status === 'signingIn' && (p.status !== 'signingIn' || p.method !== next.method)) {
       method = next.method;
-      attempts = 0;
-      a.track('auth_method_selected', { method: next.method });
       return;
     }
     if (next.status === 'awaitingCode') {
-      if (p.status !== 'awaitingCode' || p.sentAt !== next.sentAt) {
-        attempts = Math.min(10, attempts + 1);
-        a.track('auth_email_sent', { attempt: attempts });
-      } else if (next.error && next.error !== p.error) {
+      // A code being sent is not an event (`auth_email_sent` is retired, BL-2175); a new error on the same code is.
+      if (p.status === 'awaitingCode' && p.sentAt === next.sentAt && next.error && next.error !== p.error) {
         a.track('auth_failed', { method: 'email', reason: authReason(next.error) });
       }
       return;

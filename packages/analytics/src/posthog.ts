@@ -180,7 +180,7 @@ export const REQUIRED_POSTHOG_OPTIONS = {
   persistence: 'file',
   /** Replay would capture letter text on screen (ADR 0008). Default false. */
   enableSessionReplay: false,
-  /** We send our own app_opened / app_backgrounded. Default true. */
+  /** We send our own app_opened. Default true. */
   captureAppLifecycleEvents: false,
   /** No location from IP (LEGAL-REQ-012). Adds `$geoip_disable: true`. Default false. */
   disableGeoip: true,

@@ -171,13 +171,11 @@ describe('trackers', () => {
     t.trackCaptureStarted({ mode: 'spoken', source: 'tonight', promptKind: 'opening', childIndex: 0, role: 'parent' });
     t.trackCaptureDiscarded({ mode: 'spoken', stage: 'listening', audioMs: 3000 });
     t.trackTranscriptionCompleted({ engine: 'on_device', modelId: 'speech-model.whisper-large-v3-turbo-q5_0', audioMs: 1, latencyMs: 1, outcome: 'ok' });
-    t.trackBookOpened({ childIndex: 0, letters: 3, role: 'parent' });
     t.trackReadTogetherStarted({ childIndex: 0, access: 'free', letters: 3 });
     t.trackReadTogetherEnded({ reason: 'finished', durationMs: 1, lettersHeard: 1 });
     t.trackExportStarted({ letters: 3 });
     t.trackExportCompleted({ bytes: 1, durationMs: 1 });
     t.trackExportFailed({ reason: 'low_space' });
-    t.trackColdStart({ ttfiMs: 800 });
     for (const n of names) expect(Object.keys(EVENTS)).toContain(n);
   });
 });
@@ -249,7 +247,7 @@ describe('route map', () => {
 });
 
 describe('lifecycle', () => {
-  it('sends app_opened at launch and after 30 minutes away, and the session bucket on background (held events, recorded as intents until P7)', async () => {
+  it('sends app_opened at launch and after 30 minutes away, and nothing on background or cold start (app_backgrounded and app_cold_start are retired, BL-2175)', async () => {
     const { analytics, sent } = await granted();
     const storage = memoryStorage();
     let t = Date.UTC(2026, 9, 3, 18);
@@ -266,10 +264,7 @@ describe('lifecycle', () => {
     expect(lc.session().index).toBe(2);
     const events = (await sent()).map((e) => [e.event, e.properties]);
     expect(events).toEqual([
-      ['app_cold_start', { ttfi_bucket: 'lt_1s', schema_version: SCHEMA_VERSION }],
       ['app_opened', { source: 'cold', days_since_last_open: 'd0', schema_version: SCHEMA_VERSION }],
-      ['app_backgrounded', { session_bucket: '1_5m', schema_version: SCHEMA_VERSION }],
-      ['app_backgrounded', { session_bucket: '5_15m', schema_version: SCHEMA_VERSION }],
       ['app_opened', { source: 'notification', days_since_last_open: 'd2_7', schema_version: SCHEMA_VERSION }],
     ]);
     expect(Number(storage.dump()[LIFECYCLE_KEYS.firstLaunchAt])).toBe(Date.UTC(2026, 9, 3, 18));

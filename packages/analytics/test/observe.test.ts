@@ -29,7 +29,7 @@ async function granted() {
 }
 
 describe('auth observer', () => {
-  it('reports method, email sends, failures, success and sign-out from state changes', async () => {
+  it('reports failures, success and sign-out from state changes, and sends no event for a method chosen or a code sent (retired, BL-2175)', async () => {
     const { analytics, sent } = await granted();
     const under18: string[] = [];
     const see = createAuthObserver(analytics, { hasLocalLetters: () => true, onUnder18: () => under18.push('x') });
@@ -53,15 +53,10 @@ describe('auth observer', () => {
     ];
     for (const s of states) see(s);
     expect(await sent()).toEqual([
-      ['auth_method_selected', { method: 'email' }],
-      ['auth_email_sent', { attempt: 1 }],
       ['auth_failed', { method: 'email', reason: 'wrong_code' }],
-      ['auth_email_sent', { attempt: 2 }],
       ['auth_succeeded', { method: 'email', had_local_data: true }],
       ['signed_out', { reason: 'user' }],
-      ['auth_method_selected', { method: 'apple' }],
       ['auth_failed', { method: 'apple', reason: 'cancelled' }],
-      ['auth_method_selected', { method: 'google' }],
       ['auth_failed', { method: 'google', reason: 'network' }],
       ['signed_out', { reason: 'session_lost' }],
     ]);
