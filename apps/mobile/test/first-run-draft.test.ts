@@ -105,7 +105,7 @@ describe('[BL-1816] wiring: kept on this phone, in the same device settings, and
     expect(onboarding).toMatch(/const \[saved\] = useState\(\(\) => readDraft\(\)\)/);
     expect(onboarding).toMatch(/setSetting\(FIRST_RUN_DRAFT_SETTING, serializeDraft\(draft\)\)/);
     expect(onboarding).toMatch(/\[step, names, expecting, birthday, dueDate, signsAs\]/);
-    expect(onboarding).toMatch(/booksMade\.current = true;\n\s*clearDraft\(\);/);
+    expect(onboarding).toMatch(/booksMade\.current = true;\n\s*clearFirstRunDraft\(\);/);
   });
 
   it('uses the settings store only: no sync, no analytics, no log, no new store', () => {
