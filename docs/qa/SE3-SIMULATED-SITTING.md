@@ -145,7 +145,7 @@ The task brief that created this file cites exec rulings 7 and 12; I did not fin
 
 ## 7. Questions the file must answer when it is run
 
-1. The 27 Nov gate question (BL-1700): does a simulated pass exist for Listen, Review and Keep at the SE 3 size and AX5? Answer: `not answered, sitting not run`.
+1. The 27 Nov gate question (BL-1700): do the Listen, Review and Keep rows read `simulated: held` at the SE 3 size and AX5? Answer: `not answered, sitting not run`. A `simulated: held` answer is evidence for the exec review only, never a gate result or a release-note word (D-172, CDesO-22).
 2. Does a simulated reading keep DSR-024 at P1 or make it P0? For the exec-team review to rule; named here, not decided. Until then: P1 as filed.
 3. The BL-1794 arrival check (PER4-005): `not reached` in a simulator; stays a device item.
 4. Each failure becomes its own ticket (BL-1700 Scope), with the persona or row id in the title. None yet.
