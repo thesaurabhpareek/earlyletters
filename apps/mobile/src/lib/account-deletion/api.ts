@@ -35,29 +35,57 @@ const offline = (e: unknown): boolean => {
   return /network|fetch|offline|timed? ?out/i.test(m);
 };
 
-async function call<T>(fn: () => PromiseLike<Result>, read: (data: unknown) => T): Promise<ApiOutcome<T>> {
+/**
+ * How long a read waits for the server before it counts as offline (BL-492 point 3). supabase-js retries on its own for
+ * several seconds and a hung request never ends, which left a bare spinner. Reads only: a request or a cancel that is
+ * given up on may still reach the server, and then "nothing has changed" would be untrue (requestDeletion and
+ * cancelDeletion already check the status after a failure, so those keep waiting for their own answer).
+ */
+export const READ_TIMEOUT_MS = 15_000;
+
+const TIMED_OUT = Symbol('timed out');
+
+async function call<T>(fn: () => PromiseLike<Result>, read: (data: unknown) => T, timeoutMs?: number): Promise<ApiOutcome<T>> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
   try {
-    const { data, error } = await fn();
+    const pending = Promise.resolve(fn());
+    const got = timeoutMs === undefined
+      ? await pending
+      : await Promise.race([pending, new Promise<typeof TIMED_OUT>((res) => (timer = setTimeout(() => res(TIMED_OUT), timeoutMs)))]);
+    if (got === TIMED_OUT) return { ok: false, reason: 'offline' };
+    const { data, error } = got;
     if (error) return { ok: false, reason: offline(error) ? 'offline' : 'failed' };
     return { ok: true, value: read(data) };
   } catch (e) {
     return { ok: false, reason: offline(e) ? 'offline' : 'failed' };
+  } finally {
+    clearTimeout(timer);
   }
 }
 
-export function loadStatus(client: DeletionClient): Promise<ApiOutcome<ServerStatus>> {
+/**
+ * The status read. With a timeout it is the page's load (a hung read ends as offline). Without one it is the check made
+ * after a failed write: that check must wait for its own answer, because giving up on it would leave the page saying
+ * "nothing has changed" about a request that may be open (BL-492).
+ */
+function readStatus(client: DeletionClient, timeoutMs?: number): Promise<ApiOutcome<ServerStatus>> {
   return call(
     () => client.from('deletion_requests').select('id,status,scheduled_for').eq('kind', 'account')
       .in('status', ['scheduled', 'held', 'executing']).order('requested_at', { ascending: false }).limit(1),
     parseStatus,
+    timeoutMs,
   );
+}
+
+export function loadStatus(client: DeletionClient): Promise<ApiOutcome<ServerStatus>> {
+  return readStatus(client, READ_TIMEOUT_MS);
 }
 
 export function loadBooks(client: DeletionClient): Promise<ApiOutcome<SyncBook[]>> {
   return call(() => client.rpc('sync_books'), (d) => {
     const books = (d as { books?: unknown } | null)?.books;
     return Array.isArray(books) ? (books as SyncBook[]) : [];
-  });
+  }, READ_TIMEOUT_MS);
 }
 
 /**
@@ -79,7 +107,7 @@ export async function requestDeletion(client: DeletionClient, hadActiveSubscript
     },
   );
   if (r.ok) return r;
-  const s = await loadStatus(client);
+  const s = await readStatus(client);
   if (s.ok && (s.value.state === 'scheduled' || s.value.state === 'held')) {
     return { ok: true, value: { requestId: s.value.requestId, scheduledFor: s.value.scheduledFor } };
   }
@@ -94,7 +122,7 @@ export async function requestDeletion(client: DeletionClient, hadActiveSubscript
 export async function cancelDeletion(client: DeletionClient): Promise<ApiOutcome<boolean>> {
   const r = await call(() => client.rpc('cancel_account_deletion'), (d) => d === true);
   if (!r.ok || r.value) return r;
-  const s = await loadStatus(client);
+  const s = await readStatus(client);
   return s.ok && s.value.state === 'none' ? { ok: true, value: true } : { ok: false, reason: s.ok ? 'failed' : s.reason };
 }
 

@@ -1,3 +1,4 @@
+# BLOCKED (ids the app does not set yet): red by design until they land. `node apps/mobile/e2e/bin/blocked-ids.mjs <this file>` lists them (not-in-app.txt); run-suite.sh and run-p0-nightly.sh skip it and print that list.
 # E2E-11  Analytics consent off by default, on, off again (Settings, Privacy).
 # Proves: PRD-REQ-016 and LEGAL-REQ-003 (off until the person says yes),
 # PRD-REQ-018 (withdrawing works in the session and survives a relaunch),

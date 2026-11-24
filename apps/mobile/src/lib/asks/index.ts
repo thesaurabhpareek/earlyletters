@@ -30,7 +30,7 @@ import { readPrefs } from '@/lib/reminders/prefs';
 import { createKeptSessionCounter } from './kept-sessions';
 import { recordDayAsk, todayCounts } from './day-store';
 import { surfaceBusy } from './surface';
-import { firstMonthDone, nextAsk, reminderPrimeSource, sessionAfterForeground, type AskKind, type NextAsk } from './next-ask.logic';
+import { firstMonthDone, keepBookTrigger as keepBookTriggerFor, nextAsk, reminderPrimeSource, sessionAfterForeground, type AskKind, type NextAsk } from './next-ask.logic';
 
 type ReminderPrimeSource = ReturnType<typeof reminderPrimeSource>;
 
@@ -170,6 +170,19 @@ export function fireDelayedAsk(kind: 'keep_book' | 'reminder_prime', show: () =>
   if (kind === 'keep_book') noteKeepBookShown(now);
   show();
   return true;
+}
+
+/**
+ * The sign-in trigger for the Keep the book sheet `askAfterSave` returned: `third_letter` for the one re-offer,
+ * `first_letter` for the first offer (BL-1562). Reads the mark `noteKeepBookShown` sets, so call it only after
+ * `fireDelayedAsk` has marked the sheet shown (inside its `show` callback). An unreadable store gives `first_letter`.
+ */
+export function keepBookTrigger(): 'first_letter' | 'third_letter' {
+  try {
+    return keepBookTriggerFor(getSetting(K.keepBookReoffer) === 'on');
+  } catch {
+    return 'first_letter';
+  }
 }
 
 // ── The reminder card's request, for <ReminderPrimeAsk> ──────────────────

@@ -28,7 +28,7 @@ export const INVITE_ENTRIES = [
   'settings_child',
   /** First run, "I was invited". */
   'onboarding_join',
-  /** /invite/leave: leave a shared book. Not offered in build 2 (D-113, LEAVE_BOOK_OFFERED). */
+  /** /invite/leave: leave a shared book. Offered again with BL-1961 (LEAVE_BOOK_OFFERED). */
   'invite_leave',
 ] as const;
 export type InviteEntry = (typeof INVITE_ENTRIES)[number];
@@ -37,22 +37,20 @@ export type InviteEntry = (typeof INVITE_ENTRIES)[number];
 export type InviteDestination = 'coming_soon' | 'flow';
 
 /**
- * D-113 (coordinator's call, 23 Oct 2026; the founder may reverse it): Leave is hidden in build 2.
- * After leaving, sync marks the book left (lib/sync/merge.ts) and the book list hides it
- * (db/repos/children.ts), so the leaver's own letters would stay on the phone with no screen that
- * lists, exports or deletes them. Until left books are listed under "Letters to {child}" with read,
- * export and delete (docs/BACKLOG.md, before build 3), the Family tab has no Leave row and
- * /invite/leave answers coming soon, like every co-parent route whose feature is off. The leave
- * plan (members.logic.ts canLeave, invites.ts leaveBook) and its tests stay.
+ * D-113 held Leave back in build 2 because a book this phone leaves was listed nowhere. BL-444 slices 1 to 3 now list it
+ * under "Letters to {child}" (read, export, and Delete through `deleteLeftBookLetter`, BL-1960, BL-1961), so Leave is
+ * offered again: a Leave row on the Family tab, and /invite/leave opens the sheet. The leave plan (members.logic.ts
+ * canLeave, invites.ts leaveBook) is unchanged. It still follows the one rule below: no server features or no alpha
+ * build, no flow.
  */
-export const LEAVE_BOOK_OFFERED = false;
+export const LEAVE_BOOK_OFFERED = true;
 
 /**
- * One rule for all of them: no server features, no flow; a store build (`alpha` false) has no flow (founder ruling, 11 Nov 2026: co-parent is coming soon there, so one rule, servers on AND an alpha build). Leave also waits for D-113 to lift. `alpha` is PLUS_ALPHA (billing/alpha.ts),
+ * One rule for all of them: no server features, no flow; a store build (`alpha` false) has no flow (founder ruling, 11 Nov 2026: co-parent is coming soon there, so one rule, servers on AND an alpha build). Leave also follows LEAVE_BOOK_OFFERED. `alpha` is PLUS_ALPHA (billing/alpha.ts),
  * decided at bundle time; there is deliberately no default, so a caller cannot forget it.
  */
 export function inviteDestination(entry: InviteEntry, serverFeatures: boolean, alpha: boolean): InviteDestination {
-  if (entry === 'invite_leave' && !LEAVE_BOOK_OFFERED) return 'coming_soon';
+  if (entry === 'invite_leave' && !LEAVE_BOOK_OFFERED) return 'coming_soon'; // the switch above, kept as the one place to hold Leave back
   return serverFeatures && alpha ? 'flow' : 'coming_soon';
 }
 

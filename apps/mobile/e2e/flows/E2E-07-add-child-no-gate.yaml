@@ -1,3 +1,4 @@
+# BLOCKED (ids the app does not set yet): red by design until they land. `node apps/mobile/e2e/bin/blocked-ids.mjs <this file>` lists them (not-in-app.txt); run-suite.sh and run-p0-nightly.sh skip it and print that list.
 # E2E-07  Add a child after first run: no gate. The form opens straight away,
 # the second book is created, and no Plus sheet appears.
 # Proves: F14-REQ-029 (books for more children have no Plus gate: 0 Plus sheets),

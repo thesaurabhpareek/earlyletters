@@ -8,6 +8,7 @@
  * At the default size every number here equals the old one (bar 52 pt, letter 60 pt below the safe area).
  */
 import { tokens } from '@scribe/design-tokens';
+import { sizeControlMinHeight } from './size-control.logic';
 
 /** The bar's height at the default size, below the safe area. */
 export const TOP_BAR_MIN_PT = 52;
@@ -22,9 +23,9 @@ export function backButtonHeight(fontScale: number): number {
   return Math.max(tokens.target.min, Math.ceil(label + BACK_PAD_PT));
 }
 
-/** Bar height below the safe area: follows the largest Back button, never under 52 pt. */
+/** Bar height below the safe area: follows the taller of Back and the "Aa" control, never under 52 pt (BL-1990). */
 export function topBarContentHeight(fontScale: number): number {
-  return Math.max(TOP_BAR_MIN_PT, backButtonHeight(fontScale));
+  return Math.max(TOP_BAR_MIN_PT, backButtonHeight(fontScale), sizeControlMinHeight(fontScale));
 }
 
 /** Whole bar, safe area included. */

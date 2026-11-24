@@ -1,3 +1,4 @@
+# BLOCKED (ids the app does not set yet): red by design until they land. `node apps/mobile/e2e/bin/blocked-ids.mjs <this file>` lists them (not-in-app.txt); run-suite.sh and run-p0-nightly.sh skip it and print that list.
 # E2E-01a  18+ entry gate: No, then the 24-hour stop.
 # Proves: PRD-REQ-019 (gate before any first-run screen, nothing preselected,
 # No closes the app for 24 hours, a clock set back keeps it closed), LEGAL-REQ-002,
