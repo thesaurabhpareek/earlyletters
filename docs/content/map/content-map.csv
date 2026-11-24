@@ -1464,50 +1464,51 @@ features/family.en.ts#familyCopy.accept.signInBody,app screen,in-app,packages/co
 features/family.en.ts#familyCopy.accept.signIn,app screen,in-app,packages/content/src/features/family.en.ts,109,en,Sign in,7,,,,,,content,live on develop,content
 features/family.en.ts#familyCopy.accept.joining,app screen,in-app,packages/content/src/features/family.en.ts,110,en,Joining the book,16,,,,,,content,live on develop,content
 features/family.en.ts#familyCopy.accept.joinedTitle,app screen,in-app,packages/content/src/features/family.en.ts,111,en,You're in {child}'s book,24,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.accept.joinedBody,app screen,in-app,packages/content/src/features/family.en.ts,113,en,"Your letters and {inviter}'s sit side by side, each signed.",59,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.accept.joinedBodyUnknown,app screen,in-app,packages/content/src/features/family.en.ts,115,en,"Your letters and theirs sit side by side, each signed.",54,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.accept.joinedWaiting,app screen,in-app,packages/content/src/features/family.en.ts,116,en,{child}'s book is on its way to this phone.,43,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.accept.joinedNotYet,app screen,in-app,packages/content/src/features/family.en.ts,121,en,{child}'s book has not reached this phone yet.,46,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.accept.joinedWaitingUnknown,app screen,in-app,packages/content/src/features/family.en.ts,123,en,The book is on its way to this phone.,37,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.accept.joinedNotYetUnknown,app screen,in-app,packages/content/src/features/family.en.ts,124,en,The book has not reached this phone yet.,40,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.accept.open,app screen,in-app,packages/content/src/features/family.en.ts,125,en,Open the book,13,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.accept.close,app screen,in-app,packages/content/src/features/family.en.ts,126,en,Close,5,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.accept.tryAgain,app screen,in-app,packages/content/src/features/family.en.ts,127,en,Try again,9,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.accept.pasteAnother,app screen,in-app,packages/content/src/features/family.en.ts,129,en,Paste another link,18,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.accept.tryLater,app screen,in-app,packages/content/src/features/family.en.ts,131,en,"Wait a little while, then try again.",36,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.leave.row,app screen,in-app,packages/content/src/features/family.en.ts,136,en,Leave {child}'s book,20,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.leave.title,app screen,in-app,packages/content/src/features/family.en.ts,137,en,Leave {child}'s book?,21,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.leave.keep,app screen,in-app,packages/content/src/features/family.en.ts,138,en,Leave my letters in the book,28,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.leave.keepHelp,app screen,in-app,packages/content/src/features/family.en.ts,139,en,Anyone {coParent} invites later can read letters you leave in the book.,71,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.leave.takeOut,app screen,in-app,packages/content/src/features/family.en.ts,140,en,Take my letters out of the book,31,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.leave.takeOutHelp,app screen,in-app,packages/content/src/features/family.en.ts,141,en,Your letters leave the book and stay yours.,43,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.leave.cantTakeBack,app screen,in-app,packages/content/src/features/family.en.ts,142,en,Letters already on {coParent}'s phone or in an export can't be taken back.,74,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.leave.confirm,app screen,in-app,packages/content/src/features/family.en.ts,143,en,Leave the book,14,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.leave.cancel,app screen,in-app,packages/content/src/features/family.en.ts,144,en,Stay,4,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.leave.leaving,app screen,in-app,packages/content/src/features/family.en.ts,145,en,Leaving the book,16,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.leave.done,app screen,in-app,packages/content/src/features/family.en.ts,146,en,You left {child}'s book. Your own letters stay yours.,53,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.leave.coParentFallback,app screen,in-app,packages/content/src/features/family.en.ts,147,en,your co-parent,14,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.left.note,app screen,in-app,packages/content/src/features/family.en.ts,152,en,{signsAs} has left {child}'s book.,34,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.left.noteUnsigned,app screen,in-app,packages/content/src/features/family.en.ts,154,en,Your co-parent has left {child}'s book.,39,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.errors.expired,error,in-app error,packages/content/src/features/family.en.ts,158,en,This invite has expired. Ask for a new one.,43,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.errors.used,error,in-app error,packages/content/src/features/family.en.ts,159,en,This invite has already been used. Ask for a new one if that wasn't you.,72,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.errors.revoked,error,in-app error,packages/content/src/features/family.en.ts,160,en,This invite was cancelled. Ask for a new one.,45,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.errors.already_member,error,in-app error,packages/content/src/features/family.en.ts,161,en,You're already part of this book.,33,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.errors.not_found,error,in-app error,packages/content/src/features/family.en.ts,162,en,That link doesn't open an invite. Check it and try again.,57,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.errors.not_parent,error,in-app error,packages/content/src/features/family.en.ts,163,en,"Only a parent of {child}'s book can invite. If you just signed in, give it a moment and try again.",98,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.errors.rate_limited,error,in-app error,packages/content/src/features/family.en.ts,164,en,"You've sent a lot of invites. Wait a while, then try again.",59,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.errors.consent_needed,error,in-app error,packages/content/src/features/family.en.ts,165,en,Finish setting up your account first.,37,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.errors.book_deleted,error,in-app error,packages/content/src/features/family.en.ts,166,en,This book isn't available.,26,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.errors.signed_out,error,in-app error,packages/content/src/features/family.en.ts,167,en,Sign in again to continue.,26,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.errors.network,error,in-app error,packages/content/src/features/family.en.ts,168,en,This phone is offline. Try again once it is back online.,56,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.errors.unknown,error,in-app error,packages/content/src/features/family.en.ts,169,en,That didn't go through. Try again.,34,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.errors.book_full,error,in-app error,packages/content/src/features/family.en.ts,171,en,This book already has two parents. Ask the person who invited you.,66,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.errors.last_parent,error,in-app error,packages/content/src/features/family.en.ts,173,en,"You're the only parent of {child}'s book now, so it stays with you.",67,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.errors.not_allowed,error,in-app error,packages/content/src/features/family.en.ts,175,en,That isn't possible from here.,30,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.errors.retry_new_invite,error,in-app error,packages/content/src/features/family.en.ts,177,en,That didn't go through. Try again.,34,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.errors.id_taken,error,in-app error,packages/content/src/features/family.en.ts,179,en,That didn't go through. Try again.,34,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.errors.family_share_consent,error,in-app error,packages/content/src/features/family.en.ts,184,en,"Sharing a book now asks for one more agreement. Update the app to see it, then try again.",89,,,,,,content,live on develop,content
-features/family.en.ts#familyCopy.errors.paused,error,in-app error,packages/content/src/features/family.en.ts,190,en,Invites are paused for now. Try again a little later.,53,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.accept.joinedTitleUnknown,app screen,in-app,packages/content/src/features/family.en.ts,113,en,You're in the book,18,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.accept.joinedBody,app screen,in-app,packages/content/src/features/family.en.ts,115,en,"Your letters and {inviter}'s sit side by side, each signed.",59,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.accept.joinedBodyUnknown,app screen,in-app,packages/content/src/features/family.en.ts,117,en,"Your letters and theirs sit side by side, each signed.",54,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.accept.joinedWaiting,app screen,in-app,packages/content/src/features/family.en.ts,118,en,{child}'s book is on its way to this phone.,43,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.accept.joinedNotYet,app screen,in-app,packages/content/src/features/family.en.ts,123,en,{child}'s book has not reached this phone yet.,46,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.accept.joinedWaitingUnknown,app screen,in-app,packages/content/src/features/family.en.ts,125,en,The book is on its way to this phone.,37,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.accept.joinedNotYetUnknown,app screen,in-app,packages/content/src/features/family.en.ts,126,en,The book has not reached this phone yet.,40,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.accept.open,app screen,in-app,packages/content/src/features/family.en.ts,127,en,Open the book,13,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.accept.close,app screen,in-app,packages/content/src/features/family.en.ts,128,en,Close,5,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.accept.tryAgain,app screen,in-app,packages/content/src/features/family.en.ts,129,en,Try again,9,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.accept.pasteAnother,app screen,in-app,packages/content/src/features/family.en.ts,131,en,Paste another link,18,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.accept.tryLater,app screen,in-app,packages/content/src/features/family.en.ts,133,en,"Wait a little while, then try again.",36,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.leave.row,app screen,in-app,packages/content/src/features/family.en.ts,138,en,Leave {child}'s book,20,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.leave.title,app screen,in-app,packages/content/src/features/family.en.ts,139,en,Leave {child}'s book?,21,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.leave.keep,app screen,in-app,packages/content/src/features/family.en.ts,140,en,Leave my letters in the book,28,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.leave.keepHelp,app screen,in-app,packages/content/src/features/family.en.ts,141,en,Anyone {coParent} invites later can read letters you leave in the book.,71,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.leave.takeOut,app screen,in-app,packages/content/src/features/family.en.ts,142,en,Take my letters out of the book,31,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.leave.takeOutHelp,app screen,in-app,packages/content/src/features/family.en.ts,143,en,Your letters leave the book and stay yours.,43,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.leave.cantTakeBack,app screen,in-app,packages/content/src/features/family.en.ts,144,en,Letters already on {coParent}'s phone or in an export can't be taken back.,74,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.leave.confirm,app screen,in-app,packages/content/src/features/family.en.ts,145,en,Leave the book,14,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.leave.cancel,app screen,in-app,packages/content/src/features/family.en.ts,146,en,Stay,4,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.leave.leaving,app screen,in-app,packages/content/src/features/family.en.ts,147,en,Leaving the book,16,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.leave.done,app screen,in-app,packages/content/src/features/family.en.ts,148,en,You left {child}'s book. Your own letters stay yours.,53,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.leave.coParentFallback,app screen,in-app,packages/content/src/features/family.en.ts,149,en,your co-parent,14,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.left.note,app screen,in-app,packages/content/src/features/family.en.ts,154,en,{signsAs} has left {child}'s book.,34,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.left.noteUnsigned,app screen,in-app,packages/content/src/features/family.en.ts,156,en,Your co-parent has left {child}'s book.,39,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.errors.expired,error,in-app error,packages/content/src/features/family.en.ts,160,en,This invite has expired. Ask for a new one.,43,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.errors.used,error,in-app error,packages/content/src/features/family.en.ts,161,en,This invite has already been used. Ask for a new one if that wasn't you.,72,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.errors.revoked,error,in-app error,packages/content/src/features/family.en.ts,162,en,This invite was cancelled. Ask for a new one.,45,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.errors.already_member,error,in-app error,packages/content/src/features/family.en.ts,163,en,You're already part of this book.,33,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.errors.not_found,error,in-app error,packages/content/src/features/family.en.ts,164,en,That link doesn't open an invite. Check it and try again.,57,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.errors.not_parent,error,in-app error,packages/content/src/features/family.en.ts,165,en,"Only a parent of {child}'s book can invite. If you just signed in, give it a moment and try again.",98,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.errors.rate_limited,error,in-app error,packages/content/src/features/family.en.ts,166,en,"You've sent a lot of invites. Wait a while, then try again.",59,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.errors.consent_needed,error,in-app error,packages/content/src/features/family.en.ts,167,en,Finish setting up your account first.,37,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.errors.book_deleted,error,in-app error,packages/content/src/features/family.en.ts,168,en,This book isn't available.,26,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.errors.signed_out,error,in-app error,packages/content/src/features/family.en.ts,169,en,Sign in again to continue.,26,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.errors.network,error,in-app error,packages/content/src/features/family.en.ts,170,en,This phone is offline. Try again once it is back online.,56,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.errors.unknown,error,in-app error,packages/content/src/features/family.en.ts,171,en,That didn't go through. Try again.,34,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.errors.book_full,error,in-app error,packages/content/src/features/family.en.ts,173,en,This book already has two parents. Ask the person who invited you.,66,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.errors.last_parent,error,in-app error,packages/content/src/features/family.en.ts,175,en,"You're the only parent of {child}'s book now, so it stays with you.",67,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.errors.not_allowed,error,in-app error,packages/content/src/features/family.en.ts,177,en,That isn't possible from here.,30,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.errors.retry_new_invite,error,in-app error,packages/content/src/features/family.en.ts,179,en,That didn't go through. Try again.,34,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.errors.id_taken,error,in-app error,packages/content/src/features/family.en.ts,181,en,That didn't go through. Try again.,34,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.errors.family_share_consent,error,in-app error,packages/content/src/features/family.en.ts,186,en,"Sharing a book now asks for one more agreement. Update the app to see it, then try again.",89,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.errors.paused,error,in-app error,packages/content/src/features/family.en.ts,192,en,Invites are paused for now. Try again a little later.,53,,,,,,content,live on develop,content
 features/find.en.ts#findCopy.button,app screen,in-app,packages/content/src/features/find.en.ts,13,en,Find,4,,,,,,content,live on develop,content
 features/find.en.ts#findCopy.buttonHint,app screen,in-app,packages/content/src/features/find.en.ts,15,en,Looks for a word in this book's letters.,40,,,,,,content,live on develop,content
 features/find.en.ts#findCopy.placeholder,app screen,in-app,packages/content/src/features/find.en.ts,17,en,Find in {child}'s book,22,,,,,,content,live on develop,content

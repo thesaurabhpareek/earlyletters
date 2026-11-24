@@ -109,6 +109,8 @@ export const familyCopy = {
     signIn: 'Sign in',
     joining: 'Joining the book',
     joinedTitle: "You're in {child}'s book",
+    /** The same title when the child's name could not be read after joining (BL-460 point 3). */
+    joinedTitleUnknown: "You're in the book",
     /** The flyleaf, in words: {inviter} is the inviter's sign-off from the peek. */
     joinedBody: "Your letters and {inviter}'s sit side by side, each signed.",
     /** The same line when the inviter set no sign-off. */

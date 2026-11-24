@@ -1868,8 +1868,9 @@ Found in the independent reviews of 28 Oct 2026 (#370, #373, #375, #380, #381, #
 - Done when: the mutant is killed.
 
 #### BL-460 Join wait and invite residuals from the #375 review
-- Status: ready. Mode: agent. Owner: family owner (S04), analytics engineer (point 8), qa engineer (points 4 and 6). Milestone: M5. Size: M (one PR per point is fine). Depends on: none.
+- Status: partly done. Mode: agent. Owner: family owner (S04), analytics engineer (point 8), qa engineer (points 4 and 6). Milestone: M5. Size: M (one PR per point is fine). Depends on: none.
 - Remaining: points 4 (PR #1370, `458a2bb8d`) and 5 (PR #1438, `1965f6bf1`) are merged; points 1 to 3 and 6 to 8 were not found on develop.
+- Note (BL-460, 24 Nov 2026): point 3 is done (`joinedTitleUnknown` "You're in the book", used by `joinTitle('joined', null)` and the joined sheet; test in `apps/mobile/test/join-sheet.test.ts`). Points 1, 2, 6, 7 and 8 remain open: 1 and 7 need the family owner's call on the behaviour, 2 is not located in code, 6 needs a web flow, 8 is the analytics owner's.
 - Priority: Low.
 - Gate: none.
 - Satisfies: none given.

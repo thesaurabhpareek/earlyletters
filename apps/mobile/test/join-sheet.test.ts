@@ -43,6 +43,14 @@ describe('[S59] before sign-in, neither the child\'s name nor the inviter is sho
     expect(joinTitle('joined', 'Asha')).toBe("You're in Asha's book");
   });
 
+  it('[BL-460 point 3] a join whose name could not be read is titled for the joined view, not "Join a book"', () => {
+    expect(joinTitle('joined', null)).toBe(familyCopy.accept.joinedTitleUnknown);
+    expect(joinTitle('joined', null)).not.toBe(familyCopy.accept.title);
+    expect(familyCopy.accept.joinedTitleUnknown).not.toContain('{child}');
+    // Before the join, an unknown name still gets the generic title.
+    expect(joinTitle('ask', null)).toBe(familyCopy.accept.askTitle);
+  });
+
   it('only the ask shows the inviter, as a signature, and never the child', () => {
     expect(invitedByLine('Mama')).toEqual({ text: 'Invited by Mama', signature: true });
     expect(invitedByLine('  ')).toEqual({ text: familyCopy.accept.invitedByUnknown, signature: false });
@@ -205,7 +213,7 @@ describe('[S59] the token and the steps (lens B mutation survivors on #314)', ()
 describe('[S59] VoiceOver hears the joined moment (critics\' pass S5; code-read, a phone check)', () => {
   it('focus moves to "You\'re in {child}\'s book" as the joined view shows, as SheetTitle does on every other step', () => {
     const joined = code(SHEET).slice(code(SHEET).indexOf('function Joined'));
-    expect(joined).toMatch(/const heading = useRef<RNText>\(null\);\s*const joinedTitle = child \? fill\(a\.joinedTitle, \{ child \}\) : a\.title;\s*useFocusOnMount\(heading, true, joinedTitle\);/);
+    expect(joined).toMatch(/const heading = useRef<RNText>\(null\);\s*const joinedTitle = joinTitle\('joined', child \|\| null\);\s*useFocusOnMount\(heading, true, joinedTitle\);/);
     expect(joined).toMatch(/<Text ref=\{heading\} variant="title1" asHeading=\{1\}>\s*\{joinedTitle\}/);
     expect(code('lib/auth/ui.tsx')).toMatch(/useFocusOnMount\(ref, true, children\);/);
   });

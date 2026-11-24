@@ -29,7 +29,7 @@ export function joinTitle(view: JoinView, child: string | null): string {
   const a = familyCopy.accept;
   if (view === 'signIn') return a.invitedTitle;
   if (view === 'ask') return a.askTitle;
-  if (view === 'joined' && child) return fill(a.joinedTitle, { child });
+  if (view === 'joined') return child ? fill(a.joinedTitle, { child }) : a.joinedTitleUnknown;
   return a.title;
 }
 
