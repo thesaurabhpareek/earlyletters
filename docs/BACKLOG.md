@@ -10508,7 +10508,7 @@ Servers on, decided by the founder (D-170, which confirms D-157, D-160 and D-161
 - Done when: every row cites evidence and the record no longer says sign-in is optional.
 
 #### BL-1869 Apply the trace ratchet step to CI
-- Status: blocked (applying a workflow file is a physical act, listed in `docs/release/FOUNDER_QUEUE.md` when it arrives; the step is written in `docs/ops/proposed/trace-ns-ratchet.md`; the plain `--check` question in it is open with founder question 07 Q8). Mode: human. Owner: platform. Milestone: M15. Size: XS. Depends on: none.
+- Status: blocked (applying a workflow file is a physical act, listed in `docs/release/FOUNDER_QUEUE.md` when it arrives; the step is written in `docs/ops/proposed/trace-ns-ratchet.md`; the plain `--check` question in it is open with founder question 07 Q8). Mode: human. Owner: platform. Milestone: M15. Size: XS. Depends on: BL-2030.
 - Satisfies: gate G0 (BL-964). Remainder of BL-964.
 - Scope: the proposed CI step in `docs/ops/proposed/trace-ns-ratchet.md` is written into the `unit` job of `.github/workflows/ci.yml` by Karma's commit (a GitHub write under CR-176 item 5). Only if the session proxy refuses a workflow-file write does it become the account holder's own edit of that file in the GitHub web editor, and then Karma adds the line to `docs/release/FOUNDER_QUEUE.md`. No secret is involved.
 - Done when: a pull request that drops an NS P0 test title fails the step.
@@ -12549,3 +12549,14 @@ Source: reviews of PRs #1999, #2006 and #2011, and the exec-reading rule of D-17
 - Scope: change the generator line so it says Where your letters live (J14-01) and Your words (J14-02) are captured, and Storage and Spoken language are not; make the INDEX line match (regenerated, or edited by hand to the generator's exact output). Change no other line.
 - Done when: the generator line and the INDEX line agree with each other and with `apps/mobile/e2e-web/j14-recordings.flow.ts`.
 - Source: Review A of PR #2035, 24 Nov 2026. Not verified: the flow was not run.
+
+## Follow-up of CR-227 (BL-2238; filed by the qa agent, docs only)
+
+#### BL-2238 Clear the 176 NS rows that CR-227 did not seed, so `trace.mjs --no-write --check` exits 0 on develop
+- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
+- Priority: P2. Gate: none (CR-227 rules only the 18 NS-54 rows; this row carries no baseline growth). Lane: qa.
+- Satisfies: gate G0 (BL-964); refines BL-1869 and BL-2030.
+- Problem and evidence: on develop `cf4de7f40` `node scripts/trace.mjs --no-write --check` exits 1 with 194 FAIL lines, all "open and not in docs/ops/trace-ns-baseline.txt": 18 NS-54 (seeded by CR-227), 174 NS-53 (G01, G03, G04, G05 and 170 R rows), NS-21-R12b and NS-51-R43. It also prints 67 "stale baseline line" notices for rows that now have a test.
+- Scope: (1) the NS-53 owner (mobile or product) lists which of the 174 NS-53 rows have a test that can honestly carry the id, retitles that test with `[NS-53-Rn]`, and names the rest as unbuilt; the unbuilt rows go to Karma for a ruling like CR-227, never into the baseline without one. (2) Fix NS-21-R12b (cited in `apps/mobile/test/no-system-indexing.test.ts`, defined by no card) at its source: the test title or the card. (3) Fix NS-51-R43 at its source the same way, or name its owner. (4) Delete the 67 stale lines with `--update-ns-baseline`.
+- Done when: `node scripts/trace.mjs --no-write --check` exits 0 on develop.
+- Source: the reconcile run for BL-2030, 24 Nov 2026. Not verified: the NS-53 rows were not read.
