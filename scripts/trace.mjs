@@ -537,9 +537,9 @@ export function renderTrace(m) {
 export const NS_SOURCE = String.raw`(?<![A-Za-z0-9-])(?:NS-\d{2}-[A-Z]\d{1,3}(?:-\d{1,2})?[a-z]?|NX-\d{2}[a-z]?-[A-Z]\d{1,3}[a-z]?|X\d{1,2}-R\d{1,2}[a-z]?|FRAME-[A-Z]{2,12})(?![A-Za-z0-9-])`;
 const NS_ONLY = new RegExp(`^${NS_SOURCE}$`);
 const NS_TOK = String.raw`[A-Z]\d{1,2}(?:-\d{1,2})?[a-z]?(?![A-Za-z0-9-])`;
-// Cards 00 to 12, and the three added 20 Nov: 19 (NS-38 to 45), 21 (NS-46 to 50), 27 (NS-51, 52), the
+// Cards 00 to 12, and those added since: 19 (NS-38 to 45), 21 (NS-46 to 50), 27 (NS-51, 52), 28, 29 (NS-54), the
 // cards p0.py reads for NS rows. Other cards above 12 (13 to 18, 20, 22 to 26) stay out: not acceptance cards.
-const CARD_FILE = /^(?:0\d|1[0-2]|19|21|27|28)-[^/\\]*\.md$/;
+const CARD_FILE = /^(?:0\d|1[0-2]|19|21|27|28|29)-[^/\\]*\.md$/;
 const uniq = (a) => [...new Set(a)];
 export const cmpNs = (a, b) => a.localeCompare(b, 'en', { numeric: true });
 
