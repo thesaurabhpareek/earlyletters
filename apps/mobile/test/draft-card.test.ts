@@ -356,7 +356,7 @@ describe('[S33] not much today, and the light', () => {
 
   it('Undo restores the link and the lamp: it removes the mark, the line goes, and the light follows the mark (source)', () => {
     const screen = code('app/(tabs)/index.tsx');
-    expect(screen).toMatch(/const undoNotMuch = \(\) => \{\s*if \(keptMark\) deleteEntry\(keptMark\);\s*setKeptMark\(null\);/);
+    expect(screen).toMatch(/const undoNotMuch = \(\) => \{\s*(?:\/\/[^\n]*\s*)*if \(keptMark && !deleteEntry\(keptMark\) && getEntry\(keptMark\)\) return;\s*setKeptMark\(null\);/);
     expect(screen).toContain('tonightLampIntensity(daypart, room.markToday)');
     // The line stays until Undo or until the person leaves Tonight (blur), never moving content on a return.
     expect(screen).toMatch(/return \(\) => \{\s*focused\.current = false;\s*setKeptMark\(null\);\s*\};/);
