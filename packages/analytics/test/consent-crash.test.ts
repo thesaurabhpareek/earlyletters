@@ -2,7 +2,9 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   buildPostHogOptions,
   createAnalytics,
+  createBasics,
   createLazyPostHogAdapter,
+  createTrackers,
   CRASH_REPORTING,
   errorTrackingOptions,
   EV,
@@ -10,6 +12,7 @@ import {
   posthogBeforeSend,
   posthogHostFor,
   recordingProvider,
+  type AnalyticsOptions,
   type PostHogLike,
 } from '../src';
 
@@ -105,6 +108,87 @@ describe('nothing leaves the device before the parent says yes', () => {
     await analytics.init();
     await analytics.grant();
     for (const c of rec.calls.filter((x) => x.method === 'identify')) expect(c.args).toEqual([ID]);
+  });
+});
+
+// BL-2122 (P7 of the adapter split): the basics helpers and the call-site trackers go through the same gate. These
+// tests were split out of the consent describe above when P4 landed without `createBasics`.
+describe('basics helpers and trackers send nothing before the parent says yes (BL-2122)', () => {
+  function everyHelper(analytics: Parameters<typeof createBasics>[0]) {
+    const basics = createBasics(analytics);
+    return [
+      basics.tap('tonight_speak', 'tonight'),
+      basics.impress('tonight_prompt', 'tonight', 1),
+      basics.perf('save_commit', 400),
+      basics.startPerf('cold_start')(),
+      createTrackers(analytics).trackInviteAccepted({ role: 'parent' }),
+    ];
+  }
+
+  for (const answer of ['unknown', 'declined'] as const) {
+    it(`consent ${answer}: zero sends, no SDK, no network, nothing queued`, async () => {
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('network must not be used'));
+      try {
+        const { analytics, create, calls, captured, storage } = stack();
+        await analytics.init();
+        if (answer === 'declined') await analytics.revoke();
+        expect(everyHelper(analytics)).toEqual(Array(5).fill('dropped_no_consent'));
+        await analytics.flush();
+        expect(create).not.toHaveBeenCalled();
+        expect(calls).toEqual([]);
+        expect(captured).toEqual([]);
+        expect(fetchSpy).not.toHaveBeenCalled();
+        expect(analytics.queueLength()).toBe(0);
+        expect(storage.dump()['scribe.analytics.id']).toBeUndefined();
+      } finally {
+        fetchSpy.mockRestore();
+      }
+    });
+  }
+
+  it('obeys basicsPolicy: these consented-tier events never pass collect_by_default without a yes, and off wins', async () => {
+    const policies: AnalyticsOptions['basicsPolicy'][] = [undefined, 'ask_first', 'collect_by_default'];
+    for (const basicsPolicy of policies) {
+      const provider = recordingProvider();
+      const analytics = createAnalytics({ provider, basicsPolicy, randomId: () => ID, flushIntervalMs: 0 });
+      await analytics.init();
+      const before = basicsPolicy === 'collect_by_default' ? 'dropped_disclosure_pending' : 'dropped_no_consent';
+      expect(createBasics(analytics).tap('review_keep', 'tonight'), String(basicsPolicy)).toBe(before);
+      await analytics.recordDisclosureShown();
+      const shown = basicsPolicy === 'collect_by_default' ? 'dropped_not_basics' : 'dropped_no_consent';
+      expect(createBasics(analytics).perf('speak_to_mic', 50), String(basicsPolicy)).toBe(shown);
+      await analytics.grant();
+      expect(createBasics(analytics).tap('review_keep', 'tonight')).toBe('queued');
+      await analytics.flush();
+      await analytics.revoke();
+      const off = basicsPolicy === 'collect_by_default' ? 'dropped_user_off' : 'dropped_no_consent';
+      expect(createBasics(analytics).impress('keep_sheet', 'tonight'), String(basicsPolicy)).toBe(off);
+      await analytics.flush();
+      expect(provider.captured().map((c) => c.event), String(basicsPolicy)).toEqual(['control_tapped']);
+    }
+  });
+
+  it('a planted id or property never reaches the SDK: no entry text, transcript, audio or child name', async () => {
+    const provider = recordingProvider();
+    const analytics = createAnalytics({ provider, randomId: () => ID, flushIntervalMs: 0 });
+    await analytics.init();
+    await analytics.grant();
+    const plant = 'Asha said her first word today';
+    // A forced id that is not in the closed list is dropped whole by the validator.
+    expect(createBasics(analytics).tap(plant as never, 'tonight')).toBe('dropped_invalid');
+    expect(createBasics(analytics).impress('Asha' as never, 'tonight')).toBe('dropped_invalid');
+    // A caller that adds a property behind the helper's back. A key the registry does not list never leaves; a value
+    // that looks like a path or an address drops the whole event.
+    const plantWith = (extra: Record<string, unknown>): Parameters<typeof createBasics>[0] => ({
+      track: ((name: never, props: Record<string, unknown>) => analytics.track(name, { ...props, ...extra } as never)) as never,
+    });
+    expect(createBasics(plantWith({ audio_uri: 'file:///asha.m4a' })).tap('tonight_write', 'tonight')).toBe('dropped_invalid');
+    expect(createBasics(plantWith({ child_name: 'Asha', transcript: plant })).tap('tonight_write', 'tonight')).toBe('queued');
+    await analytics.flush();
+    const sent = provider.captured();
+    expect(sent.map((c) => c.event)).toEqual(['control_tapped']);
+    expect(Object.keys(sent[0]!.properties).sort()).toEqual(['control', 'route', 'schema_version']);
+    expect(JSON.stringify(sent)).not.toMatch(/Asha|first word|m4a/);
   });
 });
 

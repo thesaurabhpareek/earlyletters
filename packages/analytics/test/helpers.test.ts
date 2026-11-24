@@ -6,6 +6,7 @@ import {
   audioBucket,
   childOrdinal,
   createAnalytics,
+  createBasics,
   createLifecycle,
   createTrackers,
   daysBucket,
@@ -15,6 +16,7 @@ import {
   lettersBucket,
   MAX_ANALYTICS_CONSENT_OFFERS,
   memoryStorage,
+  msBucket,
   recordingProvider,
   ROUTE_MAP,
   routeForSegments,
@@ -60,6 +62,12 @@ describe('buckets', () => {
     ]);
   });
 
+  it('maps perf_measured times to MS_BUCKET edges, never the number (BL-2122)', () => {
+    expect([Number.NaN, -5, 0, 99, 100, 299, 300, 999, 1000, 2999, 3000, 9999, 10_000].map(msBucket)).toEqual([
+      'lt_100ms', 'lt_100ms', 'lt_100ms', 'lt_100ms', '100_300ms', '100_300ms', '300ms_1s', '300ms_1s', '1_3s', '1_3s', '3_10s', '3_10s', 'gt_10s',
+    ]);
+  });
+
   it('never throws on bad clocks or NaN', () => {
     expect(audioBucket(Number.NaN)).toBe('lt_15s');
     expect(daysBucket(-1000)).toBe('d0');
@@ -69,6 +77,43 @@ describe('buckets', () => {
   it('normalises language codes to the seven v1.0 languages only', () => {
     expect(['en', 'EN-us', 'hi-IN', 'es_MX', 'zh-Hans', 'cmn', 'fr-CA', 'ar', 'pt-BR'].map(toV1Lang)).toEqual(['en', 'en', 'hi', 'es', 'zh', 'zh', 'fr', 'ar', 'pt']);
     for (const code of ['de', 'ta', 'auto', '', null, undefined, 'Asha']) expect(toV1Lang(code), String(code)).toBeNull();
+  });
+});
+
+describe('basics helpers (BL-2122)', () => {
+  async function basicsAfterYes() {
+    const provider = recordingProvider();
+    const analytics = createAnalytics({ provider, randomId: () => '00000000-0000-4000-8000-000000000001', flushIntervalMs: 0 });
+    await analytics.init();
+    let clock = 1_000;
+    const basics = createBasics(analytics, () => clock);
+    const sent = async () => (await analytics.flush(), provider.captured());
+    return { analytics, basics, sent, tick: (ms: number) => void (clock += ms) };
+  }
+
+  it('sends registered ids only, with the time bucketed, and an impression once per surface per session', async () => {
+    const { analytics, basics, sent, tick } = await basicsAfterYes();
+    // An impression dropped before the yes does not count as seen.
+    expect(basics.impress('tonight_prompt', 'tonight')).toBe('dropped_no_consent');
+    await analytics.grant();
+    expect(basics.tap('tonight_speak', 'tonight')).toBe('queued');
+    expect(basics.impress('tonight_prompt', 'tonight', 2)).toBe('queued');
+    expect(basics.impress('tonight_prompt', 'tonight')).toBe('deduped');
+    expect(basics.impress('keep_sheet', 'tonight', 12)).toBe('queued');
+    basics.newSession();
+    expect(basics.impress('tonight_prompt', 'book')).toBe('queued');
+    const stop = basics.startPerf('save_commit');
+    tick(450);
+    expect(stop(false)).toBe('queued');
+    expect(stop()).toBe('dropped_invalid');
+    expect((await sent()).map((c) => [c.event, c.properties])).toEqual([
+      ['control_tapped', { control: 'tonight_speak', route: 'tonight', schema_version: SCHEMA_VERSION }],
+      ['surface_impressed', { surface: 'tonight_prompt', route: 'tonight', rank: 2, schema_version: SCHEMA_VERSION }],
+      // A rank outside 1 to 9 is left off, not sent and not a reason to lose the impression.
+      ['surface_impressed', { surface: 'keep_sheet', route: 'tonight', schema_version: SCHEMA_VERSION }],
+      ['surface_impressed', { surface: 'tonight_prompt', route: 'book', schema_version: SCHEMA_VERSION }],
+      ['perf_measured', { metric: 'save_commit', ms_bucket: '300ms_1s', ok: false, schema_version: SCHEMA_VERSION }],
+    ]);
   });
 });
 
