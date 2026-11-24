@@ -64,7 +64,15 @@ describe('the typed offer on Listen (spec 15 section 3)', () => {
     expect(slot).toMatch(/importantForAccessibility=\{typeOffer \? 'auto' : 'no-hide-descendants'\}/);
   });
   it('reads the model state without starting anything, and adds no new string', () => {
-    expect(listen).toMatch(/useSpeechDownload\(speechLanguage\)/);
+    expect(listen).toMatch(/useSpeechDownload\(phase === 'ready'/);
     expect(listen).not.toMatch(/"Type instead"/);
+  });
+  it('the download state is read only at Ready with no picture, so a live take reads no settings (#480)', () => {
+    expect(listen).toMatch(/useSpeechDownload\(phase === 'ready' && !pendingPhoto\?\.source \? speechLanguage : null\)/);
+    expect(listen).not.toMatch(/useSpeechDownload\(speechLanguage\)/);
+    // The hook's null path returns idle before any speech-state read.
+    const hook = readFileSync(join(__dirname, '..', 'src/lib/transcription-queue/use-words.ts'), 'utf8');
+    expect(hook.indexOf('if (!language) return')).toBeGreaterThan(-1);
+    expect(hook.indexOf('if (!language) return')).toBeLessThan(hook.indexOf('speechDownloadProgress(language)'));
   });
 });

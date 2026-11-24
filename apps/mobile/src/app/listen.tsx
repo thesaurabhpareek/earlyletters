@@ -158,7 +158,9 @@ export default function Listen() {
   // re-renders this screen on its own ticks. Nothing here starts a download or writes the choice (D-087).
   const [speechLanguage] = useState(authorSpeechLanguage);
   const [speechChoice] = useState(speechDownloadChoice);
-  const speech = useSpeechDownload(speechLanguage);
+  // null outside Ready-with-no-picture: the hook then returns idle before any settings read (use-words.ts), so a live
+  // take's once-a-second renders read nothing (#480). It still subscribes, so a download tick re-renders Listen.
+  const speech = useSpeechDownload(phase === 'ready' && !pendingPhoto?.source ? speechLanguage : null);
   const announcedMinute = useRef(0);
   /** The labels VoiceOver last could hear: they hold still while capturing (listen.logic `stableLabels`, F04-REQ-041). */
   const labelsRef = useRef<RoomLabels | null>(null);
