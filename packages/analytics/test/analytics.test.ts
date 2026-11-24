@@ -245,9 +245,9 @@ describe('free text and PII', () => {
     // @ts-expect-error free text
     analytics.track('onboarding:book_create', { has_date: true, child_ordinal: 'Asha', in_first_run: true, added_together: false });
     // @ts-expect-error free text
-    analytics.track('error_shown', { code: 'She laughed at the dog today' });
+    analytics.track('system:error_view', { code: 'She laughed at the dog today' });
     // @ts-expect-error too long
-    analytics.track('error_shown', { code: 'a'.repeat(41) });
+    analytics.track('system:error_view', { code: 'a'.repeat(41) });
     await analytics.flush();
     expect(provider.captured()).toHaveLength(0);
     expect(violations.map((v) => v.kind)).toEqual(['free_text', 'free_text', 'string_too_long']);

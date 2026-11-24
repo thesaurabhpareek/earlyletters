@@ -114,7 +114,7 @@ export function startAnalyticsObservers(): () => void {
       subscribeSyncStatus((st) =>
         safe(() => {
           if (st.phase !== last && (st.phase === 'offline' || st.phase === 'auth')) {
-            analytics.track('sync_failed', { reason: st.phase === 'offline' ? 'network' : 'auth' });
+            analytics.track('system:sync_fail', { reason: st.phase === 'offline' ? 'network' : 'auth' });
           }
           last = st.phase;
         }),

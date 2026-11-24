@@ -310,7 +310,7 @@ export const REGISTRY = {
       ownership: oneOf('purchased', 'family_shared', 'unknown'),
     },
   },
-  error_shown: {
+  'system:error_view': {
     stage: 'basics',
     decision: "Which errors families see, so we decide which one to fix first.",
     area: 'errors',
@@ -396,7 +396,7 @@ export const EV = {
   plusOfferViewed: 'plus_offer_viewed',
   plusOfferClosed: 'plus_offer_closed',
   planChanged: 'plan_changed',
-  errorShown: 'error_shown',
+  errorShown: 'system:error_view',
   controlTapped: 'control_tapped',
   surfaceImpressed: 'surface_impressed',
   perfMeasured: 'perf_measured',

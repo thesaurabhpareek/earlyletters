@@ -50,7 +50,7 @@ describe('collect_by_default with the real tierOf', () => {
     const analytics = await started(tierOf as never);
     expect(analytics.track('screen_view', { route: 'family' })).toBe('queued');
     expect(analytics.track('capture_started', { source: 'tonight' } as never)).toBe('dropped_not_basics');
-    expect(analytics.track('error_shown', { code: 'sync_failed' } as never)).toBe('dropped_not_basics');
+    expect(analytics.track('system:error_view', { code: 'sync_failed' } as never)).toBe('dropped_not_basics');
   });
 
   it('an untiered answer (undefined, a typo, a missing row) is treated as consented', async () => {

@@ -375,7 +375,7 @@ export default function Review() {
 
   // The calm "could not write it down" card counts as a shown error (error_shown, once per failure).
   useEffect(() => {
-    if (job?.phase === 'failed') track('error_shown', { code: 'transcription_failed' });
+    if (job?.phase === 'failed') track('system:error_view', { code: 'transcription_failed' });
   }, [job?.phase]);
 
   // S14: how long the words have been on their way, and since the last sign of progress (a new part or phase).
@@ -674,7 +674,7 @@ export default function Review() {
       finishSave(inBook, firstLetter);
     } catch {
       saving.current = false;
-      track('error_shown', { code: 'save_failed' });
+      track('system:error_view', { code: 'save_failed' });
       setSaveFailed(true); // the draft is intact; nothing was half-saved
     }
   };

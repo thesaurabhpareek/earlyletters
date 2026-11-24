@@ -2,7 +2,7 @@
 
 Generated from `packages/analytics/src/wire-names.ts` by `npm run wire-names -w @scribe/analytics`; do not edit by hand. `npm run wire-names -w @scribe/analytics -- --check` and `packages/analytics/test/wire-names.test.ts` fail when this file differs from that output. BL-1255 step 1 (CR-212): this is the table `posthog-standard.md` section 2.9 points to as "IN-03".
 
-The rename (step 2b onward, BL-2176) moves one area at a time, each PR on the one below. 25 of 47 keys that own a name hold it now; for the rest the "Key" column is still the old key, and "Was" says so. Where a key was renamed, "Was" is the old key, and `LEGACY_EVENT_NAMES` in `wire-names.ts` maps it to the new one, so a note, funnel or query written against an old name can still be read. Nothing was ever sent under an old name (analytics are off in every profile, CR-186). The tier column is the tier of the catalogue and registry rows, unchanged by the rename, and the basics set stays pinned to `screen_view` by `test/tiers.test.ts`. The four pattern keys keep their keys: their names are generated per registered id.
+The rename (step 2b onward, BL-2176) moves one area at a time, each PR on the one below. 27 of 47 keys that own a name hold it now; for the rest the "Key" column is still the old key, and "Was" says so. Where a key was renamed, "Was" is the old key, and `LEGACY_EVENT_NAMES` in `wire-names.ts` maps it to the new one, so a note, funnel or query written against an old name can still be read. Nothing was ever sent under an old name (analytics are off in every profile, CR-186). The tier column is the tier of the catalogue and registry rows, unchanged by the rename, and the basics set stays pinned to `screen_view` by `test/tiers.test.ts`. The four pattern keys keep their keys: their names are generated per registered id.
 
 Counts: 51 keys: 30 ruled by 2.9, 17 named by the 24 Nov rulings, 4 patterns generated per registered id, 0 NEEDS RULING; 47 have a name of their own. Step 2a (BL-2175) deleted 22 keys: 18 dropped, 4 merged (see Retired keys).
 
@@ -38,7 +38,7 @@ Reading a row. "Ruled" means 2.9 names this event (a domain row, the seven examp
 | `keeping:export_fail` | `export_failed` | catalogue | settings | consented | ruled | `keeping:export_fail` | 2.9 domain table: `keeping.export.failed` |
 | `offer_code_redeemed` | (not renamed yet) | catalogue | plus | consented | ruled | `plus:code_submit` | 2.9 domain table: `plus.code.redeemed` |
 | `restore_result` | (not renamed yet) | catalogue | plus | consented | ruled | `plus:restore_complete` | 2.9 domain table: `plus.restore.completed` (the catalogue row also carries the failed outcome as a property) |
-| `sync_failed` | (not renamed yet) | catalogue | errors | consented | ruled | `system:sync_fail` | 2.9 domain table: `system.sync.failed` (#1044); the first generated table missed this row |
+| `system:sync_fail` | `sync_failed` | catalogue | errors | consented | ruled | `system:sync_fail` | 2.9 domain table: `system.sync.failed` (#1044); the first generated table missed this row |
 | `screen_view` | (pattern, keeps its key) | both | app | basics | pattern | `<area>:<id>_screen_view` (36 today) | 2.9 Basics: `<area>:<screen_id>_screen_view` |
 | `app_opened` | (not renamed yet) | both | app | consented | ruled | `system:app_open` | 2.9 domain table: `system.app.opened` |
 | `analytics_opted_in` | (not renamed yet) | both | consent | consented | ruled | `system:analytics_consent_accept` | 2.9 domain table: `system.consent.granted` ("duplicates `analytics_opted_in`, so one event") |
@@ -57,7 +57,7 @@ Reading a row. "Ruled" means 2.9 names this event (a domain row, the seven examp
 | `plus_offer_viewed` | (not renamed yet) | both | plus | consented | ruled | `plus:offer_view` | 2.9 line 118, the seven examples |
 | `plus_offer_closed` | (not renamed yet) | both | plus | consented | ruled | `plus:offer_end` | 2.9 domain table: `plus.offer.closed` |
 | `plan_changed` | (not renamed yet) | both | plus | consented | ruled | `plus:plan_update` | 2.9 domain table: `plus.plan.changed` |
-| `error_shown` | (not renamed yet) | both | errors | consented | ruled | `system:error_view` | 2.9 line 118, the seven examples |
+| `system:error_view` | `error_shown` | both | errors | consented | ruled | `system:error_view` | 2.9 line 118, the seven examples |
 | `control_tapped` | (pattern, keeps its key) | both | app | consented | pattern | `<area>:<id>_click` (0 today) | 2.9 Basics: `<area>:<control_id>_click` |
 | `surface_impressed` | (pattern, keeps its key) | both | app | consented | pattern | `<area>:<id>_view` (0 today) | 2.9 Basics: `<area>:<element_id>_view` |
 | `book:moments_card_view` | `moments_card_impressed` | both | moments | consented | named | `book:moments_card_view` | CDO-25 allows exactly two `moments_` names; Moments sits under Book |
