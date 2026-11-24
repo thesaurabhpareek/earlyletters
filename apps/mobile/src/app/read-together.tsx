@@ -17,7 +17,7 @@
  */
 import { router, useLocalSearchParams } from 'expo-router';
 import { CheckIcon } from 'phosphor-react-native/src/icons/Check';
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
@@ -39,6 +39,7 @@ import { copy, fill, pendingCopy } from '@/lib/copy';
 import { childIndexOf, trackReadTogetherEnded, trackReadTogetherStarted } from '@/lib/analytics/track';
 import { hasPlus } from '@/lib/billing';
 import { useReducedMotion } from '@/lib/motion';
+import { readTogetherOrder, type ReadTogetherPart } from '@/lib/play-placement.logic';
 import { READ_TOGETHER_HEADER_SWIPE, swipeLeaves } from '@/lib/reader-words.logic';
 import { AppNote } from '@/components/book/app-note';
 import { bookCopy } from '@/components/book/copy';
@@ -163,6 +164,7 @@ export default function ReadTogether() {
                 onFinish={() => {
                   if (autoNext) go(i + 1, true);
                 }}
+                playFirst={accessibilitySize}
                 keepPlaying={autoNext}
                 onKeepPlaying={keepPlaying}
                 buttons={placement === 'inline' ? <PageButtons turn={turn} placement={placement} index={index} go={go} /> : null}
@@ -238,6 +240,7 @@ function LetterPage({
   current,
   autoPlay,
   onFinish,
+  playFirst,
   keepPlaying,
   onKeepPlaying,
   buttons,
@@ -247,6 +250,8 @@ function LetterPage({
   current: boolean;
   autoPlay: boolean;
   onFinish: () => void;
+  /** From AX1 up Play and the Keep playing chip sit directly under the dateline (BL-1789). */
+  playFirst: boolean;
   keepPlaying: boolean;
   onKeepPlaying: (on: boolean) => void;
   /** The page buttons, at the end of this scroll (AX1 and up); only on the page that is showing. */
@@ -258,32 +263,44 @@ function LetterPage({
   const spoken = entry.captureMode !== 'typed';
   const scale = tokens.readingScale.largePrint;
   const words = letterWords(entry);
-  return (
-    <ScrollView className="flex-1" contentContainerClassName="gap-6 px-5 pb-8 pt-6">
+  const player = spoken ? (
+    <AudioPlayer entryId={entry.id} context="readTogether" autoPlay={autoPlay} onFinish={onFinish} />
+  ) : (
+    <Text variant="body" tone="muted">
+      {rt.noRecording}
+    </Text>
+  );
+  // The order is one pure table (play-placement.logic.ts): Play, then its chip, directly under the dateline from AX1 up.
+  const parts: Record<ReadTogetherPart, ReactNode> = {
+    dateline: (
       <Text variant="letterDateline" accessibilityLabel={dateline.spoken} testID={current ? 'readTogether.dateline' : undefined}>
         {dateline.text}
       </Text>
-      {words === 'nobodySpoke' ? (
+    ),
+    words:
+      words === 'nobodySpoke' ? (
         <AppNote scale={scale}>{bookCopy.nobodySpoke}</AppNote>
       ) : (
         <Text variant="letterBody" scale={scale} selectable>
           {entry.finalText}
         </Text>
-      )}
-      {showsSignature(words) ? (
-        <Text variant="signature" scale={scale} className="self-end">
-          {fill(copy.book.signature, { signsAs })}
-        </Text>
-      ) : null}
-      {spoken ? (
-        <AudioPlayer entryId={entry.id} context="readTogether" autoPlay={autoPlay} onFinish={onFinish} />
-      ) : (
-        <Text variant="body" tone="muted">
-          {rt.noRecording}
-        </Text>
-      )}
-      <KeepPlayingChip on={keepPlaying} onChange={onKeepPlaying} />
-      {current ? buttons : null}
+      ),
+    signature: (
+      <Text variant="signature" scale={scale} className="self-end">
+        {fill(copy.book.signature, { signsAs })}
+      </Text>
+    ),
+    play: player,
+    noRecording: player,
+    keepPlaying: <KeepPlayingChip on={keepPlaying} onChange={onKeepPlaying} />,
+    pageButtons: current ? buttons : null,
+  };
+  const order = readTogetherOrder({ playFirst, spoken, signature: showsSignature(words) });
+  return (
+    <ScrollView className="flex-1" contentContainerClassName="gap-6 px-5 pb-8 pt-6">
+      {order.map((part) => (
+        <Fragment key={part}>{parts[part]}</Fragment>
+      ))}
     </ScrollView>
   );
 }

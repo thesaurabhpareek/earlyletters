@@ -197,7 +197,6 @@ export const en = {
     invite: {
       title: "Writing this with someone?",
       body: "Invite {child}'s other parent to add letters of their own, each one signed.",
-      privacyNote: "Letters you keep private are for you alone. Only the ones you add to the book are shared.",
       addButton: "Invite co-parent",
       laterButton: "Maybe later",
     },
@@ -428,6 +427,13 @@ export const en = {
     },
     changesLabel: "{count} small fixes",
     changesLabelOne: "1 small fix",
+    // The folded count row (spec 14, BL-1788). It describes the marks that exist and nothing wider: no "every",
+    // "all" or "exactly" (QD-06, D-169 item 2). Same count as changesLabel; the marked clause is the only addition.
+    changesMarked: "{count} small fixes, marked in your words.",
+    changesMarkedOne: "1 small fix, marked in your words.",
+    // Spoken hints of the count row. The open or closed state is spoken by the control, not by these words.
+    foldOpenHint: "Shows the fixes and how this letter reads.",
+    foldCloseHint: "Folds them away.",
     // Zero fixes, three honest wordings.
     noChanges: "Nothing to fix here.",
     noChangesAfterUndo: "Every fix put back.",
@@ -506,6 +512,10 @@ export const en = {
       // Used when the filled `addButton` label would pass 22 characters (a long or two-word name).
       addButtonShort: "Add to the book",
       privateButton: "Keep private",
+      // One line under each button, also the button's spoken hint (spec 14 section 5, BL-1788). They say what the
+      // button does to the letter. Not shown when a save failed. No printed book (D-010), no other readers.
+      addLine: "It goes in the book, and Read together can play it.",
+      privateLine: "It stays in your book, marked Private, and Read together skips it.",
       addedToast: "Added to {child}'s book.",
       // The saved moment's chip: where the letter now sits in the book (S21, MOTION 5e).
       filedChip: "Kept in Month {month}",

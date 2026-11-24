@@ -25,6 +25,12 @@ RUN="${RUN_ID:-$(date -u +%H%M%S)}"
 MAMA_EMAIL="${MAMA_EMAIL:-delivered+e2e13-mama-$RUN@resend.dev}"
 PAPA_EMAIL="${PAPA_EMAIL:-delivered+e2e13-papa-$RUN@resend.dev}"
 mkdir -p "$OUT"
+# shellcheck source=blocked.sh
+source "$HERE/blocked.sh"
+for f in E2E-13a-invite-create E2E-13b-invite-accept E2E-13c-invite-confirm; do
+  r="$(blocked_reason "$f")"
+  if [[ -n "$r" ]]; then echo "SKIP E2E-13 ($f is blocked: the app does not set $r; see not-in-app.txt)"; exit 3; fi
+done
 [[ -n "${MAESTRO_E2E_SUPABASE_URL:-}" ]] || { echo "set the e2e backend env first" >&2; exit 2; }
 
 if [[ -n "$APP" ]]; then

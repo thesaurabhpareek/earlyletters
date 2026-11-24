@@ -116,6 +116,11 @@ describe('[BL-1754] the tokens the components now read', () => {
     expect([...m.penEasing]).toEqual([0.45, 0, 0.2, 1]);
     expect(m.curve).toEqual({ veil: 'linear', sweep: 'quad', breath: 'sine' });
   });
+  it('[BL-1988] hold one loop cap: 30 s, longer than any one cycle of the two loops', () => {
+    expect(m.loopCapMs).toBe(30000);
+    expect(m.loopCapMs).toBeGreaterThan(m.emptyBreathMs);
+    expect(m.loopCapMs).toBeGreaterThan(m.sweepMs * 2);
+  });
   it('stay under the 2 s ceiling', () => {
     for (const ms of [m.press.reducedMs, m.sweepMs, m.instantMs]) expect(ms).toBeLessThanOrEqual(m.hardCeilingMs);
     expect(m.press.reducedMs).toBeLessThan(m.fadeMs);

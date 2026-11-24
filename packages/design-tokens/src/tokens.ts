@@ -145,8 +145,14 @@ const layout = {
   gutter: { compact: 16, regular: 20 },
   /** Gap between sections on Home and Book: compact space.9, regular space.10 (M1, B-S01). */
   sectionGap: { compact: 40, regular: 48 },
-  /** Minimum height of a list or settings row (C3, M1). Targets stay at `target.min` 44. */
+  /**
+   * Minimum height of a list or settings row at the default size (C3, M1). Targets stay at `target.min` 44.
+   * From the first accessibility size the minimum is `listRowMinAccessibility` (CDESO-7); use `listRowMinFor`.
+   * Rows still grow with their text.
+   */
   listRowMin: 52,
+  /** Minimum row height from AX1 up: `target.primary` (CDESO-7, BL-1751). Month rows and Me rows. */
+  listRowMinAccessibility: 56,
 } as const;
 
 /* ------------------------------------------------------------------ */
@@ -289,6 +295,12 @@ const type = {
    */
   /** Small label above a title or section: title case, never all caps (A-S01, C-S01; W1 confirms the case-only change). */
   kicker: ts(fontFamily.sansMedium, 14, 18, '500', 0.1, 'footnote', null),
+  /**
+   * The title of a sheet (BL-1751, CDESO-7): title2's face and size. Capped at 2.0 like title2 and cardTitle, not 1.4:
+   * body is uncapped, so a 1.4 cap would put the title smaller than the words under it from about AX2. No line limit:
+   * it never truncates at AX5.
+   */
+  sheetTitle: ts(fontFamily.serifMedium, 22, 28, '500', 0, 'title2', 2.0),
   /** Prompt and cover titles on cards (C1, C5). Same size as title2; its own name so a card title can move alone. */
   cardTitle: ts(fontFamily.serifMedium, 22, 28, '500', 0, 'title2', 2.0),
   /** Recording elapsed time (M5, A-S05). Tabular figures so the digits do not shift each second. Read to VoiceOver as words. */
@@ -424,6 +436,12 @@ const motion = {
    * and the moment the wait ends (BL-1753). Never a number or a percent.
    */
   sweepMs: 1400,
+  /**
+   * The most a looping animation runs on its own (ms): Breathe and the waiting bar end at rest after this, with no
+   * timer, by a finite even `withRepeat` count (`loopReps`). No in-app pause control; Reduce Motion stays the
+   * person's switch (CDESO-4, BL-1988). WCAG 2.2.2 reading UNVERIFIED against the W3C page.
+   */
+  loopCapMs: 30000,
   /** A sheet that must not travel lands in this many ms and a fade carries the change (Sheet, Reduce Motion; MOTION 5l). */
   instantMs: 1,
   /** A toast dragged down and let go leaves this far (pt) over `exitMs`. */
@@ -461,8 +479,32 @@ const motion = {
 /* Targets and strokes                                                 */
 /* ------------------------------------------------------------------ */
 
-/** Minimum touch targets in pt (HIG 44; primary 56; Speak/Type 64; web 48 px). */
-const target = { min: 44, primary: 56, capture: 64, web: 48 } as const;
+/**
+ * Minimum touch targets in pt (HIG 44; primary 56; Speak/Type 64; web 48 px).
+ * `action` is 48 for the action on a browse card (Continue and the like), which opens something that can be left at
+ * once (CDESO-7, BL-1751). The 56 pt rule is about recording and keeping a letter, not browsing, so it does not apply
+ * at the default size; from AX1 the actions stack and use `primary` (see `actionTargetMin`). `web` is also 48 but means
+ * a different thing, so it keeps its own name.
+ */
+const target = { min: 44, primary: 56, capture: 64, web: 48, action: 48 } as const;
+
+/**
+ * Font scale from which a text size counts as an accessibility size (AX1, as React Native reports it on iOS). The
+ * same number as `FONT_SCALE.ax1` in apps/mobile/src/lib/a11y.logic.ts; a test fails if the two drift.
+ */
+const accessibilityFromScale = 1.786;
+
+/** True at AX1 and above. Same rule as `isAccessibilitySize` in the app. */
+const isAccessibilityScale = (fontScale: number): boolean => fontScale >= accessibilityFromScale - 0.001;
+
+/** Height of a browse card's action: 48, and 56 (stacked) from AX1 (CDESO-7). */
+const actionTargetMin = (fontScale: number): number => (isAccessibilityScale(fontScale) ? target.primary : target.action);
+
+/** Whether browse card actions stack, one under the other: from AX1 (CDESO-7). */
+const actionsStack = (fontScale: number): boolean => isAccessibilityScale(fontScale);
+
+/** Minimum height of a month or Me row: 52, and 56 from AX1 (CDESO-7). Rows still grow with their text. */
+const listRowMinFor = (fontScale: number): number => (isAccessibilityScale(fontScale) ? layout.listRowMinAccessibility : layout.listRowMin);
 
 /** Stroke widths in pt. `hairline` is decorative only; controls use `control`. */
 const stroke = { hairline: 0.5, control: 1, selected: 1.5, focus: 2, editMark: 1.5 } as const;
@@ -581,6 +623,11 @@ export const tokens = {
   elevation,
   motion,
   target,
+  accessibilityFromScale,
+  isAccessibilityScale,
+  actionTargetMin,
+  actionsStack,
+  listRowMinFor,
   stroke,
   picture,
   focusRing,

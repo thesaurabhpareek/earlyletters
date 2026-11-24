@@ -40,10 +40,9 @@ describe('Read together page buttons by text size', () => {
     expect(pinnedShare(FONT_SCALE.ax1)).toBeGreaterThan(0.2); // about 0.24: just under, and the letter is left one or two lines
     expect(pinnedShare(FONT_SCALE.ax3)).toBeGreaterThan(0.25);
     expect(pinnedShare(FONT_SCALE.ax5)).toBeGreaterThan(0.3);
-    // The buttons are rendered by the LetterPage's ScrollView, after its last element, only on the page showing.
-    const scroll = SRC.slice(SRC.indexOf('<ScrollView className="flex-1"'), SRC.indexOf('</ScrollView>'));
-    expect(scroll).toContain('{current ? buttons : null}');
-    expect(scroll.indexOf('<KeepPlayingChip')).toBeLessThan(scroll.indexOf('{current ? buttons : null}'));
+    // The buttons are the last part of the LetterPage's scroll (readTogetherOrder, play-placement.test.ts), only on the page showing.
+    expect(SRC).toContain('pageButtons: current ? buttons : null');
+    expect(SRC).toContain('{order.map((part) => (');
   });
 
   it('is unchanged at the usual sizes: pinned under the letter, side by side, Back one first', () => {
@@ -60,7 +59,6 @@ describe('Read together page buttons by text size', () => {
   it('the screen pins only when placement is pinned, puts them at the end of the scroll otherwise, and keeps the swipe', () => {
     expect(SRC).toContain("!done && placement === 'pinned' ? <PageButtons");
     expect(SRC).toContain("buttons={placement === 'inline' ? <PageButtons");
-    expect(SRC).toMatch(/<KeepPlayingChip[^>]*\/>\s*\{current \? buttons : null\}\s*<\/ScrollView>/);
     expect(SRC).toContain('onSwipe={(d) => go(d');
   });
 });
