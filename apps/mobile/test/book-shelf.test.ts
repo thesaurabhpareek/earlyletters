@@ -64,7 +64,7 @@ describe('Erase now (S39, S63)', () => {
     const { capabilities, setBuildFlagForTests, setServerFeaturesForTests } = await import('../src/lib/capabilities');
     try {
       setServerFeaturesForTests(true);
-      expect(capabilities.serverErase).toBe(false); // [BL-1960] the build flag is not on, as in every store profile
+      expect(capabilities.serverErase).toBe(false); // [BL-1987] the build flag is not on, as in every store profile
       expect(shelfActions({ sync: capabilities.sync, serverErase: capabilities.serverErase }).eraseNow).toBe(false);
       setBuildFlagForTests('serverErase', true);
       expect(capabilities.serverErase).toBe(true);

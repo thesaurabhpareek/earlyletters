@@ -73,7 +73,7 @@ describe('photo and Find flags in store profiles (BL-958)', () => {
     expect(resolveProfile({ a: { extends: 'b' }, b: { extends: 'a' } }, 'a')).not.toBeNull();
   });
 
-  it('[BL-1960] EXPO_PUBLIC_SERVER_ERASE is listed with allowedOn empty, so no store profile can turn it on', () => {
+  it('[BL-1987] EXPO_PUBLIC_SERVER_ERASE is listed with allowedOn empty, so no store profile can turn it on', () => {
     const row = STORE_FLAGS.find((f) => f.env === 'EXPO_PUBLIC_SERVER_ERASE');
     expect(row?.allowedOn).toEqual([]);
     for (const profile of ['preview', 'testflight', 'production']) {

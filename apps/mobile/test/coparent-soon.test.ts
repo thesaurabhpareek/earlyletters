@@ -60,7 +60,7 @@ describe('every invite entry point has no flow when server features are off (not
     expect(src('app/settings/delete-account.tsx')).toMatch(/capabilities\.accountDeletion \? <DeleteAccount \/> : <Redirect href="\/settings" \/>/);
     expect(src('app/onboarding.tsx')).toMatch(/capabilities\.signIn \? \(\s*<Button[^>]*signInButton/);
     // The Keep the book offer (lib/asks) reads `auth.configured`, which is false when no client exists.
-    expect(src('app/review.tsx')).toMatch(/askAfterSave\(\{ firstLetter, signInOffered: auth\.configured && /);
+    expect(src('app/review.tsx')).toMatch(/askAfterSave\(\{\s*firstLetter,\s*signInOffered:\s*auth\.configured\s*&& /);
   });
 });
 

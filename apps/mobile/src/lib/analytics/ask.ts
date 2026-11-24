@@ -9,6 +9,7 @@
 import { analyticsConsentDue, CONSENT_OFFERS_KEY, type AnalyticsAskState, type AnalyticsAskVerdict } from '@scribe/analytics';
 import { getSetting, listChildren, listEntriesForChild, listHiddenChildren, setSetting } from '@/lib/store';
 import { recordDayAsk } from '@/lib/asks/day-store';
+import { surfaceBusy } from '@/lib/asks/surface';
 import { consentAskVerdict } from './ask-sequencer.logic';
 import { analytics, lifecycle } from './index';
 
@@ -63,6 +64,7 @@ function letterFacts(): { count: number; firstAt: number | null } {
 export function analyticsAskDueNow(segments: readonly string[]): AnalyticsAskVerdict {
   const consent = analytics.consent();
   if (consent !== 'unknown') return { due: false, reason: 'decided' };
+  if (surfaceBusy()) return { due: false, reason: 'blocking_surface' }; // a take or an export is running (BL-1985)
   const sessionStartedAt = lifecycle.session().startedAt;
   const { count, firstAt } = letterFacts();
   // First look in this session: remember how many letters it began with.

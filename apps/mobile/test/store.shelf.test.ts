@@ -297,7 +297,7 @@ describe('the 30 day purge', () => {
   it('[BL-1854] a signed-in phone Erase now: the shelf offers it with the server capability, and one id-only entry.erase is queued, with the rest of the book untouched', () => {
     const { shelfActions } = require_shelf();
     setServerFeaturesForTests(true);
-    setBuildFlagForTests('serverErase', true); // BL-1960: held from store profiles, on in a test build
+    setBuildFlagForTests('serverErase', true); // BL-1987: held from store profiles, on in a test build
     const { capabilities } = require_caps();
     expect(shelfActions({ sync: capabilities.sync, serverErase: capabilities.serverErase }).eraseNow).toBe(true);
     const db = store.localSqlDb();
