@@ -1,5 +1,7 @@
 # R4 Privacy, trust and safety review of PRD V2
 
+> Dated record, 24 Nov 2026: `plus.promise` named below was retired in #383 (the promise line is `billingCopy.store.promise`); the text is left as written on its date.
+
 Reviewer: independent head of privacy, trust and safety (consumer subscriptions, children's data, US). I did not write this PRD. I am not a lawyer: every row marked "Counsel: yes" needs a licensed attorney before it is closed. Date: 13 Oct 2026.
 
 Read: `README.md`, `_AUTHORING.md` 3b, `09-decisions-and-risks.md`, `06-nfr.md` sections 7, 12 to 14, features F01, F02, F08, F11, F12 (death case), F13 (hidden books), F14, F17, F18, F20, F21, `reviews/STALE-OUTSIDE-PRD.md`, `research/R4-platform-and-policy.md`. Compared with `docs/legal/` (ENGINEERING_REQUIREMENTS 1.2.0, privacy-policy 1.4.0, terms-of-service, subscription-terms 1.4.0, in-app-disclosures, app-store-privacy-labels 1.3.0, consumer-health-data-notice, COUNSEL_PACKET 1.0.0, DATA_CLASSIFICATION, DELETION_AND_EXPORT_SPEC, data-policy, subprocessors) and `docs/reviews/2026-10-04-security-privacy.md`. Line numbers are from the files as read today.

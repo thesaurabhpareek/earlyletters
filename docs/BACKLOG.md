@@ -1914,7 +1914,7 @@ Found in the independent reviews of 28 Oct 2026 (#370, #373, #375, #380, #381, #
 - Done when: each point is fixed with a test that fails on its mutant, or recorded here as left as it is.
 
 #### BL-463 After #383 retired `en.plus.promise`: the guard's case-sensitive regex, `en.plus.legal`, and stale dated documents
-- Status: ready (#383 merged as 4192a99; this is what it did not do). Mode: agent. Owner: content, legal (point 2). Milestone: M11. Size: S. Depends on: none.
+- Status: done (point 1 in PR #1521; point 2 ruled in `docs/agents/exec/RULINGS.md` (BL-1578): leave the `en.plus.legal` key unchanged, no text changes; point 3: dated-record notes added to F21, PRD C and R4, the P6B pass already carried one, and `docs/tdd/08-payments-entitlements.md` section 6 already states the sheet and key status as of 11 Nov 2026). Mode: agent. Owner: content, legal (point 2). Milestone: M11. Size: S. Depends on: none.
 - Priority: Low.
 - Gate: none.
 - Satisfies: none given.
