@@ -146,15 +146,66 @@ export function takenIds(openPRs) {
   return taken;
 }
 
-export function queueFor(handle, tasks, owners, taken, claimed = new Set()) {
+export function queueFor(handle, tasks, owners, taken, claimed = new Set(), rankRows = []) {
   const byId = new Map(tasks.map((t) => [t.id, t]));
-  return tasks.filter(
+  const eligible = tasks.filter(
     (t) =>
       primaryOwner(t, owners) === handle &&
       !taken.has(t.id) &&
       !claimed.has(t.id) &&
       eligibility(t, byId).ok,
   );
+  return orderByRank(eligible, rankRows);
+}
+
+// ---------- rank (docs/backlog/RANK.md) ----------
+
+export const RANK_TIERS = ["T0", "T1", "T2", "T3"];
+
+/**
+ * Parse docs/backlog/RANK.md: a markdown table with the header `| Rank | Id | Tier | Why |`.
+ * Returns the rows in file order and a list of shape problems (a row that is not
+ * `| <whole number> | BL-nnn | <tier> | <why> |`). The meaning checks (unique, contiguous,
+ * known ids) live in rank-check.mjs. Text before the header is ignored.
+ */
+export function parseRank(text) {
+  const rows = [];
+  const errors = [];
+  let inTable = false;
+  (text ?? "").split("\n").forEach((line, i) => {
+    if (!/^\s*\|/.test(line)) {
+      inTable = false;
+      return;
+    }
+    const cells = line.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map((c) => c.trim());
+    if (/^rank$/i.test(cells[0]) && /^id$/i.test(cells[1] ?? "")) { inTable = true; return; }
+    if (!inTable || cells.every((c) => /^:?-+:?$/.test(c))) return;
+    const [rank, id, tier, ...why] = cells;
+    if (!/^[1-9]\d*$/.test(rank ?? "") || !/^BL-\d{3,4}$/.test(id ?? "")) {
+      errors.push(`RANK.md line ${i + 1}: expected "| <rank> | BL-nnn | <tier> | <why> |", got "${line.trim().slice(0, 60)}"`);
+      return;
+    }
+    rows.push({ rank: Number(rank), id, tier: tier ?? "", why: why.join(" | ").trim(), line: i + 1 });
+  });
+  return { rows, errors };
+}
+
+export function loadRank(root = ROOT) {
+  const p = join(root, "docs", "backlog", "RANK.md");
+  return existsSync(p) ? parseRank(readFileSync(p, "utf8")) : { rows: [], errors: [], missing: true };
+}
+
+/**
+ * Order tasks for dispatch: ranked tasks first, in rank order, then every other task in its
+ * input (file) order. Ranking only orders; it never makes a task eligible. A rank row for an
+ * id that is not in `tasks` is ignored; a repeated id keeps its lowest rank.
+ */
+export function orderByRank(tasks, rankRows = []) {
+  if (!rankRows.length) return tasks;
+  const rankOf = new Map();
+  for (const r of rankRows) if (!rankOf.has(r.id) || r.rank < rankOf.get(r.id)) rankOf.set(r.id, r.rank);
+  const ranked = tasks.filter((t) => rankOf.has(t.id)).sort((a, b) => rankOf.get(a.id) - rankOf.get(b.id));
+  return [...ranked, ...tasks.filter((t) => !rankOf.has(t.id))];
 }
 
 // ---------- board state (hidden JSON in the board issue body) ----------
