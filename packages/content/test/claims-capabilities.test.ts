@@ -272,6 +272,8 @@ const IN_APP_PROMISES = [
   'en.trust.short',
   'en.trust.voice',
   'en.trust.firstRecording',
+  'en.trust.signIn',
+  'en.trust.settings',
   'en.settings.recordings.onPhoneTitle',
   'en.settings.recordings.onPhoneBody',
   'en.plus',
@@ -424,6 +426,12 @@ describe('public claims match the production profile (RT-REL-03)', () => {
     const switched = Object.keys(SWITCHED_LINES).filter((path) => typeof get(IN_APP_ROOT, path) !== 'string');
     expect(switched, 'SWITCHED_LINES paths that no longer resolve to a string').toEqual([]);
     expect(staleWebExclusions(), 'WEB_NOT_READ paths that no longer exist').toEqual([]);
+  });
+
+  it('LEGAL-REQ-044: the sign-in and settings trust lines are read as in-app promises', () => {
+    const keys = cachedSurfaces(profile).map((l) => l.path);
+    expect(keys.some((k) => k.startsWith('en.trust.signIn'))).toBe(true);
+    expect(keys.some((k) => k.startsWith('en.trust.settings'))).toBe(true);
   });
 
   it('reads the copy earlyletters.com renders, not only the content package', () => {

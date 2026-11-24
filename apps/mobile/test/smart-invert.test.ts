@@ -69,13 +69,15 @@ export function imageNames(source: string): Set<string> {
     grew = false;
     // BL-1877: `withUniwind(Image)` is the wrapper idiom src really uses (ui/safe-area-view.tsx); it wraps an image the same way.
     // BL-1841: `const Pic = styled(Image)` and `styled(Image, opts)` wrap an image and are still a picture.
-    for (const m of code.matchAll(/\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:styled|withUniwind)\(\s*([A-Za-z_$][\w$.]*)\s*[,)]/g)) {
+    // BL-1915: also `Animated.createAnimatedComponent(Image)`, `React.memo(Image)`, a typed constant (`const P: typeof Image = ...`)
+    // and a generic call (`withUniwind<P>(Image)`). The type annotation and the type arguments are length-capped and hold no `;`.
+    for (const m of code.matchAll(/\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*(?::[^=;]{1,120}?)?=\s*(?:styled|withUniwind|(?:Animated\.)?createAnimatedComponent|(?:React\.)?memo)\s*(?:<[^;{}()=]{0,120}?>|<[^;]{0,120}?\}>)?\(\s*([A-Za-z_$][\w$.]*)\s*[,)]/g)) {
       if (names.has(m[2]) && !names.has(m[1])) {
         names.add(m[1]);
         grew = true;
       }
     }
-    for (const m of code.matchAll(/\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*([A-Za-z_$][\w$.]*)\s*;/g)) {
+    for (const m of code.matchAll(/\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*(?::[^=;]{1,120}?)?=\s*([A-Za-z_$][\w$.]*)\s*;/g)) {
       if (names.has(m[2]) && !names.has(m[1])) {
         names.add(m[1]);
         grew = true;
@@ -145,11 +147,11 @@ export function forwardProblems(source: string): string[] {
   return [...(tags.length ? [] : ['draws no image']), ...bad];
 }
 /**
- * A file that defines a custom Avatar or PictureCard: `export function`, `export const`, `export default function`,
+ * A file that defines a custom Avatar or PictureCard: `export function`, `export const`, `export class` (BL-1915), `export default function`,
  * `export default Avatar;` and `export { Avatar }` (also `as` forms). BL-1877: a list that ends in `from` re-exports
  * a component defined in another file, so it is not a definition here.
  */
-const DEFINES_CUSTOM = /\bexport\s+(?:default\s+)?(?:function|const)\s+(?:PictureCard|Avatar)\b|\bexport\s+default\s+(?:PictureCard|Avatar)\b|\bexport\s*\{[^}]*\b(?:PictureCard|Avatar)\b[^}]*\}(?!\s*from\b)/;
+const DEFINES_CUSTOM = /\bexport\s+(?:default\s+)?(?:function|const|class)\s+(?:PictureCard|Avatar)\b|\bexport\s+default\s+(?:PictureCard|Avatar)\b|\bexport\s*\{[^}]*\b(?:PictureCard|Avatar)\b[^}]*\}(?!\s*from\b)/;
 
 function files(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
@@ -311,6 +313,44 @@ describe('[NS-33-R11] Smart Invert ignores pictures', () => {
     expect(offenders(member)).toEqual(['Member', 'Called', 'Double', 'Tagged']);
     expect(offenders(member.replace(/<(Member|Called|Double|Tagged) /g, `<$1 ${PROP} `))).toEqual([]);
     expect([...imageNames("const Box = styled.View;\nconst Row = styled('View');")]).toEqual([]); // not images
+  });
+
+  // BL-1915: five idioms the guard missed. Real forms in the app: withUniwind and Animated.createAnimatedComponent (see
+  // src/components/ui/safe-area-view.tsx and src/components/motion/press.ts) and a class component (resilience/plain-screen.tsx).
+  // Not real forms today, kept as plausible later shapes: React.memo(Image), the typed constant and the generic call (no
+  // app file writes them yet) and the NativeWind `styled(...)` fixtures above (this repo uses uniwind, not NativeWind).
+  // None of the five is a known limit: each is caught.
+  it('[NS-33-R11] Animated.createAnimatedComponent(Image) is a picture, so it needs the prop', () => {
+    const f = FIX('animated-image-without-prop.fixture.txt');
+    expect([...imageNames(f)].sort()).toEqual(['BareFade', 'FadeImage', 'Image']);
+    expect(offenders(f)).toEqual(['FadeImage', 'BareFade']);
+    expect(offenders(f.replace(/<(FadeImage|BareFade) /g, `<$1 ${PROP} `))).toEqual([]);
+    expect([...imageNames("import { Pressable } from 'react-native';\nconst P = Animated.createAnimatedComponent(Pressable);")]).toEqual([]);
+  });
+
+  it('[NS-33-R11] React.memo(Image) and memo(Image) are pictures, so they need the prop', () => {
+    const f = FIX('memo-image-without-prop.fixture.txt');
+    expect([...imageNames(f)].sort()).toEqual(['Image', 'Quiet', 'Still']);
+    expect(offenders(f)).toEqual(['Still', 'Quiet']);
+    expect(offenders(f.replace(/<(Still|Quiet) /g, `<$1 ${PROP} `))).toEqual([]);
+    expect([...imageNames("import { View } from 'react-native';\nconst V = React.memo(View);")]).toEqual([]);
+  });
+
+  it('[NS-33-R11] a typed constant and a generic withUniwind call over Image are pictures, so they need the prop', () => {
+    const f = FIX('typed-wrapper-image-without-prop.fixture.txt');
+    expect([...imageNames(f)].sort()).toEqual(['Alias', 'Both', 'Generic', 'Image', 'Typed']);
+    expect(offenders(f)).toEqual(['Typed', 'Generic', 'Both', 'Alias']);
+    expect(offenders(f.replace(/<(Typed|Generic|Both|Alias) /g, `<$1 ${PROP} `))).toEqual([]);
+    expect([...imageNames("import { View } from 'react-native';\nconst V: typeof View = withUniwind<{ a: string }>(View);")]).toEqual([]);
+  });
+
+  it('[NS-33-R11] export default class Avatar that renders an image is a definition and must forward the prop', () => {
+    const f = FIX('avatar-class-without-prop.fixture.txt');
+    expect(DEFINES_CUSTOM.test(f)).toBe(true);
+    expect(forwardProblems(f)).toEqual(['Image']);
+    expect(forwardProblems(f.replace('<Image ', `<Image ${PROP} `))).toEqual([]);
+    expect(DEFINES_CUSTOM.test('export class Avatar extends Component {}')).toBe(true);
+    expect(DEFINES_CUSTOM.test('export class AvatarList extends Component {}')).toBe(false);
   });
 
   it('[NS-33-R11] DEFINES_CUSTOM sees export { Avatar } and export default Avatar, and a plain re-export is not a definition', () => {

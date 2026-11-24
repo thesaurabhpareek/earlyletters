@@ -138,13 +138,18 @@ export const FORGET_PENDING_KEY = 'accountDeletion.forgetPending';
 export interface AnalyticsIds {
   ids(): string[];
   forget(): Promise<void>;
+  /** Forgets only these ids on the phone (the acknowledged ones). Without it, a partial send forgets nothing. */
+  forgetSome?(ids: string[]): Promise<void>;
 }
 
+/** The server takes at most this many ids per call (analytics-forget MAX_IDS). */
+export const FORGET_BATCH = 21;
+
 /**
- * Sends this phone's analytics ids (current and retired, at most 21) to
- * analytics-forget, then forgets them locally. On failure a flag is kept and
- * `retryForget` tries again on the next open of the screen or launch.
- * The ids never go anywhere else and are never logged.
+ * Sends this phone's analytics ids (current and retired) to analytics-forget in batches of FORGET_BATCH, then forgets
+ * on the phone only the ids whose batch was acknowledged. A batch that fails stops the loop: its ids and every later
+ * one stay, a flag is kept and `retryForget` tries again on the next open of the screen or launch. Once every batch
+ * is acknowledged the whole local record is wiped. The ids never go anywhere else and are never logged.
  */
 export async function forgetAnalytics(
   client: DeletionClient,
@@ -153,19 +158,31 @@ export async function forgetAnalytics(
   reason: 'account_deletion' | 'device_after_deletion',
   idempotencyKey: string,
 ): Promise<'done' | 'nothing' | 'pending'> {
-  const ids = analytics.ids().slice(0, 21);
+  const ids = analytics.ids();
   if (!ids.length) {
     flags.remove(FORGET_PENDING_KEY);
     return 'nothing';
   }
+  const acknowledged: string[] = [];
   try {
-    const { error } = await client.functions.invoke('analytics-forget/v1', { body: { ids, reason }, headers: { 'idempotency-key': idempotencyKey } });
-    if (error) throw error;
+    for (let i = 0; i < ids.length; i += FORGET_BATCH) {
+      const batch = ids.slice(i, i + FORGET_BATCH);
+      const { error } = await client.functions.invoke('analytics-forget/v1', { body: { ids: batch, reason }, headers: { 'idempotency-key': idempotencyKey } });
+      if (error) throw error;
+      acknowledged.push(...batch);
+    }
     await analytics.forget();
     flags.remove(FORGET_PENDING_KEY);
     return 'done';
   } catch {
     flags.set(FORGET_PENDING_KEY, reason);
+    if (acknowledged.length && analytics.forgetSome) {
+      try {
+        await analytics.forgetSome(acknowledged);
+      } catch {
+        // Kept on the phone: the retry names them again, which is safe (forgetting is idempotent).
+      }
+    }
     return 'pending';
   }
 }

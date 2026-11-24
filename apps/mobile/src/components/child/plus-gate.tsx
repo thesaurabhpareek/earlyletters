@@ -27,6 +27,7 @@ import { BackHandler, Platform, ScrollView, StyleSheet, View, type Text as RNTex
 import Animated, { FadeIn, FadeOut, ReduceMotion, SlideInDown, SlideOutDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tokens } from '@scribe/design-tokens';
+import { joinLastTwoWords } from '@/components/onboarding/finale-title.logic';
 import { ExcerptFade } from '@/components/motion/excerpt-fade';
 import { Button } from '@/components/ui/button';
 import { ModalHeader } from '@/components/ui/screen-header';
@@ -193,7 +194,7 @@ export function PlusGate({ childName, lapsed = false, lettersKept, heldOn = 'ton
   const line: Record<KeepSheetLine, React.ReactNode> = {
     title: (
       <Text key="title" ref={title} variant="title1" asHeading>
-        {fill(k.title, { child: childName })}
+        {joinLastTwoWords(fill(k.title, { child: childName }))}
       </Text>
     ),
     body: (

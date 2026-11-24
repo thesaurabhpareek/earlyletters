@@ -35,7 +35,7 @@ import { getSupabaseOrNull, SESSION_STORAGE_KEY, startAutoRefreshWhileActive } f
 import { errorCode, isNetworkError } from '../supabase/errors.logic';
 import { secureStorage } from '../supabase/secure-storage';
 import { maskEmail, phoneHoldsAnyRow } from './account-claim.logic';
-import { appleCredentialRevoked, clearPendingAppleName, forgetAppleUser, signInWithApple, watchAppleRevocation } from './apple';
+import { appleCredentialRevoked, clearPendingAppleName, signInWithApple, watchAppleRevocation } from './apple';
 import { isAppleSession, onAppBecameActive, startAppleRevocationWatch } from './apple-revocation.logic';
 import { adoptDeviceOnlyLocal, bindDeviceOnlyOwners } from './local-claim';
 import { accountClaimPending, confirmAccountClaim, publishAuth, onUploadsDrained, pendingUploads, setClaimReaders, subscribeAuth } from './auth-store';
@@ -62,6 +62,7 @@ import {
   type ConsentStep,
 } from './machine.logic';
 import { signInWithPasskey as passkeySignIn } from './passkey';
+import { forgetSignOutLeftovers } from './sign-out-leftovers';
 import { clearPendingEmailRequest, clearWrongCodes, notePendingEmailRequest, noteWrongCode, readPendingEmailRequest, sessionSavedOnPhone, wrongCodeTimes } from './pending';
 import { reauthPhaseOf, reauthStep, REAUTH_EPOCH_KEY } from './reauth.logic';
 import { useRegisterSensitiveDataRow } from './sensitive-row-hook';
@@ -266,8 +267,7 @@ export function SessionProvider({ children, onUnder18 }: Props) {
       } else if (event === 'SIGNED_OUT') {
         // H1 and audit F2: a sign-out Supabase made itself (revoked elsewhere) drops the Apple user id and the pending request.
         // The Apple id goes first, so nothing below can skip it. Keychain only, so safe inside this callback.
-        void forgetAppleUser();
-        void clearPendingEmailRequest();
+        void forgetSignOutLeftovers();
         dispatch({ type: 'SIGNED_OUT' });
         methodRef.current = null; // a signed-out run keeps no method for the next session
       }
@@ -355,9 +355,8 @@ export function SessionProvider({ children, onUnder18 }: Props) {
         // Local sign-out clears the Keychain even when the server cannot be reached
         // (auth-js 2.117.2 _signOut removes the session on any error for scope 'local').
       }
-      await forgetAppleUser();
-      // H1: a sign-out leaves no pending email request behind (ADR 0023).
-      await clearPendingEmailRequest();
+      // No Apple user id, no pending email request (H1, ADR 0023) and no first-run draft (BL-1816) left behind.
+      await forgetSignOutLeftovers();
       dispatch({ type: 'SIGNED_OUT' });
     })();
   }, [finishing, sb]);
@@ -372,9 +371,8 @@ export function SessionProvider({ children, onUnder18 }: Props) {
       } catch {
         // ignore: the gate closes either way
       }
-      // Like every other sign-out: no Apple user id and no pending email note left behind.
-      await forgetAppleUser();
-      await clearPendingEmailRequest();
+      // Like every other sign-out: nothing left behind.
+      await forgetSignOutLeftovers();
       onUnder18?.();
     })();
   }, [under18, sb, onUnder18]);

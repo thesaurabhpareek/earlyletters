@@ -196,6 +196,39 @@ export function staleBase({ behindBy, prFiles, baseFiles }) {
   return { behindBy, shared: behindBy > 0 ? workspacesOf(baseFiles).filter((w) => mine.has(w)).sort() : [] };
 }
 
+/** AIE-G20 (AIE-R46): the check whose result a reviewer's focused run can hide. */
+export const SUITE_CHECK = "tests and content rules";
+/** Pure: conclusion of the newest run of SUITE_CHECK at the head ("pending" if unfinished), or "-" if there is none. */
+export function suiteState(runs) {
+  let newest;
+  for (const r of runs) if (clean(r.name) === SUITE_CHECK && (!newest || (r.id ?? 0) > (newest.id ?? 0))) newest = r;
+  return !newest ? "-" : newest.status !== "completed" ? "pending" : clean(newest.conclusion ?? "pending");
+}
+/** Pure: true when a counted PASS stands at head but the suite is red ("PASS over a red suite"). */
+export const passOverRedSuite = (row) => Boolean((row.reviews?.A || row.reviews?.B) && row.suite === "failure");
+
+/** AIE-G21 (AIE-R47): hot files that PRs append to; each merge of one voids the reviews of the next. */
+export const HOT_FILES = [/^docs\/agents\/CLAIMS\.md$/, /^docs\/agents\/exec\/RULINGS\.md$/, /^docs\/agents\/cto\/RULINGS\.md$/, /^docs\/BACKLOG\.md$/, /^docs\/content\/map\//];
+/** Pure: the changed paths (new name or old name of a rename) that are hot files, once each. */
+export const hotFileHits = (files) => [...new Set(files.flatMap((f) => [f?.filename ?? f, f?.previous_filename]).filter((n) => typeof n === "string" && HOT_FILES.some((re) => re.test(n))))];
+/**
+ * Pure: for rows that are READY or have both counted reviews (AB), group by shared hot file. Returns
+ * [{ file, prs: [numbers, ascending] }] for files that two or more such PRs change. Lowest number merges first.
+ * `docs/content/map/*` is one group, because the files in it are generated together.
+ */
+export function hotFileGroups(rows) {
+  const by = new Map();
+  for (const r of rows) {
+    if (r.otherBase || !(r.verdict === "READY" || (r.reviews?.A && r.reviews?.B))) continue;
+    for (const f of r.hotFiles ?? []) {
+      const key = f.startsWith("docs/content/map/") ? "docs/content/map/*" : f;
+      if (!by.has(key)) by.set(key, new Set());
+      by.get(key).add(r.number);
+    }
+  }
+  return [...by].map(([file, set]) => ({ file, prs: [...set].sort((a, b) => a - b) })).filter((g) => g.prs.length > 1).sort((a, b) => a.file.localeCompare(b.file));
+}
+
 /** Strip ANSI escape sequences and control characters from anything printed. */
 export const clean = (v) => String(v ?? "").replace(/\u001b\[[0-9;?]*[ -\/]*[@-~]/g, "").replace(/[\u0000-\u001f\u007f-\u009f]/g, "");
 
@@ -370,14 +403,18 @@ export async function buildQueue({ api, repo = DEFAULT_REPO, now = new Date(), q
       mergeable_state: full?.head?.sha && full.head.sha !== head ? "unknown" : (full?.mergeable_state ?? "unknown"), // head moved between calls: not trusted
       required,
       checks: checkState(runs, required),
+      suite: suiteState(runs),
       native: null,
       claim: claims[String(p.number)] ?? "",
     };
     const reviewed = row.reviews.A && row.reviews.B;
     const green = required.every((n) => row.checks[n] === "success");
     let files = [];
-    if (reviewed && green) {
+    if (reviewed) {
       files = await paged(get, `repos/${repo}/pulls/${p.number}/files`, notices);
+      row.hotFiles = hotFileHits(files).map(clean);
+    }
+    if (reviewed && green) {
       row.native = touchesNative(files);
       const hits = securityLensHits(files);
       if (files.capped || !Number.isInteger(full?.changed_files) || files.length !== full.changed_files) row.reason = "file list incomplete";
@@ -415,9 +452,9 @@ export function formatTable(allRows) {
   const rows = allRows.filter((r) => r.verdict !== "STALE-UNKNOWN");
   const rev = (r) => `${r.reviews.A ? "A" : r.reviews.staleLenses.includes("A") ? "a" : "-"}${r.reviews.B ? "B" : r.reviews.staleLenses.includes("B") ? "b" : "-"}`;
   const ck = (r) => `${r.required.filter((n) => r.checks[n] === "success").length}/${r.required.length}` + (r.required.some((n) => r.checks[n] !== "success") ? " " + r.required.filter((n) => r.checks[n] !== "success").map((n) => `${n}:${r.checks[n]}`).join(",") : "");
-  const head = ["PR", "head (40)", "base", "push-min", "rev", "mergeable", "required", "q/ip", "watch", "claim", "verdict"];
+  const head = ["PR", "head (40)", "base", "push-min", "rev", "suite", "mergeable", "required", "q/ip", "watch", "claim", "verdict"];
   const body = rows.map((r) => [
-    `#${r.number}`, r.head, r.base, r.pushAgeMinutes === null ? "?" : String(r.pushAgeMinutes), rev(r),
+    `#${r.number}`, r.head, r.base, r.pushAgeMinutes === null ? "?" : String(r.pushAgeMinutes), rev(r), r.suite ?? "-",
     r.mergeable_state, ck(r), `${r.checks.queued}/${r.checks.inProgress}`, r.watch.length ? "WATCH " + r.watch.join(",") : "-", r.claim || "-", r.verdict,
   ]);
   const w = head.map((h, i) => Math.max(h.length, ...body.map((b) => b[i].length)));
@@ -428,12 +465,14 @@ export function formatTable(allRows) {
   const baseNotes = rows.filter((r) => r.staleBase?.behindBy > 0).map((r) => (r.staleBase.shared.length
     ? `note: #${r.number} base is behind ${r.base} by ${r.staleBase.behindBy} commits that touch ${r.staleBase.shared.map(clean).join(", ")}: update the branch, wait for required, and get fresh reviews (a new commit voids both)`
     : `note: #${r.number} base is behind ${r.base} by ${r.staleBase.behindBy} commits, none in a workspace this PR touches; still ready`));
+  const redNotes = rows.filter(passOverRedSuite).map((r) => `note: #${r.number} PASS over a red suite (AIE-G20): a counted PASS stands at head, but \`${SUITE_CHECK}\` is failure; read its log before merging`);
+  const hotNotes = hotFileGroups(rows).map((g) => `note: ${g.prs.map((n) => `#${n}`).join(", ")} all change ${clean(g.file)} (AIE-G21): merge #${g.prs[0]} first, then update the next and get fresh reviews (each merge voids the next one's reviews)`);
   const asks = rows.filter((r) => r.mergeNote).map((r) => r.mergeNote);
   const days = (r) => Math.floor(r.pushAgeMinutes / 1440);
   const parked = stale.length
     ? ["", `stale-unknown (${stale.length}): mergeability unknown and head older than 7 days; not in the table above, no ready line`, ...stale.map((r) => `  #${r.number} base ${r.base}, last push ${days(r)} days ago, head ${r.head}`)]
     : [];
-  return [line(head), ...body.map(line), "", "rev: AB = counted PASS at this head; lowercase = PASS only at an older sha; - = none", ...blockedNotes, ...held, ...lensNotes, ...baseNotes, ...asks, ...parked].join("\n");
+  return [line(head), ...body.map(line), "", "rev: AB = counted PASS at this head; lowercase = PASS only at an older sha; - = none. suite: conclusion of `tests and content rules` at head, - = no run", ...blockedNotes, ...held, ...lensNotes, ...baseNotes, ...redNotes, ...hotNotes, ...asks, ...parked].join("\n");
 }
 
 function ghApi(path, { method = "GET" } = {}) {

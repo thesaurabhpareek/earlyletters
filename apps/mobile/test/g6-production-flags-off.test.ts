@@ -21,10 +21,10 @@ const APP = join(__dirname, '..');
 
 /**
  * Every EXPO_PUBLIC_* card flag of the new scope that may never be on in a store profile before gate G6. PHOTOS and
- * BOOK_SEARCH come from STORE_FLAGS (scripts/release/store-flags.mjs, BL-958), so this list cannot drift from it; the
+ * BOOK_SEARCH (and ANALYTICS, BL-1886) come from STORE_FLAGS (scripts/release/store-flags.mjs, BL-958), so this list cannot drift from it; the
  * rest have no code behind them yet and are named by the cards and errata: E38 (PHOTO_MOMENTS, VIDEO, and MEDIA_SYNC for
  * variant B only), card 21 (DAYS, DAYS_ASK, SUGGESTIONS). EXPO_PUBLIC_MEDIA_ATTACH is retired (plan 17b, E38) and is
- * not pinned. Not here, on purpose: EXPO_PUBLIC_SERVER_FEATURES, BACKUP, STATUS_REPORT, ANALYTICS, ACCOUNT_DELETION
+ * not pinned. Not here, on purpose: EXPO_PUBLIC_SERVER_FEATURES, BACKUP, STATUS_REPORT, ACCOUNT_DELETION
  * (alpha and server switches with their own pins in capabilities.test.ts and preflight-production.test.ts).
  */
 const CARD_FLAGS = [

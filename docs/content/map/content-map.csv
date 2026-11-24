@@ -97,14 +97,14 @@ IN ENGLISH
 This version writes down letters spoken in English. The speech model is a one-time download, on Wi-Fi unless you turn on cellular data, 575 MB on most iPhones and smaller on some, and you choose when it starts. Until it is ready, your recordings are kept and the words follow.
 
 PLUS
-Your first two letters are free, so you can see how it feels. To keep adding letters, choose Plus: $4.99 a month with the first month free, or $49.99 a year with the first 2 months free. The free months are for people new to Plus. One plan covers every child's book and works with Family Sharing. A new letter past the free two waits on your phone until you decide. Every letter you have kept stays yours to read, play and export, with or without Plus.
+Your first two letters are free, so you can see how it feels. To keep adding letters, choose Plus: $4.99 a month with the first month free, or $49.99 a year with the first 2 months free. The free months are for people new to Plus. One plan covers every child's book and works with Family Sharing. A new letter past the free two waits until you decide. Every letter you have kept stays yours to read, play and export, with or without Plus.
 
 Payment is charged to your Apple Account. Plus renews automatically unless you turn off renewal at least 24 hours before the end of the current period. Manage or cancel any time in your Apple Account settings.
 
 For parents of babies and young children, from the first weeks to the first years.
 
 Terms of Service: https://earlyletters.com/terms
-Privacy Policy: https://earlyletters.com/privacy",3603,protected,"D-061 privacy promise line, word for word on every surface; build-dependent: true for servers on only",,,,cmo,live on develop,content
+Privacy Policy: https://earlyletters.com/privacy",3589,protected,"D-061 privacy promise line, word for word on every surface; build-dependent: true for servers on only",,,,cmo,live on develop,content
 apps/mobile/store.config.json#apple.info.en-US.promoText,store,store listing,apps/mobile/store.config.json,26,en,"Tell your child about today. A minute is plenty. It stays in your words. Every word we change is marked, and your original recording is kept unchanged.",151,protected,D-133 public promise line,,,,cmo,live on develop,content
 apps/web/src/content/site.ts#INVITE_BY_HAND,site,website,apps/web/src/content/site.ts,25,en,"Go back to the message, press and hold the link and copy it. Then open ${NAME}, tap ""I was invited"" and paste it.",113,,,,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#sampleLetter.to,site,website,apps/web/src/content/site.ts,34,en,[redacted],10,,,,,,cmo,live on develop,web-content
@@ -1966,7 +1966,7 @@ pages.en.ts#pages.about.sections.3.heading,site,website,packages/content/src/pag
 pages.en.ts#pages.about.sections.3.paragraphs.0,site,website,packages/content/src/pages.en.ts,80,en,"Your first two letters are free. After that, keeping another letter is part of Plus: ${plusPriceLine.monthly}, or ${plusPriceLine.annual}. Reading, playing your recordings and export are never locked away, with or without Plus.",227,,,,,,cmo,live on develop,content
 pages.en.ts#pages.about.sections.4.heading,site,website,packages/content/src/pages.en.ts,84,en,Who makes it,12,,,,,,cmo,live on develop,content
 pages.en.ts#pages.about.sections.4.paragraphs.0,site,website,packages/content/src/pages.en.ts,86,en,"${brand.name} is made and run by an independent maker in California, not a large company. Because it is published by an individual, the maker's legal name appears where the law asks for it: on the App Store listing and in the Terms and Privacy Policy.",251,,,,,,cmo,live on develop,content
-pages.en.ts#pages.about.sections.4.paragraphs.1,site,website,packages/content/src/pages.en.ts,87,en,"If ${brand.name} ever closes, you'll hear at least 90 days ahead, and export will keep working the whole time.",110,,,,,,cmo,live on develop,content
+pages.en.ts#pages.about.sections.4.paragraphs.1,site,website,packages/content/src/pages.en.ts,87,en,"If we ever plan to close, we will tell you at least 90 days ahead and keep export working the whole time.",105,,,,,,cmo,live on develop,content
 pages.en.ts#pages.about.sections.4.paragraphs.2,site,website,packages/content/src/pages.en.ts,88,en,"Questions, ideas or a kind word are all welcome at hello@earlyletters.com. A person reads every message.",104,,,,,,cmo,live on develop,content
 pages.en.ts#pages.why.title,site,website,packages/content/src/pages.en.ts,96,en,Why ${brand.name},17,,,,,,cmo,live on develop,content
 pages.en.ts#pages.why.metaDescription,site,website,packages/content/src/pages.en.ts,98,en,"Most of what a family says to a small child is said once. ${brand.name} keeps those words, and the voice that said them.",120,,,,,,cmo,live on develop,content
@@ -2376,14 +2376,14 @@ IN ENGLISH
 This version writes down letters spoken in English. The speech model is a one-time download, on Wi-Fi unless you turn on cellular data, 575 MB on most iPhones and smaller on some, and you choose when it starts. Until it is ready, your recordings are kept and the words follow.
 
 PLUS
-Your first two letters are free, so you can see how it feels. To keep adding letters, choose Plus: $4.99 a month with the first month free, or $49.99 a year with the first 2 months free. The free months are for people new to Plus. One plan covers every child's book and works with Family Sharing. A new letter past the free two waits on your phone until you decide. Every letter you have kept stays yours to read, play and export, with or without Plus.
+Your first two letters are free, so you can see how it feels. To keep adding letters, choose Plus: $4.99 a month with the first month free, or $49.99 a year with the first 2 months free. The free months are for people new to Plus. One plan covers every child's book and works with Family Sharing. A new letter past the free two waits until you decide. Every letter you have kept stays yours to read, play and export, with or without Plus.
 
 Payment is charged to your Apple Account. Plus renews automatically unless you turn off renewal at least 24 hours before the end of the current period. Manage or cancel any time in your Apple Account settings.
 
 For parents of babies and young children, from the first weeks to the first years.
 
 Terms of Service: ${brand.web.terms}
-Privacy Policy: ${brand.web.privacy}",3388,build-dependent,build-dependent: true for servers on only,,,,cmo,live on develop,content
+Privacy Policy: ${brand.web.privacy}",3374,build-dependent,build-dependent: true for servers on only,,,,cmo,live on develop,content
 store.en.ts#storeListing.supportUrl,store,store listing,packages/content/src/store.en.ts,99,en,${brand.web.origin}/support,27,,,,,,cmo,live on develop,content
 store.en.ts#storeListing.reviewNotes,store,store listing,packages/content/src/store.en.ts,110,en,"A family memory journal: parents speak or type short letters to their child. The app never rewrites what a person says. It makes only small marked fixes to the transcript (stray sounds, repeated words, a misheard name from the family's own word list, punctuation), and each fix can be put back. Version 1.0 keeps everything on the phone: there is no account to create and no server copy of letters. The birthday or due date a parent enters is used to file letters by month of age. This is not a health or medical service and gives no health advice.",548,build-dependent,build-dependent: true for servers off only,,,,cmo,live on develop,content
 store.en.ts#storeListing.primaryCategory,store,store listing,packages/content/src/store.en.ts,112,en,Lifestyle,9,,,,,,cmo,live on develop,content

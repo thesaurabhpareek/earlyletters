@@ -302,6 +302,23 @@ export class ConsentStore {
     }
   }
 
+  /**
+   * Forget only the given ids, the ones the server acknowledged. Every other id stays so a later call can name it
+   * again. Nothing else is wiped: the full wipe is `forgetAllIds`, used once every id is acknowledged.
+   */
+  async forgetSomeIds(ids: string[]): Promise<void> {
+    await this.idWrite.catch(() => undefined);
+    const gone = new Set(ids);
+    this.snap.retired = this.snap.retired.filter((x) => !gone.has(x));
+    await this.storage.set(STORAGE_KEYS.retired, JSON.stringify(this.snap.retired));
+    if (this.snap.id && gone.has(this.snap.id)) {
+      this.snap.id = null;
+      if (this.snap.status === 'granted') this.snap.status = 'denied';
+      await this.storage.remove(STORAGE_KEYS.id);
+      await this.storage.set(STORAGE_KEYS.consent, this.snap.status === 'unknown' ? 'unknown' : 'denied');
+    }
+  }
+
   /** After the deletion request is confirmed, forget every id. */
   async forgetAllIds(): Promise<void> {
     await this.idWrite.catch(() => undefined);

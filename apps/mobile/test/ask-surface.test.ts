@@ -114,7 +114,9 @@ describe('[BL-1985] the consent sheet does not appear during a take or an export
   });
   it('is not due while an export runs', () => {
     asks.setSurfaceBusy('export', true);
-    expect(analyticsAsk.analyticsAskDueNow(['(tabs)', 'book']).due).toBe(false);
+    const v = analyticsAsk.analyticsAskDueNow(['(tabs)', 'book']);
+    expect(v).toEqual({ due: false, reason: 'blocking_surface' }); // not merely "not due": the recorded reason is the busy surface
+    expect(counts()).toEqual({ asks: null, os: null });
   });
 });
 

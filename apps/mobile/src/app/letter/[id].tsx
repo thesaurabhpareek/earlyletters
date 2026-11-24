@@ -538,7 +538,7 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
                 variant="destructive"
                 leading={<TrashIcon size={20} color={c.destructive} />}
                 onPress={() => setConfirmOpen(true)}
-                accessibilityHint={copy.settings.delete.entryConfirm}
+                accessibilityHint={copy.book.entryMenu.deleteHint}
               />
             </ListSection>
           </View>

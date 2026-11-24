@@ -2,7 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { STALE_UNKNOWN_MINUTES, securityLensHits, touchesSecurityLens, namedLenses, SECURITY_LENS_NAMES, SECURITY_LENS_CLASSES, buildQueue, workspaceOf, staleBase, parseReview, parseClaims, parseArgs, formatTable, reviewState, touchesNative, clean } from "./merge-queue.mjs";
+import { STALE_UNKNOWN_MINUTES, securityLensHits, touchesSecurityLens, namedLenses, SECURITY_LENS_NAMES, SECURITY_LENS_CLASSES, buildQueue, workspaceOf, staleBase, parseReview, parseClaims, parseArgs, formatTable, suiteState, passOverRedSuite, hotFileHits, hotFileGroups, reviewState, touchesNative, clean } from "./merge-queue.mjs";
 
 const OLD = "c5cfa0cfaa96a0ba97ca5f34629747ab0badf438";
 const HEAD = "a83634ced2a5ecf32717bf833f941b892fc660b9";
@@ -593,4 +593,56 @@ test("stale base: other verdicts keep their place, and the check makes only GET 
   const calls = [];
   await buildQueue({ api: fake({ ...stalePr, behindBy: 3, baseFiles: ["apps/mobile/x"], calls }), now: NOW });
   assert.ok(calls.some((c) => c.path.includes("/compare/")) && calls.every((c) => c.method === "GET"));
+});
+
+test("AIE-G20: suiteState reads the newest run of the suite check, or - if none", () => {
+  assert.equal(suiteState([]), "-");
+  assert.equal(suiteState(good), "-");
+  assert.equal(suiteState([run(5, "tests and content rules", "failure"), run(9, "tests and content rules", "success")]), "success");
+  assert.equal(suiteState([run(5, "tests and content rules", "success"), run(9, "tests and content rules", null, "in_progress")]), "pending");
+  assert.equal(suiteState([run(5, "tests and content rules", "failure")]), "failure");
+});
+
+test("AIE-G20: PASS over a red suite prints a note and a suite column; json gains suite", async () => {
+  const comments = [review("A", HEAD), review("B", HEAD)];
+  const red = await verdict({ comments, runs: [...good, run(4, "tests and content rules", "failure")] });
+  assert.equal(red.suite, "failure");
+  assert.equal(passOverRedSuite(red), true);
+  const out = formatTable([red]);
+  assert.match(out, /suite/);
+  assert.match(out, /note: #7 PASS over a red suite \(AIE-G20\)/);
+  const green = await verdict({ comments, runs: [...good, run(4, "tests and content rules", "success")] });
+  assert.equal(passOverRedSuite(green), false);
+  assert.doesNotMatch(formatTable([green]), /red suite/);
+  const none = await verdict({ comments });
+  assert.equal(none.suite, "-");
+  assert.equal(none.verdict, "READY", "the suite column is a report, it never changes the verdict");
+  assert.equal(passOverRedSuite({ reviews: { A: false, B: false }, suite: "failure" }), false, "no counted PASS, no note");
+});
+
+test("AIE-G21: hotFileHits finds hot files, renames included", () => {
+  assert.deepEqual(hotFileHits(["docs/agents/CLAIMS.md", "docs/BACKLOG.md", "docs/content/map/a.json", "docs/other.md", { filename: "x.md", previous_filename: "docs/agents/exec/RULINGS.md" }, "docs/agents/cto/RULINGS.md"]),
+    ["docs/agents/CLAIMS.md", "docs/BACKLOG.md", "docs/content/map/a.json", "docs/agents/exec/RULINGS.md", "docs/agents/cto/RULINGS.md"]);
+  assert.deepEqual(hotFileHits(["docs/agents/CLAIMS.md.bak", "apps/docs/BACKLOG.md"]), []);
+});
+
+test("AIE-G21: hotFileGroups names PRs that share a hot file, lowest number first; one PR or other bases do not", () => {
+  const ab = { A: true, B: true };
+  const mk = (number, hotFiles, extra = {}) => ({ number, hotFiles, reviews: ab, verdict: "WAIT-QUIET", ...extra });
+  const rows = [mk(30, ["docs/agents/CLAIMS.md"]), mk(12, ["docs/agents/CLAIMS.md", "docs/content/map/a.json"]), mk(21, ["docs/content/map/b.json"]),
+    mk(40, ["docs/BACKLOG.md"]), mk(41, ["docs/BACKLOG.md"], { otherBase: true }), mk(42, ["docs/BACKLOG.md"], { reviews: { A: true, B: false }, verdict: "NEEDS-REVIEW" })];
+  assert.deepEqual(hotFileGroups(rows), [{ file: "docs/agents/CLAIMS.md", prs: [12, 30] }, { file: "docs/content/map/*", prs: [12, 21] }]);
+  assert.deepEqual(hotFileGroups([mk(40, ["docs/BACKLOG.md"], { reviews: { A: false, B: false }, verdict: "READY" }), mk(50, ["docs/BACKLOG.md"], { reviews: { A: false, B: false }, verdict: "READY" })]), [{ file: "docs/BACKLOG.md", prs: [40, 50] }]);
+  const full = (r) => ({ head: HEAD, base: "develop", pushAgeMinutes: 30, mergeable_state: "clean", required: [], checks: { queued: 0, inProgress: 0, macos: {} }, watch: [], claim: "", suite: "-", ...r, reviews: { ...r.reviews, blocked: {}, untrusted: [], staleLenses: [] } });
+  const out = formatTable(rows.map(full));
+  assert.match(out, /note: #12, #30 all change docs\/agents\/CLAIMS\.md \(AIE-G21\): merge #12 first/);
+  assert.equal(hotFileGroups([mk(1, [])]).length, 0);
+});
+
+test("AIE-G21: buildQueue records hotFiles for a reviewed PR even when CI is not green, with GET calls only", async () => {
+  const calls = [];
+  const r = await verdict({ comments: [review("A", HEAD), review("B", HEAD)], runs: [good[0]], files: ["docs/BACKLOG.md", "docs/x.md"], calls });
+  assert.deepEqual(r.hotFiles, ["docs/BACKLOG.md"]);
+  assert.equal(r.verdict, "WAIT-CI");
+  assert.ok(calls.every((c) => c.method === "GET"));
 });
