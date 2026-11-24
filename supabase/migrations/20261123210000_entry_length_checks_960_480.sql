@@ -14,7 +14,9 @@
 --   3. create_child_row (20261109000000), which refuses a long name with 22023 before the insert; re-created, only the number changes.
 --   book_update and create_first_run_children carry no length test of their own: the table check and trigger stop them.
 --
--- Ordering. Apply after 20261123100000 (File 46, sync_pull_consent_gate). Not applied. Applying it to a hosted project is the
+-- Ordering. Apply after 20261123200000_book_entries_no_engine_version (it shared this file's first version, 20261123200000, until
+-- the rename to 20261123210000: two files with one version would collide on schema_migrations), and so after 20261123100000
+-- (File 46, sync_pull_consent_gate). Not applied. Applying it to a hosted project is the
 -- founder's step (D-041, CR-73), from a CI tag run. The app does not change until then. If this merges after the main cut, it ships
 -- in a later tag.
 -- Rollback (forward-fix only; never edit this file once applied). Restoring the old numbers is safe only if no row is over the old

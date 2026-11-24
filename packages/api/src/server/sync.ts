@@ -593,7 +593,8 @@ export const PulledRowSchema = v.object({
   edit_level: v.picklist(EDIT_LEVELS),
   prompt_key: nullableStr,
   prompt_library_version: v.nullish(v.number()),
-  engine_version: v.number(),
+  /** Own rows only (FR-AIS-08, 20261123200000): `book_entries` no longer carries it, so another member's row has none. */
+  engine_version: v.optional(v.number()),
   raw_transcript: v.optional(str),
   /**
    * Own rows only. A JSON array, checked on entries since 20261023040000

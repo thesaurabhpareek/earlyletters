@@ -30,12 +30,13 @@ describe('photo and Find flags in store profiles (BL-958)', () => {
     expect(storeFlagProblems(realEas())).toEqual([]);
   });
 
-  it('names exactly the four flags, and production is never an allowed profile before G6', () => {
+  it('names exactly the five flags, and production is never an allowed profile before G6', () => {
     expect(STORE_FLAGS.map((f) => [f.env, f.card])).toEqual([
       ['EXPO_PUBLIC_PHOTOS', 'NS-01'],
       ['EXPO_PUBLIC_BOOK_SEARCH', 'NS-02'],
       ['EXPO_PUBLIC_NEW_DEVICE_EMAIL', 'NS-08'],
       ['EXPO_PUBLIC_BACKUP_LINE', 'NS-10'],
+      ['EXPO_PUBLIC_SERVER_ERASE', 'BL-1854'],
     ]);
     for (const f of STORE_FLAGS) expect(f.allowedOn).not.toContain('production');
   });
@@ -70,6 +71,19 @@ describe('photo and Find flags in store profiles (BL-958)', () => {
     expect(storeFlagProblems({ build: { base, production: { extends: 'base' } } }).map((p) => p.profile)).toEqual(['base', 'production']);
     expect(storeFlagProblems({ build: { base, production: { extends: 'base', env: { EXPO_PUBLIC_PHOTOS: 'off' } } } }).map((p) => p.profile)).toEqual(['base']);
     expect(resolveProfile({ a: { extends: 'b' }, b: { extends: 'a' } }, 'a')).not.toBeNull();
+  });
+
+  it('[BL-1960] EXPO_PUBLIC_SERVER_ERASE is listed with allowedOn empty, so no store profile can turn it on', () => {
+    const row = STORE_FLAGS.find((f) => f.env === 'EXPO_PUBLIC_SERVER_ERASE');
+    expect(row?.allowedOn).toEqual([]);
+    for (const profile of ['preview', 'testflight', 'production']) {
+      const problems = storeFlagProblems(fixture({ [profile]: { EXPO_PUBLIC_SERVER_ERASE: 'on' } }));
+      expect(problems, profile).toEqual([{ profile, env: 'EXPO_PUBLIC_SERVER_ERASE', value: 'on', card: 'BL-1854' }]);
+    }
+    // Development and e2e builds may carry it.
+    expect(storeFlagProblems(fixture({ development: { EXPO_PUBLIC_SERVER_ERASE: 'on' }, e2e: { EXPO_PUBLIC_SERVER_ERASE: 'on' } }))).toEqual([]);
+    // The real eas.json carries it in no store profile (the first test also covers this through the whole table).
+    expect(storeFlagProblems(realEas()).filter((p) => p.env === 'EXPO_PUBLIC_SERVER_ERASE')).toEqual([]);
   });
 
   it('the TestFlight preflight fails on the same table for every store profile', () => {

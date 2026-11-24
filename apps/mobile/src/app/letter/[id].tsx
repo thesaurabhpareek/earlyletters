@@ -53,6 +53,7 @@ import { useFontScale, useTheme } from '@/lib/a11y';
 import { track } from '@/lib/analytics/track';
 import { copy, fill } from '@/lib/copy';
 import { letterDateline } from '@/lib/dates';
+import { carriesWords, playUnderDateline } from '@/lib/play-placement.logic';
 import { haptic } from '@/lib/haptics';
 import { downloadingLine } from '@/lib/models/speech-download.logic';
 import { planFor } from '@/lib/models/speech-packs';
@@ -170,12 +171,15 @@ function Letter() {
   const dateline = entryDateline(child, entry);
   const spokenDateline = monthOnly ? dateline : letterDateline(child, entry.occurredOn);
   // The picture sits between the dateline and the words (ruling NS-01-C01-order). A letter with a picture hands off with
-  // the plain 200 ms fade (the carry moves dateline and words as one rigid block); a letter without one carries as before.
+  // the plain 200 ms fade (the carry moves dateline and words as one rigid block); so does Play under the dateline from AX1 up (carriesWords).
   const hasPicture =
     !!storedPhoto && words !== 'waiting' && photoSurfaces({ build: photosBuildEnabled(), paused: photosPausedNow() }).addActions;
   const picture = hasPicture ? <LetterPicture entryId={entry.id} own={isOwnEntry(entry)} columnWidth={screenWidth - 2 * CARD_TEXT_INSET} /> : null;
+  // From AX1 up Play sits directly under the dateline, above the picture (BL-1789, CDESO-1); the opening draws it, on the page's own copy only.
+  const playFirst = playUnderDateline(fontScale) && entry.captureMode !== 'typed';
+  const play = playFirst ? <AudioPlayer entryId={entry.id} /> : null;
   const openingFor: Opening = (focus) => (
-    <OpeningBlock focusRef={focus} dateline={dateline} spokenDateline={spokenDateline} text={text} note={shownNote} scale={scale} swapKey={`${size}:${showOriginal}`} picture={picture} />
+    <OpeningBlock focusRef={focus} dateline={dateline} spokenDateline={spokenDateline} text={text} note={shownNote} scale={scale} swapKey={`${size}:${showOriginal}`} picture={picture} play={focus ? play : null} />
   );
 
   const page = (
@@ -193,6 +197,7 @@ function Letter() {
         opening={openingFor}
         openingLineHeight={lineHeightFor(shownNote ? 'footnote' : 'letterBody', fontScale, scale)}
         hasPicture={hasPicture}
+        playFirst={playFirst}
         words={words}
         onEntry={setEntry}
       />
@@ -220,6 +225,7 @@ function OpeningBlock({
   scale,
   swapKey,
   picture,
+  play,
 }: {
   focusRef: RefObject<any> | null;
   dateline: string;
@@ -229,6 +235,8 @@ function OpeningBlock({
   scale: number;
   swapKey: string;
   picture?: ReactNode;
+  /** Play, from AX1 up: directly under the dateline, above the picture (BL-1789). Only the page's own copy carries it. */
+  play?: ReactNode;
 }) {
   return (
     <View style={{ gap: CARD_TEXT_GAP }}>
@@ -236,7 +244,8 @@ function OpeningBlock({
       <Text ref={focusRef ?? undefined} variant="letterDateline" caps accessibilityLabel={spokenDateline} asHeading={1} testID={focusRef ? 'letter.dateline' : undefined}>
         {dateline}
       </Text>
-      {/* The picture, when the letter has one: second in order, after the one level 1 heading and before the words. */}
+      {play}
+      {/* The picture, when the letter has one: second in order (after Play, from AX1 up), after the one level 1 heading and before the words. */}
       {picture}
       {/* "Exactly as said" and Reading Size cross-fade the words over 150 ms; the size itself never animates. */}
       <Animated.View key={swapKey} entering={focusRef ? FadeIn.duration(150).reduceMotion(ReduceMotion.Never) : undefined}>
@@ -262,11 +271,13 @@ type PageProps = {
   opening: Opening;
   openingLineHeight: number;
   hasPicture: boolean;
+  /** Play is drawn by the opening (under the dateline), not after the words. */
+  playFirst: boolean;
   words: ReturnType<typeof letterWords>;
   onEntry: (e: Entry) => void;
 };
 
-function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, opening, openingLineHeight, hasPicture, words, onEntry }: PageProps) {
+function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, opening, openingLineHeight, hasPicture, playFirst, words, onEntry }: PageProps) {
   const { c } = useTheme();
   const insets = useSafeAreaInsets();
   const toast = useToast();
@@ -288,7 +299,7 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
     const pageY = pageTop;
     const column = { x: CARD_TEXT_INSET, y: pageY, width: screen.width - 2 * CARD_TEXT_INSET, height: Number.MAX_SAFE_INTEGER, lineHeight: openingLineHeight };
     return pageRestPlan({
-      carried: !hasPicture && !!r && !reduced && canCarry(r.text, column),
+      carried: carriesWords({ hasPicture, fontScale }) && !!r && !reduced && canCarry(r.text, column),
       holdMs: tokens.motion.cardToPage.holdMs,
       measureMs: MEASURE_MS,
       spring: tokens.motion.standard,
@@ -429,7 +440,7 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
               {copy.review.originalLabel}
             </Text>
           ) : null}
-          {CARD_MODE ? <PageOpening lineHeight={openingLineHeight} carry={!hasPicture} /> : opening(ownOpening)}
+          {CARD_MODE ? <PageOpening lineHeight={openingLineHeight} carry={carriesWords({ hasPicture, fontScale })} /> : opening(ownOpening)}
           {showsSignature(words) || showOriginal ? (
             <Animated.View style={restSignature} className="self-end">
               <Text variant="signature" scale={tokens.readingScale[size]}>
@@ -440,7 +451,7 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
         </View>
 
         <Animated.View style={[{ gap: 28 }, restBody]}>
-        {spoken && <AudioPlayer entryId={entry.id} />}
+        {spoken && !playFirst && <AudioPlayer entryId={entry.id} />}
         {/* The picture's controls (add, change, words, remove) stay after the words and Play; the picture itself is drawn by the
             opening, between the dateline and the words (CL-116 C-01, ruling NS-01-C01-order): absent when photos are off. */}
         {words !== 'waiting' ? <LetterPhoto entryId={entry.id} finalText={entry.finalText} own={own} /> : null}

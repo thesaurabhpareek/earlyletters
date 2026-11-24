@@ -86,7 +86,7 @@ describe('[BL-1425] pendingUploads() is typed, and unknown is unsynced', () => {
 
   it('the provider: every dispatch passes the typed result on, the poll ends only on a counted zero, no literal 0 but switch_account', () => {
     const p = src('lib/auth/session-provider.tsx');
-    expect(p).toMatch(/pendingUploads\(\)\.then\(\(p\) => nothingPending\(p\) && done\(\)\)/);
+    expect(p).toMatch(/void endWaitIfDrained\(pendingUploads, alive, done\);/); // the helper ends only on nothingPending (next test)
     expect(p).toMatch(/pendingUploads\(\)\.then\(\(p\) => dispatch\(\{ type: 'SIGN_OUT_REQUESTED', reason: 'force_reauth', pendingUploads: p \}\)\)/);
     expect(p).toMatch(/dispatchSignOut: \(p\) => dispatch\(\{ type: 'SIGN_OUT_REQUESTED', reason: 'apple_revoked', pendingUploads: p \}\)/);
     expect(p.match(/pendingUploads: 0/g)).toHaveLength(1); // switch_account only: it never reads the probe
