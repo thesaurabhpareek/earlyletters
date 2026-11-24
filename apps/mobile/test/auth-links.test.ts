@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { brand } from '@scribe/brand';
 import { authCallbackUrl, classifyIncomingUrl } from '../src/lib/auth/links.logic';
 import { splitUrl } from '../src/lib/auth/url.logic';
+import { allowedLinkRoute, LINK_ROUTE_ALLOWLIST, planIncomingLink } from '../src/lib/family/entry.logic';
+import { armListenStart, consumeListenStart, LISTEN_ARM_WINDOW_MS, resetListenStart } from '../src/lib/resilience/start-intent';
+import { isCaptureRoute, TONIGHT_HREF } from '../src/lib/resilience/not-found.logic';
 
 const CFG = { origin: brand.web.origin, scheme: brand.scheme };
 const HASH = 'pkce_7b1c0f3e9a2d4c6b8e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b';
@@ -100,5 +103,80 @@ describe('url splitter', () => {
 
   it('keeps malformed escapes instead of throwing', () => {
     expect(splitUrl('https://example.com/?a=%E0%A4%A')?.query.a).toBe('%E0%A4%A');
+  });
+});
+
+describe('[LEGAL-REQ-011] an external link never auto-starts recording', () => {
+  // Every way a link can name a screen that records, drafts or plays audio. /write is a typing screen, but a
+  // link must not open a half-made letter either.
+  const RECORDER_LINKS = [
+    'scribe://listen',
+    'scribe://listen?go=1&autostart=true',
+    'scribe://listen/',
+    'scribe:///listen',
+    'scribe://review?draftId=1',
+    'scribe://write',
+    'scribe://read-together',
+    'scribe://read-together/letter-1',
+    'https://earlyletters.com/listen',
+    'https://earlyletters.com/review?draftId=1',
+    'https://earlyletters.com/write',
+    'https://earlyletters.com/read-together',
+    '/listen',
+    '/LISTEN',
+    '/review',
+    '/write',
+    '/read-together',
+    '/listen#record',
+  ];
+  // Every build shape: server features on or off, store or alpha, gate stopped or not.
+  const BUILDS = [true, false].flatMap((serverFeatures) =>
+    [true, false].flatMap((alpha) => [true, false].map((gateStopped) => ({ serverFeatures, alpha, gateStopped }))),
+  );
+
+  it('the plan for a link to /listen, /review, /write or /read-together is Tonight in every build, keeping nothing', () => {
+    for (const path of RECORDER_LINKS) {
+      const link = classifyIncomingUrl(path, CFG);
+      for (const build of BUILDS) {
+        const plan = planIncomingLink(link, { ...build, path });
+        expect(plan, `${path} ${JSON.stringify(build)}`).toEqual({ route: '/', keepInviteToken: false, keepAuthLink: false });
+      }
+    }
+  });
+
+  it('the screens that record are not on the list of routes a link may open', () => {
+    for (const r of ['/listen', '/review', '/write', '/read-together']) {
+      expect(LINK_ROUTE_ALLOWLIST as readonly string[], r).not.toContain(r);
+      expect(allowedLinkRoute(r), r).toBe('/');
+    }
+  });
+
+  it('a recorder link still cannot open its screen when it carries an invite or sign-in look-alike', () => {
+    for (const path of [`https://earlyletters.com/listen#t=${TOKEN}`, `scribe://listen#token_hash=${HASH}&type=email`, `https://earlyletters.com/listen?next=/auth/callback#token_hash=${HASH}`]) {
+      for (const build of BUILDS) {
+        const plan = planIncomingLink(classifyIncomingUrl(path, CFG), { ...build, path });
+        expect(plan.route, path).not.toBe('/listen');
+        expect(plan.route, path).toBe('/');
+      }
+    }
+  });
+
+  it('the first gate in the link hook (isCaptureRoute) catches the recorder screens, whatever the spelling', () => {
+    // +native-intent.tsx imports react-native, which vitest cannot load; this is the check it makes first.
+    for (const path of RECORDER_LINKS.filter((p) => !/write/.test(p))) {
+      expect(isCaptureRoute(path), path).toBe(true);
+    }
+    expect(TONIGHT_HREF).toBe('/');
+  });
+
+  it('Listen reached any way but a tap (a link, a restored screen, a stale route) reads "not tapped"', () => {
+    resetListenStart();
+    expect(consumeListenStart()).toBe(false);
+    armListenStart(1000);
+    expect(consumeListenStart(1000 + LISTEN_ARM_WINDOW_MS + 1)).toBe(false);
+    armListenStart(1000);
+    expect(consumeListenStart(1000)).toBe(true);
+    expect(consumeListenStart(1000)).toBe(false);
+    resetListenStart();
   });
 });
