@@ -20,168 +20,15 @@
  *   Store Connect, never from events or a server of ours.
  * - Every property is L2 and every event cites the requirement it serves.
  */
-import { CAPTURE_MODES, MEMBER_ROLES, OFFER_TRIGGERS } from '@scribe/core';
-import { bool, int, oneOf, opt, type EventSpec, type Level, type PropSpec } from './schema';
+import { bool, int, oneOf, opt, type EventSpec, type PropSpec } from './schema';
 import { MOMENTS_SLOT, REGISTRY } from './registry';
-import type { EventTier } from './contracts';
+import { CHILD_COUNT_BUCKET, CHILD_ORDINAL, MEMBER_ROLE, INVITE_ROLE, AUTHOR_RELATION, LETTERS_BUCKET, SESSION_BUCKET, EDIT_TYPE, EDIT_SOURCE, REJECT_REASON, AUTH_METHOD, SIGN_IN_TRIGGER, NETWORK, LANG, PACK_ID, PACK_FAILURE } from './values';
 
-// ---------------------------------------------------------------------------
-// Shared value sets
-// ---------------------------------------------------------------------------
-
-export const CHILD_ORDINAL = oneOf('first', 'second', 'third_plus');
-export const CHILD_COUNT_BUCKET = oneOf('none', 'one', 'two', 'three_plus');
-/**
- * The viewer's role in the current child's book (B section 6). DB values from
- * @scribe/core: the UI's "Co-parent" is `parent` here (CORE-05).
- */
-export const MEMBER_ROLE = oneOf(...MEMBER_ROLES);
-/** Role an invite grants: the same DB values as MEMBER_ROLE. */
-export const INVITE_ROLE = MEMBER_ROLE;
-/** Who wrote a letter, relative to the person viewing it. */
-export const AUTHOR_RELATION = oneOf('self', 'other_parent', 'family');
-/** entries.capture_mode, from @scribe/core (includes `mixed`). */
-export const CAPTURE_MODE = oneOf(...CAPTURE_MODES);
-/** packages/core PromptKind, plus `none` when no prompt was shown. */
-export const PROMPT_KIND = oneOf('opening', 'gap', 'hard', 'family', 'together', 'none');
+// The shared value sets live in values.ts and are defined there once (CODE-R13). This re-export keeps
+// every `from './catalog'` import working; a test pins that no name is redefined here.
+export * from './values';
 /** NS-53 R251: the only two card slots that may be reported (a slot is a position, never a source). */
 export { MOMENTS_SLOT };
-export const AUDIO_BUCKET = oneOf('lt_15s', '15_60s', '1_2m', '2_5m', 'gt_5m');
-export const WORDS_BUCKET = oneOf('lt_25', '25_99', '100_299', '300_plus');
-export const LETTERS_BUCKET = oneOf('0', '1', '2_4', '5_9', '10_49', '50_99', '100_364', '365_plus');
-export const LATENCY_BUCKET = oneOf('lt_5s', '5_15s', '15_30s', '30_60s', 'gt_60s');
-export const DAYS_BUCKET = oneOf('d0', 'd1', 'd2_7', 'd8_30', 'd31_90', 'd91_plus');
-export const SESSION_BUCKET = oneOf('lt_1m', '1_5m', '5_15m', 'gt_15m');
-/** packages/core EditType (a type test keeps them equal). */
-export const EDIT_TYPE = oneOf('filler', 'false_start', 'repeat', 'stt_fix', 'punctuation', 'agreement', 'paragraph');
-export const EDIT_SOURCE = oneOf('rule', 'model');
-/** packages/core RejectReason (a type test keeps them equal). Why the verifier refused a machine edit. */
-export const REJECT_REASON = oneOf(
-  'original_mismatch',
-  'changes_invisible',
-  'out_of_bounds',
-  'overlaps_protected',
-  'overlaps_other_edit',
-  'type_not_allowed_at_level',
-  'removal_only',
-  'not_a_filler',
-  'not_a_repeat',
-  'false_start_not_repeated',
-  'stt_fix_not_dictionary',
-  'punctuation_changed_letters',
-  'agreement_not_single_word',
-  'agreement_stem_mismatch',
-  'agreement_limit_per_sentence',
-  'paragraph_not_whitespace',
-  'inserted_content_word',
-  'change_ceiling_exceeded',
-  'splits_word',
-  'removal_adds_punctuation',
-  'changes_negation',
-  'changes_tense',
-  'changes_modal',
-  'changes_word',
-  'changes_number',
-  'changes_sentence_type',
-  'changes_quotes',
-  'case_change_not_allowed',
-  'case_change_not_sentence_start',
-  'removes_negation',
-  'repeat_is_emphasis',
-  'false_start_complete_phrase',
-  'stt_fix_protected_word',
-  'stt_fix_not_heard_as',
-  'not_vetted_for_language',
-);
-/** Sign-in methods (apps/mobile src/lib/auth AuthMethod). Passkeys are behind a flag at v1.0. */
-export const AUTH_METHOD = oneOf('apple', 'google', 'email', 'passkey');
-/** Where the sign-in sheet was opened from (src/lib/auth SignInTrigger). */
-export const SIGN_IN_TRIGGER = oneOf('first_letter', 'third_letter', 'invite', 'invite_create', 'sign_in', 'settings');
-/** packages/core OfferTrigger. */
-export const PLUS_TRIGGER = oneOf(...OFFER_TRIGGERS);
-export const NETWORK = oneOf('wifi', 'cellular', 'none', 'unknown');
-/** Speech model in use, by role (src/lib/models/catalog.ts; ADR 0015). Never a file name or URL. */
-export const SPEECH_MODEL = oneOf('turbo', 'small', 'hindi_small', 'zh_turbo', 'server_default', 'none');
-
-/**
- * Spoken-letter languages in v1.0 (founder decision 6, 3 Oct 2026), as ISO
- * 639-1 primary subtags: English, Hindi, Spanish, Mandarin Chinese, French,
- * Arabic, Portuguese. A closed list: a language outside it is never sent.
- */
-export const LANG = oneOf('en', 'hi', 'es', 'zh', 'fr', 'ar', 'pt');
-export type Lang = (typeof LANG.values)[number];
-export const V1_LANGUAGES: readonly Lang[] = LANG.values;
-
-/**
- * Downloadable packs (founder decision 15), by a short analytics id derived
- * from the signed manifest's pack id (`packAnalyticsId` in packs.ts). A pack
- * the catalogue does not know is sent as `other`, so failures are still
- * counted, but its id never is.
- */
-export const PACK_ID = oneOf(
-  'rules_en', 'rules_hi', 'rules_es', 'rules_zh', 'rules_fr', 'rules_ar', 'rules_pt',
-  'prompts_en', 'prompts_hi', 'prompts_es', 'prompts_zh', 'prompts_fr', 'prompts_ar', 'prompts_pt',
-  'model_vad', 'model_turbo', 'model_small', 'model_hindi_small', 'model_zh_turbo',
-  'other',
-);
-/** src/lib/packs PackFailure. */
-export const PACK_FAILURE = oneOf(
-  'no_manifest',
-  'not_in_manifest',
-  'needs_app_update',
-  'downloads_paused',
-  'waiting_for_wifi',
-  'offline',
-  'no_space',
-  'hash_mismatch',
-  'download_failed',
-  'cancelled',
-  'storage_error',
-);
-
-/** Route templates only, never resolved paths (dynamic segments stay literal). Map: routes.ts. */
-export const ROUTE = oneOf(
-  'tonight',
-  'book',
-  'family',
-  'listen',
-  'write',
-  'review',
-  'letter_detail',
-  'onboarding',
-  'read_together',
-  'sign_in',
-  'sign_in_email',
-  'sign_in_code',
-  'sign_in_verify',
-  'sign_in_consent',
-  'invite',
-  'invite_new',
-  'settings',
-  'settings_account',
-  'settings_appearance',
-  'settings_reminders',
-  'settings_recordings',
-  'settings_child_detail',
-  'settings_child_new',
-  'settings_privacy',
-  'settings_export',
-  'settings_language',
-  'settings_plus',
-  'settings_storage',
-  'settings_delete_account',
-);
-
-export const ERROR_CODE = oneOf(
-  'save_failed',
-  'mic_denied',
-  'transcription_failed',
-  'offline',
-  'backup_failed',
-  'invite_expired',
-  'storage_low',
-  'generic',
-);
 
 // ---------------------------------------------------------------------------
 // Global properties, attached by the client to every event
@@ -215,8 +62,9 @@ export const GLOBAL_PROPS = {
  * 9: `reminder_prime_shown.source` gains `first_month` (the second reminder card, after the first month chapter, BL-518, BL-1429).
  * 10: `auth_sheet_shown.trigger` and `auth_deferred.trigger` gain `third_letter` (the Keep the book re-offer after the third letter, BL-519, BL-1464).
  * 11: two Moments card events, `moments_card_impressed` and `moments_card_tapped`, one closed property `slot` (`look_back` | `question`), NS-53 section 18 and R251. Both are registry events (one definition, in registry.ts; the catalogue rows read it). The tracker `trackMomentsCard` exists; the app does not call it until the Moments flag.
+ * 12: the catalogue now reads every sendable event from registry.ts (one definition), so the three rows that only the registry held (`control_tapped`, `perf_measured`, `surface_impressed`) join the fingerprint; no event or property that was already in the catalogue changed (BL-2148, P5 of BL-1235). Production analytics stay off.
  */
-export const SCHEMA_VERSION = 11;
+export const SCHEMA_VERSION = 12;
 
 /**
  * SHA-256 of `JSON.stringify(catalogShape())` per schema version. Versions 1
@@ -232,18 +80,20 @@ export const SCHEMA_FINGERPRINTS: Readonly<Record<number, string>> = Object.free
   9: '4022bb86210eee98e8a6c9d4a42a5710bccaeacdd76e58bf92fb1d141f491f44',
   10: '1bc7d06372de546ec176a3fcf3147727d28ac6c9a39bba035902980050f9165b',
   11: 'd5086670df9e315dee3d38561bb79858605f4c247d260b20cc6cd96e44181711',
+  12: '936b6de82cf58d00e66e2df7ac327409ac1db2682e05dd4bc841dd5f3cd73fcb',
 });
 
 // ---------------------------------------------------------------------------
 // Events
 // ---------------------------------------------------------------------------
 
-/** The catalogue view of a registry row: the documentation and shape fields only, never a second copy. */
-function catalogRow<R extends { area: string; when: string; reqs: readonly string[]; level: Level; tier: EventTier; props: Record<string, PropSpec> }>(r: R): Pick<R, 'area' | 'when' | 'reqs' | 'level' | 'tier' | 'props'> {
-  return { area: r.area, when: r.when, reqs: r.reqs, level: r.level, tier: r.tier, props: r.props };
-}
-
-export const EVENTS = {
+/**
+ * Events that are typed here and NOT sent: no row in registry.ts, so validate.ts drops and counts them. Each
+ * moves to registry.ts with a decision it informs, a TRACKING_PLAN row and a privacy look, or is removed
+ * (the pinned list is in test/catalog-registry-drift.test.ts). Every event that can be sent is defined once,
+ * in registry.ts, and is not repeated here.
+ */
+export const HELD_EVENTS = {
   // --- App and navigation -------------------------------------------------
   app_cold_start: {
     area: 'app',
@@ -253,17 +103,6 @@ export const EVENTS = {
     tier: 'consented',
     props: { ttfi_bucket: oneOf('lt_1s', '1_2s', '2_3s', 'gt_3s') },
   },
-  app_opened: {
-    area: 'app',
-    when: 'App comes to the foreground after 30 min or more away, or cold starts',
-    reqs: ['PRD-REQ-016'],
-    level: 'L2',
-    tier: 'consented',
-    props: {
-      source: oneOf('cold', 'warm', 'notification', 'link'),
-      days_since_last_open: DAYS_BUCKET,
-    },
-  },
   app_backgrounded: {
     area: 'app',
     when: 'App goes to the background; carries the session length bucket',
@@ -272,36 +111,8 @@ export const EVENTS = {
     tier: 'consented',
     props: { session_bucket: SESSION_BUCKET },
   },
-  screen_view: {
-    area: 'app',
-    when: 'A route is shown. Sent by our router hook from the route template, never by SDK autocapture',
-    reqs: ['ADR-0008', 'PRD-REQ-016'],
-    level: 'L2',
-    tier: 'basics',
-    props: { route: ROUTE },
-  },
-
-  // --- Consent --------------------------------------------------------------
-  analytics_opted_in: {
-    area: 'consent',
-    when: 'Immediately after the user says yes. Carries a one-time summary of first-run facts the app already stores, because first-run events can never be sent (K-01)',
-    reqs: ['PRD-REQ-016', 'K-01'],
-    level: 'L2',
-    tier: 'consented',
-    props: {
-      surface: oneOf('consent_sheet', 'settings'),
-      days_since_install: DAYS_BUCKET,
-      letters_bucket: LETTERS_BUCKET,
-      signed_in: bool(),
-      member_role: MEMBER_ROLE,
-      first_letter_mode: oneOf(...CAPTURE_MODES, 'none'),
-      time_to_first_letter: oneOf('lt_90s', '90s_5m', '5_30m', '30m_24h', 'gt_24h', 'unknown'),
-      came_from_invite: bool(),
-    },
-  },
-
-  // --- Sign-in (A section 10). Fire only after consent, which in practice
   // means sign-in from Settings, a later invite, or a new session. ----------
+  // --- Sign-in (A section 10). Fire only after consent, which in practice
   auth_sheet_shown: {
     area: 'entry',
     when: 'Keep the book / sign-in sheet shown',
@@ -317,14 +128,6 @@ export const EVENTS = {
     level: 'L2',
     tier: 'consented',
     props: { method: AUTH_METHOD },
-  },
-  auth_succeeded: {
-    area: 'entry',
-    when: 'A new session exists on this phone (observed from the auth state). New accounts are counted on the server',
-    reqs: ['A-NFR-013', 'PRD-REQ-016'],
-    level: 'L2',
-    tier: 'consented',
-    props: { method: AUTH_METHOD, had_local_data: bool() },
   },
   auth_failed: {
     area: 'entry',
@@ -390,26 +193,7 @@ export const EVENTS = {
     tier: 'consented',
     props: { choice: oneOf('existing', 'new') },
   },
-
   // --- Children (K-12) -----------------------------------------------------
-  child_added: {
-    area: 'children',
-    when: 'A child book is created',
-    reqs: ['PRD-REQ-011', 'PRD-REQ-015', 'B-REQ-004'],
-    level: 'L2',
-    tier: 'consented',
-    props: {
-      /**
-       * True when a full date (birthday or due date) was entered, false for
-       * month only or none. Which kind of date is never sent: it reveals a
-       * pregnancy (PPRIV-02).
-       */
-      has_date: bool(),
-      child_ordinal: CHILD_ORDINAL,
-      in_first_run: bool(),
-      added_together: bool(),
-    },
-  },
   child_switched: {
     area: 'children',
     when: 'User switches the current book',
@@ -474,65 +258,7 @@ export const EVENTS = {
       source: oneOf('settings', 'review_correction', 'onboarding'),
     },
   },
-
   // --- Capture and review ---------------------------------------------------
-  capture_started: {
-    area: 'capture',
-    when: 'User starts speaking or typing a letter',
-    reqs: ['PRD-REQ-016', 'C-REQ-034'],
-    level: 'L2',
-    tier: 'consented',
-    props: {
-      mode: CAPTURE_MODE,
-      source: oneOf('tonight', 'book', 'notification', 'make_it_yours', 'resurface'),
-      prompt_kind: PROMPT_KIND,
-      child_ordinal: CHILD_ORDINAL,
-      member_role: MEMBER_ROLE,
-    },
-  },
-  capture_discarded: {
-    area: 'capture',
-    when: 'A letter in progress is thrown away before saving',
-    reqs: ['PRD-REQ-016'],
-    level: 'L2',
-    tier: 'consented',
-    props: { mode: CAPTURE_MODE, stage: oneOf('listening', 'review'), audio_bucket: opt(AUDIO_BUCKET) },
-  },
-  transcription_completed: {
-    area: 'capture',
-    when: 'A spoken letter finishes transcription, hears no speech, fails, or waits for its language model',
-    reqs: ['PRD-REQ-016', 'NFR-7.7'],
-    level: 'L2',
-    tier: 'consented',
-    props: {
-      engine: oneOf('on_device', 'server'),
-      model: SPEECH_MODEL,
-      audio_bucket: AUDIO_BUCKET,
-      latency_bucket: LATENCY_BUCKET,
-      outcome: oneOf('ok', 'no_speech', 'failed', 'queued_for_model'),
-    },
-  },
-  letter_saved: {
-    area: 'capture',
-    when: 'A letter is saved (to the book or kept private). The core activation and north-star event on device',
-    reqs: ['C-REQ-034', 'PRD-REQ-016', 'ADR-0008'],
-    level: 'L2',
-    tier: 'consented',
-    props: {
-      mode: CAPTURE_MODE,
-      destination: oneOf('book', 'private'),
-      child_ordinal: CHILD_ORDINAL,
-      member_role: MEMBER_ROLE,
-      prompt_kind: PROMPT_KIND,
-      audio_bucket: opt(AUDIO_BUCKET),
-      words_bucket: WORDS_BUCKET,
-      machine_edit_count: int(0, 500),
-      edits_reverted_count: int(0, 500),
-      edits_rejected_count: opt(int(0, 500)),
-      engine: oneOf('on_device', 'server', 'none', 'pending'),
-      from_notification_2h: bool(),
-    },
-  },
   review_action: {
     area: 'capture',
     when: 'An action on the Review screen',
@@ -575,10 +301,9 @@ export const EVENTS = {
     tier: 'consented',
     props: { action: oneOf('deleted', 'restored'), destination: oneOf('book', 'private') },
   },
-
-  // --- Languages and on-demand packs (founder decisions 6 and 15) -----------
   // The only events that carry `lang`. Never add `lang` to letter, capture,
   // book or family events: that would tie a language to letter behaviour.
+  // --- Languages and on-demand packs (founder decisions 6 and 15) -----------
   language_set: {
     area: 'languages',
     when: 'An author adds, removes or makes primary one spoken-letter language (observed; one language per event)',
@@ -605,24 +330,7 @@ export const EVENTS = {
       network: NETWORK,
     },
   },
-
   // --- Book and Read together ------------------------------------------------
-  book_opened: {
-    area: 'book',
-    when: 'Book tab shown for a child',
-    reqs: ['PRD-REQ-016'],
-    level: 'L2',
-    tier: 'consented',
-    props: { child_ordinal: CHILD_ORDINAL, letters_bucket: LETTERS_BUCKET, member_role: MEMBER_ROLE },
-  },
-  letter_opened: {
-    area: 'book',
-    when: 'A letter is opened to read',
-    reqs: ['PRD-REQ-016'],
-    level: 'L2',
-    tier: 'consented',
-    props: { author_relation: AUTHOR_RELATION, has_audio: bool() },
-  },
   playback_started: {
     area: 'book',
     when: 'A recording starts playing',
@@ -655,29 +363,7 @@ export const EVENTS = {
       letters_heard: int(0, 50),
     },
   },
-
   // --- Family (co-parent only at v1.0, founder decision 5) -------------------
-  invite_created: {
-    area: 'family',
-    when: 'A parent creates an invite',
-    reqs: ['B-REQ-007', 'B-NFR-001', 'PRD-REQ-014'],
-    level: 'L2',
-    tier: 'consented',
-    props: {
-      role: INVITE_ROLE,
-      channel: oneOf('share_sheet', 'copy_link', 'code'),
-      shared: bool(),
-      child_ordinal: CHILD_ORDINAL,
-    },
-  },
-  invite_accepted: {
-    area: 'family',
-    when: 'An invite is accepted in the app (observed). Server aggregates count every acceptance',
-    reqs: ['B-NFR-001'],
-    level: 'L2',
-    tier: 'consented',
-    props: { role: INVITE_ROLE, surface: oneOf('app') },
-  },
   invite_failed: {
     area: 'family',
     when: 'Creating or accepting an invite failed (the reason class only)',
@@ -726,7 +412,6 @@ export const EVENTS = {
     tier: 'consented',
     props: { role: MEMBER_ROLE, letters: oneOf('keep', 'take_out') },
   },
-
   // --- Reminders (C-REQ-034) -----------------------------------------------------
   reminder_prime_shown: {
     area: 'reminders',
@@ -788,7 +473,6 @@ export const EVENTS = {
     tier: 'consented',
     props: { type: oneOf('letter_reminder', 'family_digest', 'family_letter', 'plan_notice'), variant_id: opt(int(0, 99)) },
   },
-
   // --- Celebrate ---------------------------------------------------------------------
   moment_shown: {
     area: 'celebrate',
@@ -824,7 +508,6 @@ export const EVENTS = {
     tier: 'consented',
     props: { kind: oneOf('one_month', 'one_year') },
   },
-
   // --- Settings, data, privacy --------------------------------------------------------
   settings_changed: {
     area: 'settings',
@@ -889,71 +572,9 @@ export const EVENTS = {
     tier: 'consented',
     props: { stage: oneOf('started', 'export_offered', 'confirmed', 'undone') },
   },
-
-  // --- Plus: Apple's SubscriptionStoreView and StoreKit on this device only
   // (founder decision 3, ADR 0013). No server of ours sees purchases. ----------
-  plus_offer_viewed: {
-    area: 'plus',
-    when: "Apple's subscription store view presented",
-    reqs: ['C-REQ-034', 'C-REQ-023'],
-    level: 'L2',
-    tier: 'consented',
-    props: { trigger: PLUS_TRIGGER },
-  },
-  plus_offer_closed: {
-    area: 'plus',
-    when: "Apple's subscription store view closed",
-    reqs: ['C-REQ-034', 'C-NFR-002'],
-    level: 'L2',
-    tier: 'consented',
-    props: { trigger: PLUS_TRIGGER, outcome: oneOf('purchased', 'dismissed', 'unavailable') },
-  },
-  plan_changed: {
-    area: 'plus',
-    when: 'The plan StoreKit reports on this device changed state (observed; production transactions only)',
-    reqs: ['C-REQ-034', 'C-NFR-002'],
-    level: 'L2',
-    tier: 'consented',
-    props: {
-      from_state: oneOf('none', 'trial', 'active', 'grace', 'billing_retry', 'expired', 'refunded', 'revoked'),
-      to_state: oneOf('none', 'trial', 'active', 'grace', 'billing_retry', 'expired', 'refunded', 'revoked'),
-      period: oneOf('month', 'year', 'unknown'),
-      ownership: oneOf('purchased', 'family_shared', 'unknown'),
-    },
-  },
   // Membership engine (D-082, D-083): numbers only. Never the letter, its words, the recording or the child.
-  free_allowance_reached: {
-    area: 'plus',
-    when: 'The last free letter was kept, so the next Keep will ask for Plus (once per phone)',
-    reqs: ['C-REQ-034', 'C-REQ-023'],
-    level: 'L2',
-    tier: 'consented',
-    props: { allowance: int(2, 100) },
-  },
-  keep_gate_shown: {
-    area: 'plus',
-    when: 'The Keep sheet asked for Plus (the letter is held on the phone)',
-    reqs: ['C-REQ-034', 'C-REQ-023'],
-    level: 'L2',
-    tier: 'consented',
-    props: { letters_kept: int(0, 1000), allowance: int(2, 100), lapsed: int(0, 1) },
-  },
-  letter_held: {
-    area: 'plus',
-    when: 'The person chose to keep the letter on the phone for now instead of starting Plus',
-    reqs: ['C-REQ-034', 'C-REQ-023'],
-    level: 'L2',
-    tier: 'consented',
-    props: { letters_kept: int(0, 1000) },
-  },
-  plus_started_from_gate: {
-    area: 'plus',
-    when: 'Plus was on after the Keep sheet (bought, restored, an Ask to Buy approval, or an offer code)',
-    reqs: ['C-REQ-034', 'C-REQ-023'],
-    level: 'L2',
-    tier: 'consented',
-    props: { letters_kept: int(0, 1000) },
-  },
+  // --- Plus: Apple's SubscriptionStoreView and StoreKit on this device only
   offer_code_redeemed: {
     area: 'plus',
     when: "Apple's offer code sheet closed and Plus was on afterwards",
@@ -970,22 +591,9 @@ export const EVENTS = {
     tier: 'consented',
     props: { outcome: oneOf('restored', 'nothing', 'cancelled', 'failed', 'unavailable') },
   },
-
-  // --- Moments (NS-53 section 18, R251) -------------------------------------------
   // One definition per fact (CODE-R13): these two rows are the registry rows, so slot, area, when,
   // level and reqs cannot drift. Edit them in registry.ts only.
-  moments_card_impressed: catalogRow(REGISTRY.moments_card_impressed),
-  moments_card_tapped: catalogRow(REGISTRY.moments_card_tapped),
-
   // --- Errors ---------------------------------------------------------------------
-  error_shown: {
-    area: 'errors',
-    when: 'A user-facing error from strings `errors.*` is shown',
-    reqs: ['PRD-REQ-016'],
-    level: 'L2',
-    tier: 'consented',
-    props: { code: ERROR_CODE },
-  },
   sync_failed: {
     area: 'errors',
     when: 'A sync attempt fails after retries',
@@ -995,6 +603,9 @@ export const EVENTS = {
     props: { reason: oneOf('network', 'auth', 'conflict', 'server', 'unknown') },
   },
 } as const satisfies Record<string, EventSpec>;
+
+/** Everything typed: the held rows plus the registry (the one definition of each sendable event). */
+export const EVENTS = { ...HELD_EVENTS, ...REGISTRY } as const;
 
 export type Catalog = typeof EVENTS;
 

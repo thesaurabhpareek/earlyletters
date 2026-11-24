@@ -1,24 +1,24 @@
 /**
- * Drift guard between the held catalogue (`catalog.ts` EVENTS) and the send list (`registry.ts` REGISTRY).
- * Only REGISTRY names are sent (validate.ts `isKnownEvent`); the rest of EVENTS is typed and held. The two sets are
- * NOT equal on purpose, so this pins the difference by name: an event added to one file and not decided in the other
- * fails here, and an event in both must agree on its properties, their type and enum values, and level. Fictional family Asha only; no data.
+ * Drift guard between the held catalogue (`catalog.ts` HELD_EVENTS) and the send list (`registry.ts` REGISTRY).
+ * Only REGISTRY names are sent (validate.ts `isKnownEvent`); HELD_EVENTS are typed and held. Every sendable event is
+ * defined once, in the registry, and `EVENTS` is the two joined, so the two sets must stay disjoint: an event added to
+ * both, or to neither side's pin, fails here. The shared value sets (ROUTE and the rest) are defined once, in
+ * values.ts, and catalog.ts only re-exports them (CODE-R13). Fictional family Asha only; no data.
  */
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { EVENTS, REGISTRY } from '../src';
+import * as barrel from '../src';
+import * as catalog from '../src/catalog';
+import * as values from '../src/values';
+import { EVENTS, HELD_EVENTS, REGISTRY } from '../src';
 
-const cat = EVENTS as Record<string, { level: string; props: Record<string, unknown> }>;
-const reg = REGISTRY as Record<string, { level: string; props: Record<string, unknown> }>;
-
-/** In REGISTRY only: the generic rows that replaced several catalogue rows (control taps, impressions, timings). */
-const REGISTRY_ONLY = ['control_tapped', 'perf_measured', 'surface_impressed'];
 /*
  * Promotion rule. Moving an event off this list takes three things together: a row in REGISTRY
- * (packages/analytics/src/registry.ts), a row in docs/analytics/TRACKING_PLAN.md section 3.1, and a look from
- * the privacy agent. Until all three are in, the event stays held. Production analytics stay off until the
- * D-163 gate clears (D-170, docs/DECISIONS.md), so a held event is not sent from a production build either way.
+ * (packages/analytics/src/registry.ts, deleting the row from HELD_EVENTS), a row in docs/analytics/TRACKING_PLAN.md
+ * section 3.1, and a look from the privacy agent. Until all three are in, the event stays held. Production analytics
+ * stay off until the D-163 gate clears (D-170, docs/DECISIONS.md), so a held event is not sent from a production build.
  */
-/** In EVENTS only: typed and held, never sent until a row is added to the registry (a decision, not a drive-by). */
 const HELD = [
   'account_deletion', 'app_backgrounded', 'app_cold_start', 'auth_deferred', 'auth_email_sent', 'auth_failed',
   'auth_method_selected', 'auth_sheet_shown', 'child_setting_changed', 'child_switched', 'dictionary_term_added',
@@ -32,33 +32,32 @@ const HELD = [
 ];
 
 describe('[PRD-REQ-016] the held catalogue and the send registry cannot drift apart unnoticed', () => {
-  it('every registry event is in the catalogue, except the pinned registry-only rows', () => {
-    const missing = Object.keys(reg).filter((n) => !(n in cat) && !REGISTRY_ONLY.includes(n));
-    expect(missing).toEqual([]);
-    expect(Object.keys(reg).filter((n) => REGISTRY_ONLY.includes(n)).sort()).toEqual(REGISTRY_ONLY); // the pin is not stale
+  it('the held rows are exactly the pinned list, and none is also a registry row', () => {
+    expect(Object.keys(HELD_EVENTS).sort()).toEqual([...HELD].sort());
+    expect(Object.keys(HELD_EVENTS).filter((n) => n in REGISTRY)).toEqual([]);
   });
 
-  it('every catalogue event is in the registry, except the pinned held rows', () => {
-    const unsent = Object.keys(cat).filter((n) => !(n in reg));
-    expect(unsent.sort()).toEqual([...HELD].sort());
+  it('EVENTS is the held rows plus every registry row, each registry row read from the registry itself', () => {
+    expect(Object.keys(EVENTS).sort()).toEqual([...Object.keys(HELD_EVENTS), ...Object.keys(REGISTRY)].sort());
+    for (const n of Object.keys(REGISTRY)) {
+      expect((EVENTS as Record<string, unknown>)[n], n).toBe((REGISTRY as Record<string, unknown>)[n]);
+    }
   });
+});
 
-  it('an event named in both has the same properties and the same level', () => {
-    for (const n of Object.keys(reg).filter((k) => k in cat)) {
-      expect([n, Object.keys(reg[n].props).sort()]).toEqual([n, Object.keys(cat[n].props).sort()]);
-      expect([n, reg[n].level]).toEqual([n, cat[n].level]);
+describe('[CODE-R13] each shared value set is defined once, in values.ts', () => {
+  const names = Object.keys(values);
+
+  it('catalog.ts and the barrel hand out the very same objects as values.ts', () => {
+    expect(names).toContain('ROUTE');
+    for (const n of names) {
+      expect((catalog as Record<string, unknown>)[n], `catalog.${n}`).toBe((values as Record<string, unknown>)[n]);
+      expect((barrel as Record<string, unknown>)[n], `barrel.${n}`).toBe((values as Record<string, unknown>)[n]);
     }
   });
 
-  it('a property named in both has the same type and, for an enum, the same values', () => {
-    type Spec = { type: string; values?: readonly string[] };
-    for (const n of Object.keys(reg).filter((k) => k in cat)) {
-      for (const k of Object.keys(reg[n].props)) {
-        const a = reg[n].props[k] as Spec;
-        const b = cat[n].props[k] as Spec;
-        expect([n, k, a.type]).toEqual([n, k, b.type]);
-        expect([n, k, [...(a.values ?? [])].sort()]).toEqual([n, k, [...(b.values ?? [])].sort()]);
-      }
-    }
+  it('catalog.ts source does not declare any of those names again', () => {
+    const src = readFileSync(resolve(__dirname, '../src/catalog.ts'), 'utf8');
+    for (const n of names) expect(src, n).not.toMatch(new RegExp(`(?:const|let|var|function|type)\\s+${n}\\b`));
   });
 });
