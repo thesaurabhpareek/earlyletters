@@ -19,6 +19,10 @@ Option A (this) against Option B (a third-party scanner such as gitleaks):
 
 The agent writes A and does not pick B. GitHub secret scanning with push protection covers history and many formats and is a repository setting (founder).
 
+## Recorded default (BL-2124, 24 Nov 2026): Option A, pending the exec-team read
+
+Option A is the default: the own scanner (`scripts/packs/secret-scan.mjs`, tested by `apps/mobile/test/secret-scan.test.ts`, which runs in `npm test` and so in `unit`) is the secret scan, and gitleaks is not added. This is a default pending the exec-team read (CTO and CISO), not a ruling. It holds unless that read picks Option B. What A leaves open is history: a secret committed and removed before the scanner ran is not found; GitHub secret scanning with push protection (a repository setting) covers that.
+
 ## How to verify
 
 - `node scripts/packs/secret-scan.mjs` prints `no known secret in tracked files` on a clean tree.
