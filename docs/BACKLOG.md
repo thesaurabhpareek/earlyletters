@@ -12199,7 +12199,7 @@ R2 and R8 are claims to the public, so they stay UNVERIFIED either way until som
 
 ## Follow-ups from the exec reads of PRs #1908 and #1979 (24 Nov 2026; filed by the product agent, docs only)
 
-#### BL-2179 Let-go failure count: decide an age limit for a draft stuck in `discarding`, and tidy the BL-2013 row cites
+#### BL-2191 Let-go failure count: decide an age limit for a draft stuck in `discarding`, and tidy the BL-2013 row cites
 - Status: ready. Mode: agent. Owner: privacy engineer. Milestone: M15. Size: XS. Depends on: BL-2013.
 - Priority: Low. Gate: none for the cite fixes; an age limit, if the exec team rules for one, is a code change that goes to the mobile owner as its own row.
 - Satisfies: refines BL-2013; NS-09 (BL-977, cited, not changed); `docs/legal/DATA_CLASSIFICATION.md` (the `discard.failures.<draft id>` row merged in #1908).
@@ -12208,7 +12208,7 @@ R2 and R8 are claims to the public, so they stay UNVERIFIED either way until som
 - Done when: the row names the ruling and its cites match the code (`drafts.ts:237`, `lib/db/repos/wipe.ts:115`, "a draft id"); the ruling is recorded; `node scripts/agents/check.mjs` passes.
 - Source: exec read of #1908 (head 379b0fa8, 24 Nov 2026). Not verified: the line numbers are as the read gave them and were not re-checked against `develop`, so check them before editing; sign-out and the backup-exclusion setting were not read.
 
-#### BL-2180 Per-person rate limit for `new-device-fill`
+#### BL-2192 Per-person rate limit for `new-device-fill`
 - Status: ready. Mode: agent. Owner: sync owner. Milestone: M15. Size: S. Depends on: none.
 - Priority: Low. Gate: the change is to a function's behaviour, so `security` reviews it.
 - Satisfies: SEC-R13 (as the Edge Function read named it; cited, not changed); `docs/engineering/PRINCIPLES.md` (cited).
