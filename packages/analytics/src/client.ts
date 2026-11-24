@@ -38,6 +38,8 @@ export interface AnalyticsOptions {
   /** Where consent and the random id persist. Defaults to memory (tests). */
   storage?: KeyValueStorage;
   randomId?: () => string;
+  /** Forget one retired id on the server; true only when acknowledged (ER-A04). Unset keeps every retired id. */
+  forgetRetiredId?: (id: string) => boolean | Promise<boolean>;
   /** Consent version this build asks for ("major.minor"). A newer major asks again (TDD 05 X-13). */
   consentVersion?: string;
   /** Called for every allowlist violation. Throw here in dev builds. */
@@ -108,7 +110,7 @@ function hash(s: string): number {
 
 export function createAnalytics(options: AnalyticsOptions): Analytics {
   const provider = options.provider;
-  const store = new ConsentStore(options.storage ?? memoryStorage(), options.randomId ?? defaultRandomId, { currentVersion: options.consentVersion });
+  const store = new ConsentStore(options.storage ?? memoryStorage(), options.randomId ?? defaultRandomId, { currentVersion: options.consentVersion, forgetRetired: options.forgetRetiredId });
   const counts: Partial<Record<ViolationKind, number>> = {};
   const onViolation = options.onViolation;
   const report = (v: Violation) => {
@@ -168,6 +170,8 @@ export function createAnalytics(options: AnalyticsOptions): Analytics {
     await store.revoke(surface);
     await provider.optOut();
     await provider.reset();
+    // After the person's off is complete: a slow forget call must never delay it.
+    await store.settleRetired();
   }
 
   function track<E extends EventName>(name: E, props: EventProps<E>): TrackResult {
