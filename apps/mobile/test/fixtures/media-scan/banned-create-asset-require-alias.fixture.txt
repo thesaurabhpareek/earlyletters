@@ -1,0 +1,6 @@
+// fixture: banned-create-asset-require-alias. Fictional family Asha; not compiled, read by test/media-ast-scan.test.ts as text.
+// as: apps/mobile/src/lib/media/fixture.ts
+// expect: banned-name, library-call-not-allowed
+const r = require;
+const ML = r('expo-media-library');
+export const keepAshaPhoto = (uri: string) => ML.saveToLibraryAsync(uri);

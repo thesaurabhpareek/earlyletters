@@ -1,0 +1,5 @@
+// fixture: banned-clgeocoder-string. Fictional family Asha; not compiled, read by test/media-ast-scan.test.ts as text.
+// as: apps/mobile/src/lib/media/fixture.ts
+// expect: banned-name
+import { requireNativeModule } from 'expo-modules-core';
+export const geo = requireNativeModule('CLGeocoder');
