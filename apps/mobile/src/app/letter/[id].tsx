@@ -71,6 +71,7 @@ import {
   setEntryInBook,
   todayISO,
   canTypeWordsFor,
+  canChangeLetterWords,
   setTypedWordsForWaitingEntry,
   subscribeTo,
   undeleteEntry,
@@ -94,6 +95,8 @@ import { entryDateline, movedToast } from '@/components/book/date-change.logic';
 import { DateSheet } from '@/components/book/date-sheet';
 import { exactViewAvailable, provenanceLine as provenanceLineOf } from '@/lib/provenance';
 import { ConfirmSheet } from '@/components/book/confirm-sheet';
+import { ChangeRows, ChangeWordsSheet } from '@/components/book/change-words';
+import { offersChangeWords } from '@/components/book/change-words.logic';
 import { leftBookDeleteBody } from '@/components/settings/left-books.logic';
 import { CARD_TEXT_GAP, CARD_TEXT_INSET, PrivateChip, excerptOf } from '@/components/book/letter-card';
 import { letterWords } from '@/components/book/letter-words.logic';
@@ -350,6 +353,8 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
   const [dateOpen, setDateOpen] = useState(false);
   // "Write the words" sheet: open state lives here, with the sheet, so it outlives the words card (below).
   const [writing, setWriting] = useState(false);
+  // "Change words" on a saved letter (BL-413): the person's own words, each change put back on its own.
+  const [changing, setChanging] = useState(false);
   // Words that arrived after the letter was saved and have not been read back yet (D-086).
   const [unread, setUnread] = useState(() => isReadItBack(entry.id));
   useEffect(() => subscribeTo('entries', () => setUnread(isReadItBack(entry.id))), [entry.id]);
@@ -371,6 +376,7 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
   const provenanceLine = provenanceLineOf(entry, { own, audioUri: entry.audioUri, words: copy.book.provenance, recordingOnPhone: copy.book.recordingOnPhone });
   // The words card: a recording waiting for its words, or one with no words that the store can still take words for (S3).
   const wordsCard = readOnly ? null : wordsCardKind({ own, words, canWrite: words === 'nobodySpoke' && canTypeWordsFor(entry.id) });
+  const changeWords = offersChangeWords({ editable, hasWords: words === 'words', canChange: editable && canChangeLetterWords(entry.id) });
 
   const aa = (
     <Pressable
@@ -499,6 +505,7 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
               </Text>
             </View>
             <PrivateChipSlot shown={!entry.inBook} color={c.text} />
+            {changeWords && <ChangeRows entryId={entry.id} />}
             {canShowOriginal && (
               <Button
                 variant="quiet"
@@ -515,6 +522,14 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
         {editable && (
           <View style={{ marginHorizontal: 20 - CARD_TEXT_INSET }}>
             <ListSection>
+              {changeWords && (
+                <ListRow
+                  title={copy.review.editTextButton}
+                  leading={<PencilSimpleLineIcon size={20} color={c.text} />}
+                  onPress={() => setChanging(true)}
+                  testID="letter.changeWords.open"
+                />
+              )}
               <ListRow
                 title={entry.inBook ? copy.book.entryMenu.makePrivate : copy.book.entryMenu.moveToBook}
                 leading={entry.inBook ? <LockSimpleIcon size={20} color={c.text} /> : <BookOpenIcon size={20} color={c.text} />}
@@ -558,6 +573,7 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
           puts the letter on the server), and the person's typing must never go with it: while the sheet is open it stays
           mounted, with its text, whatever the card does (S3, lens notes on #373). */}
       {(wordsCard || writing) && <WordsSheet entryId={entry.id} open={writing} onClose={() => setWriting(false)} />}
+      {(changeWords || changing) && <ChangeWordsSheet entry={entry} open={changing} onClose={() => setChanging(false)} />}
 
       <ConfirmSheet
         open={confirmOpen}
