@@ -2,7 +2,7 @@
 
 Status: DRAFT for counsel to read. It is an engineering and support reading of the 0.9.0 texts, not legal advice, and it adds no promise to them. Written 24 Nov 2026. Owner: `support`. Counsel reads the reply wording (section 5) before anyone sends it.
 
-This is the support side of one sentence that the 0.9.0 Terms 10.1, Privacy 7 and the TestFlight tester notice (`docs/legal/TESTFLIGHT_TESTERS.md`, build 2 row) all make: "Email us from the address on your account and we will start the deletion by hand." Chapter 08 says what support does in one line: open a log row, acknowledge, send the verification to the account address, on verification run the support deletion path with `source='support'` and a ticket ref, record completion (`docs/engineering/08-data-rights-and-legal-requests.md`, "How to apply it", DATA-REQ-027). This file fills in the pieces that line leaves out.
+This is the support side of one sentence that the 0.9.0 Terms 10.1 and Privacy 7 make: "Email us from the address on your account and we will start the deletion by hand." (The TestFlight tester notice, `docs/legal/TESTFLIGHT_TESTERS.md` build 2 row, no longer promises a hand-started deletion: it says we confirm the request and write back within 45 days with where it stands. Privacy 7 still makes the promise; that is BL-2025 and 0.9.1.) Chapter 08 says what support does in one line: open a log row, acknowledge, send the verification to the account address, on verification run the support deletion path with `source='support'` and a ticket ref, record completion (`docs/engineering/08-data-rights-and-legal-requests.md`, "How to apply it", DATA-REQ-027). This file fills in the pieces that line leaves out.
 
 **The full procedure lives in one place.** `docs/ops/runbooks/data-requests-by-email.md` (BL-779, "the runbook" below) already has the ticket reference, the request log, the DSR-R02 check, Route 1 (delete an account) and what is not built. This file does not copy it. If the two ever disagree, the runbook wins and this file is wrong: fix this file. Stuck requests after the deletion has started are `docs/ops/runbooks/stuck-deletion.md`, not this file.
 
@@ -14,9 +14,10 @@ This is the support side of one sentence that the 0.9.0 Terms 10.1, Privacy 7 an
 | A `privacy_requests` table for the log (DSR-R05) | **NOT BUILT.** The log is a private file the founder keeps (runbook section 1, step 2). | BL-237 remainder |
 | The acknowledgement and refusal macros | Drafted below as PROPOSED WORDING. Not in use until counsel has read them. | This PR |
 | A tool or wording for the DSR-R02 check | No tool. The runbook gives an interim method (its section 2). | Runbook section 2 |
+| Which builds show Delete account | Per `apps/mobile/eas.json`, `EXPO_PUBLIC_ACCOUNT_DELETION` is "on" only in the `development` and `production` profiles. `preview` and `testflight` do not set it, so those builds do not show the row. The row also needs the servers switch on (`apps/mobile/src/lib/capabilities.ts`). The EAS environment on expo.dev can still set the variable: UNVERIFIED. | `eas.json`, `capabilities.ts` |
 | Sending mail as hello@ | The repo says hello@ is a receive-only alias, so the code email in the runbook may not be sendable. **UNVERIFIED.** | `docs/ops/DOMAINS.md` section 9 |
 
-Until BL-551 ships, an emailed deletion cannot be started by anyone. Nobody improvises a workaround: no dashboard user delete (it cascades letters and skips the flow, DB-17), no hand-written SQL against `deletion_requests`, no JWT claims in the SQL Editor. The honest reply is variant A in section 5. If the person's app shows Delete account in Settings, that is the route that works today (**UNVERIFIED** which builds show it).
+Until BL-551 ships, an emailed deletion cannot be started by anyone. Nobody improvises a workaround: no dashboard user delete (it cascades letters and skips the flow, DB-17), no hand-written SQL against `deletion_requests`, no JWT claims in the SQL Editor. The honest reply is variant A in section 5. If the person's app shows Delete account in Settings, that is the route that works today (see the builds note below).
 
 ## 1. How a request arrives
 
@@ -66,14 +67,14 @@ PROPOSED WORDING. Counsel reads it before it is used. It is sent to the address 
 >
 > Hi,
 >
-> Thanks for writing. We've got your request to delete an Early Letters account, received on <date>. Your reference is <ticket>.
+> Thanks for writing. We've got your request to delete an account with us, received on <date>. Your reference is <ticket>.
 >
 > We can't start a deletion by email yet. We'll write to you again by <date, no later than day 45> to tell you where it stands. If your app shows Delete account in Settings, you can start it there today.
 >
-> Nothing about your account has changed.
+> Nothing has changed yet.
 >
 > Warmly,
-> Early Letters
+> <brand name>
 
 **Variant B. Not usable until BL-551 is built and rehearsed.**
 
@@ -81,18 +82,19 @@ PROPOSED WORDING. Counsel reads it before it is used. It is sent to the address 
 >
 > Hi,
 >
-> Thanks for writing. We've got your request to delete an Early Letters account, received on <date>. Your reference is <ticket>.
+> Thanks for writing. We've got your request to delete an account with us, received on <date>. Your reference is <ticket>.
 >
-> Before we change anything, we'll send a short message to the address on the account. It asks you to reply with a code and the word yes, so we know the request is yours. If you don't see it, look in your junk folder, and tell us if it still isn't there.
+> Before we change anything, we'll send a short message to the address on the account, if there is one. It asks you to reply with a code and the word yes, so we know the request is yours. If you don't see it, look in your junk folder, and tell us if it still isn't there.
 >
-> Nothing about your account has changed yet.
+> Nothing has changed yet.
 >
 > Warmly,
-> Early Letters
+> <brand name>
 
 Notes for whoever sends it:
 
-- The brand name in the sign-off comes from `packages/brand/index.ts`; do not retype it in a shared macro file.
+- Replace <brand name> with the public name; it comes from `packages/brand/index.ts`; do not retype it in a shared macro file.
+- "Warmly," on deletion mail is still an open CMO question (`WRITING-GUIDE.md` section 1). Keep it only until the CMO rules.
 - It is sent from the mailbox by the founder, not by a session or a connector (runbook section 0).
 - No code is in this message. The code goes in a separate message to the account address only (runbook section 2, step 4).
 - If the person writes back to say it was not them, change nothing, log `declined`, and answer in the first reply's words only.
