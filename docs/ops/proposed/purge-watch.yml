@@ -1,0 +1,52 @@
+# PROPOSAL (BL-584, DATA-03, CR-209 option A): the founder applies this as .github/workflows/purge-watch.yml (queue row FO-1).
+# The Claude GitHub App cannot edit .github/workflows/.
+#
+# An alert from outside Supabase: every 30 minutes this makes one GET to the ops-health Edge Function
+# (supabase/functions/ops-health) and fails the run when no purge_run audit row is newer than 2 hours, or a scribe-*
+# cron run failed in the last 2 hours, or it could not find out. GitHub emails the owner on a failed scheduled run
+# (Settings > Notifications > Actions: "Send notifications for failed workflows only"). Runbook:
+# docs/ops/runbooks/purge-failing.md.
+#
+# No Supabase key is stored in GitHub. The service key stays inside Supabase's function secrets. GitHub holds two
+# secrets in the Environment `ops-watch` (no required reviewer: a scheduled run would wait for approval every 30
+# minutes and never alert, and the token can read two numbers and nothing else):
+#   OPS_HEALTH_URL    https://<production project ref>.supabase.co/functions/v1/ops-health
+#   OPS_HEALTH_TOKEN  the value of the function secret OPS_HEALTH_TOKEN (openssl rand -hex 32; never pasted anywhere else)
+# Point it at production: that is where the 30-day deletion promise runs (CDO-30). To also watch staging, copy the job with
+# its own Environment and its own token.
+# Needs the migration 20261124120000_ops_cron_health.sql applied and the function deployed first (docs/ops/proposed/ops-health-deploy.md);
+# until then the run is red by design ("could not read the project" or "not deployed").
+# Scheduled workflows run from the default branch only.
+name: Purge watch
+
+on:
+  schedule:
+    - cron: '7,37 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  watch:
+    name: purge and retention are running
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    environment: ops-watch
+    concurrency:
+      group: purge-watch
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            scripts/ops
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      - name: Check purge_run age and failed scribe-* cron runs
+        env:
+          OPS_HEALTH_URL: ${{ secrets.OPS_HEALTH_URL }}
+          OPS_HEALTH_TOKEN: ${{ secrets.OPS_HEALTH_TOKEN }}
+        run: node scripts/ops/purge-watch.ts
