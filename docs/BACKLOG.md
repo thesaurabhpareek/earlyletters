@@ -4379,15 +4379,15 @@ Every row is `proposed`: the dispatcher skips it until Karma or the founder sets
 - Source: `docs/tdd/new-scope/12-first-run-5.md` section 2 (PR breakdown) and section 3 (sequencing); map id FP-15, first-run drop D (E43).
 
 #### BL-1036 NS-45: deletion step 1 and typed-word reason wired, D1 line shown (R5, R1) (FP-16a)
-- Status: proposed (docs/tdd/new-scope/12-first-run-5.md; scoped by product, waits on the sheet row, the words row and the new content row; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-961, BL-965, BL-2037.
+- Status: proposed (docs/tdd/new-scope/12-first-run-5.md; scoped by product, waits on the sheet row, the words row and the new content row; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-961, BL-965, BL-2153.
 - Satisfies: NS-45-R1, NS-45-R5.
-- Scope: wiring only, no new words (the keys come from BL-965 and BL-2037): (1) `apps/mobile/src/app/settings/delete-account.tsx` shows step 1 with its keys and the typed-word reason field; (2) the sign-out sheet shows the D1 line from the keys; (3) tests named for R1 and R5 that fail on the old code. About 250 lines in 7 files, inside CODE-R02.
+- Scope: wiring only, no new words (the keys come from BL-965 and BL-2153): (1) `apps/mobile/src/app/settings/delete-account.tsx` shows step 1 with its keys and the typed-word reason field; (2) the sign-out sheet shows the D1 line from the keys; (3) tests named for R1 and R5 that fail on the old code. About 250 lines in 7 files, inside CODE-R02.
 - Done when: `[NS-45-R1]` and `[NS-45-R5]` tests are red on develop before the change and green after; a test fails if any string on these two screens is a literal rather than a content key.
 - Test: `apps/mobile/test/delete-account-ns45.test.ts` (unit and source pin).
 
 - Source: `docs/tdd/new-scope/12-first-run-5.md` section 2 (PR breakdown) and section 3 (sequencing); map id FP-16a, first-run drop D (E43).
 
-#### BL-2037 Words for deletion step 1, the typed-word reason and the D1 line (NS-45-R1, R5, split from BL-1036)
+#### BL-2153 Words for deletion step 1, the typed-word reason and the D1 line (NS-45-R1, R5, split from BL-1036)
 - Status: needs-decision (customer-facing words: the content owner drafts them under `packages/content/WRITING-GUIDE.md` and the exec team approves; the BL-965 packet may already hold some keys, so the content owner lists which are new). Mode: agent. Owner: content. Milestone: M15. Size: S. Depends on: none.
 - Satisfies: NS-45-R1, NS-45-R5.
 - Scope: the keys for deletion step 1, the reason shown when the typed word does not match, and the D1 line on the sign-out sheet, in `packages/content/src`, each marked PROPOSED until approved. No screen wiring.
@@ -5503,7 +5503,7 @@ Ids. The dispatcher reads three-digit ids only. Collision check on 20 Nov 2026: 
 
 #### BL-162 An XCUITest target for the accessibility audit (NS-33-R16), part (a)
 - Status: proposed (docs/engineering/readiness-20nov/quality catalogue A, row marked GAP; errata E42; scoped by product, split in three; Karma or the founder sets it to ready). Mode: agent. Owner: qa engineer, mobile engineer. Milestone: M15. Size: M. Depends on: BL-984.
-- Closes the test-design gap of 1 P0 row: NS-33-R16 (with BL-2038 and BL-2039). Builds beside BL-984.
+- Closes the test-design gap of 1 P0 row: NS-33-R16 (with BL-2154 and BL-2155). Builds beside BL-984.
 - Satisfies: NS-33-R16.
 - Scope: part (a) of three: add an XCUITest target to the e2e build profile through an Expo config plugin (no hand-edited Xcode project), with one smoke test that launches the app and runs `performAccessibilityAudit()` on the first screen. About 3 engineer-days for all three parts (an estimate, not a commitment). Until all three land the row stays a hand run with Accessibility Inspector, recorded as a stand-in and not claimed green.
 - Done when: the target builds for the simulator in a local run recorded in the PR body; a Node test pins the plugin entry in the e2e profile and fails when it is removed.
@@ -5511,7 +5511,7 @@ Ids. The dispatcher reads three-digit ids only. Collision check on 20 Nov 2026: 
 
 - Source: catalogue A, NS-33 section; `docs/engineering/readiness-20nov/experience/DESIGN-DELTA.md` build item 15.
 
-#### BL-2038 Accessibility audit calls on each named screen at the largest text size (NS-33-R16, part b of BL-162)
+#### BL-2154 Accessibility audit calls on each named screen at the largest text size (NS-33-R16, part b of BL-162)
 - Status: proposed (split from BL-162 by product; Karma or the founder sets it to ready). Mode: agent. Owner: qa engineer. Milestone: M15. Size: M. Depends on: BL-162.
 - Satisfies: NS-33-R16.
 - Scope: in the XCUITest target, one audit call per screen named in NS-33-R16, run at the largest text size, failing on a critical violation; the screen list lives in one file that a Node test compares to the NS-33 card.
@@ -5519,8 +5519,8 @@ Ids. The dispatcher reads three-digit ids only. Collision check on 20 Nov 2026: 
 - Test: `apps/mobile/test/xcuitest-screen-list.test.ts` (unit).
 - Source: split from BL-162, catalogue A, NS-33 section.
 
-#### BL-2039 CI macOS leg for the accessibility audit (NS-33-R16, part c of BL-162)
-- Status: proposed (split from BL-162 by product; the workflow is a proposal under `docs/ops/proposed/` that Karma applies). Mode: agent. Owner: platform. Milestone: M15. Size: S. Depends on: BL-2038.
+#### BL-2155 CI macOS leg for the accessibility audit (NS-33-R16, part c of BL-162)
+- Status: proposed (split from BL-162 by product; the workflow is a proposal under `docs/ops/proposed/` that Karma applies). Mode: agent. Owner: platform. Milestone: M15. Size: S. Depends on: BL-2154.
 - Satisfies: NS-33-R16.
 - Scope: a workflow patch under `docs/ops/proposed/` that runs the audit target on a macOS runner on a schedule and on release candidates, not on every PR; its cost and minutes are stated in the patch.
 - Done when: the patch file exists and a text test pins its trigger; once applied, `[NS-33-R16] automated audit` cites the run.
@@ -5815,13 +5815,13 @@ Written 21 Nov 2026 by the product agent, docs only. Every row is `proposed`: Ka
 - Status: ready (scoped by product: the default below needs no native code; the native read-back is its own row). Mode: agent. Owner: mobile engineer, security engineer. Milestone: M15. Size: S. Depends on: none.
 - Satisfies: NS-47-R6 (protection class no weaker than SEC-R15's).
 - Blocks: None.
-- Scope: the days code is on develop (`apps/mobile/src/lib/days/store-file.ts`). Default, as the module has no protection API: (1) a source test that the days file lives under the app's own Library/Application Support folder (`daysDirectory()`) and that no code path passes a protection option, so it inherits the app-wide class that `app.config.ts` declares for SEC-R15 (`NSFileProtectionCompleteUntilFirstUserAuthentication`, already pinned at `apps/mobile/test/config.test.ts:104`); (2) the PR body states the accepted class in words. A real read-back of the class on a device is BL-2040.
+- Scope: the days code is on develop (`apps/mobile/src/lib/days/store-file.ts`). Default, as the module has no protection API: (1) a source test that the days file lives under the app's own Library/Application Support folder (`daysDirectory()`) and that no code path passes a protection option, so it inherits the app-wide class that `app.config.ts` declares for SEC-R15 (`NSFileProtectionCompleteUntilFirstUserAuthentication`, already pinned at `apps/mobile/test/config.test.ts:104`); (2) the PR body states the accepted class in words. A real read-back of the class on a device is BL-2156.
 - Done when: the tests fail when the days file path leaves the app's own folder or the days code passes a protection option; the declared class is already held by `config.test.ts`.
 - Test: `apps/mobile/test/days-file-protection.test.ts` (unit, source pin).
 
 - Source: deferred from PR #1175, https://github.com/thesaurabhpareek/earlyletters/pull/1175.
 
-#### BL-2040 scribe-files: read back the file protection class on a device (NS-47-R6, split from BL-1201)
+#### BL-2156 scribe-files: read back the file protection class on a device (NS-47-R6, split from BL-1201)
 - Status: proposed (split from BL-1201 by product; Karma or the founder sets it to ready). Mode: pair. Owner: mobile engineer, security engineer. Milestone: M15. Size: M. Depends on: BL-1201.
 - Satisfies: NS-47-R6.
 - Scope: (a) a `fileProtectionClass(uri)` method in `apps/mobile/modules/scribe-files` (Swift, beside `isExcludedFromBackup`) and its type in `index.ts`; (b) the days store calls it after write and a test fails when the class is missing or weaker than SEC-R15's. Device-only proof: a run on a Mac with a device is recorded as an evidence record (Asha data only).
