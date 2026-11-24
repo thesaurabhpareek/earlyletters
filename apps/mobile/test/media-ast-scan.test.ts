@@ -92,9 +92,8 @@ describe('[NX-39-R9] the scanner passes on the real tree', () => {
     const { scanned, findings } = scanTree();
     // The Moments folder is a media folder and is in the tree today; the scan is not vacuous.
     expect(scanned).toContain('src/lib/moments/store.logic.ts');
-    // One known finding is left on purpose: the catch at launch.logic.ts:48 passes an error's code on unchecked. It
-    // is fixed in slice 3 of CR-206 (toNativeErrorCode), which changes this list to []. Nothing else may appear.
-    expect(findings.map((f) => `${f.file}:${f.line} ${f.rule} ${f.name}`)).toEqual(['src/lib/moments/launch.logic.ts:48 catch-leak e as { code?: string }']);
+    // The catch at launch.logic.ts:48 reports toNativeErrorCode(e) (CR-206 slice 3), so the real tree is clean.
+    expect(findings.map((f) => `${f.file}:${f.line} ${f.rule} ${f.name}`)).toEqual([]);
   });
 
   it('selects media files by folder and by import, and ignores the rest', () => {
@@ -160,6 +159,10 @@ describe('[NX-39-R9] NAME_EXCEPTIONS: one name in one file (CR-206, D-168)', () 
     for (const other of ['src/lib/moments/launch.logic.ts', 'src/lib/media/x.ts', 'src/lib/moments/library/source.ts', 'src/app/x.ts']) {
       expect(scanSource(other, src, { path: other }).map((f) => f.rule), other).toContain('banned-name');
     }
+  });
+
+  it('reads the exception list by own key: names like constructor and toString do not hit Object.prototype', () => {
+    expect(() => scanSource('src/lib/media/x.ts', 'class A { constructor() {} toString() { return ""; } }', { path: 'src/lib/media/x.ts' })).not.toThrow();
   });
 
   it('does not let the exception cover other places-like names in the same file', () => {
