@@ -332,11 +332,14 @@ export const site = {
   /**
    * The page behind the link at the end of most emails, https://earlyletters.com/open (app/open/page.tsx; BL-510,
    * TPL-06). It shows only when the app did not open the link. It carries no token and asks for nothing. Exec read
-   * 24 Nov (CMO, CLO, Claude roles, not counsel): approved with this wording.
+   * 24 Nov (CMO, CLO, Claude roles, not counsel): approved with this wording. `notIphone` (BL-2129, PROPOSED, not yet
+   * read by the exec team) is for a person on another kind of phone: always shown, because the page is static and
+   * never reads the browser's user agent. It names no other platform (copy-rules: no Android promise).
    */
   openApp: {
     title: `Open ${NAME}`,
     line: `Open ${NAME} on your iPhone.`,
+    notIphone: `Not on an iPhone? For now, ${NAME} is only on iPhone.`,
     body: `If ${NAME} is on this phone, tap below. If it isn't, you can get it from the App Store.`,
     bodyPrelaunch: `If ${NAME} is on this phone, tap below.`,
     open: `Open ${NAME}`,

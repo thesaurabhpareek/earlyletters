@@ -293,39 +293,40 @@ apps/web/src/content/site.ts#site.authConfirm.open,site,website,apps/web/src/con
 apps/web/src/content/site.ts#site.authConfirm.expired,site,website,apps/web/src/content/site.ts,327,en,"If the code does not work, tap Send a new email in the app.",59,,,,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#site.authConfirm.notYou,site,website,apps/web/src/content/site.ts,328,en,"If you did not ask for this email, you can ignore it. Nothing changes.",70,,,,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#site.authConfirm.home,site,website,apps/web/src/content/site.ts,329,en,Back to ${NAME},15,,,,,,cmo,live on develop,web-content
-apps/web/src/content/site.ts#site.openApp.title,site,website,apps/web/src/content/site.ts,338,en,Open ${NAME},12,,,,,,cmo,live on develop,web-content
-apps/web/src/content/site.ts#site.openApp.line,site,website,apps/web/src/content/site.ts,339,en,Open ${NAME} on your iPhone.,28,,,,,,cmo,live on develop,web-content
-apps/web/src/content/site.ts#site.openApp.body,site,website,apps/web/src/content/site.ts,340,en,"If ${NAME} is on this phone, tap below. If it isn't, you can get it from the App Store.",87,,,,,,cmo,live on develop,web-content
-apps/web/src/content/site.ts#site.openApp.bodyPrelaunch,site,website,apps/web/src/content/site.ts,341,en,"If ${NAME} is on this phone, tap below.",39,,,,,,cmo,live on develop,web-content
-apps/web/src/content/site.ts#site.openApp.open,site,website,apps/web/src/content/site.ts,342,en,Open ${NAME},12,,,,,,cmo,live on develop,web-content
-apps/web/src/content/site.ts#site.openApp.get,site,website,apps/web/src/content/site.ts,343,en,Get ${NAME} on the App Store,28,,,,,,cmo,live on develop,web-content
-apps/web/src/content/site.ts#site.openApp.onComputer,site,website,apps/web/src/content/site.ts,344,en,On a computer? Open this link on the iPhone that has ${NAME}.,61,,,,,,cmo,live on develop,web-content
-apps/web/src/content/site.ts#site.openApp.home,site,website,apps/web/src/content/site.ts,345,en,Back to ${NAME},15,,,,,,cmo,live on develop,web-content
-apps/web/src/content/site.ts#site.invite.title,site,website,apps/web/src/content/site.ts,358,en,An invite to share a book,25,,,,,,cmo,live on develop,web-content
-apps/web/src/content/site.ts#site.invite.line,site,website,apps/web/src/content/site.ts,359,en,Someone invited you to share a book.,36,,,,,,cmo,live on develop,web-content
-apps/web/src/content/site.ts#site.invite.body,site,website,apps/web/src/content/site.ts,360,en,This invite opens in ${NAME} on an iPhone.,42,,,,,,cmo,live on develop,web-content
-apps/web/src/content/site.ts#site.invite.steps.0,site,website,apps/web/src/content/site.ts,361,en,"Tap ""Copy the invite"".",22,,,,,,cmo,live on develop,web-content
-apps/web/src/content/site.ts#site.invite.steps.1,site,website,apps/web/src/content/site.ts,361,en,"Open ${NAME} and tap ""I was invited"".",37,,,,,,cmo,live on develop,web-content
-apps/web/src/content/site.ts#site.invite.steps.2,site,website,apps/web/src/content/site.ts,361,en,Paste the invite.,17,,,,,,cmo,live on develop,web-content
-apps/web/src/content/site.ts#site.invite.onComputer,site,website,apps/web/src/content/site.ts,362,en,On a computer? Open this link on the iPhone that has ${NAME}.,61,,,,,,cmo,live on develop,web-content
-apps/web/src/content/site.ts#site.invite.copy,site,website,apps/web/src/content/site.ts,363,en,Copy the invite,15,,,,,,cmo,live on develop,web-content
-apps/web/src/content/site.ts#site.invite.copied,site,website,apps/web/src/content/site.ts,364,en,"Copied. Now open ${NAME} and tap ""I was invited"".",49,,,,,,cmo,live on develop,web-content
-apps/web/src/content/site.ts#site.invite.copyFailed,site,website,apps/web/src/content/site.ts,365,en,This browser would not copy it. ${INVITE_BY_HAND},49,,,,,,cmo,live on develop,web-content
-apps/web/src/content/site.ts#site.invite.missing,site,website,apps/web/src/content/site.ts,366,en,This page opened without its invite. ${INVITE_BY_HAND},54,,,,,,cmo,live on develop,web-content
-apps/web/src/content/site.ts#site.invite.notYou,site,website,apps/web/src/content/site.ts,368,en,"If you were not expecting an invite, you can ignore it. Nothing changes.",72,,,,,,cmo,live on develop,web-content
-apps/web/src/content/site.ts#site.invite.home,site,website,apps/web/src/content/site.ts,369,en,Back to ${NAME},15,,,,,,cmo,live on develop,web-content
-apps/web/src/content/site.ts#site.sound.on,site,website,apps/web/src/content/site.ts,374,en,Sound on,8,,,,,,cmo,live on develop,web-content
-apps/web/src/content/site.ts#site.sound.off,site,website,apps/web/src/content/site.ts,375,en,Sound off,9,,,,,,cmo,live on develop,web-content
-apps/web/src/content/site.ts#site.sound.start,site,website,apps/web/src/content/site.ts,376,en,Tap to start sound,18,,,,,,cmo,live on develop,web-content
-apps/web/src/content/site.ts#site.sound.credit,site,website,apps/web/src/content/site.ts,378,en,Music,5,,,,,,cmo,live on develop,web-content
-apps/web/src/content/site.ts#site.scrollNav.next,site,website,apps/web/src/content/site.ts,383,en,Next part,9,,,,,,cmo,live on develop,web-content
-apps/web/src/content/site.ts#site.scrollNav.previous,site,website,apps/web/src/content/site.ts,384,en,Previous part,13,,,,,,cmo,live on develop,web-content
-apps/web/src/content/site.ts#site.scrollNav.cue,site,website,apps/web/src/content/site.ts,386,en,Scroll,6,,,,,,cmo,live on develop,web-content
-apps/web/src/content/site.ts#site.footer.sampleNote,site,website,apps/web/src/content/site.ts,391,en,"Any letter shown on this site is a sample, written for it.",58,,,,,,cmo,live on develop,web-content
-apps/web/src/content/site.ts#site.footer.tagline,site,website,apps/web/src/content/site.ts,393,en,In your own words.,18,,,,,,cmo,live on develop,web-content
-apps/web/src/content/site.ts#site.footer.links.0.label,site,website,apps/web/src/content/site.ts,396,en,Privacy,7,,,,,,cmo,live on develop,web-content
-apps/web/src/content/site.ts#site.footer.links.1.label,site,website,apps/web/src/content/site.ts,397,en,Terms,5,,,,,,cmo,live on develop,web-content
-apps/web/src/content/site.ts#site.footer.links.2.label,site,website,apps/web/src/content/site.ts,398,en,Contact,7,,,,,,cmo,live on develop,web-content
+apps/web/src/content/site.ts#site.openApp.title,site,website,apps/web/src/content/site.ts,340,en,Open ${NAME},12,,,,,,cmo,live on develop,web-content
+apps/web/src/content/site.ts#site.openApp.line,site,website,apps/web/src/content/site.ts,341,en,Open ${NAME} on your iPhone.,28,,,,,,cmo,live on develop,web-content
+apps/web/src/content/site.ts#site.openApp.notIphone,site,website,apps/web/src/content/site.ts,342,en,"Not on an iPhone? For now, ${NAME} is only on iPhone.",53,,,,,,cmo,live on develop,web-content
+apps/web/src/content/site.ts#site.openApp.body,site,website,apps/web/src/content/site.ts,343,en,"If ${NAME} is on this phone, tap below. If it isn't, you can get it from the App Store.",87,,,,,,cmo,live on develop,web-content
+apps/web/src/content/site.ts#site.openApp.bodyPrelaunch,site,website,apps/web/src/content/site.ts,344,en,"If ${NAME} is on this phone, tap below.",39,,,,,,cmo,live on develop,web-content
+apps/web/src/content/site.ts#site.openApp.open,site,website,apps/web/src/content/site.ts,345,en,Open ${NAME},12,,,,,,cmo,live on develop,web-content
+apps/web/src/content/site.ts#site.openApp.get,site,website,apps/web/src/content/site.ts,346,en,Get ${NAME} on the App Store,28,,,,,,cmo,live on develop,web-content
+apps/web/src/content/site.ts#site.openApp.onComputer,site,website,apps/web/src/content/site.ts,347,en,On a computer? Open this link on the iPhone that has ${NAME}.,61,,,,,,cmo,live on develop,web-content
+apps/web/src/content/site.ts#site.openApp.home,site,website,apps/web/src/content/site.ts,348,en,Back to ${NAME},15,,,,,,cmo,live on develop,web-content
+apps/web/src/content/site.ts#site.invite.title,site,website,apps/web/src/content/site.ts,361,en,An invite to share a book,25,,,,,,cmo,live on develop,web-content
+apps/web/src/content/site.ts#site.invite.line,site,website,apps/web/src/content/site.ts,362,en,Someone invited you to share a book.,36,,,,,,cmo,live on develop,web-content
+apps/web/src/content/site.ts#site.invite.body,site,website,apps/web/src/content/site.ts,363,en,This invite opens in ${NAME} on an iPhone.,42,,,,,,cmo,live on develop,web-content
+apps/web/src/content/site.ts#site.invite.steps.0,site,website,apps/web/src/content/site.ts,364,en,"Tap ""Copy the invite"".",22,,,,,,cmo,live on develop,web-content
+apps/web/src/content/site.ts#site.invite.steps.1,site,website,apps/web/src/content/site.ts,364,en,"Open ${NAME} and tap ""I was invited"".",37,,,,,,cmo,live on develop,web-content
+apps/web/src/content/site.ts#site.invite.steps.2,site,website,apps/web/src/content/site.ts,364,en,Paste the invite.,17,,,,,,cmo,live on develop,web-content
+apps/web/src/content/site.ts#site.invite.onComputer,site,website,apps/web/src/content/site.ts,365,en,On a computer? Open this link on the iPhone that has ${NAME}.,61,,,,,,cmo,live on develop,web-content
+apps/web/src/content/site.ts#site.invite.copy,site,website,apps/web/src/content/site.ts,366,en,Copy the invite,15,,,,,,cmo,live on develop,web-content
+apps/web/src/content/site.ts#site.invite.copied,site,website,apps/web/src/content/site.ts,367,en,"Copied. Now open ${NAME} and tap ""I was invited"".",49,,,,,,cmo,live on develop,web-content
+apps/web/src/content/site.ts#site.invite.copyFailed,site,website,apps/web/src/content/site.ts,368,en,This browser would not copy it. ${INVITE_BY_HAND},49,,,,,,cmo,live on develop,web-content
+apps/web/src/content/site.ts#site.invite.missing,site,website,apps/web/src/content/site.ts,369,en,This page opened without its invite. ${INVITE_BY_HAND},54,,,,,,cmo,live on develop,web-content
+apps/web/src/content/site.ts#site.invite.notYou,site,website,apps/web/src/content/site.ts,371,en,"If you were not expecting an invite, you can ignore it. Nothing changes.",72,,,,,,cmo,live on develop,web-content
+apps/web/src/content/site.ts#site.invite.home,site,website,apps/web/src/content/site.ts,372,en,Back to ${NAME},15,,,,,,cmo,live on develop,web-content
+apps/web/src/content/site.ts#site.sound.on,site,website,apps/web/src/content/site.ts,377,en,Sound on,8,,,,,,cmo,live on develop,web-content
+apps/web/src/content/site.ts#site.sound.off,site,website,apps/web/src/content/site.ts,378,en,Sound off,9,,,,,,cmo,live on develop,web-content
+apps/web/src/content/site.ts#site.sound.start,site,website,apps/web/src/content/site.ts,379,en,Tap to start sound,18,,,,,,cmo,live on develop,web-content
+apps/web/src/content/site.ts#site.sound.credit,site,website,apps/web/src/content/site.ts,381,en,Music,5,,,,,,cmo,live on develop,web-content
+apps/web/src/content/site.ts#site.scrollNav.next,site,website,apps/web/src/content/site.ts,386,en,Next part,9,,,,,,cmo,live on develop,web-content
+apps/web/src/content/site.ts#site.scrollNav.previous,site,website,apps/web/src/content/site.ts,387,en,Previous part,13,,,,,,cmo,live on develop,web-content
+apps/web/src/content/site.ts#site.scrollNav.cue,site,website,apps/web/src/content/site.ts,389,en,Scroll,6,,,,,,cmo,live on develop,web-content
+apps/web/src/content/site.ts#site.footer.sampleNote,site,website,apps/web/src/content/site.ts,394,en,"Any letter shown on this site is a sample, written for it.",58,,,,,,cmo,live on develop,web-content
+apps/web/src/content/site.ts#site.footer.tagline,site,website,apps/web/src/content/site.ts,396,en,In your own words.,18,,,,,,cmo,live on develop,web-content
+apps/web/src/content/site.ts#site.footer.links.0.label,site,website,apps/web/src/content/site.ts,399,en,Privacy,7,,,,,,cmo,live on develop,web-content
+apps/web/src/content/site.ts#site.footer.links.1.label,site,website,apps/web/src/content/site.ts,400,en,Terms,5,,,,,,cmo,live on develop,web-content
+apps/web/src/content/site.ts#site.footer.links.2.label,site,website,apps/web/src/content/site.ts,401,en,Contact,7,,,,,,cmo,live on develop,web-content
 docs/store/listing/listing.json#apple.name,store,store listing,docs/store/listing/listing.json,4,en,Early Letters: Memory Book,26,,,,,,cmo,live on develop,store-doc
 docs/store/listing/listing.json#apple.subtitle,store,store listing,docs/store/listing/listing.json,5,en,Baby memory book in your voice,30,,,,,,cmo,live on develop,store-doc
 docs/store/listing/listing.json#apple.promotionalText,store,store listing,docs/store/listing/listing.json,6,en,"Tell your child about today. A minute is plenty. It stays in your words. Every word we change is marked, and your original recording is kept unchanged.",151,protected,D-133 public promise line,,,,cmo,live on develop,store-doc
