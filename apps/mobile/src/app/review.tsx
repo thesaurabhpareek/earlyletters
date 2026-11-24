@@ -148,6 +148,7 @@ import {
   getSetting,
   beginDiscard,
   finishDiscard,
+  noteDiscardFailure,
   holdDraft,
   keepReviewedWords,
   listChildren,
@@ -421,7 +422,7 @@ export default function Review() {
           haptic('warning');
           let gone = false;
           try {
-            gone = letItGo(id, uri, { beginDiscard, deleteFile: (u) => deleteIfPresent(new File(u)), finishDiscard });
+            gone = letItGo(id, uri, { beginDiscard, deleteFile: (u) => deleteIfPresent(new File(u)), finishDiscard, onFailure: noteDiscardFailure });
           } catch {
             gone = false; // any throw is the same as not removed yet
           }

@@ -205,10 +205,38 @@ export function isHeld({ db }: RepoContext, id: string): boolean {
   return db.get<{ t: number }>('SELECT 1 AS t FROM drafts WHERE id = ? AND held_kind IS NOT NULL', id) !== null;
 }
 
-/** Let it go, step 3: removes a row already marked `discarding`, never any other. */
+/**
+ * How many times a let-go draft's delete has failed (NS-09-R15): settings key `discard.failures.<draft id>`, an
+ * integer. The key holds a draft id (L3) and the value is a count (L2); it is never logged. It goes with the row
+ * (finishDiscard, remove) and with Erase everything (every settings row).
+ */
+export const DISCARD_FAILURES_PREFIX = 'discard.failures.';
+const failuresKey = (id: string) => `${DISCARD_FAILURES_PREFIX}${id}`;
+
+export function discardFailures({ db }: RepoContext, id: string): number {
+  const v = db.get<{ value: string }>('SELECT value FROM settings WHERE key = ?', failuresKey(id))?.value;
+  const n = v === undefined ? 0 : Number.parseInt(v, 10);
+  return Number.isSafeInteger(n) && n > 0 ? n : 0;
+}
+
+/** One more failed delete for a draft that is still marked `discarding`; a gone or other draft keeps no counter. Returns the new count. */
+export function noteDiscardFailure(ctx: RepoContext, id: string): number {
+  const { db } = ctx;
+  if (!db.get("SELECT 1 AS n FROM drafts WHERE id = ? AND state = 'discarding'", id)) return 0;
+  const n = discardFailures(ctx, id) + 1;
+  db.run('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', failuresKey(id), String(n));
+  return n;
+}
+
+/** Let it go, step 3: removes a row already marked `discarding`, never any other. Its failure count goes with it. */
 export function finishDiscard({ db }: RepoContext, id: string): boolean {
-  db.run("DELETE FROM drafts WHERE id = ? AND state = 'discarding'", id);
-  return changes(db) === 1;
+  let done = false;
+  db.transaction(() => {
+    db.run("DELETE FROM drafts WHERE id = ? AND state = 'discarding'", id);
+    done = changes(db) === 1;
+    if (done) db.run('DELETE FROM settings WHERE key = ?', failuresKey(id));
+  });
+  return done;
 }
 
 /** Elapsed time so far; only while the take is still recording. */
@@ -306,6 +334,7 @@ export function setReview(
 /** Removes the row only, never the file. */
 export function remove({ db }: RepoContext, id: string): void {
   db.run('DELETE FROM drafts WHERE id = ?', id);
+  db.run('DELETE FROM settings WHERE key = ?', failuresKey(id));
 }
 
 export function audioRows({ db }: RepoContext): { id: string; audioUri: string | null; state: string }[] {
