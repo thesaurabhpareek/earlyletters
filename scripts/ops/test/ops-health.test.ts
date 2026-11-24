@@ -1,11 +1,12 @@
 // BL-584 (CR-209): the ops-health Edge Function. Run: npm run test:functions
 // (the test sits here because scripts/ops is a test:functions root and supabase/functions/ops-health is not listed in it).
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { makeOpsHealthHandler, CRON_WINDOW_MINUTES } from '../../../supabase/functions/ops-health/handler.ts';
 
 const SUPA = 'https://fake-project.supabase.co';
 const TOKEN = 'watch-token-0123456789abcdef0123456789abcdef';
-const SERVICE_KEY = 'sb_secret_fixtureonly0123456789';
+const SERVICE_KEY = 'sb_secret_ashafictional0000';
 const ENV: Record<string, string> = { OPS_HEALTH_TOKEN: TOKEN, SUPABASE_URL: SUPA, SUPABASE_SERVICE_ROLE_KEY: SERVICE_KEY };
 const get = (token: string | null = TOKEN, method = 'GET') =>
   new Request('https://fn.local/ops-health', { method, headers: token === null ? {} : { authorization: `Bearer ${token}` } });
@@ -93,10 +94,26 @@ Deno.test('[BL-584] not knowing is 503 with no detail: refused read, missing fun
   for (const w of cases) {
     const res = await w.handler(get());
     assert.equal(res.status, 503);
-    const text = JSON.stringify(await res.json());
-    assert.match(text, /"unavailable"/);
+    const body = await res.json();
+    const text = JSON.stringify(body);
+    assert.deepEqual(body, { ok: false, error: { code: 'unavailable', retryable: true }, requestId: res.headers.get('x-request-id') });
     for (const secret of [SERVICE_KEY, TOKEN, SUPA, 'fake-project']) assert.ok(!text.includes(secret), `reply leaks ${secret}`);
   }
+});
+
+Deno.test('[BL-584] a missing Supabase setting (config) is the same full 503 envelope, with no setting named', async () => {
+  const res = await world({ env: { OPS_HEALTH_TOKEN: TOKEN } }).handler(get());
+  assert.equal(res.status, 503);
+  assert.deepEqual(await res.json(), { ok: false, error: { code: 'unavailable', retryable: true }, requestId: res.headers.get('x-request-id') });
+});
+
+Deno.test('[BL-584] source pin: the token is compared with safeEqual and never with === or !==', () => {
+  const src = readFileSync(new URL('../../../supabase/functions/ops-health/handler.ts', import.meta.url), 'utf8')
+    .split('\n').filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l)).join('\n');
+  assert.match(src, /import \{[^}]*\bsafeEqual\b[^}]*\} from '\.\.\/purge-worker\/lib\/http\.ts'/);
+  assert.match(src, /!safeEqual\([\s\S]*?,\s*token\)/);
+  assert.ok(!/[!=]==\s*token\b|\btoken\s*[!=]==/.test(src), 'a plain compare of the token');
+  assert.ok(!/[!=]==\s*auth\b|\bauth\s*[!=]==/.test(src), 'a plain compare of the header');
 });
 
 Deno.test('[BL-584] the log carries no token, key, URL or number from the reads beyond a count', async () => {
