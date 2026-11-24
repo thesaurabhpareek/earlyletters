@@ -29,13 +29,14 @@ describe('[NS-53-R159] Moments strings use the glossary and say no more than the
   it('[NS-53-R159] the reason list is the closed list of spec 6.4a, fifteen lines', () => {
     expect(Object.keys(momentsTabCopy.reason)).toEqual(['marked', 'birthday', 'monthDay', 'kept', 'heart', 'video', 'day', 'year', 'run', 'picked', 'place', 'holiday', 'first', 'letter', 'question']);
   });
-  it('[NS-53-R159] the reason lines are word for word the strings of spec 6.4a', () => {
+  // monthDay and heart carry the council's ruled words (BL-1557, council batch 6), not spec 6.4a's drafts.
+  it('[NS-53-R159] the reason lines are word for word the strings of spec 6.4a, with the two council rulings', () => {
     expect(momentsTabCopy.reason).toEqual({
       marked: 'A day you marked',
       birthday: "On {child}'s birthday",
-      monthDay: 'From a month day for {child}',
+      monthDay: 'The day of the month {child} was born',
       kept: 'A day you kept close',
-      heart: 'Pictures you hearted',
+      heart: 'Pictures you marked as favorites',
       video: 'A video from this day',
       day: 'Pictures from this day',
       year: 'Pictures from this day in {year}',
