@@ -9,7 +9,8 @@
  * "I was invited" reads the token out of the pasted link. If a chat or mail app's own browser dropped the fragment,
  * the page says so instead of offering a copy that would not work (F11-U02). The steps render with the Copy button
  * (CopyInvite), so they never point at a button that is not there; with JavaScript off the page shows only how to copy
- * the link from the message. The Referer header is off for /j (next.config.ts).
+ * the link from the message. Only a build with the invite flow writes these links, so the page also says the App Store
+ * version has no invites (BL-558). The Referer header is off for /j (next.config.ts).
  */
 import type { Metadata } from 'next';
 import Link from 'next/link';
@@ -32,6 +33,8 @@ export default function InvitePage() {
     <main className={styles.page}>
       <h1 className={styles.line}>{copy.line}</h1>
       <p className={styles.body}>{copy.body}</p>
+      {/* Server-rendered for everyone, script or not: the App Store build cannot open an invite (BL-558). */}
+      <p className={styles.body}>{copy.storeBuild}</p>
       <CopyInvite
         steps={copy.steps}
         label={copy.copy}

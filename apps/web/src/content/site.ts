@@ -353,11 +353,17 @@ export const site = {
    * chat or mail app's own browser dropped the fragment), the words send the person back to the message, where the
    * whole link still is (F11-U02). The steps show only beside a working Copy button; `noScript` is all a browser with
    * JavaScript off shows in their place, since that page can neither read the invite nor copy it.
+   * `storeBuild` (BL-558, PROPOSED, not yet read by the exec team): only a build with the invite flow (the alpha) writes
+   * these links, and the App Store build hides "I was invited", so the page says so to everyone, with or without
+   * JavaScript. packages/content/test/claims-capabilities.test.ts reads the page's invite words as true only while this
+   * line is on it and the store build still has no invite flow; when the store build gains the flow, that test fails
+   * until this line goes.
    */
   invite: {
     title: 'An invite to share a book',
     line: 'Someone invited you to share a book.',
     body: `This invite opens in ${NAME} on an iPhone.`,
+    storeBuild: `For now, the App Store version of ${NAME} doesn't have invites.`,
     steps: ['Tap "Copy the invite".', `Open ${NAME} and tap "I was invited".`, 'Paste the invite.'],
     onComputer: `On a computer? Open this link on the iPhone that has ${NAME}.`,
     copy: 'Copy the invite',

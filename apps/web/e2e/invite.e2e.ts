@@ -27,6 +27,8 @@ test.describe('/j#t=<token> (an invite opened outside the app)', () => {
     await page.goto(LINK);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(copy.line);
     await expect(page.getByText(copy.body)).toBeVisible();
+    // BL-558: the App Store build has no invite flow, and the page says so.
+    await expect(page.getByText(copy.storeBuild)).toBeVisible();
     await expect(page.getByRole('listitem')).toHaveText([...copy.steps]);
     await expect(page.getByRole('button', { name: copy.copy })).toBeVisible();
     await expect(page.getByText(copy.noScript, { exact: true }), 'the no-script line stays hidden').toBeHidden();
@@ -143,6 +145,7 @@ test.describe('/j#t=<token> (an invite opened outside the app)', () => {
       await page.goto(LINK, { waitUntil: 'networkidle' });
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(copy.line);
       await expect(page.getByText(copy.noScript, { exact: true })).toBeVisible();
+      await expect(page.getByText(copy.storeBuild), 'the App Store line shows without JavaScript too (BL-558)').toBeVisible();
       await expect(page.getByRole('listitem')).toHaveCount(0);
       await expect(page.getByRole('button')).toHaveCount(0);
       await expect(page.getByText(copy.onComputer)).toBeVisible();
@@ -166,6 +169,8 @@ test.describe('/j#t=<token> (an invite opened outside the app)', () => {
     expect(html).toContain('<meta name="twitter:card" content="summary_large_image"');
     expect(html).toMatch(/<meta name="twitter:image" content="https:\/\/earlyletters\.com\/og\//);
     expect(html).not.toMatch(/supabase|posthog|vercel-insights|_vercel\/insights|googletagmanager/i);
+    // The App Store line is in what the server sends, not added by script (BL-558; claims-capabilities.test.ts relies on it).
+    expect(html).toContain(copy.storeBuild.replace(/'/g, '&#x27;'));
     // Before the fragment is read the page shows no steps, no button and no ask-again line, so none of them flashes.
     expect(html).not.toContain('<button');
     expect(html).not.toMatch(/<li[\s>]/);
