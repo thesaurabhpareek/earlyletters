@@ -3,7 +3,7 @@
  * in Node; plus-gate.tsx draws it.
  *
  * What the sheet says follows where the held letter waits and how it is kept:
- *   heldOn 'tonight'  a draft: it waits on Tonight, and the line names this phone (`keepGate.heldNote`). Signed in
+ *   heldOn 'tonight'  a draft: it waits on Home (the first tab, once Tonight), and the line names this phone (`keepGate.heldNote`). Signed in
  *                     with sync on it also syncs as an author-only held row (store.holdDraft queues it in the same
  *                     transaction), which `keepGate.heldNoteSynced` says; that sentence is a data-handling claim held
  *                     for counsel (C10), so it shows only once SYNCED_HELD_NOTE_CLEARED is switched on, and until then
@@ -212,16 +212,16 @@ export type KeepSheetLayout = {
  * Where each part of the sheet sits (P6a critics' pass S1, and both lenses on #370). At the default size the held card is
  * at the top, then the title, the body and the held note, and every button with its note is in the footer.
  *
- * At accessibility text sizes the words alone fill the first screen (at AX3 the title, body and held note reach about
- * 780 pt), so the footer holds the two buttons and nothing else: "See Plus" and "Keep it here for now", always on
- * screen. Every line of text is in the scroll, because uncapped text in a footer can grow taller than the sheet (the
- * 96-character offline note at AX5 on an SE made the footer about 865 pt in a 667 pt screen). The held note, the line
+ * From AX1 up nothing is pinned (A11Y-AND-TYPE-AUDIT-20nov rule 3, ruling E3): the words alone fill the first screen
+ * (at AX3 the title, body and held note reach about 780 pt), and a pinned two-button footer would take over a quarter
+ * of the sheet. So every line of text and both buttons are in the scroll, the two buttons last: "See Plus", then
+ * "Keep it here for now". A big size costs a scroll, not a lost control. The held note, the line
  * that says the letter is safe, comes right after the title (F14-REQ-028: said before any offer), then the note about
  * See Plus, then the body; the held card and "Redeem a code" follow. The scroll comes first in reading order, so the
  * held note is read before any button at every size.
  */
 export function keepSheetLayout(accessibilitySize: boolean): KeepSheetLayout {
   return accessibilitySize
-    ? { scroll: ['words', 'card', 'redeem'], words: ['title', 'heldNote', 'note', 'body'], pinned: ['seePlus', 'hold'] }
+    ? { scroll: ['words', 'card', 'redeem', 'seePlus', 'hold'], words: ['title', 'heldNote', 'note', 'body'], pinned: [] }
     : { scroll: ['card', 'words'], words: ['title', 'body', 'heldNote'], pinned: ['seePlus', 'note', 'hold', 'redeem'] };
 }

@@ -192,6 +192,17 @@ test('B-9: when app.config.ts refuses the forced build, the bundle as the profil
   assert.ok(!B9_REFUSAL.test('Error: Cannot find module expo-router'));
 });
 
+test('the web presentation seam keys (council ruling E6) are searched, and a store bundle that carries either fails', async () => {
+  for (const id of ['e2eFontScale', 'e2eLang']) {
+    assert.ok(SEAM_IDENTIFIERS.includes(id), id);
+    assert.deepEqual(scan([`x=new URLSearchParams(s).get("${id}")`]), { [id]: 1 });
+    const lines = [];
+    assert.equal(await guard(REPO, EAS, 'production', (s) => lines.push(s), fakeExport({ refuse: true }, bundle(`get("${id}")`)).run), false);
+    assert.match(lines.join('\n'), new RegExp(`::error::B-8 production: .*${id} x1`));
+  }
+  assert.deepEqual(scan(['fontScale lang e2e']), {}, 'the bare names are not seam identifiers');
+});
+
 test('the identifiers are S19\'s list on #203, plus the drill\'s other launch-argument keys', () => {
   for (const id of ['e2eSeed', 'e2eOffline', 'e2eConfig', 'e2eKillDrill', 'e2eKillRun', 'e2eKillPlant', 'kill-drill', 'Asha kill drill', 'e2eKillKind', 'e2eKillPoint']) assert.ok(SEAM_IDENTIFIERS.includes(id), id);
   assert.ok(SEAM_IDENTIFIERS.includes(CONTROL_IDENTIFIER));

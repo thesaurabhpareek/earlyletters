@@ -30,13 +30,13 @@
  * invites are paused and send nothing. `paused` is not a final error, so the token stays in the
  * Keychain and Try again goes on once the switch lifts.
  */
+import { SIGNS_AS_MAX, clampGraphemes } from '@scribe/core';
 import { brand } from '@scribe/brand';
-import { router, useNavigation } from 'expo-router';
+import { Redirect, router, useNavigation } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { View, type Text as RNText } from 'react-native';
 import { joinedArrival } from '@/components/family/family-notice';
 import { firstRunWelcome } from '@/components/family/welcome-handoff.logic';
-import { InviteComingSoon } from '@/components/family/invite-coming-soon';
 import { JoinAsk, JoinedCover, JoinStep, WaitingBar } from '@/components/family/join-ask';
 import { joinWait, joinWaitLine } from '@/components/family/join-wait.logic';
 import { JOINED_LANDING, joinedBody, joinFailure, joinTitle, openLanding, readPasted, retryKeepsPreview, SPEAK_AFTER_FOCUS_MS } from '@/components/family/join-sheet.logic';
@@ -46,6 +46,7 @@ import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { authUserId } from '@/lib/auth/machine.logic';
 import { useAuth } from '@/lib/auth/session-provider';
+import { PLUS_ALPHA } from '@/lib/billing/alpha';
 import { serverFeaturesEnabled } from '@/lib/capabilities';
 import { copy, fill } from '@/lib/copy';
 import { inviteDestination } from '@/lib/family/entry.logic';
@@ -62,11 +63,10 @@ import { haptic } from '@/lib/haptics';
 import { getChild, setActiveChildId, subscribe, updateChild } from '@/lib/store';
 
 /** A sign-off is at most 30 characters (lib/family/invites.ts). */
-const SIGNS_AS_MAX = 30;
 
-/** Fixed per build (lib/capabilities.ts). Off: co-parent sharing is coming soon, and no token is kept. */
+/** Fixed per build (lib/capabilities.ts). Off: nothing is shown (the route sends the person Home), and no token is kept. */
 export default function JoinBookRoute() {
-  return inviteDestination('invite_join', serverFeaturesEnabled()) === 'flow' ? <JoinBook /> : <InviteComingSoon />;
+  return inviteDestination('invite_join', serverFeaturesEnabled(), PLUS_ALPHA) === 'flow' ? <JoinBook /> : <Redirect href="/" />;
 }
 
 /** Where this sheet closes onto: first run's welcome step, or anywhere else (join-sheet.logic.ts openLanding), now. */
@@ -93,7 +93,7 @@ function JoinBook() {
   const started = useRef<'peek' | 'accept' | null>(null);
 
   useEffect(() => {
-    void readPendingInvite().then((p) => {
+    void readPendingInvite(Date.now(), authUserId(auth.state), auth.state.status !== 'restoring').then((p) => {
       if (p) track('invite_opened', { via: 'link', signed_in: auth.signedIn });
       setToken(p?.token ?? null);
       setLoaded(true);
@@ -374,12 +374,12 @@ function Joined({ childId, fallbackName, inviter, fade }: { childId: string; fal
     return () => clearTimeout(id);
   }, [waitingLine]);
   const saveSignature = () => {
-    const s = signsAs.trim().slice(0, SIGNS_AS_MAX);
+    const s = clampGraphemes(signsAs.trim(), SIGNS_AS_MAX, SIGNS_AS_MAX);
     if (book && s && s !== book.signsAs) updateChild(childId, { signsAs: s });
   };
   const type = (v: string) => {
     edited.current = true;
-    setSignsAs(v.slice(0, SIGNS_AS_MAX));
+    setSignsAs(clampGraphemes(v, SIGNS_AS_MAX, SIGNS_AS_MAX));
   };
   const open = () => {
     saveSignature();
@@ -436,7 +436,6 @@ function Joined({ childId, fallbackName, inviter, fade }: { childId: string; fal
                 value={signsAs}
                 onChangeText={type}
                 placeholder={a.signsAsPlaceholder}
-                maxLength={SIGNS_AS_MAX}
                 autoCapitalize="words"
                 autoCorrect={false}
                 returnKeyType="done"

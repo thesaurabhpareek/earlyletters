@@ -11,6 +11,7 @@ includeTags:
 excludeTags:
   - e2e-coparent
   - storekit-xcode
+  - e2e-timing
 executionOrder:
   continueOnFailure: true
   flowsOrder:

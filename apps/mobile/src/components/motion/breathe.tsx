@@ -1,14 +1,15 @@
 // web: CSS animation (later) | android: same
 /**
  * Breathe (MOTION 5j): one decorative element breathes opacity 0.85 to 1 over 8 s,
- * Calm's slowest pace. Only while visible and the app is active; off under Reduce
- * Motion. Never wraps text or controls (they stay static).
+ * Calm's slowest pace. Only while visible and the app is active, and for at most
+ * tokens.motion.loopCapMs (30 s), then it rests at full opacity; off under Reduce Motion. Never wraps text or controls (they stay static).
  */
 import { useEffect, useState, type ReactNode } from 'react';
 import { AppState, type StyleProp, type ViewStyle } from 'react-native';
-import Animated, { Easing, ReduceMotion, cancelAnimation, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
+import Animated, { ReduceMotion, cancelAnimation, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import { tokens } from '@scribe/design-tokens';
-import { useReducedMotion } from '@/lib/motion';
+import { loopReps } from '@/lib/loop.logic';
+import { curve, useReducedMotion } from '@/lib/motion';
 
 export function Breathe({ children, paused = false, style }: { children: ReactNode; paused?: boolean; style?: StyleProp<ViewStyle> }) {
   const reduced = useReducedMotion();
@@ -28,7 +29,9 @@ export function Breathe({ children, paused = false, style }: { children: ReactNo
       return;
     }
     const half = tokens.motion.emptyBreathMs / 2;
-    o.value = withRepeat(withTiming(0.85, { duration: half, easing: Easing.inOut(Easing.sin), reduceMotion: ReduceMotion.Never }), -1, true);
+    // Ends by itself at full opacity after tokens.motion.loopCapMs (an even count of one-way runs); a new run
+    // (focus, active again, Reduce Motion off) starts a new cap.
+    o.value = withRepeat(withTiming(0.85, { duration: half, easing: curve('breath'), reduceMotion: ReduceMotion.Never }), loopReps(tokens.motion.emptyBreathMs), true);
     return () => cancelAnimation(o);
   }, [run, o]);
 

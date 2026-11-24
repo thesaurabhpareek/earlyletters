@@ -1,0 +1,1 @@
+18:34 (20 Nov) ai-eng-lead | done: SKILLS-MATRIX, KNOWLEDGE-PACKS 1 and 2, BRIEF-TEMPLATE (with BL-961-3 example), HARNESS-GAPS drafted; 90 cites resolve, 63 read, 3 fixed | next: open 3 PRs, journal, reply to Karma | blocked/needs: none

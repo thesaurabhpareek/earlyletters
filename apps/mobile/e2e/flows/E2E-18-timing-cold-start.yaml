@@ -1,0 +1,45 @@
+# BLOCKED (ids the app does not set yet): red by design until they land. `node apps/mobile/e2e/bin/blocked-ids.mjs <this file>` lists them (not-in-app.txt); run-suite.sh and run-p0-nightly.sh skip it and print that list.
+# E2E-18  Timing: cold start to the first usable screen, 200 samples (BL-1403, feeds BL-044).
+# Not part of the suite: the tag is e2e-timing, not e2e, so `maestro test apps/mobile/e2e` skips it and
+# run-suite.sh does not list it. Run it per release candidate (README section 10). The clock is the
+# Maestro host's, started just before the launch and stopped when Tonight is visible; the figure includes
+# Maestro's own command time, so it is an upper bound, and the founder's phone run (DEVICE_TEST_PLAN
+# S1-01) stays the gate. Prints only `TIMING cold_start_ms=<n>` lines.
+appId: ${APP_ID}
+name: E2E-18 Timing, cold start
+tags:
+  - e2e-timing
+  - E2E-18
+  - A-NFR-001
+---
+- runFlow:
+    file: ../subflows/launch-fresh.yaml
+    env:
+      E2E_OFFLINE: "1"
+      E2E_TRANSCRIBER: "none"
+- runFlow: ../subflows/pass-age-gate.yaml
+- runFlow: ../subflows/first-run-one-child.yaml
+- repeat:
+    times: 200
+    commands:
+      - stopApp
+      - runScript:
+          file: ../scripts/timing.js
+          env:
+            TIMING_ACTION: "start"
+            TIMING_NAME: "cold_start_ms"
+      - runFlow:
+          file: ../subflows/relaunch.yaml
+          env:
+            E2E_OFFLINE: "1"
+            E2E_TRANSCRIBER: "none"
+      - extendedWaitUntil:
+          visible:
+            id: "tonight.screen"
+          timeout: 15000
+      - runScript:
+          file: ../scripts/timing.js
+          env:
+            TIMING_ACTION: "lap"
+            TIMING_NAME: "cold_start_ms"
+- stopApp

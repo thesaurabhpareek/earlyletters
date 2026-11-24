@@ -1,0 +1,58 @@
+# BLOCKED (ids the app does not set yet): red by design until they land. `node apps/mobile/e2e/bin/blocked-ids.mjs <this file>` lists them (not-in-app.txt); run-suite.sh and run-p0-nightly.sh skip it and print that list.
+# E2E-19  Timing: record start (tap Speak to the recording screen), 200 samples (BL-1403, feeds BL-044).
+# Not part of the suite (tag e2e-timing). The app is killed between samples, so each one starts from a
+# cold Tonight. The microphone prompt is answered once, before the first sample. Host clock, upper bound:
+# the figure includes Maestro's own command time; the phone run (DEVICE_TEST_PLAN S1-10) stays the gate.
+# A take left by the kill is kept by the launch sweep (E2E-03 part 6) and does not change Tonight.
+# Prints only `TIMING record_start_ms=<n>` lines.
+appId: ${APP_ID}
+name: E2E-19 Timing, record start
+tags:
+  - e2e-timing
+  - E2E-19
+  - A-NFR-001
+---
+- runFlow:
+    file: ../subflows/launch-fresh.yaml
+    env:
+      E2E_OFFLINE: "1"
+      E2E_TRANSCRIBER: "none"
+- runFlow: ../subflows/pass-age-gate.yaml
+- runFlow: ../subflows/first-run-one-child.yaml
+# Answer the microphone prompt once, outside the timed part.
+- tapOn:
+    id: "tonight.speak"
+- tapOn:
+    text: "Allow"
+- assertVisible:
+    id: "listen.screen"
+- repeat:
+    times: 200
+    commands:
+      - stopApp
+      - runFlow:
+          file: ../subflows/relaunch.yaml
+          env:
+            E2E_OFFLINE: "1"
+            E2E_TRANSCRIBER: "none"
+      - extendedWaitUntil:
+          visible:
+            id: "tonight.screen"
+          timeout: 15000
+      - runScript:
+          file: ../scripts/timing.js
+          env:
+            TIMING_ACTION: "start"
+            TIMING_NAME: "record_start_ms"
+      - tapOn:
+          id: "tonight.speak"
+      - extendedWaitUntil:
+          visible:
+            id: "listen.screen"
+          timeout: 10000
+      - runScript:
+          file: ../scripts/timing.js
+          env:
+            TIMING_ACTION: "lap"
+            TIMING_NAME: "record_start_ms"
+- stopApp

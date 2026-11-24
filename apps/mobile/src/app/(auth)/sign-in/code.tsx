@@ -31,6 +31,9 @@ import { useChildren } from '@/components/child/use-children';
 import { useEffect, useRef, useState } from 'react';
 import { Linking, Platform, TextInput, View } from 'react-native';
 import { tokens } from '@scribe/design-tokens';
+import { announce } from '@/lib/a11y';
+import { appleSignInAvailable } from '@/lib/auth/apple';
+import { RegionRefusedScreen } from '@/components/onboarding/region-refused-screen';
 import { Button } from '@/components/ui/button';
 import { useFontsReady } from '@/components/ui/fonts';
 import { Text } from '@/components/ui/text';
@@ -42,10 +45,16 @@ import type { AuthErrorKind } from '@/lib/auth/machine.logic';
 import { getPendingEmail, setPendingEmail, wrongCodeTimes } from '@/lib/auth/pending';
 import { authErrorMessage } from '@/lib/auth/messages';
 import { useAuth, type Outcome } from '@/lib/auth/session-provider';
-import { ErrorLine, QuietButton, SheetBody, SheetFrame, SheetTitle, useColors } from '@/lib/auth/ui';
+import { AppleButton, ErrorLine, QuietButton, SheetBody, SheetFrame, SheetTitle, useColors } from '@/lib/auth/ui';
+import { hasSessionState, recoverySet, shouldAnnounceRecovery } from '@/lib/first-run/handoff.logic';
+import { useIsAccessibilitySize } from '@/lib/a11y';
 import { copy } from '@/lib/copy';
 import { cn } from '@/lib/utils';
 
+/** At accessibility sizes the digits sit tight (no letter spacing) and the side padding is halved: 10 digits at the cap are
+ *  318 pt with spacing and about 258 pt without, in an inner field width of about 317 pt on a 375 pt screen (375 - 2 x 20 gutter - 2 x 8 padding - 2 x 1 border). The figures
+ *  are estimates from font metrics and tokens, not measured on a device (A11Y audit FE-9). The size does not change. */
+const CODE_SPACING_AX = 0;
 /** The code is set at title1's size (28 pt), so it takes title1's Dynamic Type cap: six digits stay on one line. */
 const CODE_TYPE = { fontSize: tokens.type.title1.fontSize, letterSpacing: 6, maxScale: tokens.type.title1.maxScale } as const;
 
@@ -71,6 +80,7 @@ export default function CodeStep() {
   // The has-a-book signal the sign-in sheet uses for its cover: "still on this phone" is true only with a book here.
   const { active } = useChildren();
   const c = useColors();
+  const ax = useIsAccessibilitySize();
   const ready = useFontsReady();
   const k = authCopy.code;
   const known = getPendingEmail();
@@ -98,6 +108,20 @@ export default function CodeStep() {
   }, [sentAt]);
 
   const canResend = sentAt === null || now >= sentAt + RESEND_WAIT_MS;
+  // The recovery set (NX-31-R11, NX-36 S5): after the minute, "Send a new email", "Use a different email" and Apple together.
+  const [appleReady, setAppleReady] = useState(false);
+  useEffect(() => {
+    void appleSignInAvailable().then(setAppleReady);
+  }, []);
+  // Signed in (the code, the Mail link or Apple just worked) the set is closed, not "unknown send time" and so open: the
+  // sheet is still mounted for a few frames, and the set must not draw or be announced at the moment of success.
+  const recovery = recoverySet({ sentAt, now, waitMs: RESEND_WAIT_MS, appleAvailable: appleReady, signedIn: hasSessionState(auth.state) });
+  // Said once, when the minute passes (a change), never on arrival at a screen that is already open.
+  const wasOpen = useRef(recovery.open);
+  useEffect(() => {
+    if (shouldAnnounceRecovery(wasOpen.current, recovery.open)) announce(k.announceResend);
+    wasOpen.current = recovery.open;
+  }, [recovery.open, k.announceResend]);
   const address = email.trim();
   // Read at every render, so the pause shows from the fifth wrong code on; `now` only schedules the render when it lifts.
   const pause = codeEntryPause(wrongCodeTimes(address), Date.now());
@@ -175,6 +199,28 @@ export default function CodeStep() {
 
   // While paused, one line in one live region: the pause, and the ways in that still work (VoiceOver hears both).
   const message = paused ? `${authErrorMessage('code_paused')} ${k.pausedOtherWays}` : authErrorMessage(error);
+
+  const signInWithApple = async () => {
+    if (inFlight.current) return;
+    inFlight.current = true;
+    setBusy(true);
+    setError(null);
+    let r: Outcome;
+    try {
+      r = await auth.signInWithApple();
+    } finally {
+      inFlight.current = false;
+      setBusy(false);
+    }
+    // Cancelled at Apple's sheet: nothing recorded as a failure, the person stays here.
+    if (r.ok) {
+      setPendingEmail(null);
+      router.replace('/sign-in/consent');
+    } else if (r.error !== 'cancelled') setError(r.error);
+  };
+
+  // FP-6: refused after the code step (E62): the refused-region screen, never a line under the field or an outage.
+  if (error === 'region_refused') return <RegionRefusedScreen />;
 
   return (
     <SheetFrame
@@ -258,9 +304,9 @@ export default function CodeStep() {
               borderRadius: tokens.radius.md,
               borderWidth: tokens.stroke.control,
               borderColor: c.controlBorder,
-              paddingHorizontal: tokens.space[4],
+              paddingHorizontal: ax ? tokens.space[2] : tokens.space[4],
               fontSize: CODE_TYPE.fontSize,
-              letterSpacing: CODE_TYPE.letterSpacing,
+              letterSpacing: ax ? CODE_SPACING_AX : CODE_TYPE.letterSpacing,
               fontVariant: ['tabular-nums'],
               ...(ready ? { fontFamily: tokens.fontFamily.sansSemiBold, fontWeight: 'normal' as const } : { fontWeight: '600' as const }),
             }}
@@ -304,6 +350,13 @@ export default function CodeStep() {
             else router.replace('/sign-in/email');
           }}
         />
+        {/* After the minute: Apple joins the two options above, then one plain help line, then the trouble link. */}
+        {recovery.options.includes('apple') ? <AppleButton signIn disabled={busy} onPress={() => void signInWithApple()} /> : null}
+        {recovery.open ? (
+          <Text variant="footnote" tone="muted" className="text-center">
+            {k.noMailHelp}
+          </Text>
+        ) : null}
         <QuietButton label={copy.auth.troubleButton} onPress={() => setHelpOpen((v) => !v)} />
         {helpOpen ? (
           <Text variant="subhead" tone="muted" accessibilityLiveRegion="polite">

@@ -13,7 +13,7 @@ import { en } from '@scribe/content';
 import { describe, expect, it } from 'vitest';
 import { LINE_ART, penWidth } from '../src/components/ui/line-art.data';
 import { STATE_LAYOUT } from '../src/components/ui/state-screen.logic';
-import { PLAIN_ART, PLAIN_LAYOUT, PLAIN_TYPE, plainArt, plainButton } from '../src/components/resilience/plain-screen.styles';
+import { PLAIN_ART, PLAIN_LAYOUT, PLAIN_TYPE, plainActionsInline, plainArt, plainButton } from '../src/components/resilience/plain-screen.styles';
 
 const SRC = join(__dirname, '..', 'src');
 const read = (rel: string) => readFileSync(join(SRC, rel), 'utf8');
@@ -162,6 +162,7 @@ describe('nothing that can throw before render (S50)', () => {
     '@/lib/resilience/recovery-export',
     '@/components/ui/line-art.data',
     '@/components/ui/state-screen.logic',
+    '@/lib/a11y.logic', // pure: the font-scale thresholds, no imports
     './plain-screen',
     './plain-screen.styles',
   ]);
@@ -184,6 +185,7 @@ describe('nothing that can throw before render (S50)', () => {
     for (const f of ['components/ui/line-art.data.ts', 'components/ui/state-screen.logic.ts']) {
       for (const m of imports(read(f))) expect(['@scribe/design-tokens', '@/components/ui/line-art.data'], `${f} imports ${m}`).toContain(m);
     }
+    expect(imports(read('lib/a11y.logic.ts'))).toEqual([]);
   });
 
   it('launch.logic.ts, which the launch screen reads for its view and its taps, imports only a type', () => {
@@ -228,14 +230,14 @@ describe('launch recovery offers no way to delete (S51, D-085)', () => {
 
   it('the words are the S51 table with the 30 Oct rulings (S1, S2), and no title ends with a full stop', () => {
     const l = en.errors.launch;
-    expect(l.title).toBe('The book could not open');
+    expect(l.title).toBe("The book couldn't open");
     expect(l.body).toBe('Export saves a copy of the recordings and book files it can read, exactly as they are.');
     expect(l.hint).toBe('Try again, or restart the phone.');
     expect(l.tryingAgainButton).toBe('Trying again');
-    expect(l.stillClosed).toBe('It did not open this time either.');
+    expect(l.stillClosed).toBe("It didn't open this time either.");
     expect(l.exportButton).toBe("Export what's readable");
     expect(l.exportButton.length).toBeLessThanOrEqual(22);
-    expect(en.errors.crash.title).toBe('This page did not open');
+    expect(en.errors.crash.title).toBe("This page didn't open");
     expect(en.errors.notFoundPage.title).toBe('Nothing at this link');
     for (const t of [l.title, en.errors.crash.title, en.errors.notFoundPage.title]) expect(t).not.toMatch(/\.$/);
     // Nothing a person can tap or is told to do here names deleting, resetting or erasing (D-085).
@@ -259,5 +261,20 @@ describe('the 404 (S49)', () => {
 
   it('never reads, shows or logs the address', () => {
     expect(src).not.toMatch(/usePathname|useLocalSearchParams|useGlobalSearchParams|useSegments|console\.|track\(/);
+  });
+});
+
+describe('[BL-495 point 4] large text: the buttons follow the words inside the scroll', () => {
+  it('from AX1 the actions are inline after the words, as StateScreen and the sign-in sheet do; below it they stay pinned', () => {
+    expect(plainActionsInline(1)).toBe(false);
+    expect(plainActionsInline(1.353)).toBe(false);
+    expect(plainActionsInline(1.786)).toBe(true);
+    expect(plainActionsInline(3.571)).toBe(true);
+  });
+
+  it('the screen reads the real font scale and draws one set of buttons, in the scroll when inline and under it when pinned', () => {
+    const src = code(read('components/resilience/plain-screen.tsx'));
+    expect(src).toMatch(/plainActionsInline\(useWindowDimensions\(\)\.fontScale \|\| 1\)/);
+    expect(src).toMatch(/\{inline \? buttons : null\}\s*<\/View>\s*<\/ScrollView>\s*\{inline \? null : buttons\}/);
   });
 });

@@ -38,6 +38,8 @@ done
 OUT="${OUT:-$HOME/.maestro/scribe-e2e/$(date -u +%Y%m%dT%H%M%SZ)}"
 mkdir -p "$OUT"
 export UDID APP_ID
+# shellcheck source=blocked.sh
+source "$HERE/blocked.sh"
 
 command -v maestro >/dev/null || { echo "maestro CLI not found (README section 2)" >&2; exit 2; }
 if [[ -n "$APP" ]]; then
@@ -63,6 +65,8 @@ FLOWS=(
   E2E-12-sign-in-email
   E2E-15-voiceover-smoke
 )
+
+# E2E-21-keep-and-leave is not listed: it is blocked on the launch seam, the asha-recordings seed and testIDs (see its header). Add it when they land.
 
 declare -a RESULTS=()
 FAILED=0
@@ -90,6 +94,10 @@ host_check() {
 for name in "${FLOWS[@]}"; do
   if [[ -n "$ONLY" && "$name" != "$ONLY"* ]]; then continue; fi
   if [[ -n "$TAG" ]] && ! has_tag "$name" "$TAG"; then continue; fi
+  reason="$(blocked_reason "$name")"
+  if [[ -n "$reason" ]]; then
+    RESULTS+=("SKIP $name (blocked: the app does not set $reason; see not-in-app.txt)"); continue
+  fi
   if has_tag "$name" needs-backend && [[ -z "${MAESTRO_E2E_SUPABASE_URL:-}" ]]; then
     RESULTS+=("SKIP $name (needs the e2e backend)"); continue
   fi

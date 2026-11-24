@@ -130,9 +130,9 @@ describe('[NX-31-R17] the sign-in-first gate', () => {
       expect(r.mayBeginBook).toBe(false);
     }
   });
-  it('[NX-31-R17] a session and no book goes to the child step, a signed-in parent is never sent back to sign-in', () => {
+  it('[NX-31-R17] a session and no book, once the account has said it is new, goes to the child step (NX-36-S17: not before), a signed-in parent is never sent back to sign-in', () => {
     for (const online of [true, false]) for (const failed of [true, false]) {
-      const r = gate({ hasSession: true, online, signInFailed: failed });
+      const r = gate({ hasSession: true, online, signInFailed: failed, newPhone: 'new' });
       expect(r.step).toBe('childStep');
       expect(r.mayBeginBook).toBe(true);
       expect(r.localStartOffered).toBe(false);
@@ -149,7 +149,7 @@ describe('[NX-31-R17] the sign-in-first gate', () => {
           serverFeatures: false, ageAnswered: age, hasSession: session, hasLocalBook: book,
           online, signInFailed: failed, localStartFallback: constant, localStartChosen: chosen,
         });
-        expect(r).toEqual({ step: 'unchanged', outage: null, localStartOffered: false, retryOnReconnect: false, mayBeginBook: true, offerSignIn: false });
+        expect(r).toEqual({ step: 'unchanged', outage: null, localStartOffered: false, retryOnReconnect: false, mayBeginBook: true, offerSignIn: false, arrivedFromAccount: false });
       }
     // The adapter used by the route also does nothing with the switch off, whatever the auth state says.
     for (const status of ['restoring', 'signedOut'] as const) {
@@ -162,7 +162,12 @@ describe('[NX-31-R17] the sign-in-first gate', () => {
     expect(src).toMatch(/const showContinue = continueMayShow\(\{\s*begin: joining\.begin,\s*onWelcome: step === 'welcome',\s*authState,\s*localStartChosen,\s*hasLocalBook: \(\) => listChildren\(\)\.length > 0,\s*\}\);/);
     expect(src).toMatch(/if \(continueTapIsLocalStart\(\{ onWelcome: step === 'welcome', authState \}\)\) setLocalStartChosen\(true\);/);
     // No second copy of the composition, and the switch is not read in the screen.
-    expect(src).not.toMatch(/gateInputsFromAuth|beginTheBookAllowed|serverFeaturesEnabled/);
+    expect(src).not.toMatch(/gateInputsFromAuth|beginTheBookAllowed/);
+    // The other reads of the switch are the opening step (handoff.logic firstRunStartStep, #728) and the resumed step
+    // (draft.logic resumeStep, BL-1816: a relaunch never skips sign-in first), never the gate's composition.
+    const reads = src.match(/serverFeaturesEnabled\(\)/g) ?? [];
+    const opening = (src.match(/(?:firstRunStartStep|resumeStep)\(\{ (?:draft: saved, start, )?serverFeatures: serverFeaturesEnabled\(\)/g) ?? []).length;
+    expect(reads.length).toBe(opening);
   });
   it('[NX-31-R17] while the session is being read the book cannot begin (no flash of a child step)', () => {
     const inputs = gateInputsFromAuth({ serverFeatures: true, authState: { status: 'restoring' }, hasLocalBook: false });
@@ -175,7 +180,8 @@ describe('[NX-31-R17] the sign-in-first gate', () => {
       { status: 'ready', userId: 'u', sync: 'on' },
     ];
     for (const authState of signedInStates) {
-      expect(beginTheBookAllowed(gateInputsFromAuth({ serverFeatures: true, authState, hasLocalBook: false }))).toBe(true);
+      // NX-36-S17: once the account has said it is new. Before that the gate holds the opening screen (test/new-phone-route.test.ts).
+      expect(beginTheBookAllowed(gateInputsFromAuth({ serverFeatures: true, authState, hasLocalBook: false, newPhone: 'new' }))).toBe(true);
     }
   });
   it('[NX-31-R17] a failed sign-in in the auth state is the outage input; the local start then allows the book', () => {
@@ -193,6 +199,10 @@ const KINDS_AS_OUTAGE: Record<AuthErrorKind, boolean> = {
   cancelled: false, expired: false, wrong_code: false, code_paused: false, invalid_email: false, provider: false,
   session_expired: false, under_18: false, consent_unavailable: false, other_phone: false, other_phone_spent: false,
   already_signed_in: false,
+  // BL-452: Account's own failures and a passkey's timed-out challenge: inline, never the outage screen.
+  passkey_expired: false, passkey_not_added: false, passkey_unavailable: false, sign_out_others_failed: false,
+  // FP-6 (NS-40-R9): a refusal is its own screen, never the outage screen.
+  region_refused: false,
 };
 const AUTH_STATES: Record<AuthState['status'], { state: AuthState; session: boolean }> = {
   restoring: { state: { status: 'restoring' }, session: false },
@@ -245,8 +255,11 @@ describe('[NX-31-R17] which auth states count as a session (gateInputsFromAuth)'
   it('[NX-31-R17] signingOut is a session: a parent in the middle of signing out is not sent back to sign-in', () => {
     const inputs = fromAuth(AUTH_STATES.signingOut.state);
     expect(inputs.hasSession).toBe(true);
-    expect(firstRunGate(inputs).step).toBe('childStep');
-    expect(beginTheBookAllowed(inputs)).toBe(true);
+    // NX-36-S17: with no book the account is asked first (the opening screen), never sign-in; once it has said "new", the child step.
+    expect(['signIn', 'outage']).not.toContain(firstRunGate(inputs).step);
+    expect(firstRunGate(inputs).step).toBe('openingBook');
+    expect(firstRunGate({ ...inputs, newPhone: 'new' }).step).toBe('childStep');
+    expect(beginTheBookAllowed({ ...inputs, newPhone: 'new' })).toBe(true);
   });
   it('[NX-31-R17] a person with no session and no failure is held at sign-in, whichever waiting state it is', () => {
     for (const status of ['restoring', 'signedOut', 'signingIn', 'awaitingCode'] as const) {

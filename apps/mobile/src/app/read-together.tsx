@@ -17,8 +17,10 @@
  */
 import { router, useLocalSearchParams } from 'expo-router';
 import { CheckIcon } from 'phosphor-react-native/src/icons/Check';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { runOnJS } from 'react-native-reanimated';
 import { tokens } from '@scribe/design-tokens';
 import { AudioPlayer } from '@/components/player/audio-player';
 import { authorOf } from '@/components/child/child-store';
@@ -27,6 +29,7 @@ import { PageTurn, type PageDirection } from '@/components/motion/page-turn';
 import { Button } from '@/components/ui/button';
 import { Lamp, useUnlitRoom } from '@/components/ui/lamp';
 import { LineArt } from '@/components/ui/line-art';
+import { PinnedActionLayout } from '@/components/ui/pinned-action';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { ModalHeader } from '@/components/ui/screen-header';
 import { StateScreen } from '@/components/ui/state-screen';
@@ -36,11 +39,14 @@ import { copy, fill, pendingCopy } from '@/lib/copy';
 import { childIndexOf, trackReadTogetherEnded, trackReadTogetherStarted } from '@/lib/analytics/track';
 import { hasPlus } from '@/lib/billing';
 import { useReducedMotion } from '@/lib/motion';
+import { readTogetherOrder, type ReadTogetherPart } from '@/lib/play-placement.logic';
+import { READ_TOGETHER_HEADER_SWIPE, swipeLeaves } from '@/lib/reader-words.logic';
 import { AppNote } from '@/components/book/app-note';
 import { bookCopy } from '@/components/book/copy';
 import { letterWords } from '@/components/book/letter-words.logic';
 import { readableInBook, showsSignature } from '@/components/book/quiet-day.logic';
-import { turnControls } from '@/components/book/turn-controls.logic';
+import { lettersInYear, endOfYearLine, readTheYearOn } from '@/components/book/read-year.logic';
+import { buttonPlacement, pageButtonsClass, turnControls, type TurnButton } from '@/components/book/turn-controls.logic';
 import { getActiveChild, getChild, getSetting, listEntriesForChild, setSetting, type Child, type Entry } from '@/lib/store';
 
 /** "Keep playing" is remembered across sessions (S30). A setting on this phone, never synced. */
@@ -50,7 +56,7 @@ const END = 'end';
 
 export default function ReadTogether() {
   const rt = copy.readTogether;
-  const { childId } = useLocalSearchParams<{ childId?: string }>();
+  const { childId, year } = useLocalSearchParams<{ childId?: string; year?: string }>();
   const child = (childId ? getChild(childId) : null) ?? getActiveChild();
   const counted = useRef(false);
   const [index, setIndex] = useState(0);
@@ -59,10 +65,13 @@ export default function ReadTogether() {
   const [autoNext, setAutoNext] = useState(() => getSetting(KEEP_PLAYING) === '1');
   const [startNext, setStartNext] = useState(false);
   // At accessibility text sizes the two page buttons stack, full width, "Next letter" first (S4).
-  const turn = turnControls(useIsAccessibilitySize());
+  const accessibilitySize = useIsAccessibilitySize();
+  const turn = turnControls(accessibilitySize);
+  // From AX1 up the buttons are the end of the letter's scroll, not pinned (BL-1791).
+  const placement = buttonPlacement(accessibilitySize);
   useUnlitRoom();
 
-  const letters = useMemo(() => (child ? readableInBook(listEntriesForChild(child.id)).reverse() : []), [child?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  const letters = useMemo(() => (child ? (year && readTheYearOn(process.env.EXPO_PUBLIC_READ_THE_YEAR) ? lettersInYear(listEntriesForChild(child.id), child, year) : readableInBook(listEntriesForChild(child.id))).reverse() : []), [child?.id, year]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // One session per opening, counted once (analytics only; nothing limits sessions).
   const session = useRef<{ startedAt: number; furthest: number } | null>(null);
@@ -129,7 +138,11 @@ export default function ReadTogether() {
       {/* Night only (the scene resolves to nothing by day): one still dusk pool, low behind the controls. */}
       <Lamp scene="readTogether" arrive intensity={done ? 0.5 : 1} />
       <SafeAreaView className="flex-1">
-        <ModalHeader onClose={close} />
+        <SwipeDownToLeave onLeave={close}>
+          <View>
+            <ModalHeader onClose={close} />
+          </View>
+        </SwipeDownToLeave>
         <Progress fraction={done ? 1 : (index + 1) / letters.length} label={position} />
         <PageTurn
           pageKey={pageKey}
@@ -138,7 +151,7 @@ export default function ReadTogether() {
           canBack={index > 0}
           onSwipe={(d) => go(d === 'next' ? index + 1 : index - 1)}
           renderPage={(key) => {
-            if (key === END) return <EndOfBook onClose={close} onAgain={() => go(0)} />;
+            if (key === END) return <EndOfBook onClose={close} onAgain={() => go(0)} line={year && readTheYearOn(process.env.EXPO_PUBLIC_READ_THE_YEAR) ? endOfYearLine(year, child.name) : undefined} />;
             const i = letters.findIndex((e) => e.id === key);
             const entry = letters[i];
             if (!entry) return null;
@@ -151,35 +164,62 @@ export default function ReadTogether() {
                 onFinish={() => {
                   if (autoNext) go(i + 1, true);
                 }}
+                playFirst={accessibilitySize}
                 keepPlaying={autoNext}
                 onKeepPlaying={keepPlaying}
+                buttons={placement === 'inline' ? <PageButtons turn={turn} placement={placement} index={index} go={go} /> : null}
               />
             );
           }}
         />
 
-        {!done && (
-          <View className={turn.stacked ? 'gap-3 px-5 pb-2 pt-3' : 'flex-row gap-3 px-5 pb-2 pt-3'}>
-            {turn.order.map((which) =>
-              which === 'back' ? (
-                <Button
-                  key="back"
-                  variant="secondary"
-                  size="lg"
-                  className={turn.stacked ? 'px-4' : 'flex-1 px-4'}
-                  fullWidth={turn.stacked}
-                  disabled={index === 0}
-                  onPress={() => go(index - 1)}
-                  label={rt.previousButton}
-                  testID="readTogether.back"
-                />
-              ) : (
-                <Button key="next" size="lg" className={turn.stacked ? 'px-4' : 'flex-1 px-4'} fullWidth={turn.stacked} onPress={() => go(index + 1)} label={rt.nextButton} testID="readTogether.next" />
-              ),
-            )}
-          </View>
-        )}
+        {!done && placement === 'pinned' ? <PageButtons turn={turn} placement={placement} index={index} go={go} /> : null}
       </SafeAreaView>
+    </View>
+  );
+}
+
+/** A swipe down on the top bar leaves Read together when READ_TOGETHER_HEADER_SWIPE is on (off until a device check); Close stays the button for it (BL-1823). */
+function SwipeDownToLeave({ onLeave, children }: { onLeave: () => void; children: ReactNode }) {
+  // One path out: the first leave wins, so the gesture can never pop twice.
+  const left = useRef(false);
+  const leaveOnce = () => {
+    if (left.current) return;
+    left.current = true;
+    onLeave();
+  };
+  const swipe = Gesture.Pan()
+    .enabled(READ_TOGETHER_HEADER_SWIPE)
+    .activeOffsetY(16)
+    .failOffsetX([-16, 16])
+    .onEnd((e) => {
+      if (swipeLeaves(e.translationY, e.velocityY)) runOnJS(leaveOnce)();
+    });
+  return <GestureDetector gesture={swipe}>{children}</GestureDetector>;
+}
+
+/** "Back one" and "Next letter": pinned under the letter at the usual sizes, the end of the scroll from AX1 up (BL-1791). */
+function PageButtons({ turn, placement, index, go }: { turn: ReturnType<typeof turnControls>; placement: 'pinned' | 'inline'; index: number; go: (to: number) => void }) {
+  const rt = copy.readTogether;
+  return (
+    <View className={pageButtonsClass(turn.stacked, placement)}>
+      {turn.order.map((which: TurnButton) =>
+        which === 'back' ? (
+          <Button
+            key="back"
+            variant="secondary"
+            size="lg"
+            className={turn.stacked ? 'px-4' : 'flex-1 px-4'}
+            fullWidth={turn.stacked}
+            disabled={index === 0}
+            onPress={() => go(index - 1)}
+            label={rt.previousButton}
+            testID="readTogether.back"
+          />
+        ) : (
+          <Button key="next" size="lg" className={turn.stacked ? 'px-4' : 'flex-1 px-4'} fullWidth={turn.stacked} onPress={() => go(index + 1)} label={rt.nextButton} testID="readTogether.next" />
+        ),
+      )}
     </View>
   );
 }
@@ -200,16 +240,22 @@ function LetterPage({
   current,
   autoPlay,
   onFinish,
+  playFirst,
   keepPlaying,
   onKeepPlaying,
+  buttons,
 }: {
   entry: Entry;
   child: Child;
   current: boolean;
   autoPlay: boolean;
   onFinish: () => void;
+  /** From AX1 up Play and the Keep playing chip sit directly under the dateline (BL-1789). */
+  playFirst: boolean;
   keepPlaying: boolean;
   onKeepPlaying: (on: boolean) => void;
+  /** The page buttons, at the end of this scroll (AX1 and up); only on the page that is showing. */
+  buttons?: ReactNode;
 }) {
   const rt = copy.readTogether;
   const signsAs = authorOf(entry, child);
@@ -217,31 +263,44 @@ function LetterPage({
   const spoken = entry.captureMode !== 'typed';
   const scale = tokens.readingScale.largePrint;
   const words = letterWords(entry);
-  return (
-    <ScrollView className="flex-1" contentContainerClassName="gap-6 px-5 pb-8 pt-6">
+  const player = spoken ? (
+    <AudioPlayer entryId={entry.id} context="readTogether" autoPlay={autoPlay} onFinish={onFinish} />
+  ) : (
+    <Text variant="body" tone="muted">
+      {rt.noRecording}
+    </Text>
+  );
+  // The order is one pure table (play-placement.logic.ts): Play, then its chip, directly under the dateline from AX1 up.
+  const parts: Record<ReadTogetherPart, ReactNode> = {
+    dateline: (
       <Text variant="letterDateline" accessibilityLabel={dateline.spoken} testID={current ? 'readTogether.dateline' : undefined}>
         {dateline.text}
       </Text>
-      {words === 'nobodySpoke' ? (
+    ),
+    words:
+      words === 'nobodySpoke' ? (
         <AppNote scale={scale}>{bookCopy.nobodySpoke}</AppNote>
       ) : (
         <Text variant="letterBody" scale={scale} selectable>
           {entry.finalText}
         </Text>
-      )}
-      {showsSignature(words) ? (
-        <Text variant="signature" scale={scale} className="self-end">
-          {fill(copy.book.signature, { signsAs })}
-        </Text>
-      ) : null}
-      {spoken ? (
-        <AudioPlayer entryId={entry.id} context="readTogether" autoPlay={autoPlay} onFinish={onFinish} />
-      ) : (
-        <Text variant="body" tone="muted">
-          {rt.noRecording}
-        </Text>
-      )}
-      <KeepPlayingChip on={keepPlaying} onChange={onKeepPlaying} />
+      ),
+    signature: (
+      <Text variant="signature" scale={scale} className="self-end">
+        {fill(copy.book.signature, { signsAs })}
+      </Text>
+    ),
+    play: player,
+    noRecording: player,
+    keepPlaying: <KeepPlayingChip on={keepPlaying} onChange={onKeepPlaying} />,
+    pageButtons: current ? buttons : null,
+  };
+  const order = readTogetherOrder({ playFirst, spoken, signature: showsSignature(words) });
+  return (
+    <ScrollView className="flex-1" contentContainerClassName="gap-6 px-5 pb-8 pt-6">
+      {order.map((part) => (
+        <Fragment key={part}>{parts[part]}</Fragment>
+      ))}
     </ScrollView>
   );
 }
@@ -271,19 +330,30 @@ function KeepPlayingChip({ on, onChange }: { on: boolean; onChange: (on: boolean
 }
 
 /** The end of the book (S31): the moon draws on once above the line, then nothing moves. Buttons from the first frame. */
-function EndOfBook({ onClose, onAgain }: { onClose: () => void; onAgain: () => void }) {
-  const rt = copy.readTogether;
+function EndOfBook({ onClose, onAgain, line }: { onClose: () => void; onAgain: () => void; line?: string }) {
+  // A year ends on its own line (BL-947): the same heading, other words.
+  const rt = line ? { ...copy.readTogether, endOfBook: line } : copy.readTogether;
   const reduced = useReducedMotion();
   return (
-    <View className="flex-1 justify-center gap-8 px-5" accessibilityLiveRegion="polite" testID="readTogether.end">
-      <LineArt name="moon" width={140} animate={!reduced} style={{ alignSelf: 'center' }} />
-      <Text variant="title1" asHeading className="text-center">
-        {rt.endOfBook}
-      </Text>
-      <View className="gap-3">
-        <Button size="lg" onPress={onClose} label={rt.finishButton} />
-        <Button variant="secondary" size="lg" onPress={onAgain} label={rt.againButton} />
+    <PinnedActionLayout
+      center
+      insetBottom={false}
+      contentContainerClassName="gap-8 px-5"
+      action={
+        <View className="gap-3">
+          <Button size="lg" fullWidth onPress={onClose} label={rt.finishButton} />
+          <Button variant="secondary" size="lg" fullWidth onPress={onAgain} label={rt.againButton} />
+        </View>
+      }
+      testID="readTogether.end">
+      {/* The live region is the moon and the line, which is what changes. The buttons stay outside it: hearing their
+          labels read out again on every change is noise (BL-1519). */}
+      <View accessibilityLiveRegion="polite" className="gap-8" testID="readTogether.end.live">
+        <LineArt name="moon" width={140} animate={!reduced} style={{ alignSelf: 'center' }} />
+        <Text variant="title1" asHeading>
+          {rt.endOfBook}
+        </Text>
       </View>
-    </View>
+    </PinnedActionLayout>
   );
 }

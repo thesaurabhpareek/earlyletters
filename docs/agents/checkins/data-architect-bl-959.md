@@ -1,0 +1,1 @@
+05:50 (20 Nov) data-architect | done: BL-959 ADR 0028 amended [A4]: entry_media.entry_id, draft_id and letter_search_rows.entry_id L3 (rule 5), media id and row_id L2; status Accepted under CR-62; content tests green | next: push, open PR, journal | blocked/needs: none; #835 comment still L2 (#836 fixes it)

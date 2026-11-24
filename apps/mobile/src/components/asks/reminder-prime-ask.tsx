@@ -19,13 +19,16 @@ import { renderTemplate } from '@scribe/core';
 import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
 import { Linking, Modal, Platform, Pressable, View } from 'react-native';
+import Animated, { FadeIn, FadeOut, ReduceMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { useToast } from '@/components/ui/toast';
 import { useTheme } from '@/lib/a11y';
 import { track } from '@/lib/analytics/track';
-import { noteReminderPrimeShown, subscribeReminderPrime, takeReminderPrimeRequest } from '@/lib/asks';
+import { sheetEntering, sheetLeaving, useSheetMotion } from '@/lib/motion';
+import { tokens } from '@scribe/design-tokens';
+import { noteReminderPrimeShown, noteReminderPrimeYes, subscribeReminderPrime, takeReminderPrimeRequest } from '@/lib/asks';
 import { childLabel, copy } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
 import { getActiveChild } from '@/lib/store';
@@ -43,8 +46,7 @@ export function ReminderPrimeAsk() {
   useEffect(() => {
     const take = () => {
       if (!takeReminderPrimeRequest()) return;
-      noteReminderPrimeShown();
-      track('reminder_prime_shown', { source: 'first_letter' });
+      track('reminder_prime_shown', { source: noteReminderPrimeShown() });
       setOpen(true);
     };
     take();
@@ -57,6 +59,7 @@ function ReminderPrimeCard({ onClose }: { onClose: () => void }) {
   const c = useTheme().c;
   const insets = useSafeAreaInsets();
   const toast = useToast();
+  const sheet = useSheetMotion();
   const r = copy.onboarding.reminder;
   const [picking, setPicking] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -67,6 +70,7 @@ function ReminderPrimeCard({ onClose }: { onClose: () => void }) {
   const yes = (chosen?: ReminderTime) => {
     haptic('tap');
     if (chosen) writePrefs({ time: chosen });
+    noteReminderPrimeYes();
     track('reminder_prime_result', { choice: 'yes' });
     onClose();
     // The choice is saved either way; then one line says what came of it (reminders-settings.md 3).
@@ -94,9 +98,22 @@ function ReminderPrimeCard({ onClose }: { onClose: () => void }) {
 
   return (
     // onRequestClose is required on Android; the card leaves only through one of its answers.
-    <Modal visible transparent animationType="slide" onRequestClose={() => {}} accessibilityViewIsModal>
-      <View className="flex-1 bg-black/30" importantForAccessibility="no-hide-descendants" accessibilityElementsHidden />
-      <View className="gap-5 rounded-t-[28px] bg-card px-6 pt-8" style={{ paddingBottom: insets.bottom + 20 }} testID="reminder-prime">
+    // The sheet motion rule (EXPERIENCE_PASS 5.8 rule 6): the card rises on the standard spring, and under Reduce Motion
+    // it and its scrim fade over fadeMs with no travel. The Modal itself has no native animation (it would slide).
+    <Modal visible transparent animationType="none" onRequestClose={() => {}} accessibilityViewIsModal>
+      <Animated.View
+        entering={FadeIn.duration(tokens.motion.fadeMs).reduceMotion(ReduceMotion.Never)}
+        exiting={FadeOut.duration(tokens.motion.fadeMs).reduceMotion(ReduceMotion.Never)}
+        className="flex-1 bg-black/30"
+        importantForAccessibility="no-hide-descendants"
+        accessibilityElementsHidden
+      />
+      <Animated.View
+        entering={sheetEntering(sheet)}
+        exiting={sheetLeaving(sheet)}
+        className="gap-5 rounded-t-[28px] bg-card px-6 pt-8"
+        style={{ paddingBottom: insets.bottom + 20 }}
+        testID="reminder-prime">
         <View className="h-14 w-14 items-center justify-center rounded-full bg-secondary" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
           <BellSimpleIcon size={28} color={c.accent} weight="regular" />
         </View>
@@ -144,7 +161,7 @@ function ReminderPrimeCard({ onClose }: { onClose: () => void }) {
           </View>
         )}
         <Button size="lg" variant="quiet" label={r.noneOption} onPress={none} />
-      </View>
+      </Animated.View>
     </Modal>
   );
 }

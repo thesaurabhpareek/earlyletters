@@ -139,7 +139,7 @@ describe('[P2 S3] the name is typed in the book\'s title face', () => {
   it('first run: every name row (the first and the extra ones) sets what is typed in the serif', () => {
     const first = code('app/onboarding.tsx');
     const names = first.slice(first.indexOf('{names.map((n, i) => ('), first.indexOf('{names.length < MAX_FIRST_RUN_CHILDREN &&'));
-    expect(names).toMatch(/<TextField[\s\S]*label=\{i === 0 \? o\.child\.nameLabel : o\.child\.nameLabelMore\}\s*face="serif"/);
+    expect(names).toMatch(/<TextField[\s\S]*label=\{i === 0 \? nameWords\(i, n\)\.label : o\.child\.nameLabelMore\}\s*face="serif"/);
     // The signature field is not the book's title: it stays in the app's face.
     const signs = first.slice(first.indexOf('ref={signsAsField}'));
     expect(signs.slice(0, signs.indexOf('/>'))).not.toMatch(/face=/);

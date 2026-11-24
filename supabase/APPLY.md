@@ -32,6 +32,7 @@ Nothing here has been run against the live project yet. Do the steps in order; e
 | 26 | `20261028000000_pg_temp_last_and_purged_photos.sql` | **Pending** | `pg_temp` last on the `escrow_svc` role default; a purged letter's photo cannot be uploaded again (section "File 26") |
 | 27 | `20261028010000_invite_redeem_by_code.sql` | **Pending** | The call `invite-redeem` makes for a typed code: gate, lookup and failure count in one transaction (section "File 27") |
 | 32 | `20261109000000_child_name_optional.sql` | **Not applied; needs approve-migration; must be applied before any servers-on build containing #701** | A book's name may be empty on the server, the date stays required (section "File 32") |
+| 39 | `20261121030000_compliance_gates.sql` | **Not applied; founder applies it from a CI tag run (D-041); the hook stays off until the CCO conditions in section "File 39" hold** | Sign-up refusal for the D-131 places, daily compliance counts, the regulatory watch table and the geo loader tables (section "File 39") |
 
 The unapplied draft `20261003041500_sync_cursor_pull.sql` was deleted on 3 Oct 2026: file 9 replaces it (its `sync_books()` moved into file 9). If your SQL editor history shows it was ever run somewhere, tell the coordinator before applying file 9.
 
@@ -441,7 +442,7 @@ Rollback: prefer fixing forward. File 9 adds tables and functions only (plus two
   Rollback: `select cron.unschedule('scribe-sync-housekeeping');`
 - **Restore epoch.** After any database restore, before clients reconnect and after the purge-ledger replay, run `select public.sync_begin_epoch('database_restore', '<restore point ISO>');` with the service role (docs/ops/runbooks/restore-drill.md step 4). Phones then re-upload what the restore lost; they never delete anything because of it. The old `app.sync_epoch` database setting from the deleted draft is not read by anything.
 - **Purge worker** (file 10): deploy and schedule as in docs/ops/README.md ("Deploy", steps 4 and 5; `supabase/cron/purge-worker.sql`). Keep the hourly `scribe-purge-due` job from step 7 as a backstop.
-- **Insights reader** (file 11): the file creates the `insights_reader` role (no login) and grants it to `authenticator` when that role exists. Nothing else to set; the weekly insights run reads with the service role (docs/analytics/INSIGHTS_LOOP.md).
+- **Insights reader** (file 11): the file creates the `insights_reader` role (no login) and grants it to `authenticator` when that role exists (removed again by file 34). Nothing else to set. After file 34 no hosted service key is used for the weekly insights run, and no hosted credential exists for it until `reporting_reader` (IN-DA-03); see docs/analytics/INSIGHTS_LOOP.md.
 - `app.store_environment` (step 11) is no longer read by anything after file 8.
 
 ## Step 16. App changes for files 8 to 11
@@ -1229,3 +1230,125 @@ What it changes:
 What it changes: `children_name_check` becomes `char_length(name) <= 60` (was 1 to 60), and `create_child_row` stores a blank or missing name as `''` (over 60 is still refused; a birthday or due date is still required). `book_update` now trims a name on edit and stores `''` for spaces only or null, like create. No row changes, no new object, no grant change.
 
 **Apply** after file 31 (the audit append-only file). **Check:** `select conname, pg_get_constraintdef(oid) from pg_constraint where conrelid = 'public.children'::regclass and contype = 'c';` must list `children_name_check` as `CHECK ((char_length(name) <= 60))` and no other check on name (if an older name check is listed under another name, drop it by that name). **Rollback:** only while no book has an empty name: restore the 1 to 60 check, re-create `book_update` from `20261015000000`, and re-create `create_child_row` from `20261004000000` with `set search_path = pg_catalog, public, pg_temp`, then re-run its `revoke all ... from public, anon, authenticated, service_role`.
+
+## File 33: the server refuses a picture (S1, BL-870, CR-71 C4)
+
+`20261110000000_photo_bucket_closed.sql`. Not applied; needs the founder's `approve-migration` label and a CI tag run (D-041). Apply before any build with `EXPO_PUBLIC_PHOTOS` on outside the founder's family (server before flag).
+
+What it changes: drops the insert and update policies on `storage.objects` for `entry-photos` (the read and delete policies stay), and adds `entries_15_photo_closed`, a trigger that raises `SCPHO` when a letter would get a `photo_path` it did not have. An unchanged or cleared legacy path still passes. No column, no new grant (the trigger function is executable by no API role).
+
+**Before the tag (founder, Q8):** `select count(*) from entries where photo_path is not null;` Expected 0. If it is not 0, stop and tell the data architect: those rows stay readable and deletable, but should be reviewed.
+
+**Apply** after file 32. **Check:** `select polname from pg_policy where polname like 'entry_photos_%';` lists `entry_photos_author_delete` and `entry_photos_read` only; `select tgname from pg_trigger where tgname = 'entries_15_photo_closed';` returns one row. **Rollback:** forward-fix only; see the file header.
+
+## File 34: the Data API login role can no longer become insights_reader (S9, CR-71 C9)
+
+`20261111000000_insights_reader_not_via_api.sql`. Not applied; needs the founder's `approve-migration` label and a CI tag run (D-041). Apply after file 33. Supersedes the "grants it to `authenticator`" line under file 11.
+
+What it changes: `revoke insights_reader from authenticator`. Nothing else: the role, its grants and the views stay; `service_role` still reads the views (it is not used for the weekly run). No column, no new grant.
+
+**Before the tag (founder):** an insights_reader JWT stops working through the Data API. The weekly insights run uses the planned `reporting_reader` login role (IN-DA-03); until it exists, run it locally and keep the hosted service key out of CI (no workflow uses a hosted service key). Do not swap in the service key as the token. **Check:** `select count(*) from pg_auth_members m join pg_roles r on r.oid = m.roleid join pg_roles g on g.oid = m.member where r.rolname = 'insights_reader' and g.rolname = 'authenticator';` returns 0. **Rollback:** forward-fix only; `grant insights_reader to authenticator;`.
+
+## File 35: the missing audit writers and the security_events store (S6, S7, CR-71 C3)
+
+`20261111010000_audit_writers_security_events.sql`. Not applied; needs the founder's `approve-migration` label and a CI tag run (D-041). Apply after file 34. Refuses a second run (55000).
+
+What it changes: a trigger on `legal_holds` writes `legal_hold_placed` and `legal_hold_released`; `ops_support_access()` (service role) writes `ops.audit_log` then `support_access`; `record_export_created()` (signed-in, own row, 5 a day) writes `export_created`; new table `ops.security_events` (no API access, append-only, 12 months) with a writer, a reader `ops_security_events_check()` and `ops_security_events_retention()`. No existing column or grant changes.
+
+**Check:** `select tgname from pg_trigger where tgname = 'legal_holds_audit';` returns one row; `select count(*) from ops.security_events;` returns 0. **Rollback:** forward-fix only; see the file header.
+
+## File 36: the new-device sign-in email, database half (NS-08-R21, E83, data-architect)
+
+`20261121000000_new_device_sign_in.sql`. Not applied; needs the founder's `approve-migration` label and a CI tag run (D-041). Apply after file 35. Refuses a second run (55000).
+
+What it changes: three service-only tables in schema `ops` (`account_sessions_seen`, `new_device_pending`, `new_device_tokens`), the access token hook function `hook_new_device_sign_in` (fail open), `ops_end_session`, `ops_new_device_sign_out`, `ops_new_device_retention`, and two new `ops.security_events` kinds. No existing column or grant changes. Nothing sends yet: the sender is a later PR.
+
+**Founder steps (not done by this file):** after applying, switch the Custom Access Token hook on in the dashboard, pointing at `public.hook_new_device_sign_in`; run H1 of `docs/engineering/readiness-20nov/data-security/09-new-device-email-security-answers.md` (`select has_table_privilege('postgres', 'auth.sessions', 'DELETE');` must be true, or the session lever does not exist on hosted). `ops` schedules `select public.ops_new_device_retention();` daily.
+
+**Check:** `select count(*) from ops.account_sessions_seen;` returns 0; `select has_function_privilege('supabase_auth_admin', 'public.hook_new_device_sign_in(jsonb)', 'execute');` is true and the same for `anon` and `authenticated` is false. **Rollback:** switch the hook off first; forward-fix only; see the file header.
+
+**Also prove on the hosted project [U] (file 09 section 3.3), after H1:** A3, refresh with the ended session's refresh token and record the exact error name (it must be refused); A4, count that session's refresh-token rows (must be zero, which proves the cascade; if not zero, file 09 section 3.4 applies). The press ends the session, not the access token already issued: that one lives out its 15 minutes (`jwt_expiry = 900`), so "signed out" means the next refresh fails, not that the current token stops at once. None of this is proved by the test suite.
+
+## File 37: the new-device sender's functions (NS-08-R21, E83, data-architect)
+
+`20261121010000_new_device_sender_functions.sql`. Not applied; the founder applies it from a CI tag run (D-041). Apply after file 36. Adds three service-only definer functions (`ops_new_device_record`, `ops_new_device_pending_take`, `ops_new_device_token_mint`); no table, column or existing grant changes. **Check:** `select has_function_privilege('service_role', 'public.ops_new_device_token_mint(uuid,uuid,bytea,interval)', 'execute');` is true, and false for `anon` and `authenticated`. **Rollback:** drop the three functions.
+
+
+## File 38: the new-device fill and re-key functions (NDS-2, NDS-5 of PR #1206, data-architect)
+
+`20261121020000_new_device_fill_rekey.sql`. Not applied; the founder applies it from a CI tag run (D-041). Apply after file 37. Adds two service-only definer functions: `ops_new_device_pending_fill` (sets class and device hash on one pending row, once, for the named profile and session) and `ops_new_device_rekey` (DEVICE_HASH_KEY overlap rotation: `current`, `rekeyed` or `unknown`, never inserts). No table, column or existing grant changes. Nothing calls them yet: the app's fill call (a JWT-verified Edge Function) and the sender's use of the re-key are separate PRs. Do not turn `NEW_DEVICE_EMAIL` on before the fill call exists (NDS-2).
+
+**Check [U] (hosted, founder):** `select has_function_privilege('service_role', 'public.ops_new_device_pending_fill(uuid,uuid,text,bytea)', 'execute');` and the same for `public.ops_new_device_rekey(uuid,bytea,bytea)` are true, and false for `anon` and `authenticated` [U]; `select proname from pg_proc where proname in ('ops_new_device_pending_fill','ops_new_device_rekey') and prosecdef;` returns two rows [U]. **Rollback:** drop the two functions.
+
+## File 39: compliance gates at sign-up, counts and the regulatory watch (re-cut of #424; CR-26 is the account-checks ruling written for #424)
+
+`20261121030000_compliance_gates.sql`. The 9 Nov go/no-go has passed. The file only lands on develop and the hook stays OFF; apply it, and meet the conditions below, before any server-feature release (sign-in, D-100, staged by D-121) reaches people outside the family. Apply after File 38 (`20261121020000`). Idempotent; adds tables in `ops` and functions; changes no existing row or function.
+
+- **What it adds.** `ops.restricted_jurisdictions` (seeded per D-131: KP, IR, CU, SY, RU, BY and four Ukrainian regions), `ops.geo_ip_ranges` and `ops.geo_ip_meta` (empty until loaded), `ops.compliance_check_counts` (daily counts, no person id, no IP), `ops.regulatory_watch`; the auth hook `public.hook_before_user_created(jsonb)`; five service-only `ops_*` functions.
+- **Fails open.** With no geo data the hook allows every sign-up and counts `geo_unknown`, so applying the file changes nothing a user sees until geo data is loaded and the hook is turned on.
+
+**Before the hook is turned on (CCO conditions, CR-27 review):**
+- An ops alert on the `geo_stale`, `geo_unknown` and `error` counts exists (not built yet).
+- Step 4 below is verified on a local stack, so we know whether `block` counts survive a refused sign-up.
+- Privacy Policy 3.0.0 (`docs/legal/privacy-policy.md`, sections 2, 5 and 12) already discloses that the sign-up IP is used to work out a country and is not kept for it; the part about it takes effect when the check ships. Before the hook is on: the founder has approved 3.0.0 and its effective date is set (it reads TBD), and the policy's "we do not keep the IP address" wording is checked against the unverified Supabase Auth audit log point below (`legal`).
+- DATA_CLASSIFICATION rows exist for the five new tables, and the retention schedule lists two years for the counts (`legal` and `compliance-engineer`).
+- The refusal screen links to https://db-ip.com (DB-IP's CC BY 4.0 attribution).
+- BL-553: the app handles the 403 refusal (mobile, with copy from content; CCO review).
+- BL-554: the regulatory watch is scheduled (regulatory-affairs with ops).
+- BL-555: legal paperwork is done (DATA_CLASSIFICATION rows for the five new tables, register CR-121, claims rows, the two-year retention entry). The two DATA_CLASSIFICATION and retention items above are part of this.
+- Counsel's answer to COUNSEL_PACKET Q57. D-131 (31 Oct 2026) already set the blocked default for IR and CU, with no name screening (D-137); until counsel confirms it is a delegated default. Any change to it stays a founder decision in `docs/DECISIONS.md`.
+- BL-552 (suspend sign-in for one account) is built before any sign-in outside the family.
+
+**What it does not cover:** at sign-up Crimea, Donetsk and Luhansk are covered only by the Terms 2.4 confirmation, because country-level data cannot single them out. "No IP stored" is true of our tables only. Supabase Auth's own audit log probably records the sign-up IP (unverified, 31 Oct 2026); check its retention before making any claim.
+
+**After applying (founder, in this order):**
+1. Load geo data: `node compliance/scripts/load-geo-ip.mjs --csv dbip-country-lite-YYYY-MM.csv.gz --version YYYY-MM --dry-run`, then again with `SUPABASE_DB_URL` and without `--dry-run`.
+2. Turn the hook on: Dashboard > Authentication > Hooks > "Before User Created" > Postgres > `public.hook_before_user_created`.
+3. Check one sign-up from a normal network still works, then `select public.ops_compliance_report(current_date, current_date);` shows one `pass`.
+4. Before relying on block counts: on a local stack (`supabase start`), refuse one sign-up through the hook and check the `block` row survived. If GoTrue's rollback removed it, block counts are not recorded at the hook and the report says only passes and fail-opens.
+
+**Check after applying** (expect 10, then `false`, then `true`):
+```sql
+select count(*) from ops.restricted_jurisdictions;
+select has_function_privilege('authenticated', 'public.hook_before_user_created(jsonb)', 'execute');
+select has_function_privilege('supabase_auth_admin', 'public.hook_before_user_created(jsonb)', 'execute');
+```
+
+**Rollback.** Turn the hook off in the Dashboard first (a dropped hook function with the hook on breaks every sign-up). Then run the drop statements in the file header.
+
+
+## File 40: value-free validation triggers on the content tables (BL-244, API-R10, TDD 06 C-2, data-architect)
+
+`20261121040000_value_free_validation_triggers.sql`. Not applied; the founder applies it from a CI tag run (D-041). Apply after File 39 (#1448, 20261121030000), which sorts before it. Adds four BEFORE INSERT OR UPDATE row triggers (`entries_validate_limits`, `held_drafts_validate_limits`, `children_validate_limits`, `dictionary_terms_validate_limits`) that test the same length and size limits as the existing CHECKs and raise 23514 with a fixed message (table and rule, no value, no DETAIL), so the CHECK never gets to echo the row. No table, column, CHECK or table grant changes; the four trigger functions are executable by no API role. **Check [U] (hosted, founder):** `select count(*) from pg_trigger where tgname like '%\_validate\_limits' and not tgisinternal;` is 4. **Rollback:** drop the four triggers and four functions.
+
+## File 41: value-free NOT NULL and shape errors on children (BL-1499, BL-244b, API-R10, data-architect)
+
+`20261122000000_value_free_children_shape.sql`. Not applied; the founder applies it from a CI tag run (D-041). Apply after File 40 (20261121040000). Postgres prints the whole row of a failed NOT NULL or CHECK only to the table owner, so the echo is reachable only from SECURITY DEFINER code; on children that is `book_update` (a null `date_of_birth` with no due date, a null `family_can_read`) and `ops_set_child_photo_path` (a path outside the book). Adds one BEFORE INSERT OR UPDATE row trigger, `children_validate_shape`, that raises the same SQLSTATE and constraint name with a fixed message (table and rule, no value). The other paths (entries and held_drafts under RLS, foreign keys, `book_look`, dictionary_terms) are shown unreachable by tests; the file header lists them. No table, column, CHECK or grant changes; the function is executable by no API role. **Check [U] (hosted, founder):** `select count(*) from pg_trigger where tgname = 'children_validate_shape' and not tgisinternal;` is 1. **Rollback:** drop the trigger and the function.
+
+## File 42: value-free date and boolean parse errors (BL-1537, BL-244c, API-R10, data-architect)
+
+`20261122100000_value_free_cast_errors.sql`. Not applied; the founder applies it from a CI tag run (D-041). Apply after File 41 (20261122000000). A date or boolean that does not parse printed the client's own text ("invalid input syntax for type date: ...") in the message and the server log of `book_update` and `create_first_run_children` when called directly (SQLSTATE 22007 or 22P02). Adds `sync_private.safe_date(text)` and `sync_private.safe_bool(text)` (SECURITY INVOKER, stable, search_path pinned, executable by `authenticated` only, because sync_push runs as the caller) that parse inside an exception block for class 22 and re-raise with the same SQLSTATE and a fixed message, and re-creates the two functions to use them. No SQLSTATE the client maps changes. `sync_push` itself answered the code only (its per-op handler) and is unchanged; its `book.update` and `book.first_run` ops are fixed through the two functions. No table, column, CHECK or table grant changes. **Check [U] (hosted, founder):** `select count(*) from pg_proc where pronamespace = 'sync_private'::regnamespace and proname in ('safe_date', 'safe_bool');` is 2. **Rollback:** re-create the two functions from 20261109000000 and 20261015000000, then drop the helpers.
+
+## File 43: first-letter increments through k (BL-326, review L12, analytics engineer)
+
+`20261122200000_insights_first_letter_increments.sql`. Not applied; the founder applies it from a CI tag run (D-041). Apply after File 42 (20261122100000). Replaces the view `insights.first_letter_conversion` (same name, same grants; two columns appended, `first_letter_d2_7` and `first_letter_d8_30`): `first_letter_d7` and `first_letter_d30` are now withheld when they differ from an earlier published count by 1 to 9, so nested counts cannot be subtracted to reveal a small group. No new object and no new grant. Counts of accounts only.
+
+**Rollback (founder-run, after the backup and confirmation step used for the other files in this document).** `create or replace view` cannot drop the two appended columns, so: (1) `drop view insights.first_letter_conversion;` (nothing in the database depends on it: `public.insights_aggregates` is a SQL function that reads it by name at call time); (2) re-create the previous definition by running section 3 of `20261004300000_insights_aggregates.sql` exactly (the statement from `create or replace view insights.first_letter_conversion` to `group by a.cohort_week;`, lines 127 to 143); (3) re-grant as that file does: `grant select on insights.first_letter_conversion to service_role, insights_reader;` (no other grant changes, and `supabase/tests/grants.mjs` lists no insights view); (4) re-run the seven `comment on column insights.first_letter_conversion.*` statements of that file (lines 298 to 304). Until step 2 runs, `insights_aggregates()` fails, so run steps 1 to 4 in one transaction.
+
+**Known residual (not closed by this file).** Successive daily snapshots of an unmatured cohort can still reveal a change of 1 to 9 between two days, because each snapshot is safe on its own. And a null `first_letter_d7` beside a published `first_letter_d1` tells a reader that the gap between them is 1 to 9. Both leak only a count of accounts, never an identity; a fix would need snapshot-level suppression and is not part of BL-326.
+
+## File 44: a retry after success answers the success (BL-525, data-architect)
+
+`20261122300000_invite_redeem_retry_after_success.sql`. Not applied; the founder applies it from a CI tag run (D-041). Apply after File 43 (20261122200000). `invite_redeem_by_code` ran its failure gate before anything else, so a person who had already joined by a code, and retried after a lost answer while a limit (person, device, address or service) was reached, was told `limited`. In accept mode, before the gate, a person who already joined by this code and is still a member now gets the same `accepted` answer again, with nothing written and nothing counted. Same signature, same grants (service role only); no table, column or new grant. Peek and every other outcome are unchanged. **Check [U] (hosted, founder):** `select pg_get_functiondef('public.invite_redeem_by_code(uuid,text,bytea,text[],text[],text[])'::regprocedure) like '%BL-525%';` is true. **Rollback:** re-create the function from section 2 of `20261028010000_invite_redeem_by_code.sql`.
+
+## File 45: the retry shortcut keeps the live-book check and the current role (BL-1844, data-architect)
+
+`20261123000000_invite_redeem_retry_live_role.sql`. Not applied; the founder applies it from a CI tag run (D-041). Apply after File 44 (20261122300000). In `invite_redeem_by_code`, the retry-after-success answer now (1) requires the book to be live (a deleted book is no longer answered as success; at a limit the caller is told `limited`, below one it is `unusable` and counted), (2) returns the member's current role from `child_members`, not the invite's role, and (3) applies the same two rules when the inner accept answers by its own idempotent retry. The advisory locks stay before the shortcut, on purpose (reason in the migration). Same signature, same grants (service role only); no table, column or new grant. **Check [U] (hosted, founder):** `select pg_get_functiondef('public.invite_redeem_by_code(uuid,text,bytea,text[],text[],text[])'::regprocedure) like '%BL-1844%';` is true. **Rollback:** re-create the function from `20261122300000_invite_redeem_retry_after_success.sql` in a new migration, never by editing an applied one.
+
+## File 46: sync_pull serves no content rows without current consent (FR-PRV-20, T7-22, data-architect)
+
+`20261123100000_sync_pull_consent_gate.sql`. Not applied; the founder applies it from a CI tag run (D-041). Apply after File 45 (20261123000000). `sync_pull` checked only the session and the rate limit, so a parent who withdrew sensitive-data (`my_sync_gate().content_allowed` false) still pulled every letter and the child's name. After the epoch and cursor checks it now answers, when terms are not current, the age attestation is missing or sensitive-data is not given, an empty page: no books (so no child profile fields, members or letters, the caller's own and other members' alike), no left-book letters, an empty held section with the held cursor echoed, `more` false, and an additive `withheld: 'consent'` key. It is a normal answer, not an error and not a reset, so a phone keeps its local copy and starts no restore. Same signature, same grants (authenticated only); no table, column or new object. `sync_books` gets the same gate (Karma ruling): while it is closed it answers `first_run_open`, `epoch`, `withheld: 'consent'` and per book only `id`, `role`, `name` and `members` (`role`, `is_me`, `signs_as`), which is what the claim and new-phone steps and the account-deletion "What happens" lines read; nickname, date of birth, birthday month and day, due date, `family_can_read`, `created_by_me`, `joined_at`, `auto_add`, `my_signs_as`, invites and each member's `profile_id` are not sent. Export and `request_account_deletion` are untouched (T7-23). **Check [U] (hosted, founder):** `select pg_get_functiondef('public.sync_pull(jsonb,int)'::regprocedure) like '%FR-PRV-20%' and pg_get_functiondef('public.sync_books()'::regprocedure) like '%FR-PRV-20%';` is true. **Rollback:** re-create `sync_pull` from section 10 of `20261016000000_sync_v1_server.sql` and `sync_books` from section 5 of `20261015000000_v1_gate_membership_sync_hardening.sql`.
+
+## File 47: the entry length checks, 960 and 480 code points (BL-1572, data-architect)
+
+`20261123210000_entry_length_checks_960_480.sql` (renamed from 20261123200000, which `20261123200000_book_entries_no_engine_version.sql` also holds; two files with one version would collide on the schema_migrations key; BL-1983). Not applied; the founder applies it from a CI tag run (D-041). Apply after `20261123200000_book_entries_no_engine_version.sql` and after File 46 (20261123100000). The phone counts a typed name or signature in graphemes (up to 16 code points each); the server counted code points, so a 30-character Devanagari name was refused. Raises `children.name` from 60 to 960 and `profiles.signs_as`, `child_member_prefs.signs_as`, `child_invites.signs_as` and `entries.author_signs_as` from 30 to 480, in the five places that held the old number: the CHECK constraints (same names), `children_validate_limits` and `entries_validate_limits` (BL-244 triggers, same fixed messages, same SQLSTATE 23514) and `create_child_row` (22023, now "at most 960 characters"). `children.nickname` stays at 30. The new limits are looser, so no stored row can fail them. No new object, column or grant. The app does not change until this is applied. **Check [U] (hosted, founder):** `select count(*) from pg_constraint where (conname = 'children_name_check' and pg_get_constraintdef(oid) like '%<= 960))') or (conname in ('profiles_signs_as_check','child_member_prefs_signs_as_check','child_invites_signs_as_check','entries_author_signs_as_check') and pg_get_constraintdef(oid) like '%<= 480))');` is 5 (Postgres prints a check as `CHECK ((char_length(name) <= 960))`, two closing parentheses; each name is pinned to its own limit, so a swapped limit counts less than 5). **Rollback:** forward-fix only, by a new migration that restores the old numbers in the same five places, and only if no row is over the old limits (name 60, signs_as 30). A `NOT VALID` check does not exempt old rows: it and the old triggers still test a row on every update, so any row over the old limit would refuse every update of that row, unrelated columns included. If any row is over, do not restore; keep the new limits (the default, they are looser) or fix those rows first. The data architect decides; words are never cut.

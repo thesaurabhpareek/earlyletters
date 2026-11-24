@@ -11,9 +11,10 @@
 //    regexes in Maestro; a regex id must match at least one requested id).
 // Uses the `yaml` package already in the root node_modules (a transitive
 // dependency; if it disappears, add it as a devDependency of @scribe/mobile).
-import { readFileSync, readdirSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { blockedIds } from './blocked-ids.mjs';
 
 let YAML;
 try {
@@ -88,8 +89,8 @@ function lintFile(path, { isFlow }) {
     const tags = config.tags ?? [];
     const e2eId = /E2E-(\d\d)/.exec(rel)?.[0];
     if (!e2eId || !tags.includes(e2eId)) problems.push(`${rel}: tags must include ${e2eId ?? 'its E2E id'}`);
-    // PRD V2 requirement ids (F##-REQ-###) count as well as the legacy ones.
-    if (!tags.some((t) => /^(PRD|A|B|C|LEGAL|DATA|F\d\d)-(REQ|NFR)-\d+$|^D-\d+$|^K-\d+$/.test(t)))
+    // PRD V2 requirement ids (F##-REQ-###) count as well as the legacy ones, and the roadmap rows (NX-40-R7, NS-39-R5).
+    if (!tags.some((t) => /^(PRD|A|B|C|LEGAL|DATA|F\d\d)-(REQ|NFR)-\d+$|^D-\d+$|^K-\d+$|^N[XS]-\d+-R\d+$/.test(t)))
       problems.push(`${rel}: tags name no requirement or decision id`);
     if (tags.includes(P0_TAG) && !P0_FLOWS.includes(e2eId))
       problems.push(`${rel}: tagged ${P0_TAG} but ${e2eId} is not one of the P0 nightly flows (${P0_FLOWS.join(', ')})`);
@@ -119,15 +120,18 @@ for (const id of P0_FLOWS) {
   else if (!p0Seen.has(id)) problems.push(`${id} has no flow tagged ${P0_TAG}`);
 }
 
-// Report only: which ids the flows use that the app does not set yet (template
-// ids such as `language.row.${code}` match any value). Never fails the lint:
-// the request list leads the app. Run with --app to print the list.
-if (process.argv.includes('--app')) {
+// Which ids the flows use that the app does not set (template ids such as
+// `language.row.${code}` match any value). The request list leads the app, so
+// ids still waiting for their screen are listed in not-in-app.txt; that list
+// only shrinks (BL-1965): a flow naming an id that no source sets and that is
+// not on it fails the lint, and so does a listed id the app now sets. Run with
+// --app to print the full list.
+{
   const SRC = resolve(E2E, '../src');
   const files = [];
   const walkDir = (d) => {
     for (const e of readdirSync(d, { withFileTypes: true })) {
-      if (e.isDirectory()) walkDir(join(d, e.name));
+      if (statSync(join(d, e.name)).isDirectory()) walkDir(join(d, e.name)); // follows links, so a copy of src/ can be a folder of links
       else if (/\.tsx?$/.test(e.name) && !/\.test\.tsx?$/.test(e.name)) files.push(join(d, e.name));
     }
   };
@@ -136,9 +140,9 @@ if (process.argv.includes('--app')) {
   for (const f of files) {
     const text = readFileSync(f, 'utf8');
     for (const m of text.matchAll(/(?:testID|closeTestID|optionTestID|tabBarButtonTestID)\s*[=:]\s*\{?\s*(?:[^'"`{}]*\?\s*)?['"`]([a-z][A-Za-z0-9.${}<>_-]+)['"`]/g)) appIds.push(m[1]);
-    for (const m of text.matchAll(/['"`]((?:[a-z][A-Za-z0-9]*)(?:\.[A-Za-z0-9${}_-]+)+)['"`]/g)) if (/^(gate|tab|onboarding|tonight|listen|review|write|signIn|signInEmail|signInCode|signInVerify|consent|consentSheet|accountConfirm|book|switcher|whoseBook|letter|readTogether|plusGate|plusConfirmed|addChild|family|invite|inviteNew|settings|account|plan|language|languagePicker|storage|privacy|export|deleteAccount|reminders|player)\./.test(m[1])) appIds.push(m[1]);
   }
   const appRes = [...new Set(appIds)].map((t) => new RegExp('^' + t.replace(/[.*+?^()|[\]\\]/g, (c) => '\\' + c).replace(/\$\{[^}]+\}/g, '[A-Za-z0-9_.-]+') + '$'));
+  const appSamples = [...new Set(appIds)].map((t) => t.replace(/\$\{[^}]+\}/g, 'x'));
   const used = new Set();
   const collect = (path) => {
     const docs = YAML.parseAllDocuments(readFileSync(path, 'utf8'));
@@ -147,11 +151,42 @@ if (process.argv.includes('--app')) {
   for (const f of flows) collect(join(E2E, 'flows', f));
   for (const f of subflows) collect(join(E2E, 'subflows', f));
   const missing = [...used].filter((id) => {
-    if (/[()|*+?[\]]/.test(id)) return false; // regex ids are checked through their parts
+    // A regex id (Maestro matches the whole id) must match at least one id the app sets; a template id
+    // in the app (`language.row.${code}`) is sampled with a value.
+    if (/[()|*+?[\]]/.test(id)) {
+      let re;
+      try { re = new RegExp(`^(?:${id})$`); } catch { return true; }
+      return !appSamples.some((a) => re.test(a));
+    }
     return !appRes.some((r) => r.test(id));
   }).sort();
-  console.log(`app check: ${used.size} ids used by flows; ${missing.length} not found in apps/mobile/src:`);
-  for (const id of missing) console.log(`  ${id}`);
+  if (process.argv.includes('--app')) {
+    console.log(`app check: ${used.size} ids used by flows; ${missing.length} not found in apps/mobile/src:`);
+    for (const id of missing) console.log(`  ${id}`);
+  }
+  const baselinePath = join(E2E, 'not-in-app.txt');
+  const baseline = new Set(
+    (existsSync(baselinePath) ? readFileSync(baselinePath, 'utf8') : '').split('\n').map((l) => l.trim()).filter((l) => l && !l.startsWith('#')),
+  );
+  for (const id of missing) {
+    if (!baseline.has(id))
+      problems.push(`a flow taps id "${id}" that no file in apps/mobile/src sets: tap an id the screen has, or request it in TESTID_REQUESTS.md and add it to not-in-app.txt`);
+  }
+  for (const id of baseline) {
+    if (!missing.includes(id))
+      problems.push(`not-in-app.txt lists "${id}", which the app now sets or no flow uses: remove the line`);
+  }
+}
+
+// A flow that taps an id still on not-in-app.txt is red by design: it must say so in a `# BLOCKED` header
+// line (and the runners skip it, reading the ids from the list). A header on a flow with nothing left to
+// wait for is stale.
+for (const f of flows) {
+  const path = join(E2E, 'flows', f);
+  const blocked = blockedIds(YAML, path, E2E);
+  const hasHeader = /^# BLOCKED/m.test(readFileSync(path, 'utf8'));
+  if (blocked.length && !hasHeader) problems.push(`flows/${f}: taps ids not in the app yet (${blocked.slice(0, 3).join(', ')}${blocked.length > 3 ? ', ...' : ''}) but has no "# BLOCKED" header line`);
+  if (!blocked.length && hasHeader) problems.push(`flows/${f}: has a "# BLOCKED" header but every id it taps is in the app now: remove the header`);
 }
 
 if (problems.length) {

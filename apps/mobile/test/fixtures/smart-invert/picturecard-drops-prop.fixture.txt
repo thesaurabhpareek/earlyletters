@@ -1,0 +1,9 @@
+// Positive control for [NS-33-R11] (BL-1841): a PictureCard whose prop is off on one image and missing on the other.
+import { Image } from 'react-native';
+import { Image as ExpoPic } from 'expo-image';
+export const PictureCard = ({ uri }: { uri: string }) => (
+  <>
+    <Image source={{ uri }} accessibilityIgnoresInvertColors={false} />
+    <ExpoPic source={uri} />
+  </>
+);

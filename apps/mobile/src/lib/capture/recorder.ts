@@ -27,6 +27,7 @@ import {
   type Draft,
   type DraftState,
 } from '../store';
+import { noteLiveTake } from './busy';
 import { createFinishing } from './finishing';
 import { RECORDING_CONTAINERS, voiceRecordingOptions } from './recording-format';
 
@@ -79,9 +80,11 @@ export function onActiveTakeChange(listener: (live: boolean) => void): () => voi
   return () => takeListeners.delete(listener);
 }
 
+/** Every change goes through here: capture/busy.ts (the queue's pause, BL-572) and the app lock's listeners both follow it. */
 function setActiveTake(id: string | null): void {
   const was = activeTake !== null;
   activeTake = id;
+  noteLiveTake(id);
   if (was === (id !== null)) return;
   for (const l of [...takeListeners]) {
     try {

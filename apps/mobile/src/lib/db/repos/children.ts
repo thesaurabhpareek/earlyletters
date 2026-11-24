@@ -7,6 +7,7 @@
  * both, so screens see one object as before.
  */
 import type { RepoContext } from './context';
+import { reconcileSearch } from '../../find/lifecycle';
 import type { Child, NewChild } from './types';
 import { BOOK_NOT_DELETED_SQL } from './wipe';
 
@@ -57,6 +58,32 @@ export function listVisible({ db }: RepoContext): Child[] {
 
 export function listHidden({ db }: RepoContext): Child[] {
   return db.all<ChildRow>(`SELECT ${COLS} FROM ${FROM} WHERE ${HIDDEN} AND ${LISTED} ORDER BY c.created_at ASC, c.id ASC`).map(fromRow);
+}
+
+/**
+ * Books this person left or was removed from (server_state 'left'), which `LISTED` leaves out: the leaver's own letters
+ * stay on the phone and these are the books they wait in (D-113, BL-444: listed under "Letters to {child}" with read,
+ * export and delete). Merge (sync/merge.ts closeBook) has already dropped other people's letters, so only the person's own
+ * remain. A book deleted on this phone waits in Recently deleted and is not here; one the server deleted ('deleted') is
+ * `listClosedByServer`. Only books that still hold a live letter are listed: a left book with nothing in it has nothing to read.
+ */
+export function listLeft({ db }: RepoContext): Child[] {
+  return db
+    .all<ChildRow>(
+      `SELECT ${COLS} FROM ${FROM} WHERE c.server_state = 'left' AND ${BOOK_NOT_DELETED_SQL}
+       AND EXISTS (SELECT 1 FROM entries e WHERE e.child_id = c.id AND e.deleted_at IS NULL)
+       ORDER BY c.created_at ASC, c.id ASC`,
+    )
+    .map(fromRow);
+}
+
+/**
+ * Books the server closed for good ('deleted'), which `LISTED` leaves out. A sole parent's account-deletion request
+ * closes hers, and the phone keeps her letters in Recently deleted for the grace period. Export reads these while a
+ * request is open (DATA-REQ-053, BL-446); nothing else lists them.
+ */
+export function listClosedByServer({ db }: RepoContext): Child[] {
+  return db.all<ChildRow>(`SELECT ${COLS} FROM ${FROM} WHERE c.server_state = 'deleted' ORDER BY c.created_at ASC, c.id ASC`).map(fromRow);
 }
 
 export function get({ db }: RepoContext, id: string): Child | null {
@@ -132,10 +159,12 @@ function setPrefTime(ctx: RepoContext, id: string, column: 'hidden_at' | 'quiet_
 /** "Hide this book" for this person (F12-REQ-005 Rev): stops prompts for this child; restorable. */
 export function hide(ctx: RepoContext, id: string): void {
   setPrefTime(ctx, id, 'hidden_at', true);
+  reconcileSearch(ctx.db); // a hidden book's letters are not found (NS-02 section 6; Find index lifecycle)
 }
 
 export function unhide(ctx: RepoContext, id: string): void {
   setPrefTime(ctx, id, 'hidden_at', false);
+  reconcileSearch(ctx.db);
 }
 
 /** "Quiet this book" for this person (F12-REQ-011): letters untouched; no reason asked; reversible. */

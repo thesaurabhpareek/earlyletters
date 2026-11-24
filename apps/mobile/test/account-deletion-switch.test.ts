@@ -24,11 +24,13 @@
  * Fictional family "Asha" only (CLAUDE.md).
  */
 import { execFile } from 'node:child_process';
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { BUILDS, buildEnv as webBuildEnv } from '../e2e-web/support/builds';
 import { capabilities, setBuildFlagForTests, setServerFeaturesForTests } from '../src/lib/capabilities';
-import { envFileLines, envFileProblems } from '../scripts/env-file-guard.mjs';
+import { envFileLines, envFileProblems, envFileProblemsAt } from '../scripts/env-file-guard.mjs';
 
 const APP = join(__dirname, '..');
 const SRC = join(APP, 'src');
@@ -126,7 +128,7 @@ describe('the capability: only "on" is on, and only with the server switch (the 
   it('it changes no other capability, and no other flag changes it', () => {
     setServerFeaturesForTests(true);
     setBuildFlagForTests('accountDeletion', true);
-    expect(capabilities).toEqual({ signIn: true, sync: true, coParent: true, backup: false, statusReport: false, accountDeletion: true, analytics: false, englishOnly: false });
+    expect(capabilities).toEqual({ signIn: true, sync: true, serverErase: false, coParent: true, backup: false, statusReport: false, accountDeletion: true, analytics: false, englishOnly: false });
     setBuildFlagForTests('accountDeletion', null);
     setBuildFlagForTests('backup', true);
     setBuildFlagForTests('statusReport', true);
@@ -175,7 +177,8 @@ describe('the profiles: hidden in the alpha builds unless the EAS environment sa
     for (const name of ['development', 'e2e', 'production']) {
       const withServers = { ...buildEnv(name), EXPO_PUBLIC_SERVER_FEATURES: 'on' };
       expect((await readCapability(withServers)).row, name).toBe(true);
-      expect((await readCapability(buildEnv(name))).row, `${name} as written, servers off`).toBe(false);
+      // As written: production has servers on since build 12 (founder, 8 Nov 2026), so its row shows; development and e2e are servers off, so theirs does not.
+      expect((await readCapability(buildEnv(name))).row, `${name} as written`).toBe(name === 'production');
     }
   });
 
@@ -193,11 +196,14 @@ describe('the profiles: hidden in the alpha builds unless the EAS environment sa
   });
 
   it('the web e2e build with servers on sets it, so flows that open Delete account (j24-style) still see the row; the server-off builds need nothing', () => {
-    const setup = code(readFileSync(join(APP, 'e2e-web/support/global-setup.ts'), 'utf8'));
-    const onBuild = setup.slice(setup.indexOf('build(ON_DIST, {'), setup.indexOf('});', setup.indexOf('build(ON_DIST, {')));
-    expect(onBuild).toMatch(/EXPO_PUBLIC_SERVER_FEATURES: 'on',/);
-    expect(onBuild).toMatch(/EXPO_PUBLIC_ACCOUNT_DELETION: 'on',/);
-    expect(setup.match(/EXPO_PUBLIC_ACCOUNT_DELETION/g)?.length).toBe(1);
+    // The builds moved from global-setup.ts to e2e-web/support/builds.ts (BL-410): read the data, not the text.
+    const env = (name: string) => webBuildEnv(BUILDS.find((b) => b.name === name)!.env);
+    expect(env('server-on').EXPO_PUBLIC_SERVER_FEATURES).toBe('on');
+    expect(env('server-on').EXPO_PUBLIC_ACCOUNT_DELETION).toBe('on');
+    // Only that one build sets it; the server-off builds need nothing.
+    expect(BUILDS.filter((b) => webBuildEnv(b.env).EXPO_PUBLIC_ACCOUNT_DELETION !== undefined).map((b) => b.name)).toEqual(['server-on']);
+    // And global-setup passes each build's env through (it does not drop it).
+    expect(code(readFileSync(join(APP, 'e2e-web/support/global-setup.ts'), 'utf8'))).toMatch(/\.\.\.buildEnv\(b\.env\)/);
   });
 
   it('app.config.ts records it in extra by the same rule (on only, and with the server switch) and the preflight reports the state without ever failing on it', () => {
@@ -239,11 +245,79 @@ describe('the preflight .env* guard (scripts/env-file-guard.mjs): the variable i
     }
   });
 
+  it('[BL-1404] never echoes a line: no "=", a ":" separator or spaces give the file and line number only', () => {
+    const secret = 'sb_secret_ashafictional0000';
+    for (const f of FILES) {
+      const cases = [secret, `SERVICE_ROLE_KEY: ${secret}`, `some words ${secret} here`];
+      for (const line of cases) {
+        const out = envFileProblems(f, `# note\n\n${line}\n`);
+        expect(out, `${f} ${line}`).toEqual([`${f}: <unparsable line 3>`]);
+        expect(out.join('\n')).not.toContain(secret);
+      }
+    }
+  });
+
+  it('[BL-1404] a secret-looking text before "=" is never printed as a name, whatever follows the "="', () => {
+    const f = '.env.local';
+    const names = ['sb_secret_ashafictional0000', 'ghp_ashafictional0000', 'sk_live_ashafictional0000', 'sb_secret_abc', 'abcDEF123456789==', 'export EXPO_PUBLIC_X', 'expo_public_lower', 'SUPABASE_SERVICE_ROLE_KEY'];
+    for (const n of names) {
+      for (const tail of ['1', '', ' ', 'abcDEF123456789==']) {
+        const out = envFileProblems(f, `${n}=${tail}\n`);
+        expect(out, `${n}=${tail}`).toEqual([`${f}: <unparsable line 1>`]);
+      }
+    }
+  });
+
+  it('[BL-1404] a padded-base64 value after a name is never printed', () => {
+    const out = envFileProblems('.env', 'EXPO_PUBLIC_SUPABASE_ANON_KEY=abcDEF123456789==\n');
+    expect(out).toEqual(['.env: EXPO_PUBLIC_SUPABASE_ANON_KEY']);
+    expect(out.join('\n')).not.toContain('abcDEF');
+  });
+
+  it('[BL-1404] a very long name is not echoed: 200,000 characters give the line number only', () => {
+    const long = `EXPO_PUBLIC_${'A'.repeat(200_000)}`;
+    for (const line of [`${long}=1`, `${'x'.repeat(200_000)}=1`]) {
+      const out = envFileProblems('.env', `\n${line}\n`);
+      expect(out).toEqual(['.env: <unparsable line 2>']);
+    }
+    expect(envFileProblems('.env', `EXPO_PUBLIC_${'A'.repeat(64)}=1\n`)[0].length).toBeLessThan(100);
+  });
+
+  it('[BL-1404] an EXPO_PUBLIC_* name still names the key and never the value', () => {
+    const f = '.env.local';
+    const out = envFileProblems(f, 'EXPO_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_ashafictional0000\n');
+    expect(out).toEqual([`${f}: EXPO_PUBLIC_SUPABASE_ANON_KEY`]);
+    expect(out.join('\n')).not.toContain('sb_publishable');
+  });
+
+  it('[BL-1404] `export KEY=value` is unparsable: reported by line, still a problem', () => {
+    expect(envFileProblems('.env', `export ${VAR}=on\n`)).toEqual(['.env: <unparsable line 1>']);
+  });
+
+  it('[BL-1405] a value with "#" in it is a problem line like any other; only a line that starts with "#" is a comment', () => {
+    expect(envFileProblems('.env', 'SUPABASE_SERVICE_ROLE_KEY=abc#def\n')).toEqual(['.env: <unparsable line 1>']);
+    expect(envFileProblems('.env', `${VAR}=abc#def\n`)).toEqual([`.env: ${VAR}`]);
+    expect(envFileProblems('.env', '  # a note\n#KEY=1\n')).toEqual([]);
+  });
+
+  it('[BL-1405] a file that cannot be read is a problem, never an empty list, and the error text is not printed', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'bl1405-'));
+    try {
+      mkdirSync(join(dir, '.env.local'));
+      expect(envFileProblemsAt(dir, '.env.local')).toEqual(['.env.local: <unreadable>']);
+      expect(envFileProblemsAt(dir, '.env.missing')).toEqual(['.env.missing: <unreadable>']);
+      writeFileSync(join(dir, '.env'), `${VAR}=on\n`);
+      expect(envFileProblemsAt(dir, '.env')).toEqual([`.env: ${VAR}`]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it('is what the preflight runs on every .env* file in apps/mobile, and its message names the variable and the Metro way', () => {
     const pre = readFileSync(join(APP, 'scripts/preflight-testflight.mjs'), 'utf8');
-    expect(pre).toMatch(/import \{ envFileProblems \} from '\.\/env-file-guard\.mjs';/);
+    expect(pre).toMatch(/import \{ envFileProblemsAt \} from '\.\/env-file-guard\.mjs';/);
     expect(pre).toMatch(/const envFiles = readdirSync\(MOBILE\)\.filter\(\(f\) => f\.startsWith\('\.env'\)\);/);
-    expect(pre).toMatch(/const bad = envFiles\.flatMap\(\(f\) => envFileProblems\(f, read\(join\(MOBILE, f\)\)\)\);/);
+    expect(pre).toMatch(/const bad = envFiles\.flatMap\(\(f\) => envFileProblemsAt\(MOBILE, f\)\);/);
     expect(pre).toMatch(/check\(bad\.length === 0, /);
     expect(pre).toMatch(/EXPO_PUBLIC_ACCOUNT_DELETION is never set in a \.env file/);
     // The guard module allows nothing for the variable, in any spelling of the allow list.
@@ -313,7 +387,7 @@ describe('the Settings row and the route honour it', () => {
     for (const [servers, deletion, signedIn] of states) {
       setServerFeaturesForTests(servers);
       setBuildFlagForTests('accountDeletion', deletion);
-      expect(run(rowCondition!, { capabilities, auth: { signedIn } }), `servers ${servers}, switch ${deletion}, signed in ${signedIn}`).toBe(servers && deletion && signedIn);
+      expect(run(rowCondition!, { capabilities, auth: { signedIn }, you: { accountReady: true } }), `servers ${servers}, switch ${deletion}, signed in ${signedIn}`).toBe(servers && deletion && signedIn);
     }
   });
 
@@ -330,7 +404,8 @@ describe('the Settings row and the route honour it', () => {
 
   it('nothing else opens the page: Settings home is the only screen that names the route, and the link allowlist never lets a link reach it', () => {
     const namers = walk(SRC).filter((f) => /['"`]\/settings\/delete-account['"`]/.test(code(readFileSync(f, 'utf8'))));
-    expect(namers.map((f) => relative(SRC, f))).toEqual(['app/settings/index.tsx']);
+    // BL-922a: the held screen's Delete account link (NS-10-R4a) names it in one pure file, shown only with the switch on (test/held-screen-routes.test.ts).
+    expect(namers.map((f) => relative(SRC, f)).sort()).toEqual(['app/settings/index.tsx', 'lib/first-run/held-screen.logic.ts']);
     // The row's tap is the only push to it.
     expect(home.match(/ROUTES\.deleteAccount/g)?.length).toBe(1);
     expect(src('lib/family/entry.logic.ts')).not.toMatch(/delete-account/);

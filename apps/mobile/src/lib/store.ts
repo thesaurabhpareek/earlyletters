@@ -21,12 +21,15 @@
  * API for other screens: src/lib/README.md.
  */
 import * as Crypto from 'expo-crypto';
-import type { DictionaryTerm, Edit, EditLevel } from '@scribe/core';
+import { AVOID_RECENT, type DictionaryTerm, type Edit, type EditLevel } from '@scribe/core';
 import { keychainFloor, type LedgerDb } from './billing/letter-ledger';
 import { decideGate } from './age-gate.logic';
+import { bookVisibleTo } from './auth/account-scope.logic';
+import { getAuthSnapshot } from './auth/auth-store';
+import { authUserId } from './auth/machine.logic';
 import { parsePutBack, parseView, type ReviewPatch, type ReviewSaved } from './capture/review-persist.logic';
 import type { SweepDraft, SweepEntry } from './capture/sweep.logic';
-import { migrate, userVersion, type MigrationResult } from './db/migrations';
+import { MigrationError, migrate, sweepTakeoverKeys, userVersion, type MigrationResult } from './db/migrations';
 import type { SqlDb } from './db/sql';
 import type { AgreementDocument, AgreementRow } from './agreements.logic';
 import { AGE_GATE_PASSED_KEY, AGE_GATE_STOPPED_KEY } from './age-gate.logic';
@@ -59,6 +62,11 @@ import {
 import type { NewDraft } from './db/repos/drafts';
 import { openNativeDb, type OpenedDb } from './db/repos/open-native';
 import { capabilities } from './capabilities';
+import { findBuildEnabled, findSurface } from './find/flag';
+import { dropSearchIndex, SEARCH_TABLE, searchIndexExists, setIndexableBooks, type EnsureResult } from './find/lifecycle';
+import { rebuildSearchIndex } from './find/rebuild';
+import { searchLetters, type FindResult } from './find/search';
+import { dropSearchView, SEARCH_VIEW } from './find/sources';
 import { SHELF_DAYS } from './shelf-days';
 import {
   SYNC_SETTING,
@@ -114,9 +122,9 @@ export const DB_FILE_NAME = 'scribe.db';
 
 /** Opening failed before or during migration. Code only: SQLite text can quote values. */
 export class StoreOpenError extends Error {
-  constructor(cause: unknown) {
+  constructor() {
     super('local_db_open_failed');
-    this.cause = cause;
+    this.name = 'StoreOpenError';
   }
 }
 
@@ -166,7 +174,7 @@ export function openStore(options: OpenStoreOptions = {}): OpenStoreResult {
   try {
     opened = (options.open ?? (() => openNativeDb(DB_FILE_NAME)))();
   } catch (e) {
-    return { ok: false, newer: false, error: new StoreOpenError(e), migration: null };
+    return { ok: false, newer: false, error: new StoreOpenError(), migration: null };
   }
   let migration: MigrationResult;
   try {
@@ -177,12 +185,87 @@ export function openStore(options: OpenStoreOptions = {}): OpenStoreResult {
     } catch {
       // already failing; the migration error is the one to report
     }
-    return { ok: false, newer: false, error: e instanceof Error ? e : new StoreOpenError(e), migration: null };
+    return { ok: false, newer: false, error: e instanceof MigrationError ? e : new StoreOpenError(), migration: null };
   }
   const result: OpenStoreResult = { ok: !migration.newer, newer: migration.newer, error: null, migration };
+  // Stale guard-window keys (BL-412, BL-1497) are cleared here: after migrations, before any pull can run. A newer file is left untouched.
+  if (!migration.newer) sweepTakeoverKeys(opened.db);
   conn = { opened, ctx: { db: opened.db, now, newId }, result };
+  // The account seam of Find's index (NS-02-R24, [X4-R1]): another account's book on this phone is never indexed.
+  setIndexableBooks(() => (bookVisibleNow() ? null : []));
   if (result.ok) vacuumOnceForSecureDelete(conn.ctx);
   return result;
+}
+
+// -- Find (NS-02; ADR 0028 D4) ------------------------------------------------------------
+/** Whether this file holds anything of Find: its index or its view. */
+const findObjectsExist = (db: SqlDb): boolean =>
+  db.get<{ n: number }>(`SELECT 1 AS n FROM sqlite_master WHERE name IN ('${SEARCH_TABLE}', '${SEARCH_VIEW}')`) !== null;
+
+/**
+ * The launch catch-up of Find's index (NS-02-R35, R43). With Find off in this build, what an earlier build made (the
+ * index, its map, its settings and the view) is dropped: derived data nobody can reach. With it on, the index is made
+ * or checked and caught up in batches of 200 letters, never while a take is recording, and merged at the end when a
+ * removal waits (lib/find/rebuild.ts). Never throws.
+ */
+export async function ensureFindIndex(): Promise<EnsureResult | 'off'> {
+  try {
+    const { db } = ctx();
+    // [X4-R1]: while another account is signed in over this owner's book, nothing is indexed, dropped or moved.
+    if (!bookVisibleNow()) return 'unavailable';
+    if (findBuildEnabled()) return await rebuildSearchIndex(db);
+    if (findObjectsExist(db)) {
+      dropSearchIndex(db);
+      dropSearchView(db);
+    }
+    return 'off';
+  } catch {
+    return 'unavailable'; // the scan still answers; the next launch tries again
+  }
+}
+
+let findCatchUpFor: unknown = null;
+
+/**
+ * Find's launch catch-up, once per open store, after the first frame (NS-02-R35, R43): the root layout calls it beside
+ * startPacks() and startRemote(), never on the path to the first frame. Returns at once; the work runs in batches.
+ * Does nothing with Find off and nothing of Find on the phone.
+ */
+export function startFindCatchUp(): void {
+  if (!conn?.result.ok || findCatchUpFor === conn) return;
+  if (!bookVisibleNow()) return; // [X4-R1]: not marked done, so a later call, once this book is shown again, still runs
+  findCatchUpFor = conn;
+  if (!findBuildEnabled() && !findObjectsExist(conn.ctx.db)) return;
+  void ensureFindIndex();
+}
+
+/**
+ * Account A returned (B signed out, or A signed in again): the seam skipped whatever was written into A's book meanwhile
+ * (NS-02-R24, [X4-R1]), so the once-per-store catch-up runs again now, not at the next launch. Find off: nothing.
+ */
+export function resumeFindCatchUp(): void {
+  findCatchUpFor = null;
+  startFindCatchUp();
+}
+
+/**
+ * The one gate of Find's screen (BL-952 slice 8): the build switch on, the remote pause off, a kept letter to find, and
+ * this phone's book shown to the signed-in account. False anywhere else: the Find action is absent, not greyed (R1).
+ */
+export function findAvailableNow(input: { paused: boolean; hasLetters: boolean }): boolean {
+  return bookVisibleNow() && findSurface({ build: findBuildEnabled(), paused: input.paused, hasLetters: input.hasLetters });
+}
+
+/** Whether Find's fast index is there and trusted (false while it is being made, or where FTS5 is missing). */
+export function findIndexReady(): boolean {
+  return searchIndexExists(ctx().db);
+}
+
+/** Find in one book: the parent's own words, newest first. Reads this phone only. Throws if even the scan cannot read. */
+export function findLetters(raw: string, childId: string): FindResult {
+  // Dark unless the build says 'on', and never another account's book ([X4-R1]): nothing asked, nothing found.
+  if (!findBuildEnabled() || !bookVisibleNow()) return { status: 'idle' };
+  return searchLetters(ctx().db, raw, childId);
 }
 
 /** Set once the database file was rebuilt with secure_delete on (BL-387, #520). An ISO time, L2. */
@@ -221,7 +304,7 @@ function ctx(): RepoContext {
   if (conn) return conn.ctx;
   const r = openStore();
   const c = conn as { ctx: RepoContext } | null; // openStore sets it on success
-  if (!c) throw r.error ?? new StoreOpenError(null);
+  if (!c) throw r.error ?? new StoreOpenError();
   return c.ctx;
 }
 
@@ -273,6 +356,19 @@ export function getSetting(key: string): string | null {
   return settings.getSetting(ctx(), key);
 }
 
+/**
+ * A saved setting only if the store is already open; null otherwise. Never opens it and never throws, so a screen that
+ * draws after a failed open (the launch recovery screen) can read the appearance without running the update steps again.
+ */
+export function getSettingIfOpen(key: string): string | null {
+  if (!conn) return null;
+  try {
+    return settings.getSetting(conn.ctx, key);
+  } catch {
+    return null;
+  }
+}
+
 export function setSetting(key: string, value: string): void {
   settings.setSetting(ctx(), key, value);
   bus.emit('settings');
@@ -309,7 +405,7 @@ export function recordAgreement(rows: readonly AgreementRow[], passAge: boolean)
 // ── Children ─────────────────────────────────────────────────────────────
 /** Visible children, oldest book first. */
 export function listChildren(): Child[] {
-  return children.listVisible(ctx());
+  return shown(() => children.listVisible(ctx()));
 }
 
 export function getChild(id: string): Child | null {
@@ -398,7 +494,7 @@ export function unhideChild(id: string): void {
 }
 
 export function listHiddenChildren(): Child[] {
-  return children.listHidden(ctx());
+  return shown(() => children.listHidden(ctx()));
 }
 
 // ── Family view of the active child (stable, single-child API) ───────────
@@ -431,6 +527,34 @@ export function dictionaryFor(f: Family): DictionaryTerm[] {
  */
 export function currentUserId(): string | null {
   return getSetting(SYNC_SETTING.owner);
+}
+
+/**
+ * BL-961 (`[X4-R1]`, NS-10-R3; ADR 0031): may this phone's book be shown now? False only while another account is
+ * signed in on a phone that holds this owner's book (lib/auth/account-scope.logic.ts). The one check: the screen cover,
+ * the first-run gate and every read for display ask it. Reads the owner only while a session exists, so a signed-out
+ * phone and a build with server features off read nothing more than before. An owner that cannot be read hides the
+ * book (the safe side); nothing is deleted either way.
+ */
+export function bookVisibleNow(): boolean {
+  const sessionUser = authUserId(getAuthSnapshot());
+  if (!sessionUser) return true;
+  try {
+    return bookVisibleTo({ owner: currentUserId(), sessionUser });
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Every list of books, letters and drafts a screen, an export or a planner reads goes through here: empty while another
+ * account is signed in (`[X4-R1]`, security.md NSC-03), so no surface (Book, Home, Recently deleted, export, the
+ * reminder planner's books) can list the owner's book. Reads by id (getEntry, getDraft, getChild) stay open on purpose:
+ * the listening-copy sweep (audio-enhance) and the launch sweep must still find the owner's rows, or they would treat
+ * them as gone. Writes and sync are unchanged; nothing is deleted or moved.
+ */
+function shown<T>(rows: () => T[]): T[] {
+  return bookVisibleNow() ? rows() : [];
 }
 
 // Plus (hasPlus, isJoinedBook, newChildNeedsPlus) lives in lib/billing: StoreKit 2
@@ -508,6 +632,8 @@ export function saveLetterFromDraft(draftId: string, e: Entry, audioExists = tru
   // Held while waiting for its words (outbox.ts): the raw transcript is set once, later.
   letters.saveFromDraft(c, draftId, e, insertDefaults(e), audioExists, () => {
     if (held !== null) c.db.run('UPDATE entries SET held_v = ? WHERE id = ?', held, draftId);
+    // The draft's picture (entry_media, ADR 0028) becomes the letter's in the same transaction: same id, new owner.
+    c.db.run('UPDATE entry_media SET entry_id = draft_id, draft_id = NULL WHERE draft_id = ?', draftId);
     // The letter ledger counts a kept letter in the same transaction (D-082, D-083): the letter and its
     // count are written together or not at all. M17 (D-103): only this person's own letter, only with its
     // words; a voice-only letter, a quiet-day mark or another author's row never counts (ledger.recordKept).
@@ -555,7 +681,7 @@ export function saveVoiceOnlyFromDraft(
 
 /** Spoken letters still waiting for their words, oldest first (the transcription queue reads this). */
 export function listWaitingForWords(childId: string): Entry[] {
-  return entries.listWaiting(ctx(), childId);
+  return shown(() => entries.listWaiting(ctx(), childId));
 }
 
 /**
@@ -639,7 +765,7 @@ export function keepReviewedWords(id: string, inBook?: boolean): boolean {
 
 /** Letters whose machine-written words wait for the author's review, oldest first. */
 export function listWordsToReview(childId: string): Entry[] {
-  return entries.listWordsToReview(ctx(), childId);
+  return shown(() => entries.listWordsToReview(ctx(), childId));
 }
 
 /** A quiet-day mark already exists for this book on this day (one per day, D-084). */
@@ -655,7 +781,7 @@ export function hasNotMuchOn(childId: string, isoDate: string): boolean {
  * first; for one letter when `entryId` is given. Empty in a build without sync.
  */
 export function listConflicts(entryId?: string): ConflictCopy[] {
-  return listConflictCopies(ctx().db, entryId);
+  return shown(() => listConflictCopies(ctx().db, entryId));
 }
 
 /**
@@ -696,7 +822,72 @@ export function listEntries(): Entry[] {
 }
 
 export function listEntriesForChild(childId: string): Entry[] {
-  return entries.listForChild(ctx(), childId);
+  return shown(() => entries.listForChild(ctx(), childId));
+}
+
+/** The newest letter this phone's user made across the visible books: date and enums only (NS-48-R27, reminders). */
+export function newestMadeLetter(childIds: readonly string[], owner: string | null): entries.MadeLetter | null {
+  return bookVisibleNow() ? entries.newestMadeLetter(ctx(), childIds, owner) : null;
+}
+
+/** When the newest draft waiting across the given visible books was made: a date only (BL-1648, reminders). */
+export function newestWaitingDraftAt(childIds: readonly string[]): string | null {
+  return bookVisibleNow() ? drafts.newestWaitingAt(ctx(), childIds) : null;
+}
+
+/** The Book's read: one book's letters newest first, without their edit lists (BL-434). */
+export function listBookEntries(childId: string): Entry[] {
+  return shown(() => entries.listForBook(ctx(), childId));
+}
+
+/** How many letters one book holds (quiet-day marks not counted), counted in SQL (BL-434). */
+export function countBookLetters(childId: string): number {
+  return bookVisibleNow() ? entries.countLetters(ctx(), childId) : 0;
+}
+
+/** What Tonight reads from the entries, and nothing more (BL-434). */
+export interface TonightRead {
+  /** The prompt keys of the newest letters that came from a prompt, newest first (at most `AVOID_RECENT`). */
+  recentKeys: string[];
+  /** The newest `occurred_on` in the book, or null when it is empty. */
+  lastOccurredOn: string | null;
+  /** Letters dated in the "A month ago" window around today (a day wider each side; the card still decides). */
+  window: Entry[];
+  /** Whether a quiet-day mark is already kept for today. */
+  markToday: boolean;
+}
+
+const dayShift = (iso: string, days: number): string => {
+  const [y, m, d] = iso.slice(0, 10).split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
+};
+
+export function readTonight(childId: string | null, today: string): TonightRead {
+  if (!childId || !bookVisibleNow()) return { recentKeys: [], lastOccurredOn: null, window: [], markToday: false };
+  const c = ctx();
+  return {
+    recentKeys: entries.recentPromptKeys(c, childId, AVOID_RECENT),
+    lastOccurredOn: entries.latestOccurredOn(c, childId),
+    // "A month ago" looks 28 to 35 days back; one day more each side covers a day-boundary rounding.
+    window: entries.listOccurredBetween(c, childId, dayShift(today, -36), dayShift(today, -27)),
+    markToday: entries.hasNotMuchOn(c, childId, today),
+  };
+}
+
+/** Export while an account-deletion request is open: books the server closed, and letters in Recently deleted (BL-446). */
+export function listClosedBooks(): Child[] {
+  return shown(() => children.listClosedByServer(ctx()));
+}
+/** Books this person left, with their own letters still here (D-113, BL-444). Read-only; the screen is a later slice. */
+export function listLeftBooks(): Child[] {
+  return shown(() => children.listLeft(ctx()));
+}
+/** The live letters of a book this person left. Empty for any book that is not left, so it cannot read a listed book by id. */
+export function listLeftBookEntries(childId: string): Entry[] {
+  return shown(() => (children.listLeft(ctx()).some((c) => c.id === childId) ? entries.listForBook(ctx(), childId) : []));
+}
+export function listDeletedEntriesForChild(childId: string): Entry[] {
+  return shown(() => entries.listDeletedForChild(ctx(), childId));
 }
 
 export function getEntry(id: string): Entry | null {
@@ -791,6 +982,7 @@ export type AudioEraser = (uri: string | null, entryId: string) => void;
 
 /** The shelf: deleted letters of every book, newest deletion first. Each has `deletedAt`. */
 export function listDeleted(): entries.DeletedEntry[] {
+  if (!bookVisibleNow()) return [];
   const c = ctx();
   // A deleted book's letters wait inside it (Restore the book brings them all back), not one by one.
   const gone = new Set(wipe.deletedIds(c));
@@ -997,7 +1189,7 @@ export function restoreBook(id: string): boolean {
 
 /** Deleted books waiting in Recently deleted, newest deletion first. */
 export function listDeletedBooks(): wipe.DeletedBook[] {
-  return wipe.listDeleted(ctx());
+  return shown(() => wipe.listDeleted(ctx()));
 }
 
 /**
@@ -1027,8 +1219,22 @@ export function eraseBook(id: string, eraseAudio: AudioEraser): boolean {
     wipe.removeBook(c, id);
   });
   compactAfterErase(c);
+  for (const hook of bookErasedHooks) {
+    try {
+      hook(id);
+    } catch {
+      // a device-file cleanup must never undo an erase that has happened
+    }
+  }
   bus.emit('children', 'entries', 'drafts', 'settings');
   return true;
+}
+
+const bookErasedHooks = new Set<(bookId: string) => void>();
+/** Device files keyed by book (the moments file, NS-53-R249) remove their rows when a book is erased for good. Never throws into the erase. */
+export function onBookErased(hook: (bookId: string) => void): () => void {
+  bookErasedHooks.add(hook);
+  return () => void bookErasedHooks.delete(hook);
 }
 
 // ── Erase everything on this phone (BL-387; F17 6.2 F; DATA-REQ-024) ─────
@@ -1069,6 +1275,9 @@ export function eraseEverythingLocal(eraseAudio: AudioEraser, eraseFiles: Device
   // in `settings`, never in the Keychain); an expired one goes with everything else.
   const stoppedAt = settings.getSetting(c, AGE_STOPPED_AT);
   const stopRunning = stoppedAt !== null && decideGate({ passed: false, stoppedAt }, Date.parse(c.now())).decision === 'stop';
+  // ADR 0028 D5 step 3: Find's index is dropped before the rows go; deleting the rows of an FTS5 table's shadow tables
+  // one by one would corrupt it. It is made again, empty, by the next launch's catch-up. Whatever the Find switch says.
+  dropSearchIndex(c.db);
   c.db.transaction(() => wipe.removeEverything(c, stopRunning ? [AGE_STOPPED_AT] : []));
   compactAfterErase(c, true);
   bus.emit('settings', 'children', 'entries', 'drafts', 'orphan_audio');
@@ -1143,7 +1352,7 @@ export function getDraft(id: string): Draft | null {
 
 /** Drafts waiting to be read back, newest first. A take still recording is not listed. */
 export function listDrafts(childId: string): Draft[] {
-  return drafts.listForChild(ctx(), childId);
+  return shown(() => drafts.listForChild(ctx(), childId));
 }
 
 /**
@@ -1223,7 +1432,7 @@ export function holdDraft(id: string, opts: { inBookChoice: boolean | null }): b
 
 /** Every letter waiting on this phone (not recording, not being let go), oldest first: for the export (PL-2). */
 export function listWaitingForExport(): Draft[] {
-  return drafts.listForExport(ctx());
+  return shown(() => drafts.listForExport(ctx()));
 }
 
 /**
@@ -1252,15 +1461,16 @@ export function setDraftReview(id: string, base: string, patch: ReviewPatch): bo
 
 /** Held drafts, newest first; for one book when given (Tonight's held row, F14-REQ-041). */
 export function listHeldDrafts(childId?: string): Draft[] {
-  return drafts.listHeld(ctx(), childId);
+  return shown(() => drafts.listHeld(ctx(), childId));
 }
 
 /**
  * Let it go, confirmed (F04-REQ-009): step 1 marks the draft `discarding`;
  * the caller then deletes the file, then calls finishDiscard. A kill in
- * between leaves the mark, and the launch sweep removes the row without ever
- * re-attaching the file. A held draft queues its `held.discard` in the same
- * transaction, which on the server removes the row and its backup.
+ * between, or a file that will not delete, leaves the mark, and the launch
+ * sweep finishes it: the file if still there, then the row, never re-attaching
+ * the file (capture/sweep.ts, BL-923). A held draft queues its `held.discard`
+ * in the same transaction, which on the server removes the row and its backup.
  */
 export function beginDiscard(id: string): boolean {
   const c = ctx();
@@ -1279,18 +1489,47 @@ export function beginDiscard(id: string): boolean {
   return done;
 }
 
-/** Let it go, last step: removes a draft already marked `discarding`, never any other. */
+/**
+ * Removes a draft's picture, the file first and then its row (photos/device.ts erasePictureOf). capture/erase.ts hands
+ * it in when it loads, which the launch sweep does at every start; until then nothing is erased here, and the photo
+ * sweep removes a gone draft's picture at the next launch.
+ */
+let eraseDraftPicture: (draftId: string) => void = () => {};
+export function setDraftPictureEraser(erase: (draftId: string) => void): void {
+  eraseDraftPicture = erase;
+}
+
+/**
+ * Let it go, last step: removes a draft already marked `discarding`, never any other. Its picture goes first, file then
+ * row (ADR 0028 D5); a picture file that will not go keeps the draft marked, off every list, for the launch sweep to
+ * finish, as a recording does (BL-924).
+ */
 export function finishDiscard(id: string): boolean {
+  if (ctx().db.get("SELECT 1 AS n FROM drafts WHERE id = ? AND state = 'discarding'", id)) {
+    try {
+      eraseDraftPicture(id);
+    } catch {
+      return false;
+    }
+  }
   const done = drafts.finishDiscard(ctx(), id);
   if (done) bus.emit('drafts');
   return done;
 }
 
 /**
- * Removes the row only. Audio files are deleted by the explicit Discard in
- * Listen, never here. A held draft's server row goes with it (held.discard).
+ * Removes the row only. Audio files are deleted by a confirmed Let it go
+ * (Review, and Discard in Listen), by the launch sweep finishing one, and by
+ * erasing a deleted book (eraseBook) or everything (eraseEverythingLocal),
+ * never here. A held draft's server row goes with it (held.discard).
  */
 export function deleteDraft(id: string): void {
+  try {
+    eraseDraftPicture(id); // its picture first, file then row (ADR 0028 D5)
+  } catch {
+    // A picture file that will not go never blocks the draft going: the launch photo sweep removes a gone draft's picture
+    // (the row's owner is gone), so nothing here may throw uncaught into the screen that let the draft go.
+  }
   const c = ctx();
   let held = false;
   c.db.transaction(() => {

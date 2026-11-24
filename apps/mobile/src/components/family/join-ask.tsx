@@ -15,16 +15,18 @@
  * at once, one 200 ms fade.
  *
  * WaitingBar: while the book is still coming down, a thin bar with no count under "{child}'s book is on its way
- * to this phone.". Indeterminate (sync reports no pull progress yet, a request to S03); still under Reduce Motion.
+ * to this phone.". Indeterminate (sync reports no pull progress yet, a request to S03); still under Reduce Motion, and still in the
+ * background. It rests at the start of its track after tokens.motion.loopCapMs (30 s).
  */
 import { useEffect, useState, type ReactNode } from 'react';
-import { View, type LayoutChangeEvent } from 'react-native';
-import Animated, { cancelAnimation, Easing, FadeIn, ReduceMotion, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
+import { AppState, View, type LayoutChangeEvent } from 'react-native';
+import Animated, { cancelAnimation, FadeIn, ReduceMotion, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import { tokens } from '@scribe/design-tokens';
 import { BookCover } from '@/components/book/book-cover';
 import { Text } from '@/components/ui/text';
 import { useTheme } from '@/lib/a11y';
-import { useReducedMotion } from '@/lib/motion';
+import { loopReps } from '@/lib/loop.logic';
+import { curve, useReducedMotion } from '@/lib/motion';
 import { SheetTitle } from '@/lib/auth/ui';
 import { familyCopy } from '@/lib/family/copy';
 import { invitedByLine } from './join-sheet.logic';
@@ -60,24 +62,31 @@ export function JoinedCover({ child, inviter }: { child: string; inviter: string
   );
 }
 
-/** One slow sweep of a short accent segment across a hairline track: no number, no percent. */
-const SWEEP_MS = 1400;
+/** One slow sweep of a short accent segment across a hairline track: no number, no percent (tokens.motion.sweepMs). */
 
 export function WaitingBar() {
   const { c } = useTheme();
   const reduced = useReducedMotion();
   const [width, setWidth] = useState(0);
+  const [active, setActive] = useState(AppState.currentState !== 'background');
   const x = useSharedValue(0);
+  // Not active (background): the bar rests at the start; back to active starts a new cap (CDESO-4).
   useEffect(() => {
-    if (reduced || width === 0) {
+    const sub = AppState.addEventListener('change', (st) => setActive(st === 'active'));
+    return () => sub.remove();
+  }, []);
+  useEffect(() => {
+    if (reduced || !active || width === 0) {
       cancelAnimation(x);
       x.value = 0;
       return;
     }
     x.value = 0;
-    x.value = withRepeat(withTiming(1, { duration: SWEEP_MS, easing: Easing.inOut(Easing.quad), reduceMotion: ReduceMotion.Never }), -1, true);
+    // One full sweep there and back is 2 x sweepMs. An even count of one-way runs ends at the start of the track
+    // after tokens.motion.loopCapMs, with no timer. The line above the bar still says the book is on its way.
+    x.value = withRepeat(withTiming(1, { duration: tokens.motion.sweepMs, easing: curve('sweep'), reduceMotion: ReduceMotion.Never }), loopReps(tokens.motion.sweepMs * 2), true);
     return () => cancelAnimation(x);
-  }, [reduced, width, x]);
+  }, [reduced, active, width, x]);
   const segment = Math.round(width / 3);
   const style = useAnimatedStyle(() => ({ transform: [{ translateX: x.value * (width - segment) }] }));
   return (

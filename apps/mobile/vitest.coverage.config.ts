@@ -22,12 +22,6 @@ export default mergeConfig(
   defineConfig({
     test: {
       ...INSTRUMENTED,
-      // One test, the plan-reminders "synthetic year" property test (test/billing-plan-reminders.test.ts, matched
-      // by its own title so the other tests in its describe block still run), takes about 70 s plain and about
-      // 170 s instrumented, past its own 120 s timeout, which no config can raise. It is left out of coverage runs
-      // only; `npm test` still runs it.
-      // Proposed fix for its owner: a sample-size knob like SCRIBE_FUZZ_RUNS (docs/qa/COVERAGE.md, flakes).
-      testNamePattern: /^(?!.*holds every invariant and always finds the legally required slot when planned early$)/,
       coverage: coverage({
         include: ['src/**/*.ts'],
         exclude: [

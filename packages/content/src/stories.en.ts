@@ -35,10 +35,11 @@ export const onboardingStories: readonly StoryCard[] = [
   {
     type: 'story',
     // v2 (LNG-18, 31 Oct 2026): one description of a small fix everywhere. v1 said "We fix slips of the tongue."
-    id: 'story.exact.v2',
+    // v3 (D-133): the true promise line. v2 headline was the old exact-words promise.
+    id: 'story.exact.v3',
     order: 2,
-    headline: "Exactly as you said it.",
-    line: "We only fix small slips, like an um, a repeat or a misheard word. We never rewrite your words.",
+    headline: "It stays in your words.",
+    line: "Every word we change is marked, and your original recording is kept unchanged. We never rewrite your words.",
     visual: 'letter-underline',
   },
   {
@@ -53,8 +54,8 @@ export const onboardingStories: readonly StoryCard[] = [
     type: 'story',
     id: 'story.private.v1',
     order: 4,
-    headline: "Private to your family.",
-    line: "Only you and the people you invite can read these letters. We never sell them or use them for ads.",
+    headline: "Private by default.",
+    line: "Your letters are yours. We never sell them and never use them for ads.",
     visual: 'two-hands',
   },
 ];
@@ -66,6 +67,7 @@ export const onboardingStories: readonly StoryCard[] = [
  *
  * story.private.v2 fits v1.0 with server features on (D-100): sharing reaches the other parent only when they are
  * invited (D-069), so it says who it is shared with and makes no claim about who can read or where letters are stored.
+ * Exec ruling 23 Nov 2026 (item 1c): v1 is the served card. v2 is never served while no store build can invite.
  */
 export const alternateStories: readonly StoryCard[] = [
   {

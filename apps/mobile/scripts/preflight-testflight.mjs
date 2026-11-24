@@ -26,8 +26,9 @@ import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, sta
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { envFileProblems } from './env-file-guard.mjs';
-import { createReport, expo as expoIn, extraPermissions, packManifestPublished, parseJsonOut, plistUsageProblems, privacyManifestDeclared, purposeStringProblem, REQUIRED_PLIST_USAGE, secretKind, signingKeys } from './preflight-lib.mjs';
+import { envFileProblemsAt } from './env-file-guard.mjs';
+import { createReport, expo as expoIn, extraPermissions, forbiddenNativeProblems, packManifestPublished, parseJsonOut, plistUsageProblems, privacyManifestDeclared, purposeStringProblem, REQUIRED_PLIST_USAGE, secretKind, signingKeys } from './preflight-lib.mjs';
+import { STORE_FLAGS, storeFlagMessage, storeFlagProblems, storeProfiles } from '../../../scripts/release/store-flags.mjs';
 
 const MOBILE = join(dirname(fileURLToPath(import.meta.url)), '..');
 const REPO = join(MOBILE, '..', '..');
@@ -195,7 +196,21 @@ if (prof) {
 }
 {
   const onProfiles = Object.entries(eas.build ?? {}).filter(([, p]) => p.env?.EXPO_PUBLIC_SERVER_FEATURES === 'on').map(([n]) => n);
-  check(!onProfiles.includes('production'), `server features are on only in: ${onProfiles.join(', ') || 'none'} (never production before the store submission is re-planned)`, 'The production profile has EXPO_PUBLIC_SERVER_FEATURES=on. Turning the switch on in the store profile is the founder\'s call after the R-17 gate and the legal pages (D-100); put it back to "off".');
+  // Build 12 (founder, 8 Nov 2026): the production profile is servers on, against scribe-prod, so "never production" is gone. What this
+  // script still holds is the pairing the store build's honesty rests on: servers on in production only with the store environment
+  // (EXPO_PUBLIC_APP_ENV=production, so the alpha-only co-parent flow stays hidden: lib/family/entry.logic.ts, lib/billing/alpha.ts) and
+  // backup, status report and analytics off. The full production list is `npm run preflight:production`. Servers off in production is
+  // the kill path and passes. The switch itself is also guarded by test/config.test.ts and packages/content/test/claims-capabilities.test.ts.
+  const productionEnv = eas.build?.production?.env ?? {};
+  const productionOn = onProfiles.includes('production');
+  const stillOff = ['EXPO_PUBLIC_BACKUP', 'EXPO_PUBLIC_STATUS_REPORT', 'EXPO_PUBLIC_ANALYTICS'].filter((k) => String(productionEnv[k] ?? '').trim().toLowerCase() === 'on');
+  check(
+    !productionOn || (productionEnv.EXPO_PUBLIC_APP_ENV === 'production' && stillOff.length === 0),
+    productionOn
+      ? `production profile has server features on with EXPO_PUBLIC_APP_ENV=production and backup, status report and analytics off (server features on in: ${onProfiles.join(', ')})`
+      : `production profile has server features off (the kill path; server features on in: ${onProfiles.join(', ') || 'none'})`,
+    `The production profile has server features on but ${productionEnv.EXPO_PUBLIC_APP_ENV === 'production' ? '' : `EXPO_PUBLIC_APP_ENV is ${JSON.stringify(productionEnv.EXPO_PUBLIC_APP_ENV)} (it must be "production", or the store build would show alpha-only co-parent surfaces); `}${stillOff.length ? `${stillOff.join(', ')} ${stillOff.length > 1 ? 'are' : 'is'} on (they stay off in the store build)` : ''}. Run \`npm run preflight:production\` for the full list.`,
+  );
   const unwritten = Object.entries(eas.build ?? {}).filter(([, p]) => !['on', 'off'].includes(p.env?.EXPO_PUBLIC_SERVER_FEATURES)).map(([n]) => n);
   check(unwritten.length === 0, 'every eas.json profile writes EXPO_PUBLIC_SERVER_FEATURES as on or off', `eas.json profile(s) without an explicit on or off: ${unwritten.join(', ')}.`);
 }
@@ -207,6 +222,15 @@ if (prof) {
   const shell = process.env.EXPO_PUBLIC_E2E;
   check(shell === undefined || shell.trim() === '', 'EXPO_PUBLIC_E2E is not set in this shell', `EXPO_PUBLIC_E2E is set in this shell (${JSON.stringify(shell)}), and a local build reads the shell: unset it before building ${PROFILE} (B-9; apps/mobile/e2e/README.md section 9 sets it only for the simulator build).`);
   unverified(`the EAS "${prof?.environment ?? PROFILE}" environment on expo.dev holds no EXPO_PUBLIC_E2E (this script cannot read it); if it does, app.config.ts refuses the EAS build (B-9). Check the names with \`npx eas-cli@24.10.0 env:list --environment ${prof?.environment ?? PROFILE}\` in apps/mobile (it needs the project id, step 3).`);
+}
+{
+  // BL-958 (flag rows of NS-01 and NS-02; gate G6): the photo and Find flags stay off in every store profile, production
+  // included, until the table in scripts/release/store-flags.mjs allows a profile. Every alpha build checks all of them.
+  const problems = storeFlagProblems(eas);
+  const names = STORE_FLAGS.map((f) => f.env).join(', ');
+  if (problems.length) for (const p of problems) fail(storeFlagMessage(p));
+  else pass(`${names} off in every store profile (${storeProfiles(eas).join(', ')}; BL-958)`);
+  unverified(`the EAS "${prof?.environment ?? PROFILE}" environment on expo.dev holds no ${names} (this script cannot read it; a value there turns the feature on in this build). Check the names with \`npx eas-cli@24.10.0 env:list --environment ${prof?.environment ?? PROFILE}\` in apps/mobile.`);
 }
 check(Boolean(eas.submit?.[PROFILE]), `eas.json has a "${PROFILE}" submit profile`, `eas.json has no "${PROFILE}" submit profile (\`eas submit --profile ${PROFILE}\` needs it).`);
 {
@@ -342,7 +366,7 @@ try {
 {
   const envFiles = readdirSync(MOBILE).filter((f) => f.startsWith('.env'));
   // scripts/env-file-guard.mjs: only values that are harmless if baked into any build; EXPO_PUBLIC_ACCOUNT_DELETION never, in any file.
-  const bad = envFiles.flatMap((f) => envFileProblems(f, read(join(MOBILE, f))));
+  const bad = envFiles.flatMap((f) => envFileProblemsAt(MOBILE, f));
   check(bad.length === 0, `apps/mobile/.env* files hold only APP_ENV, SERVER_FEATURES=off and ANALYTICS=off (${envFiles.join(', ') || 'none'})`, `apps/mobile/.env* holds other values (${bad.join(', ')}). They would be baked into the bundle.${bad.some((b) => b.endsWith('EXPO_PUBLIC_ACCOUNT_DELETION')) ? ' EXPO_PUBLIC_ACCOUNT_DELETION is never set in a .env file: the alpha profiles leave it unset so the EAS "preview" environment decides (TESTFLIGHT.md step 9); a drill passes it to Metro in the shell.' : ''}`);
   const supa = ['EXPO_PUBLIC_SUPABASE_URL', 'EXPO_PUBLIC_SUPABASE_ANON_KEY', 'EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY', 'EXPO_PUBLIC_POSTHOG_KEY'].filter((k) => profEnv[k] !== undefined);
   check(supa.length === 0, `${PROFILE} profile names no Supabase or analytics key in eas.json (project values come from the EAS environment)`, `${PROFILE} profile sets ${supa.join(', ')} in eas.json. Remove them: they belong in EAS environment variables (TESTFLIGHT.md step 9).`);
@@ -572,8 +596,11 @@ if (ios) {
     `generated Info.plist asks for the microphone and Face ID only (${REQUIRED_PLIST_USAGE.join(', ')}; the dev-client local-network key is stripped from Release)`,
     `Generated Info.plist has usage strings: ${usage.join(', ') || 'none'}. Expected exactly ${REQUIRED_PLIST_USAGE.join(' and ')} (missing: ${usageProblems.missing.join(', ') || 'none'}; extra: ${usageProblems.extra.join(', ') || 'none'}).`,
   );
-  const modes = /<key>UIBackgroundModes<\/key>\s*<array>([\s\S]*?)<\/array>/.exec(ios.plist)?.[1];
-  check(!modes, 'generated Info.plist has no UIBackgroundModes', `Generated Info.plist declares background modes (${modes?.replace(/\s+/g, ' ').trim()}); LEGAL-REQ-011 says none.`);
+  // BL-864 (NX-39-R4, R51): no background mode, task identifier, location key, photo-add key, extension target or app group.
+  // The photo-library key needs its flag and content string; no store profile turns the flag on (BL-958), so none is allowed here.
+  const forbidden = forbiddenNativeProblems({ plist: ios.plist, entitlements: ios.entitlements, pbxproj: ios.pbxproj });
+  for (const p of forbidden) fail(`Generated native project: ${p.text}`);
+  if (!forbidden.length) pass('generated native project: no background mode, location key, photo-add key, extension target, app group or CoreLocation (BL-864)');
   check(plistValue(ios.plist, 'ITSAppUsesNonExemptEncryption') === 'false', 'generated Info.plist: ITSAppUsesNonExemptEncryption = false', 'Generated Info.plist lacks ITSAppUsesNonExemptEncryption=false.');
   check(ios.privacy !== null && /NSPrivacyTracking<\/key>\s*<false\/>/.test(ios.privacy), 'generated PrivacyInfo.xcprivacy present, tracking false', 'Generated native project has no PrivacyInfo.xcprivacy, or tracking is not false.');
   if (ios.privacy !== null) {

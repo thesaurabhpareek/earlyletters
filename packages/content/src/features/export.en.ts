@@ -31,11 +31,11 @@ export const exportCopy = {
     privacyNotice: 'This file holds your letters and recordings, unlocked. Keep it somewhere private.',
     afterShare: 'The copy on this phone has been cleared away. Export again any time.', // D-074 glossary
     againButton: 'Export again',
-    failedTitle: 'The export did not finish',
-    failedBody: 'Your letters and recordings are all still here. Please try again.',
+    failedTitle: "The export didn't finish",
+    failedBody: 'Your letters and recordings are all still here. Try again.',
     // Too big: the title, then `settingsHome.helpValue` "Write to us" as the primary (S43).
     tooBigTitle: 'This book is too big for one file',
-    lowSpaceBody: 'This phone needs more free space first.',
+    lowSpaceBody: 'This phone needs more free space. Free some up, then try again.',
     integrityNote: 'A recording changed after it was saved. It is included as it is now, and the data file marks it.',
   },
 

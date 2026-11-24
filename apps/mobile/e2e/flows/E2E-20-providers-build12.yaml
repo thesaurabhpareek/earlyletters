@@ -1,0 +1,34 @@
+# BLOCKED (ids the app does not set yet): red by design until they land. `node apps/mobile/e2e/bin/blocked-ids.mjs <this file>` lists them (not-in-app.txt); run-suite.sh and run-p0-nightly.sh skip it and print that list.
+# E2E-20  The sign-in sheet offers only the providers the build has (NX-40 H5, NX-40-R7).
+# Proves: in the Build 12 profile the sheet shows Apple and email and no Google
+# button and no passkey link (Google needs both client ids, passkeys need
+# EXPO_PUBLIC_PASSKEYS=1; no profile in eas.json sets either). The same rule is
+# a Node test on every pull request (test/nx-40-build12-providers.test.ts); this
+# row is the look on the running app. Apple's own button needs an Apple Account
+# on the simulator, so it is asserted only on the e2e profile where it renders;
+# email is always there.
+appId: ${APP_ID}
+name: E2E-20 Sign-in providers in Build 12
+tags:
+  - e2e
+  - E2E-20
+  - NX-40
+  - NX-40-R7
+  - NX-40-H5
+  - needs-backend
+---
+- runFlow:
+    file: ../subflows/launch-fresh.yaml
+- runFlow: ../subflows/pass-age-gate.yaml
+- assertVisible:
+    id: "onboarding.step.welcome"
+- tapOn:
+    id: "onboarding.welcome.signIn"
+- assertVisible:
+    id: "signIn.sheet"
+- assertVisible:
+    id: "signIn.email"
+- assertNotVisible:
+    id: "signIn.google"
+- assertNotVisible:
+    id: "signIn.passkey"

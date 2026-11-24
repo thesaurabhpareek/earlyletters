@@ -1,3 +1,4 @@
+# BLOCKED (ids the app does not set yet): red by design until they land. `node apps/mobile/e2e/bin/blocked-ids.mjs <this file>` lists them (not-in-app.txt); run-suite.sh and run-p0-nightly.sh skip it and print that list.
 # E2E-09  Account deletion: request, then cancel within the 30 days.
 # Proves: C-REQ-019 and LEGAL-REQ-029 (in-app deletion, Apple 5.1.1(v); Export is
 # offered first; a typed confirmation; a scheduled date; Cancel deletion
