@@ -55,3 +55,23 @@ describe('[BL-444] left book copy', () => {
     expect(leftBookCopy.empty).not.toMatch(/[?!]/);
   });
 });
+
+// BL-1961: the delete confirmation's words (leftBookDelete). PROPOSED: they need a privacy and content read (PRIV-R21).
+import { leftBookDeleteCopy } from '../src/features/left-book.en';
+describe('[BL-1961] left book delete copy', () => {
+  const DEL = leaves(leftBookDeleteCopy, 'leftBookDelete');
+  it('is registered with the other features, so the general rules test reads it', () => {
+    expect(features.leftBookDelete).toBe(leftBookDeleteCopy);
+  });
+  it('an in-book letter says it also leaves the book {coParent} reads; a private letter names no other parent', () => {
+    expect(leftBookDeleteCopy.bodyInBook).toMatch(/leaves the book \{coParent\} reads too/);
+    expect(leftBookDeleteCopy.bodyPrivate).not.toMatch(/\{coParent\}|parent|book|phone/i);
+  });
+  it('never says kept, stays, only you, on this phone or safe, and names no child or gender', () => {
+    for (const l of DEL) {
+      expect(l.text, l.path).not.toMatch(/\b(kept|keep|keeps|stay|stays|safe|only you)\b|on this phone/i);
+      expect(l.text, l.path).not.toMatch(/\b(he|she|his|her|him|son|daughter|boy|girl)\b/i);
+      expect(l.text, l.path).not.toMatch(/[^\x20-\x7e]/);
+    }
+  });
+});

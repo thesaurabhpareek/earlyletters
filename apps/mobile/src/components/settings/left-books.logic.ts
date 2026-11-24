@@ -8,7 +8,7 @@
  * `listLeftBookEntries` (store.ts), so another signed-in account, a book joined again and a book hidden by support all
  * read as empty here, by the store's own rules. A left book is no longer pulled: the page says nothing about freshness.
  */
-import { leftBookCopy } from '@scribe/content';
+import { familyCopy, leftBookCopy, leftBookDeleteCopy } from '@scribe/content';
 import { isQuietMark } from '@/components/book/quiet-day.logic';
 import type { Child, Entry } from '@/lib/db/repos';
 import { fill } from '@/lib/copy';
@@ -42,4 +42,17 @@ export function leftBookPage(books: readonly Child[], id: string, entriesOf: (ch
   const entries = child ? entriesOf(child.id).filter((e) => !isQuietMark(e)) : [];
   if (!child || entries.length === 0) return { title: leftBookCopy.emptyTitle, lead: null, empty: leftBookCopy.empty, child: null, entries: [] };
   return { title: fill(leftBookCopy.title, { child: child.name }), lead: fill(leftBookCopy.lead, { child: child.name }), empty: null, child, entries };
+}
+
+/**
+ * What the Delete confirmation says for a letter of a left book (BL-1961, data steward ruling on BL-1960). A letter that
+ * is in the book the other parent reads (`inBook`) says the delete leaves that book too and carries
+ * `familyCopy.leave.cantTakeBack`; a private letter names neither the other parent nor their book. The sheet's title,
+ * buttons and toast stay the Book's own (`settings.delete.*`), and no line offers an undo: `undeleteEntry` refuses a
+ * left book's letter (BL-1959).
+ */
+export function leftBookDeleteBody(entry: { inBook: boolean }, coParent?: string | null): string {
+  const name = coParent?.trim() || familyCopy.leave.coParentFallback;
+  if (!entry.inBook) return leftBookDeleteCopy.bodyPrivate;
+  return `${fill(leftBookDeleteCopy.bodyInBook, { coParent: name })}\n\n${fill(familyCopy.leave.cantTakeBack, { coParent: name })}`;
 }
