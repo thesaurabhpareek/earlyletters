@@ -19,6 +19,7 @@ import { formatBytes } from '@/lib/language/spoken-language.logic';
 import type { TextRulesStatus } from '@/lib/language/packs';
 import { cn } from '@/lib/utils';
 import { languageCopy } from './copy';
+import { nameBlockStyle, nameTextStyle } from './language-text.logic';
 
 /** Status line for a language's text-rules pack. Pure; exported for the screen's footer logic. */
 export function statusText(status: TextRulesStatus | undefined): string {
@@ -101,8 +102,8 @@ export function LanguageRow({ code, status, first, onChange, onRemove, onRetry }
         accessibilityActions={actions}
         onAccessibilityAction={onAction}
         className={cn('flex-1 flex-row items-center gap-3 py-3', press && 'active:opacity-70')}>
-        <View className="flex-1 gap-0.5">
-          <Text variant="body" accessibilityLanguage={info.bcp47} style={{ writingDirection: info.script.direction }}>
+        <View className="flex-1 gap-0.5" style={nameBlockStyle()}>
+          <Text variant="body" accessibilityLanguage={info.bcp47} style={nameTextStyle(info.script.direction)}>
             {info.native}
           </Text>
           <Text variant="footnote" tone="muted">
