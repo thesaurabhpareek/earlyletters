@@ -280,8 +280,8 @@ describe('S17: Review reads as a letter', () => {
   });
 
   it('the fix rows fold behind one disclosure row; every mark stays tappable in the letter', () => {
-    expect(review).toMatch(/accessibilityState=\{\{ expanded: fixesOpen \}\}/);
-    expect(review).toMatch(/view === 'fixes' && applied\.length > 0 && fixesOpen &&/);
+    expect(review).toMatch(/accessibilityState=\{\{ expanded: foldOpen \}\}/);
+    expect(review).toMatch(/view === 'fixes' && applied\.length > 0 && foldedShow &&/);
   });
 
   it('a failed save keeps the letter, relabels the primary and says so directly above it', () => {
@@ -295,7 +295,7 @@ describe('S17: Review reads as a letter', () => {
 
   it('"Keep private" stays after a failed save, so focus is never dropped and the other destination is one tap away', () => {
     const footer = review.slice(review.indexOf('const footer ='), review.indexOf('const keepFooter'));
-    expect(footer).toMatch(/<Button variant="quiet" fullWidth onPress=\{\(\) => keepTo\(false\)\} disabled=\{!finalText\.trim\(\)\} testID="review\.save\.private">/);
+    expect(footer).toMatch(/<Button variant="quiet" fullWidth onPress=\{\(\) => keepTo\(false\)\} disabled=\{!finalText\.trim\(\)\} accessibilityHint=\{lines \? keepLine\('private'\) : undefined\} testID="review\.save\.private">/);
     expect(footer).not.toMatch(/!saveFailed\s*&&/);
   });
 
