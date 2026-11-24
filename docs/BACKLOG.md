@@ -10508,7 +10508,7 @@ Servers on, decided by the founder (D-170, which confirms D-157, D-160 and D-161
 - Done when: every row cites evidence and the record no longer says sign-in is optional.
 
 #### BL-1869 Apply the trace ratchet step to CI
-- Status: blocked on PR #2050 (BL-2238). The step uses plain `node scripts/trace.mjs --no-write --check` with `--ns-base`, as drafted in `docs/ops/proposed/trace-ns-ratchet.md` (CR-229 rules way (a) and answers 07 Q8: `--check` blocks merges through this step); it is applied as Karma's commit once #2050 merges and `--check` exits 0 on develop, and only a proxy refusal makes it a line in `docs/release/FOUNDER_QUEUE.md`. Mode: human. Owner: platform. Milestone: M15. Size: XS. Depends on: BL-2030.
+- Status: blocked (applying a workflow file is a physical act, listed in `docs/release/FOUNDER_QUEUE.md` when it arrives; the step is written in `docs/ops/proposed/trace-ns-ratchet.md`; the plain `--check` question in it is open with founder question 07 Q8). Mode: human. Owner: platform. Milestone: M15. Size: XS. Depends on: BL-2030.
 - Satisfies: gate G0 (BL-964). Remainder of BL-964.
 - Scope: the proposed CI step in `docs/ops/proposed/trace-ns-ratchet.md` is written into the `unit` job of `.github/workflows/ci.yml` by Karma's commit (a GitHub write under CR-176 item 5). Only if the session proxy refuses a workflow-file write does it become the account holder's own edit of that file in the GitHub web editor, and then Karma adds the line to `docs/release/FOUNDER_QUEUE.md`. No secret is involved.
 - Done when: a pull request that drops an NS P0 test title fails the step.
@@ -11193,7 +11193,7 @@ Source: review notes on PRs #1869, #1871 and #1872, passed to the product agent 
 - Source: the review note on PR #1872. Not verified: the test file was not opened.
 
 #### BL-2033 Decide how CI runs the NS ratchet while plain `trace.mjs --check` fails on develop
-- Status: in review (branch `docs/trace-ns-ratchet-bl-2033`, 24 Nov 2026: the full-checkout run on develop `89ccadd1` fails only on 176 NS `added` lines, with 0 duplicate and 0 undefined v2 ids since PR #1843; `docs/ops/proposed/trace-ns-ratchet.md` lists them by cause and recommends (a); Karma ruled (a) and answered 07 Q8 in CR-229, so no founder question is sent). Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
+- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none. Lane: qa.
 - Satisfies: gate G0 (BL-964); refines BL-1869 (the open "plain `--check`" question, founder question 07 Q8).
 - Problem and evidence: in `scripts/trace.mjs` (main, near line 937) `--check` exits 1 on any of: an id defined in two specs, a cited id defined nowhere, or an NS gate failure. So the step in `docs/ops/proposed/trace-ns-ratchet.md` (`--no-write --check` with the base arguments) cannot be "ratchet only": on develop it already exits 1 on the 5 v2 ids cited but defined nowhere (F14-REQ-043a and b, F16-REQ-029a to c, in `docs/prd/v2/11-requirement-rules-and-retro-changes.md`; PR #1843 fixes them). In the NS gate (`nsGate`) a baseline line that is now tested is only logged as "stale baseline line" and does not fail; a line whose row is gone or lowered (`gone`), an open row missing from the baseline (`added`) and a line the base copy lacks (`grown`) do fail. The note's "stale baseline lines" cause is therefore not confirmed as written. The only separate ratchet today is `--scope b1`, which is the build-1 catalog set, not NS.
