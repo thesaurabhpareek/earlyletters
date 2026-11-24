@@ -81,7 +81,8 @@ export function eraseDeviceFiles(): void {
   }
   // B5-4: the backup state file (it holds a token, an upload URL and a wrapped key) goes next, so a recording that will
   // not delete cannot leave it waiting for the retry. Synchronous, so no await can come before it. A failure is held
-  // until the recordings have been tried, then thrown, so the rows stay and the next try repeats everything.
+  // (BL-1466, like daysLeft) until every other step has been tried, then thrown, so the export ZIPs, print PDF, frame
+  // copies and pictures do not wait for a retry; the rows and the mark stay and the next try repeats everything.
   let backupFailure: unknown = null;
   try {
     deleteBackupFiles();
@@ -89,7 +90,6 @@ export function eraseDeviceFiles(): void {
     backupFailure = e;
   }
   for (const f of listRecordingFiles()) if (f.exists) f.delete();
-  if (backupFailure) throw backupFailure;
   removeWholeFrameCopies(0);
   sweepListeningCopies(); // copies with no draft or letter row: run again after the rows go (finish)
   // Pictures kept with letters (NS-01-R16, NX-39-R31): the whole folder, whatever the photos switch says. A container
@@ -108,6 +108,9 @@ export function eraseDeviceFiles(): void {
       // iOS may clear Caches itself; a copy here is never read back by the app.
     }
   }
+  // If more than one file will not go, the first of these is thrown (the backup file holds a token and a wrapped key);
+  // all of them were tried, and the mark stays either way.
+  if (backupFailure) throw backupFailure;
   if (daysLeft) throw daysLeft;
   if (momentsLeft) throw momentsLeft;
 }

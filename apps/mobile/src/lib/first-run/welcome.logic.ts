@@ -37,6 +37,15 @@ export function inlineErrorKind(state: AuthState): AuthErrorKind | null {
 }
 
 /**
+ * BL-1441 (council batch 6, FP-6): Apple (or Google) sign-up refused by the sign-up hook. The Welcome shows the existing
+ * refused-region screen (E-S04.refused-region), never nothing, never a line under the buttons, never the outage screen.
+ * Derived from the auth state, so a new attempt (START) clears it. Names no reason and sends nothing.
+ */
+export function regionRefusedShown(state: AuthState): boolean {
+  return state.status === 'signedOut' && state.error === 'region_refused';
+}
+
+/**
  * "Try again", and a connection that returns, both put the person back on the Welcome: the failure that sent them to
  * the outage screen is set aside (by the identity of the failed state, so a NEW failure is a new failure).
  */
