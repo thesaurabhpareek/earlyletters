@@ -17,6 +17,7 @@ vi.mock('@/lib/analytics', () => ({
   analytics: { track: vi.fn() },
   analyticsIdsForDeletion: vi.fn(),
   forgetAnalyticsIds: vi.fn(),
+  forgetAnalyticsIdsSome: vi.fn(),
   withdrawAnalytics: vi.fn(),
 }));
 vi.mock('@/lib/auth/machine.logic', () => ({ authUserId: () => 'user-asha' }));

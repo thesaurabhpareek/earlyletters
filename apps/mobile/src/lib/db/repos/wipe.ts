@@ -112,6 +112,7 @@ export function removeBook({ db }: RepoContext, childId: string): void {
   db.run(`DELETE FROM sync_outbox WHERE entity_id IN (${own}) OR entity_id = ?`, childId, childId, childId);
   db.run(`DELETE FROM rejected_writes WHERE entity_id IN (${own}) OR entity_id = ?`, childId, childId, childId);
   db.run('DELETE FROM entries WHERE child_id = ?', childId);
+  db.run("DELETE FROM settings WHERE key IN (SELECT 'discard.failures.' || id FROM drafts WHERE child_id = ?)", childId); // NS-09-R15: the count goes with the draft
   db.run('DELETE FROM drafts WHERE child_id = ?', childId);
   db.run('DELETE FROM child_member_prefs WHERE child_id = ?', childId);
   db.run('DELETE FROM sync_books WHERE child_id = ?', childId);
