@@ -48,9 +48,9 @@ const LONG_WORD = 'Donaudampfschifffahrtsgesellschaftskapitänsmützenabzeichenw
 const LONG_RUN = 'https://example.invalid/' + 'a-very-long-path-segment-'.repeat(6);
 
 const fixtures: SnapshotEntry[] = [
-  letter('l-ar', '2026-12-24', AR),
-  letter('l-hi', '2026-09-01', HI),
-  letter('l-zh', '2026-10-05', ZH),
+  { ...letter('l-ar', '2026-12-24', AR), language: 'ar' },
+  { ...letter('l-hi', '2026-09-01', HI), language: 'hi' },
+  { ...letter('l-zh', '2026-10-05', ZH), language: 'zh-Hans' },
   letter('l-long', '2026-11-02', `${LONG_WORD}\n\n${LONG_RUN}`),
 ];
 const sample = { ar: AR, hi: HI, zh: ZH };
@@ -171,8 +171,36 @@ describe('BL-411 letter fixtures: the export', () => {
     for (const text of Object.values(sample)) expect(html).toContain(text.split('\n\n')[0]);
   });
 
-  // Gaps found while writing this slice. Each is a real finding, kept here so it is not lost.
-  it.todo('the book and the reader page say lang="en" for every letter; mark a letter lang ar, hi or zh so the right font is chosen');
-  it.todo('index.html .tag uses margin-left; switch to margin-inline-start so the chip sits at the start under RTL');
+  it('BL-1978: marks each letter with its own lang in the reader page and the book, and keeps the page lang="en"', async () => {
+    const { zip } = await make();
+    const index = strFromU8(unzipSync(zip)['index.html']);
+    const printed = planExport(snapshot).books[0].html;
+    for (const html of [index, printed]) {
+      expect(html).toMatch(/^<html lang="en">/m);
+      for (const [tag, text] of [['ar', AR], ['hi', HI], ['zh-Hans', ZH]] as const) {
+        const first = text.split('\n\n')[0];
+        const art = html.split('<article').find((a) => a.includes(first))!;
+        expect(art, tag).toBeTruthy();
+        expect(art.startsWith(` lang="${tag}">`), tag).toBe(true);
+      }
+      // A letter with no language adds no attribute, and the English letters are unmarked.
+      expect(html.split('<article').filter((a) => a.startsWith(' lang=')).length).toBe(3);
+    }
+  });
+
+  it('BL-1978: never writes a stored language that is not a plain tag into the attribute', () => {
+    const odd = ['"><script>', 'en US', '', '  ', null, undefined].map((language, i) => ({ ...letter(`o${i}`, '2026-11-03', `Odd ${i}`), language }));
+    expect(bookHtml(asha, odd, 'en-US')).not.toMatch(/<article lang=/);
+    expect(bookHtml(asha, odd, 'en-US')).not.toContain('<script>');
+  });
+
+  it('BL-1978: the reader page chip sits at the start under RTL (margin-inline-start, no physical margin)', async () => {
+    const { zip } = await make();
+    const index = strFromU8(unzipSync(zip)['index.html']);
+    const style = /<style>([\s\S]*?)<\/style>/.exec(index)![1];
+    expect(/\.tag\{[^}]*\}/.exec(style)![0]).toContain('margin-inline-start:.5rem');
+    expect(style).not.toMatch(/(margin|padding|border)-(left|right)/);
+  });
+
   it.todo('AX5 pixel check of the date pill and the language list on a device (journeys J01-05, J01-10, J01-12)');
 });
