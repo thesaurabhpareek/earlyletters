@@ -10609,3 +10609,12 @@ Source: findings of 23 and 24 Nov 2026 handed to the product agent. BL-1983 is t
 - Done when: no row is `ready` whose Done-when line a merged PR meets, shown in the PR body one line per row.
 - Second pass (24 Nov 2026): 25 rows flipped to done and 9 to partly done, each from the merged PR's changed files and subject against the row's Done-when line. Rows left as they are because a Done-when clause could not be checked from the files: BL-251, BL-410, BL-419, BL-422, BL-460, BL-462, BL-463, BL-476, BL-478, BL-483, BL-492, BL-493, BL-494, BL-495, BL-775, BL-841, BL-867, BL-930, BL-963, BL-982, BL-1001, BL-1434, BL-1527 (stays open by its own text), BL-1531, BL-1533, BL-1561, BL-1562, BL-1788, BL-1790, BL-1853, BL-1855, BL-1987, BL-1990, BL-1991. BL-1961 stays in review (PR #1816 is open). BL-1983 was already done.
 - Source: findings of 23 to 24 Nov 2026. Not verified: diffs were not read; only commit subjects.
+
+## Follow-up from the review of PR #1828 (24 Nov 2026; filed by design systems, docs only)
+
+#### BL-2005 Sheet title and body text meet at AX3 and AX5: the title is capped, the body is not
+- Status: needs-decision (the Chief Design Officer role rules whether a capped sheet title may be overtaken by body text at the largest text sizes, or the cap is lifted; a role ruling, not a legal one). Mode: agent. Owner: design systems engineer. Milestone: M15. Size: S. Priority: P2. Depends on: none.
+- Problem and evidence: the sheet title is capped at 44 pt and the body text is 18 pt before scaling. Dynamic Type scales the body past 2.44 times (44 / 18), which is reached at AX3 and AX5, while the title stops at its cap. From there the body text is larger than the title above it, and the title no longer reads as the heading. Found in the reviews of #1828; the 44 and 18 are the reviewers' figures and were not re-checked against the type tokens here; not seen on a device, no Dynamic Type run was made.
+- Scope: a ruling only. Options for the Chief Design Officer to choose from: keep the cap and accept the overtake (letter text is never truncated either way, D-027); lift or raise the title cap at AX3 and up; or cap the body in the sheet. No token change is made by this row; any change follows the ruling as its own row.
+- Done when: the ruling is written into `docs/design/COMPONENTS.md` under the sheet, with the numbers above, and this row is flipped to `ready` or `done`.
+- Source: reviews of #1828, 24 Nov 2026. Not verified: the 2.44 ratio is arithmetic on those two figures; no device or simulator run.

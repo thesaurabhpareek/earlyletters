@@ -26,7 +26,9 @@
  *
  * Calm, by rule (MOTION 5k):
  * - Breathes only where the scene says (welcome, finish, Tonight): opacity down 12 percent and back
- *   over 9 s, for tokens.motion.loopCapMs (30 s, four breaths) and then rests at full light. No flicker, no colour drift, no scaling, nothing that reads as a flash.
+ *   over 9 s, for tokens.motion.loopCapMs (the run is 36 s: 8 one-way runs of 4500 ms, four breaths,
+ *   the first whole number of breaths past the 30 s cap) and then rests at full light. No flicker,
+ *   no colour drift, no scaling, nothing that reads as a flash.
  * - The lamp never cuts between rooms (EXPERIENCE_PASS 5.8). Only the first lit room after a cold launch
  *   arrives slowly (arriveMs); every later lamp comes up as a return (returnMs), unless it asks to
  *   `arrive`. persistKey "firstRun" keeps one light from the gate through onboarding; "tabs" lets the
