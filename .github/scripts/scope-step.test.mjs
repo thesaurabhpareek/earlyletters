@@ -1,6 +1,6 @@
 // Tests for the `scope` step of the install job in ci.yml (BL-1479). Run: node --test .github/scripts/scope-step.test.mjs
 // The step is inline YAML (it runs before checkout, so it cannot be a repo script). This test extracts the `run:`
-// block of the step from ci.yml and runs it under bash with a stub `gh` (and, for the error case, a stub `grep`).
+// block of the step from ci.yml and runs it under `bash -e` (as the runner does: `shell: bash -e {0}`) with a stub `gh` (and, for the error case, a stub `grep`).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -57,7 +57,7 @@ esac
     }
     const out = join(dir, 'out');
     writeFileSync(out, '');
-    const r = spawnSync('bash', ['-c', block], {
+    const r = spawnSync('bash', ['-e', '-c', block], {
       env: {
         PATH: `${dir}:${process.env.PATH}`,
         GITHUB_OUTPUT: out,
