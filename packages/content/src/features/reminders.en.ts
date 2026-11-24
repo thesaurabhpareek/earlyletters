@@ -30,6 +30,17 @@ export const reminderCopy = {
     monthOpen: { title: NEUTRAL_TITLE, body: LOCK_BODY_NEUTRAL },
     birthday: { title: NEUTRAL_TITLE, body: LOCK_BODY_NEUTRAL },
     birthdays: { title: NEUTRAL_TITLE, body: LOCK_BODY_NEUTRAL },
+    // PROPOSED, needs word approval (BL-873; NX-39-R17, NX-39-R25, NX-39-R26). A local reminder on a day the parent
+    // typed on the occasions screen (R25). Fixed keys, picked when scheduled, carrying nothing from the library (R26):
+    // no occasion name, place, photo, count or {child}, and none of "waiting", "missed", "still", "forgot", "don't"
+    // (R17). The same lines whatever the day is, so the lock screen never hints at what the parent typed. Nothing reads
+    // these until BL-842 wires the occasions planner; test/typed-day-reminders.test.ts holds them to the rules.
+    typedDay: [
+      { title: 'A day you added', body: "Anything you'd like to say about it?" },
+      { title: "How's the day going?", body: 'Talk or type a line about it.' },
+      { title: 'Anything for the book?', body: 'One thing about the day is enough.' },
+      { title: 'A word about the day?', body: 'Say it or type it, whenever suits you.' },
+    ],
   },
   /** Two or more books turn a month on the same day (twins, or siblings born on the same day of the month). */
   together: {
