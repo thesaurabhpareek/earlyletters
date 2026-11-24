@@ -16,6 +16,7 @@ Rules that never bend:
 |---|---|---|---|
 | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | every function (subscription-status uses no service key) | Injected by Supabase automatically; do not set | With the service key (section 2) |
 | `PURGE_WORKER_SECRET` | purge-worker | `openssl rand -hex 32`. Same value goes in Vault as `purge_worker_secret` (1.2) | Yearly, on suspicion (2.1) |
+| `OPS_HEALTH_TOKEN` | ops-health (the Edge Function; the same value is the GitHub Environment secret `ops-watch` / `OPS_HEALTH_TOKEN`, 1.5) | `openssl rand -hex 32`. Its own token, not `PURGE_WORKER_SECRET` and not a Supabase key. It lets the caller read two numbers (purge_run age, failed cron runs) and nothing else. BL-584, CR-209 | Yearly, on suspicion (2.7) |
 | `RESEND_API_KEY` | purge-worker | Resend > API Keys > Create, permission **Sending access**, domain `earlyletters.com`. A separate key from the Supabase SMTP key, so either can be revoked alone | Yearly, when anyone with access leaves |
 | `RESEND_CONTACTS` | purge-worker | Leave unset (off). v1.0 keeps no Resend contacts, so the sending-only key is enough. Set `on` and switch to a full-access key only if marketing lists ever exist | n/a |
 | `POSTHOG_PERSONAL_API_KEY` | analytics-forget | PostHog > Settings > Personal API keys > Create: scope **person: write** only, limited to the Early Letters project (Verified: bulk delete needs `person:write`) | Yearly |
@@ -68,6 +69,13 @@ Created by `supabase/cron/purge-worker.sql`. Vault values are encrypted at rest 
 
 Every script also needs `--project-ref` equal to the ref in `SUPABASE_URL` and a `--ticket`, and writes one `ops.audit_log` row before it reads anyone's data (LEGAL-REQ-025).
 
+### 1.5 GitHub Environment `ops-watch` (the outside purge watch, BL-584; founder creates it, queue row FO-1)
+
+| Name | Value | Notes |
+|---|---|---|
+| `OPS_HEALTH_URL` | `https://<production project ref>.supabase.co/functions/v1/ops-health` | Not a secret by itself (the function refuses without the token); kept as an Environment secret so logs mask it |
+| `OPS_HEALTH_TOKEN` | the same value as the function secret in 1.1 | No required reviewer on this Environment: a scheduled run would wait for approval every 30 minutes and never alert. Safe because the token reads two numbers. No Supabase key is stored in GitHub (CR-209) |
+
 ## 2. Key rotation
 
 ### 2.1 `PURGE_WORKER_SECRET`
@@ -100,6 +108,12 @@ Create a new key (section 5), set `APPLE_SIGNIN_KEY_ID` and `APPLE_SIGNIN_PRIVAT
 | Quarterly | Restore drill (runbooks/restore-drill.md), `ops.audit_log` review, legal hold review |
 | Before 2027-09-30 | Renew `security.txt` Expires (DOMAINS.md 8) |
 
+### 2.7 `OPS_HEALTH_TOKEN`
+1. `openssl rand -hex 32`.
+2. `npx supabase secrets set OPS_HEALTH_TOKEN=<new> --project-ref <ref>`.
+3. GitHub: Settings > Environments > `ops-watch` > update `OPS_HEALTH_TOKEN` to the same value.
+4. Run the Purge watch workflow once by hand; it should be green. Between steps 2 and 3 a scheduled run fails with "refused the token"; nothing else is affected.
+
 ## 3. Least privilege
 
 | Who or what | Can do | Cannot do |
@@ -108,6 +122,7 @@ Create a new key (section 5), set `APPLE_SIGNIN_KEY_ID` and `APPLE_SIGNIN_PRIVAT
 | `anon` (no session) | Read public policy documents | Every function (tested: no public function is executable by `anon`) |
 | `purge-worker` | Service role inside the function | It is only reachable with `PURGE_WORKER_SECRET`, which can only start a run |
 | cron (`pg_cron`) | Call the worker URL with the trigger secret | It never holds the service role key |
+| `ops-health` (with `OPS_HEALTH_TOKEN`) | Answer two numbers (purge_run age, failed scribe-* cron runs) to the caller who proves the token, reading `ops_deletion_sla` and `ops_cron_health` with the service key inside Supabase | Return a row, a job name, a count other than those two, or anything to a caller without the token; the token cannot read the database or call any other function |
 | `analytics-forget` | Check the caller's session, count calls, call PostHog bulk delete | Store or log analytics ids (it has nowhere to put them) |
 | Resend key in the worker | Send email from `earlyletters.com` | Read contacts or logs (sending-only key) |
 | PostHog key in the function | Delete persons | Read events, change settings (`person:write` only) |
@@ -134,7 +149,7 @@ Consoles: every account below has two-factor sign-in (a security key or an authe
 | Anonymous sign-ins | Off | Not used at v1.0 | Authentication > Providers |
 | Phone and unused providers | Off | Smaller surface | Authentication > Providers |
 | Auth audit logs | Keep the shortest retention offered; do not store IPs in the database if the option exists (DELETION spec OQ-5, Unverified) | Minimisation | Authentication > Audit Logs |
-| Edge Functions | `config`, `content` and `purge-worker` deployed with `--no-verify-jwt`; `analytics-forget`, `apple-token`, `invite-redeem` and `subscription-status` with JWT verification on (`.github/scripts/functions-deploy.mjs` `NO_VERIFY_JWT` and each function's `index.ts`; `escrow` lives in its own project, D-102) | Section 3 | Edge Functions > function > Details |
+| Edge Functions | `config`, `content`, `purge-worker` and (once the founder applies `docs/ops/proposed/ops-health-deploy.md`) `ops-health` deployed with `--no-verify-jwt`; `analytics-forget`, `apple-token`, `invite-redeem` and `subscription-status` with JWT verification on (`.github/scripts/functions-deploy.mjs` `NO_VERIFY_JWT` and each function's `index.ts`; `escrow` lives in its own project, D-102) | Section 3 | Edge Functions > function > Details |
 | Storage | Every bucket private (`entry-photos`, `ops-ledger`); size and MIME limits as migrations set | DATA-REQ-047 | Storage |
 | Organization | MFA required for members; members: founder only | Section 3 | Organization > Settings |
 | Error verbosity | Ask Supabase support whether `log_error_verbosity = terse` can be set, so failing rows never reach Postgres logs (TDD 06 conflict C-2, Unverified) | Letter text in a CHECK failure | Support ticket |
