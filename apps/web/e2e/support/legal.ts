@@ -21,5 +21,8 @@ export const INTERNAL_MARKS: RegExp[] = [/\bD-\d{2,3}\b/, /\bADR\b/, /\bBL-\d+/,
 /** Services named in the old drafts that the website's code does not use. */
 export const NOT_USED_SERVICES = /\b(PostHog|Sentry|RevenueCat|AWS|Amazon|Google|Anthropic|Stripe|Supabase|PowerSync|Groq|DeepInfra|Cloudflare|Apple)\b/;
 
-/** Off the site for now: their content moves into Privacy, or waits for a build with accounts. */
-export const REMOVED_ROUTES = ['/health-privacy', '/subprocessors', '/delete-account'];
+/**
+ * Off the site for now: their content moves into Privacy, or waits for a build with accounts. /delete-account came back
+ * on the branch that builds it (BL-2128, as CR-193 D-15 asks), noindex and out of the sitemap.
+ */
+export const REMOVED_ROUTES = ['/health-privacy', '/subprocessors'];
