@@ -64,11 +64,17 @@ test("duplicate ids, rank gaps and repeated ranks fail", () => {
   assert.match(checkRankRows([{ ...good[0], rank: 0 }], tasks).errors.join("\n"), /missing 1/);
 });
 
-test("unknown tier, unknown id and stale ranks fail", () => {
+test("unknown tier and unknown id fail", () => {
   assert.match(checkRankRows([{ ...good[0], tier: "T4" }], tasks).errors.join("\n"), /unknown tier "T4"/);
   assert.match(checkRankRows([{ ...good[0], id: "BL-999" }], tasks).errors.join("\n"), /BL-999 is not in docs\/BACKLOG.md/);
-  assert.match(checkRankRows([{ ...good[0], id: "BL-040" }], tasks).errors.join("\n"), /stale rank, BL-040 is done/);
-  assert.match(checkRankRows([{ ...good[0], id: "BL-050" }], tasks).errors.join("\n"), /stale rank, BL-050 is superseded/);
+});
+
+test("a stale rank (done or superseded) warns and does not fail", () => {
+  for (const [id, status] of [["BL-040", "done"], ["BL-050", "superseded"]]) {
+    const r = checkRankRows([{ ...good[0], id }], tasks);
+    assert.deepEqual(r.errors, []);
+    assert.ok(r.warnings.some((w) => w.includes(`stale rank, ${id} is ${status}`)), r.warnings.join("\n"));
+  }
 });
 
 test("shape errors from parseRank fail the check", () => {

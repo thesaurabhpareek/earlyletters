@@ -5,9 +5,10 @@
 //   node scripts/agents/rank-check.mjs
 //
 // Errors: a row that is not `| rank | BL-nnn | tier | why |`, a duplicate id, ranks that
-// are not 1..N once each, a tier outside T0..T3, an id that is not in docs/BACKLOG.md, and
-// a ranked row whose task is done or superseded (a stale rank).
-// Warning only: a ready agent row with no rank (unranked rows still run, in file order).
+// are not 1..N once each, a tier outside T0..T3 and an id that is not in docs/BACKLOG.md.
+// Warnings only: a ranked row whose task is done or superseded (a stale rank, harmless because
+// the dispatcher skips done rows; the product agent prunes it on the next recompute), and a
+// ready agent row with no rank (unranked rows still run, in file order).
 import { join } from "node:path";
 import { ROOT, parseBacklog, readText, loadRank, RANK_TIERS } from "./lib.mjs";
 
@@ -27,7 +28,7 @@ export function checkRankRows(rows, tasks, shapeErrors = []) {
     if (!RANK_TIERS.includes(r.tier)) errors.push(`${where}: unknown tier "${r.tier}", use one of ${RANK_TIERS.join(", ")}`);
     const t = byId.get(r.id);
     if (!t) errors.push(`${where}: ${r.id} is not in docs/BACKLOG.md`);
-    else if (STALE.has(t.status)) errors.push(`${where}: stale rank, ${r.id} is ${t.status}; remove the row and close the gap`);
+    else if (STALE.has(t.status)) warnings.push(`${where}: stale rank, ${r.id} is ${t.status}; the product agent prunes it on the next recompute`);
   }
 
   const ranks = rows.map((r) => r.rank).sort((a, b) => a - b);
