@@ -6,8 +6,8 @@
  * a child name. The ids are used for one PostHog call and dropped by the function, never stored or logged.
  *
  * `retired_id` is the reason a phone sends when it forgets one retired id to stay within its cap of retired ids
- * (ER-A04). The function does not accept it yet: that is the server half of BL-1252, so until it does the phone's call
- * is refused and the id is kept (safe by design: an id leaves the phone only after the server says yes).
+ * (ER-A04). The function accepts it for a signed-in session only, in its own quota bucket (BL-1252). An id leaves the
+ * phone only after the server says yes, so a refusal keeps it.
  */
 
 export const ANALYTICS_FORGET_PATH = '/functions/v1/analytics-forget/v1';
@@ -20,8 +20,8 @@ export const ANALYTICS_FORGET_MAX_IDS = 21;
 export const ANALYTICS_FORGET_REASONS = ['account_deletion', 'device_after_deletion', 'retired_id'] as const;
 export type AnalyticsForgetReason = (typeof ANALYTICS_FORGET_REASONS)[number];
 
-/** Reasons in the contract that the deployed function does not accept yet (the server half). A test pins this list. */
-export const ANALYTICS_FORGET_PENDING_REASONS: readonly AnalyticsForgetReason[] = ['retired_id'];
+/** Reasons in the contract that the function does not accept yet. A test pins this list; empty since BL-1252. */
+export const ANALYTICS_FORGET_PENDING_REASONS: readonly AnalyticsForgetReason[] = [];
 
 export interface AnalyticsForgetRequest {
   ids: string[];
