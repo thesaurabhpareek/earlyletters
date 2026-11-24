@@ -216,7 +216,7 @@ test('[J22c] Account: signed out, then in from Settings, with the age step and w
   m.rpc('sync_books', () => ({ body: { epoch: 1, first_run_open: false, books: [] } }));
   await openOn(app, '/?seed=asha');
   await openOn(app, '/settings/account?seed=asha');
-  await expect(app.getByRole('heading', { name: 'Not signed in' })).toBeVisible();
+  await expect(app.getByRole('heading', { name: authCopy.account.signedOutTitle })).toBeVisible();
   await expect(app.getByText(BODY, { exact: true })).toBeVisible();
   await step('happy', 'Account, signed out', 'The small closed cover, "Not signed in", the sign-in sheet\'s own sentence and Sign in (S56).');
 
@@ -244,7 +244,7 @@ test('[J22c] Account: signed out, then in from Settings, with the age step and w
   await expect(app.getByText(EMAIL)).toBeVisible();
   await expect(app.getByText(authCopy.account.syncTitle, { exact: true }).first()).toBeVisible();
   await expect(app.getByText('Sign out', { exact: true })).toBeVisible();
-  await step('happy', 'Account, signed in', 'How the person signed in, with its mark and the address; Sync across your phones; Devices; and Sign out as a plain row, not red: nothing is deleted. The confirm is native (not on the web).');
+  await step('happy', 'Account, signed in', 'How the person signed in, with its mark and the address; Sync; Devices; and Sign out as a plain row, not red: nothing is deleted. The confirm is native (not on the web).');
 });
 
 test('[J22d] account setup: Terms, then sensitive data declined at the same size, signed in with nothing synced', async ({ app, record }) => {
@@ -399,7 +399,7 @@ test('[J22g] the code step: Not now top right closes and asks nothing; the lette
   await expect(app.getByText(SAFE, { exact: true })).toBeVisible();
   await step('happy', 'Waiting for the email, with a book here', 'Under the code field, only when this phone holds a book: "Your letters are still on this phone." A fresh install has no letters to be safe, so it says nothing there.');
   await btn(app, 'Not now').click();
-  await expect(app.getByRole('heading', { name: 'Not signed in' })).toBeVisible();
+  await expect(app.getByRole('heading', { name: authCopy.account.signedOutTitle })).toBeVisible();
 });
 
 test('[J22h] five wrong codes: typing waits, the line says the email\'s link and Apple or Google still work, and a new email stays (P8a critics S1, lens A2)', async ({ app, record }) => {

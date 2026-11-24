@@ -17,7 +17,7 @@ test('[J17] no co-parent flow: three tabs, no Family tab and no coming soon anyw
   await expect(app.getByRole('tab', { name: 'Family' })).toHaveCount(0);
   await step('happy', 'Three tabs: Home, Book, Me', 'The bar is the same in every build. There is no Family tab and no gap where it was.');
   await app.getByText('Book', { exact: true }).last().click();
-  await app.getByRole('button', { name: 'Settings' }).first().click();
+  await app.getByTestId('book.settings').click();
   await app.getByText('Asha', { exact: true }).first().click();
   await expect(app.getByText(/Write this book together/)).toHaveCount(0);
   await expect(app.getByText(/Coming soon|coming in a later update|For now, this book is yours/)).toHaveCount(0);
@@ -35,7 +35,7 @@ test('[J17b] no co-parent flow: "I was invited" is not on the welcome screen', a
 test('[J17c] no co-parent flow: a child\'s settings have no co-parent row and no switch that cannot be turned on', async ({ app }) => {
   await seeded(app);
   await app.getByText('Book', { exact: true }).last().click();
-  await app.getByRole('button', { name: 'Settings' }).first().click();
+  await app.getByTestId('book.settings').click();
   await app.getByText('Asha', { exact: true }).first().click();
   await expect(app.getByText(/Write this book together/)).toHaveCount(0);
   await expect(app.getByText(/Family can read/)).toHaveCount(0);
