@@ -9305,7 +9305,7 @@ Queue order (the dispatcher takes the first `ready` row an agent owns, in file o
 - Done when: the spec is in `docs/design/` and names the evidence for "every".
 
 #### BL-1788 One line under Add to the book and Keep private that says what each changes
-- Status: ready. Mode: agent. Owner: content. Milestone: M15. Size: S. Depends on: BL-1710 (the dispatcher picks it only once BL-1710 is `done`, which follows the merge of the spec).
+- Status: partly done (PR #1804 merged as `33f3e0fb9`: the keys and `review-keep-lines.test.ts` are in and the rules test passes; left: privacy's read of the lines against the PRD privacy rows, which the PR says it could not complete). Mode: agent. Owner: content. Milestone: M15. Size: S. Depends on: BL-1710 (the dispatcher picks it only once BL-1710 is `done`, which follows the merge of the spec).
 - Priority: P1. Gate: written with BL-1710 so Review is touched once. Lane: content (product checks it against the PRD privacy rows).
 - Spec: `docs/design/specs/14-REVIEW-QUIET-DEFAULT-23nov.md`, section 5 (facts, limits and placement) and QD-08, QD-09. Correction to this row: no printed-book clause, because D-010 says digital only in v1. Review is touched twice unless one mobile row builds the fold and these lines together: the fold has no build row yet (spec 14 section 8), the build row for the fold is BL-1984 (CPO-66), which wires these lines in the same change, so Review is touched once.
 - Satisfies: PER1-004 (P1).
@@ -10242,7 +10242,7 @@ Sources: the Chief Product Officer rulings CPO-66 to CPO-71, the Chief Design Of
 - Done when: the three edits are in `docs/ops/RELEASE.md` and nothing else changed in that file; the PR body says the ancestor test alone is not enough and points to BL-1987, and lists the G2 question for the founder.
 
 #### BL-1987 Make the BL-1854 hold structural: Erase now on a signed-in phone sits behind a store flag that is off
-- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
+- Status: done (PR #1795 merged as `463b14ac2`; read on 24 Nov 2026 against the Done-when line from the PR's changed files: `store-flags.mjs`, `capabilities.ts` and the three named tests; no device run). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
 - Priority: P1 (it must merge before BL-1871 cuts the release PR). Gate: none to build; the flag stays off until BL-1805 clears (the founder clears the wording, CLO-22, CR-177); BL-1805 is the named gate and owner that CR-178 item 1 asks for. Lane: mobile.
 - Satisfies: CR-177; CR-178 item 1; CLO-22; D-169 item 5; BL-1854.
 - Problem and evidence: `capabilities.serverErase` (`apps/mobile/src/lib/capabilities.ts` line 213) follows the server switch, as sync does, so with servers on in production (D-170) the code BL-1854 merged is live in every build and the hold is only a sentence. The repo's own pattern for a feature that stays off in store profiles until a gate passes is `scripts/release/store-flags.mjs`: a row with `allowedOn` empty, read by `apps/mobile/scripts/preflight-testflight.mjs` and `apps/mobile/test/store-flags.test.ts`.
