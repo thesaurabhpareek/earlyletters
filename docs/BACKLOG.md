@@ -1673,12 +1673,40 @@ Note on D-051: `docs/DECISIONS.md` on `develop` has D-051 "Standard over custom"
 - Test: Journey J06 (J06-07, J06-09); content rules test.
 
 #### BL-434 Tonight and Book read only what they show
-- Status: done (PR #1541). Mode: agent. Owner: mobile engineer. Milestone: M-JR. Size: M. Depends on: none.
+- Status: partly done (Tonight reads and the Book count merged in PR #1541; remaining: Book paging by chapter, the J01-14 and J09-03 runs, switch-child timing). Mode: agent. Owner: mobile engineer. Milestone: M-JR. Size: M. Depends on: none.
 - Severity: minor. Raised by: quality (2 findings). Steps: J01-14, J09-03.
 - Satisfies: PRD 7.1 (chapter of 60 letters p95 500 ms, switch child p95 300 ms); BL-111.
 - Scope: Tonight queries only the last N prompt keys and the latest `occurred_on`. Book counts with SQL, pages by chapter and does not parse `machine_edits` for every row on focus. The switch-child path is timed.
 - Done when: On the 2,000-letter fixture Tonight focus does not read `machine_edits` and Book renders its first chapter within p95 500 ms.
 - Test: `apps/mobile/test/perf.sql.test.ts` (from BL-1402); journeys J01 (J01-14) and J09 (J09-03).
+- Remainder (split 24 Nov 2026 by BL-1631): BL-2225 (Book paging by chapter), BL-2226 (the J01-14 and J09-03 runs), BL-2227 (switch-child timing).
+
+#### BL-2225 Book pages by chapter instead of loading and chaptering every letter in memory
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M-JR. Size: M. Depends on: none.
+- Priority: Medium. Gate: before the Book reaches a large family book.
+- Satisfies: PRD 7.1 (chapter of 60 letters p95 500 ms, switch child p95 300 ms); BL-111 (same as BL-434).
+- Problem and evidence: review A and B on PR #1541 (filed by BL-1631): Tonight reads and the Book count are done, but the Book still loads and chapters every letter in memory.
+- Scope: the Book screen asks the local store for one chapter at a time (SQL `LIMIT`/`OFFSET` or a keyset on `occurred_on`), and loads the next chapter as the reader scrolls to it; it does not parse `machine_edits` for rows it does not show. No change to what a letter shows.
+- Done when: on the 2,000-letter fixture of `apps/mobile/test/perf.sql.test.ts` the Book's first chapter renders within p95 500 ms, a test shows the Book reads at most one chapter of rows on focus, and the test goes red when the paging is removed.
+- Test: `apps/mobile/test/perf.sql.test.ts` and a Book screen test.
+
+#### BL-2226 Run journeys J01-14 and J09-03 against the paged Book and Tonight, and record the result
+- Status: proposed (after BL-2225). Mode: pair. Owner: qa engineer. Milestone: M-JR. Size: XS. Depends on: BL-2225.
+- Priority: Medium. Gate: none.
+- Satisfies: PRD 7.1 and BL-111 (same as BL-434).
+- Problem and evidence: review A and B on PR #1541 (filed by BL-1631): journeys J01-14 and J09-03 were not run for the Tonight and Book read changes.
+- Scope: run the two journey steps on a build that has BL-2225 and write down what each step showed, with the build id; a failing step becomes its own row.
+- Done when: the result of both steps is recorded beside BL-434 with the build id, and each failure, if any, has a row.
+- Test: Journeys J01 (J01-14) and J09 (J09-03).
+
+#### BL-2227 Time the switch-child path again on the 2,000-letter fixture (p95 300 ms)
+- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M-JR. Size: S. Depends on: none.
+- Priority: Medium. Gate: none.
+- Satisfies: PRD 7.1 and BL-111 (same as BL-434).
+- Problem and evidence: review A and B on PR #1541 (filed by BL-1631): switch-child timing was not re-measured after the Tonight and Book read changes.
+- Scope: add or extend a case in `apps/mobile/test/perf.sql.test.ts` that times the reads a child switch triggers (Tonight and the Book's first chapter) against the p95 300 ms budget, with a planted slow read that turns it red.
+- Done when: the case passes on the real code and fails on the planted slow read, and the measured p95 is written in the PR body.
+- Test: `apps/mobile/test/perf.sql.test.ts`.
 
 ## QA: coverage baseline follow-ups (BL-441 to BL-443; from PR #180, 16 Oct 2026)
 
@@ -9387,7 +9415,7 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Done when: the case name says what it measures.
 
 #### BL-1631 Pointer: the Book paging remainder is BL-434 (no second row)
-- Status: ready. Mode: agent. Owner: product manager. Milestone: M15. Size: XS. Depends on: none.
+- Status: superseded (by BL-434; remainder rows BL-2225, BL-2226, BL-2227). Mode: agent. Owner: product manager. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Medium. Gate: before the Book reaches a large family book.
 - Satisfies: none new (a status correction; BL-434 keeps its own `Satisfies`: PRD 7.1 and BL-111).
 - Problem and evidence: review A and B on PR #1541. Tonight reads and the Book count are done, but the Book still loads and chapters every letter in memory; J01-14 and J09-03 were not run and switch-child timing was not re-measured. BL-434 reads `done (PR #1541)`, so its status cannot name a remainder: the premise of this row's old scope was false.
