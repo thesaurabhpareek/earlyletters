@@ -37,7 +37,7 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 | # | Stage | Metric and definition | Primary source | Device events used | Target (A unless noted) | Serves |
 |---|---|---|---|---|---|---|
 | 1 | Activation: first letter | Share of new accounts with a first letter within 1, 7 and 30 days; median time from first launch to first saved letter | S `first_letter_conversion`; ASC installs; D `analytics_opted_in.time_to_first_letter` | `analytics_opted_in` | Median first letter 90 s or less (B F1, R1) | PRD-REQ-016 |
-| 2 | Keep the book | Share of first-letter users with an account by day 7 | S (accounts with 1 or more letters) over D/ASC | `screen_view` (the sign-in sheet), `auth_succeeded`, `auth_deferred`, `local_merge_choice` | 50% or more (A Q2 threshold) | PRD-REQ-001, A-NFR-013 |
+| 2 | Keep the book | Share of first-letter users with an account by day 7 | S (accounts with 1 or more letters) over D/ASC | `screen_view` (the sign-in sheet), `auth_succeeded`, `auth_deferred` | 50% or more (A Q2 threshold) | PRD-REQ-001, A-NFR-013 |
 | 3 | Activated writer | Letters saved in 2 or more different weeks within 4 weeks of the first letter | S `retention_cohorts` | `letter_saved`, `capture_started` | Set after first cohorts | PRD-REQ-016 |
 | 4 | Weekly letters | Letters per active family per week; spoken versus typed; book versus private | S `weekly_keeping_families`, `letters_per_active_family`; D for `prompt_kind`, `from_notification_2h`, edit counts | `letter_saved`, `transcription_completed` | Set after first cohorts | C-REQ-034 |
 | 5 | Co-parent | Co-parent invites sent and accepted within 7 days; families with two voices | S `family_invites`, `letters_per_active_family`; D for channel | `invite_created`, `invite_accepted`, `invite_failed` | Set after first cohorts | B-REQ-007 |
@@ -87,13 +87,12 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 ### 3.1 Events by area
 
 <!-- catalogue:begin (generated from packages/analytics/src/catalog.ts by `npm run plan -w @scribe/analytics`; do not edit by hand) -->
-69 events: 24 sendable (one definition each, in packages/analytics/src/registry.ts) and 45 held. Every event also carries the global properties in 3.2. `?` marks an optional property. Every event and property is L2.
+51 events: 24 sendable (one definition each, in packages/analytics/src/registry.ts) and 27 held. Every event also carries the global properties in 3.2. `?` marks an optional property. Every event and property is L2.
 
 #### app
 
 | Event | Fires when | Properties (type: allowed values) | Serves |
 |---|---|---|---|
-| `app_backgrounded` | App goes to the background; carries the session length bucket | `session_bucket` (enum: lt_1m \| 1_5m \| 5_15m \| gt_15m) | PRD-REQ-016 |
 | `screen_view` | A route is shown. Sent by our router hook from the route template, never by SDK autocapture | `route` (enum: tonight \| book \| family \| listen \| write \| review \| letter_detail \| onboarding \| read_together \| sign_in \| sign_in_email \| sign_in_code \| sign_in_verify \| sign_in_consent \| invite \| invite_new \| settings \| settings_account \| settings_appearance \| settings_reminders \| settings_recordings \| settings_child_detail \| settings_child_new \| settings_privacy \| settings_export \| settings_language \| settings_plus \| settings_storage \| settings_delete_account) | ADR-0008, PRD-REQ-016 |
 | `app_opened` | App comes to the foreground after 30 min or more away, or cold starts | `source` (enum: cold \| warm \| notification \| link)<br>`days_since_last_open` (enum: d0 \| d1 \| d2_7 \| d8_30 \| d31_90 \| d91_plus) | PRD-REQ-016 |
 | `control_tapped` | A registered key control is activated. Sent by our own tap helper, never by SDK touch capture | `control` (enum: tonight_speak \| tonight_write \| review_keep \| review_play_back \| book_read_together \| keep_sheet_start_plus \| keep_sheet_hold \| invite_share)<br>`route` (enum: tonight \| book \| family \| listen \| write \| review \| letter_detail \| onboarding \| read_together \| sign_in \| sign_in_email \| sign_in_code \| sign_in_verify \| sign_in_consent \| invite \| invite_new \| settings \| settings_account \| settings_appearance \| settings_reminders \| settings_recordings \| settings_child_detail \| settings_child_new \| settings_privacy \| settings_export \| settings_language \| settings_plus \| settings_storage \| settings_delete_account) | ADR-0008, FR-DAT-21 |
@@ -110,13 +109,10 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 
 | Event | Fires when | Properties (type: allowed values) | Serves |
 |---|---|---|---|
-| `auth_method_selected` | A sign-in method tapped (observed from the auth state) | `method` (enum: apple \| google \| email \| passkey) | PRD-REQ-016 |
 | `auth_failed` | Sign-in failed or was cancelled (observed). An under-18 answer is never sent | `method` (enum: apple \| google \| email \| passkey)<br>`reason` (enum: cancelled \| network \| expired \| wrong_code \| code_paused \| rate_limited \| invalid_email \| not_available \| provider \| session_expired \| consent_unavailable \| unknown) | A-NFR-013 |
-| `auth_email_sent` | Email sign-in link or code sent (observed); attempt counts sends in this sign-in | `attempt` (int 1 to 10) | A-NFR-013 |
 | `auth_deferred` | User chose Later on the sign-in sheet | `trigger` (enum: first_letter \| third_letter \| invite \| invite_create \| sign_in \| settings) | PRD-REQ-016 |
 | `signed_out` | The session ended on this phone (observed): by the person, Apple revoked it, account switch, or the session was lost | `reason` (enum: user \| apple_revoked \| switch_account \| session_lost) | A-NFR-013, PRD-REQ-016 |
 | `invite_opened` | An invite link or code is opened in the app | `via` (enum: link \| code \| paste)<br>`signed_in` (bool) | B-REQ-007 |
-| `local_merge_choice` | User with local letters picks where they go at sign-in | `choice` (enum: existing \| new) | PRD-REQ-016 |
 | `auth_succeeded` | A new session exists on this phone (observed from the auth state). New accounts are counted on the server | `method` (enum: apple \| google \| email \| passkey)<br>`had_local_data` (bool) | A-NFR-013, PRD-REQ-016 |
 
 #### children
@@ -124,10 +120,6 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 | Event | Fires when | Properties (type: allowed values) | Serves |
 |---|---|---|---|
 | `child_switched` | User switches the current book | `child_ordinal` (enum: first \| second \| third_plus)<br>`surface` (enum: tonight \| book \| review \| listen) | PRD-REQ-012 |
-| `child_setting_changed` | A per-child setting is changed (which setting only, never the value) | `key` (enum: display_name \| nickname \| date \| photo \| book_look \| family_can_read \| hidden \| deleted \| signs_as \| include_in_reminders \| pause_celebrations \| auto_add)<br>`child_ordinal` (enum: first \| second \| third_plus) | PRD-REQ-013 |
-| `make_it_yours_card` | A post-first-letter "Make it yours" card is acted on | `card` (enum: goals \| words \| invite \| photo)<br>`action` (enum: opened \| completed \| skipped) | B-REQ-004, PRD-REQ-016 |
-| `goals_set` | What matters goals saved. Count only: goals are L4 (PRD 7.10), so which goals were picked is never sent | `count` (int 0 to 5) | B-NFR-001, PRD-REQ-010 |
-| `dictionary_term_added` | A Names and words term saved (kind only, never the term) | `kind` (enum: child \| nickname \| family \| word \| place \| self)<br>`source` (enum: settings \| review_correction \| onboarding) | PRD-REQ-016 |
 | `child_added` | A child book is created | `has_date` (bool)<br>`child_ordinal` (enum: first \| second \| third_plus)<br>`in_first_run` (bool)<br>`added_together` (bool) | PRD-REQ-011, PRD-REQ-015, B-REQ-004 |
 
 #### capture
@@ -137,7 +129,6 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 | `review_action` | An action on the Review screen | `action` (enum: show_exactly_said \| edit_text \| say_again \| play_back \| change_child \| change_destination \| undo_all_edits) | PRD-REQ-016, PRD-REQ-012 |
 | `machine_edit_reverted` | A user undoes one machine edit (type and source only). Fidelity health signal for the constitution | `edit_type` (enum: filler \| false_start \| repeat \| stt_fix \| punctuation \| agreement \| paragraph)<br>`source` (enum: rule \| model) | PRD-REQ-016 |
 | `machine_edit_rejected` | The verifier refused machine edits for a letter: one event per edit type, source and reason, with a count. Never the text or the span | `edit_type` (enum: filler \| false_start \| repeat \| stt_fix \| punctuation \| agreement \| paragraph)<br>`source` (enum: rule \| model)<br>`reason` (enum: original_mismatch \| changes_invisible \| out_of_bounds \| overlaps_protected \| overlaps_other_edit \| type_not_allowed_at_level \| removal_only \| not_a_filler \| not_a_repeat \| false_start_not_repeated \| stt_fix_not_dictionary \| punctuation_changed_letters \| agreement_not_single_word \| agreement_stem_mismatch \| agreement_limit_per_sentence \| paragraph_not_whitespace \| inserted_content_word \| change_ceiling_exceeded \| splits_word \| removal_adds_punctuation \| changes_negation \| changes_tense \| changes_modal \| changes_word \| changes_number \| changes_sentence_type \| changes_quotes \| case_change_not_allowed \| case_change_not_sentence_start \| removes_negation \| repeat_is_emphasis \| false_start_complete_phrase \| stt_fix_protected_word \| stt_fix_not_heard_as \| not_vetted_for_language)<br>`count` (int 1 to 500) | PRD-REQ-016, B-REQ-003 |
-| `letter_deleted` | Own letter deleted or restored within the undo window | `action` (enum: deleted \| restored)<br>`destination` (enum: book \| private) | PRD-REQ-016 |
 | `capture_started` | User starts speaking or typing a letter | `mode` (enum: spoken \| typed \| mixed)<br>`source` (enum: tonight \| book \| notification \| make_it_yours \| resurface)<br>`prompt_kind` (enum: opening \| gap \| hard \| family \| together \| none)<br>`child_ordinal` (enum: first \| second \| third_plus)<br>`member_role` (enum: parent \| contributor) | PRD-REQ-016, C-REQ-034 |
 | `capture_discarded` | A letter in progress is thrown away before saving | `mode` (enum: spoken \| typed \| mixed)<br>`stage` (enum: listening \| review)<br>`audio_bucket`? (enum: lt_15s \| 15_60s \| 1_2m \| 2_5m \| gt_5m) | PRD-REQ-016 |
 | `transcription_completed` | A spoken letter finishes transcription, hears no speech, fails, or waits for its language model | `engine` (enum: on_device \| server)<br>`model` (enum: turbo \| small \| hindi_small \| zh_turbo \| server_default \| none)<br>`audio_bucket` (enum: lt_15s \| 15_60s \| 1_2m \| 2_5m \| gt_5m)<br>`latency_bucket` (enum: lt_5s \| 5_15s \| 15_30s \| 30_60s \| gt_60s)<br>`outcome` (enum: ok \| no_speech \| failed \| queued_for_model) | PRD-REQ-016, NFR-7.7 |
@@ -163,9 +154,6 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 | Event | Fires when | Properties (type: allowed values) | Serves |
 |---|---|---|---|
 | `invite_failed` | Creating or accepting an invite failed (the reason class only) | `stage` (enum: create \| accept)<br>`reason` (enum: expired \| used \| revoked \| already_member \| not_found \| not_parent \| rate_limited \| consent_needed \| book_deleted \| signed_out \| network \| unknown) | B-REQ-007 |
-| `family_letter_reviewed` | A parent decides on a family letter | `decision` (enum: added \| kept_aside) | B-REQ-009, B-NFR-001 |
-| `member_removed` | A parent removes a member | `role` (enum: parent \| contributor) | B-REQ-010 |
-| `member_left` | A member leaves a book | `role` (enum: parent \| contributor)<br>`letters` (enum: keep \| take_out) | B-REQ-010 |
 | `invite_created` | A parent creates an invite | `role` (enum: parent \| contributor)<br>`channel` (enum: share_sheet \| copy_link \| code)<br>`shared` (bool)<br>`child_ordinal` (enum: first \| second \| third_plus) | B-REQ-007, B-NFR-001, PRD-REQ-014 |
 | `invite_accepted` | An invite is accepted in the app (observed). Server aggregates count every acceptance | `role` (enum: parent \| contributor)<br>`surface` (enum: app) | B-NFR-001 |
 
@@ -177,17 +165,8 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 | `reminder_prime_result` | Priming card answered | `choice` (enum: yes \| not_now) | C-REQ-034 |
 | `os_permission_result` | OS notification permission answered | `granted` (bool)<br>`platform` (enum: ios \| android) | C-REQ-034 |
 | `reminder_schedule_set` | Reminder cadence, time or pause saved (observed from the stored preferences) | `cadence` (enum: off \| weekly \| few_times \| every_evening)<br>`hour_bucket` (enum: morning \| afternoon \| evening \| late_evening)<br>`paused` (bool) | C-REQ-034 |
-| `reminder_sent` | Logged on next foreground for a local evening reminder that fired. Month-age and birthday notes are excluded because their timing reveals the birth date | `type` (enum: letter_reminder \| family_digest)<br>`variant_id`? (int 0 to 99) | C-REQ-034, C-NFR-001 |
 | `reminder_suppressed` | A scheduled reminder was skipped | `reason` (enum: wrote_recently \| quiet_window \| weekly_cap \| paused) | C-REQ-034 |
 | `notification_opened` | User opens the app from a notification (observed). Month-age and birthday notes are never reported | `type` (enum: letter_reminder \| family_digest \| family_letter \| plan_notice)<br>`variant_id`? (int 0 to 99) | C-REQ-034 |
-
-#### celebrate
-
-| Event | Fires when | Properties (type: allowed values) | Serves |
-|---|---|---|---|
-| `moment_shown` | A quiet milestone card is shown. Month-chapter and Year One are excluded: they fire on dates set by the birthday | `type` (enum: first_letter \| letters_10 \| letters_50 \| letters_100 \| letters_365 \| first_family_letter \| first_read_together) | C-REQ-034, C-REQ-010 |
-| `resurface_shown` | An "On this day" card is shown | `kind` (enum: one_month \| one_year) | C-REQ-034, C-REQ-014 |
-| `resurface_opened` | An "On this day" card is opened | `kind` (enum: one_month \| one_year) | C-REQ-034 |
 
 #### moments
 
@@ -204,8 +183,6 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 | `export_started` | Export everything started (one ZIP made on the phone) | `format` (enum: archive)<br>`letters_bucket` (enum: 0 \| 1 \| 2_4 \| 5_9 \| 10_49 \| 50_99 \| 100_364 \| 365_plus) | C-REQ-034, PRD-REQ-009 |
 | `export_completed` | Export finished and checked | `format` (enum: archive)<br>`size_bucket` (enum: lt_10mb \| 10_100mb \| 100_500mb \| gt_500mb)<br>`duration_bucket` (enum: lt_30s \| 30s_2m \| gt_2m) | C-REQ-034, C-NFR-007 |
 | `export_failed` | Export stopped before a file was ready | `format` (enum: archive)<br>`reason` (enum: cancelled \| low_space \| too_large \| check_failed \| unknown) | C-REQ-034, C-NFR-007 |
-| `export_shared` | The share sheet for a finished export closed | `result` (enum: shared \| dismissed) | C-REQ-034 |
-| `account_deletion` | Account deletion flow step. `confirmed` is the last event ever sent for this id | `stage` (enum: started \| export_offered \| confirmed \| undone) | C-REQ-034, PRD-REQ-018 |
 
 #### plus
 
@@ -228,7 +205,7 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 | `sync_failed` | A sync attempt fails after retries | `reason` (enum: network \| auth \| conflict \| server \| unknown) | PRD-REQ-016 |
 | `error_shown` | A user-facing error from strings `errors.*` is shown | `code` (enum: save_failed \| mic_denied \| transcription_failed \| offline \| backup_failed \| invite_expired \| storage_low \| generic) | PRD-REQ-016 |
 
-Held, not sendable (45; typed in catalog.ts for call sites that still exist, dropped and counted at run time until each gets a registry row with a decision, a plan row and a privacy look, or is removed): `account_deletion`, `app_backgrounded`, `auth_deferred`, `auth_email_sent`, `auth_failed`, `auth_method_selected`, `child_setting_changed`, `child_switched`, `dictionary_term_added`, `export_completed`, `export_failed`, `export_shared`, `export_started`, `family_letter_reviewed`, `goals_set`, `invite_failed`, `invite_opened`, `language_set`, `letter_deleted`, `local_merge_choice`, `machine_edit_rejected`, `machine_edit_reverted`, `make_it_yours_card`, `member_left`, `member_removed`, `moment_shown`, `notification_opened`, `offer_code_redeemed`, `os_permission_result`, `pack_download`, `playback_started`, `read_together_ended`, `read_together_started`, `reminder_prime_result`, `reminder_prime_shown`, `reminder_schedule_set`, `reminder_sent`, `reminder_suppressed`, `restore_result`, `resurface_opened`, `resurface_shown`, `review_action`, `settings_changed`, `signed_out`, `sync_failed`.
+Held, not sendable (27; typed in catalog.ts for call sites that still exist, dropped and counted at run time until each gets a registry row with a decision, a plan row and a privacy look, or is removed): `auth_deferred`, `auth_failed`, `child_switched`, `export_completed`, `export_failed`, `export_started`, `invite_failed`, `invite_opened`, `language_set`, `machine_edit_rejected`, `machine_edit_reverted`, `notification_opened`, `offer_code_redeemed`, `os_permission_result`, `pack_download`, `playback_started`, `read_together_ended`, `read_together_started`, `reminder_prime_result`, `reminder_prime_shown`, `reminder_schedule_set`, `reminder_suppressed`, `restore_result`, `review_action`, `settings_changed`, `signed_out`, `sync_failed`.
 
 Global properties: `schema_version` (int 1 to 1000), `child_count_bucket`? (enum: none \| one \| two \| three_plus), `sample_pct`? (int 1 to 99).
 <!-- catalogue:end -->
@@ -311,7 +288,7 @@ Inputs: 20 letters per family per month and 2 members per family (co-parent only
 
 | Events | Per month |
 |---|---|
-| `app_opened`, `app_backgrounded` (the 45 was estimated when `app_cold_start` also counted; it is retired, BL-2175) | 45 |
+| `app_opened` (the 45 was estimated when `app_backgrounded` and `app_cold_start` also counted; they are retired, BL-2175) | 45 |
 | `screen_view` | 40 |
 | Capture: `capture_started`, `letter_saved`, `transcription_completed`, `capture_discarded`, `review_action`, `machine_edit_reverted`, `machine_edit_rejected` | 45 |
 | Book: `playback_started`, Read together (the 37 was estimated when `book_opened` and `letter_opened` also counted; they are `screen_view` now, BL-2175) | 37 |
@@ -331,7 +308,7 @@ PostHog's free tier is 1M events a month (ADR 0008). The 100k-family cost is a f
 ### 5.3 Sampling policy (Decision)
 
 - **Launch at 100% for every event.** At 1k families volume is about 15% of the free tier.
-- **Trigger:** when the projected month exceeds 80% of the budget, set rates in remote config (audit-logged): `screen_view` 0.5, `app_backgrounded` 0.5, `playback_started` 0.5.
+- **Trigger:** when the projected month exceeds 80% of the budget, set rates in remote config (audit-logged): `screen_view` 0.5, `playback_started` 0.5.
 - **Never sampled:** `analytics_opted_in`, `letter_saved`, capture and transcription events, family, languages, reminders, Plus, settings, children, errors.
 - Sampling is deterministic per analytics id and event name, so a person sends all or none of a sampled event. Kept events carry `sample_pct`.
 - Transport (PRD 7.7): our in-memory queue capped at 1 MB (oldest dropped first), flushed at most every 60 s in the foreground and when the app goes to the background; the SDK runs with `persistence: 'memory'` and `flushInterval: 0`, so it never writes to disk and has no timer of its own.
@@ -399,9 +376,9 @@ Crash reports (Sentry) follow the same switch (LEGAL-REQ-003): the Sentry bootst
 
 | Events | Call site | Owner | Status |
 |---|---|---|---|
-| `app_opened`, `app_backgrounded` | `startAnalytics({ ttfiMs })` in `app/_layout.tsx` after the first frame (`ttfiMs` is accepted and not sent: `app_cold_start` is retired and returns as the `cold_start` perf metric) | coordinator | to wire (one call) |
+| `app_opened` | `startAnalytics({ ttfiMs })` in `app/_layout.tsx` after the first frame (`ttfiMs` is accepted and not sent: `app_cold_start` is retired and returns as the `cold_start` perf metric) | coordinator | to wire (one call) |
 | `screen_view` | `useScreenViews()` in `app/_layout.tsx` | coordinator | to wire (one hook) |
-| `auth_method_selected`, `auth_succeeded`, `auth_failed`, `auth_email_sent`, `signed_out` | `lib/analytics/observers.ts` (observes `subscribeAuth`) | analytics | wired by `startAnalyticsObservers()` |
+| `auth_succeeded`, `auth_failed`, `signed_out` | `lib/analytics/observers.ts` (observes `subscribeAuth`) | analytics | wired by `startAnalyticsObservers()` |
 | `invite_accepted` | observers (`onInviteAccepted`) | analytics | wired |
 | `language_set` | observers (store, `getSpokenLanguages()`) | analytics | wired |
 | `pack_download` | observers (`packs.onProgress`) | analytics | wired |
@@ -409,28 +386,24 @@ Crash reports (Sentry) follow the same switch (LEGAL-REQ-003): the Sentry bootst
 | `reminder_schedule_set` | observers (store, `readPrefs()`) | analytics | wired |
 | `notification_opened` | observers (expo-notifications response, evening reminders only) | analytics | wired |
 | `analytics_opted_in` | `grantAnalytics()` | analytics | wired |
-| `account_deletion` | `lib/account-deletion/use-account-deletion.ts` | account deletion | wired |
-| `auth_deferred` | `app/(auth)/sign-in/index.tsx`: on Later (the sheet being shown is the `sign_in` screen view), with `getSignInTrigger()` | auth | to wire |
-| `local_merge_choice` | sign-in re-ownership step | auth, sync | to wire |
+| `auth_deferred` | `app/(auth)/sign-in/index.tsx`: on Later, with `getSignInTrigger()` (the sheet being shown is the `sign_in` screen view) | auth | to wire |
 | `invite_opened` | `lib/family/pending-invite-watcher.tsx` | auth/family | to wire |
 | `invite_created`, `invite_failed` | `app/invite/new.tsx`: `trackInviteCreated({ role: 'parent', channel, shared, childIndex })`; on error `track('invite_failed', { stage, reason: inviteErrorKind(e) })` | family | to wire |
-| `member_removed`, `member_left`, `family_letter_reviewed` | family screens | family | to wire |
 | `capture_started`, `capture_discarded` | `app/listen.tsx`, `app/write.tsx` | capture (Mobile A) | to wire |
 | `transcription_completed` | `lib/transcription-queue/index.ts` on finish: `trackTranscriptionCompleted({ engine: 'on_device', modelId, audioMs, latencyMs, outcome })` (`outcome: 'no_speech'` when nobody spoke) | speech | to wire |
-| `letter_saved`, `review_action`, `machine_edit_reverted`, `machine_edit_rejected`, `letter_deleted` | `app/review.tsx`: `trackLetterSaved(...)`, `trackMachineEditsRejected(verifyResult.rejected)` | capture (Mobile A) | to wire |
+| `letter_saved`, `review_action`, `machine_edit_reverted`, `machine_edit_rejected` | `app/review.tsx`: `trackLetterSaved(...)`, `trackMachineEditsRejected(verifyResult.rejected)` | capture (Mobile A) | to wire |
 | `playback_started{version}`, `read_together_*` | `lib/player`, `app/read-together.tsx` | book, player | to wire |
-| `child_added`, `child_switched`, `child_setting_changed`, `dictionary_term_added`, `goals_set`, `make_it_yours_card` | children screens | children | to wire |
-| `reminder_prime_shown`, `reminder_prime_result`, `os_permission_result`, `reminder_sent`, `reminder_suppressed` | `lib/reminders/priming-sheet.tsx`, `scheduler.ts` | reminders | to wire |
-| `export_started`, `export_completed`, `export_failed`, `export_shared` | `app/settings/export.tsx` around `runExport` and `shareExport` | export | to wire |
+| `child_added`, `child_switched` | children screens | children | to wire |
+| `reminder_prime_shown`, `reminder_prime_result`, `os_permission_result`, `reminder_suppressed` | `lib/reminders/priming-sheet.tsx`, `scheduler.ts` | reminders | to wire |
+| `export_started`, `export_completed`, `export_failed` | `app/settings/export.tsx` around `runExport` | export | to wire |
 | `plus_offer_viewed`, `plus_offer_closed`, `restore_result` | around `presentPlusStore()` and `restorePurchases()` (`app/settings/plus.tsx`, gates) | payments | to wire |
 | `free_allowance_reached`, `keep_gate_shown`, `letter_held`, `plus_started_from_gate`, `offer_code_redeemed` | `app/review.tsx` (after a Keep), `components/child/plus-gate.tsx`, `app/settings/plus.tsx` (D-082, D-083; numbers only) | payments | wired |
 | `settings_changed` | appearance, reading size, names in notifications, packs on mobile data, listening copy | settings owners | to wire |
-| `moment_shown`, `resurface_*` | celebrate cards | book | to wire |
 | `moments_card_impressed`, `moments_card_tapped` | Moments tab, question and look-back slots only: `trackMomentsCard({ action, slot })` (NS-53 section 18, R251) | mobile | not wired: waits for the Moments flag |
 | `error_shown`, `sync_failed` | `components/ui` toast and errors; `lib/sync/engine.ts` after retries | design, sync | to wire |
 | Consent sheet | ask sequencer: show `<AnalyticsConsentSheet>` when `analyticsAskDue(...)`; call `recordAnalyticsOffer()` | coordinator (BL-023) | to wire |
 
-Retired by wire-names step 2a, slice 3a (BL-2175, CR-213), with their call sites: `app_cold_start`, `auth_sheet_shown`, `book_opened` and `letter_opened`. The sign-in sheet, the Book and a letter are reached through `screen_view` (`sign_in`, `book`, `letter_detail`). The reason for each is in `docs/analytics/instrumentation/WIRE-NAMES.md`, under Retired keys.
+Retired by wire-names step 2a (BL-2175, CR-213, CR-225), with their call sites: `app_cold_start`, `app_backgrounded`, `auth_sheet_shown`, `auth_method_selected`, `auth_email_sent`, `local_merge_choice`, `child_setting_changed`, `make_it_yours_card`, `goals_set`, `dictionary_term_added`, `family_letter_reviewed`, `member_removed`, `member_left`, `reminder_sent`, `moment_shown`, `resurface_shown`, `resurface_opened`, `export_shared`, `account_deletion`, `letter_deleted`, `book_opened` and `letter_opened`. Reach of the Book and of a letter is the `screen_view` of `book` and `letter_detail`. The reason for each is in `docs/analytics/instrumentation/WIRE-NAMES.md`, under Retired keys. A name that matches `FORBIDDEN_EVENT_PATTERNS` cannot come back without a new decision.
 
 ---
 

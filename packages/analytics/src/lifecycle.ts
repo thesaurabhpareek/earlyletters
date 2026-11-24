@@ -10,7 +10,7 @@
  * because they are local only; they leave the phone only as buckets, after a
  * yes. Pure and tested; the app feeds it AppState changes.
  */
-import { daysBucket, sessionBucket } from './buckets';
+import { daysBucket } from './buckets';
 import type { Analytics } from './client';
 import type { KeyValueStorage } from './consent';
 
@@ -40,7 +40,7 @@ export interface Lifecycle {
   launch(i?: { ttfiMs?: number; source?: 'cold' | 'notification' | 'link' }): Promise<void>;
   /** App became active. Returns true when this starts a new session. */
   foreground(source?: 'warm' | 'notification' | 'link'): Promise<boolean>;
-  /** App went to the background: sends the session bucket and flushes. */
+  /** App went to the background: records the time it was last active, and flushes what is queued. Sends no event of its own (BL-2175). */
   background(): Promise<void>;
   session(): Session;
   firstLaunchAt(): number | null;
@@ -96,7 +96,6 @@ export function createLifecycle(opts: LifecycleOptions): Lifecycle {
       const t = now();
       backgroundedAt = t;
       lastActive = t;
-      analytics.track('app_backgrounded', { session_bucket: sessionBucket(t - session.startedAt) });
       await storage.set(LIFECYCLE_KEYS.lastActiveAt, String(t));
       await analytics.flush();
     },
