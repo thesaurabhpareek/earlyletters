@@ -10612,8 +10612,8 @@ Source: findings of 23 and 24 Nov 2026 handed to the product agent. BL-1983 is t
 
 ## Follow-up from the review of PR #1828 (24 Nov 2026; filed by design systems, docs only)
 
-#### BL-2005 Sheet title and body text meet at AX3 and AX5: the title is capped, the body is not
-- Status: needs-decision (the Chief Design Officer role rules whether a capped sheet title may be overtaken by body text at the largest text sizes, or the cap is lifted; a role ruling, not a legal one). Mode: agent. Owner: design systems engineer. Milestone: M15. Size: S. Priority: P2. Depends on: none.
+#### BL-2020 Sheet title and body text meet at AX3 and AX5: the title is capped, the body is not
+- Status: needs-decision (the Chief Design Officer role rules whether a capped sheet title may be overtaken by body text at the largest text sizes, or the cap is lifted; a role ruling, not a legal one). Mode: agent. Owner: design systems. Milestone: M15. Size: S. Priority: P2. Depends on: none.
 - Problem and evidence: the sheet title is capped at 44 pt and the body text is 18 pt before scaling. Dynamic Type scales the body past 2.44 times (44 / 18), which is reached at AX3 and AX5, while the title stops at its cap. From there the body text is larger than the title above it, and the title no longer reads as the heading. Found in the reviews of #1828; the 44 and 18 are the reviewers' figures and were not re-checked against the type tokens here; not seen on a device, no Dynamic Type run was made.
 - Scope: a ruling only. Options for the Chief Design Officer to choose from: keep the cap and accept the overtake (letter text is never truncated either way, D-027); lift or raise the title cap at AX3 and up; or cap the body in the sheet. No token change is made by this row; any change follows the ruling as its own row.
 - Done when: the ruling is written into `docs/design/COMPONENTS.md` under the sheet, with the numbers above, and this row is flipped to `ready` or `done`.
