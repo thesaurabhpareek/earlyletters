@@ -19,7 +19,7 @@ import {
   SURFACE,
   type RegistryRow,
 } from '../src/registry';
-import { expandPattern, WIRE_ROWS } from '../src/wire-names';
+import { expandPattern, WIRE_NAME_RE, WIRE_ROWS } from '../src/wire-names';
 
 const rows = Object.entries(REGISTRY) as [string, RegistryRow][];
 
@@ -37,10 +37,11 @@ describe('registry.ts (P2, data only)', () => {
     expect(barrel.PROP).toBe(PROP);
   });
 
-  it('holds about 25 events, every name snake_case', () => {
+  it('holds about 25 events, every name snake_case or a wire name', () => {
     expect(rows.length).toBeGreaterThanOrEqual(20);
     expect(rows.length).toBeLessThanOrEqual(30);
-    for (const [name] of rows) expect(name).toMatch(SNAKE);
+    // Bare snake_case until the rename reaches a row (BL-2176), then the wire name `<area>:<object>_<verb>`.
+    for (const [name] of rows) expect(name.includes(':') ? WIRE_NAME_RE.test(name) : SNAKE.test(name), name).toBe(true);
   });
 
   it('names one decision per event, and no two rows share it', () => {

@@ -21,7 +21,7 @@ import { EVENTS, HELD_EVENTS, REGISTRY } from '../src';
  */
 const HELD = [
   'auth_deferred', 'auth_failed', 'child_switched', 'keeping:export_complete', 'keeping:export_fail', 'keeping:export_start',
-  'invite_failed', 'invite_opened', 'me:language_update', 'machine_edit_rejected', 'machine_edit_reverted',
+  'family:invite_fail', 'family:invite_open', 'me:language_update', 'machine_edit_rejected', 'machine_edit_reverted',
   'notification_opened', 'offer_code_redeemed', 'os_permission_result', 'pack_download', 'playback_started',
   'read_together_ended', 'read_together_started', 'reminder_prime_result', 'reminder_prime_shown',
   'reminder_schedule_set', 'reminder_suppressed', 'restore_result', 'review_action', 'me:setting_update',

@@ -150,7 +150,7 @@ describe('HogQL queries and parsing', () => {
     expect(catalogueValue('pack_download', 'failure', 'Asha')).toBe('other');
     expect(catalogueValue('machine_edit_rejected', 'count', 3)).toBe('3');
     expect(catalogueValue('machine_edit_rejected', 'count', 99999)).toBe('other');
-    expect(catalogueValue('invite_created', 'shared', true)).toBe('true');
+    expect(catalogueValue('family:invite_create', 'shared', true)).toBe('true');
     const rows = parseBreakdownRows('pack_download', 'failure', [
       ['2026-09-28T00:00:00Z', 'no_space', 12, 11],
       ['2026-09-28T00:00:00Z', 'asha.parent@example.com', 30, 20],

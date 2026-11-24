@@ -94,7 +94,7 @@ function JoinBook() {
 
   useEffect(() => {
     void readPendingInvite(Date.now(), authUserId(auth.state), auth.state.status !== 'restoring').then((p) => {
-      if (p) track('invite_opened', { via: 'link', signed_in: auth.signedIn });
+      if (p) track('family:invite_open', { via: 'link', signed_in: auth.signedIn });
       setToken(p?.token ?? null);
       setLoaded(true);
     });
@@ -133,7 +133,7 @@ function JoinBook() {
   const fail = async (e: unknown, stage: 'peek' | 'accept', t: string) => {
     const kind = inviteErrorKind(e);
     // The catalogue knows create and accept; a peek is the first half of accepting. A pause sent nothing.
-    if (kind !== 'paused') track('invite_failed', { stage: 'accept', reason: trackedInviteReason(kind) });
+    if (kind !== 'paused') track('family:invite_fail', { stage: 'accept', reason: trackedInviteReason(kind) });
     if (FINAL_INVITE_ERRORS.includes(kind)) await clearPendingInvite(t);
     setFailedAt(stage);
     setError(kind);
@@ -208,7 +208,7 @@ function JoinBook() {
     }
     const t = read.token;
     await savePendingInvite(t);
-    track('invite_opened', { via: 'paste', signed_in: auth.signedIn });
+    track('family:invite_open', { via: 'paste', signed_in: auth.signedIn });
     started.current = null;
     setPreview(null);
     setWantsJoin(false);
