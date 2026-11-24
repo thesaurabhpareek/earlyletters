@@ -170,6 +170,7 @@ import { cleanSpoken, spokenEditLevel } from '@/lib/transcription-queue/clean';
 import { useSpeechDownload, useWordsJob } from '@/lib/transcription-queue/use-words';
 import { announce, useIsAccessibilitySize, useScreenReader, useTheme } from '@/lib/a11y';
 import { footerPlacement } from '@/lib/review-layout.logic';
+import { countRowText, foldApplies, foldedControlsShow, foldHint, foldIsOpen, foldToggledTo, keepLine, keepLinesShow, markCardTiming, type KeepLineKind } from '@/lib/review-fold.logic';
 
 /** Labels per edit; `script` is a punctuation edit that only wrote characters in the author's script (core describeEdit). */
 const EDIT_COPY: Record<EditKind, keyof typeof copy.review.edits> = {
@@ -269,13 +270,11 @@ export default function Review() {
   const [wordsArrived, setWordsArrived] = useState(false);
   const [savedTo, setSavedTo] = useState<'book' | 'private' | null>(null);
   const [firstNote, setFirstNote] = useState(() => !typed && getSetting('review.firstNoteSeen') !== '1');
-  // The fix rows fold behind one disclosure row; every mark is also tappable in the letter (S17).
-  const [fixesOpen, setFixesOpen] = useState(false);
-  // With a screen reader on the rows are the path to every mark, so they start open (P4 critics' pass S3).
+  // The view control, the fix rows and "Change words" fold behind the count row (spec 14, QD-01). `foldToggled` is what the
+  // parent chose on this Review and nothing else: it is never stored, so the next Review opens folded (QD-10).
+  const [foldToggled, setFoldToggled] = useState<boolean | null>(null);
+  // With a screen reader on the rows are the path to every mark, so Review opens unfolded (QD-11; P4 critics' pass S3).
   const screenReader = useScreenReader();
-  useEffect(() => {
-    if (screenReader) setFixesOpen(true);
-  }, [screenReader]);
   // Did Write's "Add to the book" or "Keep private" send this typed letter here a moment ago? (S20) Looked at without
   // spending it, so the first frame already holds the sheet still; spent once, in the effect below.
   // While that one Keep runs, the sheet holds still; once the Plus sheet opens or the save does not work, this is the
@@ -491,7 +490,7 @@ export default function Review() {
     announce(putBackSpeech({ putBack: pendingCopy.review.putBack, undo: copy.common.undoButton, countText: countTextFor(next.applied.length) }));
     setOpenEdit(null);
     setWash(true);
-    setTimeout(() => setWash(false), 1600);
+    setTimeout(() => setWash(false), tokens.motion.newMarkMs);
   };
 
   const undoPutBack = () => {
@@ -780,13 +779,17 @@ export default function Review() {
   }
 
   const line = countLine({ view, applied: applied.length, proposed, hasFixRules: spokenEditLevel(language) === 'clean' });
-  const countText = countTextFor(applied.length);
+  const applies = foldApplies({ typed, userText, editing, proposed });
+  const foldOpen = foldIsOpen({ applies, toggled: foldToggled, screenReader });
+  const foldedShow = foldedControlsShow({ applies, open: foldOpen });
+  const countText = countRowText({ kind: line === 'count' ? 'count' : 'other', applied: applied.length, other: countTextFor(applied.length) });
 
   // The letter sheet's header (S17): the month it files into, from the day it was said.
   const occurredOn = draft.createdAt ? todayISO(new Date(draft.createdAt)) : todayISO();
   const month = monthFor(child, occurredOn);
   const header = letterHeader({ childName: child.name, signsAs: child.signsAs, month });
   const openE = openEdit !== null ? applied[openEdit] : null;
+  const markTiming = markCardTiming(motion.reduced);
   const many = listChildren().length > 1;
 
   // Review before the words are there (S14 to S16): one card, one primary, at most one quiet action.
@@ -880,6 +883,7 @@ export default function Review() {
   );
   // "Add to Asha's book" (primary; "Add to the book" when the name makes it long) and "Keep private" (quiet). A save
   // that did not work keeps the letter, says so directly above the primary, and the primary reads "Try again" (S17).
+  const lines = keepLinesShow({ saveFailed, editing });
   const footer =
     phase === 'ready' && !isSample
       ? footerShell(
@@ -892,13 +896,21 @@ export default function Review() {
                   {r.saveFailed}
                 </Text>
               )}
-              <Button size="lg" fullWidth onPress={() => keepTo(primaryDestination({ saveFailed, lastInBook: lastDestination.current }))} disabled={!finalText.trim()} testID="review.save.book">
+              <Button
+                size="lg"
+                fullWidth
+                onPress={() => keepTo(primaryDestination({ saveFailed, lastInBook: lastDestination.current }))}
+                disabled={!finalText.trim()}
+                accessibilityHint={lines ? keepLine('add') : undefined}
+                testID="review.save.book">
                 <Text>{savePrimaryLabel({ childName: child.name, saveFailed })}</Text>
               </Button>
+              {lines && <KeepLine kind="add" />}
               {/* Stays after a failed save, so focus is never dropped and the other destination is one tap away (S17). */}
-              <Button variant="quiet" fullWidth onPress={() => keepTo(false)} disabled={!finalText.trim()} testID="review.save.private">
+              <Button variant="quiet" fullWidth onPress={() => keepTo(false)} disabled={!finalText.trim()} accessibilityHint={lines ? keepLine('private') : undefined} testID="review.save.private">
                 <Text>{r.destination.privateButton}</Text>
               </Button>
+              {lines && <KeepLine kind="private" />}
             </>
           ),
         )
@@ -937,7 +949,7 @@ export default function Review() {
   // The open mark's card ("You said / Now it reads", Put it back): it opens under the line the mark ends on (S17,
   // MOTION 5d; P4 critics' pass S8), so on a long letter it is never off screen below the last line.
   const markCard = openE ? (
-    <Animated.View entering={FadeIn.delay(80).duration(160)} className="my-3 gap-2 rounded-2xl bg-muted p-4" testID="review.card">
+    <Animated.View entering={FadeIn.delay(markTiming.delayMs).duration(markTiming.ms).reduceMotion(ReduceMotion.Never)} className="my-3 gap-2 rounded-2xl bg-muted p-4" testID="review.card">
       <Text variant="labelSmall">{labelOf(openE).label}</Text>
       <Text variant="subhead">{labelOf(openE).explain}</Text>
       {/* You said / Now it reads: before and after, in the parent's own words (D-086). */}
@@ -1116,30 +1128,32 @@ export default function Review() {
 
               {!typed && userText === null && !editing && (
                 <View className="gap-3">
-                  {/* One control, both the view and the choice for this letter. Reversible until save. */}
-                  {showViewControl(proposed) && <ViewControl view={view} onChange={chooseView} />}
-                  {line === 'count' ? (
-                    // "2 small fixes": one disclosure row; the rows fold behind it, since every mark is tappable in the letter (S17).
+                  {/* The count row is the one disclosure: the view control, the fix rows and "Change words" sit behind it
+                      (spec 14, QD-01 to QD-04). It stays after "Exactly as said" or after every fix is put back (QD-03). */}
+                  {applies ? (
                     <Pressable
                       onPress={() => {
                         haptic('tap');
-                        setFixesOpen((o) => !o);
+                        setFoldToggled(foldToggledTo(foldOpen));
                       }}
                       accessibilityRole="button"
-                      accessibilityState={{ expanded: fixesOpen }}
+                      accessibilityState={{ expanded: foldOpen }}
+                      accessibilityHint={foldHint(foldOpen)}
                       accessibilityLiveRegion="polite"
                       className="min-h-12 flex-row items-center justify-between gap-3"
                       testID="review.count">
-                      <Text variant="subhead">{countText}</Text>
-                      {fixesOpen ? <CaretDownIcon size={16} color={c.textMuted} weight="bold" /> : <CaretRightIcon size={16} color={c.textMuted} weight="bold" />}
+                      <Text variant="subhead" className="flex-1">{countText}</Text>
+                      {foldOpen ? <CaretDownIcon size={16} color={c.textMuted} weight="bold" /> : <CaretRightIcon size={16} color={c.textMuted} weight="bold" />}
                     </Pressable>
                   ) : (
                     <Text variant="subhead" testID="review.count" accessibilityLiveRegion="polite">
                       {countText}
                     </Text>
                   )}
+                  {/* One control, both the view and the choice for this letter. Reversible until save. */}
+                  {showViewControl(proposed) && foldedShow && <ViewControl view={view} onChange={chooseView} />}
                   {/* Every fix as a row: the VoiceOver path to the marks (COMPONENTS 2.19). */}
-                  {view === 'fixes' && applied.length > 0 && fixesOpen && (
+                  {view === 'fixes' && applied.length > 0 && foldedShow && (
                     <View>
                       {applied.map((e, i) => (
                         <FixRow
@@ -1159,7 +1173,7 @@ export default function Review() {
               )}
 
               {/* A later letter's words are kept as they are stored: keeping them writes no words. */}
-              {!isSample && !editing && !later && (
+              {!isSample && !editing && !later && foldedShow && (
                 <Button
                   variant="quiet"
                   size="sm"
@@ -1203,6 +1217,24 @@ export default function Review() {
       />
       {keepSheet}
     </SafeAreaView>
+  );
+}
+
+/**
+ * The one line under a Keep button (spec 14 section 5): footnote size, muted. The button carries the same words once as
+ * its spoken hint, so this visible copy is hidden from VoiceOver and is not read a second time.
+ */
+function KeepLine({ kind }: { kind: KeepLineKind }) {
+  return (
+    <Text
+      variant="footnote"
+      tone="muted"
+      className="px-1 pb-1 text-center"
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      testID={`review.keepLine.${kind}`}>
+      {keepLine(kind)}
+    </Text>
   );
 }
 
