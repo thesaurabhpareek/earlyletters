@@ -147,6 +147,27 @@ describe('[NS-38-R2] the listing describes the build', () => {
   });
 });
 
+describe('[BL-1968] the App Review notes in the store words say sign-in is required', () => {
+  const notes = storeListing.reviewNotes;
+
+  it('says nothing like "no account" or "no server copy": the store build has sign-in and sync (D-160, D-170)', () => {
+    expect(notes).not.toMatch(/\bno (sign-in|sign in|account)\b/i);
+    expect(notes).not.toMatch(/no server copy|keeps everything on the phone/i);
+  });
+
+  it('passes the release workflow refusal for a servers-on build (NO_SIGN_IN)', () => {
+    const source = readFileSync(join(root, 'scripts/release/with-review-contact.ts'), 'utf8');
+    const literal = /const NO_SIGN_IN = \/(.+)\/(\w*);/.exec(source);
+    expect(literal, 'NO_SIGN_IN in with-review-contact.ts').not.toBeNull();
+    expect(new RegExp(literal![1], literal![2]).test(notes)).toBe(false);
+  });
+
+  it('says sign-in is required and recordings stay on the phone, as the servers-on notes do', () => {
+    expect(notes).toMatch(/Signing in is required/);
+    expect(notes).toMatch(/Recordings stay on the phone that made them/);
+  });
+});
+
 describe('[NS-38-R3] store name from brand', () => {
   it('is brand.storeName, "{name}: Baby Journal", and the subtitle keeps a straight apostrophe', () => {
     expect(storeListing.appName).toBe(brand.storeName);

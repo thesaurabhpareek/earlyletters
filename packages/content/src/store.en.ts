@@ -102,12 +102,13 @@ Privacy Policy: ${brand.web.privacy}`,
   supportEmail: brand.support.email,
   /**
    * App Review notes (guideline 2.1; D-004 positioning). Sent by the release workflow, never shown to families.
-   * True for a production build with server features off only (PR #54). A servers-on build sends
-   * `appReviewCopy.notesServersOn` (release/app-review.en.ts) instead; with-review-contact.ts refuses these words for
-   * a servers-on build (NO_SIGN_IN), so the wrong notes cannot be sent.
+   * True for the store build as D-170 ships it: server features on, sign-in required (D-160). The sign-in sentences are
+   * the ones `appReviewCopy.notesServersOn` (release/app-review.en.ts) already says. A servers-on build still sends those
+   * full notes with the demo account; with-review-contact.ts refuses any notes that say there is no sign-in or account
+   * (NO_SIGN_IN), and a test pins that these words pass it (BL-1968).
    */
   reviewNotes:
-    "A family memory journal: parents speak or type short letters to their child. The app never rewrites what a person says. It makes only small marked fixes to the transcript (stray sounds, repeated words, a misheard name from the family's own word list, punctuation), and each fix can be put back. Version 1.0 keeps everything on the phone: there is no account to create and no server copy of letters. The birthday or due date a parent enters is used to file letters by month of age. This is not a health or medical service and gives no health advice.",
+    "A family memory journal: parents speak or type short letters to their child. The app never rewrites what a person says. It makes only small marked fixes to the transcript (stray sounds, repeated words, a misheard name from the family's own word list, punctuation), and each fix can be put back. Signing in is required, with Sign in with Apple or an emailed link and 6-digit code. An account keeps the words of a parent's letters with them on a new phone. Recordings stay on the phone that made them. The birthday or due date a parent enters is used to file letters by month of age. This is not a health or medical service and gives no health advice.",
   /** Listed in Lifestyle, never Health and Fitness or Medical (D-004, guideline 5.1.1(ix) mitigation). */
   primaryCategory: 'Lifestyle',
   whatsNewV1:
