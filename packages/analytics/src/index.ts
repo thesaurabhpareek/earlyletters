@@ -19,3 +19,4 @@ export * from './observe';
 export * from './crash';
 export * from './contracts';
 export * from './policy';
+export * from './gate';

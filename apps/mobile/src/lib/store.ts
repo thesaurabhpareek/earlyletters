@@ -606,14 +606,17 @@ function insertDefaults(e: Entry): entries.InsertDefaults {
  * EntryTombstonedError for a deleted letter. Capture screens use
  * saveLetterFromDraft instead.
  */
-export function saveEntry(e: Entry): void {
+export function saveEntry(e: Entry): boolean {
   const c = ctx();
+  // A left book is read only (BL-1959): an existing letter in one, or a new one aimed at one, is refused with no op.
+  if (entryBookLeft(c, e.id) || (e.childId != null && bookLeft(c, e.childId))) return false;
   c.db.transaction(() => {
     entries.upsert(c, e, insertDefaults(e));
     enqueueEntryUpsert(c.db, e.id, ALL_GROUPS, enqueueContext(c));
   });
   bus.emit('entries');
   signalOutbox();
+  return true;
 }
 
 /**
@@ -622,10 +625,12 @@ export function saveEntry(e: Entry): void {
  * draft, never both and never neither. The audio must already be closed and
  * hashed (`e.audioSha256`, see capture/recorder.ts `ensureAudioHash`); a
  * spoken letter whose file is gone is refused rather than saved pointing at
- * nothing (`audioExists` is checked by the caller just before).
+ * nothing (`audioExists` is checked by the caller just before). False, with nothing written and the draft intact,
+ * when the letter is aimed at a left book (BL-1959): the caller must say the save did not work.
  */
-export function saveLetterFromDraft(draftId: string, e: Entry, audioExists = true): void {
+export function saveLetterFromDraft(draftId: string, e: Entry, audioExists = true): boolean {
   const c = ctx();
+  if (e.childId != null && bookLeft(c, e.childId)) return false;
   // A held draft (v8): its Keep names the held row's last version this phone knew ('0' when none came back),
   // so the server compares the Keep with held words this phone never saw (review K blocking 1).
   const held = drafts.isHeld(c, draftId) ? (getDraftRow(c.db, draftId)?.held_v ?? '0') : null;
@@ -645,6 +650,7 @@ export function saveLetterFromDraft(draftId: string, e: Entry, audioExists = tru
   });
   bus.emit('entries', 'drafts');
   signalOutbox();
+  return true;
 }
 
 /**
@@ -675,7 +681,7 @@ export function saveVoiceOnlyFromDraft(
 ): Entry {
   if (opts.audioExists === false) throw new letters.AudioMissingError();
   const entry = letters.voiceOnlyEntry(draft, { ...opts, occurredOn: todayISO(new Date(draft.createdAt)) });
-  saveLetterFromDraft(draft.id, entry);
+  if (!saveLetterFromDraft(draft.id, entry)) throw new Error('book_left'); // BL-1959: the draft stays, Review says it did not save
   return entry;
 }
 
@@ -697,6 +703,7 @@ export function setWordsForWaitingEntry(
   w: { rawTranscript: string; machineEdits: Edit[]; finalText: string; editLevel: EditLevel; engineVersion: number },
 ): boolean {
   const c = ctx();
+  if (entryBookLeft(c, id)) return false;
   let done = false;
   c.db.transaction(() => {
     done = entries.setWordsOnce(c, id, w);
@@ -720,6 +727,7 @@ export function setWordsForWaitingEntry(
  */
 export function setTypedWordsForWaitingEntry(id: string, text: string): boolean {
   const c = ctx();
+  if (entryBookLeft(c, id)) return false;
   let done = false;
   c.db.transaction(() => {
     done = entries.setTypedWordsOnce(c, id, text);
@@ -749,6 +757,7 @@ export function canTypeWordsFor(id: string): boolean {
  */
 export function keepReviewedWords(id: string, inBook?: boolean): boolean {
   const c = ctx();
+  if (entryBookLeft(c, id)) return false;
   let done = false;
   let moved = false;
   c.db.transaction(() => {
@@ -803,7 +812,7 @@ export function resolveConflict(opId: string, choice: 'mine' | 'theirs'): boolea
       drafts.setTyped(c, copy.entryId, copy.words.final_text);
       enqueueHeldDraft(c.db, copy.entryId, enqueueContext(c));
     } else if (choice === 'mine') {
-      if (!entries.replaceWords(c, copy.entryId, copy.words)) return;
+      if (entryBookLeft(c, copy.entryId) || !entries.replaceWords(c, copy.entryId, copy.words)) return;
       enqueueEntryUpsert(c.db, copy.entryId, ['text'], enqueueContext(c));
     }
     done = removeConflictCopy(c.db, opId);
@@ -894,11 +903,34 @@ export function getEntry(id: string): Entry | null {
   return entries.get(ctx(), id);
 }
 
+/**
+ * Whether this person left the book: `children.server_state = 'left'` and nothing else (BL-1959). It has no hidden,
+ * signed-in-account or has-a-letter filter, unlike `listLeftBooks` (a display list), so a support-hidden book and a
+ * book seen from a second account still answer true. Failure mode if it filtered: a letter there renders editable and
+ * its write queues an op the server refuses.
+ */
+function bookLeft(c: RepoContext, childId: string): boolean {
+  return c.db.get<{ n: number }>("SELECT 1 AS n FROM children WHERE id = ? AND server_state = 'left'", childId) != null;
+}
+/** The same, for the book a letter is filed in (a deleted letter too: its restore is a write as well). */
+function entryBookLeft(c: RepoContext, entryId: string): boolean {
+  return (
+    c.db.get<{ n: number }>(
+      "SELECT 1 AS n FROM entries e JOIN children c ON c.id = e.child_id WHERE e.id = ? AND c.server_state = 'left'",
+      entryId,
+    ) != null
+  );
+}
+export function isBookLeft(childId: string): boolean {
+  return bookLeft(ctx(), childId);
+}
+
 const IN_BOOK: FieldGroup[] = ['in_book'];
 
 /** Add to book / make private. Never touches text. Returns false for a missing or deleted letter. */
 export function setEntryInBook(id: string, inBook: boolean): boolean {
   const c = ctx();
+  if (entryBookLeft(c, id)) return false; // BL-1959
   let done = false;
   c.db.transaction(() => {
     done = entries.setInBook(c, id, inBook);
@@ -922,6 +954,7 @@ const OCCURRED: FieldGroup[] = ['occurred_on'];
  */
 export function setEntryDate(id: string, occurredOn: string, precision: OccurredPrecision): boolean {
   const c = ctx();
+  if (entryBookLeft(c, id)) return false; // BL-1959
   let done = false;
   c.db.transaction(() => {
     done = entries.setOccurred(c, id, occurredOn, precision, syncOwner(c.db));
@@ -934,9 +967,13 @@ export function setEntryDate(id: string, occurredOn: string, precision: Occurred
   return done;
 }
 
-/** Tombstone, never a hard delete (matches the server schema). The server clock sets the real deleted_at. */
-export function deleteEntry(id: string): void {
+/**
+ * Tombstone, never a hard delete (matches the server schema). The server clock sets the real deleted_at. False when
+ * nothing was deleted: a missing letter, or one in a left book (BL-1959; the delete rule for those letters is BL-1960).
+ */
+export function deleteEntry(id: string): boolean {
   const c = ctx();
+  if (entryBookLeft(c, id)) return false;
   let done = false;
   c.db.transaction(() => {
     done = entries.tombstone(c, id);
@@ -946,14 +983,16 @@ export function deleteEntry(id: string): void {
     bus.emit('entries');
     signalOutbox();
   }
+  return done;
 }
 
 /**
  * Restore from Recently deleted: live here at once; on the server through
  * restore_entry() (never by clearing deleted_at, which the server refuses).
  */
-export function undeleteEntry(id: string): void {
+export function undeleteEntry(id: string): boolean {
   const c = ctx();
+  if (entryBookLeft(c, id)) return false; // BL-1959: a restore is a write too (entry.restore)
   let done = false;
   c.db.transaction(() => {
     done = entries.undelete(c, id);
@@ -963,6 +1002,7 @@ export function undeleteEntry(id: string): void {
     bus.emit('entries');
     signalOutbox();
   }
+  return done;
 }
 
 // ── Recently deleted (D-085) ─────────────────────────────────────────────

@@ -20,7 +20,7 @@ import { eraseDeletedBook, eraseDeletedLetter } from '@/lib/capture/erase';
 import { copy, fill, pendingCopy } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
 import { useReducedMotion } from '@/lib/motion';
-import { getActiveChild, getChild, listDeleted, listDeletedBooks, restoreBook, subscribeTo, undeleteEntry, type DeletedBook, type DeletedEntry } from '@/lib/store';
+import { getActiveChild, getChild, listDeleted, listDeletedBooks, isBookLeft, restoreBook, subscribeTo, undeleteEntry, type DeletedBook, type DeletedEntry } from '@/lib/store';
 import { authorOf } from '@/components/child/child-store';
 import { bookCopy } from '@/components/book/copy';
 
@@ -66,9 +66,11 @@ function Shelf() {
 
   const restore = (e: DeletedEntry) => {
     haptic('tap');
-    undeleteEntry(e.id);
-    track('letter_deleted', { action: 'restored', destination: e.inBook ? 'book' : 'private' });
+    // BL-1959: a letter in a left book is refused. No "restored" event and no "restored" toast; say what is true.
+    const restored = undeleteEntry(e.id);
     setRows(read());
+    if (!restored) return toast.show({ message: d.restoreRefusedToast });
+    track('letter_deleted', { action: 'restored', destination: e.inBook ? 'book' : 'private' });
     const child = (e.childId ? getChild(e.childId) : null) ?? getActiveChild();
     toast.show({
       message: restoredLine(d, child?.name),
@@ -152,7 +154,7 @@ function Shelf() {
       {bookCards}
       {rows.map((e) => (
         <Animated.View key={e.id} layout={layout} exiting={FadeOut.duration(reduced ? tokens.motion.fadeMs : tokens.motion.exitMs).reduceMotion(ReduceMotion.Never)}>
-          <ShelfCard v={shelfRow(e, undefined, bookOf(e))} from={signatureOf(e)} eraseNow={actions.eraseNow} onRestore={() => restore(e)} onErase={() => setErasing(e.id)} />
+          <ShelfCard v={shelfRow(e, undefined, bookOf(e))} from={signatureOf(e)} eraseNow={actions.eraseNow} canRestore={!(e.childId && isBookLeft(e.childId))} onRestore={() => restore(e)} onErase={() => setErasing(e.id)} />
         </Animated.View>
       ))}
       <ConfirmSheet
@@ -181,7 +183,7 @@ function signatureOf(e: DeletedEntry): string {
   return signsAs ? fill(copy.book.signature, { signsAs }) : '';
 }
 
-function ShelfCard({ v, from, eraseNow, onRestore, onErase }: { v: ShelfRowView; from: string; eraseNow: boolean; onRestore: () => void; onErase: () => void }) {
+function ShelfCard({ v, from, eraseNow, canRestore, onRestore, onErase }: { v: ShelfRowView; from: string; eraseNow: boolean; canRestore: boolean; onRestore: () => void; onErase: () => void }) {
   const d = copy.settings.delete;
   const { c } = useTheme();
   const note = v.fullText === null;
@@ -203,7 +205,7 @@ function ShelfCard({ v, from, eraseNow, onRestore, onErase }: { v: ShelfRowView;
         <Text variant="footnote">{dates}</Text>
       </View>
       <View className="flex-row flex-wrap items-center gap-2">
-        <Button variant="secondary" size="md" label={d.restoreButton} onPress={onRestore} testID="shelf.restore" />
+        {canRestore ? <Button variant="secondary" size="md" label={d.restoreButton} onPress={onRestore} testID="shelf.restore" /> : null}
         {eraseNow ? <Button variant="destructive" size="md" icon={TrashIcon} label={d.eraseNow} onPress={onErase} testID="shelf.eraseNow" /> : null}
       </View>
     </Card>

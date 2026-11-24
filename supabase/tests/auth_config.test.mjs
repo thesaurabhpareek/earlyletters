@@ -88,6 +88,8 @@ check('sessions and sign-in switches', () => {
   assert.equal(auth.enable_anonymous_sign_ins, false);
   assert.equal(auth.enable_manual_linking, false);
   assert.equal(auth.enable_refresh_token_rotation, true);
+  // The 10 s grace in which a retried refresh token still works; 0 would log a parent out on a flaky network (TDD 04 section 4).
+  assert.equal(auth.refresh_token_reuse_interval, 10);
 });
 
 check('no SMTP block and no secret value is committed', () => {

@@ -214,6 +214,8 @@ export const ADDED = [
   'en.settings.delete.eraseFailedToast',
   'en.book.provenance.spokenOther',
   'en.settings.delete.restoredToastNoName',
+  // BL-1959: Restore refused for a letter in a left book.
+  'en.settings.delete.restoreRefusedToast',
   // P6c critics' pass (30 Oct, S1): Try again's busy words, and the line after an open that did not work. Neither is
   // registered or held text. (`launch.body` and `launch.exportNothing` are in CHANGED: S2 reworded them.)
   'en.errors.launch.tryingAgainButton',
@@ -450,6 +452,7 @@ export const SURFACE_OPT_OUT: Partial<Record<keyof typeof features, string>> = {
   export: 'P6b; its screen is pinned in apps/mobile/test/settings-p6b.test.ts; no per-file rule set written yet',
   find: 'NS-02 Find words, PROPOSED until the founder approves; pinned in test/find-copy.test.ts (R3, R23, R39); no per-file rule set written yet',
   language: 'the language picker; no per-file rule set written yet',
+  leftBook: 'BL-444 slice 2 (D-113): Letters to {child}, the page of a book this phone has left; PROPOSED words; its rules are pinned in test/left-book-copy.test.ts; the global rules read it through features',
   licences: 'attribution lines and library names; the licences rules in rules.test.ts read it',
   momentsTab: 'PROPOSED (PR 12a, spec 28-moments-tab.md): the Moments tab plain strings, off behind a flag; its rules are pinned in test/moments-tab-copy.test.ts',
   newDevicePage: 'PROPOSED (E83, E-S34): the web confirm page for the new-device email; not built yet, so nothing is shown; the global rules read it through features; no per-file rule set until the page exists',

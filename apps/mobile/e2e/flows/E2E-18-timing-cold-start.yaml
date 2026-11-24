@@ -1,3 +1,4 @@
+# BLOCKED (ids the app does not set yet): red by design until they land. `node apps/mobile/e2e/bin/blocked-ids.mjs <this file>` lists them (not-in-app.txt); run-suite.sh and run-p0-nightly.sh skip it and print that list.
 # E2E-18  Timing: cold start to the first usable screen, 200 samples (BL-1403, feeds BL-044).
 # Not part of the suite: the tag is e2e-timing, not e2e, so `maestro test apps/mobile/e2e` skips it and
 # run-suite.sh does not list it. Run it per release candidate (README section 10). The clock is the

@@ -66,11 +66,13 @@ export function listHidden({ db }: RepoContext): Child[] {
  * export and delete). Merge (sync/merge.ts closeBook) has already dropped other people's letters, so only the person's own
  * remain. A book deleted on this phone waits in Recently deleted and is not here; one the server deleted ('deleted') is
  * `listClosedByServer`. Only books that still hold a live letter are listed: a left book with nothing in it has nothing to read.
+ * A book the support path hid for everyone (`c.hidden_at`, F12 6.2 D) stays hidden after a leave; the person's own hide (`p.hidden_at`) does not
+ * apply, because a left book has no Hidden books page to come back from.
  */
 export function listLeft({ db }: RepoContext): Child[] {
   return db
     .all<ChildRow>(
-      `SELECT ${COLS} FROM ${FROM} WHERE c.server_state = 'left' AND ${BOOK_NOT_DELETED_SQL}
+      `SELECT ${COLS} FROM ${FROM} WHERE c.server_state = 'left' AND ${BOOK_NOT_DELETED_SQL} AND c.hidden_at IS NULL
        AND EXISTS (SELECT 1 FROM entries e WHERE e.child_id = c.id AND e.deleted_at IS NULL)
        ORDER BY c.created_at ASC, c.id ASC`,
     )
