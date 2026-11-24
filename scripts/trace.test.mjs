@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {
   extractIds, bracketedIds, splitRow, parseTables, sectionLines, v2Definitions, v2WorkPackages,
-  legacyDefinitions, retiredIds, testTitles, flowTags, collect, summarize, renderTrace, main, cmpId,
+  walk, legacyDefinitions, retiredIds, testTitles, flowTags, collect, summarize, renderTrace, main, cmpId,
   parseCsv, b1ScopeFromCatalog, parseBaseline, ratchet,
   nsIds, nsBracketed, nsCited, nsDefinitions, collectNs, summarizeNs, nsRatchet, nsOpen,
 } from './trace.mjs';
@@ -628,4 +628,16 @@ test('[CODE-R02] card 28 is read: three-digit row ids, a Pri header, and a repo 
   assert.deepEqual(nsIds('NS-91-R301 and NS-91-R1000'), ['NS-91-R301']);
   const none = mk(false);
   assert.equal(summarizeNs(collectNs({ repo: none, register: register(none) })).cards, 0);
+});
+
+test('walk skips .claude/worktrees and a top-level wt-* directory, and reads wt-* anywhere deeper (a PR cannot hide a test)', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'trace-walk-'));
+  try {
+    for (const rel of ['apps/a.test.ts', '.claude/worktrees/x/apps/a.test.ts', 'wt-asha/apps/a.test.ts', 'sub/wt-1/b.test.ts', 'apps/wt-x/e.test.ts', '.claude/other/c.test.ts', 'worktrees/d.test.ts']) {
+      fs.mkdirSync(path.dirname(path.join(root, rel)), { recursive: true });
+      fs.writeFileSync(path.join(root, rel), '');
+    }
+    const found = walk(root, (p) => p.endsWith('.test.ts'), [], root).map((p) => path.relative(root, p).split(path.sep).join('/'));
+    assert.deepEqual(found, ['.claude/other/c.test.ts', 'apps/a.test.ts', 'apps/wt-x/e.test.ts', 'sub/wt-1/b.test.ts', 'worktrees/d.test.ts']);
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });

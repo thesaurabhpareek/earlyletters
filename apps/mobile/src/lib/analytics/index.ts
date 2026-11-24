@@ -34,6 +34,7 @@ import {
   type PostHogLike,
   type Violation,
 } from '@scribe/analytics';
+import { makeForgetRetiredId } from './forget-retired';
 import { currentAuthUserId } from '@/lib/auth/auth-store';
 import { analyticsEnabled, capabilities, postHogKeyForBuild } from '@/lib/capabilities';
 import { deleteSetting, getSetting, listChildren, listEntriesForChild, setSetting, subscribe } from '@/lib/store';
@@ -76,6 +77,11 @@ export const analytics = createAnalytics({
   provider,
   storage: settingsStorage,
   randomId: Crypto.randomUUID,
+  // Forgets one retired id on the server; the id stays on the phone until the answer is yes (BL-1252, ER-A04).
+  forgetRetiredId: makeForgetRetiredId({
+    client: async () => (await import('@/lib/supabase/client')).getSupabaseOrNull(),
+    idempotencyKey: () => Crypto.randomUUID(),
+  }),
   onViolation,
   // Sampling rates come from remote config when volume needs it (TRACKING_PLAN 5.3); empty at launch.
   sampleRates: {},
@@ -193,6 +199,12 @@ export function analyticsIdsForDeletion(): string[] {
 /** After the deletion request is accepted upstream. */
 export async function forgetAnalyticsIds(): Promise<void> {
   await analytics.forgetIds();
+  notify();
+}
+
+/** After some of the ids were acknowledged upstream: forget those and keep the rest for a retry. */
+export async function forgetAnalyticsIdsSome(ids: string[]): Promise<void> {
+  await analytics.forgetSomeIds(ids);
   notify();
 }
 

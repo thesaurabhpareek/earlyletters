@@ -371,7 +371,7 @@ test('[J21d] a child\'s settings: "Write this book together" opens the invite, a
   await mockServer(app, { user: MAMA });
   await openOn(app, '/?seed=asha');
   await app.getByText('Book', { exact: true }).last().click();
-  await app.getByRole('button', { name: 'Settings' }).first().click();
+  await app.getByTestId('book.settings').click();
   await app.getByText(CHILD, { exact: true }).first().click();
   await expect(app.getByText('Write this book together')).toBeVisible();
   await expect(app.getByText(/Family can read/)).toHaveCount(0);

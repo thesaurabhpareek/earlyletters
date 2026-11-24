@@ -2,7 +2,7 @@
 // Wired into the root `npm test` list (BL-1880), so a stale map fails CI.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync, mkdirSync, writeFileSync, rmSync, mkdtempSync } from 'node:fs';
+import { readFileSync, existsSync, mkdirSync, writeFileSync, rmSync, mkdtempSync, readdirSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -75,4 +75,37 @@ test('[BL-1880] a planted stale map fails --check and a current one passes', () 
     writeFileSync(join(tmp, 'content-map.json'), out.json.replace('"', '"x', 1));
     assert.equal(run().status, 1);
   } finally { rmSync(tmp, { recursive: true, force: true }); }
+});
+
+// [BL-1932] The CSV is compared on its own: a map whose JSON is current but whose CSV is stale must fail, and the
+// message must name the CSV only. A check that skipped the CSV compare would pass this planted case.
+test('[BL-1932] a stale CSV alone fails --check and names only the CSV', () => {
+  const root = join(dir, '..', '..', '..');
+  const tmp = mkdtempSync(join(root, '.map-check-'));
+  const rel = tmp.slice(root.length + 1);
+  const run = () => spawnSync(process.execPath, [join(root, 'scripts/content/export-content-map.mjs'), '--check', '--out', rel], { encoding: 'utf8' });
+  try {
+    const out = render(map);
+    writeFileSync(join(tmp, 'content-map.json'), out.json);
+    writeFileSync(join(tmp, 'content-map.csv'), out.csv + 'planted,stale,row\n');
+    const r = run();
+    assert.equal(r.status, 1);
+    assert.match(r.stderr, /stale: content-map\.csv\./);
+    assert.doesNotMatch(r.stderr, /content-map\.json/);
+  } finally { rmSync(tmp, { recursive: true, force: true }); }
+});
+
+// [BL-1932] A killed run can leave a .map-check-* directory in the repo root; git must not offer it for a commit.
+test('[BL-1932] .gitignore covers the .map-check-* scratch directories', () => {
+  const root = join(dir, '..', '..', '..');
+  const r = spawnSync('git', ['check-ignore', '-q', '.map-check-planted/content-map.json'], { cwd: root });
+  assert.equal(r.status, 0, '.map-check-* is not ignored');
+});
+
+test('[BL-1932] the --check run leaves no scratch directory behind', () => {
+  const root = join(dir, '..', '..', '..');
+  const scratch = () => readdirSync(root).filter((n) => n.startsWith('.map-check-'));
+  assert.deepEqual(scratch(), [], 'an earlier check run left a scratch directory');
+  spawnSync(process.execPath, [join(root, 'scripts/content/export-content-map.mjs'), '--check'], { encoding: 'utf8' });
+  assert.deepEqual(scratch(), []);
 });

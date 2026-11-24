@@ -73,6 +73,10 @@ test('[J01] first run: the age question, the promise, the child, the signature, 
   await expect(btn(app, 'Continue')).toBeDisabled();
   await expect(app.getByText(o.child.needBirthday.replace('{child}', 'Asha'))).toBeVisible();
   await expect(dateInput(app, 'Birthday')).toHaveValue('');
+  // S05 focus (onboarding.tsx nudge): a tap on the waiting Continue moves focus to what is missing. With one child and the name
+  // optional that is the birthday, whose field arrives with the first letter of the name, so it is proved here, not before.
+  await btn(app, 'Continue').click({ force: true });
+  await expect(dateInput(app, 'Birthday')).toBeFocused();
   await expect(app.getByText("We sort letters by Asha's month of age.")).toHaveCount(0);
   await step('unhappy', 'Name entered, no birthday chosen yet', 'The cover takes the name as typed. The date block arrives with the first letter, empty: on a phone it says "Choose a date", and "Born today" is a chip beside it. Continue waits, with a line saying what is needed. A seven-month-old can no longer be saved as "0 days" by an unseen default.', 'J01-05');
 

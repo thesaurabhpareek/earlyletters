@@ -115,3 +115,18 @@ export const monthOpener = (page: Page, months: number) =>
   page.getByRole('heading', { name: new RegExp(`^(${en.book.thisMonthLabel}, )?${bookCopy.chapterAge.replace('{n}', String(months))}, `) });
 /** The opener of the month the child is in today (any age): "This month, 7 months, ..." or "This month, The first weeks, ...". */
 export const currentMonthOpener = (page: Page) => page.getByRole('heading', { name: new RegExp(`^${en.book.thisMonthLabel}, `) });
+
+/**
+ * The count line of a month, as the Months sheet says it ("2 letters, from Mama"): the Book's opener no longer carries it.
+ * Opens the sheet, reads that month's row, closes the sheet. Restores what J09b, J18 and J08c proved before the opener
+ * dropped the count (BL-1991): the number of letters and who wrote them.
+ */
+export async function expectMonthCount(page: Page, months: number, line: RegExp) {
+  await page.getByTestId('book.months').click();
+  const sheet = page.getByTestId('book.monthsSheet');
+  await expect(sheet).toBeVisible();
+  const row = sheet.locator('[data-testid^="book.month."]').filter({ hasText: bookCopy.chapterAge.replace('{n}', String(months)) });
+  await expect(row).toContainText(line);
+  await sheet.getByRole('button', { name: 'Close' }).click();
+  await expect(sheet).toBeHidden();
+}

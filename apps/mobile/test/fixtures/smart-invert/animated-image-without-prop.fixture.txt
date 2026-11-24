@@ -1,0 +1,14 @@
+// Positive control for [NS-33-R11] (BL-1915): Animated.createAnimatedComponent(Image), a real form in the app (see
+// src/components/motion/press.ts), and its bare form from a named import. Neither sets the prop.
+import { Image } from 'react-native';
+import Animated, { createAnimatedComponent } from 'react-native-reanimated';
+const FadeImage = Animated.createAnimatedComponent(Image);
+const BareFade = createAnimatedComponent(Image);
+export function Bad({ uri }: { uri: string }) {
+  return (
+    <>
+      <FadeImage source={{ uri }} />
+      <BareFade source={{ uri }} />
+    </>
+  );
+}

@@ -22,6 +22,7 @@ import { createDisk, iosContainer, layOutApp, namesIn, put, recorderDir, type Di
 import { entryMediaStore } from '../src/lib/photos/entry-media';
 import { photosDirectory } from '../src/lib/photos/files';
 import { letItGo } from '../src/lib/capture/let-it-go.logic';
+import { FIRST_RUN_DRAFT_SETTING, parseDraft, serializeDraft } from '../src/lib/first-run/draft.logic';
 import { nodeDb } from './helpers/node-db';
 import { letter } from './helpers/store-fixture';
 
@@ -456,6 +457,9 @@ describe('[DATA-REQ-024][F14-REQ-026] Erase everything on this phone, signed out
     app.store.setSetting('appLock.enabled', 'on');
     app.store.setSetting('appLock.grace', 'immediately');
     app.store.recordLaunch(T0);
+    // BL-1989: a first-run draft (Asha's name, birthday and sign-off, typed and not yet made into a book) is a setting too.
+    app.store.setSetting(FIRST_RUN_DRAFT_SETTING, serializeDraft({ step: 'signsAs', names: ['Asha'], expecting: false, birthday: '2026-03-14', dueDate: null, signsAs: 'Mama' }));
+    expect(parseDraft(app.store.getSetting(FIRST_RUN_DRAFT_SETTING))?.names).toEqual(['Asha']); // the seed took
     const stray = put(h.disk, `${h.disk.documents}recording-5D2E0F11-0000-4000-8000-0000000057A2.m4a`, 8_000);
     const frames = put(h.disk, `${h.disk.caches}whole-frames-abc-1.aac`, 4_000);
     const zip = put(h.disk, `${h.disk.caches}exports/early-letters-2026-10-03.zip`, 9_000);
@@ -497,6 +501,8 @@ describe('[DATA-REQ-024][F14-REQ-026] Erase everything on this phone, signed out
     expect(fetches).toBe(0);
     // The app lock's two settings and the shelf purge's launch stamp went with every other setting.
     for (const k of ['appLock.enabled', 'appLock.grace', 'lastLaunchAt']) expect([k, app.store.getSetting(k)]).toEqual([k, null]);
+    // BL-1989: the half-typed first run (a child's name and birthday) is gone, so first run opens empty.
+    expect(app.store.getSetting(FIRST_RUN_DRAFT_SETTING)).toBeNull();
 
     const next = await launch();
     expect(await next.all.resumeEraseAtLaunch()).toBeNull();
