@@ -1,7 +1,7 @@
 /// <reference types="node" />
 /**
  * [BL-1562] (the phone half of BL-1464) The Keep the book re-offer after the third letter opens the sign-in sheet with
- * `third_letter`, so `auth_sheet_shown` and `auth_deferred` say which of the two offers it was. The values are enums:
+ * `third_letter`, so `auth_deferred` says which of the two offers it was (the sheet being shown is the `sign_in` screen view, BL-2175). The values are enums:
  * no entry text, transcript or child name is in any property. Source tests for the screens (React Native does not
  * render in Node), a real import for the trigger parser. The asks store behaviour is in asks-keep-book-store.test.ts.
  */
@@ -42,8 +42,8 @@ describe('[BL-1562] the sheet treats third_letter as the same ask as first_lette
   it("counts as this session's one ask, as the first offer does", () => {
     expect(sheet).toMatch(/if \(trigger === 'first_letter' \|\| trigger === 'third_letter'\) noteAskShown\(\)/);
   });
-  it('reports the trigger and nothing else on both events', () => {
-    expect(sheet).toMatch(/track\('auth_sheet_shown', \{ trigger \}\)/);
+  it('reports the trigger and nothing else on the one event the sheet sends', () => {
+    expect(sheet).not.toMatch(/auth_sheet_shown/);
     expect(sheet).toMatch(/track\('auth_deferred', \{ trigger \}\)/);
   });
 });
