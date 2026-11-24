@@ -26,6 +26,7 @@ const consentLines: Record<string, string> = {
   'settings.privacy.analyticsHelp': en.settings.privacy.analyticsHelp,
   'settings.privacy.analyticsOffNote': en.settings.privacy.analyticsOffNote,
 };
+const exportReadme = readFileSync(fileURLToPath(new URL('../src/features/export.en.ts', import.meta.url)), 'utf8');
 const consentCopySource = readFileSync(fileURLToPath(new URL('../../../apps/mobile/src/components/consent/copy.ts', import.meta.url)), 'utf8');
 const section = /analyticsSection:\s*'([^']*)'/.exec(consentCopySource)?.[1] ?? '';
 
@@ -38,6 +39,10 @@ describe('[BL-389, LEGAL-REQ-044] consent copy claims only what v1.0 does', () =
   });
   it('reads the crash flag it checks', () => {
     expect(/CRASH_REPORTING\s*=\s*\{[^}]*?enabled:\s*(true|false)/s.test(crashSource)).toBe(true);
+  });
+  it.skipIf(reporterConfigured)('the data export README names no crash-report choice', () => {
+    expect(exportReadme).not.toMatch(/sharing usage and crash/i);
+    expect(exportReadme).toContain('your choice about sharing usage (');
   });
   it('says "photos" nowhere (v1.0 has none)', () => {
     for (const [key, line] of Object.entries({ ...consentLines, 'consentCopy.analyticsSection': section })) expect(line, key).not.toMatch(/photo/i);

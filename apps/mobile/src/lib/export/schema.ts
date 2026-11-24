@@ -277,7 +277,7 @@ export interface ExportDictionaryTerm {
 export interface ExportPhoneConsent {
   /** The "18 or older" question on this phone was answered yes. */
   age_confirmed: boolean;
-  /** Sharing usage and crash reports (the Settings, Privacy switch), as answered on this phone. Builds with analytics off never ask, so it is `not_answered` unless an earlier answer is stored. */
+  /** Sharing usage (the Settings, Privacy switch), as answered on this phone. Builds with analytics off never ask, so it is `not_answered` unless an earlier answer is stored. */
   usage_sharing: 'granted' | 'denied' | 'not_answered';
 }
 
