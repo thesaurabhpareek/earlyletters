@@ -120,10 +120,8 @@ describe('[P6d] the screen', () => {
     const show = screen.slice(screen.indexOf('const show = '), screen.indexOf('return ('));
     expect(show).toMatch(/unhideChild\(id\);/);
     expect(show).not.toMatch(/delete|Delete|remove|discard|purge|Alert/);
-    // Which setting only, never the value, the same key "Hide this book" sends; read after the book is back, so its
-    // ordinal is its own place among the listed books (before, it is not listed and reads as the first).
-    expect(show).toMatch(/track\('child_setting_changed', \{ key: 'hidden', child_ordinal: ordinalOf\(id\) \}\);/);
-    expect(show.indexOf('unhideChild(id);')).toBeLessThan(show.indexOf('ordinalOf(id)'));
+    // No analytics event for a per-book setting (CR-213: child_setting_changed is dropped).
+    expect(show).not.toMatch(/track|ordinalOf/);
   });
 
   it('draws the page from the rules, in content\'s words only, and follows the store', () => {

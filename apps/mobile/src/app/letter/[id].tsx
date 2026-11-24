@@ -157,11 +157,7 @@ function Letter() {
     [id],
   );
 
-  // letter_opened once per open (who wrote it, relative to you, and whether it has a recording; never which letter).
-  useEffect(() => {
-    const e = getEntry(id);
-    if (e && !isQuietMark(e)) track('letter_opened', { author_relation: isOwnEntry(e) ? 'self' : 'other_parent', has_audio: !!e.audioUri });
-  }, [id]);
+  // Opening a letter is the `screen_view` of the generated name `book:letter_detail_screen_view` (one id for every letter), not an event of its own (BL-2175).
 
   const child = entry ? ((entry.childId ? getChild(entry.childId) : null) ?? getActiveChild()) : null;
 
@@ -427,13 +423,11 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
     if (readOnly) {
       if (!deleteLeftBookLetter(gone.id)) return toast.show({ message: copy.errors.generic.title });
       haptic('warning');
-      track('letter_deleted', { action: 'deleted', destination: gone.inBook ? 'book' : 'private' });
       toast.show({ message: copy.settings.delete.entryToast });
       return back();
     }
     if (!deleteEntry(gone.id)) return toast.show({ message: copy.errors.generic.title }); // tombstone; waits 30 days on the Recently deleted shelf; false for a left book (BL-1959)
     haptic('warning');
-    track('letter_deleted', { action: 'deleted', destination: gone.inBook ? 'book' : 'private' });
     if (belowIsBook(navigation.getState() as NavState)) bookHandoff.deleted(gone);
     else
       toast.show({
@@ -441,9 +435,8 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
         action: {
           label: copy.common.undoButton,
           onPress: () => {
-            // BL-1959: a left book refuses the restore; no event, and the toast says so.
+            // BL-1959: a left book refuses the restore, and the toast says so. No analytics event (CR-225).
             if (!undeleteEntry(gone.id)) return toast.show({ message: copy.settings.delete.restoreRefusedToast });
-            track('letter_deleted', { action: 'restored', destination: gone.inBook ? 'book' : 'private' });
           },
         },
       });

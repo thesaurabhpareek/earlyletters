@@ -72,7 +72,6 @@ export default function SignInSheet() {
   }, [signedInAtOpen]);
   useEffect(() => {
     if (signedInAtOpen) return;
-    track('auth_sheet_shown', { trigger });
     // Keep the book (second letter, or the first save of a later session; lib/asks) and its one re-offer after the third
     // letter (`third_letter`, same words, BL-1562) are this session's one ask (PRD-REQ-001).
     if (trigger === 'first_letter' || trigger === 'third_letter') noteAskShown();

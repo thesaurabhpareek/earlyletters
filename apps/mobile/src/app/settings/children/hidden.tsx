@@ -14,7 +14,6 @@ import { hiddenBooksPage } from '@/components/settings/hidden-books.logic';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Text } from '@/components/ui/text';
-import { ordinalOf, track } from '@/lib/analytics/track';
 import { useFocusOnMount } from '@/lib/a11y';
 import { haptic } from '@/lib/haptics';
 import { listHiddenChildren, subscribe, unhideChild } from '@/lib/store';
@@ -32,8 +31,6 @@ export default function HiddenBooks() {
 
   const show = (id: string) => {
     unhideChild(id);
-    // Which setting only, never the value (the analytics catalogue's child_setting_changed).
-    track('child_setting_changed', { key: 'hidden', child_ordinal: ordinalOf(id) });
     haptic('success');
     setShown((n) => n + 1);
   };

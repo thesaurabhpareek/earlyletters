@@ -19,7 +19,6 @@ import { Card } from '@/components/ui/card';
 import { Text } from '@/components/ui/text';
 import { useToast } from '@/components/ui/toast';
 import { ListRow, ListSection, ToggleRow } from '@/components/ui/list-row';
-import { ordinalOf, track } from '@/lib/analytics/track';
 
 /**
  * One child's book settings (PRD B F2; EXPERIENCE_PASS_2026-10 S46, package P6): each child is managed separately.
@@ -85,10 +84,9 @@ export default function ChildSettings() {
       ? { title: x.dueDateLabel, value: formatDate(child.dueDate) }
       : { title: copy.settings.birthdayLabel, value: x.notSet };
 
-  const save = (key: 'display_name' | 'date' | 'signs_as') => (patch: ChildPatch) => {
+  const save = (patch: ChildPatch) => {
     // Only the child's own row changes: no letter, transcript, captured date or audio is touched.
     updateChild(child.id, patch);
-    track('child_setting_changed', { key, child_ordinal: ordinalOf(child.id) });
     haptic('success');
     setEditing(null);
   };
@@ -119,7 +117,6 @@ export default function ChildSettings() {
         text: s.hideLabel,
         style: 'default',
         onPress: () => {
-          track('child_setting_changed', { key: 'hidden', child_ordinal: ordinalOf(child.id) });
           hideChild(child.id);
           router.back();
         },
@@ -147,7 +144,7 @@ export default function ChildSettings() {
           </View>
         </Card>
       ) : null}
-      {editing === 'born' ? <BornEditor child={child} onSave={save('date')} onCancel={() => setEditing(null)} /> : null}
+      {editing === 'born' ? <BornEditor child={child} onSave={save} onCancel={() => setEditing(null)} /> : null}
 
       <ListSection title={s.detailsLabel}>
         <ListRow title={x.edit.nameLabel} trailing={childLabel(name)} onPress={() => setEditing('name')} accessibilityHint={x.edit.rowHint} />
@@ -155,9 +152,9 @@ export default function ChildSettings() {
         {showHere ? <ListRow title={hereRowTitle(name)} trailing="chevron" onPress={() => setEditing('born')} accessibilityHint={x.edit.rowHint} testID="child.hereRow" /> : null}
         <ListRow title={fill(s.signsAsLabel, { child: name })} trailing={child.signsAs} onPress={() => setEditing('signsAs')} accessibilityHint={x.edit.rowHint} />
       </ListSection>
-      {editing === 'name' ? <NameEditor child={child} onSave={save('display_name')} onCancel={() => setEditing(null)} /> : null}
-      {editing === 'date' ? <DateEditor child={child} onSave={save('date')} onCancel={() => setEditing(null)} /> : null}
-      {editing === 'signsAs' ? <SignsAsEditor child={child} onSave={save('signs_as')} onCancel={() => setEditing(null)} /> : null}
+      {editing === 'name' ? <NameEditor child={child} onSave={save} onCancel={() => setEditing(null)} /> : null}
+      {editing === 'date' ? <DateEditor child={child} onSave={save} onCancel={() => setEditing(null)} /> : null}
+      {editing === 'signsAs' ? <SignsAsEditor child={child} onSave={save} onCancel={() => setEditing(null)} /> : null}
 
       <ListSection footer={fill(s.remindersHelp, { child: name })}>
         <ToggleRow
@@ -165,7 +162,6 @@ export default function ChildSettings() {
           value={child.remindersOn}
           onValueChange={(v) => {
             updateChild(child.id, { remindersOn: v });
-            track('child_setting_changed', { key: 'include_in_reminders', child_ordinal: ordinalOf(child.id) });
           }}
         />
       </ListSection>
