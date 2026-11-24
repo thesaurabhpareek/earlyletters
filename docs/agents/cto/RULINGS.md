@@ -1373,6 +1373,81 @@ Founder standing approval and hard limits are quoted in the Batch 6 section of `
 - Not decisions, status corrections for product (pack open items): BL-983 says PR #767 merged but it is open; BL-2003 says BL-1867 merged but `eas.json` says otherwise (UNVERIFIED which is right); BL-931 reads in-progress though BL-939 says done; BL-1709 reads in-review though #1826 is merged.
 - Door: two-way for each. Physical acts named here sit in FOUNDER_QUEUE only (the AUTH_SETUP 11.10 device check, the PR #1924 hand application, the restore drill run).
 
+Challenge record for CR-202 to CR-212 (the held-PR rulings): self-challenged only (CTO skill section 10a), as the held-PRs note says; no separate challenger agent read them.
+
+### CR-202 PR 449 agent runner hardening: close, keep the branch (24 Nov 2026, Karma and the exec team under D-168 and D-172)
+- Verdict: RULED close; branch `fix/injection-integrated` kept. Founder-only: no. Signed: Karma. Full text: Project note `infra/exec-rulings-2026-11-24-held-prs.md` section 1.
+- Decision group: lane stays off (CR-5, D-127). Cites CAIO-16, CISO-16, CISO-15.
+- Ruling: it hardens an unattended lane that stays off, none of its new files are on `develop`, and it is about 15 times the CODE-R02 limit. The one useful piece, a script that exits 0 without running when started through a symlink (the `import.meta.url` entry check), is filed as one small backlog row for ops, one PR by an interactive session. If a lane ever returns: ops authors, security-architect is the domain reviewer, the job split first, then five stacked PRs.
+- Door: two-way. Way back: the branch is kept; reopen against the new base.
+
+### CR-203 PR 638 PRD V2 D-131 to D-140: close, keep the branch (24 Nov 2026, Karma and the exec team under D-168 and D-172)
+- Verdict: RULED close; branch `docs/prd-v2-readiness-8nov` kept. Founder-only: no. Signed: Karma. Full text: `infra/exec-rulings-2026-11-24-held-prs.md` section 2.
+- Decision group: spec hygiene. Cites CPO-89.
+- Ruling: D-131 to D-139 are already on `develop`; D-140 to D-143 were never taken and stay unused; PRD V2 is the baseline frozen at D-130, not the live log, and a second copy of the log is forbidden by COUNCIL section 5. Optional follow-up: one banner line at the top of `docs/prd/v2/README.md`.
+- Door: two-way.
+
+### CR-204 PR 733 NX-38 gap trace: re-cut as two docs PRs, no BL-830 to BL-840 rows (24 Nov 2026, Karma and the exec team under D-168 and D-172)
+- Verdict: RULED re-cut. Founder-only: no. Signed: Karma. Full text: `infra/exec-rulings-2026-11-24-held-prs.md` section 3.
+- Decision group: dangling cites. Cites CPO-90, CCO-30.
+- Ruling: land the trace under `docs/roadmap/next/03-requirements/` as a dated historical record with a status line saying it decides nothing; fix the three dangling cites (the S17 spec, two NX-39 rows). A second PR files fresh-id rows only for gap items found still missing; R2 and R8 are UNVERIFIED either way. No row reuses BL-830 to BL-840.
+- Door: two-way. Way back: close the two PRs; the original branch stays.
+
+### CR-205 PR 736 mail preflight: re-cut as one PR under scripts/release (24 Nov 2026, Karma and the exec team under D-168 and D-172)
+- Verdict: RULED re-cut. Founder-only: FOUNDER for the physical step only (the live mail run, DNS, Resend and Supabase SMTP rows: queue row FO-3, recorded in the Project note, not decided here); the ruling itself is not. Signed: Karma. Full text: `infra/exec-rulings-2026-11-24-held-prs.md` section 4.
+- Decision group: sign-in mail path (D-160, D-171). Cites CISO-20.
+- Ruling: move the script and test to `scripts/release/` (avoids Deno discovery under `scripts/ops`), a fresh backlog id replaces BL-788 and "gate G7", the one-line root `package.json` test-list edit is approved as T2 and applied in that PR with two counted lens reviews, vendor facts re-read with the date in the runbook (unread stays UNVERIFIED). DMARC starts at `p=none` and ramps after two weeks of clean reports.
+- Door: two-way. Way back: revert the PR.
+
+### CR-206 PR 759 metadata-only scanner: re-cut as four stacked PRs; three findings ruled (24 Nov 2026, Karma and the exec team under D-168 and D-172)
+- Verdict: RULED re-cut. Founder-only: no. Signed: Karma. Full text: `infra/exec-rulings-2026-11-24-held-prs.md` section 5.
+- Decision group: BL-845, BL-862. Cites CISO-18, CPrivO-50.
+- Ruling: the scanner stays strict. `hiddenPlaces` is allowed by name in one file only (`store.logic.ts`) through a pinned `NAME_EXCEPTIONS` map, because it is a persisted key and a rename would silently un-hide places. Network names match the whole identifier, so `fetchWindow` passes and `fetch(` fails, with a mutation test. The error-code catch in `launch.logic.ts` is changed to report a closed code. The duplicate preflight assertion is dropped, the CODEOWNERS line for a non-account is not added (a snapshot test pins the lists instead), and the canary files are renamed so `log-canary.test.ts` is untouched. Four stacked PRs merged bottom up; slice 1 only carries a `Size exception:` line citing this ruling.
+- Door: two-way. Way back: revert the slice.
+
+### CR-207 PR 767 co-parent grooming rows: re-cut as one docs PR (24 Nov 2026, Karma and the exec team under D-168 and D-172)
+- Verdict: RULED re-cut. Founder-only: no. Signed: Karma. Full text: `infra/exec-rulings-2026-11-24-held-prs.md` section 6.
+- Decision group: D-161, D-162. Cites CPO-91.
+- Ruling: drop BL-882 as a tombstone row (D-161 forbids a coming-soon surface; the id is kept so it is not reused); keep BL-883 to BL-889 as `proposed`; fix the false status on BL-983. The nine PR defaults are the starting point for BL-883, which may change them with its threat model; invitee consent wording waits for BL-883 and the exec read. D-161 and D-162 are not edited.
+- Door: two-way.
+
+### CR-208 PR 1399 BL-410 capture matrix: close, keep the branch (24 Nov 2026, Karma and the exec team under D-168 and D-172)
+- Verdict: RULED close; branch `qa/bl410-journey-capture` kept. Founder-only: no. Signed: Karma. Full text: `infra/exec-rulings-2026-11-24-held-prs.md` section 7.
+- Decision group: BL-410. Cites CPO-92, CDesO-45.
+- Ruling: the seam and the J24 capture loop are merged and the matrix duplicates them under clashing ids. The tab names Home, Book, Me are right; the stale control words ("Keep it word for word", "Sounds like me | Not quite") are fixed in the BL-410 row, not the app, and no two-up rating surface is wanted. Follow-ups: a product edit of the BL-410 row, and one qa flow file `j26-missing-screens.flow.ts` that must run on a machine with Chromium before its selectors count as proven.
+- Door: two-way.
+
+### CR-209 PR 656 BL-583 and BL-584: close as drafted, re-cut as two PRs; no repository service-role secret (24 Nov 2026, Karma and the exec team under D-168 and D-172)
+- Verdict: RULED close and re-cut. Founder-only: FOUNDER for the physical steps only (the function secret, hosted migration, Environment and workflow push: queue row FO-1, plus the applied-migrations readback FO-4, recorded in the Project note, not decided here); the ruling itself is not. Signed: Karma. Full text: `infra/exec-rulings-2026-11-24-held-prs.md` section 8.
+- Decision group: secrets (SEC-R04, SK-05). Cites CISO-17, CDO-30, CPrivO-53.
+- Ruling: two concerns and a key that bypasses row-level rules stored at the repository level are both refused. PR 1: the migrations-record guard (drop the unverified staging list; the workflow change stays a proposal; BL-583 and BL-584 rows set `ready` because CR-188 passed the CR-47 trigger). PR 2: an Edge Function `ops-health` returning two integers behind its own bearer token, an RPC `ops_cron_health` with its grant row, and a watch that reads only the function URL and token from an Environment `ops-watch`; point it at production first. A heartbeat monitor (option B) is the fallback and needs a vendor decision.
+- Door: two-way. Way back: delete the function and the Environment.
+
+### CR-210 PR 658 BL-603 Supabase logs: re-cut as one PR; docs/legal/evidence accepted (24 Nov 2026, Karma and the exec team under D-168 and D-172)
+- Verdict: RULED re-cut. Founder-only: FOUNDER for the dashboard readback only (queue row FO-2, recorded in the Project note, not decided here); the ruling itself is not. Signed: Karma. Full text: `infra/exec-rulings-2026-11-24-held-prs.md` section 9.
+- Decision group: BL-603. Cites CISO-19, CPrivO-51, CLO-43, CISO-12, CISO-13.
+- Ruling: `docs/legal/evidence/` is the home, merged by Karma under D-132 and D-168. Retarget the runbook and template to production first, rewrite the test so it pins only the query-string token path and the typed-code path (the "ships unfilled" check is dropped), set BL-603 `ready`. Whether Supabase logs the query string is UNVERIFIED until the readback. If the readback is not done by the store cut, the residual (single use, 15 minutes, PKCE) is accepted and recorded; the Privacy Policy gets no log line.
+- Door: two-way.
+
+### CR-211 PR 760 counsel packet addendum: close, keep the branch; Q78 to Q106 released (24 Nov 2026, Karma and the exec team under D-168 and D-172)
+- Verdict: RULED close; branch `docs/legal-counsel-memlib-packet-10nov` kept. Founder-only: no. Signed: Karma. Full text: `infra/exec-rulings-2026-11-24-held-prs.md` section 10.
+- Decision group: D-172. Cites CLO-42, CLO-32.
+- Ruling: its questions were written for NX-39 and a library read that is off in 1.0, and `COUNSEL_PACKET.md` Q109 to Q132 carry the same topics. The numbers Q78 to Q106 are retired, never reused. Follow-ups: one legal docs PR (reservation text, two overlap lines, a one-pass check for topics with no home), BL-841 marked deferred, queue row F6 retired with a pointer to D-172 and this entry. The CLO did not read the 513-line draft question by question (stated in the note).
+- Door: two-way. If the photo flag is ever scheduled, BL-841 reopens it.
+
+### CR-212 BL-1255 order: mapping table, then rename, then the privacy signature (24 Nov 2026, Karma and the exec team under D-168 and D-172)
+- Verdict: RULED. Founder-only: no (flipping to `collect_by_default` or production analytics stays his under D-163 and D-170). Signed: Karma. Full text: `infra/exec-rulings-2026-11-24-held-prs.md` section 12.
+- Decision group: analytics wire names. Cites CDO-31, CPrivO-52, CR-186.
+- Ruling: privacy does not sign the basics list first. Order: (1) a generated `WIRE-NAMES.md` with a test that every key has exactly one wire name, no collisions and no tier change; (2) the rename by area, stacked, with a diff test proving no property was added or widened and perf stays `consented`; (3) a separate signature PR editing the pinned basics set, with the CPrivO role as a counted reviewer, before `collect_by_default` is ever chosen. The rename must land before the first build with analytics on (ER-B02).
+- Door: two-way (nothing has been sent). Way back: revert the rename PRs.
+
+### CR-213 The 39 wire names PR 1962 left as NEEDS RULING (BL-1255 step 1) (24 Nov 2026, Karma and the exec team under D-168 and D-172)
+- Verdict: RULED. Founder-only: no. Signed: Karma. Full text and the 39-row table: Project note `infra/exec-rulings-2026-11-24-wire-names.md`. Self-challenged only; a real challenger should still read rows 15, 17, 20, 21 and 34.
+- Decision group: analytics wire names. Cites CDO-32, CPrivO-54, CPO-93, CR-212, CDO-25.
+- Ruling: of the 39 keys, 18 are named, 4 merge into `screen_view` or perf, and 17 are dropped (held events have no history, so dropping before first send is free). No tier changes: the basics set stays pinned to `['screen_view']`. The nine categories stay closed. Conditions: step 1b (merged, PR 1972) corrected and re-rendered the table with `dropped` and `merged` statuses; step 2a deletes the dropped and merged rows and call sites in one PR cut on PR 1957 and re-expresses the return-to-book funnel; `FORBIDDEN_EVENT_PATTERNS` is re-expressed against wire names in the same step or the guard silently stops matching; `posthog-standard.md` gets a one-time edit by its owner afterwards. The `letter_deleted` key is flagged for a separate exec look.
+- UNVERIFIED: PostHog colon names in funnels and HogQL (standard 2.8).
+- Door: two-way. Way back: revert the step 2 PRs; re-add a key by a new row with a decision.
+
 ### CR-214 Release PR #1979: the servers-on profile, the /open and /support read, the AASA path, the merge method (24 Nov 2026, Karma and the exec team under D-168 and D-172)
 - Verdict: RULED. Founder-only: no. Signed: Karma.
 - Decision group: G2, G6, D-170, CR-178. Cites CCO, CMO, CLO, CISO.
