@@ -987,6 +987,29 @@ export function deleteEntry(id: string): boolean {
 }
 
 /**
+ * The delete rule's own door for a letter in a book this person left (BL-1960, F11-REQ-011, DATA-REQ-016). `deleteEntry`
+ * refuses such a letter on purpose (BL-1959: its `entry.delete` would be refused by the server). This is the explicit
+ * way in: a local tombstone and nothing queued, so the letter waits 30 days on the Recently deleted shelf like any other
+ * and is then erased here, with no op for the server. Returns false for a letter that is not in a left book, one that is
+ * missing or already deleted, and a letter someone else wrote (a left book holds only the person's own after merge, so
+ * that last case is belt and braces). It cannot be used to delete from a book that is still joined.
+ * It does not restore: `undeleteEntry` still refuses a left book's letter (BL-1959).
+ */
+export function deleteLeftBookLetter(id: string): boolean {
+  const c = ctx();
+  if (!entryBookLeft(c, id)) return false;
+  const me = syncOwner(c.db);
+  const row = getEntryRow(c.db, id);
+  if (!row || (me && row.author_id !== null && row.author_id !== me)) return false;
+  let done = false;
+  c.db.transaction(() => {
+    done = entries.tombstone(c, id);
+  });
+  if (done) bus.emit('entries');
+  return done;
+}
+
+/**
  * Restore from Recently deleted: live here at once; on the server through
  * restore_entry() (never by clearing deleted_at, which the server refuses).
  */
@@ -1056,6 +1079,12 @@ export function eraseEntry(id: string, eraseAudio: AudioEraser): boolean {
   let serverMayHold = false;
   let heldOnServer = false;
   let bookId: string | null = null;
+  // BL-1960: a letter in a book this person left is erased here and nothing is sent. The server refuses an
+  // entry.erase from a member who left, so queueing one would only fill the rejected list; the local erase still
+  // happens. Read before the row goes.
+  const leftBook = entryBookLeft(c, id);
+  const leftBookId = leftBook ? (c.db.get<{ child_id: string | null }>('SELECT child_id FROM entries WHERE id = ?', id)?.child_id ?? '') : '';
+  let bookGone = false;
   // Queueing is local, as every other upload is: a phone that signed in under a server-on build keeps
   // its queue in an off build, so the erase goes when sync returns (final review A-M2).
   const owner = syncOwner(c.db);
@@ -1083,11 +1112,14 @@ export function eraseEntry(id: string, eraseAudio: AudioEraser): boolean {
     done = entries.eraseRow(c, id);
     // One erase for the letter and for a waiting letter's held row alike: the server erases whichever it
     // holds, and the author's other phones erase their copy (never restorable there).
-    if (done && (serverMayHold || heldOnServer)) enqueueEntryErase(c.db, id, bookId, enqueueContext(c));
+    if (done && !leftBook && (serverMayHold || heldOnServer)) enqueueEntryErase(c.db, id, bookId, enqueueContext(c));
+    // BL-1960: the book row goes when its last letter goes (same transaction, so a kill never leaves a half state).
+    if (done && leftBook) bookGone = dropEmptyLeftBook(c, leftBookId);
   });
   if (done) compactAfterErase(c);
   if (done) bus.emit('entries');
-  if (done && (serverMayHold || heldOnServer)) signalOutbox();
+  if (done && bookGone) tellBookErased(leftBookId);
+  if (done && !leftBook && (serverMayHold || heldOnServer)) signalOutbox();
   return done;
 }
 
@@ -1146,11 +1178,23 @@ export function purgeExpired(nowMs: number, eraseAudio: AudioEraser): number {
   // A book erase a kill cut short is finished first, whatever the clock says and even with no readable launch stamp
   // below: the person already asked for it, and it counts no days.
   for (const id of wipe.erasingIds(c)) eraseBook(id, eraseAudio);
+  // BL-1960: a left book with nothing filed in it keeps only its name and birth date; nothing reads it, so it goes.
+  // Not a clock matter (no letter waits on it), so it runs before the launch-stamp guard below.
+  for (const id of children.emptyLeftBookIds(c)) {
+    let gone = false;
+    c.db.transaction(() => {
+      gone = dropEmptyLeftBook(c, id);
+    });
+    if (gone) tellBookErased(id);
+  }
   const last = Date.parse(getSetting(LAST_LAUNCH_SETTING) ?? '');
   if (!Number.isFinite(last) || nowMs < last) return 0;
   const cutoff = new Date(last - SHELF_MS).toISOString();
   let erased = 0;
-  for (const id of capabilities.sync ? entries.expiredLocalOnlyIds(c, cutoff) : entries.expiredIds(c, cutoff)) {
+  // BL-1960: a left book's letters are erased on this phone's clock on a sync build too: the server's purge no longer
+  // reaches them for this person, and no entry.erase is queued for them (eraseEntry).
+  const due = capabilities.sync ? [...new Set([...entries.expiredLocalOnlyIds(c, cutoff), ...entries.expiredInLeftBooks(c, cutoff)])] : entries.expiredIds(c, cutoff);
+  for (const id of due) {
     if (eraseEntry(id, eraseAudio)) erased += 1;
   }
   // Deleted books whose 30 days are over (F17 6.2 D step 6), by the same guarded cutoff as letters (QE-05).
@@ -1268,6 +1312,27 @@ export function eraseBook(id: string, eraseAudio: AudioEraser): boolean {
   }
   bus.emit('children', 'entries', 'drafts', 'settings');
   return true;
+}
+
+/**
+ * Removes a left book's own row (name, birth date, prefs, sync marks) once nothing is filed in it: no letter, deleted
+ * or not, and no draft (BL-1960). Runs inside the caller's transaction. A book that is not left, or still holds
+ * anything, is untouched. True when the book went.
+ */
+function dropEmptyLeftBook(c: RepoContext, childId: string): boolean {
+  if (!childId || !children.leftBookIsEmpty(c, childId)) return false;
+  wipe.removeBook(c, childId);
+  return true;
+}
+function tellBookErased(childId: string): void {
+  for (const hook of bookErasedHooks) {
+    try {
+      hook(childId);
+    } catch {
+      // a device-file cleanup must never undo an erase that has happened
+    }
+  }
+  bus.emit('children', 'entries', 'settings');
 }
 
 const bookErasedHooks = new Set<(bookId: string) => void>();

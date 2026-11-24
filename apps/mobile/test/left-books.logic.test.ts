@@ -33,7 +33,7 @@ describe('[BL-444] the page', () => {
   it('lists the book\'s letters, titled for the child, with the one lead line', () => {
     const p = leftBookPage([asha], 'c1', () => [mine]);
     expect(p.title).toBe('Letters to Asha');
-    expect(p.lead).toBe("You left Asha's book. The letters you wrote in it are kept on this phone.");
+    expect(p.lead).toBe("The letters you wrote in Asha's book.");
     expect(p.entries.map((e) => e.id)).toEqual(['e1']);
     expect(p.child).toBe(asha);
     expect(p.empty).toBeNull();
