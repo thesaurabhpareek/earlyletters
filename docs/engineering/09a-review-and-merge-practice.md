@@ -41,5 +41,5 @@ Companion to chapter 09 (owner `ai-eng-lead`), kept apart so chapter 09 stays in
 | AIE-G17 | The dispatcher or `check.mjs` flags two open PRs that fix the same failing test (AIE-R41) |
 | AIE-G18 | The merge helper builds the message from the PR's actual approval basis (AIE-R43) |
 | AIE-G19 | The merge helper runs the content-map test and the analytics tests on a scratch merge when the diff touches `packages/analytics`, `packages/content` or `docs/content/map` (AIE-R44) |
-| AIE-G20 | `merge-queue.mjs` prints the CI result of `tests and content rules` at the head next to each counted PASS, so a PASS over a red suite is visible (AIE-R46) |
-| AIE-G21 | `merge-queue.mjs` orders READY PRs that append to the same hot file and says which to merge first (AIE-R47) |
+| AIE-G20 | `merge-queue.mjs` prints the CI result of `tests and content rules` at the head next to each counted PASS, so a PASS over a red suite is visible (AIE-R46). Built in #1863 (24 Nov): the `suite` column and a PASS-over-red note |
+| AIE-G21 | `merge-queue.mjs` orders READY PRs that append to the same hot file and says which to merge first (AIE-R47). Built in #1863 (24 Nov): `hotFiles` in `--json` and a group note naming the lowest PR number; it only advises, the merge order stays a person's call |
