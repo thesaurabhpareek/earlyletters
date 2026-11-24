@@ -10,6 +10,7 @@ import { promisify } from "node:util";
 
 const run = promisify(execFile);
 const WORKFLOW = "ios-compile.yml";
+const WORKFLOW_PATH = `.github/workflows/${WORKFLOW}`;
 const SHA = /^[0-9a-f]{40}$/;
 const REPO = /^[\w.-]+\/[\w.-]+$/;
 
@@ -19,7 +20,7 @@ const failTag = (reason) => ({ ok: false, message: `Release candidate tag refuse
 /** Pure. runs: workflow runs of ios-compile.yml on develop. isAncestor(mergeBase, sha) is true when sha is the merge base or a descendant of it. */
 export function decideLaunchGate({ runs, mergeBase, isAncestor }) {
   if (!SHA.test(mergeBase ?? "")) return fail("the merge base of the tagged commit and develop could not be read");
-  const develop = (runs ?? []).filter((r) => r && r.event !== "pull_request" && (r.head_branch === undefined || r.head_branch === "develop"));
+  const develop = (Array.isArray(runs) ? runs : []).filter((r) => r && r.event !== "pull_request" && (r.head_branch === undefined || r.head_branch === "develop"));
   const newest = develop.reduce((a, r) => (!a || r.created_at > a.created_at || (r.created_at === a.created_at && r.id > a.id) ? r : a), null);
   const none = "no iOS compile run on develop at or after the merge base " + mergeBase.slice(0, 9);
   if (!newest) return fail(none);
@@ -36,13 +37,15 @@ export function decideLaunchGate({ runs, mergeBase, isAncestor }) {
  * BL-1594. Pure. Proves the tagged commit itself, not only the tip of develop: a completed, successful `iOS compile`
  * run whose head_sha is exactly the tagged sha. runs: workflow runs as the Actions API returns them. Only a
  * workflow_dispatch run counts: a pull_request run builds the merge ref, not its head_sha, and can be green with the
- * compile job skipped by the paths filter. A run must name ios-compile.yml by path; a run with no path does not count.
- * When several runs checked the same sha, the newest by created_at decides; a run with no readable time fails closed.
+ * compile job skipped by the paths filter. A run's path must be exactly .github/workflows/ios-compile.yml; a run with no
+ * path, or a path that only ends in ios-compile.yml, does not count. When several runs checked the same sha, the newest
+ * by created_at decides, the higher id on a tie; a run with no readable time fails closed. A runs value that is not an
+ * array is read as no runs.
  * Not wired into any workflow yet (proposal: docs/ops/proposed/release-ios-launch-gate.md, "Tag equals checked commit").
  */
 export function decideTagCheckedRun({ tagSha, runs }) {
   if (typeof tagSha !== "string" || !SHA.test(tagSha)) return failTag("the tagged commit could not be read");
-  const same = (runs ?? []).filter((r) => r && r.head_sha === tagSha && r.event === "workflow_dispatch" && typeof r.path === "string" && r.path.endsWith(`/${WORKFLOW}`));
+  const same = (Array.isArray(runs) ? runs : []).filter((r) => r && r.head_sha === tagSha && r.event === "workflow_dispatch" && r.path === WORKFLOW_PATH);
   if (same.some((r) => typeof r.created_at !== "string" || r.created_at === "")) return failTag(`a run on the tagged commit ${tagSha.slice(0, 9)} has no start time`);
   const newest = same.reduce((a, r) => (!a || r.created_at > a.created_at || (r.created_at === a.created_at && r.id > a.id) ? r : a), null);
   if (!newest) return failTag(`no iOS compile run checked the tagged commit ${tagSha.slice(0, 9)}`);
