@@ -486,32 +486,48 @@ export const PROP = {
 } as const;
 
 /**
+ * A funnel step is a registered event, or a wire name (`<area>:<object>_<verb>`) from the table in `wire-names.ts`,
+ * which is where the generated screen-view names live. `registry-data.test.ts` checks which (rule V9).
+ */
+export type FunnelStep = RegistryName | `${string}:${string}`;
+
+/**
  * Funnels behind weekly making families (FR-DAT-21). A funnel is a query in
  * PostHog, never code in the app; this list only names the steps, and every
- * step must be a registered event (rule V9). Ids: `f_<area>_<goal>`.
+ * step must be a registered event or a wire name (rule V9). Ids: `f_<area>_<goal>`.
  */
 export const FUNNELS = {
   f_onboarding_first_letter: ['child_added', 'capture_started', 'letter_saved'],
   f_capture_letter_saved: ['capture_started', 'transcription_completed', 'letter_saved'],
   f_keep_plus_started: ['free_allowance_reached', 'keep_gate_shown', 'plus_started_from_gate'],
   f_plus_offer_converted: ['plus_offer_viewed', 'plus_offer_closed', 'plan_changed'],
-  f_return_book_read: ['app_opened', 'book_opened', 'letter_opened'],
+  // Wire names (BL-2175, CR-213): the Book and letter reads are the generated screen views, not events of their own.
+  f_return_book_read: ['system:app_open', 'book:book_screen_view', 'book:letter_detail_screen_view'],
   f_family_invite_joined: ['invite_created', 'invite_accepted'],
-} as const satisfies Record<string, readonly RegistryName[]>;
+} as const satisfies Record<string, readonly FunnelStep[]>;
 
 /**
  * Events that must never exist (FR-DAT-27 and the founder's 20 Nov rules). A test fails if a registry name
  * matches one of these patterns: the birthday-week Save a copy slip, Days notes, email opens and clicks, and
  * anything that fires at a time a birthday, due date or seal sets.
+ *
+ * The patterns read a bare key (`moment_shown`) and a wire name (`book:moment_view`, BL-1255) alike, so none is anchored
+ * with `^` on its own: a wire name starts with its area. Three of them also bar the names an event the exec team retired
+ * would have had (CR-213, CR-225): a share's destination, a delivered reminder, Moments and On this day cards by date, a
+ * letter deleted or restored, and the deletion flows PM3 keeps at T0. `export_` is not one of them: the three export names
+ * (`keeping:export_start`, `_complete`, `_fail`) are allowed, and only `export_share` is not.
  */
 export const FORBIDDEN_EVENT_PATTERNS: readonly RegExp[] = [
   /save_a_copy/,
-  /export_/,
+  /export_share/,
   /days?_note/,
-  /^moment_/,
-  /^resurface_/,
+  /(^|:)moment_/,
+  /(^|:)resurface_/,
   /email_(open|click)/,
   /birthday/,
   /month_age/,
-  /reminder_sent/,
+  /reminder_sen[dt]/,
+  /letter_(delete|restore)/,
+  /account_delet/,
+  /(phone_delete|take_delete|version_(remove|restore)|deletion_(start|restore))/,
 ];
