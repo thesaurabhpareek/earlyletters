@@ -546,6 +546,7 @@ function adoptHeldDraft(db: SqlDb, id: string, now: string): void {
   );
   db.run("DELETE FROM sync_outbox WHERE entity_id = ? AND type IN ('held.upsert', 'held.discard') AND sent_at IS NULL AND attempts = 0", id);
   db.run('DELETE FROM drafts WHERE id = ?', id);
+  db.run('DELETE FROM settings WHERE key = ?', `discard.failures.${id}`); // NS-09-R15: a count goes with its draft
 }
 
 // ── Held drafts in the pull (F16 6.2 I; S07 PulledHeld, PulledHeldGone) ─────

@@ -1602,6 +1602,19 @@ export function beginDiscard(id: string): boolean {
 }
 
 /**
+ * A let-go draft's delete failed once more (NS-09-R15). Counts only; no id or count is logged. Emits nothing: no list
+ * shows it yet (Storage, R6, is a separate row).
+ */
+export function noteDiscardFailure(id: string): number {
+  return drafts.noteDiscardFailure(ctx(), id);
+}
+
+/** Failed deletes so far for a draft being let go; 0 when none or the draft is gone. Survives a restart. */
+export function discardFailures(id: string): number {
+  return drafts.discardFailures(ctx(), id);
+}
+
+/**
  * Removes a draft's picture, the file first and then its row (photos/device.ts erasePictureOf). capture/erase.ts hands
  * it in when it loads, which the launch sweep does at every start; until then nothing is erased here, and the photo
  * sweep removes a gone draft's picture at the next launch.
