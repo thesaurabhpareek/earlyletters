@@ -272,6 +272,8 @@ const IN_APP_PROMISES = [
   'en.trust.short',
   'en.trust.voice',
   'en.trust.firstRecording',
+  'en.trust.signIn',
+  'en.trust.settings',
   'en.settings.recordings.onPhoneTitle',
   'en.settings.recordings.onPhoneBody',
   'en.plus',
@@ -416,6 +418,15 @@ describe('public claims match the production profile (RT-REL-03)', () => {
     // Build 12 (founder, 8 Nov 2026) is servers on: sign-in and sync are true; backup stays off.
     // Co-parent is false here although the switch is on: the store build hides "I was invited" (see storeCoParentFlow).
     expect(profile).toEqual({ englishOnly: true, heard: ['en'], signIn: true, sync: true, coParent: false, backup: false, photos: false, wordsExactlyAsSaid: false });
+  });
+
+  it('keeps the sign-in and Settings privacy lines in the read set (CLAIMS-1.0 F-05, LEGAL-REQ-044)', () => {
+    // Sign-in is on in production and Settings, Privacy is a screen families open; dropping either path would let a
+    // promise like "keeps your book safe" go unread while backup is off.
+    expect(IN_APP_PROMISES).toContain('en.trust.signIn');
+    expect(IN_APP_PROMISES).toContain('en.trust.settings');
+    expect(leaves(get(IN_APP_ROOT, 'en.trust.signIn'), 'en.trust.signIn').length).toBeGreaterThan(0);
+    expect(leaves(get(IN_APP_ROOT, 'en.trust.settings'), 'en.trust.settings').length).toBeGreaterThan(0);
   });
 
   it('reads every in-app promise path, every switched line and every web exclusion', () => {
