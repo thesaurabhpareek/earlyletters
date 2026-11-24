@@ -1,6 +1,6 @@
 /** Shared moves for the journey flows. Only fictional family data ("Asha"); everything goes through the real screens. */
 import type { Page } from '@playwright/test';
-import { en } from '@scribe/content';
+import { authCopy, en } from '@scribe/content';
 import { bookCopy } from '../../src/components/book/copy';
 import { canary, expect, type Recorder } from './journey';
 import type { Need } from './saved-moment';
@@ -20,6 +20,20 @@ export async function passAgeGate(page: Page) {
   await agreeBox(page).click();
   await btn(page, 'Continue').click();
   await expect(btn(page, 'Begin the book')).toBeVisible();
+}
+
+/**
+ * The same gate on the server-on build (NX-31 R17, NX-36 S2): with no session and no book the first screen is the account-first
+ * welcome, not "Begin the book". It offers Sign in with email and, where the build shows it, "I was invited". The words are
+ * read from packages/content, so a copy round moves the flow with the screen.
+ */
+export async function passAgeGateToSignIn(page: Page) {
+  await page.getByRole('radio', { name: 'Yes' }).click();
+  await agreeBox(page).click();
+  await btn(page, 'Continue').click();
+  await expect(btn(page, authCopy.sheet.email)).toBeVisible();
+  await expect(page.getByText(authCopy.sheet.bodies.sign_in_first)).toBeVisible();
+  await expect(btn(page, 'Begin the book')).toHaveCount(0);
 }
 
 export async function startOnboarding(page: Page) {
