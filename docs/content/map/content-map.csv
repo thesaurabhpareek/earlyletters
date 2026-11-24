@@ -339,7 +339,7 @@ docs/store/listing/listing.json#apple.description,store,store listing,docs/store
 Say a few words to your child at the end of the day. A first laugh, a long night, a song you made up in the car. Early Letters keeps it as a letter, in your words and in your voice, and files it by month of age. Over time it becomes a book your child can read, and hear, for years.
 
 IT STAYS IN YOUR WORDS
-Your speech is written down on your phone. Early Letters fixes only small slips: an um, an accidental repeat, a name spelled the way you spell it, a capital letter, a full stop. It never adds a word. Every change is marked, and you can put any of them back. A microphone can mishear, so read each letter before you keep it. Letters you type stay exactly as you typed them.
+Your speech is written down on your phone. Early Letters fixes only small slips: an um, an accidental repeat, a name spelled the way you spell it, a capital letter, a full stop. It never adds a word. Every word we change is marked, and you can put any of them back. A microphone can mishear, so read each letter before you keep it. Letters you type stay exactly as you typed them.
 
 YOUR VOICE, KEPT
 Each letter you speak keeps its original recording, unchanged. It stays on your phone, and in your iPhone's own backup if you use one. Years from now, your child can hear how you sounded when you said it.
@@ -373,7 +373,7 @@ PRICING
 Your first two letters are free, so you can try it. To keep adding letters, choose Plus: $4.99 a month with a 1-month free trial, or $49.99 a year with a 2-month free trial. One membership covers every child's book. Payment is charged to your Apple Account at confirmation of purchase. Subscriptions renew automatically unless cancelled at least 24 hours before the end of the current period. Manage or cancel any time in your Apple Account settings.
 
 Privacy Policy: https://earlyletters.com/privacy
-Terms: https://earlyletters.com/terms",2783,protected,"D-061 privacy promise line, word for word on every surface",,,,cmo,live on develop,store-doc
+Terms: https://earlyletters.com/terms",2791,protected,"D-061 privacy promise line, word for word on every surface",,,,cmo,live on develop,store-doc
 docs/store/listing/listing.json#googlePlay.availability,store,store listing,docs/store/listing/listing.json,18,en,NOT FOR v1.0. Android is out of v1.0 (docs/ROADMAP.md section 6). Hold until Android and Google Play Billing ship (BL-311). Re-trace every claim against the Android build before use: the storage sentence here is untraced for Android.,233,,,,,,cmo,live on develop,store-doc
 docs/store/listing/listing.json#googlePlay.title,store,store listing,docs/store/listing/listing.json,19,en,Early Letters: Memory Book,26,,,,,,cmo,live on develop,store-doc
 docs/store/listing/listing.json#googlePlay.shortDescription,store,store listing,docs/store/listing/listing.json,20,en,"Letters to your child, in your own words and voice. It stays in your words.",75,,,,,,cmo,live on develop,store-doc
@@ -388,7 +388,7 @@ docs/store/listing/listing.json#googlePlay.fullDescription,store,store listing,d
 Say a few words to your child at the end of the day. A first laugh, a long night, a song you made up in the car. Early Letters keeps it as a letter, in your words and in your voice, and files it by month of age. Over time it becomes a book your child can read, and hear, for years.
 
 IT STAYS IN YOUR WORDS
-Your speech is written down on your phone. Early Letters fixes only small slips: an um, an accidental repeat, a name spelled the way you spell it, a capital letter, a full stop. It never adds a word. Every change is marked, and you can put any of them back. A microphone can mishear, so read each letter before you keep it. Letters you type stay exactly as you typed them.
+Your speech is written down on your phone. Early Letters fixes only small slips: an um, an accidental repeat, a name spelled the way you spell it, a capital letter, a full stop. It never adds a word. Every word we change is marked, and you can put any of them back. A microphone can mishear, so read each letter before you keep it. Letters you type stay exactly as you typed them.
 
 YOUR VOICE, KEPT
 Each letter you speak keeps its original recording, unchanged. It stays on your phone. Years from now, your child can hear how you sounded when you said it.
@@ -422,7 +422,7 @@ PRICING
 Your first two letters are free, so you can try it. To keep adding letters, choose Plus: $4.99 a month with a 1-month free trial, or $49.99 a year with a 2-month free trial. One membership covers every child's book. Subscriptions renew automatically until you cancel. Manage or cancel any time in the Subscriptions section of Google Play.
 
 Privacy Policy: https://earlyletters.com/privacy
-Terms: https://earlyletters.com/terms",2623,protected,"D-061 privacy promise line, word for word on every surface",,,,cmo,live on develop,store-doc
+Terms: https://earlyletters.com/terms",2631,protected,"D-061 privacy promise line, word for word on every surface",,,,cmo,live on develop,store-doc
 docs/store/listing/listing.json#localisation.status,store,store listing,docs/store/listing/listing.json,32,en,"All drafts below need native review before any use, and no non-English text ships in build 1 (English only, D-115). Only the English strings are approved for copy rules. The promotional drafts were rewritten on 1 Nov 2026 to the true line (D-133); the translation of that line is itself unreviewed.",298,,,,,,cmo,live on develop,store-doc
 docs/store/listing/listing.json#localisation.storefrontNote,store,store listing,docs/store/listing/listing.json,33,en,v1.0 is US storefront only (LEGAL-REQ-058). Localised metadata is optional in the US storefront; app UI is English only (Hindi UI is v1.2+).,140,,,,,,cmo,live on develop,store-doc
 docs/store/listing/listing.json#localisation.locales.es-MX.review,store,store listing,docs/store/listing/listing.json,37,en,Native review required. Check regional wording.,47,,,,,,cmo,live on develop,store-doc
@@ -2297,7 +2297,7 @@ site.en.ts#site.privacy.points.5,site,website,packages/content/src/site.en.ts,82
 site.en.ts#site.faq.0.q,site,website,packages/content/src/site.en.ts,87,en,Who can see my letters?,23,,,,,,cmo,live on develop,content
 site.en.ts#site.faq.0.a,site,website,packages/content/src/site.en.ts,88,en,"Only you. Recordings are kept on the phone that made them, and your iPhone's own backup holds them too if you use one.",118,,,,,,cmo,live on develop,content
 site.en.ts#site.faq.1.q,site,website,packages/content/src/site.en.ts,91,en,Do you rewrite my words?,24,,,,,,cmo,live on develop,content
-site.en.ts#site.faq.1.a,site,website,packages/content/src/site.en.ts,92,en,"No. Transcription happens on your phone. Word for word takes out the ums and accidental repeats, spells your names your way, and marks each fix. It never adds a word. It stays in your words. Every change is marked, and your original recording is kept unchanged. You can undo any fix, or choose Exactly as said to keep every word as it came.",340,protected,D-133 public promise line,,,,cmo,live on develop,content
+site.en.ts#site.faq.1.a,site,website,packages/content/src/site.en.ts,92,en,"No. Transcription happens on your phone. Word for word takes out the ums and accidental repeats, spells your names your way, and marks each fix. It never adds a word. It stays in your words. Every word we change is marked, and your original recording is kept unchanged. You can undo any fix, or choose Exactly as said to keep every word as it came.",348,protected,D-133 public promise line,,,,cmo,live on develop,content
 site.en.ts#site.faq.2.q,site,website,packages/content/src/site.en.ts,95,en,"What if I skip a few days, or a few weeks?",42,,,,,,cmo,live on develop,content
 site.en.ts#site.faq.2.a,site,website,packages/content/src/site.en.ts,96,en,"That's fine. Nothing is counting. Tap ""Not much today"" on a quiet day, or come back when you have something to say. Your book is still there.",141,,,,,,cmo,live on develop,content
 site.en.ts#site.faq.3.q,site,website,packages/content/src/site.en.ts,99,en,Which languages can I use?,26,,,,,,cmo,live on develop,content
