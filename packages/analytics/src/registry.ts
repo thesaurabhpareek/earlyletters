@@ -83,7 +83,7 @@ export const REGISTRY = {
     tier: 'basics',
     props: { route: ROUTE },
   },
-  app_opened: {
+  'system:app_open': {
     stage: 'return',
     decision: "How many weeks a family comes back and how they got in (reminder, link or by hand), so we know whether reminders earn their place.",
     area: 'app',
@@ -96,7 +96,7 @@ export const REGISTRY = {
       days_since_last_open: DAYS_BUCKET,
     },
   },
-  analytics_opted_in: {
+  'system:analytics_consent_accept': {
     stage: 'activation',
     decision: "How far a family had got when they said yes (first-run facts we could never send before), so we can judge the install to first letter step.",
     area: 'consent',
@@ -379,8 +379,8 @@ export type RegistryName = keyof typeof REGISTRY;
 /** Event names, as constants. The only way call sites name an event. */
 export const EV = {
   screenView: 'screen_view',
-  appOpened: 'app_opened',
-  analyticsOptedIn: 'analytics_opted_in',
+  appOpened: 'system:app_open',
+  analyticsOptedIn: 'system:analytics_consent_accept',
   authSucceeded: 'onboarding:sign_in_complete',
   childAdded: 'onboarding:book_create',
   captureStarted: 'capture_started',

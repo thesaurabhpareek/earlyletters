@@ -76,9 +76,9 @@ export interface PackDownloadInput {
   packId: string;
   /** Manifest version number of the pack. */
   version: number | null;
-  stage: V<'pack_download', 'stage'>;
-  failure?: V<'pack_download', 'failure'>;
-  network: V<'pack_download', 'network'>;
+  stage: V<'system:pack_download_update', 'stage'>;
+  failure?: V<'system:pack_download_update', 'failure'>;
+  network: V<'system:pack_download_update', 'network'>;
 }
 
 /** The parts of a verifier rejection this helper reads (packages/core RejectedEdit). */
@@ -231,7 +231,7 @@ export function createTrackers(analytics: Pick<Analytics, 'track'>) {
     trackAnalyticsOptedIn(i: OptedInSummaryInput): TrackResult {
       const sinceInstall = i.firstLaunchAt == null ? 0 : i.now - i.firstLaunchAt;
       const ttfl = i.firstLaunchAt != null && i.firstLetterAt != null ? i.firstLetterAt - i.firstLaunchAt : null;
-      return track('analytics_opted_in', {
+      return track('system:analytics_consent_accept', {
         surface: i.surface,
         days_since_install: daysBucket(sinceInstall),
         letters_bucket: lettersBucket(i.letters),
@@ -253,7 +253,7 @@ export function createTrackers(analytics: Pick<Analytics, 'track'>) {
     /** A pack engine progress change, by short analytics pack id and language code only. */
     trackPackDownload(i: PackDownloadInput): HelperResult {
       const { pack, lang } = packAnalyticsId(i.packId);
-      return track('pack_download', {
+      return track('system:pack_download_update', {
         pack,
         ...(lang ? { lang } : {}),
         pack_version: clampInt(i.version ?? 1, 1, 1000),

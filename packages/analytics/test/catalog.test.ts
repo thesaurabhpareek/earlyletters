@@ -100,7 +100,7 @@ describe('catalogue rules', () => {
 
   it('carries language only as `lang`, only on languages events, only from the seven v1.0 codes', () => {
     const withLang = entries.filter(([, spec]) => 'lang' in spec.props).map(([name]) => name).sort();
-    expect(withLang).toEqual(['me:language_update', 'pack_download']);
+    expect(withLang).toEqual(['me:language_update', 'system:pack_download_update']);
     for (const name of withLang) {
       const spec = EVENTS[name as 'me:language_update'];
       expect(spec.area).toBe('languages');

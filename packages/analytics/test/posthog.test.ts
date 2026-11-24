@@ -219,7 +219,7 @@ describe('lazy adapter', () => {
       // @ts-expect-error deliberate misuse
       analytics.track('me:language_update', { lang: c, action: 'added', surface: 'settings' });
       // @ts-expect-error deliberate misuse
-      analytics.track('pack_download', { lang: 'pt', pack_kind: 'text_rules', pack_version: 3, stage: 'started', network: 'wifi', note: c });
+      analytics.track('system:pack_download_update', { lang: 'pt', pack_kind: 'text_rules', pack_version: 3, stage: 'started', network: 'wifi', note: c });
     }
     await analytics.flush();
     const sent = JSON.stringify(sdk.calls);
