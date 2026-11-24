@@ -3614,7 +3614,7 @@ Written 19 Nov 2026 by Karma with the CPO role, docs only. Source: `docs/roadmap
 - Done when: those tests pass, and `qa` has added one device row to `docs/qa/DEVICE_TEST_PLAN.md` for the VoiceOver and AX5 walk of the three screens.
 
 #### BL-929 Device baseline run sheet for a small phone (N-01)
-- Status: partly done (PR #1155 merged, 5b06b5eb8: `apps/mobile/src/lib/perf/markers.ts`; the SE 3 run sheet is not written: no such file in `docs/qa/run-sheets/`, filed as BL-1862). Mode: agent. Owner: qa engineer. Milestone: M15. Size: S.
+- Status: done (the sheet is `docs/qa/run-sheets/NS-34-SE3-SPEED.md`, written under BL-1862 and merged in PR #1667, `1da24cf22`; the perf markers are PR #1155, `5b06b5eb8`, `apps/mobile/src/lib/perf/markers.ts`; read against the Done-when line on 24 Nov 2026 by `ops`: the sheet is merged. Written, not run: no number on it has been measured on any phone, and a simulator run would stand in for an SE 3 only where the founder owns none, never as an SE 3 result, D-172). Mode: agent. Owner: qa engineer. Milestone: M15. Size: S.
 - Satisfies: `docs/prd/v2/06-nfr.md` rows 42 and 216, as reworded in BL-930.
 - Scope: one run sheet under `docs/qa/` for an iPhone SE (3rd generation): start of the screen hand-offs, time until controls are usable, frames over 16.7 ms on Home, Book scroll and the letter page, the save hand-off, and loops under Reduce Motion. It says how each number is read and where it is written down. No entry text, transcript or child name is recorded; examples use the family Asha.
 - Done when: the sheet is merged. The run itself is the founder's, on his phone, and is not part of this row.
