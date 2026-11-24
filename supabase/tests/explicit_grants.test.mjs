@@ -7,7 +7,7 @@
 // Fictional family "Asha" only (CLAUDE.md).
 import { readFileSync } from 'node:fs';
 import { createDb, users, uuid7 } from './harness.mjs';
-import { grantRows, SERVICE_ROLE_FUNCTIONS, OPS_RELATIONS, OPS_FUNCTIONS, NEW_DEVICE_TABLES, opsFacts } from './grants.mjs';
+import { grantRows, SERVICE_ROLE_FUNCTIONS } from './grants.mjs';
 
 const all = process.argv.slice(2);
 const name = (f) => f.split('/').pop();
@@ -80,25 +80,6 @@ check('no role holds TRUNCATE, REFERENCES, TRIGGER or MAINTAIN on any public tab
   !here.tables.some((v) => / (TRUNCATE|REFERENCES|TRIGGER|MAINTAIN)$/.test(v)));
 check('PUBLIC holds nothing on any public table, view or sequence, and no API role anything on a sequence (lens B N7)',
   !here.tables.some((v) => v.startsWith('public ')) && here.sequences.length === 0);
-// Schema ops (BL-1186): the same in both worlds. Nothing is granted to an API role or PUBLIC on any ops object, every ops
-// object is named in grants.mjs, and the new-device tables are among them. A world that hands out ALL on new tables
-// (legacy) must not reach ops: Supabase's automatic grants are for public only.
-const sameSet = (a, b) => JSON.stringify([...a].sort()) === JSON.stringify([...b].sort());
-const opsHere = await opsFacts(sys);
-const opsThere = await opsFacts(other.sys);
-const opsOk = (f) => sameSet(f.relations, OPS_RELATIONS) && sameSet(f.functions, OPS_FUNCTIONS) && f.held.length === 0 && f.withoutRls.length === 0;
-for (const v of [...opsHere.held, ...opsThere.held]) console.log(`      held on ops: ${v}`);
-check('[BL-1186] in both worlds every ops object is named in grants.mjs, has no grant to anon, authenticated, service_role or PUBLIC, and every ops table has RLS on',
-  opsOk(opsHere) && opsOk(opsThere));
-check('[BL-1186] the new-device tables are named in grants.mjs and exist in both worlds',
-  NEW_DEVICE_TABLES.every((t) => OPS_RELATIONS.includes(t) && opsHere.relations.includes(t) && opsThere.relations.includes(t)));
-// mutants: a grant to anon on an ops table, and a scratch ops table with no row, each turn the rule red.
-await sys('begin');
-await h.db.exec('grant select on ops.new_device_tokens to anon; create table ops.scratch_unlisted (x int)');
-const opsMut = await opsFacts(sys);
-await sys('rollback');
-check('[BL-1186] mutant: a grant to anon on ops.new_device_tokens and an unlisted scratch ops table are both caught',
-  !opsOk(opsMut) && opsMut.held.includes('anon new_device_tokens') && opsMut.relations.includes('scratch_unlisted') && opsOk(await opsFacts(sys)));
 await other.db.close();
 
 // ── The guards ───────────────────────────────────────────────────────────

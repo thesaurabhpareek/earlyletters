@@ -5650,7 +5650,7 @@ Written 21 Nov 2026 by the product agent, docs only. Every row is `proposed`: Ka
 - Source: post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176.
 
 #### BL-1186 `access_matrix` and `explicit_grants` do not guard new objects
-- Status: done on the branch, in the PR that carries this row (read 24 Nov 2026 against the Done-when line; tests in `supabase/tests/access_matrix.test.mjs`, `explicit_grants.test.mjs` and `grants.mjs`; scope is schema `ops` (public was already covered)). Was: proposed (post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176; Karma or the founder sets it to ready). Mode: agent. Owner: data architect, qa engineer. Milestone: M15. Size: M.
+- Status: proposed (post-merge reviews of PR #1176, https://github.com/thesaurabhpareek/earlyletters/pull/1176; Karma or the founder sets it to ready). Mode: agent. Owner: data architect, qa engineer. Milestone: M15. Size: M.
 - Satisfies: NS-08-R21.
 - Blocks: nothing.
 - Scope: extend the access tests so a new table, view or function in `ops` or `public` with no entry fails, including a grant to an API role the test does not list; today the new-device objects pass only because someone listed them.
