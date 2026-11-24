@@ -364,3 +364,50 @@ describe('[D-111 item 4] the line itself', () => {
     expect(LINE).not.toMatch(/\b(he|she|him|her|his|hers|son|daughter|boy|girl)\b/i);
   });
 });
+
+// ---------------------------------------------------------------------------
+// BL-1312 and BL-1313: what a pause leaves untouched, and the language on every call
+// ---------------------------------------------------------------------------
+
+describe('[FR-LOC-28] a language paused or removed: nothing deleted, translated or re-run in another language', () => {
+  it('pause, a second launch (a second account on the phone) and return: audio kept, saved words untouched, never heard in English, then heard in its own language', async () => {
+    fake.entries.set('letter-es-typed', { id: 'letter-es-typed', childId: 'child-asha', audioUri: uri('letter-es-typed'), audioDurationMs: 30_000, capturedAt: '2026-10-18T19:00:00.000Z', transcriptStatus: 'ready', finalText: 'Asha typed these words' });
+    addWaitingLetter('letter-es', 'es');
+    addDraft('draft-es', 'es');
+    const queue = await launch(true); // the language is paused (removed from the build's list)
+    queue.requestWords('draft-es');
+    await settle();
+    expect(fake.heard).toEqual([]); // never sent to another recogniser, English included
+    expect(fake.drafts.get('draft-es')?.audioUri).toBe(uri('draft-es'));
+    expect(fake.entries.get('letter-es')).toMatchObject({ audioUri: uri('letter-es'), transcriptStatus: 'waiting', finalText: null });
+    expect(fake.entries.get('letter-es-typed')).toMatchObject({ transcriptStatus: 'ready', finalText: 'Asha typed these words' });
+    expect(queue.waitingForLanguageNote(queue.wordsJob('draft-es'))).toBe(LINE); // a plain line says the words are waiting
+    while (stops.length) stops.pop()!();
+
+    await launch(true); // a second account signs in on the same phone: still paused, still nothing lost
+    await settle();
+    expect(fake.heard).toEqual([]);
+    expect(fake.entries.get('letter-es')?.transcriptStatus).toBe('waiting');
+    while (stops.length) stops.pop()!();
+
+    await launch(false); // the language returns
+    await settle();
+    expect(fake.heard.map((h) => `${h.id}:${h.language}`).sort()).toEqual(['letter-es:es']);
+    expect(fake.entries.get('letter-es-typed')?.finalText).toBe('Asha typed these words');
+    expect(fake.settings.get('speech.language')).toBe('es'); // the stored choice was never rewritten
+  });
+});
+
+describe('[NS-17-R6] language is chosen, never detected: every call the queue makes passes the letter\'s own code', () => {
+  it('each language, heard in the build that has it, reaches the recogniser as exactly that code', async () => {
+    for (const l of SPEECH_LANGUAGES) {
+      fake.heard.length = 0;
+      const queue = await launch(false);
+      addDraft(`draft-${l}`, l);
+      queue.requestWords(`draft-${l}`);
+      await settle();
+      expect(fake.heard, l).toEqual([{ id: `draft-${l}`, language: l }]);
+      while (stops.length) stops.pop()!();
+    }
+  });
+});
