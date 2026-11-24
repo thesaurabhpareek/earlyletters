@@ -12,9 +12,9 @@ const doc = readFileSync(resolve(__dirname, '../../..', WIRE_NAMES_PATH), 'utf8'
 const keys = allKeys();
 const rows = Object.entries(WIRE_ROWS);
 
-/** Every name a row could put on the wire: its single name, or a pattern's expansion. Options of a pending ruling are not names. */
+/** Every name a row could put on the wire: its single name, or a pattern's expansion. Merged and dropped rows own none; options of a pending ruling are not names. */
 function names(r: RowKind): string[] {
-  return r.status === 'ruled' ? [r.wire] : r.status === 'pattern' ? expandPattern(r) : [];
+  return r.status === 'ruled' || r.status === 'named' ? [r.wire] : r.status === 'pattern' ? expandPattern(r) : [];
 }
 
 describe('every key has exactly one row', () => {
@@ -24,17 +24,70 @@ describe('every key has exactly one row', () => {
     expect(keys.map((k) => k.key).sort()).toEqual(union);
   });
 
-  it('a ruled row has one wire name; a NEEDS RULING row has none and at least one option', () => {
+  it('a ruled or named row has one wire name; merged and dropped rows have none; a NEEDS RULING row has an option', () => {
     for (const [key, r] of rows) {
       if (r.status === 'needs_ruling') {
         expect(r.options.length, key).toBeGreaterThanOrEqual(1);
         expect(r.why.length, key).toBeGreaterThan(10);
-      } else expect(names(r).length === 1 || r.status === 'pattern', key).toBe(true);
+      } else if (r.status === 'merged' || r.status === 'dropped') expect(names(r), key).toEqual([]);
+      else expect(names(r).length === 1 || r.status === 'pattern', key).toBe(true);
     }
   });
 
   it('the document holds exactly one table row per key', () => {
     for (const k of keys) expect(doc.split('\n').filter((l) => l.startsWith(`| \`${k.key}\` |`)).length, k.key).toBe(1);
+  });
+});
+
+/** The 24 Nov 2026 rulings (BL-1255 step 1b), restated so an edit to the table cannot pass silently. */
+const NAMED: Record<string, string> = {
+  auth_deferred: 'onboarding:sign_in_dismiss', signed_out: 'me:session_end', child_added: 'onboarding:book_create', child_switched: 'capture:child_update',
+  capture_discarded: 'capture:take_cancel', review_action: 'capture:review_update', machine_edit_reverted: 'capture:edit_restore',
+  machine_edit_rejected: 'capture:edit_decline', pack_download: 'system:pack_download_update', reminder_prime_shown: 'notifications:reminder_prime_view',
+  reminder_prime_result: 'notifications:reminder_prime_submit', notification_opened: 'notifications:notification_open', export_started: 'keeping:export_start',
+  keep_gate_shown: 'plus:keep_gate_view', plus_started_from_gate: 'plus:keep_gate_plan_start', moments_card_impressed: 'book:moments_card_view',
+  moments_card_tapped: 'book:moments_card_open',
+};
+const MERGED: Record<string, string> = {
+  app_cold_start: 'system:cold_start_measure', auth_sheet_shown: 'onboarding:sign_in_screen_view', book_opened: 'book:book_screen_view',
+  letter_opened: 'book:letter_detail_screen_view',
+};
+const DROPPED = [
+  'app_backgrounded', 'auth_method_selected', 'auth_email_sent', 'local_merge_choice', 'child_setting_changed', 'make_it_yours_card', 'goals_set',
+  'dictionary_term_added', 'family_letter_reviewed', 'member_removed', 'member_left', 'reminder_sent', 'moment_shown', 'resurface_shown',
+  'resurface_opened', 'export_shared', 'account_deletion',
+];
+
+describe('the 39 rulings of 24 Nov 2026', () => {
+  it('17 keys are named, 4 merged, 17 dropped, sync_failed is ruled; none is left to rule', () => {
+    expect(Object.keys(NAMED)).toHaveLength(17);
+    expect(DROPPED).toHaveLength(17);
+    for (const [k, w] of Object.entries(NAMED)) expect(WIRE_ROWS[k], k).toMatchObject({ status: 'named', wire: w });
+    for (const [k, t] of Object.entries(MERGED)) expect(WIRE_ROWS[k], k).toMatchObject({ status: 'merged', target: t });
+    for (const k of DROPPED) expect(WIRE_ROWS[k]?.status, k).toBe('dropped');
+    expect(WIRE_ROWS.sync_failed).toMatchObject({ status: 'ruled', wire: 'system:sync_fail' });
+    const n = (s: string) => rows.filter(([, r]) => r.status === s).length;
+    expect([n('ruled'), n('named'), n('merged'), n('dropped'), n('pattern'), n('needs_ruling')]).toEqual([31, 17, 4, 17, 4, 0]);
+    expect(keys).toHaveLength(73);
+    expect(doc).toContain('Counts: 73 keys: 31 ruled by 2.9, 17 named by the 24 Nov rulings, 4 merged, 17 dropped, 4 patterns');
+  });
+
+  it('a merged row has no name of its own: its target is a screen name generated from ids.ts, or a perf metric name', () => {
+    const screens = expandPattern(WIRE_ROWS.screen_view as Extract<RowKind, { status: 'pattern' }>);
+    for (const [k, r] of rows) if (r.status === 'merged') {
+      expect(r.target, k).toMatch(WIRE_NAME_RE);
+      if (r.into === 'screen_view') expect(screens, k).toContain(r.target);
+      else expect(r.target.endsWith('_measure'), k).toBe(true);
+    }
+  });
+
+  it('no dropped or merged key keeps a wire name: it appears nowhere as the name of a row, and its table row says (none)', () => {
+    const owned = new Set(rows.flatMap(([, r]) => names(r)));
+    for (const k of [...DROPPED, ...Object.keys(MERGED)]) {
+      expect(names(WIRE_ROWS[k]!), k).toEqual([]);
+      expect(doc.split('\n').find((l) => l.startsWith(`| \`${k}\` |`)), k).toMatch(/\| \(none\)/);
+    }
+    for (const t of Object.values(MERGED).filter((x) => !x.includes('_screen_view'))) expect(owned.has(t), t).toBe(false);
   });
 });
 

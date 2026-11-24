@@ -26,6 +26,12 @@ export const WIRE_NAME_MAX = 60;
 
 export type RowKind =
   | { status: 'ruled'; wire: string; basis: string }
+  /** Assigned by the exec rulings of 24 Nov 2026 (2.9 had no row, or a different one): `wire` is the name step 2 renames to. */
+  | { status: 'named'; wire: string; basis: string }
+  /** Folded into another key. It has no name of its own (its target is the pattern name or perf metric that carries the signal). */
+  | { status: 'merged'; into: 'screen_view' | 'perf_measured'; target: string; basis: string }
+  /** No event: step 2a deletes the key and its call sites. It never gets a wire name. */
+  | { status: 'dropped'; basis: string }
   /** The one key stands for a family of names generated per registered id (2.9, "Basics"). */
   | { status: 'pattern'; suffix: 'screen_view' | 'click' | 'view' | 'measure'; idKind: 'screen' | 'control' | 'element' | 'metric'; basis: string }
   /** 2.9 does not decide. `options` are candidates for the ruling, not decisions; `why` says what is missing. */
@@ -33,51 +39,55 @@ export type RowKind =
 
 const S = '2.9 domain table';
 const ruled = (wire: string, basis: string): RowKind => ({ status: 'ruled', wire, basis });
-const ask = (why: string, ...options: string[]): RowKind => ({ status: 'needs_ruling', why, options });
-const NO_ROW = 'no row in 2.9; candidate follows the grammar of 2.2 and the folds of 2.4';
-const NO_AREA = 'the catalogue area is not one of the nine categories of 2.3';
+const named = (wire: string, basis: string): RowKind => ({ status: 'named', wire, basis });
+const merged = (into: 'screen_view' | 'perf_measured', target: string, basis: string): RowKind => ({ status: 'merged', into, target, basis });
+const drop = (basis: string): RowKind => ({ status: 'dropped', basis });
 
-/** Hand-decided rows, in catalogue order then registry-only. The generator checks that this covers every key exactly once. */
+/**
+ * Hand-decided rows, in catalogue order then registry-only. The generator checks that this covers every key exactly once.
+ * The 39 keys 2.9 left open were ruled on 24 Nov 2026 (BL-1255 step 1b, `infra/exec-rulings-2026-11-24-wire-names.md`):
+ * 17 named, 4 merged, 17 dropped, and `sync_failed`, which 2.9 already names. Nothing is renamed or deleted here (step 2).
+ */
 export const WIRE_ROWS: Readonly<Record<string, RowKind>> = {
   // app
-  app_cold_start: ask('2.9 has no cold-start row (`perf.cold_start` is a perf metric, `system.app.opened` is app_opened)', 'system:app_start', '(none): perf `cold_start` already measures it'),
+  app_cold_start: merged('perf_measured', 'system:cold_start_measure', '`cold_start` is already a PERF_METRIC; PM1 lists it under the perf pattern; its metric id (area `system`) is registered in the step 2 PR that needs it'),
   app_opened: ruled('system:app_open', `${S}: \`system.app.opened\``),
-  app_backgrounded: ask('2.9 has `system.session.ended` (`system:session_end`), which fits only if this event is that one', 'system:session_end', 'system:app_end'),
+  app_backgrounded: drop('no PM row and no reader; it is not PM5 `system.session.ended` (which carries clean, fatal or killed), so `system:session_end` stays reserved for that'),
   screen_view: { status: 'pattern', suffix: 'screen_view', idKind: 'screen', basis: '2.9 Basics: `<area>:<screen_id>_screen_view`' },
   // consent
   analytics_opted_in: ruled('system:analytics_consent_accept', `${S}: \`system.consent.granted\` ("duplicates \`analytics_opted_in\`, so one event")`),
   // entry
-  auth_sheet_shown: ask(`${NO_ROW}`, 'onboarding:sign_in_sheet_view'),
-  auth_method_selected: ask(`${NO_ROW}`, 'onboarding:sign_in_method_update', 'onboarding:sign_in_method_submit'),
+  auth_sheet_shown: merged('screen_view', 'onboarding:sign_in_screen_view', 'the sheet is registered screen id `sign_in`; its `trigger` property has no reader'),
+  auth_method_selected: drop('inferred from auth state; `auth_succeeded` and `auth_failed` already carry `method`; no PM row, no reader'),
   auth_succeeded: ruled('onboarding:sign_in_complete', `${S}: \`onboarding.sign_in.completed\``),
   auth_failed: ruled('onboarding:sign_in_fail', `${S}: \`onboarding.sign_in.failed\``),
-  auth_email_sent: ask('2.9 lists `onboarding.email.sent` as (none), server-only; this row says the phone observes the send', 'onboarding:sign_in_email_send', '(none): server-only per 2.9'),
-  auth_deferred: ask('2.9 has `onboarding.sign_in.dismissed`; whether "chose Later" is that event is a meaning call', 'onboarding:sign_in_dismiss'),
-  signed_out: ask('2.9 has `me.session.closed` (`me:session_end`) but the catalogue event also covers a lost or revoked session', 'me:session_end', 'system:session_end'),
+  auth_email_sent: drop('2.9 no-event list: sends are counted on the server; the phone sees a request accepted, not a send'),
+  auth_deferred: named('onboarding:sign_in_dismiss', 'PM1 `onboarding.sign_in.dismissed` names this key; `dismiss` is the verb for closing a slip without acting'),
+  signed_out: named('me:session_end', 'PM1 `me.session.closed` names this key; `reason` already carries the four causes'),
   invite_opened: ruled('family:invite_open', `${S}: \`family.invite.opened\` (phone side)`),
-  local_merge_choice: ask(NO_ROW, 'onboarding:local_merge_submit'),
+  local_merge_choice: drop('no emitter (F18), no PM row, no reader; needs server features'),
   // children
-  child_added: ask('2.9 has `onboarding.book.saved` (`onboarding:book_save`) for the first book only; a later add has no row', 'onboarding:book_save', 'me:child_add'),
-  child_switched: ask('2.9 has `capture.child.selected` (`capture:child_update`), a capture-time choice; this is the book switcher', 'capture:child_update', 'book:child_update'),
-  child_setting_changed: ask('2.9 has `me.setting.changed` (`me:setting_update`), already taken by `settings_changed`', 'me:child_setting_update'),
-  make_it_yours_card: ask(NO_ROW, 'onboarding:make_it_yours_submit', 'onboarding:make_it_yours_dismiss'),
-  goals_set: ask(NO_ROW, 'me:goals_update', 'onboarding:goals_save'),
-  dictionary_term_added: ask(NO_ROW, 'me:dictionary_term_add', 'capture:dictionary_term_add'),
+  child_added: named('onboarding:book_create', 'registry row whose decision is first-run completion; `create` is the verb of "a child book is created"; `book_save` is not used because PM1 makes `onboarding.book.saved` a server count'),
+  child_switched: named('capture:child_update', 'PM1 `capture.child.selected` ("active book changed") lists this key as its Was; `selected` folds to `update`'),
+  child_setting_changed: drop('no PM row, no reader, overlaps `settings_changed`; its `key` values name child-level acts: collect less'),
+  make_it_yours_card: drop('no emitter; FR-DAT-26 lists it as stale, to be removed before any profile turns analytics on'),
+  goals_set: drop('no emitter, no reader; goals are L4 and only a count was ever defined'),
+  dictionary_term_added: drop('no emitter, no reader'),
   // capture
   capture_started: ruled('capture:take_start', '2.9 line 118, the seven examples: `capture_started` to `capture:take_start` (note: the table also holds `capture.letter.started`, `capture:letter_start`)'),
-  capture_discarded: ask('2.9 holds both `capture.take.discarded` (`capture:take_cancel`) and `capture.letter.discarded` (`capture:letter_cancel`); the catalogue says "a letter in progress", while `capture_started` is a take', 'capture:take_cancel', 'capture:letter_cancel'),
+  capture_discarded: named('capture:take_cancel', 'registry row and insights reader; a drop-off shares its object with its start, and `capture_started` is `capture:take_start`; PM1 `letter_cancel` loses on pairing'),
   transcription_completed: ruled('capture:transcript_complete', `${S}: \`capture.transcript.completed\` (this key also carries failed and no-speech outcomes as a property)`),
   letter_saved: ruled('capture:letter_save', '2.9 line 118, the seven examples'),
-  review_action: ask('2.9 has `capture.review.selected` (`capture:review_update`); this key carries several actions', 'capture:review_update', 'capture:review_submit'),
-  machine_edit_reverted: ask('2.9 has `capture.edit.discarded` and `keeping.version.restored`; "undo one machine edit" fits either', 'capture:edit_cancel', 'keeping:version_restore'),
-  machine_edit_rejected: ask('2.9 has `capture.edit.declined` (`capture:edit_decline`); unclear whether that is the verifier refusing', 'capture:edit_decline'),
+  review_action: named('capture:review_update', 'PM1 `capture.review.selected`, a step of funnel F2; `selected` folds to `update`; `submit` is for forms'),
+  machine_edit_reverted: named('capture:edit_restore', 'the 2.4 `restore` row names "a reverted machine edit"; PM1 `edit_cancel` loses; constitution guardrail and insights reader'),
+  machine_edit_rejected: named('capture:edit_decline', 'PM1 `capture.edit.declined`; `decline` is "from us" (the verifier); same guardrail and reader'),
   letter_deleted: ruled('keeping:letter_delete', `${S}: \`keeping.letter.deleted\` (the catalogue row also covers restore, which 2.9 names \`keeping:letter_restore\`; any split is a property question for the rename PR)`),
   // languages
   language_set: ruled('me:language_update', `${S}: \`me.language.changed\``),
-  pack_download: ask('2.9 has only `system.pack.started` (`system:pack_start`); the catalogue row carries every state change', 'system:pack_start', 'system:pack_complete'),
+  pack_download: named('system:pack_download_update', 'PM1 maps four states to this one key and 2.9 only holds `pack_start`; `changed` folds to `update`; the `pack_download` object keeps it from reading as a pack version update'),
   // book
-  book_opened: ask(NO_ROW, 'book:book_view'),
-  letter_opened: ask(NO_ROW, 'book:letter_view', 'book:letter_open'),
+  book_opened: merged('screen_view', 'book:book_screen_view', 'PM2 deprecates it into the Book screen view ("counts are not wanted"); funnel `f_return_book_read` is re-expressed on the screen names'),
+  letter_opened: merged('screen_view', 'book:letter_detail_screen_view', 'same PM2 line; screen id `letter_detail` is one id for every letter'),
   playback_started: ruled('book:playback_start', `${S}: \`book.playback.started\``),
   read_together_started: ruled('book:read_together_start', `${S}: \`book.read_together.started\``),
   read_together_ended: ruled('book:read_together_end', `${S}: \`book.read_together.ended\``),
@@ -85,43 +95,43 @@ export const WIRE_ROWS: Readonly<Record<string, RowKind>> = {
   invite_created: ruled('family:invite_create', '2.9 line 118, the seven examples'),
   invite_accepted: ruled('family:invite_accept', `${S}: \`family.invite.accepted\``),
   invite_failed: ruled('family:invite_fail', `${S}: \`family.invite.failed\``),
-  family_letter_reviewed: ask(NO_ROW, 'family:family_letter_review_submit', 'family:letter_review_submit'),
-  member_removed: ask(NO_ROW, 'family:member_remove'),
-  member_left: ask(NO_ROW, 'family:member_end', 'family:member_leave_submit'),
+  family_letter_reviewed: drop('PM4: "1.1, no rows now"; no emitter; the co-parent work (BL-883 to BL-889) has not shipped'),
+  member_removed: drop('PM4 CPO-3: no phone events, server counts only; no emitter'),
+  member_left: drop('same as `member_removed`; its one emitter is a leave sheet that D-113 keeps unoffered'),
   // reminders (category: notifications)
-  reminder_prime_shown: ask(NO_ROW, 'notifications:reminder_prime_view'),
-  reminder_prime_result: ask(NO_ROW, 'notifications:reminder_prime_submit'),
+  reminder_prime_shown: named('notifications:reminder_prime_view', 'the denominator of the reminder-fatigue guardrail; an impression of our own card'),
+  reminder_prime_result: named('notifications:reminder_prime_submit', '`answered` folds to `submit`, as `os_permission_result` is `permission_submit`'),
   os_permission_result: ruled('notifications:permission_submit', `${S}: \`notifications.permission.answered\``),
   reminder_schedule_set: ruled('notifications:schedule_update', `${S}: \`notifications.schedule.changed\``),
-  reminder_sent: ask('2.9 lists `notifications.reminder.delivered` as (none) and notes PM4 and PM5 disagree; this key is the phone-side "fired, seen on next foreground" log, which 2.9 does not name', '(none): drop the row, per the 2.9 (none) entry', 'notifications:reminder_send'),
+  reminder_sent: drop('the registry forbids `reminder_sent` (20 Nov founder rules); the phone cannot observe delivery; 2.9 says (none); PM4 versus PM5 is settled as no delivered event'),
   reminder_suppressed: ruled('notifications:reminder_cancel', `${S}: \`notifications.reminder.suppressed\``),
-  notification_opened: ask('2.9 has `notifications.reminder.opened` and `notifications.plan_notice.opened`; this key covers any notification', 'notifications:reminder_open', 'notifications:plan_notice_open'),
+  notification_opened: named('notifications:notification_open', 'one key with four types; 2.9 `reminder_open` and `plan_notice_open` have no key of their own and stay unassigned'),
   // celebrate and moments (neither is a category)
-  moment_shown: ask(NO_AREA, 'book:moment_view'),
-  resurface_shown: ask(NO_AREA, 'book:resurface_view'),
-  resurface_opened: ask(NO_AREA, 'book:resurface_open'),
-  moments_card_impressed: ask(`${NO_AREA}; also a basics-style impression, but its id is a slot, not a registered element id`, 'book:moments_card_view'),
-  moments_card_tapped: ask(`${NO_AREA}; also a basics-style tap, but its id is a slot, not a registered control id`, 'book:moments_card_click'),
+  moment_shown: drop('no emitter; FR-DAT-26 (stale letter-count types); the registry `^moment_` pin; area `celebrate` is not a category'),
+  resurface_shown: drop('no emitter; the registry `^resurface_` pin; PM2 replaces it by an impression; a one_year card lands on the anniversary of a letter date (timing leak, TRACKING_PLAN 6.4)'),
+  resurface_opened: drop('same as `resurface_shown`'),
+  moments_card_impressed: named('book:moments_card_view', 'CDO-25 allows exactly two `moments_` names; Moments sits under Book'),
+  moments_card_tapped: named('book:moments_card_open', '`click` is reserved for control ids (V2); `open` fits a card opened from the tab'),
   // settings
   settings_changed: ruled('me:setting_update', `${S}: \`me.setting.changed\``),
-  export_started: ask('2.9 has `keeping.download.started` (`keeping:download_start`) but the other export rows say "export"; the verb object must agree', 'keeping:export_start', 'keeping:download_start'),
+  export_started: named('keeping:export_start', 'the object must agree with `export_complete` and `export_fail`; `download_start` is retired; funnel F9 and the insights engine read it'),
   export_completed: ruled('keeping:export_complete', '2.9 line 118, the seven examples'),
   export_failed: ruled('keeping:export_fail', `${S}: \`keeping.export.failed\``),
-  export_shared: ask('2.9 lists `keeping.export.shared` as (none): "NO EVENT (FR-DAT-27: no event on the share destination)", yet the catalogue holds this row. Conflict, not a naming gap', '(none): drop the row, per 2.9 and FR-DAT-27', 'keeping:export_share_end'),
-  account_deletion: ask('2.9 has three rows (`account_deletion_start`, `_restore`, `account_delete`); the catalogue has one key with a step property, and one key cannot have three names', 'keeping:account_deletion_start (and split)', 'keeping:account_delete (the confirmed step only)'),
+  export_shared: drop('2.9 no-event list and FR-DAT-27 (no event on a share destination); no emitter; PM3 says fold it away'),
+  account_deletion: drop('PM3 section 8 and IN-K3 retire it (deletion is never measured on the phone); the server RPC holds the count'),
   // plus
   plus_offer_viewed: ruled('plus:offer_view', '2.9 line 118, the seven examples'),
   plus_offer_closed: ruled('plus:offer_end', `${S}: \`plus.offer.closed\``),
   plan_changed: ruled('plus:plan_update', `${S}: \`plus.plan.changed\``),
   free_allowance_reached: ruled('plus:allowance_reach', `${S}: \`plus.allowance.reached\``),
-  keep_gate_shown: ask(NO_ROW, 'plus:keep_gate_view'),
+  keep_gate_shown: named('plus:keep_gate_view', 'registry row; I3 and F7 read `letters_kept`, `allowance`, `lapsed`; no Keep sheet screen id exists, and a screen view carries none of those'),
   letter_held: ruled('plus:letter_hold_create', `${S}: \`plus.letter.held\``),
-  plus_started_from_gate: ask('2.9 has `plus.plan.started` (`plus:plan_start`); this key is the narrower "after the Keep sheet" step, which a funnel needs apart', 'plus:plan_start', 'plus:gate_plan_start'),
+  plus_started_from_gate: named('plus:keep_gate_plan_start', 'keeps the gate in the name; `plus:plan_start` stays free for the broader PM5 event'),
   offer_code_redeemed: ruled('plus:code_submit', `${S}: \`plus.code.redeemed\``),
   restore_result: ruled('plus:restore_complete', `${S}: \`plus.restore.completed\` (the catalogue row also carries the failed outcome as a property)`),
   // errors
   error_shown: ruled('system:error_view', '2.9 line 118, the seven examples'),
-  sync_failed: ask('2.9 has `system.error.raised` (`system:error_fail`), a different row', 'system:sync_fail', 'system:error_fail'),
+  sync_failed: ruled('system:sync_fail', `${S}: \`system.sync.failed\` (#1044); the first generated table missed this row`),
   // registry-only today (BL-1235 P5 moves them into the catalogue)
   control_tapped: { status: 'pattern', suffix: 'click', idKind: 'control', basis: '2.9 Basics: `<area>:<control_id>_click`' },
   surface_impressed: { status: 'pattern', suffix: 'view', idKind: 'element', basis: '2.9 Basics: `<area>:<element_id>_view`' },
@@ -153,6 +163,7 @@ const cell = (s: string) => s.replace(/\|/g, '\\|');
 export function renderWireNames(): string {
   const keys = allKeys();
   const count = (s: RowKind['status']) => keys.filter((k) => WIRE_ROWS[k.key]?.status === s).length;
+  const live = count('ruled') + count('named');
   const out: string[] = [
     '# Wire names: the mapping table (generated)',
     '',
@@ -160,9 +171,9 @@ export function renderWireNames(): string {
     '',
     'Nothing here renames anything. The catalogue and registry still hold the old names; the rename PRs (step 2) read this table. The tier column is today\'s tier from the catalogue and registry rows, and the basics set stays pinned to `screen_view` by `test/tiers.test.ts`.',
     '',
-    `Counts: ${keys.length} keys (${count('ruled')} ruled by 2.9, ${count('pattern')} patterns generated per registered id, ${count('needs_ruling')} NEEDS RULING).`,
+    `Counts: ${keys.length} keys: ${count('ruled')} ruled by 2.9, ${count('named')} named by the 24 Nov rulings, ${count('merged')} merged, ${count('dropped')} dropped, ${count('pattern')} patterns generated per registered id, ${count('needs_ruling')} NEEDS RULING. After step 2a the table has ${keys.length - count('merged') - count('dropped')} keys, ${live} with a name of their own.`,
     '',
-    'Reading a row. "Ruled" means 2.9 names this event (a domain row, the seven examples of line 118, or the Basics patterns) and the catalogue meaning matches it. NEEDS RULING means 2.9 does not decide, or decides something else (a conflict); the options are candidates for the ruling, not decisions, and no wire name is assigned until it is made.',
+    'Reading a row. "Ruled" means 2.9 names this event (a domain row, the seven examples of line 118, or the Basics patterns) and the catalogue meaning matches it. "Named" means 2.9 did not decide and the exec rulings of 24 Nov 2026 (BL-1255 step 1b) assigned the name. "Merged" means the key is folded into another and has no name of its own; its target is shown. "Dropped" means no event: step 2a deletes the key and its call sites. NEEDS RULING (none today) would mean a new key with no decision.',
     '',
     '## Keys',
     '',
@@ -173,7 +184,9 @@ export function renderWireNames(): string {
     const r = WIRE_ROWS[k.key];
     if (!r) throw new Error(`wire-names: no row for ${k.key}`);
     const common = `| \`${k.key}\` | ${k.where} | ${k.area} | ${k.tier}`;
-    if (r.status === 'ruled') out.push(`${common} | ruled | \`${r.wire}\` | ${cell(r.basis)} |`);
+    if (r.status === 'ruled' || r.status === 'named') out.push(`${common} | ${r.status} | \`${r.wire}\` | ${cell(r.basis)} |`);
+    else if (r.status === 'merged') out.push(`${common} | merged | (none) merged into \`${r.target}\` | ${cell(r.basis)} |`);
+    else if (r.status === 'dropped') out.push(`${common} | dropped | (none) | ${cell(r.basis)} |`);
     else if (r.status === 'pattern') out.push(`${common} | pattern | \`<area>:<id>_${r.suffix}\` (${expandPattern(r).length} today) | ${cell(r.basis)} |`);
     else out.push(`${common} | NEEDS RULING | (none yet) | ${cell(r.why)}. Options: ${r.options.map((o) => (o.startsWith('(none)') ? o : `\`${o}\``)).join('; ')} |`);
   }
@@ -187,8 +200,8 @@ export function renderWireNames(): string {
   out.push(
     '## Open items',
     '',
-    '1. Privacy advice on the 1.0 candidate list (CPrivO-52, CR-212; advisory, not a decision, no code change here). `ENGINEERING-REQUIREMENTS-21nov.md` ER-B02 lists seven candidate funnel-step names for the basics tier. Advice: drop `family:invite_create` and `family:invite_accept` from the 1.0 set. D-161 and D-162 mean no 1.0 build has an invite door, so those rows would never fire and would only widen the list; add them when the co-parent work (BL-883 to BL-889) ships. That leaves five: `onboarding:first_letter_complete`, `capture:letter_save`, `capture:take_start`, `plus:offer_view`, `keeping:export_complete`, each with counts and enums only. `onboarding:first_letter_complete` (2.9: `onboarding.first_letter.completed`) has no key above today, so the rename work needs a row for it or a ruling that `letter_saved` carries it as a property. The basics set stays `screen_view` only until privacy signs a list (step 3, its own PR, which edits the set pinned in `test/tiers.test.ts`).',
-    '2. `keeping.export.shared` is (none) in 2.9 (FR-DAT-27) while `export_shared` is in the catalogue: a ruling is needed before the rename drops or keeps it.',
+    '1. Privacy advice on the 1.0 candidate list (CPrivO-52, CR-212; advisory, not a decision, no code change here). `ENGINEERING-REQUIREMENTS-21nov.md` ER-B02 lists seven candidate funnel-step names for the basics tier. Advice, ruled on 24 Nov 2026: drop `family:invite_create` and `family:invite_accept` (D-161 and D-162: no 1.0 build has an invite door), and strike `onboarding:first_letter_complete` (a server count, with no key, and opt-in comes after the first letter). That leaves four: `capture:letter_save`, `capture:take_start`, `plus:offer_view`, `keeping:export_complete`, each with counts and enums only. Privacy decides them at step 3, its own PR, which edits the set pinned in `test/tiers.test.ts`; the basics set stays `screen_view` only until then.',
+    '2. Not decided here: whether `letter_deleted` (ruled at `keeping:letter_delete`) survives PM3 R-K1 to R-K3, which propose retiring it. It needs the same exec look as `account_deletion` before step 2a.',
     '3. The registry-only keys `control_tapped`, `surface_impressed`, `perf_measured` stand for names generated per id; no control, element or metric id is registered yet, so none is generated today.',
     '',
   );
