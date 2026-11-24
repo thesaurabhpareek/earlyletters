@@ -261,5 +261,12 @@ Gap ids defined here:
 | AIE-R41 | MUST | review | not yet | AIE-G17 |
 | AIE-R42 | MUST | reviewer brief; review | review only | none |
 | AIE-R43 | MUST | review | not yet | AIE-G18 |
+| AIE-R44 | MUST | review; `merge-queue.mjs` NEEDS-UPDATE verdict for the stale-base half (AIE-R40) | review only | AIE-G19 |
+| AIE-R45 | MUST | review | review only | none |
+| AIE-R46 | MUST | review-gate skill section 4; review | review only | AIE-G20 |
+| AIE-R47 | MUST | `append-only-check.mjs` for the listed rulings only; review | partly: the order of merging is review only | AIE-G21 |
+| AIE-R48 | MUST | reviewer brief; review | review only | none |
+| AIE-R49 | SHOULD | review-gate skill section 5; review | review only | none |
+| AIE-R50 | SHOULD | review | review only | AIE-G17 |
 
-Gap ids added 21 Nov (AIE-R32 to R43; AIE-G16 to G18 are defined in `09a-review-and-merge-practice.md`): AIE-G14 `merge-queue.mjs` and any report script read counted-review headers from the first three comment lines, with one test; AIE-G15 a check that fails a ruling PR when `docs/agents`, `.claude`, `agents/*/MEMORY.md` or `docs/engineering` still contain a phrase the ruling retires.
+Gap ids added 24 Nov (AIE-R44 to R50; AIE-G19 to G21 are defined in `09a-review-and-merge-practice.md`). Gap ids added 21 Nov (AIE-R32 to R43; AIE-G16 to G18 are defined in the same file): AIE-G14 `merge-queue.mjs` and any report script read counted-review headers from the first three comment lines, with one test; AIE-G15 a check that fails a ruling PR when `docs/agents`, `.claude`, `agents/*/MEMORY.md` or `docs/engineering` still contain a phrase the ruling retires.
