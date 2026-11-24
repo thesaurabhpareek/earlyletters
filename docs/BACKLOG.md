@@ -2984,7 +2984,7 @@ Severity: **S0** blocks build 2 or can lose a word or break a promise now; **S1*
 ### Data and database
 
 #### BL-583 One applied-migrations record per project (DATA-02)
-- Status: deferred (after the 9 Nov go/no-go, CR-47). Mode: agent. Owner: platform, data architect. Severity: S1.
+- Status: ready (CR-188 passed the CR-47 trigger; ruled in CR-209, `infra/exec-rulings-2026-11-24-held-prs.md` section 8: PR 1 (script, test, proposal doc) is the 24 Nov re-cut of closed #656; the workflow patch is `docs/ops/proposed/bl-583-migrations-record.md`; the per-project lists wait for the staging and production read, queue row FO-4). Mode: agent. Owner: platform, data architect. Severity: S1.
 - Who: `ops` (workflow), `data-architect` (format).
 - Problem: `.github/migrations-applied.txt` is one flat list (`early-letters` has files 1 and 2); staging gets 1 to 27 on 2 Nov; until a later PR records them, applied files can be edited without the guard failing.
 - Acceptance:
@@ -2993,7 +2993,7 @@ Severity: **S0** blocks build 2 or can lose a word or break a promise now; **S1*
   - Given a new file that sorts before staging's newest applied version, when CI runs, then the guard fails.
 
 #### BL-584 An outside alert when purge or retention stops running (DATA-03)
-- Status: deferred (after the 9 Nov go/no-go, CR-47). Mode: agent. Owner: platform. Severity: S1.
+- Status: ready (CR-188 passed the CR-47 trigger; ruled in CR-209, `infra/exec-rulings-2026-11-24-held-prs.md` section 8: re-cut as its own PR with an `ops-health` Edge Function and the `ops-watch` Environment, no repository-level service-role secret (CR-209 option A; PR 2, owner `ops` with `data-architect`; the founder steps are queue row FO-1)). Mode: agent. Owner: platform. Severity: S1.
 - Who: `ops`.
 - Problem: the purge runbook says a dead worker cannot alert (`purge-failing.md:4`); `smoke.ts:54-58` checks scheduling only at deploy; schedules are SQL run by hand.
 - Acceptance:
