@@ -52,4 +52,11 @@ describe('[BL-476 point 1, LEGAL-REQ-051] the end of the code pause is said and 
     const effect = codeStep.slice(codeStep.indexOf('shouldAnnouncePauseEnd(wasPaused'), codeStep.indexOf('const verify'));
     expect(effect).toMatch(/focus\(\)/);
   });
+
+  it('[LEGAL-REQ-051] J22j, the clock path, checks the line and the focus after the pause ends', () => {
+    const flow = readFileSync(join(__dirname, '..', 'e2e-web', 'j22-sign-in.flow.ts'), 'utf8');
+    const j22j = flow.slice(flow.indexOf('[J22j]'), flow.indexOf('[J22k]'));
+    expect(j22j).toContain(`getByText(${JSON.stringify(authCopy.code.pauseEnded).replace(/"/g, "'")}`);
+    expect(j22j).toMatch(/getByLabel\('Code', \{ exact: true \}\)[^;]*\.toBeFocused\(\)/);
+  });
 });

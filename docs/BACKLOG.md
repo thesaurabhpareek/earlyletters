@@ -52,7 +52,7 @@ Other open and not blocking: BL-1953 and BL-1954 (live region), BL-1893 (linking
 - Test: Journeys J04 (J04-04) and J16 (J16-02); `packages/content/test/rules.test.ts`; claims registry test (BL-118).
 
 #### BL-476 Sign-in code step: say when the pause ends, and give a way to Apple and Google
-- Status: ready (point 2 is done in PR #728; point 1, announcing when the pause ends and moving focus, is what is left: LEGAL-REQ-051). Mode: agent. Owner: mobile engineer (P8a: the sign-in sheet), content (the words), design systems (point 2: review), qa engineer. Milestone: M5. Size: M (one PR per point is fine). Depends on: none.
+- Status: done on develop in code, copy and unit pins (point 2 in PR #728; point 1 is `code.tsx` with `authCopy.code.pauseEnded` and `apps/mobile/test/code-step-pause-end.test.ts`); the J22j flow assertion is added here and runs only on the Mac e2e-web row (LEGAL-REQ-051). Mode: agent. Owner: mobile engineer (P8a: the sign-in sheet), content (the words), design systems (point 2: review), qa engineer. Milestone: M5. Size: M (one PR per point is fine). Depends on: none.
 - Priority: Medium.
 - Gate: none. The code step exists only in a build with sign-in on.
 - Satisfies: none given. Cited: F02-U14 (`docs/prd/v2/features/F02-account.md:168`, "Wait, or Send a new email") and A-REQ-027 (`:210`).
