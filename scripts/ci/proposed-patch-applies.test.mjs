@@ -7,6 +7,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { REPO_ROOT, checkPatch, checkPatchFile, parsePatch, trackedTree } from './proposed-patch-applies.mjs';
 
@@ -189,4 +190,45 @@ test('[BL-2133] unsafe paths never reach git: the tracked tree treats them as ab
   } finally {
     tree.dispose();
   }
+});
+
+test('[BL-2133] cases where git refuses and a loose check would not: delete newline, mid-hunk marker, copy target, .git', () => {
+  const del = ['diff --git a/d.yml b/d.yml', 'deleted file mode 100644', '--- a/d.yml', '+++ /dev/null', '@@ -1,2 +0,0 @@', '-x', '-y', ''].join('\n');
+  assert.match(check(del, { 'd.yml': 'x\ny' })[0], /content no longer matches/, 'file lost its final newline');
+  const delNoNl = del.replace('-y\n', '-y\n\\ No newline at end of file\n');
+  assert.deepEqual(check(delNoNl, { 'd.yml': 'x\ny' }), []);
+  assert.match(check(delNoNl, { 'd.yml': 'x\ny\n' })[0], /content no longer matches/, 'an editor added a final newline');
+  const mid = ['--- a/m.yml', '+++ b/m.yml', '@@ -1,3 +1,3 @@', ' a', '\\ No newline at end of file', '-b', '+B', ' c', ''].join('\n');
+  assert.throws(() => parsePatch(mid), /in the middle of a hunk/);
+  const onRemoved = ['--- a/m.yml', '+++ b/m.yml', '@@ -1,2 +1,2 @@', ' a', '-b', '\\ No newline at end of file', '+B', ''].join('\n');
+  assert.deepEqual(check(onRemoved, { 'm.yml': 'a\nb' }), [], 'a marker on the last removed line before added lines is fine');
+  const copy = ['diff --git a/a.yml b/b.yml', 'similarity index 100%', 'copy from a.yml', 'copy to b.yml', ''].join('\n');
+  assert.deepEqual(check(copy, { 'a.yml': 'q\n' }), []);
+  assert.match(check(copy, { 'a.yml': 'q\n', 'b.yml': 'r\n' })[0], /copies onto it, but it already exists/);
+  const dotGit = MODIFY.replaceAll('w.yml', '.GIT/config');
+  assert.match(check(dotGit, { '.GIT/config': 'a\nb\nc\nd\n' })[0], /leaves the repo or is malformed/);
+});
+
+test('[BL-2133] a hunk whose stated line is far past the end still finds its context, and an empty file takes an insert', () => {
+  const far = MODIFY.replace('@@ -2,3 +2,3 @@', '@@ -40,3 +40,3 @@');
+  assert.deepEqual(check(far, { 'w.yml': 'a\nb\nc\nd\n' }), []);
+  const insert = ['--- a/e.yml', '+++ b/e.yml', '@@ -0,0 +1 @@', '+x', ''].join('\n');
+  assert.deepEqual(check(insert, { 'e.yml': '' }), []);
+});
+
+test('[BL-2133] git pathspec magic in a patch path is read literally, never as a pattern', () => {
+  const tree = trackedTree([':(glob)*', ':(top)package.json', '*.json']);
+  try {
+    assert.equal(tree.exists('package.json'), false, 'no pattern matched a real file');
+    assert.equal(fs.readdirSync(tree.dir).length, 0, 'nothing was extracted');
+  } finally {
+    tree.dispose();
+  }
+});
+
+test('[BL-2133] the temp dir is removed when the extract fails', () => {
+  const before = new Set(fs.readdirSync(os.tmpdir()).filter((n) => n.startsWith('proposed-patch-')));
+  assert.throws(() => trackedTree(['package.json'], 'HEAD', 'no-such-tar-bl2133'), /tar failed/);
+  const after = fs.readdirSync(os.tmpdir()).filter((n) => n.startsWith('proposed-patch-') && !before.has(n));
+  assert.deepEqual(after, []);
 });

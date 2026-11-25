@@ -1,6 +1,7 @@
 // Proposed workflow patches stay applicable while they wait (BL-2133, from BL-409; LEGAL-REQ-051).
 //
-// A workflow change is a proposal under docs/ops/proposed/ until Karma applies it (CR-22, D-124). A patch that nobody
+// A workflow change is a proposal under docs/ops/proposed/ until someone with an account that can write .github/ applies
+// it (CR-22, D-124; agent sessions cannot). A patch that nobody
 // applies for a week quietly stops applying, and the first person to find out is the one who tries. This module is the
 // check that finds out first.
 //
@@ -69,6 +70,8 @@ export function parsePatch(text) {
     else if (line.startsWith('deleted file mode')) cur.kind = 'delete';
     else if (line.startsWith('rename from ')) { cur.kind = 'rename'; cur.oldPath = line.slice(12); }
     else if (line.startsWith('rename to ')) cur.newPath = line.slice(10);
+    else if (line.startsWith('copy from ')) { cur.kind = 'copy'; cur.oldPath = line.slice(10); }
+    else if (line.startsWith('copy to ')) cur.newPath = line.slice(8);
     else if (line.startsWith('GIT binary patch') || line.startsWith('Binary files ')) throw new Error(`binary patch not supported: ${cur.newPath}`);
     else if (line.startsWith('--- ')) {
       const p = stripSide(line.slice(4), 'a');
@@ -94,6 +97,12 @@ export function parsePatch(text) {
         if (l.startsWith('\\')) {
           const prev = hunk.lines[hunk.lines.length - 1];
           if (!prev) throw new Error(`"\\ No newline" with no line before it in ${cur.newPath}`);
+          // git takes the marker only on the last line of a side: the end of the hunk, or a removed line with only added
+          // lines after it. Anywhere else the patch is corrupt.
+          const remainingOld = hunk.oldCount - seenOld;
+          const remainingNew = hunk.newCount - seenNew;
+          const lastOfSide = (remainingOld === 0 && remainingNew === 0) || (prev.op === '-' && remainingOld === 0);
+          if (!lastOfSide) throw new Error(`"\\ No newline" in the middle of a hunk in ${cur.newPath ?? cur.oldPath}`);
           if (prev.op !== '+') hunk.oldNoNewline = true;
           if (prev.op !== '-') hunk.newNoNewline = true;
           i++;
@@ -123,7 +132,7 @@ export function parsePatch(text) {
 
 /** A path the patch names must stay inside the repo: relative, no `..`, no backslash, no empty segment. */
 export function unsafePath(p) {
-  return path.isAbsolute(p) || p.includes('\\') || p.split('/').some((s) => s === '..' || s === '' || s === '.');
+  return path.isAbsolute(p) || p.includes('\\') || p.split('/').some((s) => s === '..' || s === '' || s === '.' || s.toLowerCase() === '.git');
 }
 
 /** Split file text into lines, remembering whether it ended with a newline. */
@@ -144,8 +153,9 @@ function matchesAt(fileArr, pre, at) {
  * one string each; an empty list means every path and every context line is consistent with the tree. Like `git apply`
  * without fuzz: a hunk may sit at another line (an offset) but its context must match exactly, a hunk at line 0 or 1
  * must match at the top and one with no trailing context at the end, and the final newline must agree. One deliberate
- * difference: hunks must come in file order (git accepts them out of order; no diff tool writes them that way), so this
- * check is stricter than `git apply --check`, never looser.
+ * difference: hunks must come in file order (git accepts them out of order; no diff tool writes them that way). It is
+ * meant to be stricter than `git apply --check`, never looser, and is checked against git by hand, not in the test; it
+ * does not model whitespace options, mode changes or binary patches (those it refuses).
  */
 export function checkPatch(files, tree) {
   const problems = [];
@@ -171,13 +181,15 @@ export function checkPatch(files, tree) {
       problems.push(`${f.oldPath}: the patch ${f.kind === 'delete' ? 'deletes' : 'changes'} it, but it does not exist`);
       continue;
     }
-    if (f.kind === 'rename' && f.newPath !== f.oldPath && tree.exists(f.newPath)) {
-      problems.push(`${f.newPath}: the patch renames onto it, but it already exists`);
+    if ((f.kind === 'rename' || f.kind === 'copy') && f.newPath !== f.oldPath && tree.exists(f.newPath)) {
+      problems.push(`${f.newPath}: the patch ${f.kind === 'copy' ? 'copies' : 'renames'} onto it, but it already exists`);
     }
     const { lines: fileArr, endsWithNewline } = fileLines(tree.read(f.oldPath));
     if (f.kind === 'delete') {
       const pre = f.hunks.flatMap((h) => h.lines.filter((l) => l.op !== '+').map((l) => l.text));
-      if (pre.length !== fileArr.length || !matchesAt(fileArr, pre, 0)) {
+      const markerSaysNoNewline = f.hunks.some((h) => h.oldNoNewline);
+      const newlineAgrees = fileArr.length === 0 || markerSaysNoNewline !== endsWithNewline;
+      if (pre.length !== fileArr.length || !matchesAt(fileArr, pre, 0) || !newlineAgrees) {
         problems.push(`${f.oldPath}: the patch deletes it, but its content no longer matches`);
       }
       continue;
@@ -203,7 +215,7 @@ export function checkPatch(files, tree) {
       const want = Math.max(0, h.oldStart - 1);
       let at = -1;
       // Nearest fit to the stated line first, then outward, never before the previous hunk's end.
-      for (let d = 0; d <= fileArr.length; d++) {
+      for (let d = 0; d <= want + fileArr.length; d++) {
         if (fits(want - d)) { at = want - d; break; }
         if (fits(want + d)) { at = want + d; break; }
       }
@@ -228,7 +240,7 @@ function git(args, opts = {}) {
  * `git archive` extract under the OS temp dir. Call `dispose()` when done. Untracked and modified worktree files are
  * ignored on purpose: the question is whether the patch applies to what is committed.
  */
-export function trackedTree(paths, rev = 'HEAD') {
+export function trackedTree(paths, rev = 'HEAD', tarCommand = 'tar') {
   // Unsafe paths never reach git; checkPatch reports them.
   const wanted = [...new Set(paths.filter((p) => p && !unsafePath(p)))];
   const existing = new Set(
@@ -238,8 +250,8 @@ export function trackedTree(paths, rev = 'HEAD') {
   try {
     if (existing.size) {
       const tarball = git(['archive', '--format=tar', rev, '--', ...existing], { encoding: 'buffer' });
-      const r = spawnSync('tar', ['-x', '-f', '-', '-C', dir], { input: tarball });
-      if (r.status !== 0) throw new Error(`tar failed: ${r.stderr}`);
+      const r = spawnSync(tarCommand, ['-x', '-f', '-', '-C', dir], { input: tarball });
+      if (r.status !== 0) throw new Error(`tar failed: ${r.error?.message ?? r.stderr}`);
     }
   } catch (e) {
     fs.rmSync(dir, { recursive: true, force: true });
