@@ -108,6 +108,7 @@ import {
   type WordsCard,
 } from '@/components/capture/words-state.logic';
 import { isOwnEntry } from '@/components/child/child-store';
+import { useFromName } from '@/lib/capture/sign-as-other';
 import { PlusGate } from '@/components/child/plus-gate';
 import { holdOnce, holdWithoutSheet, storedWords } from '@/components/child/plus-gate.logic';
 import { WhoseBookSheet } from '@/components/child/whose-book-sheet';
@@ -220,6 +221,8 @@ export default function Review() {
   const [later] = useState<Draft | null>(() => (!draftId && entryId ? laterWordsDraft(getEntry(entryId), isOwnEntry) : null));
   const [draft, setDraft] = useState<Draft | null>(() => (draftId ? getDraft(draftId) : later));
   const [childId, setChildId] = useState(draft?.childId ?? '');
+  // NS-16 (BL-980): the From name, settable only on a draft before Keep; a kept letter shows its stored one.
+  const from = useFromName({ draftId: later ? null : (draftId ?? null), keptEntryId: later ? (entryId ?? null) : null });
   const child = childId ? getChild(childId) : null;
 
   const typed = draft?.typedText != null && draft.typedText.trim().length > 0;
@@ -606,6 +609,8 @@ export default function Review() {
   const holding = useRef(false);
   const save = async (inBook: boolean) => {
     if (!draft || !child || saving.current || isSample) return; // sample words are never saved
+    const signature = from.signatureFor(child.signsAs); // NS-16-R6: over 30 is refused before anything is written or uploaded
+    if (!signature.ok) return;
     saving.current = true;
     heldInBook.current = inBook;
     writer.flush(); // the words on screen are on the draft before Keep (a held letter keeps them; a kept one takes them)
@@ -642,7 +647,7 @@ export default function Review() {
           inBook,
           soundsLikeMe: null, // "Does this sound like you?" is not asked in v1.0 (D-086); the field stays null
           childId: child.id,
-          authorSignsAs: child.signsAs,
+          authorSignsAs: signature.authorSignsAs,
           audioUri: live.audioUri,
           audioDurationMs: live.audioDurationMs,
           audioSha256: audio.sha256,
@@ -650,6 +655,7 @@ export default function Review() {
         },
         audio.exists,
       )) throw new Error('book_left'); // BL-1959: nothing was written and the draft is intact, so Review says the save did not work
+      from.kept(signature);
       // letter_saved went when the recording was kept; keeping its words later is not a second letter.
       if (!later) trackLetterSaved({
         mode: typed ? 'typed' : 'spoken',
@@ -682,6 +688,8 @@ export default function Review() {
   /** Keep the recording as a letter waiting for its words (private until the parent adds it). */
   const keepRecordingOnly = async () => {
     if (!draft || !child || saving.current) return;
+    const signature = from.signatureFor(child.signsAs); // NS-16-R6, as in save
+    if (!signature.ok) return;
     saving.current = true;
     player.pause();
     await setAudioMode('idle').catch(() => {}); // as in save: the saved moment is said at once
@@ -705,8 +713,9 @@ export default function Review() {
       const fresh = getDraft(draft.id) ?? draft;
       saveVoiceOnlyFromDraft(
         { ...fresh, audioSha256: audio.sha256, audioBytes: audio.bytes },
-        { childId: child.id, authorSignsAs: child.signsAs, inBook: false, engineVersion: ENGINE_VERSION, audioExists: audio.exists },
+        { childId: child.id, authorSignsAs: signature.authorSignsAs, inBook: false, engineVersion: ENGINE_VERSION, audioExists: audio.exists },
       );
+      from.kept(signature);
       trackLetterSaved({
         mode: 'spoken',
         inBook: false,
@@ -797,7 +806,7 @@ export default function Review() {
   // The letter sheet's header (S17): the month it files into, from the day it was said.
   const occurredOn = draft.createdAt ? todayISO(new Date(draft.createdAt)) : todayISO();
   const month = monthFor(child, occurredOn);
-  const header = letterHeader({ childName: child.name, signsAs: child.signsAs, month });
+  const header = letterHeader({ childName: child.name, signsAs: from.shown(child.signsAs), month });
   const openE = openEdit !== null ? applied[openEdit] : null;
   const markTiming = markCardTiming(motion.reduced);
   const many = listChildren().length > 1;
@@ -1084,7 +1093,8 @@ export default function Review() {
                   header={header}
                   editing={editing}
                   onChangeBook={many && !later ? pickChild : undefined}
-                  changeLabel={fill(pendingCopy.review.toChildA11y, { child: child.name })}>
+                  changeLabel={fill(pendingCopy.review.toChildA11y, { child: child.name })}
+                  from={from}>
                   {editing ? (
                     // Edit in place on the same sheet (S18): no inner box, the caret in the letter face; the sheet's edge
                     // is the accent line. The system draws Full Keyboard Access's own focus ring.

@@ -337,7 +337,7 @@ describe('review.tsx keeps a typed letter through its one Keep step', () => {
     const day = 'draft.createdAt ? todayISO(new Date(draft.createdAt)) : todayISO()';
     expect(save).toContain(`occurredOn: ${day},`);
     expect(review).toContain(`const occurredOn = ${day};`);
-    expect(review).toMatch(/const month = monthFor\(child, occurredOn\);\s*const header = letterHeader\(\{ childName: child\.name, signsAs: child\.signsAs, month \}\);/);
+    expect(review).toMatch(/const month = monthFor\(child, occurredOn\);\s*const header = letterHeader\(\{ childName: child\.name, signsAs: from\.shown\(child\.signsAs\), month \}\);/);
   });
 });
 
