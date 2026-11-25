@@ -11,6 +11,7 @@ import { Sheet } from '@/components/ui/sheet';
 import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { useToast } from '@/components/ui/toast';
+import { announce } from '@/lib/a11y';
 import { copy, fill } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
 import { changeLetterWords, letterAuthorEdits, putBackLetterEdit, type Entry } from '@/lib/store';
@@ -55,7 +56,10 @@ export function ChangeWordsSheet({ entry, open, onClose }: { entry: Entry; open:
           label={copy.common.saveButton}
           disabled={!text.trim() || same}
           onPress={() => {
-            if (!changeLetterWords(entry.id, text)) return setRefused(true);
+            if (!changeLetterWords(entry.id, text)) {
+              announce(r.saveFailed);
+              return setRefused(true);
+            }
             haptic('tap');
             onClose();
           }}
