@@ -645,7 +645,7 @@ describe('brand name and v1.0 claims', () => {
     expect(offenders(keepAndPlan, /\b(we will|will always) remind\b|\bguarantee/i)).toEqual([]);
   });
 
-  it('[BL-374] no word a person reads keeps a promise D-051 retired: "free, always", "writing stays open", "Plus is optional"', () => {
+  it('[BL-374] no word a person reads keeps a promise D-082 retired: "free, always", "writing stays open", "Plus is optional"', () => {
     // The sweep above reads only the Plus lines; the row's Done-when is every string in packages/content/src and the
     // app's copy files (EVERY: content, store, website reference, pages, emails, feature-local app copy). "Plus is off"
     // was a status sentence that became the plain value "Free" (membership.status.free); comments may still say it.
