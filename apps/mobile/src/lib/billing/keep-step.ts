@@ -14,7 +14,7 @@
  *
  * Analytics carry numbers only (letters kept, allowance, lapsed). Never throws.
  */
-import { DEFAULT_FREE_LETTERS } from '@scribe/core';
+import { DEFAULT_FREE_LETTERS, MAX_FREE_LETTERS } from '@scribe/core';
 import { track } from '../analytics/track';
 import { afterLetterKept, freeLettersAllowance, hasPlus, keepGateFor, type KeepGate } from './gates';
 import { hasWords } from './letter-ledger.logic';
@@ -30,7 +30,7 @@ export async function keepSheetFor(wordsOnScreen: string): Promise<KeepGate | nu
   if (g.decision.kind === 'hold') return g;
   track('plus:keep_gate_view', {
     letters_kept: Math.min(1000, g.lettersKept),
-    allowance: Math.min(100, Math.max(2, g.allowance)),
+    allowance: Math.min(MAX_FREE_LETTERS, Math.max(DEFAULT_FREE_LETTERS, g.allowance)),
     lapsed: g.decision.lapsed ? 1 : 0,
   });
   return g;
@@ -42,7 +42,7 @@ export async function countAfterSave(wordsOnScreen: string): Promise<boolean> {
   if (!hasWords(wordsOnScreen)) return false; // never counted (M17): no line, no free_allowance_reached
   const allowance = freeLettersAllowance();
   if (hasPlus() || kept !== allowance) return false;
-  track('plus:allowance_reach', { allowance: Math.min(100, allowance) });
+  track('plus:allowance_reach', { allowance: Math.min(MAX_FREE_LETTERS, allowance) });
   // The line's words say "second", so it shows only while the allowance is the reviewed default (2, read from
   // packages/core, the one place the number lives). A raised remote allowance still notes the moment, with no line.
   return allowance === DEFAULT_FREE_LETTERS;
