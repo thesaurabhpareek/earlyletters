@@ -688,6 +688,11 @@ export const en = {
     // PROPOSED (BL-947, NS-24): {label} is the year row's filled name, "Asha's first year". Before You has its own line.
     endOfYear: "That was {label}.",
     endOfBefore: "That was every letter from Before You.",
+    // PROPOSED (BL-1792, spec 13 section 5): "Read from here" on a letter page and on each month in Go to a month.
+    // The hints say where reading starts, in plain words, with no count. Not shown until the feature is on.
+    fromHere: "Read from here",
+    fromHereLetterA11y: "Opens Read together at this letter.",
+    fromHereMonthA11y: "Opens Read together at the first letter of this month.",
     endOfBook: "That's every letter so far.",
     againButton: "Read it again",
     nextMonthButton: "On to Month {month}",

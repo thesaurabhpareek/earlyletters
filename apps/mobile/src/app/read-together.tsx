@@ -45,7 +45,8 @@ import { AppNote } from '@/components/book/app-note';
 import { bookCopy } from '@/components/book/copy';
 import { letterWords } from '@/components/book/letter-words.logic';
 import { readableInBook, showsSignature } from '@/components/book/quiet-day.logic';
-import { lettersInYear, endOfYearLine, readTheYearOn } from '@/components/book/read-year.logic';
+import { endOfYearLine, readTheYearOn } from '@/components/book/read-year.logic';
+import { readTogetherPlan } from '@/components/book/read-from-here.logic';
 import { buttonPlacement, pageButtonsClass, turnControls, type TurnButton } from '@/components/book/turn-controls.logic';
 import { getActiveChild, getChild, getSetting, listEntriesForChild, setSetting, type Child, type Entry } from '@/lib/store';
 
@@ -56,10 +57,14 @@ const END = 'end';
 
 export default function ReadTogether() {
   const rt = copy.readTogether;
-  const { childId, year } = useLocalSearchParams<{ childId?: string; year?: string }>();
+  const { childId, year, from } = useLocalSearchParams<{ childId?: string; year?: string; from?: string }>();
   const child = (childId ? getChild(childId) : null) ?? getActiveChild();
   const counted = useRef(false);
-  const [index, setIndex] = useState(0);
+  // Only what readableInBook lets through (D-084); the whole book oldest first, or one year. `from` opens it at a letter
+  // (Read from here, BL-1792); a year wins over it, and a stale `from` opens at the first letter (read-from-here.logic.ts).
+  const plan = useMemo(() => (child ? readTogetherPlan(readableInBook(listEntriesForChild(child.id)), child, { yearsOn: readTheYearOn(process.env.EXPO_PUBLIC_READ_THE_YEAR), year, from }) : { letters: [], start: 0 }), [child?.id, year, from]); // eslint-disable-line react-hooks/exhaustive-deps
+  const letters = plan.letters;
+  const [index, setIndex] = useState(plan.start);
   const [direction, setDirection] = useState<PageDirection>('next');
   // "Keep playing": after a recording ends, turn the page and start the next voice.
   const [autoNext, setAutoNext] = useState(() => getSetting(KEEP_PLAYING) === '1');
@@ -70,8 +75,6 @@ export default function ReadTogether() {
   // From AX1 up the buttons are the end of the letter's scroll, not pinned (BL-1791).
   const placement = buttonPlacement(accessibilitySize);
   useUnlitRoom();
-
-  const letters = useMemo(() => (child ? (year && readTheYearOn(process.env.EXPO_PUBLIC_READ_THE_YEAR) ? lettersInYear(listEntriesForChild(child.id), child, year) : readableInBook(listEntriesForChild(child.id))).reverse() : []), [child?.id, year]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // One session per opening, counted once (analytics only; nothing limits sessions).
   const session = useRef<{ startedAt: number; furthest: number } | null>(null);
