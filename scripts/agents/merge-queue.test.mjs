@@ -767,3 +767,53 @@ test("CR-149 class, source PR: anything else, from paths only; mixed, renamed ou
   assert.equal(classifyPr([{ filename: "apps/mobile/test/a.test.ts", previous_filename: "apps/mobile/src/a.ts" }]), "source");
   for (const files of [null, [], [{}], ["../docs/a.md"], Object.assign(["docs/a.md"], { capped: true })]) assert.equal(classifyPr(files), "source", JSON.stringify(files));
 });
+
+test("CR-149 rule 4 and CR-70 (Review B): auth, account and deletion files hit by substring, camelCase and compound names included", () => {
+  for (const p of ["apps/mobile/src/lib/backup/token-vault.ts", "apps/mobile/src/app/settings/account.tsx",
+    "apps/mobile/src/lib/account-deletion/use-account-deletion.ts", "apps/mobile/src/components/settings/delete-account.logic.ts",
+    "apps/mobile/src/hooks/useAuth.ts", "apps/web/src/lib/authClient.ts", "apps/mobile/src/providers/AuthProvider.tsx",
+    "apps/mobile/src/lib/signInWithApple.ts", "apps/web/src/lib/magic-link.ts", "apps/mobile/src/lib/SessionStore.ts",
+    "apps/mobile/src/lib/otpEntry.ts", "apps/mobile/src/lib/secureStorage.ts", "apps/mobile/src/lib/sign_out.ts", "apps/web/src/lib/tokenCache.ts",
+    "apps/web/src/lib/vault.ts", "apps/mobile/src/lib/deleteAll.ts", "apps/mobile/src/lib/KeychainStore.ts", "apps/mobile/src/lib/oauthCallback.ts",
+    "apps/mobile/src/lib/Paywall.tsx", "apps/mobile/src/lib/useEntitlement.ts", "apps/mobile/src/lib/restorePurchase.ts", "apps/mobile/src/lib/passkeyPrompt.ts",
+    "apps/mobile/src/lib/paymentSheet.ts", "apps/mobile/src/lib/subscriptionStatus.ts", "apps/mobile/src/lib/iapReceipt.ts", "apps/mobile/src/lib/PlusBadge.tsx",
+    "apps/web/src/lib/securityHeaders.ts", "apps/web/src/lib/supabaseClient.ts", "apps/web/src/lib/privacyNotice.ts", "apps/web/src/lib/termsVersion.ts",
+    "apps/web/src/lib/legalLinks.ts", "apps/mobile/src/lib/consentGate.ts"]) {
+    assert.ok(rulesFor(p).includes("CR-70 path"), p);
+  }
+});
+
+test("CR-149 rule 4 and CR-70 (Review B): files protected only by what they read are covered by their folder, since a name rule cannot see content", () => {
+  // Both read auth.getSession but their names say nothing; the backup and analytics folders are listed whole.
+  for (const p of ["apps/mobile/src/lib/backup/runtime.ts", "apps/mobile/src/lib/analytics/forget-retired.ts"]) assert.ok(rulesFor(p).includes("CR-70 path"), p);
+  // .well-known decides which app a sign-in link opens.
+  assert.ok(rulesFor("apps/web/src/app/.well-known/apple-app-site-association/route.ts").includes("CR-70 path"));
+});
+
+test("CR-149 rule 4 and CR-70 (Review A): .gitmodules, .gitattributes and the standing merge delegation decision are protected", () => {
+  for (const p of [".gitmodules", ".gitattributes", "apps/mobile/.gitattributes", "docs/ops/proposed/standing-merge-delegation-decision.md"]) {
+    assert.ok(rulesFor(p).includes("CR-70 path"), p);
+  }
+});
+
+test("CR-149 rule 4: a leading **/ CODEOWNERS pattern matches at any depth, not only at the root", () => {
+  const later = `${CODEOWNERS}\n**/logs @owner\n`;
+  assert.deepEqual(rulesFor("apps/web/deep/logs/today.json", undefined, later), ["CODEOWNERS **/logs"]);
+  assert.deepEqual(rulesFor("logs/today.json", undefined, later), ["CODEOWNERS **/logs"]);
+  assert.equal(touchesProtectedPath(["apps/web/deep/logs/today.json"], CODEOWNERS), false, "not owned before the line was added");
+});
+
+test("CR-149 rule 1: filesSince compares names without case (fail closed: more overlap)", () => {
+  assert.deepEqual(filesSince(["Docs/A.md"], [{ filename: "docs/a.md" }]), ["Docs/A.md"]);
+  assert.deepEqual(filesSince([{ filename: "docs/b.md", previous_filename: "DOCS/a.md" }], ["docs/A.md"]), ["DOCS/a.md"]);
+});
+
+test("CR-149 class: .txt and .mdx are docs only under docs/, and a .txt a check or build reads is source anywhere", () => {
+  assert.equal(classifyPr(["docs/ops/trace-ns-baseline.txt"]), "source", "scripts/trace.mjs --check reads it (CR-227)");
+  for (const p of ["docs/agents/tone-baseline.txt", "docs/ops/action-pins-allowlist.txt", "docs/store/notes-for-review-1.0.txt",
+    "docs/ops/well-known/security.txt", "docs/requirements.txt", "docs/CMakeLists.txt", "requirements.txt", "native/CMakeLists.txt",
+    "apps/web/public/robots.txt", "apps/web/src/content/page.mdx"]) {
+    assert.equal(classifyPr([p]), "source", p);
+  }
+  assert.equal(classifyPr(["docs/notes.txt", "docs/guide.mdx", "apps/web/README.md"]), "docs");
+});

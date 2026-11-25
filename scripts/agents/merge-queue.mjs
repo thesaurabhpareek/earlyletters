@@ -216,6 +216,8 @@ const namesOf = (f) => {
  * merge base (`developFiles`), sorted, once each. A rename counts on both sides: its old name and its new name are both
  * compared, so a PR that edits `a.ts` while develop renames `a.ts` to `b.ts` (or the other way round) overlaps.
  * Failure mode guarded: a missed rename lets a PR merge onto a file that no longer exists under that name.
+ * Names compare without case (`Docs/a.md` and `docs/a.md` overlap): a case-insensitive checkout maps one onto the other,
+ * and a wrong overlap only keeps the strict rule. The PR's own spelling is returned.
  * Fail closed: a non-array, a list marked `capped` (paged() cut it off, so it may be incomplete) or an entry with no
  * readable name returns [UNREADABLE], which is non-empty and so counts as overlap.
  */
@@ -224,21 +226,28 @@ export function filesSince(baseToHeadFiles, developFiles) {
   if (sides.some((s) => !Array.isArray(s) || s.capped)) return [UNREADABLE];
   const [mine, theirs] = sides.map((s) => s.map(namesOf));
   if ([...mine, ...theirs].some((n) => n === null)) return [UNREADABLE];
-  const dev = new Set(theirs.flat());
-  return [...new Set(mine.flat().filter((n) => dev.has(n)))].sort();
+  const dev = new Set(theirs.flat().map((n) => n.toLowerCase()));
+  return [...new Set(mine.flat().filter((n) => dev.has(n.toLowerCase())))].sort();
 }
 
 /**
  * CR-70 founder-only paths (as CR-73 restated them) that SECURITY_LENS_CLASSES does not already hold, plus the CR-149
- * rule 4 names (auth, billing, the analytics allowlist, apps/mobile/src/lib/db, CODEOWNERS wherever it sits). Auth and
- * billing have no path list anywhere, so they match by name segment, broad on purpose (a false hit only keeps the strict
- * rule). Legal text and docs/DECISIONS.md are CR-73's "does not move" list.
+ * rule 4 names (auth, billing, the analytics allowlist, apps/mobile/src/lib/db, CODEOWNERS wherever it sits). Auth,
+ * billing and privacy have no path list anywhere, so they match as a substring of the whole path, case-insensitive, with
+ * no delimiter on either side: `useAuth.ts`, `token-vault.ts`, `account-deletion/` and `AuthProvider.tsx` all hit. It is
+ * broad on purpose ("author" and "tokens" hit too): a false hit only keeps the strict rule, a miss lets a PR skip it.
+ * A name rule cannot see what a file reads, so the folders whose files read the session (apps/mobile/src/lib/backup,
+ * apps/mobile/src/lib/analytics) are listed whole. `.well-known/` decides which app a sign-in link opens. `.gitmodules`
+ * and `.gitattributes` change what a checkout holds. Legal text, docs/DECISIONS.md and the standing merge delegation
+ * decision (CR-70's "this rule") are CR-73's "does not move" list.
  */
 export const CR70_EXTRA_PATHS = [
   /(?:^|\/)claude\.md$/i, /^packages\/content\//, /^packages\/brand\//, /^packages\/analytics\//, /^docs\/analytics\//,
   /^agents\//, /^\.claude\//, /^apps\/mobile\/src\/lib\/db\//, /(?:^|\/)codeowners$/i, /^docs\/legal\//, /^apps\/web\/content\/legal\//,
   /^apps\/mobile\/src\/app\/settings\/(?:legal|privacy)\.tsx$/, /^docs\/decisions\.md$/i,
-  /(?:^|[/._()-])(?:o?auth|reauth|billing|payments?|purchases?|subscriptions?|paywall|entitlements?|iap|plus|security|supabase|privacy|terms|legal|consent|sign-?in|sign-?out|passkey|keychain)(?=$|[/._()-])/i,
+  /^apps\/mobile\/src\/lib\/backup\//i, /^apps\/mobile\/src\/lib\/analytics\//i, /(?:^|\/)\.well-known\//i, /(?:^|\/)\.git(?:modules|attributes)$/i,
+  /^docs\/ops\/proposed\/standing-merge-delegation-decision\.md$/i,
+  /auth|sign[-_]?in|sign[-_]?out|session|token|vault|account|delet|magic|otp|keychain|secure[-_]?stor|passkey|billing|payment|purchase|subscription|paywall|entitlement|iap|plus|security|supabase|privacy|terms|legal|consent/i,
 ];
 /** Lockfiles of any package manager, anywhere in the tree (CR-149 rule 4 says "no lockfile", not only the root one). */
 export const LOCKFILE_RE = /(?:^|\/)(?:package-lock\.json|npm-shrinkwrap\.json|yarn\.lock|pnpm-lock\.ya?ml|bun\.lockb?|deno\.lock|podfile\.lock|gemfile\.lock|cargo\.lock|poetry\.lock|composer\.lock|gradle\.lockfile)$/i;
@@ -326,8 +335,15 @@ export function protectedPathHits(files, codeowners) {
 /** Pure: true when CR-149 rule 4 keeps the strict rule for this PR (any hit, including a fail-closed one). */
 export const touchesProtectedPath = (files, codeowners) => protectedPathHits(files, codeowners).length > 0;
 
-/** Docs: Markdown or plain text, outside the folders where a Markdown file is an instruction an agent or CI acts on. */
-const DOC_RE = /\.(?:md|mdx|txt)$/i;
+/**
+ * Docs: Markdown anywhere, or `.mdx` and `.txt` under docs/, outside the folders where a Markdown file is an instruction
+ * an agent or CI acts on. A `.txt` or `.mdx` anywhere else may be built or read (a web `public/` file, MDX pages), and a
+ * `.txt` that a check or build reads is source wherever it sits: the baselines and allowlists scripts compare against
+ * (docs/ops/trace-ns-baseline.txt, CR-227), the store review notes, the migrations-applied lists, well-known files,
+ * requirements*.txt and CMakeLists.txt.
+ */
+const DOC_RE = /\.md$|^docs\/.*\.(?:mdx|txt)$/i;
+const MACHINE_READ_TXT_RE = /(?:baseline|allowlist|denylist|migrations-applied|notes-for-review|requirements)[^/]*\.txt$|(?:^|\/)cmakelists\.txt$|(?:^|\/)\.?well-known\//i;
 const NOT_DOCS_RE = /^(?:\.claude|agents|\.github)\/|(?:^|\/)(?:claude|agents)\.md$/i;
 /** Tests: a file inside a test folder, or a file named *.test.* or *.spec.* (CR-149's first uses: apps/mobile/test, e2e-web). */
 const TEST_RE = /(?:^|\/)(?:test|tests|__tests__|e2e|e2e-web|__fixtures__|fixtures)\/|\.(?:test|spec)\.[a-z0-9]+$/i;
@@ -347,7 +363,7 @@ export function classifyPr(files) {
   if (names.some((n) => n === null)) return "source";
   const all = names.flat();
   if (!all.every(readablePath)) return "source";
-  if (all.every((p) => DOC_RE.test(p) && !NOT_DOCS_RE.test(p))) return "docs";
+  if (all.every((p) => DOC_RE.test(p) && !NOT_DOCS_RE.test(p) && !MACHINE_READ_TXT_RE.test(p))) return "docs";
   if (all.every((p) => TEST_RE.test(p) && !NOT_TEST_RE.test(p))) return "test";
   return "source";
 }
