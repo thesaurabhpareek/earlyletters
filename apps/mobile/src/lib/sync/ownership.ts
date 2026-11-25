@@ -62,7 +62,7 @@ export function takeOwnership(db: SqlDb, userId: string, ctx: EnqueueContext): O
     db.run('UPDATE entries SET author_id = ? WHERE author_id IS NULL', userId);
 
     // BL-559: a book in Recently deleted is left out, and stays 'local' (nothing of it is queued below).
-    const books = db.all<LocalChildRow>(`SELECT * FROM children c WHERE c.server_state = 'local' AND ${notDeleted('c.id')} ORDER BY c.created_at, c.id`);
+    const books = db.all<LocalChildRow>(`SELECT * FROM children WHERE server_state = 'local' AND ${notDeleted('children.id')} ORDER BY created_at, id`);
     const ok = books.filter((c) => UUID7.test(c.id) && (c.birthday || c.due_date));
     const bad = books.filter((c) => !ok.includes(c));
     const mine = "role = 'parent', created_by_me = 1, created_by = COALESCE(created_by, ?)";
@@ -142,7 +142,7 @@ export function releaseEmptyOwner(db: SqlDb, holdsAnyRow: (db: SqlDb) => boolean
 export function claimRestoredBook(db: SqlDb, childId: string, ctx: EnqueueContext): void {
   const owner = readSetting(db, SYNC_SETTING.owner);
   if (!owner) return;
-  const c = db.get<LocalChildRow>(`SELECT * FROM children c WHERE c.id = ? AND c.server_state = 'local' AND ${notDeleted('c.id')}`, childId);
+  const c = db.get<LocalChildRow>(`SELECT * FROM children WHERE id = ? AND server_state = 'local' AND ${notDeleted('children.id')}`, childId);
   if (!c) return;
   if (!UUID7.test(c.id) || !(c.birthday || c.due_date)) {
     db.run("UPDATE children SET server_state = 'refused', role = 'parent', created_by_me = 1, created_by = COALESCE(created_by, ?) WHERE id = ?", owner, childId);
