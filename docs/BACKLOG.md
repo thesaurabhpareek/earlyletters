@@ -6654,7 +6654,7 @@ Source: `docs/analytics/instrumentation/ENGINEERING-REQUIREMENTS-21nov.md` (#120
 - Source: `ENGINEERING-REQUIREMENTS-21nov.md`, ER-A14.
 
 #### BL-1250 Global properties build_kind and is_internal, hidden tester switch (ER-A15)
-- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: S. Depends on: BL-1238.
+- Status: in-review (PR #2106). Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: S. Depends on: BL-1238.
 - Satisfies: none claimed: build work for D-163, not a P0 row.
 - Scope: build_kind and is_internal on every event; one local switch, off and unreachable in a store install (FH-10). Never: entry text, transcript, audio, child name, autocapture, replay.
 - Done when: both present on every event; the switch is unreachable in a store build. DATA_CLASSIFICATION.md row for the persisted tester switch (on-device flag, no content; privacy confirms class and level), in the same PR or the founder-merged row of BL-1239.
