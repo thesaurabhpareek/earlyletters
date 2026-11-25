@@ -20,6 +20,12 @@
  * lock reads its settings.
  * A kill at any point leaves the mark; `resumeEraseAtLaunch` (root layout, before any screen reads the store)
  * finishes the same steps, all of which are safe to repeat.
+ * A try that ends `incomplete` leaves the person using the app. Every later try (the page's button again, or the launch
+ * resume) removes only the rows that existed when the mark was written, and only the files nothing kept owns (BL-775;
+ * store.ts eraseEverythingLocal, db/repos/wipe.ts EraseScope): a letter written in between keeps its recording and its
+ * picture. What is still erased whole on every try, because it holds no record of when each part was made or is a copy
+ * or a key rather than anything written: the days and moments files, the backup state file, temporary whole-frame
+ * copies, export ZIPs, print PDFs, the photo caches, and the Keychain and reminder steps below.
  *
  * Kept, on purpose (F17 6.2 F step 3): speech models (`Documents/models`) and language packs, which hold no personal
  * data and are large; Settings > Languages and speech removes them. Nothing here uses the network.
@@ -38,14 +44,15 @@ import { clearLedger } from './billing/letter-ledger';
 import { removeWholeFrameCopies } from './capture/adts-file';
 import { eraseAudioFile } from './capture/erase';
 import { listRecordingFiles } from './capture/recordings';
-import { BAKED_CACHE_FOLDER, PICKER_CACHE_FOLDER, photosDirectory } from './photos/files';
+import { fileNameOf } from './capture/sweep.logic';
+import { BAKED_CACHE_FOLDER, PICKER_CACHE_FOLDER, photosDirectory, storedPhotoFile } from './photos/files';
 import { eraseDaysFile } from './days';
 import { eraseMomentsFile } from './moments';
 import { clearPendingInvite } from './family/pending-invite';
 import { discardPendingPhotoOnLeaving } from './photos/leaving';
 import { forgetReminders } from './reminders/scheduler';
 import { secureStorage } from './supabase/secure-storage';
-import { eraseEverythingLocal, eraseEverythingPending, finishEraseEverything, ledgerDb, localDeletionAllowed } from './store';
+import { eraseEverythingLocal, eraseEverythingPending, finishEraseEverything, ledgerDb, localDeletionAllowed, type KeptFiles } from './store';
 
 export type EraseEverythingResult = 'erased' | 'incomplete' | 'signed_in';
 
@@ -56,13 +63,20 @@ export type EraseEverythingResult = 'erased' | 'incomplete' | 'signed_in';
  */
 const CACHE_COPIES = ['exports', 'recovery-export', 'Print', PICKER_CACHE_FOLDER, BAKED_CACHE_FOLDER] as const; // the photo picker's originals and the re-encode's JPEGs
 
+const NOTHING_KEPT: KeptFiles = { recordings: [], pictures: [] };
+
 /**
  * Every recording file, listening copy, temporary copy and export left on the phone after each row's own erase, and the
  * device-only days and moments files (each held and thrown at the end, so the mark stays).
  * A recording that will not go throws, so the rows stay for the next try (the sweep would otherwise find the file
  * with no row and bring it back as a draft).
+ * `kept` (BL-775): the recordings and pictures of letters and drafts written after a failed try. A recording is told
+ * old from new by the row that owns it, matched by file name, as the launch sweep pairs them (a container move changes
+ * the path, never the name); a picture by its entry_media id (`<id>.jpg`). Everything else in those
+ * folders goes, strays included: a stray has no row, and the launch sweep does not bring one back while an erase is
+ * pending (capture/sweep.ts), so it existed before the mark. Empty on the first try, so all of it goes, as before.
  */
-export function eraseDeviceFiles(): void {
+export function eraseDeviceFiles(kept: KeptFiles = NOTHING_KEPT): void {
   if (Platform.OS === 'web') return; // the web preview keeps no recordings or exports on disk (sweep.ts, erase.ts)
   closeBackupHandles(); // B5-4: an open backup handle closes before its file goes (below)
   // First (NS-47-R16, ADR 0032 item 3). A file that will not go must not stop the other steps: it is thrown at the end, so the mark stays.
@@ -89,14 +103,23 @@ export function eraseDeviceFiles(): void {
   } catch (e) {
     backupFailure = e;
   }
-  for (const f of listRecordingFiles()) if (f.exists) f.delete();
+  const keptNames = new Set(kept.recordings.map(fileNameOf));
+  for (const f of listRecordingFiles()) if (f.exists && !keptNames.has(fileNameOf(f.uri))) f.delete();
   removeWholeFrameCopies(0);
   sweepListeningCopies(); // copies with no draft or letter row: run again after the rows go (finish)
-  // Pictures kept with letters (NS-01-R16, NX-39-R31): the whole folder, whatever the photos switch says. A container
+  // Pictures kept with letters (NS-01-R16, NX-39-R31): the whole folder, whatever the photos switch says, unless a letter
+  // written after a failed try keeps one (BL-775); then every other file in it. A container
   // layout photosDirectory does not know means no picture was ever written (it fails closed for writes too).
   try {
     const pictures = photosDirectory();
-    if (pictures.exists) pictures.delete();
+    if (pictures.exists) {
+      if (kept.pictures.length === 0) pictures.delete();
+      else {
+        // By name, never by uri: one folder, and a name is the same however its path is spelled or encoded.
+        const keep = new Set(kept.pictures.flatMap((id) => { const f = storedPhotoFile(id); return f ? [fileNameOf(f.uri)] : []; }));
+        for (const item of pictures.list()) if (!keep.has(fileNameOf(item.uri))) item.delete();
+      }
+    }
   } catch (e) {
     if (!(e instanceof Error && e.message === 'photos_folder_unknown')) throw e;
   }

@@ -678,8 +678,11 @@ describe('[DATA-REQ-024][F14-REQ-026] Erase everything on this phone, signed out
     expect(fetches).toBe(0);
   });
 
-  it('[DATA-REQ-024] the failed line, "If you wait ... that erases anything you add before then": the next launch erases a letter written after the failed erase', async () => {
-    const { app, f } = await filled();
+  // BL-775 (DATA-REQ-024; D-144, CCO-6). Before it, a retry or the launch resume removed every row then present, so a
+  // letter written after a failed erase went too; this case pinned that. Now only what existed when the mark was
+  // written goes. The failed line's words are unchanged (D-144: new words go to the founder first).
+  /** Erase everything that stops at the third recording, as a file that will not go does: rows and mark stay. */
+  function failPartWay(app: App) {
     let n = 0;
     expect(
       app.store.eraseEverythingLocal((uri, id) => {
@@ -687,24 +690,142 @@ describe('[DATA-REQ-024][F14-REQ-026] Erase everything on this phone, signed out
         app.erase.eraseAudioFile(uri, id);
       }, app.all.eraseDeviceFiles),
     ).toBe('incomplete');
-
-    // The person leaves the page and keeps writing in Asha's book: a spoken letter and a typed one, both kept.
-    const late = take('0A1B2C3D-0000-4000-8000-00000000A5A9');
-    const lateId = '0199a5b0-0000-7000-8000-0000000a0009';
-    const lateTypedId = '0199a5b0-0000-7000-8000-0000000a000a';
-    app.store.saveEntry(letter({ id: lateId, childId: f.asha, audioUri: late, finalText: 'Asha, a letter after the failed erase.' }));
-    app.store.saveEntry(letter({ id: lateTypedId, childId: f.asha, captureMode: 'typed', audioUri: null, audioSha256: null, audioBytes: null, audioDurationMs: null, finalText: 'Asha, a typed one.' }));
-    expect(rowKept(lateId) && rowKept(lateTypedId)).toBe(true);
     expect(app.store.eraseEverythingPending()).toBe(true);
+  }
+  const PHOTOS = () => photosDirectory().uri.replace(/\/$/, '');
+  /** A stored picture for an owner, as commitPhoto leaves it: the file in photos/, then its row. */
+  const picture = (owner: string, media: string) => {
+    const uri = put(h.disk, `${PHOTOS()}/${media}.jpg`, 3000);
+    entryMediaStore(db).put({ entryId: owner, mediaId: media, ext: 'jpg', bytes: 3000, sha256: 'ab', width: 4, height: 4, text: 'Rain boots', place: 'the back step', addedAt: '2026-10-03T09:00:00Z', deletedAt: null });
+    return uri;
+  };
+  const LATE = { spoken: '0199a5b0-0000-7000-8000-0000000a0009', typed: '0199a5b0-0000-7000-8000-0000000a000a', newBook: '0199a5b0-0000-7000-8000-0000000c0001' };
+  /** What the person writes after the failed erase: a spoken and a typed letter in Asha's book, and a new book with a letter. */
+  function writeAfter(app: App, f: ReturnType<typeof family>) {
+    const late = take('0A1B2C3D-0000-4000-8000-00000000A5A9');
+    const lateNew = take('0A1B2C3D-0000-4000-8000-00000000C0C1');
+    app.store.saveEntry(letter({ id: LATE.spoken, childId: f.asha, audioUri: late, finalText: 'Asha, a letter after the failed erase.' }));
+    app.store.saveEntry(letter({ id: LATE.typed, childId: f.asha, captureMode: 'typed', audioUri: null, audioSha256: null, audioBytes: null, audioDurationMs: null, finalText: 'Asha, a typed one.' }));
+    const book = app.store.addChild({ name: 'Asha', birthday: '2026-09-01', dueDate: null, signsAs: 'Mama' }).id;
+    app.store.saveEntry(letter({ id: LATE.newBook, childId: book, audioUri: lateNew, finalText: 'Asha, your first week.' }));
+    return { late, lateNew, book };
+  }
+  /** Every row and file of filled() is gone: the old books, letters, draft, recordings, stray and settings. */
+  function expectOldGone(f: ReturnType<typeof family>, stray: string, newBook: string) {
+    for (const id of [...Object.values(f.ids), f.draftId]) expect([id, rowKept(id), db.get('SELECT id FROM drafts WHERE id = ?', id)]).toEqual([id, false, null]);
+    expect([f.a1, f.a2, f.draft, f.v1, stray].filter(has)).toEqual([]);
+    expect(db.all<{ id: string }>('SELECT id FROM children').map((r) => r.id)).toEqual([newBook]);
+    // The 18+ answer and every other choice made before the erase go, so the age question shows again (D-026).
+    for (const k of ['ageGate.passed', 'appearance', 'analytics.id', 'appLock.enabled', FIRST_RUN_DRAFT_SETTING, `child.bornCardHidden.${f.asha}`]) expect([k, db.get('SELECT key FROM settings WHERE key = ?', k)]).toEqual([k, null]);
+    expect(db.get("SELECT key FROM settings WHERE key LIKE 'erase.everything.%'")).toBeNull();
+  }
 
-    // The next time the app opens it finishes the erase, and the new letters go with the old ones.
+  it('[BL-775][DATA-REQ-024] the next launch after a failed erase removes every row and file that existed when it began, and keeps a letter written afterwards with its recording', async () => {
+    const { app, f, stray } = await filled();
+    failPartWay(app);
+    const { late, lateNew, book } = writeAfter(app, f);
+    expect([rowKept(LATE.spoken), rowKept(LATE.typed), has(late)]).toEqual([true, true, true]);
+
+    // The file can go now; the next time the app opens it finishes the erase.
     const next = await launch();
     expect(await next.all.resumeEraseAtLaunch()).toBe('erased');
-    expect([rowKept(lateId), rowKept(lateTypedId), has(late)]).toEqual([false, false, false]);
+    expectOldGone(f, stray, book);
+    expect([rowKept(LATE.spoken), rowKept(LATE.typed), rowKept(LATE.newBook), has(late), has(lateNew)]).toEqual([true, true, true, true, true]);
+    expect(next.store.getEntry(LATE.spoken)?.finalText).toBe('Asha, a letter after the failed erase.');
+    expect(next.store.listChildren().map((c) => c.id)).toEqual([book]);
+    expect(next.store.listEntriesForChild(book).map((e) => e.id)).toEqual([LATE.newBook]);
+    expect(next.store.eraseEverythingPending()).toBe(false);
+    // Each kept letter's recording has its row: the sweep has nothing to bring back or report.
+    expect(await next.sweep.runLaunchSweep()).toEqual({});
+    expect(rows('drafts')).toBe(0);
+    expect(fetches).toBe(0);
+  });
+
+  it('[BL-775][DATA-REQ-024] the same when the person presses Erase everything again on the page: a picture kept with a new letter stays, an old letter\'s goes', async () => {
+    const { app, f, stray } = await filled();
+    const oldPicture = picture(f.ids.v1, 'mV1');
+    failPartWay(app);
+    const { late, lateNew, book } = writeAfter(app, f);
+    const newPicture = picture(LATE.spoken, 'mLate');
+
+    expect(await app.all.eraseEverything()).toBe('erased');
+    expectOldGone(f, stray, book);
+    expect([late, lateNew, newPicture].filter(has)).toEqual([late, lateNew, newPicture]);
+    expect([has(oldPicture), db.all<{ id: string }>('SELECT id FROM entry_media').map((r) => r.id)]).toEqual([false, ['mLate']]);
+    expect([rowKept(LATE.spoken), rowKept(LATE.typed), rowKept(LATE.newBook)]).toEqual([true, true, true]);
+    expect(app.store.eraseEverythingPending()).toBe(false);
+    expect(fetches).toBe(0);
+  });
+
+  it('[BL-775][DATA-REQ-024] a kill part way through an erase with nothing written afterwards: the next open finds the store empty and the age question showing, as before', async () => {
+    const { app, f, stray, printPdf } = await filled();
+    let n = 0;
+    expect(app.store.eraseEverythingLocal((uri, id) => { if (n++ === 1) throw new Error('killed'); app.erase.eraseAudioFile(uri, id); }, app.all.eraseDeviceFiles)).toBe('incomplete');
+    const next = await launch();
+    expect(await next.all.resumeEraseAtLaunch()).toBe('erased');
     expectEmpty();
+    expect(next.store.getSetting('ageGate.passed')).toBeNull();
+    expect(next.store.listChildren()).toEqual([]);
+    expect([f.a1, f.a2, f.draft, f.v1, stray, printPdf].filter(has)).toEqual([]);
     expect(next.store.eraseEverythingPending()).toBe(false);
     expect(await next.sweep.runLaunchSweep()).toEqual({});
-    expect(fetches).toBe(0);
+  });
+
+  it('[BL-775] a draft that was waiting when the erase began, kept as a letter afterwards, still goes with its recording: it keeps its id, and it existed then', async () => {
+    const { app, f } = await filled();
+    failPartWay(app);
+    expect(has(f.draft)).toBe(true);
+    app.store.saveLetterFromDraft(f.draftId, letter({ id: f.draftId, childId: f.asha, audioUri: f.draft, finalText: 'Asha, kept after the failed erase.' }));
+    expect([rowKept(f.draftId), app.store.getDraft(f.draftId)]).toEqual([true, null]);
+    const next = await launch();
+    expect(await next.all.resumeEraseAtLaunch()).toBe('erased');
+    expect([rowKept(f.draftId), has(f.draft)]).toEqual([false, false]);
+    expectEmpty();
+  });
+
+  it('[BL-775] the scope written with the mark holds ids and settings keys only: no name, no words, no setting\'s value', async () => {
+    const { app } = await filled();
+    failPartWay(app);
+    const scope = app.store.getSetting('erase.everything.scope');
+    expect(scope).not.toBeNull();
+    expect(scope).not.toMatch(/Asha|Avi|Mama|Papa|snow|morning|tower|laughed|dark|immediately/);
+    expect(Object.keys(JSON.parse(scope!).tables)).toEqual(expect.arrayContaining(['children', 'drafts', 'entries', 'settings']));
+  });
+
+  it('[BL-775] a mark with no usable scope (left by a build before BL-775, or the schema changed since) removes everything present, which is what the failed line says', async () => {
+    for (const spoil of ['no scope', 'schema changed']) {
+      const { app, f } = await filled();
+      failPartWay(app);
+      writeAfter(app, f);
+      if (spoil === 'no scope') db.run("DELETE FROM settings WHERE key = 'erase.everything.scope'");
+      else db.run('UPDATE settings SET value = json_set(value, \'$.schema\', 0) WHERE key = \'erase.everything.scope\'');
+      const next = await launch();
+      expect(await next.all.resumeEraseAtLaunch(), spoil).toBe('erased');
+      expect([rowKept(LATE.spoken), rowKept(LATE.typed), rowKept(LATE.newBook)], spoil).toEqual([false, false, false]);
+      expectEmpty();
+    }
+  });
+
+  it('[BL-775] while an erase is pending the launch sweep does not bring an old stray recording back as a draft, so the next try cannot mistake it for new work', async () => {
+    const { app, f, stray } = await filled();
+    failPartWay(app); // stops before the device sweep, so the stray is still there
+    h.disk.undeletable.add(f.v1); // and the next launch's try fails too
+    let next = await launch();
+    expect(await next.all.resumeEraseAtLaunch()).toBe('incomplete');
+    await next.sweep.runLaunchSweep();
+    expect([has(stray), rows('drafts'), rows('orphan_audio')]).toEqual([true, 1, 0]); // only the old draft; nothing made from the stray
+    h.disk.undeletable.delete(f.v1);
+    next = await launch();
+    expect(await next.all.resumeEraseAtLaunch()).toBe('erased');
+    expect(has(stray)).toBe(false);
+    expectEmpty();
+  });
+
+  it('[BL-775] every table has a one-column primary key, so the scope names each row by a key that is never given to another row (wipe.ts EraseScope)', async () => {
+    await launch();
+    const tables = db.all<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE 'letter_search%'").map((r) => r.name);
+    expect(tables.length).toBeGreaterThan(5);
+    for (const t of tables) expect([t, db.all<{ pk: number }>(`PRAGMA table_info("${t}")`).filter((c) => c.pk > 0).length]).toEqual([t, 1]);
   });
 
   it('a phone that has signed in is refused and nothing changes (F17-REQ-026 is a separate flow)', async () => {
