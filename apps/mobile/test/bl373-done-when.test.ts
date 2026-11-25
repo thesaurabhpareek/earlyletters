@@ -8,9 +8,9 @@
  *    its schema, pinned equal here. No file on the phone compares the allowance or the letter count with a number of
  *    its own, so a change to the reviewed default reaches every screen at once.
  *  - "A lapsed member can read, play and export every letter and cannot add one." Adding is decided at the Keep step
- *    only (keep-step.ts, plan.ts decideKeepLetter). The surfaces that read, play, find, export, share, back up or
- *    restore a letter never call the Keep gate or read the plan, except `hasPlus() ? 'plus' : 'free'` to label a count
- *    or a manifest, and never compare that label. Failure mode this catches: a future "if (!hasPlus()) return" on export or playback,
+ *    only (keep-step.ts, plan.ts decideKeepLetter). The surfaces that read, play, find, export, share, sync, back up,
+ *    restore or invite never call the Keep gate or read the plan. From the billing module they import only the
+ *    `hasPlus() ? 'plus' : 'free'` label (for a count or a manifest, never compared) and the PLUS_ALPHA copy flag. Failure mode this catches: a future "if (!hasPlus()) return" on export or playback,
  *    which would lock a lapsed family out of letters they already have (LEGAL-REQ-050).
  *
  * Source checks, like billing-f5-lines.test.ts: comments are stripped before matching, one line at a time. Known
@@ -46,21 +46,33 @@ function filesUnder(rel: string): string[] {
 }
 
 describe('[BL-373] the free-letter allowance is read from one constant', () => {
-  // A number from 1 up compared with the allowance or the letter count, in either order (`allowance === 2`,
-  // `freeLettersAllowance() >= 2`, `2 <= kept`), or used to clamp the allowance (`Math.max(2, allowance)`). Zero checks
-  // (`kept === 0`) are about "none yet", not the allowance, and stay allowed.
+  // A number from 2 up (the allowance is never below 2) compared with the allowance or the letter count, in either
+  // order (`allowance === 2`, `freeLettersAllowance() >= 2`, `2 <= kept`), or used with it in a clamp
+  // (`Math.max(2, allowance)`, `Math.max(freeLettersAllowance(), 2)`). Checks against 0 or 1 (`kept === 0`,
+  // `lettersLeft === 1`) are about "none yet" or "one left", not the allowance, and stay allowed.
   const NAME = String.raw`(?:\b(?:allowance|lettersKept|kept|lettersLeft)\b|freeLettersAllowance\(\))`;
   const OP = String.raw`(?:===|!==|==|!=|>=|<=|>|<)`;
-  const N = String.raw`\b[1-9]\d*\b`;
-  const LITERAL_COMPARE = new RegExp(String.raw`${NAME}\s*${OP}\s*${N}|${N}\s*${OP}\s*${NAME}|Math\.(?:min|max)\([^)]*${N}[^)]*\ballowance\b`);
+  const N = String.raw`\b(?:[2-9]|[1-9]\d+)\b`;
+  // Clamps are checked on the allowance only: the letter count is capped at 1000 for analytics buckets, on purpose.
+  const ALLOWANCE = String.raw`(?:\ballowance\b|freeLettersAllowance\(\))`;
+  const LITERAL_COMPARE = new RegExp(
+    String.raw`${NAME}\s*${OP}\s*${N}|${N}\s*${OP}\s*${NAME}|Math\.(?:min|max)\([^)]*${N}[^)]*${ALLOWANCE}|Math\.(?:min|max)\([^)]*${ALLOWANCE}[^)]*${N}`,
+  );
+  // Inside lib/billing, where every count is a letter count, any local name will do: no bare 2 to 9 in a comparison
+  // and no constant set to 2 (`n >= 2`, `const FREE = 2;`). Loop bounds and lengths there are 40 and up.
+  const BILLING_LITERAL = new RegExp(String.raw`${OP}\s*\b[2-9]\b(?!\.)|\b[2-9]\b\s*${OP}|=\s*2\s*;`);
 
   const phone = filesUnder('.');
 
   it('the rule itself: what it catches and what it leaves alone', () => {
-    for (const bad of ['allowance === 2', 'freeLettersAllowance() >= 2', '2 <= kept', 'if (lettersKept > 1) x()', 'Math.max(2, g.allowance)'])
+    for (const bad of ['allowance === 2', 'freeLettersAllowance() >= 2', '2 <= kept', 'if (lettersKept > 3) x()', 'Math.max(2, g.allowance)', 'Math.max(freeLettersAllowance(), 2)', 'Math.max(allowance, 2)'])
       expect(LITERAL_COMPARE.test(bad), bad).toBe(true);
-    for (const ok of ['kept === 0', 'lettersLeft <= 0', 'allowance === DEFAULT_FREE_LETTERS', 'kept + 1', 'Math.min(1000, g.lettersKept)'])
+    for (const ok of ['kept === 0', 'lettersLeft <= 0', 'lettersLeft === 1', 'allowance === DEFAULT_FREE_LETTERS', 'kept + 1', 'Math.min(1000, g.lettersKept)'])
       expect(LITERAL_COMPARE.test(ok), ok).toBe(false);
+    for (const bad of ['if (n >= 2) x()', 'const FREE = 2;', '3 > n'])
+      expect(BILLING_LITERAL.test(bad), bad).toBe(true);
+    for (const ok of ['for (let k = 1; k <= 200; k++)', 'v.length <= 40', 'export const MAX_PENDING = 8;', 'x === 0'])
+      expect(BILLING_LITERAL.test(ok), ok).toBe(false);
   });
 
   it('reads every source file on the phone (the walk is not empty)', () => {
@@ -70,6 +82,13 @@ describe('[BL-373] the free-letter allowance is read from one constant', () => {
 
   it('no file on the phone compares the allowance or the letter count with a number of its own', () => {
     const hits = phone.flatMap((rel) => code(rel).split('\n').filter((l) => LITERAL_COMPARE.test(l)).map((l) => `${rel}: ${l.trim()}`));
+    expect(hits).toEqual([]);
+  });
+
+  it('no billing file holds a small number of its own in a comparison or a constant of 2', () => {
+    const hits = phone
+      .filter((rel) => rel.startsWith('lib/billing/'))
+      .flatMap((rel) => code(rel).split('\n').filter((l) => BILLING_LITERAL.test(l)).map((l) => `${rel}: ${l.trim()}`));
     expect(hits).toEqual([]);
   });
 
@@ -92,11 +111,16 @@ describe('[BL-373, LEGAL-REQ-050] reading, playing, exporting and restoring neve
   // Every way into the Keep decision or the plan on the phone. A surface that only shows or hands over letters that
   // exist must reach none of them.
   const KEEP_GATE = /\b(keepSheetFor|keepGateFor|keepLetterGate|decideKeepLetter|countAfterSave|PlusGate|freeLettersAllowance|lettersKeptNow)\b/;
-  const PLAN_READ = /\b(usePlan|plusOn|planActive|isAllowed|getPlan|planReadiness)\b|\bdecide\(/;
+  const PLAN_READ = /\b(usePlan|plusOn|planActive|isAllowed|getPlan|planReadiness|subscribePlan|refreshPlan|planLine|usePlanNote|activePlanNote)\b|\bdecide\(/;
+  // The one rule that does not need a list of names: from the phone's billing module a surface may import only the
+  // hasPlus() label and the PLUS_ALPHA build flag (copy only). Anything else from it could become a stop.
+  const BILLING_IMPORT = /import\s*(?:type\s*)?\{([^}]*)\}\s*from\s*'[^']*\bbilling(?:\/[^']*)?'/g;
+  const ALLOWED_FROM_BILLING = new Set(['hasPlus', 'PLUS_ALPHA']);
+  const DEFAULT_BILLING_IMPORT = /import\s+\w+\s*(?:,\s*\{[^}]*\})?\s*from\s*'[^']*\bbilling(?:\/[^']*)?'|import\s*\*\s*as\s+\w+\s+from\s*'[^']*\bbilling(?:\/[^']*)?'/;
   // hasPlus() may label a count or a manifest ("plus" or "free"), and the label is never compared.
   const HAS_PLUS_CALL = /hasPlus\(\)/g;
   const LABEL_ONLY = /hasPlus\(\) \? 'plus' : 'free'/g;
-  const LABEL_COMPARED = /(===|!==|==|!=)\s*'(plus|free)'|'(plus|free)'\s*(===|!==|==|!=)/;
+  const LABEL_COMPARED = /(===|!==|==|!=)\s*'(plus|free)'|'(plus|free)'\s*(===|!==|==|!=)|case\s*'(plus|free)'/;
 
   const one = (rel: string) => [rel];
   const surfaces = [
@@ -119,10 +143,21 @@ describe('[BL-373, LEGAL-REQ-050] reading, playing, exporting and restoring neve
     ...one('lib/read-it-back.ts'),
     ...one('lib/resilience/recovery-export.ts'),
     ...one('lib/resilience/recovery-export.logic.ts'),
+    ...one('lib/read-it-back.logic.ts'),
+    ...filesUnder('lib/sync'),
+    ...filesUnder('lib/moments'),
+    ...filesUnder('lib/media'),
+    ...filesUnder('lib/photos'),
+    ...filesUnder('components/photos'),
+    // Family authorship and invites are free forever too (FreeForever 'family_authors', 'invite').
+    ...one('app/family.tsx'),
+    ...filesUnder('app/invite'),
+    // Storage of letters and drafts. ledger.ts is the letter count itself (the Keep step's input), so it is not a surface.
+    ...filesUnder('lib/db/repos').filter((f) => f !== 'lib/db/repos/ledger.ts'),
   ];
 
   it('the list of surfaces is real (every file exists and each folder was walked)', () => {
-    for (const dir of ['app/letter/', 'components/book/', 'lib/export/', 'lib/backup/', 'lib/player/', 'lib/find/'])
+    for (const dir of ['app/letter/', 'components/book/', 'lib/export/', 'lib/backup/', 'lib/player/', 'lib/find/', 'lib/sync/', 'lib/db/repos/', 'app/invite/'])
       expect(surfaces.filter((s) => s.startsWith(dir)).length, dir).toBeGreaterThan(0);
     for (const s of surfaces) expect(() => code(s), s).not.toThrow();
   });
@@ -131,6 +166,15 @@ describe('[BL-373, LEGAL-REQ-050] reading, playing, exporting and restoring neve
     const src = code(rel);
     expect(src, rel).not.toMatch(KEEP_GATE);
     expect(src, rel).not.toMatch(PLAN_READ);
+  });
+
+  it.each(surfaces)('%s imports nothing from billing but the hasPlus() label and the PLUS_ALPHA flag', (rel) => {
+    const src = code(rel);
+    expect(src, rel).not.toMatch(DEFAULT_BILLING_IMPORT);
+    const names = [...src.matchAll(BILLING_IMPORT)].flatMap((m) =>
+      m[1].split(',').map((n) => n.trim().replace(/^type\s+/, '').split(/\s+as\s+/)[0]).filter(Boolean),
+    );
+    expect(names.filter((n) => !ALLOWED_FROM_BILLING.has(n)), rel).toEqual([]);
   });
 
   it.each(surfaces)('%s asks whether Plus is on only to label, never to stop', (rel) => {
