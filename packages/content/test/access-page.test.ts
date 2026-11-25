@@ -35,7 +35,7 @@ export function productionRoles(page: string): string[] | null {
   if (!m) return null;
   return m[1]
     .split('\n')
-    .map((l) => l.match(/^- (.+?)\s*$/)?.[1])
+    .map((l) => l.match(/^\s*(?:[-*+]|\d+[.)])\s+(.+?)\s*$/)?.[1])
     .filter((r): r is string => Boolean(r))
     .map((r) => r.toLowerCase());
 }
@@ -94,6 +94,14 @@ describe('the access page', () => {
     expect(policies.some((p) => ONLY_FOUNDER.test(p.text)), 'the policy sentence this test guards').toBe(true);
     expect(productionRoles(page)).toEqual(['founder']);
     expect(accessConflicts(page, policies)).toEqual([]);
+  });
+
+  it('[FR-BKO-01] counts a second role written with any list marker', () => {
+    for (const marker of ['*', '+', '1.', '2)', '  -']) {
+      const planted = page.replace(/^- founder$/m, `- founder\n${marker} support lead`);
+      expect(productionRoles(planted), marker).toEqual(['founder', 'support lead']);
+      expect(accessConflicts(planted, policies).length, marker).toBe(1);
+    }
   });
 
   it('[FR-BKO-01] fails when the page lists a second role while a policy says only the founder has access', () => {
