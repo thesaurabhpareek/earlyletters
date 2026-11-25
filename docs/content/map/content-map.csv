@@ -1711,9 +1711,10 @@ features/photos.en.ts#photosCopy.book.letter.notSaved,app screen,in-app,packages
 features/photos.en.ts#photosCopy.book.letter.addGroup,app screen,in-app,packages/content/src/features/photos.en.ts,82,en,Add to this letter,18,,,,,,content,live on develop,content
 features/photos.en.ts#photosCopy.book.letter.missing,app screen,in-app,packages/content/src/features/photos.en.ts,85,en,Not on this phone anymore,25,,,,,,content,live on develop,content
 features/photos.en.ts#photosCopy.book.letter.missingRemove,app screen,in-app,packages/content/src/features/photos.en.ts,87,en,Remove,6,,,,,,content,live on develop,content
-features/photos.en.ts#photosCopy.book.photos.a11yCard,app screen,in-app,packages/content/src/features/photos.en.ts,92,en,Photo with this letter,22,,,,,,content,live on develop,content
-features/photos.en.ts#photosCopy.review.notStored,app screen,in-app,packages/content/src/features/photos.en.ts,99,en,That photo didn't come along. You can add it again.,51,,,,,,content,live on develop,content
-features/photos.en.ts#photosCopy.a11y.startHint,a11y,screen reader label,packages/content/src/features/photos.en.ts,104,en,Opens your photos so you can pick one and then tell {child} about it.,69,,,,,,content,live on develop,content
+features/photos.en.ts#photosCopy.book.letter.otherPhone,app screen,in-app,packages/content/src/features/photos.en.ts,93,en,This photo was added on another phone.,38,,,,,,content,live on develop,content
+features/photos.en.ts#photosCopy.book.photos.a11yCard,app screen,in-app,packages/content/src/features/photos.en.ts,98,en,Photo with this letter,22,,,,,,content,live on develop,content
+features/photos.en.ts#photosCopy.review.notStored,app screen,in-app,packages/content/src/features/photos.en.ts,105,en,That photo didn't come along. You can add it again.,51,,,,,,content,live on develop,content
+features/photos.en.ts#photosCopy.a11y.startHint,a11y,screen reader label,packages/content/src/features/photos.en.ts,110,en,Opens your photos so you can pick one and then tell {child} about it.,69,,,,,,content,live on develop,content
 features/player.en.ts#playerCopy.playA11y,app screen,in-app,packages/content/src/features/player.en.ts,10,en,"{label}, {duration}",19,,,,,,content,live on develop,content
 features/player.en.ts#playerCopy.pauseA11y,app screen,in-app,packages/content/src/features/player.en.ts,11,en,Pause {signsAs},15,,,,,,content,live on develop,content
 features/player.en.ts#playerCopy.scrubLabel,app screen,in-app,packages/content/src/features/player.en.ts,12,en,Position in the recording,25,,,,,,content,live on develop,content

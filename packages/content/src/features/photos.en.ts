@@ -85,6 +85,12 @@ export const photosCopy = {
       missing: 'Not on this phone anymore',
       // TODO(founder): PROPOSED, needs word approval
       missingRemove: 'Remove',
+      // A letter that came to this phone by sync with a photo record but no photo: sync carries no picture (NX-39-R33,
+      // NS-01-R15), so the picture was only ever on the phone it was added on (BL-852, BL-1660). Shown in the photo's
+      // place. A past fact, so it stays true even if that phone no longer has it; offers no download and names no cause.
+      // Not for a photo this phone once held and lost: that is `missing`.
+      // PROPOSED (BL-2145): BL-852 named "The photo is on the other phone."; the exec team approves the words (CR-176).
+      otherPhone: 'This photo was added on another phone.',
     },
     photos: {
       // The fixed VoiceOver label of a picture when the parent typed no words about it (NS-01-R9). Never machine text.

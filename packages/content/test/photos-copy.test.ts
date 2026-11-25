@@ -70,4 +70,11 @@ describe('[NS-01-R24] the photo strings obey the content rules', () => {
     expect(t).not.toMatch(/\b(fail\w*|error|lost|lose|wrong|sorry|unfortunately|problem|corrupt\w*|please)\b/i);
     expect(t.length).toBeLessThanOrEqual(120);
   });
+  it('[NX-39-R33][BL-2145] the second phone\'s line says where the photo came from, and promises no download, cause or blame', () => {
+    const t = photosCopy.book.letter.otherPhone;
+    expect(t).toMatch(/\bphone\b/);
+    expect(t).not.toBe(photosCopy.book.letter.missing);
+    expect(t).not.toMatch(/\b(download\w*|sync\w*|will|soon|later|fail\w*|error|lost|lose|missing|wrong|sorry|please)\b/i);
+    expect(t.length).toBeLessThanOrEqual(120);
+  });
 });
