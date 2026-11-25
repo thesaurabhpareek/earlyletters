@@ -42,7 +42,7 @@ May not emit, by any route (events, properties, logs, breadcrumbs, crash fields,
 
 ### 3.2 The one existing event Moments touches: `capture_started`
 
-`capture_started` (catalog, capture area) has `source` as `tonight`, `book`, `notification`, `make_it_yours` or `resurface`. `startCapture` sends it only with `source: 'tonight'`, never the control (`apps/mobile/src/lib/capture/start-capture.ts`). Under R87 and O-49 a Moments hand-off adds no value. `moment` is a local value of the closed source list in `start-capture.ts` only and must never reach `trackCaptureStarted`. If a later change lets a Moments start reach the track call, it must map to an existing value that does not reveal the origin, or send nothing; it must not add `moment`, `picker` or `card`.
+`capture_started` (catalog, capture area) has `source` as `tonight`, `book`, `notification`, `make_it_yours` or `resurface`. `startCapture` sends it only with `source: 'tonight'`, never the control (`apps/mobile/src/lib/capture/start-capture.ts`). Under R87 and the O-49 default a Moments hand-off adds no value. No `moment` source value exists in the code yet: R227 adds `moment` to the local, closed capture source list (`start-capture.logic.ts`) in PR 6 and PR 19, and it must never reach `trackCaptureStarted`. If a later change lets a Moments start reach the track call, it must map to an existing value that does not reveal the origin, or send nothing; it must not add `moment`, `picker` or `card`.
 
 ### 3.3 A name clash to know about
 
@@ -58,8 +58,8 @@ Source: spec section 18 and its amendment, plus rows that mention events. "Allow
 | 2 | `ui.moments_card.impressed` and `.tapped`, `slot`: question, look_back (18, R251) | Conditionally allowed, 1.0: not sent | Allowed only for the `question` and `look_back` slots, because a slot is position and not source. `look_back` is limited to letters. At most one impression per slot per local day |
 | 3 | Any card event for a card dated by the child's birth date, a typed day, a tick or the library (18) | Not allowed | The presence of the event would disclose the date (EX-CDO-1, EX-CDO-4) |
 | 4 | `ui.moments_ask.impressed`, `ui.moments_ask_allow.tapped`, `ui.moments_ask_notnow.tapped` (18) | Conditionally allowed, 1.0: not sent. Needs a `privacy` read first | No properties. Must say nothing about Apple's answer, and no event may follow that varies with it. See flag B: R73 says no refusal counter exists, and a "not now" event is a refusal count on the wire |
-| 5 | `capture.letter.started` with `source: moment` (18, R87, O-38) | Not allowed | Founder question O-38 default is do not send; O-49 closes the same question for the picker and card values. The row in section 18 already says `moment` is not sent |
-| 6 | Closed enum for how a letter was started: picker, card, capture (D13, R284, O-49) | Not allowed | Decision O-49 is no. Replaced by two diary questions (R284) |
+| 5 | `capture.letter.started` with `source: moment` (18, R87, O-38) | Not allowed | Founder question O-38 default is do not send; the O-49 default (do not send, still open) covers the same question for the picker and card values. The row in section 18 already says `moment` is not sent |
+| 6 | Closed enum for how a letter was started: picker, card, capture (D13, R284, O-49) | Not allowed | O-49 is open and its default is do not send; this note takes the default. Replaced by two diary questions (R284) |
 | 7 | `perf.moments_first_paint.measured`, `ms_bucket`, `is_ok` (18, R251) | Conditionally allowed, 1.0: not sent | Buckets only; raw milliseconds stay on the phone; no `device_tier`. See flag C: the bucket set and where perf events live are not in the catalog today |
 | 8 | `system.error.raised` with codes `picker_unavailable`, `library_unreadable`, `fallback_used` (18, R282) | Not allowed | O-49: these stay local, no wire code, no catalog row. R251's note that "the `code` list keeps only `picker_unavailable`" contradicts section 18 and R282, which keep all three local. R282 and section 18 win (flag D) |
 | 9 | Permission result: allowed, limited, denied (O-18, P3 Q-P3-4) | Not allowed | Stays out unless the founder, analytics and counsel sign it. Not proposed |
@@ -79,7 +79,7 @@ These are the places where the spec text could be read as asking for code that s
 - Flag B, the ask events. Section 18 lists three events for our own ask control, and R73 says "no timer or counter of refusals exists". A `ui.moments_ask_notnow.tapped` event is a refusal count if it is sent. Recommend `privacy` decide whether the not-now event stays on the list at all.
 - Flag C, `perf.moments_first_paint.measured`. It is a wire event with a bucket set that does not exist yet. Until a bucket set is defined and reviewed, it is not wire-ready. A local timing marker for the SE 3 device run (spec 17, A5 markers) needs no wire code.
 - Flag D, `system.error.raised`. Section 18's table row says "Not sent", but R251 says "the `code` list keeps only `picker_unavailable`", which reads as one code on the wire. O-49 and R282 say none. Ask `product` to correct R251 to "no code on the wire".
-- Flag E, R87 (and the O-38 text). The row says the alternative (send `source: moment`) "needs the registry, the D-163 gate and the R87 ban reworded". With O-49 answered no, that alternative is closed for the picker and card values. O-38 itself (an enum for a Moments hand-off) should be closed in the same way or restated, so that nobody reads it as still open.
+- Flag E, R87 (and the O-38 text). The row says the alternative (send `source: moment`) "needs the registry, the D-163 gate and the R87 ban reworded". Under the O-49 default (do not send; O-49 is still open), that alternative stays shut for the picker and card values. O-38 itself (an enum for a Moments hand-off) should be closed in the same way or restated, so that nobody reads it as still open.
 - Flag F, section 18 lead-in. "When on, the closed allowlist is enums only" and "with the flag off ... 0 events are sent or queued" are correct and consistent with this note. The phrase "Registry rows land in `packages/analytics/src/catalog.ts` with the generated docs" is a future step, not an instruction for 1.0; no row should land while the flag stays off for production without the section 6 gates.
 - R284 and spec line 976. They agree with O-49 (no enum, two diary questions). Nothing to fix.
 
@@ -96,7 +96,7 @@ Local means in on-device storage or in memory on the phone, never in an event, l
 | Primer shown and answered flag | Spec permissions table | A local flag so the ask card does not return; no server row |
 | Decisions store (day keys, parent labels, hidden-place keys, corrections) | Spec section on data | L4, outside `scribe.db`, wiped by Turn off, Erase and sign-out. Never counted or reported |
 | Option index cache, if O-09 is signed | Spec | Local, same wipe |
-| `moment` as a local `source` value in `start-capture.ts` | R87 | Used for in-app routing only; never passed to the track call |
+| `moment` as a local `source` value in the capture source list (`start-capture.logic.ts`, added by PR 6 and PR 19 under R227; not in the code yet) | R87 | Used for in-app routing only; never passed to the track call |
 | Scan results, tap or dwell history, counts | Spec data section | "Never persisted"; do not add a local counter for these either |
 | Counter of "Not now" refusals | R73 | Must not exist, even locally |
 
@@ -130,7 +130,7 @@ Consent and lawful basis
 4. `privacy` reviews every consent change.
 
 Allowlist and registry
-5. A founder or owner decision for any item the spec leaves open: O-18 for the permission result (stays out), O-38 and O-49 for a started-from value (closed no), and a `privacy` read on the ask events (flag B).
+5. A founder or owner decision for any item the spec leaves open: O-18 for the permission result (stays out), O-38 and O-49 for a started-from value (both open; this note takes their default, do not send), and a `privacy` read on the ask events (flag B).
 6. A catalog row in `packages/analytics/src/catalog.ts` for each event, in its naming, with closed properties only (`oneOf`, bounded integers, booleans), level L2, a `SCHEMA_VERSION` bump, a registry entry, and the matching row in `docs/analytics/TRACKING_PLAN.md` (generated by `npm run plan -w @scribe/analytics`). The event is not a `FORBIDDEN_EVENT_PATTERNS` name.
 7. Schema tests for each event and property, including a negative test that a content-shaped value and any Moments canary (asset id, album, date, coordinate, place, filename) is rejected (R162). Screens and elements are registered in `ids.ts`.
 8. The registry is the only send path. No autocapture, no session replay, no cross-app tracking, no Apple tracking prompt.
@@ -149,14 +149,14 @@ Proof
 ## 9. What this PR does not do
 
 - It does not edit the allowlist, the catalog, the registry, the tracking plan, the spec or any decision entry.
-- It does not decide any open founder question. It restates O-49 (no) and the defaults of O-18 and O-38 as the spec records them.
+- It does not decide any open founder question. It takes the defaults of O-18, O-38 and O-49 as the spec records them; none of the three is decided.
 - It does not say that D-163 flips analytics on. It does not.
 
 ## 10. Follow-ups for other owners
 
 | For | Item |
 |---|---|
-| `product` | Correct R251 so the `code` list is empty on the wire (flag D); close or restate O-38 now that O-49 is no (flag E); decide whether the not-now ask event stays (flag B, with `privacy`) |
+| `product` | Correct R251 so the `code` list is empty on the wire (flag D); close or restate O-38 and O-49 together, both still open with the default do not send (flag E); decide whether the not-now ask event stays (flag B, with `privacy`) |
 | `product`, `mobile` | Align the dotted event names in section 18 with catalog naming when a row is first proposed (flag A) |
 | `privacy` | Read flags B and C and the `via` values of `screen.moments_home.viewed` |
 | `analytics engineer` | When section 8 holds, add the rows and tests in one PR; until then, nothing |
@@ -169,7 +169,7 @@ Decision: Moments v3 adds no analytics event, no property, no enum value, no wir
 
 1. The picker door, the host sheet, a pick and the library read send nothing (R167, R282). No host-sheet view event exists, so nothing varies by library access state, and no attach or photo event carries a picker-or-library source.
 2. `picker_unavailable`, `library_unreadable` and `fallback_used` stay local closed codes: no wire code and no catalog row (R282, R251 read with flag D above). `system:error_view.code` keeps its eight values.
-3. A Moments start sends nothing that says so (R83, R87, R227). `moment` is a local value of the closed source list in `start-capture.ts` only; `capture:take_start.source` gains no `moment`, `card`, `picker` or `library` value, and the track call keeps the literal `tonight` (O-38 default).
+3. A Moments start sends nothing that says so (R83, R87, R227). When R227 adds `moment` to the local capture source list (PR 6 and PR 19; it is not in the code at this head), it stays local; `capture:take_start.source` gains no `moment`, `card`, `picker` or `library` value, and the track call keeps the literal `tonight` (O-38 default).
 4. No enum for how a letter was started (picker, card, capture) is sent in the first release (R284, O-49 default). The two diary questions of R284 replace it and are read as x of n, never a percentage under 20.
 5. The only Moments events stay the two card events of R251, each with `slot` alone (R251).
 6. No entry text, transcript, audio, child name, date, place, picture identifier or count goes into analytics, logs or crash reports from any Moments path (R167; CLAUDE.md privacy rules).

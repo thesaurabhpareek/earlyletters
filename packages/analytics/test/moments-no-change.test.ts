@@ -43,7 +43,7 @@ function wireStrings(): { where: string; kind: 'name' | 'key' | 'value'; value: 
 }
 
 /** Picker and library vocabulary: a name, key or value with one of these says where a picture came from. */
-const PICTURE_SOURCE = /picker|librar|album|asset|picture|thumbnail|exif|icloud|local_?id/;
+const PICTURE_SOURCE = /picker|librar|album|asset|picture|image|media|attach|thumbnail|exif|icloud|local_?id/;
 /** A key that would carry Apple's library answer (R282: nothing may vary by access state). */
 const ACCESS_KEY = /permission|authori[sz]|photo/;
 /** Apple's Limited state has no other meaning in this product, so any enum holding it is an access-state enum. */
@@ -96,7 +96,7 @@ describe('Moments v3 adds no analytics (BL-1452, NS-53 PR 7)', () => {
     for (const w of ['book:moments_card_view.slot=look_back', 'capture:take_start.source=tonight', 'global.schema_version', 'surface_impressed']) {
       expect(all.map((s) => s.where), w).toContain(w);
     }
-    for (const n of ['book:picker_open', 'moments_library_read', 'photo_album', 'asset_id', 'picture_count', 'thumbnail_view', 'localId', 'icloud_download']) {
+    for (const n of ['book:picker_open', 'moments_library_read', 'photo_album', 'asset_id', 'picture_count', 'thumbnail_view', 'localId', 'icloud_download', 'image_id', 'media_id', 'image_count', 'attachment_count']) {
       expect(PICTURE_SOURCE.test(n.toLowerCase()), n).toBe(true);
     }
     for (const c of LOCAL_CODES) expect(LOCAL_CODE_RE.test(c), c).toBe(true);
@@ -116,5 +116,8 @@ describe('Moments v3 adds no analytics (BL-1452, NS-53 PR 7)', () => {
     const section = note.slice(at);
     for (const r of ['R83', 'R87', 'R167', 'R227', 'R251', 'R282', 'R284']) expect(section, r).toMatch(new RegExp(`\\b${r}\\b`));
     expect(section).toMatch(/no analytics event, no property, no enum value, no wire code and no catalog or registry row/);
+
+    // O-49 has no ruling on record (spec section 23 lists it with its default): the note must not say it was decided.
+    expect(note).not.toMatch(/O-49 (is|was) (no|answered|decided)|O-49 answered|answered no|closed no|O-49 \(no\)/);
   });
 });
