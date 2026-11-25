@@ -5,12 +5,16 @@
  * "Built" here means wired to a send path. The two invite templates, `coparent-invite` and `welcome-coparent`, stay
  * in this package (src/templates, generated/resend.ts) and its tests render them; this file does not touch them. It
  * proves three things:
- *  (a) no sender references either template id. Senders are every source file under supabase/functions,
- *      apps/mobile/src and scripts, excluding test folders and test files and excluding packages/emails itself. The
- *      matcher looks for the id as a quoted string ('coparent-invite', "coparent-invite" or `coparent-invite`), which
- *      is how a send names a template (renderForResend('account-deleted', ...), authEmails['new-device-sign-in']).
- *      It does not match the app's function createCoParentInvite (apps/mobile/src/lib/family/invites.ts), which makes
- *      a share link and sends no email. A planted sender below proves the matcher fails on a real send.
+ *  (a) no sender references either template. Senders are every source file under SENDER_ROOTS (the edge functions,
+ *      the app, the website, which already sends mail through Resend in apps/web/src/lib/notify, the server packages
+ *      and scripts), excluding test folders and test files and excluding packages/emails itself. The matcher finds a
+ *      template three ways: its id as a quoted string ('coparent-invite', "coparent-invite" or `coparent-invite`), which
+ *      is how a send names a template (renderForResend('account-deleted', ...), authEmails['new-device-sign-in']); its
+ *      module imported by path (.../family/coparent-invite); and its export names, case-sensitive (coparentInvite,
+ *      welcomeCoparent, CoparentInviteEmail, WelcomeCoparentEmail). It does not match the app's function
+ *      createCoParentInvite (apps/mobile/src/lib/family/invites.ts, capital P), which makes a share link and sends no
+ *      email. Planted senders below prove each way fails. An id built from parts at run time (`coparent-${kind}`)
+ *      cannot be caught by a static scan; a review has to.
  *  (b) docs/emails/CATALOG.md marks both rows "not built";
  *  (c) the invite sheet's words never say we will email the person invited.
  */
@@ -22,7 +26,7 @@ import { familyCopy } from '../../content/src/features/family.en';
 
 const REPO = join(__dirname, '..', '..', '..');
 const INVITE_TEMPLATE_IDS = ['coparent-invite', 'welcome-coparent'] as const;
-const SENDER_ROOTS = ['supabase/functions', 'apps/mobile/src', 'scripts'];
+const SENDER_ROOTS = ['supabase/functions', 'apps/mobile/src', 'apps/web/src', 'packages/api/src', 'packages/core/src', 'scripts'];
 
 /** Every source file under `rel`, skipping node_modules, test folders and test files. */
 function senderFiles(rel: string): string[] {
@@ -44,11 +48,13 @@ function senderFiles(rel: string): string[] {
   return out;
 }
 
-/** The invite template ids that `source` names as a quoted string, one entry per line that names one. */
+/** The lines of `source` that name an invite template: quoted id, module path or export name. */
 function inviteTemplateReferences(source: string): string[] {
   const id = INVITE_TEMPLATE_IDS.map((t) => t.replace('-', '\\-')).join('|');
   const quoted = new RegExp(`(['"\`])(${id})\\1`);
-  return source.split('\n').filter((line) => quoted.test(line));
+  const byPath = new RegExp(`/(${id})(\\.[a-z]+)?['"\`]`);
+  const byExport = /\b(coparentInvite|welcomeCoparent|CoparentInviteEmail|WelcomeCoparentEmail)\b/;
+  return source.split('\n').filter((line) => quoted.test(line) || byPath.test(line) || byExport.test(line));
 }
 
 type Leaf = { path: string; text: string };
@@ -75,6 +81,7 @@ describe('[FR-MSG-14] no invite email to an address a parent types: both invite 
     // Guard against scanning nothing: a real sender and the invite code must be in the set.
     expect(files.some((f) => f.endsWith(join('purge-worker', 'emails.ts')))).toBe(true);
     expect(files.some((f) => f.endsWith(join('lib', 'family', 'invites.ts')))).toBe(true);
+    expect(files.some((f) => f.endsWith(join('lib', 'notify', 'welcome-email.ts')))).toBe(true);
     const found = files.flatMap((f) => inviteTemplateReferences(readFileSync(f, 'utf8')).map((l) => `${f.slice(REPO.length + 1)}: ${l.trim()}`));
     expect(found).toEqual([]);
   });
@@ -85,8 +92,11 @@ describe('[FR-MSG-14] no invite email to an address a parent types: both invite 
       "export const invite = (v: Values) => renderForResend('coparent-invite', v);",
       'export const welcome = (v: Values) => renderForResend("welcome-coparent", v);',
       'const copy = familyEmails[`coparent-invite`];',
+      "import CoparentInviteEmail from '../../../packages/emails/src/templates/family/coparent-invite';",
+      "import Welcome from '@scribe/emails/src/templates/lifecycle/welcome-coparent.tsx';",
+      'const html = render(templates.family.coparentInvite.default(v));',
     ].join('\n');
-    expect(inviteTemplateReferences(planted)).toHaveLength(3);
+    expect(inviteTemplateReferences(planted)).toHaveLength(6);
     // The app's invite code names the function and the RPC, never a template id.
     const shareLink = readFileSync(join(REPO, 'apps/mobile/src/lib/family/invites.ts'), 'utf8');
     expect(shareLink).toContain('createCoParentInvite');
@@ -115,6 +125,20 @@ describe('[FR-MSG-14] no invite email to an address a parent types: both invite 
     expect(promises).toEqual([]);
     // The patterns catch the sentence the requirement names.
     expect(PROMISES_INVITE_EMAIL.some((re) => re.test("We'll email them a link to join."))).toBe(true);
-    expect(PROMISES_INVITE_EMAIL.some((re) => re.test('We will email them the invite.'))).toBe(true);
+    for (const planted of [
+      "We'll email them a link to join.",
+      'We will email them the invite.',
+      'We email your co-parent a link.',
+      'Type their address and email them from here.',
+      "We'll send them an email with the link.",
+      'We will send it by email.',
+    ]) {
+      const hits = PROMISES_INVITE_EMAIL.filter((re) => re.test(planted));
+      expect(hits.length, planted).toBeGreaterThan(0);
+    }
+    // Each pattern catches at least one planted line, so none can be dropped unnoticed.
+    const plantedLines = ["We'll email them.", 'We will email them.', 'We email them.', 'Email them now.', "We'll send them an email.", 'We will send them an email.'];
+    expect(PROMISES_INVITE_EMAIL).toHaveLength(plantedLines.length);
+    PROMISES_INVITE_EMAIL.forEach((re, i) => expect(re.test(plantedLines[i]), String(re)).toBe(true));
   });
 });

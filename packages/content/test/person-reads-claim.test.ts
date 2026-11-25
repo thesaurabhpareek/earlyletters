@@ -74,14 +74,26 @@ function sourceFiles(rel: string, exts: RegExp): string[] {
  * nobody reads, or an automated answer. Matched case-insensitively against each line.
  */
 const CONTRADICTS_CLAIM = [
-  /\bno-?reply@/i,
-  /\bdo not reply\b/i,
+  /\b(?:no-?reply|do-?not-?reply|donotreply)@/i,
+  /\bdo[ -]not[ -]reply\b/i,
   /\bdon['’]t reply\b/i,
-  /\bnot monitored\b/i,
+  /\b(?:not|isn['’]t|is not|aren['’]t) monitored\b/i,
   /\bunmonitored\b/i,
-  /\b(?:no one|nobody) reads\b/i,
+  /\b(?:no one|nobody) reads\b|\breplies (?:are|will be) not read\b|\breplies aren['’]t read\b/i,
   /\bautomat(?:ed|ic) (?:reply|response|answer|message)\b/i,
   /\bauto-?(?:reply|replies|responder)\b/i,
+];
+
+/** One planted line per pattern above, in the same order, so no pattern can be dropped or broken unnoticed. */
+const PLANTED_CONTRADICTIONS = [
+  'From: Early Letters <donotreply@earlyletters.com>',
+  'Please do-not-reply to this message.',
+  "Please don't reply to this email.",
+  "This inbox isn't monitored.",
+  'Sent from an unmonitored mailbox.',
+  'Replies are not read.',
+  'This is an automated message.',
+  'Our auto-responder will answer you.',
 ];
 
 function contradictingLines(text: string): string[] {
@@ -91,6 +103,7 @@ function contradictingLines(text: string): string[] {
 describe('[FR-MSG-12] "A person reads every one" is a claims row with an owner, a mailbox cadence and a reply target', () => {
   it('[FR-MSG-12] the footer still makes the claim the inventory row quotes', () => {
     expect(emailChrome.footer.transactional.some((l) => l.includes(CLAIM))).toBe(true);
+    expect(emailChrome.footer.commercial.some((l) => l.includes(CLAIM))).toBe(true);
     const row = rowWith(read(INVENTORY), CLAIM);
     expect(row, `no row in ${INVENTORY} quotes "${CLAIM}"`).not.toBeNull();
     expect(row!.Claim).toContain(CLAIM);
@@ -98,9 +111,9 @@ describe('[FR-MSG-12] "A person reads every one" is a claims row with an owner, 
 
   it('[FR-MSG-12] the row names an owner lane, the mailbox read every working day, and the catalog reply target', () => {
     const row = rowWith(read(INVENTORY), CLAIM)!;
-    // Owner: at least one agent handle from the roster, in backticks.
-    const owners = [...(row.Owner ?? '').matchAll(/`([a-z-]+)`/g)].map((m) => m[1]);
-    expect(owners.some((h) => rosterHandles().includes(h)), `owner cell: ${row.Owner}`).toBe(true);
+    // Owner: the cell opens with an agent handle from the roster, in backticks (not a handle quoted later in a citation).
+    const owner = /^`([a-z-]+)`/.exec(row.Owner ?? '')?.[1];
+    expect(owner && rosterHandles().includes(owner), `owner cell: ${row.Owner}`).toBe(true);
     // Mailbox and cadence: the support address and "at least every working day".
     const mailbox = row['Mailbox and cadence'] ?? '';
     expect(mailbox).toMatch(/hello@earlyletters\.com/);
@@ -109,7 +122,8 @@ describe('[FR-MSG-12] "A person reads every one" is a claims row with an owner, 
     const target = row['Reply target'] ?? '';
     const catalogTarget = /replies (within \d+ working days)/.exec(read(CATALOG))?.[1];
     expect(catalogTarget, 'CATALOG.md no longer states a reply target').toBeDefined();
-    expect(target).toContain(catalogTarget!);
+    // The cell opens with the target itself, and it is the catalog's figure (not the catalog quoted later in the cell).
+    expect(target.startsWith(catalogTarget!), `reply target cell: ${target}`).toBe(true);
     expect(target).toMatch(/help centre/i);
     expect(target).toMatch(/FR-SUP-04/);
     // Auto-reply: the cell exists and says there is none at v1.0.
@@ -121,10 +135,14 @@ describe('[FR-MSG-12] "A person reads every one" is a claims row with an owner, 
       ...sourceFiles('packages/content/src', /\.tsx?$/),
       ...sourceFiles('supabase/functions', /\.tsx?$/),
       ...sourceFiles('supabase/templates', /\.(html|txt|json)$/),
+      ...sourceFiles('packages/emails/src', /\.tsx?$/),
+      ...sourceFiles('apps/web/src/lib/notify', /\.tsx?$/),
     ];
     // Guard against scanning nothing: the footer source and an auth template must be in the set.
     expect(files.some((f) => f.endsWith(join('emails', 'chrome.en.ts')))).toBe(true);
     expect(files.some((f) => f.endsWith('magic_link.html'))).toBe(true);
+    expect(files.some((f) => f.endsWith('welcome-email.ts'))).toBe(true);
+    expect(files.some((f) => f.endsWith('LetterEmail.tsx'))).toBe(true);
     const found = files.flatMap((f) => contradictingLines(readFileSync(f, 'utf8')).map((l) => `${f.slice(REPO.length + 1)}: ${l.trim()}`));
     expect(found).toEqual([]);
   });
@@ -133,6 +151,8 @@ describe('[FR-MSG-12] "A person reads every one" is a claims row with an owner, 
     expect(contradictingLines('Thanks for writing. This is an automated reply; this mailbox is not monitored.')).toHaveLength(1);
     expect(contradictingLines('From: Early Letters <no-reply@earlyletters.com>')).toHaveLength(1);
     expect(contradictingLines('Please do not reply to this email.')).toHaveLength(1);
+    expect(CONTRADICTS_CLAIM).toHaveLength(PLANTED_CONTRADICTIONS.length);
+    CONTRADICTS_CLAIM.forEach((re, i) => expect(re.test(PLANTED_CONTRADICTIONS[i]), `${re} on "${PLANTED_CONTRADICTIONS[i]}"`).toBe(true));
     expect(contradictingLines('Questions? Reply to this email. A person reads every one.')).toEqual([]);
     expect(contradictingLines("Didn't sign up? Reply to this email and we'll fix it.")).toEqual([]);
   });
