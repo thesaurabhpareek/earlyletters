@@ -17,7 +17,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { inviteDestination } from '../../../apps/mobile/src/lib/family/entry.logic';
+import { INVITE_ENTRIES, inviteDestination } from '../../../apps/mobile/src/lib/family/entry.logic';
 import { parseServerFeatures } from '../../../apps/mobile/src/lib/capabilities';
 import { ASKS_FOR_MATERIAL, bodyText, parseMacros, parseSends, readMacrosFile } from './support/macros-file';
 
@@ -65,9 +65,14 @@ function isStoreBuild(p: Profile): boolean {
   return (p.env.EXPO_PUBLIC_APP_ENV ?? '').trim() === 'production';
 }
 
-/** Is a switch on? Every hosting switch so far is an `on` flag, read the way capabilities.ts reads one. */
+/** Is a switch on? Every switch so far is an `on` flag, read the way capabilities.ts reads one. */
 function on(value: string | undefined): boolean {
   return parseServerFeatures(value);
+}
+
+/** A hosting switch fails closed: anything but empty, off, 0 or false counts as on, so a `1` or `true` flag cannot slip past. */
+export function hostingSwitchOn(value: string | undefined): boolean {
+  return !/^(|off|0|false)$/i.test((value ?? '').trim());
 }
 
 /** A report-set row is complete when it names the card and fills all four cells (no TBD). */
@@ -91,7 +96,7 @@ export function reportSetFindings(profiles: Profile[], switches: typeof SWITCHES
         out.push(`${p.name}: ${key} is not classified in trust-and-safety-gate.test.ts SWITCHES (does it host content? FR-POL-03)`);
         continue;
       }
-      if (s.hosts && isStoreBuild(p) && on(p.env[key]) && !reportSet.has(s.hosts)) {
+      if (s.hosts && isStoreBuild(p) && hostingSwitchOn(p.env[key]) && !reportSet.has(s.hosts)) {
         out.push(`${p.name}: ${key} is on and ${s.hosts} has no complete row in docs/ops/runbooks/report-set.md (FR-POL-03)`);
       }
     }
@@ -110,15 +115,22 @@ export function safetyState(runbook: string | null, migrations: string[]): Safet
   return { runbookApproved, tool, toolBuilt: create !== null && migrations.some((sql) => create.test(sql)) };
 }
 
-/** FR-POL-04: what fails, empty when no store build opens the invite flow or both conditions hold. */
+/**
+ * FR-POL-04: what fails, empty when no store build opens the invite flow from any entry, or both conditions hold.
+ * The app decides each entry on its own (`app/invite/index.tsx` asks for `invite_join`, `family.tsx` for `family_tab`, the
+ * link watcher for `invite_link`, and so on), so every entry in INVITE_ENTRIES is checked, not one.
+ */
 export function safetyRemovalFindings(profiles: Profile[], destination: typeof inviteDestination, state: SafetyState): string[] {
   const out: string[] = [];
   for (const p of profiles.filter(isStoreBuild)) {
     const servers = on(p.env.EXPO_PUBLIC_SERVER_FEATURES);
-    const alpha = !isStoreBuild(p);
-    if (destination('invite_new', servers, alpha) !== 'flow') continue;
-    if (!state.runbookApproved) out.push(`${p.name}: the two-parent book opens, and safety-removal.md is not APPROVED (FR-POL-04)`);
-    if (!state.toolBuilt) out.push(`${p.name}: the two-parent book opens, and the access tool is not in supabase/migrations (FR-POL-04, BL-2103)`);
+    // A store build is never alpha (isAlphaBuild: env !== 'production'); passed explicitly so the call matches the app's.
+    const alpha = false;
+    const opening = INVITE_ENTRIES.filter((e) => destination(e, servers, alpha) === 'flow');
+    if (opening.length === 0) continue;
+    const from = opening.join(', ');
+    if (!state.runbookApproved) out.push(`${p.name}: the two-parent book opens from ${from}, and safety-removal.md is not APPROVED (FR-POL-04)`);
+    if (!state.toolBuilt) out.push(`${p.name}: the two-parent book opens from ${from}, and the access tool is not in supabase/migrations (FR-POL-04, BL-2103)`);
   }
   return out;
 }
@@ -149,16 +161,27 @@ describe('[FR-POL-02] a report of apparent child sexual abuse material gets an a
     expect(rows.map((s) => s.key)).toEqual([KEY]);
   });
 
-  it('[FR-POL-02] says never to open, forward or keep an attachment, and that the exec team takes it the same day', () => {
+  it('[FR-POL-02] says never to open, forward or delete an attachment, to leave it where it is, and that the exec team gets the kind and date the same day', () => {
     const m = parseMacros(readMacrosFile()).get(KEY)!;
     expect(m.notes.Never).toMatch(/open/);
     expect(m.notes.Never).toMatch(/forward/);
-    expect(m.notes.Never).toMatch(/keep/);
+    expect(m.notes.Never).toMatch(/delete/);
+    expect(m.notes.Never).toMatch(/Leave it where it is/);
     expect(m.notes['Same day']).toMatch(/exec team/);
+    expect(m.notes['Same day']).toMatch(/kind and the date only/);
+    expect(m.notes['Before it']).toMatch(/M6/);
   });
 
-  it('[FR-POL-02] the check fails on a planted reply that asks for a screenshot', () => {
-    expect(asks('Hi,\n\nThanks. Please forward us a screenshot so we can look.\n')).not.toEqual([]);
+  it('[FR-POL-02] the check fails on planted replies that ask for the material, a picture of it or where it is', () => {
+    for (const planted of [
+      'Please forward us a screenshot so we can look.',
+      'If you still have the images, email them to us.',
+      'You can paste the address of the page in your reply.',
+      'Could you show us the video?',
+      'Post the link here and we will look.',
+    ]) {
+      expect(asks(`Hi,\n\nThanks. ${planted}\n`), planted).not.toEqual([]);
+    }
   });
 });
 
@@ -178,6 +201,11 @@ describe('[FR-POL-03] content that reaches another person needs its report set b
     expect(reportSetFindings(withFlag, planted, reportSetCards(complete))).toEqual([]);
     const tbd = `${reportSetMd}| NS-05 Level 2 | TBD | Remove the page | hello@ | No filter |\n`;
     expect(reportSetFindings(withFlag, planted, reportSetCards(tbd))).not.toEqual([]);
+  });
+
+  it('[FR-POL-03] a hosting switch fails closed: `1` or `true` counts as on', () => {
+    expect(['on', 'ON', '1', 'true', 'yes'].every(hostingSwitchOn)).toBe(true);
+    expect(['', ' ', 'off', '0', 'false', undefined].some(hostingSwitchOn)).toBe(false);
   });
 
   it('[FR-POL-03] fails on a new switch nobody classified', () => {
@@ -210,6 +238,24 @@ describe('[FR-POL-04] the two-parent book stays out of store builds until the sa
     const findings = safetyRemovalFindings(profiles, opens, safetyState(runbook, migrations));
     expect(findings.some((f) => /not APPROVED/.test(f))).toBe(true);
     expect(findings.some((f) => /access tool/.test(f))).toBe(true);
+  });
+
+  it('[FR-POL-04] fails when only one entry opens in the store build, whichever entry it is', () => {
+    const state = safetyState(runbook, migrations);
+    for (const entry of INVITE_ENTRIES) {
+      const oneOpens: typeof inviteDestination = (e, s, a) => (e === entry && s ? 'flow' : inviteDestination(e, s, a));
+      const findings = safetyRemovalFindings(profiles, oneOpens, state);
+      expect(findings.length, entry).toBeGreaterThan(0);
+      expect(findings[0], entry).toContain(`opens from ${entry}`);
+    }
+  });
+
+  it('[FR-POL-04] passes the store build its real server switch, so a rule that opens only with servers on is caught', () => {
+    const serversOnly: typeof inviteDestination = (_e, s) => (s ? 'flow' : 'coming_soon');
+    expect(safetyRemovalFindings(profiles, serversOnly, safetyState(runbook, migrations))).not.toEqual([]);
+    const store = profiles.find(isStoreBuild)!;
+    const serversOff = [{ ...store, env: { ...store.env, EXPO_PUBLIC_SERVER_FEATURES: 'off' } }];
+    expect(safetyRemovalFindings(serversOff, serversOnly, safetyState(runbook, migrations))).toEqual([]);
   });
 
   it('[FR-POL-04] passes only when the runbook is APPROVED and its named tool is created in a migration', () => {

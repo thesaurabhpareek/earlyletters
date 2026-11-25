@@ -123,6 +123,19 @@ describe('[FR-POL-07] one neutral reply to a report that someone is under 18', (
     expect(under18Problems('Hi,\n\nThanks. We found their account and closed it.\n')).not.toEqual([]);
     expect(under18Problems('Hi,\n\nThanks. Please send us proof of age for the person.\n')).not.toEqual([]);
     expect(under18Problems('Hi,\n\nThanks. The account has been looked at.\n')).not.toEqual([]);
+    for (const planted of [
+      'We could not find an account for that address.',
+      'There is no account with that email.',
+      'An account under that address exists.',
+      'Could you tell us how old they are?',
+    ]) {
+      expect(under18Problems(`Hi,\n\nThanks. ${planted}\n`), planted).not.toEqual([]);
+    }
+  });
+
+  it('[FR-POL-07] the safety pointer goes first when the report says the child is in danger', () => {
+    expect(macro(KEY).notes['Before it']).toMatch(/danger/);
+    expect(macro(KEY).notes['Before it']).toMatch(/M6/);
   });
 
   it('[FR-POL-07] hands the report to underage-account.md', () => {

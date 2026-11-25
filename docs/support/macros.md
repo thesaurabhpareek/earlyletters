@@ -24,7 +24,7 @@ One row per send. A situation that reaches two people gives both the same key, s
 
 - Key: `policy.familyDispute`
 - Trigger: either parent writes about custody, a separation or a family dispute, or asks us to move, hand over or remove the other parent's letters or access.
-- Before it: if the message also says someone is in danger, the safety pointer (M6, FR-SUP-16) goes first, and this macro waits for another day.
+- Before it: if the message also says someone is in danger, the safety pointer (M6, FR-SUP-16) goes first, and this macro waits for another day. M6 is not written yet (`docs/support/safety-routing.md` does not exist, FR-SUP-16). Until it is, the pointer is the interim one in `data-requests-by-email.md` section 0, the safety row: local emergency services and the help the app shows by region.
 - Send to: each parent who writes, in these words and no others. Never add a line for one parent that the other would not get.
 - Then: change nothing. A request to limit someone's access goes to `docs/ops/runbooks/safety-removal.md`. Log kind `safety` or `other` (`data-requests-by-email.md` section 1).
 - Source: Terms 4.2 and 4.4.
@@ -49,7 +49,7 @@ ${brand.name}
 - If a step later touches data, it writes an `ops.audit_log` row with runbook `legal_process`, and only then.
 - Source: Terms 4.4; `data-requests-by-email.md` section 0, the row "From a lawyer, a court or the police".
 
-Log line (the request log of `data-requests-by-email.md` section 1; these fields and nothing else):
+Log line: the request log row of `data-requests-by-email.md` section 1, with its `ticket` (`DREQ-<yyyymmdd>-<n>`) and `channel` as for any row, and these values set:
 
 | Field | Value |
 |---|---|
@@ -65,6 +65,7 @@ Log line (the request log of `data-requests-by-email.md` section 1; these fields
 
 - Key: `policy.under18Report`
 - Trigger: anyone writes that an account holder or a family contributor is under 18.
+- Before it: if the report says the child is in danger or being hurt, the safety pointer (M6, FR-SUP-16) goes first, and this macro waits for another day (`underage-account.md` section 0). M6 is not written yet (`docs/support/safety-routing.md` does not exist, FR-SUP-16). Until it is, the pointer is the interim one in `data-requests-by-email.md` section 0, the safety row: local emergency services and the help the app shows by region.
 - Send to: the person who reported, the same words every time.
 - Never: ask for proof of age, an ID or a birth date; say whether an account exists; say what we did or will do to an account.
 - Then: hand it to `docs/ops/runbooks/underage-account.md`. Log kind `under_18`.
@@ -85,15 +86,17 @@ ${brand.name}
 
 - Key: `policy.abuseMaterialReport`
 - Trigger: anyone writes that they have seen, or are sending, sexual material involving a child, in the app or anywhere tied to it.
+- Before it: if the report says a child is in danger now, the safety pointer (M6, FR-SUP-16) is the first and only reply that day, and this acknowledgement waits. M6 is not written yet (`docs/support/safety-routing.md` does not exist, FR-SUP-16). Until it is, the pointer is the interim one in `data-requests-by-email.md` section 0, the safety row: local emergency services and the help the app shows by region.
 - Send to: the person who reported. An acknowledgement only.
-- Never: open, download, preview, forward, quote or keep any attachment or link. Do not reply with questions.
-- Same day: the founder takes it to the exec team, which is the counsel under D-172. The written procedure for the reporting duty in Terms 9 is not in this file (`docs/product/prd/functions/back-office.md`, `child-safety-report.md` is missing).
+- Never: open, download, preview, forward, copy, quote or delete any attachment or link. Leave it where it is. Do not reply with questions.
+- Same day: the founder takes it to the exec team, which is the counsel under D-172. The exec team gets the kind and the date only, never the email or a link. Only the founder can file a report; a Claude role cannot.
+- Open for the counsel read: whether "leave it where it is" meets the preservation duty that follows a report (18 U.S.C. 2258A(h)), and what the founder does with the mail after filing. The written procedure for the reporting duty in Terms 9 is not in this file (`docs/product/prd/functions/back-office.md`, `child-safety-report.md` is missing).
 - Source: Terms 9 ("We report apparent child sexual abuse material to the National Center for Missing and Exploited Children as US law requires").
 
 ```macro policy.abuseMaterialReport
 Hi,
 
-Thanks for telling us. We've received your report, and it's being looked at today.
+Thanks for telling us. We've received your report, and it's with the right person today.
 
 There's nothing more you need to send.
 
