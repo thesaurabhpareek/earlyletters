@@ -15,6 +15,7 @@ import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { getConfig } from 'expo/config';
 import type { ExpoConfig } from 'expo/config';
 import { brand, bundleId } from '../../../packages/brand/index';
+import { permissionCopy } from '../src/lib/permission-copy';
 import { APP_ENVS, DEFAULT_APP_ENV, E2E_PROFILE, e2eRefusal, resolveAppEnv, type AppEnv } from '../src/lib/build-env';
 
 const ROOT = path.resolve(__dirname, '..');
@@ -584,7 +585,7 @@ describe('Info.plist keys are an allowlist in every build (BL-2131, LEGAL-REQ-00
     NSBonjourServices: 'expo-dev-launcher (auto-applied with expo-dev-client); its build phase strips _expo._tcp from non-Debug builds',
     // Purpose strings: every one is also pinned in PURPOSE_STRINGS below.
     NSMicrophoneUsageDescription: 'expo-audio plugin in app.config.ts (microphonePermission, permissionCopy.microphone)',
-    NSFaceIDUsageDescription: 'expo-local-authentication plugin in app.config.ts (faceIDPermission, permissionCopy.faceId)',
+    NSFaceIDUsageDescription: 'expo-local-authentication plugin in app.config.ts (faceIDPermission, permissionCopy.faceId; text still a draft pending counsel, and LEGAL-REQ-007 names only the microphone: privacy labels doc section 5, F17 Q3)',
     NSLocalNetworkUsageDescription: 'expo-dev-launcher (auto-applied with expo-dev-client); its build phase strips the dev-launcher text from non-Debug builds',
   };
   const PURPOSE_STRINGS = ['NSFaceIDUsageDescription', 'NSLocalNetworkUsageDescription', 'NSMicrophoneUsageDescription'];
@@ -609,11 +610,26 @@ describe('Info.plist keys are an allowlist in every build (BL-2131, LEGAL-REQ-00
       const plist = (await introspectedIos(profile, extra)).infoPlist ?? {};
       const keys = Object.keys(plist).sort();
       expect(keys.length, label).toBeGreaterThan(0);
-      expect(keys.filter((k) => !(k in INFO_PLIST_ALLOWLIST)), `${label}: Info.plist keys not on the allowlist`).toEqual([]);
+      expect(keys.filter((k) => !Object.hasOwn(INFO_PLIST_ALLOWLIST, k)), `${label}: Info.plist keys not on the allowlist`).toEqual([]);
       expect(keys.filter((k) => k.endsWith('UsageDescription')), label).toEqual(PURPOSE_STRINGS);
       expect(plist.LSApplicationQueriesSchemes, label).toEqual(['tel', 'mailto']);
+      // The purpose strings are the approved copy, not a plugin default ("Allow $(PRODUCT_NAME) to use Face ID").
+      expect(plist.NSMicrophoneUsageDescription, label).toBe(permissionCopy.microphone.replace('{app}', brand.name));
+      expect(plist.NSFaceIDUsageDescription, label).toBe(permissionCopy.faceId.replace('{app}', brand.name));
+      // expo-dev-launcher's Release build phase removes NSLocalNetworkUsageDescription only while its text holds
+      // "Expo Dev Launcher", and removes only the _expo._tcp service. Any other value would reach the store build.
+      expect(String(plist.NSLocalNetworkUsageDescription), label).toContain('Expo Dev Launcher');
+      expect(plist.NSBonjourServices, label).toEqual(['_expo._tcp']);
     }, 60_000);
   }
+
+  it('every uploadable build is a Release build, so the dev-launcher strip runs', () => {
+    // The strip phase runs only when the configuration is not Debug. EAS builds Release unless a profile says otherwise.
+    for (const name of ['preview', 'testflight', 'production']) {
+      const ios = (easFile.build as Record<string, { ios?: { buildConfiguration?: string } }>)[name]?.ios ?? {};
+      expect(ios.buildConfiguration ?? 'Release', name).toBe('Release');
+    }
+  });
 });
 
 describe('.env.development', () => {
