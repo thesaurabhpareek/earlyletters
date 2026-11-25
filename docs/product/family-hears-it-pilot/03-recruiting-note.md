@@ -24,7 +24,7 @@ From the founder's invited list of TestFlight and alpha families only.
 ## 3. The note
 
 > Hi. We're trying out a small idea and would value your help.
-> If you're up for it, you'd send one of your letters from {brand.name} to a grandparent or someone else close to you, in your own message, and answer a few short questions about how it went over the next week. We wouldn't see the letter.
+> If you're up for it, you'd send one of your letters from {brand.name} to a grandparent or someone else close to you, in your own message, and answer a few short questions about how it went over the next week. We'd never receive it.
 > It takes about 15 minutes in all, spread over a week. It's fine to say no.
 > Would you like to hear more?
 

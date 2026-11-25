@@ -25,7 +25,7 @@ One row per parent. Nothing else is recorded about consent.
 |---|---|---|---|---|---|
 | P01 | W or V | Yes or No | SHA-256 of the rendered text sent | YYYY-MM-DD | Message or call |
 
-Check before each Arm V row: both voice reads are dated on or before this date (NS-03-R2).
+Check before each row: the `security-architect` read is dated on or before this date, for either arm, since both can send a picture (erratum E23, `README.md` gate 2). Before each Arm V row, also check that both voice reads are dated on or before this date (NS-03-R2).
 
 ## 3. Answers (Answers file)
 
@@ -34,7 +34,7 @@ One row per parent who said Yes. Codes only, except the two free-words columns, 
 | Column | Values | From |
 |---|---|---|
 | Code | P01 to P10 | |
-| Arm | W or V | Consent |
+| Arm | W or V (a V parent with no recording on this phone is moved to W and counted in W; see the log) | Consent |
 | Form sent | Screenshot, one-letter PDF, or none | Day 3 or day 7 |
 | Send date | YYYY-MM-DD, Pacific | Parent |
 | A1 Sent by day 3 | Sent, Not yet (no answer counts as Not yet) | Script A Q1 |
@@ -51,7 +51,7 @@ One row per parent who said Yes. Codes only, except the two free-words columns, 
 | B4 How they'd send it | Free words, names taken out | Script B Q4 |
 | B5 Another next week | Yes, No, Not sure | Script B Q5 |
 | B6 Reached | only them, someone else, not sure; and passed on against their wish: Yes, No, not known | Script B Q6 |
-| C Read without help | Yes, No, missing (missing counts as No) | Script C, relayed |
+| C Read without help | Yes, No, missing (missing counts as No; a B2 "could not play" makes this No) | Script C, relayed |
 | Relayed | Always Yes for C; marks the answer as second-hand | |
 
 Practice row, never counted: P00, the fictional Asha family, Arm W, Form sent Screenshot, A1 Sent, B1 Read Yes and Replied Yes, B2 on their own, B5 Yes, B6 only them and No, C Yes. Use it once to check the sheet's formulas, then delete it before P01's day 0.
@@ -66,7 +66,7 @@ Numbers only. These are the only figures that reach the read-out (BL-1325).
 | S, parents who sent (W, V) | | | |
 | SC-1 sent by day 3 | x of N | ceil(0.75 x N) | |
 | SC-2 recipient read (or listened) without help | x of S | ceil(0.6 x S) | |
-| Transport failures beside SC-2 (file did not arrive, could not play) | x of S | reported, not counted against SC-2 | |
+| Transport failures beside SC-2 (file did not arrive, could not play) | x of S | reported beside SC-2; does not change the SC-2 count (each recipient still counts by their Script C answer, and "could not play" is a No) | |
 | SC-3 replied or asked for another | x of S | ceil(0.5 x S) | |
 | SC-4 would send another next week | x of S | ceil(0.6 x S) | |
 | SC-5 reached someone unintended, or passed on against the parent's wish | count | 0 | |
@@ -101,6 +101,7 @@ By code and date only. One line per event.
 |---|---|---|---|
 | YYYY-MM-DD | P0n | item received, deleted on every device | 3 if not deleted |
 | YYYY-MM-DD | P0n | withdrew; notes and contact details deleted | |
+| YYYY-MM-DD | P0n | moved to W, no recording on this phone | |
 | YYYY-MM-DD | P0n | reached someone unintended | 1 |
 | YYYY-MM-DD | P0n | distress reported | 2 |
 | YYYY-MM-DD | all | stop rule fired; founder told | n |

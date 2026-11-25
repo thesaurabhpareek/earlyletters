@@ -83,7 +83,7 @@ From NS-03 section 20, plus three this draft raises. Counsel must confirm each.
 
 1. New question (number to be assigned by `legal` through `next-id`): concierge research with tester families, run by the founder by message and call.
 2. Q44: these texts for tester families.
-3. Arm V: the team instructs parents that they may send a recording that may hold a child's voice to a relative. NS-03 section 20 files this under Q45; the counsel packet's Q45 is titled "COPPA revisited for backup" (`docs/legal/COUNSEL_PACKET.md`), so please confirm where it belongs.
+3. Arm V: the team instructs parents that they may send a recording that may hold a child's voice to a relative. NS-03 section 20 files this under Q45; the counsel packet's Q45 is titled "COPPA revisited for backup" (`docs/legal/COUNSEL_PACKET.md`), so please confirm where it belongs. The same question covers both arms' pictures: a screenshot of a letter page carries the letter's picture if it has one, and erratum E23 (`docs/product/prd/18-errata-after-lock.md`) gates any picture in Arm W by Q45 and the `security-architect` read.
 4. Q22: a recipient who lives in another country. Recipients receive a message; they are not participants and the team never contacts them.
 5. Q51: retention. Notes and contact details 30 days after the read-out, or 2 working days after a withdrawal. Consent records 12 months after the read-out, kept after a withdrawal as proof of consent and withdrawal.
 6. The FTC COPPA position in the exec record rests on the parent being the user and every answer coming from an adult (NS-03 section 20, UNVERIFIED there).

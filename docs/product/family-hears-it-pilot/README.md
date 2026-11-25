@@ -26,11 +26,12 @@ Satisfies: BL-935 (C-19). Source of truth: `docs/product/prd/03-family-hears-it-
 
 These come from NS-03 sections 0, 5 and 10. The full checklist is BL-127's work (NS-03-R1 to R8); this list is here so the script is never used without it.
 
-1. Counsel has read the consent texts, the recruiting note and the instructions, and a dated yes is in the private pilot file (NS-03-R1). Due 27 Nov, the founder's step. Without it, no arm starts and every step moves by the same number of days.
-2. For Arm V only: the `security-architect` read of NS-03 sections 3, 4 and 15 and counsel's read of the voice lines are both dated on or before that parent's consent date (NS-03-R2). Without both, every parent is in Arm W.
-3. `qa` has filed a yes or no for the Asha fixture recording playing in WhatsApp on Android, Gmail on the web and Apple Mail (NS-03-R9). A client that can't play it is named in Instruction V.
-4. The success lines and the outcome table (NS-03 section 8) are copied word for word into the pilot file and hashed before the first parent's day 0 (NS-03-R6).
-5. `mobile` has answered whether a one-letter PDF can be made. This session read the export code (`apps/mobile/src/lib/export/pack.ts`, `build.logic.ts`): it makes one PDF per child's book, not per letter. So the scripts here lead with the screenshot fallback. Read, not run on a device.
+1. Counsel has read the consent texts, the recruiting note and the instructions, and a dated yes is in the private pilot file (NS-03-R1). Due 27 Nov, the founder's step. Without it, no arm starts and every step moves by the same number of days. This is the before-any-contact list (NS-03 section 0). Counsel also reads every other text in `01` to `03` before it is used (NS-03 section 7; the list is in `01-session-script.md`, first lines).
+2. For any arm that can send a picture: the `security-architect` read of NS-03 sections 3, 4 and 15 is dated on or before that parent's consent date. Both arms can send a picture, because a screenshot of a letter page carries the letter's picture if it has one. Erratum E23 (`docs/product/prd/18-errata-after-lock.md`) corrects NS-03 line 15, which exempted Arm W: Arm W (any picture) needs the security read as well as counsel's Q45 (`02-consent-texts-DRAFT-FOR-COUNSEL.md`, counsel question 3, part of gate 1). Without the security read, no arm starts.
+3. For Arm V also: counsel's read of the voice lines is dated on or before that parent's consent date (NS-03-R2). Without it, every parent is in Arm W.
+4. `qa` has filed a yes or no for the Asha fixture recording playing in WhatsApp on Android, Gmail on the web and Apple Mail (NS-03-R9). A client that can't play it is named in Instruction V.
+5. The success lines and the outcome table (NS-03 section 8) are copied word for word into the pilot file and hashed before the first parent's day 0 (NS-03-R6).
+6. `mobile` has answered whether a one-letter PDF can be made. This session read the export code (`apps/mobile/src/lib/export/pack.ts`, `build.logic.ts`): it makes one PDF per child's book, not per letter. So the scripts here lead with the screenshot fallback. Read, not run on a device.
 
 ## What is not here
 

@@ -1,8 +1,8 @@
 # Session script: the family-hears-it pilot (NS-03)
 
-Status: DRAFT, 24 Nov 2026, `user-research` (Claude role). Not for use until the gates in `README.md` are on record. Counsel reads every text a parent will see (the instructions below, the recruiting note and the consent texts) before the first contact.
+Status: DRAFT, 24 Nov 2026, `user-research` (Claude role). Not for use until the gates in `README.md` are on record. Counsel reads every text in `01` to `03` before it is used (NS-03 section 7): the recruiting note, the four eligibility checks and the replies to a no or a not-a-fit (`03`); the consent texts and the decline and withdrawal replies (`02`); and in this file the instructions, Scripts A, B and C (Script C is passed on to a recipient, who is not a participant), the close, the replies in section 4 and section 10, and the Arm V export steps. The texts that must be read before the first contact are the narrower list in `README.md` gate 1 (NS-03 section 0).
 
-Source: NS-03 sections 4 to 8 (`docs/product/prd/03-family-hears-it-pilot.md`). The question wording in Scripts A, B and C is the card's, kept as written so the answers can be counted against section 8. The instructions and the close are rendered for a parent to read, in the voice of `packages/content/WRITING-GUIDE.md`. Every change from the card's text is listed in the PR body under "Open for the exec team".
+Source: NS-03 sections 4 to 8 (`docs/product/prd/03-family-hears-it-pilot.md`). The question wording in Scripts A, B and C is the card's, kept as written so the answers can be counted against section 8, except Script B Q3 for Arm V, which asks about "the recording" instead of "your child's voice" (listed in the PR body, exec item 3). Elsewhere only the phrasing is lighter (for example "A few words is plenty" in Script A Q2); every answer option is the card's. The instructions and the close are rendered for a parent to read, in the voice of `packages/content/WRITING-GUIDE.md`. Every change from the card's text is listed in the PR body under "Open for the exec team".
 
 ## 0. Who does what
 
@@ -30,8 +30,10 @@ Send the recruiting note (`03-recruiting-note.md`) only after counsel's read is 
 ## 3. Consent and the arm
 
 1. Decide the arm before sending consent, by the card's rule (NS-03 section 5, step 4, PROPOSED for the founder and counsel):
-   - Before the day both voice reads are on record: every parent is Arm W.
+   - Before the `security-architect` read is on record: no arm starts. Both arms can send a picture, because a screenshot of a letter page carries the letter's picture if it has one, so both need that read (erratum E23 in `docs/product/prd/18-errata-after-lock.md`, which corrects NS-03 line 15; `README.md` gate 2).
+   - After the security read, before the day both voice reads are on record: every parent is Arm W.
    - On or after that day: alternate, starting with V. No later parent is moved to W because of an earlier gap.
+   - A parent who has said their recordings aren't on the phone they use now (for example a new phone while backup is off) is Arm W, and the alternation goes on unchanged with the next parent (NS-03 section 9).
 2. Send the consent text for that arm (`02-consent-texts-DRAFT-FOR-COUNSEL.md`), exactly as counsel read it. Don't add a line or explain it in other words. If the parent asks a question the text doesn't answer, answer it plainly and note the question by code, so the text can be fixed for the next round.
 3. Record in the consent file: code, arm, Yes or No, the hash of the text sent, the date, and message or call. Nothing else.
 4. "No thanks", or no reply after one gentle follow-up: send the decline reply in `02-consent-texts-DRAFT-FOR-COUNSEL.md` and stop. No second follow-up.
@@ -40,7 +42,7 @@ Send the recruiting note (`03-recruiting-note.md`) only after counsel's read is 
 
 Proposed wording. Both versions lead with the screenshot, because the app's export makes one PDF for the whole book, not one per letter, and the whole-book PDF is never sent (NS-03 section 0). If `mobile` confirms a one-letter PDF can be made, add it back as the first choice.
 
-**Instruction W (Arm W):**
+**Instruction W (Arm W, only after the security read is on record, E23):**
 
 > Thanks for saying yes. Here's all there is to it.
 > Pick one letter in {brand.name} you're happy to share. Take a screenshot of it (more than one if it's long) and send it to one person you choose, in the message app you already use with them.
@@ -64,10 +66,12 @@ If `qa`'s playback check (NS-03-R9) found a client that can't play the file, add
 
 > 1. In {brand.name}, open Settings, then Export your book, then Save or share. Save it to Files.
 > 2. In Files, tap the file you saved. It opens into a folder.
-> 3. In the letters folder, open the letter you picked. The line that starts "Recording" gives the recording's file name.
+> 3. Open the letters folder, then your child's folder, then the folder for the month the letter is from (for example 2026-11). Each letter's file is named by its date and a short code, not its title. Open the one with your letter's date. The line that starts "Recording" gives the recording's file name.
 > 4. Open the audio folder, tap that file, then tap Share and send it.
 
-A letter whose Recording line says "Not on this phone" has no recording to send. The parent picks another letter, or sends the screenshot only.
+The letter files sit at `letters/<child folder>/<YYYY-MM>/<date>_<id>.txt` (`build.logic.ts`, `letterPath`). `qa`'s dry-run checks that a parent can find the right file this way.
+
+A letter whose Recording line says "Not on this phone" has no recording to send. The parent may pick another letter that has one. If none of their letters has a recording on this phone (for example a new phone while backup is off), the parent takes part in Arm W only (NS-03 section 9): send Instruction W, log "moved to W, no recording on this phone" by code, and count them in Arm W. The alternation goes on unchanged with the next parent.
 
 **If an Arm W parent asks whether they can send the recording:** "This group sends the letter only. Thanks for asking."
 
@@ -127,8 +131,8 @@ The thank-you note after the read-out says what was decided in one or two lines,
 | A participant turns out to be under 18 | Stop contact. Delete their notes the same day | Stop rule 4: the pilot ends for everyone |
 | A parent wants to stop | "Of course. We'll delete your notes." Delete notes and contact details within 2 working days. Keep only the consent record, which shows the withdrawal (NS-03 section 6) | None |
 | A parent asks for a reward or a code | "There's no reward for this one, only our thanks." | None |
-| A recording didn't arrive | Code "file did not arrive". The parent may resend by email | None; reported as a transport failure |
-| The recipient couldn't play the file | Code "could not play" | None |
+| A recording didn't arrive | Code "file did not arrive". The parent may resend by email | None. Reported beside SC-2 as a transport failure; it does not change the SC-2 count (the recipient still counts by their Script C answer) |
+| The recipient couldn't play the file | Code "could not play". The Script C answer is No for SC-2 (NS-03 section 6) | None |
 | A parent can't make a screenshot | That parent doesn't take part. Code the reason | None |
 | A parent picks a letter about a hard time | Their choice. Don't ask why and don't note it | None |
 
