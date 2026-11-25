@@ -698,10 +698,10 @@ test("CR-149 rule 4, CODEOWNERS path: packages/core/src/verify.ts is protected t
   assert.ok(rulesFor("packages/core/src/verify.ts").includes("CODEOWNERS /packages/core/src/verify.ts"));
   assert.equal(touchesProtectedPath(["packages/core/src/verify.ts"], CODEOWNERS), true);
   // A path added to CODEOWNERS later is covered with no change to the script, including unanchored and ** patterns.
-  const later = `${CODEOWNERS}\n/apps/mobile/src/components/keepsake/ @owner\n*.pem @owner\ndocs/**/secret-*.md @owner\n`;
+  const later = `${CODEOWNERS}\n/apps/mobile/src/components/keepsake/ @owner\n*.pem @owner\ndocs/**/draft-*.md @owner\n`;
   assert.deepEqual(rulesFor("apps/mobile/src/components/keepsake/row.tsx", undefined, later), ["CODEOWNERS /apps/mobile/src/components/keepsake/"]);
   assert.deepEqual(rulesFor("apps/web/certs/a.pem", undefined, later), ["CODEOWNERS *.pem"]);
-  assert.deepEqual(rulesFor("docs/ops/deep/secret-plan.md", undefined, later), ["CODEOWNERS docs/**/secret-*.md"]);
+  assert.deepEqual(rulesFor("docs/ops/deep/draft-plan.md", undefined, later), ["CODEOWNERS docs/**/draft-*.md"]);
   assert.equal(touchesProtectedPath(["apps/mobile/src/components/keepsake/row.tsx"], CODEOWNERS), false, "not owned before the line was added");
   // The `*` catch-all line is not an entry of its own (correction 1), so an ordinary app file is not protected.
   assert.deepEqual(parseCodeowners("*  @owner\n/**  @owner\n").patterns, []);
@@ -816,4 +816,32 @@ test("CR-149 class: .txt and .mdx are docs only under docs/, and a .txt a check 
     assert.equal(classifyPr([p]), "source", p);
   }
   assert.equal(classifyPr(["docs/notes.txt", "docs/guide.mdx", "apps/web/README.md"]), "docs");
+});
+
+test("CR-149 rule 4 and CR-70 (Review B, second pass): erase, invite, deep-link and app-lock files are protected by name or folder", () => {
+  for (const p of ["apps/mobile/src/lib/erase-everything.ts", "apps/mobile/src/lib/capture/erase.ts", "apps/mobile/src/app/settings/erase.tsx",
+    "apps/mobile/src/components/settings/wipe.logic.ts", "apps/mobile/src/lib/resilience/recovery-export.ts", "packages/api/src/analytics-forget.ts",
+    "apps/mobile/src/app/+native-intent.tsx", "apps/mobile/src/lib/family/entry.logic.ts", "packages/core/src/invite.ts",
+    "apps/mobile/src/lib/family/invites.ts", "apps/mobile/src/lib/family/invite-link.logic.ts", "apps/mobile/src/lib/family/pending-invite.ts",
+    "apps/mobile/src/lib/family/device-invite.ts", "apps/mobile/src/app/invite/[code].tsx", "apps/web/src/app/j/page.tsx",
+    "apps/mobile/src/lib/app-lock/gate.ts", "apps/mobile/src/components/app-lock/Shield.tsx", "apps/mobile/src/app/settings/app-lock.tsx",
+    "docs/ops/backup/backup-role.sql", "docs/ops/well-known/security.txt",
+    "apps/mobile/src/lib/loginForm.ts", "apps/mobile/src/lib/logout.ts", "apps/web/src/lib/signupForm.ts", "apps/web/src/lib/password.ts",
+    "apps/web/src/lib/secretStore.ts", "apps/web/src/lib/credentials.ts", "apps/web/src/lib/jwt.ts", "apps/web/src/lib/crypto.ts",
+    "apps/web/src/lib/apiKey.ts", "apps/web/src/lib/privateKey.ts", "apps/mobile/src/lib/deepLink.ts", "apps/mobile/src/lib/biometricPrompt.ts",
+    "apps/mobile/src/lib/faceId.ts"]) {
+    assert.ok(rulesFor(p).includes("CR-70 path"), p);
+  }
+});
+
+test("CR-149 rule 4: a path with a non-ASCII character is unknown, so protected and source (a zero-width or full-width letter cannot dodge the name rule)", () => {
+  for (const p of ["apps/mobile/src/lib/a\u200buth.ts", "apps/mobile/src/lib/\uff41uth.ts", "apps/mobile/src/lib/S\u0130GN.ts"]) {
+    assert.ok(touchesProtectedPath([p], CODEOWNERS), JSON.stringify(p));
+    assert.equal(classifyPr([p.replace("apps/mobile/src/lib/", "docs/").replace(/\.ts$/, ".md")]), "source", JSON.stringify(p));
+  }
+});
+
+test("CR-149 rule 4: an empty or comment-only CODEOWNERS text fails closed", () => {
+  for (const text of ["", "\n\n", "# owners\n"]) assert.deepEqual(rulesFor("docs/ops/notes.md", undefined, text), ["CODEOWNERS text empty"], JSON.stringify(text));
+  assert.deepEqual(parseCodeowners("*  @owner\n").patterns, [], "a catch-all-only file still parses with no entry of its own");
 });

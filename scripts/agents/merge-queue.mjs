@@ -245,9 +245,10 @@ export const CR70_EXTRA_PATHS = [
   /(?:^|\/)claude\.md$/i, /^packages\/content\//, /^packages\/brand\//, /^packages\/analytics\//, /^docs\/analytics\//,
   /^agents\//, /^\.claude\//, /^apps\/mobile\/src\/lib\/db\//, /(?:^|\/)codeowners$/i, /^docs\/legal\//, /^apps\/web\/content\/legal\//,
   /^apps\/mobile\/src\/app\/settings\/(?:legal|privacy)\.tsx$/, /^docs\/decisions\.md$/i,
-  /^apps\/mobile\/src\/lib\/backup\//i, /^apps\/mobile\/src\/lib\/analytics\//i, /(?:^|\/)\.well-known\//i, /(?:^|\/)\.git(?:modules|attributes)$/i,
+  /^apps\/mobile\/src\/lib\/backup\//i, /^apps\/mobile\/src\/lib\/analytics\//i, /(?:^|\/)\.?well-known\//i, /^apps\/mobile\/src\/lib\/(?:app-lock|family)\//i, /^apps\/mobile\/src\/components\/app-lock\//i,
+  /^apps\/mobile\/src\/app\/invite\//i, /^apps\/web\/src\/app\/j\//i, /^docs\/ops\/backup\//i, /(?:^|\/)\.git(?:modules|attributes)$/i,
   /^docs\/ops\/proposed\/standing-merge-delegation-decision\.md$/i,
-  /auth|sign[-_]?in|sign[-_]?out|session|token|vault|account|delet|magic|otp|keychain|secure[-_]?stor|passkey|billing|payment|purchase|subscription|paywall|entitlement|iap|plus|security|supabase|privacy|terms|legal|consent/i,
+  /auth|sign[-_]?in|sign[-_]?out|sign[-_]?up|log[-_]?in|log[-_]?out|session|token|vault|account|delet|erase|wipe|purge|forget|recover|restore|export|backup|invite|native-intent|deep[-_]?link|app[-_]?lock|biometric|face[-_]?id|password|secret|cred|jwt|crypt|key|magic|otp|keychain|secure[-_]?stor|passkey|billing|payment|purchase|subscription|paywall|entitlement|iap|plus|security|supabase|privacy|terms|legal|consent/i,
 ];
 /** Lockfiles of any package manager, anywhere in the tree (CR-149 rule 4 says "no lockfile", not only the root one). */
 export const LOCKFILE_RE = /(?:^|\/)(?:package-lock\.json|npm-shrinkwrap\.json|yarn\.lock|pnpm-lock\.ya?ml|bun\.lockb?|deno\.lock|podfile\.lock|gemfile\.lock|cargo\.lock|poetry\.lock|composer\.lock|gradle\.lockfile)$/i;
@@ -269,9 +270,11 @@ const CATCH_ALL = new Set(["*", "**", "/*", "/**"]);
 export function parseCodeowners(text) {
   if (typeof text !== "string") return { patterns: [], error: "CODEOWNERS text missing" };
   const patterns = [];
+  let entries = 0;
   for (const raw of text.replace(/\r/g, "").split("\n")) {
     const line = raw.trim();
     if (!line || line.startsWith("#")) continue;
+    entries += 1;
     const pattern = line.split(/\s+/)[0];
     if (CATCH_ALL.has(pattern)) continue;
     if (/[![\]\\]/.test(pattern)) return { patterns: [], error: `CODEOWNERS pattern not supported: ${clean(pattern)}` };
@@ -283,11 +286,14 @@ export function parseCodeowners(text) {
       .replace(/^\u0000\//, "(?:.*/)?").replace(/\/\u0000$/, "/.*").replace(/\/\u0000\//g, "/(?:.*/)?").replace(/\u0000/g, ".*");
     patterns.push({ pattern, re: new RegExp(`^${anchored ? "" : "(?:.*/)?"}${glob}${dirOnly ? "/.+" : "(?:/.*)?"}$`, "i") });
   }
+  // An empty file (or only comments) is a read gone wrong, not a repo with no owners: fail closed.
+  if (entries === 0) return { patterns: [], error: "CODEOWNERS text empty" };
   return { patterns, error: null };
 }
 
-/** A path we can match safely: relative, forward slashes, no `.` or `..` segment, no control character. Else unknown. */
-const readablePath = (p) => typeof p === "string" && p.length > 0 && !p.startsWith("/") && !p.includes("\\") && !/[\u0000-\u001f\u007f]/.test(p)
+/** A path we can match safely: relative, forward slashes, no `.` or `..` segment, printable ASCII only (a zero-width or
+ * full-width character could slip past the name rule). Else unknown, so protected and source. */
+const readablePath = (p) => typeof p === "string" && p.length > 0 && !p.startsWith("/") && !p.includes("\\") && /^[\x20-\x7e]+$/.test(p)
   && p.split("/").every((s) => s && s !== "." && s !== "..");
 const anyRe = (res, p) => res.some((re) => re.test(p) || re.test(p.toLowerCase()));
 
