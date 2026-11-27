@@ -230,7 +230,38 @@ test('[BL-1882] "ask Saurabh to take a look" and its forms fail; talking about a
     assert.ok(asksIn(t).includes('ask-founder-to-look'), t);
     assert.equal(evaluate({ body: t }).ok, false, t);
   }
-  for (const t of ['Saurabh took a look at the layout earlier', 'Ask Saurabh about lunch', 'The founder looks at the weekly report', 'ask Karma to take a look', 'Needs the founder to confirm that reading']) assert.equal(evaluate({ body: t }).ok, true, t);
+  for (const t of ['Saurabh took a look at the layout earlier', 'Ask Saurabh about lunch', 'The founder looks at the weekly report', 'ask Karma to take a look']) assert.equal(evaluate({ body: t }).ok, true, t);
+});
+test('[BL-2224, CR-226] "Needs the founder to confirm that reading" now fails (ask-founder-to with confirm)', () => {
+  const t = 'Needs the founder to confirm that reading';
+  assert.ok(asksIn(t).includes('ask-founder-to'), t);
+  assert.equal(evaluate({ body: t }).ok, false, t);
+  assert.equal(evaluate({ diff: diffOf('docs/x.md', `+${t}`) }).ok, false, t);
+});
+test('[BL-2224, CR-226] ask-founder-to: confirm, confirming, verify and verifying are asks', () => {
+  for (const t of ['OPEN-17 asks the founder to confirm.', 'This step needs Saurabh to verify the EAS values', 'We are asking the founder to confirming it', 'requires the founder to verifying the dates']) {
+    assert.ok(asksIn(t).includes('ask-founder-to'), t);
+    assert.equal(evaluate({ body: t }).ok, false, t);
+    assert.equal(evaluate({ title: `docs(x): ${t}` }).ok, false, t);
+    assert.equal(evaluate({ diff: diffOf('docs/x.md', `+${t}`) }).ok, false, t);
+  }
+});
+test('[BL-2224, CR-226] ask-him-to: "the founder ... ask him to confirm" and "ask him to verify ... Saurabh" are asks', () => {
+  for (const t of ['The release text is the founder\'s, so ask him to confirm the date', 'Ask him to verify the build before Saurabh leaves', 'The founder is back Monday; asking him to confirming it then', 'Saurabh holds the console: asked him to verifying the values']) {
+    assert.ok(asksIn(t).includes('ask-him-to'), t);
+    assert.ok(!asksIn(t).includes('ask-founder-to'), t);
+    assert.equal(evaluate({ body: t }).ok, false, t);
+    assert.equal(evaluate({ diff: diffOf('docs/x.md', `+${t}`) }).ok, false, t);
+  }
+});
+test('[BL-2224, CR-226] founder-must is unchanged: a standing "founder to confirm" flag still passes', () => {
+  for (const t of ['Open: founder to confirm the pack wording (PRD flag)', 'Status: the founder must verify the console by hand', 'Saurabh should confirm the release name']) {
+    assert.deepEqual(asksIn(t), [], t);
+    assert.equal(evaluate({ body: t }).ok, true, t);
+    assert.equal(evaluate({ diff: diffOf('docs/x.md', `+${t}`) }).ok, true, t);
+  }
+  // The verbs did not join the other patterns: "please confirm ... the founder" and "have the founder verify" stay quiet.
+  for (const t of ['please confirm the dates with the founder', 'can the founder verify this', 'for founder confirmation']) assert.equal(evaluate({ body: t }).ok, true, t);
 });
 test('[BL-1882] exact exemption: the BL-1851 phrase in backticks on a line that names BL-1851 passes', () => {
   assert.equal(evaluate({ body: 'BL-1851 fails a PR that contains `founder review needed`' }).ok, true);
