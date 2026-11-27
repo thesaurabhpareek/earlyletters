@@ -28,7 +28,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { envFileProblemsAt } from './env-file-guard.mjs';
 import { createReport, expo as expoIn, extraPermissions, forbiddenNativeProblems, packManifestPublished, parseJsonOut, plistUsageProblems, privacyManifestDeclared, purposeStringProblem, REQUIRED_PLIST_USAGE, secretKind, signingKeys } from './preflight-lib.mjs';
-import { STORE_FLAGS, storeFlagMessage, storeFlagProblems, storeProfiles } from '../../../scripts/release/store-flags.mjs';
+import { G6_CARD_FLAGS, STORE_FLAGS, storeFlagMessage, storeFlagProblems, storeProfiles } from '../../../scripts/release/store-flags.mjs';
 
 const MOBILE = join(dirname(fileURLToPath(import.meta.url)), '..');
 const REPO = join(MOBILE, '..', '..');
@@ -230,7 +230,9 @@ if (prof) {
   const names = STORE_FLAGS.map((f) => f.env).join(', ');
   if (problems.length) for (const p of problems) fail(storeFlagMessage(p));
   else pass(`${names} off in every store profile (${storeProfiles(eas).join(', ')}; BL-958)`);
-  unverified(`the EAS "${prof?.environment ?? PROFILE}" environment on expo.dev holds no ${names} (this script cannot read it; a value there turns the feature on in this build). Check the names with \`npx eas-cli@24.10.0 env:list --environment ${prof?.environment ?? PROFILE}\` in apps/mobile.`);
+  // BL-2273: the hosted environment can turn on any card or phase flag of gate G6, not only the table's rows. When a
+  // card's Rollout turns one on in preview and testflight (allowedOn), that PR rewords this line for those flags.
+  unverified(`the EAS "${prof?.environment ?? PROFILE}" environment on expo.dev holds none of ${G6_CARD_FLAGS.join(', ')} set to anything but off (this script cannot read it; a value there turns the feature on in this build). Check the names with \`npx eas-cli@24.10.0 env:list --environment ${prof?.environment ?? PROFILE}\` in apps/mobile (it needs an Expo sign-in).`);
 }
 check(Boolean(eas.submit?.[PROFILE]), `eas.json has a "${PROFILE}" submit profile`, `eas.json has no "${PROFILE}" submit profile (\`eas submit --profile ${PROFILE}\` needs it).`);
 {

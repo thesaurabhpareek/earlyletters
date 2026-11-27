@@ -1414,7 +1414,7 @@ features/export.en.ts#exportCopy.readme.63,app screen,in-app,packages/content/sr
 features/export.en.ts#exportCopy.readme.64,app screen,in-app,packages/content/src/features/export.en.ts,en,and keep a second copy somewhere else.,38,,,,,,content,live on develop,content
 features/export.en.ts#exportCopy.readme.66,app screen,in-app,packages/content/src/features/export.en.ts,en,"Format {format}, version {version}. Questions: {email}",54,,,,,,content,live on develop,content
 features/export.en.ts#exportCopy.readmePhotos.3,app screen,in-app,packages/content/src/features/export.en.ts,en,"photos/     The pictures you added to letters, one folder per letter (JPEG).",76,,,,,,content,live on develop,content
-features/export.en.ts#exportCopy.readmePhotos.4,app screen,in-app,packages/content/src/features/export.en.ts,en,"            Each is the copy kept in the app, with no location or other details in it.",86,,,,,,content,live on develop,content
+features/export.en.ts#exportCopy.readmePhotos.4,app screen,in-app,packages/content/src/features/export.en.ts,en,"            Each is the copy kept in the app, with no location, date or camera details in it.",93,,,,,,content,live on develop,content
 features/export.en.ts#exportCopy.readmePhotos.5,app screen,in-app,packages/content/src/features/export.en.ts,en,            data/entries.json says which letter each picture belongs to.,72,,,,,,content,live on develop,content
 features/family.en.ts#familyCopy.members.you,app screen,in-app,packages/content/src/features/family.en.ts,en,You,3,,,,,,content,live on develop,content
 features/family.en.ts#familyCopy.members.coParent,app screen,in-app,packages/content/src/features/family.en.ts,en,Co-parent,9,,,,,,content,live on develop,content

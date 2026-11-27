@@ -11,6 +11,11 @@
  * under apps/mobile/src loads it. It logs with `console.log`, never `console.error`, so the fixture's own
  * console-error check does not trip on the diagnostic itself. A message is cut at 160 characters.
  *
+ * "unable to open database file" is the SQLite text when the OPFS pool has no file left for a journal (the cause
+ * BL-464 found; web-preview/sqlite-pool-capacity.js). It names no stored value. The pool VFS's own "cannot create file" is
+ * not watched: it is thrown and caught inside the sqlite worker (wa-sqlite AccessHandlePoolVFS jOpen, which returns
+ * SQLITE_CANTOPEN), and this script runs in the page only, so that text never reaches an `Error` built here.
+ *
  * It must stay self-contained (Playwright serialises the function into the page) and takes no arguments.
  */
 export const BOOT_DIAG_PREFIX = '[e2e-boot] ';
@@ -21,7 +26,7 @@ export function installBootDiagnostics(): void {
     Error: ErrorConstructor;
     addEventListener?: (type: string, fn: (e: never) => void) => void;
   };
-  const watch = /sync operation|database is locked|\blocked\b|sqlite|no such (table|column)|disk i\/o|\bbusy\b|access handle|NoModificationAllowed|QuotaExceeded|opfs|out of memory|wasm/i;
+  const watch = /sync operation|unable to open database|database is locked|\blocked\b|sqlite|no such (table|column)|disk i\/o|\bbusy\b|access handle|NoModificationAllowed|QuotaExceeded|opfs|out of memory|wasm/i;
   const say = (kind: string, m: unknown) => console.log(`${prefix}${kind}: ${String(m).slice(0, 160)}`);
   const Native = g.Error;
   g.Error = new Proxy(Native, {
