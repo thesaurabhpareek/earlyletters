@@ -12,7 +12,7 @@
  * the PR that builds one must change this file. Fictional family "Asha" only.
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { join, posix, relative } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { brand } from '@scribe/brand';
 import { verifyEdits } from '@scribe/core';
@@ -39,6 +39,7 @@ import { registerReminderCategory, REMINDER_CATEGORY } from '../src/lib/reminder
 import { REMINDER_SOURCE, routeForReminder } from '../src/lib/reminders/payload';
 import { consumeListenStart, resetListenStart } from '../src/lib/resilience/start-intent';
 import { cleanSpoken } from '../src/lib/transcription-queue/clean';
+import { importSpecifiers } from './helpers/import-reader';
 import { fixture, insertBook } from './helpers/store-fixture';
 
 const ROOT = join(__dirname, '..');
@@ -58,12 +59,46 @@ type Files = Map<string, string>;
 const files: Files = new Map(walk(SRC).map((p) => [relative(SRC, p).split('\\').join('/'), code(readFileSync(p, 'utf8'))]));
 const src = (f: string) => files.get(f) ?? '';
 
-/** Home's module: the one screen that starts a letter, and its components (NAV-TAB-ROLES P1). */
+/** Home's module: the one screen that starts a letter, and its components (NAV-TAB-ROLES P1). A folder is not a screen, so
+ * renderBreaches also holds which screens draw a component that starts. */
 const inHome = (f: string) => f === 'app/(tabs)/index.tsx' || f.startsWith('components/tonight/');
 const ONE_ENTRY = 'lib/capture/start-capture.ts';
 /** The capture screens move among themselves with router.replace: a mode change, not a start (NS-35-R2). */
 const CAPTURE_FLOW = ['app/listen.tsx', 'app/write.tsx', 'app/review.tsx'];
-const CAPTURE_ROUTE = /['"`]\/(listen|write)['"`]/;
+/**
+ * A start route as a literal: a string or template that opens with /listen or /write (also ./ or ../, or right after a
+ * template's `${...}`), followed by its end, a path, a query or a hash. So '/listen?promptKey=x', `/write?draftId=${id}`
+ * and '/Listen/' count, and '/listening' or '/writer' do not.
+ */
+const START_ROUTE = /(?:['"`]|\})\.{0,2}\/(listen|write)(?=['"`/?#]|\$\{)/i;
+/** The same for every capture screen Review included (read-together is playback only, and starts nothing). */
+const CAPTURE_LITERAL = /(?:['"`]|\})\.{0,2}\/(listen|write|review)(?=['"`/?#]|\$\{)/gi;
+type CaptureScreen = 'listen' | 'write' | 'review';
+/**
+ * NS-35-R1: the closed list of files that may hold each capture route as a literal, anywhere in the file (a router call,
+ * a constant, a route map). Any other file that names one is a breach, whatever it does with it. Each entry says why.
+ */
+const CAPTURE_LITERAL_FILES: Record<CaptureScreen, string[]> = {
+  listen: [
+    ONE_ENTRY, // the one entry's own plan type
+    'lib/capture/start-capture.logic.ts', // the one entry's plan: Speak and photo open Listen
+    'app/review.tsx', // Record again: a replace inside the capture flow (startBreaches holds the verb)
+    'lib/resilience/not-found.logic.ts', // the list a link from outside is turned away from
+  ],
+  write: [
+    'lib/capture/start-capture.logic.ts', // the one entry's plan: Type opens Write
+    'components/tonight/draft-card.logic.ts', // Home's draft card resumes a typed draft (renderBreaches holds who draws it)
+    'app/listen.tsx', // Type instead: a replace inside the capture flow
+    'app/review.tsx', // Type or edit the words: a replace inside the capture flow
+  ],
+  review: [
+    'components/tonight/draft-card.logic.ts', // Home's draft card resumes a spoken draft
+    'app/listen.tsx', // a finished take goes on to Review (replace)
+    'app/write.tsx', // a typed draft goes on to Review (replace)
+    'app/letter/[id].tsx', // the words that arrived later, opened on the words (NS-19-R1 pins that case)
+    'lib/resilience/not-found.logic.ts', // the list a link from outside is turned away from
+  ],
+};
 
 /** The text inside the bracket that opens at `from`, up to its match. */
 function balanced(text: string, from: number, open: string, close: string): string {
@@ -95,7 +130,7 @@ function letterPageBreaches(fs: Files): string[] {
   for (const [f, t] of fs) {
     if (!onLetterPage(f)) continue;
     for (const name of ['startCapture', 'beginTake', 'armListenStart', 'useAudioRecorder']) if (new RegExp(`\\b${name}\\b`).test(t)) out.push(`${f} uses ${name}`);
-    if (CAPTURE_ROUTE.test(t)) out.push(`${f} names a capture route`);
+    if (START_ROUTE.test(t)) out.push(`${f} names a capture route`);
   }
   return out;
 }
@@ -109,10 +144,57 @@ function startBreaches(fs: Files): string[] {
     for (const m of t.matchAll(/\brouter\.(push|replace|navigate)\(|\bhref=\{|\bhref="/g)) {
       const verb = m[1] ?? 'href';
       const arg = m[0].startsWith('href="') ? t.slice(m.index + 6, t.indexOf('"', m.index + 6)) : balanced(t, m.index + m[0].length - 1, m[0].endsWith('{') ? '{' : '(', m[0].endsWith('{') ? '}' : ')');
-      if (!CAPTURE_ROUTE.test(`'${arg}'`) && !CAPTURE_ROUTE.test(arg)) continue;
+      if (!START_ROUTE.test(`'${arg}'`) && !START_ROUTE.test(arg)) continue;
       if (verb === 'replace' && CAPTURE_FLOW.includes(f)) continue;
       out.push(`${f} ${verb === 'href' ? 'links to' : `router.${verb} opens`} a capture route`);
     }
+  }
+  return out;
+}
+
+/** NS-35-R1: every capture route literal in every file, against the closed list above. */
+function literalBreaches(fs: Files): string[] {
+  const out: string[] = [];
+  for (const [f, t] of fs) {
+    const named = new Set([...t.matchAll(CAPTURE_LITERAL)].map((m) => m[1].toLowerCase() as CaptureScreen));
+    for (const r of named) if (!CAPTURE_LITERAL_FILES[r].includes(f)) out.push(`${f} names /${r}`);
+  }
+  return out;
+}
+
+/** Value imports between the files in the map (`@/` is src; type-only imports are erased at build and are no edge). */
+function importers(fs: Files): Map<string, Set<string>> {
+  const by = new Map<string, Set<string>>();
+  const exts = ['', ...['.ts', '.tsx'].flatMap((e) => ['', '.ios', '.android', '.native', '.web'].flatMap((p) => [p + e, `/index${p}${e}`]))];
+  for (const [f, t] of fs) {
+    for (const spec of importSpecifiers(t)) {
+      const base = spec.startsWith('@/') ? spec.slice(2) : spec.startsWith('.') ? posix.normalize(posix.join(posix.dirname(f), spec)) : null;
+      if (base === null) continue;
+      for (const e of exts) if (fs.has(base + e)) (by.get(base + e) ?? by.set(base + e, new Set()).get(base + e)!).add(f);
+    }
+  }
+  return by;
+}
+
+/**
+ * NS-35-R1 by screen, not by folder: a file that starts a letter (it imports or calls startCapture, or a router call or
+ * link in it opens /listen or /write) may be drawn by Home alone. The screens that draw a file are the files under app/
+ * that reach it through imports, itself included. The capture flow's own replaces are held by startBreaches.
+ */
+function renderBreaches(fs: Files): string[] {
+  const by = importers(fs);
+  const opensStart = (t: string) =>
+    [...t.matchAll(/\brouter\.(push|replace|navigate)\(|\bhref=\{|\bhref="/g)].some((m) =>
+      START_ROUTE.test(m[0].startsWith('href="') ? `'${t.slice(m.index + 6, t.indexOf('"', m.index + 6))}'` : balanced(t, m.index + m[0].length - 1, m[0].endsWith('{') ? '{' : '(', m[0].endsWith('{') ? '}' : ')')),
+    );
+  const out: string[] = [];
+  for (const [f, t] of fs) {
+    if (f === ONE_ENTRY || CAPTURE_FLOW.includes(f)) continue;
+    const starts = by.get(ONE_ENTRY)?.has(f) || /(?<!function )\bstartCapture\(/.test(t) || opensStart(t);
+    if (!starts) continue;
+    const seen = new Set([f]);
+    for (const x of seen) for (const i of by.get(x) ?? []) seen.add(i);
+    for (const screen of [...seen].filter((x) => x.startsWith('app/') && x !== 'app/(tabs)/index.tsx').sort()) out.push(`${screen} draws ${f}, which starts a letter`);
   }
   return out;
 }
@@ -267,6 +349,20 @@ describe('[NS-35-R1] only Home starts', () => {
     expect(src('app/(tabs)/index.tsx')).toMatch(/startCapture\(\{ source: 'speak'/);
   });
 
+  it('[NS-35-R1] a capture route is named only in its closed list of files: a query, a template or a constant elsewhere is a breach', () => {
+    expect(literalBreaches(files)).toEqual([]);
+    // Every file on the list still names its route, so the list cannot carry a stale entry that would let a new file in.
+    for (const [r, fs] of Object.entries(CAPTURE_LITERAL_FILES)) {
+      for (const f of fs) expect([...src(f).matchAll(CAPTURE_LITERAL)].some((m) => m[1].toLowerCase() === r), `${f} names /${r}`).toBe(true);
+    }
+  });
+
+  it('[NS-35-R1] only Home draws a starter: a file that calls or imports startCapture, or opens /listen or /write, is reached from no other screen', () => {
+    expect(renderBreaches(files)).toEqual([]);
+    // The scan sees Home's real start, so a Home-only starter is what passes.
+    expect(importers(files).get(ONE_ENTRY)).toEqual(new Set(['app/(tabs)/index.tsx']));
+  });
+
   it('[NS-35-R1] the doorway sources in the closed list start nothing until their handlers are built', () => {
     for (const source of CAPTURE_DOORWAYS) expect(planCapture({ source })).toEqual({ kind: 'reserved', source });
   });
@@ -409,6 +505,49 @@ describe('each scanner fails on a planted breach', () => {
   it('[NS-35-R1] fixture: the Book calling startCapture, or a settings link to /write, is caught', () => {
     expect(startBreaches(plant('app/(tabs)/book.tsx', `${src('app/(tabs)/book.tsx')}\nstartCapture({ source: 'speak' });`))).toEqual(['app/(tabs)/book.tsx calls startCapture']);
     expect(startBreaches(plant('app/settings/x.tsx', '<Link href="/write" />'))).toEqual(['app/settings/x.tsx links to a capture route']);
+  });
+
+  it('[NS-35-R1] fixture: a capture route with a query string, in a template literal, or held in a constant is caught', () => {
+    const book = src('app/(tabs)/book.tsx');
+    const query = plant('app/(tabs)/book.tsx', `${book}\nexport const x = () => router.push('/listen?promptKey=first-smile');`);
+    expect(startBreaches(query)).toEqual(['app/(tabs)/book.tsx router.push opens a capture route']);
+    expect(literalBreaches(query)).toEqual(['app/(tabs)/book.tsx names /listen']);
+    expect(renderBreaches(query)).toEqual(['app/(tabs)/book.tsx draws app/(tabs)/book.tsx, which starts a letter']);
+    const family = plant('app/family.tsx', `${src('app/family.tsx')}\nconst go = (k: string) => router.push(\`/listen?promptKey=\${k}\`);`);
+    expect(startBreaches(family)).toEqual(['app/family.tsx router.push opens a capture route']);
+    expect(literalBreaches(family)).toEqual(['app/family.tsx names /listen']);
+    const letter = plant('app/letter/[id].tsx', `${src('app/letter/[id].tsx')}\nconst more = () => router.push('/write?draftId=1');`);
+    expect(letterPageBreaches(letter)).toEqual(['app/letter/[id].tsx names a capture route']);
+    expect(literalBreaches(letter)).toEqual(['app/letter/[id].tsx names /write']);
+    const constant = plant('lib/quick/quick-start.ts', "const QUICK_ROUTE = '/write';\nexport const quick = () => router.navigate(QUICK_ROUTE);");
+    expect(literalBreaches(constant)).toEqual(['lib/quick/quick-start.ts names /write']);
+    // A route map held as data, or a template built on a prefix, is the same breach.
+    expect(literalBreaches(plant('lib/quick/routes.ts', "export const ROUTES = { speak: { pathname: '/Listen/' } };"))).toEqual(['lib/quick/routes.ts names /listen']);
+    expect(literalBreaches(plant('lib/quick/link.ts', 'export const to = (p: string) => `${p}/review?draftId=d1`;'))).toEqual(['lib/quick/link.ts names /review']);
+    // Not a route: other words that start the same way stay clear.
+    expect(literalBreaches(plant('lib/quick/words.ts', "export const a = ['/listening', '/writer', 'listen', '/reviews'];"))).toEqual([]);
+  });
+
+  it('[NS-35-R1] fixture: a Home component that starts a letter, drawn from the Book, is caught by who draws it, not by its folder', () => {
+    const chip = "import { startCapture } from '@/lib/capture/start-capture';\nexport const SpeakChip = () => <Chip onPress={() => startCapture({ source: 'speak' })} />;";
+    const drawnBy = (screen: string) => plant(screen, `import { SpeakChip } from '@/components/tonight/speak-chip';\n${src(screen)}`);
+    const fromBook = new Map([...drawnBy('app/(tabs)/book.tsx'), ['components/tonight/speak-chip.tsx', code(chip)]]);
+    expect(renderBreaches(fromBook)).toEqual(['app/(tabs)/book.tsx draws components/tonight/speak-chip.tsx, which starts a letter']);
+    // The same chip drawn by Home alone passes: the rule is the screen, and Home may start.
+    expect(renderBreaches(new Map([...drawnBy('app/(tabs)/index.tsx'), ['components/tonight/speak-chip.tsx', code(chip)]]))).toEqual([]);
+    // Through a second module, with the import renamed, or by pushing Listen itself: still the Book drawing a start.
+    const wrapped = new Map([
+      ...plant('app/(tabs)/book.tsx', `import { Footer } from '../../components/book/footer';\n${src('app/(tabs)/book.tsx')}`),
+      ['components/book/footer.tsx', code("import { SpeakChip } from '../tonight/speak-chip';\nexport const Footer = () => <SpeakChip />;")],
+      ['components/tonight/speak-chip.tsx', code("import { startCapture as begin } from '@/lib/capture/start-capture';\nexport const SpeakChip = () => <Chip onPress={() => begin({ source: 'speak' })} />;")],
+    ]);
+    expect(renderBreaches(wrapped)).toEqual(['app/(tabs)/book.tsx draws components/tonight/speak-chip.tsx, which starts a letter']);
+    const pushes = new Map([...drawnBy('app/(tabs)/book.tsx'), ['components/tonight/speak-chip.tsx', code("export const SpeakChip = () => <Chip onPress={() => router.push('/listen')} />;")]]);
+    expect(renderBreaches(pushes)).toEqual(['app/(tabs)/book.tsx draws components/tonight/speak-chip.tsx, which starts a letter']);
+    // An aliased import in a screen is a start too, though no call is named startCapture.
+    expect(renderBreaches(plant('app/family.tsx', `import { startCapture as begin } from '@/lib/capture/start-capture';\n${src('app/family.tsx')}`))).toEqual(['app/family.tsx draws app/family.tsx, which starts a letter']);
+    // A type-only import is erased at build and starts nothing.
+    expect(renderBreaches(plant('app/family.tsx', `import type { CaptureStarted } from '@/lib/capture/start-capture';\n${src('app/family.tsx')}`))).toEqual([]);
   });
 
   it('[NS-35-R3] fixture: a notification tap handler that starts a capture is caught', () => {
