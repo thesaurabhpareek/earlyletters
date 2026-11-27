@@ -21,7 +21,9 @@
 --      CHECK's name, SQLSTATE 23514, no value, no DETAIL, so a refused label is never echoed in a log or an answer.
 --   3. entries_family_rules (the content trigger, last body 20261015030000 section 2b): first_mark and first_label join both
 --      tuples, so a change of either needs current content consent (SCCON), as an edit of the words does. Insert was already
---      gated whole.
+--      gated whole. A contributor's (relative's) new or changed first_label on a letter a parent already added sends it back
+--      for a parent's yes (approval pending, out of the book), exactly as new final_text does; a mark alone does not, as a new
+--      date or kind does not (review of #2135, CCO-32).
 --   4. entries_guard_immutable (last body 20261016000000): a tombstoned letter's mark and label cannot be changed by a client
 --      (SCTMB), as its words cannot. Without this the content trigger returns early for a tombstoned row and the consent gate
 --      of point 3 had a way round it. Restore (restore_entry, definer) is not a client write and is untouched; the mark and
@@ -107,7 +109,8 @@ begin
 end;
 $$;
 
--- --- 3. the content trigger (body as in 20261015030000 section 2b; first_mark and first_label join both tuples) ---------------
+-- --- 3. the content trigger (body as in 20261015030000 section 2b; first_mark and first_label join both tuples, and a contributor's
+--    new or changed first_label sends an approved letter back for a parent's yes, as new final_text does) ---------------
 create or replace function public.entries_family_rules()
 returns trigger language plpgsql set search_path = pg_catalog, public, pg_temp as $$
 declare
@@ -170,7 +173,8 @@ begin
       v_prev := old.approval;
       v_send := case when new.in_book is distinct from old.in_book then new.in_book
                      else old.approval <> 'not_needed' end;
-      if v_prev = 'added' and new.final_text is distinct from old.final_text
+      -- BL-2143: a first's label is the relative's own words in the book too, so a new or changed label needs the yes again.
+      if v_prev = 'added' and (new.final_text, new.first_label) is distinct from (old.final_text, old.first_label)
          and not public.my_auto_add_in(new.child_id) then
         v_prev := 'not_needed';                   -- new words need a parent's yes again
       end if;

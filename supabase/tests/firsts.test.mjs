@@ -42,6 +42,20 @@ const rowOf = (r, id) => (r.books ?? []).flatMap((b) => b.rows ?? []).find((x) =
 const graphemes = (s) => [...new Intl.Segmenter('hi', { granularity: 'grapheme' }).segment(s)].length;
 const codePoints = (s) => [...s].length;
 
+// --- A relative's label is new words: an added letter goes back for a parent's yes (review of #2135) ------------------------
+const apr = async (id) => (await sys(`select approval, in_book from entries where id = $1`, [id])).rows[0];
+const LRel = await letter(N);                         // the relative's own letter, sent to the book
+await as(A, `select public.review_family_letter($1, 'added')`, [LRel]);
+const nAddedOk = (await apr(LRel)).approval === 'added';
+await mark(N, LRel, null);                             // a mark alone, no words
+const afterMark = await apr(LRel);
+await mark(N, LRel, 'Asha said ball');                 // new words in the book
+const afterLabel = await apr(LRel);
+check('[BL-2143] fixture: a parent added the relative\'s letter', nAddedOk);
+check('[BL-2143] a relative\'s mark alone keeps the parent\'s yes (as a new date does)', afterMark.approval === 'added' && afterMark.in_book === true);
+check('[BL-2143] a relative\'s new label sends the added letter back for a parent\'s yes (pending, out of the book)',
+  afterLabel.approval === 'pending' && afterLabel.in_book === false);
+
 // --- The columns, and nothing filled by the machine -------------------------------------------------------------------------
 const LB = await letter(A);                          // in the book: the other parent may read it
 check('[NS-06-A1] a new letter is not a first and has no label (nothing is set for the parent)',
