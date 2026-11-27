@@ -52,7 +52,7 @@ Version V is version W with one paragraph added after the second.
 
 > Of course. We will delete your notes within 2 working days. Nothing changes in the app.
 
-**A question the text does not answer:** answer it plainly in a sentence or two, note the question by participant code (not the answer's words), and bring it to counsel before the next round.
+**A question the text does not answer:** answer it plainly in a sentence or two, and note the question by participant code (not the answer's words) in the Answers file (`04-answer-sheet.md` section 3, Consent questions), where the Answers clocks apply. Only the question's wording, with no code, goes on to the list for counsel and the next round.
 
 ## 4. Changes from the card's text (NS-03 section 15), and why
 
@@ -72,10 +72,11 @@ Version V is version W with one paragraph added after the second.
 
 ## 5. What is recorded, and what never is
 
-Unchanged from NS-03 section 15.
+Unchanged from NS-03 section 15, except the third line, which says what else the Consent file holds.
 
 - **Records:** participant code, arm, Yes or No, the consent text hash, the date, and the method (message or call). In the founder's private pilot store only. Never in the app, the repo, a Claude session or a Project doc. Deleted 12 months after the read-out (ruling D4).
 - **Never:** a letter, recording, picture, child's name, recipient's name or contact, a screenshot, a location, a device identifier, or anything said by a child; any payment or reward tied to the answers; any request to forward anything to the team.
+- **Also in the Consent file, by code and date only:** the line that shows a withdrawal or an under-18 finding, and the dated deletion notes (`04-answer-sheet.md` section 5a). Every other event line is kept in the Answers file, on the notes' clocks.
 - **Decline and withdraw:** No thanks ends contact with no follow-up. Withdrawal any time by message; notes deleted within 2 working days. Neither changes anything in the app, the book or the allowance.
 
 ## 6. Questions for counsel
@@ -89,7 +90,7 @@ From NS-03 section 20, plus three this draft raises. Counsel must confirm each.
    - Q45(d), Arm V: the team instructs parents that they may send a recording that may hold a child's voice to a relative. Are the voice lines of consent version V and Instruction V enough, including the residuals (the relative's messaging provider keeps a copy, and a forward cannot be undone; change 11)?
    - Q44(c), the pilot consent in both versions, each with its own hash: does it say what a study run by message needs, when nothing from the study reaches the app or our servers?
 4. Q22: a recipient who lives in another country. Recipients receive a message; they are not participants and the team never contacts them.
-5. Q51: retention. Every clock runs from the read-out, which the consent calls "the day we count everyone's answers" (change 7). Notes, the code-to-person key and contact details 30 days after the read-out, or that parent's within 2 working days of a withdrawal. Consent records 12 months after the read-out, kept after a withdrawal as proof of consent and withdrawal. Once the key is deleted, a consent record links to a code only: is that still proof of consent for a person, or should a minimal key be kept with the consent record for 12 months? For a participant found to be under 18, the kit deletes notes, key row and contact details the same day and keeps the code-only consent row: is that right?
+5. Q51: retention. Every clock runs from the read-out, which the consent calls "the day we count everyone's answers" (change 7). Notes, the code-to-person key and contact details 30 days after the read-out, or that parent's within 2 working days of a withdrawal. Consent records 12 months after the read-out, kept after a withdrawal as proof of consent and withdrawal. Once the key is deleted, a consent record links to a code only: is that still proof of consent for a person, or should a minimal key be kept with the consent record for 12 months? For a participant found to be under 18, the kit deletes notes, key row and contact details the same day and keeps the code-only consent row: is that right? On a withdrawal the kit first adds that parent's lines to the Counts file as numbers only, with no code, so N stays the same (`04-answer-sheet.md` section 4), and deletes the Counts file 90 days after the read-out (ruling D5): is that consistent with "we delete your notes"?
 6. The FTC COPPA position in the exec record rests on the parent being the user and every answer coming from an adult (NS-03 section 20, UNVERIFIED there).
 7. Endorsement: no code or reward before the read-out; any later code carries the disclosure line.
 8. New: is "We never receive it" accurate and enough, given that a signed-in parent's letters are also kept on our servers for sync (change 2)?

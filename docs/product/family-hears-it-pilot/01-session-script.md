@@ -2,7 +2,7 @@
 
 Status: DRAFT, 24 Nov 2026, `user-research` (Claude role). Not for use until the gates in `README.md` are on record. Counsel reads every text in `01` to `03` before it is used (NS-03 section 7): the recruiting note, the four eligibility checks and the replies to a no or a not-a-fit (`03`); the consent texts and the decline and withdrawal replies (`02`); and in this file the holding note after a Yes, the instructions, Scripts A, B and C, the day-7 note for a parent who did not send (Script C is passed on to a recipient, who is not a participant), the close, the replies in section 4 and section 10, and the Arm V export steps. The texts that must be read before the first contact are the narrower list in `README.md` gate 1 (NS-03 section 0).
 
-Source: NS-03 sections 4 to 8 (`docs/product/prd/03-family-hears-it-pilot.md`). The question wording in Scripts A, B and C is the card's, kept as written so the answers can be counted against section 8, except Script B Q3 for Arm V, which asks about "the recording" instead of "your child's voice" (listed in the PR body, exec item 3). Elsewhere only the phrasing is lighter (for example "A few words is plenty" in Script A Q2); every answer option is the card's. The instructions and the close are rendered for a parent to read, in the voice of `packages/content/WRITING-GUIDE.md`. Every change from the card's text is listed in the PR body under "Open for the exec team".
+Source: NS-03 sections 4 to 8 (`docs/product/prd/03-family-hears-it-pilot.md`). The question wording in Scripts A, B and C is the card's, kept as written so the answers can be counted against section 8, except Script B Q3 for Arm V, which asks about "the recording" instead of "your child's voice" (listed in the PR body, exec item 3), and Script A, which adds "If yes, which day?" to Q1 and one closing line inviting a later "sent" and the day, so the send date is known for SC-1 and for day 7 (exec item 25). Neither adds an answer option. Elsewhere only the phrasing is lighter (for example "A few words is plenty" in Script A Q2); every answer option is the card's. The instructions and the close are rendered for a parent to read, in the voice of `packages/content/WRITING-GUIDE.md`. Every change from the card's text is listed in the PR body under "Open for the exec team".
 
 ## 0. Who does what
 
@@ -19,7 +19,7 @@ Say these to yourself before each message or call.
 3. Never name a feature that doesn't exist. No "share button", no "link", no "family listening". Never hint that something is coming.
 4. No price, no Plus, no offer, no gift, no code before the read-out (NS-03-R7). A thank-you message only.
 5. No "you should", no counts, no pressure. If a parent hasn't sent by day 3, that's an answer, not a problem to fix.
-6. Days follow `README.md`, "Days and clocks, said once". Day 0 is the day the parent gets the instruction. Script A goes on day 3 from day 0, sent or not. Script B and C go on day 7 from the parent's own send date. The send cap is the last day of the 5-working-day send window. Calendar days in Pacific time, wherever the recipient lives. No contact on a US federal public holiday: a check-in that falls on one goes the next working day.
+6. Days follow `README.md`, "Days and clocks, said once". Day 0 is the day the parent gets the instruction. Script A goes on day 3 from day 0, sent or not. SC-1 is coded from the send date the parent gives, not from the day the answer arrives. Script B and C go on day 7 from the parent's own send date. The send cap is the last day of the 5-working-day send window. Calendar days in Pacific time, wherever the recipient lives. No contact on a US federal public holiday: a check-in that falls on one goes the next working day.
 7. A parent who'd rather talk than read gets the same words by voice call. Don't record the call. Type the answers into the sheet straight after, under the same note rules (section 9).
 8. A parent who prefers another language may be spoken to in it by the founder. The notes are written in English. Nobody on the team translates a letter.
 
@@ -34,7 +34,7 @@ Send the recruiting note (`03-recruiting-note.md`) only after counsel's read is 
    - After the security read, before the day both voice reads are on record: every parent is Arm W.
    - On or after that day: alternate, starting with V. No later parent is moved to W because of an earlier gap.
    - A parent who has said their recordings aren't on the phone they use now (for example a new phone while backup is off) is Arm W, and the alternation goes on unchanged with the next parent (NS-03 section 9).
-2. Send the consent text for that arm (`02-consent-texts-DRAFT-FOR-COUNSEL.md`), exactly as counsel read it. Don't add a line or explain it in other words. If the parent asks a question the text doesn't answer, answer it plainly and note the question by code, so the text can be fixed for the next round.
+2. Send the consent text for that arm (`02-consent-texts-DRAFT-FOR-COUNSEL.md`), exactly as counsel read it. Don't add a line or explain it in other words. If the parent asks a question the text doesn't answer, answer it plainly and note the question by code in the Answers file (`04-answer-sheet.md` section 3, Consent questions), so the text can be fixed for the next round. Only the question's wording, with no code, goes on to the list for counsel and the next round.
 3. Record in the consent file: code, arm, Yes or No, the hash of the text sent, the date, and message or call. Nothing else.
 4. "No thanks", or no reply after one gentle follow-up: send the decline reply in `02-consent-texts-DRAFT-FOR-COUNSEL.md` and stop. No second follow-up.
 
@@ -86,7 +86,7 @@ The two lines on the export (send only the recording; keep the export on this ph
 
 Where these come from: the Export screen's button is "Export everything", and "Save or share" shows only once the export is ready (`apps/mobile/src/app/settings/export.tsx`; `packages/content/src/strings.en.ts` `settings.export`; `packages/content/src/features/export.en.ts` `screen`). The letter files sit at `letters/<child folder>/<YYYY-MM>/<date>_<id>.txt`, where `<date>` is `YYYY-MM` for a month-only letter and `<id>` is the full entry id, a UUIDv7 (`apps/mobile/src/lib/export/build.logic.ts`, `letterPath`). A recording is `audio/<entry id>.m4a` or `audio/<entry id>.aac` (`audioPath`); the rename line follows the recommendation in security section 3.5. `qa`'s dry-run checks that a parent can find the right file this way.
 
-A letter whose Recording line says "Not on this phone" has no recording to send. The parent may pick another letter that has one. If none of their letters has a recording on this phone (for example a new phone while backup is off), the parent takes part in Arm W only (NS-03 section 9): send Instruction W, log "moved to W, no recording on this phone" by code, and count them in Arm W. The alternation goes on unchanged with the next parent.
+A letter whose Recording line says "Not on this phone", or whose file has no Recording line at all (a spoken letter saved with "Keep recordings" off; `strings.en.ts` `keepLabel`), has no recording to send. The parent may pick another letter that has one. If none of their letters has a recording on this phone (for example a new phone while backup is off), the parent takes part in Arm W only (NS-03 section 9): send Instruction W, log "moved to W, no recording on this phone" by code in the Answers file's event log, and count them in Arm W. The alternation goes on unchanged with the next parent.
 
 **If an Arm W parent asks whether they can send the recording:** "This group sends the letter only. Thanks for asking."
 
@@ -95,11 +95,14 @@ A letter whose Recording line says "Not on this phone" has no recording to send.
 On day 3 counted from day 0, to every parent, whether they have sent or not. By message, or the same words on a call.
 
 > Hi, it's day 3. Three quick questions, and you can skip any of them.
-> 1. Did you send it? Yes, or not yet.
+> 1. Did you send it? Yes, or not yet. If yes, which day?
 > 2. Did anything get in the way? A few words is plenty.
 > 3. Is there anything you'd rather we didn't ask? If so, we'll drop that question.
+> If you send it later, a quick "sent" and the day is all we need.
 
-Code Q1 as Sent or Not yet, and note the send date if the parent gives it. SC-1 counts Sent from this answer: it means sent by day 3 counted from day 0. No answer by the end of day 3 is coded Not yet. A send on day 4 or later, up to the cap, is still a send for S and gets Script B and C on its own day 7, but it stays Not yet for SC-1. For Not yet, code Q2 as "did not get to it" or "did not want to", from the parent's own words; if it's unclear, code "did not get to it" and mark it unclear.
+Write down the send date from Q1, or from a later "sent", in the Send date column. Code A1 (SC-1) from the send date, not from the day the answer arrives: Sent if the send date is on or before day 3 counted from day 0, otherwise Not yet. So a parent who sent on day 1 and answered on day 4 is Sent, and a check-in moved a day by a holiday changes no code. A parent who says Yes or "sent" but skips the day takes the day their answer reached us as the send date. A parent who has given no send date by the cut-off (the end of the day their day-7 note for a parent who did not send is due, section 6) is coded Not yet and Send date "none by the cap": no answer counts as not sent (NS-03 section 8). A send on day 4 or later, up to the cap, is still a send for S and gets Script B and C on its own day 7, but it stays Not yet for SC-1.
+
+For every parent coded Not yet, code Q2 (A2) as "did not get to it", "did not want to" or "unclear", from the parent's own words. Use "unclear" when the words fit neither, when Q2 was skipped, and for a parent who never answered Script A. "Unclear" never counts as "did not get to it". The main reason (outcome row 3, NS-03 section 8) is the A2 code held by more Not yet parents than either other code; a tie means no main reason (`04-answer-sheet.md` section 4).
 
 ## 6. Day 7: Script B to the parent
 
@@ -113,11 +116,11 @@ On day 7 counted from the parent's own send date.
 > 5. Would you send another one next week? Yes, no, or not sure.
 > 6. Did it reach only the person you meant? And did they pass it on to anyone else, that you know of?
 
-**A parent who has not sent by the cap** gets no Script B or C. On day 7 counted from day 0, or the first working day after the cap if that is later, send only this, then nothing more until the thank-you note after the read-out:
+**A parent who has not sent by the cap** gets no Script B or C. On day 7 counted from day 0, or the first working day after the cap if that is later, send only this, then nothing more until the thank-you note after the read-out. Check first that no "sent" has come in; a send date that arrives by the end of that day (the cut-off) still counts, and that parent gets Script B and C on their own day 7, or the next working day if that day has passed:
 
 > Hi, it's day 7. The test week is over, so there's nothing more to do or send. Thank you for taking part. We'll delete your notes if you ask, any time.
 
-Code them Not yet for SC-1 and Send date "none by the cap". They count in N, not in S. A send after the cap is not counted in S and gets no Script B or C; log it by code as "sent after the cap".
+Code them Not yet for SC-1 and Send date "none by the cap". They count in N, not in S. A send after the cap is not counted in S and gets no Script B or C; log it by code as "sent after the cap". A send on or before the cap that the parent first reports after the cut-off is not counted in S either and gets no Script B or C; log it by code as "send reported after the cut-off". Both go in the Answers file's event log (`04-answer-sheet.md` section 5b).
 
 Coding is in `04-answer-sheet.md`. For Q3 and Q4, write the parent's own words about how it went, with every name taken out. Don't suggest an answer to Q4 and don't name a feature.
 
@@ -148,15 +151,15 @@ The thank-you note after the read-out says what was decided in one or two lines,
 
 | What happens | What to do now | Stop rule |
 |---|---|---|
-| A parent sends a letter, recording, picture, screenshot or child's name to the team | Look only far enough to see what it is. Delete it from the thread on every device the founder holds. Log by code: "item received, deleted", with the date. Carry on with the questions | Stop rule 3 if it can't be deleted |
+| A parent sends a letter, recording, picture, screenshot or child's name to the team | Look only far enough to see what it is. The same day, delete it from the thread on every device the founder holds. Log by code in the Answers file's event log: "item received, deleted", with the date. Carry on with the questions | Stop rule 3 if it can't be deleted |
 | A parent says it reached someone they didn't mean, or was passed on against their wish | Thank them, ask nothing more about who. Tell the founder the same day | Stop rule 1: the pilot ends for everyone |
 | A parent or a recipient (as relayed) is upset by the test | Stop asking. Thank them. Offer to delete their notes. Tell the founder the same day | Stop rule 2: the pilot ends for everyone |
-| A participant turns out to be under 18 | Stop contact. The same day, delete their notes, their key row and their contact details (the pilot thread). Keep their consent row, which then holds a code only, and log by code: "under 18; notes, key row and contact details deleted" | Stop rule 4: the pilot ends for everyone |
-| A parent wants to stop | "Of course. We'll delete your notes." Within 2 working days, delete their notes, their key row and their contact details (the card deletes the key "with the raw notes", NS-03 section 14). Keep only the consent record, which shows the withdrawal (NS-03 section 6) | None |
+| A participant turns out to be under 18 | Stop contact. The same day, delete their notes and event lines, their key row and their contact details (the pilot messages in the founder's thread with them, from the recruiting note on). Keep their consent row, which then holds a code only, and log by code in the Consent file: "under 18; notes, event lines, key row and contact details deleted" | Stop rule 4: the pilot ends for everyone |
+| A parent wants to stop | "Of course. We'll delete your notes." First add that parent's lines to the Counts file as numbers only, with no code (`04-answer-sheet.md` section 4). Then, within 2 working days, delete their notes and event lines, their key row and their contact details (the pilot messages in the founder's thread with them; the card deletes the key "with the raw notes", NS-03 section 14). Keep only the consent record, which shows the withdrawal (NS-03 section 6), and log the deletion in the Consent file | None |
 | A parent asks for a reward or a code | "There's no reward for this one, only our thanks." | None |
 | A recording didn't arrive | Code "file did not arrive". The parent may resend by email | None. Reported beside SC-2 as a transport failure; it does not change the SC-2 count (the recipient still counts by their Script C answer) |
 | The recipient couldn't play the file | Code "could not play". The Script C answer is No for SC-2 (NS-03 section 6) | None |
-| A parent can't make a screenshot | That parent doesn't take part. Code the reason | None |
+| A parent can't make a screenshot | That parent doesn't take part (NS-03 section 6). Code the reason in the Answers file (`04-answer-sheet.md` section 3, Took part), never in more detail than the code. They leave N and S and are reported beside N (`04` section 4) | None |
 | A parent picks a letter about a hard time | Their choice. Don't ask why and don't note it | None |
 
 When a stop rule fires: no more questions to anyone, the same day. The founder decides what comes next, and the read-out records STOP.
