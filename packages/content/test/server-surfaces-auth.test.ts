@@ -128,7 +128,7 @@ const RETIRED = ['code.sentTo', 'consent.age.title', 'consent.age.help'];
 /** BL-451 (the sign-out wait's follow-ups, after #359): words for "Stay signed in" and a wait that ended early. */
 const BL_451: Record<string, string> = {
   'account.staySignedIn': 'Stay signed in',
-  'account.signOutEarly': 'Your newest letters are kept on this phone. They are sent the next time you sign in to this account.',
+  'account.signOutEarly': "Your newest letters are kept on this phone. They're sent once you sign in to this account and Sync is on.",
 };
 
 /**

@@ -56,7 +56,7 @@ Today the sheet is a native alert (`settings/account.tsx:191-198`); DESIGN.md mo
 | `auth.account.signOutWaiting` | EXISTING | Your newest letters are still on their way. This phone signs out once they are sent. | C-S02 `.waiting` | announced | NS-08-R15; NS-09-R12 |
 | `auth.account.signOutNow` | PROPOSED | Sign out now | C-S02 `.waiting`, quiet button (no key on `develop` for this label) | VC "Sign out now" / hint "Your newest letters wait on this phone and are sent the next time you sign in." | NS-09-R12 |
 | `auth.account.signOutOthersOffline` | PROPOSED | Needs a connection. | C-S02 `.offline`, footer under the disabled Sign out other devices | read with the row | DESIGN C-S02 |
-| `auth.account.signOutEarly` | EXISTING | Your newest letters are kept on this phone. They are sent the next time you sign in to this account. | C-S02 `.signedout` after an early end | announced | NS-09-R12 |
+| `auth.account.signOutEarly` | EXISTING | Your newest letters are kept on this phone. They're sent once you sign in to this account and Sync is on. | C-S02 `.signedout` after an early end | announced | NS-09-R12 |
 | `auth.account.signOutOthers` / `signOutOthersHelp` / `signOutOthersDone` | EXISTING | Sign out other devices / Other phones signed in to this account will need to sign in again. / Other devices are signed out. | C-S02 | - | glossary LNG-14 |
 
 Today's `signOutBody` ("Your letters stay on this phone. Sign in again any time.") drops "Sign in again any time." The full message reads, photos on: "Your letters and recordings stay on this phone. So do the pictures you added. Anyone who can open the app here can read them. Use Erase everything to remove them."
