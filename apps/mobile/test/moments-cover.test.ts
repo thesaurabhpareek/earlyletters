@@ -12,8 +12,8 @@
  *   layer mounts `PrivacyCover`, and no file but the root layout mounts `AppLockLayer`, which it does once.
  * - PC-T6: the drawn cover holds no text and one spoken label, the app name, in the light and dark themes, each with
  *   and without Increase Contrast.
- * - PC-T8: the rule's source holds only a closed list of words and strings and one `(` (its own parameter list), so
- *   no call can be added without this test changing.
+ * - PC-T8: the rule's source is ASCII and holds only a closed list of words and strings, one `(` (its own parameter
+ *   list) and no `/` outside comments and strings, so no call can be added without this test changing.
  *
  * Not proved here: the pixels iOS captures for the switcher, and whether the cover hides Apple's picker view; those
  * are the device rows D-15 (the tab body, gap G-12 in docs/security/MEDIA_THREAT_MODEL.md), D-20 and DM-09 (the
@@ -105,9 +105,9 @@ vi.mock('@/lib/a11y', () => ({
     // A different palette for each scheme and Increase Contrast setting, as the real paletteFor(scheme, highContrast).
     c: {
       'light/false': { bg: '#fff', text: '#000' },
-      'light/true': { bg: '#ffffff', text: '#000000' },
+      'light/true': { bg: '#fefefe', text: '#010101' },
       'dark/false': { bg: '#000', text: '#fff' },
-      'dark/true': { bg: '#000000', text: '#ffffff' },
+      'dark/true': { bg: '#020202', text: '#fdfdfd' },
     }[`${env.theme.scheme}/${env.theme.highContrast}`],
     scheme: env.theme.scheme,
     highContrast: env.theme.highContrast,
@@ -319,10 +319,14 @@ describe('[NS-53-G01] PC-T8 and the boundary with App lock', () => {
     expect(src).not.toMatch(/\bimport\s*\(|\brequire\s*\(|setSetting|getSetting/); // no dynamic import or store call either
     // A closed list of every word and string the code may hold (comments removed), so a multi-line import, `fetch?.(`,
     // `XMLHttpRequest`, `navigator.sendBeacon` or `console['log']` cannot get in without this list changing in the
-    // same PR. No template literal or backslash escape either. The code holds one `(`, the function's own parameter
+    // same PR. No template literal, backslash escape, regex literal or non-ASCII character either (checked above). The code holds one `(`, the function's own parameter
     // list, so no call can be added even with words already on the list, and `from` once, so a second module
     // reference over several lines fails too.
     expect(code).not.toMatch(/[`\\]/);
+    expect(src).not.toMatch(/[^\x00-\x7F]/); // ASCII only, so no word escapes the word reader below
+    // No `/` outside comments and strings: no regex literal (whose `//` the comment pass would read as a comment) and
+    // no division, so the comment pass and the language read the same code.
+    expect(code.replace(/'[^'\n]*'|"[^"\n]*"/g, ' ')).not.toMatch(/\//);
     const strings = [...code.matchAll(/'([^'\n]*)'|"([^"\n]*)"/g)].map((m) => m[1] ?? m[2]);
     expect([...new Set(strings)].sort()).toEqual(['../app-lock/machine', 'active', 'background', 'inactive', 'moments', 'none', 'other']);
     const words = code.replace(/'[^'\n]*'|"[^"\n]*"/g, ' ').match(/[A-Za-z_$][\w$]*/g) ?? [];
