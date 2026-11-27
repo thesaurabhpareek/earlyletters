@@ -1613,6 +1613,16 @@ Challenge record for CR-215 to CR-224 (24 Nov, afternoon): self-challenged only 
 - Way back: a new entry that restores CR-66's first bullet as it stood and marks the three reversals open again.
 - Revisit when: counsel answers the library questions (Q-PM-1, Q-PM-7, Q-PM-9 and the X2 reads), or an agent cites spec 26 against card 27. Karma
 
+### CR-231 BL-938 scope: the Book header end menu is in, Find's slot is not (27 Nov 2026, Karma via stream 9)
+- Question: BL-938 says "nothing is added" but satisfies NS-22-R3, which needs Quiet and Hide within 2 taps of the Book. Is the end menu in scope, and how far does the row reach?
+- Tier and type: T1; clear.
+- Options considered: build R1, R2 and R4 only and leave R3 to a new row; build the end menu as B-S02 draws it, with every PROPOSED word; build the end menu with only the words that already exist plus the menu's own name.
+- Ruling: the end menu is in, built the third way. "Nothing is added" in the row means no new destination, as the PRD's Not in scope says. The menu reuses `children.quiet.label`, `offLabel`, `quietedToast`, `offToast` and `saveFailed`, and `children.settings.hideLabel` and `hideBody` with Me's confirm. Hide shows only with two or more books, as in Me. The only new key is `book.menu.label` "More for this book" and its hint, both PROPOSED. Out: Find's slot (BL-1558 inserts it before Go to a month), the AX3 fold (the PRD says "may"), the hidden read-only route (gap E-05), the rename of "Months", and `quiet.help` (the BL-985 hold).
+- Why: the row's own Satisfies line beats its scope line; B-S01 and B-S02 are already drawn (`docs/design/e2e/B-book-and-reading/DESIGN.md` B-S01, B-S02); built words keep the founder's word list to one line. The one-page delta is `docs/design/specs/NS-22-BOOK-HEADER-DELTA-27nov.md`, the first commit of the same PR, with the design lens as Review B.
+- Door: two-way.
+- Way back: revert the PR.
+- Revisit when: R5 fails on a device at AX5, or BL-1558 lands. Karma
+
 ### CR-232 BL-2032: "no name kept" on Apple sign-in is part of NS-54-R2, not a row of its own; BL-477 is recorded as CISO-4 (27 Nov 2026, Karma under CR-176, recorded by stream 7)
 - Verdict: RULED for BL-2032 (the CPO, Claude role, owns the card reading; the CPrivO, Claude role, who owns minimisation under COUNCIL section 4, agrees). NOT A QUESTION for BL-477, already ruled as CISO-4. Founder-only: no. Signed: Karma.
 - Question: BL-2032 asks whether the second test in `apps/mobile/test/auth-apple-fp9.test.ts` ("keeps no name even if Apple sends one, and drops a name an older build left") needs its own NS-54 row, or maps to one that exists.
