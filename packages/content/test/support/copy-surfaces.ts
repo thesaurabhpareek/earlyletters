@@ -430,8 +430,9 @@ export const SURFACES: readonly Surface[] = [
       ONLY_YOU,
       // `notConfigured` is the kill path's own sentence. `what.onThisPhone` ("On this phone, your letters stay. ...") says it in a
       // word order the pattern does not match; it is a recorded decision, not a slip: it is the one line on this page that tells
-      // the person what happens to the letters on her phone (critics' pass S4, counsel's relay list).
-      { ...STAYS_ON_PHONE, allowed: ['notConfigured', 'what.onThisPhone'] },
+      // the person what happens to the letters on her phone (critics' pass S4, counsel's relay list). `what.onThisPhoneNoErase`
+      // is CPrivO-56's fallback for a build whose shelf shows no Erase now; it ends "they stay on this phone" by ruling.
+      { ...STAYS_ON_PHONE, allowed: ['notConfigured', 'what.onThisPhone', 'what.onThisPhoneNoErase'] },
       { name: 'a receipt', re: /\breceipt\b|\bwe sent\b/i },
       { name: 'the app named in words, not through brand', re: new RegExp(brand.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) },
     ],

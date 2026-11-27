@@ -16,10 +16,13 @@ import { makeJpeg } from './photos-helpers';
 
 const PHOTO_PATH = 'photos/e2/m-asha-0001.jpg';
 
-async function pack(snapshot: ExportSnapshot, files: Record<string, Uint8Array> = ASHA_FILES) {
+async function pack(snapshot: ExportSnapshot, files: Record<string, Uint8Array> = ASHA_FILES, reads: string[] = []) {
   const chunks: Uint8Array[] = [];
   const result = await packExport(snapshot, {
-    readFile: async (uri) => files[uri] ?? Promise.reject(new Error('missing')),
+    readFile: async (uri) => {
+      reads.push(uri);
+      return files[uri] ?? Promise.reject(new Error('missing'));
+    },
     sha256: async (d) => sha256Hex(d),
     renderPdf: async () => new TextEncoder().encode('%PDF-1.4\n%%EOF\n'),
     sink: { write: (c) => chunks.push(c.slice()) },
@@ -52,6 +55,19 @@ function expectHeldBack(out: Awaited<ReturnType<typeof pack>>) {
   expect(out.manifest.counts.photos).toBe(0);
   expect(out.result.photosHeldBack).toEqual(['e2']);
   expect(strFromU8(out.files['index.html'])).not.toContain('<figure>');
+  // The README describes photos/ only when a picture is in it.
+  expect(strFromU8(out.files['README.txt'])).not.toContain('PICTURES');
+}
+
+/** A second picture, on e3, beside the Asha one on e2. */
+const SECOND_URI = 'file:///support/photos/m-asha-0002.jpg';
+const SECOND = makeJpeg({ icc: true, seed: 5 });
+function withSecondPicture() {
+  const snapshot = ashaSnapshot();
+  const e2 = snapshot.entries.find((e) => e.id === 'e2')!;
+  const e3 = snapshot.entries.find((e) => e.id === 'e3')!;
+  e3.photo = { ...e2.photo!, mediaId: 'm-asha-0002', uri: SECOND_URI, sha256: sha256Hex(SECOND), bytes: SECOND.length };
+  return { snapshot, files: { ...ASHA_FILES, [SECOND_URI]: SECOND } };
 }
 
 describe('[BL-933] export 1.7.0 carries letters\' pictures', () => {
@@ -116,6 +132,42 @@ describe('[BL-933] export 1.7.0 carries letters\' pictures', () => {
     const b = await pack(ashaSnapshot(), rest);
     expect(b.e2.photo).toBeNull();
     expect(Object.keys(b.files).some((f) => f.startsWith('photos/'))).toBe(false);
+    expect(strFromU8(b.files['README.txt'])).not.toContain('PICTURES');
+  });
+
+  it('[NS-01-R6] holds back a stored copy with any bytes after the end marker, even plain text', async () => {
+    const trailer = new TextEncoder().encode('lat 51.5007 lon -0.1246');
+    const tailed = new Uint8Array([...ASHA_PHOTO, ...trailer]);
+    expect(carriesMetadata(tailed)).toBe(true);
+    expect(carriesMetadata(ASHA_PHOTO)).toBe(false);
+    const { snapshot, files } = withStoredCopy(tailed);
+    expectHeldBack(await pack(snapshot, files));
+  });
+
+  it('writes each passing picture at its own path, the first one kept from the README check included', async () => {
+    const { snapshot, files } = withSecondPicture();
+    const out = await pack(snapshot, files);
+    expect(out.result.photosHeldBack).toEqual([]);
+    expect(sha256Hex(out.files[PHOTO_PATH])).toBe(sha256Hex(ASHA_PHOTO));
+    expect(sha256Hex(out.files['photos/e3/m-asha-0002.jpg'])).toBe(sha256Hex(SECOND));
+    expect(out.manifest.counts.photos).toBe(2);
+    expect(strFromU8(out.files['README.txt'])).toContain('PICTURES');
+  });
+
+  it('describes photos/ in the README when a later picture goes in, and reads each picture once', async () => {
+    const { snapshot, files } = withSecondPicture();
+    const located = makeJpeg({ exif: true, seed: 3 });
+    snapshot.entries.find((e) => e.id === 'e2')!.photo!.sha256 = sha256Hex(located);
+    const reads: string[] = [];
+    const out = await pack(snapshot, { ...files, [ASHA_PHOTO_URI]: located }, reads);
+    expect(out.result.photosHeldBack).toEqual(['e2']);
+    expect(Object.keys(out.files).filter((f) => f.startsWith('photos/'))).toEqual(['photos/e3/m-asha-0002.jpg']);
+    expect(strFromU8(out.files['README.txt'])).toContain('PICTURES');
+    expect(reads.filter((u) => u === ASHA_PHOTO_URI)).toHaveLength(1);
+    expect(reads.filter((u) => u === SECOND_URI)).toHaveLength(1);
+    expect(out.manifest.counts.photos).toBe(1);
+    const check = await verifyExport({ size: out.zip.length, read: (o, l) => out.zip.subarray(o, o + l) }, out.result.manifest, out.result.manifestSha256, async (d) => sha256Hex(d));
+    expect(check.ok).toBe(true);
   });
 
   it('[NS-01-R14] the words are the same with or without the picture', async () => {
