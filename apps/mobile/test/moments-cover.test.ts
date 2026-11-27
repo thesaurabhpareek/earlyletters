@@ -175,6 +175,13 @@ describe('[NS-53-G01] PC-T3, PC-T6: one cover, never two, with Moments focused',
     env.appState!('active');
     expect(draw()).not.toMatch(COVER);
 
+    // Lock off, going to background (the moment iOS takes the switcher snapshot): one cover, from the root layer.
+    expect(shouldCoverMoments('moments', 'background', false)).toBe(true);
+    env.appState!('background');
+    expect(draw().match(COVER)).toHaveLength(1);
+    env.appState!('active');
+    expect(draw()).not.toMatch(COVER);
+
     // Lock on, Moments focused (the lock layer governs): still exactly one cover.
     await controller.turnOn();
     expect(controller.getAppLockState().enabled).toBe(true);
@@ -196,8 +203,15 @@ describe('[NS-53-G01] PC-T3, PC-T6: one cover, never two, with Moments focused',
     const mounting = files
       .filter((f) => /<PrivacyCover\b|privacy-cover['"]/.test(readFileSync(f, 'utf8')))
       .map((f) => relative(root, f))
-      .filter((f) => !f.endsWith('privacy-cover.tsx'));
+      .filter((f) => f !== join('components', 'app-lock', 'privacy-cover.tsx')); // the cover itself, by exact path only
     expect(mounting).toEqual(['components/app-lock/app-lock-layer.tsx']);
+  });
+});
+
+describe('[NS-53-G01] PC-T3: the root layout mounts the lock layer once', () => {
+  it('apps/mobile/src/app/_layout.tsx renders <AppLockLayer /> exactly once', () => {
+    const src = readFileSync(resolve(__dirname, '../src/app/_layout.tsx'), 'utf8');
+    expect(src.match(/<AppLockLayer\b/g)).toHaveLength(1);
   });
 });
 
@@ -208,6 +222,7 @@ describe('[NS-53-G01] PC-T8 and the boundary with App lock', () => {
     expect(imports).toEqual(['../app-lock/machine']);
     expect(src).toMatch(/^import type /m);
     expect(src).not.toMatch(/console\.|track\(|analytics\.|logger/);
+    expect(src).not.toMatch(/\bimport\s*\(|\brequire\s*\(|setSetting|getSetting/); // no dynamic import or store call either
   });
 
   it('App lock never reads the Moments rule (machine, controller and layer do not import it)', () => {
