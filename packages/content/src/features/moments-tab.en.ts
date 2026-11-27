@@ -34,12 +34,12 @@ export const momentsTabCopy = {
     marked: 'A day you marked',
     // TODO(founder): PROPOSED, needs word approval
     birthday: "On {child}'s birthday",
-    // RULED (BL-1557, council batch 6): replaces the PROPOSED 'From a month day for {child}'. The founder may veto at
-    // the first in-app read; that is not a gate.
+    // PROPOSED, words from council ruling CDesO-18 (BL-1557, batch 6), replacing 'From a month day for {child}'.
+    // Batch 6 keeps words a parent reads PROPOSED until a store build.
     monthDay: 'The day of the month {child} was born',
     // TODO(founder): PROPOSED, needs word approval
     kept: 'A day you kept close',
-    // RULED (BL-1557, council batch 6): replaces the PROPOSED 'Pictures you hearted'. US spelling (WRITING-GUIDE 6).
+    // PROPOSED, words from council ruling CDesO-18 (BL-1557, batch 6), replacing 'Pictures you hearted'. US spelling.
     heart: 'Pictures you marked as favorites',
     // TODO(founder): PROPOSED, needs word approval
     video: 'A video from this day',
