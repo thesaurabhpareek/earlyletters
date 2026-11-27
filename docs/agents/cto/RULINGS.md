@@ -1638,6 +1638,7 @@ Challenge record for CR-215 to CR-224 (24 Nov, afternoon): self-challenged only 
 - Door: two-way.
 - Way back: revert the patch; or drop `--ignore-scripts` alone if only the install fails.
 - Revisit when: the first dispatched run after the patch, when `testflight.yml` gains a second secret, or if builds move to a self-hosted runner. Karma
+
 ### CR-235 TextField's helper stays both the field's hint and a readable line; the double screen reader read is kept on purpose (27 Nov 2026, Karma under CR-176, recorded by stream 12)
 - Verdict: RULED. Founder-only: no. Signed: Karma.
 - Question: a note in Review B of #2115, and note 2 of Review A, say VoiceOver reads a TextField helper twice, once as the field's `accessibilityHint` and once as the visible helper `Text`. Should the visible line leave the accessibility tree, should the helper leave the hint, or should both stay?
