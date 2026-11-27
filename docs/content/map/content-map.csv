@@ -1743,52 +1743,54 @@ features/reminders.en.ts#reminderCopy.neutral.evening.6.body,push,push notificat
 features/reminders.en.ts#reminderCopy.neutral.evening.6.title,push,push notification,packages/content/src/features/reminders.en.ts,23,en,Before you sleep,16,,,,,,content,live on develop,content
 features/reminders.en.ts#reminderCopy.neutral.evening.7.body,push,push notification,packages/content/src/features/reminders.en.ts,24,en,Something from today for the book?,34,,,,,,content,live on develop,content
 features/reminders.en.ts#reminderCopy.neutral.evening.7.title,push,push notification,packages/content/src/features/reminders.en.ts,24,en,A page for {weekday},20,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.together.monthTitle,push,push notification,packages/content/src/features/reminders.en.ts,37,en,A new month begins,18,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.together.monthBodyNames,push,push notification,packages/content/src/features/reminders.en.ts,38,en,A new month is open for {child}.,32,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.together.monthBodyNeutral,push,push notification,packages/content/src/features/reminders.en.ts,39,en,A new month is open in each book.,33,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.priming.privacyLine,push,in-app,packages/content/src/features/reminders.en.ts,47,en,Notifications never show what you write. Names stay off the lock screen unless you turn them on.,96,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.priming.quietLine,push,in-app,packages/content/src/features/reminders.en.ts,48,en,"Only in the evenings you pick, and never late at night.",55,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.settings.enabledLabel,app screen,in-app,packages/content/src/features/reminders.en.ts,51,en,Reminders,9,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.settings.howOftenTitle,app screen,in-app,packages/content/src/features/reminders.en.ts,52,en,How often,9,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.settings.eveningsTitle,app screen,in-app,packages/content/src/features/reminders.en.ts,53,en,Which evenings,14,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.settings.timeTitle,app screen,in-app,packages/content/src/features/reminders.en.ts,54,en,Time,4,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.settings.timeLabel,app screen,in-app,packages/content/src/features/reminders.en.ts,55,en,Reminder time,13,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.settings.lateNightClamp,app screen,in-app,packages/content/src/features/reminders.en.ts,56,en,Late nights stay quiet.,23,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.settings.quietHelp,app screen,in-app,packages/content/src/features/reminders.en.ts,57,en,"Reminders come between 7 AM and 9:30 PM, and stay quiet on a day you have already written.",90,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.settings.monthNotesLabel,app screen,in-app,packages/content/src/features/reminders.en.ts,59,en,Month and birthday messages,27,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.settings.monthNotesHelp,app screen,in-app,packages/content/src/features/reminders.en.ts,60,en,"A short message on the day a new month begins in each book, and on birthdays.",77,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.settings.namesHelpOff,app screen,in-app,packages/content/src/features/reminders.en.ts,61,en,Notifications leave child names off the lock screen.,52,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.settings.namesHelpOn,app screen,in-app,packages/content/src/features/reminders.en.ts,62,en,Notifications can show names on the lock screen.,48,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.settings.deniedTitle,app screen,in-app,packages/content/src/features/reminders.en.ts,63,en,Notifications are off,21,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.settings.deniedBody,app screen,in-app,packages/content/src/features/reminders.en.ts,64,en,Turn them on in Settings to get these reminders.,48,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.settings.openSettingsButton,app screen,in-app,packages/content/src/features/reminders.en.ts,65,en,Open Settings,13,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.settings.onToast,app screen,in-app,packages/content/src/features/reminders.en.ts,67,en,Reminders are on.,17,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.settings.changeButton,app screen,in-app,packages/content/src/features/reminders.en.ts,69,en,Change,6,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.settings.savesAsYouGo,app screen,in-app,packages/content/src/features/reminders.en.ts,71,en,Changes save as you go.,23,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.settings.previewTitle,app screen,in-app,packages/content/src/features/reminders.en.ts,72,en,How it will look,16,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.settings.nextLine,app screen,in-app,packages/content/src/features/reminders.en.ts,74,en,Next: {weekday} at {time}.,26,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.settings.saved,app screen,in-app,packages/content/src/features/reminders.en.ts,76,en,Saved.,6,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.settings.notSendingYet,app screen,in-app,packages/content/src/features/reminders.en.ts,78,en,Not sending yet.,16,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.settings.scheduleFailed,app screen,in-app,packages/content/src/features/reminders.en.ts,80,en,Couldn't set your reminders.,28,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.settings.birthDateNote,app screen,in-app,packages/content/src/features/reminders.en.ts,82,en,Starts once a birth date is added.,34,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.settings.quietDelivery,app screen,in-app,packages/content/src/features/reminders.en.ts,84,en,"iPhone delivers these quietly, to Notification Center only.",59,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.settings.lockNames,app screen,in-app,packages/content/src/features/reminders.en.ts,86,en,Names stay hidden while App lock is on.,39,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.settings.offSummary,app screen,in-app,packages/content/src/features/reminders.en.ts,87,en,Off,3,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.settings.channelName,app screen,in-app,packages/content/src/features/reminders.en.ts,88,en,Reminders,9,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.weekdays.0,app screen,in-app,packages/content/src/features/reminders.en.ts,91,en,Sunday,6,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.weekdays.1,app screen,in-app,packages/content/src/features/reminders.en.ts,91,en,Monday,6,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.weekdays.2,app screen,in-app,packages/content/src/features/reminders.en.ts,91,en,Tuesday,7,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.weekdays.3,app screen,in-app,packages/content/src/features/reminders.en.ts,91,en,Wednesday,9,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.weekdays.4,app screen,in-app,packages/content/src/features/reminders.en.ts,91,en,Thursday,8,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.weekdays.5,app screen,in-app,packages/content/src/features/reminders.en.ts,91,en,Friday,6,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.weekdays.6,app screen,in-app,packages/content/src/features/reminders.en.ts,91,en,Saturday,8,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.weekdaysShort.0,app screen,in-app,packages/content/src/features/reminders.en.ts,92,en,Sun,3,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.weekdaysShort.1,app screen,in-app,packages/content/src/features/reminders.en.ts,92,en,Mon,3,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.weekdaysShort.2,app screen,in-app,packages/content/src/features/reminders.en.ts,92,en,Tue,3,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.weekdaysShort.3,app screen,in-app,packages/content/src/features/reminders.en.ts,92,en,Wed,3,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.weekdaysShort.4,app screen,in-app,packages/content/src/features/reminders.en.ts,92,en,Thu,3,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.weekdaysShort.5,app screen,in-app,packages/content/src/features/reminders.en.ts,92,en,Fri,3,,,,,,content,live on develop,content
-features/reminders.en.ts#reminderCopy.weekdaysShort.6,app screen,in-app,packages/content/src/features/reminders.en.ts,92,en,Sat,3,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.neutral.typedDay.body,push,push notification,packages/content/src/features/reminders.en.ts,35,en,Tap to see the words you added for today.,41,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.neutral.typedDay.title,push,push notification,packages/content/src/features/reminders.en.ts,35,en,A day you wanted to remember,28,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.together.monthTitle,push,push notification,packages/content/src/features/reminders.en.ts,40,en,A new month begins,18,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.together.monthBodyNames,push,push notification,packages/content/src/features/reminders.en.ts,41,en,A new month is open for {child}.,32,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.together.monthBodyNeutral,push,push notification,packages/content/src/features/reminders.en.ts,42,en,A new month is open in each book.,33,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.priming.privacyLine,push,in-app,packages/content/src/features/reminders.en.ts,50,en,Notifications never show what you write. Names stay off the lock screen unless you turn them on.,96,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.priming.quietLine,push,in-app,packages/content/src/features/reminders.en.ts,51,en,"Only in the evenings you pick, and never late at night.",55,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.settings.enabledLabel,app screen,in-app,packages/content/src/features/reminders.en.ts,54,en,Reminders,9,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.settings.howOftenTitle,app screen,in-app,packages/content/src/features/reminders.en.ts,55,en,How often,9,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.settings.eveningsTitle,app screen,in-app,packages/content/src/features/reminders.en.ts,56,en,Which evenings,14,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.settings.timeTitle,app screen,in-app,packages/content/src/features/reminders.en.ts,57,en,Time,4,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.settings.timeLabel,app screen,in-app,packages/content/src/features/reminders.en.ts,58,en,Reminder time,13,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.settings.lateNightClamp,app screen,in-app,packages/content/src/features/reminders.en.ts,59,en,Late nights stay quiet.,23,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.settings.quietHelp,app screen,in-app,packages/content/src/features/reminders.en.ts,60,en,"Reminders come between 7 AM and 9:30 PM, and stay quiet on a day you have already written.",90,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.settings.monthNotesLabel,app screen,in-app,packages/content/src/features/reminders.en.ts,62,en,Month and birthday messages,27,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.settings.monthNotesHelp,app screen,in-app,packages/content/src/features/reminders.en.ts,63,en,"A short message on the day a new month begins in each book, and on birthdays.",77,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.settings.namesHelpOff,app screen,in-app,packages/content/src/features/reminders.en.ts,64,en,Notifications leave child names off the lock screen.,52,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.settings.namesHelpOn,app screen,in-app,packages/content/src/features/reminders.en.ts,65,en,Notifications can show names on the lock screen.,48,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.settings.deniedTitle,app screen,in-app,packages/content/src/features/reminders.en.ts,66,en,Notifications are off,21,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.settings.deniedBody,app screen,in-app,packages/content/src/features/reminders.en.ts,67,en,Turn them on in Settings to get these reminders.,48,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.settings.openSettingsButton,app screen,in-app,packages/content/src/features/reminders.en.ts,68,en,Open Settings,13,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.settings.onToast,app screen,in-app,packages/content/src/features/reminders.en.ts,70,en,Reminders are on.,17,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.settings.changeButton,app screen,in-app,packages/content/src/features/reminders.en.ts,72,en,Change,6,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.settings.savesAsYouGo,app screen,in-app,packages/content/src/features/reminders.en.ts,74,en,Changes save as you go.,23,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.settings.previewTitle,app screen,in-app,packages/content/src/features/reminders.en.ts,75,en,How it will look,16,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.settings.nextLine,app screen,in-app,packages/content/src/features/reminders.en.ts,77,en,Next: {weekday} at {time}.,26,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.settings.saved,app screen,in-app,packages/content/src/features/reminders.en.ts,79,en,Saved.,6,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.settings.notSendingYet,app screen,in-app,packages/content/src/features/reminders.en.ts,81,en,Not sending yet.,16,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.settings.scheduleFailed,app screen,in-app,packages/content/src/features/reminders.en.ts,83,en,Couldn't set your reminders.,28,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.settings.birthDateNote,app screen,in-app,packages/content/src/features/reminders.en.ts,85,en,Starts once a birth date is added.,34,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.settings.quietDelivery,app screen,in-app,packages/content/src/features/reminders.en.ts,87,en,"iPhone delivers these quietly, to Notification Center only.",59,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.settings.lockNames,app screen,in-app,packages/content/src/features/reminders.en.ts,89,en,Names stay hidden while App lock is on.,39,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.settings.offSummary,app screen,in-app,packages/content/src/features/reminders.en.ts,90,en,Off,3,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.settings.channelName,app screen,in-app,packages/content/src/features/reminders.en.ts,91,en,Reminders,9,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.weekdays.0,app screen,in-app,packages/content/src/features/reminders.en.ts,94,en,Sunday,6,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.weekdays.1,app screen,in-app,packages/content/src/features/reminders.en.ts,94,en,Monday,6,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.weekdays.2,app screen,in-app,packages/content/src/features/reminders.en.ts,94,en,Tuesday,7,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.weekdays.3,app screen,in-app,packages/content/src/features/reminders.en.ts,94,en,Wednesday,9,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.weekdays.4,app screen,in-app,packages/content/src/features/reminders.en.ts,94,en,Thursday,8,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.weekdays.5,app screen,in-app,packages/content/src/features/reminders.en.ts,94,en,Friday,6,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.weekdays.6,app screen,in-app,packages/content/src/features/reminders.en.ts,94,en,Saturday,8,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.weekdaysShort.0,app screen,in-app,packages/content/src/features/reminders.en.ts,95,en,Sun,3,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.weekdaysShort.1,app screen,in-app,packages/content/src/features/reminders.en.ts,95,en,Mon,3,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.weekdaysShort.2,app screen,in-app,packages/content/src/features/reminders.en.ts,95,en,Tue,3,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.weekdaysShort.3,app screen,in-app,packages/content/src/features/reminders.en.ts,95,en,Wed,3,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.weekdaysShort.4,app screen,in-app,packages/content/src/features/reminders.en.ts,95,en,Thu,3,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.weekdaysShort.5,app screen,in-app,packages/content/src/features/reminders.en.ts,95,en,Fri,3,,,,,,content,live on develop,content
+features/reminders.en.ts#reminderCopy.weekdaysShort.6,app screen,in-app,packages/content/src/features/reminders.en.ts,95,en,Sat,3,,,,,,content,live on develop,content
 features/screen-states.en.ts#screenStates.from.rowHintA11y,app screen,in-app,packages/content/src/features/screen-states.en.ts,12,en,Changes the name this letter is signed with.,44,,,,,,content,live on develop,content
 features/screen-states.en.ts#screenStates.from.sheetTitle,app screen,in-app,packages/content/src/features/screen-states.en.ts,13,en,Who is this letter from?,24,,,,,,content,live on develop,content
 features/screen-states.en.ts#screenStates.from.fieldLabel,app screen,in-app,packages/content/src/features/screen-states.en.ts,14,en,From,4,,,,,,content,live on develop,content
