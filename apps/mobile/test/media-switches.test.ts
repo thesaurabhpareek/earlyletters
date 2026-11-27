@@ -15,7 +15,7 @@
  */
 import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join, relative } from 'node:path';
+import { basename, dirname, join, relative, sep } from 'node:path';
 import ts from 'typescript';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -88,23 +88,66 @@ const CONFIGS: Array<KillSwitchView | null | undefined> = [
 ];
 
 const stripComments = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+
+const CODE_FILE = /\.(ts|tsx|js|jsx|mjs|cjs)$/;
+/**
+ * A test file, which no bundle holds: its name ends in `.test.<ext>` or `.spec.<ext>`, or it sits under a `__tests__`
+ * folder. Only those. A module whose name merely holds `.test.` (`video.test.gate.ts`) is bundled once a screen imports
+ * it, and vitest does not run it, so it is scanned like any other (Review B A3).
+ */
+const isTestFile = (file: string): boolean =>
+  /\.(test|spec)\.(ts|tsx|js|jsx|mjs|cjs)$/.test(basename(file)) || file.split(sep).includes('__tests__');
 const walk = (dir: string): string[] =>
   readdirSync(dir).flatMap((n) => {
     const p = join(dir, n);
-    return statSync(p).isDirectory() ? walk(p) : /\.(ts|tsx)$/.test(n) && !/\.test\./.test(n) ? [p] : [];
+    return statSync(p).isDirectory() ? (n === 'node_modules' ? [] : walk(p)) : /\.(ts|tsx)$/.test(n) && !isTestFile(p) ? [p] : [];
   });
 
-const parse = (file: string) =>
-  ts.createSourceFile(file, readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true, file.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
+const scriptKind = (file: string): ts.ScriptKind =>
+  file.endsWith('.tsx') ? ts.ScriptKind.TSX : file.endsWith('.jsx') ? ts.ScriptKind.JSX : /\.[cm]?js$/.test(file) ? ts.ScriptKind.JS : ts.ScriptKind.TS;
+const parse = (file: string) => ts.createSourceFile(file, readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true, scriptKind(file));
 
-/** Every source file under src a bundle could hold, JavaScript included, tests excluded. */
+/** Every source file under a folder that a bundle could hold, JavaScript included, tests and node_modules excluded. */
 const walkCode = (dir: string): string[] =>
   readdirSync(dir).flatMap((n) => {
     const p = join(dir, n);
-    return statSync(p).isDirectory() ? walkCode(p) : /\.(ts|tsx|js|jsx|mjs|cjs)$/.test(n) && !/\.test\./.test(n) ? [p] : [];
+    return statSync(p).isDirectory() ? (n === 'node_modules' ? [] : walkCode(p)) : CODE_FILE.test(n) && !isTestFile(p) ? [p] : [];
   });
 
 const SWITCH_NAMES: string[] = MEDIA_PHASE_SWITCHES.map((s) => s.env);
+
+const REPO = join(APP, '..', '..');
+const PACKAGES = join(REPO, 'packages');
+/**
+ * Where a switch read could reach a store build, so where the name scan looks (Review B A1, A2; Review A X4, X5b):
+ *  - apps/mobile/src;
+ *  - each workspace package's src and its top-level modules (packages/brand/index.ts, registry.ts): they reach the
+ *    bundle through the node_modules/@scribe/* symlinks as real paths, so babel-preset-expo's inline-env-vars runs on
+ *    them as on src (Review B ran the transformer on a file under packages/core/src: `!!"off"`);
+ *  - apps/mobile/modules, the local Expo modules, bundled the same way;
+ *  - apps/mobile/app.config.ts, which runs with the profile's env at build time: a switch copied into `extra` ships in
+ *    the embedded config and is read through Constants.expoConfig.extra, which nothing inlines and no scan of src sees.
+ * A package's build and test configs (`*.config.ts`) run in Node only and are left out.
+ */
+const NAME_SCAN_ROOTS: string[] = [
+  SRC,
+  ...readdirSync(PACKAGES)
+    .map((p) => join(PACKAGES, p, 'src'))
+    .filter((d) => statSync(d, { throwIfNoEntry: false })?.isDirectory()),
+  ...readdirSync(PACKAGES).flatMap((p) => {
+    const dir = join(PACKAGES, p);
+    return statSync(dir).isDirectory() ? readdirSync(dir).filter((n) => CODE_FILE.test(n) && !/\.config\./.test(n) && !isTestFile(n)).map((n) => join(dir, n)) : [];
+  }),
+  join(APP, 'modules'),
+  join(APP, 'app.config.ts'),
+];
+/** The code files a scan root holds: the file itself, or every code file under the folder. A root that holds none fails. */
+function rootFiles(root: string): string[] {
+  const st = statSync(root, { throwIfNoEntry: false });
+  const files = !st ? [] : st.isDirectory() ? walkCode(root) : CODE_FILE.test(root) ? [root] : [];
+  if (files.length === 0) throw new Error(`name scan root holds no code file: ${relative(REPO, root)}`);
+  return files;
+}
 const nameIn = (name: string) => new RegExp(`(?<![A-Za-z0-9_$])${name}(?![A-Za-z0-9_$])`, 'g');
 
 /**
@@ -125,13 +168,18 @@ function nameMentions(file: string): Record<string, number> {
   return Object.fromEntries(SWITCH_NAMES.map((n) => [n, Math.max(parsed.match(nameIn(n))?.length ?? 0, stripped.match(nameIn(n))?.length ?? 0)]));
 }
 
-/** Resolve a module specifier written in `from` to a file under src, or null (a package, or not a source file). */
+const RESOLVE_EXTS = ['ts', 'tsx', 'js', 'jsx', 'mjs', 'cjs'];
+/**
+ * Resolve a module specifier written in `from` to a file under src, or null (a package, or not a source file).
+ * JavaScript counts as much as TypeScript: Metro bundles a `.js`, `.jsx` or `.mjs` helper an eraser imports, so the
+ * closure follows it (Review A X3: `./erase-gate.js` calling mediaPhaseBuilt was never scanned).
+ */
 function resolveImport(from: string, spec: string): string | null {
   const base = spec.startsWith('@/') ? join(SRC, spec.slice(2)) : spec.startsWith('.') ? join(dirname(from), spec) : null;
   if (!base) return null;
-  for (const c of [base, `${base}.ts`, `${base}.tsx`, join(base, 'index.ts'), join(base, 'index.tsx')]) {
+  for (const c of [base, ...RESOLVE_EXTS.map((e) => `${base}.${e}`), ...RESOLVE_EXTS.map((e) => join(base, `index.${e}`))]) {
     try {
-      if (statSync(c).isFile() && /\.tsx?$/.test(c)) return c;
+      if (statSync(c).isFile() && CODE_FILE.test(c)) return c;
     } catch {
       // not this candidate
     }
@@ -207,6 +255,9 @@ function switchReads(files: string[]): string[] {
       else if (ts.isVariableDeclaration(n) && n.initializer && (ts.isArrowFunction(n.initializer) || ts.isFunctionExpression(n.initializer))) here = n.name.getText(sf);
       // a reader using a reader is the definition itself (mediaPhaseBuilt recurses through `needs`), not a use
       if (ts.isIdentifier(n) && readers.has(n.text) && !isDeclaredName(n) && !SWITCH_READERS.includes(here)) found.push(`${relative(SRC, file)}#${here}`);
+      // A reader named by a string is a reference too: `caps['mediaPhaseBuilt']('video')` after `import * as caps`
+      // (Review A X7), or the name kept in a const and looked up later. An object's own key is a name it gives, not a use.
+      if ((ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n)) && exported.has(n.text) && !(ts.isPropertyAssignment(n.parent) && n.parent.name === n) && !ts.isImportDeclaration(n.parent) && !ts.isExportDeclaration(n.parent) && !SWITCH_READERS.includes(here)) found.push(`${relative(SRC, file)}#${here}`);
       if (ts.isExportSpecifier(n) && n.propertyName && n.propertyName.text !== n.name.text && readers.has(n.propertyName.text)) found.push(`${relative(SRC, file)}#${here}`);
       n.forEachChild((c) => visit(c, here));
     };
@@ -354,8 +405,24 @@ describe('[NX-39-R37] a phase switch removes screens and reads, never a data rig
       expect(switchReads([barrel, file])).toEqual([expect.stringMatching(/barrel\.ts#<module>$/), expect.stringMatching(/copy\.ts#eraseEverything$/)]);
       writeFileSync(barrel, "import { mediaPhaseMayRun } from './capabilities';\nexport { mediaPhaseMayRun as gate };\n");
       expect(switchReads([barrel])).toEqual([expect.stringMatching(/barrel\.ts#<module>$/)]);
+      // Review A X7: a reader looked up by a string key, written in place or kept in a const.
+      writeFileSync(file, "import * as caps from './capabilities';\nexport function eraseEverything() {\n  if (caps['mediaPhaseBuilt']('video')) return;\n}\n");
+      expect(switchReads([file])).toEqual([expect.stringMatching(/copy\.ts#eraseEverything$/)]);
+      writeFileSync(file, "import * as caps from './capabilities';\nconst key = `photosBuildEnabled`;\nexport function exportPlan() {\n  return (caps as Record<string, () => boolean>)[key]();\n}\n");
+      expect(switchReads([file])).toEqual([expect.stringMatching(/copy\.ts#<module>$/)]);
+      // Review A X3: a JavaScript helper an eraser imports is in the closure, and its read is seen.
+      writeFileSync(join(dir, 'erase-gate.js'), "import { mediaPhaseBuilt } from './capabilities';\nexport function eraseGate() {\n  return mediaPhaseBuilt('video');\n}\n");
+      writeFileSync(join(dir, 'erase-mod.mjs'), "export { mediaPhaseMayRun as gateMjs } from './capabilities';\n");
+      writeFileSync(file, "import { eraseGate } from './erase-gate.js';\nimport { gateMjs } from './erase-mod.mjs';\nexport function eraseEverything() {\n  if (eraseGate() || gateMjs('video', null)) return;\n}\n");
+      const jsClosure = closureOf([file]);
+      expect(jsClosure.map((f) => basename(f))).toEqual(['copy.ts', 'erase-gate.js', 'erase-mod.mjs']);
+      expect(switchReads(jsClosure)).toEqual([
+        expect.stringMatching(/copy\.ts#eraseEverything$/),
+        expect.stringMatching(/erase-gate\.js#eraseGate$/),
+        expect.stringMatching(/erase-mod\.mjs#<module>$/),
+      ]);
       // and the names an import or a declaration gives are not reads
-      writeFileSync(file, "import { mediaPhaseBuilt } from './capabilities';\nexport { mediaPhaseBuilt };\nexport const keys = { mediaPhaseBuilt: 1 };\n");
+      writeFileSync(file, "import { mediaPhaseBuilt } from './capabilities';\nexport { mediaPhaseBuilt };\nexport const keys = { mediaPhaseBuilt: 1, 'photosPaused': 2 };\n");
       expect(switchReads([file])).toEqual([]);
     } finally {
       rmSync(dir, { recursive: true, force: true });
@@ -390,24 +457,52 @@ describe('[NX-39-R37] a phase switch removes screens and reads, never a data rig
     }
   });
 
-  it('[NX-39-R37] no screen or read goes round a switch: each phase variable is named in capabilities.ts only (and P0 in lib/photos/flag.ts), in any spelling', () => {
+  it('[NX-39-R37] no screen or read goes round a switch: each phase variable is named in capabilities.ts only (and P0 in lib/photos/flag.ts), in any spelling, anywhere a build reads code', () => {
     // Expo inlines `process.env.NAME`, `process.env?.NAME`, `process.env['NAME']` and `process['env'].NAME` alike
-    // (babel-preset-expo, plugins/inline-env-vars), so the scan is for the bare name anywhere in code (Review B N1, N2).
+    // (babel-preset-expo, plugins/inline-env-vars), so the scan is for the bare name anywhere in code (Review B N1, N2),
+    // in src, the workspace packages, the local modules and app.config.ts (Review B A1, A2).
+    const CAPS = 'apps/mobile/src/lib/capabilities.ts';
+    const FLAG = 'apps/mobile/src/lib/photos/flag.ts';
+    // The roots are the ones meant: src, at least the core package, the local modules and app.config.ts. Each root
+    // must hold a file (rootFiles throws on an empty one), so a moved folder cannot turn the scan into a pass.
+    const rels = NAME_SCAN_ROOTS.map((r) => relative(REPO, r));
+    expect(rels).toEqual(expect.arrayContaining(['apps/mobile/src', 'packages/core/src', 'packages/content/src', 'packages/brand/index.ts', 'apps/mobile/modules', 'apps/mobile/app.config.ts']));
     const named: Record<string, string[]> = Object.fromEntries(SWITCH_NAMES.map((n) => [n, []]));
     const counts: Record<string, Record<string, number>> = {};
-    for (const f of walkCode(SRC)) {
-      const rel = relative(SRC, f);
-      counts[rel] = nameMentions(f);
-      for (const n of SWITCH_NAMES) if (counts[rel][n] > 0) named[n].push(rel);
+    for (const root of NAME_SCAN_ROOTS) {
+      for (const f of rootFiles(root)) {
+        const rel = relative(REPO, f);
+        counts[rel] = nameMentions(f);
+        for (const n of SWITCH_NAMES) if (counts[rel][n] > 0) named[n].push(rel);
+      }
     }
+    expect(Object.keys(counts)).toEqual(expect.arrayContaining([CAPS, FLAG, 'apps/mobile/app.config.ts', 'packages/core/src/index.ts']));
     for (const s of MEDIA_PHASE_SWITCHES) {
-      expect(named[s.env].sort(), s.env).toEqual(s.phase === 'photos' ? ['lib/capabilities.ts', 'lib/photos/flag.ts'] : ['lib/capabilities.ts']);
+      expect(named[s.env].sort(), s.env).toEqual(s.phase === 'photos' ? [CAPS, FLAG] : [CAPS]);
     }
     // capabilities.ts names each one twice, its row in MEDIA_PHASE_SWITCHES and its one read (R39 pins both), so a
     // second read in another spelling there (N1: `process.env?.EXPO_PUBLIC_VIDEO` in mediaPhaseMayRun) fails here.
-    expect(counts['lib/capabilities.ts']).toEqual(Object.fromEntries(SWITCH_NAMES.map((n) => [n, 2])));
+    expect(counts[CAPS]).toEqual(Object.fromEntries(SWITCH_NAMES.map((n) => [n, 2])));
     // flag.ts names P0's once, in its one read, and no other switch.
-    expect(counts['lib/photos/flag.ts']).toEqual(Object.fromEntries(SWITCH_NAMES.map((n) => [n, n === 'EXPO_PUBLIC_PHOTOS' ? 1 : 0])));
+    expect(counts[FLAG]).toEqual(Object.fromEntries(SWITCH_NAMES.map((n) => [n, n === 'EXPO_PUBLIC_PHOTOS' ? 1 : 0])));
+  });
+
+  it('[NX-39-R37] positive control: only real test files are skipped, and an empty scan root fails', () => {
+    for (const f of ['a.test.ts', 'a.test.tsx', 'a.spec.ts', 'a.spec.mjs', join('lib', '__tests__', 'gate.ts')]) expect(isTestFile(f), f).toBe(true);
+    // Review B A3: a module whose name only holds `.test.` is bundled, so it is scanned.
+    for (const f of ['video.test.gate.ts', 'test.ts', 'a.testing.ts', 'spec.js', join('lib', 'tests', 'gate.ts')]) expect(isTestFile(f), f).toBe(false);
+    const dir = mkdtempSync(join(tmpdir(), 'nx39-roots-'));
+    try {
+      expect(() => rootFiles(dir)).toThrow(/holds no code file/);
+      expect(() => rootFiles(join(dir, 'missing'))).toThrow(/holds no code file/);
+      writeFileSync(join(dir, 'video.test.ts'), 'export {};\n');
+      expect(() => rootFiles(dir)).toThrow(/holds no code file/);
+      writeFileSync(join(dir, 'video.test.gate.ts'), 'export const a = !!process.env?.EXPO_PUBLIC_VIDEO;\n');
+      expect(rootFiles(dir).map((f) => basename(f))).toEqual(['video.test.gate.ts']);
+      expect(nameMentions(join(dir, 'video.test.gate.ts')).EXPO_PUBLIC_VIDEO).toBe(1);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   it('[NX-39-R37] positive control: a switch name in any spelling Expo inlines is counted, and a comment is not', () => {
@@ -491,6 +586,33 @@ describe('[NX-39-R39] the switches of section 3', () => {
     expect(buildValues).toBeDefined();
     expect(buildValues!.split('\n')).toEqual(MEDIA_PHASE_SWITCHES.map((s) => `  ${s.phase}: parseServerFeatures(process.env.${s.env}),`));
     expect(code).toMatch(/const own = mediaPhaseTestOverride\[phase\] \?\? MEDIA_PHASE_BUILD_VALUE\[phase\];/);
+    // The readers' bodies, word for word (Review A X6). The env test below runs them under vitest, where `__DEV__` is
+    // undefined and Platform is a stand-in, so a branch on either (`if (!__DEV__ && phase === 'video') return true;`)
+    // would turn a phase on in a release build alone and pass every other test here.
+    const caps = parse(join(SRC, 'lib', 'capabilities.ts'));
+    const bodyOf = (name: string): string | undefined => {
+      let out: string | undefined;
+      const visit = (n: ts.Node): void => {
+        if (ts.isFunctionDeclaration(n) && n.name?.text === name && n.body) out = n.body.getText(caps);
+        else if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) && n.name.text === name && n.initializer && ts.isArrowFunction(n.initializer)) out = n.initializer.body.getText(caps);
+        n.forEachChild(visit);
+      };
+      visit(caps);
+      return out === undefined ? undefined : stripComments(out).replace(/\s+/g, ' ').trim();
+    };
+    expect(bodyOf('mediaPhaseSwitch')).toBe(
+      "{ const s = MEDIA_PHASE_SWITCHES.find((m) => m.phase === phase); if (!s) throw new Error(`unknown media phase ${phase}`); return s; }",
+    );
+    expect(bodyOf('mediaPhaseBuilt')).toBe(
+      '{ const s = mediaPhaseSwitch(phase); const own = mediaPhaseTestOverride[phase] ?? MEDIA_PHASE_BUILD_VALUE[phase]; return own && (s.needs === null || mediaPhaseBuilt(s.needs)); }',
+    );
+    expect(bodyOf('mediaPhaseMayRun')).toBe(
+      '{ if (!mediaPhaseBuilt(phase)) return false; for (let s: MediaPhaseSwitch | null = mediaPhaseSwitch(phase); s; s = s.needs === null ? null : mediaPhaseSwitch(s.needs)) { if (s.pauseKeys.some((k) => config?.killSwitches?.[k] === true)) return false; } return true; }',
+    );
+    // and neither reader file branches on the build mode anywhere in its code
+    for (const f of [join(SRC, 'lib', 'capabilities.ts'), join(SRC, 'lib', 'photos', 'flag.ts')]) {
+      expect(stripComments(readFileSync(f, 'utf8')), relative(SRC, f)).not.toMatch(/\b__DEV__\b/);
+    }
     // and nothing else touches the build values or the test override: MEDIA_PHASE_BUILD_VALUE is named at its
     // declaration and in the `own` line only, so no later write (guarded by the environment, say) can turn a phase on
     // after the pinned block (Review A N2); the override is named where it is declared, read in `own`, and in
