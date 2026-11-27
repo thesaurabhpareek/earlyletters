@@ -4,7 +4,7 @@
  *
  *   node scripts/ops/weekly-card.ts --log <path to the request log CSV> [--today YYYY-MM-DD]
  *
- * Prints tickets, kinds, days and dates only. Exit 0 with nothing urgent, 1 when a request is at day 35 or later,
+ * Prints tickets, kinds, days and dates only. Exit 0 with nothing urgent, 1 when a request is to be acted on first (section 11, Order),
  * 2 when the log cannot be read or holds a field or value the runbook does not allow.
  */
 import { readFileSync } from 'node:fs';
