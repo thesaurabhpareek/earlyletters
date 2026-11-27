@@ -178,8 +178,8 @@ function deps(p: ReturnType<typeof provider>, over: Partial<EraseThisPhoneDeps> 
 }
 
 beforeAll(async () => {
-  server = await startSyncServer({ users: Array.from({ length: 16 }, (_, i) => `0192f0aa-0000-7000-8000-${String(i + 1).padStart(12, '0')}`), protocol: 'v1' });
-  await server.consent(...Array.from({ length: 16 }, (_, i) => `0192f0aa-0000-7000-8000-${String(i + 1).padStart(12, '0')}`));
+  server = await startSyncServer({ users: Array.from({ length: 18 }, (_, i) => `0192f0aa-0000-7000-8000-${String(i + 1).padStart(12, '0')}`), protocol: 'v1' });
+  await server.consent(...Array.from({ length: 18 }, (_, i) => `0192f0aa-0000-7000-8000-${String(i + 1).padStart(12, '0')}`));
 }, 180_000);
 
 let ASHA = '';
@@ -331,6 +331,17 @@ describe('[F17-REQ-026] what the server never holds stops Erase this phone only'
       "INSERT INTO entry_media (id, entry_id, kind, ext, bytes, sha256, added_at) VALUES (?, ?, 'photo', 'jpg', 1000, ?, ?)",
       uuid7(), id, 'ab'.repeat(32), iso(),
     );
+    await expectOnlyHere();
+  });
+
+  it('a held draft\'s recording, and a recording found with no row', async () => {
+    await drainedPhone();
+    const d = store.createDraft({ childId: ASHA, captureMode: 'spoken', promptKey: null, audioUri: 'file:///phone/Documents/recording-held.m4a', audioDurationMs: 4000 });
+    db.run('UPDATE drafts SET held_v = 1 WHERE id = ?', d.id);
+    await expectOnlyHere();
+    db.run('DELETE FROM drafts');
+    expect(store.eraseThisPhoneBlockers()).toBe(0);
+    db.run("INSERT INTO orphan_audio (file_name, found_at) VALUES ('recording-found.m4a', ?)", iso());
     await expectOnlyHere();
   });
 
