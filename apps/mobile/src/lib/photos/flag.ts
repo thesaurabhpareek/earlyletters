@@ -8,8 +8,13 @@ export const parsePhotosFlag = (raw: string | undefined | null): boolean => (raw
 const BUILD_VALUE: boolean = parsePhotosFlag(process.env.EXPO_PUBLIC_PHOTOS);
 let testOverride: boolean | null = null;
 
-/** Tests only. */
+/**
+ * Tests only (vitest sets `VITEST`): run a test with the switch on or off. Pass null to go back to the build value.
+ * Throws anywhere else, so app code can never flip it (BL-2274; the same guard as `setMediaPhaseForTests`, BL-858).
+ */
 export function setPhotosForTest(value: boolean | null): void {
+  const env = typeof process !== 'undefined' ? process.env : undefined;
+  if (!env?.VITEST) throw new Error('setPhotosForTest is for tests only');
   testOverride = value;
 }
 
