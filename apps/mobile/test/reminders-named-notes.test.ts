@@ -179,6 +179,22 @@ describe('[FU-11b] named notes cleared when names go off (real store and schedul
     expect([...os.presented.keys()]).toEqual(['el.day.2026-11-26']);
   });
 
+  it('fails closed: a delivered note of ours of a named kind whose title or body reads back empty is dismissed', async () => {
+    namesOn();
+    await reminders.rescheduleReminders();
+    present([
+      note('el.month.2026-11-01', '', N.monthOpen.body, { source: SOURCE, kind: 'monthAge' }), // empty title
+      note('el.evening.2026-11-24', N.evening[0]!.title, '', { source: SOURCE, kind: 'evening' }), // empty body
+      { identifier: 'el.birthday.2026-03-01', content: { data: { source: SOURCE, kind: 'birthday' } } }, // no text returned
+      note('el.day.2026-11-26', '', '', { source: SOURCE, kind: 'libraryDay' }), // ours, but never a name: stays
+      note('someone-else', '', '', { source: 'another.app', kind: 'birthday' }), // not ours: stays
+    ]);
+    reminders.writePrefs({ namesOnLockScreen: false });
+    await reminders.rescheduleReminders();
+    expect(os.dismissed.sort()).toEqual(['el.birthday.2026-03-01', 'el.evening.2026-11-24', 'el.month.2026-11-01']);
+    expect([...os.presented.keys()]).toEqual(['el.day.2026-11-26', 'someone-else']);
+  });
+
   it('fires once per change: later re-plans with names still off never read Notification Center or dismiss again', async () => {
     namesOn();
     await reminders.rescheduleReminders();
