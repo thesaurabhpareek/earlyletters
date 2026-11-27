@@ -67,6 +67,8 @@ export interface ExportResult {
   books: number;
   /** Recordings that changed since capture (DATA-REQ-051); included as they are and marked. */
   mismatched: number;
+  /** Pictures left out at the last guard (NS-01-R6): not the stored copy, or carrying metadata. Their letters are in. */
+  photosHeldBack: number;
 }
 
 const PACK_SHARE = 0.85; // of the progress bar; checking takes the rest
@@ -369,6 +371,7 @@ export async function runExport(opts: { onProgress?: (p: ExportProgress) => void
       recordings: packed.manifest.counts.audio,
       books: packed.manifest.counts.books,
       mismatched: packed.mismatched.length,
+      photosHeldBack: packed.photosHeldBack.length,
     };
   } catch (e) {
     try {

@@ -16,12 +16,13 @@
  * string, keys included, wherever it sits (GitHub expands expressions inside block scalars such as `prompt: |`).
  * An expression ends at the first `}}` outside a single-quoted string, as GitHub's reader does. Names match in any
  * case, as GitHub does. A secret read outside any job (a workflow-level `env:`) counts for every job, and so does an
- * agent named outside any job (a workflow-level `defaults.run.shell`).
+ * agent named anywhere outside the jobs (a `defaults.run.shell`, an input default) except a path filter under `on`.
  *
  * Limits, also listed in ACCESS.md: an agent engine run from a composite, local or other action, or an engine
  * other than Claude Code and OpenCode, is not recognised; a reusable workflow a job calls is not followed; data
  * passed between jobs through outputs or artifacts is not followed; a production secret with a harmless name is not
- * caught in a non-agent job; where this parser and GitHub's read the same text differently, this one is the guide.
+ * caught in a non-agent job; a command passed in from a repository variable or from an input with no default in the
+ * file is not seen; where this parser and GitHub's read the same text differently, this one is the guide.
  */
 // The browser build is plain ESM and reads no environment variables, so it runs under Deno's --allow-read alone and
 // under Node. `yaml` is pinned by package-lock.json (apps/web depends on it); a missing install fails the import.
@@ -41,12 +42,12 @@ const CALLS_AGENT_WORKFLOW = new RegExp(String.raw`(?:^|/)(?:${AGENT_WORKFLOWS.m
 
 /**
  * A job runs an agent engine: Anthropic's actions, the npm or Python packages, the native installer, OpenCode, or
- * `claude` as a word in any of the job's strings, after a space, quote, slash, bracket or shell operator and before
- * one, a redirect or a dot (behind `sudo`, `timeout`, `env` or a path, and even in a step name or an echo: a false
+ * `claude` as a word in any of the job's strings, after a space, quote, slash, backslash, bracket or shell operator and
+ * before one, a redirect, a dot or a backslash (behind `sudo`, `timeout`, `env` or a path, and even in a step name or an echo: a false
  * alarm here costs an edit, a miss costs a key). A job that calls an agent workflow is an agent job.
  */
 const AGENT_STEP =
-  /anthropics\/claude-code\b|@anthropic-ai\/claude-(?:code|agent-sdk)|claude[-_]agent[-_]sdk|claude\.ai\/install|\bopencode\b|(?:^|[\s`'"(/;&|{!=,[:-])claude(?=[\s`'";)|&}<>.,\]:]|$)/i;
+  /anthropics\/claude-code\b|@anthropic-ai\/claude-(?:code|agent-sdk)|claude[-_]agent[-_]sdk|claude\.ai\/install|\bopencode\b|(?:^|[\s`'"(/;&|{!=,[:\\-])claude(?=[\s`'";)|&}<>.,\]:\\]|$)/i;
 
 /** GitHub's own token is not a stored secret. */
 const NOT_A_STORED_SECRET = new Set(['GITHUB_TOKEN']);
@@ -163,6 +164,24 @@ export function scanWorkflow(file: string, workflow: string): Finding[] {
   }
 }
 
+// Only path filters: a branch, tag or dispatch-type filter fixes a value a step reads (`github.ref_name`, `github.base_ref`,
+// `github.event.action`), but a path filter only decides whether the run starts.
+const EVENT_FILTERS = new Set(['paths', 'paths-ignore']);
+
+/** `on` with each event's path filters taken out; everything else under it (inputs above all) is kept. */
+function withoutFilters(on: unknown): unknown {
+  if (!on || typeof on !== 'object' || Array.isArray(on)) return on; // `on: push` or `on: [push]` names events only
+  const kept: Record<string, unknown> = {};
+  for (const [event, config] of Object.entries(on as Record<string, unknown>)) {
+    if (!config || typeof config !== 'object' || Array.isArray(config)) {
+      kept[event] = config;
+      continue;
+    }
+    kept[event] = Object.fromEntries(Object.entries(config as Record<string, unknown>).filter(([key]) => !EVENT_FILTERS.has(key)));
+  }
+  return kept;
+}
+
 function scan(file: string, workflow: string): Finding[] {
   const parsed = parse(workflow);
   if (!parsed) return [{ file, job: '*', rule: 'unparsed' }];
@@ -170,9 +189,11 @@ function scan(file: string, workflow: string): Finding[] {
   const { jobs: _jobs, ...outside } = parsed.root;
   const everyJob = secretsOf(outside);
   if (everyJob.whole) out.push({ file, job: '*', rule: 'all-secrets' });
-  // Text outside jobs (a workflow-level `defaults.run.shell`, say) runs in or shapes every job, so an agent named
-  // there makes every job an agent job.
-  const agentOutside = stringsOf(outside).some((s) => AGENT_STEP.test(s));
+  // An agent named anywhere outside the jobs makes every job an agent job: `defaults.run.shell` runs in every job, `env`
+  // reaches every step, an input's `default` or `options` reach a step through `${{ inputs.X }}`, `name` through
+  // `${{ github.workflow }}`, and a branch, tag or type filter through `github.ref_name` or `github.event.action`. Only
+  // the `paths` and `paths-ignore` filters under `on` are left out, so a `CLAUDE.md` path filter is not an agent.
+  const agentOutside = stringsOf({ ...outside, on: withoutFilters(parsed.root.on) }).some((s) => AGENT_STEP.test(s));
   const agentFile = AGENT_WORKFLOWS.includes(file);
   for (const job of jobsOf(workflow)) {
     const agent = agentFile || agentOutside || job.runsAgent;
