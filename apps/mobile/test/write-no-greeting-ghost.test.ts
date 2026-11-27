@@ -22,6 +22,9 @@ describe('[BL-372, D-084] no "Dear {child}," ghost in Write', () => {
 
   it('the page starts from the person\'s own draft or empty, never from a written opening', () => {
     expect(write).toContain("useState(existing?.typedText ?? '')");
+    // What seeds the field is its defaultValue, and it is the draft held above, with nothing added in front.
+    expect(write).toMatch(/defaultValue=\{\s*initialText\s*\}/);
+    expect(write.match(/defaultValue=/g)).toHaveLength(1);
     expect(write).not.toMatch(/\bDear\b/);
     expect(write).not.toMatch(/placeholder=\{?['"`]/);
   });
