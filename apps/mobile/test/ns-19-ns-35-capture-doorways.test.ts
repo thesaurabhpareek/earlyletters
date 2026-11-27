@@ -162,12 +162,15 @@ function literalBreaches(fs: Files): string[] {
   return out;
 }
 
+/** One read per file text: the fixtures plant a file or two onto the tree, so the rest is read once for the whole run. */
+const specsOf = new Map<string, string[]>();
+const specs = (t: string) => specsOf.get(t) ?? specsOf.set(t, importSpecifiers(t)).get(t)!;
 /** Value imports between the files in the map (`@/` is src; type-only imports are erased at build and are no edge). */
 function importers(fs: Files): Map<string, Set<string>> {
   const by = new Map<string, Set<string>>();
   const exts = ['', ...['.ts', '.tsx'].flatMap((e) => ['', '.ios', '.android', '.native', '.web'].flatMap((p) => [p + e, `/index${p}${e}`]))];
   for (const [f, t] of fs) {
-    for (const spec of importSpecifiers(t)) {
+    for (const spec of specs(t)) {
       const base = spec.startsWith('@/') ? spec.slice(2) : spec.startsWith('.') ? posix.normalize(posix.join(posix.dirname(f), spec)) : null;
       if (base === null) continue;
       for (const e of exts) if (fs.has(base + e)) (by.get(base + e) ?? by.set(base + e, new Set()).get(base + e)!).add(f);
