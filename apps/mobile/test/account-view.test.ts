@@ -8,7 +8,7 @@
  * sensitive-data step (account.tsx); it is never a one-tap consent.
  */
 import { describe, expect, it } from 'vitest';
-import { accountView, nextEndedEarly, waitEndedEarly } from '../src/components/auth/account-view.logic';
+import { accountView, heldEndedEarly, nextEndedEarly, NOT_ENDED_EARLY, waitEndedEarly, type EndedEarly } from '../src/components/auth/account-view.logic';
 import { authReducer, initialAuthState, type AuthEvent, type AuthState, type PendingUploads, type SyncGate } from '../src/lib/auth/machine.logic';
 
 const U = '11111111-1111-4111-8111-111111111111';
@@ -162,8 +162,8 @@ describe('[BL-451] a wait that ends before the letters are sent is said on the s
   });
 });
 
-describe('[BL-451] the signed-out page\'s early-end line, one state change at a time (nextEndedEarly, as account.tsx calls it)', () => {
-  /** Each event through the real machine, then the line's step, as the Account page sees it: [shown, announced]. */
+describe('[BL-451] the signed-out page\'s early-end line, one state change at a time (nextEndedEarly, as the auth provider calls it)', () => {
+  /** Each event through the real machine, then the line's step, as the auth provider takes it: [shown, announced]. */
   const walk = (from: AuthState, events: AuthEvent[], shown = false) => {
     let s = from;
     let on = shown;
@@ -217,8 +217,57 @@ describe('[BL-451] the signed-out page\'s early-end line, one state change at a 
   });
 });
 
+describe('[BL-479][CPO-105] the line as the auth provider holds it (heldEndedEarly): it outlives the Account page', () => {
+  /** Each event through the real machine, then the provider's step; returns every held value in order. */
+  const hold = (from: AuthState, events: AuthEvent[], start: EndedEarly = NOT_ENDED_EARLY) => {
+    let s = from;
+    let held = start;
+    return events.map((e) => {
+      const next = authReducer(s, e);
+      held = heldEndedEarly(s, next, held);
+      s = next;
+      return held;
+    });
+  };
+  const waiting = () => authReducer(ready(), { type: 'SIGN_OUT_REQUESTED', reason: 'user', pendingUploads: 2 });
+  const LOST: AuthEvent = { type: 'SIGNED_OUT' };
+
+  it('ends early, then holds through every later change while signed out: `said` moves once, when it first shows signed out', () => {
+    expect(hold(waiting(), [DECLINED_GATE, LOST, { type: 'START', method: 'email' }, { type: 'CANCELLED' }])).toEqual([
+      { shown: true, said: 0 },
+      { shown: true, said: 1 },
+      { shown: true, said: 1 },
+      { shown: true, said: 1 },
+    ]);
+  });
+
+  it('goes at the next sign-in, and a second early end later is said again', () => {
+    const steps = hold(waiting(), [
+      LOST,
+      { type: 'SIGNED_IN', userId: U, method: 'email' },
+      { type: 'GATE_LOADED', gate: FULL, sensitiveDeclined: false },
+      { type: 'SIGN_OUT_REQUESTED', reason: 'user', pendingUploads: 1 },
+      LOST,
+    ]);
+    expect(steps.map((h) => h.shown)).toEqual([true, false, false, false, true]);
+    expect(steps.map((h) => h.said)).toEqual([1, 1, 1, 1, 2]);
+  });
+
+  it('a change that moves nothing gives back the same object (the provider renders nothing more)', () => {
+    const out = authReducer(waiting(), LOST);
+    const held = { shown: true, said: 1 };
+    expect(heldEndedEarly(out, out, held)).toBe(held);
+    expect(heldEndedEarly(ready(), ready(), NOT_ENDED_EARLY)).toBe(NOT_ENDED_EARLY);
+  });
+
+  it('a wait that drains, or "Stay signed in": nothing held', () => {
+    expect(hold(waiting(), [{ type: 'UPLOADS_DRAINED' }, LOST]).at(-1)).toEqual(NOT_ENDED_EARLY);
+    expect(hold(waiting(), [{ type: 'SIGN_OUT_WAIT_CANCELLED' }]).at(-1)).toEqual(NOT_ENDED_EARLY);
+  });
+});
+
 describe('[BL-478] point 2: a gate answer after the queue already emptied is no early end (A-REQ-033)', () => {
-  /** The same walk as account.tsx: each event through the real machine, then the early-end line's step. */
+  /** The same walk as the auth provider's: each event through the real machine, then the early-end line's step. */
   const walk = (from: AuthState, events: AuthEvent[]) => {
     let s = from;
     let on = false;
