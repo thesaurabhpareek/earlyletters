@@ -36,6 +36,7 @@ import {
   type Violation,
 } from '@scribe/analytics';
 import { makeForgetRetiredId } from './forget-retired';
+import { analyticsBuildOptions } from './internal-tester';
 import { currentAuthUserId } from '@/lib/auth/auth-store';
 import { analyticsEnabled, capabilities, postHogKeyForBuild } from '@/lib/capabilities';
 import { deleteSetting, getSetting, listChildren, listEntriesForChild, setSetting, subscribe } from '@/lib/store';
@@ -88,6 +89,8 @@ export const analytics = createAnalytics({
   onViolation,
   // Sampling rates come from remote config when volume needs it (TRACKING_PLAN 5.3); empty at launch.
   sampleRates: {},
+  // build_kind and is_internal on every event (ER-A15, BL-1250); a store build is never internal (./internal-tester).
+  ...analyticsBuildOptions(),
 });
 
 export const lifecycle = createLifecycle({ analytics, storage: settingsStorage });

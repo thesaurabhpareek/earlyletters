@@ -69,7 +69,7 @@ const { permissionCopy } = loadTs<PermissionCopyModule>('./src/lib/permission-co
 
 type BuildEnvModule = typeof import('./src/lib/build-env');
 type AppEnv = import('./src/lib/build-env').AppEnv;
-const { resolveAppEnv, e2eRefusal } = loadTs<BuildEnvModule>('./src/lib/build-env.ts');
+const { resolveAppEnv, e2eRefusal, buildKindFor } = loadTs<BuildEnvModule>('./src/lib/build-env.ts');
 
 /** Reads EXPO_PUBLIC_APP_ENV at evaluation time. Unset means development; an unknown value is refused. */
 function appEnvFromProcess(): AppEnv {
@@ -336,6 +336,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   },
   extra: {
     appEnv: APP_ENV,
+    // The analytics build kind (ER-A15, BL-1250): read at runtime by src/lib/analytics/internal-tester.ts.
+    buildKind: buildKindFor(APP_ENV, process.env.EAS_BUILD_PROFILE),
     ...capabilityFlags(),
     // EAS project `scribe` in the organization earlyletters-team (created 1 Nov 2026, docs/release/TESTFLIGHT.md step 3). Not a secret.
     eas: { projectId: '0bc517fb-a526-4f0f-892a-5ab676a86e6b' },
