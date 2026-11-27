@@ -168,6 +168,26 @@ describe('no machine-writing claims', () => {
     );
     expect(bad.map((l) => `${l.path}: ${l.text}`)).toEqual([]);
   });
+
+  // RULE (the constitution, CLAUDE.md: the machine may remove and repair, never add meaning): the app, the product or
+  // "we" is never the one that writes, drafts or composes the family's letter, book or words. The AI-word list above
+  // misses a plain sentence like "The app writes your letter from what you say."; this closes it. "We'll write once
+  // more, at launch." (an email to the reader) passes: its object is not the family's words.
+  const MACHINE_AUTHOR =
+    /\b(?:the app|early letters|it|we|our app)\s+(?:(?:can|will|then|also)\s+)?(?:writes?|wrote|drafts?|composes?|creates?|makes?|builds?|puts? together)\s+(?:up\s+)?(?:your|the|a|their|each|every)\s+(?:\w+\s+)?(?:letters?|book|entr(?:y|ies)|story|stories|words|pages?)\b/i;
+  it('never makes the app the author of the letter, book or words', () => {
+    for (const bad of [
+      'The app writes your letter from what you say.',
+      'Early Letters drafts the letter for you.',
+      'It composes a page from your voice.',
+      'We create your book.',
+      'Early Letters can write the letter.',
+    ])
+      expect(MACHINE_AUTHOR.test(bad), bad).toBe(true);
+    for (const ok of ["We'll write once more, at launch.", 'Write to us any time:', 'You write the letter. Early Letters keeps it.'])
+      expect(MACHINE_AUTHOR.test(ok), ok).toBe(false);
+    expect(offenders(PROSE, MACHINE_AUTHOR)).toEqual([]);
+  });
 });
 
 describe('site vocabulary', () => {
