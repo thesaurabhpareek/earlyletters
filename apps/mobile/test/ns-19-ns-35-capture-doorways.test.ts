@@ -87,7 +87,7 @@ const CAPTURE_LITERAL_FILES: Record<CaptureScreen, string[]> = {
   ],
   write: [
     'lib/capture/start-capture.logic.ts', // the one entry's plan: Type opens Write
-    'components/tonight/draft-card.logic.ts', // Home's draft card resumes a typed draft (renderBreaches holds who draws it)
+    'components/tonight/draft-card.logic.ts', // Home's draft card resumes a typed draft (renderBreaches holds who takes its route: ROUTE_EXPORTS)
     'app/listen.tsx', // Type instead: a replace inside the capture flow
     'app/review.tsx', // Type or edit the words: a replace inside the capture flow
   ],
@@ -165,24 +165,58 @@ function literalBreaches(fs: Files): string[] {
 /** One read per file text: the fixtures plant a file or two onto the tree, so the rest is read once for the whole run. */
 const specsOf = new Map<string, string[]>();
 const specs = (t: string) => specsOf.get(t) ?? specsOf.set(t, importSpecifiers(t)).get(t)!;
-/** Value imports between the files in the map (`@/` is src; type-only imports are erased at build and are no edge). */
+const EXTS = ['', ...['.ts', '.tsx'].flatMap((e) => ['', '.ios', '.android', '.native', '.web'].flatMap((p) => [p + e, `/index${p}${e}`]))];
+/** The files in the map that `spec`, imported from `f`, names (`@/` is src; a package is none of them). */
+function resolve(fs: Files, f: string, spec: string): string[] {
+  const base = spec.startsWith('@/') ? spec.slice(2) : spec.startsWith('.') ? posix.normalize(posix.join(posix.dirname(f), spec)) : null;
+  return base === null ? [] : EXTS.map((e) => base + e).filter((x) => fs.has(x));
+}
+/** Value imports between the files in the map (type-only imports are erased at build and are no edge). */
 function importers(fs: Files): Map<string, Set<string>> {
   const by = new Map<string, Set<string>>();
-  const exts = ['', ...['.ts', '.tsx'].flatMap((e) => ['', '.ios', '.android', '.native', '.web'].flatMap((p) => [p + e, `/index${p}${e}`]))];
-  for (const [f, t] of fs) {
-    for (const spec of specs(t)) {
-      const base = spec.startsWith('@/') ? spec.slice(2) : spec.startsWith('.') ? posix.normalize(posix.join(posix.dirname(f), spec)) : null;
-      if (base === null) continue;
-      for (const e of exts) if (fs.has(base + e)) (by.get(base + e) ?? by.set(base + e, new Set()).get(base + e)!).add(f);
-    }
-  }
+  for (const [f, t] of fs) for (const spec of specs(t)) for (const to of resolve(fs, f, spec)) (by.get(to) ?? by.set(to, new Set()).get(to)!).add(f);
   return by;
 }
 
 /**
- * NS-35-R1 by screen, not by folder: a file that starts a letter (it imports or calls startCapture, or a router call or
- * link in it opens /listen or /write) may be drawn by Home alone. The screens that draw a file are the files under app/
- * that reach it through imports, itself included. The capture flow's own replaces are held by startBreaches.
+ * NS-35-R1: the exports that carry a start route out of a file on the literal list. A file may hold the route there
+ * (CAPTURE_LITERAL_FILES), but a screen that takes it from one of these and pushes it opens capture as surely as one
+ * that types it, so a value import of any of them is a start. Other exports of the same files carry no route:
+ * tab-jobs.ts takes HOME_CAPTURE_SOURCES, and Family, Write and Review take a dateline or a clock.
+ */
+const ROUTE_EXPORTS: Record<string, string[]> = {
+  'lib/capture/start-capture.logic.ts': ['CAPTURE_ROUTES', 'planCapture'], // the route list, and the plan whose pathname is one
+  'components/tonight/draft-card.logic.ts': ['draftCard', 'draftCards'], // a card's `route` resumes a draft on Write or Review
+};
+/**
+ * The route-bearing exports `t` takes by value: a named import or re-export (renamed or not), or the whole module
+ * (`* as`, `export *`, a literal `require`), which hands over every export. `type` names and clauses carry no value.
+ */
+function routeImports(fs: Files, f: string, t: string): string[] {
+  const out: string[] = [];
+  const take = (spec: string, clause: string | null) => {
+    for (const to of resolve(fs, f, spec)) {
+      const names = ROUTE_EXPORTS[to];
+      if (!names) continue;
+      const c = clause?.trim() ?? '*';
+      if (/^type\b/.test(c)) continue;
+      const named = /\{([^}]*)\}/.exec(c);
+      const taken = named
+        ? named[1].split(',').map((x) => x.trim()).filter((x) => x && !/^type\s/.test(x)).map((x) => x.split(/\s+as\s+/)[0].trim())
+        : /\*/.test(c) ? names : [];
+      for (const n of taken) if (names.includes(n)) out.push(`${n} from ${to}`);
+    }
+  };
+  for (const m of t.matchAll(/\b(?:import|export)\s+([^;'"`]*?)\s*\bfrom\s*['"]([^'"\n]+)['"]/g)) take(m[2], m[1]);
+  for (const m of t.matchAll(/\brequire\(\s*['"]([^'"\n]+)['"]\s*\)/g)) take(m[1], null);
+  return out;
+}
+
+/**
+ * NS-35-R1 by screen, not by folder: a file that starts a letter (it imports or calls startCapture, takes a start route
+ * by value from ROUTE_EXPORTS, or a router call or link in it opens /listen or /write) may be drawn by Home alone. The
+ * screens that draw a file are the files under app/ that reach it through imports, itself included. The capture flow's
+ * own replaces are held by startBreaches.
  */
 function renderBreaches(fs: Files): string[] {
   const by = importers(fs);
@@ -193,7 +227,7 @@ function renderBreaches(fs: Files): string[] {
   const out: string[] = [];
   for (const [f, t] of fs) {
     if (f === ONE_ENTRY || CAPTURE_FLOW.includes(f)) continue;
-    const starts = by.get(ONE_ENTRY)?.has(f) || /(?<!function )\bstartCapture\(/.test(t) || opensStart(t);
+    const starts = by.get(ONE_ENTRY)?.has(f) || /(?<!function )\bstartCapture\(/.test(t) || routeImports(fs, f, t).length > 0 || opensStart(t);
     if (!starts) continue;
     const seen = new Set([f]);
     for (const x of seen) for (const i of by.get(x) ?? []) seen.add(i);
@@ -360,10 +394,13 @@ describe('[NS-35-R1] only Home starts', () => {
     }
   });
 
-  it('[NS-35-R1] only Home draws a starter: a file that calls or imports startCapture, or opens /listen or /write, is reached from no other screen', () => {
+  it('[NS-35-R1] only Home draws a starter: a file that calls or imports startCapture, takes a start route from a listed file, or opens /listen or /write, is reached from no other screen', () => {
     expect(renderBreaches(files)).toEqual([]);
     // The scan sees Home's real start, so a Home-only starter is what passes.
     expect(importers(files).get(ONE_ENTRY)).toEqual(new Set(['app/(tabs)/index.tsx']));
+    // And it sees who takes a start route by value today: the one entry and Home, and no one else.
+    const takers = [...files].filter(([f, t]) => routeImports(files, f, t).length > 0).map(([f]) => f).sort();
+    expect(takers).toEqual(['app/(tabs)/index.tsx', ONE_ENTRY]);
   });
 
   it('[NS-35-R1] the doorway sources in the closed list start nothing until their handlers are built', () => {
@@ -551,6 +588,34 @@ describe('each scanner fails on a planted breach', () => {
     expect(renderBreaches(plant('app/family.tsx', `import { startCapture as begin } from '@/lib/capture/start-capture';\n${src('app/family.tsx')}`))).toEqual(['app/family.tsx draws app/family.tsx, which starts a letter']);
     // A type-only import is erased at build and starts nothing.
     expect(renderBreaches(plant('app/family.tsx', `import type { CaptureStarted } from '@/lib/capture/start-capture';\n${src('app/family.tsx')}`))).toEqual([]);
+  });
+
+  // A screen that pushes a start route taken from a file on the literal list starts as surely as one that types it.
+  it('[NS-35-R1] fixture (a): Family resuming a draft through Home\'s card route, renamed, is caught', () => {
+    const a = plant('app/family.tsx', `import { draftCard as dc } from '@/components/tonight/draft-card.logic';\n${src('app/family.tsx')}\nconst open = (d: DraftFields) => router.push(dc(d).route);`);
+    expect(renderBreaches(a)).toEqual(['app/family.tsx draws app/family.tsx, which starts a letter']);
+  });
+
+  it('[NS-35-R1] fixture (b): the Book pushing the one entry\'s route list is caught', () => {
+    const b = plant('app/(tabs)/book.tsx', `import { CAPTURE_ROUTES } from '@/lib/capture/start-capture.logic';\n${src('app/(tabs)/book.tsx')}\nconst go = () => router.push(CAPTURE_ROUTES[0]);`);
+    expect(renderBreaches(b)).toEqual(['app/(tabs)/book.tsx draws app/(tabs)/book.tsx, which starts a letter']);
+  });
+
+  it('[NS-35-R1] fixture (c): the Book running the plan itself and pushing the pathname it returns is caught', () => {
+    const c = plant('app/(tabs)/book.tsx', `import { planCapture } from '../../lib/capture/start-capture.logic';\n${src('app/(tabs)/book.tsx')}\nconst go = () => { const p = planCapture({ source: 'speak' }); if (p.kind === 'route') router.push({ pathname: p.pathname, params: p.params }); };`);
+    expect(renderBreaches(c)).toEqual(['app/(tabs)/book.tsx draws app/(tabs)/book.tsx, which starts a letter']);
+  });
+
+  it('[NS-35-R1] fixture: the whole module or a barrel re-export hands the route over too; a type or another export does not', () => {
+    const family = src('app/family.tsx');
+    expect(renderBreaches(plant('app/family.tsx', `import * as plan from '@/lib/capture/start-capture.logic';\n${family}`))).toEqual(['app/family.tsx draws app/family.tsx, which starts a letter']);
+    const barrel = new Map([
+      ...plant('app/(tabs)/book.tsx', `import { routes } from '@/lib/quick';\n${src('app/(tabs)/book.tsx')}`),
+      ['lib/quick/index.ts', code("export { CAPTURE_ROUTES as routes } from '../capture/start-capture.logic';")],
+    ]);
+    expect(renderBreaches(barrel)).toEqual(['app/(tabs)/book.tsx draws lib/quick/index.ts, which starts a letter']);
+    // As Family and tab-jobs.ts take from these files today: a type, a doorway list, a dateline.
+    expect(renderBreaches(plant('app/family.tsx', `import { type CapturePlan, CAPTURE_DOORWAYS } from '@/lib/capture/start-capture.logic';\nimport type { DraftCard } from '@/components/tonight/draft-card.logic';\n${family}`))).toEqual([]);
   });
 
   it('[NS-35-R3] fixture: a notification tap handler that starts a capture is caught', () => {
