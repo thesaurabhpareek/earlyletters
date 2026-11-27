@@ -5,6 +5,10 @@
 //     keeps only the low byte, so any result over 255 bytes failed to parse.
 //  2. The Atomics.pause spin budget (1M) is shorter than a cold OPFS write in
 //     Chromium, so the first sync statement timed out. The budget is raised.
+//  3. A new 1 MiB SharedArrayBuffer was made for every sync call. Chromium refuses
+//     a new one after about 8,191 have been posted to a worker ("Array buffer
+//     allocation failed"), which a long session reaches (BL-2010). One lock and one
+//     result buffer are made once and reused.
 // Remove this file when expo-sqlite ships the fix upstream.
 import { Deferred } from './Deferred';
 import { serialize, deserialize } from './SyncSerializer';
@@ -51,11 +55,15 @@ export async function invokeWorkerAsync(worker, type, data) {
   return deferred.getPromise();
 }
 
+// Fix 3: one lock and one result buffer for every sync call. A sync call blocks the main thread until the worker
+// answers and its result is read, so two sync calls never overlap and one pair is enough.
+let syncBuffers = null;
+
 export function invokeWorkerSync(worker, type, data) {
   const id = messageId++;
-  const lockBuffer = new SharedArrayBuffer(4);
+  if (!syncBuffers) syncBuffers = { lockBuffer: new SharedArrayBuffer(4), resultBuffer: new SharedArrayBuffer(1024 * 1024) };
+  const { lockBuffer, resultBuffer } = syncBuffers;
   const lock = new Int32Array(lockBuffer);
-  const resultBuffer = new SharedArrayBuffer(1024 * 1024);
   Atomics.store(lock, 0, PENDING);
   worker.postMessage({ type, id, data, isSync: true, lockBuffer, resultBuffer });
 
@@ -63,7 +71,10 @@ export function invokeWorkerSync(worker, type, data) {
   let i = 0;
   while (Atomics.load(lock, 0) === PENDING) {
     if (typeof Atomics.pause === 'function') Atomics.pause();
-    if (++i % 100000 === 0 && Date.now() - started > 30000) throw new Error('Sync operation timeout'); // fix 2
+    if (++i % 100000 === 0 && Date.now() - started > 30000) {
+      syncBuffers = null; // fix 3: a late answer to a timed-out call must land in its own pair, not the next call's
+      throw new Error('Sync operation timeout'); // fix 2
+    }
   }
 
   const length = new Uint32Array(resultBuffer, 0, 1)[0];
