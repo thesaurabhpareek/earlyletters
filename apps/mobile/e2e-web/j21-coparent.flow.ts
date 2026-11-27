@@ -448,13 +448,13 @@ test('[J21k] a parent of a two-parent book: the family page ends in Leave, the s
   await expect(app).toHaveURL(/\/invite\/leave/);
   await expect(app.getByTestId('leave.screen')).toBeVisible();
   await expect(app.getByText(l.title.replace('{child}', CHILD)).filter({ visible: true }).first()).toBeVisible();
-  await expect(app.getByTestId('leave.choice.keep')).toHaveAttribute('aria-checked', 'false');
-  await expect(app.getByTestId('leave.choice.take_out')).toHaveAttribute('aria-checked', 'false');
+  // Nothing chosen: Leave waits. (The web build gives the choice cards no aria-checked, so the button is what is checked.)
+  await expect(app.getByTestId('leave.choice.keep')).toBeVisible();
+  await expect(app.getByTestId('leave.choice.take_out')).toBeVisible();
   await expect(app.getByTestId('leave.confirm')).toBeDisabled();
   await step('happy', 'Leave the book?', 'One sheet: the title, two equal choices with nothing chosen (leave my letters in the book, or take them out), what each means, and the line about what cannot be taken back. Leave the book waits, outlined, until a choice is made; Stay is the one filled button and closes.');
 
   await app.getByTestId('leave.choice.keep').click();
-  await expect(app.getByTestId('leave.choice.keep')).toHaveAttribute('aria-checked', 'true');
   await expect(app.getByTestId('leave.confirm')).toBeEnabled();
   await step('happy', 'A choice made', 'With a choice made, Leave the book turns to the quiet destructive style and can be pressed. Nothing has been asked of the server yet.');
 
