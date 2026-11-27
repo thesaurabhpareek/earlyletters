@@ -1,7 +1,8 @@
 /**
- * A typed day survives the back-off (NS-32-R9, P1; NS-13-R29). The planner makes no typed-day note yet (typed days are
- * BL-982), so this holds the two rules a typed day depends on: the back-off rule only ever filters evening nudges, and
- * the one-a-day chooser keeps a typed day over whatever the plan holds, inside the back-off and after day 35.
+ * A typed day survives the back-off (NS-32-R9, P1; NS-13-R29). This holds the two rules a typed day depends on: the
+ * back-off rule only ever filters evening nudges, and the one-a-day chooser keeps a typed day over whatever the plan
+ * holds, inside the back-off and after day 35. The planner's own typed-day notes (BL-982) are tested in
+ * test/reminders-typed-days.test.ts.
  * Fixtures: the fictional family "Asha".
  */
 import { describe, expect, it } from 'vitest';

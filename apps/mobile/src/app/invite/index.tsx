@@ -55,6 +55,7 @@ import { familyCopy } from '@/lib/family/copy';
 import { FINAL_INVITE_ERRORS, inviteErrorKind, trackedInviteReason, type InviteErrorKind } from '@/lib/family/invite-errors.logic';
 import type { InvitePreview } from '@/lib/family/invite-preview.logic';
 import { acceptInvite, bookName, peekInvite } from '@/lib/family/invites';
+import { accountJoined } from '@/lib/first-run/new-phone.logic';
 import { joinedView, joinPlan } from '@/lib/family/join-flow.logic';
 import { track } from '@/lib/analytics/track';
 import { clearPendingInvite, readPendingInvite, savePendingInvite } from '@/lib/family/pending-invite';
@@ -173,6 +174,9 @@ function JoinBook() {
       const here = getChild(childId);
       if (leavesWait && !here) joinWait.start(childId, null);
       await clearPendingInvite(t);
+      // BL-2159: a signed-in first run under this sheet asked the account before the join and holds "no book"; it asks again,
+      // so Close before the book arrives waits for it rather than offering "Start a book" (a second, empty book).
+      if (!here) accountJoined.joined();
       const name = here?.name ?? (await bookName(auth.client, childId).catch(() => null));
       joinWait.named(childId, name);
       haptic('success');

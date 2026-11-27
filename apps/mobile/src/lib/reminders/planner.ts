@@ -26,6 +26,11 @@
  * - A quieted book adds nothing (F12-REQ-011; NS-13-R12, NS-32-R14): no
  *   month or birthday note, never named, and while every book is quiet no
  *   evening nudge either.
+ * - Typed days (NS-18, BL-982; `typedDays`): one note on the day, at the reminder time, and it outranks every other
+ *   note that day (NS-13-R29, NS-18-R2). The back-off, smart quiet and quiet books never drop it (NS-18-R4), and it
+ *   comes with Reminders off too, while notifications are allowed (GAP-LOG D W-G7, G-D09). Title and body are the
+ *   fixed line unless `dayNamesOn` (NS-18-R3); then the body is the parent's words unchanged. More typed days than
+ *   slots: nearest first, the rest at a later plan.
  *
  * - Back-off (NS-13 section 3a; R3, R4, R18): counted from the anchor day (`anchorAt`). Evening nudges follow the
  *   cadence on days 1 to 7, then at most one in each 7-day block on days 8 to 35, then nothing. Month and birthday
@@ -85,6 +90,12 @@ export interface PlannerChild {
   quiet?: boolean;
 }
 
+/** A day the parent typed (typed-days.ts): its local date and their words, exactly as typed. */
+export interface TypedDayNote {
+  date: string;
+  words: string;
+}
+
 /** The newest made letter as the layers read it (NS-48-R27): epoch ms of `captured_at` and its kind, null when unknown. */
 export interface LastLetter {
   at: number;
@@ -126,6 +137,13 @@ export interface PlanInput {
    * falls back to the default.
    */
   window?: ReminderWindow;
+  /** Days the parent typed (typed-days.ts `readTypedDays`). Absent or empty: none. */
+  typedDays?: readonly TypedDayNote[];
+  /**
+   * The one day-names switch, effective value (prefs.ts `dayNamesOn`: stored on and App lock off). Off or absent: a
+   * typed day's body is the fixed line and never the words (NS-18-R3, CL-119).
+   */
+  dayNamesOn?: boolean;
   /**
    * Picks the catalogue key for each evening nudge (NS-48-R2): the planner
    * has already decided the note, this only chooses its words. Tests inject
@@ -141,7 +159,7 @@ export interface ReminderWindow {
   latest: number;
 }
 
-export type PlannedKind = 'evening' | 'monthAge' | 'birthday';
+export type PlannedKind = 'evening' | 'monthAge' | 'birthday' | 'typedDay';
 
 export interface PlannedNotification {
   /** Stable per day and kind, so a re-plan that changes nothing changes no ids. */
@@ -320,6 +338,25 @@ function monthNoteCopy(note: DayNote, names: boolean): { title: string; body: st
   };
 }
 
+/** The typed day's words for the lock screen: the fixed line by default, the words unchanged only with day names on. */
+function typedDayCopy(t: TypedDayNote, dayNamesOn: boolean): { title: string; body: string } {
+  const fixed = reminderCopy.neutral.typedDay;
+  return { title: fixed.title, body: dayNamesOn ? t.words : fixed.body };
+}
+
+/** The typed days worth planning: a real date, today or later, words present (not only spaces), one a date (the first given wins). */
+function typedCandidates(typed: readonly TypedDayNote[] | undefined, today: CalendarDate): { source: 'typedDay'; date: string; typed: TypedDayNote }[] {
+  const seen = new Set<string>();
+  const out: { source: 'typedDay'; date: string; typed: TypedDayNote }[] = [];
+  for (const t of typed ?? []) {
+    const d = parseIsoDate(t.date);
+    if (!d || isoDate(d) !== t.date || dayNumber(d) < dayNumber(today) || seen.has(t.date) || t.words.trim().length === 0) continue;
+    seen.add(t.date);
+    out.push({ source: 'typedDay', date: t.date, typed: t });
+  }
+  return out;
+}
+
 function at(date: CalendarDate, time: ReminderTime, timeZone: string): number {
   return zonedToEpoch({ ...date, hh: time.hour, mm: time.minute }, timeZone);
 }
@@ -360,16 +397,29 @@ export function eveningDayAllowed(offset: number, date: CalendarDate, weekdays: 
 export function planReminders(input: PlanInput): PlannedNotification[] {
   const { now, timeZone, prefs } = input;
   const select = input.select ?? selectNotificationKey;
-  if (!prefs.enabled || prefs.paused) return [];
-
-  const horizon = Math.max(1, input.horizonDays ?? 21);
-  const monthHorizon = Math.max(horizon, input.monthHorizonDays ?? 92);
   const max = Math.max(0, Math.min(input.maxNotifications ?? TOTAL_MAX, budgetedSlots(input.planPending ?? PLAN_MAX)));
   const window = normalizeWindow(input.window);
   const time = clampReminderTime(prefs.time, window).time;
-  const birthdayTime = clampReminderTime(BIRTHDAY_TIME, window).time;
   const todayParts = zonedParts(now, timeZone);
   const today: CalendarDate = { y: todayParts.y, m: todayParts.m, d: todayParts.d };
+  const typed = typedCandidates(input.typedDays, today);
+  /** A typed day's note, or null when its time has passed or lands in quiet hours. Never dropped by the back-off. */
+  const typedNote = (t: TypedDayNote): PlannedNotification | null => {
+    const date = parseIsoDate(t.date)!;
+    const fireAt = at(date, time, timeZone);
+    if (fireAt <= now + MIN_LEAD_MS || inQuietHours(fireAt, timeZone, window)) return null;
+    const c = typedDayCopy(t, input.dayNamesOn === true);
+    return { id: `${ID_PREFIX}typed.${t.date}`, kind: 'typedDay', date: t.date, hour: time.hour, minute: time.minute, fireAt, title: c.title, body: c.body };
+  };
+  // Reminders off (or the old pause): a typed day is the parent's own ask, so it still comes (W-G7). Nothing else does.
+  if (!prefs.enabled || prefs.paused) {
+    const only = typed.map((c) => typedNote(c.typed)).filter((n): n is PlannedNotification => n !== null);
+    return only.sort((a, b) => a.fireAt - b.fireAt || a.id.localeCompare(b.id)).slice(0, max);
+  }
+
+  const horizon = Math.max(1, input.horizonDays ?? 21);
+  const monthHorizon = Math.max(horizon, input.monthHorizonDays ?? 92);
+  const birthdayTime = clampReminderTime(BIRTHDAY_TIME, window).time;
   // The back-off, when an anchor is known: day 0 is the anchor's local date, nothing after day 35 (replaces the horizons).
   const anchorDay = input.anchorAt != null && Number.isFinite(input.anchorAt) ? dayNumber(zonedParts(input.anchorAt, timeZone)) : null;
   const lastDay = anchorDay !== null ? anchorDay + BACKOFF_LAST_DAY : dayNumber(today) + monthHorizon - 1;
@@ -401,11 +451,20 @@ export function planReminders(input: PlanInput): PlannedNotification[] {
   // One budgeted note a local day (NS-32-R1, R1b, R3): a birthday and a month-day on one date are one note, the
   // birthday. The day's one note is chosen BEFORE the lead-time and quiet-hour drops, so a passed birthday note still
   // holds its day and nothing of lower rank fills it in.
-  const chosenNotes = chooseOnePerDay(
-    [...notes.values()].map((note) => ({ source: note.kind, date: isoDate(note.date), note })),
-  );
+  // A typed day is in the same choice, so it holds its day against a birthday or month note (NS-18-R2, NS-13-R29).
+  const chosenNotes = chooseOnePerDay<{ source: 'typedDay' | DayNote['kind']; date: string; note?: DayNote; typed?: TypedDayNote }>([
+    ...typed,
+    ...[...notes.values()].map((note) => ({ source: note.kind, date: isoDate(note.date), note })),
+  ]);
   const noteDays = new Set<number>();
-  for (const { note } of chosenNotes) {
+  for (const chosen of chosenNotes) {
+    if (chosen.typed) {
+      noteDays.add(dayNumber(parseIsoDate(chosen.typed.date)!));
+      const n = typedNote(chosen.typed);
+      if (n) out.push(n);
+      continue;
+    }
+    const note = chosen.note!;
     const t = note.kind === 'birthday' ? birthdayTime : time;
     const fireAt = at(note.date, t, timeZone);
     noteDays.add(dayNumber(note.date));
@@ -436,7 +495,7 @@ export function planReminders(input: PlanInput): PlannedNotification[] {
       const date = addDays(today, n - dayNumber(today));
       if (!weekdays.includes(weekdayOf(date))) continue;
       if (anchorDay !== null && !eveningDayAllowed(n - anchorDay, date, weekdays)) continue;
-      if (noteDays.has(n)) continue; // the month or birthday note is today's one note
+      if (noteDays.has(n)) continue; // the typed day, month or birthday note is today's one note
       const fireAt = at(date, time, timeZone);
       if (fireAt <= now + MIN_LEAD_MS || fireAt < quietUntil || inQuietHours(fireAt, timeZone, window)) continue;
       const ordinal = slotOrdinal(date, weekdays);

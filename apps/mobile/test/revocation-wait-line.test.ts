@@ -41,16 +41,16 @@ describe('[BL-1461] the revocation wait line', () => {
     expect(s.status).toBe('signingOut');
   });
 
-  it('shows nothing before the delay, then the line, said once to VoiceOver', () => {
+  it('shows nothing before the delay, then the line (RevocationWaitLine says it to VoiceOver, live-region-said-once.test.ts)', () => {
     const state = waiting('apple_revoked');
     const r = renderHook(() => useRevocationWaitLine(state, LINE));
     expect(r.result.current).toBeNull();
     vi.advanceTimersByTime(REVOCATION_WAIT_LINE_DELAY_MS - 1);
     expect(r.result.current).toBeNull();
-    expect(h.spoken).toEqual([]);
     vi.advanceTimersByTime(1);
     expect(r.result.current).toBe(LINE);
-    expect(h.spoken).toEqual([LINE]);
+    // The hook only decides when the line shows; a second announce() here would say it twice (PER4-018).
+    expect(h.spoken).toEqual([]);
   });
 
   for (const reason of ['user', 'force_reauth', 'switch_account'] as SignOutReason[]) {
