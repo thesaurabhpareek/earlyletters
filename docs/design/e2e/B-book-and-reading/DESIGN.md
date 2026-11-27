@@ -337,6 +337,7 @@ Layout, default (top to bottom, the card's text column, no lamp):
    5. Who can read it: "Only you" or "In the book" (rules in B-J03).
    6. Earlier versions (NS-12, area C, C-S13).
    7. Where the recording is (NS-08 words, area C, C-S09): "Kept on this phone" or where it is.
+   Built since this drawing, ahead of row 1: "Read from here" (spec 13 section 5, BL-1792, behind `EXPO_PUBLIC_READ_THE_YEAR`; only on a letter Read together can play; on the other parent's letter in a section of its own), then "Change words" where it is offered (BL-413). The built list has no "This letter" heading yet, and its rows other than Read from here are 44 pt, not 56; both are open for the next pass of this section.
 10. Delete (`Button` destructive tone with a Trash glyph and the word, full width), last on the page, apart from the list (R3b).
 11. The "Exactly as said" view switch (built) stays where it is today, under the provenance block; not a list row (card section 3 Not in scope).
 
