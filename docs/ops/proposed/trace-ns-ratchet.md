@@ -9,21 +9,23 @@ Agents cannot edit `.github/workflows/`. Under BL-1869 this step goes into the `
           BASE_REF: ${{ github.base_ref }}
         run: |
           set -euo pipefail
+          # Naming the baseline makes a missing or deleted one fail, also where no base copy is read.
+          NS=(--ns-baseline docs/ops/trace-ns-baseline.txt)
           if [ "$EVENT" != pull_request ]; then
-            # A push to develop or main has no base branch: it runs the plain check, which still fails on added and gone lines.
-            node scripts/trace.mjs --no-write --check
+            # A push to develop or main has no base branch: the plain check still fails on added and gone lines.
+            node scripts/trace.mjs --no-write --check "${NS[@]}"
             exit 0
           fi
-          if [ "$BASE_REF" != develop ]; then
-            # Until main's baseline holds the CR-227 and CR-228 seeds, a PR into main would read them as grown.
-            # Remove this branch once the release PR that carries them has merged into main.
-            node scripts/trace.mjs --no-write --check
+          if [ "$BASE_REF" = main ]; then
+            # Main's baseline lacks the CR-227 and CR-228 seeds (27 Nov), so a PR into main would read them as grown.
+            # No grown check into main until then. Remove this branch once the release PR carrying the seeds has merged into main.
+            node scripts/trace.mjs --no-write --check "${NS[@]}"
             exit 0
           fi
           git fetch --depth=1 origin "$BASE_REF"
-          # Fail closed: develop and main both hold the baseline, so a base copy that cannot be read fails the step.
+          # Fail closed: a base copy that cannot be read fails the step.
           git show "origin/$BASE_REF:docs/ops/trace-ns-baseline.txt" > "$RUNNER_TEMP/ns-base.txt"
-          node scripts/trace.mjs --no-write --check --ns-base "$RUNNER_TEMP/ns-base.txt"
+          node scripts/trace.mjs --no-write --check "${NS[@]}" --ns-base "$RUNNER_TEMP/ns-base.txt"
 ```
 
 What it fails on. Plain `--check` exits 1 on any of these (`scripts/trace.mjs`, `main`, the `failed` and `nsFail` lines):
@@ -41,7 +43,7 @@ What the step trusts. Only the baseline's base copy comes from the target branch
 
 That list does not close the gap, and this doc does not claim it does. Any PR can take a baselined row out of the gate, with exit 0 and none of the four files touched, by adding a title that cites the id in a test file, even one no runner runs, an e2e-web flow, a Maestro tag, or a `(device)` mark on the card row. The line then reads as stale, which is logged on every run. Each of those is a claim that the row is covered, and only review checks it is true. So a reviewer of any PR whose run shows a new stale line checks that the row's new coverage proves the row.
 
-How the base copy is taken. The step reads `docs/ops/trace-ns-baseline.txt` from `origin/<base branch>` at the time the job runs, so `grown` compares the PR's baseline with the target branch's tip. A one-time seed (CR-227, CR-228) adds lines, so the PR that carries it reads as `grown` against the base copy it starts from; it can pass only when it merges before the step is applied, after which the seed is in every later base copy of that branch. That is why the step waited for #2050, which merged into develop on 27 Nov 2026 (below). Main is a second base branch with its own copy, and on 27 Nov main (`7429febb`) holds neither seed: this branch checked against main's copy exits 1 on 188 `grown` lines (the 18 CR-227 and 170 CR-228 lines; Review B on #2052). So the drafted step reads the base copy only for PRs into develop, and runs the plain check on PRs into main, until the release PR that carries the seeds has merged into main. Then that branch of the step comes out.
+How the base copy is taken. The step reads `docs/ops/trace-ns-baseline.txt` from `origin/<base branch>` at the time the job runs, so `grown` compares the PR's baseline with the target branch's tip. A one-time seed (CR-227, CR-228) adds lines, so the PR that carries it reads as `grown` against the base copy it starts from; it can pass only when it merges before the step is applied, after which the seed is in every later base copy of that branch. That is why the step waited for #2050, which merged into develop on 27 Nov 2026 (below). Main is a second base branch with its own copy, and on 27 Nov main (`7429febb`) holds neither seed: this branch checked against main's copy exits 1 on 188 `grown` lines (the 18 CR-227 and 170 CR-228 lines; Review B on #2052). So the drafted step runs the plain check on PRs into main, and reads the base copy for every other base (develop, and any branch a PR is stacked on), until the release PR that carries the seeds has merged into main. Then that branch of the step comes out; BL-1869's owner takes it out in the PR after that release. The cost while it stands: a PR into main (the release PR, or a hotfix) can add baseline lines unseen, since only the grown check catches an added line. A deleted baseline still fails there, because the step names the baseline with `--ns-baseline` in every branch (`scripts/trace.mjs:827`).
 
 One more gap, stated plainly. A new P0 row covered only by a title in a test file no runner runs is not open, so it exits 0 with no notice at all (Review A on #2052). Whether a test file is run is the test runners' configuration, which this gate does not read.
 
