@@ -8,7 +8,7 @@
     "experiments"
   ],
   "scripts": {
-    "test": "npm run test --workspaces --if-present && node --test scripts/guards/pr-size.test.mjs scripts/guards/founder-ask.test.mjs scripts/guards/migrations-record.test.mjs scripts/trace.test.mjs scripts/lint/lint.test.mjs scripts/release/setup-steps.test.mjs scripts/release/setup-state.test.mjs scripts/qa/evidence-check.test.mjs scripts/qa/title-cites.test.mjs scripts/release/dispatch-log.test.mjs scripts/release/launch-gate.test.mjs scripts/release/mail-preflight.test.mjs scripts/content/export-content-map.test.mjs scripts/content/merge-content-map.test.mjs \"compliance/**/*.test.mjs\" && node scripts/trace.mjs --no-write",
+    "test": "npm run test --workspaces --if-present && node --test scripts/guards/pr-size.test.mjs scripts/guards/founder-ask.test.mjs scripts/guards/migrations-record.test.mjs scripts/ci/proposed-patch-applies.test.mjs scripts/trace.test.mjs scripts/lint/lint.test.mjs scripts/release/setup-steps.test.mjs scripts/release/setup-state.test.mjs scripts/qa/evidence-check.test.mjs scripts/qa/title-cites.test.mjs scripts/release/dispatch-log.test.mjs scripts/release/launch-gate.test.mjs scripts/release/mail-preflight.test.mjs scripts/content/export-content-map.test.mjs scripts/content/merge-content-map.test.mjs \"compliance/**/*.test.mjs\" && node scripts/trace.mjs --no-write",
     "test:coverage": "node scripts/coverage/run.mjs",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "mobile": "npm run start -w @scribe/mobile",
