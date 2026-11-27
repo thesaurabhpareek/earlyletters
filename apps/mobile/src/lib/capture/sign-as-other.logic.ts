@@ -24,9 +24,20 @@ export const SIGN_AS_OTHER_TAGS: readonly string[] = Object.freeze(['child-input
 
 export const parseSignAsOtherFlag = (raw: string | undefined | null): boolean => (raw ?? '').trim().toLowerCase() === 'on';
 
+/**
+ * The remote pause (`killSwitches.signAsOther`, packages/api kill-switches.ts; GAP-LOG G-18). Only the boolean `true`
+ * pauses: an absent config, a config signed before the key existed and any other value read as not paused. A pause
+ * hides the From card and never turns it on; the build flag alone does that.
+ */
+export const signAsOtherPaused = (config: { killSwitches?: Readonly<Record<string, unknown>> | null } | null | undefined): boolean =>
+  config?.killSwitches?.signAsOther === true;
+
 /** Names used before on this phone (NS-16 section 10): L3, never synced, cleared at sign-out and by Erase everything. */
 export const SIGN_AS_RECENT_SETTING = 'signAs.recent';
-/** The name typed for a draft not yet kept, so a call or a kill keeps it (NS-16 section 6): L3, same clearing. */
+/**
+ * The name typed for a draft not yet kept, so a call or a kill keeps it (NS-16 section 6): L3, same clearing, and it
+ * goes with its draft (Keep, Let it go, Delete, a book's erase; repos/drafts.ts forgetDraftFromName).
+ */
 export const SIGN_AS_DRAFT_SETTING = 'signAs.draft';
 /** The list holds at most this many names, most recent first (NS-16 section 6, "Many"). */
 export const SIGN_AS_RECENT_MAX = 20;

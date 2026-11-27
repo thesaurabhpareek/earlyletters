@@ -11,6 +11,7 @@ import {
   parseSignAsOtherFlag,
   rememberName,
   serializeDraftName,
+  signAsOtherPaused,
   signatureForKeep,
   SIGN_AS_DRAFT_SETTING,
   SIGN_AS_RECENT_SETTING,
@@ -27,6 +28,34 @@ export function setSignAsOtherForTest(value: boolean | null): void {
 }
 
 export const signAsOtherEnabled = (): boolean => testOverride ?? BUILD_VALUE;
+
+/** The signed config already on the phone (lib/remote `getRemoteConfig`); reading it makes no call. */
+export type RemoteConfigLoad = () => { getRemoteConfig(): { killSwitches?: Readonly<Record<string, unknown>> | null } | null };
+
+/**
+ * lib/remote imports react-native, so it is loaded late, only once the build flag is on, the way
+ * first-run/sign-in-pause.ts does it; Metro resolves the inline require when it bundles the app.
+ */
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const loadRemote: RemoteConfigLoad = () => require('../remote') as ReturnType<RemoteConfigLoad>;
+let loadOverride: RemoteConfigLoad | null = null;
+
+/** Tests only. */
+export function setSignAsOtherRemoteForTest(load: RemoteConfigLoad | null): void {
+  loadOverride = load;
+}
+
+/** `killSwitches.signAsOther` is on. A config that cannot be read is not paused: a pause only hides (fail-open). */
+export function signAsOtherPausedNow(load: RemoteConfigLoad = loadOverride ?? loadRemote): boolean {
+  try {
+    return signAsOtherPaused(load().getRemoteConfig());
+  } catch {
+    return false;
+  }
+}
+
+/** The From card may be drawn: the build flag on and no remote pause. The pause is read only with the flag on. */
+export const signAsOtherOffered = (): boolean => signAsOtherEnabled() && !signAsOtherPausedNow();
 
 /** Names used before on this phone, most recent first. Never throws: a store that cannot be read has none. */
 export function recentFromNames(): string[] {
@@ -52,7 +81,7 @@ export function forgetFromNames(): void {
 }
 
 export type FromName = {
-  /** The From control is drawn: the flag is on and this is a draft not yet kept. */
+  /** The From control is drawn: the flag is on, `killSwitches.signAsOther` is not, and this is a draft not yet kept. */
   offered: boolean;
   typed: string;
   recent: readonly string[];
@@ -73,7 +102,9 @@ export type FromName = {
  */
 export function useFromName(input: { draftId: string | null; keptEntryId: string | null }): FromName {
   const { draftId, keptEntryId } = input;
-  const offered = signAsOtherEnabled() && draftId !== null && keptEntryId === null;
+  // Read at each render, so a pause that lands while Review is open hides the card at its next draw; what Review
+  // shows and what Keep writes come from the same `offered`, so a paused Keep signs as the parent, as shown.
+  const offered = draftId !== null && keptEntryId === null && signAsOtherOffered();
   const [kept] = useState<string | null>(() => (keptEntryId ? (getEntry(keptEntryId)?.authorSignsAs ?? null) : null));
   const [typed, setTypedState] = useState<string>(() => (offered && draftId ? parseDraftName(getSetting(SIGN_AS_DRAFT_SETTING), draftId) : ''));
   const [recent, setRecent] = useState<string[]>(() => (offered ? recentFromNames() : []));

@@ -53,6 +53,12 @@ export const KILL_SWITCH_KEYS = [
    * ever hides: the build flag `EXPO_PUBLIC_BOOK_SEARCH` is the only thing that turns Find on. Phone only, no server part.
    */
   'bookSearch',
+  /**
+   * Signing a letter as someone else (NS-16, BL-980). Hides the From card on Review, so a new letter signs as the
+   * parent, as before. A letter already signed keeps its stored name, and the build flag `EXPO_PUBLIC_SIGN_AS_OTHER`
+   * is the only thing that turns the card on. Phone only, no server part.
+   */
+  'signAsOther',
 ] as const;
 export type KillSwitchKey = (typeof KILL_SWITCH_KEYS)[number];
 

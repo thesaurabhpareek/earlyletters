@@ -115,7 +115,7 @@ describe('[WP-F19-16] kill switches for the M14 features', () => {
   });
 
   it('[F19-REQ-009] the kill-switch vocabulary is closed and matches the F19 6.5 registry', () => {
-    expect([...KILL_SWITCH_KEYS].sort()).toEqual(['backupUploads', 'bookSearch', 'escrow', 'invites', 'libraryDays', 'packDownloads', 'photoMoments', 'photos', 'serverContent', 'signIn', 'statusReport', 'sync', 'videos']);
+    expect([...KILL_SWITCH_KEYS].sort()).toEqual(['backupUploads', 'bookSearch', 'escrow', 'invites', 'libraryDays', 'packDownloads', 'photoMoments', 'photos', 'serverContent', 'signAsOther', 'signIn', 'statusReport', 'sync', 'videos']);
     expect(Object.keys(DEFAULT_REMOTE_CONFIG.killSwitches).sort()).toEqual([...KILL_SWITCH_KEYS].sort());
   });
 
@@ -205,5 +205,18 @@ describe('[NS-02] the Find pause', () => {
     expect(older.ok && older.value.killSwitches.bookSearch).toBe(false);
     const on = parseRemoteConfig({ ...base, killSwitches: { bookSearch: true } });
     expect(on.ok && isKilled(on.value, 'bookSearch')).toBe(true);
+  });
+});
+
+describe('[NS-16] the From pause (killSwitches.signAsOther, BL-980)', () => {
+  it('[NS-16] signAsOther parses, defaults to off, and an older signed config without it parses as off', () => {
+    expect(DEFAULT_REMOTE_CONFIG.killSwitches.signAsOther).toBe(false);
+    const older = parseRemoteConfig({ ...base, killSwitches: { sync: false, bookSearch: true } });
+    expect(older.ok && older.value.killSwitches.signAsOther).toBe(false);
+    const on = parseRemoteConfig({ ...base, killSwitches: { signAsOther: true } });
+    expect(on.ok && isKilled(on.value, 'signAsOther')).toBe(true);
+    // Only the boolean true pauses: a string in the signed config falls back to off, never to on.
+    const odd = parseRemoteConfig({ ...base, killSwitches: { signAsOther: 'yes' } });
+    expect(odd.ok && odd.value.killSwitches.signAsOther).toBe(false);
   });
 });
