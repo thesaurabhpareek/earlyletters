@@ -184,7 +184,8 @@ describe('[BL-568] wiring', () => {
 
   it('[BL-568, CR-245] web never installs the handler, even in production', () => {
     // Expo's web async import runs the module first and loads its chunk only if that throws. Our handler
-    // swallows the fatal, so a production web build showed the recovery screen on every lazy import (#2240).
+    // records that first miss as a fatal fault, so a production web build showed the recovery screen on every
+    // lazy import (#2240).
     expect(shouldInstallGlobalHandlers('production', 'web')).toBe(false);
   });
 });
