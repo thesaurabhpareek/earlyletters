@@ -92,9 +92,9 @@ which is the message `decideLaunchGate` returns when it opens (`scripts/release/
 | the refusal, exit 1; the usage line, exit 2 | refused | `refuses: the refusal and exit 1`, `the usage line and exit 2` |
 | the open line, exit 1 | refused (pipefail) | `refuses: the open line but exit 1` |
 | `tagged commit checked: ...` (BL-1594's line), exit 0 | refused: it is not the launch gate's line | `refuses: the tag-check line` |
-| the open line indented, with text after it, a short sha, or `concluded failure` | refused | four `refuses:` cases |
+| the open line indented, with text after it, a short sha, `concluded failure`, no run id, a 40-hex merge base, or in upper case | refused | seven `refuses:` cases |
 
-The test reads the `run:` block from the patch itself and runs it under `bash -e` (as the runner does) with a stub `node` on `PATH`; the open line it feeds is built by calling `decideLaunchGate`, so a change to the script's wording fails the test before it can fail a release. Mutants tried on the patch (no pipefail, either anchor dropped, the check skipped, a loose sha, exit 0 on a miss, any conclusion): each fails at least one test. The patched `release-ios.yml` lints clean: `node scripts/ci/workflow-lint.mjs` printed `0 finding(s): 0 pin, 0 prt`.
+The test reads the `run:` block from the patch itself and runs it under `bash -e` (as the runner does) with a stub `node` on `PATH`; the open line it feeds is built by calling `decideLaunchGate`, so a change to the script's wording fails the test before it can fail a release. The stub `node` records its arguments, and the pass case checks the exact call (`scripts/release/launch-gate.mjs --repo <repo> --sha <tagged sha>`), so a swapped or dropped argument fails. Mutants tried on the patch (no pipefail, either anchor dropped, the check skipped, a loose run sha, a loose merge-base sha, `run [0-9]*`, case-insensitive grep, exit 0 on a miss, any conclusion, `--sha "$REPO"`, no arguments): each fails at least one test. The patched `release-ios.yml` lints clean: `node scripts/ci/workflow-lint.mjs` printed `0 finding(s): 0 pin, 0 prt`.
 
 Coupling: the regex and the script's message must change together. The test above fails when only one of them does. Door: two-way (put back the one-line `run:`). Not verified: not run on a GitHub runner; the test uses the local `bash`.
 
