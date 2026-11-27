@@ -9,7 +9,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { accountView, nextEndedEarly, waitEndedEarly } from '../src/components/auth/account-view.logic';
-import { authReducer, initialAuthState, type AuthEvent, type AuthState, type SyncGate } from '../src/lib/auth/machine.logic';
+import { authReducer, initialAuthState, type AuthEvent, type AuthState, type PendingUploads, type SyncGate } from '../src/lib/auth/machine.logic';
 
 const U = '11111111-1111-4111-8111-111111111111';
 const FULL: SyncGate = { termsCurrent: true, ageAttested: true, sensitiveData: true, contentAllowed: true };
@@ -214,5 +214,60 @@ describe('[BL-451] the signed-out page\'s early-end line, one state change at a 
     expect(nextEndedEarly(out, out, true)).toEqual({ shown: true, announce: false });
     expect(nextEndedEarly(out, out, false)).toEqual({ shown: false, announce: false });
     expect(nextEndedEarly(ready(), ready(), false)).toEqual({ shown: false, announce: false });
+  });
+});
+
+describe('[BL-478] point 2: a gate answer after the queue already emptied is no early end (A-REQ-033)', () => {
+  /** The same walk as account.tsx: each event through the real machine, then the early-end line's step. */
+  const walk = (from: AuthState, events: AuthEvent[]) => {
+    let s = from;
+    let on = false;
+    return events.map((e) => {
+      const next = authReducer(s, e);
+      const step = nextEndedEarly(s, next, on);
+      s = next;
+      on = step.shown;
+      return [step.shown, step.announce] as const;
+    });
+  };
+  const waiting = () => authReducer(ready(), { type: 'SIGN_OUT_REQUESTED', reason: 'user', pendingUploads: 2 });
+  /** Sync turned off by a gate answer, with the queue as readGateInOrder read it after that answer. */
+  const offWith = (pendingUploads: PendingUploads | number): AuthEvent => ({ ...DECLINED_GATE, pendingUploads });
+  const LOST: AuthEvent = { type: 'SIGNED_OUT' };
+
+  it('the mutant: the outbox emptied, then a gate answer turned sync off before the drain was noticed: no line, then or signed out', () => {
+    expect(walk(waiting(), [offWith(0), LOST])).toEqual([[false, false], [false, false]]);
+    expect(walk(waiting(), [offWith({ kind: 'count', n: 0 }), LOST])).toEqual([[false, false], [false, false]]);
+  });
+
+  it('the wait still ends at once and nothing more is sent', () => {
+    const w = waiting();
+    const ended = authReducer(w, offWith(0));
+    expect(accountView(ended, false)).toMatchObject({ signOut: 'closing', staySignedIn: false });
+    expect(waitEndedEarly(w, ended)).toBe(false);
+  });
+
+  it('letters still queued, a queue that could not be read, or no count at all: the line, as before', () => {
+    for (const e of [offWith(1), offWith({ kind: 'unknown' }), DECLINED_GATE] as AuthEvent[]) {
+      expect(walk(waiting(), [e, LOST])).toEqual([[true, false], [true, true]]);
+    }
+  });
+
+  it('a wait that began before the gate was read and then drained (sync still unknown) is no early end either', () => {
+    const blind = authReducer(OFFLINE(), { type: 'SIGN_OUT_REQUESTED', reason: 'user', pendingUploads: { kind: 'unknown' } });
+    expect(walk(blind, [{ type: 'UPLOADS_DRAINED' }, LOST])).toEqual([[false, false], [false, false]]);
+    expect(walk(blind, [offWith(0), LOST])).toEqual([[false, false], [false, false]]);
+    expect(walk(blind, [offWith(3), LOST])).toEqual([[true, false], [true, true]]);
+  });
+});
+
+describe('[BL-478] point 3: an Apple revocation during the person\'s own wait takes "Stay signed in" away (A-REQ-033)', () => {
+  it('the row goes once the revocation is held, and the wait is the revocation\'s', () => {
+    const waiting = authReducer(ready(), { type: 'SIGN_OUT_REQUESTED', reason: 'user', pendingUploads: 2 });
+    expect(accountView(waiting, false).staySignedIn).toBe(true);
+    const revoked = authReducer(waiting, { type: 'SIGN_OUT_REQUESTED', reason: 'apple_revoked', pendingUploads: 2 });
+    expect(revoked).toMatchObject({ status: 'signingOut', reason: 'apple_revoked', waitingForUploads: true, sync: 'on' });
+    expect(accountView(revoked, false)).toMatchObject({ signOut: 'waiting', staySignedIn: false });
+    expect(waitEndedEarly(waiting, revoked)).toBe(false);
   });
 });

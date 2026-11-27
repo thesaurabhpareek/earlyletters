@@ -21,7 +21,7 @@
  * API for other screens: src/lib/README.md.
  */
 import * as Crypto from 'expo-crypto';
-import { AVOID_RECENT, type DictionaryTerm, type Edit, type EditLevel } from '@scribe/core';
+import { AVOID_RECENT, type AuthorEdit, type DictionaryTerm, type Edit, type EditLevel } from '@scribe/core';
 import { keychainFloor, type LedgerDb } from './billing/letter-ledger';
 import { decideGate } from './age-gate.logic';
 import { bookVisibleTo } from './auth/account-scope.logic';
@@ -115,7 +115,7 @@ export type { ConflictCopy } from './sync/outbox';
 export type { Table as StoreTable } from './db/repos';
 export { AudioMissingError } from './db/repos/letters';
 export { EntryTombstonedError } from './db/repos/entries';
-export type { DeletedEntry } from './db/repos/entries';
+export type { AuthorLayer, DeletedEntry } from './db/repos/entries';
 export type { DeletedBook } from './db/repos/wipe';
 
 // ── Connection ───────────────────────────────────────────────────────────
@@ -377,6 +377,21 @@ export function setSetting(key: string, value: string): void {
 
 export function deleteSetting(key: string): void {
   settings.deleteSetting(ctx(), key);
+  bus.emit('settings');
+}
+
+/** The setting keys that start with `prefix` (repos/settings.ts `settingKeysWithPrefix`). Keys only. */
+export function settingKeysWithPrefix(prefix: string): string[] {
+  return settings.settingKeysWithPrefix(ctx(), prefix);
+}
+
+/** Deletes several settings in one transaction and tells listeners once. */
+export function deleteSettings(keys: readonly string[]): void {
+  if (keys.length === 0) return;
+  const c = ctx();
+  c.db.transaction(() => {
+    for (const key of keys) settings.deleteSetting(c, key);
+  });
   bus.emit('settings');
 }
 
@@ -993,6 +1008,50 @@ export function setEntryDate(id: string, occurredOn: string, precision: Occurred
     signalOutbox();
   }
   return done;
+}
+
+const TEXT: FieldGroup[] = ['text'];
+
+/**
+ * "Change words" on a saved letter's page, and its put back (BL-413; the constitution: every edit is stored and
+ * reversible). One local transaction each: the words, and with sync on the words group in the outbox (the server
+ * keeps each earlier final_text in entry_versions). raw_transcript, machine_edits and the free-letter ledger are never
+ * touched. False for a left book (BL-1959), and for a letter the repository refuses (entries.ts WORDS_CHANGEABLE).
+ */
+function writeWords(id: string, write: (c: RepoContext, owner: string | null) => boolean): boolean {
+  const c = ctx();
+  if (entryBookLeft(c, id)) return false;
+  let done = false;
+  c.db.transaction(() => {
+    done = write(c, syncOwner(c.db));
+    if (done) enqueueEntryUpsert(c.db, id, TEXT, enqueueContext(c));
+  });
+  if (done) {
+    bus.emit('entries');
+    signalOutbox();
+  }
+  return done;
+}
+
+/** The person's own words for a saved letter (entries.ts changeWords). */
+export function changeLetterWords(id: string, text: string): boolean {
+  return writeWords(id, (c, owner) => entries.changeWords(c, id, text, owner));
+}
+
+/** Put back one of the person's changes to a saved letter (entries.ts putBackEdit). */
+export function putBackLetterEdit(id: string, edit: AuthorEdit): boolean {
+  return writeWords(id, (c, owner) => entries.putBackEdit(c, id, edit, owner));
+}
+
+/** The person's changes to a saved letter, against its words as kept; null when there are none. */
+export function letterAuthorEdits(id: string): entries.AuthorLayer | null {
+  return entries.authorLayer(ctx(), id);
+}
+
+/** Whether the letter page offers "Change words" for this letter: the same rows changeLetterWords writes. */
+export function canChangeLetterWords(id: string): boolean {
+  const c = ctx();
+  return !entryBookLeft(c, id) && entries.canChangeWords(c, id, syncOwner(c.db));
 }
 
 /**

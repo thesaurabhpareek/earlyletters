@@ -175,7 +175,7 @@ One table: what Home shows, what Moments shows, and what changes. "Nothing" mean
 | Quiet, hidden, hard stretch, expecting-only | Nothing | R253 | [verified: 28-moments-tab.md:1323] |
 | Low Power Mode, storage critical | Nothing | Scan skipped | [verified: 28-moments-tab.md:632] |
 | App lock locked, or app inactive | Cover or picture veil first (section 5.4) | DC-5's scoped cover | |
-| Two books | The card belongs to the active book's {child}. "Tell it" does not ask "Whose book?" because Home's switcher already names the book (F-6 asks the founder to confirm) | R32 as written | A change to R32 on Home only |
+| Two books | The card belongs to the active book's {child}. "Tell it" does not ask "Whose book?" because Home's switcher already names the book (F-6, for the exec team to rule, section 11) | R32 as written | A change to R32 on Home only |
 | Library changes while Home is open | The card stays as drawn until the next focus or foreground. No change observer exists (R10.3) | Same | [verified: 28-moments-tab.md:632] |
 | The picture is deleted in Photos while shown | The thumbnail request returns null at the next focus; the card is removed with no message | | |
 | Flag off, or no Moments tab in the build | Home exactly as today | As today | |

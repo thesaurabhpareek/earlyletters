@@ -70,13 +70,27 @@ export function runPick(picker: PhotoPicker, onProgress?: (fraction: number) => 
   return { done, cancel: () => run.cancel() };
 }
 
+/**
+ * The longest side a stored copy may have, in pixels (ruling T3, NS-01-R37a). The native re-encode brings a larger
+ * picture down to exactly this and never enlarges a smaller one (R37b); the camera original is never stored.
+ */
+export const STORED_LONG_SIDE_MAX = 4032;
+
+/**
+ * True when a stripped JPEG cannot be shown to be within the stored-copy cap: its frame is longer than 4,032 px, or it
+ * has no frame size, or a zero side (a height set later by DNL). Fails closed: such a picture goes through the native
+ * re-encode, which writes a frame with its real size, or is not stored (#2095 review A note 1).
+ */
+const overCap = (s: { width: number | null; height: number | null }): boolean =>
+  !s.width || !s.height || Math.max(s.width, s.height) > STORED_LONG_SIDE_MAX;
+
 /** The room a stored copy needs besides its own size (NS-01-R45, PROPOSED in the locked card): 50 MB. */
 export const PHOTO_FREE_MARGIN_BYTES = 50 * 1024 * 1024;
 
 export type CommitResult =
   | { status: 'stored'; photo: StoredPhoto }
   | { status: 'needs_words' }
-  | { status: 'unreadable'; reason: 'not_jpeg' | 'corrupt' | 'needs_rotation' }
+  | { status: 'unreadable'; reason: 'not_jpeg' | 'corrupt' | 'needs_rotation' | 'too_large' }
   | { status: 'no_space' }
   | { status: 'failed' };
 
@@ -93,15 +107,19 @@ export async function commitPhoto(
   if ((input.requireWords ?? true) && !canKeepWithPhoto(input.finalText)) return { status: 'needs_words' };
   let stripped = stripJpeg(input.bytes);
   if (!stripped.ok && stripped.reason === 'corrupt') return { status: 'unreadable', reason: 'corrupt' };
-  if (!stripped.ok || stripped.orientation !== 1) {
-    // Not a JPEG (HEIC, PNG), or a JPEG whose Exif turn would be lost when Exif goes: the native step makes an upright
-    // JPEG first. Without it (no device adapter yet) nothing is stored and the letter is kept as it is.
-    const why = stripped.ok ? 'needs_rotation' : stripped.reason;
+  if (!stripped.ok || stripped.orientation !== 1 || overCap(stripped)) {
+    // Not a JPEG (HEIC, PNG), a JPEG whose Exif turn would be lost when Exif goes, or a JPEG longer than 4,032 px
+    // (ruling T3, NS-01-R37a): the native step makes an upright JPEG at quality 0.85 within the cap first. An upright
+    // JPEG within the cap skips it and keeps its own encoded pixels, metadata stripped (T3 open item O-1). Without the
+    // native step (no device adapter yet) nothing is stored and the letter is kept as it is.
+    const why = !stripped.ok ? stripped.reason : stripped.orientation !== 1 ? 'needs_rotation' : 'too_large';
     const baked = await deps.orientation?.bake(input.bytes, { uri: input.sourceUri }).catch(() => null);
     if (!baked) return { status: 'unreadable', reason: why };
     stripped = stripJpeg(baked);
     if (!stripped.ok) return { status: 'unreadable', reason: stripped.reason };
     if (stripped.orientation !== 1) return { status: 'unreadable', reason: 'needs_rotation' };
+    // Belt and braces: a re-encode that came back over the cap is never stored.
+    if (overCap(stripped)) return { status: 'unreadable', reason: 'too_large' };
   }
   if (carriesMetadata(stripped.bytes)) return { status: 'failed' }; // belt and braces: never store a copy that still carries any
   try {

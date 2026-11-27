@@ -1,5 +1,13 @@
 # Proposed: AX5 screens and accessibility-tree evidence job (BL-409)
 
+Apply it from the repo root. It writes `.github/workflows/`, which agent sessions cannot push (see Status below), so whoever applies it uses an account that can; the commit that applies it cites BL-2133:
+
+```
+git apply --check docs/ops/proposed/workflows/a11y-evidence.patch && git apply docs/ops/proposed/workflows/a11y-evidence.patch
+```
+
+`scripts/ci/proposed-patch-applies.test.mjs` (in `npm test`, BL-2133) fails the day this patch stops applying to develop, so the command above works on any green develop.
+
 Status: proposal. `.github/workflows/` cannot be edited by agents; the founder applies the patch. Nothing here has been run in GitHub Actions.
 Security lens: this proposal targets `.github/workflows/` (it adds one workflow file), although the PR itself touches only `docs/ops` and `apps/mobile`.
 
@@ -10,6 +18,16 @@ Security lens: this proposal targets `.github/workflows/` (it adds one workflow 
 ## What a green run means
 
 A green job means: no control in the four recorded steps lacks an accessible name, and four emulated screenshots exist. It does not mean AX5 conformance: a browser accessibility tree is not VoiceOver (no rotor, focus order, traits or grouping) and web scaling is not iOS Dynamic Type. The workflow name and the job name carry the sentence "unnamed-control check and emulation screenshots; not AX5 conformance". The patch adds no summary step (that would change its hunk size); when one is added, it starts with the same sentence.
+
+## What the job does not prove
+
+A green `ax5` job is a floor, not accessibility evidence for the store or for counsel (LEGAL-REQ-051):
+
+- A browser accessibility tree is not VoiceOver. It has no rotor, no focus order as iOS reads it, no traits and no grouping, so the device run stays BL-279 (BL-1619, BL-1626).
+- Web text scaling at 3.571 is not iOS Dynamic Type. Clipping and truncation on a phone at AX5 are not seen here.
+- It checks that a name exists, not that it is right: state and value, label-in-name, duplicate labels, decorative icons, clipped letter text and 44 pt targets are not checked. The same gaps hold for rules C1 and C2 in `apps/mobile/test/a11y-controls.test.ts`; BL-1624 carries the list.
+- It covers four screens (Review, a letter, Settings, the Plus gate), not the app.
+- It is not required, so a red run does not block a merge; someone has to read it.
 
 ## Where 3.571 comes from
 
@@ -28,7 +46,7 @@ One `npm ci`, a Chromium install and four short flows. `apps/mobile/e2e-web/supp
 
 ## How to verify
 
-1. `git apply --check docs/ops/proposed/workflows/a11y-evidence.patch`, then `git apply` it.
+1. Apply it with the command at the top of this file.
 2. Run it by hand (workflow_dispatch). Expect four J25 steps and `ax5-evidence` with `J25-01.png` to `J25-04.png` and four JSON files.
 3. Open one JSON: `a11y.tree` lists roles and names in page order; `a11y.unnamed` is `[]`.
 4. Mutant: remove an `aria-label`/`accessibilityLabel` from a control on one of the four screens; the job fails naming the step.
