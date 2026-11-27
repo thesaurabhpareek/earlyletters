@@ -11,7 +11,7 @@ const ENUM_SHAPE = /^[a-z0-9]+(?:_[a-z0-9]+)*$/;
 
 describe('values.ts (shared value sets)', () => {
   it('exports the value sets and the language list', () => {
-    expect(enums.length).toBe(26);
+    expect(enums.length).toBe(27);
     expect(values.V1_LANGUAGES).toEqual(values.LANG.values);
   });
 

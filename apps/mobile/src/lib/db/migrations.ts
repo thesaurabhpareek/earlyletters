@@ -544,6 +544,21 @@ export const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    version: 14,
+    name: 'author_base: the words of a saved letter before the author first changed them on its page (BL-413)',
+    up(db) {
+      // author_base  L4  the letter's words as kept, written once by the first "Change words" on the letter page and
+      //                  cleared when every change is put back (entries.ts changeWords, putBackEdit). The author's
+      //                  edits are the word diff from it to final_text (core diffAuthorEdits), each put back on its
+      //                  own. raw_transcript and machine_edits never change. Never sent to the server or put in
+      //                  an export's letters (the server keeps each earlier final_text in entry_versions), though it
+      //                  travels inside scribe.db in the device backup and the recovery ZIP. Words from a pull, a
+      //                  push answer or a conflict choice that differ from final_text clear it (KEEP_BASE_IF_SAME_WORDS).
+      //                  NULL: no change made.
+      addColumns(db, 'entries', [['author_base', 'TEXT']]);
+    },
+  },
 ];
 
 export const LATEST_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;

@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.6.0",
+  "schema_version": "1.7.0",
   "format": "early-letters-export",
   "generated_at": "2027-03-15T10:00:00.000Z",
   "entries": [
@@ -81,7 +81,15 @@
       "final_text": "Asha, you are four days old and the whole house is quiet.",
       "in_book": true,
       "text_file": "letters/Asha/2026-03/2026-03-12_e2.txt",
-      "photo": null,
+      "photo": {
+        "file": "photos/e2/m-asha-0001.jpg",
+        "bytes": 140,
+        "sha256": "4ad816f085df83ff32998edb12ec8517713c79570183b796d4197292d23d1c30",
+        "width": 4,
+        "height": 4,
+        "text": "Your first bath, in the kitchen sink.",
+        "place": "Home"
+      },
       "audio": {
         "path": "audio/e2.m4a",
         "sha256": "c54524468203b1760de2289c41bb3ed705168c3822e97380b040aa482d09871e",

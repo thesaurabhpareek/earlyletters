@@ -30,6 +30,9 @@ export const reminderCopy = {
     monthOpen: { title: NEUTRAL_TITLE, body: LOCK_BODY_NEUTRAL },
     birthday: { title: NEUTRAL_TITLE, body: LOCK_BODY_NEUTRAL },
     birthdays: { title: NEUTRAL_TITLE, body: LOCK_BODY_NEUTRAL },
+    // PROPOSED words, behind the G3 words gate (NS-18-R3; WORDS.md D-S10.typedDay). A day the parent typed: this title
+    // always, and this body unless the day-names switch is on (then the body is their words, unchanged).
+    typedDay: { title: 'A day you wanted to remember', body: 'Tap to see the words you added for today.' },
   },
   /** Two or more books turn a month on the same day (twins, or siblings born on the same day of the month). */
   together: {

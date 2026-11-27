@@ -21,6 +21,7 @@
 > - Hosted migration applies, in this order, in one CI tag run (D-041): File 46 `20261123100000` (row 14), then `20261123200000_book_entries_no_engine_version.sql` (row 15), then File 47 `20261123210000_entry_length_checks_960_480.sql` (row 16; the name came from PR #1786, merged 23 Nov). Check line on each row; BL-1962 gates on row 16.
 > - Held-PR rulings of 24 Nov 2026 (CR-205, CR-209, CR-210; `infra/exec-rulings-2026-11-24-held-prs.md` section 13), rows FO-1 to FO-4 below: the purge watch (FO-1, waits for the BL-584 PR), the Supabase logs readback (FO-2), the live mail check (FO-3, blocks the store cut) and the applied-migrations readback (FO-4).
 > - Hosted apply 17 (BL-1252, row 17): `20261124000000` and `20261124010000` in the production tag run after row 16, then the `analytics-forget` deploy. Migrations first, then the function.
+> - Before the production build, read back two things against `scribe-prod` (BL-2224, from `docs/ops/PRODUCTION_VARIABLES.md` section 5 and "Hand checks"): in the Supabase SQL editor, that each schema prerequisite in that table is applied (the same read as FO-4); and on expo.dev, `npx eas-cli@24.10.0 env:list --environment production`, that the Supabase URL and key point at the `scribe-prod` project ref. Both are reads; tell Karma the versions and whether the ref matches, never a value.
 
 ## Alpha build today (CR-183: the alpha lane, servers off in `testflight`)
 
