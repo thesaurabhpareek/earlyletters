@@ -896,6 +896,11 @@ export function countBookLetters(childId: string): number {
   return bookVisibleNow() ? entries.countLetters(ctx(), childId) : 0;
 }
 
+/** How many people wrote one book's live letters, counted in SQL (BL-421; `entries.countWriters`). */
+export function countBookWriters(childId: string): number {
+  return bookVisibleNow() ? entries.countWriters(ctx(), childId, currentUserId()) : 0;
+}
+
 /** What Tonight reads from the entries, and nothing more (BL-434). */
 export interface TonightRead {
   /** The prompt keys of the newest letters that came from a prompt, newest first (at most `AVOID_RECENT`). */

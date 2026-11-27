@@ -1,0 +1,8 @@
+{
+  "auditReportVersion": 2,
+  "vulnerabilities": {
+    "node-forge": {"name": "node-forge", "severity": "high", "isDirect": false, "via": [{"source": 1001, "name": "node-forge", "dependency": "node-forge", "title": "Example title that must not be printed", "url": "https://github.com/advisories/GHSA-86w9-cpqp-85rv", "severity": "high", "range": "<=1.4.0"}], "effects": [], "nodes": ["node_modules/node-forge"]},
+    "query-string": {"name": "query-string", "severity": "moderate", "isDirect": false, "via": ["decode-uri-component", {"source": 1002, "name": "query-string", "dependency": "query-string", "title": "A moderate example", "url": "https://github.com/advisories/GHSA-vcc3-ghjq-m6fr", "severity": "moderate", "range": "<7.1.4"}], "effects": [], "nodes": ["node_modules/query-string"]}
+  },
+  "metadata": {"vulnerabilities": {"info": 0, "low": 0, "moderate": 1, "high": 1, "critical": 0, "total": 2}}
+}
