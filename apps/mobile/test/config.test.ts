@@ -17,6 +17,8 @@ import type { ExpoConfig } from 'expo/config';
 import { brand, bundleId } from '../../../packages/brand/index';
 import { permissionCopy } from '../src/lib/permission-copy';
 import { APP_ENVS, DEFAULT_APP_ENV, E2E_PROFILE, e2eRefusal, resolveAppEnv, type AppEnv } from '../src/lib/build-env';
+import { MEDIA_PHASE_SWITCHES } from '../src/lib/capabilities';
+import { storeProfiles } from '../../../scripts/release/store-flags.mjs';
 
 const ROOT = path.resolve(__dirname, '..');
 const KEY = 'EXPO_PUBLIC_APP_ENV';
@@ -189,6 +191,25 @@ const ALPHA_PROFILES: readonly string[] = ['preview', 'testflight'];
  */
 const NON_ALPHA_ONLY_VARIABLES = ['EXPO_PUBLIC_ACCOUNT_DELETION'] as const;
 
+/**
+ * The seven NX-39 media phase switches (BL-858; P0, P1, P2a, P2b, P2c, P3, P4a, read in lib/capabilities.ts). The row
+ * puts them in eas.json, all off in production, so every store profile writes each one as the literal "off": a build
+ * says plainly what it ships, and absence is not accepted. Turning a phase on is a reviewed eas.json PR that edits this
+ * pin, STORE_FLAGS or the G6 list in the same diff. Writing "off" here does not settle a value in the EAS environment
+ * on expo.dev: which of the two EAS applies when both are set is unverified (preflight-keepsafe.mjs).
+ */
+const MEDIA_PHASE_VARIABLES = [
+  'EXPO_PUBLIC_PHOTOS',
+  'EXPO_PUBLIC_MEDIA_METADATA',
+  'EXPO_PUBLIC_LIBRARY_CHOOSER',
+  'EXPO_PUBLIC_PHOTO_MOMENTS',
+  'EXPO_PUBLIC_MOMENTS_BACKGROUND',
+  'EXPO_PUBLIC_VIDEO',
+  'EXPO_PUBLIC_OCCASIONS',
+] as const;
+/** The profiles that write them: the store profiles (scripts/release/store-flags.mjs, the same reading as G6). */
+const MEDIA_PHASE_PROFILES: readonly string[] = ['preview', 'production', 'testflight'];
+
 /** Project values that come only from EAS environment variables (docs/release/TESTFLIGHT.md step 7). */
 const FROM_EAS_ONLY = [
   'EXPO_PUBLIC_SUPABASE_URL',
@@ -207,7 +228,7 @@ const FROM_EAS_ONLY = [
  */
 function configForProfile(name: string, opts: { easBuild?: boolean; extra?: Record<string, string> } = {}): ExpoConfig {
   const env = { ...(easFile.build[name]?.env ?? {}), ...(opts.extra ?? {}), ...(opts.easBuild ? { EAS_BUILD_PROFILE: name } : {}) };
-  const names = [...PROFILE_VARIABLES, ...ALPHA_ONLY_VARIABLES, ...NON_ALPHA_ONLY_VARIABLES, ...FROM_EAS_ONLY, 'EXPO_PUBLIC_E2E', 'EAS_BUILD_PROFILE'];
+  const names = [...PROFILE_VARIABLES, ...ALPHA_ONLY_VARIABLES, ...NON_ALPHA_ONLY_VARIABLES, ...MEDIA_PHASE_VARIABLES, ...FROM_EAS_ONLY, 'EXPO_PUBLIC_E2E', 'EAS_BUILD_PROFILE'];
   const saved = Object.fromEntries(names.map((k) => [k, process.env[k]]));
   try {
     for (const k of names) delete process.env[k];
@@ -238,6 +259,11 @@ describe('eas.json (POPS-02, POPS-08): the alpha profile story (D-106)', () => {
     });
   }
 
+  it('the media phase pin names the seven switches of lib/capabilities.ts, and the profiles that write them are the store profiles', () => {
+    expect([...MEDIA_PHASE_VARIABLES].sort()).toEqual(MEDIA_PHASE_SWITCHES.map((s) => s.env).sort());
+    expect([...MEDIA_PHASE_PROFILES].sort()).toEqual(storeProfiles(eas));
+  });
+
   describe('every profile', () => {
     for (const name of [...APP_ENVS, 'testflight']) {
       it(`${name}: names only the build switches, writes each one out, and keeps project values in EAS`, () => {
@@ -245,7 +271,11 @@ describe('eas.json (POPS-02, POPS-08): the alpha profile story (D-106)', () => {
         const alpha = ALPHA_PROFILES.includes(name);
         // D-121: production (the staged 1.0 store build) is English only too, and still shows Delete account.
         const englishOnly = alpha || name === 'production';
-        expect(Object.keys(env).sort(), name).toEqual([...PROFILE_VARIABLES, ...(englishOnly ? ALPHA_ONLY_VARIABLES : []), ...(alpha ? [] : NON_ALPHA_ONLY_VARIABLES)].sort());
+        const store = MEDIA_PHASE_PROFILES.includes(name);
+        expect(Object.keys(env).sort(), name).toEqual([...PROFILE_VARIABLES, ...(englishOnly ? ALPHA_ONLY_VARIABLES : []), ...(alpha ? [] : NON_ALPHA_ONLY_VARIABLES), ...(store ? MEDIA_PHASE_VARIABLES : [])].sort());
+        // BL-858: each media phase switch is written as exactly "off" in a store profile (not "On", " off " or absent),
+        // and left out of development, which is not a store build.
+        for (const k of MEDIA_PHASE_VARIABLES) expect(env[k], `${name} ${k}`).toBe(store ? 'off' : undefined);
         expect(env.EXPO_PUBLIC_ENGLISH_ONLY, name).toBe(englishOnly ? 'on' : undefined);
         // D-125 item 2: the spoken-language list sits next to it and names English alone, so these builds hear as before.
         expect(env.EXPO_PUBLIC_SPOKEN_LANGUAGES, name).toBe(englishOnly ? 'en' : undefined);
@@ -502,7 +532,7 @@ const { getPrebuildConfigAsync } = createRequire(prebuildRequire.resolve('@expo/
 const { compileModsAsync } = prebuildRequire('expo/config-plugins');
 
 async function introspectedIos(name: string, extra: Record<string, string> = {}): Promise<{ entitlements?: Record<string, unknown>; infoPlist?: Record<string, unknown> }> {
-  const names = [...PROFILE_VARIABLES, ...ALPHA_ONLY_VARIABLES, ...NON_ALPHA_ONLY_VARIABLES, ...FROM_EAS_ONLY, 'EXPO_PUBLIC_E2E', 'EAS_BUILD_PROFILE'];
+  const names = [...PROFILE_VARIABLES, ...ALPHA_ONLY_VARIABLES, ...NON_ALPHA_ONLY_VARIABLES, ...MEDIA_PHASE_VARIABLES, ...FROM_EAS_ONLY, 'EXPO_PUBLIC_E2E', 'EAS_BUILD_PROFILE'];
   const saved = Object.fromEntries(names.map((k) => [k, process.env[k]]));
   try {
     for (const k of names) delete process.env[k];

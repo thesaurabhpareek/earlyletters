@@ -49,7 +49,14 @@
         "EXPO_PUBLIC_STATUS_REPORT": "off",
         "EXPO_PUBLIC_ANALYTICS": "off",
         "EXPO_PUBLIC_ENGLISH_ONLY": "on",
-        "EXPO_PUBLIC_SPOKEN_LANGUAGES": "en"
+        "EXPO_PUBLIC_SPOKEN_LANGUAGES": "en",
+        "EXPO_PUBLIC_PHOTOS": "off",
+        "EXPO_PUBLIC_MEDIA_METADATA": "off",
+        "EXPO_PUBLIC_LIBRARY_CHOOSER": "off",
+        "EXPO_PUBLIC_PHOTO_MOMENTS": "off",
+        "EXPO_PUBLIC_MOMENTS_BACKGROUND": "off",
+        "EXPO_PUBLIC_VIDEO": "off",
+        "EXPO_PUBLIC_OCCASIONS": "off"
       }
     },
     "production": {
@@ -64,7 +71,14 @@
         "EXPO_PUBLIC_ANALYTICS": "off",
         "EXPO_PUBLIC_ACCOUNT_DELETION": "on",
         "EXPO_PUBLIC_ENGLISH_ONLY": "on",
-        "EXPO_PUBLIC_SPOKEN_LANGUAGES": "en"
+        "EXPO_PUBLIC_SPOKEN_LANGUAGES": "en",
+        "EXPO_PUBLIC_PHOTOS": "off",
+        "EXPO_PUBLIC_MEDIA_METADATA": "off",
+        "EXPO_PUBLIC_LIBRARY_CHOOSER": "off",
+        "EXPO_PUBLIC_PHOTO_MOMENTS": "off",
+        "EXPO_PUBLIC_MOMENTS_BACKGROUND": "off",
+        "EXPO_PUBLIC_VIDEO": "off",
+        "EXPO_PUBLIC_OCCASIONS": "off"
       }
     },
     "testflight": {
@@ -79,7 +93,14 @@
         "EXPO_PUBLIC_STATUS_REPORT": "off",
         "EXPO_PUBLIC_ANALYTICS": "off",
         "EXPO_PUBLIC_ENGLISH_ONLY": "on",
-        "EXPO_PUBLIC_SPOKEN_LANGUAGES": "en"
+        "EXPO_PUBLIC_SPOKEN_LANGUAGES": "en",
+        "EXPO_PUBLIC_PHOTOS": "off",
+        "EXPO_PUBLIC_MEDIA_METADATA": "off",
+        "EXPO_PUBLIC_LIBRARY_CHOOSER": "off",
+        "EXPO_PUBLIC_PHOTO_MOMENTS": "off",
+        "EXPO_PUBLIC_MOMENTS_BACKGROUND": "off",
+        "EXPO_PUBLIC_VIDEO": "off",
+        "EXPO_PUBLIC_OCCASIONS": "off"
       }
     }
   },
