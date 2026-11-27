@@ -1404,6 +1404,9 @@ features/export.en.ts#exportCopy.readme.59,app screen,in-app,packages/content/sr
 features/export.en.ts#exportCopy.readme.61,app screen,in-app,packages/content/src/features/export.en.ts,152,en,"This export is not locked with a password. Keep it somewhere private,",69,,,,,,content,live on develop,content
 features/export.en.ts#exportCopy.readme.62,app screen,in-app,packages/content/src/features/export.en.ts,153,en,and keep a second copy somewhere else.,38,,,,,,content,live on develop,content
 features/export.en.ts#exportCopy.readme.64,app screen,in-app,packages/content/src/features/export.en.ts,155,en,"Format {format}, version {version}. Questions: {email}",54,,,,,,content,live on develop,content
+features/export.en.ts#exportCopy.readmePhotos.3,app screen,in-app,packages/content/src/features/export.en.ts,165,en,"photos/     The pictures you added to letters, one folder per letter (JPEG).",76,,,,,,content,live on develop,content
+features/export.en.ts#exportCopy.readmePhotos.4,app screen,in-app,packages/content/src/features/export.en.ts,166,en,"            Each is the copy kept in the app, with no location or other details in it.",86,,,,,,content,live on develop,content
+features/export.en.ts#exportCopy.readmePhotos.5,app screen,in-app,packages/content/src/features/export.en.ts,167,en,            data/entries.json says which letter each picture belongs to.,72,,,,,,content,live on develop,content
 features/family.en.ts#familyCopy.members.you,app screen,in-app,packages/content/src/features/family.en.ts,15,en,You,3,,,,,,content,live on develop,content
 features/family.en.ts#familyCopy.members.coParent,app screen,in-app,packages/content/src/features/family.en.ts,16,en,Co-parent,9,,,,,,content,live on develop,content
 features/family.en.ts#familyCopy.members.invited,app screen,in-app,packages/content/src/features/family.en.ts,17,en,Invited,7,,,,,,content,live on develop,content

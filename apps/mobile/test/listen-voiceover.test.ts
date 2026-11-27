@@ -172,7 +172,8 @@ describe('[Review A 1] every label holds still from record() to stop', () => {
     expect(listen).toMatch(/labelsRef\.current = labels;\s*const elapsedA11y = labels\.clock;/);
     expect(listen).toMatch(/accessibilityLabel=\{elapsedA11y\}/);
     expect(listen).toMatch(/accessibilityHint=\{elapsedA11y\}/);
-    expect(listen).toMatch(/className="text-center" accessibilityLabel=\{labels\.line \?\? line\}>\s*\{line\}/);
+    // BL-2241: the label falls back to the line's own label (the spoken ready words), and the drawn text stays `line`.
+    expect(listen).toMatch(/className="text-center" accessibilityLabel=\{labels\.line \?\? lineLabel \?\? undefined\}>\s*\{line\}/);
     expect(listen).toMatch(/onPress=\{togglePause\}\s*label=\{phase === 'paused' \? t\.resumeButton : copy\.common\.pauseButton\}\s*accessibilityLabel=\{labels\.toggle\}/);
     expect(p.toggleA11y).toBe('Pause or keep talking');
   });
