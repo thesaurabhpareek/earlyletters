@@ -38,11 +38,12 @@ async function signInWithEmail(page: Page, email: string) {
 const restCalls = (m: MockServer) => m.calls.filter((c) => c.path.startsWith('/rest/'));
 
 test('[J21] invitee: "I was invited", a generic landing before sign-in, then ask before joining', async ({ app, record }) => {
-  // Known failure on develop: BL-2006. Signed in, the phone asks the account for its books before the invite is joined, and the answer
-  // ("no book") is not asked again after the join, so closing the joined sheet shows "No book here yet" (new-phone screens) where
-  // this flow expects the welcome's join wait. The flow is not wrong: the screen is (see the PR body for the proposed row). No
-  // assertion changed. Remove this line when the screen is fixed: a pass turns the job red.
-  test.fail(true, 'Known failure BL-2006: remove this line in the PR that fixes it');
+  // Known failure on develop: BL-2159. Signed in, the phone asks the account for its books before the invite is joined, so closing
+  // the joined sheet before the book arrives showed "No book here yet" (new-phone screens) where this flow expects the welcome's join
+  // wait. The BL-2159 fix (#2078) asks the account again after the accept, but this test still failed in web journeys run
+  // 46011299681 (27 Nov 2026); why it still fails after that fix has not been read. No assertion changed. Remove this line in the
+  // PR that fixes it: a pass turns the job red.
+  test.fail(true, 'Known failure BL-2159: remove this line in the PR that fixes it');
   const step = journey(record, 'J21', 'co-parent-sharing', 1, 'J01-02');
   const m = await mockServer(app, { user: PAPA, email: 'papa@example.invalid' });
   m.rpc('peek_invite', () => ({ body: { inviter: 'Mama', role: 'parent' } }));
@@ -158,11 +159,12 @@ async function joinWhileSyncRuns(app: Page, server: { hasBook: boolean }) {
 }
 
 test('[J21i] invitee: Close before the book arrives while sync runs: the welcome says it is on its way, with no "Begin the book"', async ({ app }) => {
-  // Known failure on develop: BL-2006. Signed in, the phone asks the account for its books before the invite is joined, and the answer
-  // ("no book") is not asked again after the join, so closing the joined sheet shows "No book here yet" (new-phone screens) where
-  // this flow expects the welcome's join wait. The flow is not wrong: the screen is (see the PR body for the proposed row). No
-  // assertion changed. Remove this line when the screen is fixed: a pass turns the job red.
-  test.fail(true, 'Known failure BL-2006: remove this line in the PR that fixes it');
+  // Known failure on develop: BL-2159. Signed in, the phone asks the account for its books before the invite is joined, so closing
+  // the joined sheet before the book arrives showed "No book here yet" (new-phone screens) where this flow expects the welcome's join
+  // wait. The BL-2159 fix (#2078) asks the account again after the accept, but this test still failed in web journeys run
+  // 46011299681 (27 Nov 2026); why it still fails after that fix has not been read. No assertion changed. Remove this line in the
+  // PR that fixes it: a pass turns the job red.
+  test.fail(true, 'Known failure BL-2159: remove this line in the PR that fixes it');
   await joinWhileSyncRuns(app, { hasBook: false });
   await btn(app, 'Close').click();
   await expect(app.getByTestId('onboarding.joinWait').getByText(`${CHILD}'s book is on its way to this phone.`)).toBeVisible();
@@ -171,11 +173,12 @@ test('[J21i] invitee: Close before the book arrives while sync runs: the welcome
 });
 
 test('[J21j] invitee: the quiet wait runs out at 30 s (Try again and "Begin the book" come back), Try again starts it over, and a retry that finds the book hands over to the Book', async ({ app }) => {
-  // Known failure on develop: BL-2006. Signed in, the phone asks the account for its books before the invite is joined, and the answer
-  // ("no book") is not asked again after the join, so closing the joined sheet shows "No book here yet" (new-phone screens) where
-  // this flow expects the welcome's join wait. The flow is not wrong: the screen is (see the PR body for the proposed row). No
-  // assertion changed. Remove this line when the screen is fixed: a pass turns the job red.
-  test.fail(true, 'Known failure BL-2006: remove this line in the PR that fixes it');
+  // Known failure on develop: BL-2159. Signed in, the phone asks the account for its books before the invite is joined, so closing
+  // the joined sheet before the book arrives showed "No book here yet" (new-phone screens) where this flow expects the welcome's join
+  // wait. The BL-2159 fix (#2078) asks the account again after the accept, but this test still failed in web journeys run
+  // 46011299681 (27 Nov 2026); why it still fails after that fix has not been read. No assertion changed. Remove this line in the
+  // PR that fixes it: a pass turns the job red.
+  test.fail(true, 'Known failure BL-2159: remove this line in the PR that fixes it');
   // The page's clock is ours, so 30 s pass in a moment (critics' pass S2; components/family/join-wait.tsx).
   await app.clock.install();
   const server = { hasBook: false };
