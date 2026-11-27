@@ -15,7 +15,7 @@
 
 export const KINDS = [
   'delete_account', 'withdraw_sync', 'see_export', 'correct', 'under_18', 'testflight_feedback', 'email_list',
-  'safety', 'abuse_report', 'legal_process', 'other',
+  'safety', 'abuse_report', 'dispute_or_third_party', 'legal_process', 'other',
 ] as const;
 export const OUTCOMES = ['done', 'done_in_part', 'could_not_verify', 'cannot_be_done', 'declined', 'referred'] as const;
 export const VERIFIED_BY = ['code_to_account_address', 'code_to_tester_address', 'none_needed'] as const;
@@ -148,6 +148,24 @@ export function cardRow(r: Row, today: number): CardRow {
       nextActionDate: iso(today),
       nextAction: first ? firstMessage(r.kind) : 'with counsel: no reply beyond the fixed first reply; change nothing on any account',
       urgent: false,
+    };
+  }
+  if (r.kind === 'dispute_or_third_party') {
+    // Runbook section 0: an executor, a parent of an under-18 holder, or a custody or family dispute. The sender is not
+    // the holder, so nothing is owed them by day 45 and a "what was done" reply or an extension notice would say the
+    // account exists (IAM-R09). The exec-team read of 27 Nov 2026 keeps it off the clock. Days 35 to 44 are an internal
+    // check that no request about the sender's own data is inside it, since that one is on the clock from the same day.
+    const first = !r.acknowledged && day >= 1;
+    const check = day >= FIRST_DAY && day < DUE_DAY;
+    const counsel = check
+      ? "with counsel: check no request about the sender's own data is inside it; if one is, log it as its own row today with the same received date"
+      : 'with counsel: no reply beyond the fixed first reply; change nothing on any account';
+    return {
+      ...offClock,
+      left: check ? DUE_DAY - day : offClock.left,
+      nextActionDate: iso(today),
+      nextAction: first ? `${firstMessage(r.kind)}${check ? `; then ${counsel.replace(/^with counsel: /, 'with counsel, ')}` : ''}` : counsel,
+      urgent: check,
     };
   }
   if (day > dueDay) {

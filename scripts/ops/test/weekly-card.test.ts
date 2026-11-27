@@ -127,6 +127,34 @@ Deno.test('[FR-BKO-13] an abuse report stays off the 45-day clock: one fixed fir
   assert.doesNotMatch(first.nextAction, /extension|due today/);
 });
 
+Deno.test('[FR-BKO-13] a dispute or third-party request stays off the 45-day clock; days 35 to 44 check for a request of the sender\'s own', () => {
+  const counsel = 'with counsel: no reply beyond the fixed first reply; change nothing on any account';
+  const check = "with counsel: check no request about the sender's own data is inside it; if one is, log it as its own row today with the same received date";
+  const at = (n: number, more = {}) => card(row('DREQ-20261212-1', 'dispute_or_third_party', day(n), more)).rows[0];
+  for (const n of [2, 34, 45, 46, 60]) {
+    const r = at(n);
+    assert.equal(r.nextAction, counsel, String(n));
+    assert.equal(r.urgent, false, String(n));
+  }
+  for (const n of [35, 38, 44]) {
+    const r = at(n);
+    assert.equal(r.nextAction, check, String(n));
+    assert.equal(r.urgent, true, String(n));
+  }
+  for (const n of [2, 35, 38, 44, 45, 46, 60]) {
+    for (const r of [at(n), at(n, { acknowledged: '' })]) {
+      assert.equal(r.due, '-', String(n));
+      assert.doesNotMatch(r.nextAction, /extension|what was done|P0|due today/, String(n));
+    }
+  }
+  assert.match(at(2, { acknowledged: '' }).nextAction, /^first reply not logged: /);
+  assert.match(at(38, { acknowledged: '' }).nextAction, /^first reply not logged: .*; then with counsel, check no request about the sender's own data/);
+  // An urgent check row sorts with the others by days left; an off-clock row never leads.
+  const c = card(row('DREQ-20261212-1', 'dispute_or_third_party', day(38)), row('DREQ-20261212-2', 'see_export', day(36)), row('DREQ-20261212-3', 'dispute_or_third_party', day(50)));
+  assert.deepEqual(c.rows.map((r) => [r.kind, r.day]), [['dispute_or_third_party', 38], ['see_export', 36], ['dispute_or_third_party', 50]]);
+  assert.match(c.lines[0], /3 open, 2 to act on first/);
+});
+
 Deno.test('[FR-BKO-16] a letter whose named date has passed goes to counsel today and is listed first', () => {
   const r = card(row('DREQ-20261101-1', 'legal_process', day(30), { legal_date: day(1) }), row('DREQ-20261108-1', 'see_export', day(36))).rows;
   assert.equal(r[0].nextAction, 'with counsel: the date the letter names has passed; to counsel today');
