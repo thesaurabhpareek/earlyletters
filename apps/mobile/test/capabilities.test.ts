@@ -276,8 +276,23 @@ describe('[D-111 item 4, D-121] English only: on in the alpha profiles and the s
     // Every build variable is a literal member read; none is computed, so none can escape inlining.
     expect(code).not.toMatch(/process\.env\s*\[/);
     expect(code).not.toMatch(/\{[^}]*\}\s*=\s*process\.env\b/);
+    // Expo also inlines `process.env?.NAME`, `process.env?.['NAME']` and `process['env'].NAME` (babel-preset-expo,
+    // plugins/inline-env-vars), which the member-read list below would not see (Review B N1): none is written here.
+    expect(code).not.toMatch(/process\s*\.\s*env\s*\?\./);
+    expect(code).not.toMatch(/process\s*(\?\.\s*)?\[/);
+    // Every other `process` in the code is a literal member read passed to its parser, or one of the two in the
+    // tests-only guard `typeof process !== 'undefined' ? process.env : undefined`, so no other spelling gets in.
+    const processUses = [...code.matchAll(/\bprocess\b(?=([^;\n]*))/g)].map((m) => `process${m[1]}`);
+    expect(processUses.length).toBeGreaterThan(15);
+    for (const use of processUses) expect(use).toMatch(/^(process\.env\.EXPO_PUBLIC_[A-Z0-9_]+\)|process !== 'undefined' \? process\.env : undefined|process\.env : undefined)/);
     const reads = [...code.matchAll(/process\.env\.([A-Za-z0-9_]+)/g)].map((m) => m[1]);
-    expect(reads.sort()).toEqual(['EXPO_PUBLIC_ACCOUNT_DELETION', 'EXPO_PUBLIC_ANALYTICS', 'EXPO_PUBLIC_BACKUP', 'EXPO_PUBLIC_ENGLISH_ONLY', 'EXPO_PUBLIC_SERVER_ERASE', 'EXPO_PUBLIC_SERVER_FEATURES', 'EXPO_PUBLIC_SPOKEN_LANGUAGES', 'EXPO_PUBLIC_STATUS_REPORT']);
+    // The seven NX-39 phase switches (BL-858) are read here too; media-switches.test.ts pins each one.
+    expect(reads.sort()).toEqual([
+      'EXPO_PUBLIC_ACCOUNT_DELETION', 'EXPO_PUBLIC_ANALYTICS', 'EXPO_PUBLIC_BACKUP', 'EXPO_PUBLIC_ENGLISH_ONLY',
+      'EXPO_PUBLIC_LIBRARY_CHOOSER', 'EXPO_PUBLIC_MEDIA_METADATA', 'EXPO_PUBLIC_MOMENTS_BACKGROUND', 'EXPO_PUBLIC_OCCASIONS',
+      'EXPO_PUBLIC_PHOTOS', 'EXPO_PUBLIC_PHOTO_MOMENTS', 'EXPO_PUBLIC_SERVER_ERASE', 'EXPO_PUBLIC_SERVER_FEATURES',
+      'EXPO_PUBLIC_SPOKEN_LANGUAGES', 'EXPO_PUBLIC_STATUS_REPORT', 'EXPO_PUBLIC_VIDEO',
+    ]);
     expect(code).toMatch(/const SPOKEN_LANGUAGES_BUILD_VALUE: readonly string\[\] \| null = parseLanguageList\(process\.env\.EXPO_PUBLIC_SPOKEN_LANGUAGES\);/);
     expect(code.match(/process\.env\.EXPO_PUBLIC_SPOKEN_LANGUAGES/g)?.length).toBe(1);
     expect(code).toMatch(/const ENGLISH_ONLY_BUILD_VALUE: boolean = parseServerFeatures\(process\.env\.EXPO_PUBLIC_ENGLISH_ONLY\);/);

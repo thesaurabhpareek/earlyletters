@@ -7,7 +7,7 @@
 import { strFromU8, unzipSync } from 'fflate';
 import { describe, expect, it } from 'vitest';
 import type { ExportSnapshot } from '../src/lib/export/build.logic';
-import { packExport } from '../src/lib/export/pack';
+import { packExport, type PackProgress } from '../src/lib/export/pack';
 import { type EntriesFile, type Manifest } from '../src/lib/export/schema';
 import { verifyExport } from '../src/lib/export/verify';
 import { carriesMetadata } from '../src/lib/photos/strip';
@@ -18,7 +18,9 @@ const PHOTO_PATH = 'photos/e2/m-asha-0001.jpg';
 
 async function pack(snapshot: ExportSnapshot, files: Record<string, Uint8Array> = ASHA_FILES, reads: string[] = []) {
   const chunks: Uint8Array[] = [];
+  const progress: PackProgress[] = [];
   const result = await packExport(snapshot, {
+    onProgress: (p) => progress.push(p),
     readFile: async (uri) => {
       reads.push(uri);
       return files[uri] ?? Promise.reject(new Error('missing'));
@@ -37,7 +39,7 @@ async function pack(snapshot: ExportSnapshot, files: Record<string, Uint8Array> 
   const unzipped = unzipSync(zip);
   const entries = JSON.parse(strFromU8(unzipped['data/entries.json'])) as EntriesFile;
   const manifest = JSON.parse(strFromU8(unzipped['manifest.json'])) as Manifest;
-  return { zip, result, files: unzipped, entries, manifest, e2: entries.entries.find((e) => e.id === 'e2')! };
+  return { zip, result, files: unzipped, entries, manifest, progress, e2: entries.entries.find((e) => e.id === 'e2')! };
 }
 
 /** The Asha snapshot with e2's stored copy replaced by `bytes`, its kept hash set to `keptSha` (the store's own record). */
@@ -144,14 +146,63 @@ describe('[BL-933] export 1.7.0 carries letters\' pictures', () => {
     expectHeldBack(await pack(snapshot, files));
   });
 
-  it('writes each passing picture at its own path, the first one kept from the README check included', async () => {
+  it('[NS-01-R14] FU-13d: two pictures that both pass, each photos/ file the bytes of its own source, the first one kept from the README check included', async () => {
+    // Kills the mutant that drops `firstPhoto = null` in step 4c: the kept first picture's bytes would then be written at
+    // every later picture's path, so photos/e3 would hold e2's picture.
     const { snapshot, files } = withSecondPicture();
+    expect(sha256Hex(SECOND)).not.toBe(sha256Hex(ASHA_PHOTO));
     const out = await pack(snapshot, files);
     expect(out.result.photosHeldBack).toEqual([]);
-    expect(sha256Hex(out.files[PHOTO_PATH])).toBe(sha256Hex(ASHA_PHOTO));
-    expect(sha256Hex(out.files['photos/e3/m-asha-0002.jpg'])).toBe(sha256Hex(SECOND));
+    const e3Path = 'photos/e3/m-asha-0002.jpg';
+    expect(Object.keys(out.files).filter((f) => f.startsWith('photos/')).sort()).toEqual([PHOTO_PATH, e3Path]);
+    expect(out.files[PHOTO_PATH]).toEqual(ASHA_PHOTO);
+    expect(out.files[e3Path]).toEqual(SECOND);
+    for (const [path, source] of [[PHOTO_PATH, ASHA_PHOTO], [e3Path, SECOND]] as const) {
+      expect(out.manifest.files.find((f) => f.path === path)).toMatchObject({ bytes: source.length, sha256: sha256Hex(source) });
+    }
+    expect(out.entries.entries.find((e) => e.id === 'e3')!.photo).toMatchObject({ file: e3Path, bytes: SECOND.length, sha256: sha256Hex(SECOND) });
     expect(out.manifest.counts.photos).toBe(2);
     expect(strFromU8(out.files['README.txt'])).toContain('PICTURES');
+  });
+
+  it('[BL-933] FU-13d: picture progress is reported once for each picture, in order, whether the first one is kept or held back', async () => {
+    // Distinct planned sizes (entry_media.bytes is the progress size; the files' own sizes are what entries.json says),
+    // so each 'pictures' step can be told apart by how far it moves the bar: delta = sizeHint / total.
+    const E2_HINT = 40_000;
+    const E3_HINT = 120_000;
+    const located = makeJpeg({ exif: true, seed: 3 });
+    const locatedToo = makeJpeg({ exif: true, seed: 5 });
+    const run = async (heldBack: Array<'e2' | 'e3'>) => {
+      const { snapshot, files } = withSecondPicture();
+      const byId = (id: string) => snapshot.entries.find((e) => e.id === id)!.photo!;
+      byId('e2').bytes = E2_HINT;
+      byId('e3').bytes = E3_HINT;
+      const onPhone: Record<string, Uint8Array> = { ...files };
+      if (heldBack.includes('e2')) {
+        onPhone[ASHA_PHOTO_URI] = located;
+        byId('e2').sha256 = sha256Hex(located);
+      }
+      if (heldBack.includes('e3')) {
+        onPhone[SECOND_URI] = locatedToo;
+        byId('e3').sha256 = sha256Hex(locatedToo);
+      }
+      const out = await pack(snapshot, onPhone);
+      expect(out.result.photosHeldBack).toEqual(heldBack);
+      return out.progress;
+    };
+    for (const heldBack of [[], ['e2'], ['e3'], ['e2', 'e3']] as Array<Array<'e2' | 'e3'>>) {
+      const progress = await run(heldBack);
+      // The bar never goes back.
+      for (let i = 1; i < progress.length; i++) expect(progress[i].fraction, `${heldBack.join(',')} at ${i}`).toBeGreaterThanOrEqual(progress[i - 1].fraction);
+      const at = progress.flatMap((p, i) => (p.phase === 'pictures' ? [i] : []));
+      // One 'pictures' step per picture: a kept first picture is not counted in step 0 and again in step 4c, and a
+      // held-back one is counted where it was judged and not again.
+      expect(at, `pictures steps with ${heldBack.join(',') || 'none'} held back`).toHaveLength(2);
+      const deltas = at.map((i) => progress[i].fraction - progress[i - 1].fraction);
+      for (const d of deltas) expect(d).toBeGreaterThan(0);
+      // e2's size, then e3's: each picture's own size, once, in plan order.
+      expect(deltas[1] / deltas[0]).toBeCloseTo(E3_HINT / E2_HINT, 6);
+    }
   });
 
   it('describes photos/ in the README when a later picture goes in, and reads each picture once', async () => {
