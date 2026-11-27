@@ -11,7 +11,7 @@ import { phoneConsent, planExport, safeSegment } from '../src/lib/export/build.l
 import { ExportCancelledError, packExport, type PackDeps } from '../src/lib/export/pack';
 import { EXPORT_SCHEMA_VERSION, type AccountFile, type EntriesFile, type Manifest } from '../src/lib/export/schema';
 import { readCentralDirectory, verifyExport, type RandomAccess } from '../src/lib/export/verify';
-import { ASHA_AUDIO, ashaSnapshot, sha256Hex } from './helpers/asha-export';
+import { ASHA_AUDIO, ASHA_FILES, ashaSnapshot, sha256Hex } from './helpers/asha-export';
 
 const GOLDEN = './__golden__/export-asha';
 
@@ -35,7 +35,7 @@ const renderedHtml = new Map<string, string>();
 function deps(sink: PackDeps['sink'], extra: Partial<PackDeps> = {}): PackDeps {
   return {
     readFile: async (uri) => {
-      const bytes = ASHA_AUDIO[uri];
+      const bytes = ASHA_FILES[uri];
       if (!bytes) throw new Error('missing');
       return bytes;
     },
@@ -77,7 +77,7 @@ describe('Asha export (golden)', () => {
     const { zip } = await makeExport();
     const files = unzipSync(zip);
     for (const [path, bytes] of Object.entries(files)) {
-      if (path.endsWith('.m4a') || path.endsWith('.pdf')) continue;
+      if (path.endsWith('.m4a') || path.endsWith('.pdf') || path.endsWith('.jpg')) continue; // bytes, checked by hash elsewhere
       await expect(strFromU8(bytes), path).toMatchFileSnapshot(`${GOLDEN}/${path}`);
     }
   });
@@ -258,7 +258,7 @@ describe('Asha export (golden)', () => {
       expect(files[f.path].length, f.path).toBe(f.bytes);
     }
     expect(strFromU8(files['manifest.sha256'])).toBe(`${sha256Hex(files['manifest.json'])}  manifest.json\n`);
-    expect(manifest.counts).toEqual({ entries: 14, audio: 5, audio_missing: 2, audio_mismatch: 1, photos: 0, books: 2 });
+    expect(manifest.counts).toEqual({ entries: 14, audio: 5, audio_missing: 2, audio_mismatch: 1, photos: 1, books: 2 });
     const check = await verifyExport(access(zip), result.manifest, result.manifestSha256, async (d) => sha256Hex(d));
     expect(check).toEqual({ ok: true, problems: [], problemCounts: {}, filesChecked: Object.keys(files).length });
   });

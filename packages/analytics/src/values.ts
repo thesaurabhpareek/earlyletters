@@ -12,6 +12,9 @@ import { oneOf } from './schema';
 
 export const CHILD_ORDINAL = oneOf('first', 'second', 'third_plus');
 export const CHILD_COUNT_BUCKET = oneOf('none', 'one', 'two', 'three_plus');
+/** Which kind of build sent an event (ER-A15, BL-1250), so test traffic can be filtered out. Never a build number. */
+export const BUILD_KIND = oneOf('store', 'testflight', 'preview', 'dev');
+export type BuildKind = (typeof BUILD_KIND.values)[number];
 /**
  * The viewer's role in the current child's book (B section 6). DB values from
  * @scribe/core: the UI's "Co-parent" is `parent` here (CORE-05).

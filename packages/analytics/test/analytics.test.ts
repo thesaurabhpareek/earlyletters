@@ -110,7 +110,7 @@ describe('allowlist', () => {
     // @ts-expect-error unknown property is a type error too
     analytics.track('screen_view', { route: 'book', referrer: 'settings' });
     await analytics.flush();
-    expect(provider.captured()[0].properties).toEqual({ route: 'book', schema_version: SCHEMA_VERSION });
+    expect(provider.captured()[0].properties).toEqual({ route: 'book', schema_version: SCHEMA_VERSION, build_kind: 'dev', is_internal: false });
     expect(violations).toContainEqual({ kind: 'unknown_property', event: 'screen_view', property: '<unlisted>' });
   });
 
@@ -202,6 +202,8 @@ describe('allowlist', () => {
       allowance: 5,
       lapsed: 0,
       schema_version: SCHEMA_VERSION,
+      build_kind: 'dev',
+      is_internal: false,
     });
   });
 });

@@ -302,6 +302,7 @@ export const en = {
       // Listening at rest: the red circle is the start control (BRAND.md glossary phrase).
       hint: "Tap the red circle and talk.",
       // With a screen reader on, the red circle is not seen, so the line names the control instead (BL-1827, PER4-019).
+      // Exec reading CDesO-51 (BL-2242): approved as written.
       hintScreenReader: "Double tap Start recording and talk.",
       startA11y: "Start recording",
     },
