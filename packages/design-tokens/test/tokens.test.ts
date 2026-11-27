@@ -349,3 +349,34 @@ describe('design tokens: motion and targets', () => {
     expect(tokens.target.capture).toBeGreaterThanOrEqual(tokens.target.primary);
   });
 });
+
+describe('design tokens: hairline and progress lines (BL-1752)', () => {
+  it('[DSR-026] the hairline is one named 0.5 pt stroke, lighter than any control edge', () => {
+    expect(tokens.stroke.hairline).toBe(0.5);
+    expect(tokens.stroke.hairline).toBeLessThan(tokens.stroke.control);
+  });
+  it('[DSR-026] the three progress heights are named: Read together 2 pt, the sweep 3 pt, the export bar 8 pt', () => {
+    expect([tokens.progress.hairline, tokens.progress.sweep, tokens.progress.bar]).toEqual([2, 3, 8]);
+    // A progress line is never a target: it stays far under the 44 pt minimum, so nobody makes it tappable.
+    expect(tokens.progress.bar).toBeLessThan(tokens.target.min);
+  });
+  for (const mode of MODES) {
+    for (const hc of [false, true]) {
+      const tag = `${mode}${hc ? ' + Increase Contrast' : ''}`;
+      it(`[CDO-B-048] ${tag}: the progress fill passes 3:1 (WCAG 1.4.11) on every page surface`, () => {
+        const c = palette(mode, hc);
+        for (const s of ['bg', 'surface', 'surfaceRaised'] as const) {
+          expect(ratio(c[tokens.progress.fill], c[s]), `${tokens.progress.fill} on ${s}`).toBeGreaterThanOrEqual(3);
+        }
+      });
+    }
+    it(`[CDO-B-048] ${mode}: the fill stands apart from its track at 3:1`, () => {
+      const c = palette(mode);
+      expect(ratio(c[tokens.progress.fill], c[tokens.progress.track])).toBeGreaterThanOrEqual(3);
+    });
+  }
+  it('[CDO-B-048] the old Read together line, accent at 40 percent on paper, stays under 3:1, so it is not brought back', () => {
+    // 0x66 = 40 percent alpha, composited over the page by ratio().
+    for (const mode of MODES) expect(ratio(`${tokens[mode].accent}66`, tokens[mode].bg), mode).toBeLessThan(3);
+  });
+});
