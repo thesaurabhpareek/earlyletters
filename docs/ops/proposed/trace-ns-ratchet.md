@@ -5,12 +5,14 @@ Agents cannot edit `.github/workflows/`. Under BL-1869 this step goes into the `
 ```yaml
       - name: Trace ratchet (NS rows, gate G0)
         run: |
-          git fetch --depth=1 origin "${{ github.base_ref }}"
-          BASE=()
-          if git show "origin/${{ github.base_ref }}:docs/ops/trace-ns-baseline.txt" > "$RUNNER_TEMP/ns-base.txt"; then
-            BASE=(--ns-base "$RUNNER_TEMP/ns-base.txt")
-          fi   # the first PR that adds the baseline has no base copy
-          node scripts/trace.mjs --no-write --check "${BASE[@]}"
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+          git fetch --depth=1 origin "$BASE_REF"
+          # Fail closed: develop and main both hold the baseline, so a base copy that cannot be read fails the step.
+          git show "origin/$BASE_REF:docs/ops/trace-ns-baseline.txt" > "$RUNNER_TEMP/ns-base.txt"
+          node scripts/trace.mjs --no-write --check --ns-base "$RUNNER_TEMP/ns-base.txt"
 ```
 
 What it fails on. Plain `--check` exits 1 on any of these (`scripts/trace.mjs`, `main`, the `failed` and `nsFail` lines):
@@ -22,7 +24,9 @@ What it fails on. Plain `--check` exits 1 on any of these (`scripts/trace.mjs`, 
 - an `--ns-base` file that does not exist (exit 1);
 - a card or register the NS parser cannot read: under `--check` the error is thrown and the script exits 2 (in report mode it is logged and skipped).
 
-A baseline line is `stale` when its id is no longer open, that is, when any active test title cites the id. That is all it means. `it.fails`, `it.todo` and `.skip` titles are not active (`scripts/trace.mjs:241`, and `:634` skips them), but a describe title is, and so is a passing test of another clause of the row, so a row can read as stale while its main clause is still red or not built. A stale line is logged as `stale baseline line` and does not fail. Six stale lines are kept on purpose for that reason (NS-21-R12, NS-01-R50, NS-44-R1, NS-17-R5, NS-17-R7, NS-17-R8; CR-228 names each test and line). The log line still says to delete every stale line, so whoever runs `--update-ns-baseline` puts those six back in the same commit. The gate therefore proves that every open P0 row is either cited by a test title or listed in the baseline; it does not prove that a cited row's test passes in full.
+A P0 row is open when nothing marks it covered (`scripts/trace.mjs:668-669`, read at `:830`): no active test title cites its id, no `[stand-in]` title cites it (status `partial`), no e2e-web journey cites it (`journey`), and its card does not mark it as a device row (`device`). A baseline line is `stale` when its id is no longer open. `it.fails`, `it.todo` and `.skip` titles are not active (`scripts/trace.mjs:241`, and `:634` skips them), but a describe title is, and so is a passing test of another clause of the row, so a row can read as stale while its main clause is still red or not built. A stale line is logged as `stale baseline line` and does not fail. Six stale lines are kept on purpose for that reason (NS-21-R12, NS-01-R50, NS-44-R1, NS-17-R5, NS-17-R7, NS-17-R8; CR-228 names each test and line). The log line still says to delete every stale line, so whoever runs `--update-ns-baseline` puts those six back in the same commit. The gate therefore proves that every P0 row is either covered in one of those four ways or listed in the baseline. It does not prove that a cited row's test passes in full, that a `[stand-in]` test proves the whole row, or that a device row was ever run on a device: on develop `f7b4ca9e` 16 P0 device rows and one partial row pass this way with no active test title and no baseline line (counted by Review A on #2052), and their proof is the device run sheets and the review of each stand-in, not this gate.
+
+What the step trusts. Only the baseline's base copy comes from the target branch. The step runs the PR's own `scripts/trace.mjs`, `ci.yml`, cards and NS register, so a PR can weaken the gate it is checked by, for example by moving the register so the NS half finds nothing and exits 0. That is covered by review, not by the step: under CR-229 a PR that changes `scripts/trace.mjs`, `scripts/trace.test.mjs`, `docs/ops/trace-ns-baseline.txt` or the NS register (`docs/product/prd/14-test-plan.md`) needs one of its two counted reviews from the `security` or `security-architect` lens, as `.github/**` already does under CR-73.
 
 How the base copy is taken. The step reads `docs/ops/trace-ns-baseline.txt` from `origin/<base branch>` at the time the job runs, so `grown` compares the PR's baseline with the target branch's tip. A one-time seed (CR-227, CR-228) adds lines, so the PR that carries it reads as `grown` against the base copy it starts from; it can pass only when it merges before the step is applied, after which the seed is in every later base copy. That is why the step waited for #2050, which merged on 27 Nov 2026 (below).
 
@@ -69,4 +73,4 @@ So BL-1869 can apply the step as drafted now.
 
 (b) Add a ratchet-only flag or scope to `scripts/trace.mjs` (a code row, owner qa engineer, with its own test), so CI does not wait on the v2 or NS clean-up.
 
-Recommended and ruled: (a). See CR-229 in `docs/agents/cto/RULINGS.md`. (b) would add a second path through `main` for a problem that no longer exists, and a ratchet-only step would let a duplicate or undefined v2 id merge unseen. The answer to 07 Q8 (whether `--check` blocks merges) is yes, through this step, once #2050 has merged and BL-1869 applies it. What it blocks is a row neither cited nor listed. A row whose main clause is in `it.fails` or `it.todo` still passes when a describe title or a test of another clause cites it, which CR-229 records as a revisit trigger.
+Recommended and ruled: (a). See CR-229 in `docs/agents/cto/RULINGS.md`. (b) would add a second path through `main` for a problem that no longer exists, and a ratchet-only step would let a duplicate or undefined v2 id merge unseen. The answer to 07 Q8 (whether `--check` blocks merges) is yes, through this step, once #2050 has merged and BL-1869 applies it. What it blocks is a P0 row neither covered nor listed. A row whose main clause is in `it.fails` or `it.todo` still passes when a describe title or a test of another clause cites it, which CR-229 records as a revisit trigger.
