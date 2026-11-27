@@ -871,9 +871,19 @@ export function newestWaitingDraftAt(childIds: readonly string[]): string | null
   return bookVisibleNow() ? drafts.newestWaitingAt(ctx(), childIds) : null;
 }
 
-/** The Book's read: one book's letters newest first, without their edit lists (BL-434). */
+/** One book's whole read: its letters newest first, without their edit lists (BL-434). The Book pages through listBookRange (BL-2225). */
 export function listBookEntries(childId: string): Entry[] {
   return shown(() => entries.listForBook(ctx(), childId));
+}
+
+/** The Book's paged read: one book's letters in a range of days, newest first, without edit lists (BL-2225). */
+export function listBookRange(childId: string, range: entries.BookRange): Entry[] {
+  return shown(() => entries.listBookRange(ctx(), childId, range));
+}
+
+/** What the Book knows of the letters it has not read yet: dates and a flag, never words (BL-2225). */
+export function bookOutline(childId: string): entries.BookOutline {
+  return bookVisibleNow() ? entries.bookOutline(ctx(), childId) : { firstLetterOn: null, lastLetterOn: null, readable: false };
 }
 
 /** How many letters one book holds (quiet-day marks not counted), counted in SQL (BL-434). */

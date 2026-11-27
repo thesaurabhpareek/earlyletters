@@ -125,9 +125,12 @@ describe('[S1] the arrival wash survives a Book that mounts with `arrived`', () 
     const screen = code(src('app/(tabs)/book.tsx'));
 
     it('reads the letters in the state initialiser, so the first frame is the book and not the empty-book state', () => {
-      expect(screen).toMatch(/useState\(\(\) => \(\{ childId: active\?\.id \?\? null, entries: active \? listBookEntries\(active\.id\) : \[\] \}\)\)/);
+      // BL-2225: the initialiser reads the first page of the book (pages.first), not the whole book.
+      expect(screen).toMatch(/useState\(\(\) => \(\{ childId: active\?\.id \?\? null, entries: active \? pages\.first\(active\.id\) : \[\] \}\)\)/);
       expect(screen).not.toMatch(/useState<Entry\[\]>\(\[\]\)/);
-      expect(screen).toMatch(/const loaded = read\.childId === \(active\?\.id \?\? null\);/);
+      expect(screen).toMatch(/const bookRead = read\.childId === \(active\?\.id \?\? null\);/);
+      // BL-2225: an arrived card older than the pages held waits for the rest of the book before the gate looks.
+      expect(screen).toMatch(/const loaded = bookRead && !arrivalWaits;/);
     });
 
     it('asks the gate with the read state, positions at once, and washes and clears the param together once uncovered', () => {
@@ -162,7 +165,7 @@ describe('[S1] the arrival wash survives a Book that mounts with `arrived`', () 
     });
 
     it('follows the store through watchBook: subscribe, then one catch-up read, then a reread on every change (BL-1428)', () => {
-      expect(screen).toMatch(/return watchBook\(\{ childId: active\.id, read: listBookEntries, subscribe, set: setRead \}\);/);
+      expect(screen).toMatch(/return watchBook\(\{ childId: active\.id, read: pages\.reread, subscribe, set: setRead \}\);/);
       expect(screen).not.toMatch(/\n\s*reread\(\);\n/);
     });
   });
@@ -398,7 +401,8 @@ describe('[L4] Read together shows on the Book for what it can read', () => {
 
   it('the Book asks the same question as the screen (source)', () => {
     const book = code(src('app/(tabs)/book.tsx'));
-    expect(book).toMatch(/const canRead = readableInBook\(entries\)\.length > 0;/);
+    // BL-2225: the pages held, or, while older pages are unread, the store's outline of the whole book.
+    expect(book).toMatch(/const canRead = readableInBook\(entries\)\.length > 0 \|\| !!outline\?\.readable;/);
     expect(book).toMatch(/readTogether=\{canRead \? \{/);
     expect(book).not.toMatch(/entries\.some\(\(e\) => e\.inBook && !isQuietMark\(e\)\)/);
     expect(code(src('app/read-together.tsx'))).toMatch(/readableInBook\(listEntriesForChild\(child\.id\)\)/);
