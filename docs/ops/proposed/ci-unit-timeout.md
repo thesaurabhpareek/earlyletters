@@ -1,6 +1,8 @@
 # Proposal: raise the `unit` job timeout from 5 to 10 minutes
 
-Status: proposal, 21 Nov 2026. This pull request changes nothing under `.github/` (OPERATING_MODEL: agents never edit `.github/workflows/`; the founder applies it). The fence (`compliance/FENCE.json`) does not list the workflow, so no CCO approval is needed.
+Status, 27 Nov 2026: applied. `.github/workflows/ci.yml` line 109 has `timeout-minutes: 10` with the evidence comment. The patch file was removed because it no longer applied; it is at `ba634177` in git history, and `docs/ops/proposed/workflows-retired.md` gives the live lines.
+
+Original status: proposal, 21 Nov 2026. This pull request changes nothing under `.github/` (OPERATING_MODEL: agents never edit `.github/workflows/`; the founder applies it). The fence (`compliance/FENCE.json`) does not list the workflow, so no CCO approval is needed.
 
 ## Problem
 

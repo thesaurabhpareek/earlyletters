@@ -1,8 +1,8 @@
 /**
  * BL-781 (LEGAL-REQ-044; D-144, CCO-6): the four Erase everything lines are used in the app only for now. Whether
  * they may be used anywhere else is the founder's open question under D-144, so until he decides, no public surface
- * says them: the App Store listing (`store.en.ts`), the website copy sources (`site.en.ts`, `pages.en.ts`) and the
- * live website copy (`apps/web/src/content/site.ts`, read as text). Each line is checked whole and sentence by
+ * says them: the App Store listing (`store.en.ts`) and the live website copy (`apps/web/src/content/site.ts`, read
+ * as text). BL-556 removed the unrendered website copy sources (`site.en.ts`, `pages.en.ts`). Each line is checked whole and sentence by
  * sentence, so "We hold no copy." or "Nothing is sent anywhere." alone is caught too.
  * Claims inventory rows: docs/reviews/2026-10-claims-inventory.md, section 3g (X1 to X4).
  *
@@ -12,7 +12,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { en, pages, site, storeListing } from '../src';
+import { en, storeListing } from '../src';
 import { leaves } from './support/copy-surfaces';
 
 const e = en.settings.erase;
@@ -25,8 +25,6 @@ const WEB_SITE = fileURLToPath(new URL('../../../apps/web/src/content/site.ts', 
 
 const SURFACES: Record<string, string> = {
   'store.en.ts': norm(leaves(storeListing).map((l) => l.text).join('\n')),
-  'site.en.ts': norm(leaves(site).map((l) => l.text).join('\n')),
-  'pages.en.ts': norm(leaves(pages).map((l) => l.text).join('\n')),
   'apps/web/src/content/site.ts': norm(readFileSync(WEB_SITE, 'utf8')),
 };
 
