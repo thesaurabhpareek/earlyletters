@@ -523,10 +523,17 @@ describe('[NX-39-R37] a phase switch removes screens and reads, never a data rig
 
     // Export works with every switch off: the plan is the same as with every switch on (nothing a switch hides is
     // dropped from a parent's copy of their book).
+    // The plan's two writers (readerFor, readmeFor) are compared by what they write, with no picture written and with
+    // every one, and with and without the pictures section.
+    const planText = (plan: ReturnType<typeof planExport>) => {
+      const { readerFor, readmeFor, ...data } = plan;
+      const all = new Set(plan.photos.map((p) => p.entryId));
+      return { ...data, reader: [readerFor(new Set()), readerFor(all)], readme: [readmeFor(false), readmeFor(true)] };
+    };
     allSwitches(true);
-    const planOn = planExport(ashaSnapshot());
+    const planOn = planText(planExport(ashaSnapshot()));
     allSwitches(false);
-    const planOff = planExport(ashaSnapshot());
+    const planOff = planText(planExport(ashaSnapshot()));
     expect(planOff.textFiles.length).toBeGreaterThan(0);
     expect(planOff).toEqual(planOn);
 
