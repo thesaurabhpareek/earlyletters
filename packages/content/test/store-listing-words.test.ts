@@ -666,12 +666,16 @@ const OFF_PHONE_VERB = String.raw`sync(?:s|ed|ing)?|back(?:s|ed)? up|upload(?:s|
  * "We" holding the thing named after it ("we store your recordings", "we keep a copy of every recording"). Up to two
  * words may sit between "we" and the verb ("we really do store"), unless one of them denies it: "we never store your
  * recordings" and "we don't keep them" state no practice. Only this branch reads a denial; the other two refuse "we
- * never upload your recordings" too, which errs on the safe side. A sentence that keeps the thing on the phone ("we
- * keep your recordings on the phone that made them") states no practice either, unless another branch reads it.
+ * never upload your recordings" too, which errs on the safe side. A sentence that ends by keeping the thing on the
+ * phone ("we keep your recordings on the phone that made them") states no practice either (see ON_THE_PHONE).
  */
 const WE_HOLD = String.raw`\bwe(?:'ll|'d)?\s+(?:(?!(?:never|not|no|don't|won't|cannot|can't)(?![\w']))[\w']+\s+){0,2}(?:keep|store|save|hold|copy)s?\b(?:\s+[^\s.]+){0,4}?\s+`;
-/** The words that keep the thing on the phone, read after the thing in the we-branch only. */
-const ON_THE_PHONE = String.raw`(?![^.]*\bon (?:this|your|the) phone\b)`;
+/**
+ * The words that keep the thing on the phone, read in the we-branch only and only right after the thing, closing the
+ * sentence: "we keep your recordings on the phone that made them." Anything after the phone ("and back them up") or
+ * before it ("so you can play them on your phone") leaves the line refused.
+ */
+const ON_THE_PHONE = String.raw`(?!\s+(?:only\s+)?on (?:this|your|the) phone(?: that made (?:them|it))?\s*(?:[.!?;]|$))`;
 
 /** A sentence that says the thing leaves the phone, as a regex over one sentence (no period in between). */
 const leavesThePhone = (thing: string) =>
@@ -780,6 +784,10 @@ describe('[FR-MKT-16] a privacy label change moves every public privacy line in 
     [SITE, 'Your recordings are safe with us.'],
     ['/support', `Recordings are saved to your ${brand.name} account.`],
     [STORE, 'We keep your recordings on the phone and on our servers.'],
+    [SITE, 'We keep your recordings on your phone and back them up nightly.'],
+    ['/support', 'We keep your recordings safe, not just on your phone.'],
+    [STORE, 'We store your recordings so you can play them on your phone.'],
+    [SITE, 'We keep your recordings, so you can free up space on your phone.'],
   ];
   for (const [id, planted] of audioMutants) {
     it(`[FR-MKT-16] [mutant] ${id} saying "${planted}" is refused while Audio Data is not collected`, () => {
@@ -796,6 +804,9 @@ describe('[FR-MKT-16] a privacy label change moves every public privacy line in 
     'We no longer store your recordings.',
     "We don't keep your recordings.",
     "We won't store your recordings.",
+    'We cannot store your recordings.',
+    "We can't keep your recordings.",
+    'We keep your recordings only on this phone.',
     'We keep your recordings on the phone that made them.',
     'We keep it simple. Recordings stay on this phone.',
     'We keep it short. Your recordings are private.',
