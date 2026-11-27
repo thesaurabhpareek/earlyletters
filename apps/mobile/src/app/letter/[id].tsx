@@ -385,7 +385,7 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
     <ListRow
       title={copy.readTogether.fromHere}
       leading={<BookOpenIcon size={20} color={c.text} />}
-      minHeight={56}
+      minHeight={tokens.target.primary}
       accessibilityHint={copy.readTogether.fromHereLetterA11y}
       onPress={() => router.push({ pathname: '/read-together', params: { childId: child.id, from: entry.id } })}
       testID="letter.readFromHere"

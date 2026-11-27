@@ -77,7 +77,8 @@ export type ListRowProps = {
   accessibilityRole?: 'button' | 'link';
   /** E2E id (apps/mobile/e2e/TESTID_REQUESTS.md); inert for VoiceOver. */
   testID?: string;
-  /** A taller floor than 44 pt, for a row the spec sizes (Read from here on a letter page: 56). */
+  /** A taller floor than 44 pt, for a row the spec sizes (Read from here on a letter page: target.primary). Applies to a
+   * row with onPress only: a static row is not a target, so it keeps its own height. */
   minHeight?: number;
   /** A second thing the row does, as a VoiceOver action on the one element (Read from here on a month row, RYT-10). */
   accessibilityActions?: readonly { name: string; label: string }[];

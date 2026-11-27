@@ -65,7 +65,7 @@ describe('[RYT-06] read from a letter', () => {
     const row = page.slice(page.indexOf('const readFromRow'), page.indexOf(') : null;', page.indexOf('const readFromRow')));
     expect(row).toMatch(/title=\{copy\.readTogether\.fromHere\}/);
     expect(row).toMatch(/leading=\{<BookOpenIcon /);
-    expect(row).toMatch(/minHeight=\{56\}/);
+    expect(row).toMatch(/minHeight=\{tokens\.target\.primary\}/);
     expect(row).toMatch(/accessibilityHint=\{copy\.readTogether\.fromHereLetterA11y\}/);
     expect(page).toMatch(/<ListSection>\s*\{readFromRow\}\s*<ListRow\s+title=\{entry\.inBook/);
     expect(page).toMatch(/\{!editable && readFromRow && \(/);
