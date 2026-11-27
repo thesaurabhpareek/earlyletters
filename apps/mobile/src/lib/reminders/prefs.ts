@@ -15,7 +15,7 @@
  * | `notifications.lockScreenNames` | `on` / `off` | `off` (D-025; remote config later, D-035) |
  * | `reminders.onSince` | epoch ms, when reminders were last turned on (the anchor's second half, NS-13 R27) | absent |
  * | `reminders.session` | `on` or absent | absent; `on` while these reminders belong to a signed-in session (session.ts) |
- * | `notifications.dayNames` | `on` / `off` | `off`; the one day-names switch: a typed day's words on the lock screen (NS-18-R3, CL-119) |
+ * | `notifications.dayNames` | `on` / `off` | `off`; the one day-names switch: a typed day's words on the lock screen, only with names on too (NS-18-R3, CL-119, CPrivO-58) |
  *
  * Typed days keep their own keys, `typedDay.<yyyy-mm-dd>` (typed-days.ts), cleared with these at sign-out.
  *
@@ -165,10 +165,15 @@ export function lastOwnSaveAt(): number | null {
 /**
  * The newest letter this phone's user made, as the planner's layers read it (NS-48-R27): `at` (epoch ms of
  * `captured_at`) and the kind (`spoke` or `typed`; null when it cannot be told). One query, no entry text. Null when
- * nothing is made yet.
+ * nothing is made yet. Only books that are included and not quiet count: a quieted book, or one with "Include in my
+ * reminders" off, gives a key nothing, not its letter's date and not its kind (NS-48-R21, NS-32-R14). Smart quiet and
+ * the anchor still read every visible book (`lastOwnSaveAt`).
  */
 export function lastMadeLetter(): LastLetter | null {
-  const books = listChildren().map((c) => c.id);
+  const books = listChildren()
+    .filter((c) => c.remindersOn && c.quiet !== true)
+    .map((c) => c.id);
+  if (books.length === 0) return null;
   const row = newestMadeLetter(books, currentUserId());
   const at = row ? Date.parse(row.capturedAt) : NaN;
   return row && Number.isFinite(at) ? { at, kind: lastLetterKind(row.captureMode, row.kind) } : null;

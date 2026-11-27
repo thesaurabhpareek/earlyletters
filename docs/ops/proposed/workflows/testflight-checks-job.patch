@@ -1,0 +1,81 @@
+diff --git a/.github/workflows/testflight.yml b/.github/workflows/testflight.yml
+index 3970c027..b3a0c36d 100644
+--- a/.github/workflows/testflight.yml
++++ b/.github/workflows/testflight.yml
+@@ -1,7 +1,7 @@
+ # Builds the iOS app in the cloud and (optionally) uploads it to TestFlight. Dispatch only (the pull_request run
+ # below builds nothing): run it from the
+ # Actions tab, on `develop`, for one of the two alpha profiles below (D-106). A run on an `ios-v*` tag passes
+-# the job's if but is refused by the testflight environment's deployment refs (develop only) until the founder
++# the jobs' if but is refused by the testflight environment's deployment refs (develop only) until the founder
+ # decides where release-candidate builds run (AUTOMATION.md 2.0 says app-store).
+ #   testflight  alpha build 1, server features off
+ #   preview     alpha build 2, server features on against staging (its Supabase values come from the
+@@ -10,7 +10,7 @@
+ # Apple accounts, so every assumption below is UNVERIFIED until the first real run. Builds, submits and store
+ # actions run here or on the founder's own computer, never in an agent sandbox (it cannot reach expo.dev or
+ # App Store Connect). Further release workflows come through docs/release/AUTOMATION.md.
+-# The pull_request trigger (paths: this file only) builds nothing: the job's if skips every pull request run before the
++# The pull_request trigger (paths: this file only) builds nothing: the jobs' if skips every pull request run before the
+ # environment or a secret is read. The run only registers the workflow, so the API should be able to dispatch it on develop before AF-05 (a dispatch is untested).
+ #
+ # What it expects, by name (nothing else; no value is ever in this repository):
+@@ -69,17 +69,15 @@ env:
+   PROFILE: ${{ inputs.profile }}
+ 
+ jobs:
+-  build:
+-    name: testflight build
+-    # App builds come from `develop` (TestFlight) or an ios-v tag (docs/DEVELOPMENT.md).
++  # CR-233: every check runs here, in a job with no environment and no secret: the typecheck, the tests, the
++  # preflight (which starts vitest, `expo config` and `expo prebuild`) and the seam guard (which runs `expo export`).
++  # A process an earlier step starts lives until its job ends and runs as the same user, so none of that code may
++  # share a job with EXPO_TOKEN. The build job below starts from its own clean checkout and runs only the EAS step.
++  checks:
++    name: testflight checks
+     if: github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/tags/ios-v')
+     runs-on: ubuntu-latest
+-    timeout-minutes: 75
+-    # RA-20-06a (AUTOMATION.md 2.0 and 2.3, SECRETS_REVIEW.md 4.3): EXPO_TOKEN is this environment's secret. Its
+-    # deployment refs (branch develop only) are the control; the if above is not. Open: a run on an ios-v tag
+-    # (ADR 0022 decision 5, C1 builds after the freeze) is refused by those refs until the founder decides
+-    # whether the tag joins them or that build moves to app-store.
+-    environment: testflight
++    timeout-minutes: 45
+     steps:
+       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+         with:
+@@ -113,6 +111,33 @@ jobs:
+           case "$PROFILE" in testflight|preview) ;; *) echo "unknown profile"; exit 1 ;; esac
+           node .github/scripts/seam-guard.mjs --profile "$PROFILE"
+ 
++  build:
++    name: testflight build
++    needs: checks
++    # App builds come from `develop` (TestFlight) or an ios-v tag (docs/DEVELOPMENT.md).
++    if: github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/tags/ios-v')
++    runs-on: ubuntu-latest
++    timeout-minutes: 75
++    # RA-20-06a (AUTOMATION.md 2.0 and 2.3, SECRETS_REVIEW.md 4.3): EXPO_TOKEN is this environment's secret. Its
++    # deployment refs (branch develop only) are the control; the if above is not. Open: a run on an ios-v tag
++    # (ADR 0022 decision 5, C1 builds after the freeze) is refused by those refs until the founder decides
++    # whether the tag joins them or that build moves to app-store.
++    environment: testflight
++    steps:
++      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
++        with:
++          persist-credentials: false
++      # CR-233: this job holds EXPO_TOKEN, so it restores no cache (package-manager-cache: false keeps it off even if
++      # package.json names npm as its package manager) and installs with install scripts off. What still runs beside
++      # the token: eas-cli and the dependencies npx installs for it, and the project's own Expo CLI, which eas-cli
++      # starts (`expo config`, with the config plugins) with the token in its environment.
++      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
++        with:
++          node-version: 22
++          package-manager-cache: false
++      - name: Install from the lockfile, no cache, no install scripts
++        run: npm ci --ignore-scripts --no-audit --no-fund
++
+       - name: Build on EAS
+         working-directory: apps/mobile
+         env:
