@@ -10823,7 +10823,7 @@ Rows for notes the reviews of these pull requests left open. Rows BL-1918 to BL-
 - Test: `packages/api/test/` (a closed-shape case), `apps/mobile/test/sync-two-phone.test.ts`, a Family-screen logic test.
 
 #### BL-2146 Sync consent gate: the gate-before-reads source test and the rate-limit case (from BL-1919)
-- Status: in-review (PR #2079). Mode: agent. Owner: data architect. Milestone: M15. Size: S. Depends on: none.
+- Status: ready. Mode: agent. Owner: data architect. Milestone: M15. Size: S. Depends on: none.
 - Satisfies: FR-PRV-20 (`docs/product/prd/functions/privacy.md`); the consent gate of #1676; SECURITY-OPEN-QUESTIONS.md row S-1.
 - Scope: in `supabase/tests/sync_pull_consent.test.mjs`: (5) the order "gate before reads" is held only by a comment: read the function with `pg_get_functiondef` and fail if a read of a book table comes before the gate call in source order (mutant: move the gate below the first read); (6) the rate-limit case (121 closed pulls) has no test: add one that shows the 121st closed pull is limited and that a limited pull returns no content.
 - Done when: both tests exist, each fails under its mutant, and `npm run test:db` passes.
