@@ -245,10 +245,10 @@ export const CR70_EXTRA_PATHS = [
   /(?:^|\/)claude\.md$/i, /^packages\/content\//, /^packages\/brand\//, /^packages\/analytics\//, /^docs\/analytics\//,
   /^agents\//, /^\.claude\//, /^apps\/mobile\/src\/lib\/db\//, /(?:^|\/)codeowners$/i, /^docs\/legal\//, /^apps\/web\/content\/legal\//,
   /^apps\/mobile\/src\/app\/settings\/(?:legal|privacy)\.tsx$/, /^docs\/decisions\.md$/i,
-  /^apps\/mobile\/src\/lib\/backup\//i, /^apps\/mobile\/src\/lib\/analytics\//i, /(?:^|\/)\.?well-known\//i, /^apps\/mobile\/src\/lib\/(?:app-lock|family)\//i, /^apps\/mobile\/src\/components\/app-lock\//i,
+  /^apps\/mobile\/src\/lib\/backup\//i, /^apps\/mobile\/src\/lib\/analytics\//i, /(?:^|\/)\.?well-known\//i, /^apps\/mobile\/src\/lib\//i, /^apps\/web\/src\/lib\//i, /^packages\/api\//i, /^apps\/mobile\/src\/components\/family\//i, /^apps\/mobile\/src\/components\/app-lock\//i,
   /^apps\/mobile\/src\/app\/invite\//i, /^apps\/web\/src\/app\/j\//i, /^docs\/ops\/backup\//i, /(?:^|\/)\.git(?:modules|attributes)$/i,
   /^docs\/ops\/proposed\/standing-merge-delegation-decision\.md$/i,
-  /auth|sign[-_]?in|sign[-_]?out|sign[-_]?up|log[-_]?in|log[-_]?out|session|token|vault|account|delet|erase|wipe|purge|forget|recover|restore|export|backup|invite|native-intent|deep[-_]?link|app[-_]?lock|biometric|face[-_]?id|password|secret|cred|jwt|crypt|key|magic|otp|keychain|secure[-_]?stor|passkey|billing|payment|purchase|subscription|paywall|entitlement|iap|plus|security|supabase|privacy|terms|legal|consent/i,
+  /auth|sign[-_]?in|sign[-_]?out|sign[-_]?up|log[-_]?in|log[-_]?out|session|token|vault|account|delet|erase|wipe|purge|forget|recover|restore|export|backup|invite|native-intent|deep[-_]?link|app[-_]?lock|biometric|face[-_]?id|password|secret|cred|jwt|crypt|key|agreement|age[-_]?gate|integrity|canonical|signature|signed|verif|hmac|unsubscribe|rate[-_]?limit|same[-_]?origin|unlock|passcode|hash|nonce|sso|mfa|totp|permission|role|admin|rls|csrf|cors|escrow|owner|presign|cookie|trust|identity|middleware|magic|otp|keychain|secure[-_]?stor|passkey|billing|payment|purchase|subscription|paywall|entitlement|iap|plus|security|supabase|privacy|terms|legal|consent/i,
 ];
 /** Lockfiles of any package manager, anywhere in the tree (CR-149 rule 4 says "no lockfile", not only the root one). */
 export const LOCKFILE_RE = /(?:^|\/)(?:package-lock\.json|npm-shrinkwrap\.json|yarn\.lock|pnpm-lock\.ya?ml|bun\.lockb?|deno\.lock|podfile\.lock|gemfile\.lock|cargo\.lock|poetry\.lock|composer\.lock|gradle\.lockfile)$/i;
@@ -288,6 +288,8 @@ export function parseCodeowners(text) {
   }
   // An empty file (or only comments) is a read gone wrong, not a repo with no owners: fail closed.
   if (entries === 0) return { patterns: [], error: "CODEOWNERS text empty" };
+  // The real file opens with the `*` line, so a read cut short after it would look like "no owners": fail closed.
+  if (patterns.length === 0) return { patterns: [], error: "CODEOWNERS has no entry beyond the catch-all" };
   return { patterns, error: null };
 }
 
@@ -307,7 +309,8 @@ const anyRe = (res, p) => res.some((re) => re.test(p) || re.test(p.toLowerCase()
  * non-dependency key moved (scripts, name, version), and "scripts" itself runs in `npm ci` and EAS (CR-70).
  * Matching ignores case as well (a case-insensitive checkout maps `IOS/` onto `ios/`), which can only add hits.
  * Fail closed: a non-array or capped file list, an empty list, an entry with no readable name, a path that is absolute
- * or holds `.`, `..`, a backslash or a control character, and unreadable CODEOWNERS text each give a hit.
+ * or holds `.`, `..`, a backslash or any character outside printable ASCII, and unreadable, empty or catch-all-only
+ * CODEOWNERS text each give a hit.
  */
 export function protectedPathHits(files, codeowners) {
   if (!Array.isArray(files) || files.capped) return [{ path: UNREADABLE, rules: ["unreadable file list"] }];

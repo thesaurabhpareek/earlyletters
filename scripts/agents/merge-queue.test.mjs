@@ -704,7 +704,8 @@ test("CR-149 rule 4, CODEOWNERS path: packages/core/src/verify.ts is protected t
   assert.deepEqual(rulesFor("docs/ops/deep/draft-plan.md", undefined, later), ["CODEOWNERS docs/**/draft-*.md"]);
   assert.equal(touchesProtectedPath(["apps/mobile/src/components/keepsake/row.tsx"], CODEOWNERS), false, "not owned before the line was added");
   // The `*` catch-all line is not an entry of its own (correction 1), so an ordinary app file is not protected.
-  assert.deepEqual(parseCodeowners("*  @owner\n/**  @owner\n").patterns, []);
+  assert.equal(parseCodeowners("*  @owner\n/**  @owner\n").error, "CODEOWNERS has no entry beyond the catch-all");
+  assert.ok(!parseCodeowners(CODEOWNERS).patterns.some((x) => x.pattern === "*"), "the catch-all is not an entry of its own");
   assert.equal(touchesProtectedPath(["apps/mobile/src/components/letter/row.tsx", "docs/ops/notes.md"], CODEOWNERS), false);
   // Fail closed: missing text, or a pattern GitHub does not support, protects every path.
   assert.deepEqual(rulesFor("docs/ops/notes.md", undefined, null), ["CODEOWNERS text missing"]);
@@ -843,5 +844,23 @@ test("CR-149 rule 4: a path with a non-ASCII character is unknown, so protected 
 
 test("CR-149 rule 4: an empty or comment-only CODEOWNERS text fails closed", () => {
   for (const text of ["", "\n\n", "# owners\n"]) assert.deepEqual(rulesFor("docs/ops/notes.md", undefined, text), ["CODEOWNERS text empty"], JSON.stringify(text));
-  assert.deepEqual(parseCodeowners("*  @owner\n").patterns, [], "a catch-all-only file still parses with no entry of its own");
+  assert.deepEqual(rulesFor("docs/ops/notes.md", undefined, "*  @owner\n"), ["CODEOWNERS has no entry beyond the catch-all"], "a read cut short after the `*` line fails closed");
+});
+
+test("CR-149 rule 4 and CR-70 (Review B, third pass): logic folders are protected whole, since a name list is never complete", () => {
+  // Signed-document and pack trust, session ownership, consent records and the notify routes' logic live in these
+  // folders; listing the folders whole stops the next file with a plain name slipping through.
+  for (const p of ["packages/api/src/integrity.ts", "packages/api/src/canonical.ts", "apps/mobile/src/lib/remote/apply.ts",
+    "apps/mobile/src/lib/packs/engine.ts", "apps/web/src/lib/notify/unsubscribe.ts", "apps/web/src/lib/notify/readme.md",
+    "apps/mobile/src/lib/sync/handover.ts", "apps/mobile/src/lib/first-run/gate.logic.ts", "apps/mobile/src/components/family/JoinSheet.tsx",
+    "apps/mobile/src/lib/agreements.logic.ts", "apps/mobile/src/lib/age-gate.logic.ts", "apps/mobile/src/lib/photos/housekeeping.ts"]) {
+    assert.ok(rulesFor(p).includes("CR-70 path"), p);
+  }
+  // A well-known file with a plain name is still protected by its folder, with or without the leading dot.
+  for (const p of ["docs/ops/well-known/apple-app-site-association", "apps/web/public/.well-known/assetlinks.json"]) assert.ok(rulesFor(p).includes("CR-70 path"), p);
+  // Future names in the security vocabulary hit by substring, outside the protected folders.
+  for (const n of ["Unlock", "passcode", "hashPin", "nonce", "ssoButton", "mfaStep", "totp", "permissions", "roles", "adminPanel", "rlsNote",
+    "csrf", "cors", "escrow", "ownership", "signedUrl", "presign", "cookieBanner", "trustBadge", "identity", "middleware", "agreementRow", "AgeGate"]) {
+    assert.ok(rulesFor(`apps/mobile/src/components/x/${n}.tsx`).includes("CR-70 path"), n);
+  }
 });
