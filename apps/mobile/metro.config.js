@@ -18,6 +18,7 @@ const uniwindConfig = withUniwindConfig(config, {
 const uniwindResolve = uniwindConfig.resolver.resolveRequest;
 const path = require('path');
 const sqliteChannelFix = path.join(__dirname, 'web-preview', 'sqlite-worker-channel.js');
+const routerHistoryFix = path.join(__dirname, 'web-preview', 'router-memory-history.js');
 // Every platform: expo-router > query-string 7 needs decode-uri-component 0.2.2, whose fallback for a
 // malformed link is exponential (GHSA-vcc3-ghjq-m6fr; security review L6, G-22). The fixed 0.5.0 is
 // ESM-only, so the bundle gets a CommonJS copy of its decoder instead (shims/decode-uri-component.js).
@@ -37,6 +38,16 @@ uniwindConfig.resolver.resolveRequest = (context, moduleName, platform) => {
   }
   if (platform === 'web' && context.originModulePath === sqliteChannelFix) {
     const origin = path.join(path.dirname(require.resolve('expo-sqlite/package.json')), 'web', 'WorkerChannel.ts');
+    return context.resolveRequest({ ...context, originModulePath: origin }, moduleName, platform);
+  }
+  // Web only: expo-router 57.0.24 waits 100 ms for the popstate of its own history.go, then takes a late one for the
+  // browser's Back and resets the navigator (BL-2019). Swap in a copy that waits 1000 ms (web-preview/router-memory-history.js);
+  // its own imports resolve from expo-router's fork folder as before.
+  if (platform === 'web' && context.originModulePath.endsWith(path.sep + path.join('expo-router', 'build', 'fork', 'useLinking.js')) && moduleName === './createMemoryHistory') {
+    return { type: 'sourceFile', filePath: routerHistoryFix };
+  }
+  if (platform === 'web' && context.originModulePath === routerHistoryFix) {
+    const origin = path.join(path.dirname(require.resolve('expo-router/package.json')), 'build', 'fork', 'createMemoryHistory.js');
     return context.resolveRequest({ ...context, originModulePath: origin }, moduleName, platform);
   }
   return uniwindResolve(context, moduleName, platform);

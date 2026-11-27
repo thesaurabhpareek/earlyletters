@@ -12,6 +12,7 @@ import { fileURLToPath } from 'node:url';
 import { brand } from '@scribe/brand';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
+import { en } from '../../../packages/content/src/strings.en';
 import { alt as ogAlt } from '../src/app/opengraph-image';
 import * as siteModule from '../src/content/site';
 
@@ -86,6 +87,12 @@ const ALL: Leaf[] = [
 ];
 /** Words in English, as a person reads them: no links, codes or other languages. */
 const PROSE = ALL.filter((l) => !l.meta && (l.lang === undefined || l.lang === 'en'));
+/**
+ * PROSE without the registered D-061 promise (`en.trust.promise`, exact text only). Its "never use them to train machine
+ * learning models" is a promise that nothing is done to the letters, not a claim that software writes or that a child
+ * learns, so only the two word bans it trips (machine learning; learn) read this list. Every other rule reads PROSE.
+ */
+const PROSE_BUT_PROMISE = PROSE.filter((l) => l.text !== en.trust.promise);
 
 const offenders = (items: Leaf[], re: RegExp) => items.filter((l) => re.test(l.text)).map((l) => `${l.path}: ${l.text}`);
 
@@ -148,7 +155,7 @@ describe('no machine-writing claims', () => {
     expect(bad.map((l) => `${l.path}: ${l.text}`)).toEqual([]);
     expect(
       offenders(
-        PROSE,
+        PROSE_BUT_PROMISE,
         /\b(artificial intelligence|machine learning|LLM|GPT|chatbot|algorithms?|ghostwrit\w*|auto-?(write|writes|writing|complete)|writes? (it )?for you|smart|magic(al)?|generat(e|es|ed|ing)|polish(ed|es|ing)?|perfect(ed|s)?|enhanc(e|ed|es|ing))\b/i,
       ),
     ).toEqual([]);
@@ -168,7 +175,7 @@ describe('site vocabulary', () => {
   it('avoids the banned words', () => {
     const BANNED =
       /\b(learn(s|ed|ing|er|ers)?|ABC|early learning|literac(y|ies)|educat(ion|ional)|AI[- ]?(written|generated|powered)|generat(e|es|ed|ing)|legacy|hereafter|cherish(es|ed|ing)?|precious|journey(s|ed|ing)?|unlock(s|ed|ing)?|seamless(ly)?|magic(al)?|effortless(ly)?)\b/i;
-    expect(offenders(PROSE, BANNED)).toEqual([]);
+    expect(offenders(PROSE_BUT_PROMISE, BANNED)).toEqual([]);
   });
 
   // RULE (claims and trust rulings, 1 Nov 2026, docs/exec-rulings-claims-trust-2026-11-01.md, Q1, Q5 and Q6): no "exactly as you
@@ -417,15 +424,51 @@ describe('rules carried over from the content package (BL-556)', () => {
     expect(offenders(PROSE, /\bletters to your child,? in your (?:own )?voice\b/i)).toEqual([]);
   });
 
-  // RULE (D-139, 1 Nov 2026): the old descriptor ("the baby memory book you fill by talking") is retired. The live site
-  // still carries it in the three lines below; the retired copy in packages/content did not, so this rule is new to them.
-  // Changing them needs new words, which BL-556 does not write. The list only shrinks: a line that is fixed must leave it.
-  it('uses the retired descriptor only in the lines still listed (D-139)', () => {
-    const OLD_DESCRIPTOR = /\bmemory book (?:that )?(?:you|parents) fill by talking\b/i;
-    const STILL_OLD = ['site.ts:site.meta.title', 'site.ts:site.brand.line', 'site.ts:site.welcomeEmail.intro'];
+  // RULE (D-139, 1 Nov 2026): the old descriptor ("the baby memory book you fill by talking") and its variants are
+  // retired; the one descriptor is BRAND.md's, word for word. The site's title and brand line carry it. The four lines
+  // in STILL_OLD still say the old one: their replacements are new words that wait for approval, so they stay listed.
+  // The list only shrinks: a line that no longer says it must leave the list, and no new line may join it.
+  const OLD_DESCRIPTOR = /\b(?:baby |memory )+book (?:that )?(?:you|parents|families) fill by talking\b|\bbaby memory book\b|\bfill(?:s|ed|ing)? (?:it )?by talking\b/i;
+  it('the retired descriptor pattern catches its variants and lets the registered one pass (D-139, BL-556)', () => {
+    for (const bad of [
+      'the baby memory book you fill by talking',
+      'A baby book you fill by talking.',
+      'a memory book parents fill by talking',
+      `${brand.name}, the baby memory book`,
+      'the book you fill by talking',
+    ])
+      expect(OLD_DESCRIPTOR.test(bad), bad).toBe(true);
+    for (const ok of ['Letters to your child, in your own words and voice.', 'Say what happened today, out loud.', 'memory book'])
+      expect(OLD_DESCRIPTOR.test(ok), ok).toBe(false);
+  });
+
+  it('uses the retired descriptor only in the lines still listed (D-139, BL-556)', () => {
+    const STILL_OLD = [
+      'site.ts:site.comingSoon.line',
+      'site.ts:site.comingSoon.shareTitle',
+      'site.ts:site.comingSoon.shareText',
+      'site.ts:site.welcomeEmail.intro',
+    ];
     const found = PROSE.filter((l) => OLD_DESCRIPTOR.test(l.text)).map((l) => l.path);
     expect(found.filter((p) => !STILL_OLD.includes(p)), 'new lines with the retired descriptor').toEqual([]);
     expect(STILL_OLD.filter((p) => !found.includes(p)), 'fixed: remove from STILL_OLD').toEqual([]);
+  });
+
+  // RULE (D-139, BRAND.md "Early Letters + the descriptor"): the title says the name and the descriptor; the brand line,
+  // under the name on screen, says the descriptor alone. Both word for word.
+  it('says the registered descriptor in the title and the brand line (D-139, BL-556)', () => {
+    expect(siteModule.site.meta.title).toBe(`${brand.name}: letters to your child, in your own words and voice`);
+    expect(siteModule.site.brand.line).toBe('Letters to your child, in your own words and voice.');
+  });
+
+  // RULE (D-061): the privacy promise is one sentence, said the same way everywhere. packages/content says the website
+  // uses `trust.promise` word for word; the site copies it (site.ts does not depend on packages/content), so the copy is
+  // held equal here, and no shortened variant of it may stand beside it.
+  it('says the D-061 privacy promise in the Private scene word for word (D-061, BL-556)', () => {
+    const points: readonly string[] = siteModule.site.scenes.s09.points;
+    expect(points).toContain(en.trust.promise);
+    const variants = points.filter((p) => p !== en.trust.promise && /^Your letters and recordings are private\b/i.test(p));
+    expect(variants, 'a shortened copy of trust.promise').toEqual([]);
   });
 
   // RULE [BL-374] (D-082; ported from packages/content rules.test.ts by BL-556): no word a person reads keeps a promise

@@ -224,12 +224,18 @@ function PageButtons({ turn, placement, index, go }: { turn: ReturnType<typeof t
   );
 }
 
-/** How far along: a 2 pt hairline under the top bar, accent at 40 percent. Never "1 / 5"; VoiceOver hears "Letter 1 of 5". */
+/**
+ * How far along: the progress hairline under the top bar. Never "1 / 5"; VoiceOver hears "Letter 1 of 5".
+ * It is the only sighted cue of the place, so the fill is full strength (3:1 on the page, CDO-B-048), not a faded accent.
+ * The colour is named, not `c[P.fill]`: a computed key hides it from the lamp's status-colour scan (test/lamp.test.ts);
+ * test/semantic-tokens.test.ts holds it equal to `tokens.progress.fill`.
+ */
 function Progress({ fraction, label }: { fraction: number; label: string }) {
   const { c } = useTheme();
+  const P = tokens.progress;
   return (
-    <View accessible accessibilityRole="text" accessibilityLabel={label} testID="readTogether.progress" style={{ height: 2 }}>
-      <View style={{ height: 2, width: `${Math.round(fraction * 1000) / 10}%`, backgroundColor: c.accent, opacity: 0.4 }} />
+    <View accessible accessibilityRole="text" accessibilityLabel={label} testID="readTogether.progress" style={{ height: P.hairline }}>
+      <View style={{ height: P.hairline, width: `${Math.round(fraction * 1000) / 10}%`, backgroundColor: c.accent }} />
     </View>
   );
 }

@@ -28,13 +28,14 @@ export function reminderContent(p: PlannedNotification): {
 }
 
 /**
- * Where a tap on one of our reminders opens the app: the evening nudge and a typed day on Tonight (Home shows the typed
- * day's words there, NS-18-R1), the month and birthday notes on the book. Pure, so the live listener and the cold-start
+ * Where a tap on one of our reminders opens the app: the evening nudge, a typed day and a ticked day on Tonight (Home
+ * shows the typed day's words there, NS-18-R1, and the day slip is a ticked day's one landing, RV-6), the month and
+ * birthday notes on the book. Pure, so the live listener and the cold-start
  * read share one rule. Returns null for anything that is not ours.
  */
 export function routeForReminder(data: unknown): '/' | '/book' | null {
   if (!data || typeof data !== 'object') return null;
   const d = data as { source?: unknown; kind?: unknown };
   if (d.source !== REMINDER_SOURCE) return null;
-  return d.kind === 'evening' || d.kind === 'typedDay' ? '/' : '/book';
+  return d.kind === 'evening' || d.kind === 'typedDay' || d.kind === 'libraryDay' ? '/' : '/book';
 }
