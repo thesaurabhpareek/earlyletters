@@ -1,5 +1,7 @@
 # The Book page: screen spec
 
+> Superseded in part (27 Nov 2026, BL-938): the gear is gone from the Book header and the bar, More for this book takes its place, and the lens choice now sits above the arrival and backup lines. See `docs/design/specs/NS-22-BOOK-HEADER-DELTA-27nov.md`; where the two differ, the delta holds.
+
 Owner: `design-systems`. Status: written 9 Nov 2026 from the code at develop `6cd2223b` (the redesign is PR #674: BL-659 option b, BL-660, BL-675, BL-676). Not run on a device. What only a phone can show is marked **Device** and has a row in S1-151 or S1-153 (`docs/qa/DEVICE_TEST_PLAN.md`).
 
 How to read this file:

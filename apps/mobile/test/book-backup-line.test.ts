@@ -57,8 +57,9 @@ describe('[NS-10-R13] one book-level line for absent recordings', () => {
     expect(book.match(/authCopy\.newPhone\.recordingsElsewhere\b/g)).toHaveLength(1);
     expect(book).toContain('backupLineOwed(getSetting(BACKUP_LINE_SETTING), backupInBuild(), backupLineEnabled())');
     expect(book).toContain('setSetting(BACKUP_LINE_SETTING, BACKUP_LINE_DONE)');
-    // Drawn only while owed, above the lens switch and the chapters.
-    expect(book).toMatch(/\{backupLine \? \([\s\S]*?authCopy\.newPhone\.recordingsElsewhere\b[\s\S]*?\) : null\}[\s\S]*?\{lensOn \?/);
+    // Drawn only while owed, under the header (whose lens choice sits under the band since BL-938, NS-22 fixed order) and above the chapters.
+    expect(book).toMatch(/<CoverBand[\s\S]*?\/>[\s\S]*?\{backupLine \? \([\s\S]*?authCopy\.newPhone\.recordingsElsewhere\b[\s\S]*?\) : null\}/);
+    expect(book.indexOf('{backupLine ? (')).toBeLessThan(book.indexOf('<AnimatedSectionList'));
     // No per-letter warning: the card and the row never name it.
     for (const f of ['letter-card.tsx']) expect(read('components', 'book', f)).not.toMatch(/recordingsElsewhere|backupLine/);
   });
