@@ -47,7 +47,7 @@ const RETIRED = [
 ];
 
 /**
- * Deleted by P7 (39 RET-tracked keys, plus 3 approved unmarked ones that no screen read). RETIRED above is a keep-list,
+ * Deleted by P7 (39 RET-tracked keys, plus 3 approved unmarked ones that no screen read), and 1 since (BL-393). RETIRED above is a keep-list,
  * so nothing else would notice if a deleted word came back: this list does. Never reuse their words (strings.en.ts header).
  */
 const DELETED = [
@@ -99,6 +99,8 @@ const DELETED = [
   // dead and unmarked, deleted with the coordinator's yes (P7)
   'features.reminders.settings.pausedHelp',
   'en.family.subtitle',
+  // after P7: mistakesTitle removed: rendered nowhere, not quoted in in-app-disclosures.md (BL-393, Karma ruling 24 Nov 2026)
+  'en.settings.help.mistakesTitle',
 ];
 
 /**
@@ -118,7 +120,7 @@ const REGISTERED: Record<string, Text> = {
   'en.review.firstNote.body':
     'We take out small slips, like an um or a repeat, and mark each one. Tap a mark to see it and put it back. We can mishear a name, so please read it before you save.',
   'en.review.firstNote.dismissButton': 'Got it',
-  'en.settings.help.mistakesTitle': 'How transcription works',
+  // mistakesTitle removed: rendered nowhere, not quoted in in-app-disclosures.md (BL-393, Karma ruling 24 Nov 2026)
   'en.settings.help.mistakes': 'Your words are kept as you said them. We can mishear, so read each letter and fix anything we got wrong.',
   // Section 3: above Apple's plans
   'features.billing.store.features': ['Keep adding letters to every book, as many as you like.'],
@@ -252,8 +254,8 @@ describe('[EXPERIENCE_PASS_2026-10 P0] keys', () => {
     expect(typeof at('features.billing.plan.yearly')).toBe('string');
   });
 
-  it('keeps the 42 keys P7 deleted deleted: a re-added leaf fails here', () => {
-    expect(DELETED).toHaveLength(42);
+  it('keeps the 42 keys P7 deleted and 1 deleted since deleted: a re-added leaf fails here', () => {
+    expect(DELETED).toHaveLength(43);
     expect(new Set(DELETED).size).toBe(DELETED.length);
     // A deleted key is in no keep-list, so the lists cannot disagree.
     const kept = new Set([...RETIRED, ...CHANGED, ...ADDED, ...Object.keys(HELD), ...Object.keys(REGISTERED)]);
