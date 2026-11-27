@@ -21,9 +21,16 @@
  * the wait ending as it should, not early, whatever sync was when it drained (BL-478: a queue found empty when a gate
  * answer turned sync off ends as drained, and a wait that began before the gate was read can drain with sync unknown).
  *
- * `nextEndedEarly(prev, next, shown)`: the signed-out page's early-end line, one state change at a time (account.tsx
- * calls it on each change). It turns on when the wait ends early, stays through the end of the sign-out and while
- * signed out, goes once the person is signed in again, and is announced once, when it first shows signed out.
+ * `nextEndedEarly(prev, next, shown)`: the signed-out page's early-end line, one state change at a time (the auth
+ * provider calls it on each change, through `heldEndedEarly`). It turns on when the wait ends early, stays through the
+ * end of the sign-out and while signed out, goes once the person is signed in again, and is announced once, when it
+ * first shows signed out.
+ *
+ * `heldEndedEarly(prev, next, held)`: the line as the auth provider holds it (BL-479 point 1, CPO-105), so it outlives
+ * the Account page: a wait that ends early while Account is closed still shows the line on the next visit. `shown` is
+ * nextEndedEarly's; `said` counts the changes where nextEndedEarly says to announce. Account speaks only a count that
+ * moves while it is open, so the announce is said once on an open page and a later visit reads the line in page order.
+ * Memory only: a cold start after an early end drops it (known, CPO-105). Nothing moved: the same object comes back.
  */
 import { isSignedIn, type AuthState } from '@/lib/auth/machine.logic';
 
@@ -69,4 +76,17 @@ export function nextEndedEarly(prev: AuthState, next: AuthState, shown: boolean)
   // Already on the signed-out page before this change: said then, not again.
   const seen = shown && !isSignedIn(prev);
   return { shown: now, announce: now && !signedIn && !seen };
+}
+
+export interface EndedEarly {
+  shown: boolean;
+  said: number;
+}
+
+export const NOT_ENDED_EARLY: EndedEarly = { shown: false, said: 0 };
+
+export function heldEndedEarly(prev: AuthState, next: AuthState, held: EndedEarly): EndedEarly {
+  const step = nextEndedEarly(prev, next, held.shown);
+  if (step.shown === held.shown && !step.announce) return held;
+  return { shown: step.shown, said: step.announce ? held.said + 1 : held.said };
 }

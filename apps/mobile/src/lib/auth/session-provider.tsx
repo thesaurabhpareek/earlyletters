@@ -66,6 +66,7 @@ import { forgetSignOutLeftovers } from './sign-out-leftovers';
 import { clearPendingEmailRequest, clearWrongCodes, notePendingEmailRequest, noteWrongCode, readPendingEmailRequest, sessionSavedOnPhone, wrongCodeTimes } from './pending';
 import { reauthPhaseOf, reauthStep, REAUTH_EPOCH_KEY } from './reauth.logic';
 import { useRegisterSensitiveDataRow } from './sensitive-row-hook';
+import { heldEndedEarly, NOT_ENDED_EARLY, type EndedEarly } from '@/components/auth/account-view.logic';
 
 export type Outcome = { ok: true } | { ok: false; error: AuthErrorKind };
 
@@ -116,6 +117,12 @@ export interface AuthApi {
    * nothing deleted, nothing sent (S01). Settings > Account's "Stay signed in" row calls it (BL-451).
    */
   cancelSignOutWait(): void;
+  /**
+   * BL-479 point 1 (CPO-105): a sign-out wait that ended before the newest letters were sent, held here and not on the
+   * Account page, so the signed-out page says where they are on the next visit too. `said` moves once, when the line
+   * first shows signed out; Account announces only a move it sees while open. Memory only.
+   */
+  endedEarly: EndedEarly;
   signOutOtherDevices(): Promise<Outcome>;
   /** The Supabase client for screens in lib/family and lib/auth; null when not configured. */
   client: SupabaseClient | null;
@@ -319,6 +326,16 @@ export function SessionProvider({ children, onUnder18 }: Props) {
       now: Date.now,
     });
   }, [signedInUser, sb]);
+
+  // BL-479 point 1 (CPO-105): the early-end line, moved by account-view.logic's pure step on every state change with the
+  // state before it, so it holds while Account is closed and goes at the next sign-in. Memory only: a cold start drops it.
+  const endedEarlyFrom = useRef(state);
+  const [endedEarly, setEndedEarly] = useState<EndedEarly>(NOT_ENDED_EARLY);
+  useEffect(() => {
+    const prev = endedEarlyFrom.current;
+    endedEarlyFrom.current = state;
+    setEndedEarly((held) => heldEndedEarly(prev, state, held));
+  }, [state]);
 
   // Sign-out: wait for the upload queue, then end the session on this phone only.
   const waiting = state.status === 'signingOut' && state.waitingForUploads;
@@ -594,6 +611,8 @@ export function SessionProvider({ children, onUnder18 }: Props) {
         dispatch({ type: 'SIGN_OUT_WAIT_CANCELLED' });
       },
 
+      endedEarly,
+
       async signOutOtherDevices() {
         if (!sb) return { ok: false, error: 'sign_out_others_failed' };
         try {
@@ -605,7 +624,7 @@ export function SessionProvider({ children, onUnder18 }: Props) {
         }
       },
     }),
-    [state, sb, lastMethod, account, providerSignIn, remember, checkGate, claimPending],
+    [state, sb, lastMethod, account, providerSignIn, remember, checkGate, claimPending, endedEarly],
   );
 
   return <AuthContext.Provider value={api}>{children}</AuthContext.Provider>;

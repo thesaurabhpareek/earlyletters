@@ -73,14 +73,16 @@ export function failureLine(error: CancelFailure | null): string | null {
  *    connection lost mid-call.
  *  - `limited`, the daily limit (SCRAT, CDesO-58): the outcome is known and pressing again does not help yet.
  *  - `auth`, still refused after one refresh of the session (CDesO-59): nothing ran on the server, so "nothing has
- *    changed" is true, with the date drawn above it.
+ *    changed" is true, with the date drawn above it. Unless an earlier press in this session ended with its outcome
+ *    unknown and nothing has settled it since (`outcomeUnknown`, the hook's mark, CDesO-64): that press may have
+ *    cancelled, so the line says the outcome is not known yet, as for offline or failed.
  *  - Signed out (`signedIn` false, the refresh removed the session): no line. The page's signed-out view, beside its
  *    Sign in button, is the one place the sign-in words show (CDesO-59).
  */
-export function cancelFailureLine(error: CancelFailure | null, signedIn: boolean): string | null {
+export function cancelFailureLine(error: CancelFailure | null, signedIn: boolean, outcomeUnknown: boolean): string | null {
   if (error === null || !signedIn) return null;
   if (error === 'limited') return c.errors.cancelLimited;
-  if (error === 'auth') return c.errors.failed;
+  if (error === 'auth') return outcomeUnknown ? c.errors.cancelFailed : c.errors.failed;
   return c.errors.cancelFailed;
 }
 

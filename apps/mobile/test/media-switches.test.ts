@@ -41,7 +41,7 @@ import { parsePhotosFlag, photoSurfaces, photosBuildEnabled, photosPaused, setPh
 import { photoStartShows } from '../src/lib/photos/start-shows';
 import type { StoredPhoto } from '../src/lib/photos/types';
 import { KILL_SWITCH_KEYS } from '../../../packages/api/src/kill-switches';
-import { resolveProfile, STORE_FLAGS, storeProfiles } from '../../../scripts/release/store-flags.mjs';
+import { G6_CARD_FLAGS, resolveProfile, STORE_FLAGS, storeProfiles } from '../../../scripts/release/store-flags.mjs';
 import { ashaSnapshot } from './helpers/asha-export';
 import { createDisk, iosContainer, type Disk } from './helpers/expo-fs-standin';
 import { nodeDb } from './helpers/node-db';
@@ -340,6 +340,45 @@ function nameMentions(file: string): Record<string, number> {
   const parsed = texts.join('\n');
   const stripped = stripComments(readFileSync(file, 'utf8'));
   return Object.fromEntries(SWITCH_NAMES.map((n) => [n, Math.max(parsed.match(nameIn(n))?.length ?? 0, stripped.match(nameIn(n))?.length ?? 0)]));
+}
+
+/** The two lists of the store gate (scripts/release/store-flags.mjs) that may name a switch, and how each names it. */
+const STORE_GATE_LISTS: Readonly<Record<string, 'env' | 'entry'>> = { STORE_FLAGS: 'env', G6_CARD_FLAGS: 'entry' };
+
+/**
+ * Every place the store gate's code names a switch other than as a name in one of its two lists (BL-2273): a STORE_FLAGS
+ * row's `env` string, or a string entry of G6_CARD_FLAGS, each inside nothing but array and object literals and
+ * `Object.freeze`, under a top-level declaration. Any `process` or `import.meta` in its code is one too, so the file
+ * cannot read a variable in any spelling. Empty means the file only names switches, for the gates that read the lists.
+ */
+function storeGateNameProblems(file: string): string[] {
+  const source = parse(file);
+  const problems: string[] = [];
+  const inList = (n: ts.Node): boolean => {
+    let child: ts.Node = n;
+    let viaEnv = false;
+    for (let p = n.parent; p; child = p, p = p.parent) {
+      if (ts.isArrayLiteralExpression(p) || ts.isObjectLiteralExpression(p)) continue;
+      if (ts.isPropertyAssignment(p) && p.initializer === child && ts.isIdentifier(p.name) && p.name.text === 'env' && !viaEnv) {
+        viaEnv = true;
+        continue;
+      }
+      if (ts.isCallExpression(p) && p.expression.getText(source) === 'Object.freeze' && p.arguments.includes(child as ts.Expression)) continue;
+      if (!ts.isVariableDeclaration(p) || p.initializer !== child || !ts.isIdentifier(p.name)) return false;
+      const how = STORE_GATE_LISTS[p.name.text];
+      return how !== undefined && (how === 'env') === viaEnv && p.parent.parent.parent === source;
+    }
+    return false;
+  };
+  const visit = (n: ts.Node): void => {
+    if (ts.isIdentifier(n) && n.text === 'process') problems.push(`process at ${n.getStart(source)}`);
+    if (ts.isMetaProperty(n)) problems.push(`import.meta at ${n.getStart(source)}`);
+    const text = ts.isIdentifier(n) || ts.isPrivateIdentifier(n) || ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n) || ts.isTemplateHead(n) || ts.isTemplateMiddle(n) || ts.isTemplateTail(n) || ts.isRegularExpressionLiteral(n) || ts.isJsxText(n) ? n.text : null;
+    if (text !== null && SWITCH_NAMES.some((s) => nameIn(s).test(text)) && !(ts.isStringLiteral(n) && SWITCH_NAMES.includes(n.text) && inList(n))) problems.push(`${text} at ${n.getStart(source)}`);
+    n.forEachChild(visit);
+  };
+  visit(source);
+  return problems;
 }
 
 /**
@@ -757,11 +796,15 @@ describe('[NX-39-R37] a phase switch removes screens and reads, never a data rig
       for (const n of SWITCH_NAMES) if (counts[rel][n] > 0) named[n].push(rel);
     }
     const CANARY_NAMES = ['EXPO_PUBLIC_PHOTO_MOMENTS', 'EXPO_PUBLIC_MOMENTS_BACKGROUND'];
-    // The store gate's list (preflight-testflight.mjs and store-flags.test.ts read it) names the switches it refuses
-    // `on` for. It is a Node script, reached now that the scan follows imports out of the walk (Review A M6); it may
-    // name them only while no file under src reaches it by import, so no bundle can hold it (checked below).
+    // The store gate (scripts/release/store-flags.mjs) is a Node script, reached now that the scan follows imports out
+    // of the walk (Review A M6). It names switches for the release gates only: each STORE_FLAGS row's `env`
+    // (preflight-testflight.mjs, store-flags.test.ts) and each entry of G6_CARD_FLAGS, which spreads those rows (gate
+    // G6 and both store preflights, BL-2273). The allowance is that one file, the names G6_CARD_FLAGS lists, once each,
+    // and only as names in those two lists with no `process` in the file (storeGateNameProblems), while no file under
+    // src reaches it by import, so no bundle can hold it (checked below). A list of switch names in any other file, a
+    // release script included, fails here: import G6_CARD_FLAGS, or add that file here in a reviewed diff.
     const STORE_GATE = 'scripts/release/store-flags.mjs';
-    const STORE_GATE_NAMES = SWITCH_NAMES.filter((n) => STORE_FLAGS.some((f: { env: string }) => f.env === n));
+    const STORE_GATE_NAMES = SWITCH_NAMES.filter((n) => (G6_CARD_FLAGS as readonly string[]).includes(n));
     for (const s of MEDIA_PHASE_SWITCHES) {
       const expected = [CAPS, ...(s.phase === 'photos' ? [FLAG] : []), ...(CANARY_NAMES.includes(s.env) ? [CANARY] : []), ...(STORE_GATE_NAMES.includes(s.env) ? [STORE_GATE] : [])];
       expect(named[s.env].sort(), s.env).toEqual(expected.sort());
@@ -779,6 +822,7 @@ describe('[NX-39-R37] a phase switch removes screens and reads, never a data rig
     // the store gate names each of its switches once, and nothing the app's code imports, at any depth, reaches it or
     // the canary list
     expect(counts[STORE_GATE]).toEqual(Object.fromEntries(SWITCH_NAMES.map((n) => [n, STORE_GATE_NAMES.includes(n) ? 1 : 0])));
+    expect(storeGateNameProblems(join(REPO, STORE_GATE))).toEqual([]);
     const appReach = closureOf(scanned.filter((f) => f.startsWith(SRC + sep))).map(repoRel);
     expect(appReach.length).toBeGreaterThan(500);
     expect(appReach).not.toContain(STORE_GATE);
@@ -876,6 +920,35 @@ describe('[NX-39-R37] a phase switch removes screens and reads, never a data rig
       for (const [code, n] of cases) {
         writeFileSync(file, code);
         expect(nameMentions(file).EXPO_PUBLIC_VIDEO, code).toBe(n);
+      }
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('[NX-39-R37] positive control: the store gate may name a switch only in its two lists, and never read one', () => {
+    const real = readFileSync(join(REPO, 'scripts', 'release', 'store-flags.mjs'), 'utf8');
+    const dir = mkdtempSync(join(tmpdir(), 'nx39-gate-'));
+    try {
+      const file = join(dir, 'store-flags.mjs');
+      const problemsWith = (code: string) => {
+        writeFileSync(file, code);
+        return storeGateNameProblems(file);
+      };
+      expect(problemsWith(real)).toEqual([]);
+      const entry = "  'EXPO_PUBLIC_VIDEO', // NS-52, card 27 (E38)\n";
+      expect(real).toContain(entry);
+      const mutants: Array<[string, string]> = [
+        ['a read in the file', `${real}\nexport const videoOn = process.env.EXPO_PUBLIC_VIDEO === 'on';\n`],
+        ['a read by a computed name', `${real}\nexport const on = (n) => process.env[n];\n`],
+        ['a second list of names', `${real}\nexport const MORE = Object.freeze(['EXPO_PUBLIC_VIDEO']);\n`],
+        ['a name in a G6 entry that is not a plain string', real.replace(entry, '  `EXPO_PUBLIC_VIDEO`,\n')],
+        ['a name in a STORE_FLAGS row that is not its env', real.replace("card: 'NX-39 P4a'", "card: 'EXPO_PUBLIC_OCCASIONS'")],
+        ['a name in a function', `${real}\nexport function f() { return ['EXPO_PUBLIC_VIDEO']; }\n`],
+      ];
+      for (const [label, code] of mutants) {
+        expect(code, label).not.toBe(real);
+        expect(problemsWith(code).length, label).toBeGreaterThan(0);
       }
     } finally {
       rmSync(dir, { recursive: true, force: true });

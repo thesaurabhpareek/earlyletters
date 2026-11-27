@@ -95,6 +95,7 @@ switcher.close
 switcher.sheet
 tab.book
 tab.tonight
+tab.you
 tonight.screen
 tonight.speak
 tonight.type

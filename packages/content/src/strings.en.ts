@@ -584,6 +584,12 @@ export const en = {
       noName: "Year {n}",
       rowA11y: "Opens Read together at the first letter of this year.",
     },
+    // PROPOSED (BL-938, NS-22-R3; B-S01, B-S02): the Book header's end control and its sheet title. The hint is given
+    // only when the menu holds Hide (two or more books); with one book the menu holds Quiet only.
+    menu: {
+      label: "More for this book",
+      labelA11y: "Quiet or hide this book.",
+    },
     // v1.0 makes no notes (S26).
     chapterSubtitleOne: "1 letter",
     chapterLetters: "{count} letters",
@@ -1074,6 +1080,9 @@ export const en = {
       // PROPOSED (BL-389): "like" so the line does not read as the full list of what is sent (the registry has more than screens). Needs an exec-team reading (D-172).
       analyticsHelp: "How you use the app, like which screens you open. Never your letters, recordings or anyone's names.",
       analyticsOffNote: "Turning this off stops sharing right away. Nothing else changes.",
+      // Test builds only (BL-1250, CPrivO-61): never shown in the App Store build, and only where usage can be sent.
+      testerLabel: "Team test phone",
+      testerHelp: "Test builds only. Marks this phone's usage counts as the {app} team's own, so they stay out of the totals.",
       sensitiveLabel: "Sync across your phones",
       // Names the health category, as Washington and Connecticut consent requires (lawyer-2 H4, CHD policy HN-4).
       // D-128: build 2 has no withdrawal control yet, so the footer promises none. It returns before anyone outside the family signs in.
@@ -1217,7 +1226,7 @@ export const en = {
       offLabel: "Turn Quiet off",
       quietedToast: "{child}'s book is quiet for you.",
       offToast: "Quiet is off for {child}'s book.",
-      saveFailed: "That did not save. {child}'s book is as it was.",
+      saveFailed: "That did not save, so {child}'s book is as it was.",
     },
     sharing: {
       pickerTitle: "Which books?",

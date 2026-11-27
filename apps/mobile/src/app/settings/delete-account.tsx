@@ -91,7 +91,7 @@ function DeleteAccountPage({ onRetry }: { onRetry: () => void }) {
 
   const header = <Stack.Screen options={{ title: c.title }} />;
   const failure = <ErrorLine message={failureLine(d.error)} />;
-  const cancelFailure = <ErrorLine message={cancelFailureLine(d.error, d.signedIn)} />;
+  const cancelFailure = <ErrorLine message={cancelFailureLine(d.error, d.signedIn, d.outcomeUnknown)} />;
   // The page could not load: nothing was tried, so it does not say that nothing has changed.
   const loadFailure = <ErrorLine message={loadFailureLine(d.error)} />;
   const tryAgain = <Button variant="outline" size="lg" className="self-start" label={copy.common.tryAgainButton} onPress={onRetry} />;

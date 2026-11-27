@@ -31,7 +31,7 @@ export const BUILDS: readonly WebBuild[] = [
   // The store app's own behaviour (BL-1991): `preview` and `development` are alpha builds, where Plus is "not part of this test"
   // and no letter is held (src/lib/billing/alpha.ts, PL-1). Only `production` shows the two free letters, the Keep step that
   // asks for Plus, and the Plan screen's store words, so the flows about those open this build. Not seeded: it carries the
-  // preview switch, but every `?seed=` shows "This page didn't open" there, so no flow seeds it (CR-240). Servers off, no seam.
+  // preview switch, and `?seed=` works there since CR-245, but no flow seeds it (CR-240). Servers off, no seam.
   { name: 'store', dir: 'e2e-web/.results/web-dist-store', env: { EXPO_PUBLIC_WEB_PREVIEW: '1', EXPO_PUBLIC_APP_ENV: 'production' } },
 ];
 

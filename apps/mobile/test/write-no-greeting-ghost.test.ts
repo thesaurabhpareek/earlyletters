@@ -8,6 +8,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { en } from '@scribe/content';
+import { openingTags } from './helpers/jsx-tags';
 
 const write = readFileSync(join(__dirname, '..', 'src', 'app', 'write.tsx'), 'utf8');
 
@@ -27,5 +28,16 @@ describe('[BL-372, D-084] no "Dear {child}," ghost in Write', () => {
     expect(write.match(/defaultValue=/g)).toHaveLength(1);
     expect(write).not.toMatch(/\bDear\b/);
     expect(write).not.toMatch(/placeholder=\{?['"`]/);
+  });
+
+  it('the field is uncontrolled: no value prop can put words in it that the person did not type (D-057)', () => {
+    // Review A note 2 on #2184: a controlled `value=` greeting beside `defaultValue` passed the pins above.
+    const code = write.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+    // The field's whole opening tag, read past props whose value is JSX (review B finding 3 on #2216).
+    const fields = openingTags(code, 'TextField');
+    expect(fields).toHaveLength(1); // one field on the page
+    const field = fields[0];
+    expect(field).toContain('defaultValue={initialText}');
+    expect(field).not.toMatch(/\svalue=/);
   });
 });

@@ -1,13 +1,15 @@
 /**
  * BL-568: the native wiring for global-errors.logic.ts. `startGlobalErrorHandlers()` runs at module load of
  * the root layout, before the first render. A fatal throw outside React sets the fault store, and the root
- * layout shows the recovery screen in place of the app (useGlobalFault). Production profile only: in the
+ * layout shows the recovery screen in place of the app (useGlobalFault). Production profile on iOS and Android
+ * only, never web (CR-245): in the
  * testflight, preview and development builds nothing is installed and a fatal throw crashes natively
  * (shouldInstallGlobalHandlers). Records hold ids and error codes
  * only (PRIV-R10); the analytics count is the existing `error_shown` with code `generic`, dropped unless the
  * person said yes.
  */
 import { useSyncExternalStore } from 'react';
+import { Platform } from 'react-native';
 import { APP_ENV } from '@/lib/build-env';
 import { track } from '@/lib/analytics/track';
 import {
@@ -29,7 +31,7 @@ export const recentFaults = log.list;
 let started = false;
 
 export function startGlobalErrorHandlers(): void {
-  if (started || !shouldInstallGlobalHandlers(APP_ENV)) return;
+  if (started || !shouldInstallGlobalHandlers(APP_ENV, Platform.OS)) return;
   started = true;
   const g = globalThis as { ErrorUtils?: ErrorUtilsLike; HermesInternal?: RejectionTrackerLike };
   installGlobalErrorHandlers({
