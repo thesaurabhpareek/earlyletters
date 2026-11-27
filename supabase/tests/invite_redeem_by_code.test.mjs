@@ -168,6 +168,24 @@ await redeem(S, 'peek', unknown);
 check('[A03 F1] a purge pass still removes at most 200 stale rows and the new failure is counted',
   (await sys(`select count(*)::int n from invite_redeem_failures where subject like 'old-%'`)).rows[0].n === 50
   && (await failures('global')) === 1);
+// ── Retention without later traffic (BL-523; LEGAL-REQ-033, DQ-R11) ─────
+// The in-call delete only runs when a new wrong code is written. ops_retention (the purge worker's
+// daily task) is the clock that ends a row's life after a quiet spell: kept 2 hours, then deleted.
+await sys(`delete from invite_redeem_failures`);
+await sys(`insert into invite_redeem_failures (scope, subject, at) values
+  ('user', 'quiet-old', now() - interval '2 hours 1 minute'), ('global', '', now() - interval '3 days'),
+  ('device', 'quiet-new', now() - interval '1 hour 59 minutes')`);
+const kept = async () => (await sys(`select subject from invite_redeem_failures order by subject`)).rows.map((r) => r.subject);
+const quiet = (await sys(`select public.ops_retention(now()) v`)).rows[0].v;
+check('[BL-523] with no new wrong code, the daily ops_retention run deletes rows older than 2 hours and keeps younger ones',
+  quiet.invite_redeem_failures === 2 && JSON.stringify(await kept()) === JSON.stringify(['quiet-new']));
+const later = (await sys(`select public.ops_retention(now() + interval '1 minute') v`)).rows[0].v;
+check('[BL-523] the 2-hour clock follows p_now: one minute on, the 1 h 59 min row is gone too',
+  later.invite_redeem_failures === 1 && (await total()) === 0);
+const tblComment = (await sys(`select obj_description('public.invite_redeem_failures'::regclass, 'pg_class') c`)).rows[0].c;
+check('[BL-523] the table comment states the retention in the schedule words (kept 2 hours, then deleted by the next wrong code or the daily run)',
+  /Kept 2 hours; then hard deleted at the next wrong code or by the daily ops_retention\(\) run/.test(tblComment));
+
 const migrationText = readFileSync(new URL('../migrations/20261028010000_invite_redeem_by_code.sql', import.meta.url), 'utf8');
 check('[A04 F3] the migration header states its rollback (CLAUDE.md, pull requests)',
   /^-- ROLLBACK: drop function public\.invite_redeem_by_code\(uuid, text, bytea, text\[\], text\[\], text\[\]\);/m.test(migrationText)
