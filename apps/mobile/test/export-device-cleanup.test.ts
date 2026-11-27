@@ -54,6 +54,8 @@ vi.mock('expo-crypto', async () => {
   };
 });
 vi.mock('expo-constants', () => ({ default: { expoConfig: { version: '1.0.0' } } }));
+// The recording folders (capture/recordings.ts) for the recordings in no letter (BL-388).
+vi.mock('react-native', () => ({ Platform: { OS: 'ios' } }));
 vi.mock('expo-print', () => ({
   printToFileAsync: async () => {
     const uri = `${h.disk.caches}Print/print-${h.disk.files.size}.pdf`;

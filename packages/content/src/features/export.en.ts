@@ -173,15 +173,16 @@ export const exportCopy = {
   ],
   /**
    * Added before KEEPING IT SAFE, after PICTURES, only when this phone lists a recording that is in no letter (schema
-   * 1.8.0, BL-388). PROPOSED words: `content` owns the final wording.
+   * 1.8.0, BL-388), even when none of them is still on it, so no line says the folder holds one. PROPOSED words:
+   * `content` owns the final wording.
    */
   readmeNotInTheBook: [
     '',
     'NOT IN THE BOOK',
     '',
-    'not-in-the-book/ holds recordings found on this phone that are not part of any letter.',
-    'They are kept as they were, byte for byte. Open them in any music or video player.',
-    'data/not_in_the_book.json lists each one and when this phone found it. One that is',
-    'no longer on this phone is listed there with no file.',
+    "data/not_in_the_book.json lists recordings this phone found that aren't part of any letter,",
+    'and when it found each one. Each one still on this phone is in not-in-the-book/,',
+    'kept as it was, byte for byte: open it in any music or video player.',
+    'One that is no longer on this phone is listed there with no file.',
   ],
 } as const;

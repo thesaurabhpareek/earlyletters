@@ -121,6 +121,16 @@ describe('export schema', () => {
     for (const path of ['audio/recording-1.m4a', 'not-in-the-book/../x.m4a', 'not-in-the-book/a/b.m4a']) expect(validate(file({ ...row, path })), path).toBe(false);
   });
 
+  it('[BL-388] a not-in-the-book path with a backslash or a control character is rejected', () => {
+    const validate = validator('notInTheBookFile');
+    const row = { file_name: 'r.m4a', path: 'not-in-the-book/r.m4a', bytes: 10, sha256: 'a'.repeat(64), found_at: '2027-02-01T08:00:00.000Z' };
+    const file = (path: string) => ({ schema_version: EXPORT_SCHEMA_VERSION, format: EXPORT_FORMAT, recordings: [{ ...row, path }] });
+    expect(validate(file('not-in-the-book/r-2.m4a'))).toBe(true);
+    for (const path of ['not-in-the-book/a\\b.m4a', 'not-in-the-book/\\r.m4a', 'not-in-the-book/r\u0000.m4a', 'not-in-the-book/\nr.m4a', 'not-in-the-book/r\u007f.m4a']) {
+      expect(validate(file(path)), JSON.stringify(path)).toBe(false);
+    }
+  });
+
   describe('[BL-933] photo (1.7.0)', () => {
     const photo = validator('photo');
     const ok = { file: 'photos/e2/m-asha-0001.jpg', bytes: 140, sha256: 'a'.repeat(64), width: 4, height: 4, text: 'Your first bath.', place: null };

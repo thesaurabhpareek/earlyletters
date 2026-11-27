@@ -369,7 +369,7 @@
                   "string",
                   "null"
                 ],
-                "pattern": "^not-in-the-book/[^/.][^/]*$"
+                "pattern": "^not-in-the-book/[^/.\\\\\\u0000-\\u001f\\u007f][^/\\\\\\u0000-\\u001f\\u007f]*$"
               },
               "bytes": {
                 "type": [

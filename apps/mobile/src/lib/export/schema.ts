@@ -102,9 +102,10 @@ import { brand } from '@scribe/brand';
  * in no letter and no draft (the launch sweep's `orphan_audio` list, Settings > Where letters live) go in
  * `not-in-the-book/<file name>`, byte for byte, and `data/not_in_the_book.json` lists each one: its file name, its
  * path (null when the file is no longer on this phone), size, SHA-256 (null with no file) and when the phone found it.
- * Present only when there is at least one, and only in an export by the account that owns this phone's letters (or
- * signed out; device.ts). A new optional file, so every earlier v1 export still validates; the 1.7.0 schema has no
- * `notInTheBookFile`, so read each export with the schema it carries.
+ * Present only when there is at least one, and only while this phone's book may be shown (device.ts, store
+ * `bookVisibleNow`): signed out, signed in as the account that owns this phone's letters, or on a phone no account
+ * owns. A new optional file, so every earlier v1 export still validates; the 1.7.0 schema has no `notInTheBookFile`,
+ * so read each export with the schema it carries.
  */
 export const EXPORT_SCHEMA_VERSION = '1.8.0';
 
@@ -537,7 +538,8 @@ export const exportJsonSchema = {
             required: ['file_name', 'path', 'bytes', 'sha256', 'found_at'],
             properties: {
               file_name: { type: 'string', minLength: 1 },
-              path: { type: ['string', 'null'], pattern: '^not-in-the-book/[^/.][^/]*$' },
+              // No folder, no leading dot, no backslash or control character (build.logic.ts notInTheBookPath).
+              path: { type: ['string', 'null'], pattern: '^not-in-the-book/[^/.\\\\\\u0000-\\u001f\\u007f][^/\\\\\\u0000-\\u001f\\u007f]*$' },
               bytes: { type: ['integer', 'null'], minimum: 0 },
               sha256: { anyOf: [sha256, { type: 'null' }] },
               found_at: { type: 'string', minLength: 10 },

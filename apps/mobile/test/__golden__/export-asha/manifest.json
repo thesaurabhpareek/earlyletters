@@ -20,14 +20,14 @@
   "files": [
     {
       "path": "README.txt",
-      "bytes": 3982,
-      "sha256": "606968fcf5b8332a6858980b47d944e323ef3d8a7a8c742248e32cf4c0a9c934",
+      "bytes": 3983,
+      "sha256": "cbf0ca4983c14b9bb81e9daf5377cbd6f25bf867466b50579e919bf81e8fdeef",
       "media_type": "text/plain; charset=utf-8"
     },
     {
       "path": "schema/export-v1.schema.json",
-      "bytes": 32145,
-      "sha256": "bd08b9783fea12473f4f6b1dfe5f5665d4d4895a8bdf50cfdd294244e323af49",
+      "bytes": 32197,
+      "sha256": "91f515133577f080f37a115e976c693acbaffcb2c4a9921c0dd5bf513b95f0c7",
       "media_type": "application/json"
     },
     {
