@@ -124,7 +124,9 @@ function loadClaims(json: string): Claims {
   const data = keysOf(JSON.parse(json), '', ['about', 'claims', 'whatsNewFrames', 'whatsNewFeatures', 'keywords']);
   const claims = list(data.claims, 'claims').map((r, i): Row => {
     const row = keysOf(r, `claims[${i}]`, ['say', 'needs', 'source']);
-    const needs = row.needs === undefined ? undefined : list(row.needs, `claims[${i}].needs`).map((n) => (typeof n === 'string' && n in NEEDS ? (n as Need) : bad(`claims[${i}]: unknown build fact ${JSON.stringify(n)}`)));
+    const needList = row.needs === undefined ? undefined : list(row.needs, `claims[${i}].needs`);
+    if (needList && needList.length === 0) bad(`claims[${i}].needs is empty`);
+    const needs = needList?.map((n) => (typeof n === 'string' && Object.hasOwn(NEEDS, n) ? (n as Need) : bad(`claims[${i}]: unknown build fact ${JSON.stringify(n)}`)));
     return { say: fill(row.say, `claims[${i}].say`), ...(needs ? { needs } : {}), source: text(row.source, `claims[${i}].source`) };
   });
   const whatsNewFrames = list(data.whatsNewFrames, 'whatsNewFrames').map((f, i) => fill(f, `whatsNewFrames[${i}]`));
@@ -264,6 +266,8 @@ describe('[FR-MKT-08] every description line is true of the sign-in-required sto
     expect(() => loadClaims(file({ claims: [{ say: 'A line.', neds: ['servers on'], source: AUDIT }] }))).toThrow(/claims\[0\]: unknown key "neds"/);
     expect(() => loadClaims(file({ whatsNewFeatures: [{ clause: 'a clause', claim: 'A claim', flag: null, flg: 'X' }] }))).toThrow(/whatsNewFeatures\[0\]: unknown key "flg"/);
     expect(() => loadClaims(file({ keyword: {} }))).toThrow(/unknown key "keyword"/);
+    expect(() => loadClaims(file({ claims: [{ say: 'A line.', needs: ['toString'], source: AUDIT }] }))).toThrow(/unknown build fact "toString"/);
+    expect(() => loadClaims(file({ claims: [{ say: 'A line.', needs: [], source: AUDIT }] }))).toThrow(/claims\[0\]\.needs is empty/);
     expect(loadClaims(file({ about: 'A note.', claims: [{ say: 'A line.', needs: ['servers on'], source: AUDIT }] })).claims).toEqual([{ say: 'A line.', needs: ['servers on'], source: AUDIT }]);
   });
 
@@ -633,19 +637,19 @@ const answersDigest = (answers: Record<string, string>) =>
  * that names the thing and one of these states the practice.
  */
 const OFF_PHONE = [
-  String.raw`our servers?`,
+  String.raw`(?:our|secure|remote) (?:\w+ )?servers?`,
   String.raw`the cloud`,
   String.raw`online`,
   String.raw`icloud|google drive|dropbox`,
-  String.raw`(?:our|a|the) backups?`,
+  String.raw`(?:our|a|the) (?:\w+ )?backups?`,
   String.raw`backed up`,
   String.raw`uploaded`,
   String.raw`sent to us`,
   String.raw`we (?:keep|store|save|hold)`,
   String.raw`sync(?:s|ed|ing)?`,
   String.raw`synchroni[sz](?:e|es|ed|ing)`,
-  String.raw`(?:to|in|on|with) (?:your|an|the|our) account`,
-  String.raw`(?:stored|kept|saved|held|stays?) with us`,
+  String.raw`(?:to|in|on|with) (?:your|an|the|our) (?:\w+ ){0,2}account`,
+  String.raw`(?:stored|kept|saved|held|stays?|safe) with us`,
   String.raw`(?:a|your|the|any) new (?:phone|iphone|device)s?`,
   String.raw`(?:another|any other|every|all your) (?:phone|iphone|device)s?`,
   String.raw`(?:your|a|the) next (?:phone|iphone|device)s?`,
@@ -661,14 +665,18 @@ const OFF_PHONE_VERB = String.raw`sync(?:s|ed|ing)?|back(?:s|ed)? up|upload(?:s|
 /**
  * "We" holding the thing named after it ("we store your recordings", "we keep a copy of every recording"). Up to two
  * words may sit between "we" and the verb ("we really do store"), unless one of them denies it: "we never store your
- * recordings" and "we do not keep them" state no practice.
+ * recordings" and "we don't keep them" state no practice. Only this branch reads a denial; the other two refuse "we
+ * never upload your recordings" too, which errs on the safe side. A sentence that keeps the thing on the phone ("we
+ * keep your recordings on the phone that made them") states no practice either, unless another branch reads it.
  */
-const WE_HOLD = String.raw`\bwe(?:'ll|'d)?\s+(?:(?!(?:never|not|no|don't|won't|cannot|can't)\b)\w+\s+){0,2}(?:keep|store|save|hold|copy)s?\b(?:\s+\S+){0,4}?\s+`;
+const WE_HOLD = String.raw`\bwe(?:'ll|'d)?\s+(?:(?!(?:never|not|no|don't|won't|cannot|can't)(?![\w']))[\w']+\s+){0,2}(?:keep|store|save|hold|copy)s?\b(?:\s+[^\s.]+){0,4}?\s+`;
+/** The words that keep the thing on the phone, read after the thing in the we-branch only. */
+const ON_THE_PHONE = String.raw`(?![^.]*\bon (?:this|your|the) phone\b)`;
 
 /** A sentence that says the thing leaves the phone, as a regex over one sentence (no period in between). */
 const leavesThePhone = (thing: string) =>
   new RegExp(
-    String.raw`\b(?:${thing})\b[^.]*\b(?:${OFF_PHONE})\b|\b(?:${OFF_PHONE_VERB})\b(?:\s+\S+){0,3}?\s+(?:${thing})\b|${WE_HOLD}(?:${thing})\b`,
+    String.raw`\b(?:${thing})\b[^.]*\b(?:${OFF_PHONE})\b|\b(?:${OFF_PHONE_VERB})\b(?:\s+[^\s.]+){0,3}?\s+(?:${thing})\b|${WE_HOLD}(?:${thing})\b${ON_THE_PHONE}`,
     'i',
   );
 
@@ -763,6 +771,15 @@ describe('[FR-MKT-16] a privacy label change moves every public privacy line in 
     [STORE, 'Your voice notes go to our backup.'],
     [SITE, 'We really do store your recordings.'],
     ['/support', "We'll keep your recordings."],
+    [SITE, 'Recordings reach your next phone.'],
+    [SITE, 'Your recordings follow you everywhere.'],
+    ['/support', 'We copy your recordings.'],
+    [STORE, 'Recordings are kept on our secure servers.'],
+    [SITE, 'Recordings are stored on secure servers.'],
+    ['/support', 'Recordings go into a nightly backup.'],
+    [SITE, 'Your recordings are safe with us.'],
+    ['/support', `Recordings are saved to your ${brand.name} account.`],
+    [STORE, 'We keep your recordings on the phone and on our servers.'],
   ];
   for (const [id, planted] of audioMutants) {
     it(`[FR-MKT-16] [mutant] ${id} saying "${planted}" is refused while Audio Data is not collected`, () => {
@@ -777,6 +794,12 @@ describe('[FR-MKT-16] a privacy label change moves every public privacy line in 
     'We do not keep your recordings.',
     'We would never ever store your recordings.',
     'We no longer store your recordings.',
+    "We don't keep your recordings.",
+    "We won't store your recordings.",
+    'We keep your recordings on the phone that made them.',
+    'We keep it simple. Recordings stay on this phone.',
+    'We keep it short. Your recordings are private.',
+    'We back up nothing. Recordings stay on this phone.',
     'Recordings are kept on the phone that made them.',
     'Keep your recordings on this phone.',
     'Your voice stays on this phone.',
