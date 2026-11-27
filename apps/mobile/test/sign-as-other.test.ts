@@ -9,8 +9,19 @@ import { join } from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screenStates } from '@scribe/content';
 
-const h = vi.hoisted(() => ({ settings: new Map<string, string>(), entries: new Map<string, { authorSignsAs?: string }>() }));
-vi.mock('react', () => ({ useState: (init: unknown) => [typeof init === 'function' ? (init as () => unknown)() : init, () => {}] }));
+const h = vi.hoisted(() => ({
+  settings: new Map<string, string>(),
+  entries: new Map<string, { authorSignsAs?: string }>(),
+  /** Every useState slot the hook opened: its first value and every value or updater passed to its setter. */
+  slots: [] as { init: unknown; sets: unknown[] }[],
+}));
+vi.mock('react', () => ({
+  useState: (init: unknown) => {
+    const slot = { init: typeof init === 'function' ? (init as () => unknown)() : init, sets: [] as unknown[] };
+    h.slots.push(slot);
+    return [slot.init, (v: unknown) => void slot.sets.push(v)];
+  },
+}));
 vi.mock('@/lib/store', () => ({
   getSetting: (k: string) => h.settings.get(k) ?? null,
   setSetting: (k: string, v: string) => void h.settings.set(k, v),
@@ -76,9 +87,27 @@ describe('[NS-16-R6] over thirty refused before upload', () => {
   it('[NS-16-R6] over thirty refused before upload: the hook refuses and counts the refusal, so the sheet opens again', () => {
     setSignAsOtherForTest(true);
     h.settings.set(SIGN_AS_DRAFT_SETTING, serializeDraftName('d1', 'N'.repeat(31)));
+    h.slots = [];
     const from = useFromName({ draftId: 'd1', keptEntryId: null });
     expect(from.typed).toBe('N'.repeat(31));
+    expect(from.refusals).toBe(0);
     expect(from.signatureFor('Mama').ok).toBe(false);
+    // The refusal count is the slot that starts at 0; a refused Keep moves it to 1, and that change reopens the sheet.
+    const counts = h.slots.filter((s) => s.init === 0);
+    expect(counts).toHaveLength(1);
+    const step = counts[0].sets.at(-1);
+    expect(typeof step === 'function' ? (step as (n: number) => number)(0) : step).toBe(1);
+    // An accepted name counts nothing.
+    h.slots = [];
+    h.settings.set(SIGN_AS_DRAFT_SETTING, serializeDraftName('d1', 'Nani'));
+    const ok = useFromName({ draftId: 'd1', keptEntryId: null });
+    expect(ok.signatureFor('Mama').ok).toBe(true);
+    expect(h.slots.filter((s) => s.init === 0)[0].sets).toEqual([]);
+  });
+
+  it('[NS-16-R6] over thirty refused before upload: the From sheet opens again when the refusal count goes up', () => {
+    const sheet = code(src('components/capture/from-name.tsx'));
+    expect(sheet).toMatch(/React\.useEffect\(\(\) => \{\s*if \(from\.refusals > 0\) setOpen\(true\);\s*\}, \[from\.refusals\]\);/);
   });
 
   it('[NS-16-R6] over thirty refused before upload: both Keep paths check before anything is written', () => {
