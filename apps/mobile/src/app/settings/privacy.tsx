@@ -12,6 +12,7 @@ import { copy, fill } from '@/lib/copy';
 import { getActiveChild } from '@/lib/store';
 import { grantAnalytics, withdrawAnalytics } from '@/lib/analytics';
 import { useAnalyticsConsent } from '@/lib/analytics/use-analytics-consent';
+import { internalTesterOn, internalTesterRowShown, setInternalTester } from '@/lib/analytics/internal-tester';
 import { sensitiveStatusWords, useSensitiveDataStatus } from '@/lib/analytics/privacy-sources';
 import { lockScreenNamesOn } from '@/lib/reminders';
 import { readLockAbility, useAppLock } from '@/lib/app-lock/controller';
@@ -47,6 +48,9 @@ export default function PrivacySettings() {
   const sensitive = useSensitiveDataStatus();
   const [busy, setBusy] = useState(false);
   const [names, setNames] = useState(lockScreenNamesOn);
+  // The tester switch (BL-1250, CPrivO-61): no row, and no read of the setting, in a store build.
+  const testerRow = internalTesterRowShown();
+  const [tester, setTester] = useState(() => testerRow && internalTesterOn());
   // Names in notifications changes on the Reminders page: re-read it when Privacy comes back.
   useFocusEffect(useCallback(() => setNames(lockScreenNamesOn()), []));
   const child = getActiveChild()?.name || consentCopy.childFallback;
@@ -112,6 +116,18 @@ export default function PrivacySettings() {
         {capabilities.analytics ? (
           <ListSection title={consentCopy.analyticsSection} footer={p.analyticsOffNote}>
             <ToggleRow title={p.analyticsLabel} description={p.analyticsHelp} value={analytics === 'granted'} onValueChange={setAnalytics} disabled={busy} />
+          </ListSection>
+        ) : null}
+
+        {testerRow ? (
+          <ListSection>
+            <ToggleRow
+              title={p.testerLabel}
+              description={p.testerHelp}
+              value={tester}
+              onValueChange={(on) => setInternalTester(on) && setTester(on)}
+              testID="privacy.internalTester"
+            />
           </ListSection>
         ) : null}
 

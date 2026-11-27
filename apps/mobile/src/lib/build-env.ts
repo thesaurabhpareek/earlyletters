@@ -62,6 +62,24 @@ export function e2eRefusal(input: { e2e?: string | null; appEnv: AppEnv; easBuil
   return null;
 }
 
+/** The analytics `build_kind` of a build (ER-A15, BL-1250). Same values as BUILD_KIND in @scribe/analytics. */
+export type BuildKindName = 'store' | 'testflight' | 'preview' | 'dev';
+
+/** The eas.json profile whose builds are the TestFlight alpha (it shares the preview app env, D-106). */
+export const TESTFLIGHT_PROFILE = 'testflight';
+
+/**
+ * Which kind of build this is, for analytics (ER-A15, BL-1250). Only the production app env is a store build, whatever
+ * the profile says, so nothing can mark the App Store build as a test build. The `testflight` and `preview` profiles
+ * both use the preview app env, so the EAS profile name tells them apart; a preview build made off EAS counts as
+ * preview. Development, the e2e profile and anything unset are dev, never store.
+ */
+export function buildKindFor(appEnv: AppEnv, easBuildProfile?: string | null): BuildKindName {
+  if (appEnv === 'production') return 'store';
+  if (appEnv === 'preview') return (easBuildProfile ?? '').trim() === TESTFLIGHT_PROFILE ? 'testflight' : 'preview';
+  return 'dev';
+}
+
 // Literal `process.env.EXPO_PUBLIC_APP_ENV` so Metro inlines it at bundle time.
 export const APP_ENV: AppEnv = resolveAppEnv(process.env.EXPO_PUBLIC_APP_ENV) ?? DEFAULT_APP_ENV;
 
