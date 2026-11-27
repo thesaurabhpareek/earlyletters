@@ -281,11 +281,59 @@ describe('retired ids past the cap (ER-A04)', () => {
 
 describe('forgetSomeIds keeps what was not acknowledged', () => {
   it('removes only the named retired ids and leaves the rest in storage', async () => {
-    const storage = memoryStorage({ [STORAGE_KEYS.retired]: JSON.stringify(['a', 'b', 'c']) });
+    const storage = memoryStorage({ [STORAGE_KEYS.retired]: JSON.stringify([uuid(1), uuid(2), uuid(3)]) });
     const store = new ConsentStore(storage, ids());
     await store.load();
-    await store.forgetSomeIds(['a', 'c']);
-    expect(store.allIds()).toEqual(['b']);
-    expect(JSON.parse(storage.dump()[STORAGE_KEYS.retired] as string)).toEqual(['b']);
+    await store.forgetSomeIds([uuid(1), uuid(3)]);
+    expect(store.allIds()).toEqual([uuid(2)]);
+    expect(JSON.parse(storage.dump()[STORAGE_KEYS.retired] as string)).toEqual([uuid(2)]);
+  });
+
+  it('FU-5a: an acknowledged id leaves in every case it is stored in, so no copy of it is sent again', async () => {
+    const storage = memoryStorage({ [STORAGE_KEYS.retired]: JSON.stringify([hexId(1), hexId(1).toUpperCase(), hexId(2)]) });
+    const store = new ConsentStore(storage, ids());
+    await store.load();
+    await store.forgetSomeIds([hexId(1)]);
+    expect(store.allIds()).toEqual([hexId(2)]);
+    expect(JSON.parse(storage.dump()[STORAGE_KEYS.retired] as string)).toEqual([hexId(2)]);
+  });
+});
+
+describe('FU-5a: the deletion request names only ids the server can forget, each once', () => {
+  // Stored as an older build or a damaged row could leave them: settleRetired (BL-2239) has not run on this list.
+  const stored = () => ({
+    [STORAGE_KEYS.id]: hexId(1),
+    [STORAGE_KEYS.retired]: JSON.stringify([hexId(1).toUpperCase(), 'not-an-id', hexId(2), hexId(3), hexId(2).toUpperCase(), '', hexId(4)]),
+  });
+
+  it('leaves out a malformed and a repeated retired id, keeps the current id first and never twice', async () => {
+    const storage = memoryStorage(stored());
+    const store = new ConsentStore(storage, ids());
+    await store.load();
+    expect(store.allIds()).toEqual([hexId(1), hexId(2), hexId(3), hexId(4)]);
+    // A getter: the stored list is untouched, so settleRetired still sees and counts what it cleans.
+    expect(storage.dump()[STORAGE_KEYS.retired]).toBe(stored()[STORAGE_KEYS.retired]);
+  });
+
+  it('every batch then passes the function rules (UUIDs only, no repeat), and the full wipe takes the bad ids too', async () => {
+    const retired = [...Array.from({ length: 24 }, (_, i) => hexId(i + 2)), 'not-an-id', hexId(5).toUpperCase(), hexId(30)];
+    const storage = memoryStorage({ [STORAGE_KEYS.id]: hexId(1), [STORAGE_KEYS.retired]: JSON.stringify(retired) });
+    const analytics = createAnalytics({ provider: recordingProvider(), storage, randomId: ids(), flushIntervalMs: 0 });
+    await analytics.init();
+    const all = analytics.analyticsIds();
+    expect(all).toHaveLength(26);
+    expect(all[0]).toBe(hexId(1));
+    // What analytics-forget refuses or dedupes (UUID_RE, then a Set of lowercased ids): a batch with either fails or is short.
+    const batches: string[][] = [];
+    for (let i = 0; i < all.length; i += MAX_FORGET_BATCH) batches.push(all.slice(i, i + MAX_FORGET_BATCH));
+    for (const b of batches) {
+      expect(b.every((x) => FORGETTABLE_ID_RE.test(x))).toBe(true);
+      expect(new Set(b.map((x) => x.toLowerCase())).size).toBe(b.length);
+    }
+    expect(new Set(all.map((x) => x.toLowerCase())).size).toBe(all.length);
+    await analytics.forgetIds();
+    expect(analytics.analyticsIds()).toEqual([]);
+    expect(storage.dump()[STORAGE_KEYS.retired]).toBeUndefined();
+    expect(storage.dump()[STORAGE_KEYS.id]).toBeUndefined();
   });
 });

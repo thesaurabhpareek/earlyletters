@@ -171,7 +171,7 @@ describe('[S34] Reminders', () => {
     expect(remindersSwitchOn(prefs(true, true))).toBe(false);
     const screen = code('app/settings/reminders.tsx');
     expect(screen).not.toMatch(/pauseLabel|pausedHelp|paused: v/);
-    expect(screen).toMatch(/<ToggleRow title=\{s\.enabledLabel\} value=\{on\}/);
+    expect(code('components/settings/reminders-switch.tsx')).toMatch(/<ToggleRow title=\{s\.enabledLabel\} value=\{on\}/);
     // The master switch keeps every choice when off, and on clears a pause: run through lib/reminders' public API
     // in test/reminders-switch.test.ts (lens A f6 on #313 asked for behaviour, not another stream's source).
   });
