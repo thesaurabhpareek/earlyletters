@@ -11,12 +11,12 @@ import { packExport } from '../src/lib/export/pack';
 import { EXPORT_FORMAT, EXPORT_SCHEMA_VERSION, exportJsonSchema, type EntriesFile } from '../src/lib/export/schema';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ASHA_AUDIO, ashaSnapshot, sha256Hex } from './helpers/asha-export';
+import { ASHA_FILES, ashaSnapshot, sha256Hex } from './helpers/asha-export';
 
 async function ashaZip(snapshot = ashaSnapshot()): Promise<Record<string, Uint8Array>> {
   const chunks: Uint8Array[] = [];
   await packExport(snapshot, {
-    readFile: async (uri) => ASHA_AUDIO[uri] ?? Promise.reject(new Error('missing')),
+    readFile: async (uri) => ASHA_FILES[uri] ?? Promise.reject(new Error('missing')),
     sha256: async (d) => sha256Hex(d),
     renderPdf: async () => new TextEncoder().encode('%PDF-1.4\n%%EOF\n'),
     sink: { write: (c) => chunks.push(c.slice()) },
@@ -120,7 +120,7 @@ describe('export schema', () => {
 
     it('rejects an extra field (a location has no place to go) and a path outside photos/', () => {
       expect(photo({ ...ok, latitude: 37.77 })).toBe(false);
-      for (const file of ['audio/e2.m4a', 'photos/../data/entries.json', 'photos/e2/m.png', 'photos/m.jpg']) expect(photo({ ...ok, file }), file).toBe(false);
+      for (const file of ['audio/e2.m4a', 'photos/../data/entries.json', 'photos/../x.jpg', 'photos/./m.jpg', 'photos/e2/m.png', 'photos/e2/m_1.jpg', 'photos/m.jpg']) expect(photo({ ...ok, file }), file).toBe(false);
     });
   });
 

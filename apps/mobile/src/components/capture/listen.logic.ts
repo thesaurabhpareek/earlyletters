@@ -272,11 +272,18 @@ export function stableLabels(next: RoomLabels, prev: RoomLabels | null, speakabl
 }
 
 /**
- * The ready line (BL-1954, PER4-019): with a screen reader on the red circle is not seen, so the line names the control
- * to double tap; sighted, it is the line it always was. Only the ready line changes; the choice is made here, not in the screen.
+ * The ready line (BL-1954, PER4-019; BL-2241): with a screen reader on the red circle is not seen, so what VoiceOver
+ * reads names the control to double tap. The words on screen never change with it: `text` is always the sighted line
+ * and only `label` (the line's accessibilityLabel) carries `hintScreenReader`. Why: `useScreenReader()` starts false and
+ * reads late, so a visible switch would flip the line one frame after the screen opens, and a sighted helper beside a
+ * VoiceOver user would read words about a gesture they cannot see (Apple HIG, VoiceOver: labels "aren't visible
+ * onscreen"; design lens ruling in the BL-2241 PR). The choice is made here, not in the screen.
  */
-export function readyLine(ready: { hint: string; hintScreenReader: string }, screenReader: boolean): string {
-  return screenReader ? ready.hintScreenReader : ready.hint;
+export function readyLine(
+  ready: { hint: string; hintScreenReader: string },
+  screenReader: boolean,
+): { text: string; label: string } {
+  return { text: ready.hint, label: screenReader ? ready.hintScreenReader : ready.hint };
 }
 
 /** Before the microphone goes live (S13): permission off first, then a phone with no room for a take. */
