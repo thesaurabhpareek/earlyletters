@@ -75,7 +75,7 @@ Drawn as a fit-to-contents sheet of rows, not a system menu (DESIGN.md G-03: no 
 | `en.children.settings.hideLabel` | EXISTS | Hide this book | hide confirm, confirm button | label = text | Hide this book | NS-22-R3 |
 | `en.common.cancelButton` | EXISTS | Cancel | hide confirm, safe choice | label = text | Cancel | NS-22 |
 | `en.book.menu.hiddenToast` | PROPOSED | {child}'s book is in Hidden books. | after Hide | announced once | n/a | NS-22 s5 |
-| `en.children.quiet.saveFailed` | PROPOSED | That did not save. {child}'s book is as it was. | B-S02.failed (a Quiet or Hide write failed) | announced once | n/a | NS-22 s6 failed row |
+| `en.children.quiet.saveFailed` | PROPOSED | That did not save, so {child}'s book is as it was. | B-S02.failed (a Quiet or Hide write failed) | announced once | n/a | NS-22 s6 failed row |
 
 ## 3. B-S03 Lens choice (NS-01-R10, R48; NS-06-A3; NS-33-R3)
 
@@ -373,7 +373,7 @@ What happened, what the parent can do; never blame, never fear. Codes that show 
 | `SCSEL` (server refuses a seal change) | none | nothing (a rejected write the author never sees; NS-06 B6) | none |
 | `22023` on a malformed `seal_since` | none | nothing (sync internal) | none |
 | A row's local write failed (day, first, picture words, hide until a day, Open now, who can read it) | B-S09.failed, B-S10.failed, B-S12.failed, B-S11, B-S13 | That change did not save. The letter is as it was. | `en.letter.rows.saveFailed` |
-| Quiet or Hide write failed | B-S02.failed | That did not save. {child}'s book is as it was. | `en.children.quiet.saveFailed` |
+| Quiet or Hide write failed | B-S02.failed | That did not save, so {child}'s book is as it was. | `en.children.quiet.saveFailed` |
 | Letter not in the book (deleted elsewhere while open) | B-S08.notFound | This letter is not in the book / It is in Recently deleted. / Open Recently deleted / Back to the book | `en.reader.*` |
 | Past-letter pick throws | B-S17 | nothing (NS-23 s6) | none |
 | A letter cannot render in Read together | B-S19 | nothing; it is skipped (NS-24 s6) | none |

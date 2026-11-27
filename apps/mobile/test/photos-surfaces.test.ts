@@ -395,7 +395,7 @@ describe('[NS-01-R19][NX-39-R37] the switch removes the screens, not the data ri
   it('[NS-01-R19] off, the Book draws no lens row and no Photos page', () => {
     const book = readFileSync(join(SRC, 'app', '(tabs)', 'book.tsx'), 'utf8');
     expect(book).toMatch(/const lensOn = photoSurfaces\(\{ build: photosBuildEnabled\(\), paused: photosPausedNow\(\) \}\)\.lens && lens\.visible;/);
-    expect(book).toMatch(/\{lensOn \? \(/);
+    expect(book).toMatch(/lens=\{[\s\S]*?lensOn \? \(/);
     expect(book).toMatch(/const showPhotos = lensOn && lensMode === 'photos' && !params\.arrived;/);
     expect(photoSurfaces({ build: false, paused: false }).lens).toBe(false);
   });

@@ -4,7 +4,7 @@
 #   2. A seed `asha-recordings`: Asha's book with 3 or more spoken letters, each with a real fixture recording,
 #      on a Free phone (past the 2 free letters). `seedAsha` in src/dev/asha-seed.ts is not it: it makes 6 letters, 4
 #      spoken, with the fake path file:///preview/asha.m4a, so player.play would not prove playback.
-# Blocked until testIDs land: book.screen, export.ready, export.screen, letter.screen, readTogether.close, readTogether.screen, settings.screen, tab.book, tonight.screen, tonight.type, tonight.waiting, write.input, write.screen
+# Blocked until testIDs land: book.screen, export.ready, export.screen, letter.screen, readTogether.close, readTogether.screen, settings.screen, tab.book, tab.you, tonight.screen, tonight.type, tonight.waiting, write.input, write.screen
 # (the line above is every id this flow and its subflows use that is not set in apps/mobile/src; the guard test
 # e2e-21-keep-and-leave.test.ts keeps it exact in both directions. Where the app already has the same thing under
 # another id, the flow uses the app's: book.card, export.failed, settings.whereLive, whereLive.export.)
