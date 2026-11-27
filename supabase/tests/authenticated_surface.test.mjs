@@ -85,6 +85,9 @@ const surface = async () => {
       from pg_proc p join pg_namespace n on n.oid = p.pronamespace
       where ${NOT_OURS} and has_function_privilege('authenticated', p.oid, 'execute')`),
     ...await q(`select 'schema ' || n.nspname v from pg_namespace n where ${NOT_OURS} and has_schema_privilege('authenticated', n.oid, 'usage')`),
+    // CREATE on a schema lets a signed-in caller add objects there; the allowlist holds none (review of #2117).
+    ...await q(`select 'schema ' || n.nspname || ' CREATE' v from pg_namespace n
+      where ${NOT_OURS} and has_schema_privilege('authenticated', n.oid, 'create')`),
   ].sort();
 };
 // The written allowlist, in the same form.
@@ -127,6 +130,7 @@ check('the allowlist has no duplicate entry', new Set(allowed).size === allowed.
 check('[BL-1921] every privilege authenticated holds in any non-system schema is on the allowlist', now.unlisted.length === 0);
 check('[BL-1921] every allowlist entry is still held (the list cannot rot)', now.stale.length === 0);
 check('authenticated holds no privilege on any sequence', kinds('sequence') === 0);
+check('authenticated holds CREATE on no schema', !held.some((v) => / CREATE$/.test(v) && v.startsWith('schema ')));
 check('authenticated holds no schema-level entry in ops or insights (definer code and the service role only)',
   !held.some((v) => / (ops|insights)\./.test(v) || v === 'schema ops' || v === 'schema insights'));
 
@@ -164,6 +168,10 @@ check('[mutant] a function left with Postgres\'s default EXECUTE for PUBLIC fail
 const m4 = await withMutant(`grant select on public.entry_versions to authenticated;`);
 check('[mutant] a SELECT grant on entry_versions fails the enumeration',
   JSON.stringify(m4.unlisted) === JSON.stringify(['table public.entry_versions S']) || console.log(`      got ${JSON.stringify(m4)}`));
+// Schema CREATE: a signed-in caller who can create objects in public could plant its own functions and views.
+const m4c = await withMutant(`grant create on schema public to authenticated;`);
+check('[mutant] a CREATE grant on schema public fails the enumeration',
+  JSON.stringify(m4c.unlisted) === JSON.stringify(['schema public CREATE']) || console.log(`      got ${JSON.stringify(m4c)}`));
 // A revoke of a listed grant fails the staleness half.
 const m5 = await withMutant(`revoke execute on function public.sync_pull(jsonb, integer) from authenticated;`);
 check('[mutant] revoking a listed function (sync_pull) fails the staleness half',
