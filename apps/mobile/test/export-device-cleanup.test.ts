@@ -20,6 +20,8 @@ const h = vi.hoisted(() => ({
   shared: [] as { uri: string; existedWhileOpen: boolean; bytes: number }[],
   /** Fail the nth writeBytes (1-based) on any file handle; 0 never fails. */
   failWriteAt: 0,
+  /** What the failing write throws; null throws a write error that names no cause. */
+  failWith: null as Error | null,
   writes: 0,
 }));
 
@@ -32,7 +34,7 @@ vi.mock('expo-file-system', async () => {
       const write = handle.writeBytes.bind(handle);
       handle.writeBytes = (chunk: Uint8Array) => {
         h.writes += 1;
-        if (h.failWriteAt > 0 && h.writes === h.failWriteAt) throw new Error('ERR_FILE_WRITE');
+        if (h.failWriteAt > 0 && h.writes === h.failWriteAt) throw h.failWith ?? new Error('ERR_FILE_WRITE');
         write(chunk);
       };
       return handle;
@@ -78,7 +80,7 @@ vi.mock('../src/lib/db/repos/open-native', () => ({
 }));
 
 const store = await import('../src/lib/store');
-const { runExport, shareExport, ExportCancelledError } = await import('../src/lib/export/device');
+const { runExport, shareExport, ExportCancelledError, ExportLowSpaceError, isOutOfSpace } = await import('../src/lib/export/device');
 
 const T0 = Date.parse('2026-10-03T09:00:00.000Z');
 let close: () => void = () => {};
@@ -95,6 +97,7 @@ beforeEach(() => {
   h.share = 'closed';
   h.shared = [];
   h.failWriteAt = 0;
+  h.failWith = null;
   h.writes = 0;
   seq = 0;
   store.closeStore();
@@ -169,5 +172,40 @@ describe('[RT-EXP-05] [DATA-REQ-056] the temporary export ZIP is removed', () =>
       }),
     ).rejects.toBeInstanceOf(ExportCancelledError);
     expect(exportsInCache()).toEqual([]);
+  });
+});
+
+describe('[BL-388] the free-space line shows only for a real space error', () => {
+  it('a write that fails because the disk is full ends as a space error, and no partial ZIP is left', async () => {
+    for (const failWith of [
+      Object.assign(new Error('Unable to write to the file: No space left on device'), { code: 'ERR_FILE_WRITE' }),
+      new Error('Error Domain=NSCocoaErrorDomain Code=640 "You cannot save this document."'),
+      Object.assign(new Error('write failed'), { code: 'ENOSPC' }),
+    ]) {
+      const before = snapshotDisk();
+      h.writes = 0;
+      h.failWriteAt = 2;
+      h.failWith = failWith;
+      await expect(runExport()).rejects.toBeInstanceOf(ExportLowSpaceError);
+      expect(exportsInCache()).toEqual([]);
+      expect(snapshotDisk()).toEqual(before);
+    }
+  });
+
+  it('any other write failure keeps its own error, so the screen shows the general line', async () => {
+    h.failWriteAt = 2;
+    h.failWith = new Error('Disk I/O error: the file handle was closed');
+    const err = await runExport().catch((e: unknown) => e);
+    expect(err).not.toBeInstanceOf(ExportLowSpaceError);
+    expect((err as Error).message).toBe('Disk I/O error: the file handle was closed');
+  });
+
+  it('isOutOfSpace reads only a full disk, never a guess', () => {
+    expect(isOutOfSpace(new Error('ENOSPC: no space left on device, write'))).toBe(true);
+    expect(isOutOfSpace(new Error('The volume is out of space'))).toBe(true);
+    expect(isOutOfSpace(new Error('NSFileWriteOutOfSpaceError'))).toBe(true);
+    for (const e of [new Error('ERR_FILE_WRITE'), new Error('Code=6400 something else'), new Error('Code=64'), null, undefined, 'ENOSPC', { message: 42 }]) {
+      expect(isOutOfSpace(e), String(e)).toBe(false);
+    }
   });
 });

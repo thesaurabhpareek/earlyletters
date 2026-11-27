@@ -50,6 +50,20 @@ export class ExportLowSpaceError extends Error {
   }
 }
 
+// How a full disk reads when a write fails: POSIX ENOSPC (Android, and iOS below Foundation), Foundation's
+// NSFileWriteOutOfSpaceError (code 640 in NSCocoaErrorDomain), and the words both platforms put in the message.
+const OUT_OF_SPACE = /\bENOSPC\b|no space left|out of space|not enough (free )?space|NSFileWriteOutOfSpaceError|NSCocoaErrorDomain\D{0,20}640\b/i;
+
+/**
+ * True only when an error says the disk is full (BL-388): the "needs more free space" line then shows. Any other
+ * failure, a write error that names no cause included, keeps the general line, which names no cause.
+ */
+export function isOutOfSpace(e: unknown): boolean {
+  if (!e || typeof e !== 'object') return false;
+  const { code, message } = e as { code?: unknown; message?: unknown };
+  return code === 'ENOSPC' || (typeof message === 'string' && OUT_OF_SPACE.test(message));
+}
+
 export { ExportCheckFailedError };
 
 export interface ExportProgress {
@@ -311,8 +325,9 @@ async function renderPdf(html: string, locale: string): Promise<Uint8Array> {
 /**
  * Makes the export and checks it. Resolves with the ZIP in the app cache;
  * pass it to `shareExport`. Throws ExportCancelledError, ExportTooLargeError,
- * ExportLowSpaceError or ExportCheckFailedError; the partial file is always
- * removed first.
+ * ExportLowSpaceError (too little free space before packing, or a write that
+ * failed because the disk is full) or ExportCheckFailedError; the partial file
+ * is always removed first.
  */
 export async function runExport(opts: { onProgress?: (p: ExportProgress) => void; signal?: { aborted: boolean } } = {}): Promise<ExportResult> {
   cleanupExports();
@@ -381,7 +396,8 @@ export async function runExport(opts: { onProgress?: (p: ExportProgress) => void
       // already closed
     }
     deleteQuietly(file);
-    throw e;
+    // A full disk partway through says so, like the check before packing (BL-388); every other error is passed on as it was.
+    throw isOutOfSpace(e) ? new ExportLowSpaceError() : e;
   }
 }
 
