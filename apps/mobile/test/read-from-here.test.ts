@@ -67,7 +67,8 @@ describe('[RYT-06] read from a letter', () => {
     expect(row).toMatch(/leading=\{<BookOpenIcon /);
     expect(row).toMatch(/minHeight=\{tokens\.target\.primary\}/);
     expect(row).toMatch(/accessibilityHint=\{copy\.readTogether\.fromHereLetterA11y\}/);
-    expect(page).toMatch(/<ListSection>\s*\{readFromRow\}\s*<ListRow\s+title=\{entry\.inBook/);
+    // First in the list; Change words (BL-413) comes next, then Make private or Move to the book.
+    expect(page).toMatch(/<ListSection>\s*\{readFromRow\}\s*\{changeWords && \(/);
     expect(page).toMatch(/\{!editable && readFromRow && \(/);
     expect(src('components/ui/list-row.tsx')).toMatch(/style=\{minHeight \? \{ minHeight \} : undefined\}/);
   });
