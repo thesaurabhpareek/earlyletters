@@ -807,7 +807,8 @@ export function compiledSources(iosDir: string): string[] {
 
 /** Lines the module must hold exactly once, each with what it guarantees (reviews N-B1, N-B4, N-B5, N-B7, notes 1-6). */
 const PINNED: [string, string][] = [
-  ['  private static let longestSide = 4096\n', 'the 4096 px limit'],
+  ['  private static let longestSide = 4032\n', 'the 4,032 px limit (ruling T3, NS-01-R37a)'],
+  ['  private static let quality = 0.85\n', 'quality 0.85 (ruling T3, NS-01-R37c)'],
   ['  private static let maxPixels = 150_000_000\n', 'the 150 MP cap'],
   ['  private static let allowedTypes: Set<String> = [UTType.jpeg.identifier, UTType.heic.identifier, UTType.heif.identifier, UTType.png.identifier]\n', 'the format allowlist'],
   ['  private static let presentTimeout: TimeInterval = 2.0\n', "the 2 s watchdog (scribe-store's StoreSheet)"],
@@ -1004,7 +1005,9 @@ describe('[C8] the Swift module: Apple\'s picker and ImageIO, nothing else', () 
       'PDF in the allowlist': swap('UTType.png.identifier]', 'UTType.png.identifier, UTType.pdf.identifier]'),
       'no pixel cap': swap(', pixels <= maxPixels', ''),
       'the cap raised': swap('maxPixels = 150_000_000', 'maxPixels = Int.max'),
-      'the limit raised': swap('longestSide = 4096', 'longestSide = 16384'),
+      'the limit raised': swap('longestSide = 4032', 'longestSide = 16384'),
+      'the old 4096 limit': swap('longestSide = 4032', 'longestSide = 4096'),
+      'the old 0.9 quality': swap('quality = 0.85', 'quality = 0.9'),
       'an unchecked multiply': swap('let (pixels, overflow) = width.multipliedReportingOverflow(by: height)', 'let (pixels, overflow) = (width * height, false)'),
       'the cache flag on': swap('[kCGImageSourceShouldCache: false] as CFDictionary', '[kCGImageSourceShouldCache: true] as CFDictionary'),
       'cached decode': swap('kCGImageSourceShouldCache: false,\n        kCGImageSourceThumbnailMaxPixelSize', 'kCGImageSourceShouldCacheImmediately: true,\n        kCGImageSourceThumbnailMaxPixelSize'),
