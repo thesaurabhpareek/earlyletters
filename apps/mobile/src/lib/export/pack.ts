@@ -11,7 +11,8 @@
  * (`MAX_EXPORT_BYTES`); a one-year book is about 230 MB (C-NFR-007). Splitting
  * by child-year above 2 GB (spec 4.2) is not built yet.
  *
- * One file is in memory at a time. The sink receives the ZIP bytes in order.
+ * One file is in memory at a time, besides the first picture that passes the guard (kept from step 0 to step 4c).
+ * The sink receives the ZIP bytes in order.
  */
 import { strToU8, Zip, ZipPassThrough } from 'fflate';
 import { EXPORT_FORMAT, EXPORT_SCHEMA_VERSION, type Manifest, type ManifestFile } from './schema';

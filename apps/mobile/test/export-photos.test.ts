@@ -144,6 +144,16 @@ describe('[BL-933] export 1.7.0 carries letters\' pictures', () => {
     expectHeldBack(await pack(snapshot, files));
   });
 
+  it('writes each passing picture at its own path, the first one kept from the README check included', async () => {
+    const { snapshot, files } = withSecondPicture();
+    const out = await pack(snapshot, files);
+    expect(out.result.photosHeldBack).toEqual([]);
+    expect(sha256Hex(out.files[PHOTO_PATH])).toBe(sha256Hex(ASHA_PHOTO));
+    expect(sha256Hex(out.files['photos/e3/m-asha-0002.jpg'])).toBe(sha256Hex(SECOND));
+    expect(out.manifest.counts.photos).toBe(2);
+    expect(strFromU8(out.files['README.txt'])).toContain('PICTURES');
+  });
+
   it('describes photos/ in the README when a later picture goes in, and reads each picture once', async () => {
     const { snapshot, files } = withSecondPicture();
     const located = makeJpeg({ exif: true, seed: 3 });
