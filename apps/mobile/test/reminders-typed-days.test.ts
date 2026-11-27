@@ -423,7 +423,7 @@ describe('typed days on the phone (real store and scheduler)', () => {
   it('[NS-18-R6] account deletion ends the session through the same sign-out, so it clears typed days the same way (source)', () => {
     const src = (rel: string) => readFileSync(join(__dirname, '..', 'src', rel), 'utf8');
     expect(src('lib/account-deletion/use-account-deletion.ts')).toContain('signOut: auth.signOut');
-    expect(src('lib/reminders/session.ts')).toMatch(/for \(const key of REMINDER_SETTING_KEYS\) deleteSetting\(key\);\s*clearTypedDays\(\);/);
+    expect(src('lib/reminders/session.ts')).toMatch(/for \(const key of REMINDER_SETTING_KEYS\) deleteSetting\(key\);\s*\} catch \{[^}]*\}\s*try \{\s*clearTypedDays\(\);/);
   });
 
   it('[NS-18-R7] typed words do not linger: kept on the day, gone the day after, at the next plan', async () => {
