@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.8.0",
+  "format": "early-letters-export",
+  "waiting": [
+    {
+      "id": "w9",
+      "child_id": "child-asha-0001",
+      "reason": "typed_draft",
+      "kind": "letter",
+      "created_at": "2027-03-14T18:00:00.000Z",
+      "occurred_on": "2027-03-14",
+      "occurred_precision": "day",
+      "capture_mode": "typed",
+      "language": null,
+      "typed_text": "You pointed at the moon and said ball.",
+      "raw_transcript": null,
+      "changed_words": null,
+      "text_file": "waiting/w9.txt",
+      "audio": null,
+      "audio_missing": null
+    }
+  ]
+}

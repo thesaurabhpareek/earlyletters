@@ -1,6 +1,6 @@
 {
   "format": "early-letters-export",
-  "format_version": "1.7.0",
+  "format_version": "1.8.0",
   "generated_at": "2027-03-15T10:00:00.000Z",
   "app_version": "1.0.0",
   "engine_version": 3,
@@ -20,14 +20,14 @@
   "files": [
     {
       "path": "README.txt",
-      "bytes": 3650,
-      "sha256": "61c9a32f4498f01c408fc21420c16b273de0b6dcdf85d873713d14d32e79c906",
+      "bytes": 3982,
+      "sha256": "606968fcf5b8332a6858980b47d944e323ef3d8a7a8c742248e32cf4c0a9c934",
       "media_type": "text/plain; charset=utf-8"
     },
     {
       "path": "schema/export-v1.schema.json",
-      "bytes": 30416,
-      "sha256": "3108df221348bf9651a02e014583898de1fc39807eac9da6c4e973a7d2754807",
+      "bytes": 32145,
+      "sha256": "bd08b9783fea12473f4f6b1dfe5f5665d4d4895a8bdf50cfdd294244e323af49",
       "media_type": "application/json"
     },
     {
@@ -127,6 +127,12 @@
       "media_type": "text/plain; charset=utf-8"
     },
     {
+      "path": "waiting/w9.txt",
+      "bytes": 143,
+      "sha256": "e46bcd1892005e241cd4469162561c2554592b6203761c0e702b2adb975ec663",
+      "media_type": "text/plain; charset=utf-8"
+    },
+    {
       "path": "audio/e2.m4a",
       "bytes": 4096,
       "sha256": "c54524468203b1760de2289c41bb3ed705168c3822e97380b040aa482d09871e",
@@ -157,6 +163,12 @@
       "media_type": "audio/mp4"
     },
     {
+      "path": "not-in-the-book/recording-5a1e0000-0000-4000-8000-000000000388.m4a",
+      "bytes": 1500,
+      "sha256": "16e07b98e6d414a656f1b57e36f4c7ed6bf44717c7b747c4e8552c78059c4043",
+      "media_type": "audio/mp4"
+    },
+    {
       "path": "photos/e2/m-asha-0001.jpg",
       "bytes": 140,
       "sha256": "4ad816f085df83ff32998edb12ec8517713c79570183b796d4197292d23d1c30",
@@ -171,19 +183,31 @@
     {
       "path": "data/children.json",
       "bytes": 604,
-      "sha256": "10777df679dfa7715ca4568e6bc0d9edb14794c36f7819405e710ba7268bee95",
+      "sha256": "b780465be7df394a5a035df7f483d1c3efcb59b6fdf44a9642742ae7a3ec4a55",
       "media_type": "application/json"
     },
     {
       "path": "data/entries.json",
       "bytes": 15230,
-      "sha256": "622270535cbd39ca6c80f7d4bea147c5b405b30e586ccf9f95ea1a1c42670025",
+      "sha256": "fc3de0bb5628b22bbfb9ded672f01a4a80b92db837560d502e4f2889cd00837b",
       "media_type": "application/json"
     },
     {
       "path": "data/account.json",
       "bytes": 1291,
-      "sha256": "bc1cb6c90df7c19847f230ca7609f031873e6870848e1b431fe15a88fefaee06",
+      "sha256": "fa5332a206310c2bca5a222b859606102e07dce62dc0b91967120c1e420141f9",
+      "media_type": "application/json"
+    },
+    {
+      "path": "data/waiting.json",
+      "bytes": 590,
+      "sha256": "94245680f52a4835093268d86aa455b2e9dff123d945c703607799c4e4a375d1",
+      "media_type": "application/json"
+    },
+    {
+      "path": "data/not_in_the_book.json",
+      "bytes": 604,
+      "sha256": "b510bab9d5595d2b6179531b9ae1be36429482193277520d2209e3992a7fd198",
       "media_type": "application/json"
     }
   ]

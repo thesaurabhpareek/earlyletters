@@ -9,9 +9,9 @@ import { strFromU8, unzipSync } from 'fflate';
 import { describe, expect, it } from 'vitest';
 import { phoneConsent, planExport, safeSegment } from '../src/lib/export/build.logic';
 import { ExportCancelledError, packExport, type PackDeps } from '../src/lib/export/pack';
-import { EXPORT_SCHEMA_VERSION, type AccountFile, type EntriesFile, type Manifest } from '../src/lib/export/schema';
+import { EXPORT_SCHEMA_VERSION, type AccountFile, type EntriesFile, type Manifest, type NotInTheBookFile } from '../src/lib/export/schema';
 import { readCentralDirectory, verifyExport, type RandomAccess } from '../src/lib/export/verify';
-import { ASHA_AUDIO, ASHA_FILES, ashaSnapshot, sha256Hex } from './helpers/asha-export';
+import { ASHA_AUDIO, ASHA_FILES, ASHA_STRAY, ASHA_STRAY_AUDIO, ashaSnapshot, sha256Hex } from './helpers/asha-export';
 
 const GOLDEN = './__golden__/export-asha';
 
@@ -203,8 +203,9 @@ describe('Asha export (golden)', () => {
   });
 
   it('[F09-REQ-003, RT-BK-05] a month-only letter never states a day: precision in entries.json, month-only datelines everywhere (schema 1.5.0)', async () => {
-    // Since 1.5.0; 1.6.0 added waiting letters (PL-2), 1.7.0 pictures (BL-933). Exact, so the next bump updates this line on purpose.
-    expect(EXPORT_SCHEMA_VERSION).toBe('1.7.0');
+    // Since 1.5.0; 1.6.0 added waiting letters (PL-2), 1.7.0 pictures (BL-933), 1.8.0 recordings in no letter (BL-388).
+    // Exact, so the next bump updates this line on purpose.
+    expect(EXPORT_SCHEMA_VERSION).toBe('1.8.0');
     const { zip } = await makeExport();
     const files = unzipSync(zip);
     const entries = JSON.parse(strFromU8(files['data/entries.json'])) as EntriesFile;
@@ -224,6 +225,23 @@ describe('Asha export (golden)', () => {
     const book = [...renderedHtml.values()].find((h) => h.includes('you found your feet'))!;
     expect(book).toContain('<p class="date">Sometime in Month 4</p>');
     expect(article(book)).not.toMatch(/July|Wednesday/);
+  });
+
+  it('[BL-388, LEGAL-REQ-034] the manifest lists a waiting letter and a recording in no letter, byte for byte', async () => {
+    // The row's third case, a Recently deleted letter, waits on the Chief Privacy Officer's ruling (CR-35): not built here.
+    const { zip } = await makeExport();
+    const files = unzipSync(zip);
+    const manifest = JSON.parse(strFromU8(files['manifest.json'])) as Manifest;
+    const listed = new Map(manifest.files.map((f) => [f.path, f]));
+    expect([...listed.keys()]).toEqual(expect.arrayContaining(['waiting/w9.txt', 'data/waiting.json', 'data/not_in_the_book.json']));
+    const stray = listed.get(`not-in-the-book/${ASHA_STRAY}`)!;
+    expect(stray).toEqual({ path: `not-in-the-book/${ASHA_STRAY}`, bytes: ASHA_STRAY_AUDIO.length, sha256: sha256Hex(ASHA_STRAY_AUDIO), media_type: 'audio/mp4' });
+    expect(sha256Hex(files[stray.path])).toBe(sha256Hex(ASHA_STRAY_AUDIO));
+    // The one whose file is gone is listed with no file, and nothing of it is in the ZIP.
+    const list = JSON.parse(strFromU8(files['data/not_in_the_book.json'])) as NotInTheBookFile;
+    expect(list.recordings.map((r) => [r.path, r.sha256])).toEqual([[stray.path, stray.sha256], [null, null]]);
+    expect(Object.keys(files).filter((p) => p.startsWith('not-in-the-book/'))).toEqual([stray.path]);
+    expect(strFromU8(files['README.txt'])).toContain('NOT IN THE BOOK');
   });
 
   it('[BL-323] memberships and the manifest say the real role', async () => {

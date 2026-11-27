@@ -31,11 +31,15 @@
  * - A letter's picture (1.7.0, ADR 0028 D2) goes in photos/<entry id>/<media id>.jpg: the stored copy, byte for byte,
  *   which already carries no metadata. The letter's words and its text file never change because of it.
  *   pack.ts holds back any picture whose bytes are not the stored copy or carry metadata (NS-01-R6, BL-1410).
+ * - Recordings on this phone in no letter or draft (1.8.0, BL-388; the sweep's `orphan_audio`) go in not-in-the-book/,
+ *   byte for byte, and data/not_in_the_book.json; one no longer on this phone is listed with no file. They have no
+ *   author, so who gets them is decided when the snapshot is taken; this planner plans what it is given.
  */
 import { brand } from '@scribe/brand';
 import { book as bookWords } from '@scribe/content';
 import { ageOn, chapterOf, renderTemplate } from '@scribe/core';
 import { containerOfRecording, RECORDING_FILES } from '../capture/recording-file';
+import type { RECORDING_EXTENSIONS } from '../capture/sweep.logic';
 import { childLabel, copy } from '../copy';
 import { pageProvenanceKey } from '../provenance';
 import { dayDate, entryDayDate, entryLetterDateline, isMonthOnly, isoOf } from '../dates';
@@ -57,6 +61,7 @@ import {
   type ExportMachineEdit,
   type OtherVersionsFile,
   type ExportPhoneConsent,
+  type NotInTheBookFile,
   type ExportWaitingLetter,
   type WaitingFile,
   type WaitingReason,
@@ -115,6 +120,18 @@ export interface SnapshotWaiting extends Draft {
   changedWords?: string | null;
 }
 
+/** A recording on this phone in no letter or draft (the sweep's `orphan_audio` row and its file; 1.8.0, BL-388). */
+export interface SnapshotOrphan {
+  fileName: string;
+  /** Its size as the sweep noted it when it found the file (`orphan_audio.bytes`). */
+  bytes: number | null;
+  foundAt: string;
+  /** Where it is on this phone (a folder the sweep lists), or null when none holds it now. */
+  uri: string | null;
+  /** The file exists on this phone. */
+  onPhone: boolean;
+}
+
 /** The phone's consent choices for account.json (schema 1.1.0). */
 export function phoneConsent(ageConfirmed: boolean, usage: string | null | undefined): ExportPhoneConsent {
   return { age_confirmed: ageConfirmed, usage_sharing: usage === 'granted' || usage === 'denied' ? usage : 'not_answered' };
@@ -133,6 +150,8 @@ export interface ExportSnapshot {
   entries: SnapshotEntry[];
   /** Letters that are waiting (1.6.0, PL-2). Absent or empty: no waiting/ folder and no waiting.json. */
   waiting?: SnapshotWaiting[];
+  /** Recordings in no letter or draft (1.8.0). Absent or empty: no not-in-the-book/, no json, no README section. */
+  orphans?: SnapshotOrphan[];
   /** Conflict copies (F16-REQ-023). Absent or empty: no other-versions file. */
   otherVersions?: SnapshotOtherVersion[];
   /** For account.json: the consent choices this phone holds (never a server record). */
@@ -181,6 +200,16 @@ export interface PhotoJob {
   place: string | null;
 }
 
+/** One recording in no letter or draft to copy into not-in-the-book/ (1.8.0). */
+export interface OrphanJob {
+  fileName: string;
+  uri: string;
+  path: string;
+  /** From the file's extension: a stray file may be any container the sweep counts as a recording. */
+  mediaType: string;
+  sizeHint: number | null;
+}
+
 export interface BookJob {
   childId: string;
   path: string;
@@ -203,6 +232,8 @@ export interface ExportPlan {
   waitingAudio: AudioJob[];
   /** Letters' pictures (1.7.0), under photos/. */
   photos: PhotoJob[];
+  /** Recordings in no letter or draft (1.8.0), under not-in-the-book/. */
+  orphanAudio: OrphanJob[];
   /**
    * The offline reader showing only the pictures actually written (entry ids). `textFiles` holds the reader as planned,
    * with every picture; pack.ts writes this one instead, after the pictures, so a picture held back at the last guard
@@ -420,6 +451,30 @@ function waitingText(d: SnapshotWaiting, child: SnapshotChild, locale: string): 
   return `${lines.join('\n')}\n${parts.length ? `\n${parts.join('\n\n')}\n` : ''}`;
 }
 
+// ── Recordings not in the book (1.8.0, BL-388) ──────────────────────────
+
+/** Oldest found first, as Settings lists them. */
+export const orphansOf = (snapshot: Pick<ExportSnapshot, 'orphans'>): SnapshotOrphan[] =>
+  [...(snapshot.orphans ?? [])].sort((a, b) => a.foundAt.localeCompare(b.foundAt) || a.fileName.localeCompare(b.fileName));
+
+const ORPHAN_MEDIA = {
+  m4a: 'audio/mp4', mp4: 'audio/mp4', aac: 'audio/aac', caf: 'audio/x-caf', wav: 'audio/wav', '3gp': 'audio/3gpp', webm: 'audio/webm',
+} as const satisfies Record<(typeof RECORDING_EXTENSIONS)[number], string>;
+export const orphanMediaType = (name: string): string =>
+  ORPHAN_MEDIA[(/\.([^./]+)$/.exec(name)?.[1].toLowerCase() ?? '') as keyof typeof ORPHAN_MEDIA] ?? 'application/octet-stream';
+
+/**
+ * not-in-the-book/<file name>: the name as stored (`recording-<UUID>.m4a`), with any character a computer cannot use
+ * in a name replaced, and a number added before the extension if two names would be the same file (`used`, any case).
+ */
+export function notInTheBookPath(fileName: string, used: Set<string>): string {
+  const safe = fileName.normalize('NFC').replace(/[\u0000-\u001f\u007f/\\:*?"<>|]/g, '_').replace(/^\./, '_') || 'recording';
+  let name = safe;
+  for (let n = 2; used.has(name.toLowerCase()); n++) name = safe.replace(/(\.[^.]*)?$/, `-${n}$1`);
+  used.add(name.toLowerCase());
+  return `not-in-the-book/${name}`;
+}
+
 // ── HTML helpers ─────────────────────────────────────────────────────────
 
 export function escapeHtml(s: string): string {
@@ -632,12 +687,15 @@ ${body}
 function readme(snapshot: ExportSnapshot, withPhotos: boolean): string {
   // The pictures section only when this export holds a picture, so an export with none reads as it did before 1.7.0.
   // It goes before KEEPING IT SAFE, so the README still ends on the format line.
+  // The recordings not in the book (1.8.0) the same way, only when the phone lists one, after the pictures.
   const lines: string[] = [...exportCopy.readme];
-  if (withPhotos) {
+  const before = (section: readonly string[]) => {
     const at = lines.indexOf('KEEPING IT SAFE');
-    if (at < 1) throw new Error('export README: the KEEPING IT SAFE heading the pictures section goes before is missing');
-    lines.splice(at - 1, 0, ...exportCopy.readmePhotos);
-  }
+    if (at < 1) throw new Error('export README: the KEEPING IT SAFE heading a section goes before is missing');
+    lines.splice(at - 1, 0, ...section);
+  };
+  if (withPhotos) before(exportCopy.readmePhotos);
+  if (orphansOf(snapshot).length > 0) before(exportCopy.readmeNotInTheBook);
   return (
     lines
       .map((line) =>
@@ -707,8 +765,13 @@ export function planExport(snapshot: ExportSnapshot): ExportPlan {
     sizeHint: d.audioSizeOnPhone ?? d.audioBytes ?? null,
   }));
 
+  const used = new Set<string>();
+  const orphanAudio: OrphanJob[] = orphansOf(snapshot)
+    .filter((o) => o.onPhone && o.uri)
+    .map((o) => ({ fileName: o.fileName, uri: o.uri!, path: notInTheBookPath(o.fileName, used), mediaType: orphanMediaType(o.fileName), sizeHint: o.bytes }));
+
   const readmeFor = (withPhotos: boolean) => readme(snapshot, withPhotos);
-  return { textFiles, books, audio, waitingAudio, photos, readerFor, readmeFor };
+  return { textFiles, books, audio, waitingAudio, photos, orphanAudio, readerFor, readmeFor };
 }
 
 /** One recording as a data file writes it, with the hash of the file actually exported. */
@@ -738,6 +801,8 @@ export async function dataFiles(
   waitingResults: Map<string, AudioResult> = new Map(),
   /** Pictures actually written, by entry id (1.7.0). */
   photoResults: Map<string, AudioResult> = new Map(),
+  /** Recordings in no letter actually written, by file name (1.8.0). */
+  orphanResults: Map<string, AudioResult> = new Map(),
 ): Promise<{ files: TextFile[]; audioMissing: number }> {
   const folders = childFolders(snapshot.children);
   const byChild = new Map(snapshot.children.map((c) => [c.id, c]));
@@ -879,6 +944,23 @@ export async function dataFiles(
     });
     const waitingFile: WaitingFile = { schema_version: EXPORT_SCHEMA_VERSION, format: EXPORT_FORMAT, waiting: rows };
     files.push({ path: 'data/waiting.json', text: json(waitingFile), mediaType: MEDIA.json });
+  }
+  const orphans = orphansOf(snapshot);
+  if (orphans.length > 0) {
+    const orphanJobs = new Map(plan.orphanAudio.map((j) => [j.fileName, j]));
+    const notInTheBook: NotInTheBookFile = {
+      schema_version: EXPORT_SCHEMA_VERSION,
+      format: EXPORT_FORMAT,
+      // A file planned but not readable at packing time is listed like one no longer on this phone: no file.
+      recordings: orphans.map((o) => {
+        const job = orphanJobs.get(o.fileName);
+        const r = orphanResults.get(o.fileName);
+        return job && r
+          ? { file_name: o.fileName, path: job.path, bytes: r.bytes, sha256: r.sha256, found_at: o.foundAt }
+          : { file_name: o.fileName, path: null, bytes: o.bytes, sha256: null, found_at: o.foundAt };
+      }),
+    };
+    files.push({ path: 'data/not_in_the_book.json', text: json(notInTheBook), mediaType: MEDIA.json });
   }
   return {
     files,

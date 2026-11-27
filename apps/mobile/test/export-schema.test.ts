@@ -49,6 +49,8 @@ describe('export schema', () => {
       ['data/entries.json', 'entriesFile'],
       ['data/children.json', 'childrenFile'],
       ['data/account.json', 'accountFile'],
+      ['data/waiting.json', 'waitingFile'],
+      ['data/not_in_the_book.json', 'notInTheBookFile'], // [BL-388] since 1.8.0
       ['manifest.json', 'manifest'],
     ];
     for (const [path, def] of cases) {
@@ -89,7 +91,7 @@ describe('export schema', () => {
     expect(validate({ ...account, consent_on_this_phone: { age_confirmed: true, usage_sharing: 'maybe' } })).toBe(false);
   });
 
-  for (const version of ['1.0.0', '1.1.0', '1.2.0', '1.3.0', '1.4.0', '1.5.0', '1.6.0']) {
+  for (const version of ['1.0.0', '1.1.0', '1.2.0', '1.3.0', '1.4.0', '1.5.0', '1.6.0', '1.7.0']) {
     it(`[DATA-REQ-055] still reads every ${version} file (kept in __golden__/export-asha/_v${version})`, () => {
       const dir = join(__dirname, '__golden__', 'export-asha', `_v${version}`);
       const cases: [string, string][] = [
@@ -108,6 +110,16 @@ describe('export schema', () => {
       }
     });
   }
+
+  it('[BL-388] not_in_the_book.json (1.8.0) rejects an extra field (a recording has no author) and a path outside its folder', () => {
+    const validate = validator('notInTheBookFile');
+    const row = { file_name: 'recording-1.m4a', path: 'not-in-the-book/recording-1.m4a', bytes: 10, sha256: 'a'.repeat(64), found_at: '2027-02-01T08:00:00.000Z' };
+    const file = (r: object) => ({ schema_version: EXPORT_SCHEMA_VERSION, format: EXPORT_FORMAT, recordings: [r] });
+    expect(validate(file(row)), JSON.stringify(validate.errors)).toBe(true);
+    expect(validate(file({ ...row, path: null, sha256: null, bytes: null }))).toBe(true);
+    expect(validate(file({ ...row, author: 'Mama' }))).toBe(false);
+    for (const path of ['audio/recording-1.m4a', 'not-in-the-book/../x.m4a', 'not-in-the-book/a/b.m4a']) expect(validate(file({ ...row, path })), path).toBe(false);
+  });
 
   describe('[BL-933] photo (1.7.0)', () => {
     const photo = validator('photo');

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://earlyletters.com/export-format/v1.schema.json",
   "title": "Early Letters export, format 1",
-  "description": "Schema for data/entries.json, data/children.json, data/account.json, data/other-versions.json and data/waiting.json (each when present) and manifest.json in an export.",
+  "description": "Schema for data/entries.json, data/children.json, data/account.json, data/other-versions.json, data/waiting.json and data/not_in_the_book.json (each when present) and manifest.json in an export.",
   "$defs": {
     "audio": {
       "type": "object",
@@ -325,6 +325,73 @@
                     "type": "null"
                   }
                 ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "notInTheBookFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "format",
+        "recordings"
+      ],
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "pattern": "^1\\.\\d+\\.\\d+$"
+        },
+        "format": {
+          "const": "early-letters-export"
+        },
+        "recordings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "file_name",
+              "path",
+              "bytes",
+              "sha256",
+              "found_at"
+            ],
+            "properties": {
+              "file_name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "path": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^not-in-the-book/[^/.][^/]*$"
+              },
+              "bytes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "sha256": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "found_at": {
+                "type": "string",
+                "minLength": 10
               }
             }
           }
@@ -1359,6 +1426,9 @@
     },
     {
       "$ref": "#/$defs/waitingFile"
+    },
+    {
+      "$ref": "#/$defs/notInTheBookFile"
     },
     {
       "$ref": "#/$defs/manifest"

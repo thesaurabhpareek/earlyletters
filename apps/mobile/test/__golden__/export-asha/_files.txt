@@ -9,6 +9,8 @@ book/Dev.pdf
 data/account.json
 data/children.json
 data/entries.json
+data/not_in_the_book.json
+data/waiting.json
 index.html
 letters/Asha/2026-02/2026-02-20_e1.txt
 letters/Asha/2026-03/2026-03-12_e2.txt
@@ -26,5 +28,7 @@ letters/Asha/2027-03/2027-03-10_e9.txt
 letters/Dev/2025-01/2025-01-05_d1.txt
 manifest.json
 manifest.sha256
+not-in-the-book/recording-5a1e0000-0000-4000-8000-000000000388.m4a
 photos/e2/m-asha-0001.jpg
 schema/export-v1.schema.json
+waiting/w9.txt

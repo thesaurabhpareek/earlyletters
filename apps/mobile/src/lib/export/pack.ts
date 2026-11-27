@@ -80,11 +80,12 @@ export const estimatePdfBytes = (letters: number) => 60_000 + letters * 3_000;
 export function estimateExportBytes(snapshot: ExportSnapshot): number {
   const plan = planExport(snapshot);
   const text = plan.textFiles.reduce((n, f) => n + f.text.length * 1.2, 0);
-  const audio = [...plan.audio, ...plan.waitingAudio].reduce((n, a) => n + (a.sizeHint ?? 2_000_000), 0);
+  const audio = [...plan.audio, ...plan.waitingAudio, ...plan.orphanAudio].reduce((n, a) => n + (a.sizeHint ?? 2_000_000), 0);
   const photos = plan.photos.reduce((n, p) => n + p.sizeHint, 0);
   const books = plan.books.reduce((n, b) => n + estimatePdfBytes(b.letters), 0);
   const data = (snapshot.entries.length + (snapshot.waiting?.length ?? 0)) * 2_500;
-  const headers = (plan.textFiles.length + plan.audio.length + plan.waitingAudio.length + plan.photos.length + plan.books.length + 7) * 200;
+  const recordings = plan.audio.length + plan.waitingAudio.length + plan.orphanAudio.length;
+  const headers = (plan.textFiles.length + recordings + plan.photos.length + plan.books.length + 8) * 200;
   return Math.ceil(text + audio + photos + books + data + headers);
 }
 
@@ -116,7 +117,7 @@ export async function packExport(snapshot: ExportSnapshot, deps: PackDeps): Prom
   // Progress by planned bytes: text and data are small, recordings are most of it.
   const total =
     plan.textFiles.reduce((n, f) => n + f.text.length, 0) +
-    [...plan.audio, ...plan.waitingAudio].reduce((n, a) => n + (a.sizeHint ?? 1_000_000), 0) +
+    [...plan.audio, ...plan.waitingAudio, ...plan.orphanAudio].reduce((n, a) => n + (a.sizeHint ?? 1_000_000), 0) +
     plan.photos.reduce((n, p) => n + p.sizeHint, 0) +
     plan.books.reduce((n, b) => n + estimatePdfBytes(b.letters), 0) +
     snapshot.entries.length * 2_500 +
@@ -252,6 +253,25 @@ export async function packExport(snapshot: ExportSnapshot, deps: PackDeps): Prom
     await yieldToUi();
   }
 
+  // Then recordings in no letter or draft (1.8.0, BL-388), the same way, under not-in-the-book/.
+  const orphanResults = new Map<string, AudioResult>();
+  for (const job of plan.orphanAudio) {
+    check();
+    let data: Uint8Array;
+    try {
+      data = await deps.readFile(job.uri);
+    } catch {
+      // Vanished between the snapshot and now: listed in not_in_the_book.json with no file.
+      report('recordings', job.sizeHint ?? 1_000_000);
+      continue;
+    }
+    const sha256 = await deps.sha256(data);
+    await add(job.path, data, job.mediaType, sha256);
+    orphanResults.set(job.fileName, { sha256, bytes: data.length });
+    report('recordings', job.sizeHint ?? data.length);
+    await yieldToUi();
+  }
+
   // 4c. Letters' pictures (1.7.0): the stored copy, byte for byte, each through the guard above (the first one already).
   const photoResults = new Map<string, AudioResult>();
   for (; photoIndex < plan.photos.length; photoIndex++) {
@@ -273,7 +293,7 @@ export async function packExport(snapshot: ExportSnapshot, deps: PackDeps): Prom
 
   // 5. Data files, with the hashes of the recordings and pictures actually written.
   const sha256Text = (text: string) => deps.sha256(strToU8(text));
-  const data = await dataFiles(snapshot, plan, audioResults, sha256Text, waitingResults, photoResults);
+  const data = await dataFiles(snapshot, plan, audioResults, sha256Text, waitingResults, photoResults, orphanResults);
   for (const f of data.files) {
     await add(f.path, strToU8(f.text), f.mediaType);
     report('data', f.text.length);
