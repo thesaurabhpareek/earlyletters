@@ -981,6 +981,12 @@ describe('glossary (BRAND.md)', () => {
     expect(offenders(COPY, /\btid(y|ied|ies|ying|ier)\b|\bcleaned up\b/i)).toEqual([]);
   });
 
+  it('never says transcription, transcribe or transcript in copy a parent reads (BL-393, D-074)', () => {
+    // The word names the technology and reads as if the app writes (VOICE.md "Word for word"). Values only: key
+    // names, code and comments may keep the internal word. The website and pages (site.en.ts, pages.en.ts) are BL-556's.
+    expect(offenders([...IN_APP, ...EMAIL], /\btranscri\w*/i)).toEqual([]);
+  });
+
   it('says "small fix", never edit, correct, clean or improve, where the app talks about its fixes (D-086)', () => {
     const where = (l: Leaf) => /^(en\.review|en\.onboarding\.promise|en\.book\.provenance|features\.words|features\.speech)\b/.test(l.path);
     const BANNED = /\bedit(s|ed|ing)?\b|\bcorrect(s|ed|ing|ion|ions)?\b|\bclean(s|ed|ing)?\b|\bimprov\w*/i;
