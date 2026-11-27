@@ -6,11 +6,18 @@
  * my signature per book, then every letter oldest first. A kill mid-way
  * leaves nothing changed. Server-side the ids are the device's own UUIDv7s, so
  * nothing is renamed and every retry is idempotent.
+ *
+ * A book in Recently deleted (deleted on this phone before sign-in, `book.deletedAt.<id>` in settings, db/repos/wipe.ts)
+ * is not claimed (BL-559): it stays 'local', and nothing of it is queued, neither the book, its prefs, its letters nor
+ * its held drafts. It leaves the phone only if the person restores it (`claimRestoredBook`); otherwise the 30-day purge
+ * or Erase now removes it from the phone, and it never reached the server.
  */
+import { BOOK_DELETED_PREFIX } from '../db/repos/wipe';
 import type { SqlDb } from '../db/sql';
 import {
   SYNC_SETTING,
   appendOp,
+  enqueueBookCreate,
   enqueueEntryUpsert,
   enqueueHeldDraft,
   enqueuePrefs,
@@ -29,6 +36,9 @@ export class AccountMismatchError extends Error {
     this.name = 'AccountMismatchError';
   }
 }
+
+/** SQL test that the book named by `col` is not in Recently deleted on this phone (wipe.ts BOOK_NOT_DELETED_SQL, by column). */
+const notDeleted = (col: string) => `NOT EXISTS (SELECT 1 FROM settings s WHERE s.key = '${BOOK_DELETED_PREFIX}' || ${col})`;
 
 const UUID7 = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const FIRST_RUN_MAX = 6;
@@ -51,7 +61,8 @@ export function takeOwnership(db: SqlDb, userId: string, ctx: EnqueueContext): O
     writeSetting(db, SYNC_SETTING.owner, userId);
     db.run('UPDATE entries SET author_id = ? WHERE author_id IS NULL', userId);
 
-    const books = db.all<LocalChildRow>("SELECT * FROM children WHERE server_state = 'local' ORDER BY created_at, id");
+    // BL-559: a book in Recently deleted is left out, and stays 'local' (nothing of it is queued below).
+    const books = db.all<LocalChildRow>(`SELECT * FROM children WHERE server_state = 'local' AND ${notDeleted('children.id')} ORDER BY created_at, id`);
     const ok = books.filter((c) => UUID7.test(c.id) && (c.birthday || c.due_date));
     const bad = books.filter((c) => !ok.includes(c));
     const mine = "role = 'parent', created_by_me = 1, created_by = COALESCE(created_by, ?)";
@@ -73,14 +84,17 @@ export function takeOwnership(db: SqlDb, userId: string, ctx: EnqueueContext): O
     }
     for (const c of ok) enqueuePrefs(db, c.id, prefsFields(db, c.id), ctx);
 
-    // Letters deleted before they ever left the phone stay local (Recently deleted only).
+    // Letters deleted before they ever left the phone stay local (Recently deleted only), and so do the letters of a
+    // book in Recently deleted (BL-559).
     const letters = db.all<{ id: string }>(
-      "SELECT id FROM entries WHERE author_id = ? AND deleted_at IS NULL AND child_id IS NOT NULL ORDER BY captured_at, id",
+      `SELECT id FROM entries WHERE author_id = ? AND deleted_at IS NULL AND child_id IS NOT NULL AND ${notDeleted('entries.child_id')}
+       ORDER BY captured_at, id`,
       userId,
     );
     for (const l of letters) enqueueEntryUpsert(db, l.id, ALL_GROUPS, ctx); // a waiting letter goes as its held row
     // Letters the author held at the Keep gate before signing in (F14-REQ-039): author-only held rows.
-    for (const d of db.all<{ id: string }>('SELECT id FROM drafts WHERE held_kind IS NOT NULL ORDER BY created_at, id')) {
+    // Not those of a book in Recently deleted (BL-559).
+    for (const d of db.all<{ id: string }>(`SELECT id FROM drafts WHERE held_kind IS NOT NULL AND ${notDeleted('drafts.child_id')} ORDER BY created_at, id`)) {
       enqueueHeldDraft(db, d.id, ctx);
     }
     const queued = db.get<{ n: number }>("SELECT COUNT(*) AS n FROM sync_outbox WHERE type = 'entry.upsert'")!.n;
@@ -115,6 +129,35 @@ export function releaseEmptyOwner(db: SqlDb, holdsAnyRow: (db: SqlDb) => boolean
     released = true;
   });
   return released;
+}
+
+/**
+ * A book restored from Recently deleted on a phone that has signed in (BL-559). `takeOwnership` left it 'local' while it
+ * was deleted; restoring it is the person's choice to keep it, so it is claimed now as any book made after sign-in is
+ * (`enqueueBookCreate`, as store.ts addChild does), then its live letters (oldest first) and its held drafts. A book the
+ * server would refuse (not a device UUIDv7, or neither birthday nor due date) is marked 'refused' and stays on the phone,
+ * as at first sign-in. Does nothing on a phone that never signed in, for a book that is not 'local', or for one still in
+ * Recently deleted. Call it inside the restore's transaction.
+ */
+export function claimRestoredBook(db: SqlDb, childId: string, ctx: EnqueueContext): void {
+  const owner = readSetting(db, SYNC_SETTING.owner);
+  if (!owner) return;
+  const c = db.get<LocalChildRow>(`SELECT * FROM children WHERE id = ? AND server_state = 'local' AND ${notDeleted('children.id')}`, childId);
+  if (!c) return;
+  if (!UUID7.test(c.id) || !(c.birthday || c.due_date)) {
+    db.run("UPDATE children SET server_state = 'refused', role = 'parent', created_by_me = 1, created_by = COALESCE(created_by, ?) WHERE id = ?", owner, childId);
+    return;
+  }
+  enqueueBookCreate(db, childId, ctx);
+  const letters = db.all<{ id: string }>(
+    'SELECT id FROM entries WHERE child_id = ? AND author_id = ? AND deleted_at IS NULL ORDER BY captured_at, id',
+    childId,
+    owner,
+  );
+  for (const l of letters) enqueueEntryUpsert(db, l.id, ALL_GROUPS, ctx);
+  for (const d of db.all<{ id: string }>('SELECT id FROM drafts WHERE child_id = ? AND held_kind IS NOT NULL ORDER BY created_at, id', childId)) {
+    enqueueHeldDraft(db, d.id, ctx);
+  }
 }
 
 /** Plus bought later (or a fixed book): send a book the server refused again, with its letters. */
