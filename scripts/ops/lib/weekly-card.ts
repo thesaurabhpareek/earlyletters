@@ -155,16 +155,16 @@ export function cardRow(r: Row, today: number): CardRow {
     // holder, or a custody or family dispute. The sender is not the holder, so the card prompts no reply to them: a
     // "what was done" reply or an extension notice would say the account exists (IAM-R09). The exec team read it on
     // 27 Nov 2026 (not yet in a rulings file). Days 35 to 44 are an internal check: a request about the sender's own
-    // data inside it, or a request from someone acting for a holder the email does not say died or cannot act, is on the clock from the
-    // same day, and whether the 45 days apply to a living holder's guardian is COUNSEL_PACKET Q49, so that goes to
+    // data inside it, or an executor, relative or guardian row whose email does not say the holder died or cannot act,
+    // is on the clock from the same day (never a custody dispute or a parent's request), and whether the 45 days apply to a living holder's guardian is COUNSEL_PACKET Q49, so that goes to
     // counsel before day 45. From day 45 the row stays first until it closes: an unanswered Q49 is never read as a no.
     const first = !r.acknowledged && day >= 1;
     const check = day >= FIRST_DAY && day < DUE_DAY;
     const late = day >= DUE_DAY;
     const counsel = check
-      ? "with counsel: check no request about the sender's own data is inside it, and if one is, log it as its own row today with the same received date; if it is from someone acting for a holder and the email does not say the holder died or cannot act, log it under its route's kind today with the same received date and close this row; if the sender acts for a living holder who cannot act, ask counsel before day 45 whether the 45 days apply (Q49)"
+      ? "with counsel: check no request about the sender's own data is inside it, and if one is, log it as its own row today with the same received date; if it is an executor, relative or guardian row (never a custody or family dispute, and never a parent or guardian who says the holder is under 18) and the email does not say the holder died or cannot act, log it under its route's kind today with the same received date and close this row; if it is an executor, relative or guardian of a living holder who cannot act, ask counsel before day 45 whether the 45 days apply (Q49)"
       : late
-        ? 'with counsel: still open past day 44; if the sender acts for a living holder who cannot act and counsel has not said the 45 days do not apply, to counsel today (Q49); no reply beyond the fixed first reply; change nothing on any account'
+        ? "with counsel: still open past day 44; check no request about the sender's own data is inside it; if it is an executor, relative or guardian of a living holder who cannot act and counsel has not said the 45 days do not apply, to counsel today (Q49); no reply beyond the fixed first reply; change nothing on any account"
         : 'with counsel: no reply beyond the fixed first reply; change nothing on any account';
     return {
       ...offClock,
