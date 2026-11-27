@@ -14,7 +14,7 @@ Status: DRAFT. This is not a procedure. It is the brief a licensed US lawyer rea
 
 ## 2. Questions for the lawyer
 
-1. Is Early Letters a "provider" under 18 U.S.C. 2258E(6), for mail sent to the support address, and for letters stored in a book that two parents share?
+1. Are we a "provider" under 18 U.S.C. 2258E(6), for mail sent to the support address, and for letters stored in a book that two parents share?
 2. Does a report email that describes or attaches suspected material give us "actual knowledge" under 2258A(a)(1) if nobody opens it?
 3. If we report, what must we preserve under 2258A(h) (one year, per Pub. L. 118-59), where, and with whose access? How does that fit leaving the message unopened, our retention promises and a person's deletion rights?
 4. May the founder hold the message unopened in our mail provider's mailbox? Does the provider's own scanning change anything?

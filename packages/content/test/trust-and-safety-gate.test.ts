@@ -54,11 +54,13 @@ const SWITCHES: Record<string, { hosts: string | null; why: string }> = {
   EXPO_PUBLIC_PHOTOS: { hosts: null, why: 'pictures stay on the phone; media on our servers is FR-POL-14 and needs its own row here first' },
 };
 
-function readProfiles(): Profile[] {
-  const eas = JSON.parse(readFileSync(EAS_JSON, 'utf8')) as {
-    build: Record<string, { env?: Env; extends?: string; distribution?: string }>;
-    submit?: Record<string, { ios?: { groups?: unknown } }>;
-  };
+type EasJson = {
+  build: Record<string, { env?: Env; extends?: string; distribution?: string }>;
+  submit?: Record<string, { ios?: { groups?: unknown } }>;
+};
+
+/** Profiles from an eas.json object: env and distribution follow `extends` to any depth. */
+export function profilesFrom(eas: EasJson): Profile[] {
   const envOf = (name: string): Env => {
     const p = eas.build[name];
     return { ...(p.extends ? envOf(p.extends) : {}), ...(p.env ?? {}) };
@@ -75,17 +77,21 @@ function readProfiles(): Profile[] {
   }));
 }
 
+function readProfiles(): Profile[] {
+  return profilesFrom(JSON.parse(readFileSync(EAS_JSON, 'utf8')) as EasJson);
+}
+
 function isStoreBuild(p: Profile): boolean {
   return (p.env.EXPO_PUBLIC_APP_ENV ?? '').trim() === 'production';
 }
 
 /**
  * CR-234: can this build reach someone outside the internal Family group? EAS distributes to the store unless a profile
- * says `internal`. A store-distributed profile stays inside only while its submit groups are exactly ["Family"]; the
+ * says `internal`, so only an exact `internal` is exempt; any other value, a typo included, counts as store. A store-distributed profile stays inside only while its submit groups are exactly ["Family"]; the
  * App Store build always reaches outside. A manual change in App Store Connect is not visible here (FOUNDER_QUEUE row).
  */
 export function reachesOutside(p: Profile): boolean {
-  if ((p.distribution ?? 'store') !== 'store') return false;
+  if (p.distribution === 'internal') return false;
   if (isStoreBuild(p)) return true;
   return JSON.stringify(p.groups) !== JSON.stringify(['Family']);
 }
@@ -201,7 +207,7 @@ describe('[FR-POL-02] a report of apparent child sexual abuse material gets an a
     expect(m.notes.Never).toMatch(/forward/);
     expect(m.notes.Never).toMatch(/quote/);
     expect(m.notes.Never).toMatch(/delete/);
-    expect(m.notes.Never).toMatch(/move/);
+    expect(m.notes.Never).toMatch(/\bmove\b/);
     expect(m.notes.Never).toMatch(/Leave the message where it arrived/);
     expect(m.notes.Never).toMatch(/no Claude session or connector reads it/);
     expect(m.notes['Same day']).toMatch(/only after a licensed lawyer advises/);
@@ -256,7 +262,7 @@ describe('[FR-POL-03] content that reaches another person needs its report set b
   it('[FR-POL-03] a hosting switch on in a TestFlight profile sent beyond Family needs its report set (CR-234)', () => {
     const planted: typeof SWITCHES = { ...SWITCHES, EXPO_PUBLIC_SHARE_HOSTED: { hosts: 'NS-05 Level 2', why: 'planted' } };
     const preview = profiles.find((p) => p.name === 'preview')!;
-    const flagged = { ...preview, env: { ...preview.env, EXPO_PUBLIC_SHARE_HOSTED: 'on' } };
+    const flagged = { ...preview, distribution: 'store', env: { ...preview.env, EXPO_PUBLIC_SHARE_HOSTED: 'on' } };
     expect(reportSetFindings([{ ...flagged, groups: ['Family'] }], planted, reportSetCards(reportSetMd))).toEqual([]);
     expect(reportSetFindings([{ ...flagged, groups: ['Family', 'Friends'] }], planted, reportSetCards(reportSetMd))).toEqual([
       'preview: EXPO_PUBLIC_SHARE_HOSTED is on and NS-05 Level 2 has no complete row in docs/ops/runbooks/report-set.md (FR-POL-03)',
@@ -276,6 +282,28 @@ describe('[FR-POL-03] content that reaches another person needs its report set b
 
   it('[FR-POL-03] the table asks for a filter method, not only a decision (CCO-33)', () => {
     expect(reportSetMd.split('\n')).toContain(REPORT_SET_HEADER);
+  });
+
+  it('[FR-POL-03] distribution follows extends, and only an exact `internal` is exempt (CR-234)', () => {
+    const ps = profilesFrom({
+      build: {
+        dev: { distribution: 'internal' },
+        devChild: { extends: 'dev' },
+        tf: { env: { EXPO_PUBLIC_APP_ENV: 'preview' } },
+        tfChild: { extends: 'tf' },
+        tfGrandchild: { extends: 'tfChild' },
+        typo: { distribution: 'Store' },
+      },
+      submit: {
+        devChild: { ios: { groups: ['Friends'] } },
+        tfChild: { ios: { groups: ['Friends'] } },
+        tfGrandchild: { ios: { groups: ['Friends'] } },
+        typo: { ios: { groups: ['Friends'] } },
+        tf: { ios: { groups: ['Family'] } },
+      },
+    });
+    expect(ps.find((p) => p.name === 'devChild')!.distribution).toBe('internal');
+    expect(ps.filter(reachesOutside).map((p) => p.name)).toEqual(['tfChild', 'tfGrandchild', 'typo']);
   });
 
   it('[FR-POL-03] only the App Store build reaches outside Family today, and the app decides the store build the same way', () => {
@@ -330,7 +358,7 @@ describe('[FR-POL-04] the two-parent book stays out of store builds until the sa
   it('[FR-POL-04] a TestFlight profile with servers on fails once it is sent beyond Family (CR-234)', () => {
     const preview = profiles.find((p) => p.name === 'preview')!;
     const state = safetyState(runbook, migrations);
-    const inside = [{ ...preview, env: { ...preview.env, EXPO_PUBLIC_SERVER_FEATURES: 'on' }, groups: ['Family'] }];
+    const inside = [{ ...preview, distribution: 'store', env: { ...preview.env, EXPO_PUBLIC_SERVER_FEATURES: 'on' }, groups: ['Family'] }];
     expect(safetyRemovalFindings(inside, inviteDestination, state)).toEqual([]);
     for (const groups of [['Family', 'Friends'], ['Friends'], undefined]) {
       const outside = [{ ...inside[0], groups }];
