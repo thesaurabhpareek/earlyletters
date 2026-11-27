@@ -58,10 +58,20 @@ export function scheduledDay(status: { scheduledFor: string }): string {
   return localDay(status.scheduledFor);
 }
 
-/** The failure line. Each one says that nothing has changed (S64). */
+/** The failure line for a Delete account request. Each one says that nothing has changed (S64). */
 export function failureLine(error: 'offline' | 'failed' | null): string | null {
   if (error === null) return null;
   return error === 'offline' ? c.errors.offline : c.errors.failed;
+}
+
+/**
+ * The line for a Cancel deletion press that did not go through, offline or failed (BL-491 point 5, CDesO-46): here and on
+ * the deletion screen. Not `failureLine`: cancelDeletion gives up on a lost answer without reading the status again, so
+ * the phone does not know whether the server cancelled, and "nothing has changed" would read as if the person were safe
+ * while the request may still be open. One line for both kinds: offline also covers a connection lost mid-call.
+ */
+export function cancelFailureLine(error: 'offline' | 'failed' | null): string | null {
+  return error === null ? null : c.errors.cancelFailed;
 }
 
 /**
@@ -80,4 +90,12 @@ export function afterCancel(canGoBack: boolean): 'back' | 'settings' {
 /** "Delete account" is enabled only when the word is typed and no request is on its way. */
 export function canDelete(typed: string, busy: boolean): boolean {
   return confirmationMatches(typed) && !busy;
+}
+
+/**
+ * Step 1's line about this phone (CPrivO-56): "until you erase them" only where the shelf shows Erase now (pass
+ * `shelfActions(...).eraseNow`); a sync build without `EXPO_PUBLIC_SERVER_ERASE=on` gets the ruling's fallback.
+ */
+export function phoneLine(eraseNowShown: boolean): string {
+  return eraseNowShown ? c.what.onThisPhone : c.what.onThisPhoneNoErase;
 }
