@@ -23,6 +23,7 @@ import { createDisk, iosContainer, layOutApp, namesIn, put, recorderDir, type Di
 import { entryMediaStore } from '../src/lib/photos/entry-media';
 import { photosDirectory } from '../src/lib/photos/files';
 import { letItGo } from '../src/lib/capture/let-it-go.logic';
+import { SIGN_AS_DRAFT_SETTING, serializeDraftName } from '../src/lib/capture/sign-as-other.logic';
 import { FIRST_RUN_DRAFT_SETTING, parseDraft, serializeDraft } from '../src/lib/first-run/draft.logic';
 import { nodeDb } from './helpers/node-db';
 import { letter } from './helpers/store-fixture';
@@ -859,6 +860,36 @@ describe('[DATA-REQ-024][F14-REQ-026] Erase everything on this phone, signed out
     expect(await next.all.resumeEraseAtLaunch()).toBe('erased');
     expect([next.store.getSetting(key), next.store.getDraft(f.draftId)]).toEqual([null, null]);
     expectEmpty();
+  });
+
+  // Karma ruling 7224337325 on #2102, point 2 (Review B 7224030811, must-fix 2). BL-980's From name for a draft lives
+  // under one fixed key whichever draft it is for, so the retry judges it by the draft its value names.
+  it('[BL-775][NS-16] the From name typed for an old draft goes on the retry, and the retry says erased only once it is gone; one typed for a draft started after the mark stays, even under a key the scope listed (Karma ruling 7224337325, point 2)', async () => {
+    for (const draft of ['old', 'new'] as const) {
+      const { app, f } = await filled();
+      // For the new draft the slot already held the old draft's name when the mark was written, so its key is in the scope.
+      if (draft === 'new') app.store.setSetting(SIGN_AS_DRAFT_SETTING, serializeDraftName(f.draftId, 'Nani'));
+      failPartWay(app);
+      writeAfter(app, f);
+      const fresh = app.store.createDraft({ childId: f.asha, captureMode: 'spoken', promptKey: null, audioUri: take('0A1B2C3D-0000-4000-8000-00000000A5AB'), audioDurationMs: 3000, state: 'ready' }).id;
+      const value = serializeDraftName(draft === 'old' ? f.draftId : fresh, 'Nani');
+      app.store.setSetting(SIGN_AS_DRAFT_SETTING, value); // typed after the mark
+      if (draft === 'old') {
+        // The read-back: while the old draft's name will not go (planted: SQLite skips that delete), the retry is not erased.
+        db.exec(`CREATE TRIGGER hold_from_name BEFORE DELETE ON settings WHEN old.key = '${SIGN_AS_DRAFT_SETTING}' BEGIN SELECT RAISE(IGNORE); END`);
+        const held = await launch();
+        expect(await held.all.resumeEraseAtLaunch(), draft).toBe('incomplete');
+        const { oldRowsLeft, readEraseScope } = await import('../src/lib/db/repos/wipe');
+        expect(oldRowsLeft({ db }, readEraseScope({ db })!), draft).toEqual(['settings']);
+        db.exec('DROP TRIGGER hold_from_name');
+      }
+      const next = await launch();
+      expect(await next.all.resumeEraseAtLaunch(), draft).toBe('erased');
+      expect([draft, next.store.getSetting(SIGN_AS_DRAFT_SETTING)]).toEqual([draft, draft === 'old' ? null : value]);
+      expect([draft, next.store.getDraft(f.draftId), next.store.getDraft(fresh)?.id]).toEqual([draft, null, fresh]);
+      expect(await next.all.eraseEverything(), draft).toBe('erased'); // a clean phone for the next case
+    }
+    expect(fetches).toBe(0);
   });
 
   // Review B on #2102 at 1991df28, must-fix 1; Karma ruling 7218729959 (option b). Nothing stops a sign-in while the mark

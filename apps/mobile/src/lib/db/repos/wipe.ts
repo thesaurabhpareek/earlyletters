@@ -22,6 +22,7 @@
 import type { RepoContext } from './context';
 import type { SqlDb, SqlParam } from '../sql';
 import { forgetDraftFromName } from './drafts';
+import { SIGN_AS_DRAFT_SETTING } from '../../capture/sign-as-other.logic';
 import { dropSearchIndex, reconcileSearch, SEARCH_TABLE } from '../../find/lifecycle';
 
 export const BOOK_DELETED_PREFIX = 'book.deletedAt.';
@@ -266,6 +267,23 @@ function keysNaming(db: SqlDb, ids: ReadonlySet<SqlParam>): string[] {
     });
 }
 
+/**
+ * The draft that `signAs.draft` names (BL-980: one fixed key holding a draft id and the From name typed for it), read as
+ * repos/drafts.ts forgetDraftFromName reads it; null when there is none or its value does not parse. The key is the same
+ * whichever draft it is for, so the retry judges it by this id, not by the key (Karma ruling 7224337325 on #2102, point
+ * 2): it goes when the id is an erased draft or letter, and a kept draft's stays, even under a key the scope listed.
+ */
+function fromNameDraft(db: SqlDb): string | null {
+  const raw = db.get<{ value: string }>('SELECT value FROM settings WHERE key = ?', SIGN_AS_DRAFT_SETTING)?.value;
+  if (raw === undefined) return null;
+  try {
+    const id = (JSON.parse(raw) as { draftId?: unknown } | null)?.draftId;
+    return typeof id === 'string' ? id : null;
+  } catch {
+    return null; // unreadable: it names no draft, and an old key still goes by the scope
+  }
+}
+
 /** Tables keyed by a book's id: a book kept for a later letter keeps these rows (keptBooks). */
 const BOOK_ROWS: ReadonlySet<string> = new Set(['children', 'child_member_prefs', 'sync_books']);
 
@@ -434,6 +452,11 @@ export function removeEverything({ db }: RepoContext, keepSettings: readonly str
     if (t === 'settings') {
       const keys = new Set([...old].filter((k): k is string => typeof k === 'string'));
       for (const k of keysNaming(db, namedIds)) keys.add(k);
+      const fromName = fromNameDraft(db);
+      if (fromName !== null) {
+        if (namedIds.has(fromName)) keys.add(SIGN_AS_DRAFT_SETTING);
+        else keys.delete(SIGN_AS_DRAFT_SETTING);
+      }
       deleteIn(db, t, 'key', [...keys].filter((k) => !keep.has(k)));
     } else deleteIn(db, t, identityColumn(db, t), [...old, ...rowsNaming(db, t, namedIds)]);
   }
@@ -456,7 +479,8 @@ export function oldRowsLeft({ db }: Pick<RepoContext, 'db'>, scope: EraseScope):
   if (tables.includes('children') && db.all<{ id: string }>('SELECT id FROM children').some((r) => ids.has(r.id))) left.push('children');
   if (oldPictures(db, scope).size > 0) left.push('entry_media');
   for (const t of Object.keys(NAMES_BY)) if (rowsNaming(db, t, ids).length > 0) left.push(t);
-  if (keysNaming(db, ids).length > 0) left.push('settings');
+  const fromName = fromNameDraft(db);
+  if (keysNaming(db, ids).length > 0 || (fromName !== null && ids.has(fromName))) left.push('settings');
   return left;
 }
 
