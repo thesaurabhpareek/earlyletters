@@ -1,4 +1,4 @@
-// WEB PREVIEW ONLY. A copy of expo-sqlite 57.0.3 web/WorkerChannel.ts with two
+// WEB PREVIEW ONLY. A copy of expo-sqlite 57.0.3 web/WorkerChannel.ts with three
 // fixes, swapped in by metro.config.js for the web platform only. Native never
 // loads this file.
 //  1. The sync result length was written with Uint8Array.set(Uint32Array), which
@@ -9,7 +9,9 @@
 //     a new one after about 8,191 have been posted to a worker ("Array buffer
 //     allocation failed"), which a long session reaches (BL-2010). One lock and one
 //     result buffer are made once and reused.
-// Remove this file when expo-sqlite ships the fix upstream.
+// Remove this file only when an expo-sqlite release fixes all three upstream. If an
+// upgrade fixes only some of them, keep this copy and drop just the fixed items.
+// Fix 3 is what keeps J04h (BL-2010) passing.
 import { Deferred } from './Deferred';
 import { serialize, deserialize } from './SyncSerializer';
 
