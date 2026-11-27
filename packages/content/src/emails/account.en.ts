@@ -105,11 +105,16 @@ export const accountEmails = {
   'book-deletion-scheduled': {
     id: 'book-deletion-scheduled',
     subject: "A book is set to be deleted",
-    preheader: "On {deletionDate}. Until then you can export it, or change your mind.",
+    // BL-448 (CPrivO-18): no export line, since no screen offers one during the wait; reworded so no two emails share a
+    // preheader (TPL-09). Exec reading CPrivO-60 (BL-448): approved as written. Its condition: before anything sends
+    // this email, the cancel path in the body must be the app's real one ("Settings, Your data" is gone since the
+    // Settings regroup); nothing sends it today.
+    preheader: "On {deletionDate}. You can change your mind until then.",
     heading: "We have your request",
     body: [
       "On {requestDate} you asked to delete one of your books. It will be deleted on {deletionDate}, with every letter and recording in it.",
-      "To see which book, or to cancel, open the app and go to Settings, Your data. You can export everything in it first, free.",
+      // BL-448 (CPrivO-18): the export sentence that followed is gone. This line's path is not read by CPrivO-60.
+      "To see which book, or to cancel, open the app and go to Settings, Your data.",
     ],
     facts: [
       { label: "Requested on", value: "{requestDate}" },
