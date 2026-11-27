@@ -87,7 +87,7 @@ const CAPTURE_LITERAL_FILES: Record<CaptureScreen, string[]> = {
   ],
   write: [
     'lib/capture/start-capture.logic.ts', // the one entry's plan: Type opens Write
-    'components/tonight/draft-card.logic.ts', // Home's draft card resumes a typed draft (renderBreaches holds who takes its route: ROUTE_EXPORTS)
+    'components/tonight/draft-card.logic.ts', // Home's draft card resumes a typed draft (renderBreaches holds who takes its route: ROUTE_FREE_EXPORTS)
     'app/listen.tsx', // Type instead: a replace inside the capture flow
     'app/review.tsx', // Type or edit the words: a replace inside the capture flow
   ],
@@ -171,50 +171,102 @@ function resolve(fs: Files, f: string, spec: string): string[] {
   const base = spec.startsWith('@/') ? spec.slice(2) : spec.startsWith('.') ? posix.normalize(posix.join(posix.dirname(f), spec)) : null;
   return base === null ? [] : EXTS.map((e) => base + e).filter((x) => fs.has(x));
 }
-/** Value imports between the files in the map (type-only imports are erased at build and are no edge). */
+/**
+ * A literal dynamic `import('x')` (a lazy load is an import as surely as a static one: src already lazy-loads with
+ * `void import('@/lib/...').then(...)`). `typeof import('x')` is a type and carries nothing.
+ */
+const lazyImports = (t: string) => [...t.matchAll(/(?<![.\w$])(?<!\btypeof\s+)import\s*\(\s*(['"`])([^'"`$\n]+)\1\s*\)/g)].map((m) => m[2]);
+/** Value imports between the files in the map, lazy ones included (type-only imports are erased at build and are no edge). */
 function importers(fs: Files): Map<string, Set<string>> {
   const by = new Map<string, Set<string>>();
-  for (const [f, t] of fs) for (const spec of specs(t)) for (const to of resolve(fs, f, spec)) (by.get(to) ?? by.set(to, new Set()).get(to)!).add(f);
+  for (const [f, t] of fs) for (const spec of [...specs(t), ...lazyImports(t)]) for (const to of resolve(fs, f, spec)) (by.get(to) ?? by.set(to, new Set()).get(to)!).add(f);
   return by;
 }
 
 /**
- * NS-35-R1: the exports that carry a start route out of a file on the literal list. A file may hold the route there
- * (CAPTURE_LITERAL_FILES), but a screen that takes it from one of these and pushes it opens capture as surely as one
- * that types it, so a value import of any of them is a start. Other exports of the same files carry no route:
- * tab-jobs.ts takes HOME_CAPTURE_SOURCES, and Family, Write and Review take a dateline or a clock.
+ * NS-35-R1: the two files on the literal list whose exports reach other screens. A file may hold a start route there
+ * (CAPTURE_LITERAL_FILES), and a screen that takes the route from one and pushes it opens capture as surely as one that
+ * types it. So the rule is closed, like the literal list: any value import of these files is a start, unless the name
+ * is on its file's list of route-free exports below, each with its reason. A new export is a start until someone adds
+ * it here and says why it carries no route; a renamed or dropped one leaves a stale entry, which fails below.
+ * Home and the one entry may take anything (they start), so the list is only what other files take today.
  */
-const ROUTE_EXPORTS: Record<string, string[]> = {
-  'lib/capture/start-capture.logic.ts': ['CAPTURE_ROUTES', 'planCapture'], // the route list, and the plan whose pathname is one
-  'components/tonight/draft-card.logic.ts': ['draftCard', 'draftCards'], // a card's `route` resumes a draft on Write or Review
+const ROUTE_FREE_EXPORTS: Record<string, Record<string, string>> = {
+  'lib/capture/start-capture.logic.ts': {
+    HOME_CAPTURE_SOURCES: "tab-jobs.ts: the names of Home's sources, a list of words with no pathname",
+  },
+  'components/tonight/draft-card.logic.ts': {
+    tonightDateline: "Family: the dateline's text and its label",
+    writeDateline: "Write: the dateline's text and its label",
+    clockOf: 'Review: a duration as a clock string',
+    draftWords: "the Plus gate: a draft's words, a string",
+    spoken: 'the Plus gate: joins the parts of a spoken label',
+    resurfaced: 'the slip registry: a kept letter to read again (it opens the letter, never capture)',
+    EXCERPT: 'the draft and resurfaced cards: how many lines of excerpt, and the type variant',
+  },
 };
+/** Screens a lazy or static import of which draws capture: the capture screens and the one entry. */
+const CAPTURE_MODULES = [...CAPTURE_FLOW, ONE_ENTRY];
 /**
- * The route-bearing exports `t` takes by value: a named import or re-export (renamed or not), or the whole module
- * (`* as`, `export *`, a literal `require`), which hands over every export. `type` names and clauses carry no value.
+ * Every value name `t` takes from a file in ROUTE_FREE_EXPORTS: a named import or re-export (by its exported name, so a
+ * rename at the importer does not hide it), a default import, or `*` for the whole module (`* as`, `export *`, a
+ * literal `require`, a literal `import(...)`), which hands over every export. `type` names and clauses carry no value.
  */
-function routeImports(fs: Files, f: string, t: string): string[] {
-  const out: string[] = [];
+function takenFrom(fs: Files, f: string, t: string): { name: string; from: string }[] {
+  const out: { name: string; from: string }[] = [];
   const take = (spec: string, clause: string | null) => {
     for (const to of resolve(fs, f, spec)) {
-      const names = ROUTE_EXPORTS[to];
-      if (!names) continue;
+      if (!ROUTE_FREE_EXPORTS[to]) continue;
       const c = clause?.trim() ?? '*';
       if (/^type\b/.test(c)) continue;
       const named = /\{([^}]*)\}/.exec(c);
-      const taken = named
-        ? named[1].split(',').map((x) => x.trim()).filter((x) => x && !/^type\s/.test(x)).map((x) => x.split(/\s+as\s+/)[0].trim())
-        : /\*/.test(c) ? names : [];
-      for (const n of taken) if (names.includes(n)) out.push(`${n} from ${to}`);
+      const names = named ? named[1].split(',').map((x) => x.trim()).filter((x) => x && !/^type\s/.test(x)).map((x) => x.split(/\s+as\s+/)[0].trim()) : [];
+      const head = c.replace(/\{[^}]*\}/, '').replace(/,/g, ' ').trim();
+      if (/\*/.test(head)) names.push('*');
+      else if (head && head !== '{}') names.push('default');
+      for (const name of names) out.push({ name, from: to });
     }
   };
   for (const m of t.matchAll(/\b(?:import|export)\s+([^;'"`]*?)\s*\bfrom\s*['"]([^'"\n]+)['"]/g)) take(m[2], m[1]);
-  for (const m of t.matchAll(/\brequire\(\s*['"]([^'"\n]+)['"]\s*\)/g)) take(m[1], null);
+  for (const m of t.matchAll(/\brequire\(\s*(['"`])([^'"`$\n]+)\1\s*\)/g)) take(m[2], null);
+  for (const spec of lazyImports(t)) take(spec, null);
+  return out;
+}
+/** The start routes `t` takes by value: every name from takenFrom that is not on its file's route-free list. */
+function routeImports(fs: Files, f: string, t: string): string[] {
+  return takenFrom(fs, f, t)
+    .filter(({ name, from }) => !Object.hasOwn(ROUTE_FREE_EXPORTS[from], name))
+    .map(({ name, from }) => `${name === '*' ? 'the whole module' : name} from ${from}`);
+}
+/** The value names a file exports (declarations and `export { }` lists; types carry no route and are left out). */
+function exportedValues(t: string): Set<string> {
+  const out = new Set<string>();
+  for (const m of t.matchAll(/\bexport\s+(?:default\s+)?(?:async\s+)?(?:const|let|var|function\*?|class|enum)\s+([A-Za-z_$][\w$]*)/g)) out.add(m[1]);
+  for (const m of t.matchAll(/\bexport\s*\{([^}]*)\}/g)) for (const x of m[1].split(',')) if (x.trim() && !/^type\s/.test(x.trim())) out.add(x.trim().split(/\s+as\s+/).pop()!.trim());
+  return out;
+}
+/** Entries on the route-free list that no longer earn their place: no longer exported, or no file but Home and the one entry takes them. */
+function staleRouteFree(fs: Files): string[] {
+  const takers = new Map<string, Set<string>>();
+  for (const [f, t] of fs) {
+    if (f === ONE_ENTRY || f === 'app/(tabs)/index.tsx') continue;
+    for (const { name, from } of takenFrom(fs, f, t)) (takers.get(`${from}#${name}`) ?? takers.set(`${from}#${name}`, new Set()).get(`${from}#${name}`)!).add(f);
+  }
+  const out: string[] = [];
+  for (const [file, names] of Object.entries(ROUTE_FREE_EXPORTS)) {
+    const exported = exportedValues(fs.get(file) ?? '');
+    for (const name of Object.keys(names)) {
+      if (!exported.has(name)) out.push(`${file} no longer exports ${name}`);
+      else if (!takers.has(`${file}#${name}`)) out.push(`no file outside Home takes ${name} from ${file}`);
+    }
+  }
   return out;
 }
 
 /**
- * NS-35-R1 by screen, not by folder: a file that starts a letter (it imports or calls startCapture, takes a start route
- * by value from ROUTE_EXPORTS, or a router call or link in it opens /listen or /write) may be drawn by Home alone. The
+ * NS-35-R1 by screen, not by folder: a file that starts a letter (it imports or calls startCapture, imports a capture
+ * screen, takes a name off ROUTE_FREE_EXPORTS's files that is not on its list, or a router call or link in it opens
+ * /listen or /write; a lazy `import()` counts as an import) may be drawn by Home alone. The
  * screens that draw a file are the files under app/ that reach it through imports, itself included. The capture flow's
  * own replaces are held by startBreaches.
  */
@@ -227,7 +279,7 @@ function renderBreaches(fs: Files): string[] {
   const out: string[] = [];
   for (const [f, t] of fs) {
     if (f === ONE_ENTRY || CAPTURE_FLOW.includes(f)) continue;
-    const starts = by.get(ONE_ENTRY)?.has(f) || /(?<!function )\bstartCapture\(/.test(t) || routeImports(fs, f, t).length > 0 || opensStart(t);
+    const starts = CAPTURE_MODULES.some((m) => by.get(m)?.has(f)) || /(?<!function )\bstartCapture\(/.test(t) || routeImports(fs, f, t).length > 0 || opensStart(t);
     if (!starts) continue;
     const seen = new Set([f]);
     for (const x of seen) for (const i of by.get(x) ?? []) seen.add(i);
@@ -401,6 +453,13 @@ describe('[NS-35-R1] only Home starts', () => {
     // And it sees who takes a start route by value today: the one entry and Home, and no one else.
     const takers = [...files].filter(([f, t]) => routeImports(files, f, t).length > 0).map(([f]) => f).sort();
     expect(takers).toEqual(['app/(tabs)/index.tsx', ONE_ENTRY]);
+  });
+
+  it('[NS-35-R1] the route-free list is closed and current: every name on it is still exported by its file and taken outside Home', () => {
+    expect(staleRouteFree(files)).toEqual([]);
+    // The reader sees the files' real exports, so a stale entry is what it would report.
+    expect(exportedValues(src('lib/capture/start-capture.logic.ts'))).toEqual(new Set(['HOME_CAPTURE_SOURCES', 'CAPTURE_DOORWAYS', 'CAPTURE_SOURCES', 'CAPTURE_ROUTES', 'isCaptureSource', 'isCaptureDoorway', 'planCapture']));
+    expect(exportedValues(src('components/tonight/draft-card.logic.ts'))).toContain('draftCard');
   });
 
   it('[NS-35-R1] the doorway sources in the closed list start nothing until their handlers are built', () => {
@@ -614,8 +673,60 @@ describe('each scanner fails on a planted breach', () => {
       ['lib/quick/index.ts', code("export { CAPTURE_ROUTES as routes } from '../capture/start-capture.logic';")],
     ]);
     expect(renderBreaches(barrel)).toEqual(['app/(tabs)/book.tsx draws lib/quick/index.ts, which starts a letter']);
-    // As Family and tab-jobs.ts take from these files today: a type, a doorway list, a dateline.
-    expect(renderBreaches(plant('app/family.tsx', `import { type CapturePlan, CAPTURE_DOORWAYS } from '@/lib/capture/start-capture.logic';\nimport type { DraftCard } from '@/components/tonight/draft-card.logic';\n${family}`))).toEqual([]);
+    // As Family and tab-jobs.ts take from these files today: a type, a listed source list, a dateline.
+    expect(renderBreaches(plant('app/family.tsx', `import { type CapturePlan, HOME_CAPTURE_SOURCES } from '@/lib/capture/start-capture.logic';\nimport type { DraftCard } from '@/components/tonight/draft-card.logic';\n${family}`))).toEqual([]);
+    // An export that is not on the list counts, even one that holds no route today (CAPTURE_DOORWAYS): the list is closed.
+    expect(renderBreaches(plant('app/family.tsx', `import { CAPTURE_DOORWAYS } from '@/lib/capture/start-capture.logic';\n${family}`))).toEqual(['app/family.tsx draws app/family.tsx, which starts a letter']);
+  });
+
+  // The route-free list is closed: what is not on it is a start, and what is on it must still be real.
+  it('[NS-35-R1] fixture: a new export that carries a route is a start until it is listed, from either file', () => {
+    const card = src('components/tonight/draft-card.logic.ts');
+    const resume = new Map([
+      ...plant('components/tonight/draft-card.logic.ts', `${card}\nexport const resumeRoute = (d: DraftFields): DraftRoute => draftCard(d).route;`),
+      ['app/family.tsx', code(`import { resumeRoute } from '@/components/tonight/draft-card.logic';\n${src('app/family.tsx')}\nconst open = (d: DraftFields) => router.push(resumeRoute(d));`)],
+    ]);
+    expect(renderBreaches(resume)).toEqual(['app/family.tsx draws app/family.tsx, which starts a letter']);
+    const listen = new Map([
+      ...plant('lib/capture/start-capture.logic.ts', `${src('lib/capture/start-capture.logic.ts')}\nexport const LISTEN_ROUTE = CAPTURE_ROUTES[0];`),
+      ['app/(tabs)/book.tsx', code(`import { LISTEN_ROUTE } from '@/lib/capture/start-capture.logic';\n${src('app/(tabs)/book.tsx')}\nconst go = () => router.push(LISTEN_ROUTE);`)],
+    ]);
+    expect(renderBreaches(listen)).toEqual(['app/(tabs)/book.tsx draws app/(tabs)/book.tsx, which starts a letter']);
+  });
+
+  it('[NS-35-R1] fixture: a renamed export is a start under its new name, and a renamed listed name goes stale', () => {
+    const logic = src('lib/capture/start-capture.logic.ts');
+    const renamed = new Map([
+      ...plant('lib/capture/start-capture.logic.ts', logic.replace(/\bCAPTURE_ROUTES\b/g, 'START_ROUTES')),
+      ['app/(tabs)/book.tsx', code(`import { START_ROUTES } from '@/lib/capture/start-capture.logic';\n${src('app/(tabs)/book.tsx')}\nconst go = () => router.push(START_ROUTES[0]);`)],
+    ]);
+    expect(renderBreaches(renamed)).toEqual(['app/(tabs)/book.tsx draws app/(tabs)/book.tsx, which starts a letter']);
+    // tonightDateline renamed at its source and at Family: the old entry is stale, and the new name is a start.
+    const card = src('components/tonight/draft-card.logic.ts');
+    const dateline = new Map([
+      ...plant('components/tonight/draft-card.logic.ts', card.replace(/\btonightDateline\b/g, 'tonightLine')),
+      ['app/family.tsx', code(src('app/family.tsx').replace(/\btonightDateline\b/g, 'tonightLine'))],
+      ['app/(tabs)/index.tsx', code(src('app/(tabs)/index.tsx').replace(/\btonightDateline\b/g, 'tonightLine'))],
+    ]);
+    expect(staleRouteFree(dateline)).toEqual(['components/tonight/draft-card.logic.ts no longer exports tonightDateline']);
+    expect(renderBreaches(dateline)).toEqual(['app/family.tsx draws app/family.tsx, which starts a letter']);
+    // A listed name that only Home still takes is stale too: the entry clears no one.
+    const unused = plant('app/review.tsx', src('app/review.tsx').replace(/import \{ clockOf \} from '@\/components\/tonight\/draft-card\.logic';/, ''));
+    expect(staleRouteFree(unused)).toEqual(['no file outside Home takes clockOf from components/tonight/draft-card.logic.ts']);
+  });
+
+  it('[NS-35-R1] fixture: a lazy import() of a route file, the one entry or a capture screen is a start', () => {
+    const book = src('app/(tabs)/book.tsx');
+    const whole = plant('app/(tabs)/book.tsx', `${book}\nexport const go = async () => { const m = await import('@/lib/capture/start-capture.logic'); router.push(m.CAPTURE_ROUTES[0]); };`);
+    expect(renderBreaches(whole)).toEqual(['app/(tabs)/book.tsx draws app/(tabs)/book.tsx, which starts a letter']);
+    const plan = plant('app/family.tsx', `${src('app/family.tsx')}\nconst go = async () => { const { planCapture } = await import('../lib/capture/start-capture.logic'); const p = planCapture({ source: 'speak' }); if (p.kind === 'route') router.push(p.pathname); };`);
+    expect(renderBreaches(plan)).toEqual(['app/family.tsx draws app/family.tsx, which starts a letter']);
+    const entry = plant('app/(tabs)/book.tsx', `${book}\nconst go = () => void import('@/lib/capture/start-capture').then((m) => m.startCapture);`);
+    expect(renderBreaches(entry)).toEqual(['app/(tabs)/book.tsx draws app/(tabs)/book.tsx, which starts a letter']);
+    const screen = plant('app/(tabs)/book.tsx', `${book}\nconst Listen = lazy(() => import('../listen'));`);
+    expect(renderBreaches(screen)).toEqual(['app/(tabs)/book.tsx draws app/(tabs)/book.tsx, which starts a letter']);
+    // A lazy import of a route-free module, or a type written with typeof import(), starts nothing.
+    expect(renderBreaches(plant('app/family.tsx', `${src('app/family.tsx')}\ntype P = typeof import('@/lib/capture/start-capture.logic');\nconst j = () => void import('@/lib/nav/tab-jobs');`))).toEqual([]);
   });
 
   it('[NS-35-R3] fixture: a notification tap handler that starts a capture is caught', () => {
