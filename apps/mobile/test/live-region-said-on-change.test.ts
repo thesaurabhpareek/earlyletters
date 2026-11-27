@@ -5,7 +5,8 @@
  * useSaidOnChange (lib/said-on-change.ts): on the change, not on a later render, and not when the screen first opens
  * on it (a live region reads a change, not what is there when it is drawn). StateScreen says only a change of a state
  * already showing, because its callers say their own arrival (useArrival, open-deletion) and a second call would say
- * their titles twice. Each test counts the words spoken, not only that announce() ran. The hook and StateScreenView are
+ * their titles twice; a caller that says its own in-place changes passes `callerSpeaks` (live-region-caller-speaks.test.ts).
+ * Each test counts the words spoken, not only that announce() ran. The hook and StateScreenView are
  * run on the small stand-in for React's hooks, with native modules mocked; the letter page needs a phone to render, so
  * its three live regions are pinned in the source. Whether VoiceOver says it, and when, is a device check.
  * Fictional family "Asha" only.
@@ -113,18 +114,20 @@ describe('[PER4-018] a state screen says an in-place change of a polite state on
     expect(h.spoken).toEqual([]);
   });
 
-  it('[PER4-018] InlineState is wired the same way, with its spoken name when it has one', () => {
+  it('[PER4-018] InlineState is wired the same way, with its spoken name when it has one; `callerSpeaks` silences both', () => {
     const src = code('components/ui/state-screen.tsx');
-    expect(src).toContain("useSaidOnChange(stateSpoken(kind, o), (line) => announce(line), { fromNothing: false })");
-    expect(src).toContain('useStateSaid(kind, { title, body });');
-    expect(src).toContain('useStateSaid(kind, { title, body, label: accessibilityLabel });');
+    expect(src).toContain("useSaidOnChange(callerSpeaks ? null : stateSpoken(kind, o), (line) => announce(line), { fromNothing: false })");
+    expect(src).toContain('useStateSaid(kind, { title, body }, callerSpeaks);');
+    expect(src).toContain('useStateSaid(kind, { title, body, label: accessibilityLabel }, callerSpeaks);');
     expect(code('components/ui/state-screen.logic.ts')).not.toMatch(/accessibilityLiveRegion/);
   });
 });
 
-describe('[PER4-018] the letter page says each of its three live lines once, the same words the region shows', () => {
+describe('[PER4-018] the letter page says each of its three live lines once: the words the region shows, or for a moving download its phase', () => {
   const page = code('app/letter/[id].tsx');
 
+  // The region shows "Getting ready, n%" while a download moves; VoiceOver is told the phase once ("Downloading", the
+  // line below 1%), as Settings > Storage does, and not each percent.
   it('[PER4-018] the words card says its reason as a phase, not each percent', () => {
     expect(page).toContain('const reason = reasonAt(progress);');
     expect(page).toContain('useSaidOnChange(reasonAt(progress === null ? null : 0), (line) => announce(line));');
@@ -139,7 +142,9 @@ describe('[PER4-018] the letter page says each of its three live lines once, the
   it('[PER4-018] "Words are ready" is said by the page when the card appears, from the same condition that draws it', () => {
     expect(page).toContain("const readItBack = editable && words === 'words' && (unread || !!entry.wordsUnreviewed);");
     expect(page).toContain('useSaidOnChange(readItBack ? wordsCopy.waiting.readyBody : null, (line) => announce(line));');
-    expect(page).toContain("{editable && words === 'words' && (unread || entry.wordsUnreviewed) && (\n          <ReadItBackCard");
+    // The card is drawn on the same three terms (spacing and line breaks free, so a formatter pass keeps this green).
+    expect(page).toMatch(/\{\s*editable\s*&&\s*words\s*===\s*'words'\s*&&\s*\(\s*unread\s*\|\|\s*(?:!!\s*)?entry\.wordsUnreviewed\s*\)\s*&&\s*\(\s*<ReadItBackCard\b/);
+    expect(page.match(/<ReadItBackCard\b/g)).toHaveLength(1);
     expect(page).toMatch(/testID="letter\.readItBack">\s*<Text variant="headline">\{w\.readyBody\}<\/Text>/);
     // One call each: the cards themselves say nothing, so no line is said twice.
     expect(page.match(/useSaidOnChange\(/g)).toHaveLength(3);

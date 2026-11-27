@@ -65,6 +65,7 @@ export function OpenDeletionScreen({ request }: { request: OpenRequest }) {
   // VoiceOver is told what changed: the screen becoming the "your letters are on their way back" state, and a failed
   // cancel (a live region alone is not spoken on iOS). The cancel on its way and a Try again that found nothing are
   // spoken by the controller (say). Android: announce() does nothing there (lib/a11y.ts), so those lines also go to the live-region node below.
+  // StateScreen's own in-place line is off (`callerSpeaks`), so none of these is said twice.
   const before = useRef(request.state);
   useEffect(() => {
     if (before.current !== 'cancelled' && request.state === 'cancelled') ctl.say(`${c.open.restoringTitle}. ${c.open.restoringBody}`);
@@ -90,6 +91,7 @@ export function OpenDeletionScreen({ request }: { request: OpenRequest }) {
   return (
     <View className="flex-1">
       <StateScreen
+        callerSpeaks
         kind={failure ? 'error' : 'empty'}
         art="page"
         title={view.title}

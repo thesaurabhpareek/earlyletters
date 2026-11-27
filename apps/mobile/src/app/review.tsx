@@ -71,6 +71,7 @@ import { settleDraft, settleForKeep } from '@/components/capture/review-settle.l
 import { LetterSheet } from '@/components/capture/letter-sheet';
 import { SavedMoment } from '@/components/capture/saved-moment';
 import { Transcript } from '@/components/capture/transcript';
+import { useWordsSaid } from '@/components/capture/use-words-said';
 import { monthFor } from '@/components/book/chapters';
 import { entryDateline, entryDatelineA11y } from '@/components/book/date-change.logic';
 import { DateSheet } from '@/components/book/date-sheet';
@@ -1414,42 +1415,16 @@ const WORDS_TEST_ID: Record<WordsAction, string> = {
  * its drawing still. One primary, at most one quiet action (components/capture/words-state.logic.ts).
  */
 function WordsStatus({ card, size, lengthMs, run }: { card: WordsCard; size: string; lengthMs: number | null; run: Record<WordsAction, () => void> }) {
-  // VoiceOver ignores live regions on iOS, so the state is said aloud: the card's own title (never the letter's words)
-  // once Review has dissolved in (VoiceOver's focus lands on "Hear it", not on the card), again on each change of state,
-  // and the longer-than-usual line when it appears (TDD 09 V1, BL-399).
-  const said = useRef<{ state: string; later: boolean } | null>(null);
-  const title = useRef(card.title);
-  title.current = card.title;
-  const first = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(
-    () => () => {
-      if (first.current) clearTimeout(first.current);
-    },
-    [],
-  );
-  useEffect(() => {
-    const now = { state: card.state, later: card.state === 'writing' && card.primary === 'keep' };
-    const before = said.current;
-    said.current = now;
-    if (!before) {
-      first.current = setTimeout(() => {
-        first.current = null;
-        announce(title.current);
-      }, tokens.motion.route.dissolveMs);
-      return;
-    }
-    if (before.state !== now.state) {
-      if (first.current) clearTimeout(first.current);
-      first.current = null;
-      announce(card.title);
-    } else if (!before.later && now.later) announce(card.body ?? card.title);
-  }, [card.state, card.primary, card.quiet, card.title]);
+  // VoiceOver is told the card's state once Review has dissolved in, on each change of state and when the longer line
+  // appears; never on each part (use-words-said.ts). The card itself says nothing of its own (`callerSpeaks`).
+  useWordsSaid(card);
   const action = (a: WordsAction | null) => (a ? { label: wordsActionLabel(a, size), onPress: run[a], testID: WORDS_TEST_ID[a] } : undefined);
   const primary = action(card.primary);
   const quiet = action(card.quiet);
   const length = card.state === 'writing' ? clockOf(lengthMs) : null;
   return (
     <InlineState
+      callerSpeaks
       kind={card.kind}
       art={card.art}
       still={card.still}
