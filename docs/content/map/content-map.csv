@@ -1166,7 +1166,7 @@ features/auth.en.ts#authCopy.account.signOutBody,app screen,in-app,packages/cont
 features/auth.en.ts#authCopy.account.signOutWaiting,app screen,in-app,packages/content/src/features/auth.en.ts,en,Your newest letters are still on their way. This phone signs out once they are sent.,84,,,,,,content,live on develop,content
 features/auth.en.ts#authCopy.account.signOutRevokedWaiting,app screen,in-app,packages/content/src/features/auth.en.ts,en,"Your newest letters are still on this phone. They're sent first, then this phone signs out.",91,,,,,,content,live on develop,content
 features/auth.en.ts#authCopy.account.staySignedIn,app screen,in-app,packages/content/src/features/auth.en.ts,en,Stay signed in,14,,,,,,content,live on develop,content
-features/auth.en.ts#authCopy.account.signOutEarly,app screen,in-app,packages/content/src/features/auth.en.ts,en,Your newest letters are kept on this phone. They are sent the next time you sign in to this account.,100,,,,,,content,live on develop,content
+features/auth.en.ts#authCopy.account.signOutEarly,app screen,in-app,packages/content/src/features/auth.en.ts,en,Your newest letters are kept on this phone. They're sent once you sign in to this account and Sync is on.,105,,,,,,content,live on develop,content
 features/auth.en.ts#authCopy.account.cancel,app screen,in-app,packages/content/src/features/auth.en.ts,en,Cancel,6,,,,,,content,live on develop,content
 features/backup.en.ts#backupCopy.title,app screen,in-app,packages/content/src/features/backup.en.ts,en,Back up my recordings,21,,,,,,content,live on develop,content
 features/backup.en.ts#backupCopy.rowOn,app screen,in-app,packages/content/src/features/backup.en.ts,en,On,2,,,,,,content,live on develop,content

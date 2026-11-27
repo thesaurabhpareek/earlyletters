@@ -340,7 +340,8 @@ export const authCopy = {
     // BL-451: while that wait runs, for a sign-out the person asked for: back to signed in, nothing deleted or sent.
     staySignedIn: 'Stay signed in',
     // BL-451: on the signed-out page when the wait ended before they were sent (sync turned off, or the session lost).
-    signOutEarly: 'Your newest letters are kept on this phone. They are sent the next time you sign in to this account.',
+    // CDesO-65: true in both early ends; the queued letters go once there is a session for this account and the Sync row is on.
+    signOutEarly: "Your newest letters are kept on this phone. They're sent once you sign in to this account and Sync is on.",
     cancel: 'Cancel',
   },
 } as const;

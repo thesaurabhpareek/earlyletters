@@ -1498,7 +1498,7 @@ Leaving must be as clear as joining. Sign-out keeps the book on the phone, becau
 |---|---|---|
 | Sign out offline | Signed out on the phone at once (the Keychain is cleared); the server session may stay alive until it expires (security G15) | Book stays |
 | Sign out with letters still sending, sync able to run | The waiting line; signs out when they are sent; "Stay signed in" cancels | Nothing lost |
-| Sign out while sync cannot run (declined, consent outstanding) | "Your newest letters are kept on this phone. They are sent the next time you sign in to this account." (`signOutEarly`) | Kept on the phone |
+| Sign out while sync cannot run (declined, consent outstanding) | "Your newest letters are kept on this phone. They're sent once you sign in to this account and Sync is on." (`signOutEarly`) | Kept on the phone |
 | Session ended elsewhere (Sign out other devices on another phone; refresh token rejected; account's tokens revoked) | Once, in Me: "You were signed out. Sign in again to carry on." (`session_expired`); Home unchanged | Book stays (D1) |
 | Founder raises `forceReauthEpoch` | After queued letters are sent, signed out once per new number; the same line | Book stays |
 | Apple's link revoked in iOS Settings | Detected at launch (and on foreground, O-18); signed out after uploads; cannot be cancelled by "Stay signed in"; the same line | Book stays |

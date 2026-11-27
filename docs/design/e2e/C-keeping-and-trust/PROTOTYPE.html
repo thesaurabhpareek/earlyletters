@@ -330,7 +330,7 @@ def('C-S02','Account',['default','waiting','offline','signedOutEarly'],(s)=>{
   b += section('Devices',[row('Sign out other devices',{sub:s==='offline'?'Needs a connection.':''})],'Other phones signed in to this account will need to sign in again.');
   if(s==='waiting') b += section('',[row('Your newest letters are still on their way. This phone signs out once they are sent.'),row('Sign out now',{go:'C-S01:signedout'})]);
   else b += section('',[row('<span style="color:var(--accent)">Sign out</span>',{go:'C-S03:default',nochev:true})]);
-  if(s==='signedOutEarly') b = nav('Account','C-S01:signedout')+p('Your newest letters are kept on this phone. They are sent the next time you sign in to this account.');
+  if(s==='signedOutEarly') b = nav('Account','C-S01:signedout')+p('Your newest letters are kept on this phone. They\'re sent once you sign in to this account and Sync is on.');
   return frame(b,{offline:s==='offline'});
 },(s)=>['Back','Account, title','Signed in with Apple','Sync','Devices, heading','Sign out other devices', s==='waiting'?'Waiting line, then Sign out now':'Sign out']);
 
