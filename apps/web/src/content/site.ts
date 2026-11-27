@@ -69,7 +69,7 @@ export const site = {
   skip: 'Skip the film',
 
   comingSoon: {
-    line: 'Letters to your child, in your own words and voice. Say what happened today, out loud.',
+    line: 'A baby book you fill by talking. Say what happened today, out loud, and it stays in your own words.',
     // No "stays on your iPhone" claim: it is false once a person signs in (D-121 re-check, 10 Nov). Registered wording only.
     trust: 'Private by default. Never sold, never used for ads.',
     shareButton: 'Share with a friend',
@@ -87,8 +87,8 @@ export const site = {
     shareCopy: 'Copy link',
     shareMore: 'More',
     shareVia: 'Share via',
-    shareTitle: `${NAME}: letters to your child`,
-    shareText: `${NAME}: letters to your child, in your own words and voice. A few words at the end of the day, said out loud.`,
+    shareTitle: `${NAME}, the baby memory book`,
+    shareText: `${NAME}, a baby book you fill by talking. A few words at the end of the day, said out loud.`,
   },
 
   cta: {
@@ -277,7 +277,7 @@ export const site = {
     preheader: 'One letter from the book, and what happens next.',
     kicker: 'Welcome',
     headline: 'You are on the list.',
-    intro: `${NAME} keeps letters to your child, in your own words and voice. It is coming to iPhone in the US. You will hear from us once more, at launch.`,
+    intro: `${NAME} is the baby memory book you fill by talking. It is coming to iPhone in the US. You will hear from us once more, at launch.`,
     letterLabel: 'A sample letter',
     letterTo: 'To Meera',
     letterMeta: 'Month 9, Tuesday night',

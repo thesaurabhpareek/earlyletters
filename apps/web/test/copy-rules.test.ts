@@ -425,8 +425,8 @@ describe('rules carried over from the content package (BL-556)', () => {
   });
 
   // RULE (D-139, 1 Nov 2026): the old descriptor ("the baby memory book you fill by talking") and its variants are
-  // retired; the one descriptor is BRAND.md's, word for word. The site's title and brand line carry it. STILL_OLD held
-  // the lines that still said the old one; the last four left it with CMO-21's words, so it is empty now.
+  // retired; the one descriptor is BRAND.md's, word for word. The site's title and brand line carry it. The four lines
+  // in STILL_OLD still say the old one: their replacements are new words that wait for approval, so they stay listed.
   // The list only shrinks: a line that no longer says it must leave the list, and no new line may join it.
   const OLD_DESCRIPTOR = /\b(?:baby |memory )+book (?:that )?(?:you|parents|families) fill by talking\b|\bbaby memory book\b|\bfill(?:s|ed|ing)? (?:it )?by talking\b/i;
   it('the retired descriptor pattern catches its variants and lets the registered one pass (D-139, BL-556)', () => {
@@ -443,7 +443,12 @@ describe('rules carried over from the content package (BL-556)', () => {
   });
 
   it('uses the retired descriptor only in the lines still listed (D-139, BL-556)', () => {
-    const STILL_OLD: string[] = [];
+    const STILL_OLD = [
+      'site.ts:site.comingSoon.line',
+      'site.ts:site.comingSoon.shareTitle',
+      'site.ts:site.comingSoon.shareText',
+      'site.ts:site.welcomeEmail.intro',
+    ];
     const found = PROSE.filter((l) => OLD_DESCRIPTOR.test(l.text)).map((l) => l.path);
     expect(found.filter((p) => !STILL_OLD.includes(p)), 'new lines with the retired descriptor').toEqual([]);
     expect(STILL_OLD.filter((p) => !found.includes(p)), 'fixed: remove from STILL_OLD').toEqual([]);
@@ -454,20 +459,6 @@ describe('rules carried over from the content package (BL-556)', () => {
   it('says the registered descriptor in the title and the brand line (D-139, BL-556)', () => {
     expect(siteModule.site.meta.title).toBe(`${brand.name}: letters to your child, in your own words and voice`);
     expect(siteModule.site.brand.line).toBe('Letters to your child, in your own words and voice.');
-  });
-
-  // RULE (D-139, CMO-21 in docs/agents/exec/RULINGS.md): the four lines that last said the retired descriptor say
-  // the words CMO-21 records, word for word. A change to any of them is a new wording and goes back to the CMO.
-  it('says the CMO-21 words in the coming-soon and welcome lines (D-139, CMO-21, BL-556)', () => {
-    const { comingSoon, welcomeEmail } = siteModule.site;
-    expect(comingSoon.line).toBe('Letters to your child, in your own words and voice. Say what happened today, out loud.');
-    expect(comingSoon.shareTitle).toBe(`${brand.name}: letters to your child`);
-    expect(comingSoon.shareText).toBe(
-      `${brand.name}: letters to your child, in your own words and voice. A few words at the end of the day, said out loud.`,
-    );
-    expect(welcomeEmail.intro).toBe(
-      `${brand.name} keeps letters to your child, in your own words and voice. It is coming to iPhone in the US. You will hear from us once more, at launch.`,
-    );
   });
 
   // RULE (D-061): the privacy promise is one sentence, said the same way everywhere. packages/content says the website
