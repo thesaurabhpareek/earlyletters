@@ -1007,8 +1007,8 @@ export const en = {
       back: "Keep everything",
       // The Erasing screen (StateScreen loading), with no way out until the erase ends. Titles take no full stop.
       busy: "Erasing",
-      // Announced as the app returns to the start.
-      doneA11y: "Everything on this phone is erased.",
+      // Announced as the app returns to the start. Names only what was erased (BL-777, CPrivO-20, PROPOSED; D-144).
+      doneA11y: "Your books, letters, recordings and settings are erased from this phone.",
       // A file would not go: the rows stay and the mark stays. Erase everything again finishes it now; the next launch
       // finishes it too, and it erases every row then present, so a letter added in between goes as well
       // (store.ts eraseEverythingLocal, lib/erase-everything.ts resumeEraseAtLaunch; pinned in erase-all.test.ts).
