@@ -153,3 +153,67 @@ Deno.test('[FR-BKO-21] secrets: inherit fails in any workflow, and running the C
   const cli = ['on: push', 'jobs:', '  helper:', '    runs-on: ubuntu-24.04', '    steps:', '      - run: npx -y @anthropic-ai/claude-code -p hi', '        env:', '          K: ${{ secrets.EXPO_TOKEN }}', ''].join('\n');
   assert.deepEqual(scanWorkflow('x.yml', cli), [{ file: 'x.yml', job: 'helper', rule: 'agent-allowlist', secret: 'EXPO_TOKEN' }]);
 });
+
+/** A deploy job behind an environment, then the given lines as more jobs: the shape a key could hide in. */
+const afterDeploy = (...more: string[]) =>
+  ['on: workflow_dispatch', 'jobs:', '  deploy:', '    runs-on: ubuntu-24.04', '    environment: db-production', '    steps:', '      - run: echo', ...more, ''].join('\n');
+
+Deno.test('[FR-BKO-21] a quoted or flow-style job key, and any YAML anchor or alias, is reported as unparsed', () => {
+  const leaks = [
+    afterDeploy("  'leak':", '    runs-on: ubuntu-24.04', '    steps:', '      - run: echo ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}'),
+    afterDeploy('  "leak":', '    runs-on: ubuntu-24.04'),
+    afterDeploy('  leak: { runs-on: u, steps: [ { run: "echo ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" } ] }'),
+    afterDeploy(' leak:', '    runs-on: ubuntu-24.04'),
+    afterDeploy('    env: &k', '      K: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}', '  leak:', '    runs-on: ubuntu-24.04', '    env: *k'),
+    afterDeploy('  leak:', '    runs-on: ubuntu-24.04', '    env:', '      <<: *k'),
+  ];
+  for (const wf of leaks) assert.ok(scanWorkflow('x.yml', wf).some((f) => f.rule === 'unparsed'), wf);
+  assert.deepEqual(scanWorkflow('x.yml', afterDeploy('  check:  # a comment', '    runs-on: ubuntu-24.04')), []);
+});
+
+Deno.test('[FR-BKO-21] secrets.*, a quoted inherit and a dot with spaces hand out or read secrets and fail', () => {
+  for (const line of ["ALL: ${{ toJSON(secrets.*) }}", "ALL: ${{ join(secrets.*, ' ') }}", 'ALL: ${{ toJSON( secrets ) }}']) {
+    assert.ok(scanWorkflow('agents.yml', plant(AGENTS, 'run', line)).some((f) => f.rule === 'all-secrets'), line);
+  }
+  for (const line of ["secrets: 'inherit'", 'secrets: "inherit"', '"secrets": inherit']) {
+    const wf = ['on: push', 'jobs:', '  call:', '    uses: ./.github/workflows/deploy-db.yml', `    ${line}`, ''].join('\n');
+    assert.ok(scanWorkflow('x.yml', wf).some((f) => f.rule === 'all-secrets'), line);
+  }
+  assert.deepEqual(scanWorkflow('agents.yml', plant(AGENTS, 'run', 'X: ${{ secrets . EL_SIGNING_KEY }}')), [
+    { file: 'agents.yml', job: 'run', rule: 'agent-allowlist', secret: 'EL_SIGNING_KEY' },
+  ]);
+  assert.deepEqual(scanWorkflow('claude.yml', read('claude.yml')), [], 'prose such as "secrets. Each" in a comment is not a read');
+});
+
+Deno.test('[FR-BKO-21] PROD anywhere in a name, account tokens and database URLs have production power', () => {
+  const wf = (name: string) => ['on: workflow_dispatch', 'jobs:', '  push:', '    runs-on: ubuntu-24.04', '    steps:', '      - run: echo', '        env:', `          K: \${{ secrets.${name} }}`, ''].join('\n');
+  for (const name of ['EXPO_PROD_TOKEN', 'SUPABASE_PROD_DB_URL', 'PROD', 'SUPABASE_ACCESS_TOKEN', 'SUPABASE_DB_URL', 'VERCEL_TOKEN', 'OP_CONNECT_TOKEN']) {
+    assert.equal(scanWorkflow('deploy.yml', wf(name)).length, 1, name);
+  }
+  for (const name of ['EXPO_TOKEN', 'PRODUCT_NAME_HINT']) assert.deepEqual(scanWorkflow('deploy.yml', wf(name)), [], name);
+});
+
+Deno.test('[FR-BKO-21] an empty, null or computed environment is no environment', () => {
+  const wf = (env: string) =>
+    ['on: workflow_dispatch', 'jobs:', '  push:', '    runs-on: ubuntu-24.04', env, '    steps:', '      - run: echo', '        env:', '          K: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}', ''].join('\n');
+  for (const env of ["    environment: ''", '    environment: ~', '    environment: null', '    environment: {}', "    environment: ${{ '' }}", '    environment:\n      name: ""']) {
+    assert.equal(scanWorkflow('deploy.yml', wf(env)).length, 1, env);
+  }
+  for (const env of ["    environment: 'db-production'", '    environment: db-production  # founder reviews', '    environment:\n      url: https://example.com\n      name: db-production']) {
+    assert.deepEqual(scanWorkflow('deploy.yml', wf(env)), [], env);
+  }
+});
+
+Deno.test('[FR-BKO-21] the base action, the agent SDK and the Claude CLI with flags before -p make a job an agent job', () => {
+  const job = (step: string) =>
+    ['on: push', 'jobs:', '  helper:', '    runs-on: ubuntu-24.04', '    environment: db-production', '    steps:', `      - ${step}`, '        env:', '          K: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}', ''].join('\n');
+  for (const step of [
+    'uses: anthropics/claude-code-base-action@6d5ae526d25ce88daa2200be073e1a373167f064',
+    'run: claude --model opus -p "fix it"',
+    'run: claude --dangerously-skip-permissions --model opus',
+    'run: npm i @anthropic-ai/claude-agent-sdk && node agent.mjs',
+    'run: pip install claude-agent-sdk',
+  ]) {
+    assert.deepEqual(scanWorkflow('x.yml', job(step)), [{ file: 'x.yml', job: 'helper', rule: 'agent-allowlist', secret: 'SUPABASE_SERVICE_ROLE_KEY' }], step);
+  }
+});
