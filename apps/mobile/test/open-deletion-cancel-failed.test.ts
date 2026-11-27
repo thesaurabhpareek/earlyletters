@@ -12,7 +12,9 @@ const h = vi.hoisted(() => ({
   spoken: [] as string[],
   d: {} as {
     signedIn: boolean;
-    error: 'offline' | 'failed' | null;
+    error: 'offline' | 'failed' | 'auth' | null;
+    /** The hook's "outcome unknown" mark (CDesO-64); the older cases here leave it out. */
+    outcomeUnknown?: boolean;
     cancel: () => Promise<boolean>;
     signOut: () => Promise<void>;
     /** The hook's session count and status (use-account-deletion.ts); the older cases here leave them out. */
@@ -239,4 +241,46 @@ describe('[CDesO-59 case 3] a Cancel deletion that finds the request executing m
     const cancelled = { state: 'cancelled' as const, at: '2099-11-19T09:00:00.000Z' };
     expect(shownRequest(cancelled, executing)).toBe(cancelled);
   });
+});
+
+describe('[CDesO-64] an auth refusal after a press whose outcome is unknown, on the deletion screen', () => {
+  for (const unknownBefore of [true, false]) {
+    it(unknownBefore ? 'says the outcome is not known yet, never "Nothing has changed."' : 'with no unknown press before it, keeps "Nothing has changed." (CDesO-59)', async () => {
+      h.d = {
+        signedIn: true,
+        error: null,
+        session: 0,
+        outcomeUnknown: false,
+        cancel: async () => {
+          // First press: lost answer (the hook sets the mark) or, in the control case, nothing before the auth refusal.
+          h.d.error = unknownBefore ? 'failed' : 'auth';
+          h.d.outcomeUnknown = unknownBefore;
+          return false;
+        },
+        signOut: async () => undefined,
+      };
+      const r = renderHook(() => OpenDeletionScreen({ request }));
+      shown(r.result.current).primary!.onPress();
+      await settle();
+      r.rerender();
+      // Second press: refused for auth after one refresh. The hook keeps the mark, as an auth refusal reads nothing.
+      h.d.cancel = async () => {
+        h.d.error = 'auth';
+        return false;
+      };
+      shown(r.result.current).primary!.onPress();
+      await settle();
+      r.rerender();
+
+      const after = shown(r.result.current);
+      expect(after.kind).toBe('error');
+      if (unknownBefore) {
+        expect(after.body).toContain(c.errors.cancelFailed);
+        expect(after.body).not.toMatch(/nothing has changed/i);
+      } else {
+        expect(after.body).toContain(c.errors.failed);
+        expect(after.body).not.toContain(c.errors.cancelFailed);
+      }
+    });
+  }
 });
