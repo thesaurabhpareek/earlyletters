@@ -1,0 +1,172 @@
+/// <reference types="node" />
+/**
+ * [BL-528][LEGAL-REQ-034] An offline export carries this phone's copy of the consent record (council ruling CPrivO-21).
+ * After a full signed-in read the phone keeps the person's own rows, in the shapes the export already writes, with
+ * when they were read. An export that cannot read the server then holds that record and says when it was read. A copy
+ * for another account is never used, no copy keeps `unavailable`, and a failed or partial read never replaces a good
+ * copy. Each delete path (sign-out, the account-deletion request, Erase everything) has a test that fails without it.
+ * Fictional family "Asha" only (CLAUDE.md).
+ */
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { CONSENT_COPY_KEY, consentFromCopy, encodeConsentCopy, readServerRecordsWithCopy, type ConsentCopyStore } from '../src/lib/export/consent-copy.logic';
+import type { ReadOptions, ReadResult, ServerRecordsReader } from '../src/lib/export/server-records.logic';
+import { removeEverything } from '../src/lib/db/repos/wipe';
+import { nodeDb } from './helpers/node-db';
+
+const h = vi.hoisted(() => ({ settings: new Map<string, string>(), calls: [] as string[] }));
+vi.mock('@/lib/store', () => ({ getSetting: (k: string) => h.settings.get(k) ?? null, setSetting: (k: string, v: string) => void h.settings.set(k, v), deleteSetting: (k: string) => void h.settings.delete(k) }));
+vi.mock('../src/lib/auth/apple', () => ({ forgetAppleUser: async () => void h.calls.push('apple') }));
+vi.mock('../src/lib/auth/pending', () => ({ clearPendingEmailRequest: async () => void h.calls.push('pending') }));
+
+import { deviceConsentCopy } from '../src/lib/export/consent-copy';
+import { forgetSignOutLeftovers } from '../src/lib/auth/sign-out-leftovers';
+
+const ASHA_MAMA = 'user-asha-mama';
+const ASHA_PAPA = 'user-asha-papa';
+const HASH = 'cd'.repeat(32);
+const READ_AT = '2027-03-01T09:00:00.000Z';
+const LATER = '2027-03-15T10:00:00.000Z';
+
+const act = (over: Record<string, unknown> = {}) => ({
+  id: 'a1', profile_id: ASHA_MAMA, subject_hash: 'ef'.repeat(32), pseudonymised_at: null, document: 'terms', version: '1.0.0', action: 'accept',
+  method: 'signin_sheet', surface: 'signin.terms', accepted_at: '2027-01-02T00:00:00+00:00', client_recorded_at: '2027-01-01T23:59:58+00:00',
+  app_version: '1.0.0', platform: 'ios', locale: 'en-US', rendered_sha256: `\\x${HASH}`, context: { auth: 'apple', age_attested: true }, ...over,
+});
+const state = [{ document: 'terms', version: '1.0.0', action: 'accept', accepted_at: '2027-01-02T00:00:00+00:00' }];
+const ok = (data: unknown[]): ReadResult => ({ data, error: null });
+const online = (acts: unknown[] = [act()]): ServerRecordsReader => ({
+  acts: async () => ok(acts),
+  state: async () => ok(state),
+  profile: async (_s, uid) => ok([{ id: uid, display_name: 'Asha Mama', signs_as: 'Mama', created_at: '2026-10-01T00:00:00+00:00' }]),
+});
+const down = async (): Promise<ReadResult> => ({ data: null, error: { message: 'Network request failed' } });
+const offline: ServerRecordsReader = { acts: down, state: down, profile: down };
+
+const memoryStore = () => {
+  const s = { value: null as string | null, writes: 0, read: () => s.value, write: (v: string) => void ((s.writes += 1), (s.value = v)) };
+  return s;
+};
+const opts = (over: Partial<ReadOptions> = {}): ReadOptions =>
+  ({ authUserId: ASHA_MAMA, ownerId: ASHA_MAMA, reader: online(), timeoutMs: 200, now: () => new Date(READ_AT), ...over });
+
+beforeEach(() => void (h.settings.clear(), (h.calls.length = 0)));
+
+describe('[BL-528][LEGAL-REQ-034] an offline export after one signed-in read', () => {
+  it('holds the record and says when it was read (the earlier read, not the export time)', async () => {
+    const store = memoryStore();
+    const first = await readServerRecordsWithCopy(opts(), store);
+    expect([first.consent.status, store.writes]).toEqual(['included', 1]);
+    const off = await readServerRecordsWithCopy(opts({ reader: offline, now: () => new Date(LATER) }), store);
+    expect(off.consent).toEqual({ ...first.consent, status: 'included', read_at: READ_AT });
+    expect(off.consent.acts[0]).toMatchObject({ id: 'a1', document: 'terms', rendered_sha256: HASH });
+    expect(off.profile.status).toBe('unavailable'); // the profile is not copied
+  });
+
+  it('a later full read replaces the copy with the newer record and time', async () => {
+    const store = memoryStore();
+    await readServerRecordsWithCopy(opts(), store);
+    await readServerRecordsWithCopy(opts({ reader: online([act(), act({ id: 'a2', accepted_at: '2027-03-10T00:00:00+00:00' })]), now: () => new Date(LATER) }), store);
+    const off = (await readServerRecordsWithCopy(opts({ reader: offline }), store)).consent;
+    expect([off.read_at, off.acts.map((a) => a.id)]).toEqual([LATER, ['a1', 'a2']]);
+  });
+});
+
+describe('[BL-528][LEGAL-REQ-034] no copy, or a copy that is not this account\'s', () => {
+  it('no copy keeps `unavailable`', async () => {
+    const off = await readServerRecordsWithCopy(opts({ reader: offline }), memoryStore());
+    expect(off.consent).toEqual({ status: 'unavailable', read_at: null, current: [], acts: [] });
+  });
+
+  it('a copy read for another account is never used', async () => {
+    const store = memoryStore();
+    await readServerRecordsWithCopy(opts({ authUserId: ASHA_PAPA, ownerId: ASHA_PAPA }), store);
+    expect((await readServerRecordsWithCopy(opts({ reader: offline }), store)).consent).toMatchObject({ status: 'unavailable', acts: [] });
+    expect(consentFromCopy(store.value, ASHA_MAMA)).toBeNull();
+  });
+
+  it('signed out, or another account than the letters\' owner: the copy is neither read nor written', async () => {
+    const store = memoryStore();
+    await readServerRecordsWithCopy(opts(), store);
+    const saved = store.value;
+    let reads = 0;
+    const counting: ConsentCopyStore = { read: () => (reads++, store.value), write: store.write };
+    expect((await readServerRecordsWithCopy(opts({ authUserId: null, reader: offline }), counting)).consent.status).toBe('not_signed_in');
+    expect((await readServerRecordsWithCopy(opts({ authUserId: ASHA_PAPA }), counting)).consent.status).toBe('different_account');
+    expect([reads, store.writes, store.value]).toEqual([0, 1, saved]);
+  });
+
+  it('no store (an account-deletion request is open): an offline export says `unavailable`', async () => {
+    expect((await readServerRecordsWithCopy(opts({ reader: offline }), null)).consent.status).toBe('unavailable');
+    // The app passes no store while the phone's note says a request is open (export/device.ts, read in code).
+    const device = readFileSync(join(__dirname, '..', 'src/lib/export/device.ts'), 'utf8');
+    expect(device).toMatch(/requestOpen = deletionRequestOpen\(readOpenRequest\(\{ get: getSetting \}\), authUserId, Date\.now\(\)\)/);
+    expect(device).toMatch(/readServerRecordsWithCopy\([\s\S]*?\}, requestOpen \? null : deviceConsentCopy\)/);
+  });
+});
+
+describe('[BL-528][LEGAL-REQ-034] a failed or partial read never replaces a good copy', () => {
+  it('an error, a bad row or a short state read leaves the copy as it was, and writes nothing', async () => {
+    const store = memoryStore();
+    await readServerRecordsWithCopy(opts(), store);
+    const good = store.value;
+    const badRow = online([act(), act({ id: 'a3', action: 'shrug' })]);
+    const stateFails: ServerRecordsReader = { ...online(), state: async () => ({ data: null, error: { message: 'boom' } }) };
+    for (const reader of [offline, badRow, stateFails]) {
+      const r = await readServerRecordsWithCopy(opts({ reader, now: () => new Date(LATER) }), store);
+      expect([r.consent.status, r.consent.read_at]).toEqual(['included', READ_AT]);
+    }
+    expect([store.writes, store.value]).toEqual([1, good]);
+    const fresh = memoryStore(); // a first read with a bad row writes nothing at all
+    expect((await readServerRecordsWithCopy(opts({ reader: badRow }), fresh)).consent.status).toBe('unavailable');
+    expect([fresh.writes, fresh.value]).toEqual([0, null]);
+  });
+
+  it('a stored copy with a bad row, the wrong shape or bad JSON is no copy, never a shorter one', () => {
+    const good = JSON.parse(encodeConsentCopy(ASHA_MAMA, { status: 'included', read_at: READ_AT, current: [], acts: [] })!);
+    const withAct = { ...good, acts: [{ id: 'a1', document: 'terms', version: '1.0.0', action: 'accept', method: '', surface: '', at: READ_AT, client_recorded_at: null, app_version: '1.0.0', platform: 'ios', locale: null, rendered_sha256: null, context: {} }] };
+    expect(consentFromCopy(JSON.stringify(withAct), ASHA_MAMA)?.acts).toHaveLength(1);
+    const bad = [{ ...withAct, acts: [...withAct.acts, { ...withAct.acts[0], id: 'a2', action: 'shrug' }] }, { ...good, v: 2 }, { ...good, read_at: 'yesterday' }];
+    for (const raw of [...bad.map((b) => JSON.stringify(b)), '{not json']) expect(consentFromCopy(raw, ASHA_MAMA)).toBeNull();
+  });
+});
+
+describe('[BL-528][CPrivO-21] the stored shape', () => {
+  it('holds only the exported shapes, the account and when: never profile_id, subject_hash or a retention column', async () => {
+    const store = memoryStore();
+    await readServerRecordsWithCopy(opts(), store);
+    const raw = store.value ?? '';
+    for (const banned of ['profile_id', 'subject_hash', 'pseudonymised_at', 'ef'.repeat(32), 'display_name', 'signs_as']) expect(raw).not.toContain(banned);
+    const v = JSON.parse(raw);
+    expect(Object.keys(v).sort()).toEqual(['account_id', 'acts', 'current', 'read_at', 'v']);
+    const exported = (await readServerRecordsWithCopy(opts(), null)).consent;
+    expect(Object.keys(v.acts[0]).sort()).toEqual(Object.keys(exported.acts[0]).sort()); // exactly what account.json carries
+    expect(Object.keys(v.current[0]).sort()).toEqual(['action', 'at', 'document', 'version']);
+    expect([v.account_id, v.read_at]).toEqual([ASHA_MAMA, READ_AT]);
+  });
+
+  it('nothing but a full read is ever encoded', async () => {
+    for (const status of ['unavailable', 'not_signed_in', 'different_account'] as const) expect(encodeConsentCopy(ASHA_MAMA, { status, read_at: null, current: [], acts: [] })).toBeNull();
+  });
+});
+
+describe('[BL-528][CPrivO-21] the copy is deleted', () => {
+  it('on every sign-out: the shared step removes it, with the other leftovers', async () => {
+    deviceConsentCopy.write(encodeConsentCopy(ASHA_MAMA, { status: 'included', read_at: READ_AT, current: [], acts: [] }) ?? '');
+    h.settings.set('child.bornCardHidden.asha', '2026-03-01');
+    expect(h.settings.size).toBe(2);
+    await forgetSignOutLeftovers();
+    expect([...h.settings.keys()]).toEqual(['child.bornCardHidden.asha']);
+    expect(h.calls).toEqual(['apple', 'pending']);
+  });
+
+  it('by Erase everything: every setting goes, the copy with them', () => {
+    const { db, close } = nodeDb();
+    db.exec('CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)');
+    for (const [k, v] of [[CONSENT_COPY_KEY, '{"v":1}'], ['erase.everything.pending', 'x']]) db.run('INSERT INTO settings (key, value) VALUES (?, ?)', k, v);
+    removeEverything({ db } as never);
+    expect(db.all<{ key: string }>('SELECT key FROM settings').map((r) => r.key)).toEqual(['erase.everything.pending']);
+    close();
+  });
+});

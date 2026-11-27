@@ -2,7 +2,8 @@
  * The clock and the one question for "Opening your book" (NX-36-S17 Tier 0; new-phone.logic.ts decides). A phone with a
  * ready, sync-on session and no book asks `readAccountBooks` (bounded at 10 s, fail-safe to `unknown`) EVERY time the
  * route mounts or is retried (Try again keeps the 10 second clock running; a lost answer is re-asked once inside it, BL-978a
- * R11), and never stores the answer, so a kill and relaunch asks again and nothing goes stale.
+ * R11), and again, on a new clock, after an invite is joined on this phone (BL-2159, `accountJoined`). It never stores the
+ * answer, so a kill and relaunch asks again and nothing goes stale.
  * It reads the sync engine's status (phase, lastSyncedAt) and the connection. It sends only the signed-in session, and
  * records nothing: no analytics event, no storage.
  *
@@ -18,7 +19,7 @@ import { getSyncStatus, subscribeSyncStatus, syncNow } from '@/lib/sync';
 import type { SyncStatus } from '@/lib/sync/types';
 import type { AccountKind } from './account-books.logic';
 import { readAccountBooks } from './account-books';
-import { OPENING_WAIT_MS, openingView, retriesOnReconnect, type OpeningView } from './new-phone.logic';
+import { accountJoined, OPENING_WAIT_MS, openingView, retriesOnReconnect, type OpeningView } from './new-phone.logic';
 
 export interface NewPhone {
   /** null: not applicable (no account question to ask), the route behaves as before. */
@@ -99,6 +100,18 @@ export function useNewPhone(o: { enabled: boolean; client: SupabaseClient | null
     if (o.online && !wasOnline.current && active && retriesOnReconnect(kind)) setAttempt((n) => n + 1);
     wasOnline.current = o.online;
   }, [o.online, active, kind]);
+
+  // BL-2159: a join on this phone makes the earlier answer wrong ("no book" from before the accept), so ask again. Unlike Try
+  // again this starts a new 10 second window: the joined book exists only from the accept on, and keeping the first
+  // question's clock would show "taking a while" at once to anyone who read the invite for more than 10 seconds.
+  useEffect(() => {
+    if (!active) return;
+    return accountJoined.subscribe(() => {
+      began.current = null;
+      reasked.current = false;
+      setAttempt((n) => n + 1);
+    });
+  }, [active]);
 
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
   const startBook = useCallback(() => setKind('new'), []);

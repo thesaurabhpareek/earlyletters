@@ -15,7 +15,9 @@
  * - Loading ignores presses without being disabled, so VoiceOver hears "busy", not "dimmed"
  *   (Pressable writes its `disabled` prop over accessibilityState; button.logic.ts). On the web,
  *   aria-busy carries it, since react-native-web does not map accessibilityState.
- * - Heights are minimums: at AX sizes the label wraps and the button grows, never clips.
+ * - Heights are minimums: at AX sizes the label wraps and the button grows, never clips. The pill holds up to
+ *   two lines; from the third the corner is `radius.xl` (button.logic.ts `wrappedLabelRadius`, BL-490), so a tall
+ *   button is not an oval.
  * - Disabled keeps AA text (textMuted on surface 5.11 / 7.65) instead of 40% opacity. A disabled
  *   primary or secondary drops its fill for a 1 pt controlBorder outline (EXPERIENCE_PASS S01).
  * Motion: press scale 0.97 on `snappy`, from press-in (motion/press.ts). Controls never
@@ -29,9 +31,9 @@ import { ActivityIndicator, Platform, View, type PressableProps, type StyleProp,
 import type { Icon as PhosphorIcon } from 'phosphor-react-native';
 import { tokens, type TypeToken } from '@scribe/design-tokens';
 import { AnimatedPressable, usePressScale } from '@/components/motion/press';
-import { Text, TextClassContext, TextVariantContext } from '@/components/ui/text';
+import { Text, TextClassContext, TextLinesContext, TextVariantContext } from '@/components/ui/text';
 import { haptic as playHaptic, type HapticIntent } from '@/lib/haptics';
-import { pressableState } from './button.logic';
+import { pressableState, wrappedLabelRadius } from './button.logic';
 import { useIsLargeText, useTheme } from '@/lib/a11y';
 import { cn } from '@/lib/utils';
 
@@ -134,38 +136,43 @@ function Button({
   const iconColor = useIconColor(variant, disabled);
   const filled = variant === 'primary' || variant === 'secondary';
   const iconSize = size === 'capture' ? 28 : size === 'sm' ? 18 : 20;
+  // How many lines the label drew (TextLinesContext); a third line swaps the pill for radius.xl.
+  const [labelLines, setLabelLines] = React.useState(1);
+  const radius = wrappedLabelRadius(labelLines);
 
   return (
     <TextClassContext.Provider value={cn(labelClass[variant], disabled && 'text-muted-foreground', 'text-center')}>
       <TextVariantContext.Provider value={labelToken(size)}>
-        <AnimatedPressable
-          className={cn(buttonVariants({ variant, size }), fullWidth && 'self-stretch', disabled && filled && DISABLED_FILLED, className)}
-          style={[{ minHeight: BUTTON_MIN_HEIGHT[size] }, press.animatedStyle, style]}
-          role="button"
-          disabled={state.disabled}
-          accessibilityLabel={accessibilityLabel ?? label}
-          accessibilityState={state.accessibilityState}
-          aria-busy={loading ? true : undefined}
-          onPressIn={(e) => {
-            press.onPressIn();
-            if (haptic && !inactive) playHaptic(haptic);
-            onPressIn?.(e);
-          }}
-          onPressOut={(e) => {
-            press.onPressOut();
-            onPressOut?.(e);
-          }}
-          onPress={(e) => {
-            if (!inactive) onPress?.(e);
-          }}
-          {...props}>
-          {loading ? (
-            <ActivityIndicator color={iconColor} accessibilityElementsHidden importantForAccessibility="no" />
-          ) : IconCmp ? (
-            <IconCmp size={iconSize} color={iconColor} weight={size === 'capture' ? 'fill' : 'regular'} />
-          ) : null}
-          {label != null ? <Text>{label}</Text> : children}
-        </AnimatedPressable>
+        <TextLinesContext.Provider value={setLabelLines}>
+          <AnimatedPressable
+            className={cn(buttonVariants({ variant, size }), fullWidth && 'self-stretch', disabled && filled && DISABLED_FILLED, className)}
+            style={[{ minHeight: BUTTON_MIN_HEIGHT[size] }, radius != null && { borderRadius: radius }, press.animatedStyle, style]}
+            role="button"
+            disabled={state.disabled}
+            accessibilityLabel={accessibilityLabel ?? label}
+            accessibilityState={state.accessibilityState}
+            aria-busy={loading ? true : undefined}
+            onPressIn={(e) => {
+              press.onPressIn();
+              if (haptic && !inactive) playHaptic(haptic);
+              onPressIn?.(e);
+            }}
+            onPressOut={(e) => {
+              press.onPressOut();
+              onPressOut?.(e);
+            }}
+            onPress={(e) => {
+              if (!inactive) onPress?.(e);
+            }}
+            {...props}>
+            {loading ? (
+              <ActivityIndicator color={iconColor} accessibilityElementsHidden importantForAccessibility="no" />
+            ) : IconCmp ? (
+              <IconCmp size={iconSize} color={iconColor} weight={size === 'capture' ? 'fill' : 'regular'} />
+            ) : null}
+            {label != null ? <Text>{label}</Text> : children}
+          </AnimatedPressable>
+        </TextLinesContext.Provider>
       </TextVariantContext.Provider>
     </TextClassContext.Provider>
   );

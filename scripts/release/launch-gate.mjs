@@ -7,6 +7,8 @@
 // Reads run ids, shas, conclusions and times only: no run log, no secret, nothing a person wrote.
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { realpathSync } from "node:fs";
+import { pathToFileURL } from "node:url";
 
 const run = promisify(execFile);
 const WORKFLOW = "ios-compile.yml";
@@ -82,4 +84,17 @@ async function main() {
   console.log(r.message);
   if (!r.ok) { console.log(`::error::${r.message}`); process.exit(1); }
 }
-if (import.meta.url === `file://${process.argv[1]}`) main();
+
+/**
+ * BL-1574. True when this file is the script node was asked to run. Built with pathToFileURL so a path that needs URL
+ * escaping (a space, a percent sign) still matches, and through realpath because the loader resolves symlinks in
+ * import.meta.url (macOS /tmp is one). A missing or unreadable argv[1] is not this script. A false here means main()
+ * never runs and the job exits 0, so the test runs the copied script from a path with a space and through a symlink.
+ */
+export function isEntry(argv1, url) {
+  if (typeof argv1 !== "string" || argv1 === "") return false;
+  let real;
+  try { real = realpathSync(argv1); } catch { real = argv1; }
+  return url === pathToFileURL(real).href || url === pathToFileURL(argv1).href;
+}
+if (isEntry(process.argv[1], import.meta.url)) main();

@@ -12,7 +12,7 @@ Tokens are referenced by contract name only. Values belong to the designer in `p
 | Component | Import | Key props | Accessibility built in |
 |---|---|---|---|
 | `Text` | `@/components/ui` | `variant` (ramp: display, hero, title1, title2, headline, body, callout, subhead, footnote, caption, label, labelSmall, letterBody, letterDateline, signature, prompt, promptHero, nameField, numeral; old shadcn names still work), `tone` (default, muted, accent, destructive, success, caution, inverse...), `caps`, `asHeading`, `scale`, `trim` (`figures`) | caps from tokens only (body and letter text uncapped to AX5); `caps` keeps the spoken name in sentence case; bundled face, no synthesis; figure features from the token (`fontVariant`); `trim="figures"` pulls the line box in to the figures' ink (`text-trim.logic.ts`, needs `tokens.fontMetrics` for the face) |
-| `Button` | same | `variant` primary, secondary, outline, quiet, destructive (old: default, ghost, link); `size` sm, md, lg, capture, icon; `label`, `icon` (Phosphor component), `loading`, `fullWidth`, `haptic` | min heights not fixed heights (grows at AX); label is the accessible name; busy and disabled states; press scale 0.97 |
+| `Button` | same | `variant` primary, secondary, outline, quiet, destructive (old: default, ghost, link); `size` sm, md, lg, capture, icon; `label`, `icon` (Phosphor component), `loading`, `fullWidth`, `haptic` | min heights not fixed heights (grows at AX); the pill holds up to two label lines, `radius.xl` from the third (BL-490); label is the accessible name; busy and disabled states; press scale 0.97 |
 | `IconButton` | same | `icon`, `label` (required), `variant` plain, tinted, filled; `size` sm (hitSlop to 44), md, lg; `selected`, `color` | Large Content Viewer on iOS |
 | `ButtonRow` | same | children | side by side, stacks from xxxLarge text |
 | `Card` | same | `variant` raised, flat, outlined, tinted; `padding`; `radius` md, lg, xl; `onPress` + `accessibilityLabel` | pressable card is one element; press scale 0.98; inside a `CardSource`, the page that opens from it holds the press through its hold (MOTION 5f) |
@@ -139,7 +139,7 @@ type ButtonProps = {
 };
 ```
 - **States:** default, pressed, disabled (still announced; built Oct 16: a filled button that is not ready drops its fill for a 1 pt `controlBorder` outline with the label in `textMuted`, never a pale fill or 40% opacity, EXPERIENCE_PASS S01), loading (spinner replaces icon, label stays for VoiceOver, `aria-busy`), focus-visible.
-- **A11y:** `role="button"`, label = `label`, `accessibilityState={{ disabled, busy: loading }}`. Min height is the size's floor (`sm` 44, `md` 48, `lg` 56). Label wraps to 2 lines at large Dynamic Type sizes, never truncates.
+- **A11y:** `role="button"`, label = `label`, `accessibilityState={{ disabled, busy: loading }}`. Min height is the size's floor (`sm` 44, `md` 48, `lg` 56). The label wraps at large Dynamic Type sizes and never truncates. Up to two lines the button keeps the pill; from the third line its corner is `radius.xl` (34 pt), so a full-width button that has grown tall is not an oval (council ruling CDesO-14, BL-490; `button.logic.ts` `wrappedLabelRadius`, from the line count the label's own text layout reports; the web keeps the pill).
 - **Haptics:** as above; fires on press-in, not release.
 - **Motion:** press scale on `snappy`; loading cross-fade on `standard`.
 - **Builds on:** RNR `button.tsx` (rewrite `group-active` to the Pressable `pressed` render prop). Web: shadcn `Button`, variants renamed `default→primary`, `ghost→quiet`.

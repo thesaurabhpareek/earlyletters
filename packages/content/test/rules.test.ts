@@ -643,6 +643,17 @@ describe('brand name and v1.0 claims', () => {
     expect(offenders(keepAndPlan, /\b(we will|will always) remind\b|\bguarantee/i)).toEqual([]);
   });
 
+  it('[BL-374] no word a person reads keeps a promise D-082 retired: "free, always", "writing stays open", "Plus is optional"', () => {
+    // The sweep above reads only the Plus lines; the row's Done-when is every string in packages/content/src and the
+    // app's copy files (EVERY: content, store, website reference, pages, emails, feature-local app copy). "Plus is off"
+    // was a status sentence that became the plain value "Free" (membership.status.free); comments may still say it.
+    const RETIRED_PROMISES = /free, always|writing stays open|plus is optional|first book you start is free|\bplus is off\b/i;
+    for (const bad of ['The first book you start is free, always.', 'Writing stays open.', 'Plus is optional.', 'Plus is off.'])
+      expect(RETIRED_PROMISES.test(bad), bad).toBe(true);
+    expect(RETIRED_PROMISES.test(features.billing.store.promise)).toBe(false);
+    expect(offenders(EVERY, RETIRED_PROMISES)).toEqual([]);
+  });
+
   it('[F5, PL-8] no app string names a trial length; the F5 lines say what is true and count nothing', () => {
     // D-083: trial eligibility varies, so "a month free" can be false; Apple's sheet shows the trial to those it applies to.
     // The two registered Plus-sheet lines that still name one are retired only through counsel and a version bump of
