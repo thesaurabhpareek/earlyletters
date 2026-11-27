@@ -57,3 +57,11 @@ test('[J25] the Plus gate at AX5 (emulation evidence, not device evidence)', asy
   await noSideClipping(app);
   await step('happy', 'The Plus gate at AX5 (emulation)', 'The sheet that says the letter waits on this phone, at the largest text size on the web emulation. Layout evidence only.');
 });
+
+// DIAGNOSTIC ONLY (BL-2019 investigation branch, never merged): on a failure, print the page.
+test.afterEach(async ({ app }, info) => {
+  if (info.status === info.expectedStatus) return;
+  const text = await app.locator('body').innerText().catch((e) => `innerText failed: ${e}`);
+  const cards = await app.getByTestId('book.card').count().catch(() => -1);
+  console.log(`[DIAG ${info.title} #${info.repeatEachIndex}] url=${app.url()} bookCards=${cards} ms=${info.duration}\n[DIAG text] ${text.replace(/\s+/g, ' ').slice(0, 1500)}`);
+});

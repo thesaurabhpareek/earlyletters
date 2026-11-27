@@ -153,3 +153,11 @@ test('[J10d] a letter that does not exist', async ({ app, record }) => {
   await expect(app.getByText(/does-not-exist/)).toHaveCount(0);
   await step('unhappy', 'Letter not found', 'A letter that is not on this phone (a stale link) shows "This letter isn\'t in the book" and one way back. Never the id or the route. If it is on the Recently deleted shelf, the page says so and opens the shelf.');
 });
+
+// DIAGNOSTIC ONLY (BL-2019 investigation branch, never merged): on a failure, print the page.
+test.afterEach(async ({ app }, info) => {
+  if (info.status === info.expectedStatus) return;
+  const text = await app.locator('body').innerText().catch((e) => `innerText failed: ${e}`);
+  const cards = await app.getByTestId('book.card').count().catch(() => -1);
+  console.log(`[DIAG ${info.title} #${info.repeatEachIndex}] url=${app.url()} bookCards=${cards} ms=${info.duration}\n[DIAG text] ${text.replace(/\s+/g, ' ').slice(0, 1500)}`);
+});
