@@ -24,8 +24,9 @@
  *   it, stepping over blank and comment lines between.
  * - `nil-options`: an asset fetch (`fetchAssets`, `fetchKeyAssets`, and the Objective-C `fetchAssets...:` forms, read
  *   to the next `;`, even one inside a string) that passes the literal `nil` as `options:` or `with:`. Swift arguments
- *   are read to the matching parenthesis, skipping one-line string literals. This also flags an identifier fetch with
- *   `options: nil`, which the library PR should know.
+ *   are read to the matching parenthesis, skipping one-line string literals (but not a string whose interpolation
+ *   holds a string literal; see Not proved here). This also flags an identifier fetch with `options: nil`, which the
+ *   library PR should know.
  *
  * Positive controls: each rule has fixtures the scan must flag, and the clean fixtures must come back empty, so the
  * scan cannot pass by finding nothing or by flagging everything.
@@ -39,6 +40,9 @@
  * - comment and string forms the stripper does not know, any of which can blank code: a TypeScript or Swift regex
  *   literal that holds `//` or a quote, a template literal over several lines, JSX text holding `//` or `/*`, a Swift
  *   raw string (`#"..."#`) and a nested block comment;
+ * - a Swift string whose interpolation holds a string literal, such as `"\(d["k"]!)"`: the stripper and the argument
+ *   reader both end the string at the inner quote, so a `//` or `/*` after it can blank the code that follows (to
+ *   the end of the line, or to the end of the next block comment), and a parenthesis after it can end a fetch's arguments early;
  * - a value that goes on with `+` or `^` on the next line, or past an `#if` line, and a key built by joining strings;
  * - a fetch function passed around unapplied and later called with nil, `NULL` in Objective-C, a multi-line string or
  *   a regex literal holding a parenthesis inside a fetch's arguments, and a key spelled with a unicode escape;
@@ -56,8 +60,9 @@ import { describe, expect, it } from 'vitest';
 type Rule = 'hidden-assets' | 'no-source-option' | 'source-not-user-library' | 'nil-options';
 
 /**
- * Blank `//` and block comments, but not text inside string literals, so a URL in a string cannot hide the code after
- * it. Handles "..." with escapes, Swift `"""` blocks, and TypeScript '...' and `...`.
+ * Blank `//` and block comments, but not text inside string literals, so a URL in an ordinary string cannot hide the
+ * code after it. Handles "..." with escapes, Swift `"""` blocks, and TypeScript '...' and `...`. It does not step over
+ * a Swift interpolation, so a string literal inside `\( ... )` ends the outer string early (see Not proved here).
  */
 export function stripComments(src: string): string {
   let out = '';
