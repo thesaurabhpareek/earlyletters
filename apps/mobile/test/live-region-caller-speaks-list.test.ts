@@ -20,9 +20,11 @@
  * NOT_SPEAKING lists the exports of speaking modules that are read and found to say nothing for their caller
  * (useColors and the like), so a call to one alone is not speaking. lib/a11y.ts itself and state-screen.tsx (the
  * block, whose own line `callerSpeaks` turns off) are not speaking modules. Source is read with comments stripped.
- * Known gaps, none of which the tree has today: a namespace import (`import * as a11y`, then `a11y.announce(...)`) and
- * an aliased import (`useWordsSaid as useSaid`) are not seen, and a speaking component drawn as JSX (ErrorLine,
- * RevocationWaitLine) is not counted, since only lower-case calls are read.
+ * Known gaps, which no unlisted caller has today: a namespace import (`import * as a11y`, then `a11y.announce(...)`) and
+ * an aliased import (`useWordsSaid as useSaid`) are not seen (the tree has neither), and a speaking component drawn as
+ * JSX is not counted, since only lower-case calls are read. Two files draw one beside a block today (app/settings/erase.tsx
+ * draws ErrorLine, components/onboarding/new-phone-screens.tsx draws RevocationWaitLine), and both are already under
+ * SPEAKS_BESIDE for their other speech.
  * Whether VoiceOver says each line once is a device check.
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs';
@@ -176,7 +178,12 @@ describe('[PER4-018][BL-1953] every state block beside a caller that speaks is a
     // NOT_SPEAKING stays true to the tree: each name is still an export of a module that otherwise counts as speaking.
     const unnarrowed = speakingCalls(sources, new Set());
     for (const [name, { from }] of Object.entries(NOT_SPEAKING)) {
-      expect(unnarrowed.get(name), `NOT_SPEAKING ${name} is no longer an export of a speaking ${from}: take it off`).toBe(from);
+      const actual = unnarrowed.get(name);
+      const advice =
+        actual === undefined
+          ? `NOT_SPEAKING ${name} is no longer an export of any speaking module (listed from ${from}): take it off`
+          : `NOT_SPEAKING ${name} is exported by the speaking ${actual}, not ${from}: read it in ${actual} and correct its from (or take it off if it speaks there)`;
+      expect(actual, advice).toBe(from);
       expect(SPEAKING.has(name), `${name} is in NOT_SPEAKING`).toBe(false);
     }
   });
@@ -244,7 +251,10 @@ describe('[PER4-018][BL-1953] every state block beside a caller that speaks is a
       { rel: 'lib/zz/quiet.ts', source: "import { announce } from '@/lib/a11y';\nexport const useColors = () => ({});\nexport function useLoud() { announce('x'); }" },
       { rel: 'lib/zz/ink.ts', source: "import { useColors } from './quiet';\nexport const useInk = () => useColors();" },
     ];
-    const speaking = speakingCalls(world);
+    // Given out of dependency order (each wrapper before the module it calls), so a single pass cannot find the chain
+    // and the fixpoint has to repeat (review A finding 1 and review B finding 1 on 273f4a30b).
+    const speaking = speakingCalls([...world].reverse());
+    expect(speaking.get('useSpeak')).toBe('lib/zz/speaker.ts');
     expect(speaking.get('useWrap')).toBe('lib/zz/wrap.ts');
     expect(speaking.get('useWrapTwice')).toBe('lib/zz/wrap-twice.ts');
     expect(speaksWith('function S() { useWrapTwice(); }', speaking)).toBe(true);
@@ -252,7 +262,7 @@ describe('[PER4-018][BL-1953] every state block beside a caller that speaks is a
     expect(speaking.has('useColors')).toBe(false);
     expect(speaking.has('useInk')).toBe(false);
     expect(speaksWith('function S() { useInk(); }', speaking)).toBe(false);
-    expect(speakingCalls(world, new Set()).get('useInk')).toBe('lib/zz/ink.ts');
+    expect(speakingCalls([...world].reverse(), new Set()).get('useInk')).toBe('lib/zz/ink.ts');
   });
 
   it('[BL-1953] control: a new screen that speaks through a wrapper around useToast, beside a bare block, is caught (review B M1 on #2216)', () => {
@@ -280,7 +290,12 @@ describe('[PER4-018][BL-1953] every state block beside a caller that speaks is a
       rel: 'components/onboarding/outage-arrival.ts',
       source: "import { useArrival } from '@/lib/first-run/use-arrival';\nexport const useOutageArrival = (block: unknown, title: string, variant: unknown) => useArrival(block as never, title, variant);",
     };
-    const world = [...sources.filter((f) => f.rel !== rel), moved, wrapper];
+    // The wrapper sits where files() reads it, just before outage-screen.tsx and so before lib/first-run/use-arrival.ts:
+    // it is found only on a second pass, as it would be on disk.
+    const world = sources.flatMap((f) => (f.rel === rel ? [wrapper, moved] : [f]));
+    const at = (r: string) => world.findIndex((f) => f.rel === r);
+    expect(at(wrapper.rel)).toBeGreaterThanOrEqual(0);
+    expect(at(wrapper.rel)).toBeLessThan(at('lib/first-run/use-arrival.ts'));
     const speaking = speakingCalls(world);
     // What the list tests read for an entry naming `through: 'useOutageArrival'`: a speaking call, called, and the file speaks.
     expect(speaking.get('useOutageArrival')).toBe('components/onboarding/outage-arrival.ts');
