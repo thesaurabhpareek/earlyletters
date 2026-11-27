@@ -1020,6 +1020,10 @@ test("CR-149 flag: the flag is read in one place only, main(), which passes cr14
   assert.match(src, /cr149: cr149FlagOn\(process\.env\)/);
   assert.match(src, /const GIT_ENV = \{ \.\.\.process\.env, GIT_GRAFT_FILE: "[^"]+", GIT_TERMINAL_PROMPT: "0" \};/);
   assert.equal(src.match(/\[CR149_FLAG\]/g).length, 1, "one lookup of the flag, in cr149FlagOn");
+  // GIT_ENV carries the whole environment, so a flag read through it would pass the checks above: pin where it is used
+  // (its definition and the two git calls) and that the flag is read once, from process.env.
+  assert.equal(src.match(/\bGIT_ENV\b/g).length, 3, "GIT_ENV is defined once and passed only to the two git calls");
+  assert.equal(src.match(/\bcr149FlagOn\(/g).length, 1, "cr149FlagOn is called once, on process.env");
 });
 
 test("CR-149 flag off (default): a stale-base PR is NEEDS-UPDATE exactly, with no new call, no new field and no CR-149 note", async () => {
@@ -1277,6 +1281,10 @@ test("CR-149 rule 2 default (gitMergeTree): refuses an argument that is not 40 h
   assert.ok(ran[0].opts.maxBuffer > 0 && !ran[0].opts.shell);
   assert.deepEqual([ran[1].cmd, ran[1].args], ["git", ["--no-replace-objects", "diff-tree", "-r", "-z", "--raw", "--no-renames", "--ignore-submodules=none", DEV1, DEV3]], "FU-17a: the mode check runs on the tree merge-tree wrote");
   assert.ok(ran[1].opts.timeout > 0 && !ran[1].opts.shell);
+  for (const r of ran.slice(0, 2)) {
+    assert.match(r.opts.env.GIT_GRAFT_FILE, /^\/nonexistent\//, `FU-17b: ${r.args[1]} runs with grafts off`);
+    assert.equal(r.opts.env.GIT_TERMINAL_PROMPT, "0", `FU-17b: ${r.args[1]} never prompts`);
+  }
   const exit = (err, stdout = `${DEV3}\nconflict info\n`) => (cmd, args, opts, cb) => cb(err, args[1] === "merge-tree" ? stdout : "", "");
   assert.equal(await gitMergeTree(DEV1, HEAD, { run: exit(Object.assign(new Error("x"), { code: 1 })) }), "conflict");
   // git 2.43 exits 1 for a commit it cannot find too, with no tree id on stdout: that is "could not run", not a conflict.
@@ -1444,7 +1452,11 @@ test("FU-17b: real git, a local replace ref cannot turn a symlink merge clean, a
 test("FU-17b: real git, a local graft cannot turn a symlink merge clean (GIT_GRAFT_FILE is off for the queue's git reads)", async () => {
   const dir = mkdtempSync(join(tmpdir(), "mq-fu17b-graft-"));
   try {
-    const g = (...args) => execFileSync("git", ["-c", "user.name=Asha", "-c", "user.email=asha@example.invalid", "-c", "commit.gpgsign=false", ...args], { cwd: dir, encoding: "utf8" }).trim();
+    // The graft makes a cycle, and plain git's merge-base walk over a cycle depends on commit dates: with "link" a second
+    // newer than "base" the control below gave another answer (Review B, round 3). One fixed date for every commit keeps it stable.
+    const when = "2026-01-01T00:00:00Z";
+    const env = { ...process.env, GIT_AUTHOR_DATE: when, GIT_COMMITTER_DATE: when };
+    const g = (...args) => execFileSync("git", ["-c", "user.name=Asha", "-c", "user.email=asha@example.invalid", "-c", "commit.gpgsign=false", ...args], { cwd: dir, encoding: "utf8", env }).trim();
     g("init", "-q", "-b", "main");
     writeFileSync(join(dir, "a.txt"), "a\n");
     g("add", "a.txt");
