@@ -60,6 +60,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   vi.useRealTimers();
+  accountJoined.settled(); // no accept outlives its test (round 2's in-memory flag), even when an expectation failed
 });
 
 describe('[NX-36-S17] useNewPhone, run', () => {
@@ -391,6 +392,187 @@ describe('[BL-2159] a join on this phone asks the account again (NX-36-S17 cited
       run.rerender();
       syncEvent({ phase: 'idle', lastSyncedAt: '2026-11-10T09:00:03.000Z' });
       expect(run.result.current.view).toBeNull();
+    } finally {
+      run.unmount();
+    }
+  });
+
+  // Round 2 (Reviews A and B on #2234). `join()` is the sheet's order for an accept that goes through: joining, the accept,
+  // joined, then settled in its finally.
+  const join = () => {
+    accountJoined.joining();
+    accountJoined.joined();
+    accountJoined.settled();
+  };
+  /** The book lands and the first cycle is done. */
+  const lands = (run: { rerender: () => void }, setBook: () => void) => {
+    syncEvent({ phase: 'syncing', lastSyncedAt: null });
+    setBook();
+    run.rerender();
+    syncEvent({ phase: 'idle', lastSyncedAt: '2026-11-10T09:00:03.000Z' });
+  };
+
+  it('[S17 follow-up from #2195, round 2] a joiner whose first answer was "new" (a new account signed in from the sheet): the route stands aside once the joined book is here', async () => {
+    let hasLocalBook = false;
+    const run = renderHook(() => useNewPhone({ ...base, hasLocalBook }));
+    try {
+      h.asked[0]('new');
+      await flush();
+      expect(run.result.current.view).toBe('new');
+      join();
+      h.asked[1]('hasBook');
+      await flush();
+      expect(run.result.current.view).toBe('opening');
+      lands(run, () => (hasLocalBook = true));
+      expect(run.result.current.view).toBeNull();
+    } finally {
+      run.unmount();
+    }
+  });
+
+  it('[S17 follow-up from #2195, round 2] a joiner whose answers were "unknown" (lost, and lost again on the one re-ask): the route stands aside once the joined book is here', async () => {
+    let hasLocalBook = false;
+    const run = renderHook(() => useNewPhone({ ...base, hasLocalBook }));
+    try {
+      h.asked[0]('unknown');
+      await flush();
+      expect(h.asked).toHaveLength(2); // R11's one re-ask
+      h.asked[1]('unknown');
+      await flush();
+      join();
+      h.asked[2]('hasBook');
+      await flush();
+      expect(run.result.current.view).toBe('opening');
+      lands(run, () => (hasLocalBook = true));
+      expect(run.result.current.view).toBeNull();
+    } finally {
+      run.unmount();
+    }
+  });
+
+  it('[S17 follow-up from #2195, round 2] own book, then Try again loses the answer ("unknown" twice), then a join: the own book is still "arrived" (Review A M3)', async () => {
+    let hasLocalBook = false;
+    const run = renderHook(() => useNewPhone({ ...base, hasLocalBook }));
+    try {
+      h.asked[0]('hasBook'); // Asha's own book
+      await flush();
+      run.result.current.retry();
+      h.asked[1]('unknown');
+      await flush();
+      expect(h.asked).toHaveLength(3); // R11's one re-ask
+      h.asked[2]('unknown');
+      await flush();
+      join();
+      h.asked[3]('hasBook');
+      await flush();
+      expect(run.result.current.view).toBe('opening');
+      lands(run, () => (hasLocalBook = true));
+      expect(run.result.current.view).toBe('arrived');
+    } finally {
+      run.unmount();
+    }
+  });
+
+  it('[S17 follow-up from #2195, round 2] a joiner who joins a second time still stands aside (Review A M4, Review B M3)', async () => {
+    let hasLocalBook = false;
+    const run = renderHook(() => useNewPhone({ ...base, hasLocalBook }));
+    try {
+      h.asked[0]('returningNoBook');
+      await flush();
+      join();
+      h.asked[1]('hasBook'); // the first joined book, not on the phone yet
+      await flush();
+      join(); // a second invite, accepted before the first book lands
+      h.asked[2]('hasBook');
+      await flush();
+      expect(run.result.current.view).toBe('opening');
+      lands(run, () => (hasLocalBook = true));
+      expect(run.result.current.view).toBeNull();
+    } finally {
+      run.unmount();
+    }
+  });
+
+  it('[S17 follow-up from #2195, round 2] a join while the first question is still out, end state: the stale answer is dropped and the person counts as a joiner, "no book" or own book alike (the stated edge)', async () => {
+    for (const stale of ['returningNoBook', 'hasBook'] as const) {
+      h.asked.length = 0;
+      h.status = { phase: 'idle', lastSyncedAt: null };
+      let hasLocalBook = false;
+      const run = renderHook(() => useNewPhone({ ...base, hasLocalBook }));
+      try {
+        join();
+        expect(h.asked).toHaveLength(2);
+        h.asked[0](stale); // asked before the join
+        await flush();
+        expect(run.result.current.view).toBe('opening');
+        h.asked[1]('hasBook');
+        await flush();
+        expect(run.result.current.view).toBe('opening');
+        lands(run, () => (hasLocalBook = true));
+        expect(run.result.current.view).toBeNull();
+      } finally {
+        run.unmount();
+      }
+    }
+  });
+
+  it('[S17 follow-up from #2195, round 2] the race: a question out across the accept comes back "hasBook" (the joined book) before the join is told: the route still stands aside, never "arrived" under the join sheet', async () => {
+    let hasLocalBook = false;
+    const run = renderHook(() => useNewPhone({ ...base, hasLocalBook }));
+    try {
+      h.asked[0]('returningNoBook');
+      await flush();
+      run.result.current.retry(); // Try again: a question is out when Join is tapped
+      expect(h.asked).toHaveLength(2);
+      accountJoined.joining(); // the sheet sends the accept
+      h.asked[1]('hasBook'); // the server read the books after the accept committed: this is the joined book
+      await flush();
+      accountJoined.joined(); // the accept returned and the pending invite is cleared
+      accountJoined.settled();
+      expect(h.asked).toHaveLength(3);
+      h.asked[2]('hasBook');
+      await flush();
+      expect(run.result.current.view).toBe('opening');
+      lands(run, () => (hasLocalBook = true));
+      expect(run.result.current.view).toBeNull();
+    } finally {
+      run.unmount();
+    }
+  });
+
+  it('[S17 follow-up from #2195, round 2] a failed accept leaves nothing behind: an own-book answer that came during it still counts, and a later join is "arrived"', async () => {
+    let hasLocalBook = false;
+    const run = renderHook(() => useNewPhone({ ...base, hasLocalBook }));
+    try {
+      accountJoined.joining(); // Join tapped while the first question is out
+      h.asked[0]('hasBook'); // held: it might have been the joined book
+      await flush();
+      accountJoined.settled(); // the accept failed (the sheet's catch, then finally): no join
+      expect(accountJoined.inProgress()).toBe(false);
+      expect(h.asked).toHaveLength(1); // a failed accept asks nothing
+      join(); // Try again on the sheet, and this time it goes through
+      h.asked[1]('hasBook');
+      await flush();
+      lands(run, () => (hasLocalBook = true));
+      expect(run.result.current.view).toBe('arrived'); // the held answer was Asha's own book
+    } finally {
+      run.unmount();
+    }
+  });
+
+  it('[S17 follow-up from #2195, round 2] a failed accept with nothing held leaves no mark either: the answer after it counts as the account\'s own', async () => {
+    let hasLocalBook = false;
+    const run = renderHook(() => useNewPhone({ ...base, hasLocalBook }));
+    try {
+      accountJoined.joining();
+      accountJoined.settled(); // failed, before any answer
+      h.asked[0]('hasBook'); // after the failed accept: the account's own book
+      await flush();
+      join();
+      h.asked[1]('hasBook');
+      await flush();
+      lands(run, () => (hasLocalBook = true));
+      expect(run.result.current.view).toBe('arrived');
     } finally {
       run.unmount();
     }

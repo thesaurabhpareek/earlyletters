@@ -55,6 +55,9 @@ export function useNewPhone(o: { enabled: boolean; client: SupabaseClient | null
   // not mark `joinedHere`: the first book to land is treated as the account's own and gives `arrived` (the arrival line and
   // Tonight, AC-07, AC-08), as before #2078. Cleared when nothing is being asked.
   const ownBook = useRef(false);
+  // Round 2: a `hasBook` answer that came while an accept was under way (`accountJoined.inProgress()`). It may count the
+  // joined book, so it does not set `ownBook` yet: a join drops it, a failed accept keeps it. Cleared when nothing is asked.
+  const heldOwn = useRef(false);
   const onlineNow = useRef(o.online);
   onlineNow.current = o.online;
   // The engine's status, read and followed only while active.
@@ -74,6 +77,7 @@ export function useNewPhone(o: { enabled: boolean; client: SupabaseClient | null
     reasked.current = false;
     joinedHere.current = false;
     ownBook.current = false;
+    heldOwn.current = false;
   }, [active]);
 
   useEffect(() => {
@@ -87,7 +91,11 @@ export function useNewPhone(o: { enabled: boolean; client: SupabaseClient | null
       if (!alive) return;
       setKind(k);
       // After a join this may be the joined book, but `joinedHere` is then already set and stays set until nothing is asked.
-      if (k === 'hasBook') ownBook.current = true;
+      // During an accept it may be the joined book too, before the join is told: held until the accept is over.
+      if (k === 'hasBook') {
+        if (accountJoined.inProgress()) heldOwn.current = true;
+        else ownBook.current = true;
+      }
       // R11: one automatic re-ask of a lost answer, inside the same window (never a second clock).
       if (k === 'unknown' && onlineNow.current && !reasked.current && Date.now() - start < OPENING_WAIT_MS) {
         reasked.current = true;
@@ -116,7 +124,16 @@ export function useNewPhone(o: { enabled: boolean; client: SupabaseClient | null
   // question's clock would show "taking a while" at once to anyone who read the invite for more than 10 seconds.
   useEffect(() => {
     if (!active) return;
-    return accountJoined.subscribe(() => {
+    return accountJoined.subscribe((e) => {
+      // The accept is over. With no join (it failed, or the book was already here) a held answer was the account's own; a
+      // join has already dropped it.
+      if (e === 'settled') {
+        if (heldOwn.current) ownBook.current = true;
+        heldOwn.current = false;
+        return;
+      }
+      // A held answer may have been the joined book: it never marks the account's own.
+      heldOwn.current = false;
       if (!ownBook.current) joinedHere.current = true;
       began.current = null;
       reasked.current = false;

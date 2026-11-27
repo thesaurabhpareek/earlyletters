@@ -169,6 +169,9 @@ function JoinBook() {
     // through, so a Close while joining, or a name that cannot be read, still leaves it.
     const leavesWait = landing() === 'welcome';
     setBusy('accept');
+    // S17 follow-up from #2195: an account question still out now may come back counting the joined book; the route holds
+    // such an answer until the accept is over (`settled` below), so it never reads the joined book as the account's own.
+    accountJoined.joining();
     try {
       const childId = await acceptInvite(auth.client, t);
       const here = getChild(childId);
@@ -184,6 +187,7 @@ function JoinBook() {
     } catch (e) {
       await fail(e, 'accept', t);
     } finally {
+      accountJoined.settled();
       setBusy(null);
     }
   };
