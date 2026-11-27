@@ -12,7 +12,7 @@
  * the PR that builds one must change this file. Fictional family "Asha" only.
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join, posix, relative } from 'node:path';
+import { dirname, isAbsolute, join, relative, resolve as resolvePath, sep } from 'node:path';
 import ts from 'typescript';
 import { describe, expect, it, vi } from 'vitest';
 import { brand } from '@scribe/brand';
@@ -172,13 +172,25 @@ function literalBreaches(fs: Files): string[] {
 const specsOf = new Map<string, string[]>();
 const specs = (t: string) => specsOf.get(t) ?? specsOf.set(t, importSpecifiers(t)).get(t)!;
 const EXTS = ['', ...['.ts', '.tsx'].flatMap((e) => ['', '.ios', '.android', '.native', '.web'].flatMap((p) => [p + e, `/index${p}${e}`]))];
+/** tsconfig.json's paths, the longer prefix first, as TypeScript and Expo's resolver pick between them. */
+const ALIASES: [prefix: string, dir: string][] = [
+  ['@/assets/', join(ROOT, 'assets')],
+  ['@/', SRC],
+];
 /**
- * The files in the map that `spec`, imported from `f`, names (`@/` is src; a package is none of them). Both forms are
- * normalised the same way, so `..`, `.` and `//` in an alias path name the file Metro bundles, not a key no file has.
+ * The files in the map that `spec`, imported from `f`, names (a package is none of them). Every specifier is resolved
+ * to an absolute path on disk first (an alias from its folder, a relative one from the importing file's folder), and
+ * only resolved paths are compared (Karma ruling 7223212622 on #2092, point 1). So `..`, `.` and `//` anywhere, and a
+ * path that climbs out of src and back in ('@/../src/lib/x', '../../../src/lib/x'), name the file Metro bundles; one
+ * that lands outside src names no file here.
  */
 function resolve(fs: Files, f: string, spec: string): string[] {
-  const base = spec.startsWith('@/') ? posix.normalize(spec.slice(2)) : spec.startsWith('.') ? posix.normalize(posix.join(posix.dirname(f), spec)) : null;
-  return base === null ? [] : EXTS.map((e) => base + e).filter((x) => fs.has(x));
+  const alias = ALIASES.find(([prefix]) => spec.startsWith(prefix));
+  const abs = alias ? resolvePath(alias[1], spec.slice(alias[0].length)) : spec.startsWith('.') ? resolvePath(SRC, dirname(f), spec) : null;
+  if (abs === null) return [];
+  const key = relative(SRC, abs).split(sep).join('/');
+  if (key === '..' || key.startsWith('../') || isAbsolute(key)) return [];
+  return EXTS.map((e) => key + e).filter((x) => fs.has(x));
 }
 /**
  * A literal dynamic `import('x')` (a lazy load is an import as surely as a static one: src already lazy-loads with
@@ -193,24 +205,45 @@ function importers(fs: Files): Map<string, Set<string>> {
 }
 
 /**
- * NS-35-R1: every walk above reads a specifier as written. Metro bundles any `require(x)` or `import(x)` whose argument
- * Babel can fold to a string (a template, a sum, a const), so such a call reaches a file no walk sees. The rule is
- * closed instead: every runtime `require(` and `import(` call in src takes exactly one plain quoted string. Parsed, so a
- * comment, a string, `typeof import('x')` (a type) and a method such as `jest.requireActual` are not calls here.
+ * NS-35-R1: every walk above reads a specifier as written, as text. Metro reads what Babel parses: it bundles any
+ * `require(x)` or `import(x)` whose argument Babel can fold to a string (a template, a sum, a const), it decodes escapes
+ * in a specifier and in the word `require`, and `require.context` loads every file of a folder that a pattern matches.
+ * Each reaches a file no walk sees. So the rule is closed instead, read by the parser after it has decoded escapes
+ * (Karma ruling 7223212622 on #2092, point 2):
+ * - every runtime call the parser reads as `require` or `import` is written exactly `require(` or `import(` (no escape,
+ *   no brackets around the word, no gap before the bracket) and takes one plain quoted string;
+ * - every specifier, in a call or in an import or export declaration, is written as its value (no escape in it);
+ * - nothing calls a method of `require` (`require.context` and the like).
+ * A comment, a string, `typeof import('x')` (a type) and a method such as `jest.requireActual` are not calls here.
  */
 function specifierBreaches(fs: Files): { calls: number; breaches: string[] } {
   let calls = 0;
   const breaches: string[] = [];
   for (const [f, t] of fs) {
     const sf = ts.createSourceFile(f, t, ts.ScriptTarget.Latest, true, f.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
+    const at = (n: ts.Node) => `${f}:${sf.getLineAndCharacterOfPosition(n.getStart(sf)).line + 1}`;
+    const bare = (e: ts.Expression): ts.Expression => (ts.isParenthesizedExpression(e) ? bare(e.expression) : e);
+    const isRequire = (e: ts.Expression) => ts.isIdentifier(bare(e)) && (bare(e) as ts.Identifier).text === 'require';
+    // The walks read a specifier's source text; Metro reads its decoded value. Equal only when no escape is in it.
+    const plain = (lit: ts.Expression, n: ts.Node) => {
+      if (ts.isStringLiteral(lit) && lit.getText(sf).slice(1, -1) !== lit.text) breaches.push(`${at(n)} ${lit.getText(sf)} has an escape in its specifier`);
+    };
     const visit = (n: ts.Node): void => {
-      if (ts.isCallExpression(n) && (n.expression.kind === ts.SyntaxKind.ImportKeyword || (ts.isIdentifier(n.expression) && n.expression.text === 'require'))) {
-        calls++;
-        if (n.arguments.length !== 1 || !ts.isStringLiteral(n.arguments[0])) {
-          const line = sf.getLineAndCharacterOfPosition(n.getStart(sf)).line + 1;
-          breaches.push(`${f}:${line} ${n.expression.getText(sf)}(${n.arguments.map((a) => a.getText(sf)).join(', ')}) takes no plain string`);
+      if (ts.isCallExpression(n)) {
+        const callee = bare(n.expression);
+        const word = callee.kind === ts.SyntaxKind.ImportKeyword ? 'import' : isRequire(callee) ? 'require' : null;
+        const call = () => `${n.expression.getText(sf)}(${n.arguments.map((a) => a.getText(sf)).join(', ')})`;
+        if (word) {
+          calls++;
+          if (sf.text.slice(n.expression.getStart(sf), n.arguments.pos) !== `${word}(`) breaches.push(`${at(n)} ${call()} is not written ${word}(`);
+          if (n.arguments.length !== 1 || !ts.isStringLiteral(n.arguments[0])) breaches.push(`${at(n)} ${call()} takes no plain string`);
+          else plain(n.arguments[0], n);
+        } else if (ts.isPropertyAccessExpression(callee) && isRequire(callee.expression)) {
+          breaches.push(`${at(n)} ${call()} loads files no walk reads`);
         }
       }
+      if ((ts.isImportDeclaration(n) || ts.isExportDeclaration(n)) && n.moduleSpecifier) plain(n.moduleSpecifier, n);
+      if (ts.isImportEqualsDeclaration(n) && ts.isExternalModuleReference(n.moduleReference)) plain(n.moduleReference.expression, n);
       ts.forEachChild(n, visit);
     };
     visit(sf);
@@ -497,7 +530,7 @@ describe('[NS-35-R1] only Home starts', () => {
     expect(exportedValues(src('components/tonight/draft-card.logic.ts'))).toContain('draftCard');
   });
 
-  it('[NS-35-R1] every require( and import( in src takes one plain string, so every walk reads where it points', () => {
+  it('[NS-35-R1] every require( and import( in src takes one plain string, every specifier is written as its value, and nothing calls require.context, so every walk reads where it points', () => {
     const { calls, breaches } = specifierBreaches(rawFiles);
     expect(breaches).toEqual([]);
     // The parser sees src's real lazy loads (auth-store, billing, sync, the native modules), so a scan of nothing fails.
@@ -782,6 +815,21 @@ describe('each scanner fails on a planted breach', () => {
     expect(renderBreaches(lazy)).toEqual(['app/family.tsx draws app/family.tsx, which starts a letter']);
   });
 
+  // Karma ruling 7223212622 on #2092, point 3 (Review A 7223080295 and Review B 7222827028, must-fix 1): a path that
+  // leaves src and comes back names the same file, so it is the same start.
+  it('[NS-35-R1] fixture: a path that climbs out of src and back in, alias or relative, names the same file and is a start', () => {
+    const book = src('app/(tabs)/book.tsx');
+    for (const spec of ['@/../src/lib/capture/start-capture.logic', '../../../src/lib/capture/start-capture.logic', '@/assets/../src/lib/capture/start-capture.logic']) {
+      const b = plant('app/(tabs)/book.tsx', `import { CAPTURE_ROUTES as PLANTED } from '${spec}';\n${book}\nconst go = () => router.push(PLANTED[0]);`);
+      expect(renderBreaches(b), spec).toEqual(['app/(tabs)/book.tsx draws app/(tabs)/book.tsx, which starts a letter']);
+    }
+    const required = plant('app/family.tsx', `${src('app/family.tsx')}\nconst PLANTED = require('@/../src/lib/capture/start-capture.logic').CAPTURE_ROUTES;\nconst go = () => router.push(PLANTED[0]);`);
+    expect(renderBreaches(required)).toEqual(['app/family.tsx draws app/family.tsx, which starts a letter']);
+    // A path that lands outside src names no file here, as before (a package or an asset is no screen).
+    expect(resolve(files, 'app/(tabs)/book.tsx', '@/../assets/start-capture.logic')).toEqual([]);
+    expect(resolve(files, 'app/(tabs)/book.tsx', '../../../../src/lib/capture/start-capture.logic')).toEqual([]);
+  });
+
   it('[NS-35-R1] fixture: a default import from a route file counts as a taken name', () => {
     const b = plant('app/(tabs)/book.tsx', `import plan from '@/lib/capture/start-capture.logic';\n${src('app/(tabs)/book.tsx')}`);
     expect(routeImports(b, 'app/(tabs)/book.tsx', src('app/(tabs)/book.tsx'))).toEqual([]);
@@ -799,6 +847,23 @@ describe('each scanner fails on a planted breach', () => {
     expect(at("const P = '@/lib/capture/start-capture.logic';\nconst m = await import(P);")).toEqual(['app/(tabs)/book.tsx:4 import(P) takes no plain string']);
     // A plain string, a type written with typeof import(), a method named require and a string are not breaches.
     expect(at("const a = require('@/lib/nav/tab-jobs');\nvoid import('@/lib/nav/tab-jobs');\ntype T = typeof import('@/lib/capture/start-capture.logic');\nconst b = jest.requireActual(P);\nconst c = 'require(P)';")).toEqual([]);
+  });
+
+  // Karma ruling 7223212622 on #2092, points 2 and 3 (Review A 7223080295 must-fix 2, Review B 7222827028 must-fix 2): the
+  // parser reads a specifier and the word require after decoding escapes, as Metro does; the walks read the text.
+  it('[NS-35-R1] fixture: an escaped specifier, an escaped require and a require.context call are caught with file and line', () => {
+    const at = (body: string) => specifierBreaches(new Map([['app/(tabs)/book.tsx', `import { router } from 'expo-router';\n${body}`]])).breaches;
+    expect(at("import { CAPTURE_ROUTES as PLANTED } from '@/lib/capture/start\\u002dcapture.logic';")).toEqual(["app/(tabs)/book.tsx:2 '@/lib/capture/start\\u002dcapture.logic' has an escape in its specifier"]);
+    expect(at("export { CAPTURE_ROUTES } from '@/lib/capture/start\\x2dcapture.logic';")).toEqual(["app/(tabs)/book.tsx:2 '@/lib/capture/start\\x2dcapture.logic' has an escape in its specifier"]);
+    expect(at("const m = require('@/lib/capture/start\\u002dcapture.logic');")).toEqual(["app/(tabs)/book.tsx:2 '@/lib/capture/start\\u002dcapture.logic' has an escape in its specifier"]);
+    expect(at("const PLANTED = \\u0072equire('@/lib/capture/start-capture.logic').CAPTURE_ROUTES;")).toEqual(["app/(tabs)/book.tsx:2 \\u0072equire('@/lib/capture/start-capture.logic') is not written require("]);
+    expect(at("const m = \\u0069mport('@/lib/capture/start-capture.logic');")).toEqual(["app/(tabs)/book.tsx:2 \\u0069mport('@/lib/capture/start-capture.logic') is not written import("]);
+    expect(at("const m = (require)('@/lib/capture/start-capture.logic');")).toEqual(["app/(tabs)/book.tsx:2 (require)('@/lib/capture/start-capture.logic') is not written require("]);
+    expect(at("const qaCtx = require.context('../../lib/capture', false, /start-capture\\.logic\\.ts$/);\nrouter.push(qaCtx(qaCtx.keys()[0]).CAPTURE_ROUTES[0]);")).toEqual([
+      "app/(tabs)/book.tsx:2 require.context('../../lib/capture', false, /start-capture\\.logic\\.ts$/) loads files no walk reads",
+    ]);
+    // A plain specifier, an escape in an ordinary string and a method named like require are not breaches.
+    expect(at("import { tabJob } from '@/lib/nav/tab-jobs';\nconst m = require('@/lib/nav/tab-jobs');\nconst w = 'a\\u0062c';\nconst r = jest.requireActual('@/lib/nav/tab-jobs');")).toEqual([]);
   });
 
   it('[NS-35-R3] fixture: a notification tap handler that starts a capture is caught', () => {
