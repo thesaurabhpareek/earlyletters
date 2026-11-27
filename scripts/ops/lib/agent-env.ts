@@ -16,7 +16,7 @@
  * string, keys included, wherever it sits (GitHub expands expressions inside block scalars such as `prompt: |`).
  * An expression ends at the first `}}` outside a single-quoted string, as GitHub's reader does. Names match in any
  * case, as GitHub does. A secret read outside any job (a workflow-level `env:`) counts for every job, and so does an
- * agent named anywhere outside the jobs (a `defaults.run.shell`, an input default) except an event filter under `on`.
+ * agent named anywhere outside the jobs (a `defaults.run.shell`, an input default) except a path filter under `on`.
  *
  * Limits, also listed in ACCESS.md: an agent engine run from a composite, local or other action, or an engine
  * other than Claude Code and OpenCode, is not recognised; a reusable workflow a job calls is not followed; data
@@ -164,9 +164,11 @@ export function scanWorkflow(file: string, workflow: string): Finding[] {
   }
 }
 
-const EVENT_FILTERS = new Set(['branches', 'branches-ignore', 'tags', 'tags-ignore', 'paths', 'paths-ignore', 'types']);
+// Only path filters: a branch, tag or dispatch-type filter fixes a value a step reads (`github.ref_name`, `github.base_ref`,
+// `github.event.action`), but a path filter only decides whether the run starts.
+const EVENT_FILTERS = new Set(['paths', 'paths-ignore']);
 
-/** `on` with each event's filter lists taken out; everything else under it (inputs above all) is kept. */
+/** `on` with each event's path filters taken out; everything else under it (inputs above all) is kept. */
 function withoutFilters(on: unknown): unknown {
   if (!on || typeof on !== 'object' || Array.isArray(on)) return on; // `on: push` or `on: [push]` names events only
   const kept: Record<string, unknown> = {};
@@ -188,9 +190,9 @@ function scan(file: string, workflow: string): Finding[] {
   const everyJob = secretsOf(outside);
   if (everyJob.whole) out.push({ file, job: '*', rule: 'all-secrets' });
   // An agent named anywhere outside the jobs makes every job an agent job: `defaults.run.shell` runs in every job, `env`
-  // reaches every step, an input's `default` or `options` reach a step through `${{ inputs.X }}`, and `name` through
-  // `${{ github.workflow }}`. Only the event filters under `on` (branch, tag and path lists, activity types) are
-  // never run anywhere, so a `CLAUDE.md` path filter is not an agent.
+  // reaches every step, an input's `default` or `options` reach a step through `${{ inputs.X }}`, `name` through
+  // `${{ github.workflow }}`, and a branch, tag or type filter through `github.ref_name` or `github.event.action`. Only
+  // the `paths` and `paths-ignore` filters under `on` are left out, so a `CLAUDE.md` path filter is not an agent.
   const agentOutside = stringsOf({ ...outside, on: withoutFilters(parsed.root.on) }).some((s) => AGENT_STEP.test(s));
   const agentFile = AGENT_WORKFLOWS.includes(file);
   for (const job of jobsOf(workflow)) {
