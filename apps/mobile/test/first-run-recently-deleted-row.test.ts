@@ -36,6 +36,12 @@ describe('[BL-776] the Recently deleted row on the welcome', () => {
     expect(onboarding).toMatch(/subtitle=\{shelf\.help \? copy\.settings\.delete\.shelfHelp : undefined\}/);
     expect(onboarding).toMatch(/router\.push\(RECENTLY_DELETED_HREF as Href\)/);
   });
+  it('counts the letters on the shelf with listDeleted(), not as books again (CPrivO-56)', () => {
+    // Read as listDeletedBooks(), a shelf that holds only Asha's deleted letters would count no letters and hide the row.
+    expect(onboarding).toMatch(/const letters = listDeleted\(\);/);
+    expect(onboarding).not.toMatch(/const letters = listDeletedBooks\(\);/);
+    expect(onboarding.match(/listDeletedBooks\(\)/g)).toHaveLength(1);
+  });
   it('keeps the finish guard intact', () => {
     expect(onboarding).toMatch(/runFinishOnce\(/);
     expect(onboarding).toMatch(/booksMade\.current = true;/);

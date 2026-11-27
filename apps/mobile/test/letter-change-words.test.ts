@@ -12,7 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MIGRATIONS, migrate, userVersion } from '../src/lib/db/migrations';
 import { changeRow, offersChangeWords } from '../src/components/book/change-words.logic';
 import { nodeDb } from './helpers/node-db';
-import type { PullResponse, PulledRow } from '../src/lib/sync/types';
+import type { PullResponse, PulledRow, PushResponse } from '../src/lib/sync/types';
 
 vi.mock('expo-crypto', () => ({ getRandomBytes: (n: number) => new Uint8Array(n).fill(7) }));
 vi.mock('../src/lib/db/repos/open-native', () => ({
@@ -23,10 +23,12 @@ vi.mock('../src/lib/db/repos/open-native', () => ({
 
 const store = await import('../src/lib/store');
 const { takeOwnership } = await import('../src/lib/sync/ownership');
-const { applyPullPage } = await import('../src/lib/sync/merge');
+const { applyPullPage, applyPushResponse } = await import('../src/lib/sync/merge');
+const { enqueueEntryUpsert, markSent, takeBatch } = await import('../src/lib/sync/outbox');
 const entries = await import('../src/lib/db/repos/entries');
 
 const MAMA = '11111111-1111-1111-1111-111111111111';
+const PAPA = '22222222-2222-2222-2222-222222222222';
 let close: () => void = () => {};
 let seq = 0;
 const now = () => '2026-10-03T09:00:00.000Z';
@@ -120,13 +122,13 @@ describe('[BL-413, constitution] a saved letter can be edited, and every edit ca
 describe('[BL-413] words from outside the letter page let the author\'s base go', () => {
   const base = (id: string) => raw.get<{ author_base: string | null }>('SELECT author_base FROM entries WHERE id = ?', id)?.author_base;
   const OTHER = 'Asha, you danced in the rain.';
-  const pulled = (id: string, finalText: string): PullResponse => {
+  const pulled = (id: string, finalText: string, over: Partial<PulledRow> = {}): PullResponse => {
     const childId = store.getEntry(id)!.childId!;
     const row: PulledRow = {
       id, child_id: childId, author_id: MAMA, author_signs_as: 'Mama', kind: 'letter', occurred_on: '2026-08-20',
       captured_at: now(), capture_mode: 'typed', edit_level: 'clean', prompt_key: null, final_text: finalText, in_book: true,
       sounds_like_me: null, approval: 'approved', audio_kept_on_device: false, created_at: now(), updated_at: now(), deleted_at: null,
-      own: true, v: '200', raw_transcript: SAID,
+      own: true, v: '200', raw_transcript: SAID, ...over,
     };
     return {
       reset: false, epoch: 1, epoch_started_at: now(), gone: [],
@@ -140,9 +142,9 @@ describe('[BL-413] words from outside the letter page let the author\'s base go'
       }],
     };
   };
-  const pull = (id: string, finalText: string) => {
+  const pull = (id: string, finalText: string, over: Partial<PulledRow> = {}) => {
     raw.run("INSERT OR REPLACE INTO settings (key, value) VALUES ('sync.ownerId', ?)", MAMA);
-    raw.transaction(() => applyPullPage(raw, pulled(id, finalText), now()));
+    raw.transaction(() => applyPullPage(raw, pulled(id, finalText, over), now()));
   };
 
   it('a pull with other words: the letter takes them, and there is nothing of this person\'s to put back', () => {
@@ -178,6 +180,122 @@ describe('[BL-413] words from outside the letter page let the author\'s base go'
     const writers = src.match(/UPDATE entries SET[^`']*?final_text = \?/g) ?? [];
     expect(writers.length).toBeGreaterThanOrEqual(2);
     for (const w of writers) expect(w).toContain('${KEEP_BASE_IF_SAME_WORDS}');
+  });
+
+  it('every INSERT ... ON CONFLICT writer of final_text (upsert, another author\'s pulled row) carries the rule too', () => {
+    for (const file of ['../src/lib/sync/merge.ts', '../src/lib/db/repos/entries.ts']) {
+      const src = readFileSync(join(__dirname, file), 'utf8');
+      const writers = src.match(/ON CONFLICT\(id\) DO UPDATE SET[^`']*?final_text = excluded\.final_text/g) ?? [];
+      expect(writers, file).toHaveLength(1);
+      for (const w of writers) expect(w).toContain('${KEEP_BASE_IF_SAME_INCOMING}');
+    }
+  });
+
+  it('a pull while a non-words op is queued (takeWords) with other words lets the base go', () => {
+    takeOwnership(raw, MAMA, { now: now(), newId });
+    const id = keep();
+    raw.run("UPDATE entries SET server_version = '5', sync_state = 'synced' WHERE id = ?", id);
+    store.changeLetterWords(id, 'Asha, you laughed at the rain.');
+    raw.run('DELETE FROM sync_outbox');
+    raw.transaction(() => {
+      raw.run('UPDATE entries SET in_book = 0 WHERE id = ?', id);
+      enqueueEntryUpsert(raw, id, ['in_book'], { now: now(), newId });
+    });
+    expect(raw.get<{ n: number }>('SELECT count(*) AS n FROM sync_outbox WHERE entity_id = ?', id)?.n).toBe(1);
+    pull(id, OTHER);
+    expect(store.getEntry(id)?.finalText).toBe(OTHER);
+    expect(base(id)).toBeNull();
+  });
+
+  it('upsert over a letter with other words lets the base go; the same words keep it', () => {
+    const id = keep();
+    store.changeLetterWords(id, 'Asha, you laughed at the rain.');
+    const c = { db: raw, now, newId };
+    const e = store.getEntry(id)!;
+    const defaults = { childId: e.childId ?? null, authorSignsAs: 'Mama' };
+    entries.upsert(c, e, defaults);
+    expect(base(id)).toBe(KEPT);
+    expect(store.letterAuthorEdits(id)?.edits).toHaveLength(1);
+    entries.upsert(c, { ...e, finalText: OTHER }, defaults);
+    expect(store.getEntry(id)?.finalText).toBe(OTHER);
+    expect(base(id)).toBeNull();
+  });
+
+  it('another author\'s pulled row over a local row that holds a base: other words let it go, the same words keep it', () => {
+    const id = keep();
+    // Only this person's own rows get a base on the page; this one is set by hand to prove the writer, whoever calls it.
+    raw.run('UPDATE entries SET author_id = ?, author_base = ? WHERE id = ?', PAPA, KEPT, id);
+    pull(id, KEPT, { own: false, author_id: PAPA, author_signs_as: 'Papa', raw_transcript: undefined });
+    expect(base(id)).toBe(KEPT);
+    pull(id, OTHER, { own: false, author_id: PAPA, author_signs_as: 'Papa', raw_transcript: undefined, v: '201' });
+    expect(store.getEntry(id)?.finalText).toBe(OTHER);
+    expect(base(id)).toBeNull();
+  });
+});
+
+describe('[BL-413] the push answer (settleWords) lets the author\'s base go only for other words', () => {
+  const base = (id: string) => raw.get<{ author_base: string | null }>('SELECT author_base FROM entries WHERE id = ?', id)?.author_base;
+  const OTHER = 'Asha, you danced in the rain.';
+  const MINE = 'Asha, you laughed at the rain.';
+  const ctx = { now: now(), newId };
+  /** A kept letter the server holds at v5, with sync on, and nothing queued. */
+  function synced(): string {
+    takeOwnership(raw, MAMA, ctx);
+    const id = keep();
+    raw.run('DELETE FROM sync_outbox');
+    raw.run("UPDATE entries SET server_version = '5', sync_state = 'synced' WHERE id = ?", id);
+    return id;
+  }
+  /** Takes the head batch, marks it sent, and applies a scripted answer with `current` words (a word conflict when `refused`). */
+  function sendAndAnswer(id: string, current: string, opts: { refused?: boolean; beforeAnswer?: () => void } = {}) {
+    const batch = takeBatch(raw, { now: now() });
+    expect(batch.rows.map((r) => r.entity_id)).toEqual([id]);
+    raw.transaction(() => markSent(raw, batch.rows, now()));
+    opts.beforeAnswer?.();
+    const res = {
+      results: batch.ops.map((o) => ({
+        op: o.op, ok: true, applied: true, ...(opts.refused ? { conflict_groups: ['text'] } : {}),
+        current: { final_text: current, machine_edits: [], edit_level: 'clean', v: '7' },
+        entry: { id, v: '7', updated_at: now(), deleted_at: null, in_book: true, approval: 'not_needed' },
+      })),
+      paused: false, stopped: false,
+    } as PushResponse;
+    raw.transaction(() => applyPushResponse(raw, batch.rows, res, ctx));
+  }
+
+  it('a push answer carrying other words (this phone\'s words refused): the letter takes them and the base goes', () => {
+    const id = synced();
+    store.changeLetterWords(id, MINE);
+    expect(base(id)).toBe(KEPT);
+    sendAndAnswer(id, OTHER, { refused: true });
+    expect(store.getEntry(id)?.finalText).toBe(OTHER);
+    expect(base(id)).toBeNull();
+    expect(store.letterAuthorEdits(id)).toBeNull();
+  });
+
+  it('control: a push answer echoing this phone\'s own words keeps the base and the change rows', () => {
+    const id = synced();
+    store.changeLetterWords(id, MINE);
+    sendAndAnswer(id, MINE);
+    expect(store.getEntry(id)?.finalText).toBe(MINE);
+    expect(base(id)).toBe(KEPT);
+    expect(store.letterAuthorEdits(id)?.edits).toHaveLength(1);
+  });
+
+  it('with a later word change still queued from an earlier send, the answer takes nothing: words, base and changes stay', () => {
+    const id = synced();
+    store.changeLetterWords(id, MINE);
+    const LATER = 'Asha, you laughed in the rain.';
+    sendAndAnswer(id, OTHER, {
+      beforeAnswer: () => {
+        store.changeLetterWords(id, LATER);
+        // That second op was sent too and its answer is still out (a retry): the server judges it, not this answer.
+        raw.run("UPDATE sync_outbox SET sent_at = ?, attempts = 1 WHERE entity_id = ? AND sent_at IS NULL", now(), id);
+      },
+    });
+    expect(store.getEntry(id)?.finalText).toBe(LATER);
+    expect(base(id)).toBe(KEPT);
+    expect(store.letterAuthorEdits(id)?.edits).toHaveLength(2);
   });
 });
 

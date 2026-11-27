@@ -131,6 +131,12 @@ describe('[S64] failures and the typed word', () => {
     expect(STATE.confirm()).not.toContain('cancelFailure');
   });
 
+  it('[BL-491 point 5] the scheduled page starts with no Cancel deletion pressed, so a failed read keeps its own line', () => {
+    expect(page).toContain('const [cancelTried, setCancelTried] = useState(false);');
+    expect(page.match(/setCancelTried\(/g)).toHaveLength(1);
+    expect(page).toContain('setCancelTried(true);');
+  });
+
   it('enables Delete account only for the typed word, and never while a request is on its way', () => {
     expect(canDelete('delete', false)).toBe(true);
     expect(canDelete('  DELETE ', false)).toBe(true);
