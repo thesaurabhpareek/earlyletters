@@ -322,6 +322,21 @@ describe('typed days on the phone (real store and scheduler)', () => {
     expect(ours()[0]!.content).toMatchObject({ title: FIXED.title, body: FIXED.body });
   });
 
+  it('[CPrivO-58] a note scheduled with the words is replaced by the fixed line once names go off, with App lock off', async () => {
+    store.setSetting('notifications.dayNames', 'on');
+    store.setSetting('notifications.lockScreenNames', 'on');
+    typed.saveTypedDay(plus(today(), 2), CANARY, today());
+    await reminders.rescheduleReminders();
+    expect(ours()[0]!.content).toMatchObject({ title: FIXED.title, body: CANARY });
+    reminders.writePrefs({ namesOnLockScreen: false });
+    expect(store.getSetting(APP_LOCK_KEYS.enabled)).toBeNull();
+    expect(dayNamesOn()).toBe(true);
+    await reminders.rescheduleReminders();
+    expect(ours()).toHaveLength(1);
+    expect(JSON.stringify([...os.scheduled.values()])).not.toContain('zq7canary');
+    expect(ours()[0]!.content).toMatchObject({ title: FIXED.title, body: FIXED.body });
+  });
+
   it('the build switch off plans no typed day and cancels a pending one; the words stay on the phone', async () => {
     const day = plus(today(), 2);
     typed.saveTypedDay(day, 'Nursery starts', today());
