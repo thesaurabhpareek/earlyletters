@@ -26,6 +26,9 @@ export function laterWordsDraft(e: Entry | null | undefined, own: (e: Entry) => 
     captureMode: e.captureMode,
     promptKey: e.promptKey,
     createdAt: e.capturedAt,
+    // The letter's own about-day, so Review's header files it where the Book does, not by the day it was said (NS-15).
+    occurredOn: e.occurredOn,
+    occurredPrecision: e.occurredPrecision ?? 'day',
     audioUri: e.audioUri ?? null,
     audioDurationMs: e.audioDurationMs ?? null,
     rawTranscript: e.rawTranscript,

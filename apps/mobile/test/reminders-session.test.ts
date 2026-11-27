@@ -194,6 +194,7 @@ describe('[NS-13-R14] sign out removes reminders (real store and scheduler)', ()
     expect([...os.presented.keys()]).toEqual(['someone-else-shown']);
     for (const key of reminders.REMINDER_SETTING_KEYS) expect(store.getSetting(key), key).toBeNull();
     expect([...reminders.REMINDER_SETTING_KEYS].sort()).toEqual([
+      'notifications.dayNames', // the one day-names switch (NS-18-R3, BL-982): reset at sign-out
       'notifications.lockScreenNames',
       'reminders.cadence',
       'reminders.days',

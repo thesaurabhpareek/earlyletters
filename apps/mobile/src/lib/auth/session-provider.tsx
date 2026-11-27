@@ -280,12 +280,13 @@ export function SessionProvider({ children, onUnder18 }: Props) {
     };
   }, [sb]);
 
-  // Only the newest of overlapping gate reads may answer (machine.logic readGateInOrder).
+  // Only the newest of overlapping gate reads may answer (machine.logic readGateInOrder). BL-478: the queue is read once
+  // more after each answer, so a sign-out wait whose queue already emptied ends as drained, not as "ended early".
   const gateSeq = useRef(0);
   const checkGate = useCallback(async () => {
     if (!sb) return;
     lastGateCheck.current = Date.now();
-    await readGateInOrder(gateSeq, () => withTimeout(loadSyncGate(sb), GATE_TIMEOUT_MS), dispatch);
+    await readGateInOrder(gateSeq, () => withTimeout(loadSyncGate(sb), GATE_TIMEOUT_MS), dispatch, pendingUploads);
   }, [sb]);
 
   // Consent check whenever a session appears; again on foreground when stale or unknown.
@@ -303,7 +304,8 @@ export function SessionProvider({ children, onUnder18 }: Props) {
   }, [checkGate]);
 
   // A-REQ-033, NS-45-R4, O-18: Apple sign-in revoked on this Apple ID (seen at sign-in, on every foreground, and
-  // on Apple's notification): sign out once letters are uploaded (the R3 rule).
+  // on Apple's notification): sign out once letters are uploaded (the R3 rule). The watch runs through a sign-out wait
+  // too (`signedInUser` stays set), and the machine holds a revocation seen then (BL-478 point 3).
   const signedInUser = isSignedIn(state) ? state.userId : null;
   useEffect(() => {
     if (!signedInUser) return;

@@ -2,7 +2,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { STALE_UNKNOWN_MINUTES, securityLensHits, touchesSecurityLens, namedLenses, SECURITY_LENS_NAMES, SECURITY_LENS_CLASSES, buildQueue, workspaceOf, staleBase, parseReview, parseClaims, parseArgs, formatTable, suiteState, passOverRedSuite, hotFileHits, hotFileGroups, reviewState, touchesNative, clean, TRUSTED_ASSOCIATIONS } from "./merge-queue.mjs";
+import { execFileSync } from "node:child_process";
+import { STALE_UNKNOWN_MINUTES, securityLensHits, touchesSecurityLens, namedLenses, SECURITY_LENS_NAMES, SECURITY_LENS_CLASSES, buildQueue, workspaceOf, staleBase, parseReview, parseClaims, parseArgs, formatTable, suiteState, passOverRedSuite, hotFileHits, hotFileGroups, reviewState, touchesNative, clean, TRUSTED_ASSOCIATIONS, filesSince, UNREADABLE, parseCodeowners, protectedPathHits, touchesProtectedPath, classifyPr } from "./merge-queue.mjs";
 
 const OLD = "c5cfa0cfaa96a0ba97ca5f34629747ab0badf438";
 const HEAD = "a83634ced2a5ecf32717bf833f941b892fc660b9";
@@ -669,4 +670,271 @@ test("counted-review trust rule (BL-1537): line-1 header, agent marker on line 2
   assert.equal(reviewState([mk(`${hdr("A", "PASS WITH NOTES")}\nnotes`, "OWNER")], HEAD).A, false, "no Must fix: none line");
   // The pinned list itself.
   assert.deepEqual(TRUSTED_ASSOCIATIONS, ["OWNER", "MEMBER", "COLLABORATOR"]);
+});
+
+// BL-1570: the CR-149 checks as pure functions. One test per rule; each names the rule it proves. No verdict uses them yet.
+const CODEOWNERS = readFileSync(new URL("../../.github/CODEOWNERS", import.meta.url), "utf8");
+const rulesFor = (path, files = [path], owners = CODEOWNERS) => protectedPathHits(files, owners).find((h) => h.path === path)?.rules ?? [];
+
+test("CR-149 rule 1, shared file: filesSince returns the files both the PR and develop changed since the merge base", () => {
+  assert.deepEqual(filesSince(["apps/mobile/src/a.ts", "docs/x.md"], [{ filename: "docs/x.md" }, { filename: "packages/core/src/b.ts" }]), ["docs/x.md"]);
+  assert.deepEqual(filesSince([{ filename: "docs/x.md" }], [{ filename: "docs/y.md" }]), [], "no shared file: no overlap");
+});
+
+test("CR-149 rule 1, rename on one side counts on both sides (filename and previous_filename)", () => {
+  // The PR renames a file that develop edited under its old name.
+  assert.deepEqual(filesSince([{ filename: "docs/new.md", previous_filename: "docs/old.md" }], [{ filename: "docs/old.md" }]), ["docs/old.md"]);
+  // Develop renamed a file that the PR edits under its old name.
+  assert.deepEqual(filesSince([{ filename: "docs/old.md" }], [{ filename: "docs/new.md", previous_filename: "docs/old.md" }]), ["docs/old.md"]);
+});
+
+test("CR-149 rule 1 fails closed: an input that cannot prove no overlap counts as overlap", () => {
+  const capped = Object.assign([{ filename: "docs/y.md" }], { capped: true });
+  for (const [a, b] of [[null, []], [[], undefined], [[{ filename: "docs/x.md" }], capped], [[{ filename: 7 }], []], [[{}], []], [[""], []]]) {
+    assert.deepEqual(filesSince(a, b), [UNREADABLE]);
+  }
+});
+
+test("CR-149 rule 4, CODEOWNERS path: packages/core/src/verify.ts is protected through the CODEOWNERS file text (correction 1, BL-1569)", () => {
+  assert.ok(rulesFor("packages/core/src/verify.ts").includes("CODEOWNERS /packages/core/src/verify.ts"));
+  assert.equal(touchesProtectedPath(["packages/core/src/verify.ts"], CODEOWNERS), true);
+  // A path added to CODEOWNERS later is covered with no change to the script, including unanchored and ** patterns.
+  const later = `${CODEOWNERS}\n/apps/mobile/src/components/keepsake/ @owner\n*.pem @owner\ndocs/**/draft-*.md @owner\n`;
+  assert.deepEqual(rulesFor("apps/mobile/src/components/keepsake/row.tsx", undefined, later), ["CODEOWNERS /apps/mobile/src/components/keepsake/"]);
+  assert.deepEqual(rulesFor("apps/web/certs/a.pem", undefined, later), ["CODEOWNERS *.pem"]);
+  assert.deepEqual(rulesFor("docs/ops/deep/draft-plan.md", undefined, later), ["CODEOWNERS docs/**/draft-*.md"]);
+  assert.equal(touchesProtectedPath(["apps/mobile/src/components/keepsake/row.tsx"], CODEOWNERS), false, "not owned before the line was added");
+  // The `*` catch-all line is not an entry of its own (correction 1), so an ordinary app file is not protected.
+  assert.equal(parseCodeowners("*  @owner\n/**  @owner\n").error, "CODEOWNERS has no entry beyond the catch-all");
+  assert.ok(!parseCodeowners(CODEOWNERS).patterns.some((x) => x.pattern === "*"), "the catch-all is not an entry of its own");
+  assert.equal(touchesProtectedPath(["apps/mobile/src/components/letter/row.tsx", "docs/ops/notes.md"], CODEOWNERS), false);
+  // Fail closed: missing text, or a pattern GitHub does not support, protects every path.
+  assert.deepEqual(rulesFor("docs/ops/notes.md", undefined, null), ["CODEOWNERS text missing"]);
+  assert.ok(rulesFor("docs/ops/notes.md", undefined, "!docs/ @owner\n")[0].startsWith("CODEOWNERS pattern not supported"));
+});
+
+test("CR-149 rule 4 and CR-70: a .env file anywhere in the tree is protected", () => {
+  for (const p of [".env", "apps/mobile/.env.development", "apps/web/.env.local", "infra/.env.d/staging.json"]) assert.ok(rulesFor(p).includes(".env file"), p);
+});
+
+test("CR-149 rule 4: a lockfile anywhere is protected, not only the root package-lock.json", () => {
+  for (const p of ["package-lock.json", "apps/web/package-lock.json", "tools/pnpm-lock.yaml", "yarn.lock"]) assert.ok(rulesFor(p).includes("lockfile"), p);
+});
+
+test("CR-149 rule 4: any package.json change counts as a dependency change (no patch is given, so none is proved safe)", () => {
+  for (const p of ["package.json", "apps/web/package.json", "packages/core/package.json"]) assert.ok(rulesFor(p).includes("package.json dependency change"), p);
+});
+
+test("CR-149 rule 4 and CR-74: a native path (NATIVE_PATHS) is protected, through either name of a rename", () => {
+  assert.ok(rulesFor("apps/mobile/ios/Scribe/AppDelegate.swift").includes("native path (CR-74)"));
+  assert.ok(rulesFor("apps/mobile/patches/expo-av.patch").includes("native path (CR-74)"));
+  const moved = [{ filename: "apps/mobile/src/lib/delegate.ts", previous_filename: "apps/mobile/ios/Scribe/Delegate.swift" }];
+  assert.ok(rulesFor("apps/mobile/ios/Scribe/Delegate.swift", moved).includes("native path (CR-74)"));
+  assert.equal(touchesProtectedPath(moved, CODEOWNERS), true);
+  assert.ok(rulesFor("apps/mobile/IOS/Scribe/AppDelegate.swift").includes("native path (CR-74)"), "case-insensitive checkout");
+});
+
+test("CR-149 rule 4: a migration is protected, under supabase/migrations and any other migrations folder", () => {
+  assert.ok(rulesFor("supabase/migrations/20261124000000_x.sql").includes("migration"));
+  assert.ok(rulesFor("packages/api/migrations/0001.sql").includes("migration"));
+});
+
+test("CR-149 rule 4 and CR-70: the CR-70 list beyond CODEOWNERS (auth, billing, legal, build inputs) is protected", () => {
+  for (const p of ["apps/mobile/src/lib/auth/apple.ts", "apps/mobile/src/app/(auth)/sign-in/email.tsx", "apps/mobile/src/lib/billing/gates.ts",
+    "apps/mobile/src/lib/db/schema.ts", "scripts/release/cut.mjs", "apps/mobile/src/lib/build-env.ts", "docs/legal/terms.md", "docs/DECISIONS.md"]) {
+    assert.ok(rulesFor(p).includes("CR-70 path"), p);
+  }
+});
+
+test("CR-149 rule 4 fails closed: an unreadable list, entry or path counts as protected", () => {
+  for (const files of [null, "apps/x.ts", [], Object.assign(["docs/x.md"], { capped: true }), [{}], [{ filename: 3 }], ["../etc/passwd"], ["/abs/x.ts"], ["a\\b.ts"], ["apps/./x.ts"]]) {
+    assert.equal(touchesProtectedPath(files, CODEOWNERS), true, JSON.stringify(files));
+  }
+});
+
+test("CR-149 class, docs-only PR: every changed path is Markdown or text outside agent and CI folders", () => {
+  assert.equal(classifyPr([{ filename: "docs/ops/proposed/merge-queue-docs-file-overlap.md" }, "README.md", "docs/notes.txt"]), "docs");
+  assert.equal(classifyPr([".claude/agents/ops.md"]), "source", "an agent identity file is an instruction, not docs");
+  assert.equal(classifyPr(["docs/x.md", "docs/x.json"]), "source");
+});
+
+test("CR-149 class, test-only PR: every changed path is a test file or sits in a test folder", () => {
+  assert.equal(classifyPr(["apps/mobile/test/asks-keep-book-store.test.ts", "apps/mobile/e2e-web/j13-reminders.flow.ts", "scripts/agents/merge-queue.test.mjs"]), "test");
+  assert.equal(classifyPr([".github/workflows/tests/run.yml"]), "source", "a workflow is never a test");
+});
+
+test("CR-149 class, source PR: anything else, from paths only; mixed, renamed out of source or unreadable is source", () => {
+  assert.equal(classifyPr(["apps/mobile/src/lib/dates.ts"]), "source");
+  assert.equal(classifyPr(["apps/mobile/test/a.test.ts", "docs/a.md"]), "source", "test plus docs is neither test-only nor docs-only");
+  assert.equal(classifyPr([{ filename: "apps/mobile/test/a.test.ts", previous_filename: "apps/mobile/src/a.ts" }]), "source");
+  for (const files of [null, [], [{}], ["../docs/a.md"], Object.assign(["docs/a.md"], { capped: true })]) assert.equal(classifyPr(files), "source", JSON.stringify(files));
+});
+
+test("CR-149 rule 4 and CR-70 (Review B): auth, account and deletion files hit by substring, camelCase and compound names included", () => {
+  for (const p of ["apps/mobile/src/lib/backup/token-vault.ts", "apps/mobile/src/app/settings/account.tsx",
+    "apps/mobile/src/lib/account-deletion/use-account-deletion.ts", "apps/mobile/src/components/settings/delete-account.logic.ts",
+    "apps/mobile/src/hooks/useAuth.ts", "apps/web/src/lib/authClient.ts", "apps/mobile/src/providers/AuthProvider.tsx",
+    "apps/mobile/src/lib/signInWithApple.ts", "apps/web/src/lib/magic-link.ts", "apps/mobile/src/lib/SessionStore.ts",
+    "apps/mobile/src/lib/otpEntry.ts", "apps/mobile/src/lib/secureStorage.ts", "apps/mobile/src/lib/sign_out.ts", "apps/web/src/lib/tokenCache.ts",
+    "apps/web/src/lib/vault.ts", "apps/mobile/src/lib/deleteAll.ts", "apps/mobile/src/lib/KeychainStore.ts", "apps/mobile/src/lib/oauthCallback.ts",
+    "apps/mobile/src/lib/Paywall.tsx", "apps/mobile/src/lib/useEntitlement.ts", "apps/mobile/src/lib/restorePurchase.ts", "apps/mobile/src/lib/passkeyPrompt.ts",
+    "apps/mobile/src/lib/paymentSheet.ts", "apps/mobile/src/lib/subscriptionStatus.ts", "apps/mobile/src/lib/iapReceipt.ts", "apps/mobile/src/lib/PlusBadge.tsx",
+    "apps/web/src/lib/securityHeaders.ts", "apps/web/src/lib/supabaseClient.ts", "apps/web/src/lib/privacyNotice.ts", "apps/web/src/lib/termsVersion.ts",
+    "apps/web/src/lib/legalLinks.ts", "apps/mobile/src/lib/consentGate.ts"]) {
+    assert.ok(rulesFor(p).includes("CR-70 path"), p);
+  }
+});
+
+test("CR-149 rule 4 and CR-70 (Review B): files protected only by what they read are covered by their folder, since a name rule cannot see content", () => {
+  // Both read auth.getSession but their names say nothing; the backup and analytics folders are listed whole.
+  for (const p of ["apps/mobile/src/lib/backup/runtime.ts", "apps/mobile/src/lib/analytics/forget-retired.ts"]) assert.ok(rulesFor(p).includes("CR-70 path"), p);
+  // .well-known decides which app a sign-in link opens.
+  assert.ok(rulesFor("apps/web/src/app/.well-known/apple-app-site-association/route.ts").includes("CR-70 path"));
+});
+
+test("CR-149 rule 4 and CR-70 (Review A): .gitmodules, .gitattributes and the standing merge delegation decision are protected", () => {
+  for (const p of [".gitmodules", ".gitattributes", "apps/mobile/.gitattributes", "docs/ops/proposed/standing-merge-delegation-decision.md"]) {
+    assert.ok(rulesFor(p).includes("CR-70 path"), p);
+  }
+});
+
+test("CR-149 rule 4: a leading **/ CODEOWNERS pattern matches at any depth, not only at the root", () => {
+  const later = `${CODEOWNERS}\n**/logs @owner\n`;
+  assert.deepEqual(rulesFor("apps/web/deep/logs/today.json", undefined, later), ["CODEOWNERS **/logs"]);
+  assert.deepEqual(rulesFor("logs/today.json", undefined, later), ["CODEOWNERS **/logs"]);
+  assert.equal(touchesProtectedPath(["apps/web/deep/logs/today.json"], CODEOWNERS), false, "not owned before the line was added");
+});
+
+test("CR-149 rule 1: filesSince compares names without case (fail closed: more overlap)", () => {
+  assert.deepEqual(filesSince(["Docs/A.md"], [{ filename: "docs/a.md" }]), ["Docs/A.md"]);
+  assert.deepEqual(filesSince([{ filename: "docs/b.md", previous_filename: "DOCS/a.md" }], ["docs/A.md"]), ["DOCS/a.md"]);
+});
+
+test("CR-149 class: .txt and .mdx are docs only under docs/, and a .txt a check or build reads is source anywhere", () => {
+  assert.equal(classifyPr(["docs/ops/trace-ns-baseline.txt"]), "source", "scripts/trace.mjs --check reads it (CR-227)");
+  for (const p of ["docs/agents/tone-baseline.txt", "docs/ops/action-pins-allowlist.txt", "docs/store/notes-for-review-1.0.txt",
+    "docs/ops/well-known/security.txt", "docs/requirements.txt", "docs/CMakeLists.txt", "requirements.txt", "native/CMakeLists.txt",
+    "apps/web/public/robots.txt", "apps/web/src/content/page.mdx"]) {
+    assert.equal(classifyPr([p]), "source", p);
+  }
+  assert.equal(classifyPr(["docs/notes.txt", "docs/guide.mdx", "apps/web/README.md"]), "docs");
+});
+
+test("CR-149 rule 4 and CR-70 (Review B, second pass): erase, invite, deep-link and app-lock files are protected by name or folder", () => {
+  for (const p of ["apps/mobile/src/lib/erase-everything.ts", "apps/mobile/src/lib/capture/erase.ts", "apps/mobile/src/app/settings/erase.tsx",
+    "apps/mobile/src/components/settings/wipe.logic.ts", "apps/mobile/src/lib/resilience/recovery-export.ts", "packages/api/src/analytics-forget.ts",
+    "apps/mobile/src/app/+native-intent.tsx", "apps/mobile/src/lib/family/entry.logic.ts", "packages/core/src/invite.ts",
+    "apps/mobile/src/lib/family/invites.ts", "apps/mobile/src/lib/family/invite-link.logic.ts", "apps/mobile/src/lib/family/pending-invite.ts",
+    "apps/mobile/src/lib/family/device-invite.ts", "apps/mobile/src/app/invite/[code].tsx", "apps/web/src/app/j/page.tsx",
+    "apps/mobile/src/lib/app-lock/gate.ts", "apps/mobile/src/components/app-lock/Shield.tsx", "apps/mobile/src/app/settings/app-lock.tsx",
+    "docs/ops/backup/backup-role.sql", "docs/ops/well-known/security.txt",
+    "apps/mobile/src/lib/loginForm.ts", "apps/mobile/src/lib/logout.ts", "apps/web/src/lib/signupForm.ts", "apps/web/src/lib/password.ts",
+    "apps/web/src/lib/secretStore.ts", "apps/web/src/lib/credentials.ts", "apps/web/src/lib/jwt.ts", "apps/web/src/lib/crypto.ts",
+    "apps/web/src/lib/apiKey.ts", "apps/web/src/lib/privateKey.ts", "apps/mobile/src/lib/deepLink.ts", "apps/mobile/src/lib/biometricPrompt.ts",
+    "apps/mobile/src/lib/faceId.ts"]) {
+    assert.ok(rulesFor(p).includes("CR-70 path"), p);
+  }
+});
+
+test("CR-149 rule 4: a path with a non-ASCII character is unknown, so protected and source (a zero-width or full-width letter cannot dodge the name rule)", () => {
+  for (const p of ["apps/mobile/src/lib/a\u200buth.ts", "apps/mobile/src/lib/\uff41uth.ts", "apps/mobile/src/lib/S\u0130GN.ts"]) {
+    assert.ok(touchesProtectedPath([p], CODEOWNERS), JSON.stringify(p));
+    assert.equal(classifyPr([p.replace("apps/mobile/src/lib/", "docs/").replace(/\.ts$/, ".md")]), "source", JSON.stringify(p));
+  }
+});
+
+test("CR-149 rule 4: an empty or comment-only CODEOWNERS text fails closed", () => {
+  for (const text of ["", "\n\n", "# owners\n"]) assert.deepEqual(rulesFor("docs/ops/notes.md", undefined, text), ["CODEOWNERS text empty"], JSON.stringify(text));
+  assert.deepEqual(rulesFor("docs/ops/notes.md", undefined, "*  @owner\n"), ["CODEOWNERS has no entry beyond the catch-all"], "a read cut short after the `*` line fails closed");
+});
+
+test("CR-149 rule 4 and CR-70 (Review B, third pass): logic folders are protected whole, since a name list is never complete", () => {
+  // Signed-document and pack trust, session ownership, consent records and the notify routes' logic live in these
+  // folders; listing the folders whole stops the next file with a plain name slipping through.
+  for (const p of ["packages/api/src/integrity.ts", "packages/api/src/canonical.ts", "apps/mobile/src/lib/remote/apply.ts",
+    "apps/mobile/src/lib/packs/engine.ts", "apps/web/src/lib/notify/unsubscribe.ts", "apps/web/src/lib/notify/readme.md",
+    "apps/mobile/src/lib/sync/handover.ts", "apps/mobile/src/lib/first-run/gate.logic.ts", "apps/mobile/src/components/family/JoinSheet.tsx",
+    "apps/mobile/src/lib/agreements.logic.ts", "apps/mobile/src/lib/age-gate.logic.ts", "apps/mobile/src/lib/photos/housekeeping.ts"]) {
+    assert.ok(rulesFor(p).includes("CR-70 path"), p);
+  }
+  // A well-known file with a plain name is still protected by its folder, with or without the leading dot.
+  for (const p of ["docs/ops/well-known/apple-app-site-association", "apps/web/public/.well-known/assetlinks.json"]) assert.ok(rulesFor(p).includes("CR-70 path"), p);
+  // Future names in the security vocabulary hit by substring, outside the protected folders.
+  for (const n of ["Unlock", "passcode", "hashPin", "nonce", "ssoButton", "mfaStep", "totp", "permissions", "roles", "adminPanel", "rlsNote",
+    "csrf", "cors", "escrow", "ownership", "signedUrl", "presign", "cookieBanner", "trustBadge", "identity", "middleware", "agreementRow", "AgeGate"]) {
+    assert.ok(rulesFor(`apps/mobile/src/components/x/${n}.tsx`).includes("CR-70 path"), n);
+  }
+});
+
+test("CR-149 rule 4 and CR-70 (Review B, fourth pass): seams, the root layout, core rules, routes, emails and scripts are protected, each pinned by a real path", () => {
+  for (const p of ["apps/mobile/src/dev/e2e-seams.ts", "apps/mobile/src/dev/e2e-web-seam-load.ts", "apps/mobile/src/dev/kill-drill.ts",
+    "apps/mobile/src/dev/kill-drill.logic.ts", "apps/mobile/src/app/_layout.tsx", "packages/core/src/frozen.ts", "packages/core/src/family-rules.ts",
+    "packages/core/src/model-edits.ts", "packages/core/src/protect.ts", "packs/text-rules/en.json", "apps/mobile/storekit/EarlyLetters.storekit",
+    "apps/mobile/tsconfig.json", "apps/mobile/shims/decode-uri-component.js", "packages/api/src/envelope.ts", "packages/api/src/kill-switches.ts",
+    "apps/web/CLAUDE.md", "apps/web/AGENTS.md", "docs/ops/proposed/migrations-applied/early-letters.txt", "apps/mobile/src/app/settings/children/new.tsx",
+    "apps/mobile/src/app/onboarding.tsx", "apps/web/src/app/layout.tsx", "apps/web/src/app/robots.ts", "apps/web/src/content/pricing.ts",
+    "packages/emails/src/templates/LetterEmail.tsx", "scripts/review-gate/decide.mjs", "scripts/guards/founder-ask.mjs", "scripts/trace.mjs",
+    ".gitignore", ".nvmrc", "LICENSE", "apps/mobile/vitest.config.ts", "apps/mobile/src/env.d.ts", "apps/mobile/web-preview/sqlite-worker-channel.js"]) {
+    assert.ok(rulesFor(p).includes("CR-70 path"), p);
+  }
+  // Real files that only the word rule protects today (Review A, fourth pass).
+  for (const p of ["apps/mobile/src/components/consent/consent-ask.tsx", "apps/mobile/src/components/settings/children/delete-book.tsx",
+    "apps/mobile/src/components/settings/backup.tsx", "apps/web/src/components/unsubscribe/form.tsx", "apps/mobile/src/components/settings/plus.tsx",
+    "apps/mobile/src/components/welcome-sign-in.tsx"]) {
+    assert.ok(rulesFor(p).includes("CR-70 path"), p);
+  }
+});
+
+test("CR-149 rule 4: every word in the security vocabulary is pinned by its own path outside the protected folders", () => {
+  const words = ["auth","sign-in","sign-out","sign-up","log-in","log-out","session","token","vault","account","delet","erase","wipe","purge","forget","recover","restore","export","backup","invite","native-intent","deep-link","app-lock","biometric","face-id","password","secret","cred","jwt","crypt","key","agreement","age-gate","integrity","canonical","signature","signed","verif","hmac","unsubscribe","rate-limit","same-origin","unlock","passcode","hash","nonce","sso","mfa","totp","permission","role","admin","rls","csrf","cors","escrow","owner","presign","cookie","trust","identity","middleware","magic","otp","keychain","secure-stor","passkey","billing","payment","purchase","subscription","paywall","entitlement","iap","plus","security","supabase","privacy","terms","legal","consent"];
+  for (const w of words) assert.ok(rulesFor(`apps/mobile/src/components/x/${w}-row.tsx`).includes("CR-70 path"), w);
+});
+
+test("CR-149 rule 4 (fail closed by default): every tracked file the rule misses sits under a known-safe place, so a new security folder cannot slip through unseen", () => {
+  // The protected list is a deny list. This walks the real tree: a tracked file that gets no hit must be docs, a test,
+  // a media asset, a UI component outside the protected folders, an experiment or one of the few named safe files.
+  // A new file anywhere else fails here until someone adds it to the protected list or, after review, to SAFE.
+  const SAFE = [/^docs\//, /(?:^|\/)(?:test|tests|__tests__|fixtures)\//, /\.test\.[a-z]+$/, /(?:^|\/)e2e-web\/(?:flows|subflows)\//, /(?:^|\/)e2e-web\/[^/]*\.flow\.ts$/, /(?:^|\/)e2e(?:-web)?\/[^/]*\.(?:md|txt)$/, /\.e2e\.ts$/,
+    /^apps\/mobile\/src\/components\/(?:asks|book|capture|content-blocks|find|language|motion|platform|player|resilience|speech|tonight|ui)\//,
+    /^apps\/web\/src\/(?:components|scenes|film)\//, /(?:^|\/)(?:assets|public)\/[^?#]*\.(?:png|jpe?g|gif|webp|avif|svg|ico|ttf|otf|woff2?|mp3|m4a|wav|mp4|webm)$/i,
+    /(?:^|\/)readme\.md$/i,
+    /^apps\/mobile\/components\.json$/, /^apps\/mobile\/src\/generated\/licences\.json$/, /^apps\/mobile\/src\/global\.css$/, /^apps\/mobile\/src\/uniwind-types\.d\.ts$/];
+  // Pin SAFE itself: a widened entry would let these unprotected-by-name paths through unseen.
+  for (const p of ["apps/mobile/src/newthing/x.ts", "packages/newpkg/src/x.ts", "apps/web/public/sw.js", "apps/web/public/_headers",
+    "apps/mobile/e2e/scripts/reset-prod.js", "apps/mobile/e2e/newdir/x.js", "apps/mobile/src/components/handover/x.tsx", "apps/mobile/src/components/onboarding/x.tsx", "apps/mobile/src/components/settings/x.ts", "apps/mobile/assets/x.json", "x.ts", "apps/web/src/newdir/x.ts", "apps/mobile/e2e/seed.js", "apps/mobile/e2e/flows/E2E-02.yaml", "experiments/x.ts"]) {
+    assert.ok(!SAFE.some((re) => re.test(p)), `SAFE must not admit ${p}`);
+  }
+  const owners = readFileSync(new URL("../../.github/CODEOWNERS", import.meta.url), "utf8");
+  const tracked = execFileSync("git", ["ls-files"], { cwd: new URL("../..", import.meta.url), encoding: "utf8" }).split("\n").filter(Boolean);
+  assert.ok(tracked.length > 1000, "git ls-files must list the tree");
+  const unseen = tracked.filter((f) => protectedPathHits([f], owners).length === 0 && !SAFE.some((re) => re.test(f)));
+  assert.deepEqual(unseen, [], "add each path to CR70_EXTRA_PATHS in merge-queue.mjs, or to SAFE here once a security review agrees it is safe");
+});
+
+test("CR-149 rule 4 and CR-70 (Review B, fifth pass): e2e scripts, sign-in and billing components, non-media public files and allowlists are protected", () => {
+  for (const p of ["apps/mobile/e2e/scripts/lib-guard.js", "apps/mobile/e2e/scripts/ensure-user.js", "apps/mobile/e2e/bin/run-suite.sh",
+    "apps/mobile/e2e/bin/run-p0-nightly.sh", "apps/mobile/e2e/bin/run-coparent.sh", "apps/mobile/e2e/scripts/reset-prod.js", "apps/mobile/e2e-web/support/x.ts",
+    "apps/web/e2e/playwright.config.ts", "apps/mobile/e2e/config.yaml", "apps/mobile/src/components/onboarding/new-phone-screens.tsx", "apps/mobile/src/components/onboarding/outage-screen.tsx",
+    "apps/mobile/src/components/onboarding/region-refused-screen.tsx", "apps/mobile/src/components/onboarding/handover.tsx",
+    "apps/mobile/src/components/settings/plan.logic.ts", "apps/mobile/src/components/child/child-store.ts", "docs/ops/action-pins-allowlist.txt",
+    "docs/qa/skip-allowlist.json", "docs/ops/deny-list.txt", "docs/ops/block_list.txt", "apps/mobile/e2e/flows/E2E-02-first-run.yaml", "apps/mobile/e2e/subflows/go-back.yaml", "experiments/edit-compare.ts", "experiments/setup.sh", "docs/store/compliance/data-safety-google-play.md", "docs/store/listing/en-GB.md", "apps/web/public/sw.js", "apps/web/public/_headers", "apps/web/public/export-format/v1.schema.json"]) {
+    assert.ok(rulesFor(p).includes("CR-70 path"), p);
+  }
+  for (const p of ["apps/web/public/og/card.png", "apps/mobile/assets/fonts/x.woff2"]) assert.ok(!rulesFor(p).includes("CR-70 path"), p);
+});
+
+test("CR-70: folders that CODEOWNERS also names are protected by the code list too, so a trimmed CODEOWNERS cannot drop them", () => {
+  const minimal = "*  @owner\ndocs/zzz-unused.md  @owner\n";
+  for (const p of ["packages/content/src/x.ts", "packages/brand/colors.json", "docs/analytics/events.md", "agents/cto.md", ".claude/settings.json"]) {
+    assert.ok(rulesFor(p, [p], minimal).includes("CR-70 path"), p);
+  }
+});
+
+test("CR-149 rule 1 and 4: an entry with only an old name, or a blank or non-string name, is unreadable, never an empty change", () => {
+  for (const f of [{ previous_filename: "docs/a.md" }, { filename: null, previous_filename: "docs/a.md" }, { filename: "", previous_filename: "docs/a.md" },
+    { filename: "docs/a.md", previous_filename: "" }, { filename: "docs/a.md", previous_filename: 7 }, ""]) {
+    assert.ok(touchesProtectedPath([f], CODEOWNERS), JSON.stringify(f));
+    assert.equal(classifyPr([f]), "source", JSON.stringify(f));
+  }
+  assert.deepEqual(rulesFor("docs/a.md", [{ filename: "docs/a.md", previous_filename: null }]), []);
 });

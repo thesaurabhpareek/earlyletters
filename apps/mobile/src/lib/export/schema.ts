@@ -87,7 +87,17 @@ import { brand } from '@scribe/brand';
  * earlier v1 export still validates; the 1.5.0 schema has no `waitingFile`, so read each
  * export with the schema it carries.
  */
-export const EXPORT_SCHEMA_VERSION = '1.6.0';
+/**
+ * 1.7.0 (BL-933, ADR 0028 D2 and Amendment A5, NS-01-R14, NX-39-R32; DELETION_AND_EXPORT_SPEC 4.2 as fixed by
+ * BL-868): a letter's picture goes in the export. `photos/<entry id>/<media id>.jpg` is the copy the app keeps, the
+ * JPEG stripped of Exif, XMP, IPTC and location (re-encoded only when it had to be turned upright), byte for byte (never the original the parent picked; there is no
+ * option for originals). `entries[].photo` becomes an object for a letter whose picture is in this export (the file,
+ * its size and SHA-256, its pixel size when known, and the parent's own words and place for it, as typed), and stays
+ * null otherwise. Letters in Recently deleted carry no picture. Only allowed values widen, so every earlier v1 export
+ * still validates; the 1.6.0 schema allows only `photo: null`, so it rejects a 1.7.0 entries.json that holds a
+ * picture. Read each export with the schema it carries.
+ */
+export const EXPORT_SCHEMA_VERSION = '1.7.0';
 
 /** "early-letters-export", from packages/brand (the name lives only there). */
 export const EXPORT_FORMAT = `${brand.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}-export`;
@@ -107,6 +117,22 @@ export interface ExportAudio {
   integrity: AudioIntegrity;
   /** The hash taken at capture, when there was one. */
   recorded_sha256: string | null;
+}
+
+/**
+ * A letter's picture (1.7.0, ADR 0028 D2): the stored copy, with no metadata, at `file`. `text` and `place`
+ * are the parent's own words for it, exactly as typed; null when they typed none. Nothing here is read from the picture.
+ */
+export interface ExportPhoto {
+  /** `photos/<entry id>/<media id>.jpg`. */
+  file: string;
+  bytes: number;
+  sha256: string;
+  /** Pixel size, when the phone knows it. */
+  width: number | null;
+  height: number | null;
+  text: string | null;
+  place: string | null;
 }
 
 export interface ExportMachineEdit {
@@ -137,7 +163,8 @@ export interface ExportEntry {
   in_book: boolean;
   /** Plain-text copy of this letter inside the export. */
   text_file: string;
-  photo: null;
+  /** Since 1.7.0 an object when this letter's picture is in the export; null otherwise. */
+  photo: ExportPhoto | null;
   audio: ExportAudio | null;
   audio_missing: { reason: AudioMissingReason } | null;
   /** Own letters only (others' working material is never exported). */
@@ -359,6 +386,7 @@ export interface Manifest {
   app_version: string;
   engine_version: number;
   scope: { exporter_role: 'parent' | 'contributor'; children: number; include_recently_deleted: boolean };
+  /** `photos` (real since 1.7.0) is the number of picture files written. */
   counts: { entries: number; audio: number; audio_missing: number; audio_mismatch: number; photos: number; books: number };
   files: ManifestFile[];
 }
@@ -466,6 +494,22 @@ export const exportJsonSchema = {
         },
       },
     },
+    // Since 1.7.0: a letter's picture (ADR 0028 D2). The path names the letter's folder and the picture's own id.
+    photo: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['file', 'bytes', 'sha256', 'width', 'height', 'text', 'place'],
+      properties: {
+        // No `.` or `..` folder; the file name is a stored picture's own id (photos/types.ts isStoredName).
+        file: { type: 'string', pattern: '^photos/[^/.][^/]*/[0-9A-Za-z-]{1,64}\\.jpg$' },
+        bytes: { type: 'integer', minimum: 0 },
+        sha256,
+        width: { type: ['integer', 'null'], minimum: 1 },
+        height: { type: ['integer', 'null'], minimum: 1 },
+        text: { type: ['string', 'null'] },
+        place: { type: ['string', 'null'] },
+      },
+    },
     edit: {
       type: 'object',
       additionalProperties: false,
@@ -507,7 +551,8 @@ export const exportJsonSchema = {
         final_text: { type: 'string' },
         in_book: { type: 'boolean' },
         text_file: { type: 'string', pattern: '^letters/' },
-        photo: { type: 'null' },
+        // Since 1.7.0 also a picture; null when the letter has none in this export.
+        photo: { anyOf: [{ $ref: '#/$defs/photo' }, { type: 'null' }] },
         audio: { anyOf: [{ $ref: '#/$defs/audio' }, { type: 'null' }] },
         audio_missing: {
           anyOf: [
