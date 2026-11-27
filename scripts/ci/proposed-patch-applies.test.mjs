@@ -12,7 +12,8 @@ import path from 'node:path';
 import { REPO_ROOT, checkPatch, checkPatchFile, parsePatch, trackedTree } from './proposed-patch-applies.mjs';
 
 const A11Y = 'docs/ops/proposed/workflows/a11y-evidence.patch';
-const GUARDED = [A11Y];
+const TESTFLIGHT = 'docs/ops/proposed/workflows/testflight-checks-job.patch';
+const GUARDED = [A11Y, TESTFLIGHT];
 
 /** An in-memory tree for the pure checks: { path: content }. */
 const memTree = (files) => ({ exists: (p) => Object.hasOwn(files, p), read: (p) => files[p] });
