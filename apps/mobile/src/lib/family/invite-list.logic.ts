@@ -43,10 +43,14 @@ function readInvite(raw: unknown): PendingInviteRow | null {
  * The pending invites of one book from a `sync_books` answer, in the server's order (newest first).
  * A book the answer does not list, or one whose `invites` is null (not a parent), has none; a row
  * that does not read is skipped. An answer with no `books` list at all is not a list: it throws, so
- * the screen keeps what it shows instead of clearing it.
+ * the screen keeps what it shows instead of clearing it. So does a closed answer (`withheld: 'consent'`,
+ * FR-PRV-20, 20261123100000): its books carry no invites key, which says nothing about the pending
+ * invites, and reading it as an empty list would clear the rows and show the invite card over them.
  */
 export function readPendingInvites(data: unknown, childId: string): PendingInviteRow[] {
-  const books = data && typeof data === 'object' ? (data as { books?: unknown }).books : undefined;
+  const answer = data && typeof data === 'object' ? (data as { books?: unknown; withheld?: unknown }) : undefined;
+  if (answer?.withheld === 'consent') throw new Error('sync_books_withheld');
+  const books = answer?.books;
   if (!Array.isArray(books)) throw new Error('sync_books_unreadable');
   const book = books.find((b): b is { invites?: unknown } => !!b && typeof b === 'object' && (b as { id?: unknown }).id === childId);
   const invites = book?.invites;
