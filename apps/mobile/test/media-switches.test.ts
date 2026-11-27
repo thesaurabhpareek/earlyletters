@@ -228,11 +228,21 @@ async function vitestRuns(): Promise<VitestRun[]> {
 }
 
 const RESOLVE_EXTS = ['ts', 'tsx', 'js', 'jsx', 'mjs', 'cjs'];
-const firstFile = (base: string): string | null => {
-  for (const c of [base, ...RESOLVE_EXTS.map((e) => `${base}.${e}`), ...RESOLVE_EXTS.map((e) => join(base, `index.${e}`))]) {
-    if (statSync(c, { throwIfNoEntry: false })?.isFile() && CODE_FILE.test(c)) return c;
-  }
-  return null;
+/**
+ * The platform suffixes Metro tries on iOS, in its order: `x.ios.ts`, then `x.native.ts`, then `x.ts` (Review A P1: the
+ * repo pairs `components/platform/toggle.tsx` with `toggle.ios.tsx`, and an iOS store bundle ships the `.ios` file).
+ */
+const IOS_PLATFORM_SUFFIXES = ['.ios', '.native', ''];
+/**
+ * Every code file Metro could pick for `base` on iOS: `base` itself, then `base.ios.<ext>`, `base.native.<ext>` and
+ * `base.<ext>` for each extension, and the same for `base/index`. All that exist are returned, not the first, so the
+ * closure and the scan read the iOS file Metro ships and the base file next to it alike; reading one more file only
+ * adds a read to check, never hides one.
+ */
+const codeFilesFor = (base: string): string[] => {
+  const stems = [base, join(base, 'index')];
+  const candidates = [base, ...stems.flatMap((stem) => IOS_PLATFORM_SUFFIXES.flatMap((p) => RESOLVE_EXTS.map((e) => `${stem}${p}.${e}`)))];
+  return [...new Set(candidates.filter((c) => statSync(c, { throwIfNoEntry: false })?.isFile() && CODE_FILE.test(c)))];
 };
 /** The workspace packages by name, with their export map, so `@scribe/design-tokens/fonts` resolves as Metro does. */
 const WORKSPACES: Map<string, { dir: string; main?: string; exports?: Record<string, string> }> = new Map(
@@ -242,27 +252,28 @@ const WORKSPACES: Map<string, { dir: string; main?: string; exports?: Record<str
   }),
 );
 /**
- * Resolve a module specifier written in `from` to a code file in the tree, or null (an outside package, or not code):
- * relative paths, the app's `@/` alias, and the workspace packages through their `exports` (or `main` and a deep path).
- * JavaScript counts as much as TypeScript: Metro bundles a `.js`, `.jsx` or `.mjs` helper an eraser imports, so the
- * closure follows it (Review A X3: `./erase-gate.js` calling mediaPhaseBuilt was never scanned).
+ * Resolve a module specifier written in `from` to the code files in the tree Metro could bundle for it on iOS, or none
+ * (an outside package, or not code): relative paths, the app's `@/` alias, and the workspace packages through their
+ * `exports` (or `main` and a deep path). Each platform variant that exists is returned (codeFilesFor). JavaScript counts
+ * as much as TypeScript: Metro bundles a `.js`, `.jsx` or `.mjs` helper an eraser imports, so the closure follows it
+ * (Review A X3: `./erase-gate.js` calling mediaPhaseBuilt was never scanned).
  */
-function resolveImport(from: string, spec: string): string | null {
-  if (spec.startsWith('@/')) return firstFile(join(SRC, spec.slice(2)));
-  if (spec.startsWith('.')) return firstFile(join(dirname(from), spec));
+function resolveImport(from: string, spec: string): string[] {
+  if (spec.startsWith('@/')) return codeFilesFor(join(SRC, spec.slice(2)));
+  if (spec.startsWith('.')) return codeFilesFor(join(dirname(from), spec));
   const m = /^(@scribe\/[^/]+)(?:\/(.*))?$/.exec(spec);
   const ws = m ? WORKSPACES.get(m[1]) : undefined;
-  if (!m || !ws) return null;
+  if (!m || !ws) return [];
   const sub = m[2] === undefined ? '.' : `./${m[2]}`;
   if (ws.exports) {
     const exact = ws.exports[sub];
-    if (exact !== undefined) return firstFile(join(ws.dir, exact));
+    if (exact !== undefined) return codeFilesFor(join(ws.dir, exact));
     for (const [k, v] of Object.entries(ws.exports)) {
-      if (k.endsWith('/*') && sub.startsWith(k.slice(0, -1))) return firstFile(join(ws.dir, v.replace('*', sub.slice(k.length - 1))));
+      if (k.endsWith('/*') && sub.startsWith(k.slice(0, -1))) return codeFilesFor(join(ws.dir, v.replace('*', sub.slice(k.length - 1))));
     }
-    return null;
+    return [];
   }
-  return firstFile(join(ws.dir, sub === '.' ? (ws.main ?? 'index') : sub));
+  return codeFilesFor(join(ws.dir, sub === '.' ? (ws.main ?? 'index') : sub));
 }
 /**
  * The module specifiers a file names: `from 'x'` (import, export-from, import type), `require('x')`, `import('x')`, and
@@ -272,9 +283,10 @@ function resolveImport(from: string, spec: string): string | null {
  */
 const IMPORT_SPEC = /(?:\bfrom\s*|\brequire\s*\(\s*|\bimport\s*\(\s*|\bimport\s*)['"]([^'"]+)['"]/g;
 const importSpecs = (code: string): string[] => [...code.matchAll(IMPORT_SPEC)].map((m) => m[1]);
-/** The code files in the tree a file imports, by any of those forms, outside node_modules. */
-const importsOf = (file: string): string[] =>
-  importSpecs(readFileSync(file, 'utf8')).map((spec) => resolveImport(file, spec)).filter((f): f is string => f !== null && !inNodeModules(f));
+/** The code files in the tree a file imports, by any of those forms and in every iOS platform variant, outside node_modules. */
+const importsOf = (file: string): string[] => [
+  ...new Set(importSpecs(readFileSync(file, 'utf8')).flatMap((spec) => resolveImport(file, spec)).filter((f) => !inNodeModules(f))),
+];
 
 /**
  * The files the name scan reads, out of the walked ones: every file but those vitest runs. A file vitest runs is left
@@ -598,6 +610,18 @@ describe('[NX-39-R37] a phase switch removes screens and reads, never a data rig
       const sideClosure = closureOf([file]);
       expect(sideClosure.map((f) => basename(f))).toEqual(['copy.ts', 'erase-gate2.ts', 'erase-policy.ts', 'erase-side.js']);
       expect(switchReads(sideClosure)).toEqual([expect.stringMatching(/erase-gate2\.ts#<module>$/), expect.stringMatching(/erase-side\.js#<module>$/)]);
+      // Review A P1: a clean base file with an iOS file next to it that reads a switch. Metro ships the iOS file on iOS,
+      // so the closure follows every platform variant (base, `.ios`, `.native`, and under an index folder too).
+      writeFileSync(join(dir, 'erase-gate3.ts'), 'export const keepVideoPictures = (): boolean => false;\n');
+      writeFileSync(join(dir, 'erase-gate3.ios.ts'), "import { mediaPhaseBuilt } from './capabilities';\nexport const keepVideoPictures = (): boolean => mediaPhaseBuilt('video');\n");
+      mkdirSync(join(dir, 'erase-dir'));
+      writeFileSync(join(dir, 'erase-dir', 'index.ts'), 'export const keepAudio = false;\n');
+      writeFileSync(join(dir, 'erase-dir', 'index.native.tsx'), "import { mediaPhaseMayRun } from '../capabilities';\nexport const keepAudio = mediaPhaseMayRun('video', null);\n");
+      writeFileSync(file, "import { keepVideoPictures } from './erase-gate3';\nimport { keepAudio } from './erase-dir';\nexport function eraseEverything() {\n  if (keepVideoPictures() || keepAudio) return;\n}\n");
+      expect(resolveImport(file, './erase-gate3').map((f) => basename(f))).toEqual(['erase-gate3.ios.ts', 'erase-gate3.ts']);
+      const iosClosure = closureOf([file]);
+      expect(iosClosure.map((f) => relative(dir, f))).toEqual(['copy.ts', join('erase-dir', 'index.native.tsx'), join('erase-dir', 'index.ts'), 'erase-gate3.ios.ts', 'erase-gate3.ts']);
+      expect(switchReads(iosClosure)).toEqual([expect.stringMatching(/index\.native\.tsx#<module>$/), expect.stringMatching(/erase-gate3\.ios\.ts#keepVideoPictures$/)]);
       // and the names an import or a declaration gives are not reads
       writeFileSync(file, "import { mediaPhaseBuilt } from './capabilities';\nexport { mediaPhaseBuilt };\nexport const keys = { mediaPhaseBuilt: 1, 'photosPaused': 2 };\n");
       expect(switchReads([file])).toEqual([]);
