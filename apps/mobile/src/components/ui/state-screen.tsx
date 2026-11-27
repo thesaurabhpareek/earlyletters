@@ -37,9 +37,10 @@ import { Card } from '@/components/ui/card';
 import { LineArt, type LineArtName } from '@/components/ui/line-art';
 import { PinnedActionLayout } from '@/components/ui/pinned-action';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
-import { actionLayout, STATE_LAYOUT, STATE_SPEC, stateA11y, stateVisual, type StateAction, type StateKind } from '@/components/ui/state-screen.logic';
+import { actionLayout, STATE_LAYOUT, STATE_SPEC, stateSpoken, stateVisual, type StateAction, type StateKind } from '@/components/ui/state-screen.logic';
 import { Text } from '@/components/ui/text';
-import { useTheme } from '@/lib/a11y';
+import { announce, useTheme } from '@/lib/a11y';
+import { useSaidOnChange } from '@/lib/said-on-change';
 import { STANDARD_EASING } from '@/lib/motion';
 import { useIsFocused } from 'expo-router';
 
@@ -99,6 +100,24 @@ export function StateGlyph({ icon: Glyph }: { icon: PhosphorIcon }) {
   );
 }
 
+/** Role props for the block, so every state announces itself the same way (STATE_SPEC: polite, never assertive). */
+export function stateA11y(kind: StateKind): { accessibilityLiveRegion?: 'polite'; accessibilityState?: { busy: boolean } } {
+  const s = STATE_SPEC[kind];
+  return {
+    ...(s.live === 'polite' ? { accessibilityLiveRegion: 'polite' as const } : {}),
+    ...(s.busy ? { accessibilityState: { busy: true } } : {}),
+  };
+}
+
+/**
+ * iOS does not read the block's live region, so a polite state that changes in place (loading turns into an error, a
+ * heading changes) is said once with announce() (PER4-018). Its first appearance is not said here: the screens that
+ * need it say their own arrival (useArrival, open-deletion), and a second call would say their titles twice.
+ */
+function useStateSaid(kind: StateKind, o: { title: string; body?: string; label?: string }) {
+  useSaidOnChange(stateSpoken(kind, o), (line) => announce(line), { fromNothing: false });
+}
+
 /** Screen-level: the loading drawing breathes only while its screen is focused. */
 export function StateScreen(props: StateScreenProps) {
   return <StateScreenView {...props} focused={useIsFocused()} />;
@@ -110,6 +129,7 @@ export function StateScreen(props: StateScreenProps) {
  */
 export function StateScreenView({ kind, title, body, art, glyph, drawing, primary, quiet, header, focused = true }: StateScreenProps & { focused?: boolean }) {
   const visual = stateVisual(kind, { art, glyph, drawing });
+  useStateSaid(kind, { title, body });
   const L = STATE_LAYOUT;
   const picture =
     visual.slot === 'drawing' ? (
@@ -164,6 +184,7 @@ export type InlineStateProps = Common & {
 export function InlineState({ kind, title, body, art, glyph, primary, quiet, children, accessibilityLabel, still = false }: InlineStateProps) {
   const spec = STATE_SPEC[kind];
   const focused = useIsFocused();
+  useStateSaid(kind, { title, body, label: accessibilityLabel });
   // Loading always has its drawing (breathing unless held still); other kinds show one only when `art` names it (S16).
   const drawing = kind === 'loading' ? (art ?? spec.art) : art;
   return (
