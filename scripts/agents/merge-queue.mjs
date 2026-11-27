@@ -76,6 +76,7 @@
 //     rule 2  `git merge-tree --write-tree` of the base sha and the head is clean (conflict or could not run: strict)
 //     rule 5  the base sha is read again; if it moved, rules 4, 1 and 2 run again on the new sha (at most 2 times, then
 //             "kept moving"). The merge call stays sha-pinned, and the ready line says to re-read the base first.
+//   Only PRs into develop (CR149_BASE) are relaxed; main, release branches and any other --base keep the strict rule.
 //   A source PR (from paths only, classifyPr) is told to run its own tests and tsc on the scratch merge; the queue reports
 //   that as required and does not run it. Every read error or odd shape fails closed (strict rule), never READY.
 // - Claims: lines of docs/agents/CLAIMS.md (if present, not required) that mention
@@ -277,6 +278,9 @@ export const CR70_EXTRA_PATHS = [
   /^apps\/mobile\/src\/lib\/backup\//i, /^apps\/mobile\/src\/lib\/analytics\//i, /(?:^|\/)\.?well-known\//i, /^apps\/mobile\/src\/lib\//i, /^apps\/web\/src\/lib\//i, /^packages\/api\//i, /^apps\/mobile\/src\/components\/family\//i, /^apps\/mobile\/src\/components\/app-lock\//i, /^packages\/core\//i, /^apps\/mobile\/src\/dev\//i, /^apps\/mobile\/src\/app\/_layout\.tsx$/i, /^packs\//i, /^apps\/mobile\/storekit\//i, /^apps\/mobile\/shims\//i, /(?:^|\/)tsconfig[^/]*\.json$/i, /(?:^|\/)migrations[-_]applied(?:\/|\.txt$)/i, /^apps\/mobile\/src\/app\//i, /^apps\/web\/src\/app\//i, /^apps\/web\/src\/content\//i, /^packages\/emails\//i, /^scripts\//i, /(?:^|\/)\.gitignore$/i, /(?:^|\/)\.nvmrc$/i, /(?:^|\/)agents\.md$/i, /(?:^|\/)vitest[^/]*\.config\.[a-z]+$/i, /(?:^|\/)env\.d\.ts$/i, /^apps\/mobile\/web-preview\//i, /^licen[cs]e(?:\.[a-z]+)?$/i, /^apps\/mobile\/src\/components\/(?:onboarding|settings|child|account|auth|gate|consent|photos)\//i, /(?:^|\/)e2e(?:-web)?\/(?:scripts|bin|ci|kill|support)\//i, /(?:^|\/)e2e(?:-web)?\/[^/]*config[^/]*$/i, /(?:^|\/)e2e\/(?:flows|subflows)\//i, /^experiments\//i, /^docs\/store\/(?:compliance|listing)\//i, /(?:^|\/)playwright[^/]*\.config\.[a-z]+$/i, /(?:^|\/)(?:public|assets)\/(?![^?#]*\.(?:png|jpe?g|gif|webp|avif|svg|ico|ttf|otf|woff2?|mp3|m4a|wav|mp4|webm)$)/i,
   /^apps\/mobile\/src\/app\/invite\//i, /^apps\/web\/src\/app\/j\//i, /^docs\/ops\/backup\//i, /(?:^|\/)\.git(?:modules|attributes)$/i,
   /^docs\/ops\/proposed\/standing-merge-delegation-decision\.md$/i,
+  // CR-229 (24 Nov 2026) added these to the CR-73 list: the trace gate reads them from the PR itself, so a PR could weaken
+  // the check that gates it. scripts/trace.mjs and scripts/trace.test.mjs are already held by /^scripts\//.
+  /^docs\/product\/prd\/14-test-plan\.md$/i, /^docs\/ops\/trace-ns-baseline\.txt$/i,
   /auth|sign[-_]?in|sign[-_]?out|sign[-_]?up|log[-_]?in|log[-_]?out|session|token|vault|account|delet|erase|wipe|purge|forget|recover|restore|export|backup|invite|native-intent|deep[-_]?link|app[-_]?lock|biometric|face[-_]?id|password|secret|cred|jwt|crypt|key|agreement|age[-_]?gate|integrity|canonical|signature|signed|verif|hmac|unsubscribe|rate[-_]?limit|same[-_]?origin|unlock|passcode|hash|nonce|sso|mfa|totp|permission|role|admin|rls|csrf|cors|escrow|owner|presign|cookie|trust|identity|middleware|magic|otp|keychain|secure[-_]?stor|passkey|billing|payment|purchase|subscription|paywall|entitlement|iap|plus|security|supabase|privacy|terms|legal|consent|allow[-_]?list|deny[-_]?list|block[-_]?list/i,
 ];
 /** Lockfiles of any package manager, anywhere in the tree (CR-149 rule 4 says "no lockfile", not only the root one). */
@@ -416,6 +420,8 @@ export function classifyPr(files) {
 export const CR149_FLAG = "MERGE_QUEUE_CR149";
 /** Exactly the string "1" is on; anything else ("true", "yes", "0", empty, missing) is off, so a typo keeps the strict rule. */
 export const cr149FlagOn = (env) => env?.[CR149_FLAG] === "1";
+/** The only base CR-149 relaxes: it rules on develop's churn. Every other base keeps the strict rule. */
+export const CR149_BASE = "develop";
 const SHA40 = /^[0-9a-f]{40}$/;
 /** The repo root of this checkout (scripts/agents/../..): the only place the local `git merge-tree` runs. */
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -770,8 +776,9 @@ export async function buildQueue({ api, repo = DEFAULT_REPO, now = new Date(), q
       }
     }
     row.verdict = verdictFor(row, quietMinutes);
-    if (cr149 === true && row.verdict === "NEEDS-UPDATE") {
+    if (cr149 === true && row.verdict === "NEEDS-UPDATE" && p.base.ref === CR149_BASE) {
       // CR-149 runs only where the strict rule says NEEDS-UPDATE, so rule 3 (reviews and checks at head) is already met.
+      // CR-149 is a ruling about develop; a PR into main or a release branch keeps the strict rule whatever --base says.
       try {
         row.cr149 = await evaluateCr149({ get, repo, base: p.base.ref, head, prFiles: files, mergeTree });
       } catch {

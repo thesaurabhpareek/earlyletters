@@ -960,7 +960,7 @@ function fake149({ shas = [DEV1], owners = b64(CODEOWNERS), devFiles = {}, defau
       const sha = shas[Math.min(reads++, shas.length - 1)];
       return sha === undefined ? {} : { commit: { sha } };
     }
-    if (p.endsWith("/contents/.github/CODEOWNERS")) { calls.push({ path, method: o.method }); return owners; }
+    if (p.endsWith("/contents/.github/CODEOWNERS")) { calls.push({ path, method: o.method }); return typeof owners === "function" ? owners(/[?&]ref=([0-9a-f]{40})/.exec(path)?.[1]) : owners; }
     const m = /\/compare\/([0-9a-f]{40})\.\.\.([0-9a-f]{40})$/.exec(p);
     if (m) {
       calls.push({ path, method: o.method });
@@ -1129,6 +1129,46 @@ test("CR-149 rule 5: develop moving on every read is NEEDS-UPDATE, kept moving; 
   assert.equal(overlap.r.verdict, "NEEDS-UPDATE");
   assert.equal(overlap.r.cr149.failed, "rule 1: file overlap docs/ops/notes.md");
   assert.equal(overlap.r.cr149.baseSha, DEV2);
+});
+
+test("CR-149 rule 5: the re-run checks rules 4 and 2 again, so a protected path or a conflict that only the new sha has fails", async () => {
+  const owned = { ...DOCS_PR, shas: [DEV1, DEV2, DEV2] };
+  // CODEOWNERS gains an entry for the PR's folder only at the new sha.
+  const ownedLater = await run149({ ...owned, owners: (ref) => b64(ref === DEV2 ? `${CODEOWNERS}\n/docs/ops/ @owner\n` : CODEOWNERS) });
+  assert.equal(ownedLater.r.verdict, "NEEDS-UPDATE");
+  assert.equal(ownedLater.r.cr149.failed, "rule 4: protected path docs/ops/notes.md (CODEOWNERS /docs/ops/)");
+  assert.equal(ownedLater.r.cr149.baseSha, DEV2);
+  const conflictLater = await run149(owned, { mergeTree: treeStub((sha) => (sha === DEV2 ? "conflict" : "clean")) });
+  assert.equal(conflictLater.r.verdict, "NEEDS-UPDATE");
+  assert.equal(conflictLater.r.cr149.failed, "rule 2: merge-tree conflict");
+  assert.equal(conflictLater.r.cr149.baseSha, DEV2);
+});
+
+test("CR-149: only PRs into develop are relaxed; a PR into main keeps NEEDS-UPDATE with no CR-149 reads", async () => {
+  const calls = [];
+  const api = fake149({ ...DOCS_PR, calls });
+  const main = async (path, o) => {
+    const p = path.split("?")[0];
+    if (p.endsWith("/pulls")) return [{ number: 7, draft: false, head: { sha: HEAD }, base: { ref: "main" } }];
+    if (p.includes("/compare/main...")) return { behind_by: 3 };
+    if (p.endsWith("...main")) return { files: [{ filename: "docs/ops/other.md" }] };
+    if (p.endsWith("/branches/main/protection")) return PROT;
+    return api(path, o);
+  };
+  const [r] = await buildQueue({ api: main, now: NOW, quietMinutes: 10, cr149: true, mergeTree: treeStub(), base: "main" });
+  assert.equal(r.verdict, "NEEDS-UPDATE");
+  assert.equal(r.cr149, undefined);
+  assert.ok(!calls.some((c) => /\/branches\/[^/]+$|CODEOWNERS|\/compare\/[0-9a-f]{40}\.\.\.[0-9a-f]{40}$/.test(c.path.split("?")[0])), "no CR-149 read for a PR into main");
+});
+
+test("CR-149 rule 4: the two CR-229 paths (the NS register and the trace baseline) are protected", async () => {
+  for (const f of ["docs/product/prd/14-test-plan.md", "docs/ops/trace-ns-baseline.txt"]) {
+    assert.ok(protectedPathHits([f], CODEOWNERS).some((h) => h.rules.includes("CR-70 path")), f);
+    const dir = f.slice(0, f.lastIndexOf("/"));
+    const r = (await run149(stale149([f], [`${dir}/other.md`]))).r;
+    assert.equal(r.verdict, "NEEDS-UPDATE", f);
+    assert.match(r.cr149.failed, new RegExp(`^rule 4: protected path ${f.replace(/[.]/g, "\\.")} \\(CR-70 path`), f);
+  }
 });
 
 test("CR-149: an unreadable develop sha, or one that is not 40 hex, keeps NEEDS-UPDATE", async () => {
