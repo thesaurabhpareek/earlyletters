@@ -262,8 +262,8 @@ Why the bodies change: "A year of letters" says a year of letters exists. A pare
 
 | Key | Status | Title | Body | Shown when |
 |---|---|---|---|---|
-| `reminderCopy.neutral.typedDay` | PROPOSED | A day you wanted to remember | Tap to see the words you added for today. | `.typedDay` (show-words off, the default) |
-| (the parent's words) | PROPOSED rule | A day you wanted to remember | the words exactly as typed: no quotes, no prefix, nothing added | `.typedDay.words` (show-words on) |
+| `reminderCopy.neutral.typedDay` | PROPOSED | A day you wanted to remember | Tap to see the words you added for today. | `.typedDay` (day names off, the default; or Names in notifications off; or App lock on; CPrivO-58) |
+| (the parent's words) | PROPOSED rule | A day you wanted to remember | the words exactly as typed: no quotes, no prefix, nothing added | `.typedDay.words` (day names on AND Names in notifications on AND App lock off; CPrivO-58) |
 
 Kept under `reminderCopy.neutral` so the rules test's length and rhythm checks read it. The typed words are not copy and are never checked or changed.
 
