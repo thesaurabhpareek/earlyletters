@@ -16,11 +16,14 @@
  */
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
-import { afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { OPEN_PRAGMAS } from '../src/lib/db/expo-adapter';
 import { LATEST_VERSION, MIGRATIONS, MigrationError, migrate, userVersion } from '../src/lib/db/migrations';
 import { POOL_FILES, withFullPool } from '../web-preview/sqlite-pool-capacity.js';
-import { webSqliteDb, type WebSqliteDb } from './helpers/web-sqlite-db';
+import { ANSWER_MS, webSqliteDb, type WebSqliteDb } from './helpers/web-sqlite-db';
+
+// Above ANSWER_MS, so a worker that dies fails its test with the helper's own message, not a bare timeout.
+vi.setConfig({ testTimeout: 3 * ANSWER_MS });
 
 const require = createRequire(import.meta.url);
 const APP = join(__dirname, '..');
@@ -140,6 +143,22 @@ describe('[BL-464] the fix: the web copy tops the pool up to its full size on ev
   });
 });
 
+describe('[BL-464] the harness fails fast when the worker cannot answer', () => {
+  it('an answer over the shared buffer comes back as an error, and the worker answers the next call', async () => {
+    const o = await start('topped-up', null);
+    expect(() => o.db.get("SELECT replace(hex(zeroblob(600000)), '0', 'x') AS s")).toThrow(/answer to rows is \d+ bytes, over the \d+ its buffer holds/);
+    expect(o.db.get<{ n: number }>('SELECT 1 AS n')).toEqual({ n: 1 });
+  });
+
+  it('a worker that ends in the middle of a call fails the call by its deadline instead of hanging the run', async () => {
+    const o = await webSqliteDb({ pool: 'topped-up', cutAt: null, answerMs: 300 });
+    open.push(o);
+    const t = Date.now();
+    expect(() => o.crash()).toThrow('web sqlite worker gave no answer to crash in 300 ms: it has likely died');
+    expect(Date.now() - t).toBeLessThan(ANSWER_MS);
+  });
+});
+
 describe('[BL-464] metro swaps the pool copy in on web only', () => {
   // BL-443: metro.config.js loads expo/metro-config, which can take seconds on a cold runner.
   let config: {
@@ -170,6 +189,15 @@ describe('[BL-464] metro swaps the pool copy in on web only', () => {
     for (const platform of ['ios', 'android']) {
       const calls: string[] = [];
       const result = config.resolver.resolveRequest(fromWorker(calls), './wa-sqlite/AccessHandlePoolVFS', platform);
+      expect(result.filePath).not.toBe(COPY);
+      expect(calls).toEqual(['./wa-sqlite/AccessHandlePoolVFS']);
+    }
+  });
+
+  it('leaves the same import from any other file on the installed path, on web too', () => {
+    for (const origin of [join(EXPO_WEB, 'SQLiteModule.ts'), join(APP, 'not-expo-sqlite', 'web', 'worker.ts'), join(APP, 'x-expo-sqlite', 'web', 'worker.ts')]) {
+      const calls: string[] = [];
+      const result = config.resolver.resolveRequest({ ...fromWorker(calls), originModulePath: origin }, './wa-sqlite/AccessHandlePoolVFS', 'web');
       expect(result.filePath).not.toBe(COPY);
       expect(calls).toEqual(['./wa-sqlite/AccessHandlePoolVFS']);
     }

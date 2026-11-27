@@ -51,9 +51,13 @@ sqlite3.vfs_register(vfs, true);
 const db = await sqlite3.open_v2('scribe.db', SQLite.SQLITE_OPEN_READWRITE | SQLite.SQLITE_OPEN_CREATE, VFS_NAME);
 
 parentPort.on('message', async ({ op, sql, params, lock, buf }) => {
-  let out;
+  const encode = (o) => new TextEncoder().encode(JSON.stringify(o));
+  let bytes;
   try {
-    if (op === 'exec') {
+    let out;
+    if (op === 'crash') {
+      process.exit(1); // ends this worker thread only; see WebSqliteDb.crash
+    } else if (op === 'exec') {
       await sqlite3.exec(db, sql);
       out = { result: null };
     } else {
@@ -68,10 +72,14 @@ parentPort.on('message', async ({ op, sql, params, lock, buf }) => {
       }
       out = { result: rows };
     }
+    bytes = encode(out);
+    if (bytes.length > buf.byteLength - 4) {
+      throw new Error(`web sqlite worker answer to ${op} is ${bytes.length} bytes, over the ${buf.byteLength - 4} its buffer holds`);
+    }
   } catch (e) {
-    out = { error: String(e?.message ?? e) };
+    // Every failure goes back as an answer: a throw here would end the worker and leave the caller waiting.
+    bytes = encode({ error: String(e?.message ?? e).slice(0, 1000) });
   }
-  const bytes = new TextEncoder().encode(JSON.stringify(out));
   new Uint32Array(buf, 0, 1)[0] = bytes.length;
   new Uint8Array(buf).set(bytes, 4);
   const l = new Int32Array(lock);

@@ -44,7 +44,7 @@ uniwindConfig.resolver.resolveRequest = (context, moduleName, platform) => {
   // Web only: expo-sqlite 57.0.3's OPFS pool is refilled only when empty, so a page that ends during the first setup
   // leaves too few files and migration 1 cannot open its journal (BL-464). Swap in a copy that tops the pool up
   // (web-preview/sqlite-access-handle-pool-vfs.js); its ./AccessHandlePoolVFS import resolves to the installed file.
-  if (platform === 'web' && context.originModulePath.includes(`expo-sqlite${path.sep}web${path.sep}`) && moduleName === './wa-sqlite/AccessHandlePoolVFS') {
+  if (platform === 'web' && context.originModulePath.endsWith(path.sep + path.join('expo-sqlite', 'web', 'worker.ts')) && moduleName === './wa-sqlite/AccessHandlePoolVFS') {
     return { type: 'sourceFile', filePath: sqlitePoolFix };
   }
   if (platform === 'web' && context.originModulePath === sqlitePoolFix && moduleName === './AccessHandlePoolVFS') {

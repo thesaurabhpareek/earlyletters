@@ -13,9 +13,22 @@ export interface WebSqliteDb {
   filesLeft: number;
   poolFiles: number;
   close: () => Promise<number>;
+  /** A test of this helper only: the worker ends in the middle of a call, as a wasm abort would. */
+  crash: () => void;
 }
 
-export async function webSqliteDb(opts: { pool: 'upstream' | 'topped-up'; cutAt: number | null }): Promise<WebSqliteDb> {
+/**
+ * How long a call waits for the worker's answer before it throws. The wait blocks the thread, so vitest's own timeout
+ * cannot end it: keep this under the test timeout of every file that uses the helper (test/web-sqlite-pool.test.ts).
+ */
+export const ANSWER_MS = 10_000;
+
+export async function webSqliteDb(opts: {
+  pool: 'upstream' | 'topped-up';
+  cutAt: number | null;
+  answerMs?: number;
+}): Promise<WebSqliteDb> {
+  const answerMs = opts.answerMs ?? ANSWER_MS;
   // web-preview/*.js is ESM in a package with no "type"; Node parses it as ESM and would warn on every start.
   const w = new Worker(join(__dirname, 'web-sqlite-worker.mjs'), { workerData: opts, execArgv: ['--disable-warning=MODULE_TYPELESS_PACKAGE_JSON'] });
   const info = await new Promise<{ filesLeft: number; poolFiles: number }>((resolve, reject) => {
@@ -24,11 +37,16 @@ export async function webSqliteDb(opts: { pool: 'upstream' | 'topped-up'; cutAt:
   });
   const lock = new SharedArrayBuffer(4);
   const buf = new SharedArrayBuffer(1024 * 1024);
-  const call = <T>(op: 'exec' | 'rows', sql: string, params: SqlParam[] = []): T => {
+  const call = <T>(op: 'exec' | 'rows' | 'crash', sql: string, params: SqlParam[] = []): T => {
     const l = new Int32Array(lock);
     Atomics.store(l, 0, 1);
     w.postMessage({ op, sql, params, lock, buf });
-    while (Atomics.load(l, 0) === 1) Atomics.wait(l, 0, 1, 1000);
+    const deadline = Date.now() + answerMs;
+    while (Atomics.load(l, 0) === 1) {
+      const left = deadline - Date.now();
+      if (left <= 0) throw new Error(`web sqlite worker gave no answer to ${op} in ${answerMs} ms: it has likely died`);
+      Atomics.wait(l, 0, 1, Math.min(left, 1000));
+    }
     const n = new Uint32Array(buf, 0, 1)[0];
     const out = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, 4, n).slice())) as { result: T; error?: string };
     if (out.error) throw new Error(out.error);
@@ -55,5 +73,12 @@ export async function webSqliteDb(opts: { pool: 'upstream' | 'topped-up'; cutAt:
       }
     },
   };
-  return { db, ...info, close: () => w.terminate() };
+  return {
+    db,
+    ...info,
+    close: () => w.terminate(),
+    crash: () => {
+      call('crash', '');
+    },
+  };
 }
