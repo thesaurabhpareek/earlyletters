@@ -1069,7 +1069,7 @@ From `FUNCTION-TRACE.md` section 6.4 (rows the functions filed for area D) and t
 | FR-RSH-08 | D-S04, D-S11, neutral set | Designed: D-S26 `.mockFive` |
 | FR-RSH-06 | D-S15, D-S20 | Gap: a two-phone prototype path for the join test; the prototype shows both sides as states, not two phones |
 | FR-QAL-09 | A-S12, B-S11, B-S15, D-S19, C-S17 | Designed: undo windows in MOTION.md section 7 (the quiet-day Undo has no timer; toasts with an action never time out) |
-| FR-DAY-(days) | D-S09 pattern, Day detail | Designed elsewhere: C-S26 reuses D-S09; D-S09 follows the one switch and, for a typed day's words, Names in notifications too (v2; CPrivO-58) |
+| FR-DAY-(days) | D-S09 pattern, Day detail | Designed elsewhere: C-S26 reuses D-S09; D-S09 follows the one switch and, for a typed day's words, Names in notifications on and App lock off too (v2; CPrivO-58) |
 | FR-DAY (days) | D-S10 new states | Designed: `libraryDay-public`, `-neutral`, `-named`, `-quiet`, `twoDays` |
 | FR-DAY (days) | D-S11 new state | Changed by ruling: no `.libraryDay` state, one way on Home (RV-6) |
 | FR-DAY (days) | D-S06 names help line | Changed by ruling: D-S06's help says the child only; days have their own switch on C-S24 (RV-13) |

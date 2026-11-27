@@ -859,9 +859,9 @@ demo("g-remind", {
     return w;
   },
   play: function (c) {
-    c.log("the day-names switch (area C) is turned on elsewhere; preview words swap (swapMs)");
+    c.log("day names on (area C), Names in notifications on and App lock off; preview words swap (swapMs)");
     return swapText(c.q("#pv"), "Nursery starts").then(function () { return c.wait(900); }).then(function () {
-      c.log("switched off, or App lock on; swap back"); return swapText(c.q("#pv"), "A day you wanted to remember");
+      c.log("day names off, Names in notifications off, or App lock on; swap back"); return swapText(c.q("#pv"), "A day you wanted to remember");
     });
   }
 });
