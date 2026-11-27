@@ -42,7 +42,7 @@ export const UNDER_13_DAY = 10;
 
 type Field = (typeof FIELDS)[number];
 export type Row = Partial<Record<Field, string>> & { line: number };
-export type CardRow = { ticket: string; kind: string; day: number; due: string; nextActionDate: string; nextAction: string; urgent: boolean; left: number };
+export type CardRow = { ticket: string; kind: string; day: number; due: string; nextActionDate: string; nextAction: string; urgent: boolean; left: number; lead?: true };
 export type Card = { today: string; rows: CardRow[]; lines: string[] };
 
 export class LogError extends Error {}
@@ -234,7 +234,7 @@ function clockRow(r: Row, today: number): CardRow {
     // FR-BKO-13: the first message goes the day it is read.
     // An extended row on its day 90 is due today too; before that an extended row needs no extension step.
     const later = day < FIRST_DAY ? '' : day === dueDay ? step('; it is due today') : extended ? '' : step('; then finish, or send the extension notice with its reason before day 45');
-    return { ...base, nextActionDate: iso(today), nextAction: firstMessage(r.kind!) + later, urgent: day >= FIRST_DAY || safetyFirst };
+    return { ...base, nextActionDate: iso(today), nextAction: firstMessage(r.kind!) + later, urgent: day >= FIRST_DAY || safetyFirst, ...(safetyFirst ? { lead: true as const } : {}) };
   }
   if (day === dueDay) {
     return { ...base, nextActionDate: iso(today), nextAction: step('due today: reply with what was done'), urgent: true };
@@ -248,9 +248,10 @@ function clockRow(r: Row, today: number): CardRow {
   return { ...base, nextActionDate: iso(addDays(received, nextDay)), nextAction: label, urgent: day >= FIRST_DAY };
 }
 
-/** Rows to act on first (day 35 or later on the clock, a dispute row at day 35 or later, an under_18 row from day 10, a safety row with no first message logged, or a letter's date passed), fewest days left first so a P0 leads, a row on the clock before one off it on a tie; then the rest by next action date, then ticket. */
+/** Rows to act on first (day 35 or later on the clock, a dispute row at day 35 or later, an under_18 row from day 10, a safety row with no first message logged, or a letter's date passed): a safety row with no first message logged leads, because someone may be in danger today; then fewest days left first so a P0 comes next, a row on the clock before one off it on a tie; then the rest by next action date, then ticket. */
 export function order(a: CardRow, b: CardRow): number {
   if (a.urgent !== b.urgent) return a.urgent ? -1 : 1;
+  if (Boolean(a.lead) !== Boolean(b.lead)) return a.lead ? -1 : 1;
   // On a tie in days left, a row on the clock comes before one off it, so a request due today is never behind a dispute row.
   if (a.urgent) return a.left - b.left || Number(a.due === '-') - Number(b.due === '-') || b.day - a.day || a.ticket.localeCompare(b.ticket);
   return a.nextActionDate.localeCompare(b.nextActionDate) || a.ticket.localeCompare(b.ticket);

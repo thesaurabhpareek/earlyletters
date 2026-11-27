@@ -427,6 +427,20 @@ Deno.test('[FR-BKO-13] BL-237: a safety row with no first message logged asks fo
   for (const line of c.lines.slice(2)) assert.match(line, CARD_LINE);
 });
 
+Deno.test('[FR-BKO-13] BL-237: a safety row with no first message logged leads the rows to act on first, ahead of a P0 and a row due today', () => {
+  const p0 = row('DREQ-20261029-1', 'see_export', day(46));
+  const dueToday = row('DREQ-20261030-1', 'see_export', day(45));
+  const safety = row('DREQ-20261214-1', 'safety', day(0), { acknowledged: '' });
+  for (const rows of [[p0, dueToday, safety], [safety, dueToday, p0], [dueToday, safety, p0]]) {
+    const c = card(...rows);
+    assert.deepEqual(c.rows.map((r) => r.day), [0, 46, 45]);
+  }
+  // Once the pointer to help is logged it no longer leads: the row takes its place by days left.
+  const logged = card(p0, row('DREQ-20261214-1', 'safety', day(38))).rows;
+  assert.deepEqual(logged.map((r) => r.day), [46, 38]);
+  assert.match(Deno.readTextFileSync(new URL('../../../docs/ops/runbooks/data-requests-by-email.md', import.meta.url)), /`safety` row with no first message logged leads the group/);
+});
+
 Deno.test('[FR-BKO-09] BL-237: every clock step on an under_18 row goes to the holder only, never to a parent; the P0 and the day 10 target do not carry it', () => {
   const at = (n: number, more = {}) => card(row('DREQ-20261204-1', 'under_18', day(n), more)).rows[0].nextAction;
   const holder = `; ${HOLDER_ONLY}`;
