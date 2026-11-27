@@ -23,7 +23,7 @@ import { View } from 'react-native';
 import Animated, { ReduceMotion, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
-import { announce, useIsLargeText } from '@/lib/a11y';
+import { announce, useIsLargeText, useTheme } from '@/lib/a11y';
 import { fill } from '@/lib/copy';
 import type { SpeechLanguage } from '@/lib/models/catalog';
 import { setSpeechDownloadChoice, speechAskFor, speechDownloadChoice, type SpeechDownloadChoice } from '@/lib/models/speech-consent';
@@ -148,11 +148,15 @@ export function SpeechConsentCard({ language }: { language: SpeechLanguage }) {
 
 /**
  * A thin determinate line (HIG Progress indicators), drawn from the true fraction so bytes under 1% still show.
- * Track `controlBorder` (bg-input, about 3.2:1 on accentSoft), fill `accent` (bg-primary). The fill grows by scaleX
+ * The card is tinted accentSoft, so the track is `tokens.progress.thinTrackOnTint` and the fill `tokens.progress.fill`:
+ * the fill holds 3:1 against both in every palette (WCAG 1.4.11), where the old controlBorder track was 1.52:1. The
+ * colours are named so the lamp's status scan can read them (test/semantic-tokens.test.ts). The fill grows by scaleX
  * from the leading edge on `snappy`, never by width; under Reduce Motion it steps to each new value. VoiceOver reads
  * "Downloading" and the whole percent as its value, with no number below 1% (shownPercent).
  */
 function ProgressLine({ bar, reduced }: { bar: number; reduced: boolean }) {
+  const { c } = useTheme();
+  const P = tokens.progress;
   const target = barScale(bar);
   const scale = useSharedValue(target);
   useEffect(() => {
@@ -167,8 +171,9 @@ function ProgressLine({ bar, reduced }: { bar: number; reduced: boolean }) {
       accessibilityRole="progressbar"
       accessibilityLabel={packsCopy.phases.downloading}
       accessibilityValue={n === null ? undefined : { min: 0, max: 100, now: n }}
-      className="h-1 overflow-hidden rounded-full bg-input">
-      <Animated.View className="h-1 w-full bg-primary" style={[{ transformOrigin: 'left' }, fillStyle]} />
+      className="overflow-hidden"
+      style={{ height: P.thin, borderRadius: tokens.radius.pill, backgroundColor: c.bg }}>
+      <Animated.View className="w-full" style={[{ height: P.thin, backgroundColor: c.accent, transformOrigin: 'left' }, fillStyle]} />
     </View>
   );
 }

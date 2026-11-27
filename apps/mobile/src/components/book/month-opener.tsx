@@ -13,7 +13,7 @@
  * to November 11". The parts inside are not reachable on their own. At AX5 every line wraps; nothing truncates.
  * Nothing moves.
  */
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 import { tokens } from '@scribe/design-tokens';
 import { Text } from '@/components/ui/text';
 import { useTheme } from '@/lib/a11y';
@@ -29,7 +29,7 @@ export function MonthOpener({ opener, first }: { opener: Opener; first: boolean 
       accessibilityLabel={opener.a11yLabel}
       className="px-5 pb-3 pt-6"
       testID={opener.current ? 'book.opener.current' : 'book.opener'}>
-      {first ? null : <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: c.line, marginBottom: tokens.space[6] }} />}
+      {first ? null : <View style={{ height: tokens.stroke.hairline, backgroundColor: c.line, marginBottom: tokens.space[6] }} />}
       <View className="gap-1">
         {opener.kicker ? (
           <Text variant="letterDateline" caps>
