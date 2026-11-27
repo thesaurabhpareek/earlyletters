@@ -897,7 +897,7 @@ test("CR-149 rule 4 (fail closed by default): every tracked file the rule misses
   const SAFE = [/^docs\//, /(?:^|\/)(?:test|tests|__tests__|fixtures)\//, /\.test\.[a-z]+$/, /(?:^|\/)e2e(?:-web)?\/(?:flows|subflows)\//, /(?:^|\/)e2e(?:-web)?\/[^/]*\.(?:flow\.ts|md|txt)$/, /\.e2e\.ts$/,
     /^apps\/mobile\/src\/components\/(?:asks|book|capture|content-blocks|find|language|motion|platform|player|resilience|speech|tonight|ui)\//,
     /^apps\/web\/src\/(?:components|scenes|film)\//, /(?:^|\/)(?:assets|public)\/[^?#]*\.(?:png|jpe?g|gif|webp|avif|svg|ico|ttf|otf|woff2?|mp3|m4a|wav|mp4|webm)$/i,
-    /^experiments\//, /^apps\//, /(?:^|\/)readme\.md$/i,
+    /^experiments\//, /(?:^|\/)readme\.md$/i,
     /^apps\/mobile\/components\.json$/, /^apps\/mobile\/src\/generated\/licences\.json$/, /^apps\/mobile\/src\/global\.css$/, /^apps\/mobile\/src\/uniwind-types\.d\.ts$/];
   // Pin SAFE itself: a widened entry would let these unprotected-by-name paths through unseen.
   for (const p of ["apps/mobile/src/newthing/x.ts", "packages/newpkg/src/x.ts", "apps/web/public/sw.js", "apps/web/public/_headers",
