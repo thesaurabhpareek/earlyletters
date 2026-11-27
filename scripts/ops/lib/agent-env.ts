@@ -1,135 +1,158 @@
 /**
  * Agents hold no production power (BL-1330, FR-BKO-21; the rule is written once in docs/ops/ACCESS.md).
  *
- * Reads workflow files as text and reports, by file, job and secret NAME (never a value):
- * 1. an agent job that reads a secret outside the agent allowlist;
- * 2. any workflow that hands a job every secret (`secrets: inherit`, `toJSON(secrets)`, a computed `secrets[...]`);
- * 3. any job that reads a production-power secret without naming an `environment:` (so the secret would be a
- *    repository secret that any job, an agent's included, could be edited to read);
- * 4. a workflow this reader cannot split into jobs, reported as `unparsed` instead of passing.
+ * Parses each workflow with the `yaml` package (strict: duplicate keys, bad indentation and unclosed quotes are
+ * errors) and reports, by file, job and secret NAME (never a value):
+ * 1. an agent job that reads a secret outside the agent allowlist, or that names an environment;
+ * 2. any job that hands out every secret (`secrets:` that is not a mapping of names, such as `inherit` in any
+ *    spelling, or an expression that reads the whole context: `toJSON(secrets)`, `secrets.*`, `secrets[x]`);
+ * 3. any other job that reads a production-power secret without a literal environment name (so the secret would
+ *    be a repository secret that any job, an agent's included, could be edited to read);
+ * 4. a workflow that does not parse, or has no `jobs:` mapping of job mappings, reported as `unparsed`.
  *
- * The failure it guards against is silent: a service role key or signing key added to an agent job works, and
- * nothing else would notice until it leaked. So the reader fails closed:
- * - a secret read outside any job (a workflow-level `env:`) counts as read by every job;
- * - no line is skipped as a comment, because GitHub expands `${{ }}` inside block scalars such as a `prompt: |`,
- *   even on a line that starts with `#`; a commented-out read therefore counts as a read;
- * - secret names are matched without regard to case, as GitHub does;
- * - `secrets` inside an expression that is not followed by `.NAME` or `['NAME']` (as in `toJSON(secrets)`,
- *   `secrets.*` or `secrets[format(...)]`) hands out every secret, and so does `secrets: inherit`, quoted or not;
- * - an environment counts only when it is a literal name (`environment: ''`, `~` or an expression does not);
- * - a workflow is reported as `unparsed`, never passed, when it has no two-space job keys under `jobs:`, a line
- *   inside `jobs:` indented under four spaces that is not a bare `  name:` job key (a quoted or flow-style job),
- *   a secret read before the first job key, or any YAML anchor, alias or merge key (which would carry text from
- *   one job into another). The workflows here use two-space indents, one job per `  name:` key, and no anchors.
+ * Reading the parsed document instead of lines closes the layout tricks a line reader misses: anchors, aliases
+ * and merge keys are resolved into every job that uses them, quoted and flow-style job keys are ordinary keys, and
+ * a quoted scalar that runs over several lines stays one value. Secret reads are found inside `${{ }}` in every
+ * string, keys included, wherever it sits (GitHub expands expressions inside block scalars such as `prompt: |`).
+ * An expression ends at the first `}}` outside a single-quoted string, as GitHub's reader does. Names match in any
+ * case, as GitHub does. A secret read outside any job (a workflow-level `env:`) counts for every job.
  *
  * Limits, also listed in ACCESS.md: an agent engine run from a composite, local or other action, or an engine
- * other than Claude Code and OpenCode, is not recognised; data passed between jobs through outputs or artifacts is
- * not followed; a production secret with a harmless name is not caught in a non-agent job.
+ * other than Claude Code and OpenCode, is not recognised; a reusable workflow a job calls is not followed; data
+ * passed between jobs through outputs or artifacts is not followed; a production secret with a harmless name is not
+ * caught in a non-agent job; where this parser and GitHub's read the same text differently, this one is the guide.
  */
+// The browser build is plain ESM and reads no environment variables, so it runs under Deno's --allow-read alone and
+// under Node. `yaml` is pinned by package-lock.json (apps/web depends on it); a missing install fails the import.
+// @deno-types="../../../node_modules/yaml/dist/index.d.ts"
+import { parseDocument } from '../../../node_modules/yaml/browser/dist/index.js';
 
 /** The only secrets an agent job may read: its model keys and its own GitHub App identity. */
 export const AGENT_SECRET_ALLOWLIST = ['ANTHROPIC_API_KEY', 'CLAUDE_CODE_OAUTH_TOKEN', 'OPENROUTER_API_KEY', 'AGENTS_APP_PRIVATE_KEY'];
 
-/** A secret name with production power: the service role and secret keys, signing keys, the backup key, the password manager, prod. */
+/** A secret name with production power: service role and secret keys, signing and backup keys, account tokens, database URLs, prod, password managers. */
 export const PRODUCTION_POWER =
-  /SERVICE_ROLE|SERVICE_KEY|SECRET|SIGNING|PRIVATE_KEY|BACKUP|ESCROW|KEK|PASSWORD|(?:^|_)PROD(?:_|$)|PRODUCTION|ACCESS_TOKEN|DB_URL|VERCEL_TOKEN|1PASSWORD|OP_SERVICE_ACCOUNT|OP_CONNECT|BITWARDEN|VAULT/i;
+  /SERVICE_ROLE|SERVICE_KEY|SECRET|SIGNING|PRIVATE_KEY|BACKUP|ESCROW|KEK|PASSWORD|(?:^|_)PROD(?:_|$)|PRODUCTION|ACCESS_TOKEN|DB_URL|VERCEL_TOKEN|1PASSWORD|OP_SERVICE_ACCOUNT|OP_CONNECT|BITWARDEN|LASTPASS|DASHLANE|KEEPER|VAULT/i;
 
 /** Workflows whose every job runs an agent, whatever its steps say. */
 export const AGENT_WORKFLOWS = ['agents.yml', 'claude.yml'];
 
-/** A step that runs an agent engine. */
+/**
+ * A job runs an agent engine: Anthropic's actions, the npm or Python packages, the native installer, OpenCode, or
+ * `claude` as a command word (at the start of a line or after `;`, `&`, `|`, `(` or `$(`, whatever flags follow).
+ */
 const AGENT_STEP =
-  /anthropics\/claude-code-|\bopencode\b|@anthropic-ai\/claude-(?:code|agent-sdk)|claude[-_]agent[-_]sdk|\bclaude\b[^\n]*\s(?:-p|--print|--dangerously-skip-permissions)\b/i;
+  /anthropics\/claude-code-|@anthropic-ai\/claude-(?:code|agent-sdk)|claude[-_]agent[-_]sdk|claude\.ai\/install|\bopencode\b|(?:^|[\n;&|(]|\$\()[ \t]*(?:npx\s+(?:-y\s+)?)?claude(?=[ \t\n]|$)/i;
 
 /** GitHub's own token is not a stored secret. */
 const NOT_A_STORED_SECRET = new Set(['GITHUB_TOKEN']);
 
-export type Job = { name: string; text: string; environment: boolean; secrets: string[]; runsAgent: boolean };
-export type Rule = 'agent-allowlist' | 'all-secrets' | 'production-environment' | 'unparsed';
+export type Job = { name: string; environment: boolean; secrets: string[]; runsAgent: boolean; handsOutAll: boolean };
+export type Rule = 'agent-allowlist' | 'agent-environment' | 'all-secrets' | 'production-environment' | 'unparsed';
 export type Finding = { file: string; job: string; rule: Rule; secret?: string };
 
-/** A read of one named secret. Outside an expression the dot must touch the name, so prose ("secrets. Each") is not one. */
-const SECRET_REF = /\bsecrets\s*(?:\.([A-Za-z_][A-Za-z0-9_-]*)|\[\s*(['"])([A-Za-z_][A-Za-z0-9_-]*)\2\s*\])/gi;
-const SECRET_REF_IN_EXPR = /\bsecrets\s*(?:\.\s*([A-Za-z_][A-Za-z0-9_-]*)|\[\s*(['"])([A-Za-z_][A-Za-z0-9_-]*)\2\s*\])/gi;
-/** In an expression, `secrets` not followed by one name: the whole context (`toJSON(secrets)`, `secrets.*`, `secrets[x]`). */
-const WHOLE_CONTEXT = /\bsecrets\b(?!\s*\.\s*[A-Za-z_])(?!\s*\[\s*(['"])[A-Za-z_][A-Za-z0-9_-]*\1\s*\])/i;
-const INHERIT = /['"]?\bsecrets['"]?\s*:\s*['"]?inherit\b/i;
-const EXPRESSION = /\$\{\{([\s\S]*?)\}\}/g;
-/** A YAML anchor, alias or merge key in a node position. */
-const ANCHOR_OR_ALIAS = /(?:^|[:\-[,{]\s*|\s)[&*][A-Za-z0-9_-]+\s*(?:$|[,\]}#])|(?:^|\s)<<\s*:/m;
+const NAMED_READ = /\bsecrets\s*(?:\.\s*([A-Za-z_][A-Za-z0-9_-]*)|\[\s*'([A-Za-z_][A-Za-z0-9_-]*)'\s*\])/gi;
+const LITERAL_ENV = /^[A-Za-z0-9][A-Za-z0-9_.-]*$/;
 
-const expressions = (text: string) => [...text.matchAll(EXPRESSION)].map((m) => m[1]);
-
-/** Every stored secret NAME the text reads, upper-cased and sorted. */
-export function secretsIn(text: string): string[] {
-  const refs = [...text.matchAll(SECRET_REF), ...expressions(text).flatMap((e) => [...e.matchAll(SECRET_REF_IN_EXPR)])];
-  const names = refs.map((m) => (m[1] ?? m[3]).toUpperCase());
-  return [...new Set(names.filter((s) => !NOT_A_STORED_SECRET.has(s)))].sort();
-}
-
-/** True when the text hands a job every secret at once. */
-export function handsOutAll(text: string): boolean {
-  return INHERIT.test(text) || expressions(text).some((e) => WHOLE_CONTEXT.test(e));
-}
-
-/** A literal environment name; an empty, null or computed one does not put the job behind an environment. */
-const ENV_NAME = String.raw`(?!['"]?null['"]?\s*(?:#.*)?$)['"]?[A-Za-z0-9][A-Za-z0-9_.-]*['"]?\s*(?:#.*)?$`;
-const ENV_INLINE = new RegExp(String.raw`^ {4}environment:\s*` + ENV_NAME, 'i');
-const ENV_BLOCK = new RegExp(String.raw`^ {4}environment:\s*(?:#.*)?\n(?: {6}.*\n)*? {6}name:\s*` + ENV_NAME, 'mi');
-
-/**
- * Splits a workflow into the text outside any job, the text inside `jobs:` before the first job key, and the jobs.
- * The `jobs:` block ends at the next top-level line that is not a comment.
- */
-export function split(workflow: string): { outside: string; beforeFirstJob: string; jobs: Job[]; hasJobsKey: boolean; strays: number } {
-  const lines = workflow.replace(/\r\n?/g, '\n').split('\n');
-  const start = lines.findIndex((l) => /^jobs:\s*(?:#.*)?$/.test(l));
-  if (start < 0) return { outside: lines.join('\n'), beforeFirstJob: '', jobs: [], hasJobsKey: false, strays: 0 };
-  let end = lines.findIndex((l, i) => i > start && /^[^\s#]/.test(l));
-  if (end < 0) end = lines.length;
-  const blocks: { name: string; lines: string[] }[] = [];
-  const before: string[] = [];
-  let strays = 0;
-  for (const line of lines.slice(start + 1, end)) {
-    const head = line.match(/^ {2}([A-Za-z0-9_-]+):\s*(?:#.*)?$/);
-    if (!head && /^ {0,3}[^\s#]/.test(line)) strays++;
-    if (head) blocks.push({ name: head[1], lines: [] });
-    else if (blocks.length) blocks.at(-1)!.lines.push(line);
-    else before.push(line);
+/** The body of every `${{ }}` in a string. An expression ends at `}}` outside a single-quoted string; an unclosed one runs to the end. */
+export function expressionsIn(text: string): string[] {
+  const out: string[] = [];
+  let i = text.indexOf('${{');
+  while (i >= 0) {
+    let j = i + 3;
+    let quoted = false;
+    for (; j < text.length; j++) {
+      if (text[j] === "'") quoted = !quoted; // a doubled '' toggles twice and stays inside the string
+      else if (!quoted && text[j] === '}' && text[j + 1] === '}') break;
+    }
+    out.push(text.slice(i + 3, j));
+    i = text.indexOf('${{', j + 2);
   }
-  const jobs = blocks.map(({ name, lines: body }) => {
-    const text = body.join('\n');
+  return out;
+}
+
+/** The named secrets an expression reads, and whether it reads the whole context. */
+function readsOf(expr: string): { names: string[]; whole: boolean } {
+  const names = [...expr.matchAll(NAMED_READ)].map((m) => (m[1] ?? m[2]).toUpperCase());
+  const rest = expr.replace(NAMED_READ, ' ').replace(/'(?:[^']|'')*'?/g, "''");
+  return { names, whole: /\bsecrets\b/i.test(rest) };
+}
+
+/** Every string in a parsed value, mapping keys included. */
+function stringsOf(value: unknown, out: string[] = []): string[] {
+  if (typeof value === 'string') out.push(value);
+  else if (Array.isArray(value)) for (const v of value) stringsOf(v, out);
+  else if (value && typeof value === 'object') {
+    for (const [k, v] of Object.entries(value)) {
+      out.push(k);
+      stringsOf(v, out);
+    }
+  }
+  return out;
+}
+
+/** The stored secret NAMES a parsed value reads, upper-cased and sorted, and whether it reads the whole context. */
+export function secretsOf(value: unknown): { names: string[]; whole: boolean } {
+  const reads = stringsOf(value).flatMap(expressionsIn).map(readsOf);
+  const names = [...new Set(reads.flatMap((r) => r.names).filter((s) => !NOT_A_STORED_SECRET.has(s)))].sort();
+  return { names, whole: reads.some((r) => r.whole) };
+}
+
+const isMap = (v: unknown): v is Record<string, unknown> => Boolean(v) && typeof v === 'object' && !Array.isArray(v);
+
+function hasLiteralEnvironment(env: unknown): boolean {
+  const name = isMap(env) ? env.name : env;
+  return typeof name === 'string' && LITERAL_ENV.test(name);
+}
+
+/** The parsed workflow, or null when it does not parse cleanly or has no `jobs:` mapping of job mappings. */
+export function parse(workflow: string): { root: Record<string, unknown>; jobs: Record<string, Record<string, unknown>> } | null {
+  let root: unknown;
+  try {
+    const doc = parseDocument(workflow, { uniqueKeys: true, merge: true, prettyErrors: false });
+    if (doc.errors.length || doc.warnings.length) return null;
+    root = doc.toJS({ maxAliasCount: 100 });
+  } catch {
+    return null;
+  }
+  if (!isMap(root) || !isMap(root.jobs)) return null;
+  const jobs = root.jobs as Record<string, unknown>;
+  if (!Object.keys(jobs).length || !Object.values(jobs).every(isMap)) return null;
+  return { root, jobs: jobs as Record<string, Record<string, unknown>> };
+}
+
+/** The jobs of a workflow, or [] when it does not parse. */
+export function jobsOf(workflow: string): Job[] {
+  const parsed = parse(workflow);
+  if (!parsed) return [];
+  return Object.entries(parsed.jobs).map(([name, job]) => {
+    const { names, whole } = secretsOf(job);
     return {
       name,
-      text,
-      environment: body.some((l) => ENV_INLINE.test(l)) || ENV_BLOCK.test(text + '\n'),
-      secrets: secretsIn(text),
-      runsAgent: AGENT_STEP.test(text),
+      environment: hasLiteralEnvironment(job.environment),
+      secrets: names,
+      runsAgent: stringsOf(job).some((s) => AGENT_STEP.test(s)),
+      handsOutAll: whole || ('secrets' in job && !isMap(job.secrets)),
     };
   });
-  return { outside: [...lines.slice(0, start), ...lines.slice(end)].join('\n'), beforeFirstJob: before.join('\n'), jobs, hasJobsKey: true, strays };
 }
-
-/** The jobs of a workflow: the two-space keys under the top-level `jobs:` line. */
-export const jobsOf = (workflow: string): Job[] => split(workflow).jobs;
 
 /** Every finding in one workflow file. `file` is its base name, which decides whether it is an agent workflow. */
 export function scanWorkflow(file: string, workflow: string): Finding[] {
+  const parsed = parse(workflow);
+  if (!parsed) return [{ file, job: '*', rule: 'unparsed' }];
   const out: Finding[] = [];
-  const { outside, beforeFirstJob, jobs, hasJobsKey, strays } = split(workflow);
-  if (handsOutAll(workflow)) out.push({ file, job: '*', rule: 'all-secrets' });
-  if (!hasJobsKey || !jobs.length) {
-    out.push({ file, job: '*', rule: 'unparsed' });
-    return out;
-  }
-  if (strays || secretsIn(beforeFirstJob).length || ANCHOR_OR_ALIAS.test(workflow)) out.push({ file, job: '*', rule: 'unparsed' });
+  const { jobs: _jobs, ...outside } = parsed.root;
+  const everyJob = secretsOf(outside);
+  if (everyJob.whole) out.push({ file, job: '*', rule: 'all-secrets' });
   const agentFile = AGENT_WORKFLOWS.includes(file);
-  const everyJob = secretsIn(outside);
-  for (const job of jobs) {
+  for (const job of jobsOf(workflow)) {
     const agent = agentFile || job.runsAgent;
-    for (const secret of [...new Set([...job.secrets, ...everyJob])].sort()) {
+    if (job.handsOutAll) out.push({ file, job: job.name, rule: 'all-secrets' });
+    if (agent && parsed.jobs[job.name].environment !== undefined) out.push({ file, job: job.name, rule: 'agent-environment' });
+    for (const secret of [...new Set([...job.secrets, ...everyJob.names])].sort()) {
       if (agent && !AGENT_SECRET_ALLOWLIST.includes(secret)) out.push({ file, job: job.name, rule: 'agent-allowlist', secret });
-      else if (!agent && PRODUCTION_POWER.test(secret) && (!job.environment || everyJob.includes(secret))) {
+      else if (!agent && PRODUCTION_POWER.test(secret) && (!job.environment || everyJob.names.includes(secret))) {
         out.push({ file, job: job.name, rule: 'production-environment', secret });
       }
     }
@@ -138,8 +161,10 @@ export function scanWorkflow(file: string, workflow: string): Finding[] {
 }
 
 export function explain(f: Finding): string {
-  if (f.rule === 'all-secrets') return `${f.file}: hands a job every secret (secrets: inherit, toJSON(secrets) or a computed secrets[...])`;
-  if (f.rule === 'unparsed') return `${f.file}: could not split this workflow into two-space jobs (or it uses a YAML anchor or alias), so it is not checked; treat as a failure`;
-  if (f.rule === 'agent-allowlist') return `${f.file} ${f.job}: agent job reads ${f.secret}, which is not on the agent allowlist`;
-  return `${f.file} ${f.job}: reads ${f.secret} with no environment, so it would be a repository secret`;
+  if (f.rule === 'unparsed') return `${f.file}: does not parse as a workflow with a jobs mapping, so it is not checked; treat as a failure`;
+  const where = f.job === '*' ? f.file : `${f.file} ${f.job}`;
+  if (f.rule === 'all-secrets') return `${where}: hands out every secret (secrets: inherit, toJSON(secrets), secrets.* or a computed secrets[...])`;
+  if (f.rule === 'agent-environment') return `${where}: agent job names an environment, which would give it that environment's secrets and variables`;
+  if (f.rule === 'agent-allowlist') return `${where}: agent job reads ${f.secret}, which is not on the agent allowlist`;
+  return `${where}: reads ${f.secret} with no environment, so it would be a repository secret`;
 }

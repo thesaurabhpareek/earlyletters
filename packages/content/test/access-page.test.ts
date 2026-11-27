@@ -61,7 +61,29 @@ function markdownFiles(dir: string): string[] {
 }
 
 const page = readFileSync(ACCESS, 'utf8');
-const policies = LEGAL.flatMap(markdownFiles).map((f) => ({ file: f.slice(REPO.length + 1), text: readFileSync(f, 'utf8') }));
+/**
+ * Only the version in force of each policy: a published version is immutable and stays in the repo once a newer one
+ * replaces it (docs/legal/POLICY_VERSIONING.md), so for `name-1.2.3.md` or `1.2.3.md` files only the highest
+ * version in each folder is read. Files without a version are always read.
+ */
+export function inForce(files: string[]): string[] {
+  const best = new Map<string, { file: string; v: number[] }>();
+  const plain: string[] = [];
+  for (const file of files) {
+    const m = file.match(/^(.*?)(\d+)\.(\d+)\.(\d+)\.md$/);
+    if (!m) {
+      plain.push(file);
+      continue;
+    }
+    const v = [Number(m[2]), Number(m[3]), Number(m[4])];
+    const seen = best.get(m[1]);
+    const order = seen ? v[0] - seen.v[0] || v[1] - seen.v[1] || v[2] - seen.v[2] : 1;
+    if (order > 0) best.set(m[1], { file, v });
+  }
+  return [...plain, ...[...best.values()].map((b) => b.file)].sort();
+}
+
+const policies = inForce(LEGAL.flatMap(markdownFiles)).map((f) => ({ file: f.slice(REPO.length + 1), text: readFileSync(f, 'utf8') }));
 
 describe('the access page', () => {
   it('[FR-BKO-01] holds the matrix of data class by role, with the enforced-by-tech column', () => {
@@ -96,6 +118,15 @@ describe('the access page', () => {
     expect(published.length, 'the published site policy is read too').toBeGreaterThan(0);
     expect(productionRoles(page)).toEqual(['founder']);
     expect(accessConflicts(page, policies)).toEqual([]);
+  });
+
+  it('[FR-BKO-01] reads only the version in force of a versioned policy', () => {
+    expect(inForce(['a/privacy/0.9.0.md', 'a/privacy/1.0.0.md', 'a/terms/0.10.0.md', 'a/terms/0.9.9.md', 'b/x-0.9.0.md', 'b/x-0.10.0.md', 'c/plain.md'])).toEqual([
+      'a/privacy/1.0.0.md',
+      'a/terms/0.10.0.md',
+      'b/x-0.10.0.md',
+      'c/plain.md',
+    ]);
   });
 
   it('[FR-BKO-01] counts a second role written with any list marker', () => {
