@@ -10,7 +10,9 @@
  *
  * Mutants this file was written to catch: `signAsOtherOffered` ignores the pause (the build flag alone), and the
  * pause signs every draft as the parent (`signatureForKeep` ignores `paused`, the head before this change, which also
- * dropped the typed name at Keep).
+ * dropped the typed name at Keep), and `kept()` deleting `signAs.draft` whatever draft it names, so keeping draft B
+ * under the pause took the name typed for draft A, which then signed as the parent (review A and B finding 1 at
+ * 9b62a26d5 on #2179).
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -63,10 +65,9 @@ afterEach(() => {
 });
 
 const slot = () => db.get<{ value: string }>('SELECT value FROM settings WHERE key = ?', SIGN_AS_DRAFT_SETTING)?.value ?? null;
-const spokenDraft = () => {
-  const childId = store.addChild({ name: 'Asha', birthday: '2026-03-01', dueDate: null, signsAs: 'Mama' }).id;
-  return store.createDraft({ childId, captureMode: 'spoken', promptKey: null, audioUri: 'file:///rec/take-1.m4a', audioDurationMs: 600, typedText: null });
-};
+const ashaBook = () => store.addChild({ name: 'Asha', birthday: '2026-03-01', dueDate: null, signsAs: 'Mama' }).id;
+const spokenDraft = (childId = ashaBook()) =>
+  store.createDraft({ childId, captureMode: 'spoken', promptKey: null, audioUri: 'file:///rec/take-1.m4a', audioDurationMs: 600, typedText: null });
 const paused = () => setSignAsOtherRemoteForTest(config({ signAsOther: true }));
 
 /** Review's Keep (review.tsx): the hook's signature, refused before anything is written, then the store, then kept(). */
@@ -125,6 +126,35 @@ describe('[NS-16][G-18] killSwitches.signAsOther hides the From control and neve
     const from = useFromName({ draftId: d.id, keptEntryId: null });
     expect(from.typed).toBe('');
     expect(keepOnReview(d, from)?.authorSignsAs).toBe('Mama');
+  });
+
+  /** "Nani" typed for draft A while the control is offered, then draft B kept (paused or not): A's name must survive. */
+  function keepOtherDraftFirst(pause: boolean) {
+    const childId = ashaBook();
+    const a = spokenDraft(childId);
+    const b = spokenDraft(childId);
+    useFromName({ draftId: a.id, keptEntryId: null }).setTyped('Nani');
+    expect(slot()).toBe(serializeDraftName(a.id, 'Nani'));
+    if (pause) paused();
+    const onB = useFromName({ draftId: b.id, keptEntryId: null });
+    expect(onB.paused).toBe(pause);
+    expect(onB.typed).toBe('');
+    expect(keepOnReview(b, onB)?.authorSignsAs).toBe('Mama');
+    expect(slot()).toBe(serializeDraftName(a.id, 'Nani')); // mutant: B's kept() deletes the slot whatever draft it names
+    const onA = useFromName({ draftId: a.id, keptEntryId: null });
+    expect(onA.paused).toBe(pause);
+    expect(onA.typed).toBe('Nani');
+    expect(onA.shown('Mama')).toBe('Nani');
+    expect(keepOnReview(a, onA)?.authorSignsAs).toBe('Nani');
+    expect(slot()).toBeNull(); // A's own Keep takes its name
+  }
+
+  it('[NS-16][G-18] paused: keeping another draft leaves the name typed for this one, which it still shows and keeps', () => {
+    keepOtherDraftFirst(true);
+  });
+
+  it('[NS-16][G-18] control: with the control offered, keeping another draft leaves this draft\'s typed name too', () => {
+    keepOtherDraftFirst(false);
   });
 
   it('[NS-16][G-18][NS-16-R6] paused: a typed name over 30 cannot be put right with the control hidden, so Keep is not refused and signs as the parent, never a cut name', () => {

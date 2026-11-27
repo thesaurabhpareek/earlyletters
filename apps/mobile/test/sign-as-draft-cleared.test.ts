@@ -7,10 +7,12 @@
  *
  * Mutants this file was written to catch: the draft's removal leaves `signAs.draft` in settings (drafts.ts
  * forgetDraftFromName made a no-op), and merge.ts adoptHeldDraft drops the draft row without its call (review A
- * finding 3 and review B finding 2 on #2179). On develop before this change every "goes" test here is red.
+ * finding 3 and review B finding 2 on #2179); and finishDiscard dropping a draft the pull marked `discarding` without
+ * its call (review B note 1 at 9b62a26d5 on #2179). On develop before this change every "goes" test here is red.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { letItGo } from '../src/lib/capture/let-it-go.logic';
+import { finishDiscard } from '../src/lib/db/repos/drafts';
 import { serializeDraftName, SIGN_AS_DRAFT_SETTING } from '../src/lib/capture/sign-as-other.logic';
 import { removeBook } from '../src/lib/db/repos/wipe';
 import type { SqlDb } from '../src/lib/db/sql';
@@ -139,6 +141,34 @@ describe('[NS-16 s6][PRIV] the typed From name goes with its draft', () => {
       );
       expect(f.db.get('SELECT id FROM drafts WHERE id = ?', 'h1')).toBeNull(); // adopted: the draft row went
       expect(f.db.get('SELECT value FROM settings WHERE key = ?', SIGN_AS_DRAFT_SETTING)).toBeNull(); // mutant: adopt leaves the name
+    } finally {
+      f.close();
+    }
+  });
+
+  it('[NS-16 s6] a held draft let go on another phone: the pull marks it, and the sweep finishing it forgets the name', () => {
+    const NOW = '2026-10-03T09:00:00.000Z';
+    const f = fixture();
+    try {
+      insertBook(f.db, { id: 'c1', name: 'Asha', signsAs: 'Mama' });
+      writeSetting(f.db, SYNC_SETTING.owner, '11111111-1111-1111-1111-111111111111');
+      writeSetting(f.db, SYNC_SETTING.heldServer, '1');
+      f.db.run(
+        "INSERT INTO drafts (id, child_id, capture_mode, created_at, audio_uri, audio_duration_ms, state, held_kind, held_v) VALUES ('h2', 'c1', 'spoken', ?, 'file:///asha/y.m4a', 3000, 'ready', 'held_letter', '870')",
+        NOW,
+      );
+      f.db.run('INSERT INTO settings (key, value) VALUES (?, ?)', SIGN_AS_DRAFT_SETTING, serializeDraftName('h2', 'Nani'));
+      applyPullPage(
+        f.db,
+        { reset: false, epoch: 1, epoch_started_at: NOW, books: [], gone: [], more: false, held: { rows: [{ id: 'h2', gone: 'discarded', updated_at: NOW, v: '881' }], cursor: '900:00000000-0000-0000-0000-000000000000', more: false } } as unknown as PullResponse,
+        NOW,
+      );
+      // The pull only marks it (beginDiscard never ran here), so the name is still on the phone until the row goes.
+      expect(f.db.get<{ state: string }>('SELECT state FROM drafts WHERE id = ?', 'h2')?.state).toBe('discarding');
+      expect(f.db.get('SELECT value FROM settings WHERE key = ?', SIGN_AS_DRAFT_SETTING)).not.toBeNull();
+      expect(finishDiscard({ db: f.db, now: () => NOW, newId }, 'h2')).toBe(true);
+      expect(f.db.get('SELECT id FROM drafts WHERE id = ?', 'h2')).toBeNull();
+      expect(f.db.get('SELECT value FROM settings WHERE key = ?', SIGN_AS_DRAFT_SETTING)).toBeNull(); // mutant: finishDiscard leaves the name
     } finally {
       f.close();
     }

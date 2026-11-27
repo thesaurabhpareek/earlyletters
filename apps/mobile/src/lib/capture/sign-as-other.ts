@@ -6,6 +6,7 @@
 import { useState } from 'react';
 import { deleteSetting, getEntry, getSetting, setSetting } from '@/lib/store';
 import {
+  draftNameIsFor,
   parseDraftName,
   parseRecent,
   parseSignAsOtherFlag,
@@ -97,7 +98,7 @@ export type FromName = {
   shown: (parentSignsAs: string) => string;
   /** The signature Keep writes, or the refusal; checked before anything is written or uploaded. */
   signatureFor: (parentSignsAs: string) => KeepSignature;
-  /** After a Keep that wrote the row: the typed name joins this phone's list, and the draft's copy goes. */
+  /** After a Keep that wrote the row: the typed name joins this phone's list, and this draft's copy goes (never another's). */
   kept: (signature: KeepSignature) => void;
 };
 
@@ -145,7 +146,10 @@ export function useFromName(input: { draftId: string | null; keptEntryId: string
           setSetting(SIGN_AS_RECENT_SETTING, JSON.stringify(next));
           setRecent(next);
         }
-        deleteSetting(SIGN_AS_DRAFT_SETTING);
+        // One slot holds one draft's name: only this draft's goes, so a name typed for another draft is still there at
+        // that draft's own Keep, which matters most under the pause, where it cannot be typed again (G-18). The save's
+        // drafts.remove clears this draft's slot too; this keeps the name from lingering whatever the Keep path.
+        if (draftId && draftNameIsFor(getSetting(SIGN_AS_DRAFT_SETTING), draftId)) deleteSetting(SIGN_AS_DRAFT_SETTING);
       } catch {
         // The letter is kept; a list that cannot be written only means the name is not offered next time.
       }

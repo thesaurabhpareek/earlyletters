@@ -106,4 +106,14 @@ export function parseDraftName(raw: string | null, draftId: string): string {
   }
 }
 
+/** The stored slot is `draftId`'s own (whatever name it holds); false for another draft's or one that cannot be read. */
+export function draftNameIsFor(raw: string | null, draftId: string): boolean {
+  if (!raw) return false;
+  try {
+    return (JSON.parse(raw) as { draftId?: unknown } | null)?.draftId === draftId;
+  } catch {
+    return false;
+  }
+}
+
 export const serializeDraftName = (draftId: string, name: string): string => JSON.stringify({ draftId, name });
