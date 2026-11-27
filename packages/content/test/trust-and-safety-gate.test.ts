@@ -11,7 +11,7 @@
  * "Store build" means what the app code means by it: the profile whose EXPO_PUBLIC_APP_ENV is `production`
  * (apps/mobile/src/lib/billing/alpha.ts isAlphaBuild: "Only `production` is the store"). The FR-POL-03 and FR-POL-04 gates
  * apply to every build that can reach someone outside the internal TestFlight group Family (CR-234): the store build, and
- * any store-distributed profile whose submit groups are not exactly ["Family"] (the pin of BL-2027, CR-184). That file and build-env.ts are not
+ * any profile not distributed `internal` whose submit groups are not exactly ["Family"] (the pin of BL-2027, CR-184). That file and build-env.ts are not
  * imported here because build-env.ts names React Native's `__DEV__`, which this package's typecheck does not know; a test
  * below reads isAlphaBuild's source so the two cannot drift. Each gate is a pure function, and each has a planted case that
  * shows it fails.
@@ -212,7 +212,7 @@ describe('[FR-POL-02] a report of apparent child sexual abuse material gets an a
     expect(m.notes.Never).toMatch(/\bmove\b/);
     expect(m.notes.Never).toMatch(/Leave the message where it arrived/);
     expect(m.notes.Never).toMatch(/no Claude session or connector may read it/);
-    expect(m.notes['Same day']).toMatch(/only after a licensed lawyer advises/);
+    expect(m.notes['Same day']).toMatch(/only once legal advice is recorded/);
     expect(m.notes['Same day']).toMatch(/exec team/);
     expect(m.notes['Same day']).toMatch(/kind and the date only/);
     expect(m.notes['Before it']).toMatch(/M6/);
@@ -296,6 +296,7 @@ describe('[FR-POL-03] content that reaches another person needs its report set b
         tfGrandchild: { extends: 'tfChild' },
         typo: { distribution: 'Store' },
         prodFamily: { env: { EXPO_PUBLIC_APP_ENV: 'production' } },
+        devOverride: { extends: 'dev', distribution: 'store' },
       },
       submit: {
         devChild: { ios: { groups: ['Friends'] } },
@@ -304,10 +305,11 @@ describe('[FR-POL-03] content that reaches another person needs its report set b
         typo: { ios: { groups: ['Friends'] } },
         tf: { ios: { groups: ['Family'] } },
         prodFamily: { ios: { groups: ['Family'] } },
+        devOverride: { ios: { groups: ['Friends'] } },
       },
     });
     expect(ps.find((p) => p.name === 'devChild')!.distribution).toBe('internal');
-    expect(ps.filter(reachesOutside).map((p) => p.name)).toEqual(['tfChild', 'tfGrandchild', 'typo', 'prodFamily']);
+    expect(ps.filter(reachesOutside).map((p) => p.name)).toEqual(['tfChild', 'tfGrandchild', 'typo', 'prodFamily', 'devOverride']);
   });
 
   it('[FR-POL-03] only the App Store build reaches outside Family today, and the app decides the store build the same way', () => {
@@ -341,7 +343,7 @@ describe('[FR-POL-04] the two-parent book stays out of builds that reach outside
   const serversOn = (ps: Profile[]): Profile[] =>
     ps.map((p) => (isStoreBuild(p) ? { ...p, env: { ...p.env, EXPO_PUBLIC_SERVER_FEATURES: 'on' } } : p));
 
-  it('[FR-POL-04] fails when only one entry opens in a build that reaches outside Family, whichever entry it is', () => {
+  it('[FR-POL-04] fails when only one entry opens in the store build, whichever entry it is', () => {
     const state = safetyState(runbook, migrations);
     for (const entry of INVITE_ENTRIES) {
       const oneOpens: typeof inviteDestination = (e, s, a) => (e === entry && s ? 'flow' : inviteDestination(e, s, a));
