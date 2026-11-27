@@ -78,12 +78,29 @@ export function normalTypedDate(date: string): string | null {
   return d && isoDate(d) === date ? date : null;
 }
 
+/** The last day a typed day may fall on, today plus 366 (`TYPED_DAY_HORIZON_DAYS`), or null when `today` is not a date. */
+function lastTypedDay(today: string): string | null {
+  const from = parseIsoDate(today);
+  return from ? isoDate(addDays(from, TYPED_DAY_HORIZON_DAYS - 1)) : null;
+}
+
+/**
+ * The days the Add a day sheet's picker offers (D-S08, CPO-101): from tomorrow (today is not offered, G-D10) to the
+ * same last day `checkTypedDay` keeps, so the picker never offers a day the save would refuse. Null when `today` is
+ * not a date. `typed_day_past` and `typed_day_too_far` stay as guards for a sheet left open past midnight.
+ */
+export function typedDayPickerBounds(today: string): { min: string; max: string } | null {
+  const from = parseIsoDate(today);
+  const max = lastTypedDay(today);
+  return from && max ? { min: isoDate(addDays(from, 1)), max } : null;
+}
+
 /** May these words be kept for this date, with `today` the phone's local date? The words are never part of the answer. */
 export function checkTypedDay(date: string, words: string, today: string): TypedDayCheck {
   if (normalTypedDate(date) === null) return { ok: false, code: 'typed_day_bad_date' };
   if (date < today) return { ok: false, code: 'typed_day_past' };
-  const from = parseIsoDate(today);
-  if (from && date > isoDate(addDays(from, TYPED_DAY_HORIZON_DAYS - 1))) return { ok: false, code: 'typed_day_too_far' };
+  const last = lastTypedDay(today);
+  if (last !== null && date > last) return { ok: false, code: 'typed_day_too_far' };
   if (words.trim().length === 0) return { ok: false, code: 'typed_day_empty' };
   if (typedWordsLength(words) > TYPED_WORDS_MAX) return { ok: false, code: 'typed_day_too_long' };
   return { ok: true };

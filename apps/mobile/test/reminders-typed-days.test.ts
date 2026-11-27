@@ -262,6 +262,23 @@ describe('[NS-18-R5] typed words length', () => {
     expect(typed.checkTypedDay('2028-03-02', 'Nursery starts', '2027-03-01')).toEqual({ ok: false, code: 'typed_day_too_far' });
     expect(typed.saveTypedDay('2027-11-03', 'Nursery starts', today)).toEqual({ ok: false, code: 'typed_day_too_far' });
   });
+
+  it('[CPO-101, G-D10] the Add a day picker offers tomorrow to today plus 366, the same last day checkTypedDay keeps', () => {
+    const bounds = typed.typedDayPickerBounds(today);
+    expect(bounds).toEqual({ min: '2026-11-02', max: '2027-11-02' });
+    expect(bounds!.max).toBe(plus(today, typed.TYPED_DAY_HORIZON_DAYS - 1));
+    // The last day the picker offers is kept; the day after it is neither offered nor kept.
+    expect(typed.checkTypedDay(bounds!.max, 'Nursery starts', today)).toEqual({ ok: true });
+    expect(plus(today, 367) > bounds!.max).toBe(true);
+    expect(typed.checkTypedDay(plus(today, 367), 'Nursery starts', today)).toEqual({ ok: false, code: 'typed_day_too_far' });
+    // Today is not offered by the picker, but a today that arrives is still kept (the planner skips it once its time has passed).
+    expect(today < bounds!.min).toBe(true);
+    expect(typed.checkTypedDay(today, 'Nursery starts', today)).toEqual({ ok: true });
+    // Across a leap day, and at a year end.
+    expect(typed.typedDayPickerBounds('2027-03-01')).toEqual({ min: '2027-03-02', max: '2028-03-01' });
+    expect(typed.typedDayPickerBounds('2026-12-31')).toEqual({ min: '2027-01-01', max: '2028-01-01' });
+    expect(typed.typedDayPickerBounds('2026-02-30')).toBeNull();
+  });
 });
 
 describe('typed days on the phone (real store and scheduler)', () => {
