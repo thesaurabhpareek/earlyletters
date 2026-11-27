@@ -53,12 +53,14 @@ async function render(opts: { appEnv: typeof h.appEnv; extra?: unknown; analytic
 
 afterEach(() => vi.resetModules());
 
-describe('[BL-1250] [CPrivO-61] the tester switch on Settings > Privacy', () => {
+// Each case imports the whole screen afresh (resetModules), which is slow on a loaded runner.
+describe('[BL-1250] [CPrivO-61] the tester switch on Settings > Privacy', { timeout: 30_000 }, () => {
   it('the App Store build renders no tester row and never reads the setting, even when config and the setting say tester', async () => {
     const html = await render({ appEnv: 'production', extra: 'testflight', stored: 'true' });
     expect(html).toContain('privacy.promise');
     expect(html).not.toContain(ROW);
     expect(html).not.toContain('Team test phone');
+    expect(html).not.toContain('Test builds only');
     expect(h.reads).not.toContain(KEY);
   });
 
@@ -66,6 +68,8 @@ describe('[BL-1250] [CPrivO-61] the tester switch on Settings > Privacy', () => 
     const html = await render({ appEnv: 'preview', extra: 'testflight', stored: 'true' });
     expect(html).toContain(ROW);
     expect(html).toContain('Team test phone');
+    // The public name is filled in from packages/brand; the raw placeholder never shows.
+    expect(html).not.toContain('{app}');
     expect(h.reads).toContain(KEY);
   });
 
