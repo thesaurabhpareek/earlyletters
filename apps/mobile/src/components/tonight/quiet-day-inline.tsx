@@ -8,21 +8,26 @@
  *
  * Motion (Tonight passes it): the link fades out over exitMs and this line fades in over fadeMs from when the link
  * is half gone, with the `soft` haptic on the tap. Under Reduce Motion the same fades. Undo is a control: opaque
- * from the first frame. The line is a polite live region for TalkBack; on iOS Tonight announces it.
+ * from the first frame. The line is a polite live region for TalkBack; on iOS it says itself once when it appears
+ * (PER4-018), so Tonight does not also say it.
  *
  * Status colours: none (D-110).
  */
 import { MoonIcon } from 'phosphor-react-native/src/icons/Moon';
-import type { ComponentProps } from 'react';
+import { useEffect, type ComponentProps } from 'react';
 import { View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
-import { useTheme } from '@/lib/a11y';
+import { announce, useTheme } from '@/lib/a11y';
 import { copy } from '@/lib/copy';
 
 export function QuietDayInline({ onUndo, entering }: { onUndo: () => void; entering?: ComponentProps<typeof Animated.View>['entering'] }) {
   const { c } = useTheme();
+  // Once per appearance: the line mounts when the mark is kept and unmounts on Undo or when Tonight loses focus.
+  useEffect(() => {
+    announce(copy.notMuch.savedToast);
+  }, []);
   return (
     <Animated.View entering={entering} className="min-h-12 flex-row flex-wrap items-center justify-center gap-x-2" accessibilityLiveRegion="polite">
       <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" aria-hidden>

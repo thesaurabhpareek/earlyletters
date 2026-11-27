@@ -283,6 +283,8 @@ function harness(over: Partial<ReporterDeps> & { items?: unknown[]; answers?: St
     termsVersion: () => termsVersionOf(SUBSCRIPTION_TERMS_DOC_VERSION, billingCopy.store),
     ...over,
   };
+  // off() and on() set mayRun, not the kill switch: off() is the `statusReport` kill switch set
+  // to true (reporting paused), on() is the switch turned off again (reporting resumes).
   return {
     deps, sent, reporter: createStatusReporter(deps),
     signOut: () => (user = null), signIn: (u = ASHA_MAMA) => (user = u), off: () => (on = false), on: () => (on = true),
@@ -294,23 +296,65 @@ function harness(over: Partial<ReporterDeps> & { items?: unknown[]; answers?: St
 describe('the sender', () => {
   afterEach(() => vi.restoreAllMocks());
 
-  it('[F14-REQ-032] off (kill switch): no salt, no StoreKit call, no request; a purchase meanwhile keeps its consent facts and sends them once it clears (review B2)', async () => {
+  // F14-REQ-043b in the code's terms: the `statusReport` kill switch set to `true` pauses
+  // reporting (`mayRun` in lib/capabilities.ts), so "kill switch on at purchase, later turned
+  // off" is h.off() (paused) at the purchase and h.on() (resumed) later. Invariant: the consent
+  // facts stored at the purchase are the ones sent once reporting resumes, however long the pause.
+  // Failure mode: the facts are dropped or re-stamped while paused, so the first report after the
+  // switch is turned off goes with no D-081 record, or with the resume time as shown_at.
+  it('[F14-REQ-032] [F14-REQ-043b] kill switch on (reporting paused): no salt, no StoreKit call, no request; a purchase meanwhile keeps its consent facts and, once the switch is turned off, the next report carries the facts captured at purchase (lost facts: 0; review B2)', async () => {
     const h = harness();
     h.off();
     expect(await h.reporter.flush()).toBe('off');
+    const termsAtPurchase = h.deps.termsVersion();
     h.reporter.recordPurchase({ productId: 'plus.annual', originalPurchasedAt: '2026-10-29T17:59:00.000Z' });
     expect(await h.reporter.flush()).toBe('off');
     expect(h.deps.fetchSalt).not.toHaveBeenCalled();
     expect(h.deps.nativeRefs).not.toHaveBeenCalled();
     expect(h.sent).toEqual([]);
     expect(h.state().pending).toHaveLength(1);
+    h.tick(2 * 86_400_000); // two days paused, so a re-stamped shown_at would differ from the purchase time
     h.on();
     expect(await h.reporter.flush()).toBe('sent');
     expect(await h.reporter.flush()).toBe('nothing');
     expect(h.sent).toHaveLength(1);
-    expect(h.sent[0].report.consent).toMatchObject({ product_id: 'plus.annual', offer_type: 'introductory' });
+    expect(h.sent[0].report.reported_at).toBe(new Date(Date.parse(NOW) + 2 * 86_400_000).toISOString());
+    expect(h.sent[0].report.consent).toEqual({ product_id: 'plus.annual', offer_type: 'introductory', terms_shown: termsAtPurchase, shown_at: NOW });
     expect(h.sent[0].report.consent?.terms_shown).toMatch(new RegExp(`^${SUBSCRIPTION_TERMS_DOC_VERSION.replace(/\./g, '\\.')}\\+[0-9a-f]{8}$`));
     expect(h.state().pending).toEqual([]);
+  });
+
+  // The other RR-5 cell (BL-2240), the reverse order of the case above: reporting runs (kill
+  // switch off) when the purchase is recorded, the switch is then turned on (reporting paused),
+  // and later turned off again. Invariant: pausing stops sending, never the record of what this
+  // phone showed at the purchase. Failure mode: a pause (or the app restart that follows it)
+  // clears or skips the waiting consent facts, so the next report goes with no D-081 record.
+  // The new reporter stands for that restart: the facts must live in device settings, not in the
+  // in-memory retry.
+  it('[BL-2240] reporting on (kill switch off) at purchase, paused (switch on) after a failed send, then resumed (switch off): the next report still carries the consent facts captured at purchase', async () => {
+    const h = harness({ answers: [{ ok: false, code: 'network' }] });
+    const termsAtPurchase = h.deps.termsVersion();
+    h.reporter.recordPurchase({ productId: 'plus.annual', originalPurchasedAt: '2026-10-29T17:59:00.000Z' });
+    expect(await h.reporter.flush()).toBe('retry_later'); // reporting on: the first report carried the facts, but was not stored
+    expect(h.sent).toHaveLength(1);
+    expect(h.sent[0].report.consent).toBeDefined();
+
+    h.off();
+    const afterRestart = createStatusReporter(h.deps);
+    h.tick(2 * 86_400_000);
+    expect(await afterRestart.flush()).toBe('off');
+    expect(await afterRestart.flush()).toBe('off');
+    expect(h.sent).toHaveLength(1);
+    expect(h.state().pending).toHaveLength(1);
+
+    h.on();
+    expect(await afterRestart.flush()).toBe('sent');
+    expect(h.sent).toHaveLength(2);
+    expect(h.sent[1].key).not.toBe(h.sent[0].key); // planned again from device settings, not the in-memory retry
+    expect(h.sent[1].report.reported_at).toBe(new Date(Date.parse(NOW) + 2 * 86_400_000).toISOString());
+    expect(h.sent[1].report.consent).toEqual({ product_id: 'plus.annual', offer_type: 'introductory', terms_shown: termsAtPurchase, shown_at: NOW });
+    expect(h.state().pending).toEqual([]);
+    expect(await afterRestart.flush()).toBe('nothing');
   });
 
   it('[BL-347] consent facts recorded while one account owned the phone never ride on another account\'s report (review B1)', async () => {

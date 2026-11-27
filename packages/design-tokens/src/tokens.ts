@@ -163,7 +163,7 @@ const radius = {
   sm: 8, // inputs, small chips, photo thumbnails
   md: 18, // list cards, letter cards (was 14)
   lg: 24, // feature cards, month chapter covers (was 20)
-  xl: 34, // custom sheets (top corners), capture surface (was 28)
+  xl: 34, // custom sheets (top corners), capture surface, a button whose label wraps past two lines (BL-490) (was 28)
   pill: 9999, // buttons, segmented controls, tags
 } as const;
 

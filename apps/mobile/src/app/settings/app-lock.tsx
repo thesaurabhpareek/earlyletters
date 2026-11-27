@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { AppState, Linking, ScrollView, View } from 'react-native';
+import { NoPasscodeLine } from '@/components/app-lock/no-passcode-line';
 import { Button } from '@/components/ui/button';
 import { ChoiceGroup } from '@/components/ui/choice-group';
 import { ListSection, ToggleRow } from '@/components/ui/list-row';
@@ -72,11 +73,8 @@ export default function AppLockSettings() {
           />
         </ListSection>
 
-        {unavailable ? (
-          <Text variant="footnote" accessibilityLiveRegion="polite" className="px-4" testID="appLock.noPasscode">
-            {appLockCopy.noPasscode}
-          </Text>
-        ) : null}
+        {/* Says itself to VoiceOver once when it appears (PER4-018); the page speaks nothing beside its toasts. */}
+        {unavailable ? <NoPasscodeLine text={appLockCopy.noPasscode} /> : null}
 
         {faceIdDenied ? (
           <View className="gap-2 px-4" testID="appLock.faceIdDenied">

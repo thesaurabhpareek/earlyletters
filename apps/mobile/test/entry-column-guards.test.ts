@@ -237,7 +237,8 @@ describe('[BL-1497] child_id moves only while the letter has never synced', () =
 describe('[BL-1497] the migration', () => {
   it('is version 13, appended after 12, adds four triggers and writes no settings row', () => {
     const { db } = fixture();
-    expect(MIGRATIONS.map((m) => m.version).slice(11)).toEqual([12, 13].slice(0, MIGRATIONS.length - 11));
+    // Later steps append after 13 (14: BL-413 author_base); this pins only 12 and 13.
+    expect(MIGRATIONS.map((m) => m.version).slice(11, 13)).toEqual([12, 13]);
     const names = ['entries_captured_at_set_once', 'entries_engine_version_set_once', 'entries_author_id_set_once', 'entries_child_id_fixed_once_synced'];
     const have = db.all<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'trigger'").map((r) => r.name);
     for (const n of names) expect(have).toContain(n);
@@ -249,7 +250,7 @@ describe('[BL-1497] the migration', () => {
     const rows = f.db.all('SELECT * FROM entries ORDER BY id');
     f.db.exec('DROP TRIGGER entries_captured_at_set_once; DROP TRIGGER entries_engine_version_set_once; DROP TRIGGER entries_author_id_set_once; DROP TRIGGER entries_child_id_fixed_once_synced');
     f.db.exec('PRAGMA user_version = 12');
-    expect(migrate(f.db, { now: NOW, newId: f.ctx.newId }, MIGRATIONS)).toMatchObject({ from: 12, to: 13 });
+    expect(migrate(f.db, { now: NOW, newId: f.ctx.newId }, MIGRATIONS.filter((m) => m.version <= 13))).toMatchObject({ from: 12, to: 13 });
     expect(f.db.all('SELECT * FROM entries ORDER BY id')).toEqual(rows);
     expect(() => f.db.run('UPDATE entries SET captured_at = ? WHERE id = ?', CAP2, L1)).toThrow(M.cap);
     f.close();
