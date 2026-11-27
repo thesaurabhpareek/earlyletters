@@ -1,12 +1,15 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   EMPTY_CATALOGUE,
+  FLOOR_KEYS,
   lastLetterKind,
   layeredSelector,
   recencyBand,
   selectLayered,
   selectNotificationKey,
+  type KeyInput,
   type LayerCatalogue,
+  type LayerKey,
 } from '../src';
 
 const EVENING = 20 * 60;
@@ -77,6 +80,137 @@ describe('NS-48 recency and last-letter layers (pure)', () => {
       for (const minutesOfDay of [MORNING, EVENING]) {
         const base = { slotOrdinal: slot, minutesOfDay };
         expect(sel({ ...base, recency: 'r1', lastKind: 'spoke' })).toBe(selectNotificationKey(base));
+      }
+    }
+  });
+});
+
+// BL-1323: the FR-NTC rows of the notification catalogue (NS-48 is the source of truth). A seeded property test, no
+// dependency: mulberry32 with a fixed seed, so a failure prints its case number and replays exactly.
+function rng(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+const BANDS = ['r1', 'r2', 'r3', 'r4'] as const;
+const CASES = 2000;
+
+/** A generated catalogue: any pool may be missing, empty or all evening-worded. */
+function genCatalogue(r: () => number): LayerCatalogue {
+  const pool = (name: string): LayerKey[] | undefined =>
+    r() < 0.15 ? undefined : Array.from({ length: Math.floor(r() * 5) }, (_, i) => ({ key: `ntc.${name}.${i}`, evening: r() < 0.4 }));
+  return {
+    recency: Object.fromEntries(BANDS.map((b) => [b, pool(b)]).filter(([, p]) => p)),
+    kind: Object.fromEntries((['spoke', 'typed'] as const).map((k) => [k, pool(k)]).filter(([, p]) => p)),
+  };
+}
+
+/** A generated key input, odd values included: negative, fractional and NaN ordinals, every minute of the day. */
+function genInput(r: () => number): KeyInput {
+  const odd = [-7, -1, 0.5, 1e12, Number.NaN];
+  return {
+    slotOrdinal: r() < 0.1 ? odd[Math.floor(r() * odd.length)] : Math.floor(r() * 500),
+    minutesOfDay: Math.floor(r() * 24 * 60),
+    recency: r() < 0.2 ? (r() < 0.5 ? null : undefined) : BANDS[Math.floor(r() * 4)],
+    lastKind: r() < 0.3 ? null : r() < 0.5 ? 'spoke' : 'typed',
+  };
+}
+
+const keysOf = (c: LayerCatalogue) => [...Object.values(c.recency), ...Object.values(c.kind)].flatMap((p) => (p ?? []).map((k) => k.key));
+
+describe('[FR-NTC-01] a pure function in core returns a catalogue key from the inputs (property)', () => {
+  it('the same inputs always give the same key, in any call order, and the key is one the catalogue or the floor holds', () => {
+    const r = rng(1323_01);
+    for (let c = 0; c < 40; c++) {
+      const cat = genCatalogue(r);
+      const select = layeredSelector(cat);
+      const inputs = Array.from({ length: CASES / 40 }, () => genInput(r));
+      const forward = inputs.map((i) => select(i));
+      // Asked again backwards, through a fresh selector: nothing is remembered between calls or between selectors.
+      const again = layeredSelector(cat);
+      const backward = [...inputs].reverse().map((i) => again(i)).reverse();
+      expect(backward, `catalogue ${c}`).toEqual(forward);
+      const allowed = new Set([...keysOf(cat), ...FLOOR_KEYS]);
+      for (const k of forward) expect(allowed.has(k), `catalogue ${c} key ${k}`).toBe(true);
+    }
+  });
+});
+
+describe('[FR-NTC-02] the catalogue on or off changes only which key, never whether there is one (property)', () => {
+  it('off is the floor exactly; on answers every input the floor answers, and differs from it only where a layer pool answers', () => {
+    const r = rng(1323_02);
+    const off = layeredSelector(EMPTY_CATALOGUE);
+    for (let c = 0; c < 40; c++) {
+      const cat = genCatalogue(r);
+      const on = layeredSelector(cat);
+      for (let n = 0; n < CASES / 40; n++) {
+        const input = genInput(r);
+        const floor = selectNotificationKey(input);
+        expect(off(input), `catalogue ${c} case ${n}`).toBe(floor);
+        const key = on(input);
+        expect(typeof key === 'string' && key.length > 0).toBe(true);
+        const layer = selectLayered(input, cat);
+        expect(key, `catalogue ${c} case ${n}`).toBe(layer ?? floor);
+      }
+    }
+  });
+});
+
+describe('[FR-NTC-03] every input is computable at plan time: recency is fire date minus anchor date, never a clock read', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('the band depends only on the day difference, whatever the days are', () => {
+    const r = rng(1323_03);
+    for (let n = 0; n < CASES; n++) {
+      const gap = Math.floor(r() * 50) - 5;
+      const a = Math.floor(r() * 40_000);
+      const shift = Math.floor(r() * 40_000) - 20_000;
+      expect(recencyBand(a + gap + shift, a + shift), `gap ${gap}`).toBe(recencyBand(a + gap, a));
+    }
+  });
+
+  it('the band and the key are the same whatever the clock says when they are asked', () => {
+    const r = rng(1323_33);
+    const cat = genCatalogue(r);
+    const cases = Array.from({ length: 300 }, () => ({ fire: 20_000 + Math.floor(r() * 400), anchor: 20_000 + Math.floor(r() * 400), input: genInput(r) }));
+    const ask = () => cases.map(({ fire, anchor, input }) => [recencyBand(fire, anchor), layeredSelector(cat)({ ...input, recency: recencyBand(fire, anchor) })]);
+    vi.useFakeTimers();
+    vi.setSystemTime(Date.UTC(2026, 0, 1, 3));
+    const early = ask();
+    vi.setSystemTime(Date.UTC(2031, 6, 15, 22));
+    expect(ask()).toEqual(early);
+  });
+});
+
+describe('[FR-NTC-05] the question follows the last letter kind, within 6 days only', () => {
+  const SPLIT: LayerCatalogue = {
+    recency: Object.fromEntries(BANDS.map((b) => [b, [{ key: `ntc.${b}`, evening: false }]])),
+    kind: { spoke: [{ key: 'ntc.kind.spoke', evening: false }], typed: [{ key: 'ntc.kind.typed', evening: false }] },
+  };
+
+  it('days 1 to 6 after a letter take that kind pool and never the other kind; from day 7 the kind shapes nothing', () => {
+    const r = rng(1323_05);
+    for (let n = 0; n < CASES; n++) {
+      const gap = 1 + Math.floor(r() * 35);
+      const lastKind = r() < 0.5 ? 'spoke' : 'typed';
+      const input = { ...genInput(r), recency: recencyBand(1000 + gap, 1000), lastKind } as KeyInput;
+      const key = selectLayered(input, SPLIT);
+      expect(key, `gap ${gap} ${lastKind}`).toBe(gap <= 6 ? `ntc.kind.${lastKind}` : `ntc.${recencyBand(1000 + gap, 1000)}`);
+    }
+  });
+
+  it('the kind is read from the capture mode and entry kind alone: a picture is not a kind (NS-48-R5)', () => {
+    expect(lastLetterKind.length).toBe(2);
+    for (const mode of ['spoken', 'typed', 'mixed', 'picture', 'photo', 'video']) {
+      for (const kind of ['letter', 'note', 'picture', 'photo']) {
+        expect(['spoke', 'typed', null]).toContain(lastLetterKind(mode, kind));
       }
     }
   });

@@ -208,6 +208,24 @@ export function countLetters({ db }: RepoContext, childId: string): number {
   );
 }
 
+/**
+ * How many people wrote the live letters of one book, counted in SQL (BL-421: a card names its writer only when there
+ * is more than one). A writer is an `author_id`; a row with none is this phone's user's (the ledger's rule, as in
+ * `newestMadeLetter`), so it counts as the owner, and letters from before the first sign-in never make a second
+ * writer of the same person. Never `author_signs_as`: a renamed signature is the same person. Quiet-day marks are not
+ * letters, so a mark alone never makes a book shared.
+ */
+export function countWriters({ db }: RepoContext, childId: string, owner: string | null): number {
+  return (
+    db.get<{ n: number }>(
+      `SELECT count(DISTINCT CASE WHEN author_id IS NULL OR author_id = ? THEN '' ELSE author_id END) AS n
+       FROM entries WHERE deleted_at IS NULL AND child_id = ? AND kind <> 'not_much'`,
+      owner ?? '',
+      childId,
+    )?.n ?? 0
+  );
+}
+
 /** What a reminder may know of the newest made letter: a date and two enums. */
 export interface MadeLetter {
   capturedAt: string;
