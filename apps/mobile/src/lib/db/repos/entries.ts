@@ -201,6 +201,79 @@ export function listForBook({ db }: RepoContext, childId: string): Entry[] {
     .map(fromRow);
 }
 
+/** Which of one book's days a Book read covers (BL-2225): `from` and `before` are YYYY-MM-DD, `limit` caps the rows. */
+export interface BookRange {
+  /** Only days on or after this one. */
+  from?: string | null;
+  /** Only days before this one: the keyset of the next chapter of rows, never an OFFSET. */
+  before?: string | null;
+  limit?: number | null;
+}
+
+/**
+ * Live letters of one book in a range of days, newest first, without their edit lists (BL-2225: the Book reads one
+ * chapter of rows at a time). Same order as `listForBook`. The keyset is `occurred_on` alone, so each bound is a range
+ * on `entries_child (child_id, occurred_on)` and a `LIMIT` stops the walk early; the caller keeps whole days.
+ */
+export function listBookRange({ db }: RepoContext, childId: string, range: BookRange = {}): Entry[] {
+  const where = ['deleted_at IS NULL', 'child_id = ?'];
+  const params: (string | number)[] = [childId];
+  if (range.from) {
+    where.push('occurred_on >= ?');
+    params.push(range.from);
+  }
+  if (range.before) {
+    where.push('occurred_on < ?');
+    params.push(range.before);
+  }
+  if (range.limit != null) params.push(range.limit);
+  return db
+    .all<EntryRow>(
+      `SELECT ${SHOWN_COLS} FROM entries WHERE ${where.join(' AND ')} ORDER BY occurred_on DESC, captured_at DESC, id DESC${range.limit != null ? ' LIMIT ?' : ''}`,
+      ...params,
+    )
+    .map(fromRow);
+}
+
+/** What the Book needs to know of the letters it has not read yet (BL-2225): one row, no words. */
+export interface BookOutline {
+  /** The oldest and newest day with a letter or note (quiet-day marks are not letters); null in a book of marks only. */
+  firstLetterOn: string | null;
+  lastLetterOn: string | null;
+  /** Whether Read together has anything to read: kept in the book, has words, not a mark (as `readableInBook`). */
+  readable: boolean;
+}
+
+/** The Book's outline in one aggregate over the book's rows: no row is parsed and one row comes back (BL-2225). */
+export function bookOutline({ db }: RepoContext, childId: string): BookOutline {
+  const r = db.get<{ first: string | null; last: string | null; readable: number | null }>(
+    `SELECT min(CASE WHEN kind <> 'not_much' THEN occurred_on END) AS first,
+            max(CASE WHEN kind <> 'not_much' THEN occurred_on END) AS last,
+            max(in_book = 1 AND kind <> 'not_much' AND transcript_status IS NOT 'waiting') AS readable
+     FROM entries WHERE deleted_at IS NULL AND child_id = ?`,
+    childId,
+  );
+  return { firstLetterOn: r?.first ?? null, lastLetterOn: r?.last ?? null, readable: r?.readable === 1 };
+}
+
+/**
+ * The newest row in the store now, as SQLite's rowid (BL-2225). A row inserted later (synced in or kept) gets a larger
+ * one: the table has no AUTOINCREMENT, so a new rowid is the largest held plus one, and an update keeps its rowid.
+ * One row back, read off the end of the rowid tree. Its one gap: if the newest row is purged before a new one comes
+ * in, the new one may not count as come in, so it misses a wash; no row that was there washes for it.
+ */
+export function rowMark({ db }: RepoContext): number {
+  return db.get<{ m: number | null }>('SELECT max(rowid) AS m FROM entries')?.m ?? 0;
+}
+
+/**
+ * Ids of one book's live rows that came into the store after `mark` (rowMark), BL-2225. A range on the rowid, so only
+ * the rows added since are visited: `+child_id` keeps SQLite off the child indexes, which would walk the whole book.
+ */
+export function idsSince({ db }: RepoContext, childId: string, mark: number): string[] {
+  return db.all<{ id: string }>('SELECT id FROM entries WHERE rowid > ? AND +child_id = ? AND deleted_at IS NULL', mark, childId).map((r) => r.id);
+}
+
 /** How many live letters a book holds (quiet-day marks are not letters), counted in SQL and never loaded (BL-434). */
 export function countLetters({ db }: RepoContext, childId: string): number {
   return (

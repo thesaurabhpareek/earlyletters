@@ -1,5 +1,6 @@
-import { authCopy } from '@scribe/content';
-import { btn, journey } from './support/app';
+import type { Page } from '@playwright/test';
+import { accountDeletionCopy as del, authCopy, en } from '@scribe/content';
+import { btn, CHILD, journey, SIGNS_AS } from './support/app';
 import { expect, seeded, test } from './support/journey';
 import { MAMA, mockServer } from './support/mock-server';
 
@@ -87,4 +88,114 @@ test('[J16b] settings with server features on, signed out: Account, and no Delet
   await expect(app.getByTestId('settings.about.beta').getByText(EARLY_BODY)).toBeVisible();
   await expect(app.getByText(EARLY, { exact: true })).toHaveCount(0);
   await step('happy', 'Settings, server features on', 'With sign-in in the build, the header card says Not signed in and opens Account, with the Plan row right under it, as in every build (CCO-9). Delete account, in its own section above Help, shows only once the person is signed in, so it is not here while signed out. The early-version note is still only under About.');
+});
+
+const EMAIL = 'mama@example.invalid';
+const DAY = 24 * 60 * 60 * 1000;
+const REQUEST = '0199e4a2-7b3c-7d10-8a1b-3c4d5e6f7a8b';
+const escape = (t: string) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/** Email and code through the mocked server (as J22's sign-in flows do), from the sheet's first screen. */
+async function signInWithEmail(page: Page) {
+  await btn(page, authCopy.sheet.email).click();
+  await page.getByLabel(authCopy.email.label, { exact: true }).fill(EMAIL);
+  await btn(page, authCopy.email.send).click();
+  await expect(page.getByText(authCopy.code.sentToEmail.replace('{email}', EMAIL))).toBeVisible();
+  await page.getByLabel(authCopy.code.label, { exact: true }).fill('123456');
+}
+
+test('[J16c] settings signed in: Delete account, what happens, the typed word, scheduled, then Cancel deletion', async ({ app, record }) => {
+  // BL-481 group 2 (CR-171): S64 against the mocked server. The request and the cancel go to the mock only, never a real server.
+  test.setTimeout(120_000);
+  const step = journey(record, 'J16', 'settings-and-help', 30, 'J16-20');
+  const m = await mockServer(app, { user: MAMA, email: EMAIL });
+  // The account lists this phone's book once it is kept in the account (the claim asks with no book listed, as in J22c).
+  let book: string | null = null;
+  let kept = false;
+  m.rpc('sync_books', () => ({
+    body: {
+      epoch: 1,
+      first_run_open: false,
+      books: kept && book ? [{ id: book, role: 'parent', name: CHILD, members: [{ role: 'parent', is_me: true, signs_as: SIGNS_AS }], invites: [] }] : [],
+    },
+  }));
+  // The open request, as deletion_requests holds it for this account: none until the request, none again after the cancel.
+  const scheduledFor = new Date(Date.now() + 30 * DAY).toISOString();
+  let open: { id: string; status: string; scheduled_for: string } | null = null;
+  m.table('deletion_requests', () => ({ body: open ? [open] : [] }));
+  m.rpc('request_account_deletion', () => {
+    open = { id: REQUEST, status: 'scheduled', scheduled_for: scheduledFor };
+    return { body: [{ request_id: REQUEST, scheduled_for: scheduledFor }] };
+  });
+  m.rpc('cancel_account_deletion', () => {
+    open = null;
+    return { body: true };
+  });
+
+  await app.goto(`${process.env.E2E_WEB_ON_URL}/?seed=asha`);
+  await expect(app.locator('body')).not.toBeEmpty();
+  await app.goto(`${process.env.E2E_WEB_ON_URL}/settings?seed=asha`);
+  await expect(app.getByTestId('settings.signedOutCard')).toBeVisible();
+  await expect(app.getByText(en.settingsHome.deleteAccountLabel, { exact: true })).toHaveCount(0);
+  // The book's id on this phone, from its Settings row's address, so the account can list the same book.
+  await app.getByText(CHILD, { exact: true }).first().click();
+  await expect(app).toHaveURL(/\/settings\/children\/[0-9a-f-]{36}/);
+  book = /\/settings\/children\/([0-9a-f-]{36})/.exec(app.url())![1];
+  await app.goBack();
+  await expect(app.getByTestId('settings.signedOutCard')).toBeVisible();
+
+  // Sign in from Settings, and keep this phone's letters in the account.
+  await app.getByTestId('settings.signIn').click();
+  await signInWithEmail(app);
+  await expect(app.getByRole('heading', { name: authCopy.claim.title })).toBeVisible({ timeout: 15_000 });
+  await btn(app, authCopy.claim.keep).click();
+  kept = true;
+  await expect(app.getByTestId('settings.headerCard')).toBeVisible({ timeout: 15_000 });
+  const row = app.getByText(en.settingsHome.deleteAccountLabel, { exact: true });
+  await expect(row).toBeVisible();
+  expect(m.rpcCalls('request_account_deletion'), 'nothing is asked before the person asks').toHaveLength(0);
+  await step('happy', 'Settings, signed in: Delete account', 'Signed in, the header card names the account and Delete account shows in its own section above Help, in the destructive colour, with a chevron (S64). Signed out it is not there (J16b). Against a mocked server.');
+
+  await row.click();
+  await expect(app.getByRole('heading', { name: del.what.heading })).toBeVisible({ timeout: 15_000 });
+  await expect(app.getByText(del.what.intro, { exact: true })).toBeVisible();
+  await expect(app.getByText(new RegExp(`^${escape(del.what.deletedNone.replace('{child}', CHILD).replace(/\.$/, ''))}`))).toBeVisible();
+  await expect(app.getByText(del.what.copies, { exact: true })).toBeVisible();
+  await expect(app.getByTestId('deleteAccount.exportFirst')).toBeVisible();
+  await expect(app.getByTestId('deleteAccount.continue')).toBeEnabled();
+  await step('happy', 'What happens', 'Step 1 of 2: the intro, one line for the book (a sole parent\'s book is deleted, with this person\'s letters in it), what happens on this phone, the copies line, "Keep a copy first" with Export everything, then Continue, enabled once every book\'s line is on the page.');
+
+  await app.getByTestId('deleteAccount.continue').click();
+  await expect(app.getByRole('heading', { name: del.confirm.heading })).toBeVisible();
+  await expect(app.getByLabel(del.confirm.typeLabel, { exact: true })).toBeVisible();
+  await expect(app.getByTestId('deleteAccount.confirm.button')).toBeDisabled();
+  await expect(btn(app, del.confirm.back)).toBeVisible();
+  await step('happy', 'Delete your account?', 'Step 2 of 2: the heading, the date the account would be deleted on, and the field to type delete. Delete account waits, outlined, until the word is typed; Keep my account is the quiet way back.');
+
+  // Keep my account goes back to step 1 and asks nothing of the server.
+  await btn(app, del.confirm.back).click();
+  await expect(app.getByRole('heading', { name: del.what.heading })).toBeVisible();
+  expect(m.rpcCalls('request_account_deletion')).toHaveLength(0);
+  await app.getByTestId('deleteAccount.continue').click();
+
+  await app.getByLabel(del.confirm.typeLabel, { exact: true }).fill(del.confirm.typeWord);
+  await expect(app.getByTestId('deleteAccount.confirm.button')).toBeEnabled();
+  await step('happy', 'The word typed', 'With delete typed, Delete account is filled in the destructive colour and can be pressed.');
+
+  await app.getByTestId('deleteAccount.confirm.button').click();
+  await expect(app.getByTestId('deleteAccount.scheduled')).toBeVisible({ timeout: 15_000 });
+  await expect(app.getByTestId('deleteAccount.scheduled').getByText(del.scheduled.heading, { exact: true })).toBeVisible();
+  await expect(app.getByText(del.scheduled.emailNote, { exact: true })).toBeVisible();
+  await expect(app.getByTestId('deleteAccount.cancel')).toBeVisible();
+  await expect(app.getByTestId('deleteAccount.signOut')).toBeVisible();
+  expect(m.rpcCalls('request_account_deletion'), 'one request, after the press').toHaveLength(1);
+  expect(m.rpcCalls('request_account_deletion')[0].body).toMatchObject({ p_source: 'ios' });
+  await step('happy', 'Deletion scheduled', 'One request reached the server, and the page swaps in place: Deletion scheduled, the date, the line that a confirmation is on its way, Cancel deletion and Sign out of this phone. No export here.');
+
+  await app.getByTestId('deleteAccount.cancel').click();
+  await expect(app.getByText(del.scheduled.cancelled, { exact: true })).toBeVisible({ timeout: 15_000 });
+  expect(m.rpcCalls('cancel_account_deletion')).toHaveLength(1);
+  await expect(app).toHaveURL(/\/settings(\?[^/]*)?$/);
+  await expect(app.getByText(en.settingsHome.deleteAccountLabel, { exact: true })).toBeVisible();
+  await step('unhappy', 'Deletion cancelled', 'The person changes their mind: Cancel deletion asks the server once, the page goes back to Settings, and the toast says the letters and books are back, just as they were.', undefined, { settle: 120 });
 });
