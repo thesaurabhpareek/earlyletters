@@ -13,6 +13,7 @@
  * Fixtures use the fictional family Asha. The kill-switch drill on a real TestFlight phone is not here: it is the
  * founder's device step (docs/release/media-phases-kill-switch-drill.md).
  */
+import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
@@ -106,28 +107,46 @@ const PACKAGES = join(REPO, 'packages');
 const posix = (p: string) => p.split(sep).join('/');
 const repoRel = (file: string) => posix(relative(REPO, file));
 
+const inNodeModules = (p: string) => p.split(sep).includes('node_modules');
+
 /**
- * The name scan walks the whole tree, not a list of roots, so its coverage no longer depends on a root list (round 5:
- * Review A N1 to N3, Review B B1 to B6). Every code file under
- * apps/mobile and under each packages/* directory is read: subpath exports such as packages/design-tokens/fonts and
- * textures, apps/mobile/shims (metro.config.js resolves decode-uri-component to it on every platform), the local modules,
- * the configs (app.config.ts, metro.config.js), scripts, test helpers and anything under a `__tests__` folder.
- * Left out are only folders a tool writes: node_modules, dist, build, coverage, .expo, .turbo and .cache anywhere, and
- * ios and android at the app's top level (prebuild output; the local modules' own ios and android folders are walked).
- * apps/mobile/web-preview is walked too, though only a web build holds it: skipping it would make the scan depend on
- * metro.config.js's platform switch staying as it is.
+ * The folders Metro bundles from: metro.config.js's own `watchFolders`, as Metro reads them (Review A M6: at this install
+ * that is node_modules, apps/mobile, apps/web, every packages/* folder and experiments). node_modules is left out here;
+ * no file under it is scanned.
  */
-const SKIP_ANYWHERE = new Set(['node_modules', 'dist', 'build', 'coverage', '.expo', '.turbo', '.cache']);
+const METRO_WATCH: string[] = ((createRequire(join(APP, 'package.json'))('./metro.config.js') as { watchFolders?: string[] }).watchFolders ?? []).map((d) => resolve(d));
+
+/**
+ * The name scan reads every code file git would hand a build, not a list of folders, so its coverage no longer depends
+ * on a root list (round 5: Review A N1 to N3, Review B B1 to B6; round 6: Review A M1 and M6, Review B M1). The roots
+ * are apps/mobile, each packages/* folder and every folder Metro watches; under each, the files are what
+ * `git ls-files --cached --others --exclude-standard` lists, so .gitignore (which EAS uploads by) decides what is tool
+ * output. That reads subpath exports such as packages/design-tokens/fonts and textures, apps/mobile/shims
+ * (metro.config.js resolves decode-uri-component to it on every platform), the local modules, the configs
+ * (app.config.ts, metro.config.js), scripts, test helpers, anything under a `__tests__` folder, and a source folder named
+ * `build` or `dist` inside src. Left out on top of .gitignore: anything under node_modules at any depth; a folder a tool
+ * writes (build, dist, coverage, .expo, .turbo, .cache) only directly under a root; ios and android only at the app's top
+ * level (prebuild output; the local modules' own ios and android folders are read). apps/mobile/web-preview is read too,
+ * though only a web build holds it: skipping it would make the scan depend on metro.config.js's platform switch staying
+ * as it is. Any code file outside these that a scanned file imports is scanned as well (scanSet).
+ */
+const OUTPUT_AT_ROOT_TOP = new Set(['build', 'dist', 'coverage', '.expo', '.turbo', '.cache']);
 const SKIP_AT_APP_TOP = new Set(['ios', 'android']);
-const WALK_ROOTS: string[] = [APP, ...readdirSync(PACKAGES).map((p) => join(PACKAGES, p)).filter((d) => statSync(d).isDirectory())];
-function walkTree(dir: string): string[] {
-  return readdirSync(dir).flatMap((n) => {
-    const p = join(dir, n);
-    const st = statSync(p, { throwIfNoEntry: false });
-    if (!st) return [];
-    if (st.isDirectory()) return SKIP_ANYWHERE.has(n) || (dir === APP && SKIP_AT_APP_TOP.has(n)) ? [] : walkTree(p);
-    return st.isFile() && CODE_FILE.test(n) ? [p] : [];
-  });
+const WALK_ROOTS: string[] = [
+  ...new Set([APP, ...readdirSync(PACKAGES).map((p) => join(PACKAGES, p)).filter((d) => statSync(d).isDirectory()), ...METRO_WATCH.filter((d) => !inNodeModules(d + sep))]),
+].sort();
+/** The code files under one root, as git lists them, less the skips above. */
+function walkTree(root: string): string[] {
+  const listed = execFileSync('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard', '--', '.'], { cwd: root, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+  return [...new Set(listed.split('\0').filter(Boolean))]
+    .filter((rel) => {
+      const parts = rel.split('/');
+      if (parts.includes('node_modules') || !CODE_FILE.test(rel)) return false;
+      if (parts.length > 1 && OUTPUT_AT_ROOT_TOP.has(parts[0])) return false;
+      return !(root === APP && parts.length > 1 && SKIP_AT_APP_TOP.has(parts[0]));
+    })
+    .map((rel) => join(root, ...rel.split('/')))
+    .filter((f) => statSync(f, { throwIfNoEntry: false })?.isFile());
 }
 
 /** One set of files a vitest run collects: its include and exclude globs, relative to its root. */
@@ -151,6 +170,8 @@ function vitestConfigsOf(dir: string): Array<string | null> {
       const args = words.slice(at + 1);
       for (let i = 0; i < args.length; i++) {
         if (i === 0 && args[i] === 'run') continue;
+        // apps/web runs `vitest run --passWithNoTests`: it changes the exit code, not which files are collected
+        if (args[i] === '--passWithNoTests') continue;
         if (args[i] === '--config' || args[i] === '-c') config = args[++i];
         else if (args[i].startsWith('--config=')) config = args[i].slice('--config='.length);
         else throw new Error(`${repoRel(dir)} script "${name}": vitest argument ${args[i]} is not read by the switch scan; teach vitestConfigsOf what it runs`);
@@ -243,8 +264,17 @@ function resolveImport(from: string, spec: string): string | null {
   }
   return firstFile(join(ws.dir, sub === '.' ? (ws.main ?? 'index') : sub));
 }
+/**
+ * The module specifiers a file names: `from 'x'` (import, export-from, import type), `require('x')`, `import('x')`, and
+ * a side-effect import `import 'x';` (Review A M2: src/lib/billing/index.ts has `import './letter-ledger.keychain';`,
+ * and an eraser could pull in a gate the same way). Read from the raw text, so a match in a comment or a string
+ * counts too: that only adds a file to follow, never drops one.
+ */
+const IMPORT_SPEC = /(?:\bfrom\s*|\brequire\s*\(\s*|\bimport\s*\(\s*|\bimport\s*)['"]([^'"]+)['"]/g;
+const importSpecs = (code: string): string[] => [...code.matchAll(IMPORT_SPEC)].map((m) => m[1]);
+/** The code files in the tree a file imports, by any of those forms, outside node_modules. */
 const importsOf = (file: string): string[] =>
-  [...readFileSync(file, 'utf8').matchAll(/(?:from\s+|require\(\s*|import\(\s*)['"]([^'"]+)['"]/g)].map((m) => resolveImport(file, m[1])).filter((f): f is string => f !== null);
+  importSpecs(readFileSync(file, 'utf8')).map((spec) => resolveImport(file, spec)).filter((f): f is string => f !== null && !inNodeModules(f));
 
 /**
  * The files the name scan reads, out of the walked ones: every file but those vitest runs. A file vitest runs is left
@@ -254,21 +284,23 @@ const importsOf = (file: string): string[] =>
  * a `.spec.ts` or `.test.js` in src, or a helper under `__tests__`, is not collected by apps/mobile's
  * `*.test.ts` glob under src, so it is read like any other (Review B B3 to B5, Review A N3).
  */
-function scanSet(walked: string[], isRun: (f: string) => boolean): { scanned: string[]; skipped: string[] } {
+function scanSet(walked: string[], isRun: (f: string) => boolean): { scanned: string[]; skipped: string[]; outside: string[] } {
   const scanned = new Set(walked.filter((f) => !isRun(f)));
   const walkedSet = new Set(walked);
+  // Any code file a scanned file imports is scanned, walked or not (Review A M6: `experiments/video-gate.ts` re-exported
+  // by a relative path from src). importsOf already leaves node_modules out.
   for (const queue = [...scanned]; queue.length; ) {
     for (const next of importsOf(queue.pop() as string)) {
-      if (walkedSet.has(next) && !scanned.has(next)) {
+      if (!scanned.has(next)) {
         scanned.add(next);
         queue.push(next);
       }
     }
   }
-  return { scanned: [...scanned].sort(), skipped: walked.filter((f) => !scanned.has(f)).sort() };
+  return { scanned: [...scanned].sort(), skipped: walked.filter((f) => !scanned.has(f)).sort(), outside: [...scanned].filter((f) => !walkedSet.has(f)).sort() };
 }
 
-let treeScan: Promise<{ walked: string[]; scanned: string[]; skipped: string[]; runs: VitestRun[] }> | undefined;
+let treeScan: Promise<{ walked: string[]; scanned: string[]; skipped: string[]; outside: string[]; runs: VitestRun[] }> | undefined;
 /** The walk, the vitest runs and the scan set, worked out once per file run. */
 function nameScan() {
   treeScan ??= (async () => {
@@ -299,7 +331,7 @@ function nameMentions(file: string): Record<string, number> {
   return Object.fromEntries(SWITCH_NAMES.map((n) => [n, Math.max(parsed.match(nameIn(n))?.length ?? 0, stripped.match(nameIn(n))?.length ?? 0)]));
 }
 
-/** Every source file reachable from the entries by import, export-from, require() or import(). */
+/** Every source file reachable from the entries by import, export-from, require(), import() or a side-effect import. */
 function closureOf(entries: string[]): string[] {
   const seen = new Set<string>();
   const stack = [...entries];
@@ -307,11 +339,7 @@ function closureOf(entries: string[]): string[] {
     const file = stack.pop() as string;
     if (seen.has(file)) continue;
     seen.add(file);
-    const code = readFileSync(file, 'utf8');
-    for (const m of code.matchAll(/(?:from\s+|require\(\s*|import\(\s*)['"]([^'"]+)['"]/g)) {
-      const next = resolveImport(file, m[1]);
-      if (next && !seen.has(next)) stack.push(next);
-    }
+    for (const next of importsOf(file)) if (!seen.has(next)) stack.push(next);
   }
   return [...seen].sort();
 }
@@ -325,6 +353,26 @@ function isDeclaredName(id: ts.Identifier): boolean {
   }
   return false;
 }
+
+/** A function's body (or an arrow's expression), comments stripped and white space folded, for a word-for-word pin. */
+function bodyIn(sf: ts.SourceFile, name: string): string | undefined {
+  let out: string | undefined;
+  const visit = (n: ts.Node): void => {
+    if (ts.isFunctionDeclaration(n) && n.name?.text === name && n.body) out = n.body.getText(sf);
+    else if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) && n.name.text === name && n.initializer && ts.isArrowFunction(n.initializer)) out = n.initializer.body.getText(sf);
+    n.forEachChild(visit);
+  };
+  visit(sf);
+  return out === undefined ? undefined : stripComments(out).replace(/\s+/g, ' ').trim();
+}
+/** The top-level statements that declare `name`, comments stripped and white space folded. */
+const statementsDeclaring = (sf: ts.SourceFile, name: string): string[] =>
+  sf.statements
+    .filter(ts.isVariableStatement)
+    .filter((st) => st.declarationList.declarations.some((d) => ts.isIdentifier(d.name) && d.name.text === name))
+    .map((st) => stripComments(st.getText(sf)).replace(/\s+/g, ' ').trim());
+// A pin fails on any change inside these bodies, a Prettier rewrap included (Review A N7, note 4): re-pin after review.
+const PIN = 're-pin after review: a switch reader changed';
 
 /** The functions that read a phase switch, for P0 through its own module and for every phase through capabilities. */
 const SWITCH_READERS = ['mediaPhaseMayRun', 'mediaPhaseBuilt', 'photosBuildEnabled', 'photosPausedNow', 'photosPaused', 'photoSurfaces', 'photoStartShows'];
@@ -533,6 +581,16 @@ describe('[NX-39-R37] a phase switch removes screens and reads, never a data rig
         expect.stringMatching(/erase-gate\.js#eraseGate$/),
         expect.stringMatching(/erase-mod\.mjs#<module>$/),
       ]);
+      // Review A M2: a side-effect import, in either quote, is followed, and the gate it pulls in is a read (a module
+      // that sets an erase policy from mediaPhaseBuilt('video'), imported by `import './erase-gate2';` from the eraser).
+      expect(importSpecs("import './a';\nimport \"b\";\nimport'./c';\nexport * from './d';\nimport type { E } from './e';\n")).toEqual(['./a', 'b', './c', './d', './e']);
+      writeFileSync(join(dir, 'erase-policy.ts'), 'export const erasePolicy = { keepPictures: false };\n');
+      writeFileSync(join(dir, 'erase-gate2.ts'), "import { mediaPhaseBuilt } from './capabilities';\nimport { erasePolicy } from './erase-policy';\nerasePolicy.keepPictures = mediaPhaseBuilt('video');\n");
+      writeFileSync(join(dir, 'erase-side.js'), "import { mediaPhaseMayRun } from './capabilities';\nexport const sideOn = mediaPhaseMayRun('video', null);\n");
+      writeFileSync(file, "import './erase-gate2';\nimport \"./erase-side.js\";\nimport { erasePolicy } from './erase-policy';\nexport function eraseEverything() {\n  if (erasePolicy.keepPictures) return;\n}\n");
+      const sideClosure = closureOf([file]);
+      expect(sideClosure.map((f) => basename(f))).toEqual(['copy.ts', 'erase-gate2.ts', 'erase-policy.ts', 'erase-side.js']);
+      expect(switchReads(sideClosure)).toEqual([expect.stringMatching(/erase-gate2\.ts#<module>$/), expect.stringMatching(/erase-side\.js#<module>$/)]);
       // and the names an import or a declaration gives are not reads
       writeFileSync(file, "import { mediaPhaseBuilt } from './capabilities';\nexport { mediaPhaseBuilt };\nexport const keys = { mediaPhaseBuilt: 1, 'photosPaused': 2 };\n");
       expect(switchReads([file])).toEqual([]);
@@ -563,6 +621,18 @@ describe('[NX-39-R37] a phase switch removes screens and reads, never a data rig
     // lib/photos/flag.ts draws P0's surfaces; it must agree with capabilities.ts, or one could be on while the other is off.
     for (const v of [undefined, null, '', 'off', 'on', ' ON ', 'On', 'true', '1', 'yes']) expect(parsePhotosFlag(v), String(v)).toBe(parseServerFeatures(v));
     expect(stripComments(readFileSync(join(SRC, 'lib', 'photos', 'flag.ts'), 'utf8'))).toMatch(/parsePhotosFlag\(process\.env\.EXPO_PUBLIC_PHOTOS\)/);
+    // P0's reader, word for word, as capabilities.ts's are below (Review B M4: a `HermesInternal` branch in
+    // photosBuildEnabled would turn P0's screens on in a release build alone and pass every test run in Node).
+    const flag = parse(join(SRC, 'lib', 'photos', 'flag.ts'));
+    expect(bodyIn(flag, 'parsePhotosFlag'), PIN).toBe("(raw ?? '').trim().toLowerCase() === 'on'");
+    expect(statementsDeclaring(flag, 'BUILD_VALUE'), PIN).toEqual(['const BUILD_VALUE: boolean = parsePhotosFlag(process.env.EXPO_PUBLIC_PHOTOS);']);
+    expect(statementsDeclaring(flag, 'testOverride'), PIN).toEqual(['let testOverride: boolean | null = null;']);
+    expect(bodyIn(flag, 'photosBuildEnabled'), PIN).toBe('testOverride ?? BUILD_VALUE');
+    expect(bodyIn(flag, 'photoSurfaces'), PIN).toBe('{ const on = input.build && !input.paused; return { start: on, lens: on, addActions: on }; }');
+    // and nothing else in it touches the build value or the override: declared, set by setPhotosForTest, read once
+    const flagCode = stripComments(readFileSync(join(SRC, 'lib', 'photos', 'flag.ts'), 'utf8'));
+    expect(flagCode.match(/\bBUILD_VALUE\b/g)?.length, PIN).toBe(2);
+    expect(flagCode.match(/\btestOverride\b/g)?.length, PIN).toBe(3);
     setMediaPhaseForTests('photos', true);
     for (const config of CONFIGS) {
       expect(photosPaused(config as Parameters<typeof photosPaused>[0]), JSON.stringify(config)).toBe(!mediaPhaseMayRun('photos', config));
@@ -579,8 +649,12 @@ describe('[NX-39-R37] a phase switch removes screens and reads, never a data rig
     // does not collect it, so it is scanned like any other file, and it may name them only while every file that
     // imports it is one vitest runs, so no bundle can hold it (checked below).
     const CANARY = 'apps/mobile/test/support/media-log-canary.ts';
-    const { walked, scanned, skipped } = await nameScan();
+    const { walked, scanned, skipped, outside } = await nameScan();
     const rels = new Set(scanned.map(repoRel));
+    // The roots are apps/mobile, every package and every folder Metro watches but node_modules (Review A M6).
+    expect(METRO_WATCH.length).toBeGreaterThan(0);
+    for (const d of METRO_WATCH) expect(inNodeModules(d + sep) || WALK_ROOTS.includes(d), `Metro watches ${d}`).toBe(true);
+    expect(WALK_ROOTS.map(repoRel)).toEqual(expect.arrayContaining(['apps/mobile', 'apps/web', 'experiments', 'packages/core', 'packages/design-tokens']));
     // The walk reaches what the root list missed (Review A N1 to N3, Review B B1 to B6) as well as src and the packages.
     expect([...rels]).toEqual(
       expect.arrayContaining([
@@ -598,11 +672,14 @@ describe('[NX-39-R37] a phase switch removes screens and reads, never a data rig
         'packages/brand/index.ts',
         'packages/design-tokens/fonts/index.ts',
         'packages/design-tokens/textures/index.ts',
+        'experiments/gate.ts',
+        'apps/web/e2e/health.e2e.ts',
       ]),
     );
-    // Every code file a workspace package exports (its main and each `exports` entry) is scanned, so a folder that
-    // the walk skips can never hold one.
+    // Every code file a package exports (its main and each `exports` entry) is scanned, so a folder that the walk skips
+    // can never hold one. apps/web and experiments export nothing; their files are walked like the rest.
     for (const [name, ws] of WORKSPACES) {
+      if (!ws.dir.startsWith(PACKAGES + sep)) continue;
       const targets = [ws.main, ...Object.values(ws.exports ?? {})].filter((t): t is string => !!t && CODE_FILE.test(t) && !t.includes('*'));
       expect(targets.length, name).toBeGreaterThan(0);
       for (const t of targets) expect(rels.has(repoRel(join(ws.dir, t))), `${name} exports ${t}`).toBe(true);
@@ -610,7 +687,11 @@ describe('[NX-39-R37] a phase switch removes screens and reads, never a data rig
     // What is skipped is the files vitest runs: this one, the component suite, each package's tests.
     expect(skipped.map(repoRel)).toEqual(expect.arrayContaining(['apps/mobile/test/media-switches.test.ts', 'apps/mobile/test/capabilities.test.ts', 'packages/content/test/claims-capabilities.test.ts']));
     expect(skipped.some((f) => repoRel(f).startsWith('apps/mobile/test/component/'))).toBe(true);
-    expect(scanned.length + skipped.length).toBe(walked.length);
+    // Every walked file is scanned or skipped; what is scanned beyond the walk is only what a scanned file imports.
+    const scannedSet = new Set(scanned);
+    for (const f of walked) expect(scannedSet.has(f) || skipped.includes(f), repoRel(f)).toBe(true);
+    expect(scanned.length + skipped.length).toBe(walked.length + outside.length);
+    for (const f of outside) expect(inNodeModules(f), repoRel(f)).toBe(false);
 
     const named: Record<string, string[]> = Object.fromEntries(SWITCH_NAMES.map((n) => [n, []]));
     const counts: Record<string, Record<string, number>> = {};
@@ -620,8 +701,13 @@ describe('[NX-39-R37] a phase switch removes screens and reads, never a data rig
       for (const n of SWITCH_NAMES) if (counts[rel][n] > 0) named[n].push(rel);
     }
     const CANARY_NAMES = ['EXPO_PUBLIC_PHOTO_MOMENTS', 'EXPO_PUBLIC_MOMENTS_BACKGROUND'];
+    // The store gate's list (preflight-testflight.mjs and store-flags.test.ts read it) names the switches it refuses
+    // `on` for. It is a Node script, reached now that the scan follows imports out of the walk (Review A M6); it may
+    // name them only while no file under src reaches it by import, so no bundle can hold it (checked below).
+    const STORE_GATE = 'scripts/release/store-flags.mjs';
+    const STORE_GATE_NAMES = SWITCH_NAMES.filter((n) => STORE_FLAGS.some((f: { env: string }) => f.env === n));
     for (const s of MEDIA_PHASE_SWITCHES) {
-      const expected = [CAPS, ...(s.phase === 'photos' ? [FLAG] : []), ...(CANARY_NAMES.includes(s.env) ? [CANARY] : [])];
+      const expected = [CAPS, ...(s.phase === 'photos' ? [FLAG] : []), ...(CANARY_NAMES.includes(s.env) ? [CANARY] : []), ...(STORE_GATE_NAMES.includes(s.env) ? [STORE_GATE] : [])];
       expect(named[s.env].sort(), s.env).toEqual(expected.sort());
     }
     // capabilities.ts names each one twice, its row in MEDIA_PHASE_SWITCHES and its one read (R39 pins both), so a
@@ -634,6 +720,13 @@ describe('[NX-39-R37] a phase switch removes screens and reads, never a data rig
     const importers = walked.filter((f) => importsOf(f).includes(join(REPO, CANARY)));
     expect(importers.map(repoRel)).toEqual(['apps/mobile/test/media-log-canary.test.ts']);
     for (const f of importers) expect(skipped, repoRel(f)).toContain(f);
+    // the store gate names each of its switches once, and nothing the app's code imports, at any depth, reaches it or
+    // the canary list
+    expect(counts[STORE_GATE]).toEqual(Object.fromEntries(SWITCH_NAMES.map((n) => [n, STORE_GATE_NAMES.includes(n) ? 1 : 0])));
+    const appReach = closureOf(scanned.filter((f) => f.startsWith(SRC + sep))).map(repoRel);
+    expect(appReach.length).toBeGreaterThan(500);
+    expect(appReach).not.toContain(STORE_GATE);
+    expect(appReach).not.toContain(CANARY);
     // The walk reads about 1,700 files and parses the 1,000 or so it scans: about 2 s alone, so the R37 main test's
     // 20 s, as for any slow test here (Review A note 1: the default 5 s was hit under load).
   }, 20_000);
@@ -668,11 +761,32 @@ describe('[NX-39-R37] a phase switch removes screens and reads, never a data rig
       writeFileSync(alone, "import { on } from './gate.test';\nexport const b = on;\n");
       writeFileSync(screen, 'export const a = 1;\n');
       const byName = (f: string) => f.endsWith('.test.ts');
-      expect(scanSet([gate, alone, screen], byName)).toEqual({ scanned: [screen], skipped: [alone, gate].sort() });
+      expect(scanSet([gate, alone, screen], byName)).toEqual({ scanned: [screen], skipped: [alone, gate].sort(), outside: [] });
       // a screen that imports a test file puts it in the bundle, so it is scanned, and its read is counted
       writeFileSync(screen, "import { on } from './gate.test';\nexport const a = on;\n");
       expect(scanSet([gate, alone, screen], byName).scanned).toEqual([gate, screen].sort());
       expect(nameMentions(gate).EXPO_PUBLIC_VIDEO).toBe(1);
+      // Review A M2: so does a side-effect import of it, in either quote
+      for (const line of ["import './gate.test';\n", 'import "./gate.test";\n']) {
+        writeFileSync(screen, `${line}export const a = 1;\n`);
+        expect(scanSet([gate, alone, screen], byName).scanned, line).toEqual([gate, screen].sort());
+      }
+      // Review A M6: a file outside every walked root that a scanned file imports is scanned too
+      mkdirSync(join(dir, 'away'));
+      const away = join(dir, 'away', 'video-gate.ts');
+      writeFileSync(away, 'export const videoOn: boolean = !!process.env.EXPO_PUBLIC_VIDEO;\n');
+      writeFileSync(screen, "export { videoOn } from './away/video-gate';\n");
+      expect(scanSet([gate, alone, screen], byName)).toEqual({ scanned: [away, screen].sort(), skipped: [alone, gate].sort(), outside: [away] });
+      // The walk lists what git lists, skips a tool's output folder only directly under the root, and node_modules at
+      // any depth (Review A M1, Review B M1: src/lib/build/video-gate.ts is source).
+      const repo = join(dir, 'repo');
+      for (const f of ['src/lib/build/video-gate.ts', 'src/dist/a.ts', 'src/a.ts', 'build/out.js', 'dist/out.js', 'coverage/x.js', '.expo/x.js', 'node_modules/p/i.js', 'src/node_modules/p/i.js', 'src/ignored/x.ts', 'src/notes.md']) {
+        mkdirSync(dirname(join(repo, f)), { recursive: true });
+        writeFileSync(join(repo, f), 'export {};\n');
+      }
+      writeFileSync(join(repo, '.gitignore'), 'ignored/\n');
+      execFileSync('git', ['init', '-q'], { cwd: repo });
+      expect(walkTree(repo).map((f) => posix(relative(repo, f))).sort()).toEqual(['src/a.ts', 'src/dist/a.ts', 'src/lib/build/video-gate.ts']);
       // the scripts are read as vitest reads them, and a command the scan does not understand fails
       mkdirSync(join(dir, 'pkg'));
       const scripts = (s: Record<string, string>) => writeFileSync(join(dir, 'pkg', 'package.json'), JSON.stringify({ name: 'x', scripts: s }));
@@ -773,24 +887,12 @@ describe('[NX-39-R39] the switches of section 3', () => {
     // undefined and Platform is a stand-in, so a branch on either (`if (!__DEV__ && phase === 'video') return true;`)
     // would turn a phase on in a release build alone and pass every other test here.
     const caps = parse(join(SRC, 'lib', 'capabilities.ts'));
-    const bodyOf = (name: string): string | undefined => {
-      let out: string | undefined;
-      const visit = (n: ts.Node): void => {
-        if (ts.isFunctionDeclaration(n) && n.name?.text === name && n.body) out = n.body.getText(caps);
-        else if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) && n.name.text === name && n.initializer && ts.isArrowFunction(n.initializer)) out = n.initializer.body.getText(caps);
-        n.forEachChild(visit);
-      };
-      visit(caps);
-      return out === undefined ? undefined : stripComments(out).replace(/\s+/g, ' ').trim();
-    };
-    // A pin fails on any change inside these bodies, a Prettier rewrap included (Review A N7, note 4): re-pin after review.
-    const PIN = 're-pin after review: a switch reader changed';
+    const bodyOf = (name: string) => bodyIn(caps, name);
     // parseServerFeatures decides what each inlined value means, and the override's initializer is the one value the
     // override starts from in a release build (Review A N5, N6: a `HermesInternal` branch in either passes every test
     // run in Node). Both live in capabilities.ts; they are pinned here without editing it.
     expect(bodyOf('parseServerFeatures'), PIN).toBe("{ return (raw ?? '').trim().toLowerCase() === 'on'; }");
-    const overrideDecl = caps.statements.filter(ts.isVariableStatement).filter((st) => st.declarationList.declarations.some((d) => ts.isIdentifier(d.name) && d.name.text === 'mediaPhaseTestOverride'));
-    expect(overrideDecl.map((st) => stripComments(st.getText(caps)).replace(/\s+/g, ' ').trim()), PIN).toEqual(['let mediaPhaseTestOverride: Partial<Record<MediaPhase, boolean>> = {};']);
+    expect(statementsDeclaring(caps, 'mediaPhaseTestOverride'), PIN).toEqual(['let mediaPhaseTestOverride: Partial<Record<MediaPhase, boolean>> = {};']);
     expect(code.match(/\bfunction parseServerFeatures\b/g)?.length, PIN).toBe(1);
     expect(bodyOf('mediaPhaseSwitch'), PIN).toBe(
       "{ const s = MEDIA_PHASE_SWITCHES.find((m) => m.phase === phase); if (!s) throw new Error(`unknown media phase ${phase}`); return s; }",
@@ -937,25 +1039,37 @@ function processEnvWrites(file: string): string[] {
 /** The configs that run in the bundler's process, before Metro's transform workers copy process.env (Review A N4). */
 const BUNDLER_CONFIGS = ['app.config.ts', 'metro.config.js', 'babel.config.js', 'babel.config.cjs', 'babel.config.mjs', 'babel.config.ts'].map((n) => join(APP, n));
 
-/** Every variable eas.json writes in any profile, the switches and EAS's own: what one evaluation sets or clears. */
-const configVariables = (eas: Eas): string[] => [...new Set([...Object.values(eas.build).flatMap((p) => Object.keys(p.env ?? {})), ...SWITCH_NAMES, 'EAS_BUILD_PROFILE', 'EXPO_PUBLIC_E2E'])];
+/**
+ * What an EAS builder sets on top of the profile's env (Review A M3): `EAS_BUILD=true` and the platform on every build,
+ * and CI. A config read behind `process.env.EAS_BUILD === 'true'` shows only with these set, so each evaluation below is
+ * run with them and without them.
+ */
+const EAS_BUILDER_ENV: Record<string, string> = { EAS_BUILD: 'true', EAS_BUILD_PLATFORM: 'ios', CI: '1' };
 
+/** Every variable eas.json writes in any profile, the switches and EAS's own: what one evaluation sets or clears. */
+const configVariables = (eas: Eas): string[] => [...new Set([...Object.values(eas.build).flatMap((p) => Object.keys(p.env ?? {})), ...SWITCH_NAMES, 'EAS_BUILD_PROFILE', 'EXPO_PUBLIC_E2E', ...Object.keys(EAS_BUILDER_ENV)])];
+
+type Builder = 'eas' | 'local';
 /**
  * app.config.ts evaluated fresh, as one EAS build of `profile` evaluates it: exactly the profile's env (eas.json,
- * through `extends`), EAS_BUILD_PROFILE set to its name, and `extra` on top. The module is dropped from Node's
- * require cache first, so a read at its top level runs again with this env. Returned as JSON, so it can be compared.
- * `source` evaluates other text in the file's place (a mutant, for the positive control), never written to disk.
+ * through `extends`), EAS_BUILD_PROFILE set to its name, EAS_BUILD, EAS_BUILD_PLATFORM and CI as an EAS builder sets
+ * them (builder `eas`) or unset (`local`), and `extra` on top. Every module outside node_modules is dropped from Node's
+ * require cache first, app.config.ts and any helper it requires alike (Review B M2: `config/phase.js` read once and
+ * cached would give every later evaluation the first one's value), so a read at any of their top levels runs again with
+ * this env, as it does in the one fresh process of a build. Returned as JSON, so it can be compared. `source` evaluates
+ * other text in the file's place (a mutant, for the positive control), never written to disk.
  */
-function appConfigFor(eas: Eas, profile: string, extra: Record<string, string> = {}, source?: string): string {
+function appConfigFor(eas: Eas, profile: string, extra: Record<string, string> = {}, opts: { builder?: Builder; source?: string } = {}): string {
+  const { builder = 'local', source } = opts;
   const req = createRequire(join(APP, 'package.json'));
   const file = join(APP, 'app.config.ts');
   const names = configVariables(eas);
   const saved = Object.fromEntries(names.map((k) => [k, process.env[k]]));
   try {
     for (const k of names) delete process.env[k];
-    const env = { ...((resolveProfile(eas.build, profile)?.env ?? {}) as Record<string, string>), EAS_BUILD_PROFILE: profile, ...extra };
+    const env = { ...((resolveProfile(eas.build, profile)?.env ?? {}) as Record<string, string>), EAS_BUILD_PROFILE: profile, ...(builder === 'eas' ? EAS_BUILDER_ENV : {}), ...extra };
     for (const [k, v] of Object.entries(env)) process.env[k] = v;
-    for (const k of Object.keys(req.cache)) if (k === file || basename(k) === 'app.config.ts') delete req.cache[k];
+    for (const k of Object.keys(req.cache)) if (!inNodeModules(k)) delete req.cache[k];
     if (source !== undefined) {
       // @expo/require-utils takes a loaded module from the cache as it is, so the mutant stands in for the file.
       const { outputText } = ts.transpileModule(source, { fileName: file, compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, esModuleInterop: true } });
@@ -981,30 +1095,53 @@ describe('[NX-39-R39] no config path carries a switch into a build', () => {
     const eas = readEas();
     const profiles = [...new Set([...storeProfiles(eas), 'production'])].sort();
     expect(profiles).toEqual(expect.arrayContaining(['preview', 'production', 'testflight']));
-    for (const profile of profiles) {
-      const unset = appConfigFor(eas, profile);
-      expect(JSON.parse(unset).ios.bundleIdentifier, profile).toMatch(/\./);
-      for (const s of MEDIA_PHASE_SWITCHES) {
-        for (const value of ['off', 'on']) expect(appConfigFor(eas, profile, { [s.env]: value }) === unset, `${profile} ${s.env}=${value}`).toBe(true);
+    // On an EAS builder (EAS_BUILD, EAS_BUILD_PLATFORM and CI set) and off one (Review A M3).
+    for (const builder of ['local', 'eas'] as const) {
+      for (const profile of profiles) {
+        const unset = appConfigFor(eas, profile, {}, { builder });
+        expect(JSON.parse(unset).ios.bundleIdentifier, profile).toMatch(/\./);
+        for (const s of MEDIA_PHASE_SWITCHES) {
+          for (const value of ['off', 'on']) expect(appConfigFor(eas, profile, { [s.env]: value }, { builder }) === unset, `${builder} ${profile} ${s.env}=${value}`).toBe(true);
+        }
+        const allOn = Object.fromEntries(SWITCH_NAMES.map((n) => [n, 'on']));
+        expect(appConfigFor(eas, profile, allOn, { builder }) === unset, `${builder} ${profile} every switch on`).toBe(true);
       }
-      const allOn = Object.fromEntries(SWITCH_NAMES.map((n) => [n, 'on']));
-      expect(appConfigFor(eas, profile, allOn) === unset, `${profile} every switch on`).toBe(true);
     }
     // Each evaluation is under 100 ms once @expo/config is loaded, but the first one pays that cold load (BL-443).
-  }, 20_000);
+  }, 30_000);
 
-  it('[NX-39-R39] positive control: the evaluation sees a switch copied into the config, at the top level or in the function', () => {
+  it('[NX-39-R39] positive control: the evaluation sees a switch copied into the config, at the top level, in the function, behind EAS_BUILD or in a helper module', () => {
     // The real app.config.ts with B7 applied, evaluated in the file's place (nothing is written): the check above fails.
     const eas = readEas();
     const real = readFileSync(join(APP, 'app.config.ts'), 'utf8');
-    const b7 = real.replace('  extra: {\n', "  extra: {\n    video: process.env[['EXPO', 'PUBLIC', 'VIDEO'].join('_')],\n");
-    const top = real.replace('export default (', "const VIDEO = process.env[['EXPO', 'PUBLIC', 'VIDEO'].join('_')];\nexport default (").replace('  extra: {\n', '  extra: {\n    video: VIDEO,\n');
-    expect(b7).not.toBe(real);
-    expect(top).not.toBe(real);
+    const BUILT = "process.env[['EXPO', 'PUBLIC', 'VIDEO'].join('_')]";
+    const b7 = real.replace('  extra: {\n', `  extra: {\n    video: ${BUILT},\n`);
+    const top = real.replace('export default (', `const VIDEO = ${BUILT};\nexport default (`).replace('  extra: {\n', '  extra: {\n    video: VIDEO,\n');
+    // Review A M3: B7 behind a condition every EAS build meets.
+    const easOnly = real.replace('    ...capabilityFlags(),\n', `    ...capabilityFlags(),\n    ...(process.env.EAS_BUILD === 'true' ? { video: ${BUILT} } : {}),\n`);
+    for (const mutant of [b7, top, easOnly]) expect(mutant).not.toBe(real);
     // the real text, evaluated the same way, matches the file
-    expect(appConfigFor(eas, 'production', {}, real)).toBe(appConfigFor(eas, 'production'));
-    for (const mutant of [b7, top]) {
-      expect(appConfigFor(eas, 'production', { EXPO_PUBLIC_VIDEO: 'off' }, mutant)).not.toBe(appConfigFor(eas, 'production', {}, mutant));
+    expect(appConfigFor(eas, 'production', {}, { source: real })).toBe(appConfigFor(eas, 'production'));
+    expect(appConfigFor(eas, 'production', {}, { source: real, builder: 'eas' })).toBe(appConfigFor(eas, 'production', {}, { builder: 'eas' }));
+    const differs = (source: string, builder: Builder) =>
+      appConfigFor(eas, 'production', { EXPO_PUBLIC_VIDEO: 'off' }, { source, builder }) !== appConfigFor(eas, 'production', {}, { source, builder });
+    for (const mutant of [b7, top]) for (const builder of ['local', 'eas'] as const) expect(differs(mutant, builder), builder).toBe(true);
+    // the EAS_BUILD mutant shows only on an EAS builder, so the evaluation needs both
+    expect(differs(easOnly, 'local')).toBe(false);
+    expect(differs(easOnly, 'eas')).toBe(true);
+    // Review B M2: a helper module app.config.ts requires reads the switch at its own top level. It is cached after the
+    // first evaluation, so only dropping it from the require cache each time shows the second value.
+    const dir = mkdtempSync(join(tmpdir(), 'nx39-config-'));
+    try {
+      const helper = join(dir, 'phase.js');
+      writeFileSync(helper, `module.exports.video = ${BUILT};\n`);
+      const withHelper = real.replace('export default (', `const phase = require(${JSON.stringify(helper)});\nexport default (`).replace('  extra: {\n', '  extra: {\n    phaseVideo: phase.video,\n');
+      expect(withHelper).not.toBe(real);
+      for (const builder of ['local', 'eas'] as const) {
+        expect(appConfigFor(eas, 'production', {}, { source: withHelper, builder }), builder).not.toBe(appConfigFor(eas, 'production', { EXPO_PUBLIC_VIDEO: 'off' }, { source: withHelper, builder }));
+      }
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
     }
   }, 20_000);
 
