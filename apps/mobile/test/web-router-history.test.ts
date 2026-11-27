@@ -94,7 +94,7 @@ function fakeWindow(popstateDelayMs: number) {
   const entries: { id?: string }[] = [{}];
   let at = 0;
   return {
-    document: { title: 'Early Letters' },
+    document: { title: 'Book' },
     addEventListener: target.addEventListener.bind(target),
     removeEventListener: target.removeEventListener.bind(target),
     history: {
