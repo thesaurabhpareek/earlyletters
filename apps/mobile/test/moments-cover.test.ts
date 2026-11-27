@@ -29,8 +29,23 @@ const env = vi.hoisted(() => ({
   appState: null as null | ((s: string) => void),
 }));
 
-type P = { children?: ReactNode; testID?: string; style?: unknown; accessibilityLabel?: string };
-const tag = (name: string) => (p: P) => h('div', { 'data-kind': name, 'data-testid': p.testID, 'data-label': p.accessibilityLabel }, p.children);
+type P = { children?: ReactNode; testID?: string; style?: unknown; accessibilityLabel?: string } & Record<string, unknown>;
+/**
+ * Every prop VoiceOver can speak (a label, `aria-label`, a hint, a value or its text, a description) reaches the markup
+ * as an attribute whose name ends in `label`, so PC-T6 can read all of them. The mark's own label stays `data-label`.
+ */
+const SPOKEN = /label|hint|value|valuetext|description/i;
+const spoken = (p: P): Record<string, string> => {
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(p)) {
+    if (k === 'accessibilityLabel' || !SPOKEN.test(k) || v == null) continue;
+    const text = typeof v === 'object' ? Object.values(v as Record<string, unknown>).filter((x) => typeof x === 'string').join(' ') : String(v);
+    if (text) out[`data-${k.toLowerCase()}-label`] = text;
+  }
+  return out;
+};
+const tag = (name: string) => (p: P) =>
+  h('div', { 'data-kind': name, 'data-testid': p.testID, 'data-label': p.accessibilityLabel, ...spoken(p) }, p.children);
 
 vi.mock('../src/lib/store', () => ({
   getSetting: (k: string) => env.settings.get(k) ?? null,
@@ -154,7 +169,7 @@ describe('[NS-53-G01] a cold launch that is not in front is covered too, lock of
 describe('[NS-53-G01] PC-T3, PC-T6: one cover, never two, with Moments focused', () => {
   const COVER = /data-testid="appLock\.cover"/g;
 
-  it('the real AppLockLayer draws exactly one cover going inactive, with App lock off and with it on', async () => {
+  it('the real AppLockLayer draws exactly one cover going inactive and to background with App lock off, and to background with it on', async () => {
     const { writeAppLock } = await import('../src/lib/app-lock/prefs');
     const controller = await import('../src/lib/app-lock/controller');
     const { appLockCopy } = await import('../src/lib/app-lock/copy');
@@ -175,7 +190,8 @@ describe('[NS-53-G01] PC-T3, PC-T6: one cover, never two, with Moments focused',
     expect(html.replace(/<[^>]*>/g, '')).toBe(''); // PC-T6: no text, no day, place or name
     expect(html).not.toContain('Asha');
     expect(/data-testid="appLock\.cover\.mark"[^>]*data-label="([^"]*)"/.exec(html)?.[1]).toBe(appLockCopy.coverLabel);
-    // PC-T6, the VoiceOver half: the only label anywhere on the cover is the app name (no day, place or name).
+    // PC-T6, the VoiceOver half: everything VoiceOver can speak on the cover (labels, aria-label, hints, values) is the
+    // app name once (no day, place or name).
     expect([...html.matchAll(/\b[\w-]*label="([^"]*)"/gi)].map((m) => m[1])).toEqual([appLockCopy.coverLabel]);
     env.appState!('active');
     expect(draw()).not.toMatch(COVER);
@@ -222,7 +238,7 @@ describe('[NS-53-G01] PC-T3: the root layout mounts the lock layer once, and not
         return statSync(p).isDirectory() ? walk(p) : /\.tsx?$/.test(f) ? [p] : [];
       });
     const mounting = walk(root)
-      .filter((f) => /<AppLockLayer\b|\(\s*AppLockLayer\b|app-lock\/app-lock-layer['"]/.test(readFileSync(f, 'utf8')))
+      .filter((f) => /<AppLockLayer\b|\(\s*AppLockLayer\b|\bapp-lock-layer['"]/.test(readFileSync(f, 'utf8')))
       .map((f) => relative(root, f));
     expect(mounting).toEqual([join('app', '_layout.tsx')]);
     const src = readFileSync(resolve(root, 'app/_layout.tsx'), 'utf8');
