@@ -211,7 +211,7 @@ Gate (F01), Welcome > Sign in, same method as last time. The install remembers t
 | A-REQ-024 | P0 | Expired link resend | Given an expired or used token, Then expiry copy and a one-tap resend show | A-REQ-024 |
 | A-REQ-025 | P0 | Resend limits | Given a sent email, Then resend is disabled 60 s; at most 5 per address per hour | A-REQ-025 |
 | A-REQ-026 | P0 | Custom SMTP on earlyletters.com | Given production, Then auth email is sent through Resend from `hello@earlyletters.com` with SPF, DKIM and DMARC passing | A-REQ-026, B11 |
-| A-REQ-027 | P0 | Code attempt pause | Given 5 wrong codes for one address in 15 minutes, Then entry pauses 15 minutes on the device; the abuse job (BL-248) pages above 20 failures per address per hour | A-REQ-027, TDD 04 3.1.4 |
+| A-REQ-027 | P0 | Code attempt pause | Given 5 wrong codes for one address in 15 minutes, Then entry pauses 15 minutes while the app stays open; a restart clears the pause and the server's own limit holds (as NS-41-R9; exec ruling CISO-4, 22 Nov 2026, BL-477); the abuse job (BL-248) pages above 20 failures per address per hour | A-REQ-027, TDD 04 3.1.4 |
 | A-REQ-031 | P0 | Specific errors | Given each `auth_failed.reason`, Then a specific message with icon and words shows; cancel shows nothing | A-REQ-031 |
 | A-REQ-032 | P1 | Offline session restore | Given a stored session and no network, Then the user lands in the book signed in | A-REQ-032 |
 | A-REQ-033 | P0 | Apple revocation | Given a revoked credential at launch, Then sign-out happens only after unsynced letters sync | A-REQ-033 |

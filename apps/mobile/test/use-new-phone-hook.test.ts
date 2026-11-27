@@ -40,7 +40,7 @@ vi.mock('@/lib/sync', () => ({
 
 const { renderHook } = await import('./helpers/mini-react');
 const { useNewPhone } = await import('../src/lib/first-run/use-new-phone');
-const { OPENING_WAIT_MS } = await import('../src/lib/first-run/new-phone.logic');
+const { OPENING_WAIT_MS, accountJoined } = await import('../src/lib/first-run/new-phone.logic');
 
 const client = {} as SupabaseClient;
 const base = { enabled: true, client, hasLocalBook: false, online: true };
@@ -240,6 +240,71 @@ describe('[NX-36-S17] useNewPhone, run', () => {
     run.result.current.startBook();
     expect(run.result.current.view).toBe('new');
     run.unmount();
+  });
+});
+
+describe('[BL-2159] a join on this phone asks the account again (NX-36-S17 cited, not changed)', () => {
+  it('[BL-2159] accept, then close, before the book arrives: the "no book" answer from before the join is asked again, and the route waits for the book instead of showing No book here yet', async () => {
+    const run = renderHook(() => useNewPhone(base));
+    // Signed in from the join sheet: the account is asked before the invite is accepted, and has no book yet.
+    h.asked[0]('returningNoBook');
+    await flush();
+    expect(run.result.current.view).toBe('noBook');
+    // Reading the invite and tapping Join takes longer than the 10 seconds of the first question.
+    await vi.advanceTimersByTimeAsync(OPENING_WAIT_MS * 2);
+    accountJoined.joined();
+    expect(h.asked).toHaveLength(2);
+    expect(h.syncNowCalls).toBe(2);
+    expect(run.result.current.view).toBe('opening'); // never "No book here yet" while the new answer is out
+    h.asked[1]('hasBook');
+    await flush();
+    // The sheet is closed and the book has not reached the phone: the wait, not "Start a book".
+    expect(run.result.current.view).toBe('opening');
+    expect(run.result.current.hasBook).toBe(true);
+    // The joined book gets its own 10 seconds, counted from the join, not from the first question.
+    await vi.advanceTimersByTimeAsync(OPENING_WAIT_MS - 1000);
+    expect(run.result.current.view).toBe('opening');
+    await vi.advanceTimersByTimeAsync(1000 + 100);
+    expect(run.result.current.view).toBe('slow');
+    run.unmount();
+  });
+
+  it('[BL-2159] a join while the first question is still out: the stale "no book" answer is ignored', async () => {
+    const run = renderHook(() => useNewPhone(base));
+    accountJoined.joined();
+    expect(h.asked).toHaveLength(2);
+    h.asked[0]('returningNoBook'); // asked before the join
+    await flush();
+    expect(run.result.current.view).toBe('opening');
+    h.asked[1]('hasBook');
+    await flush();
+    expect(run.result.current.view).toBe('opening');
+    run.unmount();
+  });
+
+  it('[BL-2159] with no invite nothing changes: a phone with no book still sees No book here yet, asked once', async () => {
+    const run = renderHook(() => useNewPhone(base));
+    h.asked[0]('returningNoBook');
+    await flush();
+    await vi.advanceTimersByTimeAsync(OPENING_WAIT_MS * 2);
+    expect(run.result.current.view).toBe('noBook');
+    expect(h.asked).toHaveLength(1);
+    run.unmount();
+  });
+
+  it('[BL-2159] a join asks nothing where nothing is being asked: switch off, a phone that began with a book, or after the screen is gone', async () => {
+    const off = renderHook(() => useNewPhone({ ...base, enabled: false }));
+    const withBook = renderHook(() => useNewPhone({ ...base, hasLocalBook: true }));
+    accountJoined.joined();
+    expect(h.asked).toHaveLength(0);
+    expect(off.result.current.view).toBeNull();
+    expect(withBook.result.current.view).toBeNull();
+    off.unmount();
+    withBook.unmount();
+    const gone = renderHook(() => useNewPhone(base));
+    gone.unmount();
+    accountJoined.joined();
+    expect(h.asked).toHaveLength(1); // the one question of the mount, none after it
   });
 });
 
