@@ -37,7 +37,7 @@ import { XIcon } from 'phosphor-react-native/src/icons/X';
 import type { Icon as PhosphorIcon } from 'phosphor-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { appleSignInAvailable } from '@/lib/auth/apple';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View, type Text as RNText, type TextInput } from 'react-native';
+import { AccessibilityInfo, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View, type Text as RNText, type TextInput } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 import { CHILD_NAME_MAX, SIGNS_AS_MAX, clampText, languageInfo, nearLimit, textLength, type LanguageCode } from '@scribe/core';
 import { tokens } from '@scribe/design-tokens';
@@ -364,6 +364,19 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
   // A new reason (or a new step) starts quiet again; only a tap on the waiting Continue raises it.
   useEffect(() => setNudged(false), [block, step]);
 
+  /** As the date control does (DateField focus): keyboard focus on the web preview, VoiceOver focus on a phone, so no keyboard rises under VoiceOver. */
+  const focusFirstName = () => {
+    const field = nameFields.current[0];
+    if (!field) return;
+    if (Platform.OS === 'web') {
+      field.focus();
+      return;
+    }
+    try {
+      AccessibilityInfo.sendAccessibilityEvent(field as unknown as Parameters<typeof AccessibilityInfo.sendAccessibilityEvent>[0], 'focus');
+    } catch {}
+  };
+
   /** The waiting Continue was tapped: say why with the warning mark, and move focus to what is missing. */
   const nudge = () => {
     if (!block) return;
@@ -375,7 +388,9 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
     }
     const missing = names.length > 1 ? names.findIndex((n) => !n.trim()) : -1;
     if (missing >= 0) nameFields.current[missing]?.focus();
-    else dateField.current?.focus();
+    else if (dateField.current) dateField.current.focus();
+    // No date control drawn: servers off it arrives with the first letter of the name (S05, dateBlockShown), so the name is what is missing.
+    else focusFirstName();
   };
 
   // Controls never animate in (MOTION principle 2). On every step but the last they follow the step's content in the scroll;
