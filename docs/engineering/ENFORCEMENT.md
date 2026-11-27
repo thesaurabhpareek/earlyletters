@@ -143,7 +143,7 @@ Gap ids defined here:
 | IAM-R03 | MUST | `require_content_consent()`; `security_family.test.mjs`; access matrix | enforced on develop (writes, invite acceptance); not yet for "no account before Terms" | BL-581 |
 | IAM-R04 | MUST NOT | `apps/mobile/test/age-gate.test.ts`; `classification.test.mjs` | enforced on develop | |
 | IAM-R05 | MUST | `sign-in-rules-source.test.ts` (only `signInWithOtp` in `email.ts`, `signInWithIdToken` apple or google, `auth.passkey` in `passkey.ts`) | enforced on develop | none (BL-727) |
-| IAM-R06 | MUST NOT | `packages/content/test/emails.test.ts:126` (copy); `sign-in-rules-source.test.ts` (no `signInWithPassword`, `resetPasswordForEmail`, `signUp`, and no `updateUser` that sets a password, under `apps/mobile/src`) | enforced on develop | none (BL-727) |
+| IAM-R06 | MUST NOT | `packages/content/test/emails.test.ts:126` (copy); `sign-in-rules-source.test.ts` (no `signInWithPassword`, `resetPasswordForEmail`, `signUp`, and no file naming `updateUser` with a `password` object key, under `apps/mobile/src`) | enforced on develop | none (BL-727) |
 | IAM-R07 | MUST NOT | `auth_config.test.mjs` (anonymous sign-ins off); access matrix `:680` (anonymous policy), `:652` (`require_user`); `sign-in-rules-source.test.ts` (app source ban) | enforced on develop (server, config, app source) | MONO-01 (lint rule) |
 | IAM-R08 | MUST | `apple-token/handler.test.ts`; `purge-worker/test/lib.test.ts`, `worker.test.ts` | enforced on develop (nonce hash: review) | |
 | IAM-R09 | MUST | `auth_config.test.mjs`; `auth-links`, `deep-link.allowlist`, `auth-email-link` tests; `sign-in-rules-source.test.ts` (`shouldCreateUser: true`, no-reveal) | enforced on develop | BL-581 (may change no-reveal) |

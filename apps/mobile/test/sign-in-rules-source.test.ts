@@ -7,8 +7,8 @@
  *    nowhere, in a call, a destructure or a string key.
  *  - IAM-R09: the email request sends `shouldCreateUser: true`, so a known and a new address get the same answer
  *    (no-reveal), until BL-581 decides otherwise.
- *  - IAM-R23: `.github/workflows/agents.yml` names no secret whose name holds SUPABASE or SERVICE_ROLE, and does not
- *    hand every secret over (`secrets: inherit`, `toJSON(secrets)`). This test reads the file; it changes no workflow.
+ *  - IAM-R23: `.github/workflows/agents.yml` and `claude.yml` name no secret whose name holds SUPABASE or SERVICE_ROLE, and do not
+ *    hand every secret over (`secrets: inherit`, `toJSON(secrets)`). This test reads the files; it changes no workflow.
  * IAM-R11 (refresh_token_reuse_interval) is pinned in supabase/tests/auth_config.test.mjs; IAM-R12 (scope `others`,
  * outbox kept when the session is lost) in test/session-provider-sign-out-rules.test.ts.
  * Each scan is a pure function with a positive control on a made-up fixture, then the real tree.
@@ -18,7 +18,9 @@
  * `secrets.SUPABASE_SERVICE_ROLE_KEY` line in a copy of agents.yml. After Review B at c298a03: a destructured `auth`, a
  * chain split over two lines, `sb.auth['signInWithIdToken']`, an aliased client calling `signInWithOtp`,
  * `updateUser({ password: p })`, provider 'facebook' in google.ts, and a SUPABASE secret in claude.yml. After the
- * reviews at 1c6bd8d: `updateUser({ password })`, `updateUser({ 'password': p })`, and a `)` before the password key.
+ * reviews at 1c6bd8d: `updateUser({ password })`, `updateUser({ 'password': p })`, and a `)` before the password key. After the
+ * reviews at a608cca: `updateUser({ data: { name: 'a' }, password: p })`, a template literal or a spread before the key,
+ * `auth['updateUser']({ password })` and `updateUser?.(`.
  */
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
@@ -73,7 +75,10 @@ export function signInFindings(file: string, text: string): string[] {
     }
   }
   // Setting a password on the signed-in account is the other way email plus password sign-in could appear (IAM-R06).
-  if (/\bupdateUser\s*\(\s*\{[^}]*?\bpassword\b/.test(text)) out.push(`${file}: sets a password with updateUser`);
+  // Held per file, not per call: a file that names updateUser and uses `password` as an object key (`password: p`,
+  // `{ password }`, a quoted key) is reported, wherever the key sits in the call (nested object, template literal,
+  // spread, string key, optional call). A password passed in a variable holding the whole object is out of a text scan's reach.
+  if (/\bupdateUser\b/.test(text) && /['"`]?\bpassword['"`]?\s*[:,}]/.test(text)) out.push(`${file}: sets a password with updateUser`);
   // A call on a Supabase auth client: `sb.auth.signInX(`, `sb?.auth.signInX(`, `client.auth?.signInX(`, a chain split
   // over lines, and `sb.auth['signInX'](`. For the two allowed names a bare `auth.` (a destructured client) counts too;
   // for any other name the leading dot is kept, because the app's own AuthApi is also called `auth`
@@ -148,7 +153,13 @@ describe('BL-727 sign-in methods in the app source', () => {
     expect(signInFindings('lib/x.ts', 'await sb.auth.updateUser({ password })')).toEqual(['lib/x.ts: sets a password with updateUser']);
     expect(signInFindings('lib/x.ts', "await sb.auth.updateUser({ 'password': p })")).toEqual(['lib/x.ts: sets a password with updateUser']);
     expect(signInFindings('lib/x.ts', 'await sb.auth.updateUser({ email: f(a), password: p })')).toEqual(['lib/x.ts: sets a password with updateUser']);
+    expect(signInFindings('lib/x.ts', "await sb.auth.updateUser({ data: { name: 'a' }, password: p })")).toEqual(['lib/x.ts: sets a password with updateUser']);
+    expect(signInFindings('lib/x.ts', 'await sb.auth.updateUser({ email: `${a}@example.com`, password: p })')).toEqual(['lib/x.ts: sets a password with updateUser']);
+    expect(signInFindings('lib/x.ts', "await sb.auth['updateUser']({ password })")).toEqual(['lib/x.ts: sets a password with updateUser']);
+    expect(signInFindings('lib/x.ts', 'await sb.auth.updateUser?.({ ...base, password: p })')).toEqual(['lib/x.ts: sets a password with updateUser']);
+    expect(signInFindings('lib/x.ts', 'await sb.auth.updateUser(\n  {\n    password\n  }\n)')).toEqual(['lib/x.ts: sets a password with updateUser']);
     expect(signInFindings('lib/x.ts', 'await sb.auth.updateUser({ data: { name } })')).toEqual([]);
+    expect(signInFindings('lib/x.ts', '// no password is ever set here.\nawait sb.auth.updateUser({ email })')).toEqual([]);
   });
 
   it('[IAM-R06][IAM-R07] positive control: anonymous, password and reset are reported as a call, a destructure or a string key', () => {
