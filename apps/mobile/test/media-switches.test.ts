@@ -342,10 +342,22 @@ function nameMentions(file: string): Record<string, number> {
   return Object.fromEntries(SWITCH_NAMES.map((n) => [n, Math.max(parsed.match(nameIn(n))?.length ?? 0, stripped.match(nameIn(n))?.length ?? 0)]));
 }
 
-/** Every source file reachable from the entries by import, export-from, require(), import() or a side-effect import. */
+/**
+ * A start point and every iOS platform variant of it that exists: for `app/settings/erase.tsx`, also `erase.ios.tsx`,
+ * `erase.native.tsx` and the rest codeFilesFor finds for `app/settings/erase`. Expo Router has platform routes on by
+ * default (expo-router's getRoutesCore.js: `options.platformRoutes ?? true`, and an `.ios` route wins over the base file
+ * on iOS), and no file imports a route, so the import resolver never reaches a route's variants (Review A round 8, P2:
+ * an `erase.ios.tsx` reading a switch survived). Every start point the checks use goes through this.
+ */
+const startFilesFor = (file: string): string[] => [...new Set([file, ...codeFilesFor(file.replace(/\.[^./]+$/, ''))])];
+
+/**
+ * Every source file reachable from the entries, and from each entry's platform variants (startFilesFor), by import,
+ * export-from, require(), import() or a side-effect import.
+ */
 function closureOf(entries: string[]): string[] {
   const seen = new Set<string>();
-  const stack = [...entries];
+  const stack = entries.flatMap(startFilesFor);
   while (stack.length) {
     const file = stack.pop() as string;
     if (seen.has(file)) continue;
@@ -621,6 +633,20 @@ describe('[NX-39-R37] a phase switch removes screens and reads, never a data rig
       const iosClosure = closureOf([file]);
       expect(iosClosure.map((f) => relative(dir, f))).toEqual(['copy.ts', join('erase-dir', 'index.native.tsx'), join('erase-dir', 'index.ts'), 'erase-gate3.ios.ts', 'erase-gate3.ts']);
       expect(switchReads(iosClosure)).toEqual([expect.stringMatching(/index\.native\.tsx#<module>$/), expect.stringMatching(/erase-gate3\.ios\.ts#keepVideoPictures$/)]);
+      // Review A round 8, P2: a clean route with an iOS route next to it that reads a switch. Nothing imports a route,
+      // so the closure starts from each entry's platform variants too (startFilesFor), `.ios` and `.native` alike.
+      const routes = join(dir, 'app', 'settings');
+      mkdirSync(routes, { recursive: true });
+      const route = join(routes, 'erase.tsx');
+      writeFileSync(route, 'export default function EraseScreen() {\n  const askToErase = () => undefined;\n  return askToErase;\n}\n');
+      writeFileSync(join(routes, 'erase.ios.tsx'), "import { mediaPhaseBuilt } from '../../capabilities';\nexport default function EraseScreen() {\n  const askToErase = () => {\n    if (mediaPhaseBuilt('video')) return;\n  };\n  return askToErase;\n}\n");
+      writeFileSync(join(routes, 'export.tsx'), 'export default function ExportScreen() {\n  return null;\n}\n');
+      writeFileSync(join(routes, 'export.native.tsx'), "import { mediaPhaseMayRun } from '../../capabilities';\nexport default function ExportScreen() {\n  return mediaPhaseMayRun('photos', null);\n}\n");
+      expect(switchReads([route])).toEqual([]);
+      expect(startFilesFor(route).map((f) => basename(f))).toEqual(['erase.tsx', 'erase.ios.tsx']);
+      const routeClosure = closureOf([route, join(routes, 'export.tsx')]);
+      expect(routeClosure.map((f) => relative(dir, f))).toEqual([join('app', 'settings', 'erase.ios.tsx'), join('app', 'settings', 'erase.tsx'), join('app', 'settings', 'export.native.tsx'), join('app', 'settings', 'export.tsx')]);
+      expect(switchReads(routeClosure)).toEqual([expect.stringMatching(/erase\.ios\.tsx#askToErase$/), expect.stringMatching(/export\.native\.tsx#ExportScreen$/)]);
       // and the names an import or a declaration gives are not reads
       writeFileSync(file, "import { mediaPhaseBuilt } from './capabilities';\nexport { mediaPhaseBuilt };\nexport const keys = { mediaPhaseBuilt: 1, 'photosPaused': 2 };\n");
       expect(switchReads([file])).toEqual([]);
@@ -1096,6 +1122,7 @@ const NODE_ENVS: NodeEnv[] = ['unset', 'production'];
 const CONFIG_CHILD = `
 const Module = require('node:module');
 const path = require('node:path');
+const nodeEnvSeen = process.env.NODE_ENV === undefined ? null : process.env.NODE_ENV;
 let input = '';
 process.stdin.setEncoding('utf8');
 process.stdin.on('data', (d) => { input += d; });
@@ -1112,13 +1139,22 @@ process.stdin.on('end', () => {
   }
   const { getConfig } = req('expo/config');
   const exp = getConfig(app, { skipSDKVersionRequirement: true, isPublicConfig: false }).exp;
-  process.stdout.write('\\nNX39-CONFIG\\n' + JSON.stringify(exp));
+  process.stdout.write('\\nNX39-NODE_ENV\\n' + JSON.stringify(nodeEnvSeen) + '\\nNX39-CONFIG\\n' + JSON.stringify(exp));
 });
 `;
 
 /** V8's compile cache for the children: compiled code only, keyed by each file's text, so no module state is shared. */
 const COMPILE_CACHE = mkdtempSync(join(tmpdir(), 'nx39-compile-'));
-afterAll(() => rmSync(COMPILE_CACHE, { recursive: true, force: true }));
+/** Every config child not yet settled, so a failing run waits for the rest before it asserts or removes a folder. */
+const liveChildren = new Set<Promise<string>>();
+/** Wait until every config child started so far has exited, passed or failed (Review B round 8, note 1). */
+async function allChildrenSettled(): Promise<void> {
+  while (liveChildren.size) await Promise.allSettled([...liveChildren]);
+}
+afterAll(async () => {
+  await allChildrenSettled();
+  rmSync(COMPILE_CACHE, { recursive: true, force: true });
+});
 
 /** At most this many children at once (one per core), so the matrix below runs in parallel. */
 const CHILD_SLOTS = Math.max(2, availableParallelism());
@@ -1138,11 +1174,16 @@ async function inChildSlot<T>(run: () => Promise<T>): Promise<T> {
 /**
  * app.config.ts evaluated as one EAS build of `profile` evaluates it, in a fresh Node process of its own (Review B
  * round 7: a cleared require cache does not hold an ES module, so an `.mjs` helper app.config.ts imports was read once
- * per test run; a child process reads every module, CommonJS or ES, again). The child gets exactly the profile's env
- * (eas.json, through `extends`), EAS_BUILD_PROFILE set to its name, EAS_BUILD, EAS_BUILD_PLATFORM and CI as an EAS
- * builder sets them (builder `eas`) or unset (`local`), NODE_ENV unset or `production` (never vitest's `test`), and
- * `extra` on top; vitest's own variables are dropped. Returned as JSON, so it can be compared. `source` evaluates other
- * text in the file's place (a mutant, for the positive control), never written to disk.
+ * per test run; a child process reads every module, CommonJS or ES, again). The child starts from this process's env
+ * with every variable an evaluation sets or clears removed (configVariables: each one eas.json writes in any profile,
+ * the seven switches, EAS_BUILD_PROFILE, EXPO_PUBLIC_E2E, EAS_BUILD, EAS_BUILD_PLATFORM and CI), and NODE_ENV,
+ * NODE_OPTIONS, TEST and VITEST*. On top go the profile's env (eas.json, through `extends`), EAS_BUILD_PROFILE set to
+ * its name, the builder variables as an EAS builder sets them (builder `eas`) or none (`local`), NODE_ENV unset or
+ * `production` (never vitest's `test`; the child reports what it saw, and a mismatch fails the run), and `extra`. Every
+ * other variable passes through as this process has it (Review B round 8, note 2): vite's MODE, DEV, PROD, SSR and
+ * BASE_URL, any EXPO_PUBLIC_* that is neither a switch nor in eas.json, and any other EAS_BUILD_*. No switch value from
+ * this process reaches the child. Returned as JSON, so it can be compared. `source` evaluates other text in the file's
+ * place (a mutant, for the positive control), never written to disk.
  */
 function appConfigFor(
   eas: Eas,
@@ -1173,14 +1214,28 @@ function appConfigFor(
         child.on('error', fail);
         child.on('close', (code) => {
           const at = out.lastIndexOf('\nNX39-CONFIG\n');
-          if (code !== 0 || at < 0) fail(new Error(`app.config.ts evaluation (${builder} ${profile} NODE_ENV=${nodeEnv}) exited ${code}: ${err.slice(-2000)}`));
+          const envAt = out.lastIndexOf('\nNX39-NODE_ENV\n');
+          if (code !== 0 || at < 0 || envAt < 0 || envAt > at) {
+            fail(new Error(`app.config.ts evaluation (${builder} ${profile} NODE_ENV=${nodeEnv}) exited ${code}: ${err.slice(-2000)}`));
+            return;
+          }
+          // Review B round 8, H2: an `unset` child really has no NODE_ENV (not vitest's `test`), and a `production`
+          // child has `production`, as app.config.ts saw it.
+          const seen = JSON.parse(out.slice(envAt + '\nNX39-NODE_ENV\n'.length, at)) as string | null;
+          const want = nodeEnv === 'production' ? 'production' : null;
+          if (seen !== want) fail(new Error(`app.config.ts evaluation (${builder} ${profile} NODE_ENV=${nodeEnv}) saw NODE_ENV=${JSON.stringify(seen)}, not ${JSON.stringify(want)}`));
           else done(out.slice(at + '\nNX39-CONFIG\n'.length));
         });
         child.stdin.end(JSON.stringify({ app: APP, source }));
       }),
   );
-  // The callers start many at once and await them in turn; once one fails, the rest are not reported again.
-  evaluated.catch(() => undefined);
+  // The callers start many at once and await them in turn; once one fails, the rest are not reported again. Each is
+  // tracked until it settles, so a failing run still waits for every child (allChildrenSettled).
+  liveChildren.add(evaluated);
+  evaluated.then(
+    () => liveChildren.delete(evaluated),
+    () => liveChildren.delete(evaluated),
+  );
   return evaluated;
 }
 
@@ -1211,6 +1266,9 @@ describe('[NX-39-R39] no config path carries a switch into a build', () => {
       }
     }
     expect(runs.length).toBe(2 * NODE_ENVS.length * profiles.length * (MEDIA_PHASE_SWITCHES.length + 2));
+    // Every child exits before the first check, so a failing run leaves no child running past the test (Review B round
+    // 8, note 1: afterAll then removed the cache under live children and left it behind).
+    await Promise.allSettled(runs.flatMap((r) => [r.unset, r.other]));
     for (const r of runs) {
       const [unset, other] = await Promise.all([r.unset, r.other]);
       expect(JSON.parse(unset).ios.bundleIdentifier, r.label).toMatch(/\./);
@@ -1269,8 +1327,11 @@ describe('[NX-39-R39] no config path carries a switch into a build', () => {
         checks.push([`easOnly ${builder}`, differs(easOnly, builder), builder === 'eas']);
         for (const nodeEnv of NODE_ENVS) checks.push([`prodOnly ${builder} ${nodeEnv}`, differs(prodOnly, builder, nodeEnv), nodeEnv === 'production']);
       }
+      await Promise.allSettled(checks.map(([, got]) => got));
       for (const [label, got, want] of checks) expect(await got, label).toBe(want);
     } finally {
+      // the helpers in `dir` stay until every child that may load them has exited
+      await allChildrenSettled();
       rmSync(dir, { recursive: true, force: true });
     }
     // 36 children, 4 at once: about 5 s alone.
