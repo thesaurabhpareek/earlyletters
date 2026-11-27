@@ -106,14 +106,22 @@ export function parseDraftName(raw: string | null, draftId: string): string {
   }
 }
 
-/** The stored slot is `draftId`'s own (whatever name it holds); false for another draft's or one that cannot be read. */
-export function draftNameIsFor(raw: string | null, draftId: string): boolean {
-  if (!raw) return false;
+/**
+ * The draft the stored slot belongs to (whatever name it holds), or null for a slot that is empty, cannot be read or
+ * names no draft. The one reading of the slot's owner: Review's Keep (`draftNameIsFor`) and every path that ends a draft
+ * (repos/drafts.ts `forgetDraftFromName`) use it, so they never disagree on whose slot it is.
+ */
+export function draftNameOwner(raw: string | null | undefined): string | null {
+  if (!raw) return null;
   try {
-    return (JSON.parse(raw) as { draftId?: unknown } | null)?.draftId === draftId;
+    const draftId = (JSON.parse(raw) as { draftId?: unknown } | null)?.draftId;
+    return typeof draftId === 'string' ? draftId : null;
   } catch {
-    return false;
+    return null;
   }
 }
+
+/** The stored slot is `draftId`'s own (whatever name it holds); false for another draft's or one that cannot be read. */
+export const draftNameIsFor = (raw: string | null, draftId: string): boolean => draftNameOwner(raw) === draftId;
 
 export const serializeDraftName = (draftId: string, name: string): string => JSON.stringify({ draftId, name });

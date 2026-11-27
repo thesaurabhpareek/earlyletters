@@ -5,8 +5,9 @@
  * that 'words', and `showsSignature` then puts a From line under an entry the app made.
  *
  * The decision lives inline in `app/letter/[id].tsx` (no .logic helper to call, and the page is not rendered in
- * Node), so the second case is a source pin: the redirect line, where it sits, and where it sends. The first case
- * is the behaviour that makes the line necessary. Fictional family Asha only.
+ * Node), so the second case is a source pin: the redirect line, where it sits (a top-level statement of the page),
+ * where it sends, and the helper it calls. The first case is the behaviour that makes the line necessary. Fictional
+ * family Asha only.
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -38,10 +39,18 @@ describe('[BL-372, D-084] the letter page never opens a quiet-day mark', () => {
     expect(code).toMatch(redirect);
     expect(code.match(/isQuietMark\(/g)).toHaveLength(1);
     expect(code).toMatch(/import \{[^}]*\bRedirect\b[^}]*\} from 'expo-router';/);
+    // The guard is tied to the helper the first case tests, not a local look-alike (review B note 2 on #2184).
+    expect(code).toMatch(/import \{[^}]*\bisQuietMark\b[^}]*\} from '@\/components\/book\/quiet-day\.logic';/);
 
     const body = code.slice(code.indexOf('function Letter()'));
     const at = body.search(redirect);
     expect(at).toBeGreaterThan(-1);
+    // A top-level statement of Letter(), not one nested in a block that never runs (`if (false) { ... }`, review A note 1
+    // on #2184): at the function body's own indent, at brace depth one, and not the body of a brace-less `if`.
+    expect(body).toMatch(new RegExp(`\\n {2}${redirect.source}`));
+    const before = body.slice(body.indexOf('{') + 1, at);
+    expect((before.match(/\{/g) ?? []).length - (before.match(/\}/g) ?? []).length).toBe(0);
+    expect(before.trimEnd().slice(-1)).toMatch(/[;{}]/);
     // Nothing returns from the page before the redirect, and the words and signature are worked out only after it.
     expect(body.slice(0, at)).not.toMatch(/\breturn\b/);
     expect(body.indexOf('return <NotFound')).toBeGreaterThan(at);
