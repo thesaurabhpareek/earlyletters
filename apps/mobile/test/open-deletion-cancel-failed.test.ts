@@ -83,7 +83,7 @@ describe('[BL-491 point 5] a failed Cancel deletion on the deletion screen', () 
 
       const after = shown(r.result.current);
       expect(after.kind).toBe('error');
-      expect(after.body).toContain("It's not clear yet if the deletion was cancelled. Tap Cancel deletion again.");
+      expect(after.body).toContain("It's not clear yet if the deletion was canceled. Tap Cancel deletion again.");
       expect(after.body).not.toMatch(/nothing has changed/i);
       // VoiceOver is told the same line, once.
       expect(h.spoken.filter((s) => s === c.errors.cancelFailed)).toHaveLength(1);

@@ -36,7 +36,7 @@ export function OpenDeletionScreen({ request }: { request: OpenRequest }) {
   // primary shows `loading` (busy, a second press ignored), the quiet options wait, and they come back if it never
   // settles (BL-494 point 3). `acted`: nothing is shown as a failure until
   // the person has pressed Cancel deletion: the passive read on a cold launch with no connection sets the hook's error,
-  // and "It's not clear yet if the deletion was cancelled." would be an answer to a question nobody asked
+  // and "It's not clear yet if the deletion was canceled." would be an answer to a question nobody asked
   // (a Try again does not count: it is a pull, and says "still on their way" when it finds nothing).
   const latest = useRef(d);
   latest.current = d;

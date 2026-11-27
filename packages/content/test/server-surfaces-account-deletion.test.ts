@@ -106,7 +106,7 @@ describe('[P8c S64] accountDeletionCopy changes, word for word', () => {
 
   it('[BL-491 point 5] a failed Cancel deletion says the outcome is not known yet and names the one thing to do (CDesO-46)', () => {
     const line = accountDeletionCopy.errors.cancelFailed;
-    expect(line).toBe("It's not clear yet if the deletion was cancelled. Tap Cancel deletion again.");
+    expect(line).toBe("It's not clear yet if the deletion was canceled. Tap Cancel deletion again.");
     expect(line).not.toMatch(/nothing has changed/i);
     // Never that the person is out of the woods, and the button by its visible label.
     expect(line).not.toMatch(/\bsafe\b/i);

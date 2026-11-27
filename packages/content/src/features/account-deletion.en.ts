@@ -115,6 +115,6 @@ export const accountDeletionCopy = {
     // A Cancel deletion press that did not go through, offline or failed (BL-491 point 5, CDesO-46). The phone cannot
     // know whether the server cancelled before the answer was lost, so it must not say "nothing has changed", which
     // reads as if the person is safe while the request may still be open. Pressing again is harmless.
-    cancelFailed: "It's not clear yet if the deletion was cancelled. Tap Cancel deletion again.",
+    cancelFailed: "It's not clear yet if the deletion was canceled. Tap Cancel deletion again.",
   },
 } as const;

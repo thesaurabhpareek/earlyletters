@@ -112,7 +112,7 @@ describe('[S64] failures and the typed word', () => {
   it('[BL-491 point 5] a failed Cancel deletion says it may not have cancelled, offline or failed; a failed request keeps its line (CDesO-46)', () => {
     expect(cancelFailureLine(null)).toBeNull();
     for (const kind of ['offline', 'failed'] as const) {
-      expect(cancelFailureLine(kind), kind).toBe("It's not clear yet if the deletion was cancelled. Tap Cancel deletion again.");
+      expect(cancelFailureLine(kind), kind).toBe("It's not clear yet if the deletion was canceled. Tap Cancel deletion again.");
       expect(cancelFailureLine(kind), kind).toBe(c.errors.cancelFailed);
       expect(cancelFailureLine(kind), kind).not.toMatch(/nothing has changed/i);
     }
