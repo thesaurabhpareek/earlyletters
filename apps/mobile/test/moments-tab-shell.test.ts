@@ -47,7 +47,8 @@ describe('the Moments tab shell', () => {
       expect('href' in opts && 'tabBarButton' in opts).toBe(false);
     }
     expect((momentsTabVisibility(false).tabBarButton as () => null)()).toBeNull();
-    expect(momentsTabVisibility(false).tabBarItemStyle).toEqual({ display: 'none' });
+    // width 0: BL-1545, see moments-tab-ipad-sizing.test.ts.
+    expect(momentsTabVisibility(false).tabBarItemStyle).toEqual({ display: 'none', width: 0 });
     expect(momentsTabVisibility(true)).toEqual({});
     const layoutText = readFileSync(join(SRC, 'app/(tabs)/_layout.tsx'), 'utf8');
     expect(layoutText.split("\n").find((l) => l.includes('name="moments"'))).not.toMatch(/\bhref\b/);

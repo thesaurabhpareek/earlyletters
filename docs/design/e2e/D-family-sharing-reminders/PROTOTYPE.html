@@ -315,7 +315,7 @@ S["D-S07"]={t:"Time picker (system compact)",states:{"default":"System picker, 1
 S["D-S08"]={t:"Add a day",states:{
   "default":"Date from today (today only while its reminder time is ahead); words field (writing tools off).","error-typed_day_empty":"Save present and not ready (outline, muted label, VoiceOver dimmed) with the hint shown; system COMPONENTS 1.2.",
   "filled":"Words typed; preview shows the fixed line (words hidden by default).",
-  "showWords":"v2: the one day-names switch (Days page) is on and App lock is off: the preview shows the parent's words unchanged. The sheet has no switch (RV-8; G-D23).","dayNamesOff":"v2: default; fixed line.","appLock":"v2: App lock on: words stay hidden, with the reason.",
+  "showWords":"v2: the one day-names switch (Days page) is on, Names in notifications is on and App lock is off (CPrivO-58): the preview shows the parent's words unchanged. The sheet has no switch (RV-8; G-D23).","dayNamesOff":"v2: default; fixed line.","appLock":"v2: App lock on: words stay hidden, with the reason.",
   "error-typed_day_too_long":"Over 80 (a paste): every character kept; Save waits; one line, no counter.","error-typed_day_past":"The day has passed (or today after its time): one line.",
   "notAllowed":"Notifications not allowed: saving still works; one line says when it will be sent.",
   "error-schedule_failed":"iOS refused: built failure line, Try again."},
@@ -365,7 +365,7 @@ var LS={};
 });
 LS["evening-named"]="Names in notifications on (opt-in): named variant. Forced off while App lock is on.";
 LS["birthday-named"]="Names on: the birthday copy names the child.";
-LS["typedDay-words"]="Show my words on: the parent's words unchanged. Hidden again when previews are hidden.";
+LS["typedDay-words"]="Day names on, Names in notifications on, App lock off (CPrivO-58): the parent's words unchanged. Hidden again when previews are hidden.";
 LS["libraryDay-public"]="v2: an allowlisted seasonal day (publicTitleOk), App lock off, previews Always: the day's own name; neutral body. Never a family, tradition or commemorative day.";
 LS["libraryDay-neutral"]="v2: every other day, and every day with the day-names switch off or App lock on: one neutral title and body. No day, tradition or child name.";
 LS["libraryDay-named"]="v2: day-names switch on, App lock off, a family or tradition day: its name in the title; never a child name in the same string.";
