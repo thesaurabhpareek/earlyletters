@@ -422,7 +422,7 @@ describe('[NS-48-R21] a quiet book adds nothing to a key', () => {
         planReminders({ ...input, children: [...input.children, ...extra], select: (k) => (asked.push(k), selectNotificationKey(k)) });
         return asked;
       };
-      const quiet: PlannerChild = { id: 'child-quiet', name: 'Mira', birthday: '2025-01-01', included: true, quiet: true };
+      const quiet: PlannerChild = { id: 'child-quiet', name: 'Kiran', birthday: '2025-01-01', included: true, quiet: true };
       const out: PlannerChild = { id: 'child-out', name: 'Neel', birthday: '2025-01-01', included: false };
       const awake = generated(seed).children.filter((c) => !c.quiet);
       // Only a list with an awake book: with none, "every book quiet" (NS-13-R12) decides the evenings, not the keys.
