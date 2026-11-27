@@ -32,24 +32,33 @@ const NEUTRAL = reminderCopy.neutral;
 /** Every value a name-free text can take: `{weekday}` is the one blank a neutral line has, filled with each weekday. */
 const filled = (text: string): string[] => (text.includes('{weekday}') ? reminderCopy.weekdays.map((w) => text.replace('{weekday}', w)) : [text]);
 
+/** Builds a set on first use and keeps it, so a missing copy key fails the first check, not the import of the scheduler. */
+function memoSet(build: () => string[]): () => ReadonlySet<string> {
+  let set: ReadonlySet<string> | undefined;
+  return () => (set ??= new Set(build()));
+}
+
 /**
  * The `publicTitleOk` allowlist (BL-1009, NS-47-R13): with names off (App lock on included), a lock-screen title is one
  * of these fixed, name-free titles and nothing else. Hand-listed from the neutral copy, never read from a planned note.
  * A ticked day's own name (a `publicTitleOk` day row, NS-46-R36) joins this list only when the planner can title a note
  * with it (BL-1012); today no note does.
  */
-export const PUBLIC_TITLES: ReadonlySet<string> = new Set(
+export const publicTitles = memoSet(() =>
   [...NEUTRAL.evening.map((v) => v.title), NEUTRAL.monthOpen.title, NEUTRAL.birthday.title, NEUTRAL.birthdays.title, NEUTRAL.typedDay.title, NEUTRAL.libraryDay.title].flatMap(filled),
 );
 /** The name-free bodies, as for titles: what a body may be with names off. */
-export const PUBLIC_BODIES: ReadonlySet<string> = new Set(
+export const publicBodies = memoSet(() =>
   [...NEUTRAL.evening.map((v) => v.body), NEUTRAL.lockBody, NEUTRAL.monthOpen.body, NEUTRAL.birthday.body, NEUTRAL.birthdays.body, NEUTRAL.typedDay.body, NEUTRAL.libraryDay.body].flatMap(filled),
 );
 
 /** May this title show on a lock screen with names off? */
-export const publicTitleOk = (title: string): boolean => PUBLIC_TITLES.has(title);
+export const publicTitleOk = (title: string): boolean => publicTitles().has(title);
 /** May this body show on a lock screen with names off? */
-export const publicBodyOk = (body: string): boolean => PUBLIC_BODIES.has(body);
+export const publicBodyOk = (body: string): boolean => publicBodies().has(body);
+
+/** Every kind's stand-in title with names off: the one fixed neutral title, read at first use like the allowlists. */
+const fallbackTitle = (): string => NEUTRAL.libraryDay.title;
 
 /**
  * The last check before a note reaches iOS (BL-1009): with names off, a title or body outside the allowlists becomes the
@@ -59,7 +68,7 @@ export const publicBodyOk = (body: string): boolean => PUBLIC_BODIES.has(body);
  */
 export function lockScreenSafe(p: PlannedNotification, namesOn: boolean): PlannedNotification {
   if (namesOn || (publicTitleOk(p.title) && publicBodyOk(p.body))) return p;
-  return { ...p, title: publicTitleOk(p.title) ? p.title : NEUTRAL.libraryDay.title, body: publicBodyOk(p.body) ? p.body : NEUTRAL.lockBody };
+  return { ...p, title: publicTitleOk(p.title) ? p.title : fallbackTitle(), body: publicBodyOk(p.body) ? p.body : NEUTRAL.lockBody };
 }
 
 /**
