@@ -578,6 +578,23 @@ describe('[BL-2159] a join on this phone asks the account again (NX-36-S17 cited
     }
   });
 
+  it('[S17 follow-up from #2195, round 2] an own-book account that joins twice before the re-ask answers is still "arrived" (Review A M6)', async () => {
+    let hasLocalBook = false;
+    const run = renderHook(() => useNewPhone({ ...base, hasLocalBook }));
+    try {
+      h.asked[0]('hasBook'); // Asha's own book
+      await flush();
+      join();
+      join(); // a second invite, before the first join's re-ask answers
+      h.asked[2]('hasBook');
+      await flush();
+      lands(run, () => (hasLocalBook = true));
+      expect(run.result.current.view).toBe('arrived');
+    } finally {
+      run.unmount();
+    }
+  });
+
   it('[S17 follow-up from #2195, round 2] a held answer does not outlive the asking: held during an accept, sign-out, a sign-in with no book, the accept ends, a join: the route stands aside', async () => {
     let hasLocalBook = false;
     let enabled = true;
