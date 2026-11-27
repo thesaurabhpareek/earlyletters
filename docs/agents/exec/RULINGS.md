@@ -2664,7 +2664,7 @@ The entries in this batch (three stacked PRs) record each role's own ruling on t
 - Revisit when: a device walk shows a parent misreading the hint or the ask line, a typed-letter path shows the ask line, or counsel answers Q45, Q46, Q48 or Q54 with a word change.
 - Founder-only: no. Signed: Chief Product Officer (Claude role); concurred: Chief Design Officer (Claude role)
 
-### CDesO-52 Store draft: declare no Accessibility Nutrition Label, Dark Interface included, until the walk passes (27 Nov 2026, CDesO via Karma's session; Claude role, with CMO)
+### CDesO-57 Store draft: declare no Accessibility Nutrition Label, Dark Interface included, until the walk passes (27 Nov 2026, CDesO via Karma's session; Claude role, with CMO)
 - Question: `docs/store/app-store-connect-1.0.md` section 5 (`:71-73` on `develop` at d1e95f8a) drafts "Dark Interface: Yes (confirm on the release build)", and the featuring nomination's Helpful Details (`:189`) says "built to Dynamic Type, Reduce Motion and dark mode". CDesO-22 says no label is declared until the device walk passes. What should the store draft say?
 - Tier and type: T1; clear. The council gave no tier; this one is set by precedent (CPO-1), UNVERIFIED as the council's.
 - Verdict: RULED (a fail-closed hold that follows CDesO-22; declaring a label would be an exec-review class, CDesO skill section 5). Owner: Chief Design Officer; consulted: CMO (store listing copy).

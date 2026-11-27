@@ -68,7 +68,7 @@ Calculated rating 4+, **override to 18+** (Terms require 18 or older, D-006). Ma
 
 ## 5. Accessibility Nutrition Labels
 
-Voluntary. Declare none for 1.0 (CDesO-22, CDesO-52): leave every feature unclaimed, Dark Interface included, until
+Voluntary. Declare none for 1.0 (CDesO-22, CDesO-57): leave every feature unclaimed, Dark Interface included, until
 the device walk (BL-948) passes every common task with that feature on the release build: first launch, sign-in,
 purchase, settings and the primary tasks (Apple's rule, FR-CMP-06). The product page then shows that support is not
 indicated yet, which is true. Dark Interface is the first feature to weigh once the walk passes in Dark appearance;
@@ -188,7 +188,7 @@ Launching in the United States on iPhone, iOS 17 or later.
 Draft Helpful Details:
 
 ```text
-Accessibility: held (CDesO-52). Send no accessibility line until the device walk (BL-948) passes; then name only what the walk confirmed, the same features section 5 declares.
+Accessibility: held (CDesO-57). Send no accessibility line until the device walk (BL-948) passes; then name only what the walk confirmed, the same features section 5 declares.
 Privacy: speech-to-text runs on the iPhone, and recordings stay on the phone that made them. Signing in is required. The one-time speech model download is shown with its size, on Wi-Fi, and starts when the parent chooses.
 Team: made by an independent developer. [FOUNDER: add one line about yourself if you want it; no child's name or family detail.]
 Priority: this is our first and only app; the launch is our highest priority.
