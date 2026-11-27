@@ -180,7 +180,8 @@ describe('two parents, three phones, one server (protocol v1)', () => {
     ids.first = writeLetter(mama, ASHA, 'You found your feet today.', { language: 'en-GB' });
     ids.month = writeLetter(mama, ASHA, 'The month you learned to wave.', { month: '2026-09-17' });
     expect(outbox(mama)).toEqual([]); // nothing queues before the first sign-in
-    expect(mama.store.getEntry(ids.month)).toMatchObject({ occurredOn: '2026-09-01', occurredPrecision: 'month' });
+    // A month keeps the day the date sheet gives for it (NS-15-R2), never the calendar month's first day.
+    expect(mama.store.getEntry(ids.month)).toMatchObject({ occurredOn: '2026-09-17', occurredPrecision: 'month' });
 
     await mama.signIn();
     expect(outbox(mama)).toEqual([]);
