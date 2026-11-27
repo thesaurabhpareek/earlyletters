@@ -73,7 +73,7 @@ export default function TabsLayout() {
             tabBarInactiveTintColor: c.textMuted,
             tabBarAllowFontScaling: false,
             // Item = 5 pt library padding + 25 pt icon + 18 pt label line + 5 pt: fits BAR with 4 pt on top.
-            tabBarStyle: { backgroundColor: c.bg, borderTopColor: c.line, borderTopWidth: 0.5, height: BAR + bottom, paddingTop: 4, paddingBottom: bottom, elevation: 0 },
+            tabBarStyle: { backgroundColor: c.bg, borderTopColor: c.line, borderTopWidth: tokens.stroke.hairline, height: BAR + bottom, paddingTop: 4, paddingBottom: bottom, elevation: 0 },
             tabBarLabelStyle: {
               fontSize: tokens.minFontSize,
               lineHeight: 18,

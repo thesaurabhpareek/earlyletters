@@ -3,6 +3,8 @@
  * The gateway verifies the JWT (verify_jwt ON). Profile and session come ONLY from its claims: `sub` and `session_id`. Any id in
  * the body is ignored. Hosted Auth claim names are [U] until checked against a real token (see the PR).
  * The answer is a bare `{ status: 'ok' }` whether a pending row was filled or not, so the call reveals nothing about the account.
+ * Per-person limit (BL-2192): the RPC itself allows 10 fills per person per hour (20261124132000) and answers false past it, the
+ * same as an unfilled call, so a limited caller gets this same 200 and the log the same rows count.
  * Logs: counts and enums only. No session, profile, hash, device id, address or token ever reaches a log or a response.
  */
 import { failure, HEADER_REQUEST_ID, success, type ApiErrorCode, httpStatusFor } from '../../../packages/api/src/envelope.ts';
