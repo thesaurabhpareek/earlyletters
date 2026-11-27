@@ -39,7 +39,7 @@ import { useEffect, useRef, useState } from 'react';
 import { appleSignInAvailable } from '@/lib/auth/apple';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View, type Text as RNText, type TextInput } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
-import { CHILD_NAME_MAX, SIGNS_AS_MAX, checkSignsAs, clampText, languageInfo, nearLimit, textLength, type LanguageCode } from '@scribe/core';
+import { CHILD_NAME_MAX, SIGNS_AS_MAX, clampText, languageInfo, nearLimit, textLength, type LanguageCode } from '@scribe/core';
 import { tokens } from '@scribe/design-tokens';
 import { BookCover } from '@/components/book/book-cover';
 import { CoverHeading, useCoverPlace } from '@/components/child/cover-heading';
@@ -47,7 +47,7 @@ import { DateField, type DateFieldHandle } from '@/components/child/date-field';
 import { dateRange } from '@/components/child/date-field.logic';
 import { languageCopy } from '@/components/language/copy';
 import { LanguagePicker } from '@/components/language/language-picker';
-import { firstRunBookNames, firstRunChildBlock } from '@/components/onboarding/child-step.logic';
+import { firstRunBookNames, firstRunChildBlock, firstRunSignsAsBlock } from '@/components/onboarding/child-step.logic';
 import { showOnboardingLanguageRow } from '@/components/onboarding/language-row.logic';
 import { PromiseSample } from '@/components/onboarding/promise-sample';
 import { WelcomeLockup } from '@/components/onboarding/welcome-lockup';
@@ -346,7 +346,7 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
   const today = todayISO();
   const childBlock = firstRunChildBlock({ names, expecting, birthday, dueDate, today });
   // Twins or more: the reason agrees in number with the title (S06).
-  const signsAsBlock = checkSignsAs(signsAs).ok ? null : fill(namedCount > 1 ? o.signsAs.needSignsAsMany : o.signsAs.needSignsAs, { child });
+  const signsAsBlock = firstRunSignsAsBlock({ signsAs, child, many: namedCount > 1 });
   const block = step === 'child' ? childBlock : step === 'signsAs' ? signsAsBlock : null;
   const disabled = block !== null;
   const cta = { welcome: o.welcome.startButton, promise: o.promise.cta, child: o.child.cta, signsAs: o.signsAs.cta, finish: o.finish.cta }[step];

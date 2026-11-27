@@ -207,7 +207,7 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 
 Held, not sendable (27; typed in catalog.ts for call sites that still exist, dropped and counted at run time until each gets a registry row with a decision, a plan row and a privacy look, or is removed): `book:playback_start`, `book:read_together_end`, `book:read_together_start`, `capture:child_update`, `capture:edit_decline`, `capture:edit_restore`, `capture:review_update`, `family:invite_fail`, `family:invite_open`, `keeping:export_complete`, `keeping:export_fail`, `keeping:export_start`, `me:language_update`, `me:session_end`, `me:setting_update`, `notifications:notification_open`, `notifications:permission_submit`, `notifications:reminder_cancel`, `notifications:reminder_prime_submit`, `notifications:reminder_prime_view`, `notifications:schedule_update`, `onboarding:sign_in_dismiss`, `onboarding:sign_in_fail`, `plus:code_submit`, `plus:restore_complete`, `system:pack_download_update`, `system:sync_fail`.
 
-Global properties: `schema_version` (int 1 to 1000), `child_count_bucket`? (enum: none \| one \| two \| three_plus), `sample_pct`? (int 1 to 99).
+Global properties: `schema_version` (int 1 to 1000), `build_kind`? (enum: store \| testflight \| preview \| dev), `is_internal`? (bool), `child_count_bucket`? (enum: none \| one \| two \| three_plus), `sample_pct`? (int 1 to 99).
 <!-- catalogue:end -->
 
 ### 3.2 Global properties (added by the client to every event)
@@ -215,6 +215,8 @@ Global properties: `schema_version` (int 1 to 1000), `child_count_bucket`? (enum
 | Property | Type and values | Level | Why |
 |---|---|---|---|
 | `schema_version` | int 1 to 1000 (currently 12; required; a test pins the catalogue fingerprint, so a changed event needs a new version) | L2 | Lets queries span catalogue changes |
+| `build_kind`? | enum: store, testflight, preview, dev | L2 | Added by the client to every event it sends (ER-A15, BL-1250), so test builds can be filtered out of reports. A build that does not say is `dev`, never `store`. Optional in the schema only so the validator still reads a payload the client did not build |
+| `is_internal`? | bool | L2 | Added by the client to every event it sends (ER-A15, BL-1250): true only on a tester's phone with the local switch on (FH-10), always false in a `store` build, whatever the switch says. Used for PostHog's "filter out internal and test users" (`posthog-standard.md` 3.2) |
 | `child_count_bucket`? | enum: none, one, two, three_plus | L2 | K-01 asks for it as a user property; LEGAL-REQ-017 forbids person properties beyond the id. Decision: send it as an event property, which satisfies both |
 | `sample_pct`? | int 1 to 99 | L2 | Present only on sampled events, so counts can be re-weighted |
 

@@ -2547,6 +2547,67 @@ The entries in this batch (three stacked PRs) record each role's own ruling on t
 - Door: two-way. Way back: change the threshold in one place.
 - Founder-only: no. Signed: Chief Design Officer (Claude role)
 
+### CDesO-51 BL-2242: the Listen screen reader ready line is approved as written (27 Nov 2026, CDesO via Karma's session; Claude role)
+- Question: `en.listen.ready.hintScreenReader` ("Double tap Start recording and talk.") is live on `develop` (`packages/content/src/strings.en.ts:305` at 0082f8e0; added by BL-1827, PR #1708) with no `PROPOSED` marker and no exec reading on record (BL-2242). Does it ship as written?
+- Tier and type: T1; clear. The council gave no tier; this one is set by precedent (CPO-1), UNVERIFIED as the council's.
+- Options considered: approve as written; change the words; keep it marked PROPOSED until a device walk
+- Ruling: approved as written; no word change. The line carries a one-line comment citing this entry (`strings.en.ts:305`, the line above `hintScreenReader`, which moves to `:306`).
+- Why: it names the control a screen reader announces ("Start recording", the `en.listen.ready.startA11y` label), it is a plain imperative, and it is glossary-safe. `packages/content/test/spoken-lines.test.ts:24-27` already pins the exact text and that it contains `startA11y`; `:29-32` keeps "the red circle" (BRAND.md:104) on the sighted line only. What VoiceOver speaks on a phone is UNVERIFIED: no device walk was read for this entry.
+- Door: two-way
+- Way back: a new reading changes the words, the comment and the pin in `spoken-lines.test.ts` together.
+- Revisit when: a VoiceOver walk shows the control announced under another name, or `startA11y` changes.
+
+### CPO-96 BL-390: close as agree in substance; the recordings-place words stay (27 Nov 2026, CPO via Karma's session; Claude role)
+- Question: BL-390's done-when asks for one identical sentence on where recordings live in the three in-app places. The three places say it in different words, each by an earlier ruling. Is the row done?
+- Tier and type: T1; clear. The council gave no tier; this one is set by precedent (CPO-1), UNVERIFIED as the council's.
+- Options considered: keep the row open until one sentence is used everywhere; close it as agree in substance; rewrite the three lines now
+- Ruling: close BL-390 as "agree in substance". The recordings-place words stay as they are. They are pinned by `packages/content/test/recordings-place.test.ts` (present on `develop` at 0082f8e0), which holds the one fact the places must share (kept on this phone, never "only" or "stays", no backup of ours) rather than one sentence. The BACKLOG done-when edit belongs to the stream that owns `docs/BACKLOG.md`; this entry does not edit it.
+- Why: the substance of the row, that no place promises more than the build does, is met and tested; the letter of it, one identical sentence, would undo rulings the test file names in its header (lawyer-2 H4, CCO-8, the 8 Nov CTO ruling). The row's other checks (the claims registry has one row per claim; the website, store listing and Subscription Terms agree) were not re-read for this entry: UNVERIFIED.
+- Door: two-way
+- Way back: reopen BL-390 and ask for one sentence.
+- Revisit when: recording backup ships (`claims-capabilities.test.ts` then gates the backup claim), or any of the three places changes its words.
+
+### CPrivO-57 D-061: the website's Private scene says the full registered promise word for word (27 Nov 2026, CPrivO via Karma's session; Claude role, not counsel)
+- Question: the website's Private scene (`site.scenes.s09`, headline "Private by default.", in `apps/web/src/content/site.ts`) says a shortened privacy promise that stops at "never use them for ads". Must it say the registered `en.trust.promise`?
+- Tier and type: T1; clear. The council gave no tier; this one is set by precedent (CPO-1), UNVERIFIED as the council's.
+- Options considered: keep the shortened line; say the full promise word for word, held equal by a test; drop the line from the scene
+- Ruling: the Private scene says the full registered promise `en.trust.promise` word for word, held equal by a test. Carried by open PR #2129 (head fe5089dc1a6ddb0927d4a5f62e60d80733daa3b7): the s09 point in `apps/web/src/content/site.ts`, and a test in `apps/web/test/copy-rules.test.ts` that the scene contains `en.trust.promise` and no shortened copy of it beside it. Not merged when this entry was written.
+- Why: D-061 says the privacy promise once, the same way, in a few set places; `packages/content/src/strings.en.ts:1583` says the store listing and website use `trust.promise` word for word. The shortened line leaves out the promise not to train machine learning models on the letters. This is the registered promise, not a new one. Filed as CPrivO, not CCO: `docs/agents/exec/COUNCIL.md:56` has the CMO own website claims and consult the CPrivO on privacy claims, `:62` gives personal data to the CPrivO, and no CCO entry in this file rules on `trust.promise`. Whether the website is live, and in which `SITE_MODE`, is UNVERIFIED (as in CMO-20).
+- Door: two-way
+- Way back: revert the s09 point and its test in #2129, or redeploy the previous website version.
+- Revisit when: `en.trust.promise` changes (the test then fails until the site follows).
+
+### CMO-21 D-139: the website title and brand line take the BRAND.md descriptor; four site lines held as PROPOSED (27 Nov 2026, CMO via Karma's session; Claude role)
+- Question: the website still introduces the product with the descriptor D-139 retired ("the baby memory book you fill by talking" and its variants). What changes, and what waits?
+- Tier and type: T1; clear. The council gave no tier; this one is set by precedent (CPO-1), UNVERIFIED as the council's.
+- Options considered: change every site line now; change the title and brand line to the registered words now and hold the lines that need new words; change nothing until all lines have approved words
+- Ruling: the website title (`site.meta.title`) and brand line (`site.brand.line`) take the BRAND.md descriptor word for word ("letters to your child, in your own words and voice"), carried by open PR #2129 with a test that pins both. Four more site lines still say the retired descriptor: `comingSoon.line`, `comingSoon.shareTitle`, `comingSoon.shareText` (`apps/web/src/content/site.ts:72`, `:90`, `:91` on `develop` at 0082f8e0) and `welcomeEmail.intro` (`:280`). Their replacements are new words. They are recorded here as PROPOSED, are not approved by this entry, and are held, not applied, until approved:
+  - `welcomeEmail.intro`: `${NAME} keeps letters to your child, in your own words and voice. It is coming to iPhone in the US. You will hear from us once more, at launch.`
+  - `comingSoon.line`: "Letters to your child, in your own words and voice. Say what happened today, out loud."
+  - `comingSoon.shareTitle`: `${NAME}: letters to your child`
+  - `comingSoon.shareText`: `${NAME}: letters to your child, in your own words and voice. A few words at the end of the day, said out loud.`
+  #2129's `copy-rules.test.ts` lists the four as the only lines allowed to keep the old descriptor (a shrink-only list); each leaves the list when its words change.
+- Why: D-139 replaces the old descriptor everywhere a parent reads first; BRAND.md lines 14 and 89 give one descriptor, with the line standing alone where the name is already on screen. The title and brand line take the registered words unchanged, so they add no new claim; the four lines need new sentences, which are new words. Filed as CMO, not CBO: `docs/agents/exec/COUNCIL.md:14` gives positioning and the website's claims to the CMO; the CBO's `:15` is business model and pricing, and this file has no CBO entry.
+- Door: two-way
+- Way back: revert the two lines and their test in #2129, or redeploy the previous website version.
+- Revisit when: the four PROPOSED lines are approved; each changed line then leaves the shrink-only list in the same PR.
+
+### CLO-45 BL-2128: recommended changes to the /delete-account words in draft PR #2066 (27 Nov 2026, CLO via Karma's session; Claude role, not legal advice)
+- Question: draft PR #2066 (head 5d1fe325813f7b6a21379aebcd90d6fced54751c) builds `/delete-account` from the counsel draft `docs/legal/delete-account-page.md` (1.1.0, draft-for-counsel). Which of its words should change before it publishes?
+- Tier and type: T1; clear. The council gave no tier; this one is set by precedent (CPO-1), UNVERIFIED as the council's.
+- Options considered: publish the draft words unchanged; recommend changes and hold them for counsel; rewrite the page in the PR
+- Ruling: recommended changes, all PROPOSED and held for counsel; the legal text merges under D-125. Lines are of `apps/web/src/lib/legal/delete-account-copy.ts` in #2066, with the draft's line in brackets:
+  - `next.items[1]` (`:44`; draft `:48`): the backups clause uses the registered data-policy wording on backups within 38 days (`docs/legal/data-policy.md:217`, "from database backups within 38 days"); today it says "from our backups within 38 days".
+  - `removed.items[0]` (`:51`; draft `:55`) becomes "Your letters, from every book on your account."
+  - `removed.items[3]` (`:54`; draft `:58`), the recording backup line, is dropped.
+  - `removed.items[5]` (`:56`; draft `:60`) takes the app's words "A copy you exported stays wherever you saved it." (`packages/content/src/features/account-deletion.en.ts:31`, `copies`).
+  - `kept.items[1]` (`:64`; draft `:69`), the activity-logs line, becomes "Activity logs, for 24 months, without your name or email."
+  The copy file's header (`:4-6`) says its words are the draft's unchanged, and `apps/web/test/delete-account.test.ts` fails if a word differs, so each change lands in the draft first, then in the copy file. This entry changes neither file.
+- Why: each change brings a page line into line with words already registered elsewhere: the data policy's published deletion clocks, and the app's own deletion screen. The council's reasons beyond that were not given for this record. Still blocked, whatever happens to these words: CR-187 and CR-193 Ruling D-15 (`docs/agents/cto/RULINGS.md:1229`, `:1293`; D-15 names draft lines 26 and 74 to 82, the email-started deletion lines); the evidence that backups clear within 38 days; and counsel's read. Not legal advice.
+- Door: two-way while the page is noindex and off `main`
+- Way back: keep the draft words; each recommendation is a separate line.
+- Revisit when: counsel answers on the draft, or CR-187 is applied and the 38-day evidence is recorded.
+
 ### CPrivO-58 Typed-day words on the lock screen need names on too (27 Nov 2026, CPrivO via stream 11's session; Claude role)
 - Verdict: RULED. Owner: Chief Privacy Officer; consulted: CPO (scope), CDesO (how it reads); Karma concurs for the build.
 - Question: a typed day (NS-18) puts the parent's own words on the lock screen when day names are on and App lock is off (NS-18-R3, CL-119). The words are free text and can hold a child's name ("Rakhi with Avi"), so a name could reach the lock screen while "Names in notifications" is off, its default. FR-NTC-11 and NS-48-R11 say names off means no child name in any title or body.

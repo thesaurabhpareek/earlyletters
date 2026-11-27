@@ -7,12 +7,14 @@
  * for its words, a family letter (not the exporter's), a Hindi letter in
  * Devanagari, an Arabic letter, Year 2, and a hidden second book. Two quiet-day marks (D-084): a
  * current one with no words, and one saved by an older build that holds the template sentence and
- * was moved into the book (the old menu allowed it): neither is a letter, neither may print.
+ * was moved into the book (the old menu allowed it): neither is a letter, neither may print. One picture
+ * (schema 1.7.0): Mama's first letter after the birth carries the stored copy, with her words and place for it.
  */
 import { createHash } from 'node:crypto';
 import type { Edit } from '@scribe/core';
 import { phoneConsent, type ExportSnapshot, type SnapshotEntry } from '../../src/lib/export/build.logic';
 import { noConsentHistory, noProfile } from '../../src/lib/export/server-records.logic';
+import { makeJpeg } from '../photos-helpers';
 
 /** Deterministic bytes standing in for an M4A. Includes ZIP signatures on purpose, as real audio can. */
 export function fakeAudio(seed: string, length: number): Uint8Array {
@@ -34,6 +36,10 @@ export function fakeAudio(seed: string, length: number): Uint8Array {
 export const sha256Hex = (data: Uint8Array | string) => createHash('sha256').update(data).digest('hex');
 
 const ASHA = 'child-asha-0001';
+
+/** e2's picture (1.7.0): where the stored copy is, and its bytes. */
+export const ASHA_PHOTO_URI = 'file:///support/photos/m-asha-0001.jpg';
+export const ASHA_PHOTO = makeJpeg({ icc: true, seed: 3 });
 const DEV = 'child-dev-0002';
 
 /** Audio files "on the phone", by uri. */
@@ -44,6 +50,9 @@ export const ASHA_AUDIO: Record<string, Uint8Array> = {
   'file:///doc/audio/e8.m4a': fakeAudio('e8', 3_333),
   'file:///doc/audio/e10.m4a': fakeAudio('e10', 900),
 };
+
+/** Every file "on the phone", by uri: the recordings and the stored copy of e2's picture (no metadata, ADR 0028 D1). */
+export const ASHA_FILES: Record<string, Uint8Array> = { ...ASHA_AUDIO, [ASHA_PHOTO_URI]: ASHA_PHOTO };
 
 const filler = (raw: string, word: string): Edit => {
   const start = raw.indexOf(word);
@@ -104,6 +113,17 @@ export function ashaSnapshot(): ExportSnapshot {
         promptKey: 'opening.any.know',
         audioUri: 'file:///doc/audio/e2.m4a',
         soundsLikeMe: true,
+        photo: {
+          mediaId: 'm-asha-0001',
+          uri: ASHA_PHOTO_URI,
+          onPhone: true,
+          bytes: ASHA_PHOTO.length,
+          sha256: sha256Hex(ASHA_PHOTO),
+          width: 4,
+          height: 4,
+          text: 'Your first bath, in the kitchen sink.',
+          place: 'Home',
+        },
       }),
       // The file changed after capture: the hash taken when recording stopped no longer matches.
       entry({ id: 'e3', occurredOn: '2026-04-20', editLevel: 'verbatim', finalText: 'You laughed today. A real one.', audioUri: 'file:///doc/audio/e3.m4a', audioSha256: sha256Hex('the original take') }),
