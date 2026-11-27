@@ -9,12 +9,16 @@
  * "I was invited" reads the token out of the pasted link. If a chat or mail app's own browser dropped the fragment,
  * the page says so instead of offering a copy that would not work (F11-U02). The steps render with the Copy button
  * (CopyInvite), so they never point at a button that is not there; with JavaScript off the page shows only how to copy
- * the link from the message. The Referer header is off for /j (next.config.ts).
+ * the link from the message. Only a build with the invite flow writes these links, so once the site is in launch mode
+ * the page also says the App Store version has no invites (BL-558, CMO-24). Before launch there is no App Store version
+ * to speak of, so the line is not drawn; the switch is the same `launch.mode` that /open uses for its App Store words
+ * (src/lib/launch.ts). The Referer header is off for /j (next.config.ts).
  */
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { site } from '@/content/site';
 import { pageShareCard } from '@/lib/brand/share-card';
+import { launch } from '@/lib/launch';
 import styles from '../auth/confirm/confirm.module.css';
 import { CopyInvite } from './CopyInvite';
 
@@ -28,10 +32,14 @@ export const metadata: Metadata = {
 
 export default function InvitePage() {
   const copy = site.invite;
+  // CMO-24: the App Store line is drawn only once the site is in launch mode, when an App Store version exists.
+  const live = launch.mode === 'live';
   return (
     <main className={styles.page}>
       <h1 className={styles.line}>{copy.line}</h1>
       <p className={styles.body}>{copy.body}</p>
+      {/* Server-rendered, script or not, in launch mode only: the App Store build cannot open an invite (BL-558, CMO-24). */}
+      {live ? <p className={styles.body}>{copy.storeBuild}</p> : null}
       <CopyInvite
         steps={copy.steps}
         label={copy.copy}
