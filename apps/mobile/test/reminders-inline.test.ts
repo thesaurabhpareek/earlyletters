@@ -170,6 +170,9 @@ describe('[CDesO-3, CCO-10] Settings, Reminders: the switch goes straight to the
     expect(screen).toMatch(/const choices = choicesShown\(prefs\);/);
     expect(screen).toMatch(/\{choices && \(\s*<Animated\.View entering=\{motion\.enter\(\)\}/);
     expect(screen).not.toMatch(/\{on && \(/);
+    // The Next line is fed what the switch draws, so it is null while waiting and "Not sending yet." shows once, on the
+    // switch row. Fed the intent (`on: choices`) it would repeat that line under the switch, and every unit test passes.
+    expect(screen).toContain('const line = nextLine({ on, permission');
     expect(logic.choicesShown(reminders.readPrefs())).toBe(true);
     expect(logic.switchStatus(reminders.readPrefs(), 'denied')).toBe('Not sending yet.');
     expect(logic.showNotificationsOff(reminders.readPrefs(), 'denied')).toBe(true);
