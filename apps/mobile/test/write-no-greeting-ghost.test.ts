@@ -28,4 +28,15 @@ describe('[BL-372, D-084] no "Dear {child}," ghost in Write', () => {
     expect(write).not.toMatch(/\bDear\b/);
     expect(write).not.toMatch(/placeholder=\{?['"`]/);
   });
+
+  it('the field is uncontrolled: no value prop can put words in it that the person did not type (D-057)', () => {
+    // Review A note 2 on #2184: a controlled `value=` greeting beside `defaultValue` passed the pins above.
+    const code = write.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+    const start = code.indexOf('<TextField');
+    expect(start).toBeGreaterThan(-1);
+    expect(code.indexOf('<TextField', start + 1)).toBe(-1); // one field on the page
+    const field = code.slice(start, code.indexOf('/>', start) + 2);
+    expect(field).toContain('defaultValue={initialText}');
+    expect(field).not.toMatch(/\svalue=/);
+  });
 });
