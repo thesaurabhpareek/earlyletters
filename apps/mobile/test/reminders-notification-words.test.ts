@@ -24,6 +24,7 @@ vi.mock('../src/lib/db/repos/open-native', () => ({
 const store = await import('../src/lib/store');
 const { lastMadeLetter, plannerChildren, readPrefs, dayNamesOn } = await import('../src/lib/reminders/prefs');
 const { DEFAULT_PREFS, planReminders } = await import('../src/lib/reminders/planner');
+const { budgetedSlots, PLAN_MAX } = await import('../src/lib/reminders/budget');
 const { isoDate, parseIsoDate, zonedParts, zonedToEpoch, addDays } = await import('../src/lib/reminders/tz');
 const { reminderCopy } = await import('../src/lib/reminders/copy');
 const { APP_LOCK_KEYS } = await import('../src/lib/app-lock/prefs');
@@ -117,7 +118,7 @@ describe('[NS-48-R26] the one-a-day budget has one enforced place', () => {
         const p = zonedParts(n.fireAt, input.timeZone);
         expect(isoDate({ y: p.y, m: p.m, d: p.d }), `seed ${seed} ${n.id}`).toBe(n.date);
       }
-      expect(plan.length, `seed ${seed}`).toBeLessThanOrEqual(60);
+      expect(plan.length, `seed ${seed}`).toBeLessThanOrEqual(budgetedSlots(input.planPending ?? PLAN_MAX));
     }
   });
 
@@ -197,6 +198,7 @@ describe('[FR-NTC-08] a parent-chosen day takes the slot as a typedDay', () => {
       const typed = new Set((input.typedDays ?? []).map((t) => t.date));
       const notes = planReminders(input).filter((n) => n.kind === 'typedDay');
       for (const n of notes) expect(typed.has(n.date), `seed ${seed} ${n.date}`).toBe(true);
+      expect(new Set(notes.map((n) => n.date)).size, `seed ${seed}`).toBe(notes.length);
     }
   });
 });
