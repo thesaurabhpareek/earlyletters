@@ -22,7 +22,7 @@ function sourceFiles(dir: string): string[] {
 describe('setPhotosForTest is for tests only (BL-2274)', () => {
   afterEach(() => setPhotosForTest(null));
 
-  it('works under vitest: on, then back to the build value', () => {
+  it('[BL-2274] works under vitest: on, then back to the build value', () => {
     const build = photosBuildEnabled();
     setPhotosForTest(!build);
     expect(photosBuildEnabled()).toBe(!build);
@@ -30,12 +30,14 @@ describe('setPhotosForTest is for tests only (BL-2274)', () => {
     expect(photosBuildEnabled()).toBe(build);
   });
 
-  it('throws outside the test runner and leaves the switch at its build value', () => {
+  it('[BL-2274, NS-01-R19] throws outside the test runner and leaves the switch at its build value after each refused call', () => {
     const build = photosBuildEnabled();
     const saved = process.env.VITEST;
     delete process.env.VITEST;
     try {
       expect(() => setPhotosForTest(!build)).toThrow(/tests only/);
+      expect(photosBuildEnabled()).toBe(build);
+      expect(() => setPhotosForTest(build)).toThrow(/tests only/);
       expect(() => setPhotosForTest(null)).toThrow(/tests only/);
     } finally {
       process.env.VITEST = saved;
@@ -43,7 +45,7 @@ describe('setPhotosForTest is for tests only (BL-2274)', () => {
     expect(photosBuildEnabled()).toBe(build);
   });
 
-  it('no app source calls it: src names it only where it is defined', () => {
+  it('[BL-2274] no app source calls it: src names it only where it is defined', () => {
     const callers = sourceFiles(SRC)
       .filter((f) => readFileSync(f, 'utf8').includes('setPhotosForTest'))
       .map((f) => f.slice(SRC.length + 1));
