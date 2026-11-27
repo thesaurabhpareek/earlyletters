@@ -121,7 +121,7 @@ Status, 27 Nov 2026: applied. Live in `.github/workflows/ci.yml` lines 39 to 211
 
 ### Change 2: path filter for iOS compile (`ios-compile-paths.patch`)
 
-Status, 27 Nov 2026: applied. Live in `.github/workflows/ios-compile.yml` lines 61 to 72 (the `!` patterns on `push`). The patch file was removed because it no longer applied; it is at `ba634177` in git history, and `docs/ops/proposed/workflows-retired.md` gives the live lines.
+Status, 27 Nov 2026: superseded by change 3 rather than applied as written. The same `!` patterns sit on `push` (`.github/workflows/ios-compile.yml` lines 62 to 72), and `pull_request` keeps only the build paths, so a docs or tests only PR still starts no run. The patch file was removed because it no longer applied; it is at `ba634177` in git history, and `docs/ops/proposed/workflows-retired.md` gives the live lines.
 
 - What: the `pull_request` `paths:` list gets negated patterns: `**/*.md`, `apps/mobile/e2e/**`, `e2e-web/**`, `web-preview/**`, `apps/mobile/test/**`, `apps/mobile/vitest*.ts`, `**/__tests__/**`, `**/*.test.ts`, `**/*.test.tsx`, `packages/*/test/**`, `packages/emails/**`. A PR touching only those starts no iOS compile run. Grep found no import of `test`, `e2e`, `e2e-web`, `web-preview` or `@scribe/emails` from `apps/mobile/src` or `app.config.ts`.
 - Branch protection does not hang: neither `iOS simulator build (no signing)` nor `store-profile Release launch` is a required status check (branch protection: `applied migrations unchanged`, `required`, `compliance-fence`), and `merge-queue.mjs` applies the macOS rule only to native paths, which stay in the list. A run that never starts is the same as the 329 Debug jobs that are skipped today.
