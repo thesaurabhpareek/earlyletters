@@ -13,16 +13,15 @@
  * Fixtures use the fictional family Asha. The kill-switch drill on a real TestFlight phone is not here: it is the
  * founder's device step (docs/release/media-phases-kill-switch-drill.md).
  */
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import { tmpdir } from 'node:os';
+import { availableParallelism, tmpdir } from 'node:os';
 import { basename, dirname, join, matchesGlob, relative, resolve, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import ts from 'typescript';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
 import { configDefaults } from 'vitest/config';
-import { getConfig } from 'expo/config';
 import {
   MEDIA_PHASE_SWITCHES,
   mediaPhaseBuilt,
@@ -1082,66 +1081,146 @@ const configVariables = (eas: Eas): string[] => [...new Set([...Object.values(ea
 
 type Builder = 'eas' | 'local';
 /**
- * app.config.ts evaluated fresh, as one EAS build of `profile` evaluates it: exactly the profile's env (eas.json,
- * through `extends`), EAS_BUILD_PROFILE set to its name, EAS_BUILD, EAS_BUILD_PLATFORM and CI as an EAS builder sets
- * them (builder `eas`) or unset (`local`), and `extra` on top. Every module outside node_modules is dropped from Node's
- * require cache first, app.config.ts and any helper it requires alike (Review B M2: `config/phase.js` read once and
- * cached would give every later evaluation the first one's value), so a read at any of their top levels runs again with
- * this env, as it does in the one fresh process of a build. Returned as JSON, so it can be compared. `source` evaluates
- * other text in the file's place (a mutant, for the positive control), never written to disk.
+ * NODE_ENV as a build may see it (Review A N7, Review B note): unset, as in the Xcode phase where expo-constants'
+ * getAppConfig.js writes the embedded config, and `production`, as `expo export:embed` sets it. Never vitest's `test`.
  */
-function appConfigFor(eas: Eas, profile: string, extra: Record<string, string> = {}, opts: { builder?: Builder; source?: string } = {}): string {
-  const { builder = 'local', source } = opts;
-  const req = createRequire(join(APP, 'package.json'));
-  const file = join(APP, 'app.config.ts');
-  const names = configVariables(eas);
-  const saved = Object.fromEntries(names.map((k) => [k, process.env[k]]));
+type NodeEnv = 'unset' | 'production';
+const NODE_ENVS: NodeEnv[] = ['unset', 'production'];
+
+/**
+ * The child that evaluates app.config.ts once and exits. It reads `{ app, source }` as JSON on stdin, loads expo/config
+ * from the app, and prints the config as JSON after a marker line. `source`, when given, is evaluated in the file's
+ * place (a mutant, for the positive control), never written to disk: @expo/require-utils takes a loaded module from
+ * the require cache as it is.
+ */
+const CONFIG_CHILD = `
+const Module = require('node:module');
+const path = require('node:path');
+let input = '';
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', (d) => { input += d; });
+process.stdin.on('end', () => {
+  const { app, source } = JSON.parse(input);
+  const req = Module.createRequire(path.join(app, 'package.json'));
+  const file = path.join(app, 'app.config.ts');
+  if (source !== undefined) {
+    const ts = req('typescript');
+    const { outputText } = ts.transpileModule(source, { fileName: file, compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, esModuleInterop: true } });
+    const mod = { exports: {}, loaded: true, id: file, filename: file };
+    new Function('module', 'exports', 'require', '__dirname', '__filename', outputText)(mod, mod.exports, Module.createRequire(file), app, file);
+    req.cache[file] = mod;
+  }
+  const { getConfig } = req('expo/config');
+  const exp = getConfig(app, { skipSDKVersionRequirement: true, isPublicConfig: false }).exp;
+  process.stdout.write('\\nNX39-CONFIG\\n' + JSON.stringify(exp));
+});
+`;
+
+/** V8's compile cache for the children: compiled code only, keyed by each file's text, so no module state is shared. */
+const COMPILE_CACHE = mkdtempSync(join(tmpdir(), 'nx39-compile-'));
+afterAll(() => rmSync(COMPILE_CACHE, { recursive: true, force: true }));
+
+/** At most this many children at once (one per core), so the matrix below runs in parallel. */
+const CHILD_SLOTS = Math.max(2, availableParallelism());
+let childrenRunning = 0;
+const childQueue: Array<() => void> = [];
+async function inChildSlot<T>(run: () => Promise<T>): Promise<T> {
+  if (childrenRunning >= CHILD_SLOTS) await new Promise<void>((go) => childQueue.push(go));
+  childrenRunning++;
   try {
-    for (const k of names) delete process.env[k];
-    const env = { ...((resolveProfile(eas.build, profile)?.env ?? {}) as Record<string, string>), EAS_BUILD_PROFILE: profile, ...(builder === 'eas' ? EAS_BUILDER_ENV : {}), ...extra };
-    for (const [k, v] of Object.entries(env)) process.env[k] = v;
-    for (const k of Object.keys(req.cache)) if (!inNodeModules(k)) delete req.cache[k];
-    if (source !== undefined) {
-      // @expo/require-utils takes a loaded module from the cache as it is, so the mutant stands in for the file.
-      const { outputText } = ts.transpileModule(source, { fileName: file, compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, esModuleInterop: true } });
-      const mod = { exports: {} as Record<string, unknown>, loaded: true, id: file, filename: file };
-      new Function('module', 'exports', 'require', '__dirname', '__filename', outputText)(mod, mod.exports, createRequire(file), APP, file);
-      req.cache[file] = mod as unknown as NodeJS.Module;
-    }
-    return JSON.stringify(getConfig(APP, { skipSDKVersionRequirement: true, isPublicConfig: false }).exp);
+    return await run();
   } finally {
-    for (const [k, v] of Object.entries(saved)) {
-      if (v === undefined) delete process.env[k];
-      else process.env[k] = v;
-    }
-    if (source !== undefined) delete req.cache[file];
+    childrenRunning--;
+    childQueue.shift()?.();
   }
 }
 
+/**
+ * app.config.ts evaluated as one EAS build of `profile` evaluates it, in a fresh Node process of its own (Review B
+ * round 7: a cleared require cache does not hold an ES module, so an `.mjs` helper app.config.ts imports was read once
+ * per test run; a child process reads every module, CommonJS or ES, again). The child gets exactly the profile's env
+ * (eas.json, through `extends`), EAS_BUILD_PROFILE set to its name, EAS_BUILD, EAS_BUILD_PLATFORM and CI as an EAS
+ * builder sets them (builder `eas`) or unset (`local`), NODE_ENV unset or `production` (never vitest's `test`), and
+ * `extra` on top; vitest's own variables are dropped. Returned as JSON, so it can be compared. `source` evaluates other
+ * text in the file's place (a mutant, for the positive control), never written to disk.
+ */
+function appConfigFor(
+  eas: Eas,
+  profile: string,
+  extra: Record<string, string> = {},
+  opts: { builder?: Builder; nodeEnv?: NodeEnv; source?: string } = {},
+): Promise<string> {
+  const { builder = 'local', nodeEnv = 'unset', source } = opts;
+  const env: Record<string, string> = {};
+  const cleared = new Set([...configVariables(eas), 'NODE_ENV', 'NODE_OPTIONS', 'TEST']);
+  for (const [k, v] of Object.entries(process.env)) if (v !== undefined && !cleared.has(k) && !k.startsWith('VITEST')) env[k] = v;
+  Object.assign(
+    env,
+    (resolveProfile(eas.build, profile)?.env ?? {}) as Record<string, string>,
+    { EAS_BUILD_PROFILE: profile, NODE_COMPILE_CACHE: COMPILE_CACHE },
+    builder === 'eas' ? EAS_BUILDER_ENV : {},
+    nodeEnv === 'production' ? { NODE_ENV: 'production' } : {},
+    extra,
+  );
+  const evaluated = inChildSlot(
+    () =>
+      new Promise<string>((done, fail) => {
+        const child: ChildProcessWithoutNullStreams = spawn(process.execPath, ['-e', CONFIG_CHILD], { cwd: APP, env: env as NodeJS.ProcessEnv });
+        let out = '';
+        let err = '';
+        child.stdout.setEncoding('utf8').on('data', (d: string) => (out += d));
+        child.stderr.setEncoding('utf8').on('data', (d: string) => (err += d));
+        child.on('error', fail);
+        child.on('close', (code) => {
+          const at = out.lastIndexOf('\nNX39-CONFIG\n');
+          if (code !== 0 || at < 0) fail(new Error(`app.config.ts evaluation (${builder} ${profile} NODE_ENV=${nodeEnv}) exited ${code}: ${err.slice(-2000)}`));
+          else done(out.slice(at + '\nNX39-CONFIG\n'.length));
+        });
+        child.stdin.end(JSON.stringify({ app: APP, source }));
+      }),
+  );
+  // The callers start many at once and await them in turn; once one fails, the rest are not reported again.
+  evaluated.catch(() => undefined);
+  return evaluated;
+}
+
 describe('[NX-39-R39] no config path carries a switch into a build', () => {
-  it('[NX-39-R39] app.config.ts evaluates the same for preview, testflight and production with each switch unset, off or on', () => {
+  it('[NX-39-R39] app.config.ts evaluates the same for preview, testflight and production with the switches unset, off or on', async () => {
     // A name scan cannot see a switch name built at config time (Review B B7: `process.env[['EXPO', 'PUBLIC',
     // 'VIDEO'].join('_')]` copied into `extra`, which ships in the embedded config). So evaluate the config itself: a
     // switch that reaches `extra`, a plugin's options or any other key changes the result, whatever its spelling.
     const eas = readEas();
     const profiles = [...new Set([...storeProfiles(eas), 'production'])].sort();
     expect(profiles).toEqual(expect.arrayContaining(['preview', 'production', 'testflight']));
-    // On an EAS builder (EAS_BUILD, EAS_BUILD_PLATFORM and CI set) and off one (Review A M3).
+    const allOn = Object.fromEntries(SWITCH_NAMES.map((n) => [n, 'on']));
+    const allOff = Object.fromEntries(SWITCH_NAMES.map((n) => [n, 'off']));
+    // On an EAS builder (EAS_BUILD, EAS_BUILD_PLATFORM and CI set) and off one (Review A M3), with NODE_ENV unset and
+    // `production` (Review A N7), each evaluation in a fresh process (Review B R4).
+    const runs: Array<{ label: string; unset: Promise<string>; other: Promise<string> }> = [];
     for (const builder of ['local', 'eas'] as const) {
-      for (const profile of profiles) {
-        const unset = appConfigFor(eas, profile, {}, { builder });
-        expect(JSON.parse(unset).ios.bundleIdentifier, profile).toMatch(/\./);
-        for (const s of MEDIA_PHASE_SWITCHES) {
-          for (const value of ['off', 'on']) expect(appConfigFor(eas, profile, { [s.env]: value }, { builder }) === unset, `${builder} ${profile} ${s.env}=${value}`).toBe(true);
+      for (const nodeEnv of NODE_ENVS) {
+        for (const profile of profiles) {
+          const unset = appConfigFor(eas, profile, {}, { builder, nodeEnv });
+          const at = `${builder} NODE_ENV=${nodeEnv} ${profile}`;
+          // Each switch on alone, and every switch off and every switch on together: a value any switch copies into
+          // the config, or a branch on any one of them, changes one of these from unset.
+          for (const s of MEDIA_PHASE_SWITCHES) runs.push({ label: `${at} ${s.env}=on`, unset, other: appConfigFor(eas, profile, { [s.env]: 'on' }, { builder, nodeEnv }) });
+          runs.push({ label: `${at} every switch off`, unset, other: appConfigFor(eas, profile, allOff, { builder, nodeEnv }) });
+          runs.push({ label: `${at} every switch on`, unset, other: appConfigFor(eas, profile, allOn, { builder, nodeEnv }) });
         }
-        const allOn = Object.fromEntries(SWITCH_NAMES.map((n) => [n, 'on']));
-        expect(appConfigFor(eas, profile, allOn, { builder }) === unset, `${builder} ${profile} every switch on`).toBe(true);
       }
     }
-    // Each evaluation is under 100 ms once @expo/config is loaded, but the first one pays that cold load (BL-443).
-  }, 30_000);
+    expect(runs.length).toBe(2 * NODE_ENVS.length * profiles.length * (MEDIA_PHASE_SWITCHES.length + 2));
+    for (const r of runs) {
+      const [unset, other] = await Promise.all([r.unset, r.other]);
+      expect(JSON.parse(unset).ios.bundleIdentifier, r.label).toMatch(/\./);
+      expect(other === unset, r.label).toBe(true);
+    }
+    // 2 builders x 2 NODE_ENV x 3 profiles x 10 settings: 120 children, about 0.5 s each and one per core at once, so
+    // about 20 s alone on 4 cores. The limit leaves room for a full run sharing those cores.
+  }, 120_000);
 
-  it('[NX-39-R39] positive control: the evaluation sees a switch copied into the config, at the top level, in the function, behind EAS_BUILD or in a helper module', () => {
+  it('[NX-39-R39] positive control: the evaluation sees a switch copied into the config, at the top level, in the function, behind EAS_BUILD or NODE_ENV, or in a CommonJS or ES module helper', async () => {
     // The real app.config.ts with B7 applied, evaluated in the file's place (nothing is written): the check above fails.
     const eas = readEas();
     const real = readFileSync(join(APP, 'app.config.ts'), 'utf8');
@@ -1150,31 +1229,52 @@ describe('[NX-39-R39] no config path carries a switch into a build', () => {
     const top = real.replace('export default (', `const VIDEO = ${BUILT};\nexport default (`).replace('  extra: {\n', '  extra: {\n    video: VIDEO,\n');
     // Review A M3: B7 behind a condition every EAS build meets.
     const easOnly = real.replace('    ...capabilityFlags(),\n', `    ...capabilityFlags(),\n    ...(process.env.EAS_BUILD === 'true' ? { video: ${BUILT} } : {}),\n`);
-    for (const mutant of [b7, top, easOnly]) expect(mutant).not.toBe(real);
-    // the real text, evaluated the same way, matches the file
-    expect(appConfigFor(eas, 'production', {}, { source: real })).toBe(appConfigFor(eas, 'production'));
-    expect(appConfigFor(eas, 'production', {}, { source: real, builder: 'eas' })).toBe(appConfigFor(eas, 'production', {}, { builder: 'eas' }));
-    const differs = (source: string, builder: Builder) =>
-      appConfigFor(eas, 'production', { EXPO_PUBLIC_VIDEO: 'off' }, { source, builder }) !== appConfigFor(eas, 'production', {}, { source, builder });
-    for (const mutant of [b7, top]) for (const builder of ['local', 'eas'] as const) expect(differs(mutant, builder), builder).toBe(true);
-    // the EAS_BUILD mutant shows only on an EAS builder, so the evaluation needs both
-    expect(differs(easOnly, 'local')).toBe(false);
-    expect(differs(easOnly, 'eas')).toBe(true);
-    // Review B M2: a helper module app.config.ts requires reads the switch at its own top level. It is cached after the
-    // first evaluation, so only dropping it from the require cache each time shows the second value.
+    // Review A N7: B7 behind NODE_ENV === 'production', which vitest's NODE_ENV=test never met.
+    const prodOnly = real.replace('    ...capabilityFlags(),\n', `    ...capabilityFlags(),\n    ...(process.env.NODE_ENV === 'production' ? { video: ${BUILT} } : {}),\n`);
+    for (const mutant of [b7, top, easOnly, prodOnly]) expect(mutant).not.toBe(real);
+    const differs = async (source: string, builder: Builder, nodeEnv: NodeEnv = 'unset') => {
+      const [off, unset] = await Promise.all([
+        appConfigFor(eas, 'production', { EXPO_PUBLIC_VIDEO: 'off' }, { source, builder, nodeEnv }),
+        appConfigFor(eas, 'production', {}, { source, builder, nodeEnv }),
+      ]);
+      return off !== unset;
+    };
     const dir = mkdtempSync(join(tmpdir(), 'nx39-config-'));
     try {
-      const helper = join(dir, 'phase.js');
-      writeFileSync(helper, `module.exports.video = ${BUILT};\n`);
-      const withHelper = real.replace('export default (', `const phase = require(${JSON.stringify(helper)});\nexport default (`).replace('  extra: {\n', '  extra: {\n    phaseVideo: phase.video,\n');
-      expect(withHelper).not.toBe(real);
+      // Review B M2: a CommonJS helper app.config.ts requires reads the switch at its own top level.
+      const cjs = join(dir, 'phase.js');
+      writeFileSync(cjs, `module.exports.video = ${BUILT};\n`);
+      const withCjs = real.replace('export default (', `const phase = require(${JSON.stringify(cjs)});\nexport default (`).replace('  extra: {\n', '  extra: {\n    phaseVideo: phase.video,\n');
+      // Review B R4: an ES module helper (config/phase.mjs) that app.config.ts imports. Node loads it through
+      // require(esm), whose cache no test can clear, so only a fresh process per evaluation reads it again.
+      const mjs = join(dir, 'phase.mjs');
+      writeFileSync(mjs, `export const video = ${BUILT};\n`);
+      const withMjs = real.replace('export default (', `import { video as phaseVideoValue } from ${JSON.stringify(mjs)};\nexport default (`).replace('  extra: {\n', '  extra: {\n    mediaVideo: phaseVideoValue,\n');
+      for (const mutant of [withCjs, withMjs]) expect(mutant).not.toBe(real);
+      const checks: Array<[string, Promise<unknown>, unknown]> = [];
+      // the real text, evaluated the same way, matches the file
       for (const builder of ['local', 'eas'] as const) {
-        expect(appConfigFor(eas, 'production', {}, { source: withHelper, builder }), builder).not.toBe(appConfigFor(eas, 'production', { EXPO_PUBLIC_VIDEO: 'off' }, { source: withHelper, builder }));
+        for (const nodeEnv of NODE_ENVS) {
+          checks.push([
+            `real ${builder} ${nodeEnv}`,
+            Promise.all([appConfigFor(eas, 'production', {}, { source: real, builder, nodeEnv }), appConfigFor(eas, 'production', {}, { builder, nodeEnv })]).then(([a, b]) => a === b),
+            true,
+          ]);
+        }
+        for (const [name, mutant] of [['b7', b7], ['top', top], ['cjs helper', withCjs], ['mjs helper', withMjs]] as const) {
+          checks.push([`${name} ${builder}`, differs(mutant, builder), true]);
+        }
+        // the EAS_BUILD mutant shows only on an EAS builder, and the NODE_ENV mutant only with NODE_ENV=production,
+        // so the evaluation needs every one of these
+        checks.push([`easOnly ${builder}`, differs(easOnly, builder), builder === 'eas']);
+        for (const nodeEnv of NODE_ENVS) checks.push([`prodOnly ${builder} ${nodeEnv}`, differs(prodOnly, builder, nodeEnv), nodeEnv === 'production']);
       }
+      for (const [label, got, want] of checks) expect(await got, label).toBe(want);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
-  }, 20_000);
+    // 36 children, 4 at once: about 5 s alone.
+  }, 60_000);
 
   it('[NX-39-R39] no bundler config writes process.env, so none can turn a switch on in every profile', () => {
     // metro.config.js (and app.config.ts, and a babel config if one is added) runs in the bundler's process before
