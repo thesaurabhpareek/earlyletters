@@ -84,7 +84,8 @@ function nativeProblems(sources: Array<{ file: string; text: string }>): string[
 
 /**
  * Every EXPO_PUBLIC_* name the app reads that is not a card flag above: switches, keys and URLs with their own pins.
- * A new name must be added here on purpose, and that is the moment to decide whether it belongs in CARD_FLAGS.
+ * A new name must be added here on purpose, and that is the moment to decide whether it belongs in the card flag list
+ * (G6_CARD_FLAGS in scripts/release/store-flags.mjs, with its name pinned in this file).
  */
 const OTHER_PUBLIC_ENV = [
   'ACCOUNT_DELETION', 'ANALYTICS', 'APP_ENV', 'BACKUP', 'DOCS_BASE_URL', 'E2E', 'EMAIL_OTP_LENGTH', 'ENGLISH_ONLY',
@@ -245,9 +246,10 @@ describe('G6 allowlist: a new EXPO_PUBLIC_* flag cannot appear unreviewed', () =
 
   it('[NS-49-R25] G6 every EXPO_PUBLIC_* name read in src and app.config.ts is a card flag or a named other switch', () => {
     // A new name fails here on purpose. Decide: if it is a card flag that may never be on in a store build, add it to
-    // CARD_FLAGS; if it is a switch, key or URL with its own pin, add it to OTHER_PUBLIC_ENV (both above in this file).
+    // G6_CARD_FLAGS in scripts/release/store-flags.mjs and to the pin above; if it is a switch, key or URL with its own
+    // pin, add it to OTHER_PUBLIC_ENV (above in this file).
     const unknown = unknownPublicEnv(appSourceTexts(), known);
-    expect(unknown, `unlisted EXPO_PUBLIC_* name(s) ${unknown.join(', ')}: add each to CARD_FLAGS or OTHER_PUBLIC_ENV in g6-production-flags-off.test.ts`).toEqual([]);
+    expect(unknown, `unlisted EXPO_PUBLIC_* name(s) ${unknown.join(', ')}: add each to G6_CARD_FLAGS in scripts/release/store-flags.mjs or to OTHER_PUBLIC_ENV in g6-production-flags-off.test.ts`).toEqual([]);
   });
 
   it('[NS-49-R25] G6 positive control: a fixture that reads an unlisted flag is reported, a listed one is not', () => {
