@@ -44,7 +44,7 @@ tags:
     id: "player.original"
 - runFlow: ../subflows/go-back.yaml
 - tapOn:
-    id: "book.settings"
+    id: "tab.you"
 - assertVisible:
     id: "settings.screen"
 - tapOn:

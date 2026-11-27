@@ -105,10 +105,11 @@ export function journey(record: Recorder, code: string, name: string, start = 1,
 }
 
 // `.first()`: while a modal is leaving, the tab and a hidden label can both match; the tab comes first.
-export const tab = (page: Page, name: 'Home' | 'Book' | 'Me') => page.getByRole('tab', { name }).or(page.getByText(name, { exact: true }).last()).first();
+// `exact`: a role name matches as a substring by default, so "Me" would also match the Home tab.
+export const tab = (page: Page, name: 'Home' | 'Book' | 'Me') => page.getByRole('tab', { name, exact: true }).or(page.getByText(name, { exact: true }).last()).first();
 
 /** The tab that is selected now: a landing check that fails if the app shows another tab (EXPERIENCE_PASS 5.8 row 5). */
-export const selectedTab = (page: Page, name: 'Home' | 'Book' | 'Me') => page.getByRole('tab', { name, selected: true });
+export const selectedTab = (page: Page, name: 'Home' | 'Book' | 'Me') => page.getByRole('tab', { name, exact: true, selected: true });
 
 /**
  * Type a letter on the Write screen and keep it with one tap (the honest path to a letter on the web, which has no

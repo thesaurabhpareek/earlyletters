@@ -116,7 +116,7 @@ The screen already sets `write.keep.book` (Add to {child}'s book) and `write.kee
 |---|---|---|
 | `book.screen` | root | 02, 06, 08 |
 | `book.childSwitcher` | "FOR ASHA" control | 02, 07 |
-| `book.settings` | gear | most |
+| `book.more` | More for this book (Quiet, Hide); the gear left the Book in BL-938, so flows reach Settings by `tab.you` | none yet |
 | `book.readTogether` | Read together button | 06 |
 | `book.empty` | empty state | *(optional)* |
 | `book.letter` (repeated), `book.letter.waitingForWords`, `book.letter.private` | via `LetterCard` | 03, 04, 08, 10 |
@@ -161,7 +161,7 @@ The screen already sets `write.keep.book` (Add to {child}'s book) and `write.kee
 - **Recently deleted** now exists (D-085, `settings/recently-deleted.tsx`) and so does the delete confirm sheet. E2E-08 selects them by visible text. Ids to add when the components take a `testID`: `shelf.screen`, `shelf.row`, `shelf.restore`, `shelf.erase`, `shelf.empty`, `letter.delete.confirm`, `letter.delete.keep`, `settings.recentlyDeleted`.
 
 ### Keep and leave (E2E-21)
-Set in `src` today: `plusGate.hold` ("Keep it here for now"), `plusGate.held`, `plusGate.heldNote`, `plusGate.seePlus`, `plusGate.actions`, `write.keep.book`, `write.keep.private`, `player.play`, `export.start`, `book.readTogether`, `book.settings`, and the ids the flow uses in place of older requests: `book.card` (the Book's `LetterCard`; same as `book.letter`), `export.failed` (same as `export.error`), `settings.whereLive` then `whereLive.export` (the export row sits under Where letters live; there is no `settings.export` yet).
+Set in `src` today: `plusGate.hold` ("Keep it here for now"), `plusGate.held`, `plusGate.heldNote`, `plusGate.seePlus`, `plusGate.actions`, `write.keep.book`, `write.keep.private`, `player.play`, `export.start`, `book.readTogether`, `book.more`, and the ids the flow uses in place of older requests: `book.card` (the Book's `LetterCard`; same as `book.letter`), `export.failed` (same as `export.error`), `settings.whereLive` then `whereLive.export` (the export row sits under Where letters live; there is no `settings.export` yet).
 Not set in `src`, so E2E-21 is blocked on them: `book.screen`, `export.ready`, `export.screen`, `letter.screen`, `readTogether.close`, `readTogether.screen`, `settings.screen`, `tab.book`, `tonight.screen`, `tonight.type`, `tonight.waiting`, `write.input`, `write.screen`. `tonight.waiting` is still the request for one held letter (`tonight.heldRow` renders only for two or more). The sheet root has no `plusGate.screen`; flows that assert no Plus sheet use `plusGate.hold`, the one control every Keep sheet shows.
 E2E-21 is also blocked on the launch seam and the `asha-recordings` seed, which `src/dev/e2e-seams.ts` does not have (it reads neither `e2eSeed` nor `e2eOffline`).
 
