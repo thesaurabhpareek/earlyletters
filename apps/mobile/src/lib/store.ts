@@ -967,6 +967,19 @@ export function isBookLeft(childId: string): boolean {
   return bookLeft(ctx(), childId);
 }
 
+/** The pull closed the book as deleted (closeBook, `server_state = 'deleted'`): listed nowhere, so no restore into it (CPrivO-56). */
+function entryBookClosed(c: RepoContext, entryId: string): boolean {
+  return (
+    c.db.get<{ n: number }>(
+      "SELECT 1 AS n FROM entries e JOIN children c ON c.id = e.child_id WHERE e.id = ? AND c.server_state = 'deleted'",
+      entryId,
+    ) != null
+  );
+}
+export function isBookClosed(childId: string): boolean {
+  return ctx().db.get<{ n: number }>("SELECT 1 AS n FROM children WHERE id = ? AND server_state = 'deleted'", childId) != null;
+}
+
 const IN_BOOK: FieldGroup[] = ['in_book'];
 
 /** Add to book / make private. Never touches text. Returns false for a missing or deleted letter. */
@@ -1107,6 +1120,7 @@ export function deleteLeftBookLetter(id: string): boolean {
 export function undeleteEntry(id: string): boolean {
   const c = ctx();
   if (entryBookLeft(c, id)) return false; // BL-1959: a restore is a write too (entry.restore)
+  if (entryBookClosed(c, id)) return false; // CPrivO-56: its book is closed by the pull and listed nowhere
   let done = false;
   c.db.transaction(() => {
     done = entries.undelete(c, id);
