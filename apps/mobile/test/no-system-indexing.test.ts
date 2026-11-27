@@ -429,7 +429,7 @@ describe('[NS-21-R12] writing tools are off on the words sheet of the letter pag
     expect(/export const PHOTO_WORDS_WRITING_TOOLS_OFF\s*=\s*true\b/.test(words), 'OPEN: needs the native setting of ADR 0039').toBe(true);
   });
 
-  it('[NS-21-R12b] the sheet stays off in production until the setting exists', () => {
+  it('[NS-21-R12] the sheet stays off in production until the setting exists', () => {
     const code = strip(words);
     // The switch is still off, and nothing else turns the gate on for production: the gate is `not production, or built`.
     expect(code).toMatch(/export const PHOTO_WORDS_WRITING_TOOLS_OFF\s*=\s*false\b/);

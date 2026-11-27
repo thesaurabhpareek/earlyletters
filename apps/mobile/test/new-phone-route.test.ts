@@ -310,3 +310,15 @@ describe('[NX-36-S17] the arrival line: once, on the first Book, nowhere else', 
     }
   });
 });
+
+describe('[BL-2159] the join sheet tells the route that the account has a book now', () => {
+  it('[BL-2159] a successful accept with the book not on the phone yet signals the join, and the route asks again; the answer is still never stored', () => {
+    const sheet = read('app', 'invite', 'index.tsx');
+    expect(sheet).toMatch(/import \{ accountJoined \} from '@\/lib\/first-run\/new-phone\.logic';/);
+    // After the accept went through (a failed accept throws before it), and only while the book has not reached the phone.
+    expect(sheet).toMatch(/const childId = await acceptInvite\(auth\.client, t\);\n\s+const here = getChild\(childId\);\n(?:.*\n){0,5}\s+if \(!here\) accountJoined\.joined\(\);/);
+    const hook = read('lib', 'first-run', 'use-new-phone.ts');
+    expect(hook).toMatch(/accountJoined\.subscribe\(/);
+    expect(hook).not.toMatch(/getSetting|setSetting|AsyncStorage|SecureStore|secureStorage/);
+  });
+});

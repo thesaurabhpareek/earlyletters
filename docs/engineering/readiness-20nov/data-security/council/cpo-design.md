@@ -88,7 +88,7 @@ Record: "D6 closed: 60 pending in total; NS-32-R12 test before the cut; NS-32-R1
 
 ## E1. Release cut and drops
 
-Verdict: AGREE with the plan 3a recommendations and the defaults on NS-51; NEEDS FOUNDER to confirm (release content is his).
+Verdict: AGREE with the plan 3a recommendations and the defaults on NS-51; the release content is for Karma and the exec team to decide (CR-176, D-168), not this seat.
 
 My reasoning, in release terms. The smallest release that keeps the promise is Build 13 with: held screen and one reader (BL-922), the let-it-go words (BL-925/926), BL-928, the second-account fix (BL-961), the P-4 stuck-recording row, and the NS-32-R12 test. Photo and Find ship dark. The bet Build 13 tests: a parent keeps letters on one phone and believes they stay hers. What proves us wrong: tester notes where a parent cannot find her words after keeping, or sees another account's book. The release cannot measure this with analytics (off for the 1.0 line) so the proxy is the Build 13 device sheet and tester notes. Say so in the notes.
 

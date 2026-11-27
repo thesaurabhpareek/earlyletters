@@ -20,6 +20,9 @@ export interface JpegOptions {
   progressive?: boolean;
   /** Distinct image bytes so two fixtures differ. */
   seed?: number;
+  /** The frame's pixel size (SOF0). Default 4 by 4. */
+  width?: number;
+  height?: number;
 }
 
 /** A structurally valid JPEG (segments only, not a decodable picture) with the chosen metadata. */
@@ -39,7 +42,9 @@ export function makeJpeg(o: JpegOptions = {}): Uint8Array {
   if (o.icc) out.push(...seg(0xe2, [...text('ICC_PROFILE\0'), 1, 1, 9, 9, 9, 9]));
   if (o.comment) out.push(...seg(0xfe, text('taken at the park')));
   out.push(...seg(0xdb, [0, ...new Array(64).fill(8)]));
-  out.push(...seg(0xc0, [8, 0, 4, 0, 4, 1, 1, 0x11, 0]));
+  const w = o.width ?? 4;
+  const h = o.height ?? 4;
+  out.push(...seg(0xc0, [8, h >> 8, h & 0xff, w >> 8, w & 0xff, 1, 1, 0x11, 0]));
   if (o.progressive) {
     out.push(...seg(0xda, [1, 1, 0, 0, 0x3f, 0]), 0x10 + ((o.seed ?? 0) & 0x0f), 0xff, 0x00, 0xff, 0xd0, 0x22);
     out.push(...seg(0xc4, [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7])); // a table between the scans

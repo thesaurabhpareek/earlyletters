@@ -122,8 +122,11 @@ ajv.addSchema(exportJsonSchema);
 const validator = (def: string) => ajv.getSchema(`${exportJsonSchema.$id}#/$defs/${def}`)!;
 
 describe('[PL-2, F14-REQ-039] letters that are waiting are in the export (schema 1.6.0)', () => {
-  it('is format 1.6.0, a minor bump', () => {
-    expect(EXPORT_SCHEMA_VERSION).toBe('1.6.0');
+  it('is format 1.6.0 or a later v1 minor (1.6.0 was a minor bump)', () => {
+    // 1.7.0 (BL-933) added pictures; waiting letters are unchanged since 1.6.0.
+    const [major, minor] = EXPORT_SCHEMA_VERSION.split('.').map(Number);
+    expect(major).toBe(1);
+    expect(minor).toBeGreaterThanOrEqual(6);
   });
 
   it('lists four waiting letters with four text files and two recordings; nothing being let go or still recording', async () => {
