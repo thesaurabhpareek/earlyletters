@@ -127,9 +127,8 @@ describe('[NS-48-R26] the one-a-day budget has one enforced place', () => {
   });
 
   // What this proves: the chooser is defined once, in budget.ts, and the planner calls it for the day notes and on the
-  // final plan. It does NOT prove the planner makes no day choice of its own: planner.ts also skips an evening on a day
-  // that already holds a typed, month or birthday note (`noteDays`), and that skip is why the final call changes no
-  // plan in these tests. Moving that skip into budget.ts is a follow-up (PR #2133, Not verified).
+  // final plan. The days a chosen day note holds (even one later dropped for lead time or quiet hours) are named by
+  // budget.ts `heldDays` too (BL-2246): the planner calls it and builds no day set of its own for the note days.
   it('the chooser is defined only in budget.ts, and the planner calls it for day notes and on the final plan', () => {
     const dir = join(__dirname, '../src/lib/reminders');
     const others = readdirSync(dir).filter((f) => f.endsWith('.ts') && f !== 'budget.ts');
@@ -139,10 +138,15 @@ describe('[NS-48-R26] the one-a-day budget has one enforced place', () => {
     }
     const budget = readFileSync(join(dir, 'budget.ts'), 'utf8');
     expect(budget).toMatch(/export function chooseOnePerDay/);
+    expect(budget).toMatch(/export function heldDays\(/);
     const planner = readFileSync(join(dir, 'planner.ts'), 'utf8');
     const ret = planner.slice(planner.lastIndexOf('export function planReminders'));
     expect(ret).toMatch(/const chosenNotes = chooseOnePerDay</);
     expect(ret).toMatch(/const oneADay = chooseOnePerDay\(out\.map/);
+    expect(ret).toMatch(/const noteDays = heldDays\(chosenNotes\)/);
+    expect(ret).toMatch(/noteDays\.has\(/);
+    expect(planner).not.toMatch(/new Set<number>\(\)/);
+    for (const f of others) expect(readFileSync(join(dir, f), 'utf8'), f).not.toMatch(/function\s+heldDays\b/);
   });
 });
 
