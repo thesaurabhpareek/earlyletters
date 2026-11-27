@@ -7,11 +7,13 @@ import {
   GLOBAL_PROPS,
   isPiiLike,
   posthogBeforeSend,
+  REGISTRY,
   REQUIRED_POSTHOG_AUTOCAPTURE,
   REQUIRED_POSTHOG_OPTIONS,
   type PropSpec,
   withRenderedCatalogue,
 } from '../src';
+import { bool, int, oneOf } from '../src/schema';
 import { WIRE_NAME_MAX, WIRE_NAME_RE } from '../src/wire-names';
 
 const entries = Object.entries(EVENTS) as [string, { area: string; reqs: readonly string[]; level: string; props: Record<string, PropSpec> }][];
@@ -119,6 +121,90 @@ describe('catalogue rules', () => {
     const plan = readFileSync(resolve(__dirname, '../../../docs/analytics/TRACKING_PLAN.md'), 'utf8');
     expect(withRenderedCatalogue(plan) === plan, 'TRACKING_PLAN.md is out of date: run `npm run plan -w @scribe/analytics`').toBe(true);
     for (const [name] of entries) expect(plan, `event ${name}`).toContain(`\`${name}\``);
+  });
+});
+
+/**
+ * BL-1948 item 2 (NS-54-R26, NS-41-R16): no property in the catalogue is shaped to hold a phone number or a sign-in
+ * code, before any phone step exists (BL-1902). `isPiiLike` only sees a run of 7 digits or more, so a partial (the
+ * last four of a number) or a 6-digit code needs its own rule here: an enum value with a run of 4 or more digits, an
+ * int whose max is 10000 or more, or a property named for a phone, number, digit, OTP or code is rejected. The rule
+ * reads REGISTRY, EVENTS and GLOBAL_PROPS as they are, so a property added later is covered without a change here.
+ */
+const DIGIT_RUN = /\d{4,}/;
+const INT_MAX_LIMIT = 10000;
+const PHONE_SHAPED_NAME = /phone|number|digit|otp|code/i;
+
+/**
+ * Named exceptions to the property-name rule only, as `event.property`, each with why. Not a way to add one quietly:
+ * the list is pinned below, an exception holds only while the property is an enum with no digit in any value, and it
+ * covers that one event, so the same name on any other event still fails.
+ * `system:error_view.code` was on develop when the rule landed (BL-1948): it carries `ERROR_CODE`, a closed list of
+ * error slugs, never a sign-in code. Renaming it is a schema bump and a wire change, so it is left for a ruling.
+ */
+const PHONE_NAME_EXCEPTIONS: Readonly<Record<string, string>> = {
+  'system:error_view.code': 'ERROR_CODE slugs such as save_failed and mic_denied: a closed list with no digits',
+};
+
+function exceptionHolds(event: string, key: string, spec: PropSpec): boolean {
+  return `${event}.${key}` in PHONE_NAME_EXCEPTIONS && spec.type === 'enum' && spec.values.every((v) => !/\d/.test(v));
+}
+
+/** Every way one event's properties could hold a phone number or a code, as `event.key: reason` lines. Empty is clean. */
+function phoneShapedProps(event: string, props: Readonly<Record<string, PropSpec>>): string[] {
+  const out: string[] = [];
+  for (const [key, spec] of Object.entries(props)) {
+    if (PHONE_SHAPED_NAME.test(key) && !exceptionHolds(event, key, spec)) out.push(`${event}.${key}: name`);
+    if (spec.type === 'enum') for (const v of spec.values) if (DIGIT_RUN.test(v)) out.push(`${event}.${key}: value ${v}`);
+    if (spec.type === 'int' && spec.max >= INT_MAX_LIMIT) out.push(`${event}.${key}: max ${spec.max}`);
+  }
+  return out;
+}
+
+function catalogueProblems(): string[] {
+  const tables = [REGISTRY, EVENTS] as unknown as Record<string, { props: Readonly<Record<string, PropSpec>> }>[];
+  const out = tables.flatMap((t) => Object.entries(t).flatMap(([name, row]) => phoneShapedProps(name, row.props)));
+  return [...out, ...phoneShapedProps('(global)', GLOBAL_PROPS as Readonly<Record<string, PropSpec>>)];
+}
+
+describe('[NS-54-R26] no catalogue property is shaped to hold a phone number or a code (BL-1948 item 2)', () => {
+  it('holds for every registry, held and global property on this branch', () => {
+    expect(catalogueProblems()).toEqual([]);
+  });
+
+  it('rejects an enum value with a run of 4 or more digits, and lets 3 through (the bucket shapes)', () => {
+    expect(phoneShapedProps('onboarding:phone_verify_submit', { via: oneOf('sms', '1234') })).toEqual(['onboarding:phone_verify_submit.via: value 1234']);
+    expect(phoneShapedProps('x:y_z', { tail: oneOf('ends_0199') })).toEqual(['x:y_z.tail: value ends_0199']);
+    expect(phoneShapedProps('x:y_z', { bucket: oneOf('100_364', '365_plus') })).toEqual([]);
+  });
+
+  it('rejects an int whose max is 10000 or more, and lets 9999 through', () => {
+    expect(phoneShapedProps('x:y_z', { tries: int(0, 10000) })).toEqual(['x:y_z.tries: max 10000']);
+    expect(phoneShapedProps('x:y_z', { tries: int(0, 999999) })).toEqual(['x:y_z.tries: max 999999']);
+    expect(phoneShapedProps('x:y_z', { tries: int(0, 9999) })).toEqual([]);
+  });
+
+  it('rejects a property named for a phone, number, digit, OTP or code, in any case', () => {
+    for (const key of ['phoneCode', 'phone', 'phone_last4', 'number_bucket', 'digits', 'otp_sent', 'code_length', 'resend_code']) {
+      expect(phoneShapedProps('x:y_z', { [key]: bool() }), key).toEqual([`x:y_z.${key}: name`]);
+    }
+  });
+
+  it('keeps the name exceptions to the one pinned entry, each still on develop and still a digit-free enum', () => {
+    expect(Object.keys(PHONE_NAME_EXCEPTIONS)).toEqual(['system:error_view.code']);
+    for (const id of Object.keys(PHONE_NAME_EXCEPTIONS)) {
+      const [event, key] = id.split('.');
+      const spec = (EVENTS as unknown as Record<string, { props: Record<string, PropSpec> }>)[event]?.props[key];
+      expect(spec, `${id} is gone: delete its exception`).toBeDefined();
+      expect(exceptionHolds(event, key, spec), id).toBe(true);
+    }
+  });
+
+  it('an exception covers its own event only, and lapses once the property holds a digit or stops being an enum', () => {
+    expect(phoneShapedProps('onboarding:phone_verify_submit', { code: oneOf('save_failed') })).toEqual(['onboarding:phone_verify_submit.code: name']);
+    expect(phoneShapedProps('system:error_view', { code: oneOf('save_failed', 'e42') })).toEqual(['system:error_view.code: name']);
+    expect(phoneShapedProps('system:error_view', { code: int(0, 99) })).toEqual(['system:error_view.code: name']);
+    expect(phoneShapedProps('system:error_view', { code: oneOf('save_failed', 'generic') })).toEqual([]);
   });
 });
 
