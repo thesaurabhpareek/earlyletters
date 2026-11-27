@@ -49,6 +49,16 @@ export function switchStatus(prefs: Pick<ReminderPrefs, 'enabled' | 'paused'>, p
   return !busy && remindersWaitingForPermission(prefs, permission) ? reminderCopy.settings.notSendingYet : undefined;
 }
 
+/**
+ * The inline choices (How it will look through Names in notifications) hang off the intent, not off what the switch
+ * draws: while waiting for permission (BL-428) the switch draws off, but the choices stay editable, so a person can set
+ * them before allowing notifications. Failure mode this guards: gating them on `remindersSwitchShown` hid every choice
+ * while denied or not yet asked (J13).
+ */
+export function choicesShown(prefs: Pick<ReminderPrefs, 'enabled' | 'paused'>): boolean {
+  return remindersSwitchOn(prefs);
+}
+
 /** The notifications-off card: only while reminders are on and iOS says no. */
 export function showNotificationsOff(prefs: Pick<ReminderPrefs, 'enabled' | 'paused'>, permission: ReminderPermission | null): boolean {
   return remindersSwitchOn(prefs) && permission === 'denied';

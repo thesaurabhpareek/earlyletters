@@ -163,8 +163,17 @@ describe('[CDesO-3, CCO-10] Settings, Reminders: the switch goes straight to the
     expect(first).toMatchObject({ permission: 'denied', asked: true });
     expect(logic.remindersSwitchOn(reminders.readPrefs())).toBe(true);
     expect(logic.remindersSwitchShown(reminders.readPrefs(), 'denied')).toBe(false);
-    // The screen's own `on` (the choices, the Next line and the preview hang off it) is what the switch draws, not the intent.
-    expect(code('app/settings/reminders.tsx')).toMatch(/const on = remindersSwitchShown\(prefs, permission, busy\);/);
+    // The screen's own `on` (the Next line and the preview hang off it) is what the switch draws, not the intent. The
+    // choices follow the intent, so they stay editable while waiting (J13): gated on choicesShown(prefs), never on `on`.
+    const screen = code('app/settings/reminders.tsx');
+    expect(screen).toMatch(/const on = remindersSwitchShown\(prefs, permission, busy\);/);
+    expect(screen).toMatch(/const choices = choicesShown\(prefs\);/);
+    expect(screen).toMatch(/\{choices && \(\s*<Animated\.View entering=\{motion\.enter\(\)\}/);
+    expect(screen).not.toMatch(/\{on && \(/);
+    // The Next line is fed what the switch draws, so it is null while waiting and "Not sending yet." shows once, on the
+    // switch row. Fed the intent (`on: choices`) it would repeat that line under the switch, and every unit test passes.
+    expect(screen).toContain('const line = nextLine({ on, permission');
+    expect(logic.choicesShown(reminders.readPrefs())).toBe(true);
     expect(logic.switchStatus(reminders.readPrefs(), 'denied')).toBe('Not sending yet.');
     expect(logic.showNotificationsOff(reminders.readPrefs(), 'denied')).toBe(true);
     expect(logic.nextLine({ on: true, permission: 'denied', next: reminders.nextReminder(), formatTime: fmt })).toBe('Not sending yet.');
