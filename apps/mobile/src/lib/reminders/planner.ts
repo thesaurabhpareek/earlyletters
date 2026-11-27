@@ -514,7 +514,6 @@ export function planReminders(input: PlanInput): PlannedNotification[] {
       continue;
     }
     if (chosen.library) {
-      noteDays.add(dayNumber(parseIsoDate(chosen.library.date)!));
       const n = libraryNote(chosen.library);
       if (n) out.push(n);
       continue;
