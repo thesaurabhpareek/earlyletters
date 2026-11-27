@@ -1598,3 +1598,15 @@ Challenge record for CR-215 to CR-224 (24 Nov, afternoon): self-challenged only 
 - Door: two-way; it records direction already given and orders documents.
 - Way back: a new entry that restores CR-66's first bullet as it stood and marks the three reversals open again.
 - Revisit when: counsel answers the library questions (Q-PM-1, Q-PM-7, Q-PM-9 and the X2 reads), or an agent cites spec 26 against card 27. Karma
+
+### CR-233 The TestFlight workflow runs its tests in a job of their own, away from EXPO_TOKEN (27 Nov 2026, Karma via stream 17)
+- Verdict: RULED. Founder-only: no. Signed: Karma.
+- Question: in `.github/workflows/testflight.yml`, `npm test` runs in the same job as the step that holds `EXPO_TOKEN`. Should the tests move to their own job, and how is the change recorded, given agent sessions do not write under `.github/`?
+- Tier and type: T2 (a workflow that holds a secret); clear.
+- Options considered: (1) do nothing, since the token is only in the last step's environment; (2) split the tests and typecheck into a `checks` job, with `build` needing it and starting from a clean checkout; (3) option 2, plus the build job installing with no restored cache and no install scripts; (4) move every check, the preflight and the seam guard included, out of the job that holds the token.
+- Ruling: option 3, written as `docs/ops/proposed/testflight-checks-job.md` with the patch beside it. It is applied by whoever applies workflow changes, and the backlog gets a row for it. The preflight and the seam guard stay in `build`, because they check the exact tree EAS uploads and run only our own code.
+- Why: steps in one job share a runner user and a workspace, and the runner only kills leftover processes when the job ends ("Cleaning up orphan processes" at the end of every job log, for example job 140499012469). So a test or a dependency it loads could read the token from `/proc` or change the files EAS builds. Option 1 leaves that open. `release-ios.yml` already splits its checks from its build and installs fresh in the job with the token, so option 3 is the boring answer that this repo already uses. Install scripts off: only `esbuild` and `fsevents` have them, and the preflight and seam guard both passed after `npm ci --ignore-scripts` on 27 Nov 2026. Return: the token and the build inputs no longer share a job with test code. Risk: a few minutes more per dispatched build, and an EAS step that turns out to need an install script (likelihood 1, impact 2, seen on the first run).
+- UNVERIFIED: no TestFlight run has used the new shape. The first dispatch after the patch lands is the test.
+- Door: two-way.
+- Way back: revert the patch; or drop `--ignore-scripts` alone if only the install fails.
+- Revisit when: the first dispatched run after the patch, or when `testflight.yml` gains a second secret. Karma
