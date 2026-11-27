@@ -43,7 +43,7 @@ Status: proposal, 21 Nov 2026. Docs only. Nothing under `.github/` is edited by 
 
    The picker module `scribe-picker` has no PhotoKit and no usage string and is present in both legs; the scan for the picker's own invariants is a unit scan (R271, R297) and is not part of this step.
 4. Include `matrix.f2` in the two cache keys (`pods-...` and `dd-...`) so the legs do not share DerivedData, and in the `concurrency` group if the legs should not cancel each other.
-5. The `changes` job already lists `apps/mobile/modules/`, `apps/mobile/app.config.ts` and `apps/mobile/package.json`; add `apps/mobile/eas.json` as in `docs/ops/proposed/workflows/ios-compile-eas-json.patch`, because a profile's F2 value lives there.
+5. The `changes` job already lists `apps/mobile/modules/`, `apps/mobile/app.config.ts` and `apps/mobile/package.json`; add `apps/mobile/eas.json`, because a profile's F2 value lives there. Done: `ios-compile.yml` line 341 lists `apps/mobile/eas\.json$` (27 Nov 2026; the patch was removed, see `docs/ops/proposed/workflows-retired.md`).
 
 ## What it does not prove
 

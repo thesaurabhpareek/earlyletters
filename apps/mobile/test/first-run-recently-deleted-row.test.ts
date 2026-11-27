@@ -13,25 +13,34 @@ const onboarding = readFileSync(join(__dirname, '..', 'src', 'app', 'onboarding.
 
 describe('[BL-776] the Recently deleted row on the welcome', () => {
   it('shows on the welcome while a deleted book waits (Asha, the only book, deleted)', () => {
-    expect(recentlyDeletedRowShown({ step: 'welcome', deletedBookCount: 1 })).toBe(true);
-    expect(recentlyDeletedRowShown({ step: 'welcome', deletedBookCount: 2 })).toBe(true);
+    expect(recentlyDeletedRowShown({ step: 'welcome', deletedBookCount: 1, deletedLetterCount: 0 })).toBe(true);
+    expect(recentlyDeletedRowShown({ step: 'welcome', deletedBookCount: 2, deletedLetterCount: 0 })).toBe(true);
   });
-  it('is not there when no deleted book waits', () => {
-    expect(recentlyDeletedRowShown({ step: 'welcome', deletedBookCount: 0 })).toBe(false);
+  it('is not there when nothing waits on the shelf', () => {
+    expect(recentlyDeletedRowShown({ step: 'welcome', deletedBookCount: 0, deletedLetterCount: 0 })).toBe(false);
   });
   it('is only on the first screen', () => {
-    for (const step of ['promise', 'child', 'signsAs', 'finish']) expect(recentlyDeletedRowShown({ step, deletedBookCount: 1 })).toBe(false);
+    for (const step of ['promise', 'child', 'signsAs', 'finish']) expect(recentlyDeletedRowShown({ step, deletedBookCount: 1, deletedLetterCount: 1 })).toBe(false);
   });
   it('opens the shelf', () => {
     expect(RECENTLY_DELETED_HREF).toBe('/settings/recently-deleted');
   });
   it('the screen reads the waiting books, follows changes, uses the existing keys and opens the shelf', () => {
-    expect(onboarding).toMatch(/useState\(\(\) => listDeletedBooks\(\)\.length\)/);
-    expect(onboarding).toMatch(/subscribeTo\(\['children', 'settings'\], \(\) => setDeletedBookCount\(listDeletedBooks\(\)\.length\)\)/);
-    expect(onboarding).toMatch(/recentlyDeletedRowShown\(\{ step, deletedBookCount \}\)/);
+    // CPrivO-56: the shelf is read as books, letters and whether its help line still holds (readShelf).
+    expect(onboarding).toMatch(/const books = listDeletedBooks\(\);/);
+    expect(onboarding).toMatch(/return \{ books: books\.length, letters: letters\.length, help: shelfHelpShown\(\[\.\.\.books, \.\.\.letters\], Date\.now\(\)\) \};/);
+    expect(onboarding).toMatch(/useState\(readShelf\)/);
+    expect(onboarding).toMatch(/subscribeTo\(\['children', 'settings', 'entries'\], \(\) => setShelf\(readShelf\(\)\)\)/);
+    expect(onboarding).toMatch(/recentlyDeletedRowShown\(\{ step, deletedBookCount: shelf\.books, deletedLetterCount: shelf\.letters \}\)/);
     expect(onboarding).toMatch(/title=\{copy\.settings\.delete\.recentlyDeleted\}/);
-    expect(onboarding).toMatch(/subtitle=\{copy\.settings\.delete\.shelfHelp\}/);
+    expect(onboarding).toMatch(/subtitle=\{shelf\.help \? copy\.settings\.delete\.shelfHelp : undefined\}/);
     expect(onboarding).toMatch(/router\.push\(RECENTLY_DELETED_HREF as Href\)/);
+  });
+  it('counts the letters on the shelf with listDeleted(), not as books again (CPrivO-56)', () => {
+    // Read as listDeletedBooks(), a shelf that holds only Asha's deleted letters would count no letters and hide the row.
+    expect(onboarding).toMatch(/const letters = listDeleted\(\);/);
+    expect(onboarding).not.toMatch(/const letters = listDeletedBooks\(\);/);
+    expect(onboarding.match(/listDeletedBooks\(\)/g)).toHaveLength(1);
   });
   it('keeps the finish guard intact', () => {
     expect(onboarding).toMatch(/runFinishOnce\(/);
