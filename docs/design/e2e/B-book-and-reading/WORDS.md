@@ -138,6 +138,8 @@ Short query (B-S06.short), offline, two books, plan lapsed, signed out, second a
 | `en.book.years.noName` | PROPOSED | Year {n} | any year row when the book has no name (never "your child's first year") | as above | as above | NX-31-R3 pattern |
 | `en.book.monthRange` | EXISTS | {a} to {b} | each year row's second line: the birthday and the day before the next one (a year in progress shows its real end day) | read after the row title | n/a | NS-24-R5 |
 | `en.book.years.rowA11y` | PROPOSED | Opens Read together at the first letter of this year. | B-S07 year rows, hint | hint | n/a | NS-24 s4 step 3 |
+| `en.readTogether.fromHere` | PROPOSED | Read from here | B-S07 month rows: the visible trailing control (hidden from VoiceOver) and the row's accessibility action; B-S08 first row of "This letter" | label = text; on a month row, an action name | Read from here | spec 13 section 5, RYT-06, RYT-10 |
+| `en.readTogether.fromHereMonthA11y` | PROPOSED | Opens Read together at the first letter of this month. | B-S07 month rows, kept for the Voice Control fallback (nothing reads it while the control is hidden) | hint | n/a | spec 13 section 5 |
 
 A year with no letters is not offered and nothing says so (NS-24-R4). A due-date-only book offers Before You only (NS-24-R6).
 
@@ -150,6 +152,7 @@ VoiceOver order (NS-21-R14): dateline (level 1 heading), words, Play (if any), S
 | (dateline) | EXISTS | the letter's date by `Intl.DateTimeFormat`; `en.book.dateline.monthOnly` "Sometime in Month {month}"; `monthOnlyNewborn` "Sometime in the first weeks"; `beforeBirth` "Before {child} was born." | B-S08 all states | level 1 heading | n/a | NS-21-R4 |
 | `en.book.hearLink` | EXISTS | Hear it in {signsAs}'s voice | B-S08.default (spoken, recording on this phone) | label = text | Hear it in {signsAs}'s voice | NS-21-R6b |
 | `en.letter.listTitle` | PROPOSED | This letter | B-S08 all states | level 2 heading | n/a | NS-21 s16 |
+| `en.readTogether.fromHereLetterA11y` | PROPOSED | Opens Read together at this letter. | B-S08 first row of "This letter" (`readTogether.fromHere`), only on a letter Read together can play; on the other parent's letter in its own section; behind `EXPO_PUBLIC_READ_THE_YEAR` | hint | n/a | spec 13 section 5, RYT-06, RYT-07 |
 | `en.letter.rows.dayAbout` | PROPOSED, shared with area A (NS-15); area A's key wins if the words differ | About {date} | row 1, first line | label = text; hint (author only) `en.letter.rows.dayA11y` "Changes the day this letter is about." | About {date} (filled) | NS-21 s3 row 1 |
 | `en.letter.rows.daySaid` | PROPOSED, shared with area A (NS-15) | Said on {date} | row 1, second line, only when the two days differ | read after the first line | n/a | NS-15-R3 (area A) |
 | `en.book.entryMenu.changeDate` | EXISTS, retired here by `en.letter.rows.day` when BL-937 lands | Change the date | today's row; kept until BL-937 | label = text | Change the date | NS-21 s3 row 1 |

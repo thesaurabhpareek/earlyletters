@@ -10,10 +10,10 @@
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { en, reminderCopy, US_DAY_ROWS } from '@scribe/content';
 import { REMINDER_CATEGORY } from '../src/lib/reminders/categories';
-import { lockScreenSafe, PUBLIC_BODIES, PUBLIC_TITLES, publicBodyOk, publicTitleOk, REMINDER_SOURCE, reminderContent } from '../src/lib/reminders/payload';
+import { lockScreenSafe, publicBodies, publicBodyOk, publicTitleOk, publicTitles, REMINDER_SOURCE, reminderContent } from '../src/lib/reminders/payload';
 import { DEFAULT_PREFS, planReminders, type LibraryDayNote, type PlannedNotification, type PlannerChild, type PlanInput } from '../src/lib/reminders/planner';
 import { addDays, isoDate, parseIsoDate, zonedToEpoch } from '../src/lib/reminders/tz';
 
@@ -88,8 +88,8 @@ describe('[NS-47-R13] the publicTitleOk allowlist', () => {
   });
 
   it('the allowlists are fixed, name-free and hold no blank, number or day name', () => {
-    expect(PUBLIC_TITLES.size).toBeGreaterThan(0);
-    for (const s of [...PUBLIC_TITLES, ...PUBLIC_BODIES]) {
+    expect(publicTitles().size).toBeGreaterThan(0);
+    for (const s of [...publicTitles(), ...publicBodies()]) {
       expect(s, s).not.toMatch(/\{|\}|\d/);
       for (const name of NAMES) expect(s, s).not.toContain(name);
     }
@@ -110,6 +110,20 @@ describe('[NS-47-R13] the publicTitleOk allowlist', () => {
     expect(lockScreenSafe({ ...p, body: 'Asha is one today' }, false)).toMatchObject({ title: p.title, body: N.lockBody });
     expect(lockScreenSafe(leaky, true)).toBe(leaky);
     for (const n of off) expect(lockScreenSafe(n, false)).toBe(n); // the planner's names-off words pass untouched
+  });
+
+  it('the allowlists are built on first use: a copy key missing at load breaks the first check, not the import', async () => {
+    vi.resetModules();
+    const { libraryDay: _gone, ...rest } = N;
+    vi.doMock('../src/lib/reminders/copy', () => ({ reminderCopy: { ...reminderCopy, neutral: rest } }));
+    try {
+      const fresh = await import('../src/lib/reminders/payload');
+      expect(fresh.routeForReminder({ source: REMINDER_SOURCE, kind: 'evening' })).toBe('/');
+      expect(() => fresh.publicTitleOk(N.typedDay.title)).toThrow();
+    } finally {
+      vi.doUnmock('../src/lib/reminders/copy');
+      vi.resetModules();
+    }
   });
 
   it('the scheduler puts every planned note through the last check before it schedules it (source)', () => {

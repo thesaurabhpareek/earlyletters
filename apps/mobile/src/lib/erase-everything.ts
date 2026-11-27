@@ -1,7 +1,8 @@
 /**
  * Erase everything on this phone (BL-387; F17 6.2 F step 1; DATA-REQ-024, F14-REQ-026; D-083, D-103), the app's
  * part around store.ts `eraseEverythingLocal`. Signed out only: a phone that has signed in is refused and nothing
- * changes (F17-REQ-026 is a different flow, not built here).
+ * changes. Erase this phone only (F17-REQ-026, F17 6.2 F step 2) is `eraseThisPhone` below: the same steps, run by
+ * lib/erase-this-phone.logic.ts once the F02 sign-out guard has drained the outbox and the session is gone.
  *
  * Order, and why:
  *  1. Analytics stops and forgets its ids, sending nothing (it is off in v1.0; this keeps the promise if it is on).
@@ -45,7 +46,15 @@ import { clearPendingInvite } from './family/pending-invite';
 import { discardPendingPhotoOnLeaving } from './photos/leaving';
 import { forgetReminders } from './reminders/scheduler';
 import { secureStorage } from './supabase/secure-storage';
-import { eraseEverythingLocal, eraseEverythingPending, finishEraseEverything, ledgerDb, localDeletionAllowed } from './store';
+import {
+  eraseEverythingLocal,
+  eraseEverythingPending,
+  eraseThisPhoneAllowed,
+  eraseThisPhoneLocal,
+  finishEraseEverything,
+  ledgerDb,
+  localDeletionAllowed,
+} from './store';
 
 export type EraseEverythingResult = 'erased' | 'incomplete' | 'signed_in';
 
@@ -146,13 +155,7 @@ async function finish(): Promise<void> {
 
 /** Settings > Your letters > Erase everything on this phone, after the confirm alert. */
 export async function eraseEverything(): Promise<EraseEverythingResult> {
-  if (!eraseEverythingPending()) {
-    try {
-      await stopAnalyticsForErase();
-    } catch {
-      // Analytics off or not started: nothing to stop.
-    }
-  }
+  await stopAnalyticsUnlessResuming();
   // BL-1444: the picture held in memory goes before its file does. Not when the erase will be refused (signed in): nothing changes then.
   if (localDeletionAllowed()) await discardPendingPhotoOnLeaving();
   const r = eraseEverythingLocal(eraseAudioFile, eraseDeviceFiles);
@@ -160,6 +163,33 @@ export async function eraseEverything(): Promise<EraseEverythingResult> {
   resetAppLockInMemory();
   await finish();
   return 'erased';
+}
+
+export type EraseThisPhoneLocalResult = 'erased' | 'incomplete' | 'not_drained';
+
+/**
+ * Erase this phone only (F17-REQ-026, F17-U38), after the sign-out (lib/erase-this-phone.logic.ts): the same steps as
+ * eraseEverything, the free-letter Keychain item and mirror included (not a ledger reset: the next sign-in heals the
+ * count from the account's letters, F14-REQ-023). 'not_drained' when anything is still queued or only on this phone;
+ * nothing changes then.
+ */
+export async function eraseThisPhone(): Promise<EraseThisPhoneLocalResult> {
+  await stopAnalyticsUnlessResuming();
+  if (eraseThisPhoneAllowed()) await discardPendingPhotoOnLeaving(); // BL-1444, as above; a refused erase changes nothing
+  const r = eraseThisPhoneLocal(eraseAudioFile, eraseDeviceFiles);
+  if (r !== 'erased') return r;
+  resetAppLockInMemory();
+  await finish();
+  return 'erased';
+}
+
+async function stopAnalyticsUnlessResuming(): Promise<void> {
+  if (eraseEverythingPending()) return;
+  try {
+    await stopAnalyticsForErase();
+  } catch {
+    // Analytics off or not started: nothing to stop.
+  }
 }
 
 /**
