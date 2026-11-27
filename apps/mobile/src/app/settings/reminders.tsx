@@ -5,17 +5,17 @@ import { AppState, Linking, Platform, Pressable, ScrollView, View } from 'react-
 import Animated, { FadeIn, FadeOut, LinearTransition, ReduceMotion } from 'react-native-reanimated';
 import { tokens } from '@scribe/design-tokens';
 import { NotificationPreview } from '@/components/settings/notification-preview';
+import { RemindersSwitch } from '@/components/settings/reminders-switch';
 import {
   monthRowNote,
   namesRow,
   nextLine,
   previewOf,
-  remindersSwitchOn,
+  remindersSwitchShown,
   remindersTurnedOnInSettings,
   SAVED_ANNOUNCE_MS,
   savedAnnouncement,
   showNotificationsOff,
-  switchFooter,
   turnOnOutcome,
 } from '@/components/settings/reminders.logic';
 import { Chip, ChipGroup, ChoiceGroup } from '@/components/ui/choice-group';
@@ -86,7 +86,8 @@ export default function Reminders() {
   useEffect(() => subscribe(() => setPrefs(readPrefs())), []);
   useEffect(() => subscribeScheduleResult((res) => setScheduleOk(res.ok)), []);
 
-  const on = remindersSwitchOn(prefs);
+  // What the switch draws: never on while the OS permission is missing (BL-428); the intent stays in prefs.
+  const on = remindersSwitchShown(prefs, permission, busy);
   // Recomputed on every change: prefs, a book's birth date (the store listener renews prefs), the permission.
   const next = useMemo(() => (on ? nextReminder() : null), [prefs, permission, on]); // eslint-disable-line react-hooks/exhaustive-deps
   const line = nextLine({ on, permission, next, formatTime: formatReminderTime });
@@ -201,10 +202,8 @@ export default function Reminders() {
 
   return (
     <ScrollView contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
-      {/* The explanation is the footer, on screen before the switch is ever turned on (CCO-10, LEGAL-REQ-007). */}
-      <ListSection footer={switchFooter(on)}>
-        <ToggleRow title={s.enabledLabel} value={on} disabled={busy} onValueChange={(v) => void toggle(v)} testID="reminders.switch" />
-      </ListSection>
+      {/* The explanation is the switch's footer, on screen before it is ever turned on (CCO-10, LEGAL-REQ-007). */}
+      <RemindersSwitch prefs={prefs} permission={permission} busy={busy} onValueChange={(v) => void toggle(v)} />
 
       {showNotificationsOff(prefs, permission) && (
         <Animated.View exiting={motion.reduced ? undefined : FadeOut.duration(tokens.motion.exitMs).reduceMotion(ReduceMotion.Never)} accessible={false} className="gap-3 rounded-[14px] bg-secondary p-4" testID="reminders.denied">
