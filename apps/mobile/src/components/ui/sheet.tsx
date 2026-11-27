@@ -181,7 +181,7 @@ export function Sheet({ open, onClose, title, description, children, footer, hid
         backgroundColor: c.surfaceRaised,
         borderTopLeftRadius: tokens.radius.xl,
         borderTopRightRadius: tokens.radius.xl,
-        ...(scheme === 'dark' ? { borderWidth: 0.5, borderColor: c.line } : {}),
+        ...(scheme === 'dark' ? { borderWidth: tokens.stroke.hairline, borderColor: c.line } : {}),
       }}
       handleComponent={dismissible ? Grabber : null}
       style={[scheme === 'light' ? { boxShadow: tokens.elevation[3].web } : undefined, veilStyle]}>

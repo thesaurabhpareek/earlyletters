@@ -56,13 +56,13 @@ export type HeardSegment = { text: string; becomes?: string; kind?: 'name' | 'fi
 
 export const site = {
   meta: {
-    title: `${NAME}: the baby memory book you fill by talking`,
+    title: `${NAME}: letters to your child, in your own words and voice`, // the BRAND.md descriptor (D-139)
     description: `Say a few words to your child about today. ${NAME} keeps them in your own words and your own voice.`,
   },
 
   brand: {
     name: NAME,
-    line: 'The baby memory book you fill by talking.',
+    line: 'Letters to your child, in your own words and voice.', // BRAND.md: the descriptor alone, under the name (D-139)
     tagline: brand.tagline,
   },
 
@@ -206,7 +206,7 @@ export const site = {
       points: [
         'Your recordings are kept on the phone that made them.',
         'No ads. We never sell your data.',
-        'Your letters and recordings are private. We never sell them and never use them for ads.',
+        'Your letters and recordings are private. We never sell them, never use them for ads and never use them to train machine learning models.', // trust.promise (D-061), held equal by test/copy-rules.test.ts
         'Export your letters whenever you want.',
         'Delete any letter, any time.',
       ],

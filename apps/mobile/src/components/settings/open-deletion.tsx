@@ -60,7 +60,9 @@ export function OpenDeletionScreen({ request }: { request: OpenRequest }) {
   const working = press.working !== null;
   const date = request.state === 'scheduled' || request.state === 'held' ? longDate(localDay(request.scheduledFor)) : '';
   const view = deletionView(request, { signedIn: d.signedIn, date, tryAgainLabel: copy.common.tryAgainButton });
-  const failure = press.acted ? cancelFailureLine(d.error) : null;
+  // Only while this view offers Cancel deletion: once the request is cancelled or being carried out, or the person has
+  // signed out, there is nothing to tap again, so the line goes (BL-491).
+  const failure = press.acted && view.actions.includes('cancel') ? cancelFailureLine(d.error) : null;
 
   // VoiceOver is told what changed: the screen becoming the "your letters are on their way back" state, and a failed
   // cancel (a live region alone is not spoken on iOS). The cancel on its way and a Try again that found nothing are
