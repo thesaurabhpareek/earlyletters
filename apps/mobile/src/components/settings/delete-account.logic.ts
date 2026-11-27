@@ -85,6 +85,15 @@ export function cancelFailureLine(error: CancelFailure | null, signedIn: boolean
 }
 
 /**
+ * Whether a failure on the scheduled page is a Cancel deletion's: only when Cancel deletion was pressed (`pressedIn`, the
+ * hook's `session` at that press) in the session the page is in now. A press made before a sign-out and sign-in is not
+ * this session's, so a read that fails afterwards keeps the page's own line (review follow-up on #2166).
+ */
+export function cancelPressedThisSession(pressedIn: number | null, session: number): boolean {
+  return pressedIn !== null && pressedIn === session;
+}
+
+/**
  * The line when the page could not load (its status or its book lines). Nothing was tried, so "nothing has changed"
  * would be an odd thing to say there (BL-492 point 4); offline keeps its own line, which is true in both places.
  */

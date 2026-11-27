@@ -30,8 +30,9 @@ export interface DeletionClient {
   /**
    * supabase-js `auth.refreshSession()`, used once after a Cancel deletion refused for auth (CDesO-59). Optional so the
    * fakes in tests that never reach it need not draw it; the app's client always has it. Without it, the refusal stands.
+   * Only the session's user id is read from the answer, to check it is still the person who pressed.
    */
-  auth?: { refreshSession(): PromiseLike<{ data: { session: unknown } | null; error: unknown }> };
+  auth?: { refreshSession(): PromiseLike<{ data: { session: { user?: { id?: unknown } | null } | null } | null; error: unknown }> };
 }
 
 export type ApiOutcome<T> = { ok: true; value: T } | { ok: false; reason: 'offline' | 'failed' };
@@ -112,12 +113,17 @@ function authRefused(r: { code: string | null; status?: number }): boolean {
   return (r.code !== null && CANCEL_AUTH_CODES.has(r.code)) || r.status === 401;
 }
 
-/** One refresh of the session with supabase-js's own stored refresh token; true only when a session came back. */
-async function refreshed(client: DeletionClient): Promise<boolean> {
-  if (!client.auth) return false;
+/**
+ * One refresh of the session with supabase-js's own stored refresh token; true only when a session came back for the same
+ * user who pressed (`userId`, the page's session user at the press). A session for anyone else, or with no user id, is
+ * not resent under: the cancel would go out as another account. supabase-js refreshes the stored session, so today that
+ * cannot happen; the check keeps it so if the auth client ever changes (review follow-up on #2191).
+ */
+async function refreshed(client: DeletionClient, userId: string | null): Promise<boolean> {
+  if (!client.auth || !userId) return false;
   try {
     const { data, error } = await client.auth.refreshSession();
-    return !error && !!data?.session;
+    return !error && !!data?.session && data.session.user?.id === userId;
   } catch {
     return false;
   }
@@ -184,12 +190,15 @@ export async function requestDeletion(client: DeletionClient, hadActiveSubscript
  * and that second answer decides as for any press. One retry, never a loop, and never for any other refusal: a dropped
  * connection or a 5xx may have reached the server, and the status check above is what settles those. SCRAT is the daily
  * limit (CDesO-58); the call rolled back, so it is reported as `limited`, never as an unknown outcome.
+ *
+ * `userId` is the signed-in user the press was made as. The one resend goes out only if the refreshed session is still
+ * that user; otherwise nothing more is sent and the refusal stands as `auth` (nothing ran on the server).
  */
-export async function cancelDeletion(client: DeletionClient): Promise<CancelOutcome> {
+export async function cancelDeletion(client: DeletionClient, userId: string | null): Promise<CancelOutcome> {
   const send = () => attempt(() => client.rpc('cancel_account_deletion'), (d) => d === true);
   let r = await send();
   if (!r.ok && authRefused(r)) {
-    if (!(await refreshed(client))) return { ok: false, reason: 'auth' };
+    if (!(await refreshed(client, userId))) return { ok: false, reason: 'auth' };
     r = await send();
     if (!r.ok && authRefused(r)) return { ok: false, reason: 'auth' };
   }
