@@ -128,7 +128,7 @@ In-app only, no email: letter deleted or restored (Recently deleted shows it), e
 | Human replies | Any email to `hello@` | A person | T | Email | LB | Founder |
 | `deletion-request-received`, `privacy-request-received` | See section 8 | Ops | T | Email | LB / 1.0 | C2 |
 
-No auto-responder at v1.0. A one-line auto-acknowledgment ("A person reads every message and replies within 2 working days") is acceptable later if volume needs it; C2 writes it then.
+No auto-responder at v1.0. The internal target is that a person replies within 2 working days; it is not published (CL-099, CMO-22). A one-line auto-acknowledgment ("A person reads every message.") is acceptable later if volume needs it, and it states no reply time; C2 writes it then.
 
 ## 10. Global frequency rules
 
