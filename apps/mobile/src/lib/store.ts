@@ -902,14 +902,33 @@ export function bookOutline(childId: string): entries.BookOutline {
   return bookVisibleNow() ? entries.bookOutline(ctx(), childId) : { firstLetterOn: null, lastLetterOn: null, readable: false };
 }
 
+/** The setting that keeps one book's wash mark, next to the Book's seen list: a book id in the key, a row number as the value. */
+export const BOOK_READ_MARK_PREFIX = 'book.readMark.';
+
 /**
- * Which of one book's rows came into the store after the Book read its first page (BL-2225): the other parent's
- * letter synced in below the pages held still washes once when its page is read. The mark is a row number, never
- * words, so it is read whether or not the book may be shown; the ids are not.
+ * Which of one book's rows came into the store since this phone last read that book (BL-2225, CTO ruling on #2147):
+ * the other parent's letter synced in below the pages held, at launch or while another book was on screen, washes
+ * once when its page is read. `mark` is the newest row now; `kept` and `keep` are the book's mark across launches
+ * (book.tsx keeps it in the first-seen effect, after the seen list). Marks are row numbers, never words, so they are
+ * read whether or not the book may be shown; the arrivals are not.
  */
 export const bookArrivals = {
   mark: (): number => entries.rowMark(ctx()),
-  since: (childId: string, mark: number): string[] => shown(() => entries.idsSince(ctx(), childId, mark)),
+  since: (childId: string, mark: number): entries.RowArrival[] => shown(() => entries.arrivalsSince(ctx(), childId, mark)),
+  /** The book's kept mark, or null when none is kept or it is not a row number. */
+  kept: (childId: string): number | null => {
+    const n = Number(settings.getSetting(ctx(), BOOK_READ_MARK_PREFIX + childId));
+    return Number.isSafeInteger(n) && n > 0 ? n : null;
+  },
+  /**
+   * Keeps the book's mark. Written without a change event: no screen shows it, and an event would send every store
+   * listener (the Book's own reread among them) round again for a number. Erasing the book takes it with the book's
+   * other keys (wipe.ts), and Erase everything with every setting.
+   */
+  keep: (childId: string, mark: number): void => {
+    if (!Number.isSafeInteger(mark) || mark <= 0 || bookArrivals.kept(childId) === mark) return;
+    settings.setSetting(ctx(), BOOK_READ_MARK_PREFIX + childId, String(mark));
+  },
 };
 
 /** How many letters one book holds (quiet-day marks not counted), counted in SQL (BL-434). */

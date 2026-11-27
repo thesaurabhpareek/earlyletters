@@ -1,4 +1,5 @@
 import { REMINDER_CATEGORY, REMINDER_INTERRUPTION_LEVEL } from './categories';
+import { reminderCopy } from './copy';
 import type { PlannedNotification } from './planner';
 
 export const REMINDER_SOURCE = 'scribe.reminders';
@@ -25,6 +26,40 @@ export function reminderContent(p: PlannedNotification): {
     categoryIdentifier: REMINDER_CATEGORY,
     interruptionLevel: REMINDER_INTERRUPTION_LEVEL,
   };
+}
+
+const NEUTRAL = reminderCopy.neutral;
+/** Every value a name-free text can take: `{weekday}` is the one blank a neutral line has, filled with each weekday. */
+const filled = (text: string): string[] => (text.includes('{weekday}') ? reminderCopy.weekdays.map((w) => text.replace('{weekday}', w)) : [text]);
+
+/**
+ * The `publicTitleOk` allowlist (BL-1009, NS-47-R13): with names off (App lock on included), a lock-screen title is one
+ * of these fixed, name-free titles and nothing else. Hand-listed from the neutral copy, never read from a planned note.
+ * A ticked day's own name (a `publicTitleOk` day row, NS-46-R36) joins this list only when the planner can title a note
+ * with it (BL-1012); today no note does.
+ */
+export const PUBLIC_TITLES: ReadonlySet<string> = new Set(
+  [...NEUTRAL.evening.map((v) => v.title), NEUTRAL.monthOpen.title, NEUTRAL.birthday.title, NEUTRAL.birthdays.title, NEUTRAL.typedDay.title, NEUTRAL.libraryDay.title].flatMap(filled),
+);
+/** The name-free bodies, as for titles: what a body may be with names off. */
+export const PUBLIC_BODIES: ReadonlySet<string> = new Set(
+  [...NEUTRAL.evening.map((v) => v.body), NEUTRAL.lockBody, NEUTRAL.monthOpen.body, NEUTRAL.birthday.body, NEUTRAL.birthdays.body, NEUTRAL.typedDay.body, NEUTRAL.libraryDay.body].flatMap(filled),
+);
+
+/** May this title show on a lock screen with names off? */
+export const publicTitleOk = (title: string): boolean => PUBLIC_TITLES.has(title);
+/** May this body show on a lock screen with names off? */
+export const publicBodyOk = (body: string): boolean => PUBLIC_BODIES.has(body);
+
+/**
+ * The last check before a note reaches iOS (BL-1009): with names off, a title or body outside the allowlists becomes the
+ * neutral line, whatever the planner produced. With names on the note is unchanged. The planner already plans name-free
+ * words with names off, so this changes nothing today; it keeps a future copy or planner change from putting a name on
+ * a lock screen. The text is compared, never logged or kept.
+ */
+export function lockScreenSafe(p: PlannedNotification, namesOn: boolean): PlannedNotification {
+  if (namesOn || (publicTitleOk(p.title) && publicBodyOk(p.body))) return p;
+  return { ...p, title: publicTitleOk(p.title) ? p.title : NEUTRAL.libraryDay.title, body: publicBodyOk(p.body) ? p.body : NEUTRAL.lockBody };
 }
 
 /**

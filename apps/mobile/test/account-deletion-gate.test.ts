@@ -646,7 +646,8 @@ describe('the wiring that is read off the source (the behaviour is run in accoun
     expect(s).not.toMatch(/analytics\.track\(/); // no event is sent for the deletion flow (BL-2175)
     expect(s.indexOf('recordRequested(r.value);')).toBeLessThan(s.indexOf('await withdrawAnalytics()'));
     expect(s).toContain('recordCancelled();');
-    expect(s.indexOf('const r = await cancelDeletion(client);')).toBeLessThan(s.indexOf('recordCancelled();'));
+    expect(s).toContain('const r = await cancelDeletion(client, userId);');
+    expect(s.indexOf('const r = await cancelDeletion(client, userId);')).toBeLessThan(s.indexOf('recordCancelled();'));
     // Asked as the user at render time, which is known on the first read of a sign-in (the auth snapshot is not yet).
     expect(s).toContain('const userId = authUserId(auth.state);');
     expect(s).toContain('recordStatus(s.value, userId);');
@@ -661,11 +662,12 @@ describe('the wiring that is read off the source (the behaviour is run in accoun
     expect(s).toContain('quiet={working ? [] : rest.map(act)}');
     // A failed Cancel says the outcome is not known yet, never "nothing has changed" (BL-491 point 5, CDesO-46).
     // Only while Cancel is offered (BL-491); signed out draws no failure line (CDesO-59).
-    expect(s).toContain("const failure = press.acted && view.actions.includes('cancel') ? cancelFailureLine(d.error, d.signedIn) : null;");
+    // Only for a press made in this session (review follow-up on #2166; run in open-deletion-cancel-failed.test.ts).
+    expect(s).toContain("const failure = actedThisSession(press.acted, pressedIn, d.session) && view.actions.includes('cancel') ? cancelFailureLine(d.error, d.signedIn) : null;");
     expect(s).not.toMatch(/failureLine\(/);
     expect(s).toContain('ctl.say(`${c.open.restoringTitle}. ${c.open.restoringBody}`);');
     expect(s).toContain('if (press.failedPresses > 0 && failure) announce(failure);');
-    expect(s).toContain('cancel: () => ctl.cancel(),');
+    expect(s).toMatch(/cancel: \(\) => \{\s*setPressedIn\(d\.session\);\s*ctl\.cancel\(\);\s*\},/);
     expect(s).toContain('retry: () => ctl.retry(),');
     expect(s).toContain('const [first, ...rest] = view.actions;');
     expect(s).toContain('words: { cancelling: c.open.cancelling, notYet: c.open.notYet },');

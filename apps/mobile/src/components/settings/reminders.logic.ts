@@ -16,9 +16,37 @@ import type { ReminderPermission, ReminderPrefs, ReminderTime } from '@/lib/remi
 
 const fill = (text: string, values: Record<string, string>) => renderTemplate(text, values);
 
-/** The master switch: on only when reminders are on and not paused (a pause from before this screen reads as off). */
+/**
+ * The intent behind the master switch: on only when reminders are on and not paused (a pause from before this screen
+ * reads as off). What the switch draws also needs the OS permission: `remindersSwitchShown` (BL-428).
+ */
 export function remindersSwitchOn(prefs: Pick<ReminderPrefs, 'enabled' | 'paused'>): boolean {
   return prefs.enabled && !prefs.paused;
+}
+
+/**
+ * Waiting for permission (BL-428): reminders are on, but the OS has not allowed notifications (it said no, or has not
+ * been asked yet), so nothing can be sent. The intent is kept; reminders start by themselves once allowed. Not known
+ * yet (null) is not waiting, so the switch does not flicker off while the permission is read.
+ */
+export function remindersWaitingForPermission(prefs: Pick<ReminderPrefs, 'enabled' | 'paused'>, permission: ReminderPermission | null): boolean {
+  return remindersSwitchOn(prefs) && (permission === 'denied' || permission === 'undetermined');
+}
+
+/**
+ * What the switch draws (BL-428): never ON while the OS permission is missing. While a turn-on is in flight (`busy`) it
+ * draws the intent, so it stays on behind the iOS alert (CDesO-3), and settles once the answer is known.
+ */
+export function remindersSwitchShown(prefs: Pick<ReminderPrefs, 'enabled' | 'paused'>, permission: ReminderPermission | null, busy = false): boolean {
+  return remindersSwitchOn(prefs) && (busy || !remindersWaitingForPermission(prefs, permission));
+}
+
+/**
+ * The status line under the switch while it waits for permission (the BL-428 "Waiting for permission" row). Those
+ * words are not in packages/content yet, so the line is the existing "Not sending yet." until new words are approved.
+ */
+export function switchStatus(prefs: Pick<ReminderPrefs, 'enabled' | 'paused'>, permission: ReminderPermission | null, busy = false): string | undefined {
+  return !busy && remindersWaitingForPermission(prefs, permission) ? reminderCopy.settings.notSendingYet : undefined;
 }
 
 /** The notifications-off card: only while reminders are on and iOS says no. */

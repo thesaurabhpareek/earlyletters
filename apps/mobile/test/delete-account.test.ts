@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { accountDeletionCopy as c } from '@scribe/content';
-import { afterCancel, bookRowKey, bookRowLabel, cancelFailureLine, canDelete, confirmDay, failureLine, HELD, loadFailureLine, scheduledDay, whatHappens } from '@/components/settings/delete-account.logic';
+import { afterCancel, bookRowKey, bookRowLabel, cancelFailureLine, cancelPressedThisSession, canDelete, confirmDay, failureLine, HELD, loadFailureLine, scheduledDay, whatHappens } from '@/components/settings/delete-account.logic';
 import { bookImpacts, impactLines, localDay, type SyncBook } from '@/lib/account-deletion/logic';
 
 const SRC = join(__dirname, '..', 'src');
@@ -139,15 +139,25 @@ describe('[S64] failures and the typed word', () => {
     expect(page).toContain('const cancelFailure = <ErrorLine message={cancelFailureLine(d.error, d.signedIn)} />;');
     expect(s).toContain('{cancelTried ? cancelFailure : failure}');
     // Marked before the call, so the hook's error after a failed cancel is read as the cancel's.
-    expect(s).toMatch(/onPress=\{async \(\) => \{\s*setCancelTried\(true\);\s*if \(await d\.cancel\(\)\) \{/);
+    expect(s).toMatch(/onPress=\{async \(\) => \{\s*setCancelTriedIn\(d\.session\);\s*if \(await d\.cancel\(\)\) \{/);
     expect(STATE.confirm()).toContain('{tried ? failure : null}');
     expect(STATE.confirm()).not.toContain('cancelFailure');
   });
 
   it('[BL-491 point 5] the scheduled page starts with no Cancel deletion pressed, so a failed read keeps its own line', () => {
-    expect(page).toContain('const [cancelTried, setCancelTried] = useState(false);');
-    expect(page.match(/setCancelTried\(/g)).toHaveLength(1);
-    expect(page).toContain('setCancelTried(true);');
+    expect(page).toContain('const [cancelTriedIn, setCancelTriedIn] = useState<number | null>(null);');
+    expect(page.match(/setCancelTriedIn\(/g)).toHaveLength(1);
+    expect(page).toContain('setCancelTriedIn(d.session);');
+  });
+
+  it('[BL-491] a Cancel deletion pressed before a sign-out and sign-in is not this session\'s, so its line does not come back (review follow-up on #2166)', () => {
+    expect(cancelPressedThisSession(null, 0)).toBe(false);
+    expect(cancelPressedThisSession(0, 0)).toBe(true);
+    // Pressed in session 0; signed out (1) and back in (2): a read that fails now keeps the page's own line.
+    expect(cancelPressedThisSession(0, 1)).toBe(false);
+    expect(cancelPressedThisSession(0, 2)).toBe(false);
+    expect(cancelPressedThisSession(2, 2)).toBe(true);
+    expect(page).toContain('const cancelTried = cancelPressedThisSession(cancelTriedIn, d.session);');
   });
 
   it('enables Delete account only for the typed word, and never while a request is on its way', () => {

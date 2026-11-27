@@ -107,7 +107,7 @@ export interface Analytics {
   setChildCount(count: number): void;
   flush(): Promise<void>;
   queueLength(): number;
-  /** Current and retired ids, for the account-deletion request (PRD-REQ-018). */
+  /** Current and retired ids the server can forget, each once, for the account-deletion request (PRD-REQ-018, BL-2239). */
   analyticsIds(): string[];
   /** After deletion is requested upstream: forget all ids locally. */
   forgetIds(): Promise<void>;
