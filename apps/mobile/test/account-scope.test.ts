@@ -130,6 +130,16 @@ describe('[X4-R1] on a real phone database (lib/sync/ownership.ts)', () => {
     expect(releaseEmptyOwner(db, phoneHoldsAnyRow)).toBe(false);
     expect(visibleOn(db, ready(B))).toBe(false);
   });
+
+  it('[BL-388] a phone that holds only an orphan recording keeps its owner, so the next account does not export it', () => {
+    const db = phone();
+    takeOwnership(db, A, ctx);
+    db.run("INSERT INTO orphan_audio (file_name, bytes, found_at) VALUES ('stray.m4a', 10, '2026-11-01T00:00:00.000Z')");
+    expect(phoneHoldsAnyRow(db)).toBe(true);
+    expect(releaseEmptyOwner(db, phoneHoldsAnyRow)).toBe(false);
+    expect(owner(db)).toBe(A);
+    expect(visibleOn(db, ready(B))).toBe(false);
+  });
 });
 
 describe('the reader stays pure', () => {

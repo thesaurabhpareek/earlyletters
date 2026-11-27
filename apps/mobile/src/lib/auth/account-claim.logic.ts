@@ -25,7 +25,10 @@
  * draft held at the Keep gate (`drafts.held_kind` set), which takeOwnership
  * also queues since #182. That is a superset of what takeOwnership claims, so
  * the answer can only err towards asking (review 2 of PR #139: a hidden-only
- * book must still ask; a held draft must too).
+ * book must still ask; a held draft must too). An orphan recording
+ * (`orphan_audio`) counts too: the export carries them for the phone's owner
+ * (BL-388), so `releaseEmptyOwner` must not forget an owner whose orphan
+ * recordings are still here, or the next account would export them.
  */
 import type { SqlDb } from '../db/sql';
 
@@ -40,10 +43,10 @@ export interface ClaimInput {
   confirmed: ReadonlySet<string>;
 }
 
-/** Any book or letter row on this phone, in any state, or any held draft. */
+/** Any book or letter row on this phone, in any state, any held draft, or any orphan recording (BL-388). */
 export function phoneHoldsAnyRow(db: Pick<SqlDb, 'get'>): boolean {
   const r = db.get<{ any_rows: number }>(
-    'SELECT (EXISTS (SELECT 1 FROM children) OR EXISTS (SELECT 1 FROM entries) OR EXISTS (SELECT 1 FROM drafts WHERE held_kind IS NOT NULL)) AS any_rows',
+    'SELECT (EXISTS (SELECT 1 FROM children) OR EXISTS (SELECT 1 FROM entries) OR EXISTS (SELECT 1 FROM drafts WHERE held_kind IS NOT NULL) OR EXISTS (SELECT 1 FROM orphan_audio)) AS any_rows',
   );
   return !!r && Number(r.any_rows) === 1;
 }
