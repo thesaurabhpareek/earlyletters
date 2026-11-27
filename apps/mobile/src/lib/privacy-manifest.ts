@@ -136,8 +136,8 @@ interface CollectedRow {
  * Other User Content and recordings Audio Data.
  */
 const COLLECTED_ROWS: readonly CollectedRow[] = [
-  // The parent's signature, "what {child} calls you" (signs_as in book prefs and on letters), and the name
-  // Sign in with Apple shares on first sign-in.
+  // The parent's signature, "what {child} calls you" (signs_as in book prefs and on letters). Sign in with
+  // Apple asks for the email only and keeps no name (O-8, CR-232).
   { type: 'NSPrivacyCollectedDataTypeName', when: 'serverFeatures' },
   // Sign-in by email link and code (Supabase Auth); Apple's relay address; account and deletion notices.
   { type: 'NSPrivacyCollectedDataTypeEmailAddress', when: 'serverFeatures' },

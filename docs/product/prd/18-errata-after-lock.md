@@ -602,3 +602,24 @@ Not changed by this erratum: IAM-R06 (no passwords; passkeys only after sign-in)
 Why this order: Google without linking makes a second, empty book for a person who used Apple's Hide My Email and later taps Google (card 29, 2.3), so the linking rows come first. Google without its public text (Terms 3.1, policy, subprocessor list, BL-1908) would be a claim the build does not match. The phone line is last because counsel has not read the SMS rules and LEGAL-REQ-012 is the stricter document (LEGAL-REQ wins over the PRD on conflict).
 
 Edited in place: none (PROPOSED). NS-41-R1, NS-41-R20, NS-41 section 14, IAM-R05 and CG13 are not edited here; no test title changes. Plan delta: none to the sizes in BL-1889 to BL-1910; BL-1890 and BL-1908 depend on BL-1888 and now wait on BL-1908, BL-1893 and BL-1894 (BL-1892 is done; BL-1894 depends on BL-1893 and BL-1895). BL-1890 does not list BL-1894 as a dependency; gating the button on it is intended and is the ruling's trigger, so BL-1890 reads it from CR-180. The card 29 section 10 proposals 1 and 3 point here. Roles: `product` (this text), `security-architect` (IAM-R05), `content` (the help line), `legal` and counsel (the section 14 line), `mobile` (the button).
+
+## Tenth round, E99 (27 Nov, Karma with product; the number is the next free on develop at the time of writing and is assigned again at merge)
+
+### E99: card 19 no longer says the Apple name is kept (27 Nov, Karma with product; NS-41 section 6 "App killed mid-flow" row, section 10 Fields line, section 10 gaps list, section 11 "Name from Apple" row; O-8, CR-232, BL-582)
+
+Question: card 19 was written on 20 Nov from the build as it stood, when Sign in with Apple asked for the full name and the name went to `profiles.display_name`. O-8 took the default (email only, NX-31-R9) and FP-9 built it in #1125: `apple.ts` asks for the email scope only and deletes a name an older build left at each Apple sign-in, and `session-provider.tsx` deletes it again when Terms are accepted. Nothing writes `profiles.display_name` from Apple. CR-232 (`docs/agents/cto/RULINGS.md`) found four lines in the card that still describe the old build.
+
+Ruling: correct the four statements to the build, in place. This is a card-side correction under CR-66 (the card and the build differ, and the decision behind the build, O-8, is already taken); it changes no behaviour, no id's intent and no test title.
+
+| Where | Was | Now |
+|---|---|---|
+| NS-41 section 6, "App killed mid-flow" | "the Apple name waits in the Keychain" | "no Apple name is asked for or kept, E99" |
+| NS-41 section 10, Fields | Lists `profiles.display_name` (Apple name, first sign-in only) | Drops it; `scribe.auth.pendingName` is listed only as the key a leftover name is deleted from |
+| NS-41 section 10, gaps as built | "the name is written to `profiles.display_name`" | Unchanged as a record of the 20 Nov read, with "Since built (FP-9, #1125; E99): only the email scope is requested and no name is kept" added |
+| NS-41 section 11, "Name from Apple" | Prefill the profile; Keychain until Terms, then `profiles.display_name`; until deletion; exported | Not asked for; not stored; a leftover is deleted at the next Apple sign-in and at Terms; not kept; not exported |
+
+Not changed by this erratum: section 18 "Label effect" (it already says the label is unchanged when the name scope is dropped, which is the O-8 default as built); the O-8 rows at lines 877 and 1754 (the decision list); the privacy policy, label, store evidence and DATA_CLASSIFICATION texts that still say a name Apple shares is kept (CR-232 routes those to the privacy owner; they are not product's and this erratum does not touch them); `docs/product/prd/inputs/first-run-compliance.md` row 7 (a dated input).
+
+Evidence: `apps/mobile/src/lib/auth/apple.ts` lines 1 to 7 and 44 to 58; `apps/mobile/src/lib/auth/session-provider.tsx` line 562; `apps/mobile/test/auth-apple-fp9.test.ts` lines 55 to 69 (`[NS-54-R2]`); CR-232. All read on develop `ba6341774` on 27 Nov 2026.
+
+Edited in place: card 19 (the four lines above). Also, outside the cards, the comment on the Name row in `apps/mobile/src/lib/privacy-manifest.ts`, which said the Name type covers "the name Sign in with Apple shares on first sign-in"; the row itself stays (the parent's signature and `signs_as` are names), so the manifest output does not change. Plan delta: none; `privacy` carries the legal and label texts.
