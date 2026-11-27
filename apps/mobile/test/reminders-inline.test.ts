@@ -173,6 +173,8 @@ describe('[CDesO-3, CCO-10] Settings, Reminders: the switch goes straight to the
     // The Next line is fed what the switch draws, so it is null while waiting and "Not sending yet." shows once, on the
     // switch row. Fed the intent (`on: choices`) it would repeat that line under the switch, and every unit test passes.
     expect(screen).toContain('const line = nextLine({ on, permission');
+    // The preview's planned note hangs off the drawn state too: fed the intent, it would show the preview while waiting.
+    expect(screen).toContain('const next = useMemo(() => (on ? nextReminder()');
     expect(logic.choicesShown(reminders.readPrefs())).toBe(true);
     expect(logic.switchStatus(reminders.readPrefs(), 'denied')).toBe('Not sending yet.');
     expect(logic.showNotificationsOff(reminders.readPrefs(), 'denied')).toBe(true);
