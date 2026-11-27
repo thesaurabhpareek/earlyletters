@@ -202,7 +202,7 @@ function checkHomeOffersNoFirstsOrSeal(fs: Files): string[] {
 }
 
 describe('the navigation test (design spec 06 section 10)', () => {
-  it('[IA-N1] the bar is the manifest: index, book, you with the flag off; index, moments, book, you with it on (CPO-17)', () => {
+  it('[IA-N1][NS-53-R1] the bar is the manifest: index, book, you with the flag off; index, moments, book, you with it on (CPO-17)', () => {
     expect(checkBar(files, tabJobs(true), en.tabs)).toEqual([]);
     // The flag is off by default: the bar a build draws is the three as before.
     expect(MOMENTS_TAB_ON).toBe(false);
