@@ -124,11 +124,22 @@ export async function typeLetter(page: Page, text: string, to: 'book' | 'private
 /**
  * The reminder card after the phone's first letter (C-REQ-001 Rev, DR-12 B; components/asks/reminder-prime-ask.tsx):
  * answers "No reminders" so a journey about something else can go on over the Book. Asserts the card was there.
+ *
+ * Waits on what the card waits on, in two parts (BL-2268). The card is not on a timer of its own from the Keep tap:
+ * Review's saved moment holds first, and on the web build that is the screen-reader hold of 3 s from the commit
+ * (SCREEN_READER_HOLD_MS in components/capture/review-view.logic.ts), because react-native-web always reports a screen
+ * reader. Then Review lands on the Book, and the card is asked for after the route's dissolve plus 600 ms
+ * (signInAfterLandingMs, about 880 ms; app/review.tsx `land`). One 8 s wait from the tap held about 3.9 s of designed
+ * timers, so a runner at 4x load ran out of it before the card came (7 of 14 runs in PR #2161). So: first the Book is
+ * the selected tab (the moment has left), with room for a loaded runner; then the card, within 8 s of that, which is
+ * nine times its designed delay. A card that never comes after the Book still fails here, as it did before.
  */
 export async function noRemindersAfterFirstLetter(page: Page) {
-  await expect(page.getByRole('heading', { name: 'A gentle nudge, now and then?' })).toBeVisible({ timeout: 8000 });
-  await btn(page, 'No reminders').click();
-  await expect(page.getByRole('heading', { name: 'A gentle nudge, now and then?' })).toHaveCount(0);
+  const card = page.getByRole('heading', { name: en.onboarding.reminder.title, exact: true });
+  await expect(selectedTab(page, 'Book')).toBeVisible({ timeout: 20_000 });
+  await expect(card).toBeVisible({ timeout: 8000 });
+  await btn(page, en.onboarding.reminder.noneOption).click();
+  await expect(card).toHaveCount(0);
 }
 
 /** Local calendar day `days` from today (negative = earlier), YYYY-MM-DD, in the browser's time zone (the same machine). */
