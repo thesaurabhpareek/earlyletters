@@ -849,8 +849,8 @@ demo("g-quiet", {
 /* Appended items (v1.1)                                               */
 /* ------------------------------------------------------------------ */
 demo("g-remind", {
-  title: "Add a day: the preview follows the one switch", ids: "D-M64, D-M78 | D-S08 preview (v2: no switch in the sheet; the one day-names switch is on C-S24)",
-  what: "The sheet has no switch. When the day-names switch on the Days page is on and App lock is off, the preview's words cross-fade in place between the fixed line and the parent's words, unchanged; the words never animate per letter.",
+  title: "Add a day: the preview follows day names and Names in notifications", ids: "D-M64, D-M78 | D-S08 preview (v2: no switch in the sheet; the one day-names switch is on C-S24)",
+  what: "The sheet has no switch. When the day-names switch on the Days page is on, Names in notifications is on and App lock is off (CPrivO-58), the preview's words cross-fade in place between the fixed line and the parent's words, unchanged; the words never animate per letter.",
   rm: "instant swap.",
   scene: function () {
     var w = wrap(STATUS + '<div class="content"><div class="title1" style="margin:44px 0 14px">Days</div></div>' + tabbar("Me") +
@@ -859,9 +859,9 @@ demo("g-remind", {
     return w;
   },
   play: function (c) {
-    c.log("the day-names switch (area C) is turned on elsewhere; preview words swap (swapMs)");
+    c.log("day names on (area C), Names in notifications on and App lock off; preview words swap (swapMs)");
     return swapText(c.q("#pv"), "Nursery starts").then(function () { return c.wait(900); }).then(function () {
-      c.log("switched off, or App lock on; swap back"); return swapText(c.q("#pv"), "A day you wanted to remember");
+      c.log("day names off, Names in notifications off, or App lock on; swap back"); return swapText(c.q("#pv"), "A day you wanted to remember");
     });
   }
 });
