@@ -5,7 +5,8 @@
  * A row shows the first words of the letter (so the person can tell which one it is), who it is from, and one
  * line joining the day it was deleted and the day it is kept until: "Deleted October 13. Kept here until
  * November 12." The second date is the deletion time plus the shelf days, shown in the phone's own day, never as a
- * countdown (nothing here counts down or counts what is left), and always as a date still to come.
+ * countdown (nothing here counts down or counts what is left), and always as a date still to come: once it has passed
+ * the line keeps only the deleted day (CPrivO-56, keptUntilPassed).
  *
  * Erase now is offered only where it can do what it says. A build that syncs has Erase now only with the server erase
  * (WP-F16-13, F17-REQ-025; BL-1854): store.eraseEntry queues one id-only `entry.erase` for a letter the server may
@@ -99,15 +100,46 @@ export function shelfBookDays(deletedAt: string, locale?: string): Pick<ShelfRow
  * The one date line under a shelf card: "Deleted October 13. Kept here until November 12." Built from the two keys
  * (`deletedOn` "Deleted {date}", `erasesOn` "Kept here until {date}"), each a sentence, so no word is new.
  */
-export function shelfDateLine(v: Pick<ShelfRowView, 'deletedDay' | 'keptUntilDay'>, words: { deletedOn: string; erasesOn: string }): string {
+export function shelfDateLine(
+  v: Pick<ShelfRowView, 'deletedDay' | 'keptUntilDay'>,
+  words: { deletedOn: string; erasesOn: string },
+  keptUntilPast = false,
+): string {
   const fillDate = (t: string, date: string) => t.replace('{date}', date);
+  // CPrivO-56: past that day (after the account purge), the deleted day alone; no new words.
+  if (keptUntilPast) return `${fillDate(words.deletedOn, v.deletedDay)}.`;
   return `${fillDate(words.deletedOn, v.deletedDay)}. ${fillDate(words.erasesOn, v.keptUntilDay)}.`;
 }
 
 /**
- * What a shelf card offers. Restore always. Erase now only when this build can erase for good everywhere the letter
- * is: always on a phone that does not sync; in a sync build only with the server erase (`serverErase`, from
- * `capabilities.serverErase`; a build that passes nothing shows no Erase now).
+ * Whether the day a card names in "Kept here until {date}" is over, in the phone's own day (CPrivO-56). Normally nothing
+ * waits that long; a letter the server held does after the account purge, which no pull tells the phone (PR #2090).
+ */
+export function keptUntilPassed(deletedAt: string, nowMs: number): boolean {
+  const erases = new Date(Date.parse(deletedAt) + SHELF_DAYS * 24 * 60 * 60 * 1000);
+  return isoOf(new Date(nowMs)) > isoOf(erases);
+}
+
+/**
+ * Whether `settings.delete.shelfHelp` ("wait here for 30 days") may be drawn: not while the shelf lists a letter or book
+ * past its days (CPrivO-56). For the shelf and the two rows that open it, which keep their title.
+ */
+export function shelfHelpShown(onShelf: readonly { deletedAt: string }[], nowMs: number): boolean {
+  return !onShelf.some((x) => keptUntilPassed(x.deletedAt, nowMs));
+}
+
+/**
+ * Restore on a letter's card: not in a book this person left (BL-1959) or one the pull closed as deleted (closeBook,
+ * `isBookClosed`), where it would go back into a book no screen lists (CPrivO-56). Erase now does not depend on it.
+ */
+export function shelfCanRestore(book: { left: boolean; closed: boolean }): boolean {
+  return !book.left && !book.closed;
+}
+
+/**
+ * What a shelf card offers. Restore (a card hides it for a left or closed book: shelfCanRestore). Erase now only when
+ * this build can erase for good everywhere the letter is: always on a phone that does not sync; in a sync build only
+ * with the server erase (`serverErase`, from `capabilities.serverErase`; a build that passes nothing shows no Erase now).
  */
 export function shelfActions(build: { sync: boolean; serverErase?: boolean }): { restore: true; eraseNow: boolean } {
   return { restore: true, eraseNow: !build.sync || build.serverErase === true };
