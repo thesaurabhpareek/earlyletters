@@ -159,6 +159,9 @@ describe('[FR-POL-02] a report of apparent child sexual abuse material gets an a
     expect(bodyText(m!.body)).not.toMatch(/\?/);
     const rows = parseSends(md).filter((s) => /abuse material/i.test(s.situation));
     expect(rows.map((s) => s.key)).toEqual([KEY]);
+    expect(rows.map((s) => s.recipient)).toEqual(['The person who reported']);
+    // No timing or follow-up promise to the reporter: the first action is internal, not a published time (FR-BKO-13).
+    expect(bodyText(m!.body)).not.toMatch(/\b(today|tonight|tomorrow|within|hours?|days?|soon|let you know|keep you|update you|police|authorities)\b/i);
   });
 
   it('[FR-POL-02] says never to open, forward or delete an attachment, to leave it where it is, and that the exec team gets the kind and date the same day', () => {
@@ -184,6 +187,9 @@ describe('[FR-POL-02] a report of apparent child sexual abuse material gets an a
       'Send us what you saw.',
       'Reply with the details so we can act.',
       'Tell us where you saw it.',
+      'Please provide the link.',
+      'Please give us the URL.',
+      'Let us know where you saw it.',
     ]) {
       expect(asks(`Hi,\n\nThanks. ${planted}\n`), planted).not.toEqual([]);
     }

@@ -216,7 +216,7 @@ Existing files are not rewritten here; each gap names what is missing. "Cited by
 | Card (file under `docs/ops/runbooks/` unless stated) | State on this branch | Cited by | Gate | Owner | FR |
 |---|---|---|---|---|---|
 | `account-recovery.md` | Missing (PR #620 named, unreadable) | `sign-everyone-out.md:5`; BL-598 | Before any sign-in outside the family | `ops`, `support` | BKO-07, -08 |
-| `safety-removal.md` | Missing | NS-25 sections 5 and 13; runbook section 0; FR-POL-04 | Before the NS-25 store flag | `ops`, counsel | BKO-14, -15 |
+| `safety-removal.md` | Draft, not approved (BL-2104); its tool is not built (BL-2103) | NS-25 sections 5 and 13; runbook section 0; FR-POL-04 | Before the NS-25 store flag | `ops`, counsel | BKO-14, -15 |
 | `report-a-concern.md` | Missing | none yet | Before NS-25 store flag; useful sooner | `support`, `ops` | BKO-12, -13 |
 | `docs/support/safety-routing.md` | Missing (named by `data-requests-by-email.md`, `underage-account.md`) | both | Before any person outside the family signs in | `support`, clinician read (BL-105) | FR-SUP-16 |
 | `kill-switch-and-pause.md` | Missing | FR-OPS-01; `RELEASE.md` 9.6 lists 5 of 8 keys | Before the first servers-on public build | `ops` | BKO-17, -19; FR-OPS-01 |
