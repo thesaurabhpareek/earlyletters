@@ -150,17 +150,27 @@ describe('[NS-18-R3] words hidden by default', () => {
     expect(JSON.stringify(reminderContent(n!))).not.toContain('Nani');
   });
 
-  it('with the day-names switch on, the body is the words unchanged and the title stays fixed', () => {
+  it('with day names on and names on, the body is the words unchanged and the title stays fixed', () => {
     const odd = '  नमस्ते, Asha!  שלום 你好 ';
-    const [n] = onDate(planReminders(base({ dayNamesOn: true, typedDays: [{ date: '2026-11-05', words: odd }] })), '2026-11-05');
+    const named = { ...DEFAULT_PREFS, enabled: true, cadence: 'everyEvening' as const, namesOnLockScreen: true };
+    const [n] = onDate(planReminders(base({ prefs: named, dayNamesOn: true, typedDays: [{ date: '2026-11-05', words: odd }] })), '2026-11-05');
     expect(n!.title).toBe(FIXED.title);
     expect(n!.body).toBe(odd);
   });
 
+  it('[CPrivO-58] day names on with names off: the fixed line, because the words may name a child', () => {
+    const [n] = onDate(planReminders(base({ dayNamesOn: true, typedDays: [{ date: '2026-11-05', words }] })), '2026-11-05');
+    expect({ title: n!.title, body: n!.body }).toEqual({ title: FIXED.title, body: FIXED.body });
+    expect(JSON.stringify(reminderContent(n!))).not.toContain('Asha');
+  });
+
   it('the payload and the identifier never carry the words, whatever the switch says', () => {
+    const named = { ...DEFAULT_PREFS, enabled: true, cadence: 'everyEvening' as const, namesOnLockScreen: true };
     for (const dayNames of [false, true]) {
-      const [n] = onDate(planReminders(base({ dayNamesOn: dayNames, typedDays: [{ date: '2026-11-05', words: CANARY }] })), '2026-11-05');
+      const [n] = onDate(planReminders(base({ prefs: named, dayNamesOn: dayNames, typedDays: [{ date: '2026-11-05', words: CANARY }] })), '2026-11-05');
       const c = reminderContent(n!);
+      // With both switches on the body is the words, so this pass checks a note that does carry them (CPrivO-58).
+      expect(n!.body).toBe(dayNames ? CANARY : FIXED.body);
       expect(c.data).toEqual({ source: 'scribe.reminders', kind: 'typedDay' });
       expect(n!.id).not.toContain('zq7canary');
     }
@@ -227,6 +237,20 @@ describe('[NS-18-R5] typed words length', () => {
     expect(typed.checkTypedDay('2026-10-31', 'Late', today)).toEqual({ ok: false, code: 'typed_day_past' });
     expect(typed.checkTypedDay('2026-02-30', 'Never', today)).toEqual({ ok: false, code: 'typed_day_bad_date' });
     expect(typed.checkTypedDay(today, 'Today', today)).toEqual({ ok: true });
+  });
+
+  it('[BL-2247, CPO-101] a day more than a year ahead is refused: today and the 366 days after are kept', () => {
+    expect(typed.TYPED_DAY_HORIZON_DAYS).toBe(367);
+    expect(plus(today, 366)).toBe('2027-11-02');
+    expect(typed.checkTypedDay(plus(today, 92), 'Nursery starts', today)).toEqual({ ok: true });
+    expect(typed.checkTypedDay('2027-11-01', 'Nursery starts', today)).toEqual({ ok: true }); // the same date next year
+    expect(typed.checkTypedDay('2027-11-02', 'Nursery starts', today)).toEqual({ ok: true });
+    expect(typed.checkTypedDay('2027-11-03', 'Nursery starts', today)).toEqual({ ok: false, code: 'typed_day_too_far' });
+    expect(typed.checkTypedDay('2062-11-01', 'Nursery starts', today)).toEqual({ ok: false, code: 'typed_day_too_far' });
+    // Across a leap day: the same date next year is 366 days on, and is kept; the day after it is not.
+    expect(typed.checkTypedDay('2028-03-01', 'Nursery starts', '2027-03-01')).toEqual({ ok: true });
+    expect(typed.checkTypedDay('2028-03-02', 'Nursery starts', '2027-03-01')).toEqual({ ok: false, code: 'typed_day_too_far' });
+    expect(typed.saveTypedDay('2027-11-03', 'Nursery starts', today)).toEqual({ ok: false, code: 'typed_day_too_far' });
   });
 });
 
@@ -301,6 +325,7 @@ describe('typed days on the phone (real store and scheduler)', () => {
 
   it('[NS-18-R3] a note scheduled with the words is replaced by the fixed line once App lock turns on', async () => {
     store.setSetting('notifications.dayNames', 'on');
+    store.setSetting('notifications.lockScreenNames', 'on');
     typed.saveTypedDay(plus(today(), 2), CANARY, today());
     await reminders.rescheduleReminders();
     expect(ours()[0]!.content).toMatchObject({ title: FIXED.title, body: CANARY });
@@ -309,6 +334,50 @@ describe('typed days on the phone (real store and scheduler)', () => {
     expect(ours()).toHaveLength(1);
     expect(JSON.stringify([...os.scheduled.values()])).not.toContain('zq7canary');
     expect(ours()[0]!.content).toMatchObject({ title: FIXED.title, body: FIXED.body });
+  });
+
+  it('[CPrivO-58] a note scheduled with the words is replaced by the fixed line once names go off, with App lock off', async () => {
+    store.setSetting('notifications.dayNames', 'on');
+    store.setSetting('notifications.lockScreenNames', 'on');
+    typed.saveTypedDay(plus(today(), 2), CANARY, today());
+    await reminders.rescheduleReminders();
+    expect(ours()[0]!.content).toMatchObject({ title: FIXED.title, body: CANARY });
+    reminders.writePrefs({ namesOnLockScreen: false });
+    expect(store.getSetting(APP_LOCK_KEYS.enabled)).toBeNull();
+    expect(dayNamesOn()).toBe(true);
+    await reminders.rescheduleReminders();
+    expect(ours()).toHaveLength(1);
+    expect(JSON.stringify([...os.scheduled.values()])).not.toContain('zq7canary');
+    expect(ours()[0]!.content).toMatchObject({ title: FIXED.title, body: FIXED.body });
+  });
+
+  it('[CPrivO-58] names, day names or App lock going off dismisses a delivered typed-day note with the words, and nothing else', async () => {
+    const shown = (identifier: string, body: string, data: unknown): Req => ({ identifier, content: { title: FIXED.title, body, data } });
+    const off: [string, () => void][] = [
+      ['names off', () => store.setSetting('notifications.lockScreenNames', 'off')],
+      ['day names off', () => store.setSetting('notifications.dayNames', 'off')],
+      ['App lock on', () => store.setSetting(APP_LOCK_KEYS.enabled, 'on')],
+    ];
+    for (const [label, turnOff] of off) {
+      store.setSetting('notifications.dayNames', 'on');
+      store.setSetting('notifications.lockScreenNames', 'on');
+      store.setSetting(APP_LOCK_KEYS.enabled, 'off');
+      await reminders.rescheduleReminders();
+      os.presented.clear();
+      const delivered = [
+        shown(`el.typed.${plus(today(), -1)}`, CANARY, { source: 'scribe.reminders', kind: 'typedDay' }),
+        shown(`el.typed.${today()}`, FIXED.body, { source: 'scribe.reminders', kind: 'typedDay' }),
+        shown('el.month.2026-11-01', 'Asha is 8 months', { source: 'scribe.reminders', kind: 'monthAge' }),
+        shown('someone-else', CANARY, { source: 'another.app', kind: 'typedDay' }),
+      ];
+      for (const d of delivered) os.presented.set(d.identifier, d);
+      // While the words may show, a re-plan leaves Notification Center alone.
+      await reminders.rescheduleReminders();
+      expect(os.presented.size, label).toBe(4);
+      turnOff();
+      await reminders.rescheduleReminders();
+      expect([...os.presented.keys()], label).toEqual([`el.typed.${today()}`, 'el.month.2026-11-01', 'someone-else']);
+    }
   });
 
   it('the build switch off plans no typed day and cancels a pending one; the words stay on the phone', async () => {
@@ -355,7 +424,7 @@ describe('typed days on the phone (real store and scheduler)', () => {
   it('[NS-18-R6] account deletion ends the session through the same sign-out, so it clears typed days the same way (source)', () => {
     const src = (rel: string) => readFileSync(join(__dirname, '..', 'src', rel), 'utf8');
     expect(src('lib/account-deletion/use-account-deletion.ts')).toContain('signOut: auth.signOut');
-    expect(src('lib/reminders/session.ts')).toMatch(/for \(const key of REMINDER_SETTING_KEYS\) deleteSetting\(key\);\s*clearTypedDays\(\);/);
+    expect(src('lib/reminders/session.ts')).toMatch(/for \(const key of REMINDER_SETTING_KEYS\) deleteSetting\(key\);\s*\} catch \{[^}]*\}\s*try \{\s*clearTypedDays\(\);/);
   });
 
   it('[NS-18-R7] typed words do not linger: kept on the day, gone the day after, at the next plan', async () => {

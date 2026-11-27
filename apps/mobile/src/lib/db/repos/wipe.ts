@@ -17,6 +17,7 @@
  * Nothing here queues an upload. Both paths are offered only on a phone that never signed in (store.ts checks).
  */
 import type { RepoContext } from './context';
+import { forgetDraftFromName } from './drafts';
 import { dropSearchIndex, reconcileSearch } from '../../find/lifecycle';
 
 export const BOOK_DELETED_PREFIX = 'book.deletedAt.';
@@ -113,6 +114,7 @@ export function removeBook({ db }: RepoContext, childId: string): void {
   db.run(`DELETE FROM rejected_writes WHERE entity_id IN (${own}) OR entity_id = ?`, childId, childId, childId);
   db.run('DELETE FROM entries WHERE child_id = ?', childId);
   db.run("DELETE FROM settings WHERE key IN (SELECT 'discard.failures.' || id FROM drafts WHERE child_id = ?)", childId); // NS-09-R15: the count goes with the draft
+  forgetDraftFromName(db, (d) => db.get('SELECT 1 AS n FROM drafts WHERE id = ? AND child_id = ?', d, childId) !== null); // NS-16 s6
   db.run('DELETE FROM drafts WHERE child_id = ?', childId);
   db.run('DELETE FROM child_member_prefs WHERE child_id = ?', childId);
   db.run('DELETE FROM sync_books WHERE child_id = ?', childId);

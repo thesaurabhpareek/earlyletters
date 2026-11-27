@@ -886,14 +886,39 @@ export function newestWaitingDraftAt(childIds: readonly string[]): string | null
   return bookVisibleNow() ? drafts.newestWaitingAt(ctx(), childIds) : null;
 }
 
-/** The Book's read: one book's letters newest first, without their edit lists (BL-434). */
+/** One book's whole read: its letters newest first, without their edit lists (BL-434). The Book pages through listBookRange (BL-2225). */
 export function listBookEntries(childId: string): Entry[] {
   return shown(() => entries.listForBook(ctx(), childId));
 }
 
+/** The Book's paged read: one book's letters in a range of days, newest first, without edit lists (BL-2225). */
+export function listBookRange(childId: string, range: entries.BookRange): Entry[] {
+  return shown(() => entries.listBookRange(ctx(), childId, range));
+}
+
+/** What the Book knows of the letters it has not read yet: dates and a flag, never words (BL-2225). */
+export function bookOutline(childId: string): entries.BookOutline {
+  return bookVisibleNow() ? entries.bookOutline(ctx(), childId) : { firstLetterOn: null, lastLetterOn: null, readable: false };
+}
+
+/**
+ * Which of one book's rows came into the store after the Book read its first page (BL-2225): the other parent's
+ * letter synced in below the pages held still washes once when its page is read. The mark is a row number, never
+ * words, so it is read whether or not the book may be shown; the ids are not.
+ */
+export const bookArrivals = {
+  mark: (): number => entries.rowMark(ctx()),
+  since: (childId: string, mark: number): string[] => shown(() => entries.idsSince(ctx(), childId, mark)),
+};
+
 /** How many letters one book holds (quiet-day marks not counted), counted in SQL (BL-434). */
 export function countBookLetters(childId: string): number {
   return bookVisibleNow() ? entries.countLetters(ctx(), childId) : 0;
+}
+
+/** How many people wrote one book's live letters, counted in SQL (BL-421; `entries.countWriters`). */
+export function countBookWriters(childId: string): number {
+  return bookVisibleNow() ? entries.countWriters(ctx(), childId, currentUserId()) : 0;
 }
 
 /** What Tonight reads from the entries, and nothing more (BL-434). */
@@ -965,6 +990,19 @@ function entryBookLeft(c: RepoContext, entryId: string): boolean {
 }
 export function isBookLeft(childId: string): boolean {
   return bookLeft(ctx(), childId);
+}
+
+/** The pull closed the book as deleted (closeBook, `server_state = 'deleted'`): listed nowhere, so no restore into it (CPrivO-56). */
+function entryBookClosed(c: RepoContext, entryId: string): boolean {
+  return (
+    c.db.get<{ n: number }>(
+      "SELECT 1 AS n FROM entries e JOIN children c ON c.id = e.child_id WHERE e.id = ? AND c.server_state = 'deleted'",
+      entryId,
+    ) != null
+  );
+}
+export function isBookClosed(childId: string): boolean {
+  return ctx().db.get<{ n: number }>("SELECT 1 AS n FROM children WHERE id = ? AND server_state = 'deleted'", childId) != null;
 }
 
 const IN_BOOK: FieldGroup[] = ['in_book'];
@@ -1107,6 +1145,7 @@ export function deleteLeftBookLetter(id: string): boolean {
 export function undeleteEntry(id: string): boolean {
   const c = ctx();
   if (entryBookLeft(c, id)) return false; // BL-1959: a restore is a write too (entry.restore)
+  if (entryBookClosed(c, id)) return false; // CPrivO-56: its book is closed by the pull and listed nowhere
   let done = false;
   c.db.transaction(() => {
     done = entries.undelete(c, id);

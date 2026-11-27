@@ -17,6 +17,8 @@ import { Platform, Pressable, View, type StyleProp, type ViewStyle } from 'react
 import { tokens } from '@scribe/design-tokens';
 import { Text } from '@/components/ui/text';
 import { useTheme } from '@/lib/a11y';
+import type { FromName } from '@/lib/capture/sign-as-other';
+import { FromNameControl } from './from-name';
 
 export type LetterHeader = { to: string; toSpoken: string; from: string };
 
@@ -44,7 +46,7 @@ export function useSheetSurface(editing = false): ViewStyle {
 }
 
 /** "To Asha · Month 7" and "From Mama", one row, caps, quiet. */
-export function LetterHeaderRow({ header, onChangeBook, changeLabel }: { header: LetterHeader; onChangeBook?: () => void; changeLabel?: string }) {
+export function LetterHeaderRow({ header, onChangeBook, changeLabel, from }: { header: LetterHeader; onChangeBook?: () => void; changeLabel?: string; from?: FromName }) {
   const to = (
     <Text variant="letterDateline" caps tone="muted" accessibilityLabel={onChangeBook ? undefined : header.toSpoken}>
       {header.to}
@@ -62,9 +64,15 @@ export function LetterHeaderRow({ header, onChangeBook, changeLabel }: { header:
           {to}
         </View>
       )}
-      <Text variant="letterDateline" caps tone="muted" accessibilityLabel={header.from} testID="review.sheet.from">
-        {header.from}
-      </Text>
+      {from?.offered ? (
+        // NS-16: the From line is a control only before Keep, behind EXPO_PUBLIC_SIGN_AS_OTHER and not paused; paused,
+        // a name already typed shows here as plain text (G-18).
+        <FromNameControl from={from} label={header.from} />
+      ) : (
+        <Text variant="letterDateline" caps tone="muted" accessibilityLabel={header.from} testID="review.sheet.from">
+          {header.from}
+        </Text>
+      )}
     </View>
   );
 }
@@ -75,6 +83,7 @@ export function LetterSheet({
   editing = false,
   onChangeBook,
   changeLabel,
+  from,
   children,
   style,
 }: {
@@ -82,13 +91,15 @@ export function LetterSheet({
   editing?: boolean;
   onChangeBook?: () => void;
   changeLabel?: string;
+  /** Review's From name (NS-16); absent everywhere else, where the signature is plain text. */
+  from?: FromName;
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
 }) {
   const surface = useSheetSurface(editing);
   return (
     <View style={[surface, style]} testID="review.sheet">
-      <LetterHeaderRow header={header} onChangeBook={onChangeBook} changeLabel={changeLabel} />
+      <LetterHeaderRow header={header} onChangeBook={onChangeBook} changeLabel={changeLabel} from={from} />
       {children}
     </View>
   );

@@ -19,10 +19,10 @@ import { getSyncStatus, subscribeSyncStatus, syncNow } from '@/lib/sync';
 import type { SyncStatus } from '@/lib/sync/types';
 import type { AccountKind } from './account-books.logic';
 import { readAccountBooks } from './account-books';
-import { accountJoined, OPENING_WAIT_MS, openingView, retriesOnReconnect, type OpeningView } from './new-phone.logic';
+import { accountJoined, joinHandsOver, OPENING_WAIT_MS, openingView, retriesOnReconnect, type OpeningView } from './new-phone.logic';
 
 export interface NewPhone {
-  /** null: not applicable (no account question to ask), the route behaves as before. */
+  /** null: not applicable (no account question to ask, or a book joined on this phone is here), the route behaves as before. */
   view: OpeningView | null;
   /** Ask again and nudge the pull (Try again, and the connection returning). */
   retry: () => void;
@@ -49,6 +49,8 @@ export function useNewPhone(o: { enabled: boolean; client: SupabaseClient | null
   // are never restarted; only the baseline is refreshed. Cleared when nothing is being asked.
   const began = useRef<number | null>(null);
   const reasked = useRef(false);
+  // BL-2159 follow-up: an invite was joined on this phone while this was asking. Cleared when nothing is being asked.
+  const joinedHere = useRef(false);
   const onlineNow = useRef(o.online);
   onlineNow.current = o.online;
   // The engine's status, read and followed only while active.
@@ -66,6 +68,7 @@ export function useNewPhone(o: { enabled: boolean; client: SupabaseClient | null
     if (active) return;
     began.current = null;
     reasked.current = false;
+    joinedHere.current = false;
   }, [active]);
 
   useEffect(() => {
@@ -107,6 +110,7 @@ export function useNewPhone(o: { enabled: boolean; client: SupabaseClient | null
   useEffect(() => {
     if (!active) return;
     return accountJoined.subscribe(() => {
+      joinedHere.current = true;
       began.current = null;
       reasked.current = false;
       setAttempt((n) => n + 1);
@@ -120,6 +124,9 @@ export function useNewPhone(o: { enabled: boolean; client: SupabaseClient | null
   if (!active) return { view: null, retry, startBook, hasBook };
   // The first active render: the question goes out in the effect that follows, so this frame is the loading screen.
   if (!wait) return { view: 'opening', retry, startBook, hasBook };
+  // A book joined on this phone is here: the join sheet and first run's welcome hand over to the Book (5.8 row 12), so the
+  // route stands aside as it did before the re-ask. Leaving for Tonight here would replace the join sheet under the person.
+  if (joinHandsOver(joinedHere.current, o.hasLocalBook)) return { view: null, retry, startBook, hasBook };
   const s = sync ?? getSyncStatus();
   const view = openingView({
     kind,

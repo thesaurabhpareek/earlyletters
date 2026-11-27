@@ -26,15 +26,11 @@ packages/content/src/features/reminders.en.ts	uncontracted	1
 packages/content/src/features/speech.en.ts	uncontracted	3
 packages/content/src/features/words.en.ts	uncontracted	3
 packages/content/src/helplines.ts	uncontracted	2
-packages/content/src/pages.en.ts	softener	1
-packages/content/src/pages.en.ts	uncontracted	20
 packages/content/src/prompts.ts	softener	1
 packages/content/src/prompts.ts	uncontracted	1
 packages/content/src/release/app-review.en.ts	uncontracted	1
 packages/content/src/release/testflight.en.ts	please-open	3
 packages/content/src/release/testflight.en.ts	uncontracted	9
-packages/content/src/site.en.ts	slogan-kept	1
-packages/content/src/site.en.ts	uncontracted	2
 packages/content/src/store.en.ts	uncontracted	1
 packages/content/src/strings.en.ts	please-open	3
 packages/content/src/strings.en.ts	slogan-kept	4

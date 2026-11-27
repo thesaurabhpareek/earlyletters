@@ -19,6 +19,7 @@ import {
   SURFACE,
   type RegistryRow,
 } from '../src/registry';
+import { bool, int, oneOf, type EventSpec } from '../src/schema';
 import { expandPattern, WIRE_NAME_RE, WIRE_ROWS } from '../src/wire-names';
 
 const rows = Object.entries(REGISTRY) as [string, RegistryRow][];
@@ -27,8 +28,24 @@ const rows = Object.entries(REGISTRY) as [string, RegistryRow][];
 const WIRE_NAMES: string[] = Object.values(WIRE_ROWS).flatMap((r) => (r.status === 'ruled' || r.status === 'named' ? [r.wire] : r.status === 'pattern' ? expandPattern(r) : []));
 const SNAKE = /^[a-z0-9]+(?:_[a-z0-9]+)*$/;
 /** Properties the client adds to every event (catalog.ts GLOBAL_PROPS, moved in P5). */
-const GLOBALS = ['schema_version', 'child_count_bucket', 'sample_pct'];
+const GLOBALS = ['schema_version', 'build_kind', 'is_internal', 'child_count_bucket', 'sample_pct'];
 const NEVER = /religion|region|background|ethnic|birth|dob|due|child_name|name|transcript|audio_url|photo|entry|text|body|note/;
+
+/**
+ * BL-1948 item 3 (NS-54-R26, NS-41-R16): a phone step is any event whose name or area names a phone, an SMS or a
+ * one-time code. It is read from the row itself, so an event BL-1902 adds is covered here without a change.
+ */
+const PHONE_STEP = /phone|sms|otp/i;
+const isPhoneStep = (name: string, row: Pick<EventSpec, 'area'>): boolean => PHONE_STEP.test(name) || PHONE_STEP.test(row.area);
+
+/**
+ * A phone step reports its outcome as an enum or a bool only. An int, even a small one, is how a digit of a number,
+ * a code or a count of tries would leave the phone, so none is allowed on these events. Returns `event.key: type` lines.
+ */
+function phoneStepProblems(name: string, row: Pick<EventSpec, 'area' | 'props'>): string[] {
+  if (!isPhoneStep(name, row)) return [];
+  return Object.entries(row.props).flatMap(([key, spec]) => (spec.type === 'enum' || spec.type === 'bool' ? [] : [`${name}.${key}: ${spec.type}`]));
+}
 
 describe('registry.ts (P2, data only)', () => {
   it('is exported from the barrel from P4 (the send path reads it), and the barrel copy is the same object', () => {
@@ -75,6 +92,21 @@ describe('registry.ts (P2, data only)', () => {
         if (s.type === 'int') expect(s.min, `${n}.${p}`).toBeLessThan(s.max);
       }
     }
+  });
+
+  it('[NS-54-R26] a phone step carries only enum or bool outcomes (BL-1948 item 3)', () => {
+    expect(rows.flatMap(([n, r]) => phoneStepProblems(n, r))).toEqual([]);
+  });
+
+  it('[NS-54-R26] the phone-step rule finds a phone event by name or area and rejects an int on it, in planted rows', () => {
+    const outcome = { outcome: oneOf('verified', 'wrong_code', 'expired', 'paused'), resent: bool() };
+    expect(phoneStepProblems('onboarding:phone_verify_submit', { area: 'entry', props: outcome })).toEqual([]);
+    expect(phoneStepProblems('onboarding:phone_verify_submit', { area: 'entry', props: { ...outcome, tries: int(0, 5) } })).toEqual(['onboarding:phone_verify_submit.tries: int']);
+    expect(phoneStepProblems('me:number_add', { area: 'phone', props: { last4: int(0, 9999) } })).toEqual(['me:number_add.last4: int']);
+    expect(phoneStepProblems('onboarding:sms_resend', { area: 'entry', props: { wait_s: int(0, 60) } })).toEqual(['onboarding:sms_resend.wait_s: int']);
+    expect(phoneStepProblems('onboarding:otp_submit', { area: 'entry', props: { length: int(4, 8) } })).toEqual(['onboarding:otp_submit.length: int']);
+    // Not a phone step: an int stays allowed there (rank on surface_impressed).
+    expect(phoneStepProblems('surface_impressed', { area: 'app', props: { rank: int(1, 9) } })).toEqual([]);
   });
 
   it('keeps EV and PROP in step with the rows, in both directions', () => {

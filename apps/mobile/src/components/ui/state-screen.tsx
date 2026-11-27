@@ -24,7 +24,8 @@
  * Error and not-found are the same warm block as empty, never red. A primary whose press is on its way passes
  * `loading`: the button is busy (Button's own state) and the screen keeps its words (BL-494 point 3).
  * Accessibility: heading first; the picture is decorative; live region polite; actions are buttons
- * with their words as names.
+ * with their words as names. On iOS, where the live region is not read, an in-place change of a polite state is said
+ * once with announce(), unless the caller passes `callerSpeaks` because it says its own changes (BL-1953).
  */
 import type { Icon as PhosphorIcon } from 'phosphor-react-native';
 import type { ReactNode } from 'react';
@@ -37,9 +38,10 @@ import { Card } from '@/components/ui/card';
 import { LineArt, type LineArtName } from '@/components/ui/line-art';
 import { PinnedActionLayout } from '@/components/ui/pinned-action';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
-import { actionLayout, STATE_LAYOUT, STATE_SPEC, stateA11y, stateVisual, type StateAction, type StateKind } from '@/components/ui/state-screen.logic';
+import { actionLayout, STATE_LAYOUT, STATE_SPEC, stateSpoken, stateVisual, type StateAction, type StateKind } from '@/components/ui/state-screen.logic';
 import { Text } from '@/components/ui/text';
-import { useTheme } from '@/lib/a11y';
+import { announce, useTheme } from '@/lib/a11y';
+import { useSaidOnChange } from '@/lib/said-on-change';
 import { STANDARD_EASING } from '@/lib/motion';
 import { useIsFocused } from 'expo-router';
 
@@ -57,6 +59,12 @@ type Common = {
   primary?: ActionWithIcon;
   /** Quiet options under the primary (Open Settings). */
   quiet?: readonly StateAction[];
+  /**
+   * The caller says this state's changes to VoiceOver itself (useArrival, its own announce()), so the block says none
+   * of its own and nothing is said twice: Review's words card, the outage screen, the open deletion. Android's live
+   * region is unchanged.
+   */
+  callerSpeaks?: boolean;
 };
 
 export type StateScreenProps = Common & {
@@ -99,6 +107,25 @@ export function StateGlyph({ icon: Glyph }: { icon: PhosphorIcon }) {
   );
 }
 
+/** Role props for the block, so every state announces itself the same way (STATE_SPEC: polite, never assertive). */
+export function stateA11y(kind: StateKind): { accessibilityLiveRegion?: 'polite'; accessibilityState?: { busy: boolean } } {
+  const s = STATE_SPEC[kind];
+  return {
+    ...(s.live === 'polite' ? { accessibilityLiveRegion: 'polite' as const } : {}),
+    ...(s.busy ? { accessibilityState: { busy: true } } : {}),
+  };
+}
+
+/**
+ * iOS does not read the block's live region, so a polite state that changes in place (loading turns into an error, a
+ * heading changes) is said once with announce() (PER4-018). Its first appearance is not said here: the screens that
+ * need it say their own arrival (useArrival, open-deletion), and a second call would say their titles twice. A caller
+ * that also says its own in-place changes passes `callerSpeaks`, and the block is silent.
+ */
+function useStateSaid(kind: StateKind, o: { title: string; body?: string; label?: string }, callerSpeaks: boolean) {
+  useSaidOnChange(callerSpeaks ? null : stateSpoken(kind, o), (line) => announce(line), { fromNothing: false });
+}
+
 /** Screen-level: the loading drawing breathes only while its screen is focused. */
 export function StateScreen(props: StateScreenProps) {
   return <StateScreenView {...props} focused={useIsFocused()} />;
@@ -108,8 +135,9 @@ export function StateScreen(props: StateScreenProps) {
  * The same screen without reading navigation, for any caller outside a navigator. (The root crash screen is
  * components/resilience/error-boundary.tsx, which stays plain React Native so it still draws when providers fail.)
  */
-export function StateScreenView({ kind, title, body, art, glyph, drawing, primary, quiet, header, focused = true }: StateScreenProps & { focused?: boolean }) {
+export function StateScreenView({ kind, title, body, art, glyph, drawing, primary, quiet, header, callerSpeaks = false, focused = true }: StateScreenProps & { focused?: boolean }) {
   const visual = stateVisual(kind, { art, glyph, drawing });
+  useStateSaid(kind, { title, body }, callerSpeaks);
   const L = STATE_LAYOUT;
   const picture =
     visual.slot === 'drawing' ? (
@@ -161,9 +189,10 @@ export type InlineStateProps = Common & {
   still?: boolean;
 };
 
-export function InlineState({ kind, title, body, art, glyph, primary, quiet, children, accessibilityLabel, still = false }: InlineStateProps) {
+export function InlineState({ kind, title, body, art, glyph, primary, quiet, children, accessibilityLabel, still = false, callerSpeaks = false }: InlineStateProps) {
   const spec = STATE_SPEC[kind];
   const focused = useIsFocused();
+  useStateSaid(kind, { title, body, label: accessibilityLabel }, callerSpeaks);
   // Loading always has its drawing (breathing unless held still); other kinds show one only when `art` names it (S16).
   const drawing = kind === 'loading' ? (art ?? spec.art) : art;
   return (

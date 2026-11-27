@@ -630,7 +630,7 @@ Every failure keeps the person where they are, says what happened in words, says
 | 1 | Apple sheet closed | Nothing (`cancelled` is silent) | The same buttons |
 | 2 | Apple not available on this phone (no Apple Account) | Apple button absent; email is the only way; no empty slot | Email |
 | 3 | Apple or provider fails (no token, bad callback) | E-S02.error-provider `authCopy.firstRun.errors.provider` | Try again, or email |
-| 4 | Apple returns no name (any sign-in after the first) | Nothing; expected | n/a |
+| 4 | Apple returns no name (the app asks for the email only, E100) | Nothing; expected | n/a |
 | 5 | Hide My Email chosen | Normal. The account's address is a relay address; where a screen would show it (claim, Account), the method shows instead (PROPOSED "Apple (email hidden)", answers security G16) | n/a |
 | 6 | Offline on the Welcome or a sign-in tap (first run) | E-S14.offline (NS-39) | Try again; Start on this phone |
 | 7 | Sign-in service error (5xx) or the 10 s wait (first run) | E-S14.outage; a 5xx is never called "offline" | Try again; Start on this phone |
@@ -694,7 +694,7 @@ Every failure keeps the person where they are, says what happened in words, says
 | Slow | "Signing you in" stays still (ruling 31, E68); at 10 s on first run the outage screen; Apple's sheet is Apple's |
 | Failed | Rows 3, 7, 13, 14 |
 | Interrupted (call, Siri, alarm, the baby) | Apple's sheet is the system's; on return the screen is as left; a code typed is kept in the field |
-| App killed mid-flow | After Send: row 22. After Apple, before Terms: the session is kept, the Apple name waits in the Keychain, relaunch shows the consent sheet or the held screen (row 33). On the claim screen: row 36. During the Apple token capture: nothing for the parent; deletion receipt says `apple: no_token` and ops are alerted |
+| App killed mid-flow | After Send: row 22. After Apple, before Terms: the session is kept (no Apple name is asked for or kept, E100), relaunch shows the consent sheet or the held screen (row 33). On the claim screen: row 36. During the Apple token capture: nothing for the parent; deletion receipt says `apple: no_token` and ops are alerted |
 | App updated mid-flow | Same as killed; a pending link note survives (Keychain), the typed address does not |
 | Low storage | No change (sign-in writes Keychain items only) |
 | Low Power Mode | No change |
@@ -768,7 +768,7 @@ Every failure keeps the person where they are, says what happened in words, says
 | Plan lapse | No effect on sign-in | n/a |
 
 ### 10. Data and engineering
-- Fields: Supabase `auth.users` (email), `auth.identities` (Apple sub; Google sub when on), `profiles.display_name` (Apple name, first sign-in only); Keychain `scribe.auth`, `scribe.auth.pendingEmailRequest` (time only), `scribe.auth.appleUser`, `scribe.auth.pendingName`; settings `lastMethod`; server `ops.apple_tokens` (wrapped). No new field.
+- Fields: Supabase `auth.users` (email), `auth.identities` (Apple sub; Google sub when on); `profiles.display_name` only as a leftover (a name a build before #1125 saved; nothing writes it now; E100); Keychain `scribe.auth`, `scribe.auth.pendingEmailRequest` (time only), `scribe.auth.appleUser`, and `scribe.auth.pendingName` only to delete a name an older build left (nothing writes it; E100); settings `lastMethod`; server `ops.apple_tokens` (wrapped). No new field.
 - Migrations: none for this card. Config: Supabase Auth settings (founder dashboard): `otp_length`, `otp_expiry 900`, `max_frequency 1m`, rate limits, JWT 900 s, refresh rotation, anonymous off, manual linking off, redirect allowlist exact `https://earlyletters.com/auth/callback`.
 - Sync field group, export: none new (`account.json` carries the profile).
 - Modules: `lib/auth/*` (`apple.ts`, `email.ts`, `email-link.logic.ts`, `errors.logic.ts`, `machine.logic.ts`, `pending.ts`, `session-provider.tsx`, `account-claim.logic.ts`), `app/(auth)/sign-in/*`, `components/onboarding/welcome-sign-in.tsx`, `lib/first-run/*`, `lib/sync/ownership.ts`.
@@ -785,7 +785,7 @@ Every failure keeps the person where they are, says what happened in words, says
 - No bot control on email send; the 100-per-hour project cap can be used up by others. Backlog need: O-7.
 - Email trimmed, not lower-cased, before send (security G17). Backlog need: small `mobile` row (`[NS-41-R24]`).
 - Second account "never sees": not built; claim and upload are blocked (`account-claim.logic.ts`, `lib/sync/ownership.ts`), visibility is not (`child-store.ts:11-15` treats a null owner as "mine"). BL-961 plus ADR 0031 (O-5).
-- Apple scopes request full name and email (`apple.ts:51`); NX-31-R9 says email only; the name is written to `profiles.display_name`, which no app screen shows (only export). Backlog need: O-8.
+- Apple scopes request full name and email (`apple.ts:51`); NX-31-R9 says email only; the name is written to `profiles.display_name`, which no app screen shows (only export). Backlog need: O-8. Since built (FP-9, #1125; E100): only the email scope is requested and no new name is kept; a name an older build saved stays until BL-582's migration.
 - Apple revocation is checked only when a user id first appears (launch or new sign-in); no foreground check and no `credentialRevokedNotification` listener (security G7). Backlog need: `mobile` row.
 - Empty-email and short-code reasons are missing (Send and Continue are disabled silently: `email.tsx:66`, `code.tsx:225`). Backlog need: `content` plus `mobile` row with `authCopy.email.needEmail`, `authCopy.code.digits`.
 - `auth.noEmailHelp` names Google. Backlog need: `content` (CG13).
@@ -799,7 +799,7 @@ Every failure keeps the person where they are, says what happened in words, says
 | Email code and link token | Prove the inbox | Required on the email path | Digits only, exact length (6 today); link token hash 16 to 256 of `[A-Za-z0-9_-]`; single use; 900 s | L4 | Supabase; the email; phone memory | Single use, then gone | Never |
 | Pending request note | Accept a link only on the phone that asked | Automatic | Time only, no address; 1 h today (15 min after O-6); future-skew 60 s | L2 | Keychain, this device only | Until used, expired or sign-out | Never |
 | Apple user id | Identify the account; ask Apple if the link was revoked | Required on the Apple path | Provider token with nonce | L3 | Supabase `auth.identities`; Keychain `scribe.auth.appleUser` | Until deletion or sign-out | No |
-| Name from Apple | Prefill the profile (no screen uses it today) | Optional (Apple decides; first sign-in only) | Trimmed, joined, at most 60 | L3 | Keychain until Terms, then `profiles.display_name` | Until deletion | Yes (profile) |
+| Name from Apple | None: not asked for (email scope only, O-8; built in FP-9, #1125; E100) | Not asked for | None | L3 | Not stored for new sign-ins; a name an older build left in the Keychain (`scribe.auth.pendingName`) is deleted at the next Apple sign-in and when Terms are accepted. A name a build before #1125 saved to `profiles.display_name` stays there | Leftover only: until account deletion or BL-582's clearing migration | Leftover only, with the profile |
 | Apple refresh token | Revoke at deletion (5.1.1(v), TN3194) | Automatic | Code 16 to 512 of `[A-Za-z0-9._-]` | L4 | `ops.apple_tokens`, wrapped, service role only | Until revoked at deletion | Never |
 | Session and refresh tokens | Stay signed in | Automatic | JWT 900 s; rotation | L4 | Keychain, this device only | Sign-out, deletion, revocation | Never |
 | Last method | "Last time you used {method}." | Automatic | `apple` or `email` | L2 | Phone settings | Install | No |

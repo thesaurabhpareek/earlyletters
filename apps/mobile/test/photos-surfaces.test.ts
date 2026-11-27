@@ -584,7 +584,8 @@ describe('[NS-01-R10a][NS-33-R3] the lens is one radio group of two radios, exac
   });
   it('[NS-01-R20e][NS-33-R9] Months is not offered in Photos, never opens by itself on the way back, and has its own name beside the lens row (#840 review A)', () => {
     const book = readFileSync(join(SRC, 'app', '(tabs)', 'book.tsx'), 'utf8');
-    expect(book).toMatch(/const months =\s*!showPhotos && showsMonthsButton\(rows\)\s*\? \{ label: lensOn \? photos\.book\.lens\.monthsButton : bookCopy\.monthsButton,/);
+    // BL-2225: while older pages are unread, the outline answers for the whole book; Photos still takes Months away.
+    expect(book).toMatch(/const months =\s*!showPhotos && \(outline \? monthsFromOutline\(outline, active\) : showsMonthsButton\(rows\)\)\s*\? \{\s*label: lensOn \? photos\.book\.lens\.monthsButton : bookCopy\.monthsButton,/);
     expect(book).toMatch(/<MonthsSheet open=\{monthsOpen && !showPhotos\} rows=\{rows\}/);
     expect(book.match(/<MonthsSheet /g)).toHaveLength(1);
     // Both Months buttons (the cover band's and the bar's) take `months`; neither is drawn without it.

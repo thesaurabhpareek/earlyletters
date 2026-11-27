@@ -134,14 +134,18 @@ export const currentMonthOpener = (page: Page) => page.getByRole('heading', { na
 /**
  * The count line of a month, as the Months sheet says it ("2 letters, from Mama"): the Book's opener no longer carries it.
  * Opens the sheet, reads that month's row, closes the sheet. Restores what J09b, J18 and J08c proved before the opener
- * dropped the count (BL-1991): the number of letters and who wrote them.
+ * dropped the count (BL-1991, BL-2011): the number of letters and who wrote them.
+ * The row's whole text must be the month and this line, nothing more (BL-2011): a part match let "12 letters" pass for
+ * "2 letters", and J08c's old /\d+ letters?/ passed "2 letters and 1 note" when a quiet-day mark was counted.
  */
-export async function expectMonthCount(page: Page, months: number, line: RegExp) {
+export async function expectMonthCount(page: Page, months: number, line: string) {
   await page.getByTestId('book.months').click();
   const sheet = page.getByTestId('book.monthsSheet');
   await expect(sheet).toBeVisible();
-  const row = sheet.locator('[data-testid^="book.month."]').filter({ hasText: bookCopy.chapterAge.replace('{n}', String(months)) });
-  await expect(row).toContainText(line);
+  const title = bookCopy.chapterAge.replace('{n}', String(months));
+  const row = sheet.locator('[data-testid^="book.month."]').filter({ hasText: title });
+  // The row is a ListRow: its title, then its subtitle, with no other text (months-sheet.tsx).
+  await expect(row).toHaveText(`${title}${line}`);
   await sheet.getByRole('button', { name: 'Close' }).click();
   await expect(sheet).toBeHidden();
 }

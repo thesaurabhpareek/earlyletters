@@ -32,12 +32,15 @@ export type StepMeta = {
   from?: string;
 };
 
+/** The `?seed=` values src/dev/store-ready.web.ts reads (each one a fictional Asha family: src/dev/asha-seed.ts). */
+export type SeedKind = 'asha' | 'asha-waiting' | 'asha-quiet' | 'asha-marks' | 'asha-plus' | 'asha-hidden' | 'asha-unborn' | 'asha-drafts' | 'asha-long';
+
 /**
  * Open the seeded build (fictional family Asha: see src/dev/asha-seed.ts). Same app, same screens, data filled in.
  * v1.0 has no usage-sharing ask (EXPO_PUBLIC_ANALYTICS=off, decision of 15 Oct 2026), so nothing covers the
  * screen. `keepConsent` is kept for the v1.1 flows, when the ask returns behind the switch.
  */
-export async function seeded(page: Page, kind: 'asha' | 'asha-waiting' | 'asha-quiet' | 'asha-marks' | 'asha-plus' | 'asha-hidden' = 'asha', path = '/', opts: { keepConsent?: boolean } = {}) {
+export async function seeded(page: Page, kind: SeedKind = 'asha', path = '/', opts: { keepConsent?: boolean } = {}) {
   const base = process.env.E2E_WEB_SEED_URL;
   await page.goto(`${base}/?seed=${kind}`);
   await expect(page.locator('body')).not.toBeEmpty();

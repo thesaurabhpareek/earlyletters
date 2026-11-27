@@ -366,6 +366,9 @@ const FAMILY_BEFORE_JOIN = [
   ...['title', 'pasteLabel', 'pasteHelp', 'pastePlaceholder', 'continue', 'notRecognised', 'invitedTitle', 'signInBody', 'signIn', 'peeking', 'askTitle', 'invitedBy', 'invitedByUnknown', 'askBody', 'join', 'notNow', 'needsSync', 'joining', 'tryAgain', 'pasteAnother', 'tryLater'].map((k) => `accept.${k}`),
   // not_parent and last_parent are the inviter's and the leaver's lines, never shown to an invitee.
   ...Object.keys(familyCopy.errors).filter((k) => k !== 'not_parent' && k !== 'last_parent').map((k) => `errors.${k}`),
+  // BL-524: every typed-code answer is read before the join returns.
+  'code.askBody',
+  ...Object.keys(familyCopy.code.errors).map((k) => `code.errors.${k}`),
 ];
 
 export const SURFACES: readonly Surface[] = [
@@ -430,8 +433,9 @@ export const SURFACES: readonly Surface[] = [
       ONLY_YOU,
       // `notConfigured` is the kill path's own sentence. `what.onThisPhone` ("On this phone, your letters stay. ...") says it in a
       // word order the pattern does not match; it is a recorded decision, not a slip: it is the one line on this page that tells
-      // the person what happens to the letters on her phone (critics' pass S4, counsel's relay list).
-      { ...STAYS_ON_PHONE, allowed: ['notConfigured', 'what.onThisPhone'] },
+      // the person what happens to the letters on her phone (critics' pass S4, counsel's relay list). `what.onThisPhoneNoErase`
+      // is CPrivO-56's fallback for a build whose shelf shows no Erase now; it ends "they stay on this phone" by ruling.
+      { ...STAYS_ON_PHONE, allowed: ['notConfigured', 'what.onThisPhone', 'what.onThisPhoneNoErase'] },
       { name: 'a receipt', re: /\breceipt\b|\bwe sent\b/i },
       { name: 'the app named in words, not through brand', re: new RegExp(brand.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) },
     ],
