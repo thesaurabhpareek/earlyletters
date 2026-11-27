@@ -38,6 +38,7 @@ const CARD_FLAGS = [
   'EXPO_PUBLIC_MEDIA_SYNC', // variant B only (E38, handoff 24)
   'EXPO_PUBLIC_READ_THE_YEAR', // NS-24, BL-947 (the year rows in Go to a month)
   'EXPO_PUBLIC_MOMENTS_TAB', // NS-53, card 28, F1 (the shell is dark until the founder turns it on in a profile)
+  'EXPO_PUBLIC_SIGN_AS_OTHER', // NS-16, BL-980: a child-input flag (PRIV-R20); counsel Q45, Q46, Q48, Q54 gate it (CPrivO-24)
 ] as string[];
 
 type Eas = { build?: Record<string, { env?: Record<string, unknown>; distribution?: string; ios?: { simulator?: boolean }; extends?: string }> };
