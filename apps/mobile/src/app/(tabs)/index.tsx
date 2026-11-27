@@ -7,7 +7,9 @@
  * - Day One "On This Day": a month-old letter of the person's own, never a count.
  * - Airbnb sticky CTA: Speak and Type as equal twins, pinned in the thumb zone.
  *
- * Layout: the dateline ("Asha · 7 months", read aloud as "Asha, 7 months"); the greeting in title2, two tones; the
+ * Layout: with two or more books, the one child switcher ("For Asha", the Book's own) above the dateline, so the parent
+ * sees whose book a new letter goes to before they speak (NS-14); with one book nothing, not even its space. Then the
+ * dateline ("Asha · 7 months", read aloud as "Asha, 7 months"); the greeting in title2, two tones; the
  * prompt as the one literary line (promptHero), on the paper with no card, its caps label now only its accessibility
  * hint; "Another thought"; then one card per draft from listDrafts, newest first, no totals, except that two or more
  * letters held at the Keep step fold into one row that opens their list (F14-REQ-041) (or, when none is waiting,
@@ -47,6 +49,8 @@ import Animated, { FadeIn, FadeInDown, FadeOut, ReduceMotion } from 'react-nativ
 import { selectPrompt } from '@scribe/core';
 import { PROMPT_LIBRARY_VERSION, PROMPTS } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
+import { ChildSwitcher } from '@/components/child/child-switcher';
+import { useChildren } from '@/components/child/use-children';
 import { CardSource, useHiddenBehindCardPage } from '@/components/motion/card-transition';
 import { DraftCard } from '@/components/tonight/draft-card';
 import { HeldRow } from '@/components/tonight/held-row';
@@ -149,6 +153,9 @@ export default function Tonight() {
   const [lettersKept, setLettersKept] = useState<number | null>(null);
   // Two or more held letters fold into one row (F14-REQ-041); the row opens their list in place.
   const [heldOpen, setHeldOpen] = useState(false);
+  // The visible books, for the switcher only (NS-14-R1, R9: a hidden book is not listed). A switch writes the one
+  // selection, and the store event it raises re-reads the room for the new book (the subscribe below).
+  const { children } = useChildren();
 
   const load = useCallback(() => setRoom(readRoom()), []);
   const focused = useRef(false);
@@ -301,6 +308,8 @@ export default function Tonight() {
       <Lamp scene="tonight" daypart={daypart} persistKey="tabs" intensity={lampLevel} />
       <ScrollView className="flex-1" contentContainerClassName="px-5 pb-6 pt-5">
         <Animated.View entering={enter(0)}>
+          {/* Inside the dateline's own view, so it enters with it and one book leaves no gap (NS-14-R2). */}
+          {children.length > 1 ? <ChildSwitcher surface="tonight" /> : null}
           <Text variant="letterDateline" caps accessibilityLabel={dateline.a11y}>
             {dateline.text}
           </Text>
