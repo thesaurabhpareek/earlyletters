@@ -170,8 +170,9 @@ for (const [label, u, served] of [['closed', U, false], ['open', A, true]]) {
 // The order was held only by the comment in 20261123100000. Read the live function and fail if any read of a
 // book table (FROM or JOIN on one) comes before the content_gate_state call. Comments are stripped first so
 // the comment above the gate cannot count as either.
+// held_drafts and held_drafts_gone hold the author's own held-draft words and sync_pull reads both (review of #2079).
 const BOOK_TABLES = ['entries', 'children', 'child_members', 'child_member_prefs', 'child_invites', 'book_entries',
-  'profiles', 'sync_private\\.entry_erasures'];
+  'held_drafts', 'held_drafts_gone', 'profiles', 'sync_private\\.entry_erasures'];
 const READ = new RegExp(String.raw`\b(?:from|join)\s+(?:public\.)?(?:${BOOK_TABLES.join('|')})\b`, 'gi');
 const GATE = /\bpublic\.content_gate_state\s*\(/i;
 const SIG = `'public.sync_pull(jsonb, int)'::regprocedure`;
