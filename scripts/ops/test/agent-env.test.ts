@@ -244,6 +244,34 @@ Deno.test('[FR-BKO-21] an agent named outside any job, in workflow-level shell d
   }
 });
 
+Deno.test('[FR-BKO-21] workflow-level env names an agent for every job; the workflow name and its on: filters do not', () => {
+  const deploy = (top: string[]) => [
+    'on:',
+    '  push:',
+    '    paths:',
+    "      - 'CLAUDE.md'",
+    ...top,
+    'jobs:',
+    '  deploy:',
+    '    runs-on: u',
+    '    environment: db-production',
+    '    steps:',
+    '      - run: echo hi',
+    '        env:',
+    `          K: \${{ secrets.${SR} }}`,
+    '',
+  ].join('\n');
+  assert.deepEqual(scanWorkflow('deploy.yml', deploy(['name: Deploy (not claude)', 'run-name: never claude'])), [], 'name, run-name and a CLAUDE.md path filter are never run');
+  assert.deepEqual(scanWorkflow('deploy.yml', deploy(['on_dispatch_note: x', 'env:', '  CMD: npx -y @anthropic-ai/claude-code'])).map((f) => f.rule), ['agent-environment', 'agent-allowlist']);
+});
+
+Deno.test('[FR-BKO-21] a backslash before claude, or a line continuation right after it, still names the agent', () => {
+  for (const line of ['      - run: \\claude -p x', '      - run: |\n          claude\\\n            -p x']) {
+    const wf = one([], [line, '        env:', `          K: \${{ secrets.${SR} }}`].join('\n'), 'run');
+    assert.deepEqual(scanWorkflow('x.yml', wf), [{ file: 'x.yml', job: 'run', rule: 'agent-allowlist', secret: SR }], line);
+  }
+});
+
 Deno.test('[FR-BKO-21] an agent job with any environment key fails, a workflow-level whole read fails, and GitHub token reads are not stored secrets', () => {
   for (const env of ['~', "''", 'db-production']) {
     const wf = one([`    environment: ${env}`], '      - uses: anthropics/claude-code-action@v1', 'run');

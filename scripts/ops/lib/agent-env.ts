@@ -16,7 +16,7 @@
  * string, keys included, wherever it sits (GitHub expands expressions inside block scalars such as `prompt: |`).
  * An expression ends at the first `}}` outside a single-quoted string, as GitHub's reader does. Names match in any
  * case, as GitHub does. A secret read outside any job (a workflow-level `env:`) counts for every job, and so does an
- * agent named outside any job (a workflow-level `defaults.run.shell`).
+ * agent named in workflow-level `defaults` or `env` (a `defaults.run.shell`, say).
  *
  * Limits, also listed in ACCESS.md: an agent engine run from a composite, local or other action, or an engine
  * other than Claude Code and OpenCode, is not recognised; a reusable workflow a job calls is not followed; data
@@ -46,7 +46,7 @@ const CALLS_AGENT_WORKFLOW = new RegExp(String.raw`(?:^|/)(?:${AGENT_WORKFLOWS.m
  * alarm here costs an edit, a miss costs a key). A job that calls an agent workflow is an agent job.
  */
 const AGENT_STEP =
-  /anthropics\/claude-code\b|@anthropic-ai\/claude-(?:code|agent-sdk)|claude[-_]agent[-_]sdk|claude\.ai\/install|\bopencode\b|(?:^|[\s`'"(/;&|{!=,[:-])claude(?=[\s`'";)|&}<>.,\]:]|$)/i;
+  /anthropics\/claude-code\b|@anthropic-ai\/claude-(?:code|agent-sdk)|claude[-_]agent[-_]sdk|claude\.ai\/install|\bopencode\b|(?:^|[\s`'"(/;&|{!=,[:\\-])claude(?=[\s`'";)|&}<>.,\]:\\]|$)/i;
 
 /** GitHub's own token is not a stored secret. */
 const NOT_A_STORED_SECRET = new Set(['GITHUB_TOKEN']);
@@ -170,9 +170,9 @@ function scan(file: string, workflow: string): Finding[] {
   const { jobs: _jobs, ...outside } = parsed.root;
   const everyJob = secretsOf(outside);
   if (everyJob.whole) out.push({ file, job: '*', rule: 'all-secrets' });
-  // Text outside jobs (a workflow-level `defaults.run.shell`, say) runs in or shapes every job, so an agent named
-  // there makes every job an agent job.
-  const agentOutside = stringsOf(outside).some((s) => AGENT_STEP.test(s));
+  // Workflow-level `defaults` (a `run.shell`) runs in every job and `env` reaches every step, so an agent named there
+  // makes every job an agent job. `name`, `run-name` and `on` are never run, so a `CLAUDE.md` path filter is not one.
+  const agentOutside = stringsOf({ defaults: parsed.root.defaults, env: parsed.root.env }).some((s) => AGENT_STEP.test(s));
   const agentFile = AGENT_WORKFLOWS.includes(file);
   for (const job of jobsOf(workflow)) {
     const agent = agentFile || agentOutside || job.runsAgent;
