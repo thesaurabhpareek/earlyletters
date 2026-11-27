@@ -154,4 +154,16 @@ export const exportCopy = {
     '',
     'Format {format}, version {version}. Questions: {email}',
   ],
+  /**
+   * Added after the README only when the export holds a picture (schema 1.7.0, BL-933; DELETION_AND_EXPORT_SPEC 4.2).
+   * PROPOSED words: `content` owns the final wording (spec 4.2, the README line).
+   */
+  readmePhotos: [
+    '',
+    'PICTURES',
+    '',
+    'photos/     The pictures you added to letters, one folder per letter (JPEG).',
+    '            Each is the copy kept in the app, with no location or other details in it.',
+    '            data/entries.json says which letter each picture belongs to.',
+  ],
 } as const;

@@ -63,3 +63,9 @@ This export is not locked with a password. Keep it somewhere private,
 and keep a second copy somewhere else.
 
 Format early-letters-export, version 1.7.0. Questions: hello@earlyletters.com
+
+PICTURES
+
+photos/     The pictures you added to letters, one folder per letter (JPEG).
+            Each is the copy kept in the app, with no location or other details in it.
+            data/entries.json says which letter each picture belongs to.
