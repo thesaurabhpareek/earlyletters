@@ -6,11 +6,14 @@
  * cannot read the server then carries the copy as `included`, `read_at` saying when it was read. Another account's
  * copy is never used; with none, `unavailable` stands; a failed or partial read never replaces it. Class L3, one value
  * in the device settings, never synced or uploaded, not in the owner backup. Deleted on sign-out, on the
- * account-deletion request and by Erase everything (consent-copy.ts has the callers); none is kept while a request is
- * open. Data-map line: docs/ops/proposed/bl-528-consent-copy-data-map-line.md.
+ * account-deletion request and by Erase everything (consent-copy.ts has the callers). While a request is open the copy
+ * is neither read nor written (`copyStoreFor`); a second phone that did not make the request keeps the copy it has, unused,
+ * until it signs out. Data-map line: docs/ops/proposed/bl-528-consent-copy-data-map-line.md.
  */
 import { exportAct, exportState, readServerRecords, type ReadOptions, type ServerRecords } from './server-records.logic';
 import type { ExportConsentHistory, ExportPolicyAct } from './schema';
+import type { OpenRequest } from '../account-deletion/open-request';
+import { deletionRequestOpen } from './scope.logic';
 
 /** The settings key. */
 export const CONSENT_COPY_KEY = 'export.consentCopy';
@@ -74,6 +77,14 @@ export function withConsentCopy(live: ExportConsentHistory, accountId: string, s
   } catch {
     return live;
   }
+}
+
+/**
+ * The store the export may use: none while an account-deletion request for this account is open (DATA-REQ-053), so the
+ * copy is neither read nor written then. export/device.ts passes the phone's note on the request.
+ */
+export function copyStoreFor(note: OpenRequest | null, authUserId: string | null | undefined, nowMs: number, store: ConsentCopyStore | null): ConsentCopyStore | null {
+  return deletionRequestOpen(note, authUserId, nowMs) ? null : store;
 }
 
 /**

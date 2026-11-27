@@ -32,7 +32,7 @@ import { storedPhotoFile } from '../photos/files';
 import { currentUserId, localSqlDb, dictionaryFor, getSetting, listChildren, listConflicts, listEntriesForChild, listHiddenChildren, listWaitingForExport, getDraftReview, myRoleIn, listClosedBooks, listDeletedEntriesForChild, listLeftBooks, listLeftBookEntries, type Entry } from '../store';
 import { paperFor, phoneConsent, waitingChangedWords, type ExportSnapshot, type SnapshotChild, type SnapshotEntry, type SnapshotPhoto } from './build.logic';
 import { noConsentHistory, noProfile, postgrestReader, type PostgrestLike, type ServerRecordsReader } from './server-records.logic';
-import { readServerRecordsWithCopy } from './consent-copy.logic';
+import { copyStoreFor, readServerRecordsWithCopy } from './consent-copy.logic';
 import { deviceConsentCopy } from './consent-copy';
 import type { ExportDictionaryTerm } from './schema';
 import { estimateExportBytes, ExportCancelledError, ExportTooLargeError, MAX_EXPORT_BYTES, packExport, type ByteSink, type ExportPhase } from './pack';
@@ -209,7 +209,6 @@ function supabaseReader(): ServerRecordsReader | null {
  */
 export async function withServerRecords(snapshot: ExportSnapshot, signal?: { aborted: boolean }): Promise<ExportSnapshot> {
   const authUserId = currentAuthUserId();
-  const requestOpen = deletionRequestOpen(readOpenRequest({ get: getSetting }), authUserId, Date.now());
   const server = await readServerRecordsWithCopy({
     authUserId,
     ownerId: currentUserId(),
@@ -217,7 +216,7 @@ export async function withServerRecords(snapshot: ExportSnapshot, signal?: { abo
     timeoutMs: ENDPOINT_CLASSES.read_rpc.timeoutMs,
     now: () => new Date(),
     cancelled: () => signal?.aborted === true,
-  }, requestOpen ? null : deviceConsentCopy);
+  }, copyStoreFor(readOpenRequest({ get: getSetting }), authUserId, Date.now(), deviceConsentCopy));
   return { ...snapshot, consentHistory: server.consent, profile: server.profile };
 }
 
