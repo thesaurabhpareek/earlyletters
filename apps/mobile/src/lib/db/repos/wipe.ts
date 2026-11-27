@@ -268,20 +268,24 @@ function keysNaming(db: SqlDb, ids: ReadonlySet<SqlParam>): string[] {
 }
 
 /**
- * The draft that `signAs.draft` names (BL-980: one fixed key holding a draft id and the From name typed for it), read as
- * repos/drafts.ts forgetDraftFromName reads it; null when there is none or its value does not parse. The key is the same
- * whichever draft it is for, so the retry judges it by this id, not by the key (Karma ruling 7224337325 on #2102, point
- * 2): it goes when the id is an erased draft or letter, and a kept draft's stays, even under a key the scope listed.
+ * Whether `signAs.draft` (BL-980: one fixed key holding a draft id and the From name typed for it, someone else's name,
+ * L3) stays through an erase with a scope; null when there is no slot. The key is the same whichever draft it is for,
+ * so the erase judges it by the id its value holds, read as repos/drafts.ts forgetDraftFromName reads it, not by the key
+ * (Karma ruling 7224337325 on #2102, point 2). It stays only while that id is a draft or letter row still on the phone
+ * and not an erased one (Karma ruling 7225035534, point 2): a value naming no row, an erased row, or nothing readable
+ * has no work to be kept for, so it goes, on the first try as on a retry.
  */
-function fromNameDraft(db: SqlDb): string | null {
+function fromNameStays(db: SqlDb, erased: ReadonlySet<SqlParam>): boolean | null {
   const raw = db.get<{ value: string }>('SELECT value FROM settings WHERE key = ?', SIGN_AS_DRAFT_SETTING)?.value;
   if (raw === undefined) return null;
+  let id: unknown;
   try {
-    const id = (JSON.parse(raw) as { draftId?: unknown } | null)?.draftId;
-    return typeof id === 'string' ? id : null;
+    id = (JSON.parse(raw) as { draftId?: unknown } | null)?.draftId;
   } catch {
-    return null; // unreadable: it names no draft, and an old key still goes by the scope
+    return false; // unreadable: it names no row
   }
+  if (typeof id !== 'string' || erased.has(id)) return false;
+  return db.get('SELECT 1 AS x FROM drafts WHERE id = ? UNION ALL SELECT 1 AS x FROM entries WHERE id = ?', id, id) !== null;
 }
 
 /** Tables keyed by a book's id: a book kept for a later letter keeps these rows (keptBooks). */
@@ -452,11 +456,9 @@ export function removeEverything({ db }: RepoContext, keepSettings: readonly str
     if (t === 'settings') {
       const keys = new Set([...old].filter((k): k is string => typeof k === 'string'));
       for (const k of keysNaming(db, namedIds)) keys.add(k);
-      const fromName = fromNameDraft(db);
-      if (fromName !== null) {
-        if (namedIds.has(fromName)) keys.add(SIGN_AS_DRAFT_SETTING);
-        else keys.delete(SIGN_AS_DRAFT_SETTING);
-      }
+      const fromName = fromNameStays(db, namedIds);
+      if (fromName === true) keys.delete(SIGN_AS_DRAFT_SETTING);
+      else if (fromName === false) keys.add(SIGN_AS_DRAFT_SETTING);
       deleteIn(db, t, 'key', [...keys].filter((k) => !keep.has(k)));
     } else deleteIn(db, t, identityColumn(db, t), [...old, ...rowsNaming(db, t, namedIds)]);
   }
@@ -479,8 +481,7 @@ export function oldRowsLeft({ db }: Pick<RepoContext, 'db'>, scope: EraseScope):
   if (tables.includes('children') && db.all<{ id: string }>('SELECT id FROM children').some((r) => ids.has(r.id))) left.push('children');
   if (oldPictures(db, scope).size > 0) left.push('entry_media');
   for (const t of Object.keys(NAMES_BY)) if (rowsNaming(db, t, ids).length > 0) left.push(t);
-  const fromName = fromNameDraft(db);
-  if (keysNaming(db, ids).length > 0 || (fromName !== null && ids.has(fromName))) left.push('settings');
+  if (keysNaming(db, ids).length > 0 || fromNameStays(db, ids) === false) left.push('settings');
   return left;
 }
 

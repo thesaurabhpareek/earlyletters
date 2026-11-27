@@ -892,6 +892,37 @@ describe('[DATA-REQ-024][F14-REQ-026] Erase everything on this phone, signed out
     expect(fetches).toBe(0);
   });
 
+  // Karma ruling 7225035534 on #2102, point 2 (Review A 7225012487 must-fix 2, Review B 7225014363 must-fix 1). The slot
+  // is kept only for a draft or letter row still on the phone; one naming no row is someone's typed name with nothing to
+  // keep it for, so it goes on the first try as every setting did before, and on a retry, and the read-back sees it.
+  it('[BL-775][NS-16] a From name slot naming no draft or letter row goes with Erase everything, on the first try and on a retry, and the erase says erased only once it is gone (Karma ruling 7225035534, point 2)', async () => {
+    const nowhere = serializeDraftName('0A1B2C3D-0000-4000-8000-00000000DEAD', 'Nani'); // a fictional id with no row
+    for (const run of ['first', 'retry'] as const) {
+      const { app } = await filled();
+      if (run === 'first') {
+        app.store.setSetting(SIGN_AS_DRAFT_SETTING, nowhere); // present when the mark is written, so its key is in the scope
+        expect(await app.all.eraseEverything(), run).toBe('erased');
+        expect([run, app.store.getSetting(SIGN_AS_DRAFT_SETTING)]).toEqual([run, null]);
+        expectEmpty();
+        continue;
+      }
+      failPartWay(app);
+      app.store.setSetting(SIGN_AS_DRAFT_SETTING, nowhere); // written after the mark, under a key the scope never saw
+      // The read-back: while the slot will not go (planted: SQLite skips that delete), the retry is not erased.
+      db.exec(`CREATE TRIGGER hold_from_name BEFORE DELETE ON settings WHEN old.key = '${SIGN_AS_DRAFT_SETTING}' BEGIN SELECT RAISE(IGNORE); END`);
+      const held = await launch();
+      expect(await held.all.resumeEraseAtLaunch(), run).toBe('incomplete');
+      const { oldRowsLeft, readEraseScope } = await import('../src/lib/db/repos/wipe');
+      expect(oldRowsLeft({ db }, readEraseScope({ db })!), run).toEqual(['settings']);
+      db.exec('DROP TRIGGER hold_from_name');
+      const next = await launch();
+      expect(await next.all.resumeEraseAtLaunch(), run).toBe('erased');
+      expect([run, next.store.getSetting(SIGN_AS_DRAFT_SETTING)]).toEqual([run, null]);
+      expectEmpty();
+    }
+    expect(fetches).toBe(0);
+  });
+
   // Review B on #2102 at 1991df28, must-fix 1; Karma ruling 7218729959 (option b). Nothing stops a sign-in while the mark
   // stands, and takeOwnership then queues an upload per old book and letter, with names, birthdays and words, under keys
   // the scope never saw. A row that names an old book, letter or draft by id is old whenever it was written.
