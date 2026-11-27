@@ -15,7 +15,9 @@
  * Mutants run for the PR (each made, seen to fail, restored): a temp file calling `sb.auth.signInAnonymously()`;
  * one calling `sb.auth.signInWithPassword`; one destructuring `resetPasswordForEmail`; `signInWithIdToken` with
  * provider 'facebook'; `signInWithOtp` outside email.ts; `shouldCreateUser: false` in email.ts; a
- * `secrets.SUPABASE_SERVICE_ROLE_KEY` line in a copy of agents.yml.
+ * `secrets.SUPABASE_SERVICE_ROLE_KEY` line in a copy of agents.yml. After Review B at c298a03: a destructured `auth`, a
+ * chain split over two lines, `sb.auth['signInWithIdToken']`, an aliased client calling `signInWithOtp`,
+ * `updateUser({ password })`, provider 'facebook' in google.ts, and a SUPABASE secret in claude.yml.
  */
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
@@ -62,12 +64,25 @@ export function signInFindings(file: string, text: string): string[] {
   for (const word of BANNED) {
     if (new RegExp(`\\b${word}\\b`).test(text)) out.push(`${file}: names ${word}`);
   }
-  // A call on a Supabase auth client: `sb.auth.signInX(`, `sb?.auth.signInX(`, `client.auth?.signInX(`.
-  for (const m of text.matchAll(/\.auth\??\.\s*(signIn\w*|signUp\w*)\s*\(\s*(\{[^)]*)?/g)) {
-    const method = m[1];
+  // The two allowed Supabase names are held as words too, each to its file(s), so an aliased client
+  // (`const a = sb.auth; a.signInWithOtp(`), a string key or a destructure in the wrong file is still reported.
+  for (const [word, rules] of Object.entries(ALLOWED)) {
+    if (new RegExp(`\\b${word}\\b`).test(text) && !rules.some((r) => r.file === file)) {
+      out.push(`${file}: names ${word} outside ${rules.map((r) => r.file).join(' or ')}`);
+    }
+  }
+  // Setting a password on the signed-in account is the other way email plus password sign-in could appear (IAM-R06).
+  if (/\bupdateUser\s*\(\s*\{[^)]*\bpassword\s*:/.test(text)) out.push(`${file}: sets a password with updateUser`);
+  // A call on a Supabase auth client: `sb.auth.signInX(`, `sb?.auth.signInX(`, `client.auth?.signInX(`, a chain split
+  // over lines, and `sb.auth['signInX'](`. For the two allowed names a bare `auth.` (a destructured client) counts too;
+  // for any other name the leading dot is kept, because the app's own AuthApi is also called `auth`
+  // (`auth.signInWithApple`, `auth.signInWithPasskey`) and those are not Supabase calls.
+  for (const m of text.matchAll(/(\.?)\bauth\s*\??\s*(?:\.\s*(signIn\w*|signUp\w*)|\[\s*['"](signIn\w*|signUp\w*)['"]\s*\])\s*\(\s*(\{[^)]*)?/g)) {
+    const method = m[2] ?? m[3];
+    const args = m[4];
     const rules = ALLOWED[method];
     if (!rules) {
-      out.push(`${file}: calls auth.${method}`);
+      if (m[1] === '.') out.push(`${file}: calls auth.${method}`);
       continue;
     }
     const rule = rules.find((r) => r.file === file);
@@ -76,12 +91,12 @@ export function signInFindings(file: string, text: string): string[] {
       continue;
     }
     if (rule.provider) {
-      const provider = /provider:\s*'([^']*)'/.exec(m[2] ?? '')?.[1];
+      const provider = /provider:\s*'([^']*)'/.exec(args ?? '')?.[1];
       if (provider !== rule.provider) out.push(`${file}: auth.${method} with provider ${provider ?? '(not a literal)'}`);
     }
   }
   // The passkey path is the auth-js two-step API, and only passkey.ts reaches it.
-  if (/\.auth\??\.\s*passkey\b/.test(text) && file !== 'lib/auth/passkey.ts') out.push(`${file}: reaches auth.passkey outside lib/auth/passkey.ts`);
+  if (/\bauth\s*\??\s*\.\s*passkey\b/.test(text) && file !== 'lib/auth/passkey.ts') out.push(`${file}: reaches auth.passkey outside lib/auth/passkey.ts`);
   return out;
 }
 
@@ -98,12 +113,38 @@ describe('BL-727 sign-in methods in the app source', () => {
       'lib/auth/apple.ts: auth.signInWithIdToken with provider google',
     ]);
     expect(signInFindings('app/x.tsx', 'await sb?.auth.signInWithOtp({ phone })')).toEqual([
+      'app/x.tsx: names signInWithOtp outside lib/auth/email.ts',
       'app/x.tsx: calls auth.signInWithOtp outside lib/auth/email.ts',
     ]);
+    expect(signInFindings('lib/x.ts', 'await sb.auth\n  .signInWithPasskey()')).toEqual(['lib/x.ts: calls auth.signInWithPasskey']);
     expect(signInFindings('lib/x.ts', 'await sb.auth.signInWithPasskey()')).toEqual(['lib/x.ts: calls auth.signInWithPasskey']);
     expect(signInFindings('lib/x.ts', 'await sb.auth.passkey.startAuthentication()')).toEqual([
       'lib/x.ts: reaches auth.passkey outside lib/auth/passkey.ts',
     ]);
+  });
+
+  it('[IAM-R05] positive control: a destructured client, a split chain, a string key and an aliased client are each reported', () => {
+    expect(signInFindings('lib/x.ts', "const { auth } = sb; auth.signInWithIdToken({ provider: 'facebook', token })")).toEqual([
+      'lib/x.ts: names signInWithIdToken outside lib/auth/apple.ts or lib/auth/google.ts',
+      'lib/x.ts: calls auth.signInWithIdToken outside lib/auth/apple.ts or lib/auth/google.ts',
+    ]);
+    expect(signInFindings('lib/auth/google.ts', "sb.auth\n  .signInWithIdToken({ provider: 'facebook', token })")).toEqual([
+      'lib/auth/google.ts: auth.signInWithIdToken with provider facebook',
+    ]);
+    expect(signInFindings('lib/auth/apple.ts', "sb.auth['signInWithIdToken']({ provider: 'facebook', token })")).toEqual([
+      'lib/auth/apple.ts: auth.signInWithIdToken with provider facebook',
+    ]);
+    expect(signInFindings('lib/x.ts', 'const a = sb.auth; a.signInWithOtp({ phone })')).toEqual([
+      'lib/x.ts: names signInWithOtp outside lib/auth/email.ts',
+    ]);
+    expect(signInFindings('lib/x.ts', 'const { auth } = sb; auth\n  .passkey.startAuthentication()')).toEqual([
+      'lib/x.ts: reaches auth.passkey outside lib/auth/passkey.ts',
+    ]);
+  });
+
+  it('[IAM-R06] positive control: setting a password with updateUser is reported', () => {
+    expect(signInFindings('lib/x.ts', 'await sb.auth.updateUser({ password: next })')).toEqual(['lib/x.ts: sets a password with updateUser']);
+    expect(signInFindings('lib/x.ts', 'await sb.auth.updateUser({ data: { name } })')).toEqual([]);
   });
 
   it('[IAM-R06][IAM-R07] positive control: anonymous, password and reset are reported as a call, a destructure or a string key', () => {
@@ -162,6 +203,8 @@ export function agentSecretFindings(text: string): string[] {
     ...[...text.matchAll(/\bsecrets\s*\[\s*['"]([^'"]+)['"]\s*\]/g)].map((m) => m[1]),
   ];
   for (const n of names) if (/SUPABASE|SERVICE_ROLE/i.test(n)) out.push(`names secret ${n}`);
+  // A computed key (`secrets[matrix.name]`, `secrets[format(...)]`) could name anything, so it fails closed.
+  for (const m of text.matchAll(/\bsecrets\s*\[\s*(?!['"][^'"]+['"]\s*\])([^\]]*)\]/g)) out.push(`reads a secret by a computed key (${m[1].trim()})`);
   if (/^\s*secrets:\s*inherit\b/m.test(text)) out.push('passes every secret on (secrets: inherit)');
   if (/toJSON\(\s*secrets\s*\)/.test(text)) out.push('reads every secret (toJSON(secrets))');
   return out;
@@ -174,14 +217,16 @@ describe('BL-727 the agents workflow gets no Supabase secret', () => {
     expect(agentSecretFindings('k: ${{ secrets.supabase_db_password }}')).toEqual(['names secret supabase_db_password']);
     expect(agentSecretFindings('    uses: ./.github/workflows/x.yml\n    secrets: inherit\n')).toEqual(['passes every secret on (secrets: inherit)']);
     expect(agentSecretFindings('ALL: ${{ toJSON(secrets) }}')).toEqual(['reads every secret (toJSON(secrets))']);
+    expect(agentSecretFindings('K: ${{ secrets[matrix.name] }}')).toEqual(['reads a secret by a computed key (matrix.name)']);
   });
 
   it('[IAM-R23] negative control: the model and app keys the agents run on are not reported', () => {
     expect(agentSecretFindings('a: ${{ secrets.OPENROUTER_API_KEY }}\nb: ${{ secrets.AGENTS_APP_PRIVATE_KEY }}')).toEqual([]);
   });
 
-  it('[IAM-R23] .github/workflows/agents.yml names no SUPABASE or SERVICE_ROLE secret', () => {
-    const yml = readFileSync(join(REPO, '.github/workflows/agents.yml'), 'utf8');
+  // agents.yml runs the harness agents; claude.yml runs the Claude Code action, an agent too.
+  it.each(['agents.yml', 'claude.yml'])('[IAM-R23] .github/workflows/%s names no SUPABASE or SERVICE_ROLE secret', (wf) => {
+    const yml = readFileSync(join(REPO, '.github/workflows', wf), 'utf8');
     expect(yml).toMatch(/\bsecrets\./); // it does read secrets, so the scan is reading the right file
     expect(agentSecretFindings(yml)).toEqual([]);
   });

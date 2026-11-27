@@ -159,7 +159,7 @@ Gap ids defined here:
 | IAM-R20 | MUST | `db_followup_family_cap.test.mjs:139-159`; `v1_gate_coparent.test.mjs:190-195` | enforced on develop | |
 | IAM-R21 | MUST | `data_governance.test.mjs:87`; `db_followup_family_cap.test.mjs:95-97` (SCLPG) | enforced on develop | |
 | IAM-R22 | MUST | review | not yet | BL-728, DB-17 |
-| IAM-R23 | MUST NOT | `sign-in-rules-source.test.ts` reads `agents.yml` (no `SUPABASE` or `SERVICE_ROLE` secret, no `secrets: inherit`) | enforced on develop (agents.yml); review (interactive sessions) | BL-603 |
+| IAM-R23 | MUST NOT | `sign-in-rules-source.test.ts` reads `agents.yml` and `claude.yml` (no `SUPABASE` or `SERVICE_ROLE` secret, no computed key, no `secrets: inherit`) | enforced on develop (agents.yml); review (interactive sessions) | BL-603 |
 | IAM-R24 | MUST | `access_matrix.test.mjs:618` (tables, views), `:643` (functions); review (deny cells, Storage) | enforced on develop | |
 | SEC-R01 | MUST | review; `docs/security/threat-model.md` | not yet | handoff to `security` |
 | SEC-R02 | MUST | `docs/ops/SECRETS.md` | file on develop (#1094); no check that every secret has a row | PINF-05, WS-18 |
