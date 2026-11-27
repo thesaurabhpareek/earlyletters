@@ -23,7 +23,7 @@ test('output is deterministic and sorted, ids are unique', () => {
   assert.equal(new Set(map.rows.map((r) => r.id)).size, map.rows.length);
   for (const r of map.rows) assert.deepEqual(Object.keys(r), COLUMNS);
 });
-// CR-242: nothing in the map moves when an unrelated string moves, so two content PRs only conflict on rows they share.
+// CR-237: nothing in the map moves when an unrelated string moves, so two content PRs only conflict on rows they share.
 test('no line numbers and no counts: the fields that changed on every unrelated string edit are gone', () => {
   assert.equal(COLUMNS.includes('line'), false);
   assert.deepEqual(Object.keys(map.meta).sort(), ['columns', 'note']);

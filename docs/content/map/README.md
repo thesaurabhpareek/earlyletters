@@ -36,7 +36,7 @@ CI: `scripts/content/export-content-map.test.mjs` is in the root `npm test` list
 Every content PR must regenerate the map.
 
 ## When two content PRs conflict in the map (BL-1992)
-Since CR-242 (27 Nov 2026) the map has no `line` column and no counts in `meta`, and the JSON holds one row per line, like
+Since CR-237 (27 Nov 2026) the map has no `line` column and no counts in `meta`, and the JSON holds one row per line, like
 the CSV. A line number moved whenever any string above it changed, and both files carried counts that every new row
 changed, so every content PR conflicted with every other and each update voided its reviews. Rows are still in source
 order, so a string is found by `file` and the key path in `id`. To count rows, use `countBy(map.rows, 'surface')` from the
