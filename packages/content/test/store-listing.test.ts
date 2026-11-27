@@ -250,7 +250,10 @@ function readPacks(): Pack[] {
       });
       // Every name a listing could use for the language: the pack's own names and the picker's search aliases.
       const aliases = LANGUAGES.find((l) => l.code === pack.language)?.aliases ?? [];
-      const names = [pack.name.english, ...pack.name.english.split(/\s+/), pack.name.native, ...aliases].filter((n) => n.length > 2);
+      // The length floor applies only to words split from the English name ("Mandarin Chinese"), so a short word
+      // there cannot match by chance; a whole name, native or alias, counts at any length (Chinese is two characters).
+      const words = pack.name.english.split(/\s+/).filter((n) => n.length > 2);
+      const names = [pack.name.english, ...words, pack.name.native, ...aliases].filter((n) => n.trim().length > 0);
       return { code: pack.language, names: [...new Set(names)], signed };
     });
 }
@@ -273,7 +276,13 @@ const shippedOf = (packs: Pack[], heard: string[]): Set<string> =>
 
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 /** A whole-word match in any script: letters or marks on either side make it part of another word. */
-const nameRe = (name: string) => new RegExp(`(?<![\\p{L}\\p{M}])${escapeRe(name)}(?![\\p{L}\\p{M}])`, 'iu');
+// Scripts written without spaces between words (Han, kana, Thai) have no word edge to look for, so a name in
+// one of them matches wherever it appears; every other name must stand as a whole word in any script.
+const UNSPACED_SCRIPT = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Thai}]/u;
+const nameRe = (name: string) =>
+  UNSPACED_SCRIPT.test(name)
+    ? new RegExp(escapeRe(name), 'iu')
+    : new RegExp(`(?<![\\p{L}\\p{M}])${escapeRe(name)}(?![\\p{L}\\p{M}])`, 'iu');
 
 /** Each sentence that names a language that does not ship, with the language code. */
 function namesUnshipped(sentences: string[], packs: Pack[], shipped: Set<string>): string[] {
@@ -332,6 +341,13 @@ describe('[NS-17-R4] the listing names only shipped languages', () => {
   it('[NS-17-R4] [mutant] a language name in the keywords or a caption is read like any other sentence', () => {
     expect(namesUnshipped(['diary,keepsake,french'], packs, shipped)).toEqual(['fr: diary,keepsake,french']);
     expect(namesUnshipped(['Letters in Mandarin.'], packs, shipped)).toEqual(['zh: Letters in Mandarin.']);
+  });
+
+  it('[NS-17-R4] [mutant] a two-character native name inside unspaced text is refused (Chinese)', () => {
+    const planted = 'Now in \u4e2d\u6587 too.'; // the zh pack's native name, written as escapes to keep this file ASCII
+    expect(shipped.has('zh')).toBe(false);
+    expect(namesUnshipped([planted], packs, shipped)).toEqual([`zh: ${planted}`]);
+    expect(namesUnshipped(['\u6211\u4eec\u7684\u4e2d\u6587\u4fe1'], packs, shipped)).toHaveLength(1);
   });
 
   it('[NS-17-R4] [mutant] the same line passes once Spanish ships, so the rule reads the shipped list', () => {
