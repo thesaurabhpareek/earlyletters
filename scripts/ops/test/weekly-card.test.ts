@@ -11,6 +11,12 @@ const row = (ticket: string, kind: string, received: string, more: Partial<Recor
 const log = (...rows: string[]) => [HEAD, ...rows].join('\n');
 const card = (...rows: string[]) => buildCard(log(...rows), TODAY);
 const day = (n: number) => new Date(parseDate(TODAY)! - n * 86_400_000).toISOString().slice(0, 10);
+const plus = (d: string, n: number) => new Date(parseDate(d)! + n * 86_400_000).toISOString().slice(0, 10);
+// Runbook section 0, safety row: the pointer to help, not the section 1 reply; no data-request process that day.
+const SAFETY_FIRST = 'first message not logged: send the pointer to help today, not the section 1 reply: local emergency services and the help the app shows by region in Settings, If you are struggling; start no data-request process today and answer the data request afterwards; log it';
+const FIRST_REPLY = 'first reply not logged: send what its section 0 row says today, the section 1 first reply unless the row says otherwise, and log it';
+// What the card may print (the last test below): tickets, kinds, numbers, dates and plain words.
+const CARD_LINE = /^\|[ A-Za-z0-9_:;,.'|-]*\|$/;
 
 Deno.test('[FR-BKO-09] a request at day 35 or later is listed first, ahead of one whose next action date is sooner', () => {
   const c = card(
@@ -74,7 +80,7 @@ Deno.test('[FR-BKO-13] a request read on an earlier day with no first reply logg
   assert.equal(r.nextAction, 'first reply not logged: send what its section 0 row says today, the section 1 first reply unless the row says otherwise, and log it');
   assert.equal(r.nextActionDate, TODAY);
   const safety = card(row('DREQ-20261212-1', 'safety', day(2), { acknowledged: '' })).rows[0];
-  assert.equal(safety.nextAction, 'first message not logged: send the pointer to help today, as the safety row says, and log it');
+  assert.equal(safety.nextAction, SAFETY_FIRST);
   const late = card(row('DREQ-20261108-1', 'see_export', day(36), { acknowledged: '' })).rows[0];
   assert.match(late.nextAction, /^first reply not logged: .*; then finish, or send the extension notice with its reason before day 45$/);
   assert.equal(late.urgent, true);
@@ -256,4 +262,127 @@ Deno.test('[FR-BKO-09] the card prints tickets, kinds, numbers and dates only', 
   const c = card(row('DREQ-20261108-1', 'withdraw_sync', day(36)), row('DREQ-20261212-1', 'legal_process', day(2)));
   for (const line of c.lines.slice(2)) assert.match(line, /^\|[ A-Za-z0-9_:;,.'|-]*\|$/);
   assert.equal(c.lines[2], '| ticket | kind | day | due | next action date | next action |');
+});
+
+Deno.test('[FR-BKO-13] FU-15a: a safety first message follows its section 0 row: the pointer to help, not the section 1 reply', () => {
+  for (const n of [1, 2, 34]) {
+    const r = card(row('DREQ-20261212-1', 'safety', day(n), { acknowledged: '' })).rows[0];
+    assert.equal(r.nextAction, SAFETY_FIRST, String(n));
+    assert.equal(r.nextActionDate, TODAY);
+  }
+  const s = SAFETY_FIRST;
+  assert.match(s, /pointer to help today, not the section 1 reply/);
+  assert.match(s, /local emergency services/);
+  assert.match(s, /Settings, If you are struggling/);
+  assert.match(s, /start no data-request process today and answer the data request afterwards/);
+  assert.doesNotMatch(s, /first reply/, 'the section 1 first reply is not the first message for safety');
+  // On the clock like any request: from day 35 the clock step follows the pointer to help.
+  assert.equal(card(row('DREQ-20261108-1', 'safety', day(36), { acknowledged: '' })).rows[0].nextAction, `${SAFETY_FIRST}; then finish, or send the extension notice with its reason before day 45`);
+  // Every other kind that can reach the first-message step defers to its own section 0 row.
+  for (const kind of ['delete_account', 'withdraw_sync', 'see_export', 'correct', 'under_18', 'testflight_feedback', 'email_list', 'abuse_report', 'dispute_or_third_party', 'other']) {
+    const r = card(row('DREQ-20261212-1', kind, day(2), { acknowledged: '' })).rows[0];
+    assert.equal(r.nextAction, FIRST_REPLY, kind);
+  }
+  // legal_process never gets a first-message step: no reply until counsel says so.
+  assert.doesNotMatch(card(row('DREQ-20261212-1', 'legal_process', day(2), { acknowledged: '' })).rows[0].nextAction, /first|send/);
+  for (const line of card(row('DREQ-20261212-1', 'safety', day(2), { acknowledged: '' })).lines.slice(2)) assert.match(line, CARD_LINE);
+});
+
+Deno.test('[FR-BKO-16] FU-15a: a legal_process row turns urgent the day after its legal_date, not on it or before it', () => {
+  const received = day(30);
+  const at = (todayIso: string) => buildCard(log(row('DREQ-20261114-1', 'legal_process', received, { legal_date: TODAY })), todayIso).rows[0];
+  const before = at(day(1));
+  assert.equal(before.urgent, false);
+  assert.equal(before.nextActionDate, TODAY, 'the day before: the named date is next');
+  assert.equal(before.nextAction, 'with counsel: no reply until counsel says so; the letter names this date');
+  assert.equal(before.due, '-');
+  assert.equal(before.left, Number.POSITIVE_INFINITY);
+  const on = at(TODAY);
+  assert.equal(on.urgent, false, 'on the named date it has not passed yet (section 11: once that date has passed)');
+  assert.equal(on.nextActionDate, TODAY);
+  assert.equal(on.nextAction, 'with counsel: no reply until counsel says so; the letter names this date');
+  assert.equal(on.left, Number.POSITIVE_INFINITY);
+  const after = at(plus(TODAY, 1));
+  assert.equal(after.urgent, true);
+  assert.equal(after.nextActionDate, plus(TODAY, 1), 'the day after: to counsel that day');
+  assert.equal(after.nextAction, 'with counsel: the date the letter names has passed; to counsel today');
+  assert.equal(after.due, '-');
+  assert.equal(after.left, -1);
+  // Listed first once passed, and ahead of a row on the clock at day 36 (fewer days left).
+  const c = buildCard(log(row('DREQ-20261114-1', 'legal_process', received, { legal_date: TODAY }), row('DREQ-20261108-1', 'see_export', day(36))), plus(TODAY, 1));
+  assert.deepEqual(c.rows.map((r) => r.kind), ['legal_process', 'see_export']);
+  assert.match(c.lines[0], /2 open, 2 to act on first/);
+  // None of the three ever asks for a reply, an extension or a P0: the row stays with counsel.
+  for (const r of [before, on, after]) assert.doesNotMatch(r.nextAction, /extension|what was done|P0|first reply/);
+});
+
+Deno.test('[FR-BKO-09] FU-15a: the exact P0 and due wording on the boundary days, with no extension, a timely one and a late one', () => {
+  const at = (n: number, more = {}) => card(row('DREQ-20261030-1', 'see_export', day(n), more)).rows[0];
+  // No extension: day 45 is due today, day 46 the P0.
+  assert.equal(at(45).nextAction, 'due today: reply with what was done');
+  const p0 = at(46);
+  assert.equal(p0.nextAction, 'P0: past day 45 with no extension notice; to counsel today');
+  assert.deepEqual([p0.nextActionDate, p0.urgent, p0.left, p0.due], [TODAY, true, -1, plus(day(46), 45)]);
+  assert.equal(at(46, { acknowledged: '' }).nextAction, 'P0: past day 45 with no extension notice; to counsel today', 'the P0 leads even with no first reply logged');
+  // A notice on day 44 counts: day 89 walks to the day-90 due date, day 90 is due today, day 91 is the extended P0.
+  const ext = (n: number, more = {}) => at(n, { extended: plus(day(n), 44), ...more });
+  const d89 = ext(89);
+  assert.deepEqual([d89.nextAction, d89.nextActionDate, d89.urgent, d89.left], ['due: reply with what was done', plus(day(89), 90), true, 1]);
+  const d90 = ext(90);
+  assert.deepEqual([d90.nextAction, d90.nextActionDate, d90.left, d90.due], ['due today: reply with what was done', TODAY, 0, TODAY]);
+  const d91 = ext(91);
+  assert.equal(d91.nextAction, 'P0: past the extended due date; to counsel today');
+  assert.deepEqual([d91.nextActionDate, d91.urgent, d91.left, d91.due], [TODAY, true, -1, plus(day(91), 90)]);
+  assert.equal(ext(91, { acknowledged: '' }).nextAction, 'P0: past the extended due date; to counsel today');
+  // With no first reply logged, an extended row says only the first reply until its day 90, which is due today.
+  assert.equal(ext(89, { acknowledged: '' }).nextAction, FIRST_REPLY);
+  assert.equal(ext(90, { acknowledged: '' }).nextAction, `${FIRST_REPLY}; it is due today`);
+  assert.equal(at(45, { acknowledged: '' }).nextAction, `${FIRST_REPLY}; it is due today`);
+  assert.equal(at(44, { acknowledged: '' }).nextAction, `${FIRST_REPLY}; then finish, or send the extension notice with its reason before day 45`);
+  // A notice on day 45 is late: day 45 is still due today, day 46 is the late-notice P0 and the due date stays day 45.
+  const late = (n: number) => at(n, { extended: plus(day(n), 45) });
+  assert.equal(late(45).nextAction, 'due today: reply with what was done');
+  assert.equal(late(45).due, TODAY);
+  const l46 = late(46);
+  assert.equal(l46.nextAction, 'P0: the extension notice did not go before day 45; to counsel today');
+  assert.deepEqual([l46.nextActionDate, l46.urgent, l46.left, l46.due], [TODAY, true, -1, plus(day(46), 45)]);
+});
+
+Deno.test('[FR-BKO-09] FU-15a: an under_18 row is flagged from day 10, the under-13 internal target, and its 45-day clock is unchanged', () => {
+  const at = (n: number, more = {}) => card(row('DREQ-20261204-1', 'under_18', day(n), more)).rows[0];
+  const before = 'day 10 under-13 internal target: if the holder is under 13, finish Route 4 by then; an internal target, not the legal 45-day clock';
+  const today = 'under-13 internal target: day 10 is today; if the holder is under 13, finish Route 4 today; an internal target, not the legal 45-day clock';
+  const passed = 'under-13 internal target: day 10 has passed; if the holder is under 13, finish Route 4 today; an internal target, not the legal 45-day clock';
+  // Day 7 is still the first follow-up; days 8 and 9 point at day 10.
+  assert.deepEqual([at(7).nextAction, at(7).urgent], ['day 7 follow-up', false]);
+  const d9 = at(9);
+  assert.deepEqual([d9.nextAction, d9.nextActionDate, d9.urgent], [before, plus(day(9), 10), false]);
+  assert.equal(at(8).nextActionDate, plus(day(8), 10));
+  const d10 = at(10);
+  assert.deepEqual([d10.nextAction, d10.nextActionDate, d10.urgent], [today, TODAY, true]);
+  const d11 = at(11);
+  assert.deepEqual([d11.nextAction, d11.nextActionDate, d11.urgent], [`${passed}; then day 30 follow-up`, TODAY, true]);
+  for (const r of [d9, d10, d11]) {
+    assert.match(r.nextAction, /an internal target, not the legal 45-day clock/);
+    assert.equal(r.due, plus(day(r.day), 45), `${r.day}: the 45-day due date stays`);
+    assert.equal(r.left, 45 - r.day, String(r.day));
+  }
+  // The clock steps still follow the target, and the P0 wording is the clock's own.
+  assert.equal(at(36).nextAction, `${passed}; then finish, or send the extension notice with its reason before day 45`);
+  assert.equal(at(45).nextAction, `${passed}; then due today: reply with what was done`);
+  assert.equal(at(46).nextAction, 'P0: past day 45 with no extension notice; to counsel today');
+  assert.equal(at(46).left, -1);
+  // With no first reply logged, the first reply goes first, then the target.
+  assert.equal(at(9, { acknowledged: '' }).nextAction, FIRST_REPLY);
+  assert.equal(at(9, { acknowledged: '' }).urgent, false);
+  assert.equal(at(10, { acknowledged: '' }).nextAction, `${FIRST_REPLY}; then ${today}`);
+  assert.equal(at(11, { acknowledged: '' }).nextAction, `${FIRST_REPLY}; then ${passed}`);
+  // Other kinds keep their walk: day 10 is not a step for them.
+  assert.deepEqual([card(row('DREQ-20261204-1', 'see_export', day(11))).rows[0].nextAction, card(row('DREQ-20261204-1', 'see_export', day(11))).rows[0].urgent], ['day 30 follow-up', false]);
+  assert.equal(card(row('DREQ-20261204-1', 'see_export', day(9))).rows[0].nextAction, 'day 30 follow-up');
+  // Listed first from day 10, behind rows with fewer days left; the card counts it and stays printable.
+  const c = card(row('DREQ-20261204-1', 'under_18', day(10)), row('DREQ-20261205-1', 'under_18', day(9)), row('DREQ-20261108-1', 'see_export', day(36)));
+  assert.deepEqual(c.rows.map((r) => [r.kind, r.day]), [['see_export', 36], ['under_18', 10], ['under_18', 9]]);
+  assert.match(c.lines[0], /3 open, 2 to act on first/);
+  for (const line of c.lines.slice(2)) assert.match(line, CARD_LINE);
 });

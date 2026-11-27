@@ -57,11 +57,13 @@ type OnCadence = Exclude<Cadence, 'off'>;
  * ruled: CDesO-3, CCO-10, CPO-3). Local notifications only.
  *
  * No sheet in front of the iOS alert (CDesO-3): the footer under the switch explains first (CCO-10, LEGAL-REQ-007),
- * and turning the switch on writes `enabled` before iOS asks, so the switch stays on. The choices reveal inline
- * under it: How it will look (the real words of the first planned notification), Next (from the planner), How
- * often, Which evenings, Time, Month and birthday messages, Names in notifications. Changes save as they are made;
- * the page says so once, the Next line cross-fades on every change (none under Reduce Motion), and VoiceOver hears
- * "Saved. Next: ..." 600 ms after the last change. A scheduling failure shows with Try again.
+ * and turning the switch on writes `enabled` before iOS asks, so the switch stays on behind the alert. Once iOS has
+ * answered, the switch draws on only while notifications are allowed (BL-428): denied or not yet answered, it draws off
+ * with "Not sending yet." and the intent is kept; denied also shows the Notifications are off card with Open Settings.
+ * The choices reveal inline under it: How it will look (the real words of the first planned notification), Next
+ * (from the planner), How often, Which evenings, Time, Month and birthday messages, Names in notifications. Changes
+ * save as they are made; the page says so once, the Next line cross-fades on every change (none under Reduce Motion),
+ * and VoiceOver hears "Saved. Next: ..." 600 ms after the last change. A scheduling failure shows with Try again.
  */
 export default function Reminders() {
   const c = useTheme().c;

@@ -242,7 +242,7 @@ Purpose: Quiet this book and Hide this book within 2 taps of the Book (F12-REQ-0
 Layout, default: a fit-to-contents `Sheet` titled "More for this book" (header role) with `ListRow`s: "Quiet this book" (Moon glyph), "Hide this book" (EyeSlash glyph); at AX3 and above, "Go to a month" first. Each row 56 pt. No destructive styling (Hide deletes nothing). The Quiet row's subtitle says what it does (`en.children.quiet.help`).
 Layout, AX5: rows grow, titles wrap, footnote wraps; the sheet scrolls.
 VoiceOver: sheet title, then rows in order, each a button with its hint.
-States: `.default`; `.printOn`; `.quieted` ("Turn Quiet off" replaces Quiet; nothing else changes, R7); `.hiddenReadOnly` (only "Show this book again"); `.ax3` (Go to a month folded in); `.failed` (sheet closes, one toast line "That did not save. {child}'s book is as it was."; old state kept); `.twoParents` (no extra line: per person; the other parent sees no change).
+States: `.default`; `.printOn`; `.quieted` ("Turn Quiet off" replaces Quiet; nothing else changes, R7); `.hiddenReadOnly` (only "Show this book again"); `.ax3` (Go to a month folded in); `.failed` (sheet closes, one toast line "That did not save, so {child}'s book is as it was."; old state kept); `.twoParents` (no extra line: per person; the other parent sees no change).
 Components: `Sheet`, `ListRow`, `Toast`; Hide reuses C-S15's confirm and words (`children.settings.hideBody`).
 System menu first (B G-03, ruled CARD): the target is the system menu (N6, `Stack.Toolbar.Menu`), motion T-MENU. No `platform/action-menu` exists on develop [F], so until it lands (v2 engineering row R3) and wherever the menu cannot carry the content (the subtitle line at AX5), a fit-to-contents `Sheet` of `ListRow`s is the fallback; it wraps at AX5 and keeps 2 taps. This section draws the sheet form; the menu form has the same rows in the same order.
 `.printOn` (FR-PRT-16, P2 gated, off in 1.0): a third row "A book to hold" (BookOpenText glyph) opens PRT-S01. Absent, never disabled, when the print flag is off, the book is hidden from this person, or no kept letter can be read (NS-21-R2). Quiet and Hide keep their place first; no price, count or countdown on the row. Entry points for print stay exactly three: C-S04, C-S06 and this row.
@@ -337,6 +337,7 @@ Layout, default (top to bottom, the card's text column, no lamp):
    5. Who can read it: "Only you" or "In the book" (rules in B-J03).
    6. Earlier versions (NS-12, area C, C-S13).
    7. Where the recording is (NS-08 words, area C, C-S09): "Kept on this phone" or where it is.
+   Built since this drawing, ahead of row 1: "Read from here" (spec 13 section 5, BL-1792, behind `EXPO_PUBLIC_READ_THE_YEAR`; only on a letter Read together can play; on the other parent's letter in a section of its own), then "Change words" where it is offered (BL-413). The built list has no "This letter" heading yet, and its rows other than Read from here are 44 pt, not 56; both are open for the next pass of this section.
 10. Delete (`Button` destructive tone with a Trash glyph and the word, full width), last on the page, apart from the list (R3b).
 11. The "Exactly as said" view switch (built) stays where it is today, under the provenance block; not a list row (card section 3 Not in scope).
 

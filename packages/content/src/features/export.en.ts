@@ -168,7 +168,7 @@ export const exportCopy = {
     'PICTURES',
     '',
     'photos/     The pictures you added to letters, one folder per letter (JPEG).',
-    '            Each is the copy kept in the app, with no location or other details in it.',
+    '            Each is the copy kept in the app, with no location, date or camera details in it.',
     '            data/entries.json says which letter each picture belongs to.',
   ],
 } as const;
