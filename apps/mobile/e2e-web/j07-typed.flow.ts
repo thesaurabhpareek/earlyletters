@@ -69,17 +69,28 @@ test('[J07d] the free letters: two are kept, the third is held', async ({ app, r
     await app.getByRole('textbox').first().fill(text);
     await expect(btn(app, /^Add to .*book/)).toBeEnabled();
   };
+  // After Keep the app takes these steps before the Book, and each wait has its own bound. The saved moment shows
+  // ("Added to"). On the web it holds 3 s from the save, because the web reports a screen reader (SCREEN_READER_HOLD_MS,
+  // components/capture/review-view.logic.ts, used in saved-moment.tsx). Then land() in app/review.tsx goes to the Book.
+  // At 8 workers on 4 cores the old 6 s wait for the Book missed in 8 of 45 runs. From the tap, the Book came after
+  // 3.8 to 13.2 s (48 landings), always in the same frame that the saved moment left. Under that load the Keep click
+  // can also return after the moment has gone (1 of 45 missed "Added to"), so the first wait also takes the Book.
+  // The 15 s bound is for the hold alone: it took up to 6.6 s here and up to 12.3 s in PR #2245's runs.
+  // The same cause and wait as noRemindersAfterFirstLetter in PR #2245 (BL-2268); it can move into support/app.ts then.
+  const landOnBook = async () => {
+    await expect(app.getByText(/Added to/).or(selectedTab(app, 'Book')).first(), 'the letter was kept').toBeVisible();
+    await expect(app.getByTestId('review.saved'), 'the saved moment handed over to the Book').toHaveCount(0, { timeout: 15_000 });
+    await expect(selectedTab(app, 'Book')).toBeVisible();
+  };
   await write('You held the spoon by yourself today.');
   await btn(app, /^Add to .*book/).click();
-  await expect(app.getByText(/Added to/)).toBeVisible();
+  await landOnBook();
   await expect(app.getByText('That was your second free letter.')).toHaveCount(0);
-  await expect(selectedTab(app, 'Book')).toBeVisible({ timeout: 6000 });
   await noRemindersAfterFirstLetter(app); // the first letter's one ask (DR-12 B)
   await write('You laughed at the rain.');
   await btn(app, /^Add to .*book/).click();
-  await expect(app.getByText(/Added to/)).toBeVisible();
   // The second-free line is the Book's own toast after the landing (S21), not under the chip.
-  await expect(selectedTab(app, 'Book')).toBeVisible({ timeout: 6000 });
+  await landOnBook();
   await expect(app.getByText('That was your second free letter.')).toBeVisible({ timeout: 4000 });
   await step('happy', 'The second free letter', 'The second letter is kept like the first. "That was your second free letter." shows once, as the Book\'s toast after the landing, with no count of what is left (D-082, S21).', undefined, { settle: 120 });
   await write('You waved at the dog.');
