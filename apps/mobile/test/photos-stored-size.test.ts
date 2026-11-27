@@ -106,3 +106,31 @@ describe('[NS-01-R37c] re-encodes are upright JPEG at 0.85', () => {
     expect(swift).toContain('kCGImageSourceThumbnailMaxPixelSize: min(max(width, height), longestSide),');
   });
 });
+
+describe('[NS-01-R37a] a picture whose size cannot be read is not stored at that size', () => {
+  /** makeJpeg with its frame header removed, so stripJpeg reads no size. */
+  const noFrame = () => {
+    const b = makeJpeg({ width: 6000, height: 4000 });
+    const at = b.findIndex((v, i) => v === 0xff && b[i + 1] === 0xc0);
+    const len = (b[at + 2] << 8) | b[at + 3];
+    return Uint8Array.from([...b.slice(0, at), ...b.slice(at + 2 + len)]);
+  };
+
+  it('[NS-01-R37a] a JPEG with no frame size goes through the re-encode, or is refused without it', async () => {
+    expect(stripJpeg(noFrame())).toMatchObject({ ok: true, width: null, height: null });
+    const { d, files } = deps();
+    expect(await commitPhoto(d, { ...ONE, bytes: noFrame() })).toEqual({ status: 'unreadable', reason: 'too_large' });
+    expect(files.disk.size).toBe(0);
+  });
+
+  it('[NS-01-R37a] a second frame header cannot hide the first frame size', async () => {
+    const big = makeJpeg({ width: 6000, height: 4000 });
+    const at = big.findIndex((v, i) => v === 0xff && big[i + 1] === 0xda);
+    const small = [0xff, 0xc0, 0, 11, 8, 0, 4, 0, 4, 1, 1, 0x11, 0];
+    const two = Uint8Array.from([...big.slice(0, at), ...small, ...big.slice(at)]);
+    expect(stripJpeg(two)).toMatchObject({ ok: true, width: 6000, height: 4000 });
+    const { d, files } = deps();
+    expect(await commitPhoto(d, { ...ONE, bytes: two })).toEqual({ status: 'unreadable', reason: 'too_large' });
+    expect(files.disk.size).toBe(0);
+  });
+});

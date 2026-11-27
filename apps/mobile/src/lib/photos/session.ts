@@ -76,9 +76,13 @@ export function runPick(picker: PhotoPicker, onProgress?: (fraction: number) => 
  */
 export const STORED_LONG_SIDE_MAX = 4032;
 
-/** True when a stripped JPEG's frame says it is longer than the stored-copy cap. A frame with no size is not judged here. */
+/**
+ * True when a stripped JPEG cannot be shown to be within the stored-copy cap: its frame is longer than 4,032 px, or it
+ * has no frame size, or a zero side (a height set later by DNL). Fails closed: such a picture goes through the native
+ * re-encode, which writes a frame with its real size, or is not stored (#2095 review A note 1).
+ */
 const overCap = (s: { width: number | null; height: number | null }): boolean =>
-  s.width !== null && s.height !== null && Math.max(s.width, s.height) > STORED_LONG_SIDE_MAX;
+  !s.width || !s.height || Math.max(s.width, s.height) > STORED_LONG_SIDE_MAX;
 
 /** The room a stored copy needs besides its own size (NS-01-R45, PROPOSED in the locked card): 50 MB. */
 export const PHOTO_FREE_MARGIN_BYTES = 50 * 1024 * 1024;
