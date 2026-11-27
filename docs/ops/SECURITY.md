@@ -1,7 +1,7 @@
 # Security operations: secrets, keys, least privilege, Supabase settings
 
 Owner: server and privacy-operations engineer. Written 3 Oct 2026. For the founder, who is today the only person with access to anything.
-Companions: [AUTH_SETUP.md](AUTH_SETUP.md) (sign-in providers, SMTP, redirect URLs), [DOMAINS.md](DOMAINS.md), TDD 04 section 3.9 (secrets design), LEGAL-REQ-025, -026, -028. When a vendor dashboard label differs from this page, look for the same setting nearby.
+Companions: [WISP.md](WISP.md) and [RISK_REGISTER.md](RISK_REGISTER.md) (the programme and its risks, drafts), [AUTH_SETUP.md](AUTH_SETUP.md) (sign-in providers, SMTP, redirect URLs), [DOMAINS.md](DOMAINS.md), TDD 04 section 3.9 (secrets design), LEGAL-REQ-025, -026, -028. When a vendor dashboard label differs from this page, look for the same setting nearby.
 
 Rules that never bend:
 - Secrets live in a platform secret store (Supabase function secrets, Supabase Vault, EAS, Vercel) and the founder's password manager. Never in the repo, the app bundle, a `EXPO_PUBLIC_*` or `NEXT_PUBLIC_*` variable, a chat, an email or a ticket.
