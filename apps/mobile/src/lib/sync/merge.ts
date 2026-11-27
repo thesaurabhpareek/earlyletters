@@ -18,7 +18,7 @@
  * - A restore never deletes anything here: see enterRestoreMode.
  */
 import { prefsRow, upsertPrefs } from '../db/repos/children';
-import { KEEP_BASE_IF_SAME_WORDS, WORDS_UNREVIEWED } from '../db/repos/entries';
+import { KEEP_BASE_IF_SAME_INCOMING, KEEP_BASE_IF_SAME_WORDS, WORDS_UNREVIEWED } from '../db/repos/entries';
 import type { SqlDb } from '../db/sql';
 import {
   ALL_GROUPS,
@@ -714,7 +714,7 @@ function mergeOtherRow(db: SqlDb, row: PulledRow, owner: string | null, epoch: n
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', '[]', ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, 'synced',
        COALESCE(?, 'day'), COALESCE(?, 'ltr'))
      ON CONFLICT(id) DO UPDATE SET
-       kind = excluded.kind, occurred_on = excluded.occurred_on, edit_level = excluded.edit_level,
+       ${KEEP_BASE_IF_SAME_INCOMING}, kind = excluded.kind, occurred_on = excluded.occurred_on, edit_level = excluded.edit_level,
        prompt_key = excluded.prompt_key, final_text = excluded.final_text, in_book = excluded.in_book,
        sounds_like_me = excluded.sounds_like_me, updated_at = excluded.updated_at, deleted_at = NULL,
        synced_at = excluded.synced_at, author_signs_as = excluded.author_signs_as, approval = excluded.approval,

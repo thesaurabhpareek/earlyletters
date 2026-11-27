@@ -3,7 +3,8 @@
 // Run: node --test scripts/ci/proposed-patch-applies.test.mjs
 //
 // The patches are read as data (scripts/ci/proposed-patch-applies.mjs): no `git apply`, no worktree, nothing from a
-// patch is run. To guard another proposal, add its path to GUARDED once `git apply --check` passes for it on develop.
+// patch is run. Every `.patch` in docs/ops/proposed/workflows/ is guarded, so a proposal cannot rot unseen: the commit
+// that applies one (or finds it applied) deletes the patch and marks its doc applied (docs/ops/proposed/workflows-retired.md).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -12,7 +13,9 @@ import path from 'node:path';
 import { REPO_ROOT, checkPatch, checkPatchFile, parsePatch, trackedTree } from './proposed-patch-applies.mjs';
 
 const A11Y = 'docs/ops/proposed/workflows/a11y-evidence.patch';
-const GUARDED = [A11Y];
+const TESTFLIGHT = 'docs/ops/proposed/workflows/testflight-checks-job.patch';
+const WORKFLOW_PROPOSALS = 'docs/ops/proposed/workflows';
+const GUARDED = fs.readdirSync(path.join(REPO_ROOT, WORKFLOW_PROPOSALS)).filter((n) => n.endsWith('.patch')).sort().map((n) => `${WORKFLOW_PROPOSALS}/${n}`);
 
 /** An in-memory tree for the pure checks: { path: content }. */
 const memTree = (files) => ({ exists: (p) => Object.hasOwn(files, p), read: (p) => files[p] });
@@ -35,9 +38,15 @@ for (const p of GUARDED) {
   test(`[BL-2133] ${p} applies to the tracked tree (context matches, created files do not exist)`, () => {
     const { files, problems } = checkPatchFile(p);
     assert.ok(files.length > 0, 'the patch has at least one file diff');
-    assert.deepEqual(problems, [], `the proposal has rotted; refresh it:\n${problems.join('\n')}`);
+    assert.deepEqual(problems, [], `the proposal no longer applies. If it was applied, delete the patch and mark its doc applied in the same commit (docs/ops/proposed/workflows-retired.md); otherwise refresh it against develop:\n${problems.join('\n')}`);
   });
 }
+
+test('[BL-2133] every workflow proposal patch is guarded, and the a11y patch is one of them', () => {
+  assert.ok(GUARDED.includes(A11Y));
+  assert.ok(GUARDED.includes(TESTFLIGHT), 'the testflight checks-job proposal (CR-233) is guarded');
+  assert.ok(GUARDED.length >= 2, `found ${GUARDED.length} patches; the folder listing failed or the patches are gone`);
+});
 
 test('[BL-2133] the a11y patch creates exactly .github/workflows/a11y-evidence.yml and nothing else', () => {
   const files = parsePatch(fs.readFileSync(path.join(REPO_ROOT, A11Y), 'utf8'));

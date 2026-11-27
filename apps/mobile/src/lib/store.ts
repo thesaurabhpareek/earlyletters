@@ -896,6 +896,11 @@ export function countBookLetters(childId: string): number {
   return bookVisibleNow() ? entries.countLetters(ctx(), childId) : 0;
 }
 
+/** How many people wrote one book's live letters, counted in SQL (BL-421; `entries.countWriters`). */
+export function countBookWriters(childId: string): number {
+  return bookVisibleNow() ? entries.countWriters(ctx(), childId, currentUserId()) : 0;
+}
+
 /** What Tonight reads from the entries, and nothing more (BL-434). */
 export interface TonightRead {
   /** The prompt keys of the newest letters that came from a prompt, newest first (at most `AVOID_RECENT`). */
@@ -965,6 +970,19 @@ function entryBookLeft(c: RepoContext, entryId: string): boolean {
 }
 export function isBookLeft(childId: string): boolean {
   return bookLeft(ctx(), childId);
+}
+
+/** The pull closed the book as deleted (closeBook, `server_state = 'deleted'`): listed nowhere, so no restore into it (CPrivO-56). */
+function entryBookClosed(c: RepoContext, entryId: string): boolean {
+  return (
+    c.db.get<{ n: number }>(
+      "SELECT 1 AS n FROM entries e JOIN children c ON c.id = e.child_id WHERE e.id = ? AND c.server_state = 'deleted'",
+      entryId,
+    ) != null
+  );
+}
+export function isBookClosed(childId: string): boolean {
+  return ctx().db.get<{ n: number }>("SELECT 1 AS n FROM children WHERE id = ? AND server_state = 'deleted'", childId) != null;
 }
 
 const IN_BOOK: FieldGroup[] = ['in_book'];
@@ -1107,6 +1125,7 @@ export function deleteLeftBookLetter(id: string): boolean {
 export function undeleteEntry(id: string): boolean {
   const c = ctx();
   if (entryBookLeft(c, id)) return false; // BL-1959: a restore is a write too (entry.restore)
+  if (entryBookClosed(c, id)) return false; // CPrivO-56: its book is closed by the pull and listed nowhere
   let done = false;
   c.db.transaction(() => {
     done = entries.undelete(c, id);

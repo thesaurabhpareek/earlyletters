@@ -302,6 +302,7 @@ export const en = {
       // Listening at rest: the red circle is the start control (BRAND.md glossary phrase).
       hint: "Tap the red circle and talk.",
       // With a screen reader on, the red circle is not seen, so the line names the control instead (BL-1827, PER4-019).
+      // Exec reading CDesO-51 (BL-2242): approved as written.
       hintScreenReader: "Double tap Start recording and talk.",
       startA11y: "Start recording",
     },
@@ -988,8 +989,8 @@ export const en = {
       // F17 6.2 F step 3: speech stays, it holds nothing of the person's.
       speechStays: "Your spoken language stays ready, because it holds nothing of yours. You can remove it in Storage.",
       onThisPhone: "This happens on this phone only. Nothing is sent anywhere.",
-      // Privacy Review A on #520 and the council of 8 Nov: the same facts the deletion page states (pages.en.ts, "What
-      // stays"). Read straight after the body; names exports because the screen itself offers "Save a copy first?".
+      // Privacy Review A on #520 and the council of 8 Nov: the same facts the deletion page stated ("What stays", in
+      // pages.en.ts until BL-556 removed it). Read straight after the body; names exports because the screen itself offers "Save a copy first?".
       backups: "Exports you already saved, and backups of this phone such as iCloud Backup, are not changed.",
       // Council on #520 (founder decision, 8 Nov): the account-deletion screen's Plus line (features/account-deletion.en.ts
       // subscription.body) with this screen's own first words. Store build only, and only while Plus will renew

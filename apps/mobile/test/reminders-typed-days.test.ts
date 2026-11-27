@@ -150,17 +150,27 @@ describe('[NS-18-R3] words hidden by default', () => {
     expect(JSON.stringify(reminderContent(n!))).not.toContain('Nani');
   });
 
-  it('with the day-names switch on, the body is the words unchanged and the title stays fixed', () => {
+  it('with day names on and names on, the body is the words unchanged and the title stays fixed', () => {
     const odd = '  नमस्ते, Asha!  שלום 你好 ';
-    const [n] = onDate(planReminders(base({ dayNamesOn: true, typedDays: [{ date: '2026-11-05', words: odd }] })), '2026-11-05');
+    const named = { ...DEFAULT_PREFS, enabled: true, cadence: 'everyEvening' as const, namesOnLockScreen: true };
+    const [n] = onDate(planReminders(base({ prefs: named, dayNamesOn: true, typedDays: [{ date: '2026-11-05', words: odd }] })), '2026-11-05');
     expect(n!.title).toBe(FIXED.title);
     expect(n!.body).toBe(odd);
   });
 
+  it('[CPrivO-58] day names on with names off: the fixed line, because the words may name a child', () => {
+    const [n] = onDate(planReminders(base({ dayNamesOn: true, typedDays: [{ date: '2026-11-05', words }] })), '2026-11-05');
+    expect({ title: n!.title, body: n!.body }).toEqual({ title: FIXED.title, body: FIXED.body });
+    expect(JSON.stringify(reminderContent(n!))).not.toContain('Asha');
+  });
+
   it('the payload and the identifier never carry the words, whatever the switch says', () => {
+    const named = { ...DEFAULT_PREFS, enabled: true, cadence: 'everyEvening' as const, namesOnLockScreen: true };
     for (const dayNames of [false, true]) {
-      const [n] = onDate(planReminders(base({ dayNamesOn: dayNames, typedDays: [{ date: '2026-11-05', words: CANARY }] })), '2026-11-05');
+      const [n] = onDate(planReminders(base({ prefs: named, dayNamesOn: dayNames, typedDays: [{ date: '2026-11-05', words: CANARY }] })), '2026-11-05');
       const c = reminderContent(n!);
+      // With both switches on the body is the words, so this pass checks a note that does carry them (CPrivO-58).
+      expect(n!.body).toBe(dayNames ? CANARY : FIXED.body);
       expect(c.data).toEqual({ source: 'scribe.reminders', kind: 'typedDay' });
       expect(n!.id).not.toContain('zq7canary');
     }
@@ -301,6 +311,7 @@ describe('typed days on the phone (real store and scheduler)', () => {
 
   it('[NS-18-R3] a note scheduled with the words is replaced by the fixed line once App lock turns on', async () => {
     store.setSetting('notifications.dayNames', 'on');
+    store.setSetting('notifications.lockScreenNames', 'on');
     typed.saveTypedDay(plus(today(), 2), CANARY, today());
     await reminders.rescheduleReminders();
     expect(ours()[0]!.content).toMatchObject({ title: FIXED.title, body: CANARY });

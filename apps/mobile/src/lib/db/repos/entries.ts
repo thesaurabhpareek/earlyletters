@@ -141,7 +141,7 @@ export function upsert(ctx: RepoContext, e: Entry, defaults: InsertDefaults): vo
        occurred_precision, language, base_direction)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(id) DO UPDATE SET
-       final_text = excluded.final_text, machine_edits = excluded.machine_edits,
+       ${KEEP_BASE_IF_SAME_INCOMING}, final_text = excluded.final_text, machine_edits = excluded.machine_edits,
        edit_level = excluded.edit_level, in_book = excluded.in_book,
        sounds_like_me = excluded.sounds_like_me,
        child_id = CASE WHEN entries.synced_at IS NULL AND ? IS NOT NULL THEN ? ELSE entries.child_id END,
@@ -205,6 +205,24 @@ export function listForBook({ db }: RepoContext, childId: string): Entry[] {
 export function countLetters({ db }: RepoContext, childId: string): number {
   return (
     db.get<{ n: number }>("SELECT count(*) AS n FROM entries WHERE deleted_at IS NULL AND child_id = ? AND kind <> 'not_much'", childId)?.n ?? 0
+  );
+}
+
+/**
+ * How many people wrote the live letters of one book, counted in SQL (BL-421: a card names its writer only when there
+ * is more than one). A writer is an `author_id`; a row with none is this phone's user's (the ledger's rule, as in
+ * `newestMadeLetter`), so it counts as the owner, and letters from before the first sign-in never make a second
+ * writer of the same person. Never `author_signs_as`: a renamed signature is the same person. Quiet-day marks are not
+ * letters, so a mark alone never makes a book shared.
+ */
+export function countWriters({ db }: RepoContext, childId: string, owner: string | null): number {
+  return (
+    db.get<{ n: number }>(
+      `SELECT count(DISTINCT CASE WHEN author_id IS NULL OR author_id = ? THEN '' ELSE author_id END) AS n
+       FROM entries WHERE deleted_at IS NULL AND child_id = ? AND kind <> 'not_much'`,
+      owner ?? '',
+      childId,
+    )?.n ?? 0
   );
 }
 
@@ -392,6 +410,14 @@ const WORDS_CHANGEABLE = `deleted_at IS NULL AND kind <> 'not_much' AND transcri
  * `?` is the incoming words. Different words drop `author_base`; the same words (a push answer echoing ours) keep it.
  */
 export const KEEP_BASE_IF_SAME_WORDS = 'author_base = CASE WHEN final_text IS ? THEN author_base ELSE NULL END';
+
+/**
+ * The same rule for an INSERT ... ON CONFLICT DO UPDATE writer of final_text (`upsert`, the pull of another author's
+ * row): there `entries.final_text` is the words before the write and `excluded.final_text` the incoming ones. Neither
+ * writer meets a row with an author_base today; the rule makes that hold for any later caller too.
+ */
+export const KEEP_BASE_IF_SAME_INCOMING =
+  'author_base = CASE WHEN entries.final_text IS excluded.final_text THEN entries.author_base ELSE NULL END';
 
 /** The author's changes to a saved letter: the words as kept (`author_base`) and each change since, against them. */
 export interface AuthorLayer {
