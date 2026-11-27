@@ -141,12 +141,17 @@ Deno.test('[FR-BKO-13] a dispute or third-party request stays off the 45-day clo
     assert.equal(r.nextAction, check, String(n));
     assert.equal(r.urgent, true, String(n));
   }
-  for (const n of [2, 35, 38, 44, 45, 46, 60]) {
-    for (const r of [at(n), at(n, { acknowledged: '' })]) {
+  for (const n of [0, 1, 2, 34, 35, 38, 44, 45, 46, 60]) {
+    const inWindow = n >= 35 && n <= 44;
+    for (const r of [at(n), at(n, { acknowledged: '' }), at(n, { extended: day(Math.max(n - 1, 0)) }), at(n, { legal_date: day(0) })]) {
       assert.equal(r.due, '-', String(n));
+      assert.equal(r.urgent, inWindow, `${n}: urgent only on days 35 to 44, acknowledged or not, whatever else the row holds`);
       assert.doesNotMatch(r.nextAction, /extension|what was done|P0|due today/, String(n));
+      assert.equal(/; then with counsel, check/.test(r.nextAction), inWindow && /^first reply/.test(r.nextAction), String(n));
     }
   }
+  assert.doesNotMatch(at(0, { acknowledged: '' }).nextAction, /^first reply not logged/, 'day 0 is the day it arrived');
+  assert.match(at(1, { acknowledged: '' }).nextAction, /^first reply not logged: /);
   assert.match(at(2, { acknowledged: '' }).nextAction, /^first reply not logged: /);
   assert.match(at(38, { acknowledged: '' }).nextAction, /^first reply not logged: .*; then with counsel, check no request about the sender's own data/);
   // An urgent check row sorts with the others by days left; an off-clock row never leads.

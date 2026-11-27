@@ -2,7 +2,7 @@
  * The weekly request clock (BL-2102; FR-BKO-09, FR-BKO-13, FR-BKO-16). Reads the request log of
  * docs/ops/runbooks/data-requests-by-email.md section 1 (a CSV file on the founder's computer) and builds the
  * data-request part of the Monday card: every open request with its day, due date, next action date and next
- * action, any request at day 35 or later listed first.
+ * action, any request on the clock at day 35 or later (and a dispute row at day 35 to 44) listed first.
  *
  * Why a script: Privacy 10 promises a reply within 45 days (one extension if we say why). A row that passes day 45
  * with no notice is a P0 defect, and a by-hand count is how that gets missed.
@@ -188,7 +188,7 @@ export function cardRow(r: Row, today: number): CardRow {
   return { ...base, nextActionDate: iso(addDays(received, nextDay)), nextAction: label, urgent: day >= FIRST_DAY };
 }
 
-/** Rows to act on first (day 35 or later, or a letter's date passed), fewest days left first so a P0 leads; then the rest by next action date, then ticket. */
+/** Rows to act on first (day 35 or later on the clock, a dispute row at day 35 to 44, or a letter's date passed), fewest days left first so a P0 leads; then the rest by next action date, then ticket. */
 export function order(a: CardRow, b: CardRow): number {
   if (a.urgent !== b.urgent) return a.urgent ? -1 : 1;
   if (a.urgent) return a.left - b.left || b.day - a.day || a.ticket.localeCompare(b.ticket);
