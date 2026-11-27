@@ -72,6 +72,10 @@ import { LetterSheet } from '@/components/capture/letter-sheet';
 import { SavedMoment } from '@/components/capture/saved-moment';
 import { Transcript } from '@/components/capture/transcript';
 import { monthFor } from '@/components/book/chapters';
+import { entryDateline, entryDatelineA11y } from '@/components/book/date-change.logic';
+import { DateSheet } from '@/components/book/date-sheet';
+import { reviewAboutDay } from '@/components/capture/about-day.logic';
+import { ReviewDayLine } from '@/components/capture/review-day-line';
 import {
   DEFAULT_VIEW_SETTING,
   arrivalParams,
@@ -158,10 +162,12 @@ import {
   saveVoiceOnlyFromDraft,
   setActiveChildId,
   setDraftChild,
+  setDraftOccurred,
   setDraftReview,
   setSetting,
   todayISO,
   type Draft,
+  type OccurredPrecision,
 } from '@/lib/store';
 import { languageFor, requestWords, retryWords, sampleWordsFor, spokenFor, startSpeechDownload } from '@/lib/transcription-queue';
 import { showReviewAsk } from '@/lib/models/speech-consent.logic';
@@ -194,6 +200,11 @@ const EDIT_COPY: Record<EditKind, keyof typeof copy.review.edits> = {
 function keepLaterLetter(id: string, inBook: boolean): void {
   if (!keepReviewedWords(id, inBook)) throw new Error('later_words_not_waiting');
   clearReadItBack(id);
+}
+
+/** The local calendar day a draft was said (its `createdAt`): the about-day until the parent picks another (NS-15). */
+function saidOnOf(draft: Pick<Draft, 'createdAt'>): string {
+  return draft.createdAt ? todayISO(new Date(draft.createdAt)) : todayISO();
 }
 
 /** Any letter on this phone yet, in any book (hidden books count). */
@@ -518,6 +529,23 @@ export default function Review() {
     setWash(false);
   };
 
+  // The day this letter is about (NS-15-R1): the dateline opens DateSheet, and Save writes the pick to the draft at
+  // once (setDraftOccurred), so a held draft, a kill before Keep and Keep itself all keep it. The words are never read
+  // for a date (NS-15-R4). A letter whose words arrived later is kept already: its letter page moves it. Never gated by
+  // a plan (NS-15-R15). A write that does not finish shows the generic line, as the letter page does.
+  const [dateOpen, setDateOpen] = useState(false);
+  const openDay = () => {
+    haptic('tap');
+    setDateOpen(true);
+  };
+  const changeDay = (next: { occurredOn: string; precision: OccurredPrecision }) => {
+    setDateOpen(false);
+    if (!draft || later) return;
+    if (!setDraftOccurred(draft.id, next.occurredOn, next.precision)) return toast.show({ message: copy.errors.generic.title });
+    haptic('tap');
+    setDraft((d) => (d ? { ...d, occurredOn: next.occurredOn, occurredPrecision: next.precision } : d));
+  };
+
   const pickChild = () => {
     if (listChildren().length < 2 || !draft || later) return; // a saved letter stays in its book
     haptic('tap');
@@ -622,6 +650,8 @@ export default function Review() {
       }
       // The row as it is now: a save that finished after Review opened has the real length and file (BL-563).
       const live = getDraft(draft.id) ?? draft;
+      // The day it is about (NS-15-R2): the parent's pick on the live row, else the day it was said; captured_at stays.
+      const day = reviewAboutDay(live, saidOnOf(draft));
       const firstLetter = !hasAnyLetter();
       // A letter whose words arrived later is already saved: its words count now, at this Keep (later-words.logic).
       if (later) keepLaterLetter(draft.id, inBook);
@@ -630,7 +660,8 @@ export default function Review() {
         {
           id: draft.id,
           kind: 'letter',
-          occurredOn: draft.createdAt ? todayISO(new Date(draft.createdAt)) : todayISO(),
+          occurredOn: day.occurredOn,
+          occurredPrecision: day.occurredPrecision,
           capturedAt: draft.createdAt,
           captureMode,
           editLevel: view === 'exact' ? 'verbatim' : level,
@@ -794,9 +825,10 @@ export default function Review() {
   const foldedShow = foldedControlsShow({ applies, open: foldOpen });
   const countText = countRowText({ kind: line === 'count' ? 'count' : 'other', applied: applied.length, other: countTextFor(applied.length) });
 
-  // The letter sheet's header (S17): the month it files into, from the day it was said.
-  const occurredOn = draft.createdAt ? todayISO(new Date(draft.createdAt)) : todayISO();
-  const month = monthFor(child, occurredOn);
+  // The letter sheet's header (S17): the month it files into, from the day it is about (NS-15-R2): the parent's pick,
+  // else the day it was said. Never a date read from the words (NS-15-R4).
+  const about = reviewAboutDay(draft, saidOnOf(draft));
+  const month = monthFor(child, about.occurredOn);
   const header = letterHeader({ childName: child.name, signsAs: child.signsAs, month });
   const openE = openEdit !== null ? applied[openEdit] : null;
   const markTiming = markCardTiming(motion.reduced);
@@ -1085,6 +1117,13 @@ export default function Review() {
                   editing={editing}
                   onChangeBook={many && !later ? pickChild : undefined}
                   changeLabel={fill(pendingCopy.review.toChildA11y, { child: child.name })}>
+                  {/* Line 2 of the header: the day it is about, a control for the author until the words are being changed. */}
+                  <ReviewDayLine
+                    text={entryDateline(child, about)}
+                    spoken={entryDatelineA11y(child, about)}
+                    hint={copy.book.entryMenu.changeDate}
+                    onPress={!later && !editing ? openDay : undefined}
+                  />
                   {editing ? (
                     // Edit in place on the same sheet (S18): no inner box, the caret in the letter face; the sheet's edge
                     // is the accent line. The system draws Full Keyboard Access's own focus ring.
@@ -1225,6 +1264,9 @@ export default function Review() {
         onSelect={chooseChild}
         onClose={() => setPickerOpen(false)}
       />
+      {!later && (
+        <DateSheet open={dateOpen} child={child} entry={about} todayISO={todayISO()} onClose={() => setDateOpen(false)} onSave={changeDay} />
+      )}
       {keepSheet}
     </SafeAreaView>
   );

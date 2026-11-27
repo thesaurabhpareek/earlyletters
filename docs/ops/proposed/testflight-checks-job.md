@@ -26,7 +26,7 @@ No action pin, permission, trigger, environment or secret name changes.
 
 - `release-ios.yml` already splits `checks (G2)` from its `build` job and says: "Jobs that hold secrets install with a fresh `npm ci` and setup-node pinned by SHA, never a restored cache." It does not turn install scripts off; that part is new here.
 - The lockfile has two packages with install scripts, `esbuild` and `fsevents` (macOS only), and no workspace package has an install or prepare script. After `npm ci --ignore-scripts` on develop on 27 Nov 2026, the preflight printed "0 fail" and the seam guard exited 0, so the install is enough for anything that reads `node_modules`.
-- The pinned setup-node (v7.0.0) documents `package-manager-cache`, default true, which turns caching on when `packageManager` names npm.
+- The pinned setup-node (v7.0.0) documents `package-manager-cache`, default true, which turns caching on when `packageManager` or `devEngines.packageManager` names npm.
 - `scripts/ci/proposed-patch-applies.test.mjs` now guards this patch, so CI fails if a line the patch changes or uses as context changes in `testflight.yml`. A change elsewhere in the file still passes; those steps move into `checks` unchanged.
 
 ## Risk
@@ -38,6 +38,7 @@ No action pin, permission, trigger, environment or secret name changes.
 - What this does not fix:
   - `npx eas-cli@<pinned>` runs in the job that holds the token. The pin fixes eas-cli itself, but eas-cli ships no shrinkwrap, so npx resolves its dependencies fresh at run time, with their install scripts.
   - eas-cli starts the project's own Expo CLI (`expo config --json`, and `--type introspect` for a managed iOS build, which runs the config plugins' mods) and passes it its whole environment, the token included. So `@expo/cli` from the lockfile, `app.config.ts` and the config plugins run beside the token.
+  - eas-cli also loads `@expo/fingerprint` from the lockfile into its own process to fingerprint the build. That package runs the config loader again (so `app.config.ts` and the plugins) and the project's `expo-modules-autolinking` CLI, both with the token in their environment. The project has no expo-updates and the workflow does not set `EAS_SKIP_AUTO_FINGERPRINT`, so this runs on every build.
   - `npm ci` still unpacks every dependency into that job, though with install scripts off nothing in them runs at install.
   - The split relies on GitHub-hosted runners giving each job a fresh machine. A self-hosted or reused runner would undo it.
   - `checks` still saves the npm cache, as the single job did before.
