@@ -1147,6 +1147,17 @@ process.stdin.on('end', () => {
 const COMPILE_CACHE = mkdtempSync(join(tmpdir(), 'nx39-compile-'));
 /** Every config child not yet settled, so a failing run waits for the rest before it asserts or removes a folder. */
 const liveChildren = new Set<Promise<string>>();
+/**
+ * A copy of eas.json with the seven switches taken out of every profile. The store profiles write each one as `off`
+ * (BL-858, E9), so the profile as written is no longer the unset case; the matrix below evaluates this copy for unset,
+ * and the profile as written as one more setting.
+ */
+function withoutSwitches(eas: Eas): Eas {
+  const copy = JSON.parse(JSON.stringify(eas)) as Eas;
+  for (const p of Object.values(copy.build)) if (p.env) for (const n of SWITCH_NAMES) delete p.env[n];
+  return copy;
+}
+
 /** Wait until every config child started so far has exited, passed or failed (Review B round 8, note 1). */
 async function allChildrenSettled(): Promise<void> {
   while (liveChildren.size) await Promise.allSettled([...liveChildren]);
@@ -1249,23 +1260,25 @@ describe('[NX-39-R39] no config path carries a switch into a build', () => {
     expect(profiles).toEqual(expect.arrayContaining(['preview', 'production', 'testflight']));
     const allOn = Object.fromEntries(SWITCH_NAMES.map((n) => [n, 'on']));
     const allOff = Object.fromEntries(SWITCH_NAMES.map((n) => [n, 'off']));
+    const bare = withoutSwitches(eas);
     // On an EAS builder (EAS_BUILD, EAS_BUILD_PLATFORM and CI set) and off one (Review A M3), with NODE_ENV unset and
     // `production` (Review A N7), each evaluation in a fresh process (Review B R4).
     const runs: Array<{ label: string; unset: Promise<string>; other: Promise<string> }> = [];
     for (const builder of ['local', 'eas'] as const) {
       for (const nodeEnv of NODE_ENVS) {
         for (const profile of profiles) {
-          const unset = appConfigFor(eas, profile, {}, { builder, nodeEnv });
+          const unset = appConfigFor(bare, profile, {}, { builder, nodeEnv });
           const at = `${builder} NODE_ENV=${nodeEnv} ${profile}`;
-          // Each switch on alone, and every switch off and every switch on together: a value any switch copies into
-          // the config, or a branch on any one of them, changes one of these from unset.
-          for (const s of MEDIA_PHASE_SWITCHES) runs.push({ label: `${at} ${s.env}=on`, unset, other: appConfigFor(eas, profile, { [s.env]: 'on' }, { builder, nodeEnv }) });
-          runs.push({ label: `${at} every switch off`, unset, other: appConfigFor(eas, profile, allOff, { builder, nodeEnv }) });
-          runs.push({ label: `${at} every switch on`, unset, other: appConfigFor(eas, profile, allOn, { builder, nodeEnv }) });
+          // Each switch on alone, every switch off and every switch on together, and the profile as eas.json writes it:
+          // a value any switch copies into the config, or a branch on any one of them, changes one of these from unset.
+          for (const s of MEDIA_PHASE_SWITCHES) runs.push({ label: `${at} ${s.env}=on`, unset, other: appConfigFor(bare, profile, { [s.env]: 'on' }, { builder, nodeEnv }) });
+          runs.push({ label: `${at} every switch off`, unset, other: appConfigFor(bare, profile, allOff, { builder, nodeEnv }) });
+          runs.push({ label: `${at} every switch on`, unset, other: appConfigFor(bare, profile, allOn, { builder, nodeEnv }) });
+          runs.push({ label: `${at} as written in eas.json`, unset, other: appConfigFor(eas, profile, {}, { builder, nodeEnv }) });
         }
       }
     }
-    expect(runs.length).toBe(2 * NODE_ENVS.length * profiles.length * (MEDIA_PHASE_SWITCHES.length + 2));
+    expect(runs.length).toBe(2 * NODE_ENVS.length * profiles.length * (MEDIA_PHASE_SWITCHES.length + 3));
     // Every child exits before the first check, so a failing run leaves no child running past the test (Review B round
     // 8, note 1: afterAll then removed the cache under live children and left it behind).
     await Promise.allSettled(runs.flatMap((r) => [r.unset, r.other]));
@@ -1274,8 +1287,8 @@ describe('[NX-39-R39] no config path carries a switch into a build', () => {
       expect(JSON.parse(unset).ios.bundleIdentifier, r.label).toMatch(/\./);
       expect(other === unset, r.label).toBe(true);
     }
-    // 2 builders x 2 NODE_ENV x 3 profiles x 10 settings: 120 children, about 0.5 s each and one per core at once, so
-    // about 20 s alone on 4 cores. The limit leaves room for a full run sharing those cores.
+    // 2 builders x 2 NODE_ENV x 3 profiles x 11 settings: 132 children, about 0.5 s each and one per core at once, so
+    // about 22 s alone on 4 cores. The limit leaves room for a full run sharing those cores.
   }, 120_000);
 
   it('[NX-39-R39] positive control: the evaluation sees a switch copied into the config, at the top level, in the function, behind EAS_BUILD or NODE_ENV, or in a CommonJS or ES module helper', async () => {
@@ -1290,10 +1303,12 @@ describe('[NX-39-R39] no config path carries a switch into a build', () => {
     // Review A N7: B7 behind NODE_ENV === 'production', which vitest's NODE_ENV=test never met.
     const prodOnly = real.replace('    ...capabilityFlags(),\n', `    ...capabilityFlags(),\n    ...(process.env.NODE_ENV === 'production' ? { video: ${BUILT} } : {}),\n`);
     for (const mutant of [b7, top, easOnly, prodOnly]) expect(mutant).not.toBe(real);
+    // Unset means not written: production writes every switch as `off` (BL-858, E9), so compare against the bare copy.
+    const bare = withoutSwitches(eas);
     const differs = async (source: string, builder: Builder, nodeEnv: NodeEnv = 'unset') => {
       const [off, unset] = await Promise.all([
-        appConfigFor(eas, 'production', { EXPO_PUBLIC_VIDEO: 'off' }, { source, builder, nodeEnv }),
-        appConfigFor(eas, 'production', {}, { source, builder, nodeEnv }),
+        appConfigFor(bare, 'production', { EXPO_PUBLIC_VIDEO: 'off' }, { source, builder, nodeEnv }),
+        appConfigFor(bare, 'production', {}, { source, builder, nodeEnv }),
       ]);
       return off !== unset;
     };
