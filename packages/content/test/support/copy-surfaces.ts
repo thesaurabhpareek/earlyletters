@@ -366,6 +366,9 @@ const FAMILY_BEFORE_JOIN = [
   ...['title', 'pasteLabel', 'pasteHelp', 'pastePlaceholder', 'continue', 'notRecognised', 'invitedTitle', 'signInBody', 'signIn', 'peeking', 'askTitle', 'invitedBy', 'invitedByUnknown', 'askBody', 'join', 'notNow', 'needsSync', 'joining', 'tryAgain', 'pasteAnother', 'tryLater'].map((k) => `accept.${k}`),
   // not_parent and last_parent are the inviter's and the leaver's lines, never shown to an invitee.
   ...Object.keys(familyCopy.errors).filter((k) => k !== 'not_parent' && k !== 'last_parent').map((k) => `errors.${k}`),
+  // BL-524: every typed-code answer is read before the join returns.
+  'code.askBody',
+  ...Object.keys(familyCopy.code.errors).map((k) => `code.errors.${k}`),
 ];
 
 export const SURFACES: readonly Surface[] = [

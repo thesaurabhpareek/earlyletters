@@ -27,6 +27,9 @@ test.describe('/j#t=<token> (an invite opened outside the app)', () => {
     await page.goto(LINK);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(copy.line);
     await expect(page.getByText(copy.body)).toBeVisible();
+    // BL-558, CMO-24: the App Store line is drawn only in launch mode, and this suite builds the site before launch
+    // (launch-off.e2e.ts), so it is not here. test/invite-store-build.test.ts renders the page in both modes.
+    await expect(page.getByText(copy.storeBuild)).toHaveCount(0);
     await expect(page.getByRole('listitem')).toHaveText([...copy.steps]);
     await expect(page.getByRole('button', { name: copy.copy })).toBeVisible();
     await expect(page.getByText(copy.noScript, { exact: true }), 'the no-script line stays hidden').toBeHidden();
@@ -143,6 +146,7 @@ test.describe('/j#t=<token> (an invite opened outside the app)', () => {
       await page.goto(LINK, { waitUntil: 'networkidle' });
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(copy.line);
       await expect(page.getByText(copy.noScript, { exact: true })).toBeVisible();
+      await expect(page.getByText(copy.storeBuild), 'no App Store line before launch, script or not (CMO-24)').toHaveCount(0);
       await expect(page.getByRole('listitem')).toHaveCount(0);
       await expect(page.getByRole('button')).toHaveCount(0);
       await expect(page.getByText(copy.onComputer)).toBeVisible();
@@ -166,6 +170,9 @@ test.describe('/j#t=<token> (an invite opened outside the app)', () => {
     expect(html).toContain('<meta name="twitter:card" content="summary_large_image"');
     expect(html).toMatch(/<meta name="twitter:image" content="https:\/\/earlyletters\.com\/og\//);
     expect(html).not.toMatch(/supabase|posthog|vercel-insights|_vercel\/insights|googletagmanager/i);
+    // Before launch the server sends no App Store line (CMO-24). In launch mode it is in the server HTML, not added by
+    // script: test/invite-store-build.test.ts renders it there.
+    expect(html).not.toContain(copy.storeBuild.replace(/'/g, '&#x27;'));
     // Before the fragment is read the page shows no steps, no button and no ask-again line, so none of them flashes.
     expect(html).not.toContain('<button');
     expect(html).not.toMatch(/<li[\s>]/);
