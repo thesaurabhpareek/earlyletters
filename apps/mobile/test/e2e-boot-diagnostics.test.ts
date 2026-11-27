@@ -27,7 +27,12 @@ describe('[BL-464] boot diagnostics for the web e2e', () => {
     const p = page();
     new p.E('Sync operation timeout');
     new p.E('database is locked');
-    expect(p.logs).toEqual([`${BOOT_DIAG_PREFIX}Error: Sync operation timeout`, `${BOOT_DIAG_PREFIX}Error: database is locked`]);
+    new p.E('Error code 14: unable to open database file'); // the OPFS pool had no file for a journal (BL-464)
+    expect(p.logs).toEqual([
+      `${BOOT_DIAG_PREFIX}Error: Sync operation timeout`,
+      `${BOOT_DIAG_PREFIX}Error: database is locked`,
+      `${BOOT_DIAG_PREFIX}Error: Error code 14: unable to open database file`,
+    ]);
     expect(p.errors).toEqual([]);
   });
 

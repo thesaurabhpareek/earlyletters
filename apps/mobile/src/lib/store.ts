@@ -79,6 +79,7 @@ import {
   heldEverSent,
   getDraftRow,
   getEntryRow,
+  pendingCount,
   syncOwner,
   enqueueEntryUpsert,
   enqueuePrefs,
@@ -902,14 +903,33 @@ export function bookOutline(childId: string): entries.BookOutline {
   return bookVisibleNow() ? entries.bookOutline(ctx(), childId) : { firstLetterOn: null, lastLetterOn: null, readable: false };
 }
 
+/** The setting that keeps one book's wash mark, next to the Book's seen list: a book id in the key, a row number as the value. */
+export const BOOK_READ_MARK_PREFIX = 'book.readMark.';
+
 /**
- * Which of one book's rows came into the store after the Book read its first page (BL-2225): the other parent's
- * letter synced in below the pages held still washes once when its page is read. The mark is a row number, never
- * words, so it is read whether or not the book may be shown; the ids are not.
+ * Which of one book's rows came into the store since this phone last read that book (BL-2225, CTO ruling on #2147):
+ * the other parent's letter synced in below the pages held, at launch or while another book was on screen, washes
+ * once when its page is read. `mark` is the newest row now; `kept` and `keep` are the book's mark across launches
+ * (book.tsx keeps it in the first-seen effect, after the seen list). Marks are row numbers, never words, so they are
+ * read whether or not the book may be shown; the arrivals are not.
  */
 export const bookArrivals = {
   mark: (): number => entries.rowMark(ctx()),
-  since: (childId: string, mark: number): string[] => shown(() => entries.idsSince(ctx(), childId, mark)),
+  since: (childId: string, mark: number): entries.RowArrival[] => shown(() => entries.arrivalsSince(ctx(), childId, mark)),
+  /** The book's kept mark, or null when none is kept or it is not a row number. */
+  kept: (childId: string): number | null => {
+    const n = Number(settings.getSetting(ctx(), BOOK_READ_MARK_PREFIX + childId));
+    return Number.isSafeInteger(n) && n > 0 ? n : null;
+  },
+  /**
+   * Keeps the book's mark. Written without a change event: no screen shows it, and an event would send every store
+   * listener (the Book's own reread among them) round again for a number. Erasing the book takes it with the book's
+   * other keys (wipe.ts), and Erase everything with every setting.
+   */
+  keep: (childId: string, mark: number): void => {
+    if (!Number.isSafeInteger(mark) || mark <= 0 || bookArrivals.kept(childId) === mark) return;
+    settings.setSetting(ctx(), BOOK_READ_MARK_PREFIX + childId, String(mark));
+  },
 };
 
 /** How many letters one book holds (quiet-day marks not counted), counted in SQL (BL-434). */
@@ -1499,7 +1519,7 @@ export function eraseEverythingPending(): boolean {
 /**
  * Erase everything, the store's part (signed out only, F17 6.2 F step 1). In order:
  *  1. the pending mark, so a kill at any later point is finished at the next launch (a mark is only ever written on
- *     a phone that had not signed in);
+ *     a phone that had not signed in, or by eraseThisPhoneLocal once the drain left nothing);
  *  2. each letter's and draft's recording, listening copy and temporary copies (`eraseAudio`);
  *  3. every other recording file, listening copy, temporary copy and export left on the phone (`eraseFiles`);
  *  4. every row of every table, settings included, in one transaction; the mark stays.
@@ -1515,6 +1535,50 @@ export function eraseEverythingLocal(eraseAudio: AudioEraser, eraseFiles: Device
     if (!localDeletionAllowed()) return 'signed_in';
     settings.setSetting(c, wipe.ERASE_EVERYTHING_SETTING, c.now());
   }
+  return eraseMarked(c, eraseAudio, eraseFiles);
+}
+
+/**
+ * Erase this phone only (F17-REQ-026, F17-U38, BL-559), before the outbox drains: what would stop it. A count of the
+ * things only this phone holds that will not drain (wipe.ts onlyOnThisPhone, a queued row counted as on its way), plus
+ * queued ops the drain does not send (a book the server refused, held ops for a server without held drafts, an erase
+ * waiting for a server that can erase). 0 means signing out with the F02 guard leaves nothing that only this phone has.
+ * Not a count of letters: a screen reads it as none or some.
+ */
+export function eraseThisPhoneBlockers(): number {
+  const c = ctx();
+  return wipe.onlyOnThisPhone(c, { queuedOnItsWay: true }) + (outboxRows(c) - pendingCount(c.db));
+}
+
+function outboxRows(c: RepoContext): number {
+  return c.db.get<{ n: number }>('SELECT COUNT(*) AS n FROM sync_outbox')!.n;
+}
+
+/**
+ * Erase this phone only, the store's part, once the session is gone (lib/erase-everything.ts eraseThisPhone; F17 6.2 F
+ * step 2). The same wipe as Erase everything, and only when the drain has left nothing: no row in the outbox and nothing
+ * the server has not acknowledged (wipe.ts onlyOnThisPhone, nothing counted as on its way). Otherwise 'not_drained' and
+ * nothing begun, so a sign-out that ended before the queue emptied (the session lost mid-wait, a guard that did not
+ * wait) never costs a letter. A phone that never signed in passes too. Nothing here is sent; the drain sent it before.
+ * The mark is the same as Erase everything's, so a kill part way is finished at the next launch (resumeEraseAtLaunch).
+ */
+export function eraseThisPhoneLocal(eraseAudio: AudioEraser, eraseFiles: DeviceFilesEraser): 'erased' | 'incomplete' | 'not_drained' {
+  const c = ctx();
+  if (!eraseEverythingPending()) {
+    if (!eraseThisPhoneAllowed()) return 'not_drained';
+    settings.setSetting(c, wipe.ERASE_EVERYTHING_SETTING, c.now());
+  }
+  return eraseMarked(c, eraseAudio, eraseFiles);
+}
+
+/** Whether eraseThisPhoneLocal would begin: everything this phone holds of the account is on the server. */
+export function eraseThisPhoneAllowed(): boolean {
+  const c = ctx();
+  return localDeletionAllowed() || (outboxRows(c) === 0 && wipe.onlyOnThisPhone(c, { queuedOnItsWay: false }) === 0);
+}
+
+/** Steps 2 to 4 of Erase everything, once the mark is written. */
+function eraseMarked(c: RepoContext, eraseAudio: AudioEraser, eraseFiles: DeviceFilesEraser): 'erased' | 'incomplete' {
   try {
     for (const r of wipe.allAudioRows(c)) eraseAudio(r.audioUri, r.id);
     eraseFiles();

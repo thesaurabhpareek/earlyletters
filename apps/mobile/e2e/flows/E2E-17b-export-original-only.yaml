@@ -50,7 +50,7 @@ tags:
     id: "player.source.original"
 - runFlow: ../subflows/go-back.yaml
 - tapOn:
-    id: "book.settings"
+    id: "tab.you"
 - tapOn:
     id: "settings.export"
 - assertVisible:

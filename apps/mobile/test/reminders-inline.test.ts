@@ -122,9 +122,10 @@ describe('[CDesO-3, CCO-10] Settings, Reminders: the switch goes straight to the
     expect(logic.switchFooter(true)).toBe('Changes save as you go.');
     const screen = code('app/settings/reminders.tsx');
     // The footer is the switch's own section footer (drawn just under the switch), and that section is the page's
-    // first element with no condition around it: it shows whatever iOS has said, before any tap.
-    expect(screen).toMatch(/<ListSection footer=\{switchFooter\(on\)\}>\s*<ToggleRow title=\{s\.enabledLabel\} value=\{on\}/);
-    expect(screen).toMatch(/<ScrollView[^>]*>\s*(?:\{\s*\}\s*)?<ListSection footer=\{switchFooter\(on\)\}>/);
+    // first element with no condition around it: it shows whatever iOS has said, before any tap. Since BL-428 the
+    // section is its own component (components/settings/reminders-switch.tsx).
+    expect(code('components/settings/reminders-switch.tsx')).toMatch(/<ListSection footer=\{switchFooter\(on\)\}>\s*<ToggleRow title=\{s\.enabledLabel\} value=\{on\}/);
+    expect(screen).toMatch(/<ScrollView[^>]*>\s*(?:\{\s*\}\s*)?<RemindersSwitch prefs=\{prefs\} permission=\{permission\} busy=\{busy\}/);
   });
 
   it('no sheet in front of the alert anywhere: the priming sheet and its "A few evenings a week" title are gone', () => {
@@ -156,11 +157,15 @@ describe('[CDesO-3, CCO-10] Settings, Reminders: the switch goes straight to the
     expect(os.scheduled.length).toBeGreaterThan(0);
   });
 
-  it('denied now: the switch stays on (intent kept), Next reads "Not sending yet.", and iOS is never asked again', async () => {
+  it('denied now: the intent is kept but the switch draws off (BL-428), "Not sending yet." shows, and iOS is never asked again', async () => {
     os.answer = 'denied';
     const first = await reminders.turnOnReminders();
     expect(first).toMatchObject({ permission: 'denied', asked: true });
     expect(logic.remindersSwitchOn(reminders.readPrefs())).toBe(true);
+    expect(logic.remindersSwitchShown(reminders.readPrefs(), 'denied')).toBe(false);
+    // The screen's own `on` (the choices, the Next line and the preview hang off it) is what the switch draws, not the intent.
+    expect(code('app/settings/reminders.tsx')).toMatch(/const on = remindersSwitchShown\(prefs, permission, busy\);/);
+    expect(logic.switchStatus(reminders.readPrefs(), 'denied')).toBe('Not sending yet.');
     expect(logic.showNotificationsOff(reminders.readPrefs(), 'denied')).toBe(true);
     expect(logic.nextLine({ on: true, permission: 'denied', next: reminders.nextReminder(), formatTime: fmt })).toBe('Not sending yet.');
     // Denied before: off, then on again. No alert; the same card.

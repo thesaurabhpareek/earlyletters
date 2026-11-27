@@ -237,9 +237,16 @@ export class ConsentStore {
     return this.idWrite;
   }
 
-  /** Current id (if any) plus retired ids, for the deletion request. */
+  /**
+   * The ids the deletion request names: the current id first (if any), then the retired ids, newest first. Only ids the
+   * server can forget, each once (compared without case, so a retired copy of the current id is dropped), by the same
+   * rule as `settleRetired` (BL-2239). Storage may hold any string (`load` keeps it), and the function refuses a whole
+   * batch for one non-UUID id, which kept up to 21 good ids and the retry flag for ever; a repeat only wasted a place in
+   * a batch and a call of the daily quota. What is left out here is still wiped by `forgetAllIds` once every batch is
+   * acknowledged. A getter: it writes nothing, so `settleRetired` still counts what it cleans.
+   */
   allIds(): string[] {
-    return [...(this.snap.id ? [this.snap.id] : []), ...this.snap.retired];
+    return cleanRetiredIds([...(this.snap.id ? [this.snap.id] : []), ...this.snap.retired]).ids;
   }
 
   async load(): Promise<ConsentSnapshot> {
@@ -359,10 +366,12 @@ export class ConsentStore {
    */
   async forgetSomeIds(ids: string[]): Promise<void> {
     await this.idWrite.catch(() => undefined);
-    const gone = new Set(ids);
-    this.snap.retired = this.snap.retired.filter((x) => !gone.has(x));
+    // Compared without case, as `allIds` dedupes: it names one copy of an id, so every copy of it leaves here, or the
+    // copy it did not name would be sent again on the next try for nothing.
+    const gone = new Set(ids.map((x) => x.toLowerCase()));
+    this.snap.retired = this.snap.retired.filter((x) => !gone.has(x.toLowerCase()));
     await this.storage.set(STORAGE_KEYS.retired, JSON.stringify(this.snap.retired));
-    if (this.snap.id && gone.has(this.snap.id)) {
+    if (this.snap.id && gone.has(this.snap.id.toLowerCase())) {
       this.snap.id = null;
       if (this.snap.status === 'granted') this.snap.status = 'denied';
       await this.storage.remove(STORAGE_KEYS.id);

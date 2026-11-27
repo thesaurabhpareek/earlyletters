@@ -75,7 +75,7 @@ Drawn as a fit-to-contents sheet of rows, not a system menu (DESIGN.md G-03: no 
 | `en.children.settings.hideLabel` | EXISTS | Hide this book | hide confirm, confirm button | label = text | Hide this book | NS-22-R3 |
 | `en.common.cancelButton` | EXISTS | Cancel | hide confirm, safe choice | label = text | Cancel | NS-22 |
 | `en.book.menu.hiddenToast` | PROPOSED | {child}'s book is in Hidden books. | after Hide | announced once | n/a | NS-22 s5 |
-| `en.children.quiet.saveFailed` | PROPOSED | That did not save. {child}'s book is as it was. | B-S02.failed (a Quiet or Hide write failed) | announced once | n/a | NS-22 s6 failed row |
+| `en.children.quiet.saveFailed` | PROPOSED | That did not save, so {child}'s book is as it was. | B-S02.failed (a Quiet or Hide write failed) | announced once | n/a | NS-22 s6 failed row |
 
 ## 3. B-S03 Lens choice (NS-01-R10, R48; NS-06-A3; NS-33-R3)
 
@@ -138,6 +138,8 @@ Short query (B-S06.short), offline, two books, plan lapsed, signed out, second a
 | `en.book.years.noName` | PROPOSED | Year {n} | any year row when the book has no name (never "your child's first year") | as above | as above | NX-31-R3 pattern |
 | `en.book.monthRange` | EXISTS | {a} to {b} | each year row's second line: the birthday and the day before the next one (a year in progress shows its real end day) | read after the row title | n/a | NS-24-R5 |
 | `en.book.years.rowA11y` | PROPOSED | Opens Read together at the first letter of this year. | B-S07 year rows, hint | hint | n/a | NS-24 s4 step 3 |
+| `en.readTogether.fromHere` | PROPOSED | Read from here | B-S07 month rows: the visible trailing control (hidden from VoiceOver) and the row's accessibility action; B-S08 first row of "This letter" | label = text; on a month row, an action name | Read from here | spec 13 section 5, RYT-06, RYT-10 |
+| `en.readTogether.fromHereMonthA11y` | PROPOSED | Opens Read together at the first letter of this month. | B-S07 month rows, kept for the Voice Control fallback (nothing reads it while the control is hidden) | hint | n/a | spec 13 section 5 |
 
 A year with no letters is not offered and nothing says so (NS-24-R4). A due-date-only book offers Before You only (NS-24-R6).
 
@@ -150,6 +152,7 @@ VoiceOver order (NS-21-R14): dateline (level 1 heading), words, Play (if any), S
 | (dateline) | EXISTS | the letter's date by `Intl.DateTimeFormat`; `en.book.dateline.monthOnly` "Sometime in Month {month}"; `monthOnlyNewborn` "Sometime in the first weeks"; `beforeBirth` "Before {child} was born." | B-S08 all states | level 1 heading | n/a | NS-21-R4 |
 | `en.book.hearLink` | EXISTS | Hear it in {signsAs}'s voice | B-S08.default (spoken, recording on this phone) | label = text | Hear it in {signsAs}'s voice | NS-21-R6b |
 | `en.letter.listTitle` | PROPOSED | This letter | B-S08 all states | level 2 heading | n/a | NS-21 s16 |
+| `en.readTogether.fromHereLetterA11y` | PROPOSED | Opens Read together at this letter. | B-S08 first row of "This letter" (`readTogether.fromHere`), only on a letter Read together can play; on the other parent's letter in its own section; behind `EXPO_PUBLIC_READ_THE_YEAR` | hint | n/a | spec 13 section 5, RYT-06, RYT-07 |
 | `en.letter.rows.dayAbout` | PROPOSED, shared with area A (NS-15); area A's key wins if the words differ | About {date} | row 1, first line | label = text; hint (author only) `en.letter.rows.dayA11y` "Changes the day this letter is about." | About {date} (filled) | NS-21 s3 row 1 |
 | `en.letter.rows.daySaid` | PROPOSED, shared with area A (NS-15) | Said on {date} | row 1, second line, only when the two days differ | read after the first line | n/a | NS-15-R3 (area A) |
 | `en.book.entryMenu.changeDate` | EXISTS, retired here by `en.letter.rows.day` when BL-937 lands | Change the date | today's row; kept until BL-937 | label = text | Change the date | NS-21 s3 row 1 |
@@ -373,7 +376,7 @@ What happened, what the parent can do; never blame, never fear. Codes that show 
 | `SCSEL` (server refuses a seal change) | none | nothing (a rejected write the author never sees; NS-06 B6) | none |
 | `22023` on a malformed `seal_since` | none | nothing (sync internal) | none |
 | A row's local write failed (day, first, picture words, hide until a day, Open now, who can read it) | B-S09.failed, B-S10.failed, B-S12.failed, B-S11, B-S13 | That change did not save. The letter is as it was. | `en.letter.rows.saveFailed` |
-| Quiet or Hide write failed | B-S02.failed | That did not save. {child}'s book is as it was. | `en.children.quiet.saveFailed` |
+| Quiet or Hide write failed | B-S02.failed | That did not save, so {child}'s book is as it was. | `en.children.quiet.saveFailed` |
 | Letter not in the book (deleted elsewhere while open) | B-S08.notFound | This letter is not in the book / It is in Recently deleted. / Open Recently deleted / Back to the book | `en.reader.*` |
 | Past-letter pick throws | B-S17 | nothing (NS-23 s6) | none |
 | A letter cannot render in Read together | B-S19 | nothing; it is skipped (NS-24 s6) | none |
@@ -457,7 +460,7 @@ Words where `DESIGN.md` carries an intent and this file proposes different words
 | R1 | Go to a month keeps the built "Months" label (B-S01 layout row 1; VC list) | "Go to a month" | NS-22 s3 renames it; with the lens, two controls named "Months" in one bar break Voice Control |
 | R2 | "Unquiet this book" | "Turn Quiet off" | card gap G2 |
 | R3 | Quiet toast "Quiet for now." | "{child}'s book is quiet for you." | says for whom (Quiet is per person); "for now" hints at a time limit Quiet does not have |
-| R4 | Quiet failure "That did not change. Try again." | "That did not save. {child}'s book is as it was." | names what did not finish and what is true (VOICE.md) |
+| R4 | Quiet failure "That did not change. Try again." | "That did not save, so {child}'s book is as it was." | names what did not finish and what is true (VOICE.md) |
 | R5 | Lens group label "Show" | "Show letters by" | VoiceOver hears a whole phrase before "Months, selected" |
 | R6 | Photos lens VoiceOver "Has a photo" | "Photo with this letter" (built `photos.book.photos.a11yCard`) | one fixed phrase everywhere (NS-01-R9a) |
 | R7 | Index footnote "Still getting ready." | "Find is getting ready on this phone." | NS-02 s16 bans "still"; card gap G8 |

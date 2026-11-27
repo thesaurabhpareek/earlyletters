@@ -9,6 +9,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { accountDeletionDecision, GOOGLE_FLAGS, productionChecks, readInputs, SEAM_FLAGS, SERVERS_ON_COLLECTED } from '../scripts/preflight-production.mjs';
 import { productionFindings, repoFindings } from '../../../scripts/release/doctor';
+import { G6_CARD_FLAGS } from '../../../scripts/release/store-flags.mjs';
 
 const APP = join(__dirname, '..');
 const REPO = join(APP, '..', '..');
@@ -126,6 +127,7 @@ describe('the store preflight on a store-ready fixture', () => {
       'update-channel',
       'asc-app-id',
       'seams',
+      'card-flags',
       'secrets',
     ]);
   });
@@ -238,6 +240,11 @@ describe('one failing fixture per check: only that check FAILs', () => {
     ['seams', 'EXPO_PUBLIC_E2E in the profile', withEnv({ EXPO_PUBLIC_E2E: '1' })],
     ['seams', 'EXPO_PUBLIC_WEB_PREVIEW in the profile', withEnv({ EXPO_PUBLIC_WEB_PREVIEW: '1' })],
     ['seams', 'EXPO_PUBLIC_E2E in the shell', { ...good(), shellEnv: { EXPO_PUBLIC_E2E: '1' } }],
+    ['card-flags', 'EXPO_PUBLIC_PHOTOS=on in the profile [BL-2273, G6]', withEnv({ EXPO_PUBLIC_PHOTOS: 'on' })],
+    ['card-flags', 'EXPO_PUBLIC_VIDEO=on in the profile (a G6 flag outside STORE_FLAGS) [BL-2273]', withEnv({ EXPO_PUBLIC_VIDEO: 'on' })],
+    ['card-flags', 'EXPO_PUBLIC_DAYS written blank in the profile (only "off" or absent is off) [BL-2273]', withEnv({ EXPO_PUBLIC_DAYS: '' })],
+    ['card-flags', 'EXPO_PUBLIC_BOOK_SEARCH=on in this shell (a --local build reads it) [BL-2273]', { ...good(), shellEnv: { PATH: '/usr/bin', EXPO_PUBLIC_BOOK_SEARCH: 'on' } }],
+    ['card-flags', 'EXPO_PUBLIC_ANALYTICS=on in this shell [BL-2273]', { ...good(), shellEnv: { PATH: '/usr/bin', EXPO_PUBLIC_ANALYTICS: 'on' } }],
     ['secrets', 'an sb_secret_ key in the shell', { ...good(), shellEnv: { EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: 'sb_secret_ashafictional0000' } }],
     ['secrets', 'a service_role JWT in the profile', withEnv({ EXPO_PUBLIC_SUPABASE_ANON_KEY: `eyJhbGciOiJIUzI1NiJ9.${Buffer.from(JSON.stringify({ role: 'service_role' })).toString('base64url')}.c2ln` })],
     ['secrets', 'a secret-named variable in another profile', { ...good(), eas: { ...(good().eas as { build: object }), build: { ...(good().eas as { build: object }).build, preview: { env: { SUPABASE_SECRET: 'x' } } } } }],
@@ -251,6 +258,27 @@ describe('one failing fixture per check: only that check FAILs', () => {
   it('covers every check with at least one fixture', () => {
     const passIds = (productionChecks(good()) as Result[]).filter((r) => r.level === 'PASS').map((r) => r.id);
     expect([...new Set(cases.map(([id]) => id))].sort()).toEqual([...passIds].sort());
+  });
+
+  it('[BL-2273] card-flags passes on a flag written "off" in the profile and on a blank or "off" one in this shell', () => {
+    expect(fails(withEnv({ EXPO_PUBLIC_PHOTOS: 'off', EXPO_PUBLIC_VIDEO: ' Off ' }))).toEqual([]);
+    expect(fails({ ...good(), shellEnv: { PATH: '/usr/bin', EXPO_PUBLIC_PHOTOS: '', EXPO_PUBLIC_VIDEO: 'off' } })).toEqual([]);
+  });
+
+  it('[BL-2273, G6] the card-flags FAIL names every flag it found, in the profile and in this shell', () => {
+    const input = { ...withEnv({ EXPO_PUBLIC_MOMENTS_TAB: 'on' }), shellEnv: { PATH: '/usr/bin', EXPO_PUBLIC_PHOTOS: 'on' } };
+    const msg = (productionChecks(input) as Result[]).find((r) => r.id === 'card-flags' && r.level === 'FAIL')?.msg ?? '';
+    expect(msg).toContain('EXPO_PUBLIC_PHOTOS="on" in this shell');
+    expect(msg).toContain('EXPO_PUBLIC_MOMENTS_TAB="on" in the eas.json production profile');
+  });
+
+  it('[BL-2273, G6] an UNVERIFIED line names each card and phase flag the hosted EAS environment could set', () => {
+    const lines = (productionChecks(good()) as Result[]).filter((r) => r.id === 'eas-environment-flags');
+    expect(lines.map((r) => r.level)).toEqual(['UNVERIFIED']);
+    expect(G6_CARD_FLAGS.length).toBeGreaterThanOrEqual(16);
+    for (const flag of G6_CARD_FLAGS) expect(lines[0].msg).toMatch(new RegExp(`\\b${flag}\\b`));
+    expect(lines[0].msg).toContain('the EAS "production" environment on expo.dev');
+    expect(lines[0].msg).toContain('env:list --environment production');
   });
 
   it('pack-manifest passes on a published value, written the way scripts/packs/lib.ts writes it', () => {

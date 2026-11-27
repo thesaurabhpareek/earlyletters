@@ -10,11 +10,16 @@
  *   reread after a store change reads everything from the floor up, so a letter kept, edited, deleted or synced in
  *   that range shows at once and nothing below it is read; with the whole book held it rereads the whole book.
  * - Paging changes what is read, never what a letter shows: the rows are `listForBook`'s rows in its order.
- * - A row first read by paging down (an older page) that was already in the store when the first page was read is
- *   never news (`olderPage`): the seen list starts from the first page, so it would wash every letter of theirs on
- *   the page. A row that came into the store after that (the other parent's letter synced in, dated below the floor)
- *   is not an older page: its page goes to the first-seen wash like the whole read did before paging, so it washes
- *   once when the reader reaches it, unless it was seen already. The store's arrivals (`BookArrivals`) say which.
+ * - A row first read by paging down (an older page) that was already in the store when this phone last read the book
+ *   is never news (`olderPage`): the seen list starts from the first page, so it would wash every letter of theirs on
+ *   the page. A row that came into the store after that (the other parent's letter synced in, dated below the floor,
+ *   at launch, while another book was on screen or while this one is) is not an older page: its page goes to the
+ *   first-seen wash like the whole read did before paging, so it washes once when the reader reaches it, unless it
+ *   was seen already. The store's arrivals (`BookArrivals`) say which, from the book's kept mark.
+ * - The kept mark only passes a row that came in once that row is held (`keepMark`), so one still unread on a page
+ *   below the floor counts as come in at every launch until it is read. With no mark kept (this book's first read),
+ *   or one that is 0 or above the newest row, the mark is the newest row now: nothing there washes, and the arrivals
+ *   read never starts from 0, which would be the whole table.
  */
 import { arrivalOf } from './book.logic';
 import { chapterKey, monthFor } from './chapters';
@@ -37,11 +42,19 @@ export function readPage(read: RangeRead, childId: string, before: string | null
   return { entries: read(childId, { from: lastDay, before }), floor: lastDay };
 }
 
+/** One of a book's rows that came into the store after a mark: its id, its row number and its day. */
+export type Arrival = { id: string; row: number; day: string };
+
 /**
- * Which of one book's rows came into the store after a mark (store.bookArrivals). `mark` is taken when the first page
- * is read; `since` names this book's live rows added after it, synced in or kept since.
+ * Which of one book's rows came into the store after a mark (store.bookArrivals). `mark` is the newest row now, read
+ * when the first page is; `kept` is the mark this phone kept for the book when it last read it (null for none);
+ * `since` lists this book's live rows added after a mark, synced in or kept since.
  */
-export type BookArrivals = { mark: () => number; since: (childId: string, mark: number) => readonly string[] };
+export type BookArrivals = {
+  mark: () => number;
+  kept: (childId: string) => number | null;
+  since: (childId: string, mark: number) => readonly Arrival[];
+};
 
 /**
  * The Book's pages for the book on screen. `first` is the read on focus (one page); `reread` follows a store change
@@ -60,21 +73,44 @@ export function createBookPages(read: RangeRead, size: number = BOOK_PAGE, arriv
   let childId: string | null = null;
   let floor: string | null = null;
   let older = new Set<string>();
+  /** Rows above this one came in since the book was last read. 0: none are told apart (no arrivals, or an empty store). */
   let mark = 0;
-  /** Rows below `above` were not held before this read: an older page, unless they came into the store after the first page. */
+  /** The newest row when the first page was read. */
+  let now = 0;
+  /** The mark the book may keep now (keepMark), or null when there is none to keep. */
+  let keep: number | null = null;
+  /** Rows below `above` were not held before this read: an older page, unless they came into the store since the mark. */
   const markOlder = (id: string, rows: readonly Entry[], above: string) => {
     const below = rows.filter((e) => e.occurredOn < above);
     if (below.length === 0) return;
-    const came = arrivals ? new Set(arrivals.since(id, mark)) : null;
-    for (const e of below) if (!came?.has(e.id)) older.add(e.id);
+    if (!arrivals || mark <= 0) {
+      for (const e of below) older.add(e.id);
+      return;
+    }
+    const came = arrivals.since(id, mark);
+    const ids = new Set(came.map((a) => a.id));
+    for (const e of below) if (!ids.has(e.id)) older.add(e.id);
+    // The mark may pass every row that came in up to `now` and is held, and stops just below the first still unread.
+    // A row past `now` (come in during this read) stays above it either way.
+    let next = now;
+    for (const a of came) if (floor !== null && a.day < floor && a.row <= next) next = a.row - 1;
+    keep = next;
   };
   const first = (id: string): Entry[] => {
     // The mark before the read: a row added between the two is held by this page or counts as come in, never lost.
-    mark = arrivals ? arrivals.mark() : 0;
+    now = arrivals ? arrivals.mark() : 0;
+    const kept = arrivals ? arrivals.kept(id) : null;
+    // A kept mark above the newest row is not this store's rows any more (purged, or renumbered by a VACUUM).
+    const usable = kept !== null && kept > 0 && kept <= now;
+    mark = usable ? kept : now;
     const page = readPage(read, id, null, size);
     childId = id;
     floor = page.floor;
     older = new Set();
+    // With the whole book held, or nothing kept to tell apart yet, the book may keep the newest row; otherwise its kept
+    // mark stays until a page read shows which rows came in. An empty store keeps nothing: a mark of 0 would make the
+    // next read's arrivals the whole table.
+    keep = now <= 0 ? null : floor === null || !usable ? now : kept;
     return page.entries;
   };
   return {
@@ -105,7 +141,11 @@ export function createBookPages(read: RangeRead, size: number = BOOK_PAGE, arriv
     },
     all(id: string): Entry[] {
       const rows = read(id, {});
-      if (id === childId && floor !== null) markOlder(id, rows, floor);
+      if (id === childId && floor !== null) {
+        const above = floor;
+        floor = null;
+        markOlder(id, rows, above);
+      } else if (id !== childId) keep = null;
       childId = id;
       floor = null;
       return rows;
@@ -114,8 +154,13 @@ export function createBookPages(read: RangeRead, size: number = BOOK_PAGE, arriv
     done: (id: string | null): boolean => id !== null && id === childId && floor === null,
     /** Whether this book's rows from `day` up are held. */
     holds: (id: string, day: string): boolean => id === childId && (floor === null || floor <= day),
-    /** Whether this row was first read by paging down and was in the store before the first page: never news. */
+    /** Whether this row was first read by paging down and was in the store when the book was last read: never news. */
     olderPage: (entryId: string): boolean => older.has(entryId),
+    /**
+     * The mark this book may keep now (store.bookArrivals.keep), or null. Kept after the first-seen wash has run on the
+     * rows held, so a row it passes has been through the seen list.
+     */
+    keepMark: (id: string): number | null => (id === childId ? keep : null),
   };
 }
 
