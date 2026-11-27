@@ -1405,8 +1405,11 @@ export function eraseEverythingPending(): boolean {
  * The caller then clears the Keychain (the free-letter count goes after the rows, so a relaunch cannot raise it
  * again from letters still present) and calls finishEraseEverything. Files go before rows, so the sweep never finds
  * a recording without its row to bring back. Nothing is queued or sent.
- * Returns 'signed_in' when the phone has signed in (nothing begun), 'incomplete' when a file would not go (the mark
- * stays; a later try or the next launch finishes), 'erased' when the rows are gone.
+ * A sign-in can still happen while the mark stands and queue uploads of the old books and letters; with a scope, a row
+ * that names an old book, letter or draft goes whenever it was written (wipe.ts NAMES_BY), and step 4 is read back.
+ * Returns 'signed_in' when the phone has signed in (nothing begun), 'incomplete' when a file would not go or the
+ * read-back still finds a row naming an old id (the mark stays; a later try or the next launch finishes), 'erased'
+ * when the rows are gone.
  */
 export function eraseEverythingLocal(eraseAudio: AudioEraser, eraseFiles: DeviceFilesEraser): 'erased' | 'incomplete' | 'signed_in' {
   const c = ctx();
@@ -1434,9 +1437,12 @@ export function eraseEverythingLocal(eraseAudio: AudioEraser, eraseFiles: Device
   // one by one would corrupt it. It is made again by the next launch's catch-up, from the letters left. Whatever the Find switch says.
   dropSearchIndex(c.db);
   c.db.transaction(() => wipe.removeEverything(c, stopRunning ? [AGE_STOPPED_AT] : [], scope));
+  // Karma ruling on #2102, point 4: `erased` only once nothing naming an old id is left, so a row the rules above
+  // missed keeps the mark (and the next try) instead of waiting in the outbox to upload erased words.
+  const left = scope !== null && wipe.oldRowsLeft(c, scope).length > 0;
   compactAfterErase(c, true);
   bus.emit('settings', 'children', 'entries', 'drafts', 'orphan_audio');
-  return 'erased';
+  return left ? 'incomplete' : 'erased';
 }
 
 /** The last step of Erase everything: removes the pending mark and its scope together. The phone is now as on first run, but for what was written after a failed try. */

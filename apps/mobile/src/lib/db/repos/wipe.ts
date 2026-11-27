@@ -268,6 +268,58 @@ function keysNaming(db: SqlDb, ids: ReadonlySet<SqlParam>): string[] {
 const BOOK_ROWS: ReadonlySet<string> = new Set(['children', 'child_member_prefs', 'sync_books']);
 
 /**
+ * Tables whose rows name a book, letter or draft by id in a column, or in an op's payload, under a key of their own
+ * (Karma ruling on #2102 answering Review B, option b). Nothing stops a sign-in while the mark stands, and takeOwnership
+ * (sync/ownership.ts) then queues an upload per old book and letter, with its name, birthday or words, and writes book
+ * rows, under keys the scope never saw. Such a row is old whatever its key, whenever it was written; one naming only a
+ * kept book or a new row stays.
+ */
+const NAMES_BY: Readonly<Record<string, { readonly columns: readonly string[]; readonly payload?: string }>> = {
+  sync_outbox: { columns: ['entity_id', 'book_id'], payload: 'payload' },
+  rejected_writes: { columns: ['entity_id'], payload: 'payload' },
+  child_member_prefs: { columns: ['child_id'] },
+  sync_books: { columns: ['child_id'] },
+};
+
+/** Whether an op's payload names one of `ids` as a value or a key anywhere in it; a payload that does not parse is searched as text. */
+function payloadNames(payload: unknown, ids: ReadonlySet<SqlParam>): boolean {
+  if (typeof payload !== 'string') return false;
+  let o: unknown;
+  try {
+    o = JSON.parse(payload);
+  } catch {
+    return [...ids].some((id) => typeof id === 'string' && payload.includes(id));
+  }
+  const walk = (v: unknown): boolean => {
+    if (typeof v === 'string') return ids.has(v);
+    if (Array.isArray(v)) return v.some(walk);
+    if (v && typeof v === 'object') return Object.entries(v).some(([k, x]) => ids.has(k) || walk(x));
+    return false;
+  };
+  return walk(o);
+}
+
+/** The keys of the rows of `table` that name one of `ids` (NAMES_BY); none for any other table. */
+function rowsNaming(db: SqlDb, table: string, ids: ReadonlySet<SqlParam>): SqlParam[] {
+  const spec = NAMES_BY[table];
+  if (!spec || ids.size === 0 || !userTables(db).includes(table)) return [];
+  const have = new Set(db.all<{ name: string }>(`PRAGMA table_info(${quote(table)})`).map((c) => c.name));
+  const cols = spec.columns.filter((c) => have.has(c));
+  const payload = spec.payload && have.has(spec.payload) ? spec.payload : null;
+  const key = identityColumn(db, table);
+  const picked = [...cols, ...(payload ? [payload] : [])].map(quote).join(', ');
+  return db
+    .all<Record<string, unknown>>(`SELECT ${column(key)} AS k, ${picked} FROM ${quote(table)}`)
+    .filter((r) => cols.some((c) => ids.has(r[c] as SqlParam)) || (payload !== null && payloadNames(r[payload], ids)))
+    .map((r) => r.k as SqlParam);
+}
+
+/** The ids this try erases: every old book, letter and draft, but a book kept for a later letter (keptBooks). */
+function idsErased(scope: EraseScope, books: ReadonlySet<SqlParam>): Set<SqlParam> {
+  return new Set<SqlParam>([...(oldIds(scope, 'children') ?? []), ...(oldIds(scope, 'entries') ?? [])].filter((id) => !books.has(id)));
+}
+
+/**
  * Old books that a letter or draft kept by this try still points to (Karma ruling on #2102, point 1). After a try ends
  * `incomplete` every book on the shelf is old, so a letter written afterwards nearly always goes into one; erasing its
  * book row would leave a letter that no shelf lists and no Delete a book reaches. Such a book keeps its book rows; its
@@ -344,17 +396,39 @@ export function removeEverything({ db }: RepoContext, keepSettings: readonly str
   // Pictures first: whether one is old reads its owner, which goes below.
   if (userTables(db).includes('entry_media')) deleteIn(db, 'entry_media', 'id', [...oldPictures(db, scope)]);
   const books = keptBooks(db, scope); // read before the letters and drafts that point to them go
-  // Settings that name an old book, letter or draft by id go with it, whenever they were written; a kept book's stay.
-  const namedIds = new Set<SqlParam>([...(oldIds(scope, 'children') ?? []), ...(oldIds(scope, 'entries') ?? [])].filter((id) => !books.has(id)));
+  // Settings, and the rows of NAMES_BY, that name an old book, letter or draft by id go with it, whenever they were
+  // written; a kept book's stay.
+  const namedIds = idsErased(scope, books);
   for (const t of userTables(db)) {
     if (t === 'entry_media') continue;
-    let old = oldIds(scope, t);
-    if (!old) continue; // made after the erase began: nothing in it is old
+    // A table made after the erase began holds no row that is old by its key; one that names an old id still goes.
+    let old = oldIds(scope, t) ?? new Set<SqlParam>();
     if (BOOK_ROWS.has(t)) old = new Set([...old].filter((id) => !books.has(id)));
     if (t === 'settings') {
       const keys = new Set([...old].filter((k): k is string => typeof k === 'string'));
       for (const k of keysNaming(db, namedIds)) keys.add(k);
       deleteIn(db, t, 'key', [...keys].filter((k) => !keep.has(k)));
-    } else deleteIn(db, t, identityColumn(db, t), [...old]);
+    } else deleteIn(db, t, identityColumn(db, t), [...old, ...rowsNaming(db, t, namedIds)]);
   }
+}
+
+/**
+ * After removeEverything with a scope: the tables in which a row naming an old book, letter or draft is still on the
+ * phone (Karma ruling on #2102, point 4). A retry says `erased` only when this is empty; otherwise the mark stays and the
+ * try reports failed, so the next try repeats it. Kept books are worked out again from the rows left, which gives the
+ * same books: the letters and drafts that kept them are still there.
+ */
+export function oldRowsLeft({ db }: RepoContext, scope: EraseScope): string[] {
+  const tables = userTables(db);
+  const ids = idsErased(scope, keptBooks(db, scope));
+  const letters = oldIds(scope, 'entries') ?? new Set<SqlParam>();
+  const left: string[] = [];
+  for (const t of ['entries', 'drafts']) {
+    if (tables.includes(t) && db.all<{ id: string }>(`SELECT id FROM ${quote(t)}`).some((r) => letters.has(r.id))) left.push(t);
+  }
+  if (tables.includes('children') && db.all<{ id: string }>('SELECT id FROM children').some((r) => ids.has(r.id))) left.push('children');
+  if (oldPictures(db, scope).size > 0) left.push('entry_media');
+  for (const t of Object.keys(NAMES_BY)) if (rowsNaming(db, t, ids).length > 0) left.push(t);
+  if (keysNaming(db, ids).length > 0) left.push('settings');
+  return left;
 }

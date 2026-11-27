@@ -846,6 +846,72 @@ describe('[DATA-REQ-024][F14-REQ-026] Erase everything on this phone, signed out
     expectEmpty();
   });
 
+  // Review B on #2102 at 1991df28, must-fix 1; Karma ruling 7218729959 (option b). Nothing stops a sign-in while the mark
+  // stands, and takeOwnership then queues an upload per old book and letter, with names, birthdays and words, under keys
+  // the scope never saw. A row that names an old book, letter or draft by id is old whenever it was written.
+  const USER = '0199a5b0-0000-7000-8000-00000000aaaa'; // a fictional account id
+  async function signIn(app: App) {
+    const { takeOwnership } = await import('../src/lib/sync/ownership');
+    const now = new Date().toISOString();
+    expect(takeOwnership(db, USER, { now, newId: () => `0199a5b0-0000-7000-8000-${String(++seq).padStart(12, '0')}` }).outcome).toBe('claimed');
+    expect(app.store.localDeletionAllowed()).toBe(false);
+  }
+  const ops = () => db.all<{ seq: number; type: string; entity_id: string; payload: string }>('SELECT seq, type, entity_id, payload FROM sync_outbox ORDER BY seq');
+
+  it('[BL-775] a sign-in between a failed try and the retry: the 6 uploads it queued for old books and letters go, a kept letter\'s stay, and the retry says erased only once a read-back finds nothing naming an old id (Karma ruling on #2102, Review B)', async () => {
+    const { app, f, stray } = await filled();
+    failPartWay(app);
+    await signIn(app);
+    // What Review B probed: the old books' names and birthdays, a per-book choice each, and each old letter with its words.
+    const old = ops();
+    expect(old.map((o) => o.type)).toEqual(['book.first_run', 'prefs.upsert', 'prefs.upsert', 'entry.upsert', 'entry.upsert', 'entry.upsert']);
+    const sent = old.map((o) => o.payload).join('\n');
+    for (const s of ['Avi', '2024-06-10', 'Asha, a quiet morning.', 'Avi, you built a tower.']) expect(sent).toContain(s);
+    // Written after the sign-in, queued as the app queues them: a new book and a letter in it.
+    const lateNew = take('0A1B2C3D-0000-4000-8000-00000000C0C1');
+    const book = app.store.addChild({ name: 'Asha', birthday: '2026-09-01', dueDate: null, signsAs: 'Mama' }).id;
+    app.store.saveEntry(letter({ id: LATE.newBook, childId: book, audioUri: lateNew, finalText: 'Asha, your first week.' }));
+    const kept = ops().filter((o) => !old.some((x) => x.seq === o.seq));
+    expect(kept.map((o) => o.entity_id)).toEqual(expect.arrayContaining([book, LATE.newBook]));
+
+    // A row naming an old letter that will not go (planted: SQLite skips that delete without an error). The read-back
+    // finds it, so the retry keeps the mark and reports failed, as when a file will not go.
+    db.exec(`CREATE TRIGGER hold_old_op BEFORE DELETE ON sync_outbox WHEN old.entity_id = '${f.ids.v1}' BEGIN SELECT RAISE(IGNORE); END`);
+    let next = await launch();
+    expect(await next.all.resumeEraseAtLaunch()).toBe('incomplete');
+    expect(next.store.eraseEverythingPending()).toBe(true);
+    expect(ops().map((o) => o.entity_id)).toContain(f.ids.v1);
+
+    db.exec('DROP TRIGGER hold_old_op');
+    next = await launch();
+    expect(await next.all.resumeEraseAtLaunch()).toBe('erased');
+    expectOldGone(f, stray, [book]);
+    // All 6 are gone; the kept book's and letter's uploads are exactly as they were, and none names an old book or letter.
+    expect(ops()).toEqual(kept);
+    const oldIds = [f.asha, f.avi, f.draftId, ...Object.values(f.ids)];
+    for (const o of ops()) expect([o.seq, oldIds.filter((id) => o.payload.includes(id))]).toEqual([o.seq, []]);
+    expect(ops().map((o) => o.payload).join('\n')).not.toMatch(/Avi|2024-06-10|quiet morning|built a tower/);
+    // The account written by the sign-in after the mark names no old data: it stays, so sync is not signed out.
+    expect(next.store.getSetting('sync.ownerId')).toBe(USER);
+    expect([rowKept(LATE.newBook), has(lateNew), next.store.listEntriesForChild(book).map((e) => e.id)]).toEqual([true, true, [LATE.newBook]]);
+    expect(next.store.eraseEverythingPending()).toBe(false);
+    expect(fetches).toBe(0);
+  });
+
+  it('[BL-775] a per-person row and a server listing first written after the mark for an old book go with that book; a kept book\'s stay (Karma ruling on #2102, Review B)', async () => {
+    const { app, f, stray } = await filled();
+    db.run('DELETE FROM child_member_prefs WHERE child_id = ?', f.avi); // Avi's book has no per-person row when the mark is written
+    failPartWay(app);
+    const { book } = writeAfter(app, f); // Asha's book is kept for the late letters
+    db.run("INSERT INTO child_member_prefs (child_id, signs_as, updated_at) VALUES (?, 'Papa', '2026-10-03T10:00:00.000Z')", f.avi);
+    for (const id of [f.avi, f.asha]) db.run('INSERT INTO sync_books (child_id) VALUES (?)', id);
+    const next = await launch();
+    expect(await next.all.resumeEraseAtLaunch()).toBe('erased');
+    expectOldGone(f, stray, [f.asha, book]);
+    expect(db.all<{ id: string }>('SELECT child_id AS id FROM sync_books').map((r) => r.id)).toEqual([f.asha]);
+    expect(db.get<{ s: string }>('SELECT signs_as AS s FROM child_member_prefs WHERE child_id = ?', f.asha)?.s).toBe('Mama');
+  });
+
   it('[BL-775] the scope written with the mark holds ids and settings keys only: no name, no words, no setting\'s value', async () => {
     const { app } = await filled();
     failPartWay(app);
