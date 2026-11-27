@@ -29,7 +29,9 @@ import { hasPlus } from '../billing';
 import { getSupabaseOrNull } from '../supabase/client';
 import { currentUserId, dictionaryFor, getSetting, listChildren, listConflicts, listEntriesForChild, listHiddenChildren, listWaitingForExport, getDraftReview, myRoleIn, listClosedBooks, listDeletedEntriesForChild, listLeftBooks, listLeftBookEntries, type Entry } from '../store';
 import { paperFor, phoneConsent, waitingChangedWords, type ExportSnapshot, type SnapshotChild, type SnapshotEntry } from './build.logic';
-import { noConsentHistory, noProfile, postgrestReader, readServerRecords, type PostgrestLike, type ServerRecordsReader } from './server-records.logic';
+import { noConsentHistory, noProfile, postgrestReader, type PostgrestLike, type ServerRecordsReader } from './server-records.logic';
+import { readServerRecordsWithCopy } from './consent-copy.logic';
+import { deviceConsentCopy } from './consent-copy';
 import type { ExportDictionaryTerm } from './schema';
 import { estimateExportBytes, ExportCancelledError, ExportTooLargeError, MAX_EXPORT_BYTES, packExport, type ByteSink, type ExportPhase } from './pack';
 import { EXPORT_FORMAT } from './schema';
@@ -169,16 +171,22 @@ function supabaseReader(): ServerRecordsReader | null {
   return sb ? postgrestReader(sb as unknown as PostgrestLike) : null;
 }
 
-/** Adds the server's consent record and the person's profile to a snapshot (never throws; Stop ends the read at once; see server-records.logic.ts). */
+/**
+ * Adds the server's consent record and the person's profile to a snapshot (never throws; Stop ends the read at once;
+ * see server-records.logic.ts). Offline, the phone's copy of the last full consent read (BL-528, consent-copy.logic.ts),
+ * which is neither read nor written while an account-deletion request is open: the request deleted it.
+ */
 export async function withServerRecords(snapshot: ExportSnapshot, signal?: { aborted: boolean }): Promise<ExportSnapshot> {
-  const server = await readServerRecords({
-    authUserId: currentAuthUserId(),
+  const authUserId = currentAuthUserId();
+  const requestOpen = deletionRequestOpen(readOpenRequest({ get: getSetting }), authUserId, Date.now());
+  const server = await readServerRecordsWithCopy({
+    authUserId,
     ownerId: currentUserId(),
     reader: supabaseReader(),
     timeoutMs: ENDPOINT_CLASSES.read_rpc.timeoutMs,
     now: () => new Date(),
     cancelled: () => signal?.aborted === true,
-  });
+  }, requestOpen ? null : deviceConsentCopy);
   return { ...snapshot, consentHistory: server.consent, profile: server.profile };
 }
 
