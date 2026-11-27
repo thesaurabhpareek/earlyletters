@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { appEnvOf, main, placeholders, scanPublisher } from './placeholder-scan.mjs';
+import { EXEMPT, appEnvOf, main, placeholders, scanPublisher } from './placeholder-scan.mjs';
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const eas = JSON.parse(readFileSync(join(REPO, 'apps/mobile/eas.json'), 'utf8'));
@@ -55,4 +55,20 @@ test('[BL-2125] no environment, two of them or an unknown one is exit 2, never a
   assert.equal(await main(['--app-env', 'preview', '--profile', 'preview'], quiet, quiet), 2);
   assert.equal(await main(['--app-env', 'staging'], quiet, quiet), 2);
   assert.equal(await main(['--profile', 'no-such-profile'], quiet, quiet), 2);
+});
+
+test('[CLO-49] only D-004\'s exact non-name passes on legalName; any other TODO still fails', async () => {
+  const d004 = EXEMPT['publisher.legalName'];
+  assert.deepEqual(scanPublisher({ ...TODO, legalName: d004 }, 'production'), []);
+  assert.deepEqual(scanPublisher({ ...TODO, legalName: d004 + ' ' }, 'production'), ['publisher.legalName']);
+  assert.deepEqual(scanPublisher({ ...TODO, legalName: 'TODO: real name' }, 'production'), ['publisher.legalName']);
+  assert.deepEqual(scanPublisher({ ...DONE, supportName: d004 }, 'production'), ['publisher.supportName']);
+  assert.deepEqual(placeholders({ inner: { legalName: d004 } }), ['publisher.inner.legalName']);
+});
+
+test('[CLO-49] the real packages/brand passes a preview and a production build, and still holds the D-004 string', async () => {
+  const { brand } = await import(new URL('../../packages/brand/index.ts', import.meta.url).href);
+  assert.equal(brand.publisher.legalName, EXEMPT['publisher.legalName']);
+  assert.equal(await main(['--app-env', 'preview'], quiet, quiet), 0);
+  assert.equal(await main(['--profile', 'production'], quiet, quiet), 0);
 });

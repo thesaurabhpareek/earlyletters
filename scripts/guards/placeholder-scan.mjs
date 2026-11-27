@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Placeholder scan (BL-2125, from BL-117): a preview or production build must not ship while a publisher
-// value in packages/brand still holds `TODO` (today `publisher.legalName`). Development builds are exempt.
+// value in packages/brand still holds `TODO`. Development builds are exempt. `publisher.legalName` holding exactly
+// D-004's non-name is exempt too (CLO-49), since no real name ever goes in code.
 //
 //   node scripts/guards/placeholder-scan.mjs --profile <eas build profile>   the app env comes from apps/mobile/eas.json
 //   node scripts/guards/placeholder-scan.mjs --app-env <development|preview|production>
@@ -16,13 +17,20 @@ import { profileEnv } from '../../.github/scripts/seam-guard.mjs';
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const APP_ENVS = ['development', 'preview', 'production'];
 const PLACEHOLDER = /\bTODO\b/;
+/**
+ * The one value that may hold TODO (CLO-49): D-004 keeps the founder's personal name out of code for good, so
+ * `publisher.legalName` stays this exact non-name and the legal documents carry the name. Only this field and only
+ * this exact string pass; any other TODO, here or in any other field, still fails a release build.
+ */
+export const EXEMPT = Object.freeze({ 'publisher.legalName': 'TODO: individual publisher (name set in legal documents, not in code)' });
 
 /** Each publisher field, nested ones included, whose string value holds a placeholder. */
 export function placeholders(publisher, at = 'publisher') {
   const out = [];
   for (const [k, v] of Object.entries(publisher ?? {})) {
-    if (typeof v === 'string' && PLACEHOLDER.test(v)) out.push(`${at}.${k}`);
-    else if (v && typeof v === 'object') out.push(...placeholders(v, `${at}.${k}`));
+    const path = `${at}.${k}`;
+    if (typeof v === 'string' && PLACEHOLDER.test(v) && EXEMPT[path] !== v) out.push(path);
+    else if (v && typeof v === 'object') out.push(...placeholders(v, path));
   }
   return out;
 }

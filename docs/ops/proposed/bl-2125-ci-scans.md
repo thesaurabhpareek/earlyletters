@@ -39,7 +39,7 @@ The check reads an `expo export --no-bytecode` output as text. The export uses t
 
 Optional, on pull requests: in `ci.yml`, job "no e2e seam in store bundles (B-8)", a step with the same `if: steps.changed.outputs.run == 'true'` that runs the block above once per store profile (`preview`, `production`, `testflight`), about two more minutes.
 
-## 3. Placeholder scan: do not paste until the TODO is resolved
+## 3. Placeholder scan: ready to paste (CLO-49)
 
 ```yaml
       - name: No TODO publisher value in a release build (BL-2125)
@@ -48,7 +48,7 @@ Optional, on pull requests: in `ci.yml`, job "no e2e seam in store bundles (B-8)
 
 In `testflight.yml` after "Preflight", and in `release-ios.yml` `checks (G2)` with `--profile production`, next to "No placeholder identity in the build".
 
-Today `packages/brand/index.ts` `publisher.legalName` is `TODO: individual publisher (name set in legal documents, not in code)`, so this step fails every preview, testflight and production build. Its comment says the value is never to hold a real name (D-004) and nothing renders it. Before the step is pasted, someone decides whether that text is a placeholder still to be filled (then the build should stop, as the step does) or a permanent value (then it is reworded without `TODO`, in its own PR). Until then the script and its tests run in `npm test` against planted values only.
+`packages/brand/index.ts` `publisher.legalName` holds `TODO: individual publisher (name set in legal documents, not in code)` for good: D-004 keeps the founder's personal name out of code, and nothing renders the field. The exec team ruled (CLO-49, recorded by stream 1 or the next docs PR) that the scan exempts that one field holding exactly that string and nothing else; any other TODO, or any change to that string, still fails a preview, testflight or production build. With the exemption the real `packages/brand` passes `--profile production` and `--app-env preview` (tested), so the step can be pasted as written.
 
 ## How to verify
 
