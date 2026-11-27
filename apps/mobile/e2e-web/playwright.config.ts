@@ -11,7 +11,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: '.',
-  testMatch: /.*\.flow\.ts$/,
+  testMatch: /zz-bl2268-stress\.flow\.ts$/, // TEMPORARY (BL-2268 proof)
   globalSetup: './support/global-setup.ts',
   fullyParallel: true,
   workers: process.env.CI ? 2 : 3,
