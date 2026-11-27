@@ -12,8 +12,9 @@
  *   layer mounts `PrivacyCover`, and no file but the root layout mounts `AppLockLayer`, which it does once.
  * - PC-T6: the drawn cover holds no text and one spoken label, the app name, in the light and dark themes, each with
  *   and without Increase Contrast.
- * - PC-T8: the rule's source is ASCII and holds only a closed list of words and strings, one `(` (its own parameter
- *   list) and no `/` outside comments and strings, so no call can be added without this test changing.
+ * - PC-T8: the rule's source is printable ASCII and, read with the TypeScript scanner, holds only a closed list of
+ *   word, string and punctuation tokens with one `(` (its own parameter list), so no call can be added without this
+ *   test changing.
  *
  * Not proved here: the pixels iOS captures for the switcher, and whether the cover hides Apple's picker view; those
  * are the device rows D-15 (the tab body, gap G-12 in docs/security/MEDIA_THREAT_MODEL.md), D-20 and DM-09 (the
@@ -26,6 +27,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 // react-dom ships no types here and no dependency is added for them: a typed require keeps tsc clean.
 const { renderToStaticMarkup } = createRequire(import.meta.url)('react-dom/server') as { renderToStaticMarkup: (e: unknown) => string };
+import ts from 'typescript';
 import { describe, expect, it, vi } from 'vitest';
 
 const env = vi.hoisted(() => ({
@@ -293,53 +295,49 @@ describe('[NS-53-G01] PC-T8 and the boundary with App lock', () => {
     const src = readFileSync(resolve(__dirname, '../src/lib/moments/cover.ts'), 'utf8');
     const importLines = src.split('\n').filter((l) => /^\s*(?:import|export)\b[^=]*\bfrom\b|^\s*import\s*['"(]/.test(l));
     expect(importLines).toEqual(["import type { AppPhase } from '../app-lock/machine';"]); // one type-only import, no side-effect import
-    // Comments are removed by a pass that steps over string literals, so `//` or `/*` inside a string cannot hide the
-    // code after it from the checks below.
-    let code = '';
-    for (let i = 0; i < src.length; ) {
-      const q = src[i];
-      if (src.startsWith('//', i)) {
-        while (i < src.length && src[i] !== '\n') i++;
-      } else if (src.startsWith('/*', i)) {
-        const end = src.indexOf('*/', i + 2);
-        i = end < 0 ? src.length : end + 2;
-        code += ' ';
-      } else if (q === "'" || q === '"' || q === '`') {
-        let j = i + 1;
-        while (j < src.length && src[j] !== q && src[j] !== '\n') j += src[j] === '\\' ? 2 : 1;
-        code += src.slice(i, j + 1);
-        i = j + 1;
+    // Every character is printable ASCII or a newline: no tab, no lone carriage return (which ends a `//` comment for
+    // the compiler), no line or paragraph separator and no non-ASCII letter.
+    expect(src).not.toMatch(/[^\n\x20-\x7E]/);
+    // The source is read token by token with the TypeScript compiler's own scanner, so comments and strings are split
+    // off exactly as the compiler splits them. Every word and string token must come from a closed list, so a
+    // multi-line import, `fetch?.(`, `XMLHttpRequest`, `navigator.sendBeacon` or `console['log']` cannot get in
+    // without this list changing in the same PR. There is one `(` (the function's own parameter list), so no call can
+    // be added even with words already on the list; `from` once, so no second module reference; and no `/` token and
+    // no template, so no regex literal, division or template literal.
+    const scanner = ts.createScanner(ts.ScriptTarget.Latest, true, ts.LanguageVariant.Standard, src);
+    const words: string[] = [];
+    const strings: string[] = [];
+    const other: string[] = [];
+    for (let k = scanner.scan(); k !== ts.SyntaxKind.EndOfFileToken; k = scanner.scan()) {
+      if (k === ts.SyntaxKind.Identifier || (k >= ts.SyntaxKind.FirstKeyword && k <= ts.SyntaxKind.LastKeyword)) {
+        words.push(scanner.getTokenText());
+      } else if (k === ts.SyntaxKind.StringLiteral) {
+        strings.push(scanner.getTokenText());
       } else {
-        code += q;
-        i++;
+        other.push(scanner.getTokenText());
       }
     }
-    expect(code).not.toMatch(/\bfetch\s*\(|\bAppState\b|\bReact\b/);
+    const code = [...words, ...strings, ...other].join(' ');
+    expect(code).not.toMatch(/\bfetch\b|\bAppState\b|\bReact\b/);
     expect(src).not.toMatch(/console\.|track\(|analytics\.|logger/);
     expect(src).not.toMatch(/\bimport\s*\(|\brequire\s*\(|setSetting|getSetting/); // no dynamic import or store call either
-    // A closed list of every word and string the code may hold (comments removed), so a multi-line import, `fetch?.(`,
-    // `XMLHttpRequest`, `navigator.sendBeacon` or `console['log']` cannot get in without this list changing in the
-    // same PR. No template literal, backslash escape, regex literal or non-ASCII character either (checked above). The code holds one `(`, the function's own parameter
-    // list, so no call can be added even with words already on the list, and `from` once, so a second module
-    // reference over several lines fails too.
-    expect(code).not.toMatch(/[`\\]/);
-    expect(src).not.toMatch(/[^\x00-\x7F]/); // ASCII only, so no word escapes the word reader below
-    // No `/` outside comments and strings: no regex literal (whose `//` the comment pass would read as a comment) and
-    // no division, so the comment pass and the language read the same code.
-    expect(code.replace(/'[^'\n]*'|"[^"\n]*"/g, ' ')).not.toMatch(/\//);
-    const strings = [...code.matchAll(/'([^'\n]*)'|"([^"\n]*)"/g)].map((m) => m[1] ?? m[2]);
-    expect([...new Set(strings)].sort()).toEqual(['../app-lock/machine', 'active', 'background', 'inactive', 'moments', 'none', 'other']);
-    const words = code.replace(/'[^'\n]*'|"[^"\n]*"/g, ' ').match(/[A-Za-z_$][\w$]*/g) ?? [];
+    expect([...new Set(strings)].sort()).toEqual(
+      ["'../app-lock/machine'", "'active'", "'background'", "'inactive'", "'moments'", "'none'", "'other'"],
+    );
     expect([...new Set(words)].sort()).toEqual(
       [
-        'APP_PHASES', 'AppPhase', 'MOMENTS_ROUTE_CLASSES', 'MomentsRouteClass', 'appState', 'boolean', 'const', 'export',
-        'from', 'function', 'import', 'lockEnabled', 'readonly', 'return', 'route', 'shouldCoverMoments', 'type',
+        'APP_PHASES', 'AppPhase', 'MOMENTS_ROUTE_CLASSES', 'MomentsRouteClass', 'appState', 'boolean', 'const',
+        'export', 'from', 'function', 'import', 'lockEnabled', 'readonly', 'return', 'route', 'shouldCoverMoments',
+        'type',
       ].sort(),
     );
     expect(words.filter((w) => w === 'import')).toHaveLength(1);
     expect(words.filter((w) => w === 'from')).toHaveLength(1);
-    expect(code.match(/\(/g)).toHaveLength(1);
-    expect(code).toMatch(/\bfunction shouldCoverMoments\(/);
+    expect(other.filter((t) => t === '(')).toHaveLength(1);
+    expect([...new Set(other)].sort()).toEqual(
+      ['!', '!==', '&&', '(', ')', ',', ':', ';', '=', '===', '[', ']', '{', '|', '}'].sort(),
+    );
+    expect(src).toMatch(/\bfunction shouldCoverMoments\(/);
   });
 
   it('App lock never reads the Moments rule (machine, controller and layer do not import it)', () => {
