@@ -57,3 +57,21 @@ test('[BL-2125] the command: clean export 0, planted onContinueDev 1, bytecode o
   assert.equal(main([], quiet, quiet), 2);
   assert.equal(main([join(tmpdir(), 'no-such-export-bl2125')], quiet, quiet), 2);
 });
+
+test('[BL-216] a named or shorthand handler handed in, or a gate that hands it over when off, fails (review of #2140)', () => {
+  const fails = [
+    '(0,a.jsx)(Z,{onDismiss:x,onContinueDev:h})',
+    '(0,a.jsx)(Z,{onContinueDev})',
+    'e.onContinueDev=h;',
+    '{onContinueDev:Y.devShortcutsAllowed?void 0:h}',
+  ];
+  for (const s of fails) assert.equal(ungatedHandlers(s).length, 1, s);
+  const passes = [
+    'function({childName:e,onContinueDev:F}){var A=1}',
+    '({onContinueDev:F})=>F',
+    'const{onContinueDev:t}=e;',
+    'e.onContinueDev,',
+    '{onContinueDev:Y.devShortcutsAllowed?a?b:c:void 0}',
+  ];
+  for (const s of passes) assert.deepEqual(ungatedHandlers(s), [], s);
+});

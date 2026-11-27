@@ -8,8 +8,12 @@
 // It reads the bundle as text and never evaluates it. It fails when:
 //   1. `devShortcutsAllowed` (apps/mobile/src/lib/build-env.ts) is anything but a constant false in the
 //      bundle, or cannot be found there (a search that cannot see the flag proves nothing, so it fails closed);
-//   2. `onContinueDev` (components/child/plus-gate.tsx) is handed a value that is not behind that flag: only
-//      `onContinueDev: <x>.devShortcutsAllowed ? ... : ...`, a plain pass-through or a destructured name pass.
+//   2. `onContinueDev` (components/child/plus-gate.tsx) is handed a value that is not behind that flag. Only
+//      three shapes pass: `onContinueDev: <x>.devShortcutsAllowed ? ... : ...`; a property read
+//      (`<x>.onContinueDev`); and a name inside a destructuring pattern, the receiving side (a function's
+//      parameter `function({onContinueDev:F}){` or an assignment `{onContinueDev:F}=`). A name handed in an
+//      object literal (`{onContinueDev:h}`), a shorthand or anything else fails, because the name may hold an
+//      ungated handler (review of #2140).
 // Why not a plain grep for `onContinueDev`: minification keeps property names, so the prop name is in every
 // production export (measured 27 Nov 2026: two hits, both gated). What must hold is that the gate is a
 // constant false and every handler sits behind it.
@@ -48,14 +52,54 @@ export function flagValues(text) {
 }
 
 const GATED = new RegExp(`^\\s*:\\s*(?:\\(\\s*0\\s*,\\s*)?(?:[\\w$]+\\.)?${FLAG}\\s*\\)?\\s*\\?`);
-const PASS = /^\s*(?::\s*[\w$]+\s*)?(?:[,}]|=\s*void 0\s*[,}])/;
+const NAMED = /^\s*(?::\s*[\w$]+\s*)?(?:[,}]|=\s*void 0\s*[,}])/;
+
+/**
+ * For `flag ? A : B` starting just after the `?`: true only when B, the branch a false flag takes, is empty
+ * (`void 0`, `null` or `undefined`). `flag ? void 0 : h` hands h over exactly when the flag is off (review of #2140).
+ */
+export function offWhenFalse(text, from) {
+  let depth = 0;
+  let pending = 0; // nested `?` waiting for their `:`
+  for (let i = from; i < text.length; i += 1) {
+    const c = text[i];
+    if (c === '{' || c === '(' || c === '[') depth += 1;
+    else if (c === '}' || c === ')' || c === ']') { if (depth === 0) return false; depth -= 1; }
+    else if (depth === 0 && c === '?') pending += 1;
+    else if (depth === 0 && c === ':') {
+      if (pending > 0) { pending -= 1; continue; }
+      return /^\s*(?:void 0|null|undefined)\s*[,})]/.test(text.slice(i + 1, i + 40));
+    }
+    else if (depth === 0 && c === ',') return false;
+  }
+  return false;
+}
+
+/** True when the object holding text[at] is a destructuring pattern: it closes into `){` or `)=>` (a parameter) or `=`. */
+export function inPattern(text, at) {
+  let depth = 0;
+  for (let i = at; i < text.length; i += 1) {
+    const c = text[i];
+    if (c === '{' || c === '(' || c === '[') depth += 1;
+    else if (c === ')' || c === ']') depth -= 1;
+    else if (c === '}') {
+      if (depth === 0) return /^\s*(?:\)\s*(?:\{|=>)|=(?![=>]))/.test(text.slice(i + 1, i + 40));
+      depth -= 1;
+    }
+    if (depth < 0) return false;
+  }
+  return false;
+}
 
 /** Each `onContinueDev` whose value is not behind the flag, with a little of the text after it. */
 export function ungatedHandlers(text) {
   const out = [];
   for (let at = text.indexOf(HANDLER); at !== -1; at = text.indexOf(HANDLER, at + HANDLER.length)) {
     const after = text.slice(at + HANDLER.length, at + HANDLER.length + 120);
-    if (!GATED.test(after) && !PASS.test(after)) out.push(`${HANDLER}${after.slice(0, 60)}`);
+    if (text[at - 1] === '.' && !/^\s*=(?!=)/.test(after)) continue; // a property read, not a value handed in
+    if (GATED.test(after) && offWhenFalse(text, at + HANDLER.length + after.indexOf('?') + 1)) continue;
+    if (NAMED.test(after) && inPattern(text, at + HANDLER.length)) continue;
+    out.push(`${HANDLER}${after.slice(0, 60)}`);
   }
   return out;
 }
