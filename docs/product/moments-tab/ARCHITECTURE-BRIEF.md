@@ -202,7 +202,8 @@ tab focus / foreground ---------------------------------------------------------
       v   columnar typed arrays: id, creationMs, kind, durationMs, subtype flags,
       |   favourite, burst id, place cell (see Q-2), plus `truncated`
       v   core.exclude    drops no-date, screenshot, screen recording, animation,
-      |                   non-user-library, parent-left-out; collapses bursts      (no trace left)
+      |                   non-user-library; collapses bursts                       (no trace left)
+      |                   (left-out pictures are gone: R56 DROPPED, BL-1967, E-4-7)
       v   core.place      cell -> place id (table injected); coordinates never reach a Moment
       v   core.group      local day via offsetAt(ms); sessions at SESSION_GAP; near-duplicates
       v   core.qualify    7.2 rules incl. both span predicates; dismissals by day key

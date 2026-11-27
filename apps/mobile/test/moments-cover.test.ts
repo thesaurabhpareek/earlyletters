@@ -10,6 +10,9 @@
  * - PC-T3: the real AppLockLayer, rendered with Moments focused, draws exactly one cover going inactive and going to
  *   background with the lock off, and exactly one going to background with the lock on; no file in src but the lock
  *   layer mounts `PrivacyCover`, and no file but the root layout mounts `AppLockLayer`, which it does once.
+ * - PC-T6: the drawn cover holds no text and one spoken label, the app name, in the light and dark themes, each with
+ *   and without Increase Contrast.
+ * - PC-T8: the rule's source holds only a closed list of words and strings, so no call of any kind can be added.
  *
  * Not proved here: the pixels iOS captures for the switcher, and whether the cover hides Apple's picker view; those
  * are the device rows D-15 (the tab body, gap G-12 in docs/security/MEDIA_THREAT_MODEL.md), D-20 and DM-09 (the
@@ -27,6 +30,7 @@ import { describe, expect, it, vi } from 'vitest';
 const env = vi.hoisted(() => ({
   settings: new Map<string, string>(),
   appState: null as null | ((s: string) => void),
+  theme: { scheme: 'light' as 'light' | 'dark', highContrast: false },
 }));
 
 type P = { children?: ReactNode; testID?: string; style?: unknown; accessibilityLabel?: string } & Record<string, unknown>;
@@ -35,7 +39,8 @@ type P = { children?: ReactNode; testID?: string; style?: unknown; accessibility
  * `accessibilityHint`, `accessibilityValue`, `aria-valuetext` and `accessibilityActions` among them) reach the markup
  * as attributes whose names end in `label`: every string or number inside them, at any depth (an action's `name` and
  * `label` included), becomes one attribute, so PC-T6 can read them. The mark's own `accessibilityLabel` stays
- * `data-label`. Props with other names (style, colours, path data) are not read.
+ * `data-label`. Props with other names (style, colours, path data) are not read. A plain `animatedProps` object (which
+ * Reanimated copies onto the native view) is merged into the props first, so a label passed that way is read too.
  */
 const SPOKEN = /label|hint|value|text|description|action|name|title/i;
 const leaves = (v: unknown): string[] =>
@@ -50,8 +55,11 @@ const spoken = (p: P): Record<string, string> => {
   }
   return out;
 };
-const tag = (name: string) => (p: P) =>
-  h('div', { 'data-kind': name, 'data-testid': p.testID, 'data-label': p.accessibilityLabel, ...spoken(p) }, p.children);
+const tag = (name: string) => (props: P) => {
+  const extra = props.animatedProps && typeof props.animatedProps === 'object' ? (props.animatedProps as P) : {};
+  const p: P = { ...props, ...extra };
+  return h('div', { 'data-kind': name, 'data-testid': p.testID, 'data-label': p.accessibilityLabel, ...spoken(p) }, p.children);
+};
 
 vi.mock('../src/lib/store', () => ({
   getSetting: (k: string) => env.settings.get(k) ?? null,
@@ -92,7 +100,12 @@ vi.mock('@/components/ui/button', () => ({ Button: tag('button') }));
 vi.mock('@/components/ui/toast', () => ({ useToast: () => ({ show: () => {} }) }));
 vi.mock('@/lib/a11y', () => ({
   useFocusOnMount: () => {},
-  useTheme: () => ({ c: { bg: '#fff', text: '#000' }, scheme: 'light', highContrast: false, reduceTransparency: false }),
+  useTheme: () => ({
+    c: env.theme.scheme === 'dark' ? { bg: '#000', text: '#fff' } : { bg: '#fff', text: '#000' },
+    scheme: env.theme.scheme,
+    highContrast: env.theme.highContrast,
+    reduceTransparency: false,
+  }),
 }));
 
 const { shouldCoverMoments, MOMENTS_ROUTE_CLASSES, APP_PHASES } = await import('../src/lib/moments/cover');
@@ -199,6 +212,17 @@ describe('[NS-53-G01] PC-T3, PC-T6: one cover, never two, with Moments focused',
     // PC-T6, the VoiceOver half: every label, hint, value, action, name or title prop on the drawn cover (as the mock
     // above reads them) says the app name, once, and nothing else (no day, place or name).
     expect([...html.matchAll(/\b[\w-]*label="([^"]*)"/gi)].map((m) => m[1])).toEqual([appLockCopy.coverLabel]);
+    // The same in the dark theme and with Increase Contrast, in each scheme: one cover, no text, the app name alone.
+    for (const scheme of ['light', 'dark'] as const) {
+      for (const highContrast of [false, true]) {
+        env.theme = { scheme, highContrast };
+        const themed = draw();
+        expect(themed.match(COVER), `${scheme}, high contrast ${highContrast}`).toHaveLength(1);
+        expect(themed.replace(/<[^>]*>/g, '')).toBe('');
+        expect([...themed.matchAll(/\b[\w-]*label="([^"]*)"/gi)].map((m) => m[1])).toEqual([appLockCopy.coverLabel]);
+      }
+    }
+    env.theme = { scheme: 'light', highContrast: false };
     env.appState!('active');
     expect(draw()).not.toMatch(COVER);
 
@@ -261,6 +285,20 @@ describe('[NS-53-G01] PC-T8 and the boundary with App lock', () => {
     expect(code).not.toMatch(/\bfetch\s*\(|\bAppState\b|\bReact\b/);
     expect(src).not.toMatch(/console\.|track\(|analytics\.|logger/);
     expect(src).not.toMatch(/\bimport\s*\(|\brequire\s*\(|setSetting|getSetting/); // no dynamic import or store call either
+    // A closed list of every word and string the code may hold (comments removed), so a multi-line import, `fetch?.(`,
+    // `XMLHttpRequest`, `navigator.sendBeacon`, `console['log']` or any other call cannot get in without this list
+    // changing in the same PR. No template literal or backslash escape either.
+    expect(code).not.toMatch(/[`\\]/);
+    const strings = [...code.matchAll(/'([^'\n]*)'|"([^"\n]*)"/g)].map((m) => m[1] ?? m[2]);
+    expect([...new Set(strings)].sort()).toEqual(['../app-lock/machine', 'active', 'background', 'inactive', 'moments', 'none', 'other']);
+    const words = code.replace(/'[^'\n]*'|"[^"\n]*"/g, ' ').match(/[A-Za-z_$][\w$]*/g) ?? [];
+    expect([...new Set(words)].sort()).toEqual(
+      [
+        'APP_PHASES', 'AppPhase', 'MOMENTS_ROUTE_CLASSES', 'MomentsRouteClass', 'appState', 'boolean', 'const', 'export',
+        'from', 'function', 'import', 'lockEnabled', 'readonly', 'return', 'route', 'shouldCoverMoments', 'type',
+      ].sort(),
+    );
+    expect(words.filter((w) => w === 'import')).toHaveLength(1);
   });
 
   it('App lock never reads the Moments rule (machine, controller and layer do not import it)', () => {
