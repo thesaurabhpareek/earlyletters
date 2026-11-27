@@ -78,6 +78,7 @@ import { usePhotosLens } from '@/lib/photos/hooks';
 import { EndOfBook } from '@/components/book/end-of-book';
 import { MonthsSheet } from '@/components/book/months-sheet';
 import { monthsHintFor, readTheYearOn, yearRows } from '@/components/book/read-year.logic';
+import { monthStarts } from '@/components/book/read-from-here.logic';
 import { QuietDayRow } from '@/components/book/quiet-day-row';
 import { isQuietMark, readableInBook } from '@/components/book/quiet-day.logic';
 import { isOwnEntry } from '@/components/child/child-store';
@@ -191,6 +192,9 @@ export default function Book() {
     const join = pages.more(id);
     if (join) setRead((held) => (held.childId === id ? { childId: id, entries: join(held.entries) } : held));
   }, [active, bookRead, pages]);
+  // Read from here (BL-1792): each month's first playable letter, behind the same flag; a month without one has no control.
+  // The sheet opens on the whole book (holdWholeBook), so `chapters` is the whole book's whenever the sheet shows these.
+  const starts = useMemo(() => (yearsOn ? monthStarts(chapters) : undefined), [chapters, yearsOn]);
   const readBack = useMemo(() => new Set(entries.filter((e) => e.captureMode !== 'typed' && isReadItBack(e.id)).map((e) => e.id)), [entries]);
 
   const wash = useCallback((ids: string[]) => {
@@ -583,7 +587,7 @@ export default function Book() {
             />
             </Animated.View>
             {topBar}
-            <MonthsSheet open={monthsOpen && !showPhotos} rows={rows} onClose={() => setMonthsOpen(false)} onChoose={jumpTo} years={years} onChooseYear={(y) => { setMonthsOpen(false); router.push({ pathname: '/read-together', params: { childId: active.id, year: y.key } }); }} />
+            <MonthsSheet open={monthsOpen && !showPhotos} rows={rows} onClose={() => setMonthsOpen(false)} onChoose={jumpTo} years={years} onChooseYear={(y) => { setMonthsOpen(false); router.push({ pathname: '/read-together', params: { childId: active.id, year: y.key } }); }} starts={starts} onReadFrom={(from) => { setMonthsOpen(false); router.push({ pathname: '/read-together', params: { childId: active.id, from } }); }} />
           </>
         )}
       </Animated.View>

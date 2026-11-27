@@ -52,14 +52,19 @@ export async function settleReminderSession(previousUserId: string | null, userI
 
 /**
  * Clears the reminder settings and every typed day first (NS-18-R6), so a re-plan already queued by the store plans
- * nothing, then removes every reminder of ours, scheduled or delivered. Local only. Never throws.
+ * nothing, then removes every reminder of ours, scheduled or delivered. Each step has its own guard, so a failure in
+ * one never skips another. Local only. Never throws.
  */
 export async function endReminderSession(): Promise<void> {
   try {
     for (const key of REMINDER_SETTING_KEYS) deleteSetting(key);
-    clearTypedDays();
   } catch {
     // The store is closed (an erase is under way, and it forgets reminders itself).
+  }
+  try {
+    clearTypedDays();
+  } catch {
+    // The same; nothing to log: the keys hold a parent's words
   }
   await forgetReminders();
 }

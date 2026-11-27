@@ -5,7 +5,7 @@ One row per customer-visible string in the checked-out tree, as `content-map.jso
 
 ## Read it
 Columns: `id` (file#key path, or the prompt key), `surface` (app screen, error, push, email, store, site, book, prompt,
-a11y, legal, safety), `channel`, `file`, `line`, `locale`, `text`, `chars` (code points), `hold` (`protected`, `held`, `build-dependent` or
+a11y, legal, safety), `channel`, `file`, `locale`, `text`, `chars` (code points), `hold` (`protected`, `held`, `build-dependent` or
 empty) with `hold_reason`, `tone`, `day_id`, `layer` (filled only where the source object carries `tone`, `dayId` or `day`,
 `layer` or `tradition`; none does yet), `owner` (content, cmo, clo, cco, privacy), `status` and `source`.
 
@@ -36,6 +36,14 @@ CI: `scripts/content/export-content-map.test.mjs` is in the root `npm test` list
 Every content PR must regenerate the map.
 
 ## When two content PRs conflict in the map (BL-1992)
+Since CR-237 (27 Nov 2026) the map has no `line` column and no counts in `meta`, and the JSON holds one row per line, like
+the CSV. A line number moved whenever any string above it changed, and both files carried counts that every new row
+changed, so every content PR conflicted with every other and each update voided its reviews. Rows are still in source
+order, so a string is found by `file` and the key path in `id`. To count rows, use `countBy(map.rows, 'surface')` from the
+script, or `jq '[.rows[].surface] | group_by(.) | map({(.[0]): length}) | add' docs/content/map/content-map.json`. Two PRs
+that add or change different rows now merge without a conflict; the helper below is for the rarer case of the same or
+neighbouring rows.
+
 Choice: option (a) of the row, a helper script, with the files still committed. The two files are pure output, so a
 conflict in them is noise and the only correct resolution is to regenerate. Cost: one command per rebase, run by the author.
 Not chosen: (b) a CI step that commits the files needs a workflow change and a bot push to PR branches, which agents do not

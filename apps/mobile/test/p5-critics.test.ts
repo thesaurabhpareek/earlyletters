@@ -250,8 +250,9 @@ describe('[S9] j10c picks the Book\'s own card', () => {
   it('selects the card by test id, because the Tonight screen under the Book carries the same words on the web', () => {
     const j10 = flow('j10-letter.flow.ts');
     const waiting = j10.slice(j10.indexOf("test('[J10c]"), j10.indexOf("test('[J10e]"));
-    expect(waiting).toMatch(/app\.getByTestId\('book\.card'\)\.filter\(\{ hasText: \/waiting for its words\/i \}\)\.first\(\)\.click\(\);/);
-    expect(waiting).not.toMatch(/app\.getByText\(\/waiting for its words\/i\)\.first\(\)\.click\(\)/);
+    // The tap goes through tapWhenStill (BL-2019) or a plain click; either way the card is picked by its test id.
+    expect(waiting).toMatch(/(?:tapWhenStill\()?app\.getByTestId\('book\.card'\)\.filter\(\{ hasText: \/waiting for its words\/i \}\)\.first\(\)(?:\.click\(\)|\));/);
+    expect(waiting).not.toMatch(/app\.getByText\(\/waiting for its words\/i\)\.first\(\)/);
     // The id it picks is the one the card sets.
     expect(code(src('components/book/letter-card.tsx'))).toMatch(/testID="book\.card"/);
   });

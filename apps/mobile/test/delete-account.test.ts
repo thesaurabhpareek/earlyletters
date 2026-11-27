@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { accountDeletionCopy as c } from '@scribe/content';
-import { afterCancel, bookRowKey, bookRowLabel, cancelFailureLine, canDelete, confirmDay, failureLine, HELD, loadFailureLine, scheduledDay, whatHappens } from '@/components/settings/delete-account.logic';
+import { afterCancel, bookRowKey, bookRowLabel, cancelFailureLine, cancelPressedThisSession, canDelete, confirmDay, failureLine, HELD, loadFailureLine, scheduledDay, whatHappens } from '@/components/settings/delete-account.logic';
 import { bookImpacts, impactLines, localDay, type SyncBook } from '@/lib/account-deletion/logic';
 
 const SRC = join(__dirname, '..', 'src');
@@ -110,31 +110,54 @@ describe('[S64] failures and the typed word', () => {
   });
 
   it('[BL-491 point 5] a failed Cancel deletion says it may not have cancelled, offline or failed; a failed request keeps its line (CDesO-46)', () => {
-    expect(cancelFailureLine(null)).toBeNull();
+    expect(cancelFailureLine(null, true)).toBeNull();
     for (const kind of ['offline', 'failed'] as const) {
-      expect(cancelFailureLine(kind), kind).toBe("It's not clear yet if the deletion was canceled. Tap Cancel deletion again.");
-      expect(cancelFailureLine(kind), kind).toBe(c.errors.cancelFailed);
-      expect(cancelFailureLine(kind), kind).not.toMatch(/nothing has changed/i);
+      expect(cancelFailureLine(kind, true), kind).toBe("It's not clear yet if the deletion was canceled. Tap Cancel deletion again.");
+      expect(cancelFailureLine(kind, true), kind).toBe(c.errors.cancelFailed);
+      expect(cancelFailureLine(kind, true), kind).not.toMatch(/nothing has changed/i);
     }
     // The request's own failure is unchanged.
     expect(failureLine('offline')).toBe('Nothing has changed. Deleting an account needs a connection.');
     expect(failureLine('failed')).toBe(c.errors.failed);
   });
 
+  it('[CDesO-58] a Cancel deletion refused by the daily limit (SCRAT) says it was not canceled and when to try again', () => {
+    expect(cancelFailureLine('limited', true)).toBe("The deletion wasn't canceled. There have been too many cancellations in the last day. Try again in 24 hours.");
+    expect(cancelFailureLine('limited', true)).toBe(c.errors.cancelLimited);
+  });
+
+  it('[CDesO-59] a cancel still refused for auth on a signed-in phone says nothing has changed; signed out, no line at all', () => {
+    expect(cancelFailureLine('auth', true)).toBe('That did not go through. Nothing has changed.');
+    expect(cancelFailureLine('auth', true)).toBe(c.errors.failed);
+    // The refresh removed the session: the signed-out view, beside its Sign in button, is the only place the sign-in
+    // words show, so no failure line carries them or anything else.
+    for (const kind of ['auth', 'limited', 'offline', 'failed'] as const) expect(cancelFailureLine(kind, false), kind).toBeNull();
+  });
+
   it('[BL-491 point 5] the scheduled page shows the cancel line only once Cancel deletion was pressed; step 2 keeps the request line', () => {
     const s = STATE.scheduled();
-    expect(page).toContain('const cancelFailure = <ErrorLine message={cancelFailureLine(d.error)} />;');
+    expect(page).toContain('const cancelFailure = <ErrorLine message={cancelFailureLine(d.error, d.signedIn)} />;');
     expect(s).toContain('{cancelTried ? cancelFailure : failure}');
     // Marked before the call, so the hook's error after a failed cancel is read as the cancel's.
-    expect(s).toMatch(/onPress=\{async \(\) => \{\s*setCancelTried\(true\);\s*if \(await d\.cancel\(\)\) \{/);
+    expect(s).toMatch(/onPress=\{async \(\) => \{\s*setCancelTriedIn\(d\.session\);\s*if \(await d\.cancel\(\)\) \{/);
     expect(STATE.confirm()).toContain('{tried ? failure : null}');
     expect(STATE.confirm()).not.toContain('cancelFailure');
   });
 
   it('[BL-491 point 5] the scheduled page starts with no Cancel deletion pressed, so a failed read keeps its own line', () => {
-    expect(page).toContain('const [cancelTried, setCancelTried] = useState(false);');
-    expect(page.match(/setCancelTried\(/g)).toHaveLength(1);
-    expect(page).toContain('setCancelTried(true);');
+    expect(page).toContain('const [cancelTriedIn, setCancelTriedIn] = useState<number | null>(null);');
+    expect(page.match(/setCancelTriedIn\(/g)).toHaveLength(1);
+    expect(page).toContain('setCancelTriedIn(d.session);');
+  });
+
+  it('[BL-491] a Cancel deletion pressed before a sign-out and sign-in is not this session\'s, so its line does not come back (review follow-up on #2166)', () => {
+    expect(cancelPressedThisSession(null, 0)).toBe(false);
+    expect(cancelPressedThisSession(0, 0)).toBe(true);
+    // Pressed in session 0; signed out (1) and back in (2): a read that fails now keeps the page's own line.
+    expect(cancelPressedThisSession(0, 1)).toBe(false);
+    expect(cancelPressedThisSession(0, 2)).toBe(false);
+    expect(cancelPressedThisSession(2, 2)).toBe(true);
+    expect(page).toContain('const cancelTried = cancelPressedThisSession(cancelTriedIn, d.session);');
   });
 
   it('enables Delete account only for the typed word, and never while a request is on its way', () => {

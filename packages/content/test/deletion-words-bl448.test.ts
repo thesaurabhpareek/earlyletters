@@ -3,9 +3,9 @@
  * the server do today. No export line: no book-deletion screen offers Save a copy during the wait
  * (`request_book_deletion` has no caller in the app; the one Delete this book screen runs only on a phone that never
  * signed in, offers Export before the confirm, and sends nothing).
- * The website Delete account page's half of BL-448 is not here: it lived in src/pages.en.ts, which open PR #2056
- * deletes, so it is left to the page's own home. The request email's co-parent line is pinned in
- * server-surfaces-account-deletion.test.ts.
+ * The website Delete account page's half of BL-448 is not here: it lived in src/pages.en.ts, which BL-556 (#2056)
+ * removed. The site has no Delete account page for now, so that half waits for the page. The request email's co-parent
+ * line is pinned in server-surfaces-account-deletion.test.ts.
  */
 import { describe, expect, it } from 'vitest';
 import { accountEmails } from '../src';

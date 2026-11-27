@@ -282,6 +282,42 @@ describe('[BL-2159] a join on this phone asks the account again (NX-36-S17 cited
     run.unmount();
   });
 
+  it('[BL-2159] J21g/J21h: once the joined book is here the route stands aside (no view), never "arrived" under the open join sheet', async () => {
+    let hasLocalBook = false;
+    const run = renderHook(() => useNewPhone({ ...base, hasLocalBook }));
+    // Unmounted even when an expectation fails, so the join listener never reaches the next test.
+    try {
+      h.asked[0]('returningNoBook');
+      await flush();
+      accountJoined.joined();
+      h.asked[1]('hasBook');
+      await flush();
+      expect(run.result.current.view).toBe('opening'); // the book is not here yet: the wait, as BL-2159 has it
+      syncEvent({ phase: 'syncing', lastSyncedAt: null });
+      hasLocalBook = true;
+      run.rerender();
+      expect(run.result.current.view).toBeNull(); // the first page brought the book: the join sheet hands over, not this route
+      syncEvent({ phase: 'idle', lastSyncedAt: '2026-11-10T09:00:03.000Z' });
+      expect(run.result.current.view).toBeNull(); // the cycle is done: still not "arrived" (that would leave for Tonight)
+      await vi.advanceTimersByTimeAsync(OPENING_WAIT_MS + 100);
+      expect(run.result.current.view).toBeNull();
+    } finally {
+      run.unmount();
+    }
+  });
+
+  it('[BL-2159] with no join the arrival is unchanged: the book lands, the cycle is done, "arrived"', async () => {
+    let hasLocalBook = false;
+    const run = renderHook(() => useNewPhone({ ...base, hasLocalBook }));
+    h.asked[0]('hasBook');
+    await flush();
+    hasLocalBook = true;
+    run.rerender();
+    syncEvent({ phase: 'idle', lastSyncedAt: '2026-11-10T09:00:03.000Z' });
+    expect(run.result.current.view).toBe('arrived');
+    run.unmount();
+  });
+
   it('[BL-2159] with no invite nothing changes: a phone with no book still sees No book here yet, asked once', async () => {
     const run = renderHook(() => useNewPhone(base));
     h.asked[0]('returningNoBook');

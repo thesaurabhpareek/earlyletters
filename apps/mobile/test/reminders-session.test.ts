@@ -16,7 +16,38 @@ type Req = { identifier: string; content: { data?: unknown } };
 const os = vi.hoisted(() => ({
   scheduled: new Map<string, { identifier: string; content: { data?: unknown } }>(),
   presented: new Map<string, { identifier: string; content: { data?: unknown } }>(),
+  /** Makes the read of what iOS holds scheduled throw (BL-1009). Off unless a test turns it on. */
+  failScheduledRead: false,
 }));
+
+/** Makes one clean-up step throw, to prove the others still run (BL-2247). Off unless a test turns it on. */
+const fail = vi.hoisted(() => ({ deleteSetting: false, clearTypedDays: false, thrown: 0 }));
+vi.mock('../src/lib/store', async (importOriginal) => {
+  const real = await importOriginal<typeof import('../src/lib/store')>();
+  return {
+    ...real,
+    deleteSetting: (key: string) => {
+      if (fail.deleteSetting) {
+        fail.thrown += 1;
+        throw new Error('store closed');
+      }
+      real.deleteSetting(key);
+    },
+  };
+});
+vi.mock('../src/lib/reminders/typed-days', async (importOriginal) => {
+  const real = await importOriginal<typeof import('../src/lib/reminders/typed-days')>();
+  return {
+    ...real,
+    clearTypedDays: () => {
+      if (fail.clearTypedDays) {
+        fail.thrown += 1;
+        throw new Error('store closed');
+      }
+      real.clearTypedDays();
+    },
+  };
+});
 
 vi.mock('../src/lib/days', () => ({ endDaysSession: () => true })); // reminders/session clears the days store (NS-47-R15): test/days-store.test.ts
 vi.mock('../src/lib/moments', () => ({ endMomentsSession: () => true })); // reminders/session clears the moments file too: test/moments-hooks.test.ts
@@ -37,7 +68,10 @@ vi.mock('expo-notifications', () => {
     AndroidImportance: { DEFAULT: 3 },
     getPermissionsAsync: async () => perm(),
     requestPermissionsAsync: async () => perm(),
-    getAllScheduledNotificationsAsync: async () => [...os.scheduled.values()],
+    getAllScheduledNotificationsAsync: async () => {
+      if (os.failScheduledRead) throw new Error('not now');
+      return [...os.scheduled.values()];
+    },
     cancelScheduledNotificationAsync: async (id: string) => void os.scheduled.delete(id),
     scheduleNotificationAsync: async (r: Req) => {
       os.scheduled.set(r.identifier, { identifier: r.identifier, content: r.content });
@@ -156,6 +190,10 @@ describe('[NS-13-R14] sign out removes reminders (real store and scheduler)', ()
   const newId = () => `0199a5b0-0000-7000-8000-${String(++seq).padStart(12, '0')}`;
 
   beforeEach(() => {
+    fail.deleteSetting = false;
+    fail.clearTypedDays = false;
+    fail.thrown = 0;
+    os.failScheduledRead = false;
     os.scheduled.clear();
     os.presented.clear();
     store.closeStore();
@@ -209,6 +247,47 @@ describe('[NS-13-R14] sign out removes reminders (real store and scheduler)', ()
     // Kept per phone: the open book and the ask count (design OQ-13.6 default).
     expect(store.getSetting('activeChildId')).toBe(activeBefore);
     expect(store.getSetting('asks.reminderPrimes')).toBe('1');
+  });
+
+  it('[BL-2247] a failing settings clear still clears every typed day and removes every reminder of ours', async () => {
+    reminders.writePrefs({ enabled: true, cadence: 'everyEvening' });
+    await reminders.rescheduleReminders();
+    expect(os.scheduled.size).toBeGreaterThan(0);
+    store.setSetting('typedDay.2026-10-20', 'Nursery starts'); // after the plan, so no sweep takes it first
+    fail.deleteSetting = true;
+    await reminders.endReminderSession();
+    expect(fail.thrown).toBe(1); // the first key threw, so the settings clear stopped there
+    expect(store.settingKeysWithPrefix('typedDay.')).toEqual([]);
+    expect(os.scheduled.size).toBe(0);
+  });
+
+  it('[BL-2247] a failing typed-day clear still clears the reminder settings and removes every reminder of ours', async () => {
+    reminders.writePrefs({ enabled: true, cadence: 'everyEvening', namesOnLockScreen: true });
+    await reminders.rescheduleReminders();
+    expect(os.scheduled.size).toBeGreaterThan(0);
+    store.setSetting('typedDay.2026-10-20', 'Nursery starts');
+    fail.clearTypedDays = true;
+    await reminders.endReminderSession();
+    expect(fail.thrown).toBe(1);
+    expect(store.settingKeysWithPrefix('typedDay.')).toEqual(['typedDay.2026-10-20']); // the clear really failed
+    for (const key of reminders.REMINDER_SETTING_KEYS) expect(store.getSetting(key), key).toBeNull();
+    expect(os.scheduled.size).toBe(0);
+  });
+
+  it('[BL-1009] a scheduled list that cannot be read still dismisses every delivered note of ours at sign-out, and nothing else', async () => {
+    reminders.writePrefs({ enabled: true, cadence: 'everyEvening', namesOnLockScreen: true });
+    await reminders.rescheduleReminders();
+    os.presented.set('el.birthday.2026-03-01', { identifier: 'el.birthday.2026-03-01', content: { data: { source: REMINDER_SOURCE, kind: 'birthday' } } });
+    os.presented.set('older-evening-note', { identifier: 'older-evening-note', content: { data: { source: REMINDER_SOURCE, kind: 'evening' } } });
+    os.presented.set('el.typed.2026-10-17', { identifier: 'el.typed.2026-10-17', content: {} });
+    os.presented.set('someone-else-shown', { identifier: 'someone-else-shown', content: { data: { source: 'another.app' } } });
+    store.setSetting('typedDay.2026-10-20', 'Nursery starts');
+    os.failScheduledRead = true;
+    await reminders.endReminderSession();
+    expect([...os.presented.keys()]).toEqual(['someone-else-shown']);
+    // The other steps still ran: the settings and the typed days are gone.
+    for (const key of reminders.REMINDER_SETTING_KEYS) expect(store.getSetting(key), key).toBeNull();
+    expect(store.settingKeysWithPrefix('typedDay.')).toEqual([]);
   });
 
   it('[NS-13-R13] killed right after Sign out, before the clear: the next launch clears A\'s reminders before B signs in', async () => {
