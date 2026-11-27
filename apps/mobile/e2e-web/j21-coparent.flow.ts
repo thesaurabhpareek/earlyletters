@@ -433,10 +433,11 @@ test('[J21k] a parent of a two-parent book: the family page ends in Leave, the s
   await expect(app.getByRole('tab', { name: 'Book' }).or(app.getByText('Book', { exact: true }).last()).first()).toBeVisible({ timeout: 30_000 });
   await app.getByText('Book', { exact: true }).last().click();
   await app.getByTestId('book.settings').click();
-  await app.getByText(CHILD, { exact: true }).first().click();
-  await app.getByText(familyCopy.bookRow.label, { exact: true }).click();
+  // `visible`: the Book stays in the tree under Settings on the web, with the child's name in it.
+  await app.getByText(CHILD, { exact: true }).filter({ visible: true }).first().click();
+  await app.getByText(familyCopy.bookRow.label, { exact: true }).filter({ visible: true }).first().click();
   await expect(app).toHaveURL(/\/family/);
-  await expect(app.getByText(familyCopy.members.coParent, { exact: true })).toBeVisible();
+  await expect(app.getByText(familyCopy.members.coParent, { exact: true }).filter({ visible: true }).first()).toBeVisible();
   const leaveRow = app.getByTestId('family.leave');
   await expect(leaveRow).toBeVisible();
   await expect(leaveRow).toContainText(l.row.replace('{child}', CHILD));
@@ -446,7 +447,7 @@ test('[J21k] a parent of a two-parent book: the family page ends in Leave, the s
   await leaveRow.click();
   await expect(app).toHaveURL(/\/invite\/leave/);
   await expect(app.getByTestId('leave.screen')).toBeVisible();
-  await expect(app.getByText(l.title.replace('{child}', CHILD)).first()).toBeVisible();
+  await expect(app.getByText(l.title.replace('{child}', CHILD)).filter({ visible: true }).first()).toBeVisible();
   await expect(app.getByTestId('leave.choice.keep')).toHaveAttribute('aria-checked', 'false');
   await expect(app.getByTestId('leave.choice.take_out')).toHaveAttribute('aria-checked', 'false');
   await expect(app.getByTestId('leave.confirm')).toBeDisabled();
