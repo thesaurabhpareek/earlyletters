@@ -2477,7 +2477,7 @@ The entries in this batch (three stacked PRs) record each role's own ruling on t
 - Question: the website still introduces the product with the descriptor D-139 retired ("the baby memory book you fill by talking" and its variants). What changes, and what waits?
 - Tier and type: T1; clear. The council gave no tier; this one is set by precedent (CPO-1), UNVERIFIED as the council's.
 - Options considered: change every site line now; change the title and brand line to the registered words now and hold the lines that need new words; change nothing until all lines have approved words
-- Ruling: the website title (`site.meta.title`) and brand line (`site.brand.line`) take the BRAND.md descriptor word for word ("letters to your child, in your own words and voice"), carried by open PR #2129 with a test that pins both. Four more site lines still say the retired descriptor: `comingSoon.line`, `comingSoon.shareTitle`, `comingSoon.shareText` (`apps/web/src/content/site.ts:72`, `:90`, `:91` on `develop` at 0082f8e0) and `welcomeEmail.intro` (`:280`). Their replacements are new words. They are recorded here as PROPOSED, are not approved by this entry, and are held for the founder's word:
+- Ruling: the website title (`site.meta.title`) and brand line (`site.brand.line`) take the BRAND.md descriptor word for word ("letters to your child, in your own words and voice"), carried by open PR #2129 with a test that pins both. Four more site lines still say the retired descriptor: `comingSoon.line`, `comingSoon.shareTitle`, `comingSoon.shareText` (`apps/web/src/content/site.ts:72`, `:90`, `:91` on `develop` at 0082f8e0) and `welcomeEmail.intro` (`:280`). Their replacements are new words. They are recorded here as PROPOSED, are not approved by this entry, and are held, not applied, until approved:
   - `welcomeEmail.intro`: `${NAME} keeps letters to your child, in your own words and voice. It is coming to iPhone in the US. You will hear from us once more, at launch.`
   - `comingSoon.line`: "Letters to your child, in your own words and voice. Say what happened today, out loud."
   - `comingSoon.shareTitle`: `${NAME}: letters to your child`
@@ -2486,13 +2486,13 @@ The entries in this batch (three stacked PRs) record each role's own ruling on t
 - Why: D-139 replaces the old descriptor everywhere a parent reads first; BRAND.md lines 14 and 89 give one descriptor, with the line standing alone where the name is already on screen. The title and brand line take the registered words unchanged, so they add no new claim; the four lines need new sentences, which are new words. Filed as CMO, not CBO: `docs/agents/exec/COUNCIL.md:14` gives positioning and the website's claims to the CMO; the CBO's `:15` is business model and pricing, and this file has no CBO entry.
 - Door: two-way
 - Way back: revert the two lines and their test in #2129, or redeploy the previous website version.
-- Revisit when: the founder's word on the four PROPOSED lines; each changed line then leaves the shrink-only list in the same PR.
+- Revisit when: the four PROPOSED lines are approved; each changed line then leaves the shrink-only list in the same PR.
 
 ### CLO-45 BL-2128: recommended changes to the /delete-account words in draft PR #2066 (27 Nov 2026, CLO via Karma's session; Claude role, not legal advice)
 - Question: draft PR #2066 (head 5d1fe325813f7b6a21379aebcd90d6fced54751c) builds `/delete-account` from the counsel draft `docs/legal/delete-account-page.md` (1.1.0, draft-for-counsel). Which of its words should change before it publishes?
 - Tier and type: T1; clear. The council gave no tier; this one is set by precedent (CPO-1), UNVERIFIED as the council's.
 - Options considered: publish the draft words unchanged; recommend changes and hold them for counsel; rewrite the page in the PR
-- Ruling: recommended changes, all PROPOSED and held for counsel and the founder; the legal text merge is the founder's (D-125). Lines are of `apps/web/src/lib/legal/delete-account-copy.ts` in #2066, with the draft's line in brackets:
+- Ruling: recommended changes, all PROPOSED and held for counsel; the legal text merges under D-125. Lines are of `apps/web/src/lib/legal/delete-account-copy.ts` in #2066, with the draft's line in brackets:
   - `next.items[1]` (`:44`; draft `:48`): the backups clause uses the registered data-policy wording on backups within 38 days (`docs/legal/data-policy.md:217`, "from database backups within 38 days"); today it says "from our backups within 38 days".
   - `removed.items[0]` (`:51`; draft `:55`) becomes "Your letters, from every book on your account."
   - `removed.items[3]` (`:54`; draft `:58`), the recording backup line, is dropped.
