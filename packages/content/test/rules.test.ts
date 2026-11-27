@@ -981,6 +981,12 @@ describe('glossary (BRAND.md)', () => {
     expect(offenders(COPY, /\btid(y|ied|ies|ying|ier)\b|\bcleaned up\b/i)).toEqual([]);
   });
 
+  it('never says transcription, transcribe or transcript in copy a parent reads (BL-393, D-074)', () => {
+    // The word names the technology and reads as if the app writes (VOICE.md "Word for word"). Values only: key
+    // names, code and comments may keep the internal word. The website and pages (site.en.ts, pages.en.ts) are BL-556's.
+    expect(offenders([...IN_APP, ...EMAIL], /\btranscri\w*/i)).toEqual([]);
+  });
+
   it('says "small fix", never edit, correct, clean or improve, where the app talks about its fixes (D-086)', () => {
     const where = (l: Leaf) => /^(en\.review|en\.onboarding\.promise|en\.book\.provenance|features\.words|features\.speech)\b/.test(l.path);
     const BANNED = /\bedit(s|ed|ing)?\b|\bcorrect(s|ed|ing|ion|ions)?\b|\bclean(s|ed|ing)?\b|\bimprov\w*/i;
@@ -1261,6 +1267,14 @@ describe('[EXPERIENCE_PASS_2026-10 P8] every feature copy file has per-surface r
       const reason = SURFACE_OPT_OUT[key]!;
       expect(weLines.map((l) => l.path).filter((p) => !reason.includes(p)), key).toEqual([]);
     }
+  });
+
+  // BL-462 point 4, reminders: BL-474 took its one "we" line out, and reminder-copy-no-we.test.ts guards only the
+  // lock-screen paths. A "we" anywhere else in the opt-out file (the Settings screen words) must be named in the reason too.
+  it('names any "we" line of the reminders opt-out in its reason (none today, BL-474)', () => {
+    const weLines = leaves(features.reminders).filter((l) => /\b(?:we|our|us)\b/i.test(l.text));
+    const reason = SURFACE_OPT_OUT.reminders!;
+    expect(weLines.map((l) => l.path).filter((p) => !reason.includes(p))).toEqual([]);
   });
 
   // BL-462 point 5 (mutant B07): the deletion screen names the child where the book stays.
