@@ -244,12 +244,10 @@ Deno.test('[FR-BKO-21] an agent named outside any job, in workflow-level shell d
   }
 });
 
-Deno.test('[FR-BKO-21] workflow-level env names an agent for every job; the workflow name and its on: filters do not', () => {
-  const deploy = (top: string[]) => [
+Deno.test('[FR-BKO-21] an agent named outside the jobs counts for every job, but an on: filter or activity type does not', () => {
+  const deploy = (on: string[], top: string[] = []) => [
     'on:',
-    '  push:',
-    '    paths:',
-    "      - 'CLAUDE.md'",
+    ...on,
     ...top,
     'jobs:',
     '  deploy:',
@@ -261,8 +259,21 @@ Deno.test('[FR-BKO-21] workflow-level env names an agent for every job; the work
     `          K: \${{ secrets.${SR} }}`,
     '',
   ].join('\n');
-  assert.deepEqual(scanWorkflow('deploy.yml', deploy(['name: Deploy (not claude)', 'run-name: never claude'])), [], 'name, run-name and a CLAUDE.md path filter are never run');
-  assert.deepEqual(scanWorkflow('deploy.yml', deploy(['on_dispatch_note: x', 'env:', '  CMD: npx -y @anthropic-ai/claude-code'])).map((f) => f.rule), ['agent-environment', 'agent-allowlist']);
+  for (const filter of ['paths', 'paths-ignore', 'branches', 'branches-ignore', 'tags', 'tags-ignore', 'types']) {
+    const on = ['  push:', `    ${filter}: ['claude', 'CLAUDE.md']`, '  schedule:', "    - cron: '0 3 * * *'"];
+    assert.deepEqual(scanWorkflow('deploy.yml', deploy(on, ['name: Deploy'])), [], `${filter} is never run`);
+  }
+  const agent = ['agent-environment', 'agent-allowlist'];
+  const cases: [string, string[], string[]][] = [
+    ['workflow env', ['  push:'], ['env:', '  CMD: npx -y @anthropic-ai/claude-code']],
+    ['workflow name, read through github.workflow', ['  push:'], ['name: claude -p go']],
+    ['dispatch input default', ['  workflow_dispatch:', '    inputs:', '      cmd:', '        default: npx -y @anthropic-ai/claude-code -p go'], []],
+    ['call input default', ['  workflow_call:', '    inputs:', '      cmd:', '        type: string', "        default: 'claude -p go'"], []],
+    ['choice option', ['  workflow_dispatch:', '    inputs:', '      cmd:', '        type: choice', "        options: ['claude -p go', 'echo hi']"], []],
+  ];
+  for (const [label, on, top] of cases) {
+    assert.deepEqual(scanWorkflow('deploy.yml', deploy(on, top)).map((f) => f.rule), agent, label);
+  }
 });
 
 Deno.test('[FR-BKO-21] a backslash before claude, or a line continuation right after it, still names the agent', () => {
