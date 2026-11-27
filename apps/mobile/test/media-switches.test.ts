@@ -125,10 +125,25 @@ function closureOf(entries: string[]): string[] {
   return [...seen].sort();
 }
 
+/** The name an import, an export or a declaration gives, which is not a use of what it names. */
+function isDeclaredName(id: ts.Identifier): boolean {
+  const p = id.parent;
+  if (ts.isImportSpecifier(p) || ts.isExportSpecifier(p) || ts.isImportClause(p) || ts.isNamespaceImport(p)) return true;
+  if (ts.isFunctionDeclaration(p) || ts.isFunctionExpression(p) || ts.isMethodDeclaration(p) || ts.isVariableDeclaration(p) || ts.isParameter(p) || ts.isPropertyAssignment(p) || ts.isPropertyDeclaration(p) || ts.isPropertySignature(p)) {
+    return p.name === id;
+  }
+  return false;
+}
+
 /** The functions that read a phase switch, for P0 through its own module and for every phase through capabilities. */
 const SWITCH_READERS = ['mediaPhaseMayRun', 'mediaPhaseBuilt', 'photosBuildEnabled', 'photosPausedNow', 'photosPaused', 'photoSurfaces', 'photoStartShows'];
 
-/** `file#function` for every call to a switch reader in these files (the enclosing named function, or `<module>`). */
+/**
+ * `file#function` for every reference to a switch reader in these files (the enclosing named function, or `<module>`).
+ * Any reference counts, not only a call: a copy into a local (`const gate = mediaPhaseMayRun`), `.call`, `.apply` or
+ * `.bind`, or passing it as a value would each go round a call-only scan. An import or export specifier and the name a
+ * declaration gives (a function's own name, an object key) are not references.
+ */
 function switchReads(files: string[]): string[] {
   const found: string[] = [];
   for (const file of files) {
@@ -145,11 +160,8 @@ function switchReads(files: string[]): string[] {
       let here = owner;
       if ((ts.isFunctionDeclaration(n) || ts.isMethodDeclaration(n)) && n.name) here = n.name.getText(sf);
       else if (ts.isVariableDeclaration(n) && n.initializer && (ts.isArrowFunction(n.initializer) || ts.isFunctionExpression(n.initializer))) here = n.name.getText(sf);
-      if (ts.isCallExpression(n)) {
-        const callee = n.expression.getText(sf).split('.').pop() as string;
-        // a reader calling a reader is the definition itself (mediaPhaseBuilt recurses through `needs`), not a use
-        if (readers.has(callee) && !SWITCH_READERS.includes(here)) found.push(`${relative(SRC, file)}#${here}`);
-      }
+      // a reader using a reader is the definition itself (mediaPhaseBuilt recurses through `needs`), not a use
+      if (ts.isIdentifier(n) && readers.has(n.text) && !isDeclaredName(n) && !SWITCH_READERS.includes(here)) found.push(`${relative(SRC, file)}#${here}`);
       n.forEachChild((c) => visit(c, here));
     };
     visit(sf, '<module>');
@@ -261,7 +273,8 @@ describe('[NX-39-R37] a phase switch removes screens and reads, never a data rig
     erasePictureOf('e1');
     expect(await files.list()).toEqual([]);
     expect(db.all('SELECT id FROM entry_media')).toEqual([]);
-  });
+    // About 3 s alone; vitest's default 5 s was hit once under a full run on 4 cores (Review B).
+  }, 20_000);
 
   it('[NX-39-R37] positive control: a switch read added to an export or erase function is caught', () => {
     const dir = mkdtempSync(join(tmpdir(), 'nx39-r37-'));
@@ -273,9 +286,37 @@ describe('[NX-39-R37] a phase switch removes screens and reads, never a data rig
       expect(switchReads([file])[0]).toMatch(/copy\.ts#eraseAll$/);
       writeFileSync(file, "import { mediaPhaseMayRun as gate } from './capabilities';\nexport function exportSnapshot() {\n  return gate('photos', null);\n}\n");
       expect(switchReads([file])[0]).toMatch(/copy\.ts#exportSnapshot$/);
+      // Review B M4 and M5: a copy into a local, and `.call`, are references too.
+      writeFileSync(file, "import { mediaPhaseMayRun } from './capabilities';\nexport function exportPlan() {\n  const gate = mediaPhaseMayRun;\n  return gate('photos', null);\n}\n");
+      expect(switchReads([file])).toEqual([expect.stringMatching(/copy\.ts#exportPlan$/)]);
+      writeFileSync(file, "import { mediaPhaseMayRun } from './capabilities';\nconst gate = mediaPhaseMayRun;\nexport function exportPlan() {\n  return gate('photos', null);\n}\n");
+      expect(switchReads([file])).toEqual([expect.stringMatching(/copy\.ts#<module>$/)]);
+      writeFileSync(file, "import { mediaPhaseBuilt } from './capabilities';\nexport function eraseEverything() {\n  return mediaPhaseBuilt.call(null, 'photos');\n}\n");
+      expect(switchReads([file])).toEqual([expect.stringMatching(/copy\.ts#eraseEverything$/)]);
+      // and the names an import or a declaration gives are not reads
+      writeFileSync(file, "import { mediaPhaseBuilt } from './capabilities';\nexport { mediaPhaseBuilt };\nexport const keys = { mediaPhaseBuilt: 1 };\n");
+      expect(switchReads([file])).toEqual([]);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
+  });
+
+  it('[NX-39-R37] the phase override is for tests only, and goes back to the build value', () => {
+    setMediaPhaseForTests('occasions', true);
+    expect(mediaPhaseBuilt('occasions')).toBe(true);
+    const saved = process.env.VITEST;
+    delete process.env.VITEST;
+    try {
+      expect(() => setMediaPhaseForTests('occasions', false)).toThrow(/tests only/);
+      expect(() => setMediaPhaseForTests('photos', true)).toThrow(/tests only/);
+    } finally {
+      process.env.VITEST = saved;
+    }
+    // the refused calls changed nothing
+    expect(mediaPhaseBuilt('occasions')).toBe(true);
+    expect(mediaPhaseBuilt('photos')).toBe(false);
+    setMediaPhaseForTests('occasions', null);
+    expect(mediaPhaseBuilt('occasions')).toBe(false);
   });
 
   it('[NX-39-R37] P0\'s screens read the same variable, with the same rule and the same pause, as its switch here', () => {
@@ -330,9 +371,36 @@ describe('[NX-39-R39] the switches of section 3', () => {
       ['P3', 'EXPO_PUBLIC_VIDEO'],
       ['P4a', 'EXPO_PUBLIC_OCCASIONS'],
     ]);
-    // Expo inlines only a read written out in full: each variable is read once, literally, in capabilities.ts.
+    // What each phase builds on and which remote keys pause it, written out here so a change to the table is a
+    // reviewed change to this test too (Review A K3, K8: the loops in R37 build their expectations from the table).
+    expect(MEDIA_PHASE_SWITCHES.map((s) => [s.nx39, s.phase, s.needs, s.pauseKeys])).toEqual([
+      ['P0', 'photos', null, ['photos']],
+      ['P1', 'mediaMetadata', 'photos', []],
+      ['P2a', 'libraryChooser', 'photos', ['photoMoments']], // E6: photoMoments pauses library picking (NS-51)
+      ['P2b', 'moments', 'photos', ['photoMoments']],
+      ['P2c', 'momentsBackground', 'moments', []],
+      ['P3', 'video', 'photos', ['videos']],
+      ['P4a', 'occasions', null, []],
+    ]);
+    // and what each remote key pauses, with every switch on
+    allSwitches(true);
+    const pausedNow = (key: string) => PHASES.filter((p) => !mediaPhaseMayRun(p, { killSwitches: { [key]: true } })).sort();
+    expect(PAUSE_KEYS).toEqual(['photoMoments', 'photos', 'videos']);
+    expect(pausedNow('photos')).toEqual(['libraryChooser', 'mediaMetadata', 'moments', 'momentsBackground', 'photos', 'video']);
+    expect(pausedNow('photoMoments')).toEqual(['libraryChooser', 'moments', 'momentsBackground']);
+    expect(pausedNow('videos')).toEqual(['video']);
+    allSwitches(null);
+    // Expo inlines only a read written out in full: each variable is read once, literally, in capabilities.ts, through
+    // parseServerFeatures into its own phase's build value (Review B M2: a `!!process.env...` read would turn `off` on).
     const code = stripComments(readFileSync(join(SRC, 'lib', 'capabilities.ts'), 'utf8'));
-    for (const s of MEDIA_PHASE_SWITCHES) expect(code.match(new RegExp(`process\\.env\\.${s.env}\\b`, 'g'))?.length, s.env).toBe(1);
+    const buildValues = code.match(/const MEDIA_PHASE_BUILD_VALUE: Readonly<Record<MediaPhase, boolean>> = \{\n([\s\S]*?)\n\};/)?.[1];
+    expect(buildValues).toBeDefined();
+    expect(buildValues!.split('\n')).toEqual(MEDIA_PHASE_SWITCHES.map((s) => `  ${s.phase}: parseServerFeatures(process.env.${s.env}),`));
+    expect(code).toMatch(/const own = mediaPhaseTestOverride\[phase\] \?\? MEDIA_PHASE_BUILD_VALUE\[phase\];/);
+    for (const s of MEDIA_PHASE_SWITCHES) {
+      expect(code.match(new RegExp(`process\\.env\\.${s.env}\\b`, 'g'))?.length, s.env).toBe(1);
+      expect(code, s.env).toMatch(new RegExp(`\\n  ${s.phase}: parseServerFeatures\\(process\\.env\\.${s.env}\\),\\n`));
+    }
     // production and every store profile leave each one off, and the build reads what production holds as off
     const eas = readEas();
     expect(storeProfiles(eas)).toContain('production');
@@ -343,6 +411,44 @@ describe('[NX-39-R39] the switches of section 3', () => {
     const g6 = readFileSync(join(APP, 'test', 'g6-production-flags-off.test.ts'), 'utf8');
     const storeFlagNames = STORE_FLAGS.map((f: { env: string }) => f.env);
     for (const s of MEDIA_PHASE_SWITCHES) expect(storeFlagNames.includes(s.env) || g6.includes(`'${s.env}'`), s.env).toBe(true);
+  });
+
+  it('[NX-39-R39] each switch is off for every value but `on`, read from the environment as a build reads it', async () => {
+    // A fresh copy of capabilities.ts per value, with the variable set in process.env, as a bundle inlines it.
+    // `on` is matched after trim and lower-case (parseServerFeatures, the rule of every switch in capabilities.ts and of
+    // lib/photos/flag.ts), so `On` and ` ON ` are on; store-flags.mjs and G6 refuse any written value but `off` anyway.
+    const OFF_VALUES: Array<string | undefined> = [undefined, '', '   ', 'off', ' OFF ', 'Off', 'true', '1', 'yes', 'no', 'onn', 'o n', 'enabled'];
+    const ON_VALUES = ['on', 'On', ' ON '];
+    const saved = Object.fromEntries(MEDIA_PHASE_SWITCHES.map((s) => [s.env, process.env[s.env]]));
+    const builtWith = async (env: Record<string, string | undefined>): Promise<Record<MediaPhase, boolean>> => {
+      for (const s of MEDIA_PHASE_SWITCHES) {
+        const v = env[s.env];
+        if (v === undefined) delete process.env[s.env];
+        else process.env[s.env] = v;
+      }
+      vi.resetModules();
+      const fresh = await import('../src/lib/capabilities');
+      return Object.fromEntries(PHASES.map((p) => [p, fresh.mediaPhaseBuilt(p)])) as Record<MediaPhase, boolean>;
+    };
+    try {
+      for (const s of MEDIA_PHASE_SWITCHES) {
+        // every phase it builds on is on, so only its own value decides
+        const needed = Object.fromEntries(chain(s.phase).slice(1).map((p) => [switchOf(p).env, 'on']));
+        for (const v of [...OFF_VALUES, ...ON_VALUES]) {
+          const built = await builtWith({ ...needed, [s.env]: v });
+          expect(built[s.phase], `${s.env}=${JSON.stringify(v)}`).toBe(ON_VALUES.includes(v as string));
+          for (const p of chain(s.phase).slice(1)) expect(built[p], `${s.env}: ${p} needed and on`).toBe(true);
+        }
+      }
+      // nothing set at all (production, every test build): every phase is off
+      expect(Object.values(await builtWith({}))).toEqual(PHASES.map(() => false));
+    } finally {
+      for (const [k, v] of Object.entries(saved)) {
+        if (v === undefined) delete process.env[k];
+        else process.env[k] = v;
+      }
+      vi.resetModules();
+    }
   });
 
   it('[NX-39-R39] mutant: a copy of eas.json with any one switch on in production or a store profile is caught', () => {

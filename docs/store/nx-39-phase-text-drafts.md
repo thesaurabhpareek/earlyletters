@@ -15,14 +15,14 @@ Info.plist carries with that phase on. Bracketed text is for the person who move
 
 ## 1. Permission keys in the built Info.plist
 
-The list below is PR #2071's allowlist (BL-2131, `apps/mobile/test/config.test.ts`, open at the time of writing). It
+The list below is PR #2071's allowlist (BL-2131, `apps/mobile/test/config.test.ts`, merged into develop at 4e55503). It
 reads the introspected config, not the plist inside a built .ipa, so the founder reads the plist of the build that is
 submitted before any block below is pasted (open item E3).
 
 | Key | Who writes it | In a Release build |
 |---|---|---|
 | `NSMicrophoneUsageDescription` | expo-audio plugin, `permissionCopy.microphone` | Yes |
-| `NSFaceIDUsageDescription` | expo-local-authentication plugin, `permissionCopy.faceId` | Yes |
+| `NSFaceIDUsageDescription` | expo-local-authentication plugin, `permissionCopy.faceId` | Yes. iOS shows it the first time the app asks for Face ID, and only two actions ask: turning on App lock (`lib/app-lock/controller.ts` `turnOn`) and confirming Erase everything on this phone (`app/settings/erase.tsx`, `lib/security/owner-check.ts`). Unlock, turning App lock off and the Export check ask only while App lock is already on |
 | `NSLocalNetworkUsageDescription` (with `NSBonjourServices`) | expo-dev-launcher | Expected no: its build phase strips it from non-Debug builds (read from its source, not from an .ipa) |
 
 Keys a phase adds when its switch is on (NX-39-R4, R46). None is in any build today, and gate G6
@@ -49,7 +49,7 @@ PHOTOS AND OTHER CODE THAT IS OFF IN THIS BUILD (2.3.1(a))
 The binary contains code for adding photos to letters in a later update. It is switched off when the app is built, so no photo screen or button is shown, the app reads no photos, and no remote setting can turn it on. Remote settings can only pause a feature, never start one.
 
 PERMISSIONS IN THIS BUILD
-The Info.plist has two purpose strings. NSMicrophoneUsageDescription is asked the first time you tap Speak. NSFaceIDUsageDescription is asked only if you turn on App lock in Settings. Reminders are local notifications, and iOS asks the first time you turn one on. There is no photo library, camera, location or contacts permission, and no background mode.
+The Info.plist has two purpose strings. NSMicrophoneUsageDescription is asked the first time you tap Speak. NSFaceIDUsageDescription is asked the first time the app uses Face ID, which happens only when you turn on App lock in Settings or confirm Erase everything on this phone in Settings. Reminders are local notifications, and iOS asks the first time you turn one on. There is no photo library, camera, location or contacts permission, and no background mode.
 ```
 
 ### 2.1 P0, one photo with a letter (`EXPO_PUBLIC_PHOTOS`)
@@ -60,7 +60,7 @@ A parent can add one photo to a letter: on Tonight tap "Start from a photo", or 
 To test on a device with no photos: take a screenshot first (side button and volume up), then choose it in the picker.
 
 PERMISSIONS IN THIS BUILD
-NSMicrophoneUsageDescription (asked the first time you tap Speak) and NSFaceIDUsageDescription (asked only if you turn on App lock). No photo library, camera or location permission, and no background mode.
+NSMicrophoneUsageDescription (asked the first time you tap Speak) and NSFaceIDUsageDescription (asked only when you turn on App lock or confirm Erase everything on this phone, both in Settings). No photo library, camera or location permission, and no background mode.
 ```
 
 ### 2.2 P1, the photo's date (`EXPO_PUBLIC_MEDIA_METADATA`)
@@ -89,7 +89,7 @@ PHOTO LIBRARY
 To test on a device with no photos: take two or three screenshots, tap "Add from your library", choose Limit Access, and select them.
 
 PERMISSIONS IN THIS BUILD
-NSPhotoLibraryUsageDescription (asked when you tap "Add from your library"), NSMicrophoneUsageDescription (asked the first time you tap Speak) and NSFaceIDUsageDescription (asked only if you turn on App lock). PHPhotoLibraryPreventAutomaticLimitedAccessAlert is set, so iOS does not prompt again after Limited access. No camera or location permission, no photo library add permission, and no background mode.
+NSPhotoLibraryUsageDescription (asked when you tap "Add from your library"), NSMicrophoneUsageDescription (asked the first time you tap Speak) and NSFaceIDUsageDescription (asked only when you turn on App lock or confirm Erase everything on this phone, both in Settings). PHPhotoLibraryPreventAutomaticLimitedAccessAlert is set, so iOS does not prompt again after Limited access. No camera or location permission, no photo library add permission, and no background mode.
 ```
 
 ### 2.4 P2b with P4b, "Suggest days" (`EXPO_PUBLIC_PHOTO_MOMENTS`)
@@ -212,4 +212,4 @@ Each item has the default these drafts use. Changing a default is a wording edit
 | E6 | Which remote key pauses P2a. `photoMoments` is documented as "picking from the photo library for a letter" (NS-51) | `photoMoments` pauses P2a and P2b, and `photos` pauses every picture phase (`MEDIA_PHASE_SWITCHES`) |
 | E7 | The reviewer path for P2b with no real library (2.4) | Two screenshots under Limit Access, marked UNVERIFIED until the engine owner names the smallest set that makes a card |
 | E8 | The reminder quiet window in the P4a text, 9:30 PM to 7 AM (NX-39-R26) | Stated as NX-39-R26 writes it, in 12-hour time for US reviewers |
-| E9 | Whether `eas.json` writes the seven switches as `off` in `production`, or leaves them out | Left out: the build reads a missing switch as off, `EXPO_PUBLIC_PHOTOS` and `EXPO_PUBLIC_BOOK_SEARCH` are already handled that way, and `apps/mobile/test/config.test.ts` (owned by open PR #2071) pins the names each profile writes. Writing them is a follow-up after #2071 merges, in every profile at once |
+| E9 | Whether `eas.json` writes the seven switches as `off` in `production`, or leaves them out | Left out in BL-858's PR: the build reads a missing switch as off, and `EXPO_PUBLIC_PHOTOS` and `EXPO_PUBLIC_BOOK_SEARCH` are already handled that way. #2071 merged into develop at 4e55503, so writing them is unblocked: it is a follow-up PR that writes all seven as `off` in every profile at once and updates the names `apps/mobile/test/config.test.ts` pins for each profile. Written `off`, a value set in the EAS environment on expo.dev should no longer decide the build (UNVERIFIED which value EAS applies when both are set, as `scripts/release/preflight-keepsafe.mjs` says) |
