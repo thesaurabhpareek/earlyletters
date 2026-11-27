@@ -1,8 +1,8 @@
 ---
 title: Counsel packet, Early Letters v1.0 (option B) and after
-version: 1.9.0
+version: 1.10.0
 status: for counsel
-date: 2026-11-21
+date: 2026-11-24
 owner: founder
 prepared_by: AI (Claude), legal drafting support (stream S17); not legal advice
 ---
@@ -12,6 +12,8 @@ prepared_by: AI (Claude), legal drafting support (stream S17); not legal advice
 > **Read under D-172 (23 Nov 2026).** No outside counsel is engaged and none has reviewed or approved anything here. Wherever this packet says "counsel", read the exec-team review (CLO, CCO, Chief Privacy Officer; Claude roles, not licensed lawyers; not legal advice). The calendar dates below that name counsel are superseded (D-172). The packet's wording is otherwise unchanged and is not edited line by line.
 
 ## 0. How to use this packet
+
+**New in 1.10.0 (24 Nov 2026).** Adds section 10 (Q133 to Q138, printed book and print sale: FTC Mail Order Rule and returns, card data scope, sales tax, California price display, children's-product rules, the font licence in a PDF). Sections 1 to 9 are unchanged.
 
 **New in 1.9.0 (21 Nov 2026).** Adds section 9 (Q123 to Q132, Moments tab, NS-53) and corrects the Q129 default to the founder's O-44 decision (disclose the iPhone backup in one plain line). Sections 1 to 8 are unchanged.
 
@@ -786,10 +788,130 @@ A first cut (orders 1 to 6) answers everything the spec says the door and the li
 ### 9.14 What counsel is not asked to do
 Nothing here asks counsel to approve the product copy in 9.1 as marketing, to set price, or to rule on anything outside these ten topics. The contradictions between published drafts and the hybrid design are listed in `docs/product/moments-tab/PRIVACY-CONTRADICTIONS.md`; they are fixes `legal` drafts as Privacy Policy 3.1.0, Terms 4.2.0, in-app disclosures 3.5.0 and label 2.3.0 (spec R266), held as draft-for-counsel.
 
+## 10. Questions from the printed book and print sale rows (24 Nov 2026)
+
+> Draft for counsel review. Prepared by an AI (legal drafting support); not legal advice; no attorney-client relationship exists. Every reading below is an engineering reading; counsel must confirm. Nothing here says anything is compliant or legal. Read under D-172: "counsel" is the exec-team review. Each question can be answered without relying on my summary of the page named in its facts.
+
+**Where these come from.**
+- **The rows.** `docs/product/prd/functions/print-and-fulfilment.md` (CBO role, 20 Nov 2026): Q-PRT-4 (price and shipping, SB 478), Q-PRT-5 (FTC Mail Order Rule), Q-PRT-6 (sales tax), Q-PRT-8 (children's-product rules and the PCI level) and Q-PRT-9 (emoji face licence). Each said "needs a number from legal" or named a register row, and none had a number in this packet. FR-PRT-10, -11, -19, -20, -21 and -46 are the build rows that wait on them.
+- **The register.** `docs/legal/compliance-register.md`: CR-054 (printed books: PCI via hosted card fields, FTC Mail Order Rule, returns; marked Unverified), CR-087 (Apple 3.1.3(e) line), CR-120 (sales tax on printed books, Gap), CR-123 (open-source licences). SB 478 and CPSIA have no register row yet; they are listed in the pull request description as rows to add.
+- **Existing print entries.** Q11 (processor contracts, which the partner and the payment processor will need) and Q47 (publisher identity; Q-PRT-2 asks whether an entity is the seller) already gate NS-07 and NS-30 (7.16). Q30 (later features) and Q121 (a printed QR to a hosted video) are separate. These six do not repeat them.
+- **Why this is not urgent.** Printing is unbuilt. The free file (NS-07) ships without ordering, and Q-PRT-1 keeps it that way until the go/no-go. So each question below blocks nothing today; each blocks the print flag in `production` before it is built.
+- **How the numbers work.** Q133 to Q138 are the next free numbers after section 9 (Q132). I checked on 24 Nov 2026: develop's packet ends at Q132; the patches of all open PRs that touch `docs/legal/COUNSEL_PACKET.md` contain no Q133 to Q199; no remote branch head I read adds a heading at Q133 or above. The repo's id check (`scripts/agents/next-id.mjs`) does not cover packet question numbers, so this was by hand. Re-run it at merge.
+- **"Deadline."** The gate it blocks, as in section 8 (ruling T5). No calendar date is invented.
+- **Facts tags.** V: read on 24 Nov 2026 at the page named. U: not read.
+
+### 10.1 Index
+
+| Q | Topic | Old id | Rows | Priority | Blocks (flag in `production`) |
+|---|---|---|---|---|---|
+| Q133 | FTC Mail Order Rule and a returns and refund policy for a printed book sold direct | Q-PRT-5 | FR-PRT-46; CR-054 | C | Print order flow (NS-30); nothing now |
+| Q134 | Card data scope: a hosted checkout, or Apple's in-app purchase for print | Q-PRT-8 (PCI part) | FR-PRT-19; CR-054, CR-087 | C | Print order flow (NS-30); nothing now |
+| Q135 | Sales tax on printed books: the partner's duty or ours | Q-PRT-6 | FR-PRT-21; CR-120 | C | Print order flow (NS-30); nothing now |
+| Q136 | California total-price display for a printed book (SB 478) | Q-PRT-4 | FR-PRT-20 | C | Print order flow (NS-30); the price screen; nothing now |
+| Q137 | Children's-product rules (CPSIA) for a keepsake book | Q-PRT-8 (CPSIA part) | FR-PRT-46 | C | Print order flow (NS-30); a paid book sold from the app; nothing now |
+| Q138 | The licence of the fonts embedded in a printed or shared PDF, and an emoji face | Q-PRT-9; CR-123 | FR-PRT-10, -11 | C | Printable file (NS-07) if it embeds a face we have no record for; an emoji face for print |
+
+Mapping, in the style of 7.16:
+
+| Q | Now also gates | Source |
+|---|---|---|
+| Q133, Q135, Q136, Q137 | NS-30 print sale | `print-and-fulfilment.md` Q-PRT-5, -6, -4, -8; FR-PRT-46 |
+| Q134 | NS-30 print sale (the payment path) | FR-PRT-19; CR-054 |
+| Q138 | NS-07 printable book (font records); NS-30 | FR-PRT-10, -11; NS-07 C28-13 |
+| Q11, Q47 | NS-07 printable book, NS-30 print sale (unchanged, 7.16) | NS-07 section 4.17 |
+
+### 10.2 Q133 (new). The FTC Mail Order Rule and returns for a printed book sold direct (Q-PRT-5; CR-054)
+- **Facts.**
+  - **What the page says.** The FTC business guide to the Mail, Internet, or Telephone Order Merchandise Rule (Part 435) says the rule covers most goods ordered by mail, telephone, fax or the internet, whoever starts the contact. If a seller states a shipping time it needs a reasonable basis for it; with none stated, a reasonable expectation of shipping within 30 days of a properly completed order. If it cannot ship on time it must offer the buyer a delay consent or a full refund, with a free way to cancel and a revised date or a reason. Refunds are due within seven working days after cancellation and may not be store credit. V (read on 24 Nov 2026 from https://www.ftc.gov/business-guidance/resources/business-guide-ftcs-mail-internet-or-telephone-order-merchandise-rule; summary, not quoted).
+  - **What it does not say.** The page lists exemptions (such as serial deliveries after the first, seeds and plants, C.O.D. orders, services) and does not discuss made-to-order or personalised goods. Whether a book printed from a family's own letters is inside the rule is not answered there. U: I did not read the rule text in the Code of Federal Regulations.
+  - **The product.** A book would be made to order by a print partner and shipped to the parent. No partner is chosen; no turnaround is known (`print-and-fulfilment.md` Q-PRT-3). CR-054 lists returns policy and the rule as "Unverified". The partner's own defect and reprint terms are not read.
+  - **Returns.** The page read says nothing on a right to return a correct personalised item. Whether any state law or the card networks add a return duty for a made-to-order book is U.
+- **(a)** Does the rule apply to a personalised printed book we sell direct to a US parent? If the partner, not we, is the seller of record, does the answer change?
+- **(b)** If yes: what must the order page, the Print Terms and the delay notice say, and is "we ship within N days" a statement that creates the "reasonable basis" duty?
+- **(c)** Must we accept a return of a correct book (no defect) or may the Print Terms say a made-to-order book is final except for our error or damage? What do California and other states add?
+- **(d)** Does the answer change if the seller is the founder as an individual (D-004) rather than an entity (Q47, Q-PRT-2)?
+- **Default.** Build as if the rule applies: no shipping time promised that the partner has not confirmed in writing; a delay notice with a revised date and a free cancel; a full refund to the original payment method within seven working days of a cancellation; no store credit. The Print Terms say a correct book is final and a defective or damaged book is reprinted or refunded (FR-PRT-29 as written). The order flow is not built until the Print Terms are drafted and counsel has read them.
+- **If no.** The notice and refund timing stay as the default anyway unless counsel says they can be dropped; the Print Terms drop the cancellation text counsel names.
+- **Deadline.** Before the print flag turns on in `production`; no calendar date (ruling T5).
+- **Blocks.** NS-30 print sale. Nothing now.
+
+### 10.3 Q134 (new). Card data scope: a hosted checkout, or Apple's in-app purchase for print (Q-PRT-8; CR-054; CR-087)
+- **Facts.**
+  - **Two routes, not decided.** Route 1: payment on a hosted page opened outside the app (card or Apple Pay), with no card number ever reaching us (FR-PRT-19; CR-054). Route 2: Apple's in-app purchase for the book. App Review 3.1.3(e), as the print file quotes it, says that an app enabling the purchase of physical goods consumed outside the app must use purchase methods other than in-app purchase, such as Apple Pay or card entry. V for the print file's quotation (read 20 Nov 2026 by the CBO role); U: I did not re-read Apple's page on 24 Nov 2026. Whether a printed book is "consumed outside of the app" is a reading for counsel; the print file assumes yes and puts the book on route 1.
+  - **PCI.** The PCI Security Standards Council FAQ I read says an e-commerce merchant can use SAQ A if it fully outsources payment processing and does not store, process or transmit cardholder data on its own systems, including by redirecting the customer to a compliant third-party payment page; requirements 2, 6 and 8 still apply to a merchant-managed system that builds the redirect. V (read on 24 Nov 2026 from https://www.pcisecuritystandards.org/faqs/1439/; summary, not quoted). U: I did not read the SAQ A form, the current PCI DSS version or the card-brand rules, and nothing here says which SAQ would apply to us. CR-054 names "SAQ A (Unverified level)".
+  - **Payment label.** Whether a hosted page that collects an address and a card number changes the App Privacy answers is U (`print-and-fulfilment.md` lists it as not read; it also touches Q54).
+  - **Apple route 2.** Under in-app purchase Apple would be the merchant of record and would collect the money; whether Apple's terms allow a physical, shipped, personalised good there at all, what Apple would take, and whether we could then hold the buyer's shipping address are all U.
+- **(a)** Is a printed book "physical goods consumed outside of the app" under 3.1.3(e), so that route 2 is not available? Or may we choose either?
+- **(b)** On route 1, which SAQ type, if any, would we complete, and what must we keep (a processor contract, an attestation, the hosted page's own compliance record)? Does the answer change by the processor chosen?
+- **(c)** On route 1, does a link or button in the app that opens the hosted page raise any App Review issue beyond 3.1.3(e) (for example the Notes for Review wording in FR-PRT-19)?
+- **(d)** Does the page that collects the address change the App Privacy answers or the Privacy Policy's list of providers (Q11, Q54)?
+- **Default.** Route 1: a hosted page outside the app; the app never sees a card number; no StoreKit product exists for a book. No route is chosen for the founder here; counsel's answer to (a) decides whether route 2 exists.
+- **If no.** If counsel finds route 1 not allowed, print is not sold from the app until the other route is read in full.
+- **Deadline.** Before the print flag turns on in `production`; no calendar date (ruling T5).
+- **Blocks.** NS-30 print sale. Nothing now.
+
+### 10.4 Q135 (new). Sales tax on printed books: the partner's duty or ours (Q-PRT-6; CR-120)
+- **Facts.**
+  - **What the register says.** CR-120: printed books sold by us create sales-tax collection duties where we have nexus; Unverified; accountant before the first order. As an individual publisher the founder would carry the duty personally (D-004; FR-PRT-21). A tax tool's fee is on the processor's pricing page (S6 in the print file).
+  - **What I did not read.** U: I read no statute, no state revenue page and no marketplace-facilitator rule. I do not know whether a print partner that ships to the buyer counts as a facilitator for any state, or whether our own sales would pass a nexus threshold in any state.
+  - **Apple.** CR-120 says Apple collects and remits tax on in-app purchases (Unverified). This does not cover a book sold outside in-app purchase (Q134 route 1).
+- **(a)** For a book we sell and a partner prints and ships, who has the duty to collect tax in each state: the partner (as a facilitator or otherwise), the payment processor, or us? Does it differ by state?
+- **(b)** At the pilot size in Q-PRT-13 (50 orders a month), does any state require registration, and does shipping to a state create a duty?
+- **(c)** Does a seller that is an individual rather than an entity change the answer (Q47)?
+- **(d)** Is a tax tool enough, or must the state list be settled before the first order? Is a book taxable in the states we would ship to, and does a personalised book differ?
+- **Default.** The accountant settles the states and the tool before the first order; the pilot ships only to states where that is settled; the order page shows tax as a computed line, never an estimate (FR-PRT-20, -21). If the answer is not in hand, the pilot is closed.
+- **If no.** If a state requires registration, the pilot excludes it until done.
+- **Deadline.** Before the print flag turns on in `production`; no calendar date (ruling T5). This is also an accountant question; counsel and the accountant may answer it together.
+- **Blocks.** NS-30 print sale. Nothing now.
+
+### 10.5 Q136 (new). California total-price display for a printed book (SB 478; Q-PRT-4)
+- **Facts.**
+  - **What the page says.** The California Attorney General's SB 478 page says advertised or listed prices must include all mandatory fees and charges; government-imposed taxes such as sales tax may be left out of the displayed price; reasonable shipping costs for physical goods may be left out, while handling charges may not; optional fees and fees triggered by later conduct need not be included; card-processing fees need not be included if the buyer can pay another way, but are mandatory if only cards are accepted. It covers most sellers of goods or services for personal use, online or in person. Effective 1 July 2024; Civil Code 1770(a)(29); amended by SB 1524. V (read on 24 Nov 2026 from https://oag.ca.gov/hiddenfees; the Attorney General's summary, not the statute).
+  - **Not read.** U: I did not read the statute text on leginfo.legislature.ca.gov (the page did not load in my session on 24 Nov 2026), the Attorney General's FAQ PDF, or SB 1524.
+  - **The product.** The proposed order page shows the book, copies, shipping, tax and a total before any payment step, with no strike-through price (FR-PRT-20). The $59 first copy with US shipping and $39 each extra figures are proposals only; no price is fixed (Q-PRT-4).
+- **(a)** For a book listed at a price "with shipping", does SB 478 as read by counsel require the displayed price to include any charge we would call shipping or handling, and what is the difference between the two for a print partner's per-order fee?
+- **(b)** Does a processing fee, a partner fee or a rush option fall in "mandatory", "optional" or "later conduct"?
+- **(c)** Does the statute apply to an app that opens a hosted page, and where must the all-in price appear (the app, the hosted page, or both)?
+- **(d)** Does any other state's rule on price display matter for the states we would ship to?
+- **Default.** One screen shows the book, copies, shipping (included or the amount), tax and total before any payment step; any price shown before checkout is the price including every mandatory charge and excluding only tax; no price before the parent has seen the preview.
+- **If no.** The price screen follows counsel's list of what may sit outside the displayed price.
+- **Deadline.** Before the print flag turns on in `production`; no calendar date (ruling T5).
+- **Blocks.** NS-30 print sale and the price screen. Nothing now.
+
+### 10.6 Q137 (new). Children's-product rules (CPSIA) for a keepsake book (Q-PRT-8)
+- **Facts.**
+  - **What the pages say.** The CPSC's page on children's products describes a children's product as a consumer product designed or intended primarily for children 12 years of age or younger, and says the Commission looks at the maker's stated use and labels, how it is presented in packaging and promotion, whether it is commonly recognised as for young children, and the Age Determination Guidelines. Its FAQ mentions books and magazines once, saying the principles for art materials apply, and that age guidance from librarians, educators and publishers helps. The CPSC's Children's Product Certificate page says manufacturers and importers issue a certificate based on a third-party lab's tests for products subject to a children's product safety rule, and that some products are exempt or excepted but still need a certificate citing the exemption. V (read on 24 Nov 2026 from https://www.cpsc.gov/Business--Manufacturing/Business-Education/Childrens-Products and https://www.cpsc.gov/Business--Manufacturing/Testing-Certification/Childrens-Product-Certificate; summaries, not quoted).
+  - **Not read.** U: neither page says whether a printed paper book is subject to any children's product safety rule; I did not read the CPSIA text, any rule on lead in inks or on tracking labels, or any state rule (California and other states have their own chemical rules; none was read).
+  - **The product.** The book is named for a baby but is an adult-bought keepsake of a parent's words, made by a print partner; it is not a toy or a baby product. The print file marks CPSIA as UNVERIFIED and lists it under Q-PRT-8.
+- **(a)** Is a printed keepsake book of a parent's letters to a baby a "children's product" for CPSIA, given the factors above, and does the name "Year One" or a baby's name matter?
+- **(b)** If yes, is any children's product safety rule applicable to a paper book, and who would issue the certificate: the partner as manufacturer, or we as the seller who has the book made (Q47)?
+- **(c)** What state rules on inks or paper for a product sold to a baby's parent, if any, should be checked, and does the partner's own compliance statement help?
+- **(d)** Does any age statement on the book or the product page (for example "for baby") change (a)?
+- **Default.** Assume no children's product rule applies until counsel says; no age statement and no use by or near a baby is claimed on the product page; the partner is asked, in writing, for its own compliance statement for ink and paper before any order.
+- **If no.** If a rule applies, the print flag stays off until the certificate route and the partner's duty are settled.
+- **Deadline.** Before the print flag turns on in `production`; no calendar date (ruling T5).
+- **Blocks.** NS-30 print sale. Nothing now.
+
+### 10.7 Q138 (new). The licence of fonts embedded in a printed or shared PDF, and an emoji face (Q-PRT-9; CR-123)
+- **Facts.**
+  - **What the page says.** The SIL Open Font License text published on openfontlicense.org lets people use, study, copy, modify and redistribute the font, provided it is not sold by itself; it may be bundled or sold with other software. Each copy of the font must carry the copyright notice and the licence. A modified version may not use a Reserved Font Name without written permission. The font, including modified versions, stays under the OFL. The page says the licence's terms do not apply to documents made with the font; it does not say whether embedding a font in a PDF is "bundling" or "redistribution" (it points to an FAQ I did not see). V (read on 24 Nov 2026 from https://openfontlicense.org/open-font-license-official-text/; summary, not quoted). I did not read scripts.sil.org.
+  - **The product.** Literata, Mukta and Tiro Devanagari Hindi are recorded as SIL OFL 1.1 in `packages/design-tokens/src/tokens.ts` (print file, S-list). An Arabic and a Han face for print are UNVERIFIED as bundled, and whether any emoji face would be bundled for print is open (FR-PRT-10, -11). Apple's system fonts are never embedded (FR-PRT-10). A character no allowlisted face covers is left as a blank, with the parent choosing what to change (FR-PRT-11; Q-PRT-9). CR-123 lists the Settings licence screen and a generated notices file as the open-source licence answer.
+  - **Not read.** U: the OFL FAQ on embedding in PDFs; the licence of any emoji face (some emoji sets are under other licences; I do not know which one we would use); the font files' own licence notices; whether the notices file lists fonts.
+- **(a)** Is embedding an OFL font in the PDF we give a parent (the free file, NS-07) or send to a print partner (NS-30) a use that needs the notice or any other step, beyond what applies to a document made with the font?
+- **(b)** Which notice (copyright and licence text) must we keep, and where: the notices file, Settings licences, or inside the book or file?
+- **(c)** If an emoji face were bundled for print, is a face under OFL enough, or must a licence be checked face by face? Is there any rule on printing an emoji set that is a trademark or artwork of a platform?
+- **(d)** The partner prints our PDF: does it need anything from us about the fonts?
+- **Default.** Embed only OFL faces on the allowlist; keep each face's notice in the generated notices file and Settings licences (CR-123); no emoji face for print and no system font; a character no face covers prints as a blank and the parent chooses what to change (FR-PRT-11). A font licence record is kept for each face before the file is built (FR-PRT-10).
+- **If no.** If counsel names a notice or a limit for embedded faces, the notices file and the file preflight follow it. If an OFL face cannot be embedded in a PDF, the face is replaced by another counsel clears.
+- **Deadline.** Before the printable file (NS-07) embeds any face we have no licence record for, and before any emoji face is bundled; no calendar date (ruling T5).
+- **Blocks.** NS-07 if it embeds a face with no record; an emoji face for print; NS-30.
+
 ## Changelog
 
 | Version | Date | Change |
 |---|---|---|
+| 1.10.0 | 2026-11-24 | Adds section 10 (Q133 to Q138) for the printed-book rows `print-and-fulfilment.md` Q-PRT-4, -5, -6, -8, -9 and register rows CR-054, CR-120, CR-123, which had no packet number. Source pages read 24 Nov 2026 and unread items are tagged V and U in each question. Sections 1 to 9 unchanged. SB 478 and CPSIA are not in the compliance register; rows proposed in the pull request. Version 1.10.0 because 1.9.0 is used. Legal Drafting (Claude, `legal`), not a lawyer. |
 | 1.9.0 | 2026-11-21 | Adds section 9 (Q123 to Q132, Moments tab, NS-53; merged in #1316) above this Changelog, where it was first appended after it. Q129 default corrected to the founder's O-44 decision of 21 Nov 2026 (disclose the iPhone backup in one plain policy line; do not exclude the folder); the 9.2 index row and the C-3 note in `PRIVACY-CONTRADICTIONS.md` follow. Version 1.9.0 because 1.8.0 is used by #1057 (POLICY_VERSIONING 2.4). Legal Drafting (Claude, `legal`), not a lawyer. |
 | 1.8.0 | 2026-11-20 | Adds section 8 (Q109 to Q122) for the locked cards NS-46 to NS-52 (`21-days-cultural-photos-home.md`, `27-photo-moments-and-media.md`, `develop` 9e4757459dc3): CUL-Q5, Q6 (widened to religion by inference, with the controller and US-storefront sub-questions), Q7, Q11 (now Q112, not Q41), Q14; FR-DAY-23 (the right to use source tables); tradition-reviewer records; L-14 to L-19; C-9 to C-11 with the Journaling picker terms. Version 1.8.0 because 1.7.0 is used and #598 names 1.6.0 (POLICY_VERSIONING 2.4). Legal Drafting (Claude, `legal`), not a lawyer. |
 | 1.7.0 | 2026-11-20 | Adds section 7 (BL-949): the questions raised by the locked new-scope pack (`docs/prd-lock-v1-20nov` at 450bcb4a) and its engineering designs of 20 Nov. Repeated questions are merged into Q32, Q40, Q41, Q43 to Q46, Q48 to Q51 and Q54, with new lettered parts. Two are new: Q107 (a sealed letter and the child who may read it later) and Q108 (earlier versions already on our server, which the policy does not name). Q107 is the first free number, because open drafts claim Q58 to Q106 (#598, BL-780, #760). Twelve cited questions are unchanged (7.16). Section 6 gains items 9 to 12. Version 1.7.0, because #598 names 1.6.0 for its renumbering of Q58 to Q60 (POLICY_VERSIONING 2.4). Legal Drafting (Claude, `legal`), not a lawyer. |
