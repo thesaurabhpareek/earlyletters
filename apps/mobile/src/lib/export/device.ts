@@ -50,9 +50,10 @@ export class ExportLowSpaceError extends Error {
   }
 }
 
-// How a full disk reads when a write fails: POSIX ENOSPC (Android, and iOS below Foundation), Foundation's
-// NSFileWriteOutOfSpaceError (code 640 in NSCocoaErrorDomain), and the words both platforms put in the message.
-const OUT_OF_SPACE = /\bENOSPC\b|no space left|out of space|not enough (free )?space|NSFileWriteOutOfSpaceError|NSCocoaErrorDomain\D{0,20}640\b/i;
+// How a full disk reads when a write fails: POSIX ENOSPC or EDQUOT (Android, and iOS below Foundation), Foundation's
+// NSFileWriteOutOfSpaceError (code 640 in NSCocoaErrorDomain), and the words both platforms put in the message. On iOS
+// expo-modules-core passes only the localized description ("...because there isn't enough space."), no domain or code.
+const OUT_OF_SPACE = /\bENOSPC\b|\bEDQUOT\b|no space left|out of space|(not|isn.t) enough (free )?space|NSFileWriteOutOfSpaceError|NSCocoaErrorDomain\D{0,20}640\b/i;
 
 /**
  * True only when an error says the disk is full (BL-388): the "needs more free space" line then shows. Any other
@@ -342,13 +343,13 @@ export async function runExport(opts: { onProgress?: (p: ExportProgress) => void
   }
 
   const dir = exportsDir();
-  dir.create({ intermediates: true, idempotent: true });
   const fileName = `${EXPORT_FORMAT}-${snapshot.generatedAt.slice(0, 10)}.zip`;
   const file = new File(dir, fileName);
-  file.create({ overwrite: true });
 
   let sink: (ByteSink & { close(): void }) | null = null;
   try {
+    dir.create({ intermediates: true, idempotent: true });
+    file.create({ overwrite: true });
     sink = fileSink(file);
     const packed = await packExport(snapshot, {
       readFile: (uri) => new File(uri).bytes(),

@@ -192,6 +192,18 @@ describe('[BL-388] the free-space line shows only for a real space error', () =>
     }
   });
 
+  it('a full disk when the file is first made is a space error too, and nothing is left', async () => {
+    const before = snapshotDisk();
+    const { File } = await import('expo-file-system');
+    const create = vi.spyOn(File.prototype, 'create').mockImplementationOnce(() => {
+      throw new Error('ENOSPC: no space left on device, open');
+    });
+    await expect(runExport()).rejects.toBeInstanceOf(ExportLowSpaceError);
+    create.mockRestore();
+    expect(exportsInCache()).toEqual([]);
+    expect(snapshotDisk()).toEqual(before);
+  });
+
   it('any other write failure keeps its own error, so the screen shows the general line', async () => {
     h.failWriteAt = 2;
     h.failWith = new Error('Disk I/O error: the file handle was closed');
@@ -204,7 +216,11 @@ describe('[BL-388] the free-space line shows only for a real space error', () =>
     expect(isOutOfSpace(new Error('ENOSPC: no space left on device, write'))).toBe(true);
     expect(isOutOfSpace(new Error('The volume is out of space'))).toBe(true);
     expect(isOutOfSpace(new Error('NSFileWriteOutOfSpaceError'))).toBe(true);
-    for (const e of [new Error('ERR_FILE_WRITE'), new Error('Code=6400 something else'), new Error('Code=64'), null, undefined, 'ENOSPC', { message: 42 }]) {
+    // iOS through expo-modules-core: the localized description only, with a straight or a curly apostrophe.
+    expect(isOutOfSpace(new Error('The file couldn\u2019t be saved because there isn\u2019t enough space.'))).toBe(true);
+    expect(isOutOfSpace(new Error("The file couldn't be saved because there isn't enough space."))).toBe(true);
+    expect(isOutOfSpace(Object.assign(new Error('write failed'), { message: 'write failed: EDQUOT (Disk quota exceeded)' }))).toBe(true);
+    for (const e of [new Error('ERR_FILE_WRITE'), new Error('Error Domain=NSCocoaErrorDomain Code=6400'), new Error('Code=640'), null, undefined, 'ENOSPC', { message: 42 }]) {
       expect(isOutOfSpace(e), String(e)).toBe(false);
     }
   });
