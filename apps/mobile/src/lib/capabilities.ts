@@ -108,6 +108,22 @@
  *                     Inlined at build time like the others; remote config has no key for
  *                     it, so a language can never appear in a reviewed binary by download.
  *
+ *   MEDIA PHASES      The seven phase switches of NX-39 section 3 (BL-858; NX-39-R37, R39), one per phase:
+ *                     P0 `EXPO_PUBLIC_PHOTOS`, P1 `EXPO_PUBLIC_MEDIA_METADATA`, P2a `EXPO_PUBLIC_LIBRARY_CHOOSER`,
+ *                     P2b with P4b `EXPO_PUBLIC_PHOTO_MOMENTS`, P2c `EXPO_PUBLIC_MOMENTS_BACKGROUND`, P3 `EXPO_PUBLIC_VIDEO`,
+ *                     P4a `EXPO_PUBLIC_OCCASIONS`. NX-39 proposed the bare name MOMENTS for P2b; the name on develop is
+ *                     `EXPO_PUBLIC_PHOTO_MOMENTS` (CR-69 A5 "one set", card 27 by CR-66, and the canary gate in
+ *                     test/support/media-log-canary.ts), so P2b uses it and no second Moments flag exists. Only `on` is
+ *                     on. Each is written `off` in the `production` profile and is off in every store profile until its
+ *                     NX-39 gate is signed (scripts/release/store-flags.mjs and test/g6-production-flags-off.test.ts).
+ *                     A phase needs the phase it builds on: every picture phase needs P0, and P2c needs P2b, so turning
+ *                     an earlier phase off removes every later one. The remote kill switches (`killSwitches.photos`,
+ *                     `photoMoments`, `videos`) pause a phase in a build that has it and never start one
+ *                     (`mediaPhaseMayRun`); `photos` pauses P0 and every later picture phase. P4a reads no library and
+ *                     has no remote key. No phase switch is read by Export or Erase everything
+ *                     (test/media-switches.test.ts): the switches remove screens and reads, never a data right.
+ *                     P0's surfaces still read the same variable through lib/photos/flag.ts, with the same rule.
+ *
  * Pure TypeScript (no React Native), so Node tests read it directly.
  */
 
@@ -281,6 +297,81 @@ export interface KillSwitchView {
 export function mayRun(feature: PausableFeature, config: KillSwitchView | null | undefined): boolean {
   if (!buildFlagEnabled(KILL_SWITCH_FLAG[feature])) return false;
   return config?.killSwitches?.[feature] !== true;
+}
+
+/** The NX-39 phases that have a build switch (section 3). P4b rides on `moments` and has no switch of its own. */
+export type MediaPhase = 'photos' | 'mediaMetadata' | 'libraryChooser' | 'moments' | 'momentsBackground' | 'video' | 'occasions';
+
+export interface MediaPhaseSwitch {
+  readonly phase: MediaPhase;
+  /** The row in NX-39 section 3. */
+  readonly nx39: string;
+  /** The eas.json variable. */
+  readonly env: string;
+  /** The phase this one builds on, or null. Off there means off here. */
+  readonly needs: MediaPhase | null;
+  /** The remote kill switches that pause this phase itself (a phase it needs adds its own). */
+  readonly pauseKeys: readonly string[];
+}
+
+/** The seven switches, in the order of NX-39 section 3. */
+export const MEDIA_PHASE_SWITCHES: readonly MediaPhaseSwitch[] = Object.freeze([
+  { phase: 'photos', nx39: 'P0', env: 'EXPO_PUBLIC_PHOTOS', needs: null, pauseKeys: ['photos'] },
+  { phase: 'mediaMetadata', nx39: 'P1', env: 'EXPO_PUBLIC_MEDIA_METADATA', needs: 'photos', pauseKeys: [] },
+  { phase: 'libraryChooser', nx39: 'P2a', env: 'EXPO_PUBLIC_LIBRARY_CHOOSER', needs: 'photos', pauseKeys: ['photoMoments'] },
+  { phase: 'moments', nx39: 'P2b', env: 'EXPO_PUBLIC_PHOTO_MOMENTS', needs: 'photos', pauseKeys: ['photoMoments'] },
+  { phase: 'momentsBackground', nx39: 'P2c', env: 'EXPO_PUBLIC_MOMENTS_BACKGROUND', needs: 'moments', pauseKeys: [] },
+  { phase: 'video', nx39: 'P3', env: 'EXPO_PUBLIC_VIDEO', needs: 'photos', pauseKeys: ['videos'] },
+  { phase: 'occasions', nx39: 'P4a', env: 'EXPO_PUBLIC_OCCASIONS', needs: null, pauseKeys: [] },
+] satisfies MediaPhaseSwitch[]);
+
+/** Inlined at bundle time: each read is written out in full so Expo inlines it. Only `on` is on. */
+const MEDIA_PHASE_BUILD_VALUE: Readonly<Record<MediaPhase, boolean>> = {
+  photos: parseServerFeatures(process.env.EXPO_PUBLIC_PHOTOS),
+  mediaMetadata: parseServerFeatures(process.env.EXPO_PUBLIC_MEDIA_METADATA),
+  libraryChooser: parseServerFeatures(process.env.EXPO_PUBLIC_LIBRARY_CHOOSER),
+  moments: parseServerFeatures(process.env.EXPO_PUBLIC_PHOTO_MOMENTS),
+  momentsBackground: parseServerFeatures(process.env.EXPO_PUBLIC_MOMENTS_BACKGROUND),
+  video: parseServerFeatures(process.env.EXPO_PUBLIC_VIDEO),
+  occasions: parseServerFeatures(process.env.EXPO_PUBLIC_OCCASIONS),
+};
+
+let mediaPhaseTestOverride: Partial<Record<MediaPhase, boolean>> = {};
+
+const mediaPhaseSwitch = (phase: MediaPhase): MediaPhaseSwitch => {
+  const s = MEDIA_PHASE_SWITCHES.find((m) => m.phase === phase);
+  if (!s) throw new Error(`unknown media phase ${phase}`);
+  return s;
+};
+
+/** Is this phase in the build: its own switch on and every phase it needs on. */
+export function mediaPhaseBuilt(phase: MediaPhase): boolean {
+  const s = mediaPhaseSwitch(phase);
+  const own = mediaPhaseTestOverride[phase] ?? MEDIA_PHASE_BUILD_VALUE[phase];
+  return own && (s.needs === null || mediaPhaseBuilt(s.needs));
+}
+
+/**
+ * May this phase draw its screens and make its reads now? The build first, then the remote kill switches of the
+ * phase and of every phase it needs. Remote config can only pause: with the build off this is false whatever the
+ * config holds, and only the boolean `true` pauses (a missing or older config pauses nothing).
+ */
+export function mediaPhaseMayRun(phase: MediaPhase, config: KillSwitchView | null | undefined): boolean {
+  if (!mediaPhaseBuilt(phase)) return false;
+  for (let s: MediaPhaseSwitch | null = mediaPhaseSwitch(phase); s; s = s.needs === null ? null : mediaPhaseSwitch(s.needs)) {
+    if (s.pauseKeys.some((k) => config?.killSwitches?.[k] === true)) return false;
+  }
+  return true;
+}
+
+/** Tests only, like setServerFeaturesForTests: set a phase's own switch as if the build had it (null: the build value). */
+export function setMediaPhaseForTests(phase: MediaPhase, value: boolean | null): void {
+  const env = typeof process !== 'undefined' ? process.env : undefined;
+  if (!env?.VITEST) throw new Error('setMediaPhaseForTests is for tests only');
+  const next = { ...mediaPhaseTestOverride };
+  if (value === null) delete next[phase];
+  else next[phase] = value;
+  mediaPhaseTestOverride = next;
 }
 
 /**
