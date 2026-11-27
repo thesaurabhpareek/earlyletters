@@ -29,7 +29,7 @@
  *   exactly as heard) and the original recording, byte for byte. Never a machine-tidied version: nothing
  *   was kept, so there is no verified edit set. Free in every plan state, like the rest of the export.
  * - A letter's picture (1.7.0, ADR 0028 D2) goes in photos/<entry id>/<media id>.jpg: the stored copy, byte for byte,
- *   which is already re-encoded with no metadata. The letter's words and its text file never change because of it.
+ *   which already carries no metadata. The letter's words and its text file never change because of it.
  *   pack.ts holds back any picture whose bytes are not the stored copy or carry metadata (NS-01-R6, BL-1410).
  */
 import { brand } from '@scribe/brand';
@@ -260,6 +260,9 @@ export const waitingAudioPath = (draftId: string, audioUri?: string | null) => `
 export const waitingTextPath = (draftId: string) => `waiting/${draftId}.txt`;
 
 /** A picture's place in the export (ADR 0028 D2 and Q3): one folder per letter, the picture named by its own id. */
+/** A pixel size the schema can state: a whole number of at least 1, else unknown (a JPEG may declare 0). */
+const pixels = (n: number | null): number | null => (Number.isInteger(n) && (n as number) >= 1 ? n : null);
+
 export const exportPhotoPath = (entryId: string, mediaId: string) => `photos/${entryId}/${mediaId}.jpg`;
 
 /** The picture goes in when the letter has one and its stored copy is on this phone. */
@@ -622,8 +625,11 @@ ${body}
 
 function readme(snapshot: ExportSnapshot, withPhotos: boolean): string {
   // The pictures section only when this export holds a picture, so an export with none reads as it did before 1.7.0.
+  // It goes before KEEPING IT SAFE, so the README still ends on the format line.
+  const lines: string[] = [...exportCopy.readme];
+  if (withPhotos) lines.splice(lines.lastIndexOf('KEEPING IT SAFE') - 1, 0, ...exportCopy.readmePhotos);
   return (
-    [...exportCopy.readme, ...(withPhotos ? exportCopy.readmePhotos : [])]
+    lines
       .map((line) =>
         fill(line, {
           date: dayDate(snapshot.generatedAt.slice(0, 10), snapshot.locale),
@@ -742,7 +748,7 @@ export async function dataFiles(
     const photoResult = photoResults.get(e.id);
     const photo: ExportEntry['photo'] =
       photoJob && photoResult
-        ? { file: photoJob.path, bytes: photoResult.bytes, sha256: photoResult.sha256, width: photoJob.width, height: photoJob.height, text: photoJob.text, place: photoJob.place }
+        ? { file: photoJob.path, bytes: photoResult.bytes, sha256: photoResult.sha256, width: pixels(photoJob.width), height: pixels(photoJob.height), text: photoJob.text, place: photoJob.place }
         : null;
     const row: ExportEntry = {
       id: e.id,

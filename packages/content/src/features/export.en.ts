@@ -155,7 +155,7 @@ export const exportCopy = {
     'Format {format}, version {version}. Questions: {email}',
   ],
   /**
-   * Added after the README only when the export holds a picture (schema 1.7.0, BL-933; DELETION_AND_EXPORT_SPEC 4.2).
+   * Added before KEEPING IT SAFE only when the export holds a picture (schema 1.7.0, BL-933; DELETION_AND_EXPORT_SPEC 4.2).
    * PROPOSED words: `content` owns the final wording (spec 4.2, the README line).
    */
   readmePhotos: [

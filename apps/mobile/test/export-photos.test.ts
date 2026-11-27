@@ -128,4 +128,15 @@ describe('[BL-933] export 1.7.0 carries letters\' pictures', () => {
     expect(strFromU8(without.files['README.txt'])).not.toContain('PICTURES');
     expect(strFromU8(withPicture.files['README.txt'])).toContain('PICTURES');
   });
+
+  it('states an unknown pixel size as null, never 0, and the README still ends on the format line', async () => {
+    const snapshot = ashaSnapshot();
+    const e2 = snapshot.entries.find((e) => e.id === 'e2')!;
+    e2.photo = { ...e2.photo!, width: 0, height: 0 };
+    const out = await pack(snapshot);
+    expect(out.e2.photo).toMatchObject({ width: null, height: null });
+    const readme = strFromU8(out.files['README.txt']).trimEnd().split('\r\n');
+    expect(readme.at(-1)).toMatch(/^Format /);
+    expect(readme.indexOf('PICTURES')).toBeLessThan(readme.indexOf('KEEPING IT SAFE'));
+  });
 });

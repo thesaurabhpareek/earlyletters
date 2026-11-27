@@ -120,7 +120,7 @@ describe('export schema', () => {
 
     it('rejects an extra field (a location has no place to go) and a path outside photos/', () => {
       expect(photo({ ...ok, latitude: 37.77 })).toBe(false);
-      for (const file of ['audio/e2.m4a', 'photos/../data/entries.json', 'photos/e2/m.png', 'photos/m.jpg']) expect(photo({ ...ok, file }), file).toBe(false);
+      for (const file of ['audio/e2.m4a', 'photos/../data/entries.json', 'photos/../x.jpg', 'photos/./m.jpg', 'photos/e2/m.png', 'photos/e2/m_1.jpg', 'photos/m.jpg']) expect(photo({ ...ok, file }), file).toBe(false);
     });
   });
 
