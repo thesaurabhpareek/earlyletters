@@ -659,10 +659,11 @@ const OFF_PHONE = [
 const OFF_PHONE_VERB = String.raw`sync(?:s|ed|ing)?|back(?:s|ed)? up|upload(?:s|ed|ing)?|sends?`;
 
 /**
- * "We" holding the thing named after it ("we store your recordings", "we keep a copy of every recording"). One word may
- * sit between "we" and the verb, unless it denies it: "we never store your recordings" states no practice.
+ * "We" holding the thing named after it ("we store your recordings", "we keep a copy of every recording"). Up to two
+ * words may sit between "we" and the verb ("we really do store"), unless one of them denies it: "we never store your
+ * recordings" and "we do not keep them" state no practice.
  */
-const WE_HOLD = String.raw`\bwe(?:'ll| will)?\s+(?:(?!(?:never|not|do|don't|won't|cannot|can't)\b)\w+\s+)?(?:keep|store|save|hold|copy)s?\b(?:\s+\S+){0,4}?\s+`;
+const WE_HOLD = String.raw`\bwe(?:'ll|'d)?\s+(?:(?!(?:never|not|no|don't|won't|cannot|can't)\b)\w+\s+){0,2}(?:keep|store|save|hold|copy)s?\b(?:\s+\S+){0,4}?\s+`;
 
 /** A sentence that says the thing leaves the phone, as a regex over one sentence (no period in between). */
 const leavesThePhone = (thing: string) =>
@@ -760,6 +761,8 @@ describe('[FR-MKT-16] a privacy label change moves every public privacy line in 
     ['/support', 'Recordings are restored when you sign in again.'],
     [SITE, 'Recordings are kept in iCloud.'],
     [STORE, 'Your voice notes go to our backup.'],
+    [SITE, 'We really do store your recordings.'],
+    ['/support', "We'll keep your recordings."],
   ];
   for (const [id, planted] of audioMutants) {
     it(`[FR-MKT-16] [mutant] ${id} saying "${planted}" is refused while Audio Data is not collected`, () => {
@@ -772,6 +775,8 @@ describe('[FR-MKT-16] a privacy label change moves every public privacy line in 
   const trueAudioLines = [
     'We never store your recordings.',
     'We do not keep your recordings.',
+    'We would never ever store your recordings.',
+    'We no longer store your recordings.',
     'Recordings are kept on the phone that made them.',
     'Keep your recordings on this phone.',
     'Your voice stays on this phone.',
