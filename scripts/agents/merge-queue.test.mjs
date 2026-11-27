@@ -2,6 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { STALE_UNKNOWN_MINUTES, securityLensHits, touchesSecurityLens, namedLenses, SECURITY_LENS_NAMES, SECURITY_LENS_CLASSES, buildQueue, workspaceOf, staleBase, parseReview, parseClaims, parseArgs, formatTable, suiteState, passOverRedSuite, hotFileHits, hotFileGroups, reviewState, touchesNative, clean, TRUSTED_ASSOCIATIONS, filesSince, UNREADABLE, parseCodeowners, protectedPathHits, touchesProtectedPath, classifyPr } from "./merge-queue.mjs";
 
 const OLD = "c5cfa0cfaa96a0ba97ca5f34629747ab0badf438";
@@ -863,4 +864,42 @@ test("CR-149 rule 4 and CR-70 (Review B, third pass): logic folders are protecte
     "csrf", "cors", "escrow", "ownership", "signedUrl", "presign", "cookieBanner", "trustBadge", "identity", "middleware", "agreementRow", "AgeGate"]) {
     assert.ok(rulesFor(`apps/mobile/src/components/x/${n}.tsx`).includes("CR-70 path"), n);
   }
+});
+
+test("CR-149 rule 4 and CR-70 (Review B, fourth pass): seams, the root layout, core rules, routes, emails and scripts are protected, each pinned by a real path", () => {
+  for (const p of ["apps/mobile/src/dev/e2e-seams.ts", "apps/mobile/src/dev/e2e-web-seam-load.ts", "apps/mobile/src/dev/kill-drill.ts",
+    "apps/mobile/src/dev/kill-drill.logic.ts", "apps/mobile/src/app/_layout.tsx", "packages/core/src/frozen.ts", "packages/core/src/family-rules.ts",
+    "packages/core/src/model-edits.ts", "packages/core/src/protect.ts", "packs/text-rules/en.json", "apps/mobile/storekit/EarlyLetters.storekit",
+    "apps/mobile/tsconfig.json", "apps/mobile/shims/decode-uri-component.js", "packages/api/src/envelope.ts", "packages/api/src/kill-switches.ts",
+    "apps/web/CLAUDE.md", "apps/web/AGENTS.md", "docs/ops/proposed/migrations-applied/early-letters.txt", "apps/mobile/src/app/settings/children/new.tsx",
+    "apps/mobile/src/app/onboarding.tsx", "apps/web/src/app/layout.tsx", "apps/web/src/app/robots.ts", "apps/web/src/content/pricing.ts",
+    "packages/emails/src/templates/LetterEmail.tsx", "scripts/review-gate/decide.mjs", "scripts/guards/founder-ask.mjs", "scripts/trace.mjs",
+    ".gitignore", ".nvmrc", "LICENSE", "apps/mobile/vitest.config.ts", "apps/mobile/src/env.d.ts", "apps/mobile/web-preview/sqlite-worker-channel.js"]) {
+    assert.ok(rulesFor(p).includes("CR-70 path"), p);
+  }
+  // Real files that only the word rule protects today (Review A, fourth pass).
+  for (const p of ["apps/mobile/src/components/consent/consent-ask.tsx", "apps/mobile/src/components/settings/children/delete-book.tsx",
+    "apps/mobile/src/components/settings/backup.tsx", "apps/web/src/components/unsubscribe/form.tsx", "apps/mobile/src/components/settings/plus.tsx",
+    "apps/mobile/src/components/welcome-sign-in.tsx"]) {
+    assert.ok(rulesFor(p).includes("CR-70 path"), p);
+  }
+});
+
+test("CR-149 rule 4: every word in the security vocabulary is pinned by its own path outside the protected folders", () => {
+  const words = ["auth","sign-in","sign-out","sign-up","log-in","log-out","session","token","vault","account","delet","erase","wipe","purge","forget","recover","restore","export","backup","invite","native-intent","deep-link","app-lock","biometric","face-id","password","secret","cred","jwt","crypt","key","agreement","age-gate","integrity","canonical","signature","signed","verif","hmac","unsubscribe","rate-limit","same-origin","unlock","passcode","hash","nonce","sso","mfa","totp","permission","role","admin","rls","csrf","cors","escrow","owner","presign","cookie","trust","identity","middleware","magic","otp","keychain","secure-stor","passkey","billing","payment","purchase","subscription","paywall","entitlement","iap","plus","security","supabase","privacy","terms","legal","consent"];
+  for (const w of words) assert.ok(rulesFor(`apps/mobile/src/components/x/${w}-row.tsx`).includes("CR-70 path"), w);
+});
+
+test("CR-149 rule 4 (fail closed by default): every tracked file the rule misses sits under a known-safe place, so a new security folder cannot slip through unseen", () => {
+  // The protected list is a deny list. This walks the real tree: a tracked file that gets no hit must be docs, a test,
+  // a media asset, a UI component outside the protected folders, an experiment or one of the few named safe files.
+  // A new file anywhere else fails here until someone adds it to the protected list or, after review, to SAFE.
+  const SAFE = [/^docs\//, /(?:^|\/)(?:test|tests|__tests__|e2e|e2e-web|fixtures)\//, /\.test\.[a-z]+$/, /^apps\/mobile\/src\/components\//,
+    /^apps\/web\/src\/(?:components|scenes|film)\//, /(?:^|\/)(?:assets|public)\//, /^experiments\//, /(?:^|\/)readme\.md$/i,
+    /^apps\/mobile\/components\.json$/, /^apps\/mobile\/src\/generated\/licences\.json$/, /^apps\/mobile\/src\/global\.css$/, /^apps\/mobile\/src\/uniwind-types\.d\.ts$/];
+  const owners = readFileSync(new URL("../../.github/CODEOWNERS", import.meta.url), "utf8");
+  const tracked = execFileSync("git", ["ls-files"], { cwd: new URL("../..", import.meta.url), encoding: "utf8" }).split("\n").filter(Boolean);
+  assert.ok(tracked.length > 1000, "git ls-files must list the tree");
+  const unseen = tracked.filter((f) => protectedPathHits([f], owners).length === 0 && !SAFE.some((re) => re.test(f)));
+  assert.deepEqual(unseen, [], "add each path to CR70_EXTRA_PATHS in merge-queue.mjs, or to SAFE here once a security review agrees it is safe");
 });
