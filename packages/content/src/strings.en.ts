@@ -1029,7 +1029,6 @@ export const en = {
     },
     privacyLine: "Private by default. You decide what goes in the book.",
     help: {
-      mistakesTitle: "How transcription works",
       mistakes: "Your words are kept as you said them. We can mishear, so read each letter and fix anything we got wrong.",
       // Shutdown and portability pledge (PRD-REQ-009, PRD.md K-05). Same number and promise as Terms 17
       // and Privacy Policy 18; counsel to confirm. Change all of them together or none.
