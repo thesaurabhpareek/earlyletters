@@ -11,7 +11,7 @@ Status: proposal, 21 Nov 2026. `scripts/agents/**` needs the security lens (CR-7
 
 ## The matching workflow proposal
 
-`docs/ops/proposed/workflows/ios-compile-eas-json.patch` adds `apps/mobile/eas\.json$` to the `changes` job's native filter (`ios-compile.yml:308`). Paste it and an `eas.json`-only PR runs the macOS checks instead of waiting for ever on a skipped one.
+`docs/ops/proposed/workflows/ios-compile-eas-json.patch` adds `apps/mobile/eas\.json$` to the `changes` job's native filter (`ios-compile.yml:308`). Paste it and an `eas.json`-only PR runs the macOS checks instead of waiting for ever on a skipped one. (Applied: `ios-compile.yml` line 341 lists it on develop at `ba634177`; the patch was removed, see `docs/ops/proposed/workflows-retired.md`.)
 
 ## Verdicts before and after (five sample PRs)
 

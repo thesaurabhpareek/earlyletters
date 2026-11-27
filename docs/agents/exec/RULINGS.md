@@ -2607,3 +2607,19 @@ The entries in this batch (three stacked PRs) record each role's own ruling on t
 - Door: two-way while the page is noindex and off `main`
 - Way back: keep the draft words; each recommendation is a separate line.
 - Revisit when: counsel answers on the draft, or CR-187 is applied and the 38-day evidence is recorded.
+
+### CPrivO-58 Typed-day words on the lock screen need names on too (27 Nov 2026, CPrivO via stream 11's session; Claude role)
+- Verdict: RULED. Owner: Chief Privacy Officer; consulted: CPO (scope), CDesO (how it reads); Karma concurs for the build.
+- Question: a typed day (NS-18) puts the parent's own words on the lock screen when day names are on and App lock is off (NS-18-R3, CL-119). The words are free text and can hold a child's name ("Rakhi with Avi"), so a name could reach the lock screen while "Names in notifications" is off, its default. FR-NTC-11 and NS-48-R11 say names off means no child name in any title or body.
+- Ruling: option A. The words show only when day names are on AND names on the lock screen are on AND App lock is off. In every other state the note carries the fixed line. The planner never reads or searches the words (option C, a name check on the text, is rejected: it misses nicknames and other scripts and would have the machine judge a parent's words). Option B (keep NS-18-R3 as written and narrow FR-NTC-11 to machine copy) is rejected: the parent who turned names off asked for no names on the lock screen, whoever wrote them.
+- Why I can rule it: blocking a leak and collecting less is inside my rights; this only removes text from a lock screen and adds nothing. Nothing in the app sets day names on today (the switch screen is BL-1015, blocked), so no family sees a change.
+- Evidence (read this session): `apps/mobile/src/lib/reminders/planner.ts` `typedDayCopy`; Review A on PR #2133 found 163 of 400 seeded plans put a child's name in a typed body with names off and day names on.
+- Effects: errata rows for NS-18-R3 ("words show with day names on and names on, App lock off") and NS-48-R27 wording, for the PM lane. BL-1015's switch help must say the words show only when names are shown too (CDesO). Implementation and tests: PR #2133 (BL-1324).
+- Door: two-way. Way back: drop the names condition in `typedDayCopy` and its tests.
+- Founder-only: no. Signed: Chief Privacy Officer (Claude role, not counsel)
+
+### CPO-97 NS-18-R3 errata follows CPrivO-58 (27 Nov 2026, CPO via stream 11's session; Claude role)
+- Verdict: RULED (requirement hygiene, concur with CPrivO-58). No release scope or date moves: day names cannot be turned on in any build yet.
+- Ruling: NS-18-R3 and FR-NTC-11 stop conflicting by reading NS-18-R3 as "the words show only with day names on and names on, App lock off". The errata rows for NS-18-R3 and NS-48-R27 go to the PM lane with the backlog reconcile.
+- Door: two-way.
+- Founder-only: no. Signed: Chief Product Officer (Claude role)
