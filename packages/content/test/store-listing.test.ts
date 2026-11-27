@@ -275,21 +275,36 @@ const shippedOf = (packs: Pack[], heard: string[]): Set<string> =>
   new Set(packs.filter((p) => p.signed && heard.includes(p.code)).map((p) => p.code));
 
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-/** A whole-word match in any script: letters or marks on either side make it part of another word. */
-// Scripts written without spaces between words (Han, kana, Thai) have no word edge to look for, so a name in
-// one of them matches wherever it appears; every other name must stand as a whole word in any script.
 const UNSPACED_SCRIPT = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Thai}]/u;
+/**
+ * A name in a script written without spaces between words (Han, kana, Thai) has no word edge to look for, so it matches
+ * wherever it appears. Every other name must stand as a whole word in any script: letters or marks on either side make
+ * it part of another word.
+ */
 const nameRe = (name: string) =>
   UNSPACED_SCRIPT.test(name)
     ? new RegExp(escapeRe(name), 'iu')
     : new RegExp(`(?<![\\p{L}\\p{M}])${escapeRe(name)}(?![\\p{L}\\p{M}])`, 'iu');
 
+/**
+ * Unspaced words that contain a language name or alias but name no language. Each is blanked out before the names are
+ * looked for, so the alias inside it does not count; the same alias anywhere else in the sentence still does. Add a word
+ * here only when it names no language: anything not listed is refused, which is the safe side for a store listing.
+ * Escapes keep this file ASCII.
+ */
+const NOT_LANGUAGE_NAMES = [
+  '\u5916\u56fd\u8bed', // "foreign language", simplified; holds the zh alias guoyu
+  '\u5916\u570b\u8a9e', // "foreign language", traditional; holds the zh alias guoyu
+];
+const notLanguageNameRe = new RegExp(NOT_LANGUAGE_NAMES.map(escapeRe).join('|'), 'gu');
+
 /** Each sentence that names a language that does not ship, with the language code. */
 function namesUnshipped(sentences: string[], packs: Pack[], shipped: Set<string>): string[] {
   const out: string[] = [];
   for (const sentence of sentences) {
+    const read = sentence.replace(notLanguageNameRe, ' ');
     for (const pack of packs) {
-      if (!shipped.has(pack.code) && pack.names.some((n) => nameRe(n).test(sentence))) out.push(`${pack.code}: ${sentence}`);
+      if (!shipped.has(pack.code) && pack.names.some((n) => nameRe(n).test(read))) out.push(`${pack.code}: ${sentence}`);
     }
   }
   return out;
@@ -348,6 +363,17 @@ describe('[NS-17-R4] the listing names only shipped languages', () => {
     expect(shipped.has('zh')).toBe(false);
     expect(namesUnshipped([planted], packs, shipped)).toEqual([`zh: ${planted}`]);
     expect(namesUnshipped(['\u6211\u4eec\u7684\u4e2d\u6587\u4fe1'], packs, shipped)).toHaveLength(1);
+  });
+
+  it('[NS-17-R4] [mutant] a Han word that only contains a language alias is not a language name ("foreign language")', () => {
+    // Simplified and traditional "foreign language" hold the zh alias guoyu ("\u56fd\u8bed", "\u570b\u8a9e") but name no
+    // language, so they pass; the alias standing on its own, or beside such a word, is still refused.
+    const en = new Set(['en']);
+    expect(namesUnshipped(['\u652f\u6301\u5916\u56fd\u8bed'], packs, en)).toEqual([]);
+    expect(namesUnshipped(['\u652f\u6301\u5916\u570b\u8a9e'], packs, en)).toEqual([]);
+    expect(namesUnshipped(['\u652f\u6301\u56fd\u8bed'], packs, en)).toEqual(['zh: \u652f\u6301\u56fd\u8bed']);
+    expect(namesUnshipped(['\u5916\u56fd\u8bed\u548c\u56fd\u8bed'], packs, en)).toHaveLength(1);
+    expect(namesUnshipped(['\u5916\u56fd\u8bed\u548c\u4e2d\u6587'], packs, en)).toHaveLength(1);
   });
 
   it('[NS-17-R4] [mutant] the same line passes once Spanish ships, so the rule reads the shipped list', () => {
