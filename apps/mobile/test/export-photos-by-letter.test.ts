@@ -25,6 +25,8 @@ const h = vi.hoisted(() => ({ disk: null as unknown as Disk, authUser: null as s
 vi.mock('expo-file-system', async () => (await import('./helpers/expo-fs-standin')).expoFileSystem(() => h.disk));
 vi.mock('expo-crypto', () => ({ CryptoDigestAlgorithm: { SHA256: 'SHA-256' }, digest: async () => new ArrayBuffer(32), getRandomBytes: (n: number) => new Uint8Array(n).fill(7) }));
 vi.mock('expo-constants', () => ({ default: { expoConfig: { version: '1.0.0' } } }));
+// The recording folders (capture/recordings.ts) for the recordings in no letter (BL-388).
+vi.mock('react-native', () => ({ Platform: { OS: 'ios' } }));
 vi.mock('expo-print', () => ({ printToFileAsync: async () => ({ uri: '' }) }));
 vi.mock('expo-sharing', () => ({ isAvailableAsync: async () => false, shareAsync: async () => {} }));
 // The deletion request belongs to the account signed in (export/scope.logic.ts); the store's lists read as signed out

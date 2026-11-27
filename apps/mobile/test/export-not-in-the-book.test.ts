@@ -6,8 +6,8 @@
  */
 import { strFromU8, unzipSync } from 'fflate';
 import { describe, expect, it } from 'vitest';
-import { ASHA_FILES, ASHA_STRAY, ashaSnapshot, sha256Hex } from './helpers/asha-export';
-import { notInTheBookPath, orphanMediaType, planExport } from '../src/lib/export/build.logic';
+import { ASHA_FILES, ASHA_STRAY, ASHA_STRAY_AUDIO, ashaSnapshot, sha256Hex } from './helpers/asha-export';
+import { notInTheBookPath, orphanMediaType, orphansOf, planExport, type SnapshotOrphan } from '../src/lib/export/build.logic';
 import { packExport } from '../src/lib/export/pack';
 import type { NotInTheBookFile } from '../src/lib/export/schema';
 
@@ -39,6 +39,36 @@ describe('[BL-388] LEGAL-REQ-034: plan and pack', () => {
     expect(listOf(files).recordings.map((r) => [r.path, r.bytes, r.sha256])).toEqual([[null, 1_500, null], [null, 2_048, null]]);
     expect(Object.keys(files).some((p) => p.startsWith('not-in-the-book/'))).toBe(false);
     expect(strFromU8(files['README.txt'])).toContain('NOT IN THE BOOK');
+  });
+
+  it('every one gone: the README section stays, and no line says the folder holds one', async () => {
+    const snap = ashaSnapshot();
+    const files = await pack({ ...snap, orphans: snap.orphans!.map((o) => ({ ...o, uri: null, onPhone: false })) });
+    expect(Object.keys(files).some((p) => p.startsWith('not-in-the-book/'))).toBe(false);
+    const readme = strFromU8(files['README.txt']);
+    expect(readme).toContain('NOT IN THE BOOK');
+    expect(readme).not.toMatch(/not-in-the-book\/ holds/);
+  });
+
+  it('a row the phone marks gone is never planned, even with a uri', () => {
+    const snap = ashaSnapshot();
+    expect(planExport({ ...snap, orphans: [{ ...snap.orphans![0], onPhone: false }] }).orphanAudio).toEqual([]);
+  });
+
+  it('bytes and SHA-256 are the packed file\'s, not the size the sweep noted', async () => {
+    const snap = ashaSnapshot();
+    const files = await pack({ ...snap, orphans: [{ ...snap.orphans![0], bytes: 1 }] });
+    expect(listOf(files).recordings).toEqual([{
+      file_name: ASHA_STRAY, path: `not-in-the-book/${ASHA_STRAY}`, bytes: ASHA_STRAY_AUDIO.length, sha256: sha256Hex(ASHA_STRAY_AUDIO), found_at: '2027-02-01T08:00:00.000Z',
+    }]);
+  });
+
+  it('oldest found first, then by name in plain code-unit order (the store\'s binary ORDER BY), in the list too', async () => {
+    const o = (fileName: string, foundAt: string): SnapshotOrphan => ({ fileName, bytes: 1, foundAt, uri: null, onPhone: false });
+    const orphans = [o('recording-a.m4a', '2027-02-03T08:00:00.000Z'), o('recording-b.m4a', '2027-02-01T08:00:00.000Z'), o('recording-B.m4a', '2027-02-01T08:00:00.000Z')];
+    const order = ['recording-B.m4a', 'recording-b.m4a', 'recording-a.m4a'];
+    expect(orphansOf({ orphans }).map((r) => r.fileName)).toEqual(order);
+    expect(listOf(await pack({ ...ashaSnapshot(), orphans })).recordings.map((r) => r.file_name)).toEqual(order);
   });
 
   it('names every computer can open, two the same numbered, and each container its own media type', () => {

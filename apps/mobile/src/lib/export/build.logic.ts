@@ -453,9 +453,10 @@ function waitingText(d: SnapshotWaiting, child: SnapshotChild, locale: string): 
 
 // ── Recordings not in the book (1.8.0, BL-388) ──────────────────────────
 
-/** Oldest found first, as Settings lists them. */
+const binary = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+/** Oldest found first, then by name: plain `<`, the store's binary `ORDER BY found_at, file_name` for any ASCII name. */
 export const orphansOf = (snapshot: Pick<ExportSnapshot, 'orphans'>): SnapshotOrphan[] =>
-  [...(snapshot.orphans ?? [])].sort((a, b) => a.foundAt.localeCompare(b.foundAt) || a.fileName.localeCompare(b.fileName));
+  [...(snapshot.orphans ?? [])].sort((a, b) => binary(a.foundAt, b.foundAt) || binary(a.fileName, b.fileName));
 
 const ORPHAN_MEDIA = {
   m4a: 'audio/mp4', mp4: 'audio/mp4', aac: 'audio/aac', caf: 'audio/x-caf', wav: 'audio/wav', '3gp': 'audio/3gpp', webm: 'audio/webm',
@@ -947,6 +948,7 @@ export async function dataFiles(
   }
   const orphans = orphansOf(snapshot);
   if (orphans.length > 0) {
+    // By file name: the `orphan_audio` primary key, so each name is one row (device.ts).
     const orphanJobs = new Map(plan.orphanAudio.map((j) => [j.fileName, j]));
     const notInTheBook: NotInTheBookFile = {
       schema_version: EXPORT_SCHEMA_VERSION,

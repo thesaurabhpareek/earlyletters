@@ -29,8 +29,10 @@ import { hasPlus } from '../billing';
 import { getSupabaseOrNull } from '../supabase/client';
 import { entryMediaStore } from '../photos/entry-media';
 import { storedPhotoFile } from '../photos/files';
-import { currentUserId, localSqlDb, dictionaryFor, getSetting, listChildren, listConflicts, listEntriesForChild, listHiddenChildren, listWaitingForExport, getDraftReview, myRoleIn, listClosedBooks, listDeletedEntriesForChild, listLeftBooks, listLeftBookEntries, type Entry } from '../store';
-import { paperFor, phoneConsent, waitingChangedWords, type ExportSnapshot, type SnapshotChild, type SnapshotEntry, type SnapshotPhoto } from './build.logic';
+import { listRecordingFiles } from '../capture/recordings';
+import { fileNameOf } from '../capture/sweep.logic';
+import { bookVisibleNow, listOrphanAudio, currentUserId, localSqlDb, dictionaryFor, getSetting, listChildren, listConflicts, listEntriesForChild, listHiddenChildren, listWaitingForExport, getDraftReview, myRoleIn, listClosedBooks, listDeletedEntriesForChild, listLeftBooks, listLeftBookEntries, type Entry, type OrphanAudio } from '../store';
+import { paperFor, phoneConsent, waitingChangedWords, type ExportSnapshot, type SnapshotChild, type SnapshotEntry, type SnapshotOrphan, type SnapshotPhoto } from './build.logic';
 import { noConsentHistory, noProfile, postgrestReader, type PostgrestLike, type ServerRecordsReader } from './server-records.logic';
 import { copyStoreFor, readServerRecordsWithCopy } from './consent-copy.logic';
 import { deviceConsentCopy } from './consent-copy';
@@ -149,6 +151,37 @@ function photosByLetter(): Map<string, SnapshotPhoto> {
   return out;
 }
 
+/**
+ * Recordings in no letter or draft (1.8.0, BL-388): the sweep's list, each name found in the sweep's own listing of
+ * the recording folders (capture/recordings.ts `listRecordingFiles`), the recorder's folder last so it wins a
+ * same-name clash as it does for the sweep. A uri is only ever one that listing gave, and only for the row whose
+ * `fileName` is its last segment. Rows are keyed by `fileName` (the `orphan_audio` primary key), so a name is listed
+ * once and build.logic.ts and pack.ts may key by it too. Such a recording has no author, so it goes in only when this
+ * phone's book may be shown to whoever is using it (store `bookVisibleNow`, auth/account-scope.logic.ts): signed
+ * out, signed in as the account that owns this phone's letters, or on a phone no account owns. A folder that cannot
+ * be listed leaves every row with no file, and a list that cannot be read leaves them out, rather than failing.
+ */
+function orphanRecordings(): SnapshotOrphan[] {
+  let rows: OrphanAudio[];
+  try {
+    if (!bookVisibleNow()) return [];
+    rows = listOrphanAudio();
+  } catch {
+    return [];
+  }
+  const byName = new Map<string, string>();
+  try {
+    for (const f of listRecordingFiles()) byName.set(fileNameOf(f.uri), f.uri);
+  } catch {
+    byName.clear(); // half a listing could name the wrong folder's file: none
+  }
+  return rows.map((o) => {
+    const at = byName.get(o.fileName);
+    const uri = at !== undefined && fileNameOf(at) === o.fileName ? at : null;
+    return { fileName: o.fileName, bytes: o.bytes, foundAt: o.foundAt, uri, onPhone: uri !== null };
+  });
+}
+
 /** Everything on this phone that goes into an export: every book (hidden ones too), every letter not deleted; more while a deletion request is open. */
 export function exportSnapshot(now = new Date()): ExportSnapshot {
   const me = currentUserId();
@@ -186,6 +219,7 @@ export function exportSnapshot(now = new Date()): ExportSnapshot {
     children,
     entries,
     waiting,
+    orphans: orphanRecordings(),
     // Conflict copies are the author's own words: kept on this phone until they pick, and in every export (F16-REQ-023).
     otherVersions: listConflicts().map((c) => ({
       entryId: c.entryId, finalText: c.words.final_text, editLevel: c.words.edit_level, machineEdits: c.words.machine_edits, keptAt: c.at,
