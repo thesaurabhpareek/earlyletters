@@ -87,7 +87,7 @@ describe('Moments events (NS-53-R251, NS-53-R167)', () => {
     const got = provider.captured();
     expect(got.map((e) => e.event)).toEqual(['book:moments_card_view', 'book:moments_card_open']);
     expect(got.map((e) => e.properties.slot)).toEqual(['look_back', 'question']);
-    for (const e of got) expect(Object.keys(e.properties).filter((k) => !['schema_version', 'child_count_bucket', 'sample_pct'].includes(k))).toEqual(['slot']);
+    for (const e of got) expect(Object.keys(e.properties).filter((k) => !['schema_version', 'build_kind', 'is_internal', 'child_count_bucket', 'sample_pct'].includes(k))).toEqual(['slot']);
   });
 
   it('[NS-53-R251-f] the helper refuses a slot outside the closed set at run time', async () => {
