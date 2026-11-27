@@ -165,9 +165,12 @@ describe('[NS-18-R3] words hidden by default', () => {
   });
 
   it('the payload and the identifier never carry the words, whatever the switch says', () => {
+    const named = { ...DEFAULT_PREFS, enabled: true, cadence: 'everyEvening' as const, namesOnLockScreen: true };
     for (const dayNames of [false, true]) {
-      const [n] = onDate(planReminders(base({ dayNamesOn: dayNames, typedDays: [{ date: '2026-11-05', words: CANARY }] })), '2026-11-05');
+      const [n] = onDate(planReminders(base({ prefs: named, dayNamesOn: dayNames, typedDays: [{ date: '2026-11-05', words: CANARY }] })), '2026-11-05');
       const c = reminderContent(n!);
+      // With both switches on the body is the words, so this pass checks a note that does carry them (CPrivO-58).
+      expect(n!.body).toBe(dayNames ? CANARY : FIXED.body);
       expect(c.data).toEqual({ source: 'scribe.reminders', kind: 'typedDay' });
       expect(n!.id).not.toContain('zq7canary');
     }

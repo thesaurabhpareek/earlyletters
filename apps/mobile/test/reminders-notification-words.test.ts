@@ -248,7 +248,7 @@ describe('[NS-48-R9] the catalogue honours the lock-screen rules', () => {
     }
   });
 
-  it('the catalogue never overrides them: a selector that returns any key changes no typed, month or birthday note', () => {
+  it('the catalogue never overrides them: a selector that returns an unknown key or another real key changes no typed, month or birthday note', () => {
     const plain = (seed: number) => planReminders(generated(seed));
     const odd = (seed: number) => planReminders(generated(seed, { select: () => 'not-a-key' }));
     const other = (seed: number) => planReminders(generated(seed, { select: () => 'floor.5' }));
