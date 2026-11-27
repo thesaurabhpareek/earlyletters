@@ -122,7 +122,7 @@ export interface PlanInput {
   anchorAt?: number | null;
   /** Evening nudges are planned this many days ahead (default 21). */
   horizonDays?: number;
-  /** Month and birthday notes are planned this many days ahead (default `MONTH_HORIZON_DAYS`, 92). */
+  /** Month and birthday notes are planned this many days ahead (default 92). */
   monthHorizonDays?: number;
   /** Fewer budgeted notes than the budget allows, for tests and narrow plans. Never more: the total stays at `TOTAL_MAX` (60). */
   maxNotifications?: number;
@@ -192,8 +192,6 @@ export const DEFAULT_TIME: ReminderTime = { hour: 20, minute: 30 };
 export const DEFAULT_DAYS = [2, 6]; // Tuesday and Saturday (C-REQ-002)
 export const DEFAULT_WEEKLY_DAY = 6; // Saturday (F13 section 6, K-03)
 export const BIRTHDAY_TIME: ReminderTime = { hour: 9, minute: 0 };
-/** Days ahead, today included, that month and birthday notes are planned by default: the farthest default horizon here. */
-export const MONTH_HORIZON_DAYS = 92;
 export const RECENT_SAVE_QUIET_MS = 20 * 3_600_000;
 /** Last day, counted from the anchor, that an evening nudge, month note or birthday note may fall on (R4, R18). */
 export const BACKOFF_LAST_DAY = 35;
@@ -426,7 +424,7 @@ export function planReminders(input: PlanInput): PlannedNotification[] {
   }
 
   const horizon = Math.max(1, input.horizonDays ?? 21);
-  const monthHorizon = Math.max(horizon, input.monthHorizonDays ?? MONTH_HORIZON_DAYS);
+  const monthHorizon = Math.max(horizon, input.monthHorizonDays ?? 92);
   const birthdayTime = clampReminderTime(BIRTHDAY_TIME, window).time;
   // The back-off, when an anchor is known: day 0 is the anchor's local date, nothing after day 35 (replaces the horizons).
   const anchorDay = input.anchorAt != null && Number.isFinite(input.anchorAt) ? dayNumber(zonedParts(input.anchorAt, timeZone)) : null;

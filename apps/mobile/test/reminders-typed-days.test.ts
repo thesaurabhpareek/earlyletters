@@ -61,7 +61,7 @@ const store = await import('../src/lib/store');
 const reminders = await import('../src/lib/reminders');
 const { reminderCopy } = await import('@scribe/content');
 const { dayNamesOn } = await import('../src/lib/reminders/prefs');
-const { DEFAULT_PREFS, MONTH_HORIZON_DAYS, planReminders } = await import('../src/lib/reminders/planner');
+const { DEFAULT_PREFS, planReminders } = await import('../src/lib/reminders/planner');
 const { reminderContent, routeForReminder } = await import('../src/lib/reminders/payload');
 const { addDays, isoDate, parseIsoDate, zonedParts, zonedToEpoch } = await import('../src/lib/reminders/tz');
 const typed = await import('../src/lib/reminders/typed-days');
@@ -239,17 +239,18 @@ describe('[NS-18-R5] typed words length', () => {
     expect(typed.checkTypedDay(today, 'Today', today)).toEqual({ ok: true });
   });
 
-  it('[BL-2247] a day past the plan horizon is refused: today and the 91 days after are kept, day 92 is not', () => {
-    expect(typed.TYPED_DAY_HORIZON_DAYS).toBe(MONTH_HORIZON_DAYS);
-    expect(MONTH_HORIZON_DAYS).toBe(92);
-    expect(typed.checkTypedDay(plus(today, 91), 'Nursery starts', today)).toEqual({ ok: true });
-    expect(plus(today, 91)).toBe('2027-01-31');
-    expect(typed.checkTypedDay('2027-02-01', 'Nursery starts', today)).toEqual({ ok: false, code: 'typed_day_too_far' });
+  it('[BL-2247, CPO-101] a day more than a year ahead is refused: today and the 366 days after are kept', () => {
+    expect(typed.TYPED_DAY_HORIZON_DAYS).toBe(367);
+    expect(plus(today, 366)).toBe('2027-11-02');
+    expect(typed.checkTypedDay(plus(today, 92), 'Nursery starts', today)).toEqual({ ok: true });
+    expect(typed.checkTypedDay('2027-11-01', 'Nursery starts', today)).toEqual({ ok: true }); // the same date next year
+    expect(typed.checkTypedDay('2027-11-02', 'Nursery starts', today)).toEqual({ ok: true });
+    expect(typed.checkTypedDay('2027-11-03', 'Nursery starts', today)).toEqual({ ok: false, code: 'typed_day_too_far' });
     expect(typed.checkTypedDay('2062-11-01', 'Nursery starts', today)).toEqual({ ok: false, code: 'typed_day_too_far' });
-    // Across a leap day: 15 Dec 2027 plus 91 days is 15 Mar 2028.
-    expect(typed.checkTypedDay('2028-03-15', 'Nursery starts', '2027-12-15')).toEqual({ ok: true });
-    expect(typed.checkTypedDay('2028-03-16', 'Nursery starts', '2027-12-15')).toEqual({ ok: false, code: 'typed_day_too_far' });
-    expect(typed.saveTypedDay('2027-02-01', 'Nursery starts', today)).toEqual({ ok: false, code: 'typed_day_too_far' });
+    // Across a leap day: the same date next year is 366 days on, and is kept; the day after it is not.
+    expect(typed.checkTypedDay('2028-03-01', 'Nursery starts', '2027-03-01')).toEqual({ ok: true });
+    expect(typed.checkTypedDay('2028-03-02', 'Nursery starts', '2027-03-01')).toEqual({ ok: false, code: 'typed_day_too_far' });
+    expect(typed.saveTypedDay('2027-11-03', 'Nursery starts', today)).toEqual({ ok: false, code: 'typed_day_too_far' });
   });
 });
 
