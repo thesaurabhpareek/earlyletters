@@ -17,7 +17,8 @@
 // anonymous policy, or a row in the grant list.
 // Fictional family "Asha" only (CLAUDE.md).
 import { createDb, users, uuid7, EXPECTED_PROBE } from './harness.mjs';
-import { GRANTS, COLUMNS, grantRows } from './grants.mjs';
+import { GRANTS, COLUMNS, grantRows, SERVICE_ROLE_FUNCTIONS, OPS_RELATIONS, OPS_FUNCTIONS, NEW_DEVICE_TABLES, NEW_DEVICE_HOOK,
+  NEW_DEVICE_FUNCTIONS, opsFacts } from './grants.mjs';
 import { legacyPhotoPath } from './legacy_photo.mjs';
 
 const h = await createDb(process.argv.slice(2));
@@ -684,5 +685,51 @@ for (const bucket of ['entry-photos', 'entry-audio']) {
     (await sys(`select 1 from pg_policies where schemaname='storage' and tablename='objects' and permissive='RESTRICTIVE'
       and qual ~ 'is_anonymous' and qual ~ $1`, [`'${bucket}'`])).rows.length === 1);
 }
+
+// ── Schema ops (BL-1186, NS-08-R21) ──────────────────────────────────────
+// The public checks above stop at public. ops holds the service-only tables (the new-device rows, audit, security events),
+// so the same two rules apply there: every object has a name in grants.mjs, and no API role or PUBLIC holds anything on it.
+// The in-test mutants add a scratch object and a grant inside a transaction and prove the rule goes red on each.
+const noSpace = (x) => x.replace(/ /g, ''); // oidvectortypes spells 'timestamp with time zone' with spaces; the lists are compared without them
+const sameSet = (a, b) => JSON.stringify([...a].sort()) === JSON.stringify([...b].sort());
+const opsClean = (f) => sameSet(f.relations, OPS_RELATIONS) && sameSet(f.functions, OPS_FUNCTIONS) && f.held.length === 0 && f.withoutRls.length === 0;
+const opsWith = async (ddl) => {
+  await db.exec('begin');
+  try { await db.exec(ddl); return await opsFacts(sys); } finally { await db.exec('rollback'); }
+};
+const opsNow = await opsFacts(sys);
+for (const v of opsNow.relations.filter((x) => !OPS_RELATIONS.includes(x))) console.log(`      ops object not in grants.mjs: ${v}`);
+for (const v of opsNow.functions.filter((x) => !OPS_FUNCTIONS.includes(x))) console.log(`      ops function not in grants.mjs: ${v}`);
+for (const v of opsNow.held) console.log(`      held on ops: ${v}`);
+check('[BL-1186] every table, view, sequence and function in ops is named in grants.mjs, and the list names nothing that is gone',
+  sameSet(opsNow.relations, OPS_RELATIONS) && sameSet(opsNow.functions, OPS_FUNCTIONS));
+check('[BL-1186] no API role (anon, authenticated, service_role) and not PUBLIC holds any privilege on an ops object or usage on the schema',
+  opsNow.held.length === 0);
+check('[BL-1186] every ops table has row level security on', opsNow.withoutRls.length === 0);
+check('[BL-1186] the new-device tables are named in grants.mjs and exist; so are its functions, which the service_role list or the hook holds',
+  NEW_DEVICE_TABLES.every((t) => OPS_RELATIONS.includes(t) && opsNow.relations.includes(t))
+  && NEW_DEVICE_FUNCTIONS.every((f) => SERVICE_ROLE_FUNCTIONS.includes(f))
+  && (await sys(`select count(*)::int n from pg_proc p where p.pronamespace = 'public'::regnamespace
+      and p.proname || '(' || replace(oidvectortypes(p.proargtypes), ' ', '') || ')' = any($1)`, [[...NEW_DEVICE_FUNCTIONS, NEW_DEVICE_HOOK].map(noSpace)])).rows[0].n === NEW_DEVICE_FUNCTIONS.length + 1);
+check('[BL-1186] every public function named new_device or hook_new_device is in grants.mjs (a ninth one with no row fails)',
+  sameSet((await sys(`select p.proname || '(' || replace(oidvectortypes(p.proargtypes), ' ', '') || ')' v from pg_proc p
+    where p.pronamespace = 'public'::regnamespace and p.proname ~ 'new_device'`)).rows.map((r) => r.v), [...NEW_DEVICE_FUNCTIONS.filter((f) => /new_device/.test(f)), NEW_DEVICE_HOOK].map(noSpace)));
+// mutants: the rule is not empty.
+check('[BL-1186] mutant: a scratch ops table with no row in grants.mjs fails the name check',
+  !opsClean(await opsWith(`create table ops.scratch_unlisted (x int)`)));
+check('[BL-1186] mutant: a scratch ops table with a row but RLS off fails the RLS check',
+  (await opsWith(`create table ops.scratch_unlisted (x int)`)).withoutRls.includes('scratch_unlisted'));
+check('[BL-1186] mutant: a scratch ops function with no row fails the name check (and PUBLIC execute is caught)',
+  (await (async () => { const f = await opsWith(`create function ops.scratch_fn() returns int language sql as $$ select 1 $$`);
+    return !f.functions.every((x) => OPS_FUNCTIONS.includes(x)) && f.held.includes('public scratch_fn()'); })()));
+check('[BL-1186] mutant: select on a new-device table granted to anon is caught',
+  (await opsWith(`grant select on ops.new_device_tokens to anon`)).held.includes('anon new_device_tokens'));
+check('[BL-1186] mutant: select on a new-device table granted to authenticated is caught',
+  (await opsWith(`grant select on ops.new_device_pending to authenticated`)).held.includes('authenticated new_device_pending'));
+check('[BL-1186] mutant: a column-level grant to anon on an ops table is caught (has_any_column_privilege)',
+  (await opsWith(`grant select (kind) on ops.security_events to anon`)).held.includes('anon security_events (column)'));
+check('[BL-1186] mutant: execute on an ops function granted to authenticated, and usage on the schema granted to anon, are caught',
+  (await opsWith(`grant execute on function ops.country_of(inet) to authenticated; grant usage on schema ops to anon`)).held.join() === 'anon schema ops,authenticated country_of()');
+check('[BL-1186] the rule is clean again after the mutants roll back', opsClean(await opsFacts(sys)));
 
 done();

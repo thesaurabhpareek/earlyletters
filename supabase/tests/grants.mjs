@@ -42,3 +42,51 @@ export const SERVICE_ROLE_FUNCTIONS = ['accept_child_invite_by_code(uuid,bytea)'
   'ops_cron_health(integer)'];
 // "role relation letters" rows, sorted, for an exact comparison.
 export const grantRows = () => Object.entries(GRANTS).flatMap(([role, m]) => Object.entries(m).map(([rel, l]) => `${role} ${rel} ${l}`)).sort();
+
+// BL-1186. Schema `ops` is service-only: no API role and not PUBLIC holds any privilege on any ops table, view, sequence
+// or function, and ops is reached only through the definer functions in SERVICE_ROLE_FUNCTIONS above. A new ops object
+// with no name here turns access_matrix.test.mjs and explicit_grants.test.mjs red; add it here in the PR that makes it.
+export const OPS_RELATIONS = ['account_sessions_seen', 'alert_state', 'apple_tokens', 'audit_log', 'audit_log_id_seq',
+  'compliance_check_counts', 'forget_quota', 'forget_quota_retired', 'geo_ip_meta', 'geo_ip_ranges', 'new_device_pending', 'new_device_tokens',
+  'regulatory_watch', 'regulatory_watch_id_seq', 'restricted_jurisdictions', 'security_events', 'security_events_id_seq'];
+// Argument types only, no spaces (the shape the two tests build with oidvectortypes).
+export const OPS_FUNCTIONS = ['audit_log_guard()', 'audit_log_no_truncate()', 'bump_check(text,text,text)', 'country_of(inet)',
+  'security_detail_ok(jsonb)', 'security_events_guard()'];
+// NS-08-R21: every object the new-device sign-in email adds, so each of the two tests names them. The tables are in
+// OPS_RELATIONS; the functions are in public, and are in SERVICE_ROLE_FUNCTIONS except the hook, which only
+// supabase_auth_admin executes (asserted in new_device_sign_in.test.mjs).
+export const NEW_DEVICE_TABLES = ['account_sessions_seen', 'new_device_pending', 'new_device_tokens'];
+export const NEW_DEVICE_HOOK = 'hook_new_device_sign_in(jsonb)';
+export const NEW_DEVICE_FUNCTIONS = ['ops_end_session(uuid,uuid)', 'ops_new_device_sign_out(bytea,text)', 'ops_new_device_retention(timestamp with time zone)',
+  'ops_new_device_record(uuid,bytea,text)', 'ops_new_device_pending_take(uuid,integer)', 'ops_new_device_token_mint(uuid,uuid,bytea,interval)',
+  'ops_new_device_pending_fill(uuid,uuid,text,bytea)', 'ops_new_device_rekey(uuid,bytea,bytea)'];
+// One query set for both tests: what the ops schema holds, and what an API role or PUBLIC can do to it. Held rows are
+// "role object"; PUBLIC is read from the ACL (grantee 0).
+export const opsFacts = async (sys) => {
+  const q = async (s) => (await sys(s)).rows.map((r) => r.v);
+  return {
+    relations: await q(`select c.relname v from pg_class c where c.relnamespace = 'ops'::regnamespace and c.relkind in ('r', 'p', 'v', 'm', 'S') order by 1`),
+    functions: await q(`select p.proname || '(' || replace(oidvectortypes(p.proargtypes), ' ', '') || ')' v from pg_proc p
+      where p.pronamespace = 'ops'::regnamespace order by 1`),
+    withoutRls: await q(`select c.relname v from pg_class c where c.relnamespace = 'ops'::regnamespace and c.relkind in ('r', 'p') and not c.relrowsecurity order by 1`),
+    held: await q(`select v from (
+      select r || ' ' || c.relname v from pg_class c cross join unnest(array['anon', 'authenticated', 'service_role']) r
+        cross join unnest(array['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER', 'MAINTAIN']) p
+        where c.relnamespace = 'ops'::regnamespace and c.relkind in ('r', 'p', 'v', 'm') and has_table_privilege(r, c.oid, p)
+      union select r || ' ' || c.relname || ' (column)' from pg_class c cross join unnest(array['anon', 'authenticated', 'service_role']) r
+        cross join unnest(array['SELECT', 'INSERT', 'UPDATE', 'REFERENCES']) p
+        where c.relnamespace = 'ops'::regnamespace and c.relkind in ('r', 'p', 'v', 'm') and has_any_column_privilege(r, c.oid, p)
+      union select r || ' ' || c.relname from pg_class c cross join unnest(array['anon', 'authenticated', 'service_role']) r
+        where c.relnamespace = 'ops'::regnamespace and c.relkind = 'S'
+          and (has_sequence_privilege(r, c.oid, 'USAGE') or has_sequence_privilege(r, c.oid, 'SELECT') or has_sequence_privilege(r, c.oid, 'UPDATE'))
+      union select 'public ' || c.relname from pg_class c
+        cross join aclexplode(coalesce(c.relacl, acldefault((case when c.relkind = 'S' then 's' else 'r' end)::"char", c.relowner))) a
+        where c.relnamespace = 'ops'::regnamespace and c.relkind in ('r', 'p', 'v', 'm', 'S') and a.grantee = 0
+      union select r || ' ' || p.proname || '()' from pg_proc p cross join unnest(array['anon', 'authenticated', 'service_role']) r
+        where p.pronamespace = 'ops'::regnamespace and has_function_privilege(r, p.oid, 'execute')
+      union select 'public ' || p.proname || '()' from pg_proc p cross join aclexplode(coalesce(p.proacl, acldefault('f'::"char", p.proowner))) a
+        where p.pronamespace = 'ops'::regnamespace and a.grantee = 0
+      union select r || ' schema ops' from unnest(array['anon', 'authenticated', 'service_role']) r where has_schema_privilege(r, 'ops', 'usage')
+    ) x order by 1`),
+  };
+};
