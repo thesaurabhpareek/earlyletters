@@ -6,7 +6,10 @@
  * The eyebrow uses the Text `caps` style: VoiceOver hears "For Asha", not letters.
  * Each row names the child's current month under the book ("Month 7", "The first weeks", "Before You"), from the
  * Book's own chapter titles; the current book has the check (EXPERIENCE_PASS S25). The Book shows this row only
- * when there is more than one book (S24).
+ * when there is more than one book (S24), and so does Home, above its dateline (NS-14-R1, R2), with `surface="tonight"`.
+ * Both screens read and write the one selection through useChildren, so a switch on one is the book the other opens
+ * (NS-14-R6). VoiceOver hears the visible words as the name and whose book as the value ("For Asha", "Asha's book"),
+ * so Voice Control's command stays the label on screen. The label wraps at accessibility sizes, never truncates (NS-14-R5).
  */
 import { router } from 'expo-router';
 import { CaretDownIcon } from 'phosphor-react-native/src/icons/CaretDown';
@@ -29,7 +32,10 @@ export function currentMonthLine(child: Pick<Child, 'birthday'>): string {
   return chapterTitle(monthFor(child, todayISO()));
 }
 
-export function ChildSwitcher() {
+/** Where the switcher sits, as the `capture:child_update` event's allowlist names it (packages/analytics catalog). */
+export type SwitcherSurface = 'book' | 'tonight';
+
+export function ChildSwitcher({ surface = 'book' }: { surface?: SwitcherSurface }) {
   const { c } = useTheme();
   const { children, active, select } = useChildren();
   const [open, setOpen] = useState(false);
@@ -44,10 +50,13 @@ export function ChildSwitcher() {
         onPress={() => setOpen(true)}
         accessibilityRole="button"
         accessibilityLabel={fill(s.label, { child: active.name })}
+        accessibilityValue={{ text: fill(copy.book.title, { child: active.name }) }}
         accessibilityHint={s.hint}
         hitSlop={8}
+        testID="child.switcher"
         className="min-h-11 flex-row items-center gap-1 self-start">
-        <Text variant="caption" caps tone="muted" style={{ letterSpacing: 1 }}>
+        {/* shrink: in a row a Text does not wrap on its own, so a long name at AX5 would run off the screen. */}
+        <Text variant="caption" caps tone="muted" className="shrink" style={{ letterSpacing: 1 }}>
           {fill(s.label, { child: active.name })}
         </Text>
         <CaretDownIcon size={14} color={c.textMuted} weight="bold" />
@@ -62,7 +71,7 @@ export function ChildSwitcher() {
           options={children.map((ch) => ({ value: ch.id, label: fill(copy.book.title, { child: ch.name }), description: currentMonthLine(ch) }))}
           onChange={(id) => {
             select(id);
-            track('capture:child_update', { child_ordinal: ordinalOf(id), surface: 'book' });
+            track('capture:child_update', { child_ordinal: ordinalOf(id), surface });
           }}
           onSelect={close}
         />
