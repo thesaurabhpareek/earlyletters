@@ -294,7 +294,7 @@ Home columns are the PROPOSED homes of spec 26b (not frozen, see section 0). All
 
 ## 2. Harness hand-off summary
 
-Replaced for v3: see `HARNESS-REPLAN-HYBRID.md` (the PR list in five waves as it stood on 21 Nov 2026; see spec 19.4 for the current count and size; what can start now; what must wait; replacement text for BL-1432 to BL-1438 and one new row for `scribe-picker`). In one line: PR 0, PRs 1 to 4, PR 5 with a synthetic table, PRs 6, 8 and 12, PR 18a and the simulator picker spike can start now; PR 9 waits for G1a-L and G3; 18b-1a waits for the simulator read-out; 18b-2 and 18c wait for the device read-outs; the door ships only with the photo flag's legal set.
+Replaced for v3: see `HARNESS-REPLAN-HYBRID.md` (the first 21 Nov 2026 PR list in five waves, before the design closure fold of the same day added 6b and 19c and before 3c on 22 Nov; see spec 19.4 for the current count and size; what can start now; what must wait; replacement text for BL-1432 to BL-1438 and one new row for `scribe-picker`). In one line: PR 0, PRs 1 to 4, PR 5 with a synthetic table, PRs 6, 8 and 12, PR 18a and the simulator picker spike can start now; PR 9 waits for G1a-L and G3; 18b-1a waits for the simulator read-out; 18b-2 and 18c wait for the device read-outs; the door ships only with the photo flag's legal set.
 
 ## 3. Proposed backlog and claim entries (text only)
 

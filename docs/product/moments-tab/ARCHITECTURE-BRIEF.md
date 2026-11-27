@@ -204,7 +204,8 @@ tab focus / foreground ---------------------------------------------------------
       v   core.exclude    drops no-date, screenshot, screen recording, animation;
       |                   collapses bursts                                         (no trace left)
       |                   (hidden and non-user-library never reach core: the fetch
-      |                   above excludes them, 7.1, E-B3-3, R38; erratum, PROPOSED)
+      |                   above excludes them, 7.1, E-B3-3, R38; erratum, PROPOSED;
+      |                   the fetch part is UNVERIFIED until G1a-L)
       |                   (left-out pictures are gone: R56 DROPPED, BL-1967, E-4-7)
       v   core.place      cell -> place id (table injected); coordinates never reach a Moment
       v   core.group      local day via offsetAt(ms); sessions at SESSION_GAP; near-duplicates
@@ -495,9 +496,9 @@ The rest are MY proposed budgets, with no source, to be replaced by the G1b read
 
 Rule: no number in this table becomes a test threshold until G1b writes its read-out into `docs/release/<x.y.z>.md` (G1b "ASSUMED thresholds ... are set as data").
 
-## 8. The 41-item plan as an architecture critical path
+## 8. The 19.4 plan as an architecture critical path
 
-Source: HR section 1 table (the 21 Nov list, five waves) and spec 19.4, which is the source of the item list; see spec 19.4 for the current count. Sizes are ASSUMED changed lines. This section sorts them by what blocks what.
+Source: HR section 1 table (the first 21 Nov list, before the design closure fold; five waves) and spec 19.4, which is the source of the item list; see spec 19.4 for the current count. Sizes are ASSUMED changed lines. This section sorts them by what blocks what.
 
 ### 8.1 The three spikes and what each decides
 
