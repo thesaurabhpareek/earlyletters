@@ -99,6 +99,21 @@ describe('keepSheetFor: the gate before the write', () => {
   });
 });
 
+describe('[BL-373, D-082] a lapsed member keeps every letter and cannot add one', () => {
+  const LAPSED: PlanView = { ...PLUS, state: 'expired', effectiveUntil: '2026-09-01T00:00:00Z' };
+
+  it('three letters kept under Plus, then Plus ends: the Keep sheet in its lapsed wording, and all three letters are still there', async () => {
+    h.view = PLUS;
+    for (const t of ['One.', 'Two.', 'Three.']) expect(await keepTyped(t)).toBe(false);
+    h.view = LAPSED;
+    h.events.length = 0;
+    const g = await keepSheetFor('Four.');
+    expect(g?.decision).toEqual({ kind: 'offer', trigger: 'keep_letter', needsSignIn: false, lapsed: true });
+    expect(h.events).toEqual([{ name: 'plus:keep_gate_view', props: { letters_kept: 3, allowance: 2, lapsed: 1 } }]);
+    expect(store.listEntriesForChild(asha).map((e) => e.finalText).sort()).toEqual(['One.', 'Three.', 'Two.']);
+  });
+});
+
 describe('countAfterSave: the count and the allowance note after the write', () => {
   it('the save that reaches the allowance notes it once: plus:allowance_reach and the second-free line', async () => {
     expect(await keepTyped('One.')).toBe(false);

@@ -48,7 +48,7 @@
 import { en } from '@scribe/content';
 import { eligibleFloorIndexes, floorIndexOfKey, recencyBand, selectNotificationKey, type KeyInput, type KeySelector, type LastLetterKind } from '@scribe/core';
 import { childLabel, fill } from '../copy';
-import { budgetedSlots, chooseOnePerDay, PLAN_MAX, TOTAL_MAX } from './budget';
+import { budgetedSlots, chooseOnePerDay, heldDays, PLAN_MAX, TOTAL_MAX } from './budget';
 import { reminderCopy } from './copy';
 import {
   addDays,
@@ -505,10 +505,10 @@ export function planReminders(input: PlanInput): PlannedNotification[] {
     ...library,
     ...[...notes.values()].map((note) => ({ source: note.kind, date: isoDate(note.date), note })),
   ]);
-  const noteDays = new Set<number>();
+  // Every chosen day note holds its day, even one dropped below for lead time or quiet hours (budget.ts `heldDays`).
+  const noteDays = heldDays(chosenNotes);
   for (const chosen of chosenNotes) {
     if (chosen.typed) {
-      noteDays.add(dayNumber(parseIsoDate(chosen.typed.date)!));
       const n = typedNote(chosen.typed);
       if (n) out.push(n);
       continue;
@@ -522,7 +522,6 @@ export function planReminders(input: PlanInput): PlannedNotification[] {
     const note = chosen.note!;
     const t = note.kind === 'birthday' ? birthdayTime : time;
     const fireAt = at(note.date, t, timeZone);
-    noteDays.add(dayNumber(note.date));
     if (fireAt <= now + MIN_LEAD_MS || inQuietHours(fireAt, timeZone, window)) continue;
     const c = monthNoteCopy(note, prefs.namesOnLockScreen);
     out.push({
@@ -550,7 +549,7 @@ export function planReminders(input: PlanInput): PlannedNotification[] {
       const date = addDays(today, n - dayNumber(today));
       if (!weekdays.includes(weekdayOf(date))) continue;
       if (anchorDay !== null && !eveningDayAllowed(n - anchorDay, date, weekdays)) continue;
-      if (noteDays.has(n)) continue; // the typed day, month or birthday note is today's one note
+      if (noteDays.has(isoDate(date))) continue; // the typed day, month or birthday note is today's one note
       const fireAt = at(date, time, timeZone);
       if (fireAt <= now + MIN_LEAD_MS || fireAt < quietUntil || inQuietHours(fireAt, timeZone, window)) continue;
       const ordinal = slotOrdinal(date, weekdays);

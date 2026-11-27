@@ -272,6 +272,9 @@ export default function ExportScreen() {
             </Text>
           </View>
           {state.result.mismatched > 0 && <Text className="text-sm leading-5 text-muted-foreground">{s.integrityNote}</Text>}
+          {state.result.photosHeldBack > 0 && (
+            <Text className="text-sm leading-5 text-muted-foreground">{state.result.photosHeldBack === 1 ? s.photoHeldBackOne : s.photoHeldBackMany}</Text>
+          )}
         </View>
       )}
       {help.sheet}
