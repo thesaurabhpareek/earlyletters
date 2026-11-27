@@ -129,7 +129,7 @@ Deno.test('[FR-BKO-13] an abuse report stays off the 45-day clock: one fixed fir
 
 Deno.test('[FR-BKO-13] a dispute or third-party request stays off the 45-day clock; from day 35 it is checked and stays first until it closes', () => {
   const counsel = 'with counsel: no reply beyond the fixed first reply; change nothing on any account';
-  const check = "with counsel: check no request about the sender's own data is inside it, and if one is, log it as its own row today with the same received date; if the email does not say the holder died or cannot act, log it under its route's kind today with the same received date; if the sender acts for a living holder who cannot act, ask counsel before day 45 whether the 45 days apply (Q49)";
+  const check = "with counsel: check no request about the sender's own data is inside it, and if one is, log it as its own row today with the same received date; if it is from someone acting for a holder and the email does not say the holder died or cannot act, log it under its route's kind today with the same received date and close this row; if the sender acts for a living holder who cannot act, ask counsel before day 45 whether the 45 days apply (Q49)";
   const late = 'with counsel: still open past day 44; if the sender acts for a living holder who cannot act and counsel has not said the 45 days do not apply, to counsel today (Q49); no reply beyond the fixed first reply; change nothing on any account';
   const at = (n: number, more = {}) => card(row('DREQ-20261212-1', 'dispute_or_third_party', day(n), more)).rows[0];
   for (const n of [2, 34]) {
@@ -141,6 +141,7 @@ Deno.test('[FR-BKO-13] a dispute or third-party request stays off the 45-day clo
     const r = at(n);
     assert.equal(r.nextAction, check, String(n));
     assert.equal(r.urgent, true, String(n));
+    assert.equal(r.left, 45 - n, String(n));
   }
   for (const n of [45, 46, 60, 200]) {
     const r = at(n);
@@ -166,7 +167,7 @@ Deno.test('[FR-BKO-13] a dispute or third-party request stays off the 45-day clo
   const firstOnly = at(2, { acknowledged: '' }).nextAction;
   assert.equal(at(34, { acknowledged: '' }).nextAction, firstOnly, 'before day 35 an unacknowledged row shows the first reply alone');
   assert.equal(firstOnly, 'first reply not logged: send what its section 0 row says today, the section 1 first reply unless the row says otherwise, and log it');
-  // A dispute row sorts with the clock rows by days left: a P0 leads; from day 45 it is level with a row due today.
+  // A dispute row sorts with the clock rows by days left: a P0 leads; from day 45 it ties a row due today, which comes first.
   const c = card(
     row('DREQ-20261212-1', 'dispute_or_third_party', day(38)),
     row('DREQ-20261212-2', 'see_export', day(36)),
@@ -176,12 +177,13 @@ Deno.test('[FR-BKO-13] a dispute or third-party request stays off the 45-day clo
     row('DREQ-20261212-6', 'see_export', day(42)),
     row('DREQ-20261212-7', 'see_export', day(38)),
     row('DREQ-20261212-8', 'dispute_or_third_party', day(20)),
+    row('DREQ-20261212-9', 'dispute_or_third_party', day(60)),
   );
   assert.deepEqual(c.rows.map((r) => [r.ticket.slice(-1), r.kind, r.day]), [
-    ['4', 'see_export', 46], ['3', 'dispute_or_third_party', 50], ['5', 'see_export', 45], ['6', 'see_export', 42],
-    ['1', 'dispute_or_third_party', 38], ['7', 'see_export', 38], ['2', 'see_export', 36], ['8', 'dispute_or_third_party', 20],
-  ], 'a P0 leads; a dispute row ties a clock row on the same day; one before day 35 does not lead');
-  assert.match(c.lines[0], /8 open, 7 to act on first/);
+    ['4', 'see_export', 46], ['5', 'see_export', 45], ['9', 'dispute_or_third_party', 60], ['3', 'dispute_or_third_party', 50], ['6', 'see_export', 42],
+    ['7', 'see_export', 38], ['1', 'dispute_or_third_party', 38], ['2', 'see_export', 36], ['8', 'dispute_or_third_party', 20],
+  ], 'a P0 leads; on a tie in days left a clock row comes before a dispute row, whatever the ticket; the older of two tied rows first; one before day 35 does not lead');
+  assert.match(c.lines[0], /9 open, 8 to act on first/);
 });
 
 Deno.test('[FR-BKO-16] a letter whose named date has passed goes to counsel today and is listed first', () => {
