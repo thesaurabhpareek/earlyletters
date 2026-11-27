@@ -23,7 +23,7 @@
 import { Slot } from '@rn-primitives/slot';
 import { cva, type VariantProps } from 'class-variance-authority';
 import * as React from 'react';
-import { Platform, Text as RNText, type Role, type TextStyle } from 'react-native';
+import { Platform, Text as RNText, type Role, type TextLayoutEvent, type TextStyle } from 'react-native';
 import { tokens, type TypeToken } from '@scribe/design-tokens';
 import { cn } from '@/lib/utils';
 import { useFontScale } from '@/lib/a11y';
@@ -91,6 +91,12 @@ const ARIA_LEVEL: Partial<Record<LegacyVariant, string>> = { h1: '1', h2: '2', h
 const TextClassContext = React.createContext<string | undefined>(undefined);
 /** Set by Button and Chip: the ramp style their label uses unless the caller picks one. */
 const TextVariantContext = React.createContext<TypeToken | undefined>(undefined);
+/**
+ * Set by Button: told how many lines its label drew, so a label that wraps past two lines changes the corner
+ * (button.logic.ts `wrappedLabelRadius`, BL-490). One label Text per button; native only (react-native-web has no
+ * onTextLayout, so the web keeps the pill).
+ */
+const TextLinesContext = React.createContext<((lines: number) => void) | undefined>(undefined);
 
 export type TextProps = React.ComponentProps<typeof RNText> &
   React.RefAttributes<RNText> & {
@@ -144,6 +150,7 @@ function Text(props: TextProps) {
 function PlainText({ className, asChild = false, variant, tone, caps, asHeading, scale, style, maxFontSizeMultiplier, role, trim: _trim, ...props }: TextProps) {
   const textClass = React.useContext(TextClassContext);
   const contextVariant = React.useContext(TextVariantContext);
+  const reportLines = React.useContext(TextLinesContext);
   const ready = useFontsReady();
   const Component = asChild ? Slot : RNText;
 
@@ -172,8 +179,16 @@ function PlainText({ className, asChild = false, variant, tone, caps, asHeading,
       role={role ?? (heading ? 'heading' : legacy ? ROLE[legacy] : undefined)}
       aria-level={typeof asHeading === 'number' ? String(asHeading) : legacy ? ARIA_LEVEL[legacy] : undefined}
       {...props}
+      onTextLayout={
+        reportLines
+          ? (e: TextLayoutEvent) => {
+              reportLines(e.nativeEvent.lines.length);
+              props.onTextLayout?.(e);
+            }
+          : props.onTextLayout
+      }
     />
   );
 }
 
-export { Text, TextClassContext, TextVariantContext };
+export { Text, TextClassContext, TextLinesContext, TextVariantContext };
