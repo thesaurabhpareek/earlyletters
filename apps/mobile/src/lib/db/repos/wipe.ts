@@ -210,7 +210,7 @@ export function takeEraseScope({ db }: RepoContext): string {
  * parse, or the schema changed since (an update in between). Null erases every row present, which is what the failed
  * line has always told the person ("that erases anything you add before then").
  */
-export function readEraseScope({ db }: RepoContext): EraseScope | null {
+export function readEraseScope({ db }: Pick<RepoContext, 'db'>): EraseScope | null {
   const raw = db.get<{ value: string }>('SELECT value FROM settings WHERE key = ?', ERASE_EVERYTHING_SCOPE)?.value;
   if (!raw) return null;
   try {
@@ -443,7 +443,7 @@ export function removeEverything({ db }: RepoContext, keepSettings: readonly str
  * try reports failed, so the next try repeats it. Kept books are worked out again from the rows left, which gives the
  * same books: the letters and drafts that kept them are still there.
  */
-export function oldRowsLeft({ db }: RepoContext, scope: EraseScope): string[] {
+export function oldRowsLeft({ db }: Pick<RepoContext, 'db'>, scope: EraseScope): string[] {
   const tables = userTables(db);
   const ids = idsErased(scope, keptBooks(db, scope));
   const letters = oldIds(scope, 'entries') ?? new Set<SqlParam>();
@@ -456,4 +456,23 @@ export function oldRowsLeft({ db }: RepoContext, scope: EraseScope): string[] {
   for (const t of Object.keys(NAMES_BY)) if (rowsNaming(db, t, ids).length > 0) left.push(t);
   if (keysNaming(db, ids).length > 0) left.push('settings');
   return left;
+}
+
+/**
+ * Whether uploads wait for an Erase everything retry (Karma ruling 7222053206 on #2102, point 1): only while a pending
+ * mark stands and the old rows are still on the phone, read back exactly as the retry reads them (oldRowsLeft). Once
+ * they read clean, a later step that fails (the Keychain, erase-everything.ts finish) keeps the mark for the next try,
+ * but holds nothing back: the outbox then names no old book, letter or draft. A mark with no usable scope cannot tell
+ * old rows from new, and its retry removes everything present, so uploads wait. A read that throws waits too: holding
+ * an upload loses nothing, sending an erased letter cannot be taken back.
+ * The mark is one primary-key lookup; the scope is read only while it stands (sync/engine.ts pushAll, once a pass).
+ */
+export function uploadsWaitForErase(db: SqlDb): boolean {
+  try {
+    if (!db.get('SELECT 1 AS x FROM settings WHERE key = ?', ERASE_EVERYTHING_SETTING)) return false;
+    const scope = readEraseScope({ db });
+    return scope === null || oldRowsLeft({ db }, scope).length > 0;
+  } catch {
+    return true;
+  }
 }

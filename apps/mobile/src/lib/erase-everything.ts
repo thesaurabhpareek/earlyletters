@@ -28,7 +28,8 @@
  * copies, export ZIPs, print PDFs, the photo caches, and the Keychain and reminder steps below.
  *
  * Kept, on purpose (F17 6.2 F step 3): speech models (`Documents/models`) and language packs, which hold no personal
- * data and are large; Settings > Languages and speech removes them. Nothing here uses the network.
+ * data and are large; Settings > Languages and speech removes them. Nothing here uses the network itself; once the
+ * mark goes, a phone that signed in after a failed try is asked to sync once (`finish`), so what was kept uploads.
  */
 import { Directory, Paths } from 'expo-file-system';
 import { Platform } from 'react-native';
@@ -165,6 +166,20 @@ async function finish(): Promise<void> {
   await forgetReminders();
   if (tokensFailed) throw tokensHeld;
   finishEraseEverything();
+  syncOnceAfterErase();
+}
+
+/**
+ * Karma ruling 7222053206 on #2102, point 2: after a sign-in between a failed try and this one, the kept ops go at once
+ * instead of at the next save, foreground or refresh, and a sign-out waiting for uploads is not left polling. A no-op
+ * when sync is not running (signed out, local-only, the kill path), which is every erase that never signed in. Not
+ * awaited, and nothing it does can make the erase fail: the mark is already gone; a sync that cannot start waits for
+ * the next trigger.
+ */
+function syncOnceAfterErase(): void {
+  // Loaded here, not at the top: this module is read at launch before any screen, and the sync wiring brings the
+  // network client with it, which a phone that never signed in never needs.
+  void import('./sync').then((m) => m.syncNow()).catch(() => {});
 }
 
 /** Settings > Your letters > Erase everything on this phone, after the confirm alert. */

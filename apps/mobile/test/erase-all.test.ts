@@ -43,6 +43,9 @@ const h = vi.hoisted(() => ({
   /** CDO-23: when true the native backup-exclusion stand-in sticks, so the moments file can be written. */
   exclusionSticks: false,
   excluded: new Set<string>(),
+  /** What the app's syncNow does in this test (null: sync is not running), and each call's promise, in order. */
+  syncNow: null as null | (() => Promise<unknown>),
+  syncs: [] as Promise<unknown>[],
 }));
 
 vi.mock('expo-file-system', async () => (await import('./helpers/expo-fs-standin')).expoFileSystem(() => h.disk));
@@ -94,6 +97,15 @@ vi.mock('../src/lib/supabase/secure-storage', () => ({
       if (h.failRemoveKey === k) throw new Error('keychain locked');
       h.keychain.delete(k);
     },
+  },
+}));
+// The app's sync wiring (lib/sync/index.ts), as erase-everything.ts calls it once the mark goes (Karma ruling 7222053206 on
+// #2102, point 2). The engine itself is driven for real below (syncEngine).
+vi.mock('../src/lib/sync', () => ({
+  syncNow: () => {
+    const p = h.syncNow ? h.syncNow() : Promise.resolve(null);
+    h.syncs.push(p);
+    return p;
   },
 }));
 vi.mock('../src/lib/auth/apple', () => ({ APPLE_USER_KEY: 'scribe.auth.appleUser', PENDING_NAME_KEY: 'scribe.auth.pendingName' }));
@@ -195,6 +207,8 @@ beforeEach(() => {
   h.killAt = null;
   h.exclusionSticks = false;
   h.excluded = new Set();
+  h.syncNow = null;
+  h.syncs = [];
   h.disk = createDisk(PHONE);
   layOutApp(h.disk);
   const n = nodeDb();
@@ -1006,6 +1020,63 @@ describe('[DATA-REQ-024][F14-REQ-026] Erase everything on this phone, signed out
     expect(s.pushed.map((o) => o.type)).toContain('book.first_run');
     expect(s.pushed.filter((o) => o.type === 'entry.upsert').map((o) => o.id).sort()).toEqual([LATE.spoken, LATE.typed, LATE.newBook].sort());
     expect(JSON.stringify(s.pushed)).not.toMatch(/Avi|2024-06-10|quiet morning|built a tower/);
+    s.engine.stop();
+    expect(fetches).toBe(0);
+  });
+
+  /** Every queued or pushed op that names an old book, letter or draft of filled(), by id. */
+  const namingOld = (f: ReturnType<typeof family>, text: string) => [f.avi, f.draftId, ...Object.values(f.ids)].filter((id) => text.includes(id));
+
+  it('[BL-775] once the retry reads the old rows clean, a Keychain step that refuses keeps the mark but not the uploads: after a sign-in, a launch resume the upload tokens will not leave, then a sync, pushes the kept ops and nothing naming an old id (Karma ruling 7222053206, point 1; Review B)', async () => {
+    const { app, f } = await filled();
+    failPartWay(app);
+    const { book } = writeAfter(app, f);
+    const s = await syncEngine();
+    expect(s.engine.start()?.outcome).toBe('claimed');
+    await s.engine.sync();
+    expect(s.pushed).toEqual([]); // the old rows are still on the phone: held
+
+    const tokens = await import('../src/lib/backup/token-vault');
+    h.keychain.set(tokens.BACKUP_TOKENS_KEY, '{"a:b":"asha-token"}');
+    h.failRemoveKey = tokens.BACKUP_TOKENS_KEY;
+    const next = await launch();
+    expect(await next.all.resumeEraseAtLaunch()).toBe('incomplete');
+    expect(next.store.eraseEverythingPending()).toBe(true); // the mark stays for the next try to finish the Keychain
+    expect(h.syncs).toEqual([]); // not erased, so no sync was asked for
+    const queued = ops();
+    expect(queued.map((o) => [o.seq, namingOld(f, o.entity_id + o.payload)])).toEqual(queued.map((o) => [o.seq, []]));
+
+    await s.engine.sync();
+    expect(s.pushed[0].type).toBe('book.first_run');
+    expect(s.pushed[0].data.children).toEqual([expect.objectContaining({ id: f.asha }), expect.objectContaining({ id: book })]);
+    expect(s.pushed.filter((o) => o.type === 'prefs.upsert').map((o) => o.id).sort()).toEqual([f.asha, book].sort());
+    expect(s.pushed.filter((o) => o.type === 'entry.upsert').map((o) => o.id).sort()).toEqual([LATE.spoken, LATE.typed, LATE.newBook].sort());
+    expect(s.pushed).toHaveLength(6);
+    expect(namingOld(f, JSON.stringify(s.pushed))).toEqual([]);
+    expect(JSON.stringify(s.pushed)).not.toMatch(/Avi|2024-06-10|quiet morning|built a tower/);
+    expect(next.store.eraseEverythingPending()).toBe(true);
+    s.engine.stop();
+    expect(fetches).toBe(0);
+  });
+
+  it('[BL-775] the erase asks for one sync once it reports erased, so the kept ops upload at once after a sign-in, with no save, foreground or refresh (Karma ruling 7222053206, point 2; Review A)', async () => {
+    const { app, f } = await filled();
+    failPartWay(app);
+    writeAfter(app, f);
+    const s = await syncEngine();
+    expect(s.engine.start()?.outcome).toBe('claimed');
+    await s.engine.sync();
+    expect(s.pushed).toEqual([]);
+    h.syncNow = () => s.engine.sync({ verify: true }); // as lib/sync/index.ts syncNow, with the engine running
+
+    const next = await launch();
+    expect(await next.all.resumeEraseAtLaunch()).toBe('erased');
+    await vi.waitFor(() => expect(h.syncs).toHaveLength(1)); // loaded on demand (erase-everything.ts syncOnceAfterErase)
+    await Promise.all(h.syncs);
+    expect(h.syncs).toHaveLength(1); // once
+    expect(s.pushed.map((o) => o.type)).toContain('book.first_run');
+    expect(s.pushed.filter((o) => o.type === 'entry.upsert').map((o) => o.id).sort()).toEqual([LATE.spoken, LATE.typed, LATE.newBook].sort());
+    expect(namingOld(f, JSON.stringify(s.pushed))).toEqual([]);
     s.engine.stop();
     expect(fetches).toBe(0);
   });
