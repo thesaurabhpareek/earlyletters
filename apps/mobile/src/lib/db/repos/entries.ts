@@ -371,8 +371,9 @@ export function replaceWords(
   w: { final_text: string; machine_edits: unknown[]; edit_level: string },
 ): boolean {
   ctx.db.run(
-    'UPDATE entries SET final_text = ?, machine_edits = ?, edit_level = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL',
-    w.final_text, JSON.stringify(w.machine_edits ?? []), w.edit_level, ctx.now(), id,
+    `UPDATE entries SET ${KEEP_BASE_IF_SAME_WORDS}, final_text = ?, machine_edits = ?, edit_level = ?, updated_at = ?
+     WHERE id = ? AND deleted_at IS NULL`,
+    w.final_text, w.final_text, JSON.stringify(w.machine_edits ?? []), w.edit_level, ctx.now(), id,
   );
   return moved(ctx, id);
 }
@@ -384,6 +385,13 @@ export function replaceWords(
  */
 const WORDS_CHANGEABLE = `deleted_at IS NULL AND kind <> 'not_much' AND transcript_status IS NULL AND final_text <> ''
        AND (author_id IS NULL OR author_id = ?)`;
+
+/**
+ * SET clause for every writer that replaces final_text from outside the letter page (a pull, a push answer, a conflict
+ * choice). SQLite reads the old row on the right of SET, so `final_text` here is the words before this write; the one
+ * `?` is the incoming words. Different words drop `author_base`; the same words (a push answer echoing ours) keep it.
+ */
+export const KEEP_BASE_IF_SAME_WORDS = 'author_base = CASE WHEN final_text IS ? THEN author_base ELSE NULL END';
 
 /** The author's changes to a saved letter: the words as kept (`author_base`) and each change since, against them. */
 export interface AuthorLayer {

@@ -12,6 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MIGRATIONS, migrate, userVersion } from '../src/lib/db/migrations';
 import { changeRow, offersChangeWords } from '../src/components/book/change-words.logic';
 import { nodeDb } from './helpers/node-db';
+import type { PullResponse, PulledRow } from '../src/lib/sync/types';
 
 vi.mock('expo-crypto', () => ({ getRandomBytes: (n: number) => new Uint8Array(n).fill(7) }));
 vi.mock('../src/lib/db/repos/open-native', () => ({
@@ -22,6 +23,8 @@ vi.mock('../src/lib/db/repos/open-native', () => ({
 
 const store = await import('../src/lib/store');
 const { takeOwnership } = await import('../src/lib/sync/ownership');
+const { applyPullPage } = await import('../src/lib/sync/merge');
+const entries = await import('../src/lib/db/repos/entries');
 
 const MAMA = '11111111-1111-1111-1111-111111111111';
 let close: () => void = () => {};
@@ -111,6 +114,70 @@ describe('[BL-413, constitution] a saved letter can be edited, and every edit ca
     store.putBackLetterEdit(id, store.letterAuthorEdits(id)!.edits[0]);
     stop();
     expect(told).toBe(2);
+  });
+});
+
+describe('[BL-413] words from outside the letter page let the author\'s base go', () => {
+  const base = (id: string) => raw.get<{ author_base: string | null }>('SELECT author_base FROM entries WHERE id = ?', id)?.author_base;
+  const OTHER = 'Asha, you danced in the rain.';
+  const pulled = (id: string, finalText: string): PullResponse => {
+    const childId = store.getEntry(id)!.childId!;
+    const row: PulledRow = {
+      id, child_id: childId, author_id: MAMA, author_signs_as: 'Mama', kind: 'letter', occurred_on: '2026-08-20',
+      captured_at: now(), capture_mode: 'typed', edit_level: 'clean', prompt_key: null, final_text: finalText, in_book: true,
+      sounds_like_me: null, approval: 'approved', audio_kept_on_device: false, created_at: now(), updated_at: now(), deleted_at: null,
+      own: true, v: '200', raw_transcript: SAID,
+    };
+    return {
+      reset: false, epoch: 1, epoch_started_at: now(), gone: [],
+      books: [{
+        id: childId, access: 'parent', repull: false, meta_hash: 'h1', rows: [row], cursor: '200:00000000-0000-0000-0000-000000000000', more: false,
+        meta: {
+          role: 'parent', name: 'Asha', nickname: null, date_of_birth: '2026-03-13', birthday_md: '03-13', due_date: null, family_can_read: false,
+          created_by_me: true, my_signs_as: 'Mama', include_in_reminders: true,
+          members: [{ profile_id: MAMA, role: 'parent', is_me: true, joined_at: now(), signs_as: null }],
+        },
+      }],
+    };
+  };
+  const pull = (id: string, finalText: string) => {
+    raw.run("INSERT OR REPLACE INTO settings (key, value) VALUES ('sync.ownerId', ?)", MAMA);
+    raw.transaction(() => applyPullPage(raw, pulled(id, finalText), now()));
+  };
+
+  it('a pull with other words: the letter takes them, and there is nothing of this person\'s to put back', () => {
+    const id = keep();
+    store.changeLetterWords(id, 'Asha, you laughed at the rain.');
+    expect(base(id)).toBe(KEPT);
+    pull(id, OTHER);
+    expect(store.getEntry(id)?.finalText).toBe(OTHER);
+    expect(base(id)).toBeNull();
+    expect(store.letterAuthorEdits(id)).toBeNull();
+  });
+
+  it('control: a pull with the same words keeps the base and the change rows', () => {
+    const id = keep();
+    store.changeLetterWords(id, 'Asha, you laughed at the rain.');
+    pull(id, 'Asha, you laughed at the rain.');
+    expect(base(id)).toBe(KEPT);
+    expect(store.letterAuthorEdits(id)?.edits).toHaveLength(1);
+  });
+
+  it('a conflict choice (replaceWords) with other words lets the base go; the same words keep it', () => {
+    const id = keep();
+    store.changeLetterWords(id, 'Asha, you laughed at the rain.');
+    const c = { db: raw, now, newId };
+    expect(entries.replaceWords(c, id, { final_text: 'Asha, you laughed at the rain.', machine_edits: [], edit_level: 'clean' })).toBe(true);
+    expect(base(id)).toBe(KEPT);
+    expect(entries.replaceWords(c, id, { final_text: OTHER, machine_edits: [], edit_level: 'clean' })).toBe(true);
+    expect(base(id)).toBeNull();
+  });
+
+  it('every sync writer of final_text carries the same rule (the push answer and the queued-ops pull use takeWords)', () => {
+    const src = readFileSync(join(__dirname, '../src/lib/sync/merge.ts'), 'utf8');
+    const writers = src.match(/UPDATE entries SET[^`']*?final_text = \?/g) ?? [];
+    expect(writers.length).toBeGreaterThanOrEqual(2);
+    for (const w of writers) expect(w).toContain('${KEEP_BASE_IF_SAME_WORDS}');
   });
 });
 
