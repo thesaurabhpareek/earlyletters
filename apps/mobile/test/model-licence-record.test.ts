@@ -2,8 +2,8 @@
  * [FR-AIS-09] [FR-AIS-10] Every model file the phone can download has a
  * licence record, and the record agrees with the catalog. BL-1357.
  *
- * The record is markdown at `MODEL_LICENCE_RECORD_PATH`. It sits under
- * docs/ops/proposed/ until the exec review (D-172); moving it to
+ * The record is markdown at `MODEL_LICENCE_RECORD_PATH` (test/helpers/licence-records.ts).
+ * It sits under docs/ops/proposed/ until the exec review (D-172); moving it to
  * docs/legal/model-licences.md changes that one constant and nothing else.
  *
  * Failure modes this guards: a model added to `catalog.ts` as default or
@@ -15,10 +15,11 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { MODEL_LICENCE_RECORD_PATH, parseModelLicenceRecords, type ModelLicenceRecords } from './helpers/licence-records';
 import { SPEECH_MODELS, type SpeechModel } from '../src/lib/models/catalog';
 
-/** Repo-relative path of the licence record. The one line to change when the file moves to docs/legal/. */
-export const MODEL_LICENCE_RECORD_PATH = 'docs/ops/proposed/model-licences.md';
+/** Repo-relative path of the licence record (test/helpers/licence-records.ts, the one line to change when the file moves to docs/legal/). */
+export { MODEL_LICENCE_RECORD_PATH };
 
 const ROOT = join(__dirname, '..', '..', '..');
 
@@ -41,32 +42,10 @@ export const RECORD_FIELDS = [
 ] as const;
 
 type ModelFacts = Pick<SpeechModel, 'id' | 'bytes' | 'sha256' | 'licence' | 'status' | 'source'>;
-export type LicenceRecords = Map<string, Map<string, string>>;
+export type LicenceRecords = ModelLicenceRecords;
 
-/** Records keyed by catalog id: one `## <id>` heading, then a `| Field | Value |` table. */
-export function parseLicenceRecords(markdown: string): LicenceRecords {
-  const records: LicenceRecords = new Map();
-  let current: Map<string, string> | null = null;
-  for (const line of markdown.split('\n')) {
-    const heading = /^## (speech-model\.\S+)\s*$/.exec(line);
-    if (heading) {
-      current = new Map();
-      records.set(heading[1], current);
-      continue;
-    }
-    if (line.startsWith('## ')) {
-      current = null;
-      continue;
-    }
-    if (!current || !line.startsWith('|')) continue;
-    const cells = line.trim().slice(1, -1).split('|');
-    const field = cells[0].trim();
-    const value = cells.slice(1).join('|').trim();
-    if (field === 'Field' || /^-+$/.test(field)) continue;
-    current.set(field, value);
-  }
-  return records;
-}
+/** Records keyed by catalog id; the parser lives in test/helpers/licence-records.ts, which FR-LEG-13's check (test/licences.test.ts) shares. */
+export const parseLicenceRecords: (markdown: string) => LicenceRecords = parseModelLicenceRecords;
 
 const leadingLicence = (s: string) => /^([A-Za-z0-9.-]+)/.exec(s)?.[1] ?? '';
 
