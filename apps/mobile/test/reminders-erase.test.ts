@@ -106,6 +106,15 @@ describe('[DATA-REQ-024] Erase everything forgets our reminders and any failure 
     expect(seen).toEqual([true]);
   });
 
+  it('a reminder ours by id alone (no data) or by data alone (another id) goes too, scheduled or delivered', async () => {
+    const note = (identifier: string, data?: unknown) => ({ identifier, content: data === undefined ? {} : { data } });
+    const notes = [note('el.month.2026-10-01'), note('older-note', { source: REMINDER_SOURCE, kind: 'monthAge' }), note('other.app', { source: 'someone.else' })];
+    for (const map of [os.scheduled, os.presented]) for (const n of notes) map.set(n.identifier, n);
+    await reminders.forgetReminders();
+    expect([...os.scheduled.keys()]).toEqual(['other.app']);
+    expect([...os.presented.keys()]).toEqual(['other.app']);
+  });
+
   it('with no failure before, the erase tells nobody anything and the result stays OK', async () => {
     const seen: boolean[] = [];
     const stop = reminders.subscribeScheduleResult((r) => seen.push(r.ok));

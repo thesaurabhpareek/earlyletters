@@ -19,13 +19,16 @@ const os = vi.hoisted(() => ({
 }));
 
 /** Makes one clean-up step throw, to prove the others still run (BL-2247). Off unless a test turns it on. */
-const fail = vi.hoisted(() => ({ deleteSetting: false, clearTypedDays: false }));
+const fail = vi.hoisted(() => ({ deleteSetting: false, clearTypedDays: false, thrown: 0 }));
 vi.mock('../src/lib/store', async (importOriginal) => {
   const real = await importOriginal<typeof import('../src/lib/store')>();
   return {
     ...real,
     deleteSetting: (key: string) => {
-      if (fail.deleteSetting) throw new Error('store closed');
+      if (fail.deleteSetting) {
+        fail.thrown += 1;
+        throw new Error('store closed');
+      }
       real.deleteSetting(key);
     },
   };
@@ -35,7 +38,10 @@ vi.mock('../src/lib/reminders/typed-days', async (importOriginal) => {
   return {
     ...real,
     clearTypedDays: () => {
-      if (fail.clearTypedDays) throw new Error('store closed');
+      if (fail.clearTypedDays) {
+        fail.thrown += 1;
+        throw new Error('store closed');
+      }
       real.clearTypedDays();
     },
   };
@@ -181,6 +187,7 @@ describe('[NS-13-R14] sign out removes reminders (real store and scheduler)', ()
   beforeEach(() => {
     fail.deleteSetting = false;
     fail.clearTypedDays = false;
+    fail.thrown = 0;
     os.scheduled.clear();
     os.presented.clear();
     store.closeStore();
@@ -243,6 +250,7 @@ describe('[NS-13-R14] sign out removes reminders (real store and scheduler)', ()
     store.setSetting('typedDay.2026-10-20', 'Nursery starts'); // after the plan, so no sweep takes it first
     fail.deleteSetting = true;
     await reminders.endReminderSession();
+    expect(fail.thrown).toBe(1); // the first key threw, so the settings clear stopped there
     expect(store.settingKeysWithPrefix('typedDay.')).toEqual([]);
     expect(os.scheduled.size).toBe(0);
   });
@@ -251,8 +259,11 @@ describe('[NS-13-R14] sign out removes reminders (real store and scheduler)', ()
     reminders.writePrefs({ enabled: true, cadence: 'everyEvening', namesOnLockScreen: true });
     await reminders.rescheduleReminders();
     expect(os.scheduled.size).toBeGreaterThan(0);
+    store.setSetting('typedDay.2026-10-20', 'Nursery starts');
     fail.clearTypedDays = true;
     await reminders.endReminderSession();
+    expect(fail.thrown).toBe(1);
+    expect(store.settingKeysWithPrefix('typedDay.')).toEqual(['typedDay.2026-10-20']); // the clear really failed
     for (const key of reminders.REMINDER_SETTING_KEYS) expect(store.getSetting(key), key).toBeNull();
     expect(os.scheduled.size).toBe(0);
   });
