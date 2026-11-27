@@ -12,7 +12,8 @@
  *   layer mounts `PrivacyCover`, and no file but the root layout mounts `AppLockLayer`, which it does once.
  * - PC-T6: the drawn cover holds no text and one spoken label, the app name, in the light and dark themes, each with
  *   and without Increase Contrast.
- * - PC-T8: the rule's source holds only a closed list of words and strings, so no call of any kind can be added.
+ * - PC-T8: the rule's source holds only a closed list of words and strings and one `(` (its own parameter list), so
+ *   no call can be added without this test changing.
  *
  * Not proved here: the pixels iOS captures for the switcher, and whether the cover hides Apple's picker view; those
  * are the device rows D-15 (the tab body, gap G-12 in docs/security/MEDIA_THREAT_MODEL.md), D-20 and DM-09 (the
@@ -101,7 +102,13 @@ vi.mock('@/components/ui/toast', () => ({ useToast: () => ({ show: () => {} }) }
 vi.mock('@/lib/a11y', () => ({
   useFocusOnMount: () => {},
   useTheme: () => ({
-    c: env.theme.scheme === 'dark' ? { bg: '#000', text: '#fff' } : { bg: '#fff', text: '#000' },
+    // A different palette for each scheme and Increase Contrast setting, as the real paletteFor(scheme, highContrast).
+    c: {
+      'light/false': { bg: '#fff', text: '#000' },
+      'light/true': { bg: '#ffffff', text: '#000000' },
+      'dark/false': { bg: '#000', text: '#fff' },
+      'dark/true': { bg: '#000000', text: '#ffffff' },
+    }[`${env.theme.scheme}/${env.theme.highContrast}`],
     scheme: env.theme.scheme,
     highContrast: env.theme.highContrast,
     reduceTransparency: false,
@@ -213,16 +220,20 @@ describe('[NS-53-G01] PC-T3, PC-T6: one cover, never two, with Moments focused',
     // above reads them) says the app name, once, and nothing else (no day, place or name).
     expect([...html.matchAll(/\b[\w-]*label="([^"]*)"/gi)].map((m) => m[1])).toEqual([appLockCopy.coverLabel]);
     // The same in the dark theme and with Increase Contrast, in each scheme: one cover, no text, the app name alone.
-    for (const scheme of ['light', 'dark'] as const) {
-      for (const highContrast of [false, true]) {
-        env.theme = { scheme, highContrast };
-        const themed = draw();
-        expect(themed.match(COVER), `${scheme}, high contrast ${highContrast}`).toHaveLength(1);
-        expect(themed.replace(/<[^>]*>/g, '')).toBe('');
-        expect([...themed.matchAll(/\b[\w-]*label="([^"]*)"/gi)].map((m) => m[1])).toEqual([appLockCopy.coverLabel]);
+    const eachTheme = (phase: string) => {
+      for (const scheme of ['light', 'dark'] as const) {
+        for (const highContrast of [false, true]) {
+          env.theme = { scheme, highContrast };
+          const themed = draw();
+          expect(themed.match(COVER), `${phase}, ${scheme}, high contrast ${highContrast}`).toHaveLength(1);
+          expect(themed.replace(/<[^>]*>/g, '')).toBe('');
+          expect(themed).not.toContain('Asha');
+          expect([...themed.matchAll(/\b[\w-]*label="([^"]*)"/gi)].map((m) => m[1])).toEqual([appLockCopy.coverLabel]);
+        }
       }
-    }
-    env.theme = { scheme: 'light', highContrast: false };
+      env.theme = { scheme: 'light', highContrast: false };
+    };
+    eachTheme('inactive');
     env.appState!('active');
     expect(draw()).not.toMatch(COVER);
 
@@ -230,6 +241,7 @@ describe('[NS-53-G01] PC-T3, PC-T6: one cover, never two, with Moments focused',
     expect(shouldCoverMoments('moments', 'background', false)).toBe(true);
     env.appState!('background');
     expect(draw().match(COVER)).toHaveLength(1);
+    eachTheme('background'); // the moment iOS takes the snapshot: the same checks in every theme
     env.appState!('active');
     expect(draw()).not.toMatch(COVER);
 
@@ -281,13 +293,35 @@ describe('[NS-53-G01] PC-T8 and the boundary with App lock', () => {
     const src = readFileSync(resolve(__dirname, '../src/lib/moments/cover.ts'), 'utf8');
     const importLines = src.split('\n').filter((l) => /^\s*(?:import|export)\b[^=]*\bfrom\b|^\s*import\s*['"(]/.test(l));
     expect(importLines).toEqual(["import type { AppPhase } from '../app-lock/machine';"]); // one type-only import, no side-effect import
-    const code = src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/[^\n]*/g, ' ');
+    // Comments are removed by a pass that steps over string literals, so `//` or `/*` inside a string cannot hide the
+    // code after it from the checks below.
+    let code = '';
+    for (let i = 0; i < src.length; ) {
+      const q = src[i];
+      if (src.startsWith('//', i)) {
+        while (i < src.length && src[i] !== '\n') i++;
+      } else if (src.startsWith('/*', i)) {
+        const end = src.indexOf('*/', i + 2);
+        i = end < 0 ? src.length : end + 2;
+        code += ' ';
+      } else if (q === "'" || q === '"' || q === '`') {
+        let j = i + 1;
+        while (j < src.length && src[j] !== q && src[j] !== '\n') j += src[j] === '\\' ? 2 : 1;
+        code += src.slice(i, j + 1);
+        i = j + 1;
+      } else {
+        code += q;
+        i++;
+      }
+    }
     expect(code).not.toMatch(/\bfetch\s*\(|\bAppState\b|\bReact\b/);
     expect(src).not.toMatch(/console\.|track\(|analytics\.|logger/);
     expect(src).not.toMatch(/\bimport\s*\(|\brequire\s*\(|setSetting|getSetting/); // no dynamic import or store call either
     // A closed list of every word and string the code may hold (comments removed), so a multi-line import, `fetch?.(`,
-    // `XMLHttpRequest`, `navigator.sendBeacon`, `console['log']` or any other call cannot get in without this list
-    // changing in the same PR. No template literal or backslash escape either.
+    // `XMLHttpRequest`, `navigator.sendBeacon` or `console['log']` cannot get in without this list changing in the
+    // same PR. No template literal or backslash escape either. The code holds one `(`, the function's own parameter
+    // list, so no call can be added even with words already on the list, and `from` once, so a second module
+    // reference over several lines fails too.
     expect(code).not.toMatch(/[`\\]/);
     const strings = [...code.matchAll(/'([^'\n]*)'|"([^"\n]*)"/g)].map((m) => m[1] ?? m[2]);
     expect([...new Set(strings)].sort()).toEqual(['../app-lock/machine', 'active', 'background', 'inactive', 'moments', 'none', 'other']);
@@ -299,6 +333,9 @@ describe('[NS-53-G01] PC-T8 and the boundary with App lock', () => {
       ].sort(),
     );
     expect(words.filter((w) => w === 'import')).toHaveLength(1);
+    expect(words.filter((w) => w === 'from')).toHaveLength(1);
+    expect(code.match(/\(/g)).toHaveLength(1);
+    expect(code).toMatch(/\bfunction shouldCoverMoments\(/);
   });
 
   it('App lock never reads the Moments rule (machine, controller and layer do not import it)', () => {
