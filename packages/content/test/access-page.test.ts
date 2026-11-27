@@ -148,7 +148,7 @@ describe('the access page', () => {
     expect(accessConflicts(planted, policies.map(change))).toEqual([]);
     // Changing only docs/legal is not enough while the published site policy still promises founder-only access.
     const draftOnly = policies.map((p) => (p.file.startsWith('docs/legal/') ? change(p) : p));
-    expect(accessConflicts(planted, draftOnly)).toEqual([expect.stringMatching(/apps\/web\/content\/legal\/privacy\/0\.9\.0\.md says only the founder/)]);
+    expect(accessConflicts(planted, draftOnly)).toEqual([expect.stringMatching(/apps\/web\/content\/legal\/privacy\/\d+\.\d+\.\d+\.md says only the founder/)]);
   });
 
   it('[FR-BKO-01] fails closed when the production access list is missing or empty', () => {

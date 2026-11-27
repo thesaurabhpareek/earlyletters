@@ -11,7 +11,7 @@
  * 4. a workflow that does not parse, or has no `jobs:` mapping of job mappings, reported as `unparsed`.
  *
  * Reading the parsed document instead of lines closes the layout tricks a line reader misses: anchors, aliases
- * and merge keys are resolved into every job that uses them, quoted and flow-style job keys are ordinary keys, and
+ * are resolved into every job that uses them (a merge key, which GitHub does not support, is unparsed), quoted and flow-style job keys are ordinary keys, and
  * a quoted scalar that runs over several lines stays one value. Secret reads are found inside `${{ }}` in every
  * string, keys included, wherever it sits (GitHub expands expressions inside block scalars such as `prompt: |`).
  * An expression ends at the first `}}` outside a single-quoted string, as GitHub's reader does. Names match in any
@@ -39,10 +39,11 @@ export const AGENT_WORKFLOWS = ['agents.yml', 'claude.yml'];
 
 /**
  * A job runs an agent engine: Anthropic's actions, the npm or Python packages, the native installer, OpenCode, or
- * `claude` as a command word (at the start of a line or after `;`, `&`, `|`, `(` or `$(`, whatever flags follow).
+ * `claude` as a word anywhere in the job's strings (behind `sudo`, `timeout`, `env`, a path or a quote, and even in
+ * a step name or an echo: a false alarm here costs an edit, a miss costs a key).
  */
 const AGENT_STEP =
-  /anthropics\/claude-code-|@anthropic-ai\/claude-(?:code|agent-sdk)|claude[-_]agent[-_]sdk|claude\.ai\/install|\bopencode\b|(?:^|[\n;&|(]|\$\()[ \t]*(?:npx\s+(?:-y\s+)?)?claude(?=[ \t\n]|$)/i;
+  /anthropics\/claude-code-|@anthropic-ai\/claude-(?:code|agent-sdk)|claude[-_]agent[-_]sdk|claude\.ai\/install|\bopencode\b|(?:^|[\s`'"(/;&|{!=])claude(?=[\s`'";)|&}]|$)/i;
 
 /** GitHub's own token is not a stored secret. */
 const NOT_A_STORED_SECRET = new Set(['GITHUB_TOKEN']);
@@ -105,17 +106,29 @@ function hasLiteralEnvironment(env: unknown): boolean {
   return typeof name === 'string' && LITERAL_ENV.test(name);
 }
 
+/**
+ * True when the value holds only what a workflow can mean: plain objects, arrays, strings, numbers, booleans and
+ * null. A tagged collection (`!!omap`, `!!set`) becomes a Map or Set, and a timestamp a Date, which the string
+ * walk would skip; a merge key `<<` is one GitHub does not support. Each makes the workflow unparsed, never passed.
+ */
+function plainOnly(value: unknown): boolean {
+  if (value === null || ['string', 'number', 'boolean'].includes(typeof value)) return true;
+  if (Array.isArray(value)) return value.every(plainOnly);
+  if (typeof value !== 'object' || Object.getPrototypeOf(value) !== Object.prototype) return false;
+  return Object.entries(value as Record<string, unknown>).every(([k, v]) => k !== '<<' && plainOnly(v));
+}
+
 /** The parsed workflow, or null when it does not parse cleanly or has no `jobs:` mapping of job mappings. */
 export function parse(workflow: string): { root: Record<string, unknown>; jobs: Record<string, Record<string, unknown>> } | null {
   let root: unknown;
   try {
-    const doc = parseDocument(workflow, { uniqueKeys: true, merge: true, prettyErrors: false });
+    const doc = parseDocument(workflow, { uniqueKeys: true, merge: false, prettyErrors: false });
     if (doc.errors.length || doc.warnings.length) return null;
     root = doc.toJS({ maxAliasCount: 100 });
   } catch {
     return null;
   }
-  if (!isMap(root) || !isMap(root.jobs)) return null;
+  if (!plainOnly(root) || !isMap(root) || !isMap(root.jobs)) return null;
   const jobs = root.jobs as Record<string, unknown>;
   if (!Object.keys(jobs).length || !Object.values(jobs).every(isMap)) return null;
   return { root, jobs: jobs as Record<string, Record<string, unknown>> };

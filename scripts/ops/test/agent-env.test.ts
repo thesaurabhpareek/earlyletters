@@ -5,7 +5,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { AGENT_SECRET_ALLOWLIST, explain, expressionsIn, jobsOf, scanWorkflow } from '../lib/agent-env.ts';
 
 const DIR = new URL('../../../.github/workflows/', import.meta.url);
-const WORKFLOWS = readdirSync(DIR).filter((f) => /\.ya?ml$/.test(f)).sort();
+const WORKFLOWS = readdirSync(DIR).filter((f) => /\.ya?ml$/i.test(f)).sort();
 const read = (f: string) => readFileSync(new URL(f, DIR), 'utf8');
 const AGENTS = read('agents.yml');
 const SR = 'SUPABASE_SERVICE_ROLE_KEY';
@@ -128,7 +128,7 @@ Deno.test('[FR-BKO-21] anchors, aliases, merge keys, quoted keys and flow-style 
   const deploy = ['on: workflow_dispatch', 'jobs:', '  deploy:', '    runs-on: ubuntu-24.04', '    environment: db-production'];
   const cases: [string, string, string][] = [
     [[...deploy, '    env: &k', `      K: \${{ secrets.${SR} }}`, '    steps: [{run: echo}]', '  leak:', '    runs-on: ubuntu-24.04', '    env: *k', '    steps: [{run: echo}]'].join('\n'), 'leak', 'production-environment'],
-    [[...deploy, '    env: &k', `      K: \${{ secrets.${SR} }}`, '    steps: [{run: echo}]', '  leak:', '    runs-on: ubuntu-24.04', '    env:', '      <<: *k', '    steps: [{uses: anthropics/claude-code-action@v1}]'].join('\n'), 'leak', 'agent-allowlist'],
+    [[...deploy, '    env: &k', `      K: \${{ secrets.${SR} }}`, '    steps: [{run: echo}]', '  leak:', '    runs-on: ubuntu-24.04', '    env: {K2: *k}', '    steps: [{uses: anthropics/claude-code-action@v1}]'].join('\n'), 'leak', 'agent-allowlist'],
     [[...deploy, '    steps: [{run: echo}]', "  'leak':", '    runs-on: ubuntu-24.04', `    steps: [{run: "echo \${{ secrets.${SR} }}"}]`].join('\n'), 'leak', 'production-environment'],
     [[...deploy, '    steps: [{run: echo}]', `  leak: { runs-on: u, steps: [ { run: "echo \${{ secrets.${SR} }}" } ] }`].join('\n'), 'leak', 'production-environment'],
   ];
@@ -136,12 +136,12 @@ Deno.test('[FR-BKO-21] anchors, aliases, merge keys, quoted keys and flow-style 
 });
 
 Deno.test('[FR-BKO-21] a multi-line quoted scalar stays one value: no fake job, no fake environment', () => {
-  const fakeEnv = one(['    runs-on: "ubuntu-24.04', '      environment: db-production"'].slice(0), stepReading('      - run: echo', SR)).replace('    runs-on: ubuntu-24.04\n', '');
+  const fakeEnv = one(['    runs-on: "ubuntu-24.04', '      environment: db-production"'], stepReading('      - run: echo', SR)).replace('    runs-on: ubuntu-24.04\n', '');
   assert.deepEqual(scanWorkflow('x.yml', fakeEnv), [{ file: 'x.yml', job: 'push', rule: 'production-environment', secret: SR }]);
-  const fakeJob = one([], ['      - uses: anthropics/claude-code-action@v1', '        with:', '          prompt: "hello', '  fake:', '    environment: db-production', '    x: 1"', ...reads(SR)].join('\n'));
-  const found = scanWorkflow('x.yml', fakeJob);
-  assert.ok(found.length > 0, 'the read is not credited to a fake job with an environment');
-  assert.ok(found.every((f) => f.rule === 'unparsed' || f.job === 'push'));
+  const fakeJob = one([], ['      - uses: anthropics/claude-code-action@v1', '        with:', '          prompt: "hello', '            fake:', '              environment: db-production', '            x: 1"', ...reads(SR)].join('\n'));
+  assert.equal(jobsOf(fakeJob).length, 1, 'the quoted text parses and is not a job');
+  assert.deepEqual(scanWorkflow('x.yml', fakeJob), [{ file: 'x.yml', job: 'push', rule: 'agent-allowlist', secret: SR }]);
+  assert.deepEqual(scanWorkflow('x.yml', fakeJob.replace('db-production', `\${{ secrets.${SR} }}`)).length, 1, 'a read inside the quoted text counts');
 });
 
 Deno.test('[FR-BKO-21] what does not parse, or has no jobs, is reported as unparsed, not passed', () => {
@@ -154,6 +154,13 @@ Deno.test('[FR-BKO-21] what does not parse, or has no jobs, is reported as unpar
     ['on: workflow_dispatch', 'jobs:', '  deploy:', '    environment: db-production', ' leak:', '    runs-on: u', ''].join('\n'),
     ['on: push', 'jobs:', '  a:', '    runs-on: u', '  a:', '    runs-on: v', ''].join('\n'),
     one([], ['      - run: "echo', 'x"'].join('\n')),
+    one(['    env: !!set', `      ? \${{ secrets.${SR} }}`]),
+    one(['    env: !!omap', `      - K: \${{ secrets.${SR} }}`]),
+    one([], `      - run: !!omap\n        - a: \${{ secrets.${SR} }}`),
+    one(['    timeout-minutes: !foo 5']),
+    '%YAML 1.1\n---\n' + one(['    when: 2026-11-27']),
+    one(['    env: &k', '      A: b', '    defaults:', '      <<: *k']),
+    'on: push\njobs:\n  a:\n    runs-on: u\n---\nb: 1\n',
   ]) {
     assert.deepEqual(scanWorkflow('x.yml', wf), [{ file: 'x.yml', job: '*', rule: 'unparsed' }], wf);
   }
@@ -173,17 +180,31 @@ Deno.test('[FR-BKO-21] the agent engines make a job an agent job, wherever they 
     'run: |\n          curl -fsSL https://claude.ai/install.sh | bash\n          claude \\\n            --model opus \\\n            -p "fix it"',
     'run: cd app && claude --print hi',
     'run: curl -fsSL https://claude.ai/install.sh | bash',
+    'run: timeout 30m claude -p hi',
+    'run: CI=1 claude -p hi',
+    'run: sudo claude',
+    'run: if true; then claude -p hi; fi',
+    'run: echo `claude -p hi`',
+    `run: '"claude" -p hi'`,
+    'run: ~/.local/bin/claude -p hi',
+    'run: ./node_modules/.bin/claude -p hi',
+    'run: npm exec claude',
+    'run: "{ claude -p hi; }"',
   ]) {
     assert.deepEqual(scanWorkflow('x.yml', one([], stepReading(`      - ${step}`, 'EXPO_TOKEN'), 'helper')), [
       { file: 'x.yml', job: 'helper', rule: 'agent-allowlist', secret: 'EXPO_TOKEN' },
     ], step);
   }
-  assert.deepEqual(scanWorkflow('x.yml', one([], stepReading('      - run: echo "see the claude notes"', 'EXPO_TOKEN'), 'helper')), []);
+  assert.deepEqual(scanWorkflow('x.yml', one([], stepReading('      - run: echo claudette', 'EXPO_TOKEN'), 'helper')), [], 'a longer word is not the command');
 });
 
 Deno.test('[FR-BKO-21] an agent job that names an environment fails, even reading only allowlisted keys', () => {
   const wf = one(['    environment: db-production'], stepReading('      - uses: anthropics/claude-code-action@v1', 'ANTHROPIC_API_KEY'), 'run');
   assert.deepEqual(scanWorkflow('x.yml', wf), [{ file: 'x.yml', job: 'run', rule: 'agent-environment' }]);
+});
+
+Deno.test('[FR-BKO-21] a read in a mapping key counts', () => {
+  assert.deepEqual(scanWorkflow('agents.yml', plant(AGENTS, 'run', `\${{ secrets.${SR} }}: x`)), [{ file: 'agents.yml', job: 'run', rule: 'agent-allowlist', secret: SR }]);
 });
 
 Deno.test('[FR-BKO-21] the findings name the secret but never a value', () => {
