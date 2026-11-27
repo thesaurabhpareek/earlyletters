@@ -618,6 +618,12 @@ export const PulledRowSchema = v.object({
   /** `{child_id}/{author_id}/{entry_id}.<ext>` or null (photos are not in v1.0; the column exists). */
   photo_path: v.nullish(str),
   audio_kept_on_device: v.boolean(),
+  /**
+   * Firsts (BL-2143, 20261127100000): the parent's own mark and label, stored as typed; book_entries carries both.
+   * Optional so a pull from a database without that file (not yet applied by the founder) still parses.
+   */
+  first_mark: v.optional(v.boolean()),
+  first_label: v.nullish(str),
   created_at: str,
   updated_at: str,
   deleted_at: nullableStr,

@@ -2,6 +2,8 @@
 // and functions, in both default-grant worlds (harness.mjs DEFAULT_GRANTS). One list for access_matrix and
 // explicit_grants. A grant exists only where a code path uses it today; the migration header names each path.
 // S select, I insert, U update, D delete; nothing else (no TRUNCATE, REFERENCES, TRIGGER or MAINTAIN).
+// 20261127100000 (BL-2143) adds no object and no grant: entries.first_mark and first_label take the entries grants below, and
+// book_entries, recreated with the two columns, stays absent from this list (no client role reads it; definer code does).
 export const GRANTS = {
   anon: { policy_versions: 'S' },
   authenticated: { audio_blobs: 'S', child_member_prefs: 'SIU', child_members: 'S', deletion_requests: 'S', entries: 'SIU',

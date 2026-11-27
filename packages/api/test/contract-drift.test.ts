@@ -175,8 +175,12 @@ describe('[F16-REQ-028] the sync wire contract equals the SQL parser', () => {
 });
 
 describe('[F16-REQ-028] the pull row equals what sync_pull sends on own rows, field for field', () => {
-  /** Columns in the contract that develop's sync_pull does not send yet. None since 20261015030000 and 20261016000000. */
-  const PENDING_PULL_COLUMNS: string[] = [];
+  /**
+   * Columns in the contract that develop's sync_pull does not send yet on own rows. The Firsts pair (BL-2143,
+   * 20261127100000) reaches the other parent through book_entries; sending it on the author's own rows, for a second
+   * phone, is BL-968's sync_pull change.
+   */
+  const PENDING_PULL_COLUMNS: string[] = ['first_mark', 'first_label'];
   const pull = newestDefinition('sync_pull');
   const start = pull.indexOf('case when p.author_id = v_uid then');
   const end = pull.indexOf('else', start);

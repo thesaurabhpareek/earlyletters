@@ -21,7 +21,9 @@ for (const m of missing) console.log(`      unclassified: public.${m.rel}.${m.co
 check(`every public column has an L1 to L4 comment (${cols.length} columns)`, cols.length > 0 && missing.length === 0);
 
 // Content columns must be L4 (PRD 7.10): a rename or new copy cannot slip through as L2/L3.
-const mustBeL4 = ['raw_transcript', 'final_text', 'machine_edits', 'stt_meta', 'search', 'term', 'heard_as', 'raw_sha256', 'name', 'date_of_birth', 'due_date', 'nickname'];
+const mustBeL4 = ['raw_transcript', 'final_text', 'machine_edits', 'stt_meta', 'search', 'term', 'heard_as', 'raw_sha256', 'name', 'date_of_birth', 'due_date', 'nickname',
+  // 20261127100000 (BL-2143): the parent-typed label of a first is free text (NS-06 A10).
+  'first_label'];
 const weak = cols.filter((r) => mustBeL4.includes(r.col) && !['policy_documents', 'policy_versions'].includes(r.rel) && !/^L4\b/.test(r.comment ?? ''));
 for (const w of weak) console.log(`      content column below L4: public.${w.rel}.${w.col} (${w.comment})`);
 check('content, child identity and dictionary columns are L4', weak.length === 0);
