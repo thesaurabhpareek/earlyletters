@@ -14,20 +14,20 @@
     "audio": 5,
     "audio_missing": 2,
     "audio_mismatch": 1,
-    "photos": 0,
+    "photos": 1,
     "books": 2
   },
   "files": [
     {
       "path": "README.txt",
-      "bytes": 3275,
-      "sha256": "877639c73bdae0b52551613295f6eaf6c85a0960ef1e2209533912b65b954e4c",
+      "bytes": 3529,
+      "sha256": "2f18755fb4b945b5f4a989f93832b20492bf42bc014801cef4164368bf8fb1ba",
       "media_type": "text/plain; charset=utf-8"
     },
     {
       "path": "schema/export-v1.schema.json",
-      "bytes": 30398,
-      "sha256": "f131fb2ba3e69c3bec55649383841ebd24de8777e7988c573dfa85efbd42c1fe",
+      "bytes": 30416,
+      "sha256": "3108df221348bf9651a02e014583898de1fc39807eac9da6c4e973a7d2754807",
       "media_type": "application/json"
     },
     {
@@ -127,12 +127,6 @@
       "media_type": "text/plain; charset=utf-8"
     },
     {
-      "path": "index.html",
-      "bytes": 5887,
-      "sha256": "1105c208eaa101cd7e5190e39cab2aae9c74ea01e0c35601f228a922c9ce1b22",
-      "media_type": "text/html; charset=utf-8"
-    },
-    {
       "path": "audio/e2.m4a",
       "bytes": 4096,
       "sha256": "c54524468203b1760de2289c41bb3ed705168c3822e97380b040aa482d09871e",
@@ -163,6 +157,18 @@
       "media_type": "audio/mp4"
     },
     {
+      "path": "photos/e2/m-asha-0001.jpg",
+      "bytes": 140,
+      "sha256": "4ad816f085df83ff32998edb12ec8517713c79570183b796d4197292d23d1c30",
+      "media_type": "image/jpeg"
+    },
+    {
+      "path": "index.html",
+      "bytes": 6323,
+      "sha256": "a1889a15caa08a9c207913d34ee9288c00570cd3000b5d04cc9e00b4d916c533",
+      "media_type": "text/html; charset=utf-8"
+    },
+    {
       "path": "data/children.json",
       "bytes": 604,
       "sha256": "10777df679dfa7715ca4568e6bc0d9edb14794c36f7819405e710ba7268bee95",
@@ -170,8 +176,8 @@
     },
     {
       "path": "data/entries.json",
-      "bytes": 14950,
-      "sha256": "c9df969c8e74f98cd47044d0fe3180ab0df5d325e9f9b4ca400dd686b449655c",
+      "bytes": 15230,
+      "sha256": "622270535cbd39ca6c80f7d4bea147c5b405b30e586ccf9f95ea1a1c42670025",
       "media_type": "application/json"
     },
     {
