@@ -10,13 +10,16 @@
 # Two roles, one job. On a pull request it measures and compares with the BASE branch's baseline
 # (`measure.ts --check`; the 12 MB bytecode and 3 MB asset budgets fail with no waiver). On a push to develop it
 # measures, writes docs/ops/size-baseline.json in the runner only, and uploads it with the report as the artifact
-# size-baseline-<sha>; the baseline is committed from that artifact by a follow-up PR (size-gate.md, "Baseline").
+# size-baseline-<sha>-<attempt>; the baseline is committed from that artifact by a follow-up PR (size-gate.md, "Baseline").
 # It runs its own two exports (about 3 to 4 minutes, in parallel with the other jobs). It skips on the inert-docs
 # lane like the other heavy jobs (`needs.install.outputs.heavy`), and on pushes to main.
-# The PR body reaches the script only through the PR_BODY environment variable. The owner label is read from the
-# issue events (who applied it last), never from the body. The job only reads, so a fork PR's read-only token is
+# The PR body reaches the script only through the PR_BODY environment variable. The label is read from the issue
+# events (who applied it last), never from the body. Karma decides a growth and applies the label; the check proves
+# only that the repository owner's account applied it, and agent sessions act as that account, so it is not a second
+# person's review (size-gate.md, "Who applies the label"). The job only reads, so a fork PR's read-only token is
 # enough. Applying the label does not start a run (ci.yml listens to the default pull_request types): re-run this
-# job after the owner applies it.
+# job after the label. A re-run reads the PR body as it was at the push, so the Size-change: line goes in before
+# the last push.
   size-gate:
     name: size gate (bytecode, packages, dependencies)
     needs: install
@@ -26,6 +29,7 @@
     permissions:
       contents: read
       issues: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -38,7 +42,9 @@
           BASE_REF: ${{ github.base_ref }}
         run: git show "origin/$BASE_REF:docs/ops/size-baseline.json" > "$RUNNER_TEMP/base-baseline.json" || rm -f "$RUNNER_TEMP/base-baseline.json"
       # Events come oldest first and --jq runs once per page, so only the last matching line across all pages
-      # counts. Any error leaves approved=0 (fail closed).
+      # counts. Fail closed: the runner's default shell is `bash -e` with no pipefail, so without the set line
+      # below a gh error after an earlier page would leave tail's status 0 and that page's "labeled" line in
+      # `last`. With pipefail any gh error empties `last`, and approved=0.
       - name: Did the repository owner apply size:baseline-accepted?
         id: owner
         if: github.event_name == 'pull_request'
@@ -48,6 +54,7 @@
           PR: ${{ github.event.pull_request.number }}
           OWNER: ${{ github.repository_owner }}
         run: |
+          set -euo pipefail
           last="$(gh api --paginate "repos/$REPO/issues/$PR/events" --jq '.[] | select((.event == "labeled" or .event == "unlabeled") and .label.name == "size:baseline-accepted") | "\(.event) \(.actor.login)"' | tail -n 1)" || last=""
           if [ "$last" = "labeled $OWNER" ]; then approved=1; else approved=0; fi
           echo "approved=$approved" >> "$GITHUB_OUTPUT"
@@ -57,6 +64,7 @@
           PR_BODY: ${{ github.event.pull_request.body }}
           APPROVED: ${{ steps.owner.outputs.approved }}
         run: |
+          set -euo pipefail
           extra=""; [ "$APPROVED" = 1 ] && extra="--owner-approved"
           npx tsx scripts/size/measure.ts --check --base-baseline "$RUNNER_TEMP/base-baseline.json" $extra
       - name: Measure develop and write the baseline (in the runner, not committed)
@@ -67,7 +75,7 @@
         if: ${{ !cancelled() && github.event_name == 'push' }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: size-baseline-${{ github.sha }}
+          name: size-baseline-${{ github.sha }}-${{ github.run_attempt }}
           path: |
             docs/ops/size-baseline.json
             dist/size/report.md

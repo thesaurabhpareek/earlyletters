@@ -1,5 +1,7 @@
 /// <reference types="node" />
-import { existsSync, readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -100,17 +102,29 @@ describe('[D-065] hard budget in the gate', () => {
     expect(r.lines.join('\n')).toMatch(/FAIL bytecode 12\.0 MB is over its 12\.0 MB sub-budget \(no waiver\)/);
     expect(checkSize({ current: { ...over, hbcBytes: JS_BUNDLE_BUDGET_BYTES }, reference: null, body: '', baselineUpdated: false, ownerApproved: false }).pass).toBe(true);
   });
+
+  it('[D-065] a PR that crosses 12 MB from below fails even with the full relative waiver (Size-change line, updated baseline, owner label)', () => {
+    const below: Baseline = { commit: 'b'.repeat(40), hbcBytes: 11_800_000, hbcGzipBytes: 0, assetsBytes: 0, fontBytes: 0, dependencyCount: 1, owners: [] };
+    const crossed = { ...below, hbcBytes: JS_BUNDLE_BUDGET_BYTES + 1 };
+    const r = checkSize({ current: crossed, reference: below, body: 'Size-change: needed, platform', baselineUpdated: true, ownerApproved: true });
+    // The growth itself is waived (a notice), so this reaches the waiver branch: only the hard budget fails it.
+    expect(r.lines.join('\n')).toMatch(/notice: bytecode grew \d+ bytes .*accepted/);
+    expect(r.lines.join('\n')).toMatch(/FAIL bytecode 12\.0 MB is over its 12\.0 MB sub-budget \(no waiver\)/);
+    expect(r.pass).toBe(false);
+  });
 });
 
 // BL-2130: docs/ops/proposed/workflows/size-gate-step.yml is pasted into ci.yml by hand (agents cannot push
-// .github/). These tests paste it in memory at the point its header names and parse the result, so the text cannot
-// drift from ci.yml unseen. Once it is pasted for real, the commit that pastes it deletes the proposal file (as
-// docs/ops/proposed/workflows-retired.md asks of applied proposals) and the first test then checks ci.yml instead.
+// .github/). Before the paste, these tests paste it in memory at the point its header names and parse the result,
+// so the text cannot drift from ci.yml unseen. Once it is pasted for real, the commit that pastes it deletes the
+// proposal file (as docs/ops/proposed/workflows-retired.md asks of applied proposals), and the same assertions then
+// run on ci.yml's own size-gate job, so the paste cannot drop a property the proposal had.
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const CI = join(REPO, '.github/workflows/ci.yml');
 const STEP = join(REPO, 'docs/ops/proposed/workflows/size-gate-step.yml');
 const PASTE_BEFORE = '  required:';
-type Job = { needs?: string | string[]; if?: string; steps?: { uses?: string }[] };
+type Step = { name?: string; uses?: string; run?: string; with?: Record<string, unknown> };
+type Job = { needs?: string | string[]; if?: string; outputs?: Record<string, string>; steps?: Step[] };
 const jobsOf = (text: string) => (parseYaml(text) as { jobs: Record<string, Job> }).jobs;
 const needsOf = (j: Job) => (j.needs === undefined ? [] : Array.isArray(j.needs) ? j.needs : [j.needs]);
 const pasted = () => {
@@ -120,9 +134,12 @@ const pasted = () => {
   const step = readFileSync(STEP, 'utf8').replace(/\n+$/, '');
   return { ci, at, count: lines.filter((l) => l === PASTE_BEFORE).length, text: [...lines.slice(0, at), step, '', ...lines.slice(at)].join('\n') };
 };
+/** The jobs as they are once size-gate is in ci.yml: pasted in memory while the proposal exists, ci.yml itself after. */
+const gateJobs = () => (existsSync(STEP) ? jobsOf(pasted().text) : jobsOf(readFileSync(CI, 'utf8')));
+const OWNER_STEP = 'Did the repository owner apply size:baseline-accepted?';
 
 describe('[BL-2130] size-gate step text against ci.yml', () => {
-  it('[BL-2130] the step pastes before the "  required:" line of ci.yml as valid YAML, after seam-guard, and its needs: job exists', () => {
+  it('[BL-2130] the step pastes before the "  required:" line of ci.yml as valid YAML, after seam-guard, and changes no other job', () => {
     if (!existsSync(STEP)) {
       expect(jobsOf(readFileSync(CI, 'utf8'))['size-gate'], 'the proposal file is gone, so ci.yml must carry the pasted job').toBeDefined();
       return;
@@ -136,21 +153,57 @@ describe('[BL-2130] size-gate step text against ci.yml', () => {
     const names = Object.keys(after);
     expect(names.indexOf('size-gate')).toBe(names.indexOf('seam-guard') + 1);
     expect(names.indexOf('required')).toBe(names.indexOf('size-gate') + 1);
-    const gate = after['size-gate'];
-    expect(needsOf(gate)).toEqual(['install']);
-    for (const n of needsOf(gate)) expect(Object.keys(before), `needs: ${n} is a job of ci.yml`).toContain(n);
-    expect(gate.if).toContain("needs.install.outputs.heavy == 'true'");
-    expect(before.install, 'the heavy output the job reads').toMatchObject({ outputs: { heavy: expect.any(String) } });
     // The paste changes nothing else: every job that was there parses the same.
     for (const n of Object.keys(before)) expect(after[n]).toEqual(before[n]);
   });
 
-  it('[BL-2130] the pasted job stays advisory (not in required) and every action it uses is local or pinned to a 40-character sha', () => {
-    if (!existsSync(STEP)) return;
-    const gate = jobsOf(pasted().text)['size-gate'];
-    expect(needsOf(jobsOf(pasted().text).required)).not.toContain('size-gate');
-    const uses = (gate.steps ?? []).map((s) => s.uses).filter((u): u is string => !!u);
+  it('[BL-2130] the job needs install, reads its heavy output, runs on PRs and develop pushes, and stays advisory (before and after the paste)', () => {
+    const jobs = gateJobs();
+    const gate = jobs['size-gate'];
+    expect(needsOf(gate)).toEqual(['install']);
+    expect(jobs.install, 'needs: install is a job of ci.yml and has the heavy output the job reads').toMatchObject({ outputs: { heavy: expect.any(String) } });
+    expect(gate.if).toContain("needs.install.outputs.heavy == 'true'");
+    expect(gate.if).toContain("github.event_name == 'pull_request'");
+    expect(gate.if, 'the develop push run is the one that makes the baseline').toContain("github.ref == 'refs/heads/develop'");
+    expect(needsOf(jobs.required), 'advisory until Karma makes it required (that PR changes this line)').not.toContain('size-gate');
+  });
+
+  it('[BL-2130] every action is local or pinned to a 40-character sha, checkout keeps no token, and no run: script interpolates ${{ }}', () => {
+    const steps = gateJobs()['size-gate'].steps ?? [];
+    const uses = steps.map((s) => s.uses).filter((u): u is string => !!u);
     expect(uses.length).toBeGreaterThanOrEqual(3);
     for (const u of uses) expect(u).toMatch(/^(\.\/\S+|[\w.-]+\/[\w.-]+@[0-9a-f]{40})$/);
+    const checkout = steps.find((s) => s.uses?.startsWith('actions/checkout@'));
+    expect(checkout?.with?.['persist-credentials']).toBe(false);
+    // Event fields (the PR body above all) reach a script only through env:, never spliced into its text.
+    for (const s of steps) if (s.run) expect(s.run).not.toContain('${{');
+  });
+
+  it('[BL-2130] the owner-label step fails closed: a gh error after a printed "labeled" line gives approved=0', () => {
+    const step = (gateJobs()['size-gate'].steps ?? []).find((s) => s.name === OWNER_STEP);
+    expect(step?.run, `the step "${OWNER_STEP}" exists`).toBeDefined();
+    expect(step!.run!.split('\n')[0], 'the runner shell is bash -e with no pipefail, so the script sets it').toBe('set -euo pipefail');
+    const dir = mkdtempSync(join(tmpdir(), 'size-gate-'));
+    try {
+      const run = (ghBody: string) => {
+        writeFileSync(join(dir, 'gh'), `#!/usr/bin/env bash\n${ghBody}\n`);
+        chmodSync(join(dir, 'gh'), 0o755);
+        const out = join(dir, 'out');
+        writeFileSync(out, '');
+        // Same shell as the runner's default for a step with no shell: key (bash -e {0}).
+        const r = spawnSync('bash', ['-e', '-c', step!.run!], {
+          env: { PATH: `${dir}:${process.env.PATH ?? ''}`, GITHUB_OUTPUT: out, GH_TOKEN: 'x', REPO: 'o/r', PR: '1', OWNER: 'owner' },
+          encoding: 'utf8',
+        });
+        expect(r.status, r.stderr).toBe(0);
+        return readFileSync(out, 'utf8').trim();
+      };
+      expect(run('echo "labeled owner"')).toBe('approved=1');
+      expect(run('echo "labeled owner"; exit 1'), 'a later page failed: the earlier page must not count').toBe('approved=0');
+      expect(run('printf "labeled owner\\nunlabeled owner\\n"')).toBe('approved=0');
+      expect(run('echo "labeled someone-else"')).toBe('approved=0');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
