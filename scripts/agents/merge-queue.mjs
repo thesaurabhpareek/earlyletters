@@ -207,8 +207,12 @@ export function staleBase({ behindBy, prFiles, baseFiles }) {
 export const UNREADABLE = "(unreadable input)";
 /** Both names of a changed file: `filename`, and `previous_filename` for a rename. Null when the entry is not readable. */
 const namesOf = (f) => {
-  const names = typeof f === "string" ? [f] : [f?.filename, f?.previous_filename].filter((n) => n !== undefined && n !== null);
-  return names.length && names.every((n) => typeof n === "string" && n.length) ? names : null;
+  if (typeof f === "string") return f.length ? [f] : null;
+  // The new name is required: an entry with only an old name is unreadable, never an empty change (fail closed).
+  if (typeof f?.filename !== "string" || !f.filename.length) return null;
+  const old = f.previous_filename;
+  if (old === undefined || old === null) return [f.filename];
+  return typeof old === "string" && old.length ? [f.filename, old] : null;
 };
 
 /**
@@ -245,7 +249,7 @@ export const CR70_EXTRA_PATHS = [
   /(?:^|\/)claude\.md$/i, /^packages\/content\//, /^packages\/brand\//, /^packages\/analytics\//, /^docs\/analytics\//,
   /^agents\//, /^\.claude\//, /^apps\/mobile\/src\/lib\/db\//, /(?:^|\/)codeowners$/i, /^docs\/legal\//, /^apps\/web\/content\/legal\//,
   /^apps\/mobile\/src\/app\/settings\/(?:legal|privacy)\.tsx$/, /^docs\/decisions\.md$/i,
-  /^apps\/mobile\/src\/lib\/backup\//i, /^apps\/mobile\/src\/lib\/analytics\//i, /(?:^|\/)\.?well-known\//i, /^apps\/mobile\/src\/lib\//i, /^apps\/web\/src\/lib\//i, /^packages\/api\//i, /^apps\/mobile\/src\/components\/family\//i, /^apps\/mobile\/src\/components\/app-lock\//i, /^packages\/core\//i, /^apps\/mobile\/src\/dev\//i, /^apps\/mobile\/src\/app\/_layout\.tsx$/i, /^packs\//i, /^apps\/mobile\/storekit\//i, /^apps\/mobile\/shims\//i, /(?:^|\/)tsconfig[^/]*\.json$/i, /(?:^|\/)migrations[-_]applied(?:\/|\.txt$)/i, /^apps\/mobile\/src\/app\//i, /^apps\/web\/src\/app\//i, /^apps\/web\/src\/content\//i, /^packages\/emails\//i, /^scripts\//i, /(?:^|\/)\.gitignore$/i, /(?:^|\/)\.nvmrc$/i, /(?:^|\/)agents\.md$/i, /(?:^|\/)vitest[^/]*\.config\.[a-z]+$/i, /(?:^|\/)env\.d\.ts$/i, /^apps\/mobile\/web-preview\//i, /^licen[cs]e(?:\.[a-z]+)?$/i, /^apps\/mobile\/src\/components\/(?:onboarding|settings|child|account|auth|gate|consent|photos)\//i, /(?:^|\/)e2e(?:-web)?\/(?:scripts|bin|ci|kill|support)\//i, /(?:^|\/)e2e(?:-web)?\/[^/]*config[^/]*$/i, /(?:^|\/)playwright[^/]*\.config\.[a-z]+$/i, /(?:^|\/)(?:public|assets)\/(?![^?#]*\.(?:png|jpe?g|gif|webp|avif|svg|ico|ttf|otf|woff2?|mp3|m4a|wav|mp4|webm)$)/i,
+  /^apps\/mobile\/src\/lib\/backup\//i, /^apps\/mobile\/src\/lib\/analytics\//i, /(?:^|\/)\.?well-known\//i, /^apps\/mobile\/src\/lib\//i, /^apps\/web\/src\/lib\//i, /^packages\/api\//i, /^apps\/mobile\/src\/components\/family\//i, /^apps\/mobile\/src\/components\/app-lock\//i, /^packages\/core\//i, /^apps\/mobile\/src\/dev\//i, /^apps\/mobile\/src\/app\/_layout\.tsx$/i, /^packs\//i, /^apps\/mobile\/storekit\//i, /^apps\/mobile\/shims\//i, /(?:^|\/)tsconfig[^/]*\.json$/i, /(?:^|\/)migrations[-_]applied(?:\/|\.txt$)/i, /^apps\/mobile\/src\/app\//i, /^apps\/web\/src\/app\//i, /^apps\/web\/src\/content\//i, /^packages\/emails\//i, /^scripts\//i, /(?:^|\/)\.gitignore$/i, /(?:^|\/)\.nvmrc$/i, /(?:^|\/)agents\.md$/i, /(?:^|\/)vitest[^/]*\.config\.[a-z]+$/i, /(?:^|\/)env\.d\.ts$/i, /^apps\/mobile\/web-preview\//i, /^licen[cs]e(?:\.[a-z]+)?$/i, /^apps\/mobile\/src\/components\/(?:onboarding|settings|child|account|auth|gate|consent|photos)\//i, /(?:^|\/)e2e(?:-web)?\/(?:scripts|bin|ci|kill|support)\//i, /(?:^|\/)e2e(?:-web)?\/[^/]*config[^/]*$/i, /(?:^|\/)e2e\/(?:flows|subflows)\//i, /^experiments\//i, /^docs\/store\/(?:compliance|listing)\//i, /(?:^|\/)playwright[^/]*\.config\.[a-z]+$/i, /(?:^|\/)(?:public|assets)\/(?![^?#]*\.(?:png|jpe?g|gif|webp|avif|svg|ico|ttf|otf|woff2?|mp3|m4a|wav|mp4|webm)$)/i,
   /^apps\/mobile\/src\/app\/invite\//i, /^apps\/web\/src\/app\/j\//i, /^docs\/ops\/backup\//i, /(?:^|\/)\.git(?:modules|attributes)$/i,
   /^docs\/ops\/proposed\/standing-merge-delegation-decision\.md$/i,
   /auth|sign[-_]?in|sign[-_]?out|sign[-_]?up|log[-_]?in|log[-_]?out|session|token|vault|account|delet|erase|wipe|purge|forget|recover|restore|export|backup|invite|native-intent|deep[-_]?link|app[-_]?lock|biometric|face[-_]?id|password|secret|cred|jwt|crypt|key|agreement|age[-_]?gate|integrity|canonical|signature|signed|verif|hmac|unsubscribe|rate[-_]?limit|same[-_]?origin|unlock|passcode|hash|nonce|sso|mfa|totp|permission|role|admin|rls|csrf|cors|escrow|owner|presign|cookie|trust|identity|middleware|magic|otp|keychain|secure[-_]?stor|passkey|billing|payment|purchase|subscription|paywall|entitlement|iap|plus|security|supabase|privacy|terms|legal|consent|allow[-_]?list|deny[-_]?list|block[-_]?list/i,

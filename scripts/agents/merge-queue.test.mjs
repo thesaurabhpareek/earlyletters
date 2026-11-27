@@ -894,14 +894,14 @@ test("CR-149 rule 4 (fail closed by default): every tracked file the rule misses
   // The protected list is a deny list. This walks the real tree: a tracked file that gets no hit must be docs, a test,
   // a media asset, a UI component outside the protected folders, an experiment or one of the few named safe files.
   // A new file anywhere else fails here until someone adds it to the protected list or, after review, to SAFE.
-  const SAFE = [/^docs\//, /(?:^|\/)(?:test|tests|__tests__|fixtures)\//, /\.test\.[a-z]+$/, /(?:^|\/)e2e(?:-web)?\/(?:flows|subflows)\//, /(?:^|\/)e2e(?:-web)?\/[^/]*\.(?:flow\.ts|md|txt)$/, /\.e2e\.ts$/,
+  const SAFE = [/^docs\//, /(?:^|\/)(?:test|tests|__tests__|fixtures)\//, /\.test\.[a-z]+$/, /(?:^|\/)e2e-web\/(?:flows|subflows)\//, /(?:^|\/)e2e-web\/[^/]*\.flow\.ts$/, /(?:^|\/)e2e(?:-web)?\/[^/]*\.(?:md|txt)$/, /\.e2e\.ts$/,
     /^apps\/mobile\/src\/components\/(?:asks|book|capture|content-blocks|find|language|motion|platform|player|resilience|speech|tonight|ui)\//,
     /^apps\/web\/src\/(?:components|scenes|film)\//, /(?:^|\/)(?:assets|public)\/[^?#]*\.(?:png|jpe?g|gif|webp|avif|svg|ico|ttf|otf|woff2?|mp3|m4a|wav|mp4|webm)$/i,
-    /^experiments\//, /(?:^|\/)readme\.md$/i,
+    /(?:^|\/)readme\.md$/i,
     /^apps\/mobile\/components\.json$/, /^apps\/mobile\/src\/generated\/licences\.json$/, /^apps\/mobile\/src\/global\.css$/, /^apps\/mobile\/src\/uniwind-types\.d\.ts$/];
   // Pin SAFE itself: a widened entry would let these unprotected-by-name paths through unseen.
   for (const p of ["apps/mobile/src/newthing/x.ts", "packages/newpkg/src/x.ts", "apps/web/public/sw.js", "apps/web/public/_headers",
-    "apps/mobile/e2e/scripts/reset-prod.js", "apps/mobile/e2e/newdir/x.js", "apps/mobile/src/components/handover/x.tsx", "apps/mobile/src/components/onboarding/x.tsx", "apps/mobile/src/components/settings/x.ts", "apps/mobile/assets/x.json", "x.ts"]) {
+    "apps/mobile/e2e/scripts/reset-prod.js", "apps/mobile/e2e/newdir/x.js", "apps/mobile/src/components/handover/x.tsx", "apps/mobile/src/components/onboarding/x.tsx", "apps/mobile/src/components/settings/x.ts", "apps/mobile/assets/x.json", "x.ts", "apps/web/src/newdir/x.ts", "apps/mobile/e2e/seed.js", "apps/mobile/e2e/flows/E2E-02.yaml", "experiments/x.ts"]) {
     assert.ok(!SAFE.some((re) => re.test(p)), `SAFE must not admit ${p}`);
   }
   const owners = readFileSync(new URL("../../.github/CODEOWNERS", import.meta.url), "utf8");
@@ -917,7 +917,7 @@ test("CR-149 rule 4 and CR-70 (Review B, fifth pass): e2e scripts, sign-in and b
     "apps/web/e2e/playwright.config.ts", "apps/mobile/e2e/config.yaml", "apps/mobile/src/components/onboarding/new-phone-screens.tsx", "apps/mobile/src/components/onboarding/outage-screen.tsx",
     "apps/mobile/src/components/onboarding/region-refused-screen.tsx", "apps/mobile/src/components/onboarding/handover.tsx",
     "apps/mobile/src/components/settings/plan.logic.ts", "apps/mobile/src/components/child/child-store.ts", "docs/ops/action-pins-allowlist.txt",
-    "docs/qa/skip-allowlist.json", "apps/web/public/sw.js", "apps/web/public/_headers", "apps/web/public/export-format/v1.schema.json"]) {
+    "docs/qa/skip-allowlist.json", "docs/ops/deny-list.txt", "docs/ops/block_list.txt", "apps/mobile/e2e/flows/E2E-02-first-run.yaml", "apps/mobile/e2e/subflows/go-back.yaml", "experiments/edit-compare.ts", "experiments/setup.sh", "docs/store/compliance/data-safety-google-play.md", "docs/store/listing/en-GB.md", "apps/web/public/sw.js", "apps/web/public/_headers", "apps/web/public/export-format/v1.schema.json"]) {
     assert.ok(rulesFor(p).includes("CR-70 path"), p);
   }
   for (const p of ["apps/web/public/og/card.png", "apps/mobile/assets/fonts/x.woff2"]) assert.ok(!rulesFor(p).includes("CR-70 path"), p);
@@ -925,7 +925,16 @@ test("CR-149 rule 4 and CR-70 (Review B, fifth pass): e2e scripts, sign-in and b
 
 test("CR-70: folders that CODEOWNERS also names are protected by the code list too, so a trimmed CODEOWNERS cannot drop them", () => {
   const minimal = "*  @owner\ndocs/zzz-unused.md  @owner\n";
-  for (const p of ["packages/content/src/x.ts", "packages/brand/tokens.json", "docs/analytics/events.md", "agents/cto.md", ".claude/settings.json"]) {
+  for (const p of ["packages/content/src/x.ts", "packages/brand/colors.json", "docs/analytics/events.md", "agents/cto.md", ".claude/settings.json"]) {
     assert.ok(rulesFor(p, [p], minimal).includes("CR-70 path"), p);
   }
+});
+
+test("CR-149 rule 1 and 4: an entry with only an old name, or a blank or non-string name, is unreadable, never an empty change", () => {
+  for (const f of [{ previous_filename: "docs/a.md" }, { filename: null, previous_filename: "docs/a.md" }, { filename: "", previous_filename: "docs/a.md" },
+    { filename: "docs/a.md", previous_filename: "" }, { filename: "docs/a.md", previous_filename: 7 }, ""]) {
+    assert.ok(touchesProtectedPath([f], CODEOWNERS), JSON.stringify(f));
+    assert.equal(classifyPr([f]), "source", JSON.stringify(f));
+  }
+  assert.deepEqual(rulesFor("docs/a.md", [{ filename: "docs/a.md", previous_filename: null }]), []);
 });
