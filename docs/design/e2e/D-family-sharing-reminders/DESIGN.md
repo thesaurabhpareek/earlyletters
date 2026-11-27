@@ -144,9 +144,9 @@ Each journey lists the screens it walks. Every row of each card's "Unhappy paths
 
 **J-D20 Add a day.**
 1. Me, Days (C-S24, reached from the row "Days" on Reminders or in Me), section "Days you added", row "Add a day" (v2: the flow is drawn here as D-S08 and reused by C-S24).
-2. D-S08 opens: Date (system compact date picker; today only while its reminder time is ahead, G-D10), "Your words" field (1 to 80 graphemes, any script, writing tools off), a live preview (NotificationPreview) showing what the lock screen will show under the one day-names switch on C-S24 (the fixed line by default, the words when that switch is on and App lock is off), then Save and Cancel. v2: the per-day "Show my words" switch is replaced by a read-only line pointing at the one switch (RV-8, NS-47-R37); section 15 flags the G-D14 conflict and gives the fallback.
+2. D-S08 opens: Date (system compact date picker from tomorrow to today plus 366 days; today is not offered, G-D10, CPO-101), "Your words" field (1 to 80 graphemes, any script, writing tools off), a live preview (NotificationPreview) showing what the lock screen will show under the one day-names switch on C-S24 (the fixed line by default, the words only when that switch is on, Names in notifications is on and App lock is off, CPrivO-58), then Save and Cancel. v2: the per-day "Show my words" switch is replaced by a read-only line pointing at the one switch (RV-8, NS-47-R37); section 15 flags the G-D14 conflict and gives the fallback.
 3. Save (under 300 ms): the sheet closes; the day appears in C-S24's "Days you added" as a row: the date, then the words under it (D-S06.typedDays-list is now that list on C-S24). VoiceOver reads "Saturday 14 March. Nursery starts."
-4. On that day, at the reminder time (or 20:30 when reminders are off; gap G-D09), one notification of class `typedDay` arrives: by default the fixed line (D-S10.typedDay); with the day-names switch on and App lock off, the parent's words unchanged.
+4. On that day, at the reminder time (or 20:30 when reminders are off; gap G-D09), one notification of class `typedDay` arrives: by default the fixed line (D-S10.typedDay); with the day-names switch on, Names in notifications on and App lock off, the parent's words unchanged (CPrivO-58).
 5. Tap: Home (D-S11.typedDay) shows the parent's words above the prompt ("Nursery starts"); one more tap starts speaking.
 6. The day after delivery, the words are deleted and the row leaves the list (NS-18-R7). Nothing says so.
 
@@ -188,7 +188,7 @@ The Days page, Browse and Day detail (C-S24, C-S25, C-S26) and Home's day slip (
 
 **J-D64 A quiet-tone day (Memorial Day, Veterans Day, Good Friday, Yom Kippur; NS-46-R16, R37; NS-50-R15).** Never pre-ticked. Lock screen: the one neutral title and the quiet neutral body ("The book is open if you want it."), no question mark, no invitation to write (D-S10.libraryDay-quiet). Home: the day's name and the same line replace the prompt block; Speak and Type unchanged (A-S01.dayToday, quiet tone). This is separate from the Not much today mark of NS-07 C5 (J-D40), which is a letter-less mark the parent makes.
 
-**J-D65 What a lock screen may say about a day (NS-47-R12, R13, R37, R38; NS-46-R36; RV-1, RV-8, RV-13).** One neutral title and one neutral body per tone for every family, tradition, culture-led and national day. A seasonal day on the hand-listed allowlist (`publicTitleOk`: seasons, New Year's Day, Thanksgiving, Independence Day, Labor Day) may be its own name in the title. The one day-names switch on C-S24 (default off, effective value `stored && !appLockOn`, forced off while App lock is on and not turned back on by itself) lets a family or tradition day, and any typed day's words, show. No lock-screen string in any switch state holds both a day name and a child name (D-S10.libraryDay-named; section 5.4).
+**J-D65 What a lock screen may say about a day (NS-47-R12, R13, R37, R38; NS-46-R36; RV-1, RV-8, RV-13).** One neutral title and one neutral body per tone for every family, tradition, culture-led and national day. A seasonal day on the hand-listed allowlist (`publicTitleOk`: seasons, New Year's Day, Thanksgiving, Independence Day, Labor Day) may be its own name in the title. The one day-names switch on C-S24 (default off, effective value `stored && !appLockOn`, forced off while App lock is on and not turned back on by itself) lets a family or tradition day, and any typed day's words, show; a typed day's words also need Names in notifications on (CPrivO-58). No lock-screen string in any switch state holds both a day name and a child name (D-S10.libraryDay-named; section 5.4).
 
 **J-D66 A quiet or hidden book, or "Include in my reminders" off (NS-46-R25, NS-32-R14, errata E16).** No library reminder is scheduled for that book and it is never the subject; with every included book quiet or hidden no library reminder is sent; a member with `celebrations_paused` set gets none (R49). A paused family gets no day notes either: no day reminder and no day name on any lock screen (NS-46-R25; ruling 21). Engineering gap E-D01 (`Child.quiet` has no reader) blocks this.
 
@@ -513,18 +513,18 @@ Default:
  |                                       |
  | HOW IT WILL LOOK                      |
  | +-----------------------------------+ |  NotificationPreview: the fixed line by
- | | A day you wanted to remember      | |  default; the parent's words only when the
- | +-----------------------------------+ |  day-names switch is on and App lock is off
- | The lock screen shows this unless you |  static footnote (v2); it points at the
- | choose otherwise on the Days page.    |  one switch, which lives on C-S24
+ | | A day you wanted to remember      | |  default; the parent's words only with day
+ | +-----------------------------------+ |  names on, Names in notifications on, App
+ | The lock screen shows this unless you |  lock off (CPrivO-58). Static footnote (v2);
+ | choose otherwise on the Days page.    |  it points at the one switch, on C-S24
  |---------------------------------------|
  | [               Save               ]  |  Button primary lg, 56 pt
  +---------------------------------------+
 ```
-- v2: the sheet carries no switch. One switch, `notifications.dayNames`, decides whether any day's words or name show on a lock screen; it lives once, on the Days page C-S24 under the list, off by default, forced off while App lock is on (RV-8, RV-13, NS-47-R14, R37). The preview is read-only and shows the effective result; `.appLock` adds the reason line "Words stay hidden while App lock is on." (the built `.appLock` pattern, read as "present and not ready"). This replaces v1's per-day switch and the G-D14 ruling; section 15 flags the conflict and gives the fallback if Karma keeps G-D14.
+- v2: the sheet carries no switch. One switch, `notifications.dayNames`, decides whether any day's words or name show on a lock screen (a typed day's words also need Names in notifications on, CPrivO-58); it lives once, on the Days page C-S24 under the list, off by default, forced off while App lock is on (RV-8, RV-13, NS-47-R14, R37). The preview is read-only and shows the effective result; `.appLock` adds the reason line "Words stay hidden while App lock is on." (the built `.appLock` pattern, read as "present and not ready"). This replaces v1's per-day switch and the G-D14 ruling; section 15 flags the conflict and gives the fallback if Karma keeps G-D14.
 - No character counter (a counter is a count shown while typing). Typing stops at 80 graphemes; a paste over 80 keeps every character, and Save shows `.error-typed_day_too_long` ("That is longer than fits here. A short line works best.") and waits. Nothing is cut silently.
 - Save follows the system v2 rule (COMPONENTS 1.2, "present and not ready"): with no words Save shows as an outline with `textMuted` label, VoiceOver reads "dimmed", and its hint is "Add a few words about the day." (`reminderCopy.typedDay.errorEmpty`). `.error-typed_day_empty` is that not-ready state; nothing is announced as an error.
-- The date picker starts at today; today is accepted only while today's reminder time is still ahead, else `.error-typed_day_past` ("Choose a day that is still to come."). Reconciled with WORDS.md G6; replaces this file's first default (tomorrow onward).
+- The date picker starts tomorrow and its last day is today plus 366 days, so the sheet never offers a day `checkTypedDay` would refuse (CPO-101; G-D10). `checkTypedDay` still keeps today (CPO-101: "`checkTypedDay` keeps today and the 366 days after it"), for a date that arrives another way; `.error-typed_day_past` ("Choose a day that is still to come.") and `typed_day_too_far` stay as guards, and D-S08's one PROPOSED guard line for `typed_day_too_far` is written by content with CDesO in the row that builds the sheet (CPO-101). Was: the picker started at today and today was accepted only while today's reminder time was still ahead (reconciled with WORDS.md G6).
 - `.notAllowed`: the line "Notifications are off. This day is saved and will be sent once they are allowed." (intent) above Save; Save still works.
 - AX5: full height; fields stack; the footnote wraps; Save pinned.
 - VoiceOver: title, date (picker), words field "Your words", preview as one element ("Example. {title}. {body}"), the footnote, Save. The field's hint: "Shows in the app on that day." Writing Tools: off (D2; FR-PRV-16 asks every field spec to say so: this field, and the C-S26 move-a-date field).
@@ -770,9 +770,9 @@ iOS draws the frame. The rows below are what our content makes it show. "App" is
 | Show Previews: Always | names on, App lock on | names forced off: neutral title and body | same |
 | Show Previews: When Unlocked (default iOS) | any | App, and our category placeholder in place of title and body (R33; NS-32-R13). With no placeholder set (today), iOS shows its generic "Notification" | full title and body once unlocked |
 | Show Previews: Never | any | App and the placeholder | App and the placeholder, even unlocked |
-| typedDay, Always | words switch off (default) | App, the fixed line | same |
-| typedDay, Always | words switch on | App, the parent's words unchanged | same |
-| typedDay, When Unlocked or Never | words switch on | App and the placeholder (the words never show while locked) | words once unlocked (When Unlocked) |
+| typedDay, Always | day-names switch off (default), names off, or App lock on | App, the fixed line | same |
+| typedDay, Always | day-names switch on, names on, App lock off (CPrivO-58) | App, the parent's words unchanged | same |
+| typedDay, When Unlocked or Never | day-names switch on, names on, App lock off (CPrivO-58) | App and the placeholder (the words never show while locked) | words once unlocked (When Unlocked) |
 | plan, any | n/a | App, "Plus", the plan line with a date and no price; placeholder when previews are hidden | same |
 | any | library day, switch off (default) or App lock on | App, the one neutral title, the neutral body of its tone (quiet tone: "The book is open if you want it.") | same |
 | Always | allowlisted seasonal day, App lock off | App, the day's own name, the neutral body | same |
@@ -900,7 +900,7 @@ No new colour or motion token. Open name requests still owned upstream: `layout.
 | G-D07 | NS-13-R14 | Should the sign-out sheet (C-S03) say reminders stop? | WORDS.md proposes `account.signOut.remindersLine` for area C. Design has no objection (it is true and calm); area C decides whether D1's sheet carries it |
 | G-D08 | NS-13-R13 | Where B's ask card can appear after B's first letter on A's phone | As G-D05 |
 | G-D09 | NS-18 section 4 step 2 "at the reminder time" | The time when reminders are off, or never set | The stored time, default 20:30 |
-| G-D10 | NS-18 section 5 "a day in the past" | Is today accepted? | No: the picker starts tomorrow and its last day is today plus 366 days (CPO-101; WORDS.md G6). Was: today only while today's reminder time is still ahead. PROPOSED NS-18 section 5 errata row, in CPO-101's words: "A day more than a year ahead: not offered by the picker; refused if it arrives (`typed_day_too_far`)" |
+| G-D10 | NS-18 section 5 "a day in the past" | Is today accepted? | The picker does not offer today: it starts tomorrow and its last day is today plus 366 days (CPO-101; WORDS.md G6). `checkTypedDay` still keeps today as a guard (CPO-101: "`checkTypedDay` keeps today and the 366 days after it"), for a date that arrives another way; the planner skips it once its reminder time has passed. Was: today only while today's reminder time is still ahead. PROPOSED NS-18 section 5 errata row, in CPO-101's words: "A day more than a year ahead: not offered by the picker; refused if it arrives (`typed_day_too_far`)" |
 | G-D11 | NS-18 section 5 "reminders turned off" | What the parent sees when notifications are not allowed | Save works; one line says it will be sent once allowed |
 | G-D12 | NS-25 section 5 "invite expired" | The link page has no server and cannot know expiry | Expiry is shown in the app at peek (D-S15.error-expired) |
 | G-D13 | NS-18-R5 | How the 80-character limit is shown without a counter | No counter; a paste over 80 is kept and Save shows one line (D-S08) |
@@ -990,7 +990,7 @@ Read `MOTION.md` (v1) and `WORDS.md` in this folder after both were written. Scr
 2. **Join sheet (WORDS G13).** D-S15 and D-S16 are one sheet. The sign-off field leaves the pre-agreement sheet and lives only in D-S17.joined, so the child is never named before agreement. `family.accept.signsAsLabelBeforeJoin` is not needed.
 3. **Link page expiry (WORDS `D-S14.expired`).** The web page is static and never sees the token server-side, so it cannot know an invite expired. `D-S14.expired` is not reachable; the expired line belongs to D-S15.error-expired (existing `family.errors.expired`). `site.invite.expiredBody` and the reuse of `onboarding.inviteExpired.title` on the page should be dropped from WORDS.md.
 4. **Share completion (MOTION G2).** The preview closes after the share sheet completes, in every outcome.
-5. **Typed day validation (WORDS G6).** Today allowed while its reminder time is ahead; Save "present and not ready" with no words (system COMPONENTS 1.2); three local codes `typed_day_empty`, `typed_day_past`, `typed_day_too_long`.
+5. **Typed day validation (WORDS G6; updated by CPO-101).** The picker offers tomorrow to today plus 366 days, not today; `checkTypedDay` still keeps today as a guard (CPO-101). Was: today allowed while its reminder time is ahead. Save "present and not ready" with no words (system COMPONENTS 1.2); local codes `typed_day_empty`, `typed_day_past`, `typed_day_too_long`, and `typed_day_too_far` as a guard (CPO-101).
 6. **Placeholders (WORDS G1, section D-S10.hidden).** One neutral line for every budgeted class; a separate line for plan. Keys `reminderCopy.placeholders.<class>` and `billing.reminders.placeholder`.
 7. **Brand placeholder.** `{app}` (WORDS.md) in docs and the prototype, rendered from `packages/brand`.
 8. **Ask position (MOTION G8).** Over the Book, after the saved moment lands (as built).
