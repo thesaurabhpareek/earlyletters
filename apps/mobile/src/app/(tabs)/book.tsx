@@ -204,12 +204,16 @@ export default function Book() {
     if (!active || entries.length === 0) return;
     const raw = getSetting(SEEN_KEY);
     // Not the older pages the reader scrolls to (BL-2225): the seen list starts from the first page, so a page read
-    // later would wash every letter of theirs on it. A letter that came into the store after the first page (synced in
-    // by the other parent, on any day) is not an older page: it washes once when it is read, as the whole read did.
+    // later would wash every letter of theirs on it. A letter that came into the store since this book was last read
+    // (synced in by the other parent, on any day, at launch or while another book was on screen) is not an older page:
+    // it washes once when it is read, as the whole read did.
     const next = firstSeen(entries.filter((e) => !pages.olderPage(e.id)), (e) => isOwnEntry(e as Entry), parseSeen(raw));
     wash(next.wash);
     const value = JSON.stringify(next.seen);
     if (value !== raw) setSetting(SEEN_KEY, value);
+    // The book's mark is kept after the seen list, so a letter it passes is on that list or was never news.
+    const keep = pages.keepMark(active.id);
+    if (keep !== null) bookArrivals.keep(active.id, keep);
   }, [entries, active, wash, pages]);
 
   // A kept letter arrives (5.8 row 5, P4 sets `arrived`): position the list on it under its opener at once, then, when

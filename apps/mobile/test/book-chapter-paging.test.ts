@@ -6,7 +6,7 @@
  * pinned by its source, as the other Book screen tests do. Fictional family "Asha" only.
  */
 import { readFileSync } from 'node:fs';
-import { afterAll, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 // child-store reads the native store; the signature rule it provides is the only part chapters.ts uses.
 vi.mock('@/components/child/child-store', () => ({ authorOf: (e: { authorSignsAs?: string }, c: { signsAs: string }) => e.authorSignsAs ?? c.signsAs }));
@@ -17,7 +17,7 @@ vi.mock('../src/lib/db/repos/open-native', () => ({
   },
 }));
 
-import { firstSeen, watchBook, type BookRead } from '../src/components/book/book.logic';
+import { firstSeen, parseSeen, watchBook, type BookRead } from '../src/components/book/book.logic';
 import { BOOK_PAGE, arrivalReach, createBookPages, monthsFromOutline, readPage, type BookArrivals, type BookPages, type RangeRead } from '../src/components/book/book-pages.logic';
 import { bookChapters } from '../src/components/book/chapters';
 import { monthRows, showsMonthsButton } from '../src/components/book/book-page.logic';
@@ -268,7 +268,7 @@ describe('[BL-2225] the other parent\'s letter synced in below the first page wa
     for (const reachIt of ['scroll', 'whole book'] as const) {
       const g = seeded(400);
       const { ctx, read } = spied(g);
-      const arrivals: BookArrivals = { mark: () => entries.rowMark(ctx), since: (c, m) => entries.idsSince(ctx, c, m) };
+      const arrivals: BookArrivals = { mark: () => entries.rowMark(ctx), kept: () => null, since: (c, m) => entries.arrivalsSince(ctx, c, m) };
       const papa = (n: number, on: string) => entries.upsert(g.ctx, letter({ id: id(n), childId: ASHA, occurredOn: on, capturedAt: '2026-11-20T09:00:00.000Z', authorSignsAs: 'Papa' }), { childId: ASHA, authorSignsAs: 'Papa' });
       papa(9100, '2022-03-04'); // theirs, in the store before the first page and below it: never news
       const pages = createBookPages(read, BOOK_PAGE, arrivals);
@@ -313,14 +313,14 @@ describe('[BL-2225] the other parent\'s letter synced in below the first page wa
   it('[BL-2225] the arrivals read only the rows added since the mark, by rowid, and only this book\'s live ones', () => {
     const g = seeded(40);
     const mark = entries.rowMark(g.ctx);
-    expect(entries.idsSince(g.ctx, ASHA, mark)).toEqual([]);
+    expect(entries.arrivalsSince(g.ctx, ASHA, mark)).toEqual([]);
     entries.upsert(g.ctx, letter({ id: id(9201), childId: ASHA, occurredOn: '2022-01-01' }), { childId: ASHA, authorSignsAs: 'Papa' });
     entries.upsert(g.ctx, letter({ id: id(9202), childId: NIA, occurredOn: '2022-01-01' }), { childId: NIA, authorSignsAs: 'Papa' });
     entries.upsert(g.ctx, letter({ id: id(0), childId: ASHA, occurredOn: dayOf(0), finalText: 'Asha laughed again.' }), { childId: ASHA, authorSignsAs: 'Mama' }); // an edit keeps its rowid
     const { seen, ctx } = spied(g);
-    expect(entries.idsSince(ctx, ASHA, mark)).toEqual([id(9201)]);
+    expect(entries.arrivalsSince(ctx, ASHA, mark)).toEqual([{ id: id(9201), row: mark + 1, day: '2022-01-01' }]);
     entries.tombstone(g.ctx, id(9201));
-    expect(entries.idsSince(g.ctx, ASHA, mark)).toEqual([]);
+    expect(entries.arrivalsSince(g.ctx, ASHA, mark)).toEqual([]);
     // The plan of the very SQL the repo sent: the rowid range, never a walk of the book's index or of all of entries.
     const plan = g.db.all<{ detail: string }>(`EXPLAIN QUERY PLAN ${seen[0].sql}`, mark, ASHA).map((r) => r.detail);
     expect(plan.some((l) => /SEARCH entries USING INTEGER PRIMARY KEY \(rowid>\?\)/.test(l))).toBe(true);
@@ -431,5 +431,244 @@ describe('[BL-2225] the Book screen reads by page (source)', () => {
   it('[BL-2225] the first-seen wash leaves out the older pages the reader scrolls to', () => {
     expect(screen).toMatch(/firstSeen\(entries\.filter\(\(e\) => !pages\.olderPage\(e\.id\)\), /);
     expect(screen).not.toMatch(/entries\.slice\(0, BOOK_PAGE\)/);
+  });
+
+  it('[BL-2225] keeps the book\'s wash mark in the first-seen effect, after the seen list is written', () => {
+    expect(screen).toMatch(
+      /if \(value !== raw\) setSetting\(SEEN_KEY, value\);\s*(\/\/[^\n]*\n\s*)*const keep = pages\.keepMark\(active\.id\);\s*if \(keep !== null\) bookArrivals\.keep\(active\.id, keep\);/,
+    );
+  });
+});
+
+describe('[BL-2225] the wash mark is kept per book next to the seen list, across launches and book switches', () => {
+  // CTO ruling on #2147 (Reviews A and B): the mark lived only while the Book was open, so the other parent's letter
+  // that synced in before the Book was first opened (at launch), or into one book while another was on screen, was in
+  // the store at the mark and never washed; develop's whole read washed it. These run the real store module, and
+  // book.tsx's first-seen effect as it runs on every change of the rows held: older pages left out, firstSeen, the
+  // seen list written, then the book's mark kept.
+  const NOW = '2026-11-20T09:00:00.000Z';
+  const SEEN = 'book.seenFromOthers';
+  const papaSigns = (e: Pick<Entry, 'id'>) => (e as Entry).authorSignsAs === 'Papa';
+  let h: ReturnType<typeof nodeDb>;
+  let sent: { sql: string; rows: number }[] = [];
+  /** A launch: the store opened over the same file, as the root layout opens it. */
+  const launch = () => {
+    store.closeStore();
+    const { seen, spy } = counting(h.db);
+    sent = seen;
+    expect(store.openStore({ open: () => ({ db: spy, close: () => {} }), now: () => NOW }).ok).toBe(true);
+  };
+  const papa = (n: number, childId: string, on: string) =>
+    entries.upsert({ db: store.localSqlDb(), now: () => NOW, newId: () => id(99_998) }, letter({ id: id(n), childId, occurredOn: on, capturedAt: NOW, authorSignsAs: 'Papa', inBook: true }), { childId, authorSignsAs: 'Papa' });
+
+  /** The Book on one book: its pages, the rows held, and what its first-seen effect washed. */
+  function book(pages: BookPages, childId: string, washed: string[]) {
+    let held: Entry[] = [];
+    const effect = () => {
+      const raw = store.getSetting(SEEN);
+      const next = firstSeen(held.filter((e) => !pages.olderPage(e.id)), (e) => !papaSigns(e), parseSeen(raw));
+      washed.push(...next.wash);
+      const value = JSON.stringify(next.seen);
+      if (value !== raw) store.setSetting(SEEN, value);
+      const keep = pages.keepMark(childId);
+      if (keep !== null) store.bookArrivals.keep(childId, keep);
+    };
+    return {
+      open() {
+        held = pages.reread(childId);
+        effect();
+      },
+      scrollOne() {
+        const join = pages.more(childId);
+        expect(join).not.toBeNull();
+        held = join!(held);
+        effect();
+      },
+      scrollToEnd() {
+        for (let join = pages.more(childId); join; join = pages.more(childId)) {
+          held = join(held);
+          effect();
+        }
+      },
+      held: () => held,
+    };
+  }
+
+  beforeAll(() => {
+    h = nodeDb();
+    launch();
+    seedLetters({ db: store.localSqlDb(), now: () => NOW, newId: () => id(99_999) }, 400);
+  });
+  afterAll(() => {
+    store.closeStore();
+    h.close();
+  });
+
+  it('[BL-2225] a letter of theirs synced in at launch, before the Book opens, washes once when its page is read; letters there at the last read, and one seen already, never wash', () => {
+    papa(9300, ASHA, '2022-03-04'); // in the store before this phone ever read the book: never news
+    const washed: string[] = [];
+    const first = book(createBookPages(store.listBookRange, BOOK_PAGE, store.bookArrivals), ASHA, washed);
+    first.open();
+    const floor = first.held().at(-1)!.occurredOn;
+    // 9302 was shown on this phone before (another screen, say): it is on the seen list.
+    store.setSetting(SEEN, JSON.stringify([id(9302), ...(parseSeen(store.getSetting(SEEN)) ?? [])]));
+
+    // The app closes. The next launch's sync brings the other parent's letters for days long before the first page.
+    launch();
+    papa(9301, ASHA, '2022-03-05');
+    papa(9302, ASHA, '2022-03-06');
+    expect('2022-03-06' < floor).toBe(true);
+    const next = book(createBookPages(store.listBookRange, BOOK_PAGE, store.bookArrivals), ASHA, washed);
+    next.open();
+    expect(ids(next.held())).not.toContain(id(9301));
+    next.scrollToEnd();
+    expect(ids(next.held())).toEqual(expect.arrayContaining([id(9300), id(9301), id(9302)]));
+    expect(washed).toEqual([id(9301)]);
+
+    // Once: a third launch reads the same pages and washes nothing.
+    launch();
+    const third = book(createBookPages(store.listBookRange, BOOK_PAGE, store.bookArrivals), ASHA, washed);
+    third.open();
+    third.scrollToEnd();
+    expect(washed).toEqual([id(9301)]);
+  });
+
+  it('[BL-2225] a letter of theirs synced into one book while the other is on screen washes when its page is read after switching back', () => {
+    const washed: string[] = [];
+    const pages = createBookPages(store.listBookRange, BOOK_PAGE, store.bookArrivals);
+    const asha = book(pages, ASHA, washed);
+    asha.open();
+    asha.scrollToEnd();
+    // A child switch: watchBook's reread calls first() for the other book, then the sync lands in this one.
+    const nia = book(pages, NIA, washed);
+    nia.open();
+    papa(9310, ASHA, '2022-04-01');
+    asha.open();
+    expect(ids(asha.held())).not.toContain(id(9310));
+    asha.scrollToEnd();
+    expect(washed).toEqual([id(9310)]);
+  });
+
+  it('[BL-2225] the kept mark passes every letter come in and held, and stops below the first one still unread', () => {
+    const washed: string[] = [];
+    const mark = () => entries.rowMark({ db: store.localSqlDb(), now: () => NOW, newId: () => id(1) });
+    launch();
+    const before = mark();
+    book(createBookPages(store.listBookRange, BOOK_PAGE, store.bookArrivals), ASHA, washed).open();
+    expect(store.bookArrivals.kept(ASHA)).toBe(before);
+    // Between launches, one letter of theirs for a day long ago. The reader reads one page further, still above its
+    // day, and closes the app: the mark stays below it, so the next launch still counts it as come in.
+    launch();
+    papa(9320, ASHA, '2022-02-01');
+    const row = mark();
+    const one = book(createBookPages(store.listBookRange, BOOK_PAGE, store.bookArrivals), ASHA, washed);
+    one.open();
+    expect(store.bookArrivals.kept(ASHA)).toBe(before);
+    one.scrollOne();
+    expect(one.held().at(-1)!.occurredOn > '2022-02-01').toBe(true);
+    expect(store.bookArrivals.kept(ASHA)).toBe(row - 1);
+    expect(washed).toEqual([]);
+    // Read down to it on the next launch: it washes, and the mark passes it.
+    launch();
+    const two = book(createBookPages(store.listBookRange, BOOK_PAGE, store.bookArrivals), ASHA, washed);
+    two.open();
+    two.scrollToEnd();
+    expect(washed).toEqual([id(9320)]);
+    expect(store.bookArrivals.kept(ASHA)).toBe(row);
+  });
+
+  it('[BL-2225] the marks\' own plans: the newest row is one step off the end of the rowid tree, the kept mark one settings key', () => {
+    launch();
+    sent.length = 0;
+    expect(store.bookArrivals.mark()).toBeGreaterThan(0);
+    expect(store.bookArrivals.kept(ASHA)).toBeGreaterThan(0);
+    const [markSql, keptSql] = sent.map((s) => s.sql);
+    expect(sent.map((s) => s.rows)).toEqual([1, 1]);
+    const plan = (sql: string, ...p: string[]) => h.db.all<{ detail: string }>(`EXPLAIN QUERY PLAN ${sql}`, ...p).map((r) => r.detail);
+    // SQLite's max(rowid) shortcut: one SEARCH, never a SCAN of entries or a walk of an index. With a WHERE the plan
+    // still reads SEARCH but walks back from the end until a row matches, so the mark has none.
+    expect(plan(markSql)).toEqual(['SEARCH entries']);
+    expect(markSql).toMatch(/^SELECT max\(rowid\)/);
+    expect(markSql).not.toMatch(/\bWHERE\b/);
+    expect(plan(keptSql, 'book.readMark.' + ASHA).join(' ')).toMatch(/^SEARCH settings USING (INDEX sqlite_autoindex_settings_1|PRIMARY KEY) \(key=\?\)$/);
+    expect(keptSql).toMatch(/FROM settings WHERE key = \?/);
+  });
+
+  it('[BL-2225] the kept mark holds a row number under a book id: no words, no name', () => {
+    launch();
+    const keys = h.db.all<{ key: string; value: string }>("SELECT key, value FROM settings WHERE key LIKE 'book.readMark.%'");
+    expect(keys.length).toBeGreaterThan(0);
+    for (const k of keys) {
+      expect(k.key).toMatch(/^book\.readMark\.child-(asha|nia)$/);
+      expect(k.value).toMatch(/^[1-9][0-9]*$/);
+    }
+  });
+});
+
+describe('[BL-2225] an empty-store or first-ever mark never reads the whole table', () => {
+  const f = seeded(400);
+  const { seen, ctx, read } = spied(f);
+  const now = entries.rowMark(f.ctx);
+  /** The store's arrivals with a given kept mark and a given mark now, every `since` mark recorded. */
+  function arrivals(kept: number | null, markNow = now) {
+    const asked: number[] = [];
+    const a: BookArrivals = {
+      mark: () => markNow,
+      since: (c, m) => {
+        asked.push(m);
+        return entries.arrivalsSince(ctx, c, m);
+      },
+      kept: () => kept,
+    };
+    return { a, asked };
+  }
+  const pageDown = (pages: BookPages) => {
+    for (let join = pages.more(ASHA); join; join = pages.more(ASHA)) join([]);
+  };
+  const arrivalRows = () => seen.filter((s) => /WHERE rowid > \?/.test(s.sql)).reduce((n, s) => n + s.rows, 0);
+
+  it('[BL-2225] a store that was empty at the mark (0) asks for no arrivals: from 0 the range is the whole table', () => {
+    const { a, asked } = arrivals(null, 0);
+    seen.length = 0;
+    const pages = createBookPages(read, BOOK_PAGE, a);
+    pages.first(ASHA);
+    pageDown(pages);
+    expect(asked).toEqual([]);
+    expect(arrivalRows()).toBe(0);
+    expect(pages.keepMark(ASHA)).toBeNull();
+  });
+
+  it.each([
+    ['no mark kept yet (the first read of this book)', null],
+    ['a kept 0 (the store was empty)', 0],
+    ['a kept mark above the newest row (rows purged or renumbered since)', now + 50],
+  ] as [string, number | null][])('[BL-2225] %s: the mark is the newest row now, so no row there washes and no old row is read', (_name, kept) => {
+    const { a, asked } = arrivals(kept);
+    seen.length = 0;
+    const pages = createBookPages(read, BOOK_PAGE, a);
+    pages.first(ASHA);
+    expect(pages.keepMark(ASHA)).toBe(now);
+    pageDown(pages);
+    expect(new Set(asked)).toEqual(new Set([now]));
+    expect(arrivalRows()).toBe(0);
+  });
+
+  it('[BL-2225] a kept mark inside the rows is the one the arrivals are read from', () => {
+    const { a, asked } = arrivals(now - 3);
+    const pages = createBookPages(read, BOOK_PAGE, a);
+    pages.first(ASHA);
+    expect(pages.keepMark(ASHA)).toBe(now - 3);
+    pageDown(pages);
+    expect(new Set(asked)).toEqual(new Set([now - 3]));
+    expect(pages.keepMark(ASHA)).toBe(now);
+  });
+
+  it('[BL-2225] a book held whole without its first page read keeps no mark: the one in hand is the other book\'s', () => {
+    const { a } = arrivals(now - 3);
+    const pages = createBookPages(read, BOOK_PAGE, a);
+    pages.first(ASHA);
+    pages.all(NIA);
+    expect(pages.keepMark(NIA)).toBeNull();
+    expect(pages.keepMark(ASHA)).toBeNull();
   });
 });

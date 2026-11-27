@@ -259,19 +259,28 @@ export function bookOutline({ db }: RepoContext, childId: string): BookOutline {
 /**
  * The newest row in the store now, as SQLite's rowid (BL-2225). A row inserted later (synced in or kept) gets a larger
  * one: the table has no AUTOINCREMENT, so a new rowid is the largest held plus one, and an update keeps its rowid.
- * One row back, read off the end of the rowid tree. Its one gap: if the newest row is purged before a new one comes
- * in, the new one may not count as come in, so it misses a wash; no row that was there washes for it.
+ * One row back, read off the end of the rowid tree. Its gaps, each only ever a missed wash and never an extra one: if
+ * the newest row is purged before a new one comes in, the new one may take a row number already marked; and a VACUUM
+ * after a mark was kept (store.ts runs one at an open that has never run it, and after Erase everything, which takes
+ * the kept marks with every setting) may renumber rows down past it.
  */
 export function rowMark({ db }: RepoContext): number {
   return db.get<{ m: number | null }>('SELECT max(rowid) AS m FROM entries')?.m ?? 0;
 }
 
+/** One of a book's live rows that came into the store after a mark: its id, row number and day, never its words. */
+export interface RowArrival {
+  id: string;
+  row: number;
+  day: string;
+}
+
 /**
- * Ids of one book's live rows that came into the store after `mark` (rowMark), BL-2225. A range on the rowid, so only
- * the rows added since are visited: `+child_id` keeps SQLite off the child indexes, which would walk the whole book.
+ * One book's live rows that came into the store after `mark` (rowMark), BL-2225. A range on the rowid, so only the
+ * rows added since are visited: `+child_id` keeps SQLite off the child indexes, which would walk the whole book.
  */
-export function idsSince({ db }: RepoContext, childId: string, mark: number): string[] {
-  return db.all<{ id: string }>('SELECT id FROM entries WHERE rowid > ? AND +child_id = ? AND deleted_at IS NULL', mark, childId).map((r) => r.id);
+export function arrivalsSince({ db }: RepoContext, childId: string, mark: number): RowArrival[] {
+  return db.all<RowArrival>('SELECT id, rowid AS row, occurred_on AS day FROM entries WHERE rowid > ? AND +child_id = ? AND deleted_at IS NULL', mark, childId);
 }
 
 /** How many live letters a book holds (quiet-day marks are not letters), counted in SQL and never loaded (BL-434). */
