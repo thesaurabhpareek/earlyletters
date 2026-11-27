@@ -129,7 +129,7 @@ Deno.test('[FR-BKO-13] an abuse report stays off the 45-day clock: one fixed fir
 
 Deno.test('[FR-BKO-13] a dispute or third-party request stays off the 45-day clock; days 35 to 44 check for a request of the sender\'s own', () => {
   const counsel = 'with counsel: no reply beyond the fixed first reply; change nothing on any account';
-  const check = "with counsel: check no request about the sender's own data, or for a living holder as their agent, is inside it; if one is, log it as its own row today with the same received date";
+  const check = "with counsel: check no request about the sender's own data is inside it; if one is, log it as its own row today with the same received date";
   const at = (n: number, more = {}) => card(row('DREQ-20261212-1', 'dispute_or_third_party', day(n), more)).rows[0];
   for (const n of [2, 34, 45, 46, 60]) {
     const r = at(n);
@@ -162,9 +162,10 @@ Deno.test('[FR-BKO-13] a dispute or third-party request stays off the 45-day clo
     row('DREQ-20261212-3', 'dispute_or_third_party', day(50)),
     row('DREQ-20261212-4', 'see_export', day(46)),
     row('DREQ-20261212-5', 'see_export', day(45)),
+    row('DREQ-20261212-6', 'see_export', day(42)),
   );
-  assert.deepEqual(c.rows.map((r) => [r.kind, r.day]), [['see_export', 46], ['see_export', 45], ['dispute_or_third_party', 38], ['see_export', 36], ['dispute_or_third_party', 50]], 'a P0 and a due-today row lead a dispute check');
-  assert.match(c.lines[0], /5 open, 4 to act on first/);
+  assert.deepEqual(c.rows.map((r) => [r.kind, r.day]), [['see_export', 46], ['see_export', 45], ['see_export', 42], ['dispute_or_third_party', 38], ['see_export', 36], ['dispute_or_third_party', 50]], 'a P0, a due-today row and a row with fewer days left lead a dispute check');
+  assert.match(c.lines[0], /6 open, 5 to act on first/);
 });
 
 Deno.test('[FR-BKO-16] a letter whose named date has passed goes to counsel today and is listed first', () => {
