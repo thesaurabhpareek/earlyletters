@@ -1,5 +1,5 @@
 /**
- * Ticked library days in the planner (BL-1319; NS-46-R4, R5, R7, R8, R30) and the day-only gate (BL-1007; NS-46-R31).
+ * Ticked library days in the planner (BL-1319; NS-46-R4, R5, R7, R8) and the day-only gate (BL-1007; NS-46-R31).
  * The planner is pure, so these tests give it dates: the days module resolves ticks to dates (BL-1012), and the
  * planner never sees a day id, a name or a content key. Day ids are synthetic (`zz-test-day-a`, `zz-test-day-b`),
  * never a real tradition beside a book with Asha (NS-46-R8). Fixtures: the fictional family Asha.
@@ -56,11 +56,21 @@ describe('[NS-46-R4] a ticked day adds no class', () => {
     expect(`${NEUTRAL.title} ${NEUTRAL.body}`).not.toMatch(/Asha|\{child\}|\d/);
   });
 
+  it('the words stay the neutral pair with names on the lock screen and day names on', () => {
+    const date = '2026-11-20';
+    const named = planReminders(base({ libraryDays: [day(date)], dayNamesOn: true, prefs: { ...DEFAULT_PREFS, enabled: true, cadence: 'everyEvening', namesOnLockScreen: true } }));
+    expect(onDate(named, date)).toEqual([expect.objectContaining({ kind: 'libraryDay', title: NEUTRAL.title, body: NEUTRAL.body })]);
+    const offNamed = planReminders(base({ libraryDays: [day(date)], dayNamesOn: true, prefs: { ...DEFAULT_PREFS, enabled: false, namesOnLockScreen: true } }));
+    expect(offNamed).toEqual([expect.objectContaining({ kind: 'libraryDay', title: NEUTRAL.title, body: NEUTRAL.body })]);
+  });
+
   it('the identifier and payload carry no day id, content key or layer, and the tap opens Home', () => {
     const date = '2026-11-20';
-    const n = onDate(planReminders(base({ libraryDays: [day(date)] })), date)[0]!;
+    // A caller that passes more than the date (as a careless feed might) still gets only the date into the note.
+    const leaky = { date, id: DAY_A, key: `days.${DAY_A}`, layer: 'tradition' } as LibraryDayNote;
+    const n = onDate(planReminders(base({ libraryDays: [leaky] })), date)[0]!;
     const content = reminderContent(n);
-    const all = JSON.stringify({ id: n.id, content });
+    const all = JSON.stringify({ n, content });
     for (const banned of [DAY_A, DAY_B, 'days.', 'seasonal', 'family', 'civic', 'tradition', 'cultureLed', 'national']) {
       expect(all).not.toContain(banned);
     }
@@ -83,13 +93,11 @@ describe('[NS-46-R5] a typed day does not recur', () => {
   const yearOn = plus(typedDate, 365);
 
   it('planned once on its date; on the same date a year later nothing comes from it', () => {
-    const now = base().now;
     const thisYear = planReminders(base({ typedDays: [{ date: typedDate, words: 'Nursery starts' }], prefs: { ...DEFAULT_PREFS, enabled: false } }));
     expect(thisYear.map((n) => n.id)).toEqual([`el.typed.${typedDate}`]);
     // A year later the same typed entry (had it not been swept) is in the past, so it plans nothing at all.
     const later = planReminders(base({ now: at(yearOn, 8), typedDays: [{ date: typedDate, words: 'Nursery starts' }], prefs: { ...DEFAULT_PREFS, enabled: false } }));
     expect(later).toEqual([]);
-    expect(now).toBeLessThan(at(yearOn, 8));
   });
 
   it('the planner never moves a typed day to another year: no typed note is planned on any date but its own', () => {
@@ -113,6 +121,7 @@ describe('[NS-46-R7] birthday beats a library day', () => {
 
   it('the order on one date: a typed day, birthday, library day, month, evening', () => {
     const month = '2026-11-10'; // a month-day for Asha
+    expect(kinds(planReminders(base()), month)).toEqual(['monthAge']); // without the tick, the month note holds the day
     expect(kinds(planReminders(base({ libraryDays: [day(month)] })), month)).toEqual(['libraryDay']);
     expect(kinds(planReminders(base({ libraryDays: [day(month)], typedDays: [{ date: month, words: 'Nursery starts' }] })), month)).toEqual(['typedDay']);
     const plain = '2026-11-12'; // an evening only
@@ -174,11 +183,13 @@ describe('[NS-46-R31] day reminders do not need evening reminders on', () => {
     expect(out.map((n) => n.kind)).toEqual(['typedDay']);
   });
 
-  it('with Reminders off a ticked day keeps the reminder time and the quiet hours', () => {
-    const out = planReminders(base({ prefs: { ...DEFAULT_PREFS, enabled: false, time: { hour: 19, minute: 15 } }, libraryDays: [day(ticked)] }));
-    expect(out).toEqual([expect.objectContaining({ hour: 19, minute: 15 })]);
-    const passed = planReminders(base({ now: at(ticked, 20), prefs: { ...DEFAULT_PREFS, enabled: false, time: { hour: 19, minute: 15 } }, libraryDays: [day(ticked)] }));
-    expect(passed).toEqual([]);
+  it('with Reminders off a ticked day keeps the reminder time, its window and the lead time', () => {
+    const off = (over: Partial<PlanInput>) => planReminders(base({ prefs: { ...DEFAULT_PREFS, enabled: false, time: { hour: 19, minute: 15 } }, libraryDays: [day(ticked)], ...over }));
+    expect(off({})).toEqual([expect.objectContaining({ hour: 19, minute: 15 })]);
+    // A narrower window (remote config, C-NFR-009) moves the time inside it, as for every other note.
+    expect(off({ window: { earliest: 9 * 60, latest: 18 * 60 } })).toEqual([expect.objectContaining({ hour: 18, minute: 0 })]);
+    // Its time has passed today: not sent late.
+    expect(off({ now: at(ticked, 20) })).toEqual([]);
   });
 
   it('with Reminders on the same ticked day plans too, so the switch is not the gate for it', () => {
