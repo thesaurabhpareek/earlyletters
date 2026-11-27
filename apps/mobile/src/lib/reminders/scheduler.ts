@@ -58,6 +58,13 @@ let timer: ReturnType<typeof setTimeout> | null = null;
 let chain: Promise<ScheduleResult> = Promise.resolve(OK);
 let lastResult: ScheduleResult = OK;
 const resultListeners = new Set<(r: ScheduleResult) => void>();
+/**
+ * Whether a typed day's words may show (CPrivO-58: day names on and names on, so App lock off), as the last apply saw
+ * it. Null before the first apply of this run, so a launch with the words off checks Notification Center once.
+ */
+let lastWordsShown: boolean | null = null;
+/** The planner's typed-day ids (planner.ts `typedNote`). */
+const TYPED_ID_PREFIX = `${ID_PREFIX}typed.`;
 
 /**
  * The signed config reader for the library days pause (BL-1008). Built on first use and only when the build switch is
@@ -198,6 +205,21 @@ function pendingPlanNotices(scheduled: readonly { identifier: string }[]): numbe
   return scheduled.filter((s) => s.identifier.startsWith(PLAN_ID_PREFIX)).length;
 }
 
+/**
+ * A re-plan replaces only what is still scheduled: a typed-day note already delivered keeps the parent's words in
+ * Notification Center after names, day names or App lock turn them off. So when the words may no longer show, every
+ * delivered typed-day note of ours whose body is not the fixed line is dismissed. Only our own typed-day notes (by our
+ * data or our typed-day id): anyone else's, and our other kinds, stay. The body is compared, never logged or kept.
+ */
+async function dismissDeliveredTypedWords(): Promise<void> {
+  const fixed = reminderCopy.neutral.typedDay.body;
+  for (const n of await Notifications.getPresentedNotificationsAsync()) {
+    const { identifier, content } = n.request;
+    const typedDay = (isOurs(content.data) && content.data.kind === 'typedDay') || identifier.startsWith(TYPED_ID_PREFIX);
+    if (typedDay && content.body !== fixed) await Notifications.dismissNotificationAsync(identifier).catch(() => {});
+  }
+}
+
 async function apply(): Promise<void> {
   // A phone that turned reminders on before the anchor existed starts its count now (once), never stops at once.
   if (readPrefs().enabled && readOnSince() === null) writeOnSince(Date.now());
@@ -207,6 +229,19 @@ async function apply(): Promise<void> {
     sweepPastTypedDays(localToday(Date.now()));
   } catch {
     // nothing to log: the keys hold a parent's words
+  }
+  // CPrivO-58: the words went off (or this is the first apply of the run with them off). Before the early returns
+  // below, because a delivered note can outlive its plan: a typed day already fired, or swept the day after. A failed
+  // read (no module on the web preview) never stops the plan: the next apply tries again.
+  const wordsShown = dayNamesOn() && readPrefs().namesOnLockScreen;
+  if (wordsShown) lastWordsShown = true;
+  else if (lastWordsShown !== false) {
+    try {
+      await dismissDeliveredTypedWords();
+      lastWordsShown = false;
+    } catch {
+      // nothing to log: the notes may hold a parent's words
+    }
   }
   // Reminders off and no typed day: nothing to plan and nothing to read. An empty plan already applied (`lastSignature`
   // is '') means none of ours is pending, so no read. The first apply after the switch goes off (or after a launch, or

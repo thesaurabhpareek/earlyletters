@@ -337,6 +337,35 @@ describe('typed days on the phone (real store and scheduler)', () => {
     expect(ours()[0]!.content).toMatchObject({ title: FIXED.title, body: FIXED.body });
   });
 
+  it('[CPrivO-58] names, day names or App lock going off dismisses a delivered typed-day note with the words, and nothing else', async () => {
+    const shown = (identifier: string, body: string, data: unknown): Req => ({ identifier, content: { title: FIXED.title, body, data } });
+    const off: [string, () => void][] = [
+      ['names off', () => store.setSetting('notifications.lockScreenNames', 'off')],
+      ['day names off', () => store.setSetting('notifications.dayNames', 'off')],
+      ['App lock on', () => store.setSetting(APP_LOCK_KEYS.enabled, 'on')],
+    ];
+    for (const [label, turnOff] of off) {
+      store.setSetting('notifications.dayNames', 'on');
+      store.setSetting('notifications.lockScreenNames', 'on');
+      store.setSetting(APP_LOCK_KEYS.enabled, 'off');
+      await reminders.rescheduleReminders();
+      os.presented.clear();
+      const delivered = [
+        shown(`el.typed.${plus(today(), -1)}`, CANARY, { source: 'scribe.reminders', kind: 'typedDay' }),
+        shown(`el.typed.${today()}`, FIXED.body, { source: 'scribe.reminders', kind: 'typedDay' }),
+        shown('el.month.2026-11-01', 'Asha is 8 months', { source: 'scribe.reminders', kind: 'monthAge' }),
+        shown('someone-else', CANARY, { source: 'another.app', kind: 'typedDay' }),
+      ];
+      for (const d of delivered) os.presented.set(d.identifier, d);
+      // While the words may show, a re-plan leaves Notification Center alone.
+      await reminders.rescheduleReminders();
+      expect(os.presented.size, label).toBe(4);
+      turnOff();
+      await reminders.rescheduleReminders();
+      expect([...os.presented.keys()], label).toEqual([`el.typed.${today()}`, 'el.month.2026-11-01', 'someone-else']);
+    }
+  });
+
   it('the build switch off plans no typed day and cancels a pending one; the words stay on the phone', async () => {
     const day = plus(today(), 2);
     typed.saveTypedDay(day, 'Nursery starts', today());
