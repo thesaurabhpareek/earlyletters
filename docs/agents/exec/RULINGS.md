@@ -2622,6 +2622,7 @@ The entries in this batch (three stacked PRs) record each role's own ruling on t
 - Verdict: RULED (requirement hygiene, concur with CPrivO-58). No release scope or date moves: day names cannot be turned on in any build yet.
 - Ruling: NS-18-R3 and FR-NTC-11 stop conflicting by reading NS-18-R3 as "the words show only with day names on and names on, App lock off". The errata rows for NS-18-R3 and NS-48-R27 go to the PM lane with the backlog reconcile.
 - Door: two-way.
+- Founder-only: no. Signed: Chief Product Officer (Claude role)
 
 ### CMO-22 Support reply times: no public time; data requests say 45 days (27 Nov 2026, CMO via Karma's session, stream 16; Claude role, not a lawyer)
 - Question: what reply time do the contact, support and delete-account pages promise, and how do FR-MSG-12, FR-MSG-33, claims row EF1 and `packages/content/src/pages.en.ts:168` fit CL-099?
