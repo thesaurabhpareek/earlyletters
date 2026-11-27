@@ -7,8 +7,9 @@
  * Order, and why:
  *  1. Not signed in: nothing here; the signed-out Erase everything (DATA-REQ-024) is the flow.
  *  2. Anything that only this phone holds and that the drain will not send (a book the server refused, a draft never
- *     held, a conflict copy; store.ts eraseThisPhoneBlockers): stop before signing out, nothing changed. The screen
- *     says "your letters are still in your account", so a wipe must never lose a letter the account does not have.
+ *     held, a conflict copy, and any recording or picture, which the server never holds; store.ts
+ *     eraseThisPhoneBlockers): stop before signing out, nothing changed. A wipe must never lose anything the account
+ *     does not have, so this flow erases a phone only when everything on it is also in the account.
  *  3. Sign out through the F02 sign-out guard (session-provider `signOut`): it waits for the outbox to drain, so every
  *     queued op reaches the server first ("Sending your last letters first." while it waits), then removes the session.
  *     "Stay signed in" during the wait ends it here with nothing changed.

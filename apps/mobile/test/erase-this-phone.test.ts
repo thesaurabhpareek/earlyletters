@@ -19,7 +19,12 @@
  *  M4 wipe.ts onlyOnThisPhone: a letter's own sync state not read (a letter the server refused counted as on it);
  *  M5 wipe.ts onlyOnThisPhone: the drafts clause removed;
  *  M6 erase-this-phone.logic.ts: 'stayed' read as signed out;
- *  M7 store.ts eraseEverythingLocal: a signed-in phone let through (the signed-out flow changed).
+ *  M7 store.ts eraseEverythingLocal: a signed-in phone let through (the signed-out flow changed);
+ *  M8 store.ts eraseThisPhoneAllowed: the outbox-empty check removed (a queued delete wiped unsent);
+ *  M9 wipe.ts onlyOnThisPhone: the conflict-copy clause removed;
+ *  M10 store.ts eraseThisPhoneBlockers: the term for queued ops the drain does not send removed;
+ *  M11 wipe.ts onlyOnThisPhone: the recordings and pictures clause removed.
+ * The lib/erase-everything.ts eraseThisPhone wrapper (Keychain, reminders) is held in erase-all.test.ts.
  * Not seen on a phone: real Supabase Auth, the Keychain, the React provider. Fictional family "Asha" only (CLAUDE.md).
  */
 import { randomBytes } from 'node:crypto';
@@ -173,8 +178,8 @@ function deps(p: ReturnType<typeof provider>, over: Partial<EraseThisPhoneDeps> 
 }
 
 beforeAll(async () => {
-  server = await startSyncServer({ users: Array.from({ length: 12 }, (_, i) => `0192f0aa-0000-7000-8000-${String(i + 1).padStart(12, '0')}`), protocol: 'v1' });
-  await server.consent(...Array.from({ length: 12 }, (_, i) => `0192f0aa-0000-7000-8000-${String(i + 1).padStart(12, '0')}`));
+  server = await startSyncServer({ users: Array.from({ length: 16 }, (_, i) => `0192f0aa-0000-7000-8000-${String(i + 1).padStart(12, '0')}`), protocol: 'v1' });
+  await server.consent(...Array.from({ length: 16 }, (_, i) => `0192f0aa-0000-7000-8000-${String(i + 1).padStart(12, '0')}`));
 }, 180_000);
 
 let ASHA = '';
@@ -289,6 +294,73 @@ describe('[F17-REQ-026] Erase this phone only on a signed-in phone', () => {
     expect(outboxRows()).toBe(0);
     expect(store.eraseThisPhoneLocal(() => {}, () => {})).toBe('not_drained');
     expect(db.get<{ n: number }>('SELECT COUNT(*) AS n FROM drafts')!.n).toBe(1);
+  });
+});
+
+/** A signed-in phone with every letter on the server and nothing queued. */
+async function drainedPhone(): Promise<string[]> {
+  const queued = await phoneWithTwoQueued();
+  await (await engine()).sync();
+  expect(outboxRows()).toBe(0);
+  expect(store.eraseThisPhoneBlockers()).toBe(0);
+  return queued;
+}
+
+/** Stops before signing out (only_here), and the wipe after a sign-out refuses it too; nothing is erased. */
+async function expectOnlyHere(): Promise<void> {
+  const p = provider({ drain: true });
+  const signOut = vi.fn(p.signOut);
+  const audio = vi.fn();
+  expect(await eraseThisPhoneOnly(deps(p, { signOut }))).toBe('only_here');
+  expect(signOut).not.toHaveBeenCalled();
+  expect(store.eraseThisPhoneLocal(audio, () => {})).toBe('not_drained');
+  expect(audio).not.toHaveBeenCalled();
+  expect(localLetters()).toBe(7);
+}
+
+describe('[F17-REQ-026] what the server never holds stops Erase this phone only', () => {
+  it('a recording of a synced letter (the server holds the words, never the recording)', async () => {
+    const [id] = await drainedPhone();
+    db.run('UPDATE entries SET audio_uri = ? WHERE id = ?', 'file:///phone/Documents/recording-asha.m4a', id);
+    await expectOnlyHere();
+  });
+
+  it('a picture kept with a synced letter (pictures never leave the phone, ADR 0028)', async () => {
+    const [id] = await drainedPhone();
+    db.run(
+      "INSERT INTO entry_media (id, entry_id, kind, ext, bytes, sha256, added_at) VALUES (?, ?, 'photo', 'jpg', 1000, ?, ?)",
+      uuid7(), id, 'ab'.repeat(32), iso(),
+    );
+    await expectOnlyHere();
+  });
+
+  it('a conflict copy (this phone\'s words the server did not take)', async () => {
+    const [id] = await drainedPhone();
+    db.run(
+      "INSERT INTO rejected_writes (op_id, type, entity_id, payload, code, rejected_at) VALUES (?, 'entry.upsert', ?, '{}', 'conflict', ?)",
+      uuid7(), id, iso(),
+    );
+    await expectOnlyHere();
+  });
+
+  it('a queued op the drain does not send (an erase waiting for a server that can erase)', async () => {
+    await drainedPhone();
+    db.run(
+      "INSERT INTO sync_outbox (op_id, lane, type, entity_id, payload, created_at, next_attempt_at) VALUES (?, 2, 'entry.erase', ?, '{}', ?, '2999-01-01T00:00:00.000Z')",
+      uuid7(), uuid7(), iso(),
+    );
+    await expectOnlyHere();
+    expect(outboxRows()).toBe(1);
+  });
+
+  it('a queued delete of a synced letter (no live row shows it) with a sign-out that does not drain: nothing is erased', async () => {
+    const [id] = await drainedPhone();
+    expect(store.deleteEntry(id)).toBe(true);
+    expect(outboxRows()).toBe(1);
+    expect(store.eraseThisPhoneBlockers()).toBe(0);
+    expect(await eraseThisPhoneOnly(deps(provider({ drain: false })))).toBe('not_drained');
+    expect(outboxRows()).toBe(1);
+    expect(localLetters()).toBe(7);
   });
 });
 
