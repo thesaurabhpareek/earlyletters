@@ -5,8 +5,8 @@
  * more. The words are the app's own (packages/content export.en.ts).
  *
  * Static markup draws a screen once, so it cannot run an export to reach the ready state. The screen's one state hook is
- * given the ready state instead: the stand-in useState answers the screen's first call (its `{ kind: 'idle' }` state)
- * with the state under test and passes every other call to React. What it does NOT prove: the export run that sets
+ * given the ready state instead: the stand-in useState answers any call that starts from the screen's `{ kind: 'idle' }`
+ * state with the state under test, and passes every other call to React. What it does NOT prove: the export run that sets
  * that state (test/export-photos.test.ts counts photosHeldBack), and layout on a phone. Fictional family Asha only.
  */
 import * as React from 'react';

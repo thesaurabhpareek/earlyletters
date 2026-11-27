@@ -190,7 +190,7 @@ describe('[BL-933] export 1.7.0 carries letters\' pictures', () => {
       expect(out.result.photosHeldBack).toEqual(heldBack);
       return out.progress;
     };
-    for (const heldBack of [[], ['e2'], ['e2', 'e3']] as Array<Array<'e2' | 'e3'>>) {
+    for (const heldBack of [[], ['e2'], ['e3'], ['e2', 'e3']] as Array<Array<'e2' | 'e3'>>) {
       const progress = await run(heldBack);
       // The bar never goes back.
       for (let i = 1; i < progress.length; i++) expect(progress[i].fraction, `${heldBack.join(',')} at ${i}`).toBeGreaterThanOrEqual(progress[i - 1].fraction);
