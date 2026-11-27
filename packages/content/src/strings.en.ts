@@ -206,6 +206,18 @@ export const en = {
       body: "Say one thing about {child} today. That is a letter.",
       cta: "Write the first one",
     },
+
+    // BL-1657 (wired by BL-2144): the calm card when making the book fails at the finish step. What happened, then
+    // what's still fine, then one way on. "Still here" and not "on this phone": the answers stay on the screen, while
+    // keeping the first-run draft can itself fail quietly (onboarding.tsx). No {child}: with twins the line would need
+    // "books". While the card shows it takes the place of `finish.title` and `finish.body`, so the screen never says
+    // the book is open and not open at once (CDesO-52's placement condition for BL-2144).
+    // Exec reading CDesO-52 (BL-1657): approved as written.
+    finishRetry: {
+      title: "The book isn't open yet",
+      body: "Everything you typed is still here.",
+      tryAgainButton: "Try again",
+    },
   },
 
   tonight: {

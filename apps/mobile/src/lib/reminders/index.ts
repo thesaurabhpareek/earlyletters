@@ -18,6 +18,7 @@ export { clampReminderTime, type Cadence, type PlannedNotification, type Reminde
 export { lockScreenNamesOn, plannerChildren, readPrefs, writeOnSince, REMINDER_SETTING_KEYS, writePrefs } from './prefs';
 export { endReminderSession, sessionEnded, settleReminderSession } from './session';
 export {
+  askForDayReminders,
   disableReminders,
   enableReminders,
   forgetReminders,

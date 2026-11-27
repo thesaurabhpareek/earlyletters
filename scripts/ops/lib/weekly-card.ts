@@ -2,7 +2,7 @@
  * The weekly request clock (BL-2102; FR-BKO-09, FR-BKO-13, FR-BKO-16). Reads the request log of
  * docs/ops/runbooks/data-requests-by-email.md section 1 (a CSV file on the founder's computer) and builds the
  * data-request part of the Monday card: every open request with its day, due date, next action date and next
- * action, any request at day 35 or later listed first.
+ * action, any request on the clock at day 35 or later (and an open dispute row at day 35 or later) listed first.
  *
  * Why a script: Privacy 10 promises a reply within 45 days (one extension if we say why). A row that passes day 45
  * with no notice is a P0 defect, and a by-hand count is how that gets missed.
@@ -15,7 +15,7 @@
 
 export const KINDS = [
   'delete_account', 'withdraw_sync', 'see_export', 'correct', 'under_18', 'testflight_feedback', 'email_list',
-  'safety', 'abuse_report', 'legal_process', 'other',
+  'safety', 'abuse_report', 'dispute_or_third_party', 'legal_process', 'other',
 ] as const;
 export const OUTCOMES = ['done', 'done_in_part', 'could_not_verify', 'cannot_be_done', 'declined', 'referred'] as const;
 export const VERIFIED_BY = ['code_to_account_address', 'code_to_tester_address', 'none_needed'] as const;
@@ -150,6 +150,30 @@ export function cardRow(r: Row, today: number): CardRow {
       urgent: false,
     };
   }
+  if (r.kind === 'dispute_or_third_party') {
+    // Runbook section 0: an executor, relative or guardian of a holder who died or cannot act, a parent of an under-18
+    // holder, or a custody or family dispute. The sender is not the holder, so the card prompts no reply to them: a
+    // "what was done" reply or an extension notice would say the account exists (IAM-R09). The exec team read it on
+    // 27 Nov 2026 (not yet in a rulings file). Days 35 to 44 are an internal check: a request about the sender's own
+    // data inside it, or an executor, relative or guardian row whose email does not say the holder died or cannot act,
+    // is on the clock from the same day (never a custody dispute or a parent's request), and whether the 45 days apply to a living holder's guardian is COUNSEL_PACKET Q49, so that goes to
+    // counsel before day 45. From day 45 the row stays first until it closes: an unanswered Q49 is never read as a no.
+    const first = !r.acknowledged && day >= 1;
+    const check = day >= FIRST_DAY && day < DUE_DAY;
+    const late = day >= DUE_DAY;
+    const counsel = check
+      ? "with counsel: check no request about the sender's own data is inside it, and if one is, log it as its own row today with the same received date; if it is an executor, relative or guardian row (never a custody or family dispute, and never a parent or guardian who says the holder is under 18) and the email does not say the holder died or cannot act, log it under its route's kind today with the same received date and close this row; if it is an executor, relative or guardian of a living holder who cannot act, ask counsel before day 45 whether the 45 days apply (Q49)"
+      : late
+        ? "with counsel: still open past day 44; check no request about the sender's own data is inside it; if it is an executor, relative or guardian of a living holder who cannot act and counsel has not said the 45 days do not apply, to counsel today (Q49); no reply beyond the fixed first reply; change nothing on any account"
+        : 'with counsel: no reply beyond the fixed first reply; change nothing on any account';
+    return {
+      ...offClock,
+      left: check ? DUE_DAY - day : late ? 0 : offClock.left,
+      nextActionDate: iso(today),
+      nextAction: first ? `${firstMessage(r.kind)}${check || late ? `; then ${counsel.replace(/^with counsel: /, 'with counsel, ')}` : ''}` : counsel,
+      urgent: check || late,
+    };
+  }
   if (day > dueDay) {
     const why = extended ? 'past the extended due date' : lateExtension ? 'the extension notice did not go before day 45' : 'past day 45 with no extension notice';
     return { ...base, nextActionDate: iso(today), nextAction: `P0: ${why}; to counsel today`, urgent: true };
@@ -170,10 +194,11 @@ export function cardRow(r: Row, today: number): CardRow {
   return { ...base, nextActionDate: iso(addDays(received, nextDay)), nextAction: label, urgent: day >= FIRST_DAY };
 }
 
-/** Rows to act on first (day 35 or later, or a letter's date passed), fewest days left first so a P0 leads; then the rest by next action date, then ticket. */
+/** Rows to act on first (day 35 or later on the clock, a dispute row at day 35 or later, or a letter's date passed), fewest days left first so a P0 leads, a row on the clock before one off it on a tie; then the rest by next action date, then ticket. */
 export function order(a: CardRow, b: CardRow): number {
   if (a.urgent !== b.urgent) return a.urgent ? -1 : 1;
-  if (a.urgent) return a.left - b.left || b.day - a.day || a.ticket.localeCompare(b.ticket);
+  // On a tie in days left, a row on the clock comes before one off it, so a request due today is never behind a dispute row.
+  if (a.urgent) return a.left - b.left || Number(a.due === '-') - Number(b.due === '-') || b.day - a.day || a.ticket.localeCompare(b.ticket);
   return a.nextActionDate.localeCompare(b.nextActionDate) || a.ticket.localeCompare(b.ticket);
 }
 

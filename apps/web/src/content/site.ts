@@ -332,11 +332,15 @@ export const site = {
   /**
    * The page behind the link at the end of most emails, https://earlyletters.com/open (app/open/page.tsx; BL-510,
    * TPL-06). It shows only when the app did not open the link. It carries no token and asks for nothing. Exec read
-   * 24 Nov (CMO, CLO, Claude roles, not counsel): approved with this wording.
+   * 24 Nov (CMO, CLO, Claude roles, not counsel): approved with this wording. `notIphone` (BL-2129) is for a person on
+   * another kind of phone: always shown, because the page is static and never reads the browser's user agent. It
+   * names no other platform (copy-rules: no Android promise).
    */
   openApp: {
     title: `Open ${NAME}`,
     line: `Open ${NAME} on your iPhone.`,
+    // Exec reading CMO-23 (BL-2129): approved as written, shown to everyone (no user-agent check).
+    notIphone: `Not on an iPhone? For now, ${NAME} is only on iPhone.`,
     body: `If ${NAME} is on this phone, tap below. If it isn't, you can get it from the App Store.`,
     bodyPrelaunch: `If ${NAME} is on this phone, tap below.`,
     open: `Open ${NAME}`,
@@ -353,11 +357,19 @@ export const site = {
    * chat or mail app's own browser dropped the fragment), the words send the person back to the message, where the
    * whole link still is (F11-U02). The steps show only beside a working Copy button; `noScript` is all a browser with
    * JavaScript off shows in their place, since that page can neither read the invite nor copy it.
+   * `storeBuild` (BL-558): only a build with the invite flow (the alpha) writes these links, and the App Store build
+   * hides "I was invited", so the page says so, with or without JavaScript, once the site is in launch mode (CMO-24:
+   * drawn only when `launch.mode === 'live'`, the switch /open uses; before launch there is no App Store version).
+   * packages/content/test/claims-capabilities.test.ts reads the page's invite words as true only while this line is
+   * in this table and the store build still has no invite flow; when the store build gains the flow, that test fails
+   * until this line goes.
    */
   invite: {
     title: 'An invite to share a book',
     line: 'Someone invited you to share a book.',
     body: `This invite opens in ${NAME} on an iPhone.`,
+    // Exec reading CMO-24 (BL-558): approved as written, drawn only in launch mode (app/j/page.tsx).
+    storeBuild: `For now, the App Store version of ${NAME} doesn't have invites.`,
     steps: ['Tap "Copy the invite".', `Open ${NAME} and tap "I was invited".`, 'Paste the invite.'],
     onComputer: `On a computer? Open this link on the iPhone that has ${NAME}.`,
     copy: 'Copy the invite',
