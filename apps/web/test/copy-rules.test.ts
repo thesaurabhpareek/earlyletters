@@ -487,6 +487,15 @@ describe('rules carried over from the content package (BL-556)', () => {
     for (const ok of ['Try again in a moment.', 'One moment.']) expect(MOMENT_MADE.test(ok), ok).toBe(false);
   });
 
+  // RULE (BL-556; was "never types the brand name" over packages/content/src): the brand name is never typed in
+  // site copy. site.ts and the copy files take it from packages/brand (NAME), so a rename reaches every line.
+  it('never types the brand name in site.ts or the copy files', () => {
+    const name = new RegExp(brand.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    const files = [fileURLToPath(new URL('../src/content/site.ts', import.meta.url)), ...COPY_FILES];
+    const bad = files.flatMap(fileLeaves).filter((l) => name.test(l.text));
+    expect(bad.map((l) => `${l.path}: ${l.text}`)).toEqual([]);
+  });
+
   // RULE (BRAND-MOMENTS-2, X1, Q-X1-12): the website does not say Moments until counsel clears the name.
   it('[BRAND-MOMENTS-2] does not say Moments', () => {
     expect(offenders(PROSE, /\bmoments\b/i)).toEqual([]);
