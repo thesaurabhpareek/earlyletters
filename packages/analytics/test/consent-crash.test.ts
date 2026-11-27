@@ -189,7 +189,7 @@ describe('basics helpers and trackers send nothing before the parent says yes (B
     await analytics.flush();
     const sent = provider.captured();
     expect(sent.map((c) => c.event)).toEqual(['control_tapped']);
-    expect(Object.keys(sent[0]!.properties).sort()).toEqual(['control', 'route', 'schema_version']);
+    expect(Object.keys(sent[0]!.properties).sort()).toEqual(['build_kind', 'control', 'is_internal', 'route', 'schema_version']);
     expect(JSON.stringify(sent)).not.toMatch(/Asha|first word|m4a/);
   });
 });

@@ -106,13 +106,15 @@ describe('basics helpers (BL-2122)', () => {
     tick(450);
     expect(stop(false)).toBe('queued');
     expect(stop()).toBe('dropped_invalid');
+    // BL-1250 (#2106) adds build_kind and is_internal to every event; this test's client is a dev build.
+    const BUILD = { build_kind: 'dev', is_internal: false };
     expect((await sent()).map((c) => [c.event, c.properties])).toEqual([
-      ['control_tapped', { control: 'tonight_speak', route: 'tonight', schema_version: SCHEMA_VERSION }],
-      ['surface_impressed', { surface: 'tonight_prompt', route: 'tonight', rank: 2, schema_version: SCHEMA_VERSION }],
+      ['control_tapped', { control: 'tonight_speak', route: 'tonight', ...BUILD, schema_version: SCHEMA_VERSION }],
+      ['surface_impressed', { surface: 'tonight_prompt', route: 'tonight', rank: 2, ...BUILD, schema_version: SCHEMA_VERSION }],
       // A rank outside 1 to 9 is left off, not sent and not a reason to lose the impression.
-      ['surface_impressed', { surface: 'keep_sheet', route: 'tonight', schema_version: SCHEMA_VERSION }],
-      ['surface_impressed', { surface: 'tonight_prompt', route: 'book', schema_version: SCHEMA_VERSION }],
-      ['perf_measured', { metric: 'save_commit', ms_bucket: '300ms_1s', ok: false, schema_version: SCHEMA_VERSION }],
+      ['surface_impressed', { surface: 'keep_sheet', route: 'tonight', ...BUILD, schema_version: SCHEMA_VERSION }],
+      ['surface_impressed', { surface: 'tonight_prompt', route: 'book', ...BUILD, schema_version: SCHEMA_VERSION }],
+      ['perf_measured', { metric: 'save_commit', ms_bucket: '300ms_1s', ok: false, ...BUILD, schema_version: SCHEMA_VERSION }],
     ]);
   });
 });
