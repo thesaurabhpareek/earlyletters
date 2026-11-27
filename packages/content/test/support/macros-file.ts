@@ -53,11 +53,12 @@ export function bodyText(body: string): string {
  * ID or a birth date. Used for the abuse-material acknowledgement (FR-POL-02) and the under-18 reply (FR-POL-07).
  */
 export const ASKS_FOR_MATERIAL: readonly RegExp[] = [
-  /\b(send|attach|forward|upload|share|reply with|include|email|paste|post|show|provide|give|describe)\b[^.?]*\b(file|files|picture|pictures|photo|photos|image|images|video|videos|screenshot|screenshots|attachment|attachments|link|links|copy|evidence|proof|id|birth|address|url|page|them|email|emails|message|messages|mail|details|username|what you)\b/i,
+  /\b(send|attach|forward|upload|share|reply with|include|email|paste|post|show|provide|give|describe|keep|save)\b[^.?]*\b(it|this|that|anything|more|file|files|picture|pictures|photo|photos|image|images|video|videos|screenshot|screenshots|attachment|attachments|link|links|copy|evidence|proof|id|birth|address|url|page|them|email|emails|message|messages|mail|details|username|what you)\b/i,
   /\b(proof of age|date of birth|birth date|passport|driver'?s licen[cs]e|government id)\b/i,
   /\bhow old\b/i,
   /\b(age|born|year of birth)\b/i,
   /\b(tell us|let us know) (where|who|what|the)\b/i,
+  /\b(tell|say|write)\b[^.?]*\b(more|where|who|what|which|when)\b/i,
 ];
 
 /** Words that would say an account exists, or what happened to one (FR-POL-07). */
@@ -65,6 +66,8 @@ export const NAMES_AN_ACCOUNT: readonly RegExp[] = [
   /\b(the|their|this|that|his|her|your)\s+account\b/i,
   /\baccount\s+(exists|was|is|has been|will be)\b/i,
   /\b(closed|deleted|removed|suspended|found)\b/i,
+  // A promise of what we will do implies an account exists, so the present and future forms count too.
+  /\b(close|delete|remove|suspend|disable|block|ban)[sd]?\b/i,
   // The neutral reply never needs the word: any mention of an account, or of finding one, says too much.
   /\baccounts?\b/i,
   /\b(find|exists?)\b/i,

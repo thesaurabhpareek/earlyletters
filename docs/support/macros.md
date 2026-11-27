@@ -65,7 +65,7 @@ Log line: the request log row of `data-requests-by-email.md` section 1, with its
 
 - Key: `policy.under18Report`
 - Trigger: anyone writes that an account holder or a family contributor is under 18.
-- Before it: if the report says the child is in danger or being hurt, the safety pointer (M6, FR-SUP-16) goes first, and this macro waits for another day (`underage-account.md` section 0). M6 is not written yet (`docs/support/safety-routing.md` does not exist, FR-SUP-16). Until it is, the pointer is the interim one in `data-requests-by-email.md` section 0, the safety row: local emergency services and the help the app shows by region.
+- Before it: if the report says the child is in danger or being hurt, the safety pointer (M6, FR-SUP-16) goes first, and this macro waits for another day (FR-SUP-16; `data-requests-by-email.md` section 0, the safety row). M6 is not written yet (`docs/support/safety-routing.md` does not exist, FR-SUP-16). Until it is, the pointer is the interim one in `data-requests-by-email.md` section 0, the safety row: local emergency services and the help the app shows by region.
 - Send to: the person who reported, the same words every time.
 - Never: ask for proof of age, an ID or a birth date; say whether an account exists; say what we did or will do to an account.
 - Then: hand it to `docs/ops/runbooks/underage-account.md`. Log kind `under_18`.

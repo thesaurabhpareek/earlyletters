@@ -135,6 +135,8 @@ describe('[FR-POL-07] one neutral reply to a report that someone is under 18', (
       'Nobody is signed up with that address.',
       "We've dealt with it.",
       "We'll let you know the outcome.",
+      'If they are under 18, we will delete it.',
+      'We will remove them if so.',
     ]) {
       expect(under18Problems(`Hi,\n\nThanks. ${planted}\n`), planted).not.toEqual([]);
     }

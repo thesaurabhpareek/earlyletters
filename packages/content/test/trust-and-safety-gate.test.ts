@@ -190,6 +190,11 @@ describe('[FR-POL-02] a report of apparent child sexual abuse material gets an a
       'Please provide the link.',
       'Please give us the URL.',
       'Let us know where you saw it.',
+      'Please send it to us.',
+      'Please forward it to us.',
+      'Please tell us more about what you saw.',
+      'Keep a copy of it for us.',
+      'Please tell us which book it was in.',
     ]) {
       expect(asks(`Hi,\n\nThanks. ${planted}\n`), planted).not.toEqual([]);
     }
@@ -251,19 +256,23 @@ describe('[FR-POL-04] the two-parent book stays out of store builds until the sa
     expect(findings.some((f) => /access tool/.test(f))).toBe(true);
   });
 
+  // These planted cases set the store build's servers on, so they still test the gate if production's switch is off.
+  const serversOn = (ps: Profile[]): Profile[] =>
+    ps.map((p) => (isStoreBuild(p) ? { ...p, env: { ...p.env, EXPO_PUBLIC_SERVER_FEATURES: 'on' } } : p));
+
   it('[FR-POL-04] fails when only one entry opens in the store build, whichever entry it is', () => {
     const state = safetyState(runbook, migrations);
     for (const entry of INVITE_ENTRIES) {
       const oneOpens: typeof inviteDestination = (e, s, a) => (e === entry && s ? 'flow' : inviteDestination(e, s, a));
-      const findings = safetyRemovalFindings(profiles, oneOpens, state);
+      const findings = safetyRemovalFindings(serversOn(profiles), oneOpens, state);
       expect(findings.length, entry).toBeGreaterThan(0);
       expect(findings[0], entry).toContain(`opens from ${entry}`);
     }
   });
 
-  it('[FR-POL-04] passes the store build its real server switch, so a rule that opens only with servers on is caught', () => {
+  it('[FR-POL-04] passes the store build its server switch, so a rule that opens only with servers on is caught', () => {
     const serversOnly: typeof inviteDestination = (_e, s) => (s ? 'flow' : 'coming_soon');
-    expect(safetyRemovalFindings(profiles, serversOnly, safetyState(runbook, migrations))).not.toEqual([]);
+    expect(safetyRemovalFindings(serversOn(profiles), serversOnly, safetyState(runbook, migrations))).not.toEqual([]);
     const store = profiles.find(isStoreBuild)!;
     const serversOff = [{ ...store, env: { ...store.env, EXPO_PUBLIC_SERVER_FEATURES: 'off' } }];
     expect(safetyRemovalFindings(serversOff, serversOnly, safetyState(runbook, migrations))).toEqual([]);
