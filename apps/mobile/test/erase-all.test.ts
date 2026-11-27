@@ -1277,6 +1277,79 @@ describe('[DATA-REQ-024][F14-REQ-026] Erase everything on this phone, signed out
   });
 });
 
+describe('[F17-REQ-026] lib/erase-everything.ts eraseThisPhone, the wrapper Erase this phone only runs after the sign-out (BL-559)', () => {
+  /** A signed-in phone whose one typed letter and book are on the server, nothing queued, with Keychain items set. */
+  async function synced() {
+    const app = await launch();
+    const asha = app.store.addChild({ name: 'Asha', birthday: '2026-03-01', dueDate: null, signsAs: 'Mama' }).id;
+    app.store.saveEntry(letter({ id: '0199a5b0-0000-7000-8000-0000000a0003', childId: asha, captureMode: 'typed', audioUri: null, audioSha256: null, audioBytes: null, audioDurationMs: null, finalText: 'Asha, a quiet morning.' }));
+    app.store.setSetting('sync.ownerId', '0199a5b0-0000-7000-8000-00000000aaaa');
+    db.run("UPDATE entries SET sync_state = 'synced'");
+    db.run("UPDATE children SET server_state = 'synced'");
+    db.run('DELETE FROM sync_outbox');
+    app.store.ledgerDb().raiseTo(1);
+    await app.ledger.syncLedger(app.store.ledgerDb());
+    h.keychain.set('scribe.auth.appleUser', 'stand-in.apple.user');
+    h.keychain.set('scribe.auth.deviceId', 'ab'.repeat(32));
+    expect(app.store.localDeletionAllowed()).toBe(false);
+    return app;
+  }
+
+  it('erases the rows, the free-letter Keychain item, the sign-in leftovers and the reminders', async () => {
+    const app = await synced();
+    expect(await app.all.eraseThisPhone()).toBe('erased');
+    expect(rows('entries') + rows('children') + rows('settings')).toBe(0);
+    expect([...h.keychain.keys()]).toEqual([]);
+    expect(h.calls).toEqual(expect.arrayContaining(['analytics:stop', 'invite:clear', 'reminders:forget']));
+    expect(app.store.eraseEverythingPending()).toBe(false);
+    expect(fetches).toBe(0);
+  });
+
+  it('a recording on the phone (the server never holds one): refused, nothing erased', async () => {
+    const app = await synced();
+    const a1 = take('0A1B2C3D-0000-4000-8000-00000000A5A1');
+    db.run('UPDATE entries SET audio_uri = ?', a1);
+    expect(await app.all.eraseThisPhone()).toBe('not_drained');
+    expect(has(a1)).toBe(true);
+    expect(rows('entries')).toBe(1);
+    expect(h.keychain.has('scribe.auth.deviceId')).toBe(true);
+    expect(h.calls).not.toContain('reminders:forget');
+  });
+
+  // CTO ruling 7225265946 on #2102, point 2: Erase this phone writes its mark with a scope, as Erase everything does, so
+  // a retry after a failed try keeps what was written since (the BL-775 rule).
+  it('[F17-REQ-026][BL-775] a failed Erase this phone leaves its mark with a scope, and the retry keeps a letter written since (CTO ruling 7225265946, point 2)', async () => {
+    const app = await synced();
+    expect(
+      app.store.eraseThisPhoneLocal(app.erase.eraseAudioFile, () => {
+        throw new Error('a file would not go');
+      }),
+    ).toBe('incomplete');
+    expect(app.store.eraseEverythingPending()).toBe(true);
+    expect(app.store.getSetting('erase.everything.scope')).not.toBeNull();
+    const asha = app.store.listChildren()[0]!.id;
+    const late = '0199a5b0-0000-7000-8000-0000000a0019';
+    app.store.saveEntry(letter({ id: late, childId: asha, captureMode: 'typed', audioUri: null, audioSha256: null, audioBytes: null, audioDurationMs: null, finalText: 'Asha, written after the failed try.' }));
+    expect(await app.all.eraseThisPhone()).toBe('erased');
+    expect(db.all<{ id: string }>('SELECT id FROM entries').map((r) => r.id)).toEqual([late]);
+    expect(app.store.eraseEverythingPending()).toBe(false);
+    expect(fetches).toBe(0);
+  });
+
+  // CTO ruling 7225265946 on #2102, point 4: the one sync asked for after `erased` (erase-everything.ts syncOnceAfterErase)
+  // runs on this path too. The sign-out has stopped the engine, so lib/sync/index.ts syncNow resolves null and sends nothing.
+  it('[F17-REQ-026] after Erase this phone the sync asked for once it reports erased is a harmless no-op: the session is gone, nothing is queued or sent (CTO ruling 7225265946, point 4)', async () => {
+    const app = await synced();
+    h.syncNow = null; // as lib/sync/index.ts syncNow once the sign-out stopped the engine
+    expect(await app.all.eraseThisPhone()).toBe('erased');
+    await vi.waitFor(() => expect(h.syncs).toHaveLength(1)); // loaded on demand
+    expect(await Promise.all(h.syncs)).toEqual([null]);
+    expect(rows('sync_outbox') + rows('entries') + rows('children') + rows('settings')).toBe(0);
+    expect(app.store.eraseEverythingPending()).toBe(false);
+    expect(fetches).toBe(0);
+  });
+});
+
 describe('[DATA-REQ-024] erased words leave the database file itself, not only its rows (privacy Review A on #520)', () => {
   // A real database file in WAL mode with the phone's open pragmas, so the bytes an iPhone backup would copy can be read.
   const WORD = 'Zinniaquill'; // a word only these letters say

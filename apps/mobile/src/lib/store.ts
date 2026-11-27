@@ -79,6 +79,7 @@ import {
   heldEverSent,
   getDraftRow,
   getEntryRow,
+  pendingCount,
   syncOwner,
   enqueueEntryUpsert,
   enqueuePrefs,
@@ -1522,16 +1523,18 @@ export function eraseEverythingPending(): boolean {
 /**
  * Erase everything, the store's part (signed out only, F17 6.2 F step 1). In order:
  *  1. the pending mark and, in the same transaction, its scope: what exists on the phone now (wipe.ts EraseScope), so a
- *     kill at any later point is finished at the next launch, and a later try removes only that (a mark is only ever
- *     written on a phone that had not signed in);
+ *     kill at any later point is finished at the next launch, and a later try removes only that. A mark is only ever
+ *     written by this function on a phone that had not signed in, or by eraseThisPhoneLocal once the drain left
+ *     nothing; both write it with its scope (writeEraseMark);
  *  2. each old letter's and draft's recording, listening copy and temporary copies (`eraseAudio`);
  *  3. every other recording file, listening copy, temporary copy and export left on the phone (`eraseFiles`), except
  *     the recordings and pictures of rows written since the mark;
  *  4. the old rows of every table, settings included, in one transaction; the mark and its scope stay.
- * On the first try nothing is newer than the mark, so all of it goes. After a try that ended `incomplete` the person may
- * keep writing; a retry and the launch resume run these same steps against the scope read in step 1, so a letter
- * written in between, its recording and its picture are kept (BL-775). A mark with no usable scope (a build before
- * BL-775, or the schema changed since) removes everything present, as the failed line says.
+ * Steps 2 to 4 are eraseMarked, which both callers run. On the first try nothing is newer than the mark, so all of it
+ * goes. After a try that ended `incomplete` the person may keep writing; a retry and the launch resume run these same
+ * steps against the scope read in step 1, so a letter written in between, its recording and its picture are kept
+ * (BL-775). A mark with no usable scope (a build before BL-775, or the schema changed since) removes everything present,
+ * as the failed line says.
  * The caller then clears the Keychain (the free-letter count goes after the rows, so a relaunch cannot raise it
  * again from letters still present) and calls finishEraseEverything. Files go before rows, so the sweep never finds
  * a recording without its row to bring back. Nothing is queued or sent.
@@ -1545,13 +1548,65 @@ export function eraseEverythingLocal(eraseAudio: AudioEraser, eraseFiles: Device
   const c = ctx();
   if (!eraseEverythingPending()) {
     if (!localDeletionAllowed()) return 'signed_in';
-    // One transaction: a mark without its scope would fall back to erasing everything present, new work included.
-    c.db.transaction(() => {
-      const scope = wipe.takeEraseScope(c); // before the mark, so the mark is not part of what it lists
-      settings.setSetting(c, wipe.ERASE_EVERYTHING_SETTING, c.now());
-      settings.setSetting(c, wipe.ERASE_EVERYTHING_SCOPE, scope);
-    });
+    writeEraseMark(c);
   }
+  return eraseMarked(c, eraseAudio, eraseFiles);
+}
+
+/**
+ * Erase this phone only (F17-REQ-026, F17-U38, BL-559), before the outbox drains: what would stop it. A count of the
+ * things only this phone holds that will not drain (wipe.ts onlyOnThisPhone, a queued row counted as on its way), plus
+ * queued ops the drain does not send (a book the server refused, held ops for a server without held drafts, an erase
+ * waiting for a server that can erase). 0 means signing out with the F02 guard leaves nothing that only this phone has.
+ * Not a count of letters: a screen reads it as none or some.
+ */
+export function eraseThisPhoneBlockers(): number {
+  const c = ctx();
+  return wipe.onlyOnThisPhone(c, { queuedOnItsWay: true }) + (outboxRows(c) - pendingCount(c.db));
+}
+
+function outboxRows(c: RepoContext): number {
+  return c.db.get<{ n: number }>('SELECT COUNT(*) AS n FROM sync_outbox')!.n;
+}
+
+/**
+ * Erase this phone only, the store's part, once the session is gone (lib/erase-everything.ts eraseThisPhone; F17 6.2 F
+ * step 2). The same wipe as Erase everything, and only when the drain has left nothing: no row in the outbox and nothing
+ * the server has not acknowledged (wipe.ts onlyOnThisPhone, nothing counted as on its way). Otherwise 'not_drained' and
+ * nothing begun, so a sign-out that ended before the queue emptied (the session lost mid-wait, a guard that did not
+ * wait) never costs a letter. A phone that never signed in passes too. Nothing here is sent; the drain sent it before.
+ * The mark and its scope are the same as Erase everything's, so a kill part way is finished at the next launch
+ * (resumeEraseAtLaunch) and a retry removes only what existed at the mark.
+ */
+export function eraseThisPhoneLocal(eraseAudio: AudioEraser, eraseFiles: DeviceFilesEraser): 'erased' | 'incomplete' | 'not_drained' {
+  const c = ctx();
+  if (!eraseEverythingPending()) {
+    if (!eraseThisPhoneAllowed()) return 'not_drained';
+    writeEraseMark(c); // with its scope, so a retry after a failed try keeps work written since (BL-775)
+  }
+  return eraseMarked(c, eraseAudio, eraseFiles);
+}
+
+/** Whether eraseThisPhoneLocal would begin: everything this phone holds of the account is on the server. */
+export function eraseThisPhoneAllowed(): boolean {
+  const c = ctx();
+  return localDeletionAllowed() || (outboxRows(c) === 0 && wipe.onlyOnThisPhone(c, { queuedOnItsWay: false }) === 0);
+}
+
+/**
+ * The mark and its scope, in one transaction: a mark without its scope would fall back to erasing everything present,
+ * new work included. The scope is taken before the mark, so the mark is not part of what it lists.
+ */
+function writeEraseMark(c: RepoContext): void {
+  c.db.transaction(() => {
+    const scope = wipe.takeEraseScope(c);
+    settings.setSetting(c, wipe.ERASE_EVERYTHING_SETTING, c.now());
+    settings.setSetting(c, wipe.ERASE_EVERYTHING_SCOPE, scope);
+  });
+}
+
+/** Steps 2 to 4 of Erase everything, once the mark is written, against the scope the mark was written with. */
+function eraseMarked(c: RepoContext, eraseAudio: AudioEraser, eraseFiles: DeviceFilesEraser): 'erased' | 'incomplete' {
   const scope = wipe.readEraseScope(c);
   try {
     for (const r of wipe.audioRowsToErase(c, scope)) eraseAudio(r.audioUri, r.id);
