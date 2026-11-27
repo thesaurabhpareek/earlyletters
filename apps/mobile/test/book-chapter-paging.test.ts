@@ -17,8 +17,8 @@ vi.mock('../src/lib/db/repos/open-native', () => ({
   },
 }));
 
-import { watchBook, type BookRead } from '../src/components/book/book.logic';
-import { BOOK_PAGE, arrivalReach, createBookPages, monthsFromOutline, readPage, type RangeRead } from '../src/components/book/book-pages.logic';
+import { firstSeen, watchBook, type BookRead } from '../src/components/book/book.logic';
+import { BOOK_PAGE, arrivalReach, createBookPages, monthsFromOutline, readPage, type BookArrivals, type BookPages, type RangeRead } from '../src/components/book/book-pages.logic';
 import { bookChapters } from '../src/components/book/chapters';
 import { monthRows, showsMonthsButton } from '../src/components/book/book-page.logic';
 import { readableInBook } from '../src/components/book/quiet-day.logic';
@@ -111,9 +111,10 @@ describe('[BL-2225] on focus the Book reads at most one chapter of rows (the rea
 
   it('[BL-2225] the focus read (initialiser, watch and catch-up, outline) brings at most one chapter of rows into the app, and no edit list', () => {
     seen.length = 0;
-    // What book.tsx does on focus, with the functions it imports: createBookPages(listBookRange), pages.first in the
-    // initialiser, watchBook with pages.reread and the store's subscribe, and the outline while older pages are unread.
-    const pages = createBookPages(store.listBookRange);
+    // What book.tsx does on focus, with the functions it imports: createBookPages(listBookRange, BOOK_PAGE,
+    // bookArrivals), pages.first in the initialiser (with the arrivals mark), watchBook with pages.reread and the
+    // store's subscribe, and the outline while older pages are unread.
+    const pages = createBookPages(store.listBookRange, BOOK_PAGE, store.bookArrivals);
     const state = holder({ childId: ASHA, entries: pages.first(ASHA) });
     const off = watchBook({ childId: ASHA, read: pages.reread, subscribe: store.subscribe, set: state.set });
     const outline = pages.done(ASHA) ? null : store.bookOutline(ASHA);
@@ -122,8 +123,9 @@ describe('[BL-2225] on focus the Book reads at most one chapter of rows (the rea
     const reads = entryRows(seen);
     expect(reads.length).toBeGreaterThan(0);
     for (const r of reads) expect(r.rows).toBeLessThanOrEqual(BOOK_PAGE);
-    // The page and its catch-up reread are the same chapter: the whole focus read is two reads of one chapter, plus
-    // one outline row. Without paging this is 1,000 rows each.
+    // The page and its catch-up reread are the same chapter: the whole focus read is two reads of one chapter (a full
+    // page gives back its cut day, so each is under BOOK_PAGE rows), plus one outline row and the arrivals mark's one
+    // row. Without paging this is 1,000 rows each.
     expect(reads.reduce((n, r) => n + r.rows, 0)).toBeLessThanOrEqual(2 * BOOK_PAGE + 1);
     expect(state.get().entries.length).toBeGreaterThan(0);
     expect(state.get().entries.length).toBeLessThanOrEqual(BOOK_PAGE);
@@ -256,6 +258,77 @@ describe('[BL-2225] an older page is never news to the first-seen wash', () => {
   });
 });
 
+describe('[BL-2225] the other parent\'s letter synced in below the first page washes when its page is read, once', () => {
+  // Review A note 2, CTO ruling on #2147: before paging the whole read held such a letter and it washed. book.tsx's
+  // first-seen effect, as it runs on every change of the rows held: older pages left out, then firstSeen.
+  const theirs = (e: Pick<Entry, 'id'>) => (e as Entry).authorSignsAs === 'Papa';
+  const effect = (held: readonly Entry[], pages: BookPages, seen: string[] | null) => firstSeen(held.filter((e) => !pages.olderPage(e.id)), (e) => !theirs(e), seen);
+
+  it('[BL-2225] scrolled to (onEndReached) or held whole (Months), it washes once; letters there before the first page, and one seen already, never wash', () => {
+    for (const reachIt of ['scroll', 'whole book'] as const) {
+      const g = seeded(400);
+      const { ctx, read } = spied(g);
+      const arrivals: BookArrivals = { mark: () => entries.rowMark(ctx), since: (c, m) => entries.idsSince(ctx, c, m) };
+      const papa = (n: number, on: string) => entries.upsert(g.ctx, letter({ id: id(n), childId: ASHA, occurredOn: on, capturedAt: '2026-11-20T09:00:00.000Z', authorSignsAs: 'Papa' }), { childId: ASHA, authorSignsAs: 'Papa' });
+      papa(9100, '2022-03-04'); // theirs, in the store before the first page and below it: never news
+      const pages = createBookPages(read, BOOK_PAGE, arrivals);
+      let held: Entry[] = pages.first(ASHA);
+      const floor = held[held.length - 1].occurredOn;
+      // A phone whose seen list started on the first page; 9102 was shown on this phone before.
+      let seen: string[] = [...effect(held, pages, null).seen, id(9102)];
+      const washed: string[] = [];
+      const run = () => {
+        const next = effect(held, pages, seen);
+        washed.push(...next.wash);
+        seen = next.seen;
+      };
+      // The other parent's letters for days long before the first page sync in: a store change rereads from the floor.
+      papa(9101, '2022-03-05');
+      papa(9102, '2022-03-06');
+      expect('2022-03-06' < floor).toBe(true);
+      held = pages.reread(ASHA);
+      run();
+      expect(ids(held)).not.toContain(id(9101));
+      if (reachIt === 'scroll') {
+        for (let join = pages.more(ASHA); join; join = pages.more(ASHA)) {
+          held = join(held);
+          run();
+        }
+      } else {
+        held = pages.all(ASHA);
+        run();
+      }
+      expect(ids(held)).toEqual(expect.arrayContaining([id(9100), id(9101), id(9102)]));
+      expect(pages.olderPage(id(9100))).toBe(true);
+      expect(pages.olderPage(id(9101))).toBe(false);
+      expect(washed).toEqual([id(9101)]);
+      // Once: the next change of the rows held does not wash it again.
+      held = pages.reread(ASHA);
+      run();
+      expect(washed).toEqual([id(9101)]);
+      g.close();
+    }
+  });
+
+  it('[BL-2225] the arrivals read only the rows added since the mark, by rowid, and only this book\'s live ones', () => {
+    const g = seeded(40);
+    const mark = entries.rowMark(g.ctx);
+    expect(entries.idsSince(g.ctx, ASHA, mark)).toEqual([]);
+    entries.upsert(g.ctx, letter({ id: id(9201), childId: ASHA, occurredOn: '2022-01-01' }), { childId: ASHA, authorSignsAs: 'Papa' });
+    entries.upsert(g.ctx, letter({ id: id(9202), childId: NIA, occurredOn: '2022-01-01' }), { childId: NIA, authorSignsAs: 'Papa' });
+    entries.upsert(g.ctx, letter({ id: id(0), childId: ASHA, occurredOn: dayOf(0), finalText: 'Asha laughed again.' }), { childId: ASHA, authorSignsAs: 'Mama' }); // an edit keeps its rowid
+    const { seen, ctx } = spied(g);
+    expect(entries.idsSince(ctx, ASHA, mark)).toEqual([id(9201)]);
+    entries.tombstone(g.ctx, id(9201));
+    expect(entries.idsSince(g.ctx, ASHA, mark)).toEqual([]);
+    // The plan of the very SQL the repo sent: the rowid range, never a walk of the book's index or of all of entries.
+    const plan = g.db.all<{ detail: string }>(`EXPLAIN QUERY PLAN ${seen[0].sql}`, mark, ASHA).map((r) => r.detail);
+    expect(plan.some((l) => /SEARCH entries USING INTEGER PRIMARY KEY \(rowid>\?\)/.test(l))).toBe(true);
+    expect(plan.some((l) => /^SCAN entries|INDEX entries_(child|sync)/.test(l))).toBe(false);
+    g.close();
+  });
+});
+
 describe('[BL-2225] pages hold whole days', () => {
   const day = (d: number) => `2026-0${Math.floor(d / 28) + 1}-${String((d % 28) + 1).padStart(2, '0')}`;
   /** A fake ranged read over a list already newest first, with the repo's bounds. */
@@ -335,7 +408,7 @@ describe('[BL-2225] the Book screen reads by page (source)', () => {
   const screen = readFileSync(new URL('../src/app/(tabs)/book.tsx', import.meta.url), 'utf8');
 
   it('[BL-2225] reads its first page on focus and follows the store from its floor, never the whole book', () => {
-    expect(screen).toMatch(/const \[pages\] = useState\(\(\) => createBookPages\(listBookRange\)\);/);
+    expect(screen).toMatch(/const \[pages\] = useState\(\(\) => createBookPages\(listBookRange, BOOK_PAGE, bookArrivals\)\);/);
     expect(screen).toMatch(/useState\(\(\) => \(\{ childId: active\?\.id \?\? null, entries: active \? pages\.first\(active\.id\) : \[\] \}\)\)/);
     expect(screen).toMatch(/return watchBook\(\{ childId: active\.id, read: pages\.reread, subscribe, set: setRead \}\);/);
     expect(screen).not.toMatch(/listBookEntries|listForBook|listEntriesForChild/);

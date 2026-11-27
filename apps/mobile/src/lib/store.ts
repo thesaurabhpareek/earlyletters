@@ -901,6 +901,16 @@ export function bookOutline(childId: string): entries.BookOutline {
   return bookVisibleNow() ? entries.bookOutline(ctx(), childId) : { firstLetterOn: null, lastLetterOn: null, readable: false };
 }
 
+/**
+ * Which of one book's rows came into the store after the Book read its first page (BL-2225): the other parent's
+ * letter synced in below the pages held still washes once when its page is read. The mark is a row number, never
+ * words, so it is read whether or not the book may be shown; the ids are not.
+ */
+export const bookArrivals = {
+  mark: (): number => entries.rowMark(ctx()),
+  since: (childId: string, mark: number): string[] => shown(() => entries.idsSince(ctx(), childId, mark)),
+};
+
 /** How many letters one book holds (quiet-day marks not counted), counted in SQL (BL-434). */
 export function countBookLetters(childId: string): number {
   return bookVisibleNow() ? entries.countLetters(ctx(), childId) : 0;

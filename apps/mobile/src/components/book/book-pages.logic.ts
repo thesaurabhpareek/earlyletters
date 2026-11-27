@@ -10,8 +10,11 @@
  *   reread after a store change reads everything from the floor up, so a letter kept, edited, deleted or synced in
  *   that range shows at once and nothing below it is read; with the whole book held it rereads the whole book.
  * - Paging changes what is read, never what a letter shows: the rows are `listForBook`'s rows in its order.
- * - A row first read by paging down (an older page) is never news: the first-seen wash is for letters that arrive,
- *   on focus or by a store change, not for a page the reader scrolled to (`olderPage`).
+ * - A row first read by paging down (an older page) that was already in the store when the first page was read is
+ *   never news (`olderPage`): the seen list starts from the first page, so it would wash every letter of theirs on
+ *   the page. A row that came into the store after that (the other parent's letter synced in, dated below the floor)
+ *   is not an older page: its page goes to the first-seen wash like the whole read did before paging, so it washes
+ *   once when the reader reaches it, unless it was seen already. The store's arrivals (`BookArrivals`) say which.
  */
 import { arrivalOf } from './book.logic';
 import { chapterKey, monthFor } from './chapters';
@@ -35,23 +38,39 @@ export function readPage(read: RangeRead, childId: string, before: string | null
 }
 
 /**
+ * Which of one book's rows came into the store after a mark (store.bookArrivals). `mark` is taken when the first page
+ * is read; `since` names this book's live rows added after it, synced in or kept since.
+ */
+export type BookArrivals = { mark: () => number; since: (childId: string, mark: number) => readonly string[] };
+
+/**
  * The Book's pages for the book on screen. `first` is the read on focus (one page); `reread` follows a store change
  * without reading past the floor; `more` adds the next page as the reader scrolls to it; `reach` holds down to one
  * day (an arrived letter dated back); `all` holds the whole book for what needs it (the Months sheet and its jump, the
  * Photos lens).
  *
- * The object holds the floor between renders; the screen reads `done` and `holds` while rendering, so every call that
- * moves the floor is made outside a state updater and is followed by the setRead that carries its rows.
+ * The object holds the floor between renders; the screen reads `done` and `holds` while rendering. A call that moves
+ * the floor is followed by the setRead that carries its rows, or runs inside a state updater whose result the render
+ * reads (watchBook's reread on a child switch calls `first`), so the render that reads `done` sees the floor its rows
+ * were read to.
+ *
+ * Without `arrivals` nothing read below the floor counts as come in since the first page: every such row is an older page.
  */
-export function createBookPages(read: RangeRead, size: number = BOOK_PAGE) {
+export function createBookPages(read: RangeRead, size: number = BOOK_PAGE, arrivals?: BookArrivals) {
   let childId: string | null = null;
   let floor: string | null = null;
   let older = new Set<string>();
-  /** Rows below `above` were not held before this read: they are an older page. */
-  const markOlder = (rows: readonly Entry[], above: string) => {
-    for (const e of rows) if (e.occurredOn < above) older.add(e.id);
+  let mark = 0;
+  /** Rows below `above` were not held before this read: an older page, unless they came into the store after the first page. */
+  const markOlder = (id: string, rows: readonly Entry[], above: string) => {
+    const below = rows.filter((e) => e.occurredOn < above);
+    if (below.length === 0) return;
+    const came = arrivals ? new Set(arrivals.since(id, mark)) : null;
+    for (const e of below) if (!came?.has(e.id)) older.add(e.id);
   };
   const first = (id: string): Entry[] => {
+    // The mark before the read: a row added between the two is held by this page or counts as come in, never lost.
+    mark = arrivals ? arrivals.mark() : 0;
     const page = readPage(read, id, null, size);
     childId = id;
     floor = page.floor;
@@ -72,7 +91,7 @@ export function createBookPages(read: RangeRead, size: number = BOOK_PAGE) {
       const above = floor;
       const page = readPage(read, id, above, size);
       floor = page.floor;
-      markOlder(page.entries, above);
+      markOlder(id, page.entries, above);
       return (held) => [...held.filter((e) => e.occurredOn >= above), ...page.entries];
     },
     /** Holds every day from `day` up (whole days), or null when that day is already held. */
@@ -81,12 +100,12 @@ export function createBookPages(read: RangeRead, size: number = BOOK_PAGE) {
       const above = floor;
       const rows = read(id, { from: day });
       floor = day;
-      markOlder(rows, above);
+      markOlder(id, rows, above);
       return rows;
     },
     all(id: string): Entry[] {
       const rows = read(id, {});
-      if (id === childId && floor !== null) markOlder(rows, floor);
+      if (id === childId && floor !== null) markOlder(id, rows, floor);
       childId = id;
       floor = null;
       return rows;
@@ -95,7 +114,7 @@ export function createBookPages(read: RangeRead, size: number = BOOK_PAGE) {
     done: (id: string | null): boolean => id !== null && id === childId && floor === null,
     /** Whether this book's rows from `day` up are held. */
     holds: (id: string, day: string): boolean => id === childId && (floor === null || floor <= day),
-    /** Whether this row was first read by paging down, not on focus or by a store change. */
+    /** Whether this row was first read by paging down and was in the store before the first page: never news. */
     olderPage: (entryId: string): boolean => older.has(entryId),
   };
 }

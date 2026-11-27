@@ -57,11 +57,11 @@ import { downloadingLine } from '@/lib/models/speech-download.logic';
 import { planFor } from '@/lib/models/speech-packs';
 import { springConfig, useMotion } from '@/lib/motion';
 import { isReadItBack } from '@/lib/read-it-back';
-import { bookOutline, deleteEntry, getEntry, getSetting, listBookRange, setSetting, subscribe, todayISO, undeleteEntry, type Entry } from '@/lib/store';
+import { bookArrivals, bookOutline, deleteEntry, getEntry, getSetting, listBookRange, setSetting, subscribe, todayISO, undeleteEntry, type Entry } from '@/lib/store';
 import { languageFor } from '@/lib/transcription-queue';
 import { useSpeechDownload, useWordsJob } from '@/lib/transcription-queue/use-words';
 import { bookHandoff, createArrivalGate, watchBook, firstBookViewThisSession, firstSeen, parseSeen, secondFreeOnArrival, withLeaving } from '@/components/book/book.logic';
-import { arrivalReach, createBookPages, monthsFromOutline } from '@/components/book/book-pages.logic';
+import { BOOK_PAGE, arrivalReach, createBookPages, monthsFromOutline } from '@/components/book/book-pages.logic';
 import { bookChapters, openerOf, type Chapter } from '@/components/book/chapters';
 import { BookRow, LetterCard } from '@/components/book/letter-card';
 import { letterWords } from '@/components/book/letter-words.logic';
@@ -103,13 +103,14 @@ export default function Book() {
   // (a Book that mounts with `arrived` has to find its card on that first look). `read.childId` says whose letters
   // these are, so the arrival waits for the right book. The read is one chapter of rows (BL-2225, PRD 7.1): the next
   // is read as the reader scrolls to it, an arrived letter dated back is read down to its day, and the whole book only
-  // for what needs it (the Months sheet, the Photos lens).
-  const [pages] = useState(() => createBookPages(listBookRange));
+  // for what needs it (the Months sheet, the Photos lens). `bookArrivals` tells a letter synced in below the pages
+  // held from the rows that were there, so it still washes when its page is read.
+  const [pages] = useState(() => createBookPages(listBookRange, BOOK_PAGE, bookArrivals));
   const [read, setRead] = useState(() => ({ childId: active?.id ?? null, entries: active ? pages.first(active.id) : [] }));
   const entries = read.entries;
   const bookRead = read.childId === (active?.id ?? null);
-  // `pages` moves its floor only just before the setRead that carries the rows (never inside an updater), so this
-  // render already sees its latest state.
+  // `pages` moves its floor just before the setRead that carries the rows, or inside the updater that computes them
+  // (watchBook's reread calls `first` on a child switch), so this render sees the floor its rows were read to.
   const done = pages.done(active?.id ?? null);
   const leaving = useSyncExternalStore(bookHandoff.subscribe, bookHandoff.get, bookHandoff.get);
   const [washes, setWashes] = useState<Record<string, number>>({});
@@ -203,7 +204,8 @@ export default function Book() {
     if (!active || entries.length === 0) return;
     const raw = getSetting(SEEN_KEY);
     // Not the older pages the reader scrolls to (BL-2225): the seen list starts from the first page, so a page read
-    // later would wash every letter of theirs on it. A letter that arrives by a store change still washes, wherever it is.
+    // later would wash every letter of theirs on it. A letter that came into the store after the first page (synced in
+    // by the other parent, on any day) is not an older page: it washes once when it is read, as the whole read did.
     const next = firstSeen(entries.filter((e) => !pages.olderPage(e.id)), (e) => isOwnEntry(e as Entry), parseSeen(raw));
     wash(next.wash);
     const value = JSON.stringify(next.seen);

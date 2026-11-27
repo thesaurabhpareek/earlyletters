@@ -256,6 +256,24 @@ export function bookOutline({ db }: RepoContext, childId: string): BookOutline {
   return { firstLetterOn: r?.first ?? null, lastLetterOn: r?.last ?? null, readable: r?.readable === 1 };
 }
 
+/**
+ * The newest row in the store now, as SQLite's rowid (BL-2225). A row inserted later (synced in or kept) gets a larger
+ * one: the table has no AUTOINCREMENT, so a new rowid is the largest held plus one, and an update keeps its rowid.
+ * One row back, read off the end of the rowid tree. Its one gap: if the newest row is purged before a new one comes
+ * in, the new one may not count as come in, so it misses a wash; no row that was there washes for it.
+ */
+export function rowMark({ db }: RepoContext): number {
+  return db.get<{ m: number | null }>('SELECT max(rowid) AS m FROM entries')?.m ?? 0;
+}
+
+/**
+ * Ids of one book's live rows that came into the store after `mark` (rowMark), BL-2225. A range on the rowid, so only
+ * the rows added since are visited: `+child_id` keeps SQLite off the child indexes, which would walk the whole book.
+ */
+export function idsSince({ db }: RepoContext, childId: string, mark: number): string[] {
+  return db.all<{ id: string }>('SELECT id FROM entries WHERE rowid > ? AND +child_id = ? AND deleted_at IS NULL', mark, childId).map((r) => r.id);
+}
+
 /** How many live letters a book holds (quiet-day marks are not letters), counted in SQL and never loaded (BL-434). */
 export function countLetters({ db }: RepoContext, childId: string): number {
   return (
