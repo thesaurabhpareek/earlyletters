@@ -1,7 +1,7 @@
 import { reminderCopy } from '@scribe/content';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { RemindersSwitch } from '@/components/settings/reminders-switch';
-import { remindersSwitchOn, remindersSwitchShown, remindersWaitingForPermission, showNotificationsOff, switchStatus } from '@/components/settings/reminders.logic';
+import { choicesShown, nextLine, remindersSwitchOn, remindersSwitchShown, remindersWaitingForPermission, showNotificationsOff, switchStatus } from '@/components/settings/reminders.logic';
 import type { ReminderPermission } from '@/lib/reminders';
 import { renderMarkup } from '../helpers/render-markup';
 import { harness } from './harness';
@@ -86,5 +86,22 @@ describe('[BL-428] [J13-02] the reminders switch shows the true state', () => {
     expect(states.map((p) => switchStatus(ON, p))).toEqual([s.notSendingYet, s.notSendingYet, undefined, undefined]);
     expect(states.map((p) => remindersSwitchShown(OFF, p))).toEqual([false, false, false, false]);
     expect(states.map((p) => remindersWaitingForPermission(OFF, p))).toEqual([false, false, false, false]);
+  });
+
+  it('waiting for permission keeps the choices on screen; only the switch draws off (J13)', () => {
+    // The choices (How often through Names in notifications) follow the intent, whatever the OS has said.
+    expect(choicesShown(ON)).toBe(true);
+    expect(choicesShown(OFF)).toBe(false);
+    expect(choicesShown({ enabled: true, paused: true })).toBe(false);
+    // Denied: the card and the choices both show.
+    expect(showNotificationsOff(ON, 'denied') && choicesShown(ON)).toBe(true);
+    // Undetermined: the choices show, with no card.
+    expect(showNotificationsOff(ON, 'undetermined')).toBe(false);
+    // The screen's Next line hangs off what the switch draws, so "Not sending yet." shows once, on the switch row.
+    for (const p of ['denied', 'undetermined'] as const) {
+      const next = { date: '2026-11-03', hour: 20, minute: 30 };
+      expect(nextLine({ on: remindersSwitchShown(ON, p), permission: p, next, formatTime: () => '8:30 PM' }), p).toBeNull();
+      expect(draw(ON, p).html.split(s.notSendingYet).length - 1, p).toBe(1);
+    }
   });
 });

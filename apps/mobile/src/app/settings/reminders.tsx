@@ -7,6 +7,7 @@ import { tokens } from '@scribe/design-tokens';
 import { NotificationPreview } from '@/components/settings/notification-preview';
 import { RemindersSwitch } from '@/components/settings/reminders-switch';
 import {
+  choicesShown,
   monthRowNote,
   namesRow,
   nextLine,
@@ -60,10 +61,11 @@ type OnCadence = Exclude<Cadence, 'off'>;
  * and turning the switch on writes `enabled` before iOS asks, so the switch stays on behind the alert. Once iOS has
  * answered, the switch draws on only while notifications are allowed (BL-428): denied or not yet answered, it draws off
  * with "Not sending yet." and the intent is kept; denied also shows the Notifications are off card with Open Settings.
- * The choices reveal inline under it: How it will look (the real words of the first planned notification), Next
- * (from the planner), How often, Which evenings, Time, Month and birthday messages, Names in notifications. Changes
- * save as they are made; the page says so once, the Next line cross-fades on every change (none under Reduce Motion),
- * and VoiceOver hears "Saved. Next: ..." 600 ms after the last change. A scheduling failure shows with Try again.
+ * The choices reveal inline under it while reminders are on, waiting for permission included: How it will look (the
+ * real words of the first planned notification), Next (from the planner), How often, Which evenings, Time, Month and
+ * birthday messages, Names in notifications. Changes save as they are made; the page says so once, the Next line
+ * cross-fades on every change (none under Reduce Motion), and VoiceOver hears "Saved. Next: ..." 600 ms after the last
+ * change. A scheduling failure shows with Try again.
  */
 export default function Reminders() {
   const c = useTheme().c;
@@ -90,6 +92,9 @@ export default function Reminders() {
 
   // What the switch draws: never on while the OS permission is missing (BL-428); the intent stays in prefs.
   const on = remindersSwitchShown(prefs, permission, busy);
+  // The choices follow the intent, so they stay editable while the switch waits for permission (BL-428 follow-up).
+  // The Next line, the preview and the failure card stay on `on`: "Not sending yet." shows once, on the switch row.
+  const choices = choicesShown(prefs);
   // Recomputed on every change: prefs, a book's birth date (the store listener renews prefs), the permission.
   const next = useMemo(() => (on ? nextReminder() : null), [prefs, permission, on]); // eslint-disable-line react-hooks/exhaustive-deps
   const line = nextLine({ on, permission, next, formatTime: formatReminderTime });
@@ -232,7 +237,7 @@ export default function Reminders() {
         </View>
       )}
 
-      {on && (
+      {choices && (
         <Animated.View entering={motion.enter()} layout={layout} className="gap-7">
           <View className="gap-3">
             {preview && (
