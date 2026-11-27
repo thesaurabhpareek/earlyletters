@@ -210,7 +210,8 @@ const RULES: readonly Rule[] = [
     id: 'backup',
     // Our own recording backup, or iCloud. "Your iPhone's own backup" is the person's, and is true in every build.
     claims: [/\bbacked up\b|\bbacks? up\b|\bbacking up\b|\bour (own |encrypted )?backups?\b|\bencrypted backup\b|\brecording backup\b|\bicloud\b|\bcloud backups?\b/i],
-    truths: [/\byour iPhone's own backup\b/gi],
+    // "If iCloud Backup is on" is the person's own iPhone setting too (whereLive.iphoneBackup.body, D-033), not our backup.
+    truths: [/\byour iPhone's own backup\b/gi, /\bif iCloud Backup is on\b/gi],
     trueWhen: (p) => p.backup,
     needs: 'recording backup (EXPO_PUBLIC_BACKUP on)',
   },
@@ -260,7 +261,7 @@ function claimsOf(rule: Rule, text: string): string[] {
 /**
  * In-app lines that promise something and are shown in the production build whatever its switches say: first run,
  * the packaged story deck, the privacy lines, the language picker, the microphone purpose string, the Recordings
- * card and the Plus sheet. Paths are under `{ en, features, permissions }`; a path that no longer resolves fails the
+ * card, Where your letters live, the letter page's recording line and the Plus sheet. Paths are under `{ en, features, permissions }`; a path that no longer resolves fails the
  * test below.
  */
 const IN_APP_PROMISES = [
@@ -276,6 +277,12 @@ const IN_APP_PROMISES = [
   'en.trust.settings',
   'en.settings.recordings.onPhoneTitle',
   'en.settings.recordings.onPhoneBody',
+  // BL-390: where recordings live, as the app says it today. Where your letters live replaced the Recordings card
+  // (app/settings/where-letters-live.tsx), and the letter page and Book card append book.recordingOnPhone.
+  'en.whereLive.onPhone',
+  'en.whereLive.onPhoneSynced',
+  'en.whereLive.iphoneBackup.body',
+  'en.book.recordingOnPhone',
   'en.plus',
   'features.billing',
   'features.language.picker',
@@ -606,10 +613,13 @@ describe('the claim rules', () => {
     expect(hits('Letters follow you to all your devices.')).toEqual(['sync']);
     expect(hits('Log in on your next phone.')).toEqual(['sync']);
     expect(hits('Recordings are saved to iCloud.')).toEqual(['backup']);
+    // The iCloud Backup truth takes out only the condition: a claim beside it is still read (BL-390).
+    expect(hits('Your book comes back from iCloud, if iCloud Backup is on.')).toEqual(['backup']);
   });
 
   it('leaves the true lines alone', () => {
     expect(hits("The original recording stays with each letter, on your phone and in your iPhone's own backup if you use one.")).toEqual([]);
+    expect(hits('Includes your recordings, if iCloud Backup is on.')).toEqual([]);
     expect(hits('This version works in English.')).toEqual([]);
     expect(hits('More languages follow one at a time, each after a native speaker has checked it.')).toEqual([]);
     expect(hits('Other languages are coming in a later update.')).toEqual([]);
