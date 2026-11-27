@@ -204,8 +204,9 @@ function supabaseReader(): ServerRecordsReader | null {
 
 /**
  * Adds the server's consent record and the person's profile to a snapshot (never throws; Stop ends the read at once;
- * see server-records.logic.ts). Offline, the phone's copy of the last full consent read (BL-528, consent-copy.logic.ts),
- * which is neither read nor written while an account-deletion request is open: the request deleted it.
+ * see server-records.logic.ts). When the server cannot be read, the phone's copy of the last full consent read (BL-528,
+ * consent-copy.logic.ts), which is neither read nor written while this phone holds a note that a deletion request is
+ * open (copyStoreFor). On the phone that made the request, the request also deleted it.
  */
 export async function withServerRecords(snapshot: ExportSnapshot, signal?: { aborted: boolean }): Promise<ExportSnapshot> {
   const authUserId = currentAuthUserId();
