@@ -10,7 +10,8 @@
  * The test runs the library's own function text, read from node_modules, with only its last comparison changed to return
  * the sum. The pin test checks only the parts it lists (the start and end markers, the comparison, the 768 check, the
  * numeric-width condition and the 125 default); any other library change that moves the sum (for example the library
- * skipping hidden routes itself) is caught by the flag-off and flag-on sum tests instead, which then need updating.
+ * ignoring a zero width) is caught by the flag-off and flag-on sum tests instead. A change that leaves the sum the same
+ * (for example the library skipping hidden routes itself, which width 0 already makes add nothing) is not caught.
  * Mutant (run by hand, see the PR): drop `width: 0` from momentsTabVisibility; the flag-off case fails.
  *
  * Not proved here: the pixels on a device, and the result today. The sum is read only at 768 points wide or more, and
