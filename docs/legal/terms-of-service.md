@@ -1,16 +1,16 @@
 ---
 title: Early Letters Terms of Service
-version: 4.1.0
+version: 4.2.0
 status: draft-for-counsel
 effective_date: TBD
-last_updated: 2026-10-31
+last_updated: 2026-11-23
 owner: founder
 applies_to: Early Letters iOS app and earlyletters.com
 ---
 
 # Early Letters Terms of Service
 
-Version 4.1.0. Effective [effective date].
+Version 4.2.0. Effective [effective date].
 
 ## The short version
 
@@ -22,7 +22,7 @@ This is a summary. The full terms below are what count.
 - Your first 2 letters are free. After that, keeping a new letter needs Plus. Reading, playing and exporting every letter you keep is free, always, with or without Plus. Past letters are never put behind a payment.
 - Plus is optional. It lets you keep adding letters after your first 2. Apple sells it and renews it automatically until you cancel in your Apple Account. Apple sends its own receipts and subscription emails. The app also tries to remind you on your phone before a free trial ends and before an annual plan renews. We will not charge you a higher price for a plan you already have unless you agree first.
 - Co-parents are equals. Neither can delete the other's letters, and after the first 72 hours neither can remove the other.
-- If we ever close Early Letters, we will give you at least 90 days' notice and a way to take everything with you.
+- If we ever plan to close Early Letters, we will give you at least 90 days' notice and a way to take everything with you.
 - Early Letters is an early version and can make mistakes. Export a copy now and then.
 
 ## 1. The agreement
@@ -153,7 +153,7 @@ Early Letters is still being built. Features may change, pause or sometimes brea
 
 ## 12. If we close Early Letters
 
-If we ever close Early Letters, we will tell you at least 90 days ahead, stop new charges, and keep export working the whole time, including recordings in backup. If someone else takes over the Service, they must keep sections 5.3, 8.3 and this section, or give you the same notice and export.
+If we ever plan to close Early Letters, we will tell you at least 90 days ahead, stop new charges, and keep export working the whole time, including recordings in backup. If someone else takes over the Service, they must keep sections 5.3, 8.3 and this section, or give you the same notice and export.
 
 ## 13. Disclaimers
 
@@ -207,5 +207,6 @@ California residents: under California Civil Code section 1789.3, you may contac
 
 | Version | Date | Change |
 |---|---|---|
+| 4.2.0 | 2026-11-23 | The closing pledge (summary and section 12) reads "If we ever plan to close", the same words as the app's Settings line and Privacy Policy 13, because a notice cannot be promised for a sudden closure (illness, a court order, Apple removing the app). Exec-team ruling of 23 Nov 2026 (Claude roles, not a lawyer). It makes the promise one we can keep, and it narrows when the notice duty starts. Major, not minor: POLICY_VERSIONING 2.4 says when in doubt it is major, and 2.1 item 9 lets a reviewer class it so; exec ruling CLO-A of 24 Nov 2026 (Claude roles, not a lawyer; a lawyer still has to confirm). The published number for this document is 1.0.0 (CLO-B); 4.2.0 is an internal revision number (POLICY_VERSIONING 2.4). Not published. |
 | 4.1.0 | 2026-10-31 | Plus section restated: how letters are counted, what stays free for as long as we operate, that past letters are never put behind a payment, prices and trials, receipts and reminders (the app's reminders give the date and how to cancel, not the price, and may not arrive; our own emails about Plus are described as not sent yet), who Plus covers. Sign-in, sync and sharing are described as not in every version of the app. |
 | 3.1.0 | 2026-10-16 | Covers accounts, books shared by two parents, recording backup when it is available, and Plus after the first 2 letters. |

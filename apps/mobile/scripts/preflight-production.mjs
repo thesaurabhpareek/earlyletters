@@ -35,11 +35,12 @@ export const GOOGLE_FLAGS = ['EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID', 'EXPO_PUBLIC_GO
 /**
  * The data types the production privacy manifest declares with servers on, backup and status report off
  * (apps/mobile/src/lib/privacy-manifest.ts COLLECTED_ROWS; the App Privacy worksheet, proposals/privacy-label-servers-on.md
- * section 5). Exactly these, no more (no Audio Data, Device ID or Purchase History) and no fewer.
+ * section 5). Exactly these (Other Data Types joined on 23 Nov 2026, exec ruling), no more (no Audio Data, Device ID or Purchase History) and no fewer.
  */
 export const SERVERS_ON_COLLECTED = [
   'NSPrivacyCollectedDataTypeEmailAddress',
   'NSPrivacyCollectedDataTypeName',
+  'NSPrivacyCollectedDataTypeOtherDataTypes',
   'NSPrivacyCollectedDataTypeOtherUserContent',
   'NSPrivacyCollectedDataTypeSensitiveInfo',
   'NSPrivacyCollectedDataTypeUserID',

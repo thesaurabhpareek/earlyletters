@@ -264,11 +264,12 @@ describe('one failing fixture per check: only that check FAILs', () => {
     expect(SEAM_FLAGS).toEqual(['EXPO_PUBLIC_E2E', 'EXPO_PUBLIC_WEB_PREVIEW']);
   });
 
-  it('the Google flags are the two client ids, and the servers-on set is the five types of the privacy worksheet', () => {
+  it('the Google flags are the two client ids, and the servers-on set is the six types of the privacy worksheet', () => {
     expect(GOOGLE_FLAGS).toEqual(['EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID', 'EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID']);
     expect(SERVERS_ON_COLLECTED).toEqual([
       'NSPrivacyCollectedDataTypeEmailAddress',
       'NSPrivacyCollectedDataTypeName',
+      'NSPrivacyCollectedDataTypeOtherDataTypes',
       'NSPrivacyCollectedDataTypeOtherUserContent',
       'NSPrivacyCollectedDataTypeSensitiveInfo',
       'NSPrivacyCollectedDataTypeUserID',

@@ -88,8 +88,11 @@ const APPLE_DATA_TYPES = [
 ].map((t) => `NSPrivacyCollectedDataType${t}`);
 
 const t = (name: string) => `NSPrivacyCollectedDataType${name}`;
-/** S17 worksheet 1.4.0 section 3.2: a server-on build without backup or the status report. */
-const SERVER_ON = [t('Name'), t('EmailAddress'), t('SensitiveInfo'), t('OtherUserContent'), t('UserID')];
+/**
+ * Worksheet section 3.2: a server-on build without backup or the status report. Other Data Types joined on
+ * 23 Nov 2026 (exec ruling; labels doc 2.3.0): the consent record and the deletion and audit records.
+ */
+const SERVER_ON = [t('Name'), t('EmailAddress'), t('SensitiveInfo'), t('OtherUserContent'), t('UserID'), t('OtherDataTypes')];
 /** Section 3.4: backup adds Audio Data and Device ID; the status report adds Purchase History. */
 const WITH_BACKUP = [...SERVER_ON, t('AudioData'), t('DeviceID')];
 const WITH_STATUS_REPORT = [...SERVER_ON, t('PurchaseHistory')];

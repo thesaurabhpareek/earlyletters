@@ -16,9 +16,9 @@
 import { sha256Hex } from './sha256';
 
 /** `version` in docs/legal/terms-of-service.md front matter (test/agreements.test.ts fails when they drift). */
-export const TERMS_DOC_VERSION = '4.1.0';
+export const TERMS_DOC_VERSION = '4.2.0';
 /** `version` in docs/legal/privacy-policy.md front matter. */
-export const PRIVACY_DOC_VERSION = '3.0.0';
+export const PRIVACY_DOC_VERSION = '3.1.0';
 
 export type AgreementDocument = 'terms' | 'privacy';
 /** The sentence says "I agree to ... Privacy Policy", so both rows record what was shown: an accept (Q-D is open). */
