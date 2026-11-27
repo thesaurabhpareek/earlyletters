@@ -22,7 +22,7 @@
  */
 import { bool, int, oneOf, opt, type EventSpec, type PropSpec } from './schema';
 import { MOMENTS_SLOT, REGISTRY } from './registry';
-import { CHILD_COUNT_BUCKET, CHILD_ORDINAL, AUTHOR_RELATION, LETTERS_BUCKET, SESSION_BUCKET, EDIT_TYPE, EDIT_SOURCE, REJECT_REASON, AUTH_METHOD, SIGN_IN_TRIGGER, NETWORK, LANG, PACK_ID, PACK_FAILURE } from './values';
+import { BUILD_KIND, CHILD_COUNT_BUCKET, CHILD_ORDINAL, AUTHOR_RELATION, LETTERS_BUCKET, SESSION_BUCKET, EDIT_TYPE, EDIT_SOURCE, REJECT_REASON, AUTH_METHOD, SIGN_IN_TRIGGER, NETWORK, LANG, PACK_ID, PACK_FAILURE } from './values';
 
 // The shared value sets live in values.ts and are defined there once (CODE-R13). This re-export keeps
 // every `from './catalog'` import working; a test pins that no name is redefined here.
@@ -40,6 +40,13 @@ export { MOMENTS_SLOT };
  */
 export const GLOBAL_PROPS = {
   schema_version: int(1, 1000),
+  /**
+   * The kind of build (ER-A15, BL-1250). The client adds it to every event it sends (a test pins that); it is optional
+   * here only so the validator and the SDK filter still read a payload the client did not build.
+   */
+  build_kind: opt(BUILD_KIND),
+  /** True only on a tester's phone with the local switch on; always false in a store build (ER-A15, FH-10). Added like `build_kind`. */
+  is_internal: opt(bool()),
   child_count_bucket: opt(CHILD_COUNT_BUCKET),
   /** Present only when the event is sampled; percent kept, 1 to 99. */
   sample_pct: opt(int(1, 99)),
@@ -76,8 +83,9 @@ export const GLOBAL_PROPS = {
  * 23: wire-names step 2b, slice 9 (BL-2176, CR-212, CR-213): the `plus` area is renamed: `plus_offer_viewed` to `plus:offer_view`, `plus_offer_closed` to `plus:offer_end`, `plan_changed` to `plus:plan_update`, `free_allowance_reached` to `plus:allowance_reach`, `keep_gate_shown` to `plus:keep_gate_view`, `letter_held` to `plus:letter_hold_create`, `plus_started_from_gate` to `plus:keep_gate_plan_start`, `offer_code_redeemed` to `plus:code_submit`, `restore_result` to `plus:restore_complete`. No property was added or widened, no tier changed, and no build has sent any of them (analytics are off in every profile, CR-186).
  * 24: wire-names step 2b, slice 10 (BL-2176, CR-212, CR-213): the first half of the `capture` area is renamed: `capture_started` to `capture:take_start`, `capture_discarded` to `capture:take_cancel`, `transcription_completed` to `capture:transcript_complete`, `letter_saved` to `capture:letter_save`. No property was added or widened, no tier changed (the basics set stays `screen_view`), and no build has sent any of them (analytics are off in every profile, CR-186).
  * 25: wire-names step 2b, slice 11 (BL-2176, CR-212, CR-213): the rest of the `capture` area is renamed, the last slice: `review_action` to `capture:review_update`, `machine_edit_reverted` to `capture:edit_restore`, `machine_edit_rejected` to `capture:edit_decline`, `child_switched` to `capture:child_update`. All 47 rows that own a name now hold it. No property was added or widened, no tier changed (the basics set stays `screen_view`), and no build has sent any of them (analytics are off in every profile, CR-186).
+ * 26: two global properties the client adds to every event (ER-A15, BL-1250): `build_kind` (`store`, `testflight`, `preview`, `dev`) and `is_internal` (bool, true only on a tester's phone with the local switch on, never in a store build), so test and internal traffic can be filtered out. No event or event property changed, no tier changed, and no build has sent any event (analytics are off in every profile, CR-186, CR-194).
  */
-export const SCHEMA_VERSION = 25;
+export const SCHEMA_VERSION = 26;
 
 /**
  * SHA-256 of `JSON.stringify(catalogShape())` per schema version. Versions 1
@@ -107,6 +115,7 @@ export const SCHEMA_FINGERPRINTS: Readonly<Record<number, string>> = Object.free
   23: 'ca191bd7fa6bb49a85ee997894aacda24ef023c684e77614cf4679218a8a34d3',
   24: '84ac0d4c4b22eb6f77bf09d474224535b2ab8bbb203cea90b548e44863ca6049',
   25: 'e2b2e4e17ba534fd0421c2de6f1ffbadab573cc686bc3210ccd50a56be208274',
+  26: '2c808e0c4247502bd6482f75aabc7ce45791171d6232c406d916acdfc5ea058d',
 });
 
 // ---------------------------------------------------------------------------
