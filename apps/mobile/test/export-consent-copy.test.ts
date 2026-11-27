@@ -102,7 +102,7 @@ describe('[BL-528][LEGAL-REQ-034] no copy, or a copy that is not this account\'s
     expect((await readServerRecordsWithCopy(opts({ reader: offline }), null)).consent.status).toBe('unavailable');
     // The app passes the store through copyStoreFor with the phone's note on the request (export/device.ts).
     const device = readFileSync(join(__dirname, '..', 'src/lib/export/device.ts'), 'utf8');
-    expect(device).toMatch(/\}, copyStoreFor\(readOpenRequest\(\{ get: getSetting \}\), authUserId, Date\.now\(\), deviceConsentCopy\)\)/);
+    expect(device).toMatch(/\}, copyStoreFor\(\(\) => readOpenRequest\(\{ get: getSetting \}\), authUserId, Date\.now, deviceConsentCopy\)\)/);
   });
 
   it('[DATA-REQ-053] while this account has a request open, the copy is neither read nor written', async () => {
@@ -112,15 +112,76 @@ describe('[BL-528][LEGAL-REQ-034] no copy, or a copy that is not this account\'s
     const writes = store.writes;
     const open: OpenRequest = { state: 'scheduled', requestId: 'req-1', scheduledFor: '2099-01-01T00:00:00.000Z', userId: ASHA_MAMA };
     const now = Date.parse('2027-03-15T10:00:00.000Z');
-    expect(copyStoreFor(open, ASHA_MAMA, now, store)).toBeNull();
-    const offlineExport = await readServerRecordsWithCopy(opts({ reader: offline }), copyStoreFor(open, ASHA_MAMA, now, store));
+    const at = () => now;
+    expect(copyStoreFor(() => open, ASHA_MAMA, at, store)).toBeNull();
+    const offlineExport = await readServerRecordsWithCopy(opts({ reader: offline }), copyStoreFor(() => open, ASHA_MAMA, at, store));
     expect(offlineExport.consent.status).toBe('unavailable');
-    const onlineExport = await readServerRecordsWithCopy(opts(), copyStoreFor(open, ASHA_MAMA, now, store));
+    const onlineExport = await readServerRecordsWithCopy(opts(), copyStoreFor(() => open, ASHA_MAMA, at, store));
     expect(onlineExport.consent.status).toBe('included');
     expect([store.writes, store.value]).toEqual([writes, saved]);
-    // No note, or a note for another account: the copy is used as usual.
-    expect(copyStoreFor(null, ASHA_MAMA, now, store)).toBe(store);
-    expect(copyStoreFor({ ...open, userId: ASHA_PAPA }, ASHA_MAMA, now, store)).toBe(store);
+    // No note, or a note for another account: the copy is used as usual, through the store.
+    for (const note of [null, { ...open, userId: ASHA_PAPA }]) {
+      const through = copyStoreFor(() => note, ASHA_MAMA, at, store);
+      expect(through?.read()).toBe(saved);
+      await readServerRecordsWithCopy(opts(), through);
+    }
+    expect(store.writes).toBe(writes + 2);
+  });
+
+  it('a note that cannot be read writes nothing and reads nothing', async () => {
+    const store = memoryStore();
+    await readServerRecordsWithCopy(opts(), store);
+    let fail = false;
+    const copy = copyStoreFor(() => { if (fail) throw new Error('database locked'); return null; }, ASHA_MAMA, Date.now, store);
+    fail = true;
+    expect((await readServerRecordsWithCopy(opts({ reader: offline }), copy)).consent.status).toBe('unavailable');
+    expect((await readServerRecordsWithCopy(opts(), copy)).consent.status).toBe('included');
+    expect(store.writes).toBe(1);
+  });
+});
+
+describe('[FU-13a][DATA-REQ-053] a request made while the export reads the server', () => {
+  const open: OpenRequest = { state: 'scheduled', requestId: 'req-1', scheduledFor: '2099-01-01T00:00:00.000Z', userId: ASHA_MAMA };
+  // The server read waits on `gate`; the test makes the request on this phone in between, as the screen would.
+  const paused = (base: ServerRecordsReader) => {
+    let release = () => {};
+    const gate = new Promise<void>((r) => (release = r));
+    const reader: ServerRecordsReader = { ...base, acts: async (...a) => (await gate, base.acts(...a)) };
+    return { reader, release };
+  };
+  // What use-account-deletion.ts does once the server takes the request: the note first, then the copy goes.
+  const requestOnThisPhone = (store: ReturnType<typeof memoryStore>, notes: { value: OpenRequest | null }) => {
+    notes.value = open;
+    store.value = null;
+  };
+
+  it('a full read that ends after the request does not put the copy back', async () => {
+    const store = memoryStore();
+    await readServerRecordsWithCopy(opts(), store);
+    const notes = { value: null as OpenRequest | null };
+    const { reader, release } = paused(online());
+    const exporting = readServerRecordsWithCopy(opts({ reader }), copyStoreFor(() => notes.value, ASHA_MAMA, Date.now, store));
+    await Promise.resolve();
+    requestOnThisPhone(store, notes);
+    release();
+    const r = await exporting;
+    expect(r.consent.status).toBe('included'); // the export still carries what it read
+    expect([store.value, store.writes]).toEqual([null, 1]);
+  });
+
+  it('an offline read that ends after the request does not read the copy', async () => {
+    const store = memoryStore();
+    await readServerRecordsWithCopy(opts(), store);
+    const saved = store.value;
+    const notes = { value: null as OpenRequest | null };
+    const { reader, release } = paused(offline);
+    const exporting = readServerRecordsWithCopy(opts({ reader }), copyStoreFor(() => notes.value, ASHA_MAMA, Date.now, store));
+    await Promise.resolve();
+    // Another phone's request reaches this one as a note only; its copy is still there and must not be used.
+    notes.value = open;
+    release();
+    expect((await exporting).consent.status).toBe('unavailable');
+    expect(store.value).toBe(saved);
   });
 });
 
