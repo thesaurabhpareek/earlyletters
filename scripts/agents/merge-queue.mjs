@@ -132,7 +132,8 @@ export const NATIVE_PATHS = [
 ];
 export const touchesNative = (files) => files.some((f) => [f.filename ?? f, f.previous_filename].some((n) => typeof n === "string" && NATIVE_PATHS.some((re) => re.test(n))));
 /**
- * CR-73 security-lens trigger list: the CR-70 founder-only path list, unchanged in content. The list no
+ * CR-73 security-lens trigger list: the CR-70 founder-only path list, unchanged in content, plus the four trace gate
+ * paths CR-229 added to it (the "trace gate" class). The list no
  * longer routes a PR to the founder; it sets one condition instead (a counted review that names the
  * `security` or `security-architect` lens). A report only: nothing here merges or blocks a merge call.
  */
@@ -152,6 +153,8 @@ export const SECURITY_LENS_CLASSES = [
   { name: "next.config", re: /^apps\/web\/next\.config\./ }, { name: "vercel.json", re: /(?:^|\/)vercel\.json$/ },
   { name: "web scripts", re: /^apps\/web\/scripts\// }, { name: "web api", re: /^apps\/web\/src\/app\/api\// }, { name: "supabase", re: /^supabase\// },
   { name: "engine files", re: /^packages\/core\/src\/(?:verify|meaning|types|pipeline|plan)\.ts$/ },
+  // CR-229 (24 Nov 2026): the trace gate runs the PR's own copy of these, so a PR could weaken the check that gates it.
+  { name: "trace gate", re: /^(?:scripts\/trace(?:\.test)?\.mjs|docs\/ops\/trace-ns-baseline\.txt|docs\/product\/prd\/14-test-plan\.md)$/ },
 ];
 export const SECURITY_LENS_PATHS = SECURITY_LENS_CLASSES.map((c) => c.re);
 /** Pure: the changed paths (new name or old name of a rename) that are on the security-lens trigger list, in order, once each. */

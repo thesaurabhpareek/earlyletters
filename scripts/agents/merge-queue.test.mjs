@@ -190,6 +190,7 @@ const CLASS_ROWS = [
   ["package.json", ["package.json", "packages/core/package.json", "apps/mobile/package.json"]], ["next.config", ["apps/web/next.config.ts", "apps/web/next.config.mjs"]], ["vercel.json", ["vercel.json", "apps/web/vercel.json"]],
   ["web scripts", ["apps/web/scripts/a.mjs"]], ["web api", ["apps/web/src/app/api/x/route.ts"]], ["supabase", ["supabase/migrations/1.sql", "supabase/tests/grants.mjs"]],
   ["engine files", ["packages/core/src/verify.ts", "packages/core/src/meaning.ts", "packages/core/src/types.ts", "packages/core/src/pipeline.ts", "packages/core/src/plan.ts"]],
+  ["trace gate", ["scripts/trace.mjs", "scripts/trace.test.mjs", "docs/ops/trace-ns-baseline.txt", "docs/product/prd/14-test-plan.md"]],
 ];
 
 test("CR-73 security lens: every trigger path class is caught, and ordinary paths are not", () => {
@@ -197,7 +198,7 @@ test("CR-73 security lens: every trigger path class is caught, and ordinary path
   for (const [name, paths] of CLASS_ROWS) for (const f of paths) assert.equal(touchesSecurityLens([f]), true, `${name}: ${f}`);
   assert.deepEqual(SECURITY_LENS_CLASSES.map((c) => c.name).sort(), CLASS_ROWS.map(([n]) => n).sort(), "table and test rows cover the same classes");
   assert.ok(hit.length >= 45);
-  const miss = ["docs/a.md", "docs/engineering/a.md", "packages/core/src/verifier.ts", "packages/core/src/age.ts", "apps/mobile/src/lib/other.ts", "apps/web/src/lib/a.ts", "compliance-notes.md", "scripts/ops-notes.md", "scripts/agentsx/a.mjs", "scripts/trace.mjs", "scripts/x.mjs", "packages/api/src/client.ts", "packages/api/src/serverless.ts", "apps/mobile/src/a.ts", "apps/web/src/app/page.tsx", "packages/emails/src/a.tsx", "supabase-notes.md", "docs/package.json.md"];
+  const miss = ["docs/a.md", "docs/engineering/a.md", "packages/core/src/verifier.ts", "packages/core/src/age.ts", "apps/mobile/src/lib/other.ts", "apps/web/src/lib/a.ts", "compliance-notes.md", "scripts/ops-notes.md", "scripts/agentsx/a.mjs", "scripts/tracer.mjs", "scripts/trace.mjs.bak", "scripts/x/trace.mjs", "foo/scripts/trace.mjs", "apps/docs/ops/trace-ns-baseline.txt", "docs/ops/trace-ns-baseline.md", "docs/product/prd/14-test-plan-notes.md", "docs/product/prd/13-engineering-plan.md", "scripts/x.mjs", "packages/api/src/client.ts", "packages/api/src/serverless.ts", "apps/mobile/src/a.ts", "apps/web/src/app/page.tsx", "packages/emails/src/a.tsx", "supabase-notes.md", "docs/package.json.md"];
   for (const f of miss) assert.equal(touchesSecurityLens([f]), false, f);
   assert.equal(touchesSecurityLens([]), false);
 });
@@ -206,6 +207,17 @@ test("CR-73 security lens: objects, renames out of a trigger path, and the hit l
   assert.equal(touchesSecurityLens([{ filename: "docs/a.md" }, { filename: "supabase/x.sql" }]), true);
   assert.equal(touchesSecurityLens([{ filename: "docs/moved.mjs", previous_filename: "scripts/agents/a.mjs" }]), true);
   assert.deepEqual(securityLensHits(["docs/a.md", { filename: "vercel.json" }, ".npmrc", "docs/a.md"]), ["vercel.json", ".npmrc"]);
+});
+
+test("CR-229: a PR that changes the trace gate's own files needs the security lens, and a rename out of one still counts", async () => {
+  for (const f of ["scripts/trace.mjs", "scripts/trace.test.mjs", "docs/ops/trace-ns-baseline.txt", "docs/product/prd/14-test-plan.md"]) {
+    const r = await verdict({ comments: both(), files: [f] });
+    assert.equal(r.verdict, "NEEDS-REVIEW", f);
+    assert.equal(r.reason, "security lens missing", f);
+    assert.deepEqual(r.securityHits, [f]);
+    assert.equal((await verdict({ comments: both("", LENS("security")), files: [f] })).verdict, "READY", `${f} with the lens`);
+  }
+  assert.deepEqual(securityLensHits([{ filename: "docs/ops/old-baseline.txt", previous_filename: "docs/ops/trace-ns-baseline.txt" }]), ["docs/ops/old-baseline.txt"]);
 });
 
 test("CR-73 security lens: a trigger-path PR with two passes and no security lens named is NEEDS-REVIEW, security lens missing", async () => {
@@ -1165,7 +1177,8 @@ test("CR-149 rule 4: the two CR-229 paths (the NS register and the trace baselin
   for (const f of ["docs/product/prd/14-test-plan.md", "docs/ops/trace-ns-baseline.txt"]) {
     assert.ok(protectedPathHits([f], CODEOWNERS).some((h) => h.rules.includes("CR-70 path")), f);
     const dir = f.slice(0, f.lastIndexOf("/"));
-    const r = (await run149(stale149([f], [`${dir}/other.md`]))).r;
+    // Both are on the security-lens list too (CR-229), so the reviews name that lens to reach the CR-149 step at all.
+    const r = (await run149({ ...stale149([f], [`${dir}/other.md`]), comments: [review("A", HEAD), review("B", HEAD, "Lens: security\n")] })).r;
     assert.equal(r.verdict, "NEEDS-UPDATE", f);
     assert.match(r.cr149.failed, new RegExp(`^rule 4: protected path ${f.replace(/[.]/g, "\\.")} \\(CR-70 path`), f);
   }
