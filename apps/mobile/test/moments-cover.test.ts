@@ -7,11 +7,14 @@
  * - G01 by the root cover: for every row where the Moments rule asks for a cover, the real machine's `coverShown` is
  *   true, so the one `PrivacyCover` the root layout mounts already covers it (BL-1407). If that ever stops being true,
  *   this test fails and the scoped gate of the spec has to be built.
- * - PC-T3: the real AppLockLayer, rendered with Moments focused and the app inactive, draws exactly one cover with the
- *   lock off and exactly one with the lock on; and no file in src but the lock layer mounts `PrivacyCover`.
+ * - PC-T3: the real AppLockLayer, rendered with Moments focused, draws exactly one cover going inactive and going to
+ *   background with the lock off, and exactly one going to background with the lock on; no file in src but the lock
+ *   layer mounts `PrivacyCover`, and no file but the root layout mounts `AppLockLayer`, which it does once.
  *
  * Not proved here: the pixels iOS captures for the switcher, and whether the cover hides Apple's picker view; those
- * are the device rows D-1, DM-09 and G7 (PC-T9). The fictional family is "Asha".
+ * are the device rows D-15 (the tab body, gap G-12 in docs/security/MEDIA_THREAT_MODEL.md), D-20 and DM-09 (the
+ * picker) and G7 (PC-T9). Focus return after the cover lifts (part of G01) is not tested here. The fictional family is
+ * "Asha".
  */
 import { createElement as h, type ReactNode } from 'react';
 import { createRequire } from 'node:module';
@@ -208,9 +211,19 @@ describe('[NS-53-G01] PC-T3, PC-T6: one cover, never two, with Moments focused',
   });
 });
 
-describe('[NS-53-G01] PC-T3: the root layout mounts the lock layer once', () => {
-  it('apps/mobile/src/app/_layout.tsx renders <AppLockLayer /> exactly once', () => {
-    const src = readFileSync(resolve(__dirname, '../src/app/_layout.tsx'), 'utf8');
+describe('[NS-53-G01] PC-T3: the root layout mounts the lock layer once, and nothing else mounts it', () => {
+  it('apps/mobile/src/app/_layout.tsx renders <AppLockLayer /> exactly once, and no other file in src renders it', () => {
+    const root = resolve(__dirname, '../src');
+    const walk = (d: string): string[] =>
+      readdirSync(d).flatMap((f) => {
+        const p = join(d, f);
+        return statSync(p).isDirectory() ? walk(p) : /\.tsx?$/.test(f) ? [p] : [];
+      });
+    const mounting = walk(root)
+      .filter((f) => /<AppLockLayer\b|createElement\(\s*AppLockLayer\b/.test(readFileSync(f, 'utf8')))
+      .map((f) => relative(root, f));
+    expect(mounting).toEqual([join('app', '_layout.tsx')]);
+    const src = readFileSync(resolve(root, 'app/_layout.tsx'), 'utf8');
     expect(src.match(/<AppLockLayer\b/g)).toHaveLength(1);
   });
 });
@@ -218,9 +231,10 @@ describe('[NS-53-G01] PC-T3: the root layout mounts the lock layer once', () => 
 describe('[NS-53-G01] PC-T8 and the boundary with App lock', () => {
   it('the rule is pure: no React, no AppState, no analytics, no log', () => {
     const src = readFileSync(resolve(__dirname, '../src/lib/moments/cover.ts'), 'utf8');
-    const imports = [...src.matchAll(/^import .* from '([^']+)';$/gm)].map((m) => m[1]);
-    expect(imports).toEqual(['../app-lock/machine']);
-    expect(src).toMatch(/^import type /m);
+    const importLines = src.split('\n').filter((l) => /^\s*(?:import|export)\b[^=]*\bfrom\b|^\s*import\s*['"(]/.test(l));
+    expect(importLines).toEqual(["import type { AppPhase } from '../app-lock/machine';"]); // one type-only import, no side-effect import
+    const code = src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/[^\n]*/g, ' ');
+    expect(code).not.toMatch(/\bfetch\s*\(|\bAppState\b|\bReact\b/);
     expect(src).not.toMatch(/console\.|track\(|analytics\.|logger/);
     expect(src).not.toMatch(/\bimport\s*\(|\brequire\s*\(|setSetting|getSetting/); // no dynamic import or store call either
   });

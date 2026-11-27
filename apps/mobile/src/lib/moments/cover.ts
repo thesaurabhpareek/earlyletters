@@ -6,7 +6,8 @@
  * a day name, a thumbnail or Apple's picker view is never in the app switcher snapshot of a borrowed unlocked phone.
  * With App lock on, the lock layer governs and the Moments rule asks for nothing of its own (one cover, never two).
  *
- * Why there is no second layer (BL-2136, Karma): the spec planned a scoped gate beside `AppLockLayer` because, when it
+ * Why there is no second layer (BL-2136; the CTO ruling is recorded in PR #2113 and has no CR number yet): the
+ * spec planned a scoped gate beside `AppLockLayer` because, when it
  * was written (21 Nov 2026), the root cover drew only while the lock was on. BL-1407 (#1442, merged 22 Nov) made the
  * root cover lock-independent: `coverShown` is true whenever the app is not active, on every route, lock on or off. So
  * every row where this rule asks for a cover is already covered by the one `PrivacyCover` the root layout mounts, and a
