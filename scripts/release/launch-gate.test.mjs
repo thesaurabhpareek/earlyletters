@@ -102,7 +102,7 @@ test("[BL-1480] gate(): API error fails closed, never reads a token or logs more
 
 // BL-1574: main(), the part the workflow runs. Stub `gh` and `git` on PATH so no network or real repo is read.
 const SCRIPT = join(dirname(fileURLToPath(import.meta.url)), "launch-gate.mjs");
-function runMain(args, { runs = [], mergeBase = MB, ancestor = true, ancestorExit = ancestor ? 0 : 1, script = SCRIPT } = {}) {
+function runMain(args, { runs = [], mergeBase = MB, ancestor = true, ancestorExit = ancestor ? 0 : 1, script = SCRIPT, nodeFlags = [], env = {} } = {}) {
   const dir = mkdtempSync(join(tmpdir(), "launch-gate-"));
   try {
     writeFileSync(join(dir, "runs.json"), JSON.stringify({ workflow_runs: runs }));
@@ -117,7 +117,7 @@ function runMain(args, { runs = [], mergeBase = MB, ancestor = true, ancestorExi
     writeFileSync(join(dir, "git"), `#!/bin/sh\nif [ "$1" = "merge-base" ] && [ "$2" = "--is-ancestor" ]; then\n  [ "$#" = 4 ] && [ "$3" = "${mergeBase}" ] || exit 3\n  case "$4" in ${headCase}) exit ${ancestorExit};; *) exit 3;; esac\nfi\n[ "$1" = "merge-base" ] && [ "$2" = "${sha}" ] && [ "$3" = "origin/develop" ] || exit 3\necho ${mergeBase}\n`);
     chmodSync(join(dir, "gh"), 0o755);
     chmodSync(join(dir, "git"), 0o755);
-    const r = spawnSync(process.execPath, [script, ...args], { env: { ...process.env, PATH: `${dir}:${process.env.PATH}` }, encoding: "utf8", timeout: 20000 });
+    const r = spawnSync(process.execPath, [...nodeFlags, script, ...args], { env: { ...process.env, ...env, PATH: `${dir}:${process.env.PATH}` }, encoding: "utf8", timeout: 20000 });
     return { code: r.status, out: r.stdout, err: r.stderr };
   } finally {
     rmSync(dir, { recursive: true, force: true });
@@ -189,6 +189,31 @@ test("[BL-1574] main() runs when the script path has a space or is reached throu
       const usage = runMain([], { script });
       assert.equal(usage.code, 2, script);
       assert.match(usage.err, USAGE, script);
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("[BL-1574] main() still runs through a symlink when node keeps the link in import.meta.url (--preserve-symlinks-main)", () => {
+  // With --preserve-symlinks-main, as a flag or through NODE_OPTIONS, the loader leaves the symlink in import.meta.url,
+  // so the realpath compare in isEntry() is false and only the second compare (the argv[1] URL as given) finds the
+  // entry. Without that compare main() never runs under the flag and the job exits 0. The workflow passes no node flags
+  // today; this pins the branch so a later step that sets NODE_OPTIONS cannot open the gate by accident.
+  const dir = mkdtempSync(join(tmpdir(), "launch gate "));
+  try {
+    const copy = join(dir, "launch-gate.mjs");
+    copyFileSync(SCRIPT, copy);
+    const link = join(dir, "linked gate.mjs");
+    symlinkSync(copy, link);
+    for (const how of [{ nodeFlags: ["--preserve-symlinks-main"] }, { env: { NODE_OPTIONS: "--preserve-symlinks-main" } }]) {
+      const label = JSON.stringify(how);
+      const refused = runMain(["--repo", "o/r", "--sha", AFTER], { runs: [run({ conclusion: "failure" })], script: link, ...how });
+      assert.equal(refused.code, 1, `${label}: ${refused.out}${refused.err}`);
+      assert.match(refused.out, /^::error::Release candidate tag refused: run 1 on b{9} concluded failure/m, label);
+      const usage = runMain([], { script: link, ...how });
+      assert.equal(usage.code, 2, label);
+      assert.match(usage.err, USAGE, label);
     }
   } finally {
     rmSync(dir, { recursive: true, force: true });
