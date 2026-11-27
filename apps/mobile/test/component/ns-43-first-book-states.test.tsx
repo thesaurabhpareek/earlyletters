@@ -4,9 +4,10 @@
  * test/ns-43-first-book-states.test.ts.
  *
  * What this proves: at the accessibility-5 text size every field, choice and reason on "Who is this book for?" and "What
- * does {child} call you?" is in the screen, whole, with no line limit, in reading order (heading, fields, choices, the
- * date, the reason, Continue), each with its accessible name; the reason is a polite live region and a waiting Continue
- * is marked disabled. What it does NOT prove: VoiceOver's own focus moves and announcements, stacking (className does
+ * does {child} call you?" is in the screen, whole, with no line limit, in reading order (on the first: Back, the
+ * heading, the name field, born or expecting, the date, Add another child, the signed-in note and Use another account,
+ * the reason, Continue; on the second: the heading, the field, the examples, the help, the reason, Continue), each with
+ * its accessible name; the reason is a polite live region and a waiting Continue is marked disabled. What it does NOT prove: VoiceOver's own focus moves and announcements, stacking (className does
  * not reach this markup), the iOS date button (react-native-web draws the web date input), or scrolling on an SE 3.
  * Those are the device pass of R13, which stays a device row.
  *

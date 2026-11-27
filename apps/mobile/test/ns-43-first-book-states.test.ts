@@ -15,7 +15,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import * as content from '@scribe/content';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { importSpecifiers } from './helpers/import-reader';
+import { dynamicImports, importSpecifiers } from './helpers/import-reader';
 import { nodeDb } from './helpers/node-db';
 import { stripComments } from './helpers/strip-comments';
 
@@ -126,28 +126,35 @@ describe('[NS-43-R8] no child step for a returning account', async () => {
 /**
  * A language teaser (NS-17-R1, K-E01, CG2): a promise that more languages, or anything else, are coming. Matched on the
  * words a parent would read, case-insensitive. "As soon as" (a letter's words follow as soon as the phone is ready) is
- * not a promise of a feature, so `soon` alone is matched only when it is not followed by "as". "On its way" ("Spanish is
- * on its way") is matched unless it is the person's own book coming to this phone (the welcome's join wait: "The book is
- * on its way to this phone"), which is a delivery, not a feature to come.
+ * not a promise of a feature, so `soon` alone is matched only when it is not followed by "as". "On its way" and "is
+ * coming" ("Spanish is on its way", "Hindi is coming") are matched, except the person's own book on its way (the
+ * welcome's join wait, familyCopy.accept.joinedWaiting*: "The book is on its way to this phone"), which is a delivery,
+ * not a feature to come. The exception is keyed on the book as the subject, not on where it goes: "Spanish is on its
+ * way to this phone" is a promise all the same.
  */
-const TEASER = /coming soon|coming later|\bsoon\b(?! as\b)|later update|later version|future (update|version)|(other|more) languages|languages (are|will be) (coming|on the way)|\bon its way\b(?! (back )?to (this|your) phone)/i;
+const TEASER = /coming soon|coming later|\bsoon\b(?! as\b)|later update|later version|future (update|version)|(other|more) languages|languages (are|will be) (coming|on the way)|(?<!\bbook is )\bon its way\b|\bis coming\b/i;
 
 /**
  * The first-run surfaces: every file `app/onboarding.tsx` reaches through its value imports, followed inside `src`
  * (`@/` and relative paths). The route draws the welcome, its join wait, the held screens, the deletion screens, the
  * language picker and the steps from these files, and each file's copy references resolve to the words files
  * (family.en.ts, strings.en.ts and the rest), so a line on any of them is read. A fixed list missed the welcome's join
- * line (components/family/join-wait.logic.ts) and anything new a step comes to draw. Type-only imports are erased at
- * build and draw nothing; packages outside `src` are reached only as copy roots.
+ * line (components/family/join-wait.logic.ts) and anything new a step comes to draw. A platform twin (`x.ios.tsx`) and a
+ * literal dynamic `import()` are followed too. Type-only imports are erased at build and draw nothing; packages
+ * outside `src` are reached only as copy roots.
  */
-function importedFrom(from: string, spec: string, planted: Record<string, string>): string | null {
+function importedFrom(from: string, spec: string, planted: Record<string, string>): string[] {
   let base: string;
   if (spec.startsWith('@/')) base = join(SRC, spec.slice(2));
   else if (spec.startsWith('.')) base = join(dirname(join(SRC, from)), spec);
-  else return null;
-  for (const c of [base, `${base}.tsx`, `${base}.ts`, join(base, 'index.tsx'), join(base, 'index.ts')]) {
-    const rel = relative(SRC, c);
-    if (rel in planted || (existsSync(c) && statSync(c).isFile())) return rel.startsWith('..') ? null : rel;
+  else return [];
+  const found = (c: string) => c !== '' && (relative(SRC, c) in planted || (existsSync(c) && statSync(c).isFile()));
+  if (found(base)) return relative(SRC, base).startsWith('..') ? [] : [relative(SRC, base)];
+  // The phone bundles `x.ios.tsx` (or `x.native.tsx`) over `x.tsx` when it exists, so every twin is read: the one the
+  // build draws and the default the other tests read.
+  for (const stem of [base, join(base, 'index')]) {
+    const twins = ['.ios.tsx', '.native.tsx', '.tsx', '.ios.ts', '.native.ts', '.ts'].map((e) => `${stem}${e}`).filter(found);
+    if (twins.length) return twins.map((c) => relative(SRC, c)).filter((rel) => !rel.startsWith('..'));
   }
   // An import the walk cannot find would hide every file behind it, so it fails rather than shrinks the scan.
   throw new Error(`${from}: cannot resolve ${spec}`);
@@ -161,10 +168,9 @@ function firstRunSources(planted: Record<string, string> = {}): Record<string, s
     const file = queue.pop() as string;
     if (file in out) continue;
     out[file] = planted[file] ?? read(file);
-    for (const spec of importSpecifiers(out[file])) {
-      const next = importedFrom(file, spec, planted);
-      if (next && !(next in out)) queue.push(next);
-    }
+    // A literal `import('x')` loads a module as surely as a static one (a lazy screen would draw its words too).
+    for (const spec of [...importSpecifiers(out[file]), ...dynamicImports(out[file]).literal])
+      for (const next of importedFrom(file, spec, planted)) if (!(next in out)) queue.push(next);
   }
   return out;
 }
@@ -281,6 +287,30 @@ describe('[NS-43-R11] no language teaser in first run', async () => {
     const planted = { ...roots, copy: { ...copy, onboarding: { ...o, signsAs: { ...o.signsAs, notYetHelp: `${o.signsAs.notYetHelp} Spanish is on its way.` } } } };
     expect(teasersOnFirstRun(sources, planted)).toContain(`app/onboarding.tsx copy.onboarding.signsAs.notYetHelp: ${o.signsAs.notYetHelp} Spanish is on its way.`);
     expect(TEASER.test(content.familyCopy.accept.joinedWaitingUnknown)).toBe(false);
+    expect(TEASER.test(content.familyCopy.accept.joinedWaiting)).toBe(false);
+  });
+
+  it('[NS-43-R11] mutant: a language on its way "to this phone" or "to your phone" is still a teaser; only the book is exempt', () => {
+    // The exception is the book as the subject, so where a promise says it is going does not let it through.
+    const route = read('app/onboarding.tsx').replace("import { LanguagePicker } from '@/components/language/language-picker';", "import { LanguagePicker } from '@/components/language/language-picker';\nimport { LanguageNote } from '@/components/language/language-note';");
+    const note = "import { languageCopy } from '@/components/language/copy';\nexport function LanguageNote() {\n  return languageCopy.picker.welcomeNote;\n}\n";
+    const walked = firstRunSources({ 'app/onboarding.tsx': route, 'components/language/language-note.tsx': note });
+    for (const line of ['Spanish is on its way to this phone.', 'Spanish is on its way to your phone.', 'Hindi is coming.']) {
+      const planted = { ...roots, languageCopy: { ...content.languageCopy, picker: { ...content.languageCopy.picker, welcomeNote: line } } };
+      expect(teasersOnFirstRun(walked, planted), line).toContain(`components/language/language-note.tsx languageCopy.picker.welcomeNote: ${line}`);
+    }
+  });
+
+  it('[NS-43-R11] mutant: a teaser in a platform twin (.ios.tsx) or behind a lazy import() is caught', () => {
+    const lang = { ...roots, languageCopy: { ...content.languageCopy, picker: { ...content.languageCopy.picker, welcomeNote: 'Spanish is on its way.' } } };
+    const note = "import { languageCopy } from '@/components/language/copy';\nexport function SignedInNote() {\n  return languageCopy.picker.welcomeNote;\n}\n";
+    // The phone bundles signed-in-note.ios.tsx over signed-in-note.tsx: its words are read too.
+    const twin = firstRunSources({ 'components/onboarding/signed-in-note.ios.tsx': note });
+    expect(Object.keys(twin)).toEqual(expect.arrayContaining(['components/onboarding/signed-in-note.ios.tsx', 'components/onboarding/signed-in-note.tsx']));
+    expect(teasersOnFirstRun(twin, lang)).toContain('components/onboarding/signed-in-note.ios.tsx languageCopy.picker.welcomeNote: Spanish is on its way.');
+    const route = `${read('app/onboarding.tsx')}\nconst LazyNote = React.lazy(() => import('@/components/language/language-note'));\n`;
+    const lazy = firstRunSources({ 'app/onboarding.tsx': route, 'components/language/language-note.tsx': note });
+    expect(teasersOnFirstRun(lazy, lang)).toContain('components/language/language-note.tsx languageCopy.picker.welcomeNote: Spanish is on its way.');
   });
 
   it('[NS-43-R11] mutant: a planted coming-soon key on the child step is caught', () => {
