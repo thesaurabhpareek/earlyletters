@@ -14,7 +14,8 @@
  * wins, rule 1), so each row is handled as L3, as `readTogether.sessions.<book id>` is (4.5). The third is a time under
  * a fixed key. None holds a name or words, and none is logged or sent.
  *
- * Nothing here queues an upload. Both paths are offered only on a phone that never signed in (store.ts checks).
+ * Nothing here queues an upload. Both paths are offered only on a phone that never signed in (store.ts checks), except
+ * Erase this phone only (F17-REQ-026), which store.ts lets through once `onlyOnThisPhone` reads 0 and nothing is queued.
  */
 import type { RepoContext } from './context';
 import { forgetDraftFromName } from './drafts';
@@ -26,6 +27,31 @@ export const ERASE_EVERYTHING_SETTING = 'erase.everything.pending';
 
 /** SQL test for "this book is deleted", for a query that names the book `c` (children.ts LISTED). */
 export const BOOK_NOT_DELETED_SQL = `NOT EXISTS (SELECT 1 FROM settings s WHERE s.key = '${BOOK_DELETED_PREFIX}' || c.id)`;
+
+/**
+ * Erase this phone only (F17-REQ-026, BL-559): how many things this phone holds that the account on the server does not,
+ * so that a signed-in wipe would lose them. Counted, each once: a live letter whose own sync state is not synced or whose
+ * book is not on the server (a book the server refused, one never sent, one this person left or that was deleted there);
+ * a live book not on the server; a draft whose held copy is not on the server; a conflict copy (this phone's words kept
+ * for the author to pick, never sent). Live means not in Recently deleted: a deleted letter or book is erased by any
+ * Erase everything. With `queuedOnItsWay`, a letter, book or draft still queued counts as on its way (the outbox drains
+ * before the wipe); without it, only what the server has acknowledged is safe. Reads only.
+ */
+export function onlyOnThisPhone({ db }: RepoContext, opts: { queuedOnItsWay: boolean }): number {
+  const safe = opts.queuedOnItsWay ? "('synced', 'pending')" : "('synced')";
+  const bookLive = `(c.id IS NULL OR ${BOOK_NOT_DELETED_SQL})`;
+  const queued = opts.queuedOnItsWay ? 'EXISTS (SELECT 1 FROM sync_outbox o WHERE o.entity_id = d.id)' : '0';
+  return db.get<{ n: number }>(
+    `SELECT
+       (SELECT COUNT(*) FROM entries e LEFT JOIN children c ON c.id = e.child_id
+          WHERE e.deleted_at IS NULL AND ${bookLive}
+            AND (e.sync_state NOT IN ${safe} OR c.id IS NULL OR c.server_state NOT IN ${safe}))
+     + (SELECT COUNT(*) FROM children c WHERE ${BOOK_NOT_DELETED_SQL} AND c.server_state NOT IN ${safe})
+     + (SELECT COUNT(*) FROM drafts d LEFT JOIN children c ON c.id = d.child_id
+          WHERE ${bookLive} AND d.held_v IS NULL AND NOT ${queued})
+     + (SELECT COUNT(*) FROM rejected_writes WHERE code = 'conflict') AS n`,
+  )!.n;
+}
 
 export interface DeletedBook {
   id: string;

@@ -79,6 +79,7 @@ import {
   heldEverSent,
   getDraftRow,
   getEntryRow,
+  pendingCount,
   syncOwner,
   enqueueEntryUpsert,
   enqueuePrefs,
@@ -1499,7 +1500,7 @@ export function eraseEverythingPending(): boolean {
 /**
  * Erase everything, the store's part (signed out only, F17 6.2 F step 1). In order:
  *  1. the pending mark, so a kill at any later point is finished at the next launch (a mark is only ever written on
- *     a phone that had not signed in);
+ *     a phone that had not signed in, or by eraseThisPhoneLocal once the drain left nothing);
  *  2. each letter's and draft's recording, listening copy and temporary copies (`eraseAudio`);
  *  3. every other recording file, listening copy, temporary copy and export left on the phone (`eraseFiles`);
  *  4. every row of every table, settings included, in one transaction; the mark stays.
@@ -1515,6 +1516,50 @@ export function eraseEverythingLocal(eraseAudio: AudioEraser, eraseFiles: Device
     if (!localDeletionAllowed()) return 'signed_in';
     settings.setSetting(c, wipe.ERASE_EVERYTHING_SETTING, c.now());
   }
+  return eraseMarked(c, eraseAudio, eraseFiles);
+}
+
+/**
+ * Erase this phone only (F17-REQ-026, F17-U38, BL-559), before the outbox drains: what would stop it. A count of the
+ * things only this phone holds that will not drain (wipe.ts onlyOnThisPhone, a queued row counted as on its way), plus
+ * queued ops the drain does not send (a book the server refused, held ops for a server without held drafts, an erase
+ * waiting for a server that can erase). 0 means signing out with the F02 guard leaves nothing that only this phone has.
+ * Not a count of letters: a screen reads it as none or some.
+ */
+export function eraseThisPhoneBlockers(): number {
+  const c = ctx();
+  return wipe.onlyOnThisPhone(c, { queuedOnItsWay: true }) + (outboxRows(c) - pendingCount(c.db));
+}
+
+function outboxRows(c: RepoContext): number {
+  return c.db.get<{ n: number }>('SELECT COUNT(*) AS n FROM sync_outbox')!.n;
+}
+
+/**
+ * Erase this phone only, the store's part, once the session is gone (lib/erase-everything.ts eraseThisPhone; F17 6.2 F
+ * step 2). The same wipe as Erase everything, and only when the drain has left nothing: no row in the outbox and nothing
+ * the server has not acknowledged (wipe.ts onlyOnThisPhone, nothing counted as on its way). Otherwise 'not_drained' and
+ * nothing begun, so a sign-out that ended before the queue emptied (the session lost mid-wait, a guard that did not
+ * wait) never costs a letter. A phone that never signed in passes too. Nothing here is sent; the drain sent it before.
+ * The mark is the same as Erase everything's, so a kill part way is finished at the next launch (resumeEraseAtLaunch).
+ */
+export function eraseThisPhoneLocal(eraseAudio: AudioEraser, eraseFiles: DeviceFilesEraser): 'erased' | 'incomplete' | 'not_drained' {
+  const c = ctx();
+  if (!eraseEverythingPending()) {
+    if (!eraseThisPhoneAllowed()) return 'not_drained';
+    settings.setSetting(c, wipe.ERASE_EVERYTHING_SETTING, c.now());
+  }
+  return eraseMarked(c, eraseAudio, eraseFiles);
+}
+
+/** Whether eraseThisPhoneLocal would begin: everything this phone holds of the account is on the server. */
+export function eraseThisPhoneAllowed(): boolean {
+  const c = ctx();
+  return localDeletionAllowed() || (outboxRows(c) === 0 && wipe.onlyOnThisPhone(c, { queuedOnItsWay: false }) === 0);
+}
+
+/** Steps 2 to 4 of Erase everything, once the mark is written. */
+function eraseMarked(c: RepoContext, eraseAudio: AudioEraser, eraseFiles: DeviceFilesEraser): 'erased' | 'incomplete' {
   try {
     for (const r of wipe.allAudioRows(c)) eraseAudio(r.audioUri, r.id);
     eraseFiles();

@@ -185,7 +185,8 @@ export default function Settings() {
         {backupInBuild() ? <ListRow title={backupCopy.title} value={backupRowValue()} trailing="chevron" onPress={go(ROUTES.backup)} /> : null}
         <ListRow title={h.storageLabel} subtitle={h.storageHelp} trailing="chevron" onPress={go(ROUTES.storage)} />
         {/* Erase everything on this phone (BL-387, F17 6.2 F): last in Your letters, only on a phone that never signed in
-            (signed in, F17-REQ-026 offers account deletion first; not built here). */}
+            (signed in, F17-REQ-026 offers account deletion first; its phone-only choice is lib/erase-this-phone.logic.ts,
+            and its screen waits for its words, BL-559). */}
         {localDeletionAllowed() ? (
           <ListRow title={copy.settings.erase.rowLabel} variant="destructive" trailing="chevron" onPress={go(ROUTES.erase)} testID="settings.erase" />
         ) : null}
