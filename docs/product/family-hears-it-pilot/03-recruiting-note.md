@@ -17,15 +17,15 @@ From the founder's invited list of TestFlight and alpha families only.
 
 - One parent per message, from the founder's own phone, in the thread the founder already has with them. Never in a group chat, so nobody learns who else is taking part.
 - Only after counsel's read is on record in the pilot file (NS-03-R1).
-- The window is 5 working days. If fewer than 8 have said yes by the end, extend once by 3 working days. If still fewer than 8, stop and re-plan (stop rule 5).
+- The recruiting window is 5 working days (NS-03 section 5, step 4). The send window and day 0 follow it (`README.md`, "Days and clocks, said once"). If fewer than 8 have said yes by the end, extend once by 3 working days. If still fewer than 8, stop and re-plan (stop rule 5).
 - No contact on a US federal public holiday.
 - Track only numbers in the counts file: how many were asked, how many said yes. Names stay in the founder's own messages and the private key.
 
 ## 3. The note
 
 > Hi. We're trying out a small idea and would value your help.
-> If you're up for it, you'd send one of your letters from {brand.name} to a grandparent or someone else close to you, in your own message, and answer a few short questions about how it went over the next week. We'd never receive it.
-> It takes about 15 minutes in all, spread over a week. It's fine to say no.
+> If you're up for it, you'd send one of your letters from {brand.name} to a grandparent or someone else close to you, in your own message, and answer a few short questions about how it went over the next two weeks or so. We'd never receive it.
+> It takes about 15 minutes in all, spread over up to two weeks. It's fine to say no.
 > Would you like to hear more?
 
 ## 4. If they'd like to hear more: four quick checks

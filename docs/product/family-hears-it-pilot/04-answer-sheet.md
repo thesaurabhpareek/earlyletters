@@ -4,15 +4,16 @@ Status: DRAFT, 24 Nov 2026, `user-research` (Claude role). This is the blank lay
 
 Source: NS-03 sections 8, 14 and 23 (`docs/product/prd/03-family-hears-it-pilot.md`).
 
-## 1. Four files, one per deletion clock
+## 1. Four files and the thread, one per deletion clock
 
-Each kind of record has its own clock, so each sits in its own file and can be deleted on the day without touching the others.
+Each kind of record has its own clock, so each sits in its own file and can be deleted on the day without touching the others. Every clock runs from the read-out, as `README.md` ("Days and clocks, said once") defines it; the consent texts call it "the day we count everyone's answers".
 
 | File | Holds | Deleted | Rule |
 |---|---|---|---|
-| Key | Participant code to person | With the answers, 30 days after the read-out | NS-03 section 14 |
+| Key | Participant code to person | With the answers: 30 days after the read-out, or that parent's row within 2 working days of a withdrawal, or the same day for a participant found to be under 18 | NS-03 section 14 ("Deleted with the raw notes") |
 | Consent | The consent record (section 2) and the log (section 5) | 12 months after the read-out | Ruling D4 |
-| Answers | Coded answers and short notes (section 3) | 30 days after the read-out, or within 2 working days of a withdrawal for that parent's row | NS-03-R4, NS-03-R5 |
+| Answers | Coded answers and short notes (section 3) | 30 days after the read-out, or within 2 working days of a withdrawal for that parent's row, or the same day for a participant found to be under 18 | NS-03-R4, NS-03-R5 |
+| Contact details | The pilot thread in the founder's own messages; no copy elsewhere | 30 days after the read-out, or with that parent's notes on a withdrawal or an under-18 finding | NS-03 section 14, NS-03-R4 |
 | Counts | Numbers only (section 4) | 90 days after the round | Ruling D5 |
 
 Every deletion gets a dated note in the consent file's log: what was deleted, by code, and the date. The log entry never repeats what was deleted.
@@ -35,9 +36,11 @@ One row per parent who said Yes. Codes only, except the two free-words columns, 
 |---|---|---|
 | Code | P01 to P10 | |
 | Arm | W or V (a V parent with no recording on this phone is moved to W and counted in W; see the log) | Consent |
+| Day 0 | YYYY-MM-DD, Pacific: the day the parent got the instruction | Founder |
 | Form sent | Screenshot, one-letter PDF, or none | Day 3 or day 7 |
-| Send date | YYYY-MM-DD, Pacific | Parent |
-| A1 Sent by day 3 | Sent, Not yet (no answer counts as Not yet) | Script A Q1 |
+| Recording sent | Yes, No (Arm V only: whether the recording went with the letter; blank for W) | Day 3 or day 7 |
+| Send date | YYYY-MM-DD, Pacific, or none by the cap | Parent |
+| A1 Sent by day 3 | Sent, Not yet. Day 3 counts from day 0, not from the send. No answer counts as Not yet; a send on day 4 or later, up to the cap, is Not yet here but still counts in S | Script A Q1 |
 | A2 Reason if not yet | did not get to it, did not want to, unclear | Script A Q2 |
 | A3 Questions dropped | The question numbers, or none | Script A Q3 |
 | B1 Read | Yes, No | Script B Q1 |
@@ -54,7 +57,7 @@ One row per parent who said Yes. Codes only, except the two free-words columns, 
 | C Read without help | Yes, No, missing (missing counts as No; a B2 "could not play" makes this No) | Script C, relayed |
 | Relayed | Always Yes for C; marks the answer as second-hand | |
 
-Practice row, never counted: P00, the fictional Asha family, Arm W, Form sent Screenshot, A1 Sent, B1 Read Yes and Replied Yes, B2 on their own, B5 Yes, B6 only them and No, C Yes. Use it once to check the sheet's formulas, then delete it before P01's day 0.
+Practice row, never counted: P00, the fictional Asha family, Arm W, Form sent Screenshot, Recording sent blank, A1 Sent, B1 Read Yes and Replied Yes, B2 on their own, B5 Yes, B6 only them and No, C Yes. Use it once to check the sheet's formulas, then delete it before P01's day 0.
 
 ## 4. Counts (Counts file)
 
@@ -63,8 +66,9 @@ Numbers only. These are the only figures that reach the read-out (BL-1325).
 | Line | Count | Threshold | Met |
 |---|---|---|---|
 | N, parents who consented (W, V) | | | |
-| S, parents who sent (W, V) | | | |
-| SC-1 sent by day 3 | x of N | ceil(0.75 x N) | |
+| S, parents who sent by the cap (W, V) | | | |
+| Arm V senders who also sent the recording | x of S (V) | reported beside SC-2, so the read-out can say how many V recipients had the voice | |
+| SC-1 sent by day 3, counted from day 0 | x of N | ceil(0.75 x N) | |
 | SC-2 recipient read (or listened) without help | x of S | ceil(0.6 x S) | |
 | Transport failures beside SC-2 (file did not arrive, could not play) | x of S | reported beside SC-2; does not change the SC-2 count (each recipient still counts by their Script C answer, and "could not play" is a No) | |
 | SC-3 replied or asked for another | x of S | ceil(0.5 x S) | |
@@ -100,12 +104,14 @@ By code and date only. One line per event.
 | Date | Code | Event | Stop rule |
 |---|---|---|---|
 | YYYY-MM-DD | P0n | item received, deleted on every device | 3 if not deleted |
-| YYYY-MM-DD | P0n | withdrew; notes and contact details deleted | |
+| YYYY-MM-DD | P0n | withdrew; notes, key row and contact details deleted | |
+| YYYY-MM-DD | P0n | under 18; notes, key row and contact details deleted | 4 |
+| YYYY-MM-DD | P0n | sent after the cap; not counted in S | |
 | YYYY-MM-DD | P0n | moved to W, no recording on this phone | |
 | YYYY-MM-DD | P0n | reached someone unintended | 1 |
 | YYYY-MM-DD | P0n | distress reported | 2 |
 | YYYY-MM-DD | all | stop rule fired; founder told | n |
-| YYYY-MM-DD | all | answers and key deleted (30 days after read-out) | |
+| YYYY-MM-DD | all | answers, key and contact details deleted (30 days after read-out) | |
 | YYYY-MM-DD | all | counts deleted (90 days) | |
 
 The consent file is itself deleted at 12 months, so the note of that deletion goes in the founder's own dated record outside it (NS-03-R4).
