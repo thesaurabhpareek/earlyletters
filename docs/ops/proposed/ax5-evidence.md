@@ -13,11 +13,11 @@ Security lens: this proposal targets `.github/workflows/` (it adds one workflow 
 
 ## What it adds
 
-`docs/ops/proposed/workflows/a11y-evidence.patch` creates `.github/workflows/a11y-evidence.yml`: one job, `ax5` (its name reads "Unnamed-control check and emulation screenshots; not AX5 conformance"), path filtered, not a required check (a required check that never reports blocks merges that do not touch the app), the same pinned actions as the e2e-web proposal (`docs/ops/proposed/workflows/e2e-web.patch`). It is a separate file from `.github/workflows/web-e2e.yml`, which on develop runs the site checks for `apps/web` and is not related. It runs only `apps/mobile/e2e-web/j25-ax5-evidence.flow.ts` with `JOURNEY_SHOTS=1` and `A11Y_STRICT=1`, then uploads the four AX5 screenshots (Review, a letter, Settings, the Plus gate), their step JSON and the traces.
+`docs/ops/proposed/workflows/a11y-evidence.patch` creates `.github/workflows/a11y-evidence.yml`: one job, `ax5` (its name reads "Unnamed-control check and emulation screenshots; not AX5 conformance"), path filtered, not a required check (a required check that never reports blocks merges that do not touch the app), the same pinned actions as the e2e-web proposal (`docs/ops/proposed/workflows/e2e-web.patch`). It is a separate file from `.github/workflows/web-e2e.yml`, which on develop runs the site checks for `apps/web` and is not related. It runs only `apps/mobile/e2e-web/j25-ax5-evidence.flow.ts` with `JOURNEY_SHOTS=1` and `A11Y_STRICT=1`, then uploads the three AX5 screenshots (Review, a letter, Settings; the Plus gate is device evidence only since CR-240, DEVICE_TEST_PLAN V-06), their step JSON and the traces.
 
 ## What a green run means
 
-A green job means: no control in the four recorded steps lacks an accessible name, and four emulated screenshots exist. It does not mean AX5 conformance: a browser accessibility tree is not VoiceOver (no rotor, focus order, traits or grouping) and web scaling is not iOS Dynamic Type. The workflow name and the job name carry the sentence "unnamed-control check and emulation screenshots; not AX5 conformance". The patch adds no summary step (that would change its hunk size); when one is added, it starts with the same sentence.
+A green job means: no control in the three recorded steps lacks an accessible name, and three emulated screenshots exist. It does not mean AX5 conformance: a browser accessibility tree is not VoiceOver (no rotor, focus order, traits or grouping) and web scaling is not iOS Dynamic Type. The workflow name and the job name carry the sentence "unnamed-control check and emulation screenshots; not AX5 conformance". The patch adds no summary step (that would change its hunk size); when one is added, it starts with the same sentence.
 
 ## What the job does not prove
 
@@ -26,7 +26,7 @@ A green `ax5` job is a floor, not accessibility evidence for the store or for co
 - A browser accessibility tree is not VoiceOver. It has no rotor, no focus order as iOS reads it, no traits and no grouping, so the device run stays BL-279 (BL-1619, BL-1626).
 - Web text scaling at 3.571 is not iOS Dynamic Type. Clipping and truncation on a phone at AX5 are not seen here.
 - It checks that a name exists, not that it is right: state and value, label-in-name, duplicate labels, decorative icons, clipped letter text and 44 pt targets are not checked. The same gaps hold for rules C1 and C2 in `apps/mobile/test/a11y-controls.test.ts`; BL-1624 carries the list.
-- It covers four screens (Review, a letter, Settings, the Plus gate), not the app.
+- It covers three screens (Review, a letter, Settings), not the app. The Plus gate at AX5 is not here: the seam build is an alpha build with no gate, so it is device evidence only (CR-240, DEVICE_TEST_PLAN V-06).
 - It is not required, so a red run does not block a merge; someone has to read it.
 
 ## Where 3.571 comes from
@@ -42,14 +42,14 @@ Every step JSON written by `e2e-web/support/journey.ts` now carries `a11y.tree` 
 
 ## Cost
 
-One `npm ci`, a Chromium install and four short flows. `apps/mobile/e2e-web/support/global-setup.ts` loops over all four builds (plain, seed, server-on, seam) and exports each one that is missing, whatever flow is filtered, so a cold run does four Expo web exports, not one. Time: unmeasured; no run has happened. Timeout 15 minutes. That is above the 10 minute CI budget, so the job stays parallel and non-required and adds no time to the required path; if the first run is slower than the budget allows, split it rather than raise the timeout.
+One `npm ci`, a Chromium install and three short flows. `apps/mobile/e2e-web/support/global-setup.ts` loops over all five builds (plain, seed, server-on, seam, store) and exports each one that is missing, whatever flow is filtered, so a cold run does five Expo web exports, not one. Time: unmeasured; no run has happened. Timeout 15 minutes. That is above the 10 minute CI budget, so the job stays parallel and non-required and adds no time to the required path; if the first run is slower than the budget allows, split it rather than raise the timeout.
 
 ## How to verify
 
 1. Apply it with the command at the top of this file.
-2. Run it by hand (workflow_dispatch). Expect four J25 steps and `ax5-evidence` with `J25-01.png` to `J25-04.png` and four JSON files.
+2. Run it by hand (workflow_dispatch). Expect three J25 steps and `ax5-evidence` with `J25-01.png` to `J25-03.png` and three JSON files.
 3. Open one JSON: `a11y.tree` lists roles and names in page order; `a11y.unnamed` is `[]`.
-4. Mutant: remove an `aria-label`/`accessibilityLabel` from a control on one of the four screens; the job fails naming the step.
+4. Mutant: remove an `aria-label`/`accessibilityLabel` from a control on one of the three screens; the job fails naming the step.
 
 ## Rollback
 

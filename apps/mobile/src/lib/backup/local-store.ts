@@ -11,6 +11,7 @@
  * hash already set is never changed. Until S03 adopts it, it lives here,
  * behind `capabilities.backup`.
  */
+import { BOOK_DELETED_PREFIX } from '../db/repos/wipe';
 import type { SqlDb } from '../db/sql';
 import type { BackupSource, BackupSourceItem } from './queue';
 import type { LocalLetter, RestoreLocal } from './restore';
@@ -50,9 +51,14 @@ export interface SourceOptions {
   heldOnServer?: (draftId: string) => boolean;
 }
 
-/** Which rows `list` and `has` read: one rule, so the two never disagree. The letter rule takes the profile id. */
-const LETTER_WHERE = 'deleted_at IS NULL AND audio_uri IS NOT NULL AND child_id IS NOT NULL AND (author_id IS NULL OR author_id = ?)';
-const DRAFT_WHERE = "state = 'ready' AND audio_uri IS NOT NULL";
+/**
+ * Which rows `list` and `has` read: one rule, so the two never disagree. The letter rule takes the profile id.
+ * A letter or draft of a book in Recently deleted on this phone is not backed up (BL-559): such a book never reached
+ * the server, and its recordings stay on the phone until it is restored or erased.
+ */
+const bookNotDeleted = (col: string) => `NOT EXISTS (SELECT 1 FROM settings s WHERE s.key = '${BOOK_DELETED_PREFIX}' || ${col})`;
+const LETTER_WHERE = `deleted_at IS NULL AND audio_uri IS NOT NULL AND child_id IS NOT NULL AND (author_id IS NULL OR author_id = ?) AND ${bookNotDeleted('entries.child_id')}`;
+const DRAFT_WHERE = `state = 'ready' AND audio_uri IS NOT NULL AND ${bookNotDeleted('drafts.child_id')}`;
 
 /** Saved letters and held drafts of mine with a recording on this phone, oldest first. */
 export function backupSource(o: SourceOptions): BackupSource {

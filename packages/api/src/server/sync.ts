@@ -869,15 +869,54 @@ export const SyncBooksResponseSchema = v.object({
   first_run_open: v.boolean(),
   books: v.array(SyncBookSchema),
   /**
-   * FR-PRV-20 (20261123100000): 'consent' when the gate is closed. Each book then carries only id, role, name and
-   * members (role, is_me, signs_as): the strict SyncBookSchema does not describe that shape, and no caller parses it
-   * strictly (the claim step and account deletion read `first_run_open`, `books` and those fields defensively).
+   * FR-PRV-20 (20261123100000): 'consent' when the gate is closed. Such an answer has the closed shape
+   * (SyncBooksClosedResponseSchema below) and parseSyncBooks reads it with that schema, never with this one.
    */
   withheld: v.optional(v.picklist(['consent'])),
 });
 export type SyncBooksResponse = v.InferOutput<typeof SyncBooksResponseSchema>;
 
-export function parseSyncBooks(input: unknown): ParseResult<SyncBooksResponse> {
+/**
+ * A member as `sync_books` lists it while the consent gate is closed (20261123100000): role, is_me and
+ * signs_as only, what account deletion's "What happens" lines read (T7-23). No profile_id, joined_at or auto_add.
+ */
+export const SyncBookMemberClosedSchema = v.object({
+  role: v.picklist(MEMBER_ROLES),
+  is_me: v.boolean(),
+  signs_as: nullableStr,
+});
+
+/**
+ * A book as `sync_books` lists it while the consent gate is closed (FR-PRV-20, 20261123100000): id, role, the
+ * child's name and the members, nothing else. No invites key at all: a closed book says nothing about its
+ * pending invites, so a reader must not take a missing list for an empty one.
+ */
+export const SyncBookClosedSchema = v.object({
+  id: str,
+  role: v.picklist(MEMBER_ROLES),
+  name: str,
+  members: v.array(SyncBookMemberClosedSchema),
+});
+
+/** The whole `sync_books` answer while the gate is closed: `withheld` is always 'consent' here. */
+export const SyncBooksClosedResponseSchema = v.object({
+  epoch: v.nullable(v.number()),
+  first_run_open: v.boolean(),
+  withheld: v.literal('consent'),
+  books: v.array(SyncBookClosedSchema),
+});
+export type SyncBooksClosedResponse = v.InferOutput<typeof SyncBooksClosedResponseSchema>;
+
+/**
+ * Reads a `sync_books` answer. Only `withheld: 'consent'` selects the closed shape; every other answer must
+ * meet the strict SyncBooksResponseSchema, so a book that lacks a full-shape field without that marker is
+ * invalid, never quietly read as closed.
+ */
+export function parseSyncBooks(input: unknown): ParseResult<SyncBooksResponse | SyncBooksClosedResponse> {
+  if (input && typeof input === 'object' && (input as { withheld?: unknown }).withheld === 'consent') {
+    const closed = v.safeParse(SyncBooksClosedResponseSchema, input);
+    return closed.success ? { ok: true, value: closed.output } : { ok: false, reason: 'invalid' };
+  }
   const r = v.safeParse(SyncBooksResponseSchema, input);
   return r.success ? { ok: true, value: r.output } : { ok: false, reason: 'invalid' };
 }
