@@ -15,7 +15,8 @@
  * a quoted scalar that runs over several lines stays one value. Secret reads are found inside `${{ }}` in every
  * string, keys included, wherever it sits (GitHub expands expressions inside block scalars such as `prompt: |`).
  * An expression ends at the first `}}` outside a single-quoted string, as GitHub's reader does. Names match in any
- * case, as GitHub does. A secret read outside any job (a workflow-level `env:`) counts for every job.
+ * case, as GitHub does. A secret read outside any job (a workflow-level `env:`) counts for every job, and so does an
+ * agent named outside any job (a workflow-level `defaults.run.shell`).
  *
  * Limits, also listed in ACCESS.md: an agent engine run from a composite, local or other action, or an engine
  * other than Claude Code and OpenCode, is not recognised; a reusable workflow a job calls is not followed; data
@@ -36,7 +37,7 @@ export const PRODUCTION_POWER =
 
 /** Workflows whose every job runs an agent, whatever its steps say; a job that calls one is an agent job too. */
 export const AGENT_WORKFLOWS = ['agents.yml', 'claude.yml'];
-const CALLS_AGENT_WORKFLOW = new RegExp(String.raw`(?:^|/)(?:${AGENT_WORKFLOWS.map((f) => f.replace('.', '\.')).join('|')})(?:@|$)`);
+const CALLS_AGENT_WORKFLOW = new RegExp(String.raw`(?:^|/)(?:${AGENT_WORKFLOWS.map((f) => f.replace('.', '\\.')).join('|')})(?:@|$)`);
 
 /**
  * A job runs an agent engine: Anthropic's actions, the npm or Python packages, the native installer, OpenCode, or
@@ -169,9 +170,12 @@ function scan(file: string, workflow: string): Finding[] {
   const { jobs: _jobs, ...outside } = parsed.root;
   const everyJob = secretsOf(outside);
   if (everyJob.whole) out.push({ file, job: '*', rule: 'all-secrets' });
+  // Text outside jobs (a workflow-level `defaults.run.shell`, say) runs in or shapes every job, so an agent named
+  // there makes every job an agent job.
+  const agentOutside = stringsOf(outside).some((s) => AGENT_STEP.test(s));
   const agentFile = AGENT_WORKFLOWS.includes(file);
   for (const job of jobsOf(workflow)) {
-    const agent = agentFile || job.runsAgent;
+    const agent = agentFile || agentOutside || job.runsAgent;
     if (job.handsOutAll) out.push({ file, job: job.name, rule: 'all-secrets' });
     if (agent && parsed.jobs[job.name].environment !== undefined) out.push({ file, job: job.name, rule: 'agent-environment' });
     for (const secret of [...new Set([...job.secrets, ...everyJob.names])].sort()) {

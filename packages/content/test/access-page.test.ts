@@ -64,7 +64,10 @@ const page = readFileSync(ACCESS, 'utf8');
 /**
  * Only the version in force of each policy: a published version is immutable and stays in the repo once a newer one
  * replaces it (docs/legal/POLICY_VERSIONING.md), so for `name-1.2.3.md` or `1.2.3.md` files only the highest
- * version in each folder is read. Files without a version are always read.
+ * version in each folder is read. Files without a version are always read. Known gap: until a new version's
+ * `effective_at`, existing users stay on the old one (POLICY_VERSIONING.md section 3), so two versions are in force;
+ * this reads only the newest. Only one version of each policy exists today; read every version from the newest
+ * effective one up once a second is published.
  */
 export function inForce(files: string[]): string[] {
   const best = new Map<string, { file: string; v: number[] }>();

@@ -150,6 +150,7 @@ Deno.test('[FR-BKO-21] what does not parse, or has no jobs, is reported as unpar
   for (const wf of [
     'on: push\n',
     'on: push\njobs: []\n',
+    'on: push\njobs: {}\n',
     'on: push\njobs:\n  run: echo\n',
     ['on: workflow_dispatch', 'jobs:', '  deploy:', '    environment: db-production', ' leak:', '    runs-on: u', ''].join('\n'),
     ['on: push', 'jobs:', '  a:', '    runs-on: u', '  a:', '    runs-on: v', ''].join('\n'),
@@ -215,6 +216,32 @@ Deno.test('[FR-BKO-21] a job that calls an agent workflow is an agent job', () =
   const call = ['on: push', 'jobs:', '  call:', '    uses: ./.github/workflows/agents.yml', '    secrets:', '      ANTHROPIC_API_KEY: ${{ secrets.EXPO_TOKEN }}', ''].join('\n');
   assert.deepEqual(scanWorkflow('x.yml', call), [{ file: 'x.yml', job: 'call', rule: 'agent-allowlist', secret: 'EXPO_TOKEN' }]);
   assert.deepEqual(scanWorkflow('x.yml', call.replace('agents.yml', 'deploy-db.yml')), [], 'a call to another workflow passing a harmless name is clean');
+  assert.deepEqual(scanWorkflow('x.yml', call.replace('agents.yml', 'agentsXyml')), [], 'the dot in the file name is literal');
+});
+
+Deno.test('[FR-BKO-21] an agent named outside any job, in workflow-level shell defaults, makes every job an agent job', () => {
+  for (const shell of ['npx -y @anthropic-ai/claude-code -p {0}', 'opencode run {0}']) {
+    const wf = [
+      'on: push',
+      'defaults:',
+      '  run:',
+      `    shell: "${shell}"`,
+      'jobs:',
+      '  deploy:',
+      '    runs-on: u',
+      '    environment: db-production',
+      '    steps:',
+      '      - run: echo hi',
+      '        env:',
+      `          K: \${{ secrets.${SR} }}`,
+      '',
+    ].join('\n');
+    assert.deepEqual(scanWorkflow('deploy.yml', wf), [
+      { file: 'deploy.yml', job: 'deploy', rule: 'agent-environment' },
+      { file: 'deploy.yml', job: 'deploy', rule: 'agent-allowlist', secret: SR },
+    ], shell);
+    assert.deepEqual(scanWorkflow('deploy.yml', wf.replace(shell, 'bash -e {0}')), [], 'a plain shell default changes nothing');
+  }
 });
 
 Deno.test('[FR-BKO-21] an agent job with any environment key fails, a workflow-level whole read fails, and GitHub token reads are not stored secrets', () => {
