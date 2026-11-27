@@ -889,8 +889,9 @@ const isOff = (v: unknown) => v === undefined || String(v).trim().toLowerCase() 
 
 /**
  * Problems with the phase switches in one eas.json: in production and in every store profile each switch is off, that
- * is not written or written `off` (store-flags.mjs reads off the same way). The switches are not written today:
- * test/config.test.ts pins the names each profile writes, and the build reads a missing name as off.
+ * is not written or written `off` (store-flags.mjs reads off the same way). Every store profile writes each one as the
+ * literal `off` (BL-858, E9; test/config.test.ts pins the names and values each profile writes), and the build reads a
+ * missing name as off too, so either passes here.
  */
 function phaseSwitchProblems(eas: Eas): string[] {
   const problems: string[] = [];
@@ -1261,6 +1262,10 @@ describe('[NX-39-R39] no config path carries a switch into a build', () => {
     const allOn = Object.fromEntries(SWITCH_NAMES.map((n) => [n, 'on']));
     const allOff = Object.fromEntries(SWITCH_NAMES.map((n) => [n, 'off']));
     const bare = withoutSwitches(eas);
+    // Review A note 2 (mutants T2, T3): the bare copy holds no switch in any profile, and the eas.json it came from is
+    // left as read, so "unset" and "as written" each mean what their labels say.
+    for (const [name, p] of Object.entries(bare.build)) for (const n of SWITCH_NAMES) expect(p.env?.[n], `bare ${name} ${n}`).toBeUndefined();
+    expect(eas, 'withoutSwitches changed its input').toEqual(readEas());
     // On an EAS builder (EAS_BUILD, EAS_BUILD_PLATFORM and CI set) and off one (Review A M3), with NODE_ENV unset and
     // `production` (Review A N7), each evaluation in a fresh process (Review B R4).
     const runs: Array<{ label: string; unset: Promise<string>; other: Promise<string> }> = [];
