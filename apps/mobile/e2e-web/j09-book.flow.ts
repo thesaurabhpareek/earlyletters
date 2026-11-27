@@ -31,7 +31,8 @@ test('[J09b] the Book with many letters, a private one, a waiting one', async ({
   // to 27 Feb; the exact days move with leap years, the time zone and the hour) the child is in Month 6 itself, so its opener
   // is the lit one and reads "This month, Month 6. ...". Keep the alternation: a date window would break in those zones.
   await expect(monthOpener(app, 6)).toBeVisible();
-  await expectMonthCount(app, 6, /2 letters, from Mama/);
+  // BL-676 (Months sheet) and BL-2011: the seed's two Month 6 letters, both signed Mama, are counted and named in that month's row.
+  await expectMonthCount(app, 6, '2 letters, from Mama');
   await expect(currentMonthOpener(app)).toBeVisible();
   await expect(app.getByText(/\w+ \d+ to \w+ \d+/).first()).toBeVisible();
   // Excerpts end in a fade, never an ellipsis glyph.

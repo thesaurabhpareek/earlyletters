@@ -3,14 +3,16 @@
  * retired on off; a new one on a later on; the 21st retired id is forgotten on the server before it leaves the list.
  * Fictional family Asha only: no event data is involved.
  */
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { ConsentStore, MAX_FORGET_BATCH, MAX_RETIRED_IDS, STORAGE_KEYS, createAnalytics, memoryStorage, recordingProvider } from '../src';
+import { ConsentStore, FORGETTABLE_ID_RE, MAX_FORGET_BATCH, MAX_RETIRED_IDS, STORAGE_KEYS, createAnalytics, memoryStorage, recordingProvider } from '../src';
 
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 function ids() {
   let n = 0;
   return () => uuid(++n);
 }
+const hexId = (n: number) => `abcdef00-0000-4000-8000-${String(n).padStart(12, '0')}`;
 const UUID_LOWER = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 describe('install id (ER-A04)', () => {
@@ -203,6 +205,49 @@ describe('retired ids past the cap (ER-A04)', () => {
     await store.settleRetired();
     expect(calls.map((c) => c.length)).toEqual([MAX_FORGET_BATCH, 4]);
     expect(store.allIds()).toHaveLength(MAX_RETIRED_IDS + 4);
+  });
+
+  it('BL-2239: a repeated id (upper and lower case) and a non-UUID id are dropped from storage, and the one call carries only clean ids', async () => {
+    // Newest first, as revoke writes it: 20 kept ids, then 3 overflow ids, with a repeat and a malformed id among them.
+    // Hex letters in every id, so the upper-case copy really differs from the lower-case one.
+    const good = Array.from({ length: MAX_RETIRED_IDS + 3 }, (_, i) => hexId(i + 1));
+    const stored = [...good.slice(0, 5), good[2].toUpperCase(), ...good.slice(5, MAX_RETIRED_IDS), 'asha-not-a-uuid', ...good.slice(MAX_RETIRED_IDS)];
+    const storage = memoryStorage({ [STORAGE_KEYS.consent]: 'denied', [STORAGE_KEYS.retired]: JSON.stringify(stored) });
+    const calls: string[][] = [];
+    const counts: unknown[] = [];
+    const store = new ConsentStore(storage, ids(), {
+      forgetRetired: (batch) => (calls.push(batch), true),
+      onRetiredCleaned: (c) => counts.push(c),
+    });
+    await store.load();
+    await store.settleRetired();
+    expect(calls).toEqual([good.slice(MAX_RETIRED_IDS)]);
+    const after = JSON.parse(storage.dump()[STORAGE_KEYS.retired] as string) as string[];
+    expect(after).toEqual(good.slice(0, MAX_RETIRED_IDS));
+    expect(after).not.toContain(good[2].toUpperCase());
+    expect(after).not.toContain('asha-not-a-uuid');
+    // Counts only: nothing that reaches the log hook is an id.
+    expect(counts).toEqual([{ duplicates: 1, malformed: 1 }]);
+  });
+
+  it('BL-2239: the cleaned list is written back even when the call is refused, so the next batch is clean', async () => {
+    const good = Array.from({ length: MAX_RETIRED_IDS + 1 }, (_, i) => hexId(i + 1));
+    const stored = [good[0], good[0].toUpperCase(), ...good.slice(1), '42'];
+    const storage = memoryStorage({ [STORAGE_KEYS.retired]: JSON.stringify(stored) });
+    const calls: string[][] = [];
+    const store = new ConsentStore(storage, ids(), { forgetRetired: (batch) => (calls.push(batch), false) });
+    await store.load();
+    await store.settleRetired();
+    expect(calls).toEqual([[good[MAX_RETIRED_IDS]]]);
+    expect(JSON.parse(storage.dump()[STORAGE_KEYS.retired] as string)).toEqual(good);
+  });
+
+  it('BL-2239: the id check is the analytics-forget contract one (packages/api and the function)', () => {
+    const api = readFileSync(new URL('../../api/src/analytics-forget.ts', import.meta.url), 'utf8');
+    const fn = readFileSync(new URL('../../../supabase/functions/analytics-forget/handler.ts', import.meta.url), 'utf8');
+    const line = `const UUID_RE = ${FORGETTABLE_ID_RE.toString()};`;
+    expect(api).toContain(line);
+    expect(fn).toContain(line);
   });
 
   it('never drops an id when there is no forget callback at all', async () => {

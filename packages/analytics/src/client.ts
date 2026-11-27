@@ -17,7 +17,7 @@
  *    identity and retires the random id, within the session (PRD-REQ-018).
  * 5. Violations are reported without values.
  */
-import { EVENTS, SCHEMA_VERSION, type Catalog, type EventName } from './catalog';
+import { BUILD_KIND, EVENTS, SCHEMA_VERSION, type BuildKind, type Catalog, type EventName } from './catalog';
 import type { AnalyticsGate, BasicsPolicy, EventTier, GateDropReason } from './contracts';
 import { createGate } from './gate';
 import { ConsentStore, defaultRandomId, memoryStorage, type ConsentStatus, type ConsentSurface, type KeyValueStorage, type PendingConsentAct } from './consent';
@@ -65,6 +65,16 @@ export interface AnalyticsOptions {
    * every instance of a sampled event or none.
    */
   sampleRates?: Partial<Record<EventName, number>>;
+  /**
+   * The kind of build, sent as `build_kind` on every event (ER-A15, BL-1250). Unset or unrecognised resolves to `dev`
+   * (`resolveBuildKind`), so traffic from a build that forgot to say never counts as a store install.
+   */
+  buildKind?: string;
+  /**
+   * The local internal-tester switch (FH-10), read on every event and sent as `is_internal`. In a `store` build it is
+   * never called and `is_internal` is always false, whatever it would answer: the switch cannot reach a store install.
+   */
+  internalTester?: () => boolean;
   /** Queue cap in bytes of JSON (PRD 7.7: 1 MB). Oldest dropped first. */
   maxQueueBytes?: number;
   /** Auto-flush interval (PRD 7.7: at most every 60 s). 0 disables. */
@@ -120,6 +130,24 @@ export function childCountBucket(count: number): 'none' | 'one' | 'two' | 'three
   return 'three_plus';
 }
 
+/** `build_kind` for a build value: one of `BUILD_KIND`, anything else `dev` (ER-A15). Pure; reads no environment. */
+export function resolveBuildKind(value: unknown): BuildKind {
+  return (BUILD_KIND.values as readonly unknown[]).includes(value) ? (value as BuildKind) : 'dev';
+}
+
+/**
+ * `is_internal` (ER-A15, FH-10): true only when the build is not a store build and the tester switch answers exactly
+ * true. A store build never asks the switch, and a switch that throws or answers anything else counts as off.
+ */
+export function isInternalEvent(buildKind: BuildKind, internalTester?: () => boolean): boolean {
+  if (buildKind === 'store' || !internalTester) return false;
+  try {
+    return internalTester() === true;
+  } catch {
+    return false;
+  }
+}
+
 /** FNV-1a, 32 bit. Deterministic, dependency-free, fine for sampling. */
 function hash(s: string): number {
   let h = 0x811c9dc5;
@@ -135,6 +163,7 @@ export function createAnalytics(options: AnalyticsOptions): Analytics {
   const store = new ConsentStore(options.storage ?? memoryStorage(), options.randomId ?? defaultRandomId, { currentVersion: options.consentVersion, forgetRetired: options.forgetRetiredId });
   const policy: BasicsPolicy = options.basicsPolicy === 'collect_by_default' ? 'collect_by_default' : 'ask_first';
   const tierOf = options.tierOf ?? ((): EventTier => 'consented');
+  const buildKind = resolveBuildKind(options.buildKind);
   const gate: AnalyticsGate = createGate({ policy, status: () => store.status, disclosureShown: () => store.disclosureShown });
   const drops: Partial<Record<GateDropReason, number>> = {};
   let connected = false;
@@ -224,6 +253,9 @@ export function createAnalytics(options: AnalyticsOptions): Analytics {
     const withGlobals: Record<string, unknown> = {
       ...(props as Record<string, unknown>),
       schema_version: SCHEMA_VERSION,
+      // After the caller's props, so an event can never set its own build kind or internal flag (ER-A15).
+      build_kind: buildKind,
+      is_internal: isInternalEvent(buildKind, options.internalTester),
       ...(childBucket ? { child_count_bucket: childBucket } : {}),
       ...(samplePct !== undefined ? { sample_pct: samplePct } : {}),
     };

@@ -27,9 +27,13 @@ import { currentAuthUserId } from '../auth/auth-store';
 import { dateLocale } from '../dates';
 import { hasPlus } from '../billing';
 import { getSupabaseOrNull } from '../supabase/client';
-import { currentUserId, dictionaryFor, getSetting, listChildren, listConflicts, listEntriesForChild, listHiddenChildren, listWaitingForExport, getDraftReview, myRoleIn, listClosedBooks, listDeletedEntriesForChild, listLeftBooks, listLeftBookEntries, type Entry } from '../store';
-import { paperFor, phoneConsent, waitingChangedWords, type ExportSnapshot, type SnapshotChild, type SnapshotEntry } from './build.logic';
-import { noConsentHistory, noProfile, postgrestReader, readServerRecords, type PostgrestLike, type ServerRecordsReader } from './server-records.logic';
+import { entryMediaStore } from '../photos/entry-media';
+import { storedPhotoFile } from '../photos/files';
+import { currentUserId, localSqlDb, dictionaryFor, getSetting, listChildren, listConflicts, listEntriesForChild, listHiddenChildren, listWaitingForExport, getDraftReview, myRoleIn, listClosedBooks, listDeletedEntriesForChild, listLeftBooks, listLeftBookEntries, type Entry } from '../store';
+import { paperFor, phoneConsent, waitingChangedWords, type ExportSnapshot, type SnapshotChild, type SnapshotEntry, type SnapshotPhoto } from './build.logic';
+import { noConsentHistory, noProfile, postgrestReader, type PostgrestLike, type ServerRecordsReader } from './server-records.logic';
+import { copyStoreFor, readServerRecordsWithCopy } from './consent-copy.logic';
+import { deviceConsentCopy } from './consent-copy';
 import type { ExportDictionaryTerm } from './schema';
 import { estimateExportBytes, ExportCancelledError, ExportTooLargeError, MAX_EXPORT_BYTES, packExport, type ByteSink, type ExportPhase } from './pack';
 import { EXPORT_FORMAT } from './schema';
@@ -63,6 +67,8 @@ export interface ExportResult {
   books: number;
   /** Recordings that changed since capture (DATA-REQ-051); included as they are and marked. */
   mismatched: number;
+  /** Pictures left out at the last guard (NS-01-R6): not the stored copy, or carrying metadata. Their letters are in. */
+  photosHeldBack: number;
 }
 
 const PACK_SHARE = 0.85; // of the progress bar; checking takes the rest
@@ -100,6 +106,34 @@ function consentOnThisPhone(): ExportSnapshot['consent'] {
   return phoneConsent(getSetting(AGE_GATE_PASSED) === '1', getSetting(ANALYTICS_KEYS.consent));
 }
 
+/**
+ * The kept pictures on this phone by letter (1.7.0, ADR 0028 D2), read whatever the photos switch says: exporting is a
+ * data right (NS-01-R19). A letter in Recently deleted carries none (NS-01-R14). If the table or the folder cannot be
+ * read, the letters go out with `photo: null` rather than the export failing.
+ */
+function photosByLetter(): Map<string, SnapshotPhoto> {
+  const out = new Map<string, SnapshotPhoto>();
+  let rows;
+  try {
+    rows = entryMediaStore(localSqlDb()).all();
+  } catch {
+    return out;
+  }
+  for (const p of rows) {
+    if (p.deletedAt) continue;
+    let file;
+    try {
+      file = storedPhotoFile(p.mediaId);
+    } catch {
+      file = null; // the photos folder cannot be placed on this phone: nothing is read from anywhere else
+    }
+    if (!file) continue;
+    const state = fileState(file.uri);
+    out.set(p.entryId, { mediaId: p.mediaId, uri: file.uri, onPhone: state.exists, bytes: p.bytes, sha256: p.sha256, width: p.width, height: p.height, text: p.text, place: p.place });
+  }
+  return out;
+}
+
 /** Everything on this phone that goes into an export: every book (hidden ones too), every letter not deleted; more while a deletion request is open. */
 export function exportSnapshot(now = new Date()): ExportSnapshot {
   const me = currentUserId();
@@ -112,10 +146,11 @@ export function exportSnapshot(now = new Date()): ExportSnapshot {
     requestOpen,
   );
   const children: SnapshotChild[] = scope.map((b) => ({ ...b.book, hidden: b.hidden, role: myRoleIn(b.book.id) }));
+  const pictures = photosByLetter();
   const entries: SnapshotEntry[] = scope.flatMap((b) =>
     b.letters.map((e) => {
       const state = e.captureMode !== 'typed' ? fileState(e.audioUri) : { exists: false, size: null };
-      return { ...e, childId: e.childId ?? b.book.id, own: own(e), audioOnPhone: state.exists, audioSizeOnPhone: state.size };
+      return { ...e, childId: e.childId ?? b.book.id, own: own(e), audioOnPhone: state.exists, audioSizeOnPhone: state.size, photo: pictures.get(e.id) ?? null };
     }),
   );
   // Letters that are waiting (PL-2, 1.6.0): held at Keep, not read back, typed and not kept. Every plan state.
@@ -169,16 +204,22 @@ function supabaseReader(): ServerRecordsReader | null {
   return sb ? postgrestReader(sb as unknown as PostgrestLike) : null;
 }
 
-/** Adds the server's consent record and the person's profile to a snapshot (never throws; Stop ends the read at once; see server-records.logic.ts). */
+/**
+ * Adds the server's consent record and the person's profile to a snapshot (never throws; Stop ends the read at once;
+ * see server-records.logic.ts). When the server cannot be read, the phone's copy of the last full consent read (BL-528,
+ * consent-copy.logic.ts), which is neither read nor written while this phone holds a note that a deletion request is
+ * open (copyStoreFor). On the phone that made the request, the request also deleted it.
+ */
 export async function withServerRecords(snapshot: ExportSnapshot, signal?: { aborted: boolean }): Promise<ExportSnapshot> {
-  const server = await readServerRecords({
-    authUserId: currentAuthUserId(),
+  const authUserId = currentAuthUserId();
+  const server = await readServerRecordsWithCopy({
+    authUserId,
     ownerId: currentUserId(),
     reader: supabaseReader(),
     timeoutMs: ENDPOINT_CLASSES.read_rpc.timeoutMs,
     now: () => new Date(),
     cancelled: () => signal?.aborted === true,
-  });
+  }, copyStoreFor(readOpenRequest({ get: getSetting }), authUserId, Date.now(), deviceConsentCopy));
   return { ...snapshot, consentHistory: server.consent, profile: server.profile };
 }
 
@@ -330,6 +371,7 @@ export async function runExport(opts: { onProgress?: (p: ExportProgress) => void
       recordings: packed.manifest.counts.audio,
       books: packed.manifest.counts.books,
       mismatched: packed.mismatched.length,
+      photosHeldBack: packed.photosHeldBack.length,
     };
   } catch (e) {
     try {

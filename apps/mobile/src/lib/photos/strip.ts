@@ -96,7 +96,8 @@ export function stripJpeg(input: Uint8Array): StripResult {
       continue;
     }
     let keep = decoderMarker(marker); // the allow list; APPn are decided below
-    if (marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc && segEnd - body >= 5) {
+    // The first frame's size is the one a decoder uses; a later frame header cannot change what the size checks see.
+    if (width === null && marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc && segEnd - body >= 5) {
       height = (b[body + 1] << 8) | b[body + 2]; // start of frame: precision, height, width
       width = (b[body + 3] << 8) | b[body + 4];
     }
@@ -141,9 +142,10 @@ const signed = (b: Uint8Array, from: number, to: number): boolean => {
 
 /**
  * Independent check, the last guard before a copy is stored (session.ts) and the tests' judge: true when the bytes
- * carry an Exif, XMP, IPTC or comment segment, or any marker segment, or anything after the end marker, holds one of
- * their signatures. Only marker segments (in the headers and between scans) and the tail are searched, never the
- * compressed picture data, so a clean picture is never refused by chance (#836 review A N2).
+ * carry an Exif, XMP, IPTC or comment segment, or any marker segment holds one of their signatures, or any byte at all
+ * follows the end marker (stripJpeg drops a trailer, so one on a stored copy was added after it was kept). Only marker
+ * segments (in the headers and between scans) and the tail are searched, never the compressed picture data, so a clean
+ * picture is never refused by chance (#836 review A N2).
  */
 export function carriesMetadata(b: Uint8Array): boolean {
   if (b.length < 4 || b[0] !== 0xff || b[1] !== 0xd8) return signed(b, 0, b.length);
@@ -155,7 +157,7 @@ export function carriesMetadata(b: Uint8Array): boolean {
       i += 1; // fill byte
       continue;
     }
-    if (m === 0xd9) return signed(b, i + 2, b.length); // whatever follows the end marker
+    if (m === 0xd9) return i + 2 < b.length; // anything after the end marker: stripJpeg never keeps it, so it is not ours
     if (m >= 0xd0 && m <= 0xd7) {
       i += 2;
       continue;

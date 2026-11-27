@@ -26,12 +26,14 @@ import * as Notifications from 'expo-notifications';
 import { AppState, Platform } from 'react-native';
 import { getSetting, setSetting, subscribe } from '../store';
 import { reminderCopy } from './copy';
-import { ID_PREFIX, planReminders, planSignature, type Cadence, type PlannedNotification } from './planner';
-import { anchorAt, lastMadeLetter, lastOwnSaveAt, plannerChildren, readOnSince, readPrefs, writeOnSince, writePrefs } from './prefs';
+import { ID_PREFIX, planReminders, planSignature, type Cadence, type LibraryDayNote, type PlannedNotification } from './planner';
+import { anchorAt, dayNamesOn, lastMadeLetter, lastOwnSaveAt, plannerChildren, readOnSince, readPrefs, writeOnSince, writePrefs } from './prefs';
+import { readTypedDays, sweepPastTypedDays, typedDaysBuildEnabled } from './typed-days';
 import { REMINDER_SOURCE, reminderContent, routeForReminder } from './payload';
 import { registerReminderCategory } from './categories';
 import { LAST_PLANNED_VERSION_KEY, replanAfterUpdate } from './update';
 import { PLAN_ID_PREFIX } from '../billing/plan-reminders.logic';
+import { isoDate, zonedParts } from './tz';
 import { PLAN_MAX } from './budget';
 import { daysBuildEnabled, libraryDaysAllowed, remoteConfigReader, watchLibraryDaysPause, withoutLibraryNotes, type RemoteConfigReader } from './library-days';
 
@@ -147,9 +149,36 @@ function triggerFor(p: PlannedNotification): Notifications.NotificationTriggerIn
   return { type: Notifications.SchedulableTriggerInputTypes.DATE, date: p.fireAt, channelId: ANDROID_CHANNEL };
 }
 
+/** The phone's local date, YYYY-MM-DD, in the zone the plan uses. */
+function localToday(now: number): string {
+  const p = zonedParts(now, deviceTimeZone());
+  return isoDate({ y: p.y, m: p.m, d: p.d });
+}
+
+/** Typed days to plan: none while the build switch is off (a pending one is then cancelled at this plan). */
+function typedDaysToPlan() {
+  return typedDaysBuildEnabled() ? readTypedDays() : [];
+}
+
+/**
+ * Ticked library days to plan, already resolved to local dates. None yet: the days module's planner feed is BL-1012,
+ * and until it lands no library note is planned on any build. The gates below already count it (NS-46-R31).
+ */
+function libraryDaysToPlan(): LibraryDayNote[] {
+  return [];
+}
+
+/** A typed day or a ticked day waits: the day-only gate keeps planning for these with Reminders off (NS-46-R31). */
+function dayNotesWaiting(): boolean {
+  return typedDaysToPlan().length > 0 || libraryDaysToPlan().length > 0;
+}
+
 /** What the prefs plan on this phone now, whatever iOS allows (the Settings preview and Next line). Pure read. */
 export function intendedPlan(now = Date.now(), planPending: number = PLAN_MAX): PlannedNotification[] {
   return planReminders({
+    typedDays: typedDaysToPlan(),
+    libraryDays: libraryDaysToPlan(),
+    dayNamesOn: dayNamesOn(),
     planPending,
     now,
     timeZone: deviceTimeZone(),
@@ -167,10 +196,13 @@ export function nextReminder(now = Date.now()): PlannedNotification | null {
   return intendedPlan(now)[0] ?? null;
 }
 
-/** The current plan for this phone, or [] when reminders are off, paused or not allowed. */
+/**
+ * The current plan for this phone, or [] when not allowed, or when reminders are off (or paused) and no typed or ticked
+ * day waits. A typed day and a ticked day still come with Reminders off (planner.ts, W-G7, NS-46-R31).
+ */
 export async function currentPlan(now = Date.now(), planPending: number = PLAN_MAX): Promise<PlannedNotification[]> {
   const prefs = readPrefs();
-  if (!prefs.enabled || prefs.paused) return [];
+  if ((!prefs.enabled || prefs.paused) && !dayNotesWaiting()) return [];
   if ((await getReminderPermission()) !== 'granted') return [];
   return intendedPlan(now, planPending);
 }
@@ -183,10 +215,17 @@ function pendingPlanNotices(scheduled: readonly { identifier: string }[]): numbe
 async function apply(): Promise<void> {
   // A phone that turned reminders on before the anchor existed starts its count now (once), never stops at once.
   if (readPrefs().enabled && readOnSince() === null) writeOnSince(Date.now());
-  // Reminders off: nothing to plan and nothing to read. An empty plan already applied (`lastSignature` is '') means
-  // none of ours is pending, so no read. The first apply after the switch goes off (or after a launch, or a failure)
-  // still reads once, to cancel what was scheduled earlier (BL-1189).
-  const off = !readPrefs().enabled;
+  // NS-18-R7: a typed day's words go the day after it, before anything is planned from them. A sweep that cannot run
+  // (the store is closing) never stops the plan: the next plan sweeps again.
+  try {
+    sweepPastTypedDays(localToday(Date.now()));
+  } catch {
+    // nothing to log: the keys hold a parent's words
+  }
+  // Reminders off and no typed day: nothing to plan and nothing to read. An empty plan already applied (`lastSignature`
+  // is '') means none of ours is pending, so no read. The first apply after the switch goes off (or after a launch, or
+  // a failure) still reads once, to cancel what was scheduled earlier (BL-1189). A typed or ticked day still comes when off.
+  const off = !readPrefs().enabled && !dayNotesWaiting();
   if (off && lastSignature === '') return;
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
   // A pause drops library notes from the plan, so the signature changes and the pending ones are cancelled below.
@@ -387,6 +426,35 @@ export async function turnOnReminders(opts: { cadence?: Exclude<Cadence, 'off'> 
   return { permission, asked, scheduled };
 }
 
+/** What the first-tick door came to: the OS answer, whether the iOS alert showed, and whether iOS took the plan. */
+export type DayAskResult = TurnOnResult;
+
+/**
+ * The first-tick door (NS-46-R31, BL-1007; D-family DESIGN.md J-D60 step 3, Q-FD-20 CLOSED as CL-026): the parent
+ * ticked their first day. iOS is asked once, and only while it has never been asked; a "no" is final and never asked
+ * again (iOS keeps the answer, and a denied phone is not asked). Unlike `turnOnReminders`, this never writes
+ * `enabled`: ticking a day is not turning on evening reminders, and the day-only gate plans the day either way.
+ * The sentence before the alert ("Your iPhone will ask to send reminders", D-S25.firstTickAsk) is the caller's, and
+ * its words are PROPOSED behind G2 and G3; this module stays free of words and analytics. Shipped dark: no screen
+ * calls it until the Days surface turns on.
+ */
+export async function askForDayReminders(): Promise<DayAskResult> {
+  let permission: ReminderPermission = 'undetermined';
+  let asked = false;
+  try {
+    let p = await Notifications.getPermissionsAsync();
+    if (permissionOf(p) === 'undetermined' && p.canAskAgain !== false) {
+      asked = true;
+      p = await Notifications.requestPermissionsAsync({ ios: { allowAlert: true, allowBadge: false, allowSound: false } });
+    }
+    permission = permissionOf(p);
+  } catch {
+    permission = 'denied';
+  }
+  const scheduled = await rescheduleReminders();
+  return { permission, asked, scheduled };
+}
+
 /** Kept for callers that need only the OS answer. Same as `turnOnReminders()`. */
 export async function enableReminders(cadence?: Exclude<Cadence, 'off'>): Promise<ReminderPermission> {
   return (await turnOnReminders({ cadence })).permission;
@@ -425,7 +493,7 @@ export async function forgetReminders(): Promise<void> {
   await chain;
 }
 
-/** The user turned reminders off: every scheduled nudge and note is removed. */
+/** The user turned reminders off: every scheduled nudge and note is removed, except a typed day's note, which still comes (W-G7). */
 export async function disableReminders(): Promise<ScheduleResult> {
   writePrefs({ enabled: false });
   return rescheduleReminders();

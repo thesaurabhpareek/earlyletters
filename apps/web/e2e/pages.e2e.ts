@@ -1,4 +1,8 @@
-/** /privacy and /terms (short pages, words in src/lib/legal/*-copy.ts), the routes taken off for now, the 404 page and the closed lab. */
+/**
+ * /privacy and /terms (short pages, words in src/lib/legal/*-copy.ts), the routes taken off for now, the 404 page, the
+ * closed lab, and /open (the email link's fallback page, BL-510 and BL-2129).
+ */
+import { brand } from '@scribe/brand';
 import { site } from '../src/content/site';
 import { legalCopy } from '../src/lib/legal/legal-copy';
 import { formatDate, legalPage, legalSlugs } from '../src/lib/legal/pages';
@@ -118,4 +122,47 @@ test.describe('/lab is closed in production', () => {
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(siteCopy.notFound.line);
     });
   }
+});
+
+/**
+ * /open (src/app/open/page.tsx): the page an email's app link lands on when the app did not open. BL-2129: a person on
+ * another kind of phone reads that it is iPhone only for now, under the heading. The line is for everyone, never chosen
+ * by user agent, so the page stays static and reads nothing about the visitor.
+ */
+test.describe('/open', () => {
+  const copy = site.openApp;
+  /** A made-up non-iPhone browser. Only its shape matters: the page must not change for it. */
+  const OTHER_PHONE_UA = 'Mozilla/5.0 (Linux; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Mobile Safari/537.36';
+
+  test('one h1, the not-on-an-iPhone line right under it, an Open button with no path, a way home, not indexed', async ({ page }) => {
+    const response = await page.goto('/open');
+    expect(response?.status()).toBe(200);
+    const h1 = page.getByRole('heading', { level: 1 });
+    await expect(h1).toHaveCount(1);
+    await expect(h1).toHaveText(copy.line);
+    await expect(page.locator('main h1 + p')).toHaveText(copy.notIphone);
+    await expect(page.getByRole('link', { name: copy.open })).toHaveAttribute('href', `${brand.scheme}://`);
+    await expect(page.getByRole('link', { name: copy.home })).toHaveAttribute('href', '/');
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
+  });
+
+  test('sends the same page to any phone: the HTML does not depend on the user agent', async ({ request }) => {
+    const iphone = await request.get('/open', { headers: { 'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)' } });
+    const other = await request.get('/open', { headers: { 'user-agent': OTHER_PHONE_UA } });
+    expect(iphone.status()).toBe(200);
+    expect(other.status()).toBe(200);
+    expect(other.headers()['vary'] ?? '', 'no Vary on User-Agent').not.toMatch(/user-agent/i);
+    const html = await other.text();
+    expect(html).toBe(await iphone.text());
+    expect(html).toContain(copy.notIphone);
+  });
+
+  test.describe('on another kind of phone', () => {
+    test.use({ userAgent: OTHER_PHONE_UA });
+
+    test('shows the not-on-an-iPhone line', async ({ page }) => {
+      await page.goto('/open');
+      await expect(page.getByText(copy.notIphone)).toBeVisible();
+    });
+  });
 });

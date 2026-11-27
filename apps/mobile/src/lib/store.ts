@@ -21,7 +21,7 @@
  * API for other screens: src/lib/README.md.
  */
 import * as Crypto from 'expo-crypto';
-import { AVOID_RECENT, type DictionaryTerm, type Edit, type EditLevel } from '@scribe/core';
+import { AVOID_RECENT, type AuthorEdit, type DictionaryTerm, type Edit, type EditLevel } from '@scribe/core';
 import { keychainFloor, type LedgerDb } from './billing/letter-ledger';
 import { decideGate } from './age-gate.logic';
 import { bookVisibleTo } from './auth/account-scope.logic';
@@ -114,7 +114,7 @@ export type { ConflictCopy } from './sync/outbox';
 export type { Table as StoreTable } from './db/repos';
 export { AudioMissingError } from './db/repos/letters';
 export { EntryTombstonedError } from './db/repos/entries';
-export type { DeletedEntry } from './db/repos/entries';
+export type { AuthorLayer, DeletedEntry } from './db/repos/entries';
 export type { DeletedBook } from './db/repos/wipe';
 
 // ── Connection ───────────────────────────────────────────────────────────
@@ -376,6 +376,21 @@ export function setSetting(key: string, value: string): void {
 
 export function deleteSetting(key: string): void {
   settings.deleteSetting(ctx(), key);
+  bus.emit('settings');
+}
+
+/** The setting keys that start with `prefix` (repos/settings.ts `settingKeysWithPrefix`). Keys only. */
+export function settingKeysWithPrefix(prefix: string): string[] {
+  return settings.settingKeysWithPrefix(ctx(), prefix);
+}
+
+/** Deletes several settings in one transaction and tells listeners once. */
+export function deleteSettings(keys: readonly string[]): void {
+  if (keys.length === 0) return;
+  const c = ctx();
+  c.db.transaction(() => {
+    for (const key of keys) settings.deleteSetting(c, key);
+  });
   bus.emit('settings');
 }
 
@@ -881,6 +896,11 @@ export function countBookLetters(childId: string): number {
   return bookVisibleNow() ? entries.countLetters(ctx(), childId) : 0;
 }
 
+/** How many people wrote one book's live letters, counted in SQL (BL-421; `entries.countWriters`). */
+export function countBookWriters(childId: string): number {
+  return bookVisibleNow() ? entries.countWriters(ctx(), childId, currentUserId()) : 0;
+}
+
 /** What Tonight reads from the entries, and nothing more (BL-434). */
 export interface TonightRead {
   /** The prompt keys of the newest letters that came from a prompt, newest first (at most `AVOID_RECENT`). */
@@ -952,6 +972,19 @@ export function isBookLeft(childId: string): boolean {
   return bookLeft(ctx(), childId);
 }
 
+/** The pull closed the book as deleted (closeBook, `server_state = 'deleted'`): listed nowhere, so no restore into it (CPrivO-56). */
+function entryBookClosed(c: RepoContext, entryId: string): boolean {
+  return (
+    c.db.get<{ n: number }>(
+      "SELECT 1 AS n FROM entries e JOIN children c ON c.id = e.child_id WHERE e.id = ? AND c.server_state = 'deleted'",
+      entryId,
+    ) != null
+  );
+}
+export function isBookClosed(childId: string): boolean {
+  return ctx().db.get<{ n: number }>("SELECT 1 AS n FROM children WHERE id = ? AND server_state = 'deleted'", childId) != null;
+}
+
 const IN_BOOK: FieldGroup[] = ['in_book'];
 
 /** Add to book / make private. Never touches text. Returns false for a missing or deleted letter. */
@@ -992,6 +1025,50 @@ export function setEntryDate(id: string, occurredOn: string, precision: Occurred
     signalOutbox();
   }
   return done;
+}
+
+const TEXT: FieldGroup[] = ['text'];
+
+/**
+ * "Change words" on a saved letter's page, and its put back (BL-413; the constitution: every edit is stored and
+ * reversible). One local transaction each: the words, and with sync on the words group in the outbox (the server
+ * keeps each earlier final_text in entry_versions). raw_transcript, machine_edits and the free-letter ledger are never
+ * touched. False for a left book (BL-1959), and for a letter the repository refuses (entries.ts WORDS_CHANGEABLE).
+ */
+function writeWords(id: string, write: (c: RepoContext, owner: string | null) => boolean): boolean {
+  const c = ctx();
+  if (entryBookLeft(c, id)) return false;
+  let done = false;
+  c.db.transaction(() => {
+    done = write(c, syncOwner(c.db));
+    if (done) enqueueEntryUpsert(c.db, id, TEXT, enqueueContext(c));
+  });
+  if (done) {
+    bus.emit('entries');
+    signalOutbox();
+  }
+  return done;
+}
+
+/** The person's own words for a saved letter (entries.ts changeWords). */
+export function changeLetterWords(id: string, text: string): boolean {
+  return writeWords(id, (c, owner) => entries.changeWords(c, id, text, owner));
+}
+
+/** Put back one of the person's changes to a saved letter (entries.ts putBackEdit). */
+export function putBackLetterEdit(id: string, edit: AuthorEdit): boolean {
+  return writeWords(id, (c, owner) => entries.putBackEdit(c, id, edit, owner));
+}
+
+/** The person's changes to a saved letter, against its words as kept; null when there are none. */
+export function letterAuthorEdits(id: string): entries.AuthorLayer | null {
+  return entries.authorLayer(ctx(), id);
+}
+
+/** Whether the letter page offers "Change words" for this letter: the same rows changeLetterWords writes. */
+export function canChangeLetterWords(id: string): boolean {
+  const c = ctx();
+  return !entryBookLeft(c, id) && entries.canChangeWords(c, id, syncOwner(c.db));
 }
 
 /**
@@ -1048,6 +1125,7 @@ export function deleteLeftBookLetter(id: string): boolean {
 export function undeleteEntry(id: string): boolean {
   const c = ctx();
   if (entryBookLeft(c, id)) return false; // BL-1959: a restore is a write too (entry.restore)
+  if (entryBookClosed(c, id)) return false; // CPrivO-56: its book is closed by the pull and listed nowhere
   let done = false;
   c.db.transaction(() => {
     done = entries.undelete(c, id);

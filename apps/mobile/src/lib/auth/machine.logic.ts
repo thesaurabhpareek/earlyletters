@@ -103,7 +103,14 @@ export type AuthEvent =
   | { type: 'EMAIL_SENT'; at: number }
   /** A session now exists (provider token exchange, email link or code, passkey). */
   | { type: 'SIGNED_IN'; userId: string; method: AuthMethod | null }
-  | { type: 'GATE_LOADED'; gate: SyncGate; sensitiveDeclined: boolean }
+  | {
+      type: 'GATE_LOADED'; gate: SyncGate; sensitiveDeclined: boolean;
+      /**
+       * BL-478: the upload queue, read after this gate answer arrived (readGateInOrder). Only a sign-out wait reads it:
+       * an empty queue means the wait already drained, so a gate answer that turns sync off is not an early end.
+       */
+      pendingUploads?: PendingUploads | number;
+    }
   /** The gate could not be read (offline, server error). Signed in, sync waits. */
   | { type: 'GATE_UNAVAILABLE' }
   | { type: 'CONSENT_RECORDED'; step: ConsentStep; accepted: boolean }
@@ -185,7 +192,11 @@ export function authReducer(state: AuthState, event: AuthEvent): AuthState {
       if (state.status === 'signingOut' && state.waitingForUploads) {
         const next = afterGate({ userId: state.userId, method: null }, event.gate, event.sensitiveDeclined);
         const sync: SyncMode = next.status === 'ready' && next.sync === 'on' ? 'on' : 'off';
-        return sync === state.sync ? state : { ...state, sync, waitingForUploads: sync === 'on' };
+        if (sync === state.sync) return state;
+        // BL-478 point 2: the queue emptied before the drain was noticed, and then this answer turned sync off. Nothing
+        // is left behind, so the wait ends as drained (sync as it was), never as "ended early" with sync off.
+        if (sync === 'off' && event.pendingUploads !== undefined && nothingPending(event.pendingUploads)) return { ...state, waitingForUploads: false };
+        return { ...state, sync, waitingForUploads: sync === 'on' };
       }
       return state;
 
@@ -213,6 +224,12 @@ export function authReducer(state: AuthState, event: AuthEvent): AuthState {
       return state;
 
     case 'SIGN_OUT_REQUESTED': {
+      // BL-478 point 3 (A-REQ-033): an Apple revocation noticed while a sign-out the person asked for waits is held, not
+      // dropped. The wait becomes the revocation's, so "Stay signed in" can no longer leave this phone signed in with a
+      // revoked credential; it still ends only once the queued letters are up. The queue is the one the wait already tracks.
+      if (state.status === 'signingOut' && state.waitingForUploads && state.reason === 'user' && event.reason === 'apple_revoked') {
+        return { ...state, reason: 'apple_revoked' };
+      }
       if (state.status !== 'ready' && state.status !== 'needsConsent' && state.status !== 'checkingConsent') return state;
       // BL-450: an Apple revocation noticed at launch meets `checkingConsent`, where the gate is not read yet. Sync may be
       // allowed, so it is not 'off' but 'unknown': the wait starts and the provider reads the gate (GATE_LOADED then lets
@@ -290,11 +307,21 @@ export async function readGateInOrder(
   seq: { current: number },
   load: () => Promise<{ gate: SyncGate; sensitiveDeclined: boolean }>,
   dispatch: (e: AuthEvent) => void,
+  /**
+   * BL-478 point 2: the upload queue, read once more after the gate answers and before it is dispatched, so a wait
+   * whose queue emptied before the drain was noticed ends as drained. A failed read is unknown, never empty (BL-1425).
+   */
+  countPending?: () => Promise<PendingUploads | number>,
 ): Promise<void> {
   const mine = ++seq.current;
   try {
     const { gate, sensitiveDeclined } = await load();
-    if (mine === seq.current) dispatch({ type: 'GATE_LOADED', gate, sensitiveDeclined });
+    if (!countPending) {
+      if (mine === seq.current) dispatch({ type: 'GATE_LOADED', gate, sensitiveDeclined });
+      return;
+    }
+    const pending = await countPending().catch((): PendingUploads => ({ kind: 'unknown' }));
+    if (mine === seq.current) dispatch({ type: 'GATE_LOADED', gate, sensitiveDeclined, pendingUploads: pending });
   } catch {
     if (mine === seq.current) dispatch({ type: 'GATE_UNAVAILABLE' });
   }

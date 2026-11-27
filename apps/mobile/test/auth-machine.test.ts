@@ -343,6 +343,44 @@ describe('auth state machine: signing out never loses a letter (PRD A F6.4, A-RE
     });
   });
 
+  describe('[A-REQ-033, BL-478] Apple revoked while a sign-out the person asked for waits', () => {
+    const waiting = () => authReducer(ready, { type: 'SIGN_OUT_REQUESTED', reason: 'user', pendingUploads: 2 });
+    const REVOKED: AuthEvent = { type: 'SIGN_OUT_REQUESTED', reason: 'apple_revoked', pendingUploads: 2 };
+
+    it('the mutant: "Stay signed in" after the revocation leaves nobody signed in on a revoked credential', () => {
+      const held = authReducer(waiting(), REVOKED);
+      expect(held).toEqual({ status: 'signingOut', userId: U, reason: 'apple_revoked', waitingForUploads: true, sync: 'on' });
+      expect(authReducer(held, { type: 'SIGN_OUT_WAIT_CANCELLED' })).toBe(held);
+    });
+
+    it('it still waits for the letters, and signs out once they are up', () => {
+      const held = authReducer(waiting(), REVOKED);
+      expect(canSync(held)).toBe(true);
+      expect(shouldFinishSignOut(held)).toBe(false);
+      const drained = authReducer(held, { type: 'UPLOADS_DRAINED' });
+      expect(shouldFinishSignOut(drained)).toBe(true);
+      expect(authReducer(drained, { type: 'SIGNED_OUT' })).toEqual({ status: 'signedOut' });
+    });
+
+    it('a revocation before "Stay signed in" and after it: the same sign-out either way', () => {
+      // After the tap the phone is ready again, and the watch's next notice starts the revocation's own wait.
+      const stayed = authReducer(waiting(), { type: 'SIGN_OUT_WAIT_CANCELLED' });
+      expect(stayed).toEqual({ status: 'ready', userId: U, sync: 'on' });
+      expect(authReducer(stayed, REVOKED)).toEqual(authReducer(waiting(), REVOKED));
+    });
+
+    it('changes nothing else: a sign-out already closing, a wait that is not the person\'s, a second "Sign out"', () => {
+      const closing = authReducer(authReducer(waiting(), { type: 'UPLOADS_DRAINED' }), REVOKED);
+      expect(closing).toEqual({ status: 'signingOut', userId: U, reason: 'user', waitingForUploads: false, sync: 'on' });
+      const forced = authReducer(ready, { type: 'SIGN_OUT_REQUESTED', reason: 'force_reauth', pendingUploads: 2 });
+      expect(authReducer(forced, REVOKED)).toBe(forced);
+      const held = authReducer(waiting(), REVOKED);
+      expect(authReducer(held, { type: 'SIGN_OUT_REQUESTED', reason: 'user', pendingUploads: 2 })).toBe(held);
+      const w = waiting();
+      expect(authReducer(w, { type: 'SIGN_OUT_REQUESTED', reason: 'user', pendingUploads: 0 })).toBe(w);
+    });
+  });
+
   it('when sync could never run (consent declined), there is nothing to wait for', () => {
     const local = { status: 'ready', userId: U, sync: 'off' } as const;
     const s = authReducer(local, { type: 'SIGN_OUT_REQUESTED', reason: 'user', pendingUploads: 9 });

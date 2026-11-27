@@ -16,13 +16,7 @@ import { describe, expect, it } from 'vitest';
 const SRC = join(__dirname, '..', 'src');
 
 /** Today's offenders at the time of BL-1828. Remove entries; never add. */
-export const BASELINE: readonly string[] = [
-  'src/app/letter/[id].tsx',
-  'src/app/settings/app-lock.tsx',
-  'src/components/tonight/quiet-day-inline.tsx',
-  'src/components/ui/state-screen.logic.ts',
-  'src/lib/auth/revocation-wait-line.tsx',
-];
+export const BASELINE: readonly string[] = [];
 
 const LIVE = /\baccessibilityLiveRegion\b/;
 const ANNOUNCES = /\b(announce|announceForAccessibility)\(/;

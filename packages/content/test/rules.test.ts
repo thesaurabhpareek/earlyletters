@@ -27,10 +27,8 @@ import {
   HELPLINES,
   lifecycleEmails,
   onboardingStories,
-  pages,
   permissions,
   PROMPTS,
-  site,
   STORY_VISUALS,
   storeListing,
 } from '../src';
@@ -102,9 +100,7 @@ const APP_COPY: Leaf[] = APP_COPY_FILES.flatMap(stringsIn);
 // Surfaces, for the rules that differ by surface. IN_APP is everything the iOS app shows; IN_APP plus STORE is
 // what Apple reviews as "app or metadata".
 const STORE = leaves(storeListing, 'store');
-const SITE = leaves(site, 'site');
 const BOOK = leaves(book, 'book');
-const PAGES = leaves(pages, 'pages');
 const STORIES: Leaf[] = onboardingStories.flatMap((c) => [
   { path: `story.${c.id}.headline`, text: c.headline },
   { path: `story.${c.id}.line`, text: c.line },
@@ -123,11 +119,9 @@ const IN_APP: Leaf[] = [...leaves(en, 'en'), ...leaves(permissions, 'permissions
 const ALL: Leaf[] = [
   ...leaves(en, 'en'),
   ...STORE,
-  ...SITE,
   ...BOOK,
   ...leaves(permissions, 'permissions'),
   ...leaves(features, 'features'),
-  ...PAGES,
   ...STORIES,
   ...HELPLINE_LEAVES,
   ...PROMPT_LEAVES,
@@ -139,12 +133,16 @@ const EMAIL: Leaf[] = leaves(
 );
 /** Everything the rules below apply to: content, email copy and feature-local app copy. */
 const EVERY: Leaf[] = [...ALL, ...EMAIL, ...APP_COPY];
-/** What the public reads before installing: the store listing and the website. */
-const PUBLIC: Leaf[] = [...leaves(storeListing, 'store'), ...leaves(site, 'site'), ...leaves(pages, 'pages')];
+/**
+ * What the public reads before installing, in this package: the store listing. The website's words are
+ * apps/web/src/content/site.ts and apps/web/src/lib/legal; apps/web/test/copy-rules.test.ts holds the same bans
+ * for them (BL-556 removed the copy here that nothing rendered).
+ */
+const PUBLIC: Leaf[] = [...leaves(storeListing, 'store')];
 const DOCS = ['VOICE.md', 'BRAND.md'].map((f) => ({ path: f, text: readFileSync(join(__dirname, '..', f), 'utf8') }));
 
 /** The leaf lists the [BRAND-MOMENTS-2] scan reads; its self-check reads this same constant. */
-const BRAND_MOMENTS_SCAN_SOURCES: Leaf[][] = [STORE, SITE, PAGES];
+const BRAND_MOMENTS_SCAN_SOURCES: Leaf[][] = [STORE];
 const offenders = (items: Leaf[], re: RegExp) => items.filter((l) => re.test(l.text)).map((l) => `${l.path}: ${l.text}`);
 
 describe('characters', () => {
@@ -166,12 +164,11 @@ describe('characters', () => {
       notifications: IN_APP.filter(isNotification),
       inApp: IN_APP.filter((l) => !isNotification(l)),
       store: STORE,
-      site: [...SITE, ...PAGES],
       book: BOOK,
       emails: EMAIL,
       prompts: PROMPT_LEAVES,
     };
-    const budget = { notifications: 0, inApp: 2, store: 0, site: 1, book: 0, emails: 0, prompts: 0 };
+    const budget = { notifications: 0, inApp: 2, store: 0, book: 0, emails: 0, prompts: 0 };
     // Every string sits in exactly one surface, so none escapes a budget.
     expect(Object.values(surfaces).reduce((n, s) => n + s.length, 0)).toBe(EVERY.length);
     for (const surface of Object.keys(budget) as (keyof typeof budget)[]) {
@@ -369,8 +366,9 @@ describe('adult audience', () => {
     'i',
   );
 
-  it('[LEGAL-REQ-045] store and website copy has no "kids" and no child-directed phrases', () => {
-    expect(offenders([...STORE, ...SITE], CHILD_DIRECTED)).toEqual([]);
+  // The website half is in apps/web/test/copy-rules.test.ts (BL-556).
+  it('[LEGAL-REQ-045] store copy has no "kids" and no child-directed phrases', () => {
+    expect(offenders(STORE, CHILD_DIRECTED)).toEqual([]);
   });
 
   it('[LEGAL-REQ-045] the pattern catches child-directed phrases and lets adult sentences pass', () => {
@@ -406,7 +404,7 @@ describe('digital only', () => {
   // The reading-size option, not a printed book. Allowed only at this path with this exact value.
   const ALLOWED = new Map([['en.reader.sizes.largePrint', 'Large print']]);
 
-  it('[K-32] no product, store, website or book string mentions print or ordering a book', () => {
+  it('[K-32] no product, store or book string mentions print or ordering a book (the website: apps/web copy-rules)', () => {
     const hits = EVERY.filter((l) => PRINT.test(l.text) && ALLOWED.get(l.path) !== l.text);
     expect(hits.map((l) => `${l.path}: ${l.text}`)).toEqual([]);
   });
@@ -424,7 +422,7 @@ describe('beta placement', () => {
   // keeps one small "early version, can make mistakes" note. So no product string says "beta" at all. The store
   // half, with the words that mean the same, is the D-060 test under "brand name and v1.0 claims" below.
   // Which screen shows the About note is checked in apps/mobile, not here.
-  it('[K-13] no app, website, book or email string says "beta" (D-060)', () => {
+  it('[K-13] no app, book or email string says "beta" (D-060; the website: apps/web copy-rules)', () => {
     expect(offenders(EVERY.filter((l) => !l.path.startsWith('store')), /\bbeta\b/i)).toEqual([]);
   });
 
@@ -450,7 +448,7 @@ describe('Apple platforms only', () => {
 
 describe('never gender anyone', () => {
   // The child is always {child}; authors are {signsAs}. Prompts are checked above; this covers every string.
-  it('uses no gendered pronouns in any product, store, website, book or email string', () => {
+  it('uses no gendered pronouns in any product, store, book or email string', () => {
     expect(offenders(EVERY, /\b(she|he|her|him|his|hers|herself|himself)\b/i)).toEqual([]);
   });
 
@@ -645,6 +643,18 @@ describe('brand name and v1.0 claims', () => {
     expect(offenders(keepAndPlan, /\b(we will|will always) remind\b|\bguarantee/i)).toEqual([]);
   });
 
+  it('[BL-374] no word a person reads keeps a promise D-082 retired: "free, always", "writing stays open", "Plus is optional"', () => {
+    // The sweep above reads only the Plus lines; the row's Done-when is every string in packages/content/src and the
+    // app's copy files (EVERY: content, store, emails, feature-local app copy; the live website copy is checked in
+    // apps/web/test/copy-rules.test.ts). "Plus is off" was a status sentence that became the plain value "Free"
+    // (membership.status.free); comments may still say it.
+    const RETIRED_PROMISES = /free, always|writing stays open|plus is optional|first book you start is free|\bplus is off\b/i;
+    for (const bad of ['The first book you start is free, always.', 'Writing stays open.', 'Plus is optional.', 'Plus is off.'])
+      expect(RETIRED_PROMISES.test(bad), bad).toBe(true);
+    expect(RETIRED_PROMISES.test(features.billing.store.promise)).toBe(false);
+    expect(offenders(EVERY, RETIRED_PROMISES)).toEqual([]);
+  });
+
   it('[F5, PL-8] no app string names a trial length; the F5 lines say what is true and count nothing', () => {
     // D-083: trial eligibility varies, so "a month free" can be false; Apple's sheet shows the trial to those it applies to.
     // The two registered Plus-sheet lines that still name one are retired only through counsel and a version bump of
@@ -720,7 +730,7 @@ describe('brand name and v1.0 claims', () => {
     // No mixing languages in one sentence, no word highlight, no family listening. Owner-only encrypted backup
     // ships in v1.0 (D-073 supersedes D-059's "no audio upload"), so backup wording is no longer blocked here.
     const V1_OVERCLAIM = /\b(vault mode|one sentence|mid-sentence|any mix|words appear|highlight|20 languages|any language|hear each other|family can (hear|listen))/i;
-    expect(offenders([...leaves(storeListing, 'store'), ...leaves(site, 'site')], V1_OVERCLAIM)).toEqual([]);
+    expect(offenders(leaves(storeListing, 'store'), V1_OVERCLAIM)).toEqual([]);
     // Family at launch is the co-parent only: the listing never promises grandparents or a web page.
     const FAMILY = /\b(grandparents?|nani|dadi|aunts?|uncles?|no app needed|from the web|web page)\b/i;
     expect(offenders([...leaves(storeListing, 'store'), ...onboardingStories.map((c) => ({ path: c.id, text: `${c.headline} ${c.line}` }))], FAMILY)).toEqual([]);
@@ -788,7 +798,6 @@ describe('privacy reassurance (D-061)', () => {
     const stated = EMAIL.filter((l) => /never sell|never use them for ads|train machine learning/i.test(l.text));
     expect(stated.length).toBeGreaterThan(0);
     for (const l of stated) expect(l.text, l.path).toBe(promise);
-    expect(site.privacy.lead).toBe(promise);
     expect(storeListing.description).toContain(promise);
     expect(en.trust.settings.voice).toBe(en.trust.voice);
     expect(storeListing.description).toContain(en.trust.voice);
@@ -983,7 +992,7 @@ describe('glossary (BRAND.md)', () => {
 
   it('never says transcription, transcribe or transcript in copy a parent reads (BL-393, D-074)', () => {
     // The word names the technology and reads as if the app writes (VOICE.md "Word for word"). Values only: key
-    // names, code and comments may keep the internal word. The website and pages (site.en.ts, pages.en.ts) are BL-556's.
+    // names, code and comments may keep the internal word. The live website copy is checked in apps/web/test/copy-rules.test.ts.
     expect(offenders([...IN_APP, ...EMAIL], /\btranscri\w*/i)).toEqual([]);
   });
 
@@ -994,7 +1003,7 @@ describe('glossary (BRAND.md)', () => {
   });
 
   it('uses "Word for word" only where the feature is named, never to caption fixed text (D-086)', () => {
-    const named = /^(en\.onboarding\.promise\b|en\.settings\.tidyLabel$|site\.|store\.|pages\.|email\.)/;
+    const named = /^(en\.onboarding\.promise\b|en\.settings\.tidyLabel$|store\.|email\.)/;
     const bad = [...ALL, ...EMAIL].filter((l) => /word for word/i.test(l.text) && !named.test(l.path));
     expect(bad.map((l) => `${l.path}: ${l.text}`)).toEqual([]);
     expect(en.review.view.exact).toBe('Exactly as said');
@@ -1015,18 +1024,15 @@ describe('glossary (BRAND.md)', () => {
     expect(offenders(COPY, /\bApple ID\b|\bstore account\b|\biCloud account\b/i)).toEqual([]);
   });
 
-  it('never calls a release a beta in store or website copy', () => {
+  it('never calls a release a beta in store copy', () => {
     expect(offenders(PUBLIC, /\bbeta\b/i)).toEqual([]);
     expect(Object.keys(storeListing)).not.toContain('promotionalTextBeta');
   });
 
   it('keeps v1.0 public copy to the co-parent, with no gift or approval promises', () => {
     expect(offenders(PUBLIC, /\bgifts?\b|\bapprov(e|es|ed|al)\b|\bcontributors?\b/i)).toEqual([]);
-    // D-055: other family may be named on the website only as "coming in a later update" (or asked about in an
-    // FAQ question whose answer says so), never as a v1.0 feature.
-    const later = /\b(later update|not yet|coming)\b/i;
-    const family = PUBLIC.filter((l) => /\bgrandparents?\b|\baunts?\b|\buncles?\b/i.test(l.text) && !(l.path.startsWith('site.') && (later.test(l.text) || l.text.trim().endsWith('?'))));
-    expect(family.map((l) => `${l.path}: ${l.text}`)).toEqual([]);
+    // D-055: the store names no other family. The website rule (stricter: none at all) is in apps/web/test/copy-rules.test.ts.
+    expect(offenders(PUBLIC, /\bgrandparents?\b|\baunts?\b|\buncles?\b/i)).toEqual([]);
   });
 
   it('makes no Hindi-English mixing or word highlighting claims (v1.1)', () => {
@@ -1066,16 +1072,9 @@ describe('glossary (BRAND.md)', () => {
     for (const ok of ['Moments', 'Open Moments', 'Try again in a moment.', 'One moment.', 'A good moment for a few words to {child}.', 'Give it a moment, then tap Keep again.']) expect(MOMENT_MADE.test(ok), ok).toBe(false);
   });
 
-  it('[BRAND-MOMENTS-2] store metadata and website copy do not say Moments until counsel clears the name (X1, Q-X1-12)', () => {
+  // The website half is in apps/web/test/copy-rules.test.ts (BL-556).
+  it('[BRAND-MOMENTS-2] store metadata does not say Moments until counsel clears the name (X1, Q-X1-12)', () => {
     expect(offenders(BRAND_MOMENTS_SCAN_SOURCES.flat(), /\bmoments\b/i)).toEqual([]);
-  });
-
-  it('[BRAND-MOMENTS-2] the scan reaches the pages leaves: a pages line that says Moments is an offender', () => {
-    expect(PAGES.length).toBeGreaterThan(0);
-    // Derived from the same constant the scan uses: dropping PAGES there turns this red.
-    expect(BRAND_MOMENTS_SCAN_SOURCES).toContain(PAGES);
-    const fixture: Leaf = { path: 'pages.fixture.line', text: 'Moments, a place for your photos.' };
-    expect(offenders([...BRAND_MOMENTS_SCAN_SOURCES.flat(), fixture], /\bmoments\b/i)).toEqual([`pages.fixture.line: ${fixture.text}`]);
   });
 
   it('[BRAND-MOMENTS-3] BRAND.md names Moments as a label and a place, and keeps the note row', () => {
@@ -1384,19 +1383,11 @@ describe('claims that must be true of what the first build does', () => {
     expect(offenders(status, /\b(arrives?|coming|later in the|not open yet|beta)\b/i)).toEqual([]);
   });
 
-  it('the site reference describes the first build only: no invite, sync, backup, gift or mixed languages (Q3, D-121, D-126)', () => {
-    const held = /private by design|invite|grandparent|co-parent|backs up|backed up|sync|vault|cloud|gift|same sentence/i;
-    expect(offenders(SITE, held)).toEqual([]);
-  });
-
-  it('the website, book and email never repeat the retired tagline (Q6; the in-app headline stays under D-125 item 9)', () => {
+  // The website half of this rule (Q6), and the website's Q3 first-build-only list and Q5 row 1 overclaim rule, are in
+  // apps/web/test/copy-rules.test.ts (BL-556).
+  it('the book and email never repeat the retired tagline (Q6; the in-app headline stays under D-125 item 9)', () => {
     const retired = /exactly as (you said (it|them)|they were said|they said)/i;
-    expect(offenders([...SITE, ...PAGES, ...BOOK, ...EMAIL], retired)).toEqual([]);
-  });
-
-  it('the site and pages promise only the fixes the first build makes: ums, repeats and family names, not grammar or any misheard word (Q5 row 1)', () => {
-    const overclaim = /grammar|we was|misheard word/i;
-    expect(offenders([...SITE, ...PAGES], overclaim)).toEqual([]);
+    expect(offenders([...BOOK, ...EMAIL], retired)).toEqual([]);
   });
 });
 

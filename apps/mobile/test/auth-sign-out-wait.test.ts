@@ -281,7 +281,7 @@ describe('S01: the session provider wiring', () => {
 
   it('every gate read goes through readGateInOrder with one sequence for the provider', () => {
     const src = provider();
-    expect(src).toMatch(/const gateSeq = useRef\(0\);\s*const checkGate = useCallback\(async \(\) => \{\s*if \(!sb\) return;\s*lastGateCheck\.current = Date\.now\(\);\s*await readGateInOrder\(gateSeq, \(\) => withTimeout\(loadSyncGate\(sb\), GATE_TIMEOUT_MS\), dispatch\);\s*\}, \[sb\]\);/);
+    expect(src).toMatch(/const gateSeq = useRef\(0\);\s*const checkGate = useCallback\(async \(\) => \{\s*if \(!sb\) return;\s*lastGateCheck\.current = Date\.now\(\);\s*await readGateInOrder\(gateSeq, \(\) => withTimeout\(loadSyncGate\(sb\), GATE_TIMEOUT_MS\), dispatch, pendingUploads\);\s*\}, \[sb\]\);/);
     expect(src.match(/loadSyncGate\(/g)).toHaveLength(1);
     expect(src).not.toMatch(/type: 'GATE_(LOADED|UNAVAILABLE)'/);
   });
@@ -384,5 +384,62 @@ describe('BL-478 point 1: a stale poll cannot end a second sign-out wait (A-REQ-
     expect(done).toHaveBeenCalledTimes(2);
     await endWaitIfDrained(async () => ({ kind: 'unknown' }), alive, done); // BL-1425: unknown is not empty
     expect(done).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('BL-478 point 2: the queue is read once more after a gate answer, before it is dispatched (A-REQ-033)', () => {
+  const later = <T,>() => {
+    let release!: (v: T) => void;
+    const p = new Promise<T>((res) => (release = res));
+    return { read: () => p, release };
+  };
+
+  it('the mutant: the queue emptied before the drain was noticed, then the gate turned sync off: the wait ends drained, sync as it was', async () => {
+    const seq = { current: 0 };
+    let state = authReducer(readyOn, ask(2));
+    const dispatch = (e: AuthEvent) => void (state = authReducer(state, e));
+    await readGateInOrder(seq, async () => ({ gate: DECLINED, sensitiveDeclined: true }), dispatch, async () => 0);
+    expect(state).toEqual({ status: 'signingOut', userId: U, reason: 'user', waitingForUploads: false, sync: 'on' });
+    expect(shouldFinishSignOut(state)).toBe(true);
+    expect(canSync(state)).toBe(false);
+  });
+
+  it('letters still queued, or a count that fails: sync off and the wait ends, as before', async () => {
+    for (const count of [async () => 1, async () => ({ kind: 'unknown' as const }), () => Promise.reject(new Error('locked'))]) {
+      const seen: AuthEvent[] = [];
+      await readGateInOrder({ current: 0 }, async () => ({ gate: DECLINED, sensitiveDeclined: true }), (e) => seen.push(e), count);
+      expect(seen).toHaveLength(1);
+      const next = authReducer(authReducer(readyOn, ask(2)), seen[0]!);
+      expect(next).toEqual({ status: 'signingOut', userId: U, reason: 'user', waitingForUploads: false, sync: 'off' });
+    }
+  });
+
+  it('the count is read after the answer, not before, and a newer read started meanwhile wins', async () => {
+    const seq = { current: 0 };
+    const seen: AuthEvent[] = [];
+    const gateAnswer = later<{ gate: SyncGate; sensitiveDeclined: boolean }>();
+    const count = vi.fn(async () => 0);
+    const first = readGateInOrder(seq, gateAnswer.read, (e) => seen.push(e), count);
+    await Promise.resolve();
+    expect(count).not.toHaveBeenCalled();
+    gateAnswer.release({ gate: DECLINED, sensitiveDeclined: true });
+    await first;
+    expect(count).toHaveBeenCalledTimes(1);
+    expect(seen).toEqual([{ type: 'GATE_LOADED', gate: DECLINED, sensitiveDeclined: true, pendingUploads: 0 }]);
+
+    const slowCount = later<number>();
+    const older = readGateInOrder(seq, async () => ({ gate: DECLINED, sensitiveDeclined: true }), (e) => seen.push(e), slowCount.read);
+    await new Promise((r) => setTimeout(r, 0));
+    const newer = readGateInOrder(seq, async () => ({ gate: FULL, sensitiveDeclined: false }), (e) => seen.push(e), async () => 2);
+    await newer;
+    slowCount.release(0);
+    await older;
+    expect(seen.slice(1)).toEqual([{ type: 'GATE_LOADED', gate: FULL, sensitiveDeclined: false, pendingUploads: 2 }]);
+  });
+
+  it('outside a wait the count changes nothing', () => {
+    const withCount: AuthEvent = { type: 'GATE_LOADED', gate: DECLINED, sensitiveDeclined: true, pendingUploads: 0 };
+    expect(authReducer(readyOn, withCount)).toEqual(authReducer(readyOn, gate(DECLINED, true)));
+    expect(authReducer(blind, withCount)).toEqual(authReducer(blind, gate(DECLINED, true)));
   });
 });

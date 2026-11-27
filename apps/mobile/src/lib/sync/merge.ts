@@ -18,7 +18,7 @@
  * - A restore never deletes anything here: see enterRestoreMode.
  */
 import { prefsRow, upsertPrefs } from '../db/repos/children';
-import { WORDS_UNREVIEWED } from '../db/repos/entries';
+import { KEEP_BASE_IF_SAME_INCOMING, KEEP_BASE_IF_SAME_WORDS, WORDS_UNREVIEWED } from '../db/repos/entries';
 import type { SqlDb } from '../db/sql';
 import {
   ALL_GROUPS,
@@ -121,11 +121,15 @@ export function applyEntryState(db: SqlDb, s: EntryState, epoch: number | null, 
   );
 }
 
-/** Writes the server's words into the local row (raw_transcript is never touched). */
+/**
+ * Writes the server's words into the local row (raw_transcript is never touched). `author_base` (BL-413) is let go
+ * when the words change: the author's put-back rows are a diff from that base to final_text, so words from another
+ * phone would read as this person's changes and a put-back would write words neither phone had. Same words keep it.
+ */
 function takeWords(db: SqlDb, id: string, w: WordsGroup): void {
   db.run(
-    'UPDATE entries SET final_text = ?, machine_edits = ?, edit_level = ? WHERE id = ?',
-    w.final_text, JSON.stringify(w.machine_edits ?? []), w.edit_level, id,
+    `UPDATE entries SET ${KEEP_BASE_IF_SAME_WORDS}, final_text = ?, machine_edits = ?, edit_level = ? WHERE id = ?`,
+    w.final_text, w.final_text, JSON.stringify(w.machine_edits ?? []), w.edit_level, id,
   );
 }
 
@@ -661,7 +665,7 @@ function mergeExistingOwnRow(db: SqlDb, row: PulledRow, local: LocalEntryRow, ed
     return;
   }
   db.run(
-    `UPDATE entries SET kind = ?, occurred_on = ?, edit_level = ?, prompt_key = ?, final_text = ?, machine_edits = ?,
+    `UPDATE entries SET ${KEEP_BASE_IF_SAME_WORDS}, kind = ?, occurred_on = ?, edit_level = ?, prompt_key = ?, final_text = ?, machine_edits = ?,
        in_book = ?, sounds_like_me = ?, author_signs_as = ?, approval = ?, deleted_at = ?, updated_at = ?,
        -- A letter that waited here for its words got them on another phone (v8): they wait for this
        -- author's review here too, and count only once kept (M17; the server has no review mark yet).
@@ -671,7 +675,7 @@ function mergeExistingOwnRow(db: SqlDb, row: PulledRow, local: LocalEntryRow, ed
        base_direction = COALESCE(?, base_direction),
        sync_state = 'synced'
      WHERE id = ?`,
-    row.kind, row.occurred_on, row.edit_level, row.prompt_key, row.final_text, edits,
+    row.final_text ?? null, row.kind, row.occurred_on, row.edit_level, row.prompt_key, row.final_text, edits,
     row.in_book ? 1 : 0, bool(row.sounds_like_me), row.author_signs_as, row.approval, row.deleted_at, now,
     row.raw_transcript ?? '',
     mergedLanguage(local.language, row.language),
@@ -710,7 +714,7 @@ function mergeOtherRow(db: SqlDb, row: PulledRow, owner: string | null, epoch: n
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', '[]', ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, 'synced',
        COALESCE(?, 'day'), COALESCE(?, 'ltr'))
      ON CONFLICT(id) DO UPDATE SET
-       kind = excluded.kind, occurred_on = excluded.occurred_on, edit_level = excluded.edit_level,
+       ${KEEP_BASE_IF_SAME_INCOMING}, kind = excluded.kind, occurred_on = excluded.occurred_on, edit_level = excluded.edit_level,
        prompt_key = excluded.prompt_key, final_text = excluded.final_text, in_book = excluded.in_book,
        sounds_like_me = excluded.sounds_like_me, updated_at = excluded.updated_at, deleted_at = NULL,
        synced_at = excluded.synced_at, author_signs_as = excluded.author_signs_as, approval = excluded.approval,

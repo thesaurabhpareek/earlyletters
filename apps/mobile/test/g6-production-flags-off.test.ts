@@ -30,6 +30,7 @@ const APP = join(__dirname, '..');
 const CARD_FLAGS = [
   ...STORE_FLAGS.map((f: { env: string }) => f.env),
   'EXPO_PUBLIC_DAYS', // NS-46, card 21
+  'EXPO_PUBLIC_TYPED_DAYS', // NS-18, card 09 section 10 (BL-982)
   'EXPO_PUBLIC_DAYS_ASK', // card 21 flags line (E57 says no new flag; absent or off either way)
   'EXPO_PUBLIC_SUGGESTIONS', // NS-49, card 21
   'EXPO_PUBLIC_PHOTO_MOMENTS', // NS-51, card 27 (E38)
@@ -37,6 +38,7 @@ const CARD_FLAGS = [
   'EXPO_PUBLIC_MEDIA_SYNC', // variant B only (E38, handoff 24)
   'EXPO_PUBLIC_READ_THE_YEAR', // NS-24, BL-947 (the year rows in Go to a month)
   'EXPO_PUBLIC_MOMENTS_TAB', // NS-53, card 28, F1 (the shell is dark until the founder turns it on in a profile)
+  'EXPO_PUBLIC_SIGN_AS_OTHER', // NS-16, BL-980: a child-input flag (PRIV-R20); counsel Q45, Q46, Q48, Q54 gate it (CPrivO-24)
 ] as string[];
 
 type Eas = { build?: Record<string, { env?: Record<string, unknown>; distribution?: string; ios?: { simulator?: boolean }; extends?: string }> };

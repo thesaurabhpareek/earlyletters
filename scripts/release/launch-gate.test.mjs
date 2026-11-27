@@ -1,12 +1,12 @@
 // BL-1480: the release-candidate tag precondition (docs/ops/proposed/release-ios-launch-gate.md).
 import test from "node:test";
 import assert from "node:assert/strict";
-import { decideLaunchGate, decideTagCheckedRun, gate } from "./launch-gate.mjs";
+import { decideLaunchGate, decideTagCheckedRun, gate, isEntry } from "./launch-gate.mjs";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, writeFileSync, chmodSync, rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, chmodSync, rmSync, copyFileSync, symlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const MB = "a".repeat(40);
 const AFTER = "b".repeat(40);
@@ -83,6 +83,15 @@ test("[BL-1480] an ancestry check that throws fails closed", () => {
   assert.equal(r.ok, false);
 });
 
+test("[BL-1574] an ancestry answer that is not exactly true refuses (a truthy string, undefined, 1, an object)", () => {
+  // gate() passes known.get(sha), which is undefined for a run it did not check; only the boolean true opens.
+  for (const answer of ["yes", "true", undefined, null, 1, {}, []]) {
+    const r = decide([run({})], { isAncestor: () => answer });
+    assert.equal(r.ok, false, JSON.stringify(answer) ?? "undefined");
+    assert.match(r.message, /no iOS compile run on develop at or after the merge base a{9}/);
+  }
+});
+
 test("[BL-1480] gate(): API error fails closed, never reads a token or logs more than the run id and conclusion", async () => {
   const bad = await gate({ listRuns: async () => { throw new Error("HTTP 403"); }, mergeBase: async () => MB, isAncestor: async () => true });
   assert.equal(bad.ok, false);
@@ -93,21 +102,22 @@ test("[BL-1480] gate(): API error fails closed, never reads a token or logs more
 
 // BL-1574: main(), the part the workflow runs. Stub `gh` and `git` on PATH so no network or real repo is read.
 const SCRIPT = join(dirname(fileURLToPath(import.meta.url)), "launch-gate.mjs");
-function runMain(args, { runs = [], mergeBase = MB, ancestor = true } = {}) {
+function runMain(args, { runs = [], mergeBase = MB, ancestor = true, ancestorExit = ancestor ? 0 : 1, script = SCRIPT, nodeFlags = [], env = {} } = {}) {
   const dir = mkdtempSync(join(tmpdir(), "launch-gate-"));
   try {
     writeFileSync(join(dir, "runs.json"), JSON.stringify({ workflow_runs: runs }));
     // The stubs check their arguments, so main() must ask for develop's runs of ios-compile.yml, the merge base of the
     // --sha commit with origin/develop, and `merge-base --is-ancestor <merge base> <a run's head_sha>` in that order;
     // any other call exits 3 and the gate fails closed. Swapping the two --is-ancestor arguments therefore fails a test.
+    // ancestorExit is the --is-ancestor exit code: 0 is an ancestor, 1 is not, anything else is a read error (git uses 128).
     const sha = args[args.indexOf("--sha") + 1];
     const heads = [...new Set(runs.map((r) => r?.head_sha).filter((h) => /^[0-9a-f]{40}$/.test(h ?? "")))];
     const headCase = heads.length ? heads.join("|") : "no-run-head";
     writeFileSync(join(dir, "gh"), `#!/bin/sh\n[ "$1" = "api" ] && [ "$2" = "repos/o/r/actions/workflows/ios-compile.yml/runs?branch=develop&per_page=30" ] || exit 3\ncat "${join(dir, "runs.json")}"\n`);
-    writeFileSync(join(dir, "git"), `#!/bin/sh\nif [ "$1" = "merge-base" ] && [ "$2" = "--is-ancestor" ]; then\n  [ "$#" = 4 ] && [ "$3" = "${mergeBase}" ] || exit 3\n  case "$4" in ${headCase}) exit ${ancestor ? 0 : 1};; *) exit 3;; esac\nfi\n[ "$1" = "merge-base" ] && [ "$2" = "${sha}" ] && [ "$3" = "origin/develop" ] || exit 3\necho ${mergeBase}\n`);
+    writeFileSync(join(dir, "git"), `#!/bin/sh\nif [ "$1" = "merge-base" ] && [ "$2" = "--is-ancestor" ]; then\n  [ "$#" = 4 ] && [ "$3" = "${mergeBase}" ] || exit 3\n  case "$4" in ${headCase}) exit ${ancestorExit};; *) exit 3;; esac\nfi\n[ "$1" = "merge-base" ] && [ "$2" = "${sha}" ] && [ "$3" = "origin/develop" ] || exit 3\necho ${mergeBase}\n`);
     chmodSync(join(dir, "gh"), 0o755);
     chmodSync(join(dir, "git"), 0o755);
-    const r = spawnSync(process.execPath, [SCRIPT, ...args], { env: { ...process.env, PATH: `${dir}:${process.env.PATH}` }, encoding: "utf8", timeout: 20000 });
+    const r = spawnSync(process.execPath, [...nodeFlags, script, ...args], { env: { ...process.env, ...env, PATH: `${dir}:${process.env.PATH}` }, encoding: "utf8", timeout: 20000 });
     return { code: r.status, out: r.stdout, err: r.stderr };
   } finally {
     rmSync(dir, { recursive: true, force: true });
@@ -152,6 +162,71 @@ test("[BL-1574] main(): an open gate exits 0 with no ::error:: line", () => {
   assert.equal(r.code, 0, r.out + r.err);
   assert.match(r.out, /launch gate open: run 1 on b{9} concluded success/);
   assert.doesNotMatch(r.out, /::error::/);
+});
+
+test("[BL-1574] main(): an --is-ancestor read error (git exit 128) is a read failure, not a refusal for the run's order", () => {
+  const r = runMain(["--repo", "o/r", "--sha", AFTER], { runs: [run({})], ancestorExit: 128 });
+  assert.equal(r.code, 1, r.out + r.err);
+  assert.match(r.out, /^::error::Release candidate tag refused: a read failed \(/m);
+  assert.doesNotMatch(r.out, /no iOS compile run on develop/);
+});
+
+test("[BL-1574] main() runs when the script path has a space or is reached through a symlink, so a refused gate exits 1", () => {
+  // The old entry check compared import.meta.url with `file://${argv[1]}`, which is false once the path needs URL
+  // escaping, so main() never ran and the job exited 0. The script needs nothing but node: builtins, so a copy runs.
+  const dir = mkdtempSync(join(tmpdir(), "launch gate "));
+  try {
+    const spaced = join(dir, "release scripts");
+    mkdirSync(spaced);
+    const copy = join(spaced, "launch-gate.mjs");
+    copyFileSync(SCRIPT, copy);
+    const link = join(dir, "linked-gate.mjs");
+    symlinkSync(copy, link);
+    for (const script of [copy, link]) {
+      const refused = runMain(["--repo", "o/r", "--sha", AFTER], { runs: [run({ conclusion: "failure" })], script });
+      assert.equal(refused.code, 1, `${script}: ${refused.out}${refused.err}`);
+      assert.match(refused.out, /^::error::Release candidate tag refused: run 1 on b{9} concluded failure/m, script);
+      const usage = runMain([], { script });
+      assert.equal(usage.code, 2, script);
+      assert.match(usage.err, USAGE, script);
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("[BL-1574] main() still runs through a symlink when node keeps the link in import.meta.url (--preserve-symlinks-main)", () => {
+  // With --preserve-symlinks-main, as a flag or through NODE_OPTIONS, the loader leaves the symlink in import.meta.url,
+  // so the realpath compare in isEntry() is false and only the second compare (the argv[1] URL as given) finds the
+  // entry. Without that compare main() never runs under the flag and the job exits 0. The workflow passes no node flags
+  // today; this pins the branch so a later step that sets NODE_OPTIONS cannot open the gate by accident.
+  const dir = mkdtempSync(join(tmpdir(), "launch gate "));
+  try {
+    const copy = join(dir, "launch-gate.mjs");
+    copyFileSync(SCRIPT, copy);
+    const link = join(dir, "linked gate.mjs");
+    symlinkSync(copy, link);
+    for (const how of [{ nodeFlags: ["--preserve-symlinks-main"] }, { env: { NODE_OPTIONS: "--preserve-symlinks-main" } }]) {
+      const label = JSON.stringify(how);
+      const refused = runMain(["--repo", "o/r", "--sha", AFTER], { runs: [run({ conclusion: "failure" })], script: link, ...how });
+      assert.equal(refused.code, 1, `${label}: ${refused.out}${refused.err}`);
+      assert.match(refused.out, /^::error::Release candidate tag refused: run 1 on b{9} concluded failure/m, label);
+      const usage = runMain([], { script: link, ...how });
+      assert.equal(usage.code, 2, label);
+      assert.match(usage.err, USAGE, label);
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("[BL-1574] isEntry(): a missing argv[1] or another file is not the entry; the escaped path of this file is", () => {
+  const url = pathToFileURL("/x/launch gate/launch-gate.mjs").href;
+  assert.equal(isEntry(undefined, url), false);
+  assert.equal(isEntry("", url), false);
+  assert.equal(isEntry("/x/launch gate/other.mjs", url), false);
+  assert.equal(isEntry("/x/launch gate/launch-gate.mjs", url), true, "a path that does not exist on disk still compares by its URL");
+  assert.equal(isEntry(SCRIPT, pathToFileURL(SCRIPT).href), true);
 });
 
 // BL-1594: the tagged commit itself must be the commit a green iOS compile run checked.

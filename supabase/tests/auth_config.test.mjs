@@ -3,7 +3,7 @@
 // exports, and pins the values the app, the templates and the copy depend on. The hosted projects must
 // hold the same values (supabase/auth-email.md section 3); this test cannot see them.
 // Runs under `npm run test:db` (the runner passes the migration list, which this file ignores).
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
@@ -83,7 +83,7 @@ check('rate limits match supabase/auth-email.md 3.6', () => {
   assert.deepEqual(auth.rate_limit, { email_sent: 100, sign_in_sign_ups: 30, token_verifications: 30, token_refresh: 150 });
 });
 
-check('sessions and sign-in switches', () => {
+check('[IAM-R07][IAM-R11] sessions and sign-in switches (BL-727 pins the reuse interval)', () => {
   assert.equal(auth.jwt_expiry, 900);
   assert.equal(auth.enable_anonymous_sign_ins, false);
   assert.equal(auth.enable_manual_linking, false);
@@ -184,6 +184,49 @@ check('AUTH_SETTINGS.md cites the config.toml line that holds each key (BL-1995)
     const cited = new Set(group.match(/\d+/g));
     assert.ok(cited.has(String(n)), `row ${row}: ${key} is at config.toml:${n}; the row cites ${[...cited].join(', ')}`);
   }
+});
+
+// ---------- BL-1893: identity linking, pinned to the versions it was read on ----------
+// Read on 25 Nov 2026 (NS-54-R15, R18, R19; A-REQ-019):
+//  - Supabase Identity Linking guide (supabase.com/docs/guides/auth/auth-identity-linking, page dated 16 Nov 2026):
+//    identities with the same email address are linked to one user automatically; manual linking (beta) is off unless
+//    the project turns it on; `linkIdentity` takes an ID token on native apps; SAML SSO users are never linked.
+//  - "How Auth links identities" (supabase.com/docs/guides/auth/identities, dated 20 Jun 2024): when a new OAuth
+//    identity can be linked to an existing user, Auth removes that user's unconfirmed identities, because linking to an
+//    unverified address allows pre-account takeover.
+//  - Installed auth-js 2.117.2 (`GoTrueClient.js` linkIdentityIdToken): posts `/token?grant_type=id_token` with
+//    `link_identity: true` and this session's access token; its error codes include `identity_already_exists` and
+//    `manual_linking_disabled`.
+// UNVERIFIED: the auth server version that Supabase CLI 2.119.0 runs and its source (the CLI and auth repositories
+// could not be read from this session); whether the same-email rule applies to the `id_token` grant exactly as to
+// OAuth redirects (the guide says OAuth); and which code the server sends for an identity on another account. Those are
+// the staging test BL-1893 names (Apple relay against Google). An upgrade of either pin below fails here, so the
+// behaviour is read again before the new version ships.
+check('BL-1893 linking behaviour was read on Supabase CLI 2.119.0 and auth-js 2.117.2; a new version is read again first', () => {
+  for (const wf of ['db-cli.yml', 'deploy-db.yml', 'deploy-functions.yml']) {
+    const y = readFileSync(join(repoRoot, '.github/workflows', wf), 'utf8');
+    assert.equal(/SUPABASE_CLI_VERSION:\s*([0-9.]+)/.exec(y)?.[1], '2.119.0', `${wf}: re-read the linking behaviour, then move this pin`);
+  }
+  const lock = JSON.parse(readFileSync(join(repoRoot, 'package-lock.json'), 'utf8'));
+  assert.equal(lock.packages['node_modules/@supabase/auth-js']?.version, '2.117.2', 'auth-js moved: re-read linkIdentity, then move this pin');
+  const gotrue = readFileSync(join(repoRoot, 'node_modules/@supabase/auth-js/dist/main/GoTrueClient.js'), 'utf8');
+  const linkFn = gotrue.slice(gotrue.indexOf('async linkIdentityIdToken('), gotrue.indexOf('async linkIdentityIdToken(') + 1200);
+  assert.match(linkFn, /grant_type=id_token/, 'linkIdentity with a token no longer uses the id_token grant');
+  assert.match(linkFn, /link_identity: true/, 'linkIdentity with a token no longer asks the server to link');
+  assert.match(linkFn, /jwt: /, 'linkIdentity with a token no longer sends this session, so the server cannot tie it to this account');
+});
+
+// NS-54-R19: manual linking stays off until the screen that uses it ships (BL-1894), and goes on in that same change.
+// "Ships" is read from the source: a module under apps/mobile/src that imports the linking path. Both must move together.
+check('[NS-54-R19][stand-in] enable_manual_linking is on exactly when an app module imports the linking path (BL-1893, BL-1894)', () => {
+  const walk = (d) => readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(join(d, e.name)) : /\.(ts|tsx)$/.test(e.name) ? [join(d, e.name)] : []));
+  const src = join(repoRoot, 'apps/mobile/src');
+  const logic = join(src, 'lib/auth/link-identity.logic.ts');
+  assert.ok(existsSync(logic), 'the linking path moved: update this check');
+  const users = walk(src).filter((f) => f !== logic && !/\.test\.tsx?$/.test(f) && /from '[^']*link-identity\.logic'/.test(readFileSync(f, 'utf8')));
+  const callers = walk(src).filter((f) => f !== logic && /\.auth\??\.linkIdentity\s*\(/.test(readFileSync(f, 'utf8')));
+  assert.deepEqual(callers, [], 'call linkIdentity only through lib/auth/link-identity.logic.ts');
+  assert.equal(auth.enable_manual_linking, users.length > 0, users.length ? `wired in ${users.join(', ')} but manual linking is off` : 'manual linking is on but no screen uses it');
 });
 
 if (failures) {
