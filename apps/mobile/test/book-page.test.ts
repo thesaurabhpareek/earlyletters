@@ -231,7 +231,7 @@ describe('BL-675: the cover band and chapter headings in words', () => {
     }
   });
 
-  it('VoiceOver meets title, age, switcher, Read together, Months, Settings in that order; the gear has no row of its own (source)', () => {
+  it('VoiceOver meets title, age, switcher, Read together, the lens, Go to a month, More for this book in that order; no gear (source; NS-22)', () => {
     const band = code(src('components/book/cover-band.tsx'));
     const laid = band.slice(band.indexOf(') : ('), band.indexOf('function LitGlow'));
     const at = (s: string) => laid.indexOf(s);
@@ -239,9 +239,11 @@ describe('BL-675: the cover band and chapter headings in words', () => {
     expect(at('{titleText}')).toBeLessThan(at('{ageText}'));
     expect(at('{ageText}')).toBeLessThan(at('{switcher}'));
     expect(at('{switcher}')).toBeLessThan(at('{read}'));
-    expect(at('{read}')).toBeLessThan(at('{trailing}'));
+    expect(at('{read}')).toBeLessThan(at('{lens}'));
+    expect(at('{lens}')).toBeLessThan(at('{trailing}'));
     const trailing = band.slice(band.indexOf('const trailing'), band.indexOf('return ('));
-    expect(trailing.indexOf('months.label')).toBeLessThan(trailing.indexOf('GearSixIcon'));
+    expect(trailing.indexOf('months.label')).toBeLessThan(trailing.indexOf('DotsThreeIcon'));
+    expect(band).not.toMatch(/GearSix/);
     expect(band).toMatch(/<Text variant="display" asHeading=\{1\}/);
     expect(band).toMatch(/size="md"\s+fullWidth\s+icon=\{BookOpenTextIcon\}/);
     // The light: plain under Increase Contrast and Reduce Transparency.

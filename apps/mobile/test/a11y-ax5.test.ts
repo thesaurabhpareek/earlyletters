@@ -149,9 +149,9 @@ function barDefects(bar: string): string[] {
 describe('BL-1860 the Book inline bar at accessibility sizes', () => {
   const bar = bookBar(read('app/(tabs)/book.tsx'));
 
-  it('finds the bar with its title, Months and settings controls', () => {
+  it('finds the bar with its title, Go to a month and More for this book (the gear left in BL-938)', () => {
     expect(bar).toMatch(/testID="book\.bar\.months"/);
-    expect(bar).toMatch(/testID="book\.bar\.settings"/);
+    expect(bar).toMatch(/testID="book\.bar\.more"/);
     expect(bar).toMatch(/<Text variant="headline"/);
   });
 

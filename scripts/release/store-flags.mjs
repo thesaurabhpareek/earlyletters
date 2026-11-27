@@ -40,8 +40,9 @@ export const STORE_FLAGS = Object.freeze([
   Object.freeze({ env: 'EXPO_PUBLIC_ANALYTICS', card: 'BL-1886', allowedOn: Object.freeze([]) }),
   // NX-39 phase switches with no code behind them yet (BL-858; read in apps/mobile/src/lib/capabilities.ts). Each stays
   // off in every store profile until its row in NX-39 section 3 is signed; the PR that turns one on in preview and
-  // testflight edits its row here. P0 (PHOTOS) is above; P2b (PHOTO_MOMENTS) and P3 (VIDEO) are pinned by name in
-  // g6-production-flags-off.test.ts, which spreads this list, so they are not repeated here.
+  // testflight edits its row here. P0 (PHOTOS) is above; P2b (PHOTO_MOMENTS) and P3 (VIDEO) are named in G6_CARD_FLAGS
+  // below, which spreads this list, so they are not repeated here. These names are the only ones media-switches.test.ts
+  // (R37) lets this file hold, as names in the two lists only, never a read.
   Object.freeze({ env: 'EXPO_PUBLIC_MEDIA_METADATA', card: 'NX-39 P1', allowedOn: Object.freeze([]) }),
   Object.freeze({ env: 'EXPO_PUBLIC_LIBRARY_CHOOSER', card: 'NX-39 P2a', allowedOn: Object.freeze([]) }),
   Object.freeze({ env: 'EXPO_PUBLIC_MOMENTS_BACKGROUND', card: 'NX-39 P2c', allowedOn: Object.freeze([]) }),
