@@ -1652,6 +1652,22 @@ Challenge record for CR-215 to CR-224 (24 Nov, afternoon): self-challenged only 
 - Door: two-way. Way back: revert the test, then ship option (a) or (b) in its own row.
 - Revisit when: a device walk shows the repeat is worse than described (for example, read three times), a helper becomes long enough that hearing it twice is a real cost, or React Native gains a describedby that both screen readers honour, which would make option (a) lose nothing. Karma
 
+### CR-241 BL-2019: ship the web-only router copy with 1000 ms, on four conditions (27 Nov 2026, Karma via stream 14)
+
+I'm shipping the copy. The bug is in the router: a late popstate makes useLinking call resetRoot, the Book remounts, and the toast's cleanup hides it. A patch-package would also change native, which is not affected. Waiting for upstream leaves J10 and J10f red with no date. A 500 ms wait is too close to the 463 ms long task CI logged, and 2000 ms doubles the cost below for no evidence. The resolver swap repeats the sqlite-worker-channel precedent, and the pin test fails on any expo-router upgrade.
+
+What 1000 ms trades away: listen() drops every popstate while one of our go() calls is unresolved. So a real Back pressed during a late or missing popstate of ours is taken as ours. A go() into no history now resolves after 1 s, so useLinking's replace and the URL lag by that long. A stall longer than 1 s still resets the stack. That is acceptable for a web preview build. It would not be for a shipped web app.
+
+Tier T2: metro.config.js is a build input, and its resolver runs for every platform. It needs two counted reviews on the full head sha: lens A (security) and lens B (tests).
+
+Conditions before merge:
+1. The header and the test cite this ruling, CR-241.
+2. Run CI web journeys on the head with the run-web-journeys label. J10 and J10f must not fail from a reset. A failure from the card tap belongs to #2189 and counts against that PR, not this one.
+3. Run `expo export --platform ios` and show the bundle has no router-memory-history module.
+4. Add a backlog row to remove the copy when expo-router stops guessing with a timer, or when the pin test fails on an upgrade. Stream 1 owns docs/BACKLOG.md, so stream 14 sends it the row to file.
+
+Way back: revert the commit.
+
 ### CR-236 Web journeys A: J02's diagnostic run, Leave the book on web, J22b's marker, the journey record, and the new J21g and J21h failure (27 Nov 2026, Karma under CR-176, recorded by stream 12)
 - Question: five calls the web journeys A chunk (BL-2018, BL-2008, BL-2244, BL-481, BL-410, BL-495 point 3) needs before any PR, read on develop `505bafde` and web journeys run 46011299681.
 - Tier and type: T1; clear (1, 3, 5), complicated (2, 4).

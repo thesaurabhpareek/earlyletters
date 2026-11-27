@@ -13,7 +13,7 @@
  * - Requires a development or store build: whisper.rn is a native module and
  *   is not in Expo Go. It is required lazily so Expo Go never touches it.
  */
-import { AppState, type NativeEventSubscription } from 'react-native';
+import { AppState, Platform, type NativeEventSubscription } from 'react-native';
 import type { WhisperContext, WhisperVadContext } from 'whisper.rn/index';
 import { nativePath } from './paths';
 
@@ -26,6 +26,10 @@ let mod: WhisperModule | null | undefined;
 /** whisper.rn when its native side is present (development or store build), else null. */
 export function whisperModule(): WhisperModule | null {
   if (mod !== undefined) return mod;
+  // There is no speech model on the web. Requiring whisper.rn there throws while its module loads (TurboModuleRegistry is
+  // missing), and Metro reports a module-load throw to the global handler as fatal before this catch sees it; the production
+  // web export then shows the recovery screen (BL-2243). So the web never loads it.
+  if (Platform.OS === 'web') return (mod = null);
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const m = require('whisper.rn/index') as WhisperModule;
