@@ -31,16 +31,22 @@ const env = vi.hoisted(() => ({
 
 type P = { children?: ReactNode; testID?: string; style?: unknown; accessibilityLabel?: string } & Record<string, unknown>;
 /**
- * Every prop VoiceOver can speak (a label, `aria-label`, a hint, a value or its text, a description) reaches the markup
- * as an attribute whose name ends in `label`, so PC-T6 can read all of them. The mark's own label stays `data-label`.
+ * Props whose name holds label, hint, value, text, description, action, name or title (so `aria-label`,
+ * `accessibilityHint`, `accessibilityValue`, `aria-valuetext` and `accessibilityActions` among them) reach the markup
+ * as attributes whose names end in `label`: every string or number inside them, at any depth (an action's `name` and
+ * `label` included), becomes one attribute, so PC-T6 can read them. The mark's own `accessibilityLabel` stays
+ * `data-label`. Props with other names (style, colours, path data) are not read.
  */
-const SPOKEN = /label|hint|value|valuetext|description/i;
+const SPOKEN = /label|hint|value|text|description|action|name|title/i;
+const leaves = (v: unknown): string[] =>
+  typeof v === 'string' ? [v] : typeof v === 'number' ? [String(v)] : v && typeof v === 'object' ? Object.values(v).flatMap(leaves) : [];
 const spoken = (p: P): Record<string, string> => {
   const out: Record<string, string> = {};
   for (const [k, v] of Object.entries(p)) {
-    if (k === 'accessibilityLabel' || !SPOKEN.test(k) || v == null) continue;
-    const text = typeof v === 'object' ? Object.values(v as Record<string, unknown>).filter((x) => typeof x === 'string').join(' ') : String(v);
-    if (text) out[`data-${k.toLowerCase()}-label`] = text;
+    if (k === 'accessibilityLabel' || !SPOKEN.test(k)) continue;
+    leaves(v).forEach((text, i) => {
+      if (text) out[`data-${k.toLowerCase()}-${i}-label`] = text;
+    });
   }
   return out;
 };
@@ -190,8 +196,8 @@ describe('[NS-53-G01] PC-T3, PC-T6: one cover, never two, with Moments focused',
     expect(html.replace(/<[^>]*>/g, '')).toBe(''); // PC-T6: no text, no day, place or name
     expect(html).not.toContain('Asha');
     expect(/data-testid="appLock\.cover\.mark"[^>]*data-label="([^"]*)"/.exec(html)?.[1]).toBe(appLockCopy.coverLabel);
-    // PC-T6, the VoiceOver half: everything VoiceOver can speak on the cover (labels, aria-label, hints, values) is the
-    // app name once (no day, place or name).
+    // PC-T6, the VoiceOver half: every label, hint, value, action, name or title prop on the drawn cover (as the mock
+    // above reads them) says the app name, once, and nothing else (no day, place or name).
     expect([...html.matchAll(/\b[\w-]*label="([^"]*)"/gi)].map((m) => m[1])).toEqual([appLockCopy.coverLabel]);
     env.appState!('active');
     expect(draw()).not.toMatch(COVER);
