@@ -105,12 +105,16 @@ export const accountDeletionCopy = {
   // Not "everything": the iPhone backup, exports and the Keychain letter count are not on this phone's storage (#672).
   notConfigured: `Accounts are not available on this phone right now, so an account cannot be deleted here. The letters on this phone stay until you delete the app. To delete your account, write to ${brand.support.email}.`,
 
-  // Each failure says first, or says plainly, that nothing has changed.
+  // Each failure of a request says first, or says plainly, that nothing has changed (not loadFailed or cancelFailed).
   errors: {
     offline: 'Nothing has changed. Deleting an account needs a connection.',
     failed: 'That did not go through. Nothing has changed.',
     // The page could not load its own lines or status. Nothing was tried, so it must not say "nothing has changed"
     // (BL-492 point 4). Offline keeps `offline` above, which is true there too.
     loadFailed: "That didn't load. Try again in a moment.",
+    // A Cancel deletion press that did not go through, offline or failed (BL-491 point 5, CDesO-46). The phone cannot
+    // know whether the server cancelled before the answer was lost, so it must not say "nothing has changed", which
+    // reads as if the person is safe while the request may still be open. Pressing again is harmless.
+    cancelFailed: "It's not clear yet if the deletion was cancelled. Tap Cancel deletion again.",
   },
 } as const;

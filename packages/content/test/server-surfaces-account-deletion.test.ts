@@ -90,14 +90,27 @@ describe('[P8c S64] accountDeletionCopy changes, word for word', () => {
 
   it('says in every failure that nothing has changed, and first when offline', () => {
     // `loadFailed` is the one line for a page that could not load: nothing was tried there (BL-492 point 4).
+    // `cancelFailed` is a Cancel deletion that did not go through: the phone cannot know whether the server cancelled, so
+    // "nothing has changed" would read as if the person were safe while the request may still be open (BL-491 point 5).
+    const exempt = new Set(['loadFailed', 'cancelFailed']);
     for (const [key, text] of Object.entries(accountDeletionCopy.errors)) {
-      if (key === 'loadFailed') expect(text, key).not.toMatch(/nothing has changed/i);
+      if (exempt.has(key)) expect(text, key).not.toMatch(/nothing has changed/i);
       else expect(text, key).toContain('Nothing has changed.');
     }
     expect(accountDeletionCopy.errors.loadFailed).toBe("That didn't load. Try again in a moment.");
     expect(accountDeletionCopy.errors.offline.startsWith('Nothing has changed.')).toBe(true);
+    expect(accountDeletionCopy.errors.offline).not.toBe(accountDeletionCopy.errors.cancelFailed);
     // No blame on the person: the line says what the request needs, never "you are offline".
     expect(ALL.filter((l) => /\byou are offline\b|\bplease try again\b/i.test(l.text)).map((l) => l.path)).toEqual([]);
+  });
+
+  it('[BL-491 point 5] a failed Cancel deletion says the outcome is not known yet and names the one thing to do (CDesO-46)', () => {
+    const line = accountDeletionCopy.errors.cancelFailed;
+    expect(line).toBe("It's not clear yet if the deletion was cancelled. Tap Cancel deletion again.");
+    expect(line).not.toMatch(/nothing has changed/i);
+    // Never that the person is out of the woods, and the button by its visible label.
+    expect(line).not.toMatch(/\bsafe\b/i);
+    expect(line).toContain(`Tap ${accountDeletionCopy.scheduled.cancelButton} again.`);
   });
 });
 
