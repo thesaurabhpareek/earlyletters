@@ -167,10 +167,6 @@ test('[J04g] a book that is not born yet: the dateline names the child and the p
 });
 
 test('[J04h] a test build past the free letters: no Plus line on Tonight and no Plus sheet', async ({ app, record }) => {
-  // Known failure on develop: BL-2010. The Home tab click times out and the page reports "Array buffer allocation failed"
-  // twice (the same message as #480). Not yet read whether that is the app or how the flow seeds the data; it may share a
-  // cause with BL-2009 (the store build). Remove this line when BL-2010 is fixed: a pass turns the job red.
-  test.fail(true, 'Known failure BL-2010: remove this line in the PR that fixes it');
   test.setTimeout(150_000);
   const step = journey(record, 'J04', 'tonight-and-prompts', 11, 'J04-08');
   // The e2e web build is an alpha build (support/global-setup.ts: EXPO_PUBLIC_APP_ENV=preview, so PLUS_ALPHA). In alpha
