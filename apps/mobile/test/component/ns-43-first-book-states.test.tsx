@@ -125,6 +125,8 @@ vi.mock('@/lib/auth/revocation-wait-line', () => ({ RevocationWaitLine: () => nu
 
 import { copy, fill, pendingCopy } from '@/lib/copy';
 import { CHILD_NAME_MAX, SIGNS_AS_MAX } from '@scribe/core';
+import { authCopy } from '@/lib/auth/copy';
+import { signedInLine } from '@/lib/first-run/account-books.logic';
 import { renderMarkup } from '../helpers/render-markup';
 
 const AX5 = 3.12; // the Dynamic Type accessibility-5 scale the design tokens use (as test/component/ax5-truncation-labels)
@@ -136,7 +138,7 @@ const draft = (over: Partial<{ step: string; names: string[]; expecting: boolean
 
 async function render(): Promise<string> {
   let mod: any;
-  try { mod = await import('@/app/onboarding'); } catch (e) { console.log('DBGERR', (e as Error).stack, JSON.stringify(e, Object.getOwnPropertyNames(e as object)).slice(0, 3000)); throw e; }
+  mod = await import('@/app/onboarding');
   const Onboarding = mod.default;
   return renderMarkup(<Onboarding />);
 }
@@ -165,11 +167,15 @@ beforeEach(() => {
 });
 
 describe('[NS-43-R13] the first book at AX5 and with VoiceOver', () => {
-  it('[NS-43-R13] "Who is this book for?": heading, name, born or expecting, the date, the reason, Continue, in that order, whole', async () => {
+  it('[NS-43-R13] "Who is this book for?": Back, heading, name, born or expecting, the date, the signed-in note and Use another account, the reason, Continue, in that order, whole', async () => {
     h.draft = draft({ step: 'child' });
     const html = await render();
     const reason = fill(o.child.needBirthday, { child: o.childFallback });
+    // The signed-in note as the stood-in session draws it (a***@example.com), from the real words and masking.
+    const note = signedInLine({ maskedEmail: 'a***@example.com', provider: 'apple' }, { signedInAs: o.child.signedInAs, signedInAsLabel: o.child.signedInAsLabel, spokenAddress: o.child.spokenAddress, spokenAddressNoFirst: o.child.spokenAddressNoFirst, apple: authCopy.account.signedInWith.apple });
+    expect(note).not.toBeNull();
     inOrder(html, [
+      `aria-label="${esc(copy.common.backButton)}"`,
       `>${esc(o.child.title)}<`,
       `>${esc(o.child.nameOptionalLabel)}<`,
       `placeholder="${esc(o.child.namePlaceholder)}"`,
@@ -182,6 +188,9 @@ describe('[NS-43-R13] the first book at AX5 and with VoiceOver', () => {
       `>${esc(o.child.bornToday)}<`,
       `aria-label="${esc(o.child.birthdayLabel)}"`,
       `>${esc(o.child.addAnotherButton)}<`,
+      // Use another account starts the sign-in again, so the note and its button sit after the fields, before the reason.
+      `>${esc(note!.text)}<`,
+      `aria-label="${esc(o.child.useAnother)}"`,
       `>${esc(reason)}<`,
       `>${esc(o.child.cta)}<`,
     ]);
