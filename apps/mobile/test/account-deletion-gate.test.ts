@@ -654,13 +654,17 @@ describe('the wiring that is read off the source (the behaviour is run in accoun
 
   it('[S-1] the deletion screen draws the press state, speaks a failed cancel and the change to "cancelled", and has the controller do the rest', () => {
     const s = read('components', 'settings', 'open-deletion.tsx');
-    expect(s).toContain("kind={working ? 'loading' : failure ? 'error' : 'empty'}");
+    // BL-494 point 3: a press keeps the state; its primary is busy and the quiet options wait.
+    expect(s).toContain("kind={failure ? 'error' : 'empty'}");
+    expect(s).not.toMatch(/kind=\{[^}]*'loading'/);
+    expect(s).toContain('primary={first ? { ...act(first), loading: working } : undefined}');
+    expect(s).toContain('quiet={working ? [] : rest.map(act)}');
     expect(s).toContain('const failure = press.acted ? failureLine(d.error) : null;');
     expect(s).toContain('ctl.say(`${c.open.restoringTitle}. ${c.open.restoringBody}`);');
     expect(s).toContain('if (press.failedPresses > 0 && failure) announce(failure);');
     expect(s).toContain('cancel: () => ctl.cancel(),');
     expect(s).toContain('retry: () => ctl.retry(),');
-    expect(s).toContain('const [first, ...rest] = working ? [] : view.actions;');
+    expect(s).toContain('const [first, ...rest] = view.actions;');
     expect(s).toContain('words: { cancelling: c.open.cancelling, notYet: c.open.notYet },');
     expect(s).toContain('accessibilityLabel={c.open.checking}');
   });
