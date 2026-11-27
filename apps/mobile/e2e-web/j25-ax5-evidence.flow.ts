@@ -1,11 +1,14 @@
 import type { Page } from '@playwright/test';
-import { btn, journey, tapWhenStill } from './support/app';
+import { journey, tapWhenStill } from './support/app';
 import { expect, test } from './support/journey';
 
 /**
- * J25 (BL-409, LEGAL-REQ-051): one AX5 screenshot each of Review, a letter, Settings and the Plus gate, on the seam build
- * (support/builds.ts). EMULATION EVIDENCE, NOT DEVICE EVIDENCE: Chromium at phone size shows layout at the 3.571 scale, not
- * iOS Dynamic Type or VoiceOver; the device run (docs/qa/DEVICE_TEST_PLAN.md) stays the authority. Each step also records
+ * J25 (BL-409, LEGAL-REQ-051): one AX5 screenshot each of Review, a letter and Settings, on the seam build
+ * (support/builds.ts). No Plus gate here (CR-240, BL-2009): the seam build is a development build, which alpha.ts makes an
+ * alpha build where no letter is held, so the gate never shows, and B-9 refuses the seam in a production build. The Plus gate
+ * at AX5 is device evidence: docs/qa/DEVICE_TEST_PLAN.md V-06, on a production-profile build.
+ * EMULATION EVIDENCE, NOT DEVICE EVIDENCE: Chromium at phone size shows layout at the 3.571 scale, not iOS Dynamic Type or
+ * VoiceOver; the device run (docs/qa/DEVICE_TEST_PLAN.md) stays the authority. Each step also records
  * the accessibility tree (role, name, order) in its step JSON; with A11Y_STRICT=1 an unnamed control fails the step.
  */
 const AX5 = 3.571;
@@ -41,19 +44,4 @@ test('[J25] Settings at AX5 (emulation evidence, not device evidence)', async ({
   await expect(app.getByTestId('settings.plan')).toBeVisible();
   await noSideClipping(app);
   await step('happy', 'Settings at AX5 (emulation)', 'Settings at the largest text size on the web emulation. Layout evidence only.');
-});
-
-test('[J25] the Plus gate at AX5 (emulation evidence, not device evidence)', async ({ app, record }) => {
-  // Known failure on develop: BL-2009, the same cause as J06e (a free phone past its first two letters comes from the seed
-  // hook, which the reading says does not run on the store build; not confirmed). Remove this line when BL-2009 is fixed:
-  // a pass turns the job red.
-  test.fail(true, 'Known failure BL-2009: remove this line in the PR that fixes it');
-  const step = journey(record, 'J25', 'ax5-evidence', 4);
-  await app.goto(SEAM('/', 'asha')); // a free phone past its first two letters, as in J06e
-  await app.getByText('Read it back').first().click();
-  await btn(app, 'Got it').click();
-  await btn(app, /^Add to .*book/).click();
-  await expect(app.getByText("Keep adding to Asha's book")).toBeVisible();
-  await noSideClipping(app);
-  await step('happy', 'The Plus gate at AX5 (emulation)', 'The sheet that says the letter waits on this phone, at the largest text size on the web emulation. Layout evidence only.');
 });
