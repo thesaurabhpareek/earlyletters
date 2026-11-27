@@ -168,7 +168,7 @@ Where core's closed lists live (CODE-R13): my standards position, PROPOSED, no r
 
 The parent's 60-character label is free text and can hold a child's name: it is never logged, never sent, never in a crash report, and it lives only in `moments.json`, so it is excluded from backup with that file (R201, RK-8).
 
-Never persisted, never sent, never logged (10.2, line 596): image bytes or thumbnails of library assets; coordinates; machine titles, captions, filenames, EXIF text; counts; tap or dwell history; scan results; the permission result as an event; any picture or album identifier (R247: dropped for good, O-13 and O-14 closed as No). Thumbnails have no disk cache (R112, 10.1 step 6).
+Never persisted, never sent, never logged (PRD section 10.2): image bytes or thumbnails of library assets; coordinates; machine titles, captions, filenames, EXIF text; counts; tap or dwell history; scan results; the permission result as an event; any picture or album identifier (R247: dropped for good, O-13 and O-14 closed as No). Thumbnails have no disk cache (R112, 10.1 step 6).
 
 Wipe rules (R246, R115): revoke or downgrade drops everything rebuildable and keeps dismissal and hidden-place keys, unread without access; Turn off deletes every field; Erase, sign-out and Delete account delete the file and the home-place value; the file is deleted first, before any await; `eraseDeviceFiles` lists it and a scan finds zero bytes.
 
@@ -202,7 +202,8 @@ tab focus / foreground ---------------------------------------------------------
       v   columnar typed arrays: id, creationMs, kind, durationMs, subtype flags,
       |   favourite, burst id, place cell (see Q-2), plus `truncated`
       v   core.exclude    drops no-date, screenshot, screen recording, animation,
-      |                   non-user-library, parent-left-out; collapses bursts      (no trace left)
+      |                   non-user-library; collapses bursts                       (no trace left)
+      |                   (left-out pictures are gone: R56 DROPPED, BL-1967, E-4-7)
       v   core.place      cell -> place id (table injected); coordinates never reach a Moment
       v   core.group      local day via offsetAt(ms); sessions at SESSION_GAP; near-duplicates
       v   core.qualify    7.2 rules incl. both span predicates; dismissals by day key

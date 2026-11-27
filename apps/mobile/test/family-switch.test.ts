@@ -367,6 +367,26 @@ describe('[F11-REQ-019] the pending list from sync_books', () => {
     for (const bad of [null, 'x', [], {}, { books: null }, { books: 'x' }]) expect(() => readPendingInvites(bad, ASHA)).toThrow();
   });
 
+  it('[FR-PRV-20] a closed answer (withheld consent) is not a list, so the tab never reads it as "no invites" (BL-1919)', () => {
+    // 20261123100000: while the consent gate is closed, sync_books lists each book with id, role, name and
+    // members only, with no invites key. That says nothing about the pending invites; reading it as an empty
+    // list would clear the tab's rows and let the invite card show over open invites.
+    const closed = {
+      epoch: 1, first_run_open: false, withheld: 'consent',
+      books: [{ id: ASHA, role: 'parent', name: 'Asha', members: [{ role: 'parent', is_me: true, signs_as: 'Mama' }] }],
+    };
+    expect(() => readPendingInvites(closed, ASHA)).toThrow('sync_books_withheld');
+    // Shown rows stay: the Family tab's load keeps what it shows when the read throws (asserted on app/family.tsx above).
+    let shown = readPendingInvites(SYNC_BOOKS, ASHA);
+    try {
+      shown = readPendingInvites(closed, ASHA);
+    } catch {
+      // as family.tsx load(): keep what is shown
+    }
+    expect(openInvites(shown).map((r) => r.id)).toEqual(['i-3', 'i-2']);
+    expect(familyTabState({ role: 'parent', members: [], openInvites: openInvites(shown).length }).showInviteCard).toBe(false);
+  });
+
   it('skips a row that does not read, keeps only what the screen shows, and never a hash', () => {
     const good = { id: 'i-9', role: 'parent', signs_as: '  Papa  ', created_at: '2026-10-22T09:00:00.000Z', expires_at: '2026-10-29T09:00:00.000Z', status: 'open' };
     const rows = readPendingInvites(

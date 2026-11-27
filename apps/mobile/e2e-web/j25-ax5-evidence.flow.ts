@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { journey } from './support/app';
+import { journey, tapWhenStill } from './support/app';
 import { expect, test } from './support/journey';
 
 /**
@@ -32,7 +32,7 @@ test('[J25] a letter at AX5 (emulation evidence, not device evidence)', async ({
   const step = journey(record, 'J25', 'ax5-evidence', 2);
   await app.goto(SEAM('/', 'asha'));
   await app.getByText('Book', { exact: true }).last().click();
-  await app.getByText(/rained all morning/).first().click();
+  await tapWhenStill(app.getByText(/rained all morning/).first());
   await expect(app.getByText('Spoken', { exact: false }).or(app.getByText('Typed', { exact: false })).first()).toBeVisible();
   await noSideClipping(app);
   await step('happy', 'A letter at AX5 (emulation)', 'The letter page at the largest text size on the web emulation. Layout evidence only.');

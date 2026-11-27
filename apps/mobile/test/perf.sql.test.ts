@@ -7,7 +7,14 @@
  * Maestro runs (BL-1403) and the device run (BL-044). The budgets are BL-408's, not new ones.
  * Fixture: 2,000 letters for the fictional family Asha (two children, 1,000 each, over five years).
  */
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+// child-store reads the native store; chapters.ts uses only its signature rule (as test/book-chapters.test.ts does).
+vi.mock('@/components/child/child-store', () => ({ authorOf: (e: { authorSignsAs?: string }, c: { signsAs: string }) => e.authorSignsAs ?? c.signsAs }));
+
+import { BOOK_PAGE, createBookPages, type RangeRead } from '../src/components/book/book-pages.logic';
+import { bookChapters } from '../src/components/book/chapters';
+import { monthRows } from '../src/components/book/book-page.logic';
 import { entries, children, letters, settings } from '../src/lib/db/repos';
 import { fixture, insertBook, letter } from './helpers/store-fixture';
 
@@ -149,6 +156,28 @@ describe('[BL-1402] the local store at five years, SQL path on a CI machine', ()
     expect(within(real, BUDGETS.chapterMs)).toBe(true);
   });
 
+  it('[BL-2225] the Book\'s first chapter (one page read, chaptered and listed for Months) renders inside 500 ms (p95), reading one page of rows', () => {
+    const asha = children.get(f.ctx, ASHA)!;
+    let rowsRead = 0;
+    const read: RangeRead = (childId, range) => {
+      const rows = entries.listBookRange(f.ctx, childId, range);
+      rowsRead = Math.max(rowsRead, rows.length);
+      return rows;
+    };
+    const t = time(SAMPLES, () => {
+      const pages = createBookPages(read);
+      pages.first(ASHA); // the Book's read on focus (book.tsx initialiser)
+      const first = pages.reread(ASHA); // watchBook's catch-up read, from the floor
+      const chapters = bookChapters(first, asha, '2026-11-01');
+      expect(monthRows(chapters).length).toBeGreaterThan(0);
+      entries.bookOutline(f.ctx, ASHA); // the Months button and Read together while older pages are unread
+    });
+    expect(p95(t)).toBeLessThanOrEqual(BUDGETS.chapterMs);
+    // Goes red when the paging is removed: the whole book would be 1,000 rows here.
+    expect(rowsRead).toBeGreaterThan(0);
+    expect(rowsRead).toBeLessThanOrEqual(Math.min(BOOK_PAGE, CHAPTER_SIZE));
+  });
+
   // [BL-1627] Loose on purpose: "uses entries_child" and "no full scan of entries", never the whole plan text.
   const usesEntriesChild = (plan: string[]) => plan.some((l) => /SEARCH entries USING (COVERING )?INDEX entries_child/.test(l));
   const noFullScan = (plan: string[]) => !plan.some((l) => /^SCAN entries/.test(l));
@@ -161,6 +190,25 @@ describe('[BL-1402] the local store at five years, SQL path on a CI machine', ()
     const plans = plansOf(f, (c) => void run(c));
     expect(plans).toHaveLength(1);
     expect(usesEntriesChild(plans[0])).toBe(true);
+    expect(noFullScan(plans[0])).toBe(true);
+  });
+
+  it.each([
+    ['the first page', (c: typeof f.ctx) => entries.listBookRange(c, ASHA, { limit: BOOK_PAGE })],
+    ['the next page (keyset)', (c: typeof f.ctx) => entries.listBookRange(c, ASHA, { before: '2024-06-01', limit: BOOK_PAGE })],
+    ['a reread from the floor', (c: typeof f.ctx) => entries.listBookRange(c, ASHA, { from: '2026-09-01' })],
+  ])('[BL-2225] the Book read %s searches entries_child and never scans all of entries', (_name, run) => {
+    const plans = plansOf(f, (c) => void run(c));
+    expect(plans).toHaveLength(1);
+    expect(usesEntriesChild(plans[0])).toBe(true);
+    expect(noFullScan(plans[0])).toBe(true);
+  });
+
+  it('[BL-2225] the Book\'s outline searches one book by child and never scans all of entries', () => {
+    // One aggregate row over the book's rows; SQLite may pick either index that leads with child_id.
+    const plans = plansOf(f, (c) => void entries.bookOutline(c, ASHA));
+    expect(plans).toHaveLength(1);
+    expect(plans[0].some((l) => /SEARCH entries USING (COVERING )?INDEX \w+ \(child_id=\?/.test(l))).toBe(true);
     expect(noFullScan(plans[0])).toBe(true);
   });
 });

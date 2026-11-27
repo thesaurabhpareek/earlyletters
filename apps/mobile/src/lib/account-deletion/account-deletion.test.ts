@@ -87,7 +87,7 @@ describe('two-step confirm and the 30-day window', () => {
 
 // ── Server calls against a fake client ─────────────────────────────────────
 
-type Answer = { data: unknown; error: { message?: string } | null };
+type Answer = { data: unknown; error: { code?: string; message?: string } | null; status?: number };
 const SCHEDULED_ROW: Answer = { data: [{ id: 'req-1', status: 'scheduled', scheduled_for: '2026-11-02T00:00:00Z' }], error: null };
 
 /** `status` is what the read of the caller's open request answers (an open scheduled request unless given). */
@@ -156,8 +156,7 @@ describe('server calls', () => {
     expect(await cancelAnswering(false, { data: [], error: null })).toEqual({ ok: true, value: true });
   });
 
-  it('a false answer while the request is still open or executing is a failure, so the page never says they are back', async () => {
-    expect(await cancelAnswering(false, { data: [{ id: 'req-1', status: 'executing' }], error: null })).toEqual({ ok: false, reason: 'failed' });
+  it('a false answer while the request is still open is a failure, so the page never says they are back', async () => {
     // Anything but true reads as false, and the request here is still scheduled.
     for (const data of [false, null, 'true']) expect(await cancelAnswering(data), String(data)).toEqual({ ok: false, reason: 'failed' });
   });
@@ -172,10 +171,103 @@ describe('server calls', () => {
     expect(await cancelAnswering(false, { data: null, error: { message: 'SCDEL' } })).toEqual({ ok: false, reason: 'failed' });
   });
 
+  it('[CDesO-59 case 3] a false answer while the request is executing returns that read, so the page moves to executing and shows no failure', async () => {
+    const executing: Answer = { data: [{ id: 'req-1', status: 'executing', scheduled_for: '2026-11-02T00:00:00Z' }], error: null };
+    expect(await cancelAnswering(false, executing)).toEqual({ ok: false, reason: 'executing', status: { state: 'executing', requestId: 'req-1', scheduledFor: '2026-11-02T00:00:00Z' } });
+    expect(await cancelAnswering(false, { data: [{ id: 'req-1', status: 'executing' }], error: null })).toEqual({ ok: false, reason: 'executing', status: { state: 'executing', requestId: 'req-1' } });
+  });
+
   it('a cancel that could not reach the server is not checked against the status', async () => {
     const f = fakeClient({ throwRpc: new TypeError('Network request failed'), status: { data: [], error: null } });
     expect(await cancelDeletion(f.client)).toEqual({ ok: false, reason: 'offline' });
     expect(f.query).toEqual([]);
+  });
+
+  // ── CDesO-58 and CDesO-59: the refusals the phone can tell apart ──
+  /**
+   * A client whose cancel_account_deletion answers each item of `answers` in turn (the last one repeats), with a
+   * refreshSession that answers `refresh` (or none at all). Counts both, so one retry and no loop can be proved.
+   */
+  function refusingClient(answers: Answer[], opts: { refresh?: 'ok' | 'error' | 'no_session' | 'throws' | 'missing'; status?: Answer } = {}) {
+    const f = fakeClient({ status: opts.status });
+    const sent = { rpc: 0, refresh: 0 };
+    const client: DeletionClient = {
+      ...f.client,
+      rpc(fn) {
+        expect(fn).toBe('cancel_account_deletion');
+        const a = answers[Math.min(sent.rpc, answers.length - 1)];
+        sent.rpc += 1;
+        return Promise.resolve(a);
+      },
+    };
+    if (opts.refresh !== 'missing') {
+      client.auth = {
+        refreshSession() {
+          sent.refresh += 1;
+          if (opts.refresh === 'throws') return Promise.reject(new TypeError('Network request failed'));
+          if (opts.refresh === 'error') return Promise.resolve({ data: { session: null }, error: new Error('Invalid Refresh Token: Refresh Token Not Found') });
+          if (opts.refresh === 'no_session') return Promise.resolve({ data: { session: null }, error: null });
+          return Promise.resolve({ data: { session: { access_token: 'fresh' } }, error: null });
+        },
+      };
+    }
+    return { client, sent, query: f.query };
+  }
+  const refused = (code: string, message = 'refused', status?: number): Answer => ({ data: null, error: { code, message }, ...(status ? { status } : {}) });
+  const SCRAT = refused('SCRAT', 'too many cancellations today', 400);
+  const EXPIRED = refused('PGRST303', 'JWT expired', 401);
+  const CANCELLED: Answer = { data: true, error: null };
+
+  it('[CDesO-58] keeps the server code: SCRAT, the daily limit, is `limited`, not an unknown outcome, and is not retried', async () => {
+    const c = refusingClient([SCRAT]);
+    expect(await cancelDeletion(c.client)).toEqual({ ok: false, reason: 'limited' });
+    expect(c.sent).toEqual({ rpc: 1, refresh: 0 });
+    // The call rolled back, so there is nothing to check against the status.
+    expect(c.query).toEqual([]);
+    // Read by its code, never its words: the same message under another code is an ordinary failure.
+    expect(await cancelDeletion(refusingClient([refused('P0001', 'too many cancellations today')]).client)).toEqual({ ok: false, reason: 'failed' });
+  });
+
+  it('[CDesO-59 case 1] an auth refusal refreshes the session and sends once more; that second answer decides as for any press', async () => {
+    // Cancelled on the second send.
+    const ok = refusingClient([EXPIRED, CANCELLED]);
+    expect(await cancelDeletion(ok.client)).toEqual({ ok: true, value: true });
+    expect(ok.sent).toEqual({ rpc: 2, refresh: 1 });
+    // The daily limit on the second send is CDesO-58.
+    expect(await cancelDeletion(refusingClient([EXPIRED, SCRAT]).client)).toEqual({ ok: false, reason: 'limited' });
+    // Anything else on the second send keeps cancelFailed's reasons.
+    expect(await cancelDeletion(refusingClient([EXPIRED, refused('40001', 'could not serialize access due to concurrent update')]).client)).toEqual({ ok: false, reason: 'failed' });
+    expect(await cancelDeletion(refusingClient([EXPIRED, refused('', 'Network request failed')]).client)).toEqual({ ok: false, reason: 'offline' });
+  });
+
+  it('[CDesO-59 case 1] every auth refusal the server gives is retried: 28000, 42501, PGRST301 to 303 and HTTP 401', async () => {
+    for (const first of [refused('28000', 'not signed in'), refused('42501', 'permission denied for function cancel_account_deletion'),
+      refused('PGRST301', 'JWT expired'), refused('PGRST302', 'Anonymous access is disabled'), refused('PGRST303', 'JWT expired'), refused('', 'Unauthorized', 401)]) {
+      const c = refusingClient([first, CANCELLED]);
+      expect(await cancelDeletion(c.client), first.error?.code || '401').toEqual({ ok: true, value: true });
+      expect(c.sent, first.error?.code || '401').toEqual({ rpc: 2, refresh: 1 });
+    }
+  });
+
+  it('[CDesO-59 case 1] one retry, never a loop: a second auth refusal is `auth`, and a refresh that brings no session sends nothing more', async () => {
+    const twice = refusingClient([EXPIRED, EXPIRED, CANCELLED]);
+    expect(await cancelDeletion(twice.client)).toEqual({ ok: false, reason: 'auth' });
+    expect(twice.sent).toEqual({ rpc: 2, refresh: 1 });
+    for (const refresh of ['error', 'no_session', 'throws', 'missing'] as const) {
+      const c = refusingClient([EXPIRED, CANCELLED], { refresh });
+      expect(await cancelDeletion(c.client), refresh).toEqual({ ok: false, reason: 'auth' });
+      expect(c.sent, refresh).toEqual({ rpc: 1, refresh: refresh === 'missing' ? 0 : 1 });
+    }
+  });
+
+  it('[CDesO-59] a refusal that is not about auth is never retried and never refreshes the session', async () => {
+    for (const first of [SCRAT, refused('SCANO', 'anonymous'), refused('40001', 'could not serialize access'), refused('57014', 'timeout'),
+      refused('PGRST202', 'function not found', 404), refused('', 'Network request failed'), refused('XX000', 'internal', 500)]) {
+      const c = refusingClient([first, CANCELLED]);
+      const r = await cancelDeletion(c.client);
+      expect(r.ok, first.error?.code || 'network').toBe(false);
+      expect(c.sent, first.error?.code || 'network').toEqual({ rpc: 1, refresh: 0 });
+    }
   });
 
   it('tells offline from other failures, and never throws', async () => {

@@ -24,8 +24,9 @@ vi.mock('../src/lib/db/repos/open-native', () => ({
 }));
 
 const store = await import('../src/lib/store');
-const { lastMadeLetter, readPrefs, dayNamesOn } = await import('../src/lib/reminders/prefs');
+const { lastMadeLetter, plannerChildren, readPrefs, dayNamesOn } = await import('../src/lib/reminders/prefs');
 const { DEFAULT_PREFS, planReminders } = await import('../src/lib/reminders/planner');
+const { budgetedSlots, PLAN_MAX } = await import('../src/lib/reminders/budget');
 const { isoDate, parseIsoDate, zonedParts, zonedToEpoch, addDays } = await import('../src/lib/reminders/tz');
 const { reminderCopy } = await import('../src/lib/reminders/copy');
 const { APP_LOCK_KEYS } = await import('../src/lib/app-lock/prefs');
@@ -121,7 +122,7 @@ describe('[NS-48-R26] the one-a-day budget has one enforced place', () => {
         const p = zonedParts(n.fireAt, input.timeZone);
         expect(isoDate({ y: p.y, m: p.m, d: p.d }), `seed ${seed} ${n.id}`).toBe(n.date);
       }
-      expect(plan.length, `seed ${seed}`).toBeLessThanOrEqual(60);
+      expect(plan.length, `seed ${seed}`).toBeLessThanOrEqual(budgetedSlots(input.planPending ?? PLAN_MAX));
     }
   });
 
@@ -205,6 +206,7 @@ describe('[FR-NTC-08] a parent-chosen day takes the slot as a typedDay', () => {
       const typed = new Set((input.typedDays ?? []).map((t) => t.date));
       const notes = planReminders(input).filter((n) => n.kind === 'typedDay');
       for (const n of notes) expect(typed.has(n.date), `seed ${seed} ${n.date}`).toBe(true);
+      expect(new Set(notes.map((n) => n.date)).size, `seed ${seed}`).toBe(notes.length);
     }
   });
 });
@@ -413,6 +415,14 @@ describe('[NS-48-R21] a quiet book adds nothing to a key', () => {
     const { avi } = books();
     store.updateChild(avi.id, { remindersOn: false });
     expect(lastMadeLetter()).toEqual({ at: Date.parse('2026-09-01T08:00:00.000Z'), kind: 'typed' });
+  });
+
+  it('[T2-068] a hidden book: the same, and it is no planner child, so it adds no name, band or kind', () => {
+    const { avi } = books();
+    expect(plannerChildren().map((c) => c.name)).toEqual(['Asha', 'Avi']);
+    store.hideChild(avi.id);
+    expect(lastMadeLetter()).toEqual({ at: Date.parse('2026-09-01T08:00:00.000Z'), kind: 'typed' });
+    expect(plannerChildren().map((c) => c.name)).toEqual(['Asha']);
   });
 
   it('every book quiet: the layers get nothing and the floor runs', () => {

@@ -136,6 +136,31 @@ export const familyCopy = {
     tryLater: 'Wait a little while, then try again.',
   },
 
+  /**
+   * BL-524 (approach: exec ruling CDesO-19; words: CDesO-54): joining with a typed 8-character code through
+   * `invite-redeem` (F11-REQ-002, F11-REQ-007). Keys only: no screen reads them until BL-445's flag flips. Only the
+   * answers whose link words would be untrue for a code are here; every other answer reuses a key above, and
+   * test/typed-code-answers.test.ts maps each answer the endpoint can give to its key.
+   * The code path never says why a code failed (expired, used, cancelled and wrong all read as `not_found`), so these
+   * lines never guess a reason and never blame the person. Shown before joining, so they never name the child.
+   */
+  code: {
+    // Exec reading CDesO-54 (BL-524): approved as written.
+    /** The peek answered: the ask, in place of accept.askBody (which says "this link"). */
+    askBody: "You'll both read every letter in the book. Join only if you know who gave you this code.",
+    errors: {
+      // Exec reading CDesO-54 (BL-524): approved as written.
+      /** invite_unusable, detail not_found: a wrong, expired, used or cancelled code, all one answer on purpose. */
+      not_found: "That code doesn't open an invite. Check it and try again, or ask for a new one.",
+      // Exec reading CDesO-54 (BL-524): approved as written.
+      /** rate_limited with no detail: this person, phone or network has met its limit for the hour (B-NFR-004). */
+      rate_limited: "Codes can't be checked for a while. Try again later, or ask the person who invited you for the link.",
+      // Exec reading CDesO-54 (BL-524): approved as written.
+      /** rate_limited, detail codes_paused: the global brake for everyone (F11-REQ-007, FR-SEC-10). Links keep working. */
+      codes_paused: "Codes aren't working right now. Ask the person who invited you to send the link instead.",
+    },
+  },
+
   /** Leaving a shared book (F11 6.2 D; F11-REQ-011, F11-REQ-027, F11-REQ-028; R4 PT-14, PT-15). Nothing is preselected. */
   leave: {
     row: "Leave {child}'s book",

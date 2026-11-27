@@ -323,7 +323,7 @@ describe('BL-676: the Months sheet and the compact month', () => {
     expect(book).toMatch(/pointerEvents=\{barUp \? 'box-none' : 'none'\}/);
     expect(book).toMatch(/accessibilityElementsHidden=\{!barUp\}/);
     expect(book).toMatch(/<MonthsSheet open=\{monthsOpen && !showPhotos\} rows=\{rows\}/); // never while the Photos lens shows (NS-01)
-    expect(book).toMatch(/ListFooterComponent=\{EndOfBook\}/);
+    expect(book).toMatch(/ListFooterComponent=\{done \? EndOfBook : null\}/);
     expect(book).toMatch(/<CoverBand\b/);
     // The compact month wraps: no numberOfLines on it.
     const bar = book.slice(book.indexOf('const topBar'), book.indexOf('return (\n    <View className="flex-1 bg-background"'));

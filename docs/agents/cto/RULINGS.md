@@ -1677,3 +1677,30 @@ Conditions before merge:
 4. Add a backlog row to remove the copy when expo-router stops guessing with a timer, or when the pin test fails on an upgrade. Stream 1 owns docs/BACKLOG.md, so stream 14 sends it the row to file.
 
 Way back: revert the commit.
+
+### CR-234 The trust and safety gates follow any build that can reach someone outside the Family group (27 Nov 2026, Karma, recorded by stream 16; Claude role)
+- Question: FR-POL-03 and FR-POL-04 gate only the App Store build. The TestFlight `preview` profile already opens the two-parent book to Family testers. Should the gates cover TestFlight?
+- Tier and type: T2 (a test on a gate path, release mechanics); complicated. Consulted CCO (CCO-33) and CISO.
+- Options considered: (a) gate production only, as before; (b) gate every store-distributed profile; (c) gate every profile that can reach someone outside the internal Family group.
+- Ruling: (c). `packages/content/test/trust-and-safety-gate.test.ts` gains `reachesOutside(profile)`: store-distributed and either the App Store build or submit groups other than exactly ["Family"]. Both gates run on those profiles, reading a TestFlight profile as alpha the way the app does, and the test asserts that only `production` reaches outside today. Once `eas.json` sends `preview` or `testflight` beyond Family, the gates apply to it: the report-set check fails if a hosting switch is on there without its row, and the safety-removal check fails if servers are on there so the invite flow opens, until the runbook and tool are done. `testflight` has servers off today, so sending it beyond Family trips nothing yet. `report-set.md` and `safety-removal.md` say so.
+- Why: CR-184 treats the Family group as not outside sign-in. Apple guideline 2.2 holds TestFlight betas to the review guidelines, and the TestFlight overview sends a build added to an external group to App Review (both read 27 Nov 2026 on developer.apple.com). The BL-2027 pin test covers `eas.json` but not a group chosen by hand in App Store Connect.
+- Debate: self-challenged only.
+- Door: two-way. Way back: revert the predicate.
+- Not done here: a comment in `apps/mobile/test/eas-family-group-pin.test.ts` naming CR-234 (an existing shared test, not this stream's), a line in `docs/release/TESTFLIGHT.md`, and a FOUNDER_QUEUE row ("add no servers-on build to Friends or a public link in App Store Connect until the CR-234 gates are green"), which are the release owner's.
+- Revisit when: BL-1867 turns servers on in `testflight`, or a Friends build is planned.
+- Founder-only: no. Choosing a group in App Store Connect is a physical act. Karma
+
+### CR-236 Web journeys A: J02's diagnostic run, Leave the book on web, J22b's marker, the journey record, and the new J21g and J21h failure (27 Nov 2026, Karma under CR-176, recorded by stream 12)
+- Question: five calls the web journeys A chunk (BL-2018, BL-2008, BL-2244, BL-481, BL-410, BL-495 point 3) needs before any PR, read on develop `505bafde` and web journeys run 46011299681.
+- Tier and type: T1; clear (1, 3, 5), complicated (2, 4).
+- Options considered: for each, wait for an exec read; act now inside the row's own gate; or move the work to a phone or a person.
+- Ruling:
+  1. BL-2008 (J02): a test-only diagnostic PR goes first. It takes the `test.fail` marker off for one labelled run to get the trace, and changes no screen, no logic and no assertion. The row's Gate is the rule: exec-team review before any change to the age gate screen or logic, none for a flow-only fix. The filing line "no flow edit comes first" (BACKLOG:12101) means the flow is not bent to pass before we know whether the screen regressed, and a trace is how we find out. If the trace shows the flow is wrong against `apps/mobile/test/age-gate.test.ts`, fix the flow. If the screen does not go back to the question, file a screen row, keep the marker naming it, and stop: that row is the exec read.
+  2. BL-481 group 5 (Leave the book): CR-171's own condition is met, since `LEAVE_BOOK_OFFERED` is true (`apps/mobile/src/lib/family/entry.logic.ts:46`, BL-1961). Add a signed-in web flow against the mock server that reaches the Leave row, records its step ids and checks that `leave_child` was called. If the mock cannot reach the row signed in, it goes phone-only with a device-plan row, the same fallback as group 2. Group 6 (Back up) stays "not offered" while `EXPO_PUBLIC_BACKUP` is off in every eas.json profile.
+  3. J22b: re-point its marker from the superseded BL-2006 to BL-2160, which decides what the journey is for now. BL-2160 stays needs-decision: R17 and R18 have only been read through the flow's comment, and I won't pick (a), (b) or (c) blind.
+  4. The journey record (BL-495 point 3): not a person and not the founder's hours. It comes from the CI job in `docs/ops/proposed/journey-artifact-ci.md`, which is a `.github/**` change, so it goes to the CI owner as a row through the usual two reviews, one of them from the security lens. Point 3 waits on that job. No stream 12 code work.
+  5. J21g and J21h now fail at `j21-coparent.flow.ts:281` with no marker. They passed in the nightly without #2078 and fail on every PR head since, so #2078's re-ask after accept is the likely cause (inferred, not shown). No marker goes on them: a fresh regression stays red. Stream 1 files a mobile row and reopens BL-2159, whose own journeys (J21, J21i, J21j) still fail after #2078.
+- Why: each call stays inside an existing gate or ruling (the BL-2008 Gate line, CR-171, BL-2160's scope) and buys evidence before any edit a person would notice. The web journeys job is not required, so none of this can block a merge.
+- Door: two-way.
+- Way back: revert the test-only PRs; a marker comes back in one line.
+- Revisit when: the J02 trace is read; BL-2160 is ruled; the journey CI job lands. Karma

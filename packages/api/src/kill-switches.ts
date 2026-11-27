@@ -53,6 +53,14 @@ export const KILL_SWITCH_KEYS = [
    * ever hides: the build flag `EXPO_PUBLIC_BOOK_SEARCH` is the only thing that turns Find on. Phone only, no server part.
    */
   'bookSearch',
+  /**
+   * Signing a letter as someone else (NS-16, BL-980; GAP-LOG A G-18). It only hides the From control on Review: a
+   * draft with no typed name signs as the parent, as before; a draft that already carries a typed name keeps it as
+   * its signature at Keep, shown and not editable (as a kept letter's name is, NS-16-R17). It never stops Keep,
+   * reading or export, a letter already signed keeps its stored name, and the build flag `EXPO_PUBLIC_SIGN_AS_OTHER`
+   * is the only thing that turns the control on. Phone only, no server part.
+   */
+  'signAsOther',
 ] as const;
 export type KillSwitchKey = (typeof KILL_SWITCH_KEYS)[number];
 

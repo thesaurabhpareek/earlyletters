@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { drafts, entries, letters } from '../src/lib/db/repos';
 import { EntryTombstonedError } from '../src/lib/db/repos/entries';
 import { fixture, letter, rawRow, seedChild, type Fixture } from './helpers/store-fixture';
+import { keepQuietDay } from '../src/lib/capture/quiet-day-save.logic';
 
 let f: Fixture;
 const defaults = { childId: null, authorSignsAs: null };
@@ -420,5 +421,25 @@ describe('reads', () => {
     entries.upsert(f.ctx, letter({ id: 'c', occurredOn: '2026-10-01', capturedAt: '2026-10-01T11:00:00.000Z' }), defaults);
     entries.upsert(f.ctx, letter({ id: 'r', childId: 'child-ravi' }), defaults);
     expect(entries.listForChild(f.ctx, 'child-asha').map((e) => e.id)).toEqual(['c', 'b', 'a']);
+  });
+});
+
+describe('[BL-372, D-084] "Not much today" against the store', () => {
+  it('two taps on one day leave one mark, with no words written by the app', () => {
+    let n = 0;
+    const tap = () =>
+      keepQuietDay({
+        day: '2026-10-03',
+        now: '2026-10-03T20:00:00.000Z',
+        id: () => `q${++n}`,
+        entries: () => entries.listForChild(f.ctx, 'child-asha'),
+        save: (mark) => entries.upsert(f.ctx, mark, { childId: 'child-asha', authorSignsAs: 'Mama' }),
+      });
+    expect(tap()).toEqual({ kind: 'quietDay', markId: 'q1' });
+    expect(tap()).toEqual({ kind: 'quietDay', markId: 'q1' });
+    const marks = f.db.all<{ raw_transcript: string; final_text: string; in_book: number }>(
+      "SELECT raw_transcript, final_text, in_book FROM entries WHERE kind = 'not_much' AND occurred_on = '2026-10-03'",
+    );
+    expect(marks).toEqual([{ raw_transcript: '', final_text: '', in_book: 0 }]);
   });
 });
