@@ -549,13 +549,15 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
                   <CoverHeading title={signsAsTitle} headingRef={heading} place={coverPlace}>
                     <BookCover name={coverName} signsAs={coverSignsAs || undefined} size="sm" behindName={names.length > 1 ? coverBehind : undefined} />
                   </CoverHeading>
+                  {/* "Not talking yet?" is the field's own helper, right under it at subhead (BL-419); near the limit, the limit line takes its place. */}
                   <TextField
                     ref={signsAsField}
                     label={signsAsTitle}
                     labelHidden
                     value={signsAs}
                     onChangeText={(v) => setSignsAs(clampText(v, SIGNS_AS_MAX))}
-                    helper={nearLimit(textLength(signsAs), SIGNS_AS_MAX) ? fill(copy.childrenExtra.edit.signsAsLimit, { n: SIGNS_AS_MAX }) : undefined}
+                    helper={nearLimit(textLength(signsAs), SIGNS_AS_MAX) ? fill(copy.childrenExtra.edit.signsAsLimit, { n: SIGNS_AS_MAX }) : o.signsAs.notYetHelp}
+                    helperVariant="subhead"
                     placeholder={o.signsAs.placeholder}
                     autoCapitalize="words"
                     autoCorrect={false}
@@ -569,7 +571,6 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
                         <Chip key={ex} label={ex} selected={signsAs === ex} onPress={() => chooseSignsAs(ex)} />
                       ))}
                     </ChipGroup>
-                    <Text variant="footnote">{o.signsAs.notYetHelp}</Text>
                   </View>
                   {/* The spoken language, under a hairline, with no footer (S06). Hidden in an English-only build (SET-06). */}
                   {showOnboardingLanguageRow(hearsOnlyEnglish(heardLanguagesForBuild())) && (

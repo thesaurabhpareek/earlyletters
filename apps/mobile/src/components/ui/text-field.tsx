@@ -29,6 +29,8 @@ export type TextFieldProps = Omit<TextInputProps, 'style'> & {
   /** Hide the label visually when a heading right above already says it (still the accessible name). */
   labelHidden?: boolean;
   helper?: string;
+  /** The helper's size: footnote (default), or subhead where the helper is part of the promise the field makes (BL-419, S06). */
+  helperVariant?: 'footnote' | 'subhead';
   error?: string | null;
   variant?: 'field' | 'letter';
   /** The field variant's typed text: Mukta (default), or the letter face for the child's name (S05). */
@@ -43,7 +45,7 @@ export type TextFieldProps = Omit<TextInputProps, 'style'> & {
 const R = tokens.radius;
 
 export const TextField = React.forwardRef<TextInput, TextFieldProps>(function TextField(
-  { label, labelHidden, helper, error, variant = 'field', face = 'sans', scale, trailing, className, inputClassName, onFocus, onBlur, multiline, ...props },
+  { label, labelHidden, helper, helperVariant = 'footnote', error, variant = 'field', face = 'sans', scale, trailing, className, inputClassName, onFocus, onBlur, multiline, ...props },
   ref,
 ) {
   const { c } = useTheme();
@@ -129,7 +131,7 @@ export const TextField = React.forwardRef<TextInput, TextFieldProps>(function Te
           </Text>
         </View>
       ) : helper ? (
-        <Text variant="footnote" tone="muted">
+        <Text variant={helperVariant} tone="muted">
           {helper}
         </Text>
       ) : null}

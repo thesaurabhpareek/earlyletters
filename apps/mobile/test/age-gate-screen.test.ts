@@ -23,7 +23,7 @@ describe('[S01] [S02] Dynamic Type: every control on the gate stays reachable', 
     expect(close).toBeGreaterThan(open);
     expect(screen.slice(open, screen.indexOf('>', open))).toMatch(/contentContainerStyle=\{\{ flexGrow: 1\b/);
     // Everything someone must reach is inside it: the question, both answers, Continue, the stop line and the way back.
-    for (const part of ['{g.title}', '<AgeAnswers', 'copy.common.continueButton', '{g.stopTitle}', 'g.mistakeButton']) {
+    for (const part of ['{g.title}', '<AgeAnswers', 'copy.common.continueButton', 'joinLastTwoWords(g.stopTitle)', 'g.mistakeButton']) {
       const at = screen.indexOf(part);
       expect(at, `${part} is on the gate`).toBeGreaterThan(0);
       expect(at > open && at < close, `${part} scrolls`).toBe(true);
