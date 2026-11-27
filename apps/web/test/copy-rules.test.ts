@@ -171,20 +171,39 @@ describe('no machine-writing claims', () => {
 
   // RULE (the constitution, CLAUDE.md: the machine may remove and repair, never add meaning): the app, the product or
   // "we" is never the one that writes, drafts or composes the family's letter, book or words. The AI-word list above
-  // misses a plain sentence like "The app writes your letter from what you say."; this closes it. "We'll write once
-  // more, at launch." (an email to the reader) passes: its object is not the family's words.
-  const MACHINE_AUTHOR =
-    /\b(?:the app|early letters|it|we|our app)\s+(?:(?:can|will|then|also)\s+)?(?:writes?|wrote|drafts?|composes?|creates?|makes?|builds?|puts? together)\s+(?:up\s+)?(?:your|the|a|their|each|every)\s+(?:\w+\s+)?(?:letters?|book|entr(?:y|ies)|story|stories|words|pages?)\b/i;
+  // misses a plain sentence like "The app writes your letter from what you say."; this closes it. The subject is the
+  // app, "we" (with "we'll"), "it", the product name from packages/brand, `{app}`, or a copy piece that starts with a
+  // space (the text after a `${brand.name}` in a template, which this walker reads as its own piece). The object must
+  // be the family's letter, book, page, story or words, so "We'll write once more, at launch." passes.
+  const escapeRe = (t: string) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const AUTHOR = String.raw`(?:^\s+|(?:\b(?:the app|our app|it|we|${escapeRe(brand.name)})\b|\{app\})(?:'ll)?(?:\s+(?:can|will|then|also|just|helps?(?: you)?))?\s+)`;
+  const FAMILY_WORDS = String.raw`(?:letters?|books?|entr(?:y|ies)|story|stories|words|pages?)`;
+  const MACHINE_AUTHOR = new RegExp(
+    String.raw`${AUTHOR}(?:(?:writes?|wrote|drafts?|composes?|creates?|makes?|builds?|puts? together)\s+(?:up\s+)?(?:your|the|a|their|each|every)\s+(?:[\w']+\s+){0,2}?${FAMILY_WORDS}\b(?!\s+(?:easy|simple|safe|ready|private)\b)|turns?\b[^.!?]{0,40}?\binto\s+(?:a|your|the)\s+(?:[\w']+\s+)?${FAMILY_WORDS}\b)`,
+    'i',
+  );
   it('never makes the app the author of the letter, book or words', () => {
     for (const bad of [
       'The app writes your letter from what you say.',
-      'Early Letters drafts the letter for you.',
+      `${brand.name} drafts the letter for you.`,
       'It composes a page from your voice.',
       'We create your book.',
-      'Early Letters can write the letter.',
+      `${brand.name} can write the letter.`,
+      "We'll write your letter.",
+      "It'll make your book.",
+      `${brand.name} makes your child's book.`,
+      'The app turns what you say into a letter.',
+      'Our app helps write your letters.',
+      ' writes your letter from what you say.',
     ])
       expect(MACHINE_AUTHOR.test(bad), bad).toBe(true);
-    for (const ok of ["We'll write once more, at launch.", 'Write to us any time:', 'You write the letter. Early Letters keeps it.'])
+    for (const ok of [
+      "We'll write once more, at launch.",
+      'Write to us any time:',
+      `You write the letter. ${brand.name} keeps it.`,
+      'It makes the book easy to share.',
+      'Any letter shown on this site is a sample, written for it.',
+    ])
       expect(MACHINE_AUTHOR.test(ok), ok).toBe(false);
     expect(offenders(PROSE, MACHINE_AUTHOR)).toEqual([]);
   });
