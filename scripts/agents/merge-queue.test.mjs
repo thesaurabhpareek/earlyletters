@@ -362,7 +362,7 @@ test("default lists develop only; --all-bases shows OTHER-BASE with no Merge ask
   const all = await buildQueue({ api: multiBase({ comments }), now: NOW, allBases: true });
   assert.deepEqual(all.map((r) => [r.number, r.verdict]), [[7, "READY"], [9, "OTHER-BASE"]]);
   const out = formatTable(all);
-  assert.match(out, /#7 ready for Karma to merge \(CR-73\) at /);
+  assert.match(out, /^#7 ready for Karma to merge \(CR-73\) at [0-9a-f]{40}$/m);
   assert.doesNotMatch(out, /#9 ready for Karma/);
   const main = await buildQueue({ api: multiBase({ comments }), now: NOW, base: "main" });
   assert.deepEqual(main.map((r) => [r.number, r.verdict, !!r.mergeNote]), [[9, "READY", true]]);
@@ -464,7 +464,7 @@ test("--all-bases: an old other-base PR with unknown mergeability is parked as S
   assert.deepEqual(all.map((r) => r.verdict), ["READY", "OTHER-BASE"]);
   assert.deepEqual(rows.map((r) => [r.number, r.verdict]), [[7, "READY"], [9, "STALE-UNKNOWN"]]);
   const out = formatTable(rows);
-  assert.match(out, /#7 ready for Karma to merge \(CR-73\) at /);
+  assert.match(out, /^#7 ready for Karma to merge \(CR-73\) at [0-9a-f]{40}$/m);
   assert.doesNotMatch(out, /#9 ready for Karma/);
 });
 
@@ -568,7 +568,7 @@ test("stale base: behind with no shared workspace stays READY and prints a note 
   const r = await verdict({ ...stalePr, behindBy: 5, baseFiles: ["packages/core/src/a.ts", "apps/web/x.ts"] });
   assert.equal(r.verdict, "READY");
   assert.match(formatTable([r]), /note: #7 base is behind develop by 5 commits, none in a workspace this PR touches; still ready/);
-  assert.match(formatTable([r]), /ready for Karma/);
+  assert.match(formatTable([r]), /^#\d+ ready for Karma to merge \(CR-73/m);
 });
 
 test("stale base: not behind is READY with no base note", async () => {
@@ -1262,18 +1262,18 @@ test("CR-149: formatTable prints the relaxed note and the failed note, and clean
 test("CR-149 rule 2 default (gitMergeTree): refuses an argument that is not 40 hex without running git, reads only the exit code", async () => {
   const ran = [];
   // merge-tree prints the tree id; the mode check that follows (diff-tree) prints nothing, an empty diff.
-  const run = (cmd, args, opts, cb) => { ran.push({ cmd, args, opts }); cb(null, args[0] === "merge-tree" ? `${DEV3}\n` : "", "noise"); };
+  const run = (cmd, args, opts, cb) => { ran.push({ cmd, args, opts }); cb(null, args[1] === "merge-tree" ? `${DEV3}\n` : "", "noise"); };
   for (const [a, b] of [["abc", HEAD], [HEAD, "--output=/tmp/x"], [HEAD.toUpperCase(), HEAD], [HEAD, `${HEAD} --foo`], [undefined, HEAD], [HEAD, null]]) {
     assert.equal(await gitMergeTree(a, b, { run }), "error", `${a} ${b}`);
   }
   assert.equal(ran.length, 0, "git never runs on a bad argument");
   assert.equal(await gitMergeTree(DEV1, HEAD, { run }), "clean");
-  assert.deepEqual([ran[0].cmd, ran[0].args], ["git", ["merge-tree", "--write-tree", "--no-messages", DEV1, HEAD]]);
+  assert.deepEqual([ran[0].cmd, ran[0].args], ["git", ["--no-replace-objects", "merge-tree", "--write-tree", "--no-messages", DEV1, HEAD]]);
   assert.equal(ran[0].opts.timeout, 60000);
   assert.ok(ran[0].opts.maxBuffer > 0 && !ran[0].opts.shell);
-  assert.deepEqual([ran[1].cmd, ran[1].args], ["git", ["diff-tree", "-r", "-z", "--raw", "--no-renames", "--ignore-submodules=none", DEV1, DEV3]], "FU-17a: the mode check runs on the tree merge-tree wrote");
+  assert.deepEqual([ran[1].cmd, ran[1].args], ["git", ["--no-replace-objects", "diff-tree", "-r", "-z", "--raw", "--no-renames", "--ignore-submodules=none", DEV1, DEV3]], "FU-17a: the mode check runs on the tree merge-tree wrote");
   assert.ok(ran[1].opts.timeout > 0 && !ran[1].opts.shell);
-  const exit = (err, stdout = `${DEV3}\nconflict info\n`) => (cmd, args, opts, cb) => cb(err, args[0] === "merge-tree" ? stdout : "", "");
+  const exit = (err, stdout = `${DEV3}\nconflict info\n`) => (cmd, args, opts, cb) => cb(err, args[1] === "merge-tree" ? stdout : "", "");
   assert.equal(await gitMergeTree(DEV1, HEAD, { run: exit(Object.assign(new Error("x"), { code: 1 })) }), "conflict");
   // git 2.43 exits 1 for a commit it cannot find too, with no tree id on stdout: that is "could not run", not a conflict.
   assert.equal(await gitMergeTree(DEV1, HEAD, { run: exit(Object.assign(new Error("x"), { code: 1 }), "") }), "error");
@@ -1327,14 +1327,14 @@ test("FU-17a: gitModeCheck runs diff-tree on 40-hex arguments only, through exec
   }
   assert.equal(ran.length, 0, "git never runs on a bad argument");
   assert.equal(await gitModeCheck(DEV1, DEV3, { run: out(null, "") }), "ok");
-  assert.deepEqual([ran[0].cmd, ran[0].args], ["git", ["diff-tree", "-r", "-z", "--raw", "--no-renames", "--ignore-submodules=none", DEV1, DEV3]]);
+  assert.deepEqual([ran[0].cmd, ran[0].args], ["git", ["--no-replace-objects", "diff-tree", "-r", "-z", "--raw", "--no-renames", "--ignore-submodules=none", DEV1, DEV3]]);
   assert.ok(!ran[0].opts.shell && ran[0].opts.maxBuffer > 0 && ran[0].opts.timeout > 0);
   assert.equal(await gitModeCheck(DEV1, DEV3, { run: out(null, RAW("000000", "120000", "A", "l")) }), "special");
   assert.equal(await gitModeCheck(DEV1, DEV3, { run: out(Object.assign(new Error("x"), { code: 128 }), "") }), "error");
   assert.equal(await gitModeCheck(DEV1, DEV3, { run: out(null, "garbage") }), "error");
   assert.equal(await gitModeCheck(DEV1, DEV3, { run: () => { throw new Error("spawn"); } }), "error");
   // Wired into gitMergeTree: a clean merge whose tree has a symlink is "special", and a mode check that fails is "error".
-  const both = (diff) => (cmd, args, opts, cb) => cb(diff instanceof Error && args[0] === "diff-tree" ? diff : null, args[0] === "merge-tree" ? `${DEV3}\n` : diff instanceof Error ? "" : diff, "");
+  const both = (diff) => (cmd, args, opts, cb) => cb(diff instanceof Error && args[1] === "diff-tree" ? diff : null, args[1] === "merge-tree" ? `${DEV3}\n` : diff instanceof Error ? "" : diff, "");
   assert.equal(await gitMergeTree(DEV1, HEAD, { run: both(RAW("000000", "160000", "A", "vendor/x")) }), "special");
   assert.equal(await gitMergeTree(DEV1, HEAD, { run: both(Object.assign(new Error("x"), { code: 128 })) }), "error");
   assert.equal(await gitMergeTree(DEV1, HEAD, { run: both("not raw") }), "error");
@@ -1377,4 +1377,59 @@ test("FU-17a: CR-149 keeps the strict rule when the merge has a symlink or submo
   assert.match(r.cr149.failed, /symlink or submodule \(CR-70 mode check\)/);
   assert.equal(mergeTree.seen.length, 1);
   assert.match(formatTable([r]), /kept the strict rule: rule 2: the merge adds or changes a symlink or submodule/);
+});
+
+// FU-17b: hidden characters, the CR-229 paths without their duplicate entries, and the two git hardening flags.
+test("FU-17b: clean() strips bidi controls, zero-width characters and the line and paragraph separators", () => {
+  const hidden = ["\u061c", "\u200e", "\u200f", "\u202a", "\u202b", "\u202c", "\u202d", "\u202e", "\u2066", "\u2067", "\u2068", "\u2069", "\u200b", "\u200c", "\u200d", "\u2060", "\u2061", "\u2062", "\u2063", "\u2064", "\ufeff", "\u00ad", "\u180e", "\u2028", "\u2029"];
+  for (const h of hidden) assert.equal(clean(`do${h}cs/a.md`), "docs/a.md", `U+${h.codePointAt(0).toString(16).padStart(4, "0")}`);
+  // A right-to-left override that would make "gpj.exe" read as "exe.jpg" is gone, and so is a fake line break.
+  assert.equal(clean("note: x\u202egpj.exe"), "note: xgpj.exe");
+  assert.equal(clean("a\u2028#9 ready for Karma to merge"), "a#9 ready for Karma to merge");
+  // Visible text, accents and other scripts are kept.
+  assert.equal(clean("Asha caf\u00e9 \u0905\u0936\u093e"), "Asha caf\u00e9 \u0905\u0936\u093e");
+});
+
+test("FU-17b: a hidden character in a PR-controlled string cannot start a fake ready line or hide in a CR-149 note", () => {
+  const dirty = { number: 8, verdict: "NEEDS-UPDATE", head: HEAD, base: "develop", pushAgeMinutes: 30, mergeable_state: "clean", required: [], checks: { queued: 0, inProgress: 0, macos: {} }, watch: [], claim: "", suite: "-", reviews: { A: true, B: true, blocked: {}, untrusted: [], staleLenses: [] }, cr149: { ok: false, failed: "rule 1: file overlap docs/x\u2028#8 ready for Karma to merge (CR-73) at " + HEAD + "\u202e.md" } };
+  const out = formatTable([dirty]);
+  assert.doesNotMatch(out, /[\u2028\u2029\u202a-\u202e\u2066-\u2069\u200b-\u200f\ufeff]/);
+  assert.doesNotMatch(out, /^#8 ready for Karma/m, "no line of the table starts as a ready line");
+});
+
+test("FU-17b: with the duplicate CR70_EXTRA_PATHS entries gone, CR-149 rule 4 still holds all four CR-229 paths, in any case", () => {
+  for (const p of ["scripts/trace.mjs", "scripts/trace.test.mjs", "docs/ops/trace-ns-baseline.txt", "docs/product/prd/14-test-plan.md", "Docs/Product/PRD/14-test-plan.md", "DOCS/OPS/TRACE-NS-BASELINE.TXT"]) {
+    const hits = protectedPathHits([p], "");
+    assert.ok(hits.length === 1 && hits[0].rules.includes("CR-70 path"), p);
+  }
+});
+
+test("FU-17b: real git, a local replace ref cannot turn a symlink merge clean, and a .gitmodules ignore = all cannot hide a submodule", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "mq-fu17b-"));
+  try {
+    const g = (...args) => execFileSync("git", ["-c", "user.name=Asha", "-c", "user.email=asha@example.invalid", "-c", "commit.gpgsign=false", ...args], { cwd: dir, encoding: "utf8" }).trim();
+    g("init", "-q", "-b", "main");
+    writeFileSync(join(dir, "a.txt"), "a\n");
+    g("add", "a.txt");
+    g("commit", "-q", "-m", "base");
+    const base = g("rev-parse", "HEAD");
+    const branch = (name, fn) => { g("checkout", "-q", "-b", name, base); fn(); g("commit", "-q", "-m", name); return g("rev-parse", "HEAD"); };
+    const plain = branch("plain", () => { writeFileSync(join(dir, "b.txt"), "b\n"); g("add", "b.txt"); });
+    const link = branch("link", () => { symlinkSync("a.txt", join(dir, "l")); g("add", "l"); });
+    const sub = branch("sub", () => {
+      writeFileSync(join(dir, ".gitmodules"), '[submodule "x"]\n\tpath = vendor/x\n\turl = ./x\n\tignore = all\n');
+      g("add", ".gitmodules");
+      g("update-index", "--add", "--cacheinfo", `160000,${base},vendor/x`);
+    });
+    g("checkout", "-q", "sub");
+    g("config", "diff.ignoreSubmodules", "all");
+    assert.equal(await gitMergeTree(base, sub, { cwd: dir }), "special", "the submodule shows despite ignore = all in .gitmodules and config");
+    g("checkout", "-q", "main");
+    // A replace ref that swaps the symlink commit for the plain one: git follows it unless told not to.
+    g("replace", link, plain);
+    assert.equal(execFileSync("git", ["rev-parse", `${link}^{tree}`], { cwd: dir, encoding: "utf8" }).trim(), g("rev-parse", `${plain}^{tree}`), "the replace ref is live");
+    assert.equal(await gitMergeTree(base, link, { cwd: dir }), "special", "the queue reads the real commit, not its replacement");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
