@@ -430,11 +430,10 @@ test('[J21k] a parent of a two-parent book: the family page ends in Leave, the s
   await openOn(app);
   await passAgeGateToSignIn(app);
   await signInWithEmail(app, 'papa@example.invalid');
-  // The book arrives and the phone leaves first run for Home; then the book's settings row opens the family page.
-  await expect(app.getByRole('tab', { name: 'Book' }).or(app.getByText('Book', { exact: true }).last()).first()).toBeVisible({ timeout: 30_000 });
-  await app.getByText('Book', { exact: true }).last().click();
-  await app.getByTestId('book.settings').click();
-  // `visible`: the Book stays in the tree under Settings on the web, with the child's name in it.
+  // The book arrives and the phone leaves first run for Home; then Me (Settings) and the book's row open the family page.
+  await expect(tab(app, 'Book')).toBeVisible({ timeout: 30_000 });
+  await tab(app, 'Me').click();
+  // `visible`: the other tabs stay in the tree on the web, with the child's name in them.
   await app.getByText(CHILD, { exact: true }).filter({ visible: true }).first().click();
   await app.getByText(familyCopy.bookRow.label, { exact: true }).filter({ visible: true }).first().click();
   await expect(app).toHaveURL(/\/family/);
