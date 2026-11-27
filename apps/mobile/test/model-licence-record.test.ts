@@ -2,7 +2,7 @@
  * [FR-AIS-09] [FR-AIS-10] Every model file the phone can download has a
  * licence record, and the record agrees with the catalog. BL-1357.
  *
- * The record is markdown at `MODEL_LICENCE_RECORD_PATH` (src/lib/licences.ts).
+ * The record is markdown at `MODEL_LICENCE_RECORD_PATH` (test/helpers/licence-records.ts).
  * It sits under docs/ops/proposed/ until the exec review (D-172); moving it to
  * docs/legal/model-licences.md changes that one constant and nothing else.
  *
@@ -15,10 +15,10 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { MODEL_LICENCE_RECORD_PATH, parseModelLicenceRecords, type ModelLicenceRecords } from '../src/lib/licences';
+import { MODEL_LICENCE_RECORD_PATH, parseModelLicenceRecords, type ModelLicenceRecords } from './helpers/licence-records';
 import { SPEECH_MODELS, type SpeechModel } from '../src/lib/models/catalog';
 
-/** Repo-relative path of the licence record (src/lib/licences.ts, the one line to change when the file moves to docs/legal/). */
+/** Repo-relative path of the licence record (test/helpers/licence-records.ts, the one line to change when the file moves to docs/legal/). */
 export { MODEL_LICENCE_RECORD_PATH };
 
 const ROOT = join(__dirname, '..', '..', '..');
@@ -44,7 +44,7 @@ export const RECORD_FIELDS = [
 type ModelFacts = Pick<SpeechModel, 'id' | 'bytes' | 'sha256' | 'licence' | 'status' | 'source'>;
 export type LicenceRecords = ModelLicenceRecords;
 
-/** Records keyed by catalog id; the parser lives in src/lib/licences.ts, which FR-LEG-13's check (test/licences.test.ts) shares. */
+/** Records keyed by catalog id; the parser lives in test/helpers/licence-records.ts, which FR-LEG-13's check (test/licences.test.ts) shares. */
 export const parseLicenceRecords: (markdown: string) => LicenceRecords = parseModelLicenceRecords;
 
 const leadingLicence = (s: string) => /^([A-Za-z0-9.-]+)/.exec(s)?.[1] ?? '';
