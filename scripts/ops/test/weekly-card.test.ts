@@ -1,7 +1,7 @@
 // BL-2102 (FR-BKO-09, FR-BKO-13, FR-BKO-16): the weekly request clock. Run: npm run test:functions
 // The log here is fictional: tickets, kinds and dates only, which is all the runbook lets the log hold.
 import assert from 'node:assert/strict';
-import { buildCard, cardRow, LogError, order, parseDate, parseLog } from '../lib/weekly-card.ts';
+import { buildCard, cardRow, FIELDS, HOLDER_ONLY, KINDS, LogError, order, parseDate, parseLog } from '../lib/weekly-card.ts';
 
 const TODAY = '2026-12-14';
 const HEAD = 'ticket,kind,channel,received,acknowledged,verified,extended,completed,due,legal_date,next_action,verified_by,outcome';
@@ -136,7 +136,7 @@ Deno.test('[FR-BKO-13] an abuse report stays off the 45-day clock: one fixed fir
 Deno.test('[FR-BKO-13] a dispute or third-party request stays off the 45-day clock; from day 35 it is checked and stays first until it closes', () => {
   const counsel = 'with counsel: no reply beyond the fixed first reply; change nothing on any account';
   const check = "with counsel: check no request about the sender's own data is inside it, and if one is, log it as its own row today with the same received date; if it is an executor, relative or guardian row (never a custody or family dispute, and never a parent or guardian who says the holder is under 18) and the email does not say the holder died or cannot act, log it under its route's kind today with the same received date and close this row; if it is an executor, relative or guardian of a living holder who cannot act, ask counsel before day 45 whether the 45 days apply (Q49)";
-  const late = "with counsel: still open past day 44; check no request about the sender's own data is inside it; if it is an executor, relative or guardian of a living holder who cannot act and counsel has not said the 45 days do not apply, to counsel today (Q49); no reply beyond the fixed first reply; change nothing on any account";
+  const late = "with counsel: still open past day 44; check no request about the sender's own data is inside it, and if one is, log it as its own row today with the same received date; if it is an executor, relative or guardian row (never a custody or family dispute, and never a parent or guardian who says the holder is under 18) and the email does not say the holder died or cannot act, log it under its route's kind today with the same received date and close this row; if it is an executor, relative or guardian of a living holder who cannot act and counsel has not said the 45 days do not apply, to counsel today (Q49); no reply beyond the fixed first reply; change nothing on any account";
   const at = (n: number, more = {}) => card(row('DREQ-20261212-1', 'dispute_or_third_party', day(n), more)).rows[0];
   for (const n of [2, 34]) {
     const r = at(n);
@@ -350,26 +350,26 @@ Deno.test('[FR-BKO-09] FU-15a: the exact P0 and due wording on the boundary days
 
 Deno.test('[FR-BKO-09] FU-15a: an under_18 row is flagged from day 10, the under-13 internal target, and its 45-day clock is unchanged', () => {
   const at = (n: number, more = {}) => card(row('DREQ-20261204-1', 'under_18', day(n), more)).rows[0];
-  const before = 'day 10 under-13 internal target: if the holder is under 13, finish Route 4 by then; an internal target, not the legal 45-day clock';
-  const today = 'under-13 internal target: day 10 is today; if the holder is under 13, finish Route 4 today; an internal target, not the legal 45-day clock';
-  const passed = 'under-13 internal target: day 10 has passed; if the holder is under 13, finish Route 4 today; an internal target, not the legal 45-day clock';
+  const before = 'day 10 under-13 internal target: if the holder is under 13, finish Route 4 by then; opening the deletion waits on BL-551: follow underage-account.md step 4, and never delete a user in the dashboard; an internal target, not the 45-day due date';
+  const today = 'under-13 internal target: day 10 is today; if the holder is under 13, finish Route 4 today; opening the deletion waits on BL-551: follow underage-account.md step 4, and never delete a user in the dashboard; an internal target, not the 45-day due date';
+  const passed = 'under-13 internal target: day 10 has passed; if the holder is under 13, finish Route 4 today; opening the deletion waits on BL-551: follow underage-account.md step 4, and never delete a user in the dashboard; an internal target, not the 45-day due date';
   // Day 7 is still the first follow-up; days 8 and 9 point at day 10.
-  assert.deepEqual([at(7).nextAction, at(7).urgent], ['day 7 follow-up', false]);
+  assert.deepEqual([at(7).nextAction, at(7).urgent], [`day 7 follow-up; ${HOLDER_ONLY}`, false]);
   const d9 = at(9);
   assert.deepEqual([d9.nextAction, d9.nextActionDate, d9.urgent], [before, plus(day(9), 10), false]);
   assert.equal(at(8).nextActionDate, plus(day(8), 10));
   const d10 = at(10);
   assert.deepEqual([d10.nextAction, d10.nextActionDate, d10.urgent], [today, TODAY, true]);
   const d11 = at(11);
-  assert.deepEqual([d11.nextAction, d11.nextActionDate, d11.urgent], [`${passed}; then day 30 follow-up`, TODAY, true]);
+  assert.deepEqual([d11.nextAction, d11.nextActionDate, d11.urgent], [`${passed}; then day 30 follow-up; ${HOLDER_ONLY}`, TODAY, true]);
   for (const r of [d9, d10, d11]) {
-    assert.match(r.nextAction, /an internal target, not the legal 45-day clock/);
+    assert.match(r.nextAction, /an internal target, not the 45-day due date/);
     assert.equal(r.due, plus(day(r.day), 45), `${r.day}: the 45-day due date stays`);
     assert.equal(r.left, 45 - r.day, String(r.day));
   }
   // The clock steps still follow the target, and the P0 wording is the clock's own.
-  assert.equal(at(36).nextAction, `${passed}; then finish, or send the extension notice with its reason before day 45`);
-  assert.equal(at(45).nextAction, `${passed}; then due today: reply with what was done`);
+  assert.equal(at(36).nextAction, `${passed}; then finish, or send the extension notice with its reason before day 45; ${HOLDER_ONLY}`);
+  assert.equal(at(45).nextAction, `${passed}; then due today: reply with what was done; ${HOLDER_ONLY}`);
   assert.equal(at(46).nextAction, 'P0: past day 45 with no extension notice; to counsel today');
   assert.equal(at(46).left, -1);
   // With no first reply logged, the first reply goes first, then the target.
@@ -385,4 +385,123 @@ Deno.test('[FR-BKO-09] FU-15a: an under_18 row is flagged from day 10, the under
   assert.deepEqual(c.rows.map((r) => [r.kind, r.day]), [['see_export', 36], ['under_18', 10], ['under_18', 9]]);
   assert.match(c.lines[0], /3 open, 2 to act on first/);
   for (const line of c.lines.slice(2)) assert.match(line, CARD_LINE);
+});
+
+// BL-237: the request log of record for 1.0 is this CSV file (runbook section 1; TDD 10 section 7). The card and the
+// runbook must name the same columns, so a founder who copies the runbook's header line gets a log the card reads.
+Deno.test('[FR-BKO-09] BL-237: the log columns are pinned, and the runbook header line is exactly the columns the card reads', () => {
+  assert.deepEqual([...FIELDS], [
+    'ticket', 'kind', 'channel', 'received', 'acknowledged', 'verified', 'extended', 'completed', 'due', 'legal_date',
+    'next_action', 'verified_by', 'outcome',
+  ]);
+  const runbook = Deno.readTextFileSync(new URL('../../../docs/ops/runbooks/data-requests-by-email.md', import.meta.url));
+  const header = FIELDS.join(',');
+  const lines = runbook.split('\n').map((l) => l.trim());
+  assert.ok(lines.includes(header), 'section 1 gives the header line, spelled as the card reads it');
+  assert.equal(HEAD, header, 'the fixtures in this file use the same header');
+  // A log that starts with that line and one fictional row reads.
+  assert.equal(buildCard([header, row('DREQ-20261212-1', 'see_export', day(2))].join('\n'), TODAY).rows.length, 1);
+  // The runbook names the kinds the card reads, and calls the file the log of record.
+  for (const kind of KINDS) assert.ok(runbook.includes(`\`${kind}\``), kind);
+  assert.match(runbook, /privacy_requests` log of record for 1\.0/);
+  assert.match(runbook, /TDD 10 section 7/);
+});
+
+Deno.test('[FR-BKO-13] BL-237: a safety row with no first message logged asks for the pointer to help from day 0 and is listed first', () => {
+  for (const n of [0, 1, 2, 34]) {
+    const r = card(row('DREQ-20261212-1', 'safety', day(n), { acknowledged: '' })).rows[0];
+    assert.equal(r.nextAction, SAFETY_FIRST, String(n));
+    assert.equal(r.nextActionDate, TODAY, String(n));
+    assert.equal(r.urgent, true, `${n}: urgent until the pointer to help is logged`);
+    assert.doesNotMatch(r.nextAction, /follow-up/, String(n));
+  }
+  // Logged on day 0: the walk goes on as for any request, not urgent before day 35.
+  const logged = card(row('DREQ-20261212-1', 'safety', day(0))).rows[0];
+  assert.deepEqual([logged.nextAction, logged.urgent], ['day 7 follow-up', false]);
+  // Other kinds still wait for day 1 before the first-message step.
+  assert.deepEqual([card(row('DREQ-20261212-1', 'see_export', day(0), { acknowledged: '' })).rows[0].nextAction, card(row('DREQ-20261212-1', 'see_export', day(0), { acknowledged: '' })).rows[0].urgent], ['day 7 follow-up', false]);
+  // Listed first, ahead of a row whose next action date is sooner, and counted in the headline.
+  const c = card(row('DREQ-20261212-1', 'see_export', day(6)), row('DREQ-20261214-1', 'safety', day(0), { acknowledged: '' }));
+  assert.deepEqual(c.rows.map((r) => r.kind), ['safety', 'see_export']);
+  assert.match(c.lines[0], /2 open, 1 to act on first/);
+  for (const line of c.lines.slice(2)) assert.match(line, CARD_LINE);
+});
+
+Deno.test('[FR-BKO-13] BL-237: a safety row with no first message logged leads the rows to act on first, ahead of a P0 and a row due today', () => {
+  const p0 = row('DREQ-20261029-1', 'see_export', day(46));
+  const dueToday = row('DREQ-20261030-1', 'see_export', day(45));
+  const safety = row('DREQ-20261214-1', 'safety', day(0), { acknowledged: '' });
+  for (const rows of [[p0, dueToday, safety], [safety, dueToday, p0], [dueToday, safety, p0]]) {
+    const c = card(...rows);
+    assert.deepEqual(c.rows.map((r) => r.day), [0, 46, 45]);
+  }
+  // Past its due date it still asks for the pointer to help first and still leads, ahead of another P0 (day 46, and day 91 once extended).
+  for (const late of [row('DREQ-20261212-1', 'safety', day(46), { acknowledged: '' }), row('DREQ-20261212-1', 'safety', day(91), { acknowledged: '', extended: day(61) })]) {
+    const c = card(row('DREQ-20261029-1', 'see_export', day(50)), late);
+    assert.deepEqual(c.rows.map((r) => r.kind), ['safety', 'see_export']);
+    assert.match(c.rows[0].nextAction, new RegExp(`^${SAFETY_FIRST.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}; then P0: `));
+    assert.match(c.rows[0].nextAction, /extended due date|past day 45/);
+  }
+  // Once the pointer to help is logged it no longer leads: the row takes its place by days left.
+  const logged = card(p0, row('DREQ-20261214-1', 'safety', day(38))).rows;
+  assert.deepEqual(logged.map((r) => r.day), [46, 38]);
+  assert.match(Deno.readTextFileSync(new URL('../../../docs/ops/runbooks/data-requests-by-email.md', import.meta.url)), /`safety` row with no first message logged leads the group/);
+});
+
+Deno.test('[FR-BKO-09] BL-237: every clock step on an under_18 row goes to the holder only, never to a parent; the P0 and the day 10 target do not carry it', () => {
+  const at = (n: number, more = {}) => card(row('DREQ-20261204-1', 'under_18', day(n), more)).rows[0].nextAction;
+  const holder = `; ${HOLDER_ONLY}`;
+  assert.equal(HOLDER_ONLY, 'only if the holder wrote in, to the holder only; never to a parent or anyone else (section 11)');
+  assert.equal(at(2), `day 7 follow-up${holder}`);
+  assert.ok(at(20).endsWith(`then day 30 follow-up${holder}`), 'day 30 follow-up');
+  assert.ok(at(31).endsWith(`then day 40 follow-up${holder}`), 'day 40 follow-up');
+  assert.ok(at(35).endsWith(`then finish, or send the extension notice with its reason before day 45${holder}`), 'the extension step');
+  assert.ok(at(45).endsWith(`then due today: reply with what was done${holder}`), 'due today');
+  assert.ok(at(44, { acknowledged: '' }).endsWith(`; then finish, or send the extension notice with its reason before day 45${holder}`), 'the extension step after the first reply');
+  assert.ok(at(45, { acknowledged: '' }).endsWith(`; it is due today${holder}`), 'due today after the first reply');
+  assert.ok(at(60, { extended: day(30) }).endsWith(`then due: reply with what was done${holder}`), 'an extended row');
+  // Said once per row, and never on the P0 (that goes to counsel) or on the day 10 step itself.
+  for (const n of [2, 20, 31, 35, 45]) assert.equal(at(n).split(HOLDER_ONLY).length, 2, String(n));
+  assert.equal(at(46), 'P0: past day 45 with no extension notice; to counsel today');
+  assert.doesNotMatch(at(9), /holder only/);
+  assert.doesNotMatch(at(10), /holder only/);
+  assert.doesNotMatch(at(5, { acknowledged: '' }), /holder only/, 'the first reply before day 35');
+  // No other kind carries it.
+  for (const kind of KINDS.filter((k) => k !== 'under_18')) {
+    for (const n of [2, 20, 35, 45]) assert.doesNotMatch(card(row('DREQ-20261204-1', kind, day(n))).rows[0].nextAction, /holder only/, `${kind} ${n}`);
+  }
+  // The card stays printable: only plain words, numbers and the parentheses the dispute row already prints.
+  for (const line of card(row('DREQ-20261204-1', 'under_18', day(20))).lines.slice(2)) assert.match(line, /^\|[ A-Za-z0-9_:;,.'()|-]*\|$/);
+});
+
+Deno.test('[FR-BKO-09] BL-237: the day 10 under_18 line names BL-551, underage-account.md step 4 and the dashboard rule, and calls 45 days the due date, not a legal clock', () => {
+  const at = (n: number, more = {}) => card(row('DREQ-20261204-1', 'under_18', day(n), more)).rows[0].nextAction;
+  for (const [n, more] of [[8, {}], [9, {}], [10, {}], [11, {}], [36, {}], [45, {}], [10, { acknowledged: '' }]] as const) {
+    const a = at(n, more);
+    assert.match(a, /opening the deletion waits on BL-551: follow underage-account\.md step 4, and never delete a user in the dashboard/, String(n));
+    assert.match(a, /an internal target, not the 45-day due date/, String(n));
+    assert.doesNotMatch(a, /legal/, `${n}: whether 45 days is a legal limit here is for counsel`);
+  }
+  for (const line of card(row('DREQ-20261204-1', 'under_18', day(10))).lines.slice(2)) assert.match(line, CARD_LINE);
+});
+
+Deno.test('[FR-BKO-13] BL-237: an under_18 row with no first reply on day 35 or later reads first reply, then the day 10 target, then the clock step', () => {
+  const passed = 'under-13 internal target: day 10 has passed; if the holder is under 13, finish Route 4 today; opening the deletion waits on BL-551: follow underage-account.md step 4, and never delete a user in the dashboard; an internal target, not the 45-day due date';
+  const d36 = card(row('DREQ-20261108-1', 'under_18', day(36), { acknowledged: '' })).rows[0];
+  assert.equal(d36.nextAction, `${FIRST_REPLY}; then ${passed}; then finish, or send the extension notice with its reason before day 45; ${HOLDER_ONLY}`);
+  assert.deepEqual([d36.nextActionDate, d36.urgent], [TODAY, true]);
+  const a = d36.nextAction;
+  assert.ok(a.indexOf(FIRST_REPLY) === 0 && a.indexOf(passed) > 0 && a.indexOf(passed) < a.indexOf('then finish, or send the extension notice'), 'first reply, target, clock step');
+  assert.equal(card(row('DREQ-20261030-1', 'under_18', day(45), { acknowledged: '' })).rows[0].nextAction, `${FIRST_REPLY}; then ${passed}; it is due today; ${HOLDER_ONLY}`);
+  // Day 46 is the P0 alone, as for any request.
+  assert.equal(card(row('DREQ-20261029-1', 'under_18', day(46), { acknowledged: '' })).rows[0].nextAction, 'P0: past day 45 with no extension notice; to counsel today');
+});
+
+Deno.test('[FR-BKO-13] BL-237: from day 45 a dispute row still repeats the executor re-log and the own-data split, with the same exclusions as days 35 to 44', () => {
+  for (const n of [35, 44, 45, 46, 60, 200]) {
+    const a = card(row('DREQ-20261212-1', 'dispute_or_third_party', day(n))).rows[0].nextAction;
+    assert.match(a, /check no request about the sender's own data is inside it, and if one is, log it as its own row today with the same received date/, String(n));
+    assert.match(a, /if it is an executor, relative or guardian row \(never a custody or family dispute, and never a parent or guardian who says the holder is under 18\) and the email does not say the holder died or cannot act, log it under its route's kind today with the same received date and close this row/, String(n));
+    assert.doesNotMatch(a, /extension|what was done|P0|due today/, String(n));
+  }
 });
