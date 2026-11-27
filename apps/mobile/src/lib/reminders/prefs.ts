@@ -15,7 +15,7 @@
  * | `notifications.lockScreenNames` | `on` / `off` | `off` (D-025; remote config later, D-035) |
  * | `reminders.onSince` | epoch ms, when reminders were last turned on (the anchor's second half, NS-13 R27) | absent |
  * | `reminders.session` | `on` or absent | absent; `on` while these reminders belong to a signed-in session (session.ts) |
- * | `notifications.dayNames` | `on` / `off` | `off`; the one day-names switch: a typed day's words on the lock screen (NS-18-R3, CL-119) |
+ * | `notifications.dayNames` | `on` / `off` | `off`; the one day-names switch: a typed day's words on the lock screen, only with names on too (NS-18-R3, CL-119, CPrivO-58) |
  *
  * Typed days keep their own keys, `typedDay.<yyyy-mm-dd>` (typed-days.ts), cleared with these at sign-out.
  *

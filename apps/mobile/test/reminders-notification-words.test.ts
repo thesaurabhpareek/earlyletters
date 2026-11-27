@@ -197,12 +197,27 @@ describe('[FR-NTC-08] a parent-chosen day takes the slot as a typedDay', () => {
 });
 
 describe('[FR-NTC-11] no child name on a lock screen with names off or App lock on', () => {
-  it('names off: no title, body or id of any note holds a child name (400 seeded plans)', () => {
+  it('names off: no title, body or id of any note holds a child name, with day names off or on (400 seeded plans)', () => {
+    // Day names on is the hard case: a typed day's words can name a child ("Rakhi with Avi"), and names off still wins
+    // (CPrivO-58). Whole word, any case, so "avi" or "AVI" typed by a parent is caught too.
+    const named = NAMES.map((m) => new RegExp(`\\b${m}\\b`, 'i'));
     for (const seed of SEEDS) {
-      const input = generated(seed);
-      const plan = planReminders({ ...input, prefs: { ...input.prefs, namesOnLockScreen: false }, dayNamesOn: false });
-      for (const n of plan) for (const s of strings(n)) for (const name of NAMES) expect(s, `seed ${seed} ${n.id}`).not.toContain(name);
+      for (const dayNames of [false, true]) {
+        const input = generated(seed);
+        const plan = planReminders({ ...input, prefs: { ...input.prefs, namesOnLockScreen: false }, dayNamesOn: dayNames });
+        for (const n of plan) for (const s of strings(n)) for (const re of named) expect(s, `seed ${seed} ${n.id}`).not.toMatch(re);
+      }
     }
+  });
+
+  it('names on and day names on: a typed day with a name in its words shows them, so the check above can fail', () => {
+    const shown = SEEDS.some((seed) => {
+      const input = generated(seed);
+      return planReminders({ ...input, prefs: { ...input.prefs, namesOnLockScreen: true }, dayNamesOn: true }).some(
+        (n) => n.kind === 'typedDay' && n.body === 'Rakhi with Avi',
+      );
+    });
+    expect(shown).toBe(true);
   });
 
   it('the same plans with names on do show names, so the check above can fail', () => {
@@ -223,7 +238,9 @@ describe('[NS-48-R9] the catalogue honours the lock-screen rules', () => {
           const plan = planReminders({ ...input, prefs: { ...input.prefs, namesOnLockScreen: names }, dayNamesOn: dayNames });
           for (const n of plan.filter((p) => p.kind === 'typedDay')) {
             expect(n.title, `seed ${seed}`).toBe(FIXED.title);
-            if (!dayNames) expect(n.body, `seed ${seed}`).toBe(FIXED.body);
+            // The words, unchanged, only with both switches on (NS-18-R3, CPrivO-58); otherwise the fixed line.
+            const typed = input.typedDays!.find((t) => t.date === n.date)!;
+            expect(n.body, `seed ${seed} ${n.date}`).toBe(names && dayNames ? typed.words : FIXED.body);
             for (const w of DAY_WORDS) expect(n.id).not.toContain(w);
           }
         }
@@ -234,10 +251,19 @@ describe('[NS-48-R9] the catalogue honours the lock-screen rules', () => {
   it('the catalogue never overrides them: a selector that returns any key changes no typed, month or birthday note', () => {
     const plain = (seed: number) => planReminders(generated(seed));
     const odd = (seed: number) => planReminders(generated(seed, { select: () => 'not-a-key' }));
-    for (const seed of SEEDS.slice(0, 100)) {
-      const keep = (p: PlannedNotification[]) => p.filter((n) => n.kind !== 'evening').map((n) => `${n.id}|${n.title}|${n.body}`);
-      expect(keep(odd(seed)), `seed ${seed}`).toEqual(keep(plain(seed)));
+    const other = (seed: number) => planReminders(generated(seed, { select: () => 'floor.5' }));
+    const keep = (p: PlannedNotification[]) => p.filter((n) => n.kind !== 'evening').map((n) => `${n.id}|${n.title}|${n.body}`);
+    const evenings = (p: PlannedNotification[]) => JSON.stringify(p.filter((n) => n.kind === 'evening'));
+    let eveningsMoved = false;
+    for (const seed of SEEDS) {
+      const base = plain(seed);
+      const changed = other(seed);
+      expect(keep(odd(seed)), `seed ${seed}`).toEqual(keep(base));
+      expect(keep(changed), `seed ${seed}`).toEqual(keep(base));
+      // A real, different key does reach the evenings, so the selector is live in these plans.
+      if (evenings(changed) !== evenings(base)) eveningsMoved = true;
     }
+    expect(eveningsMoved).toBe(true);
   });
 
   it('no neutral line holds a day name or a faith word', () => {
@@ -263,31 +289,34 @@ describe('[FR-NTC-09] a family or faith day stays neutral on the lock screen unl
     close();
   });
 
-  it('the words show only with the day-name switch on and App lock off, in all four switch combinations', () => {
+  it('the words show only with day names on, names on and App lock off, in all eight switch combinations', () => {
     const LA = 'America/Los_Angeles';
     const now = zonedToEpoch({ ...parseIsoDate('2026-10-05')!, hh: 12, mm: 0 }, LA);
     const seen: Record<string, string> = {};
     for (const day of ['off', 'on']) {
       for (const lock of ['off', 'on']) {
-        store.setSetting('notifications.dayNames', day);
-        store.setSetting(APP_LOCK_KEYS.enabled, lock);
-        store.setSetting('notifications.lockScreenNames', 'on');
-        const plan = planReminders({
-          now,
-          timeZone: LA,
-          prefs: { ...readPrefs(), enabled: true },
-          children: [],
-          lastSaveAt: null,
-          lastForegroundAt: null,
-          typedDays: [{ date: '2026-10-07', words: 'Diwali with Nani' }],
-          dayNamesOn: dayNamesOn(),
-        });
-        const t = plan.find((n) => n.kind === 'typedDay')!;
-        expect(t.title).toBe(FIXED.title);
-        seen[`${day}/${lock}`] = t.body;
+        for (const names of ['off', 'on']) {
+          store.setSetting('notifications.dayNames', day);
+          store.setSetting(APP_LOCK_KEYS.enabled, lock);
+          store.setSetting('notifications.lockScreenNames', names);
+          const plan = planReminders({
+            now,
+            timeZone: LA,
+            prefs: { ...readPrefs(), enabled: true },
+            children: [],
+            lastSaveAt: null,
+            lastForegroundAt: null,
+            typedDays: [{ date: '2026-10-07', words: 'Diwali with Nani' }],
+            dayNamesOn: dayNamesOn(),
+          });
+          const t = plan.find((n) => n.kind === 'typedDay')!;
+          expect(t.title).toBe(FIXED.title);
+          seen[`day ${day}/lock ${lock}/names ${names}`] = t.body;
+        }
       }
     }
-    expect(seen).toEqual({ 'off/off': FIXED.body, 'off/on': FIXED.body, 'on/off': 'Diwali with Nani', 'on/on': FIXED.body });
+    expect(Object.keys(seen)).toHaveLength(8);
+    expect(Object.entries(seen).filter(([, body]) => body !== FIXED.body)).toEqual([['day on/lock off/names on', 'Diwali with Nani']]);
   });
 });
 
@@ -381,7 +410,7 @@ describe('[NS-48-R21] a quiet book adds nothing to a key', () => {
   });
 
   it('in the pure planner, a quiet or excluded book changes no key input (400 seeded plans)', () => {
-    for (const seed of SEEDS.slice(0, 200)) {
+    for (const seed of SEEDS) {
       const run = (extra: PlannerChild[]) => {
         const asked: KeyInput[] = [];
         const input = generated(seed);

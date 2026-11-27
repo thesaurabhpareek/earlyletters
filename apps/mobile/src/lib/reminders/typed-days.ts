@@ -6,8 +6,8 @@
  * J-N18): nothing in this file logs, and no error it returns carries the words.
  *
  * - The words are L4 free text and may hold a name. A reminder shows the fixed line by default; the words reach the
- *   lock screen only when the one day-names switch is on and App lock is off (NS-18-R3, CL-119, E45; prefs.ts
- *   `dayNamesOn`). The app never adds to, completes or trims the words (section 14).
+ *   lock screen only when the one day-names switch is on, names on the lock screen is on and App lock is off
+ *   (NS-18-R3, CL-119, E45, FR-NTC-11, CPrivO-58; prefs.ts `dayNamesOn` and `lockScreenNamesOn`). The app never adds to, completes or trims the words (section 14).
  * - 1 to 80 characters, counted as a person sees them (graphemes), any script (NS-18-R5, PROPOSED). Words of only
  *   spaces are empty.
  * - A day before today is refused (section 5). Today is accepted; the planner skips it if its time has passed.
