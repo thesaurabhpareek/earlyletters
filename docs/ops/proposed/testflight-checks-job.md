@@ -17,7 +17,7 @@ The earlier steps run far more than our own code. `npm test` runs the test suite
 
 1. A new job `checks` ("testflight checks") with no environment and no secret holds every check, unchanged: checkout, setup-node with the npm cache, `npm ci`, typecheck, tests, preflight and the B-8 seam guard. It has the same `if` as `build`.
 2. `build` gets `needs: checks`, so nothing is built unless every check passed, as today.
-3. `build` keeps its own clean checkout, sets `package-manager-cache: false` on setup-node (so no cache comes back even if `package.json` ever gains a `packageManager` field that names npm), installs with `npm ci --ignore-scripts --no-audit --no-fund`, and runs the EAS step unchanged.
+3. `build` keeps its own clean checkout, sets `package-manager-cache: false` on setup-node (so no cache comes back even if `package.json` ever names npm in `packageManager` or `devEngines.packageManager`), installs with `npm ci --ignore-scripts --no-audit --no-fund`, and runs the EAS step unchanged.
 4. Two header comments say "the jobs' if" instead of "the job's if".
 
 No action pin, permission, trigger, environment or secret name changes.
@@ -27,16 +27,17 @@ No action pin, permission, trigger, environment or secret name changes.
 - `release-ios.yml` already splits `checks (G2)` from its `build` job and says: "Jobs that hold secrets install with a fresh `npm ci` and setup-node pinned by SHA, never a restored cache." It does not turn install scripts off; that part is new here.
 - The lockfile has two packages with install scripts, `esbuild` and `fsevents` (macOS only), and no workspace package has an install or prepare script. After `npm ci --ignore-scripts` on develop on 27 Nov 2026, the preflight printed "0 fail" and the seam guard exited 0, so the install is enough for anything that reads `node_modules`.
 - The pinned setup-node (v7.0.0) documents `package-manager-cache`, default true, which turns caching on when `packageManager` names npm.
-- `scripts/ci/proposed-patch-applies.test.mjs` now guards this patch, so CI fails if `testflight.yml` drifts from it.
+- `scripts/ci/proposed-patch-applies.test.mjs` now guards this patch, so CI fails if a line the patch changes or uses as context changes in `testflight.yml`. A change elsewhere in the file still passes; those steps move into `checks` unchanged.
 
 ## Risk
 
 - Each run pays for a second `npm ci`, a few minutes on a workflow that only runs when someone dispatches a build.
 - A dispatch on an `ios-v` tag now runs `checks` (no secret) before the environment refuses `build`. Nothing more is exposed.
+- The `testflight` environment's reviewer is now asked only once `checks` has passed, not at the start of the run.
 - UNVERIFIED: that eas-cli needs nothing an install script would have produced. It builds on EAS's servers, so this is unlikely; the first dispatched run is the check.
 - What this does not fix:
-  - `npx eas-cli@<pinned>` installs eas-cli with its own install scripts in the job that holds the token.
-  - eas-cli loads `app.config.ts` and its config plugins in the process that holds the token.
+  - `npx eas-cli@<pinned>` runs in the job that holds the token. The pin fixes eas-cli itself, but eas-cli ships no shrinkwrap, so npx resolves its dependencies fresh at run time, with their install scripts.
+  - eas-cli starts the project's own Expo CLI (`expo config --json`, and `--type introspect` for a managed iOS build, which runs the config plugins' mods) and passes it its whole environment, the token included. So `@expo/cli` from the lockfile, `app.config.ts` and the config plugins run beside the token.
   - `npm ci` still unpacks every dependency into that job, though with install scripts off nothing in them runs at install.
   - The split relies on GitHub-hosted runners giving each job a fresh machine. A self-hosted or reused runner would undo it.
   - `checks` still saves the npm cache, as the single job did before.
