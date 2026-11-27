@@ -42,6 +42,7 @@ import { LampView } from '@/components/ui/lamp';
 import { QuotePair } from '@/components/ui/quote-pair';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { Text } from '@/components/ui/text';
+import { joinLastTwoWords } from '@/components/onboarding/finale-title.logic';
 import { announce, useFocusOnMount, useIsLargeText, useTheme } from '@/lib/a11y';
 import { acceptBeforeYouBegin, answerAgeGate, reopenAgeGate } from '@/lib/age-gate';
 import { continueBeforeBegin, type EntryDecision } from '@/lib/agreements.logic';
@@ -175,8 +176,9 @@ export function AgeGateScreen({ decision, refresh }: Props) {
           ) : (
             <Animated.View key="stop" entering={SWAP_IN} className="flex-1 items-center" testID="gate.stop">
               <View accessibilityLiveRegion="polite" style={{ marginTop: ROOM.questionGap }}>
+                {/* The last two words stay together at render time, so the line never ends on one word (BL-419). */}
                 <Text variant="title1" asHeading={1} className="text-center" style={{ maxWidth: 320 }}>
-                  {g.stopTitle}
+                  {joinLastTwoWords(g.stopTitle)}
                 </Text>
               </View>
               {/* The slot is always laid out and only fades in when the day has passed, so the heading never moves (BL-420). */}
