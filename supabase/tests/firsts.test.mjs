@@ -46,10 +46,10 @@ const codePoints = (s) => [...s].length;
 const LB = await letter(A);                          // in the book: the other parent may read it
 check('[NS-06-A1] a new letter is not a first and has no label (nothing is set for the parent)',
   JSON.stringify(await stored(LB)) === JSON.stringify({ first_mark: false, first_label: null }));
-const LABEL = 'Asha’s first steps, to the sofa ';  // a trailing space and a typographic apostrophe, kept as typed
+const LABEL = 'Asha\u2019s first steps, to the sofa ';  // a trailing space and a typographic apostrophe, kept as typed
 check('[NS-06-A1] the author marks their own letter with a label', (await mark(A, LB, LABEL)).rows.length === 1);
 check('[NS-06-A1] the label is stored exactly as typed (no trim, no change)', (await stored(LB)).first_label === LABEL);
-const NFD = 'Ashá été';           // combining accents (decomposed): never normalised
+const NFD = 'Asha\u0301 e\u0301te\u0301';           // combining accents (decomposed): never normalised
 const LN = await letter(A);
 await mark(A, LN, NFD);
 check('[NS-06-A1] a decomposed label keeps its code points (the server never normalises the parent\'s words)',
@@ -63,8 +63,8 @@ const fill = (await sys(`select count(*)::int n from pg_proc p where p.pronamesp
 check('[NS-06-A5] no function in public assigns first_label (no machine writes the label)', fill === 0);
 
 // --- The ceiling: 200 code points; the 40 grapheme rule is the phone's (PRD A23) ---------------------------------------------
-const CLUSTER = 'स्त्र';    // a Devanagari conjunct: 5 code points, one grapheme cluster
-const ARABIC = 'ب';                             // one Arabic letter
+const CLUSTER = '\u0938\u094d\u0924\u094d\u0930';    // a Devanagari conjunct: 5 code points, one grapheme cluster
+const ARABIC = '\u0628';                             // one Arabic letter
 const dev40 = CLUSTER.repeat(40), dev41 = CLUSTER.repeat(41), ar40 = ARABIC.repeat(40);
 check('[NS-06-A23] the fixtures are what they say (Intl.Segmenter): 40 and 41 clusters, 200 and 205 code points',
   graphemes(dev40) === 40 && codePoints(dev40) === 200 && graphemes(dev41) === 41 && codePoints(dev41) === 205
