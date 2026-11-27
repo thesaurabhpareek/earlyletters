@@ -68,6 +68,14 @@ for (const [who, uid] of [['the other parent', B], ['a contributor', N], ['a str
 const viewCols = (await sys(`select column_name from information_schema.columns where table_schema = 'public' and table_name = 'book_entries'`)).rows.map((r) => r.column_name);
 check('[FR-AIS-08] the book view lists columns (the check is not vacuous)', viewCols.includes('final_text') && viewCols.length > 10);
 for (const col of SECRET_COLS) check(`[FR-AIS-08] the book view has no ${col} column`, !viewCols.includes(col));
+// The view's columns are a reviewed allowlist: a new column reaches the other parent only by a change here (BL-2143 appended
+// first_mark and first_label, the parent's own Firsts mark and label, 20261127100000).
+const REVIEWED_VIEW_COLS = ['id', 'child_id', 'author_id', 'author_signs_as', 'kind', 'occurred_on', 'captured_at', 'capture_mode',
+  'edit_level', 'prompt_key', 'prompt_library_version', 'final_text', 'in_book', 'photo_path', 'audio_kept_on_device',
+  'sounds_like_me', 'created_at', 'updated_at', 'deleted_at', 'search', 'approval', 'occurred_precision', 'base_direction',
+  'first_mark', 'first_label'];
+check('[FR-AIS-08] the book view columns are exactly the reviewed allowlist (25, with first_mark and first_label)',
+  [...viewCols].sort().join() === [...REVIEWED_VIEW_COLS].sort().join());
 const viewJson = JSON.stringify((await sys(`select to_jsonb(b) j from book_entries b where b.id = $1`, [ID])).rows);
 check('[FR-AIS-08] the book view row for the letter holds none of the sentinels', !SENTINELS.some((s) => viewJson.includes(s)));
 
