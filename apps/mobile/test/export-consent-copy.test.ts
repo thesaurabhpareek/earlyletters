@@ -18,7 +18,7 @@ import { nodeDb } from './helpers/node-db';
 
 const h = vi.hoisted(() => ({ settings: new Map<string, string>(), calls: [] as string[] }));
 vi.mock('@/lib/store', () => ({ getSetting: (k: string) => h.settings.get(k) ?? null, setSetting: (k: string, v: string) => void h.settings.set(k, v), deleteSetting: (k: string) => void h.settings.delete(k) }));
-vi.mock('../src/lib/auth/apple', () => ({ forgetAppleUser: async () => void h.calls.push('apple') }));
+vi.mock('../src/lib/auth/apple', () => ({ forgetAppleUser: async () => void h.calls.push('apple'), clearPendingAppleName: async () => void h.calls.push('pendingName') }));
 vi.mock('../src/lib/auth/pending', () => ({ clearPendingEmailRequest: async () => void h.calls.push('pending') }));
 
 import { deviceConsentCopy } from '../src/lib/export/consent-copy';
@@ -176,7 +176,7 @@ describe('[BL-528][CPrivO-21] the copy is deleted', () => {
     expect(h.settings.size).toBe(2);
     await forgetSignOutLeftovers();
     expect([...h.settings.keys()]).toEqual(['child.bornCardHidden.asha']);
-    expect(h.calls).toEqual(['apple', 'pending']);
+    expect(h.calls).toEqual(['apple', 'pendingName', 'pending']);
   });
 
   it('by Erase everything: every setting goes, the copy with them', () => {
