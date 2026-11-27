@@ -117,9 +117,9 @@ apps/web/src/content/site.ts#sampleLetter.heard.2.text,site,website,apps/web/src
 apps/web/src/content/site.ts#sampleLetter.heard.3.text,site,website,apps/web/src/content/site.ts,46,en,"today you found the light switch. On, off, on, off. Fourteen times, I counted. Mama pretended not to notice and then laughed so hard she had to sit down. You looked at us",170,,,,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#sampleLetter.heard.4.text,site,website,apps/web/src/content/site.ts,48,en,", you looked at us",18,,,,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#sampleLetter.heard.5.text,site,website,apps/web/src/content/site.ts,50,en," like we were the strange ones. Maybe we are. Anyway. You are asleep now, and the house sounds different. Goodnight, little one.",128,,,,,,cmo,live on develop,web-content
-apps/web/src/content/site.ts#site.meta.title,site,website,apps/web/src/content/site.ts,59,en,${NAME}: the baby memory book you fill by talking,49,,,,,,cmo,live on develop,web-content
+apps/web/src/content/site.ts#site.meta.title,site,website,apps/web/src/content/site.ts,59,en,"${NAME}: letters to your child, in your own words and voice",59,,,,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#site.meta.description,site,website,apps/web/src/content/site.ts,60,en,Say a few words to your child about today. ${NAME} keeps them in your own words and your own voice.,99,,,,,,cmo,live on develop,web-content
-apps/web/src/content/site.ts#site.brand.line,site,website,apps/web/src/content/site.ts,65,en,The baby memory book you fill by talking.,41,,,,,,cmo,live on develop,web-content
+apps/web/src/content/site.ts#site.brand.line,site,website,apps/web/src/content/site.ts,65,en,"Letters to your child, in your own words and voice.",51,,,,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#site.skip,site,website,apps/web/src/content/site.ts,69,en,Skip the film,13,,,,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#site.comingSoon.line,site,website,apps/web/src/content/site.ts,72,en,"A baby book you fill by talking. Say what happened today, out loud, and it stays in your own words.",99,,,,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#site.comingSoon.trust,site,website,apps/web/src/content/site.ts,74,en,"Private by default. Never sold, never used for ads.",51,,,,,,cmo,live on develop,web-content
@@ -210,7 +210,7 @@ apps/web/src/content/site.ts#site.scenes.s09.label,site,website,apps/web/src/con
 apps/web/src/content/site.ts#site.scenes.s09.headline,site,website,apps/web/src/content/site.ts,205,en,Private by default.,19,,,,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#site.scenes.s09.points.0,site,website,apps/web/src/content/site.ts,207,en,Your recordings are kept on the phone that made them.,53,,,,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#site.scenes.s09.points.1,site,website,apps/web/src/content/site.ts,208,en,No ads. We never sell your data.,32,,,,,,cmo,live on develop,web-content
-apps/web/src/content/site.ts#site.scenes.s09.points.2,site,website,apps/web/src/content/site.ts,209,en,Your letters and recordings are private. We never sell them and never use them for ads.,87,,,,,,cmo,live on develop,web-content
+apps/web/src/content/site.ts#site.scenes.s09.points.2,site,website,apps/web/src/content/site.ts,209,en,"Your letters and recordings are private. We never sell them, never use them for ads and never use them to train machine learning models.",136,protected,"D-061 privacy promise line, word for word on every surface",,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#site.scenes.s09.points.3,site,website,apps/web/src/content/site.ts,210,en,Export your letters whenever you want.,38,,,,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#site.scenes.s09.points.4,site,website,apps/web/src/content/site.ts,211,en,"Delete any letter, any time.",28,,,,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#site.scenes.s10.label,site,website,apps/web/src/content/site.ts,215,en,Pricing,7,,,,,,cmo,live on develop,web-content

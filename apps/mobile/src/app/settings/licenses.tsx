@@ -22,6 +22,7 @@ import { CaretRightIcon } from 'phosphor-react-native/src/icons/CaretRight';
 import { useMemo, useState } from 'react';
 import { Platform, Pressable, SectionList, View } from 'react-native';
 import { licences } from '@scribe/content';
+import { tokens } from '@scribe/design-tokens';
 import { Text } from '@/components/ui/text';
 import { useTheme } from '@/lib/a11y';
 import type * as Licences from '@/lib/licences';
@@ -102,7 +103,7 @@ export default function LicensesScreen() {
         )}
         renderItem={({ item, index, section }) => (
           <View className={`bg-card dark:border-x dark:border-border ${index === 0 ? 'rounded-t-lg dark:border-t' : ''} ${index === section.data.length - 1 ? 'rounded-b-lg dark:border-b' : ''}`}>
-            {index > 0 ? <View className="ml-4 h-px bg-border" style={{ height: 0.5 }} /> : null}
+            {index > 0 ? <View className="ml-4 bg-border" style={{ height: tokens.stroke.hairline }} /> : null}
             <LicenceRow row={item} open={open === item.key} onToggle={() => setOpen((k) => (k === item.key ? null : item.key))} />
           </View>
         )}
