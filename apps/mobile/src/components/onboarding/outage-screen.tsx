@@ -6,7 +6,8 @@
  * no note slot yet (design-systems). Try again reads the connection (use-first-run-route.ts) and the Welcome comes back
  * when the connection returns or the read finds it there. No motion of its own, no analytics event.
  * Accessibility: on arrival the heading takes focus and the title is announced (iOS needs `announce()`; StateScreen's live
- * region is Android-only), again if the offline variant becomes the outage one. The focus goes to the block that holds
+ * region is Android-only), again if the offline variant becomes the outage one, and nothing more: StateScreen's own
+ * in-place line is off (`callerSpeaks`), so the change is not said twice. The focus goes to the block that holds
  * the StateScreen, whose first reachable element is its heading; StateScreen has no ref to the heading itself
  * (design-systems follow-up). Cannot be checked on a device from here.
  */
@@ -33,6 +34,7 @@ export function OutageScreen({ variant, localStartOffered, onTryAgain, onLocalSt
   return (
     <View ref={block} collapsable={false} style={{ flex: 1 }}>
       <StateScreen
+        callerSpeaks
         kind="error"
         glyph={offline ? WifiSlashIcon : CloudSlashIcon}
         title={title}

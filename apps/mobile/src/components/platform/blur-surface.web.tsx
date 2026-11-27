@@ -6,6 +6,7 @@
  */
 import { BlurView } from 'expo-blur';
 import { View } from 'react-native';
+import { tokens } from '@scribe/design-tokens';
 import { useTheme } from '@/lib/a11y';
 import type { BlurSurfaceProps } from './blur-surface.types';
 
@@ -13,7 +14,7 @@ export type { BlurSurfaceProps } from './blur-surface.types';
 
 export function BlurSurface({ children, style, className, material = 'chrome', edge = 'none' }: BlurSurfaceProps) {
   const { c, scheme, reduceTransparency } = useTheme();
-  const edgeStyle = edge === 'top' ? { borderTopWidth: 0.5, borderTopColor: c.line } : edge === 'bottom' ? { borderBottomWidth: 0.5, borderBottomColor: c.line } : undefined;
+  const edgeStyle = edge === 'top' ? { borderTopWidth: tokens.stroke.hairline, borderTopColor: c.line } : edge === 'bottom' ? { borderBottomWidth: tokens.stroke.hairline, borderBottomColor: c.line } : undefined;
   if (reduceTransparency) {
     return (
       <View className={className} style={[{ backgroundColor: c.surfaceRaised }, edgeStyle, style]}>
