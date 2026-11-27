@@ -710,11 +710,17 @@ describe('[DATA-REQ-024][F14-REQ-026] Erase everything on this phone, signed out
     app.store.saveEntry(letter({ id: LATE.newBook, childId: book, audioUri: lateNew, finalText: 'Asha, your first week.' }));
     return { late, lateNew, book };
   }
-  /** Every row and file of filled() is gone: the old books, letters, draft, recordings, stray and settings. */
-  function expectOldGone(f: ReturnType<typeof family>, stray: string, newBook: string) {
+  /**
+   * Every row and file of filled() is gone: the old letters, draft, recordings, stray and settings, and Avi's book. Asha's
+   * book row stays, with its per-person row, because a letter written after the mark still points to it (Karma ruling on
+   * #2102, point 1); `books` is every book row left.
+   */
+  function expectOldGone(f: ReturnType<typeof family>, stray: string, books: readonly string[]) {
     for (const id of [...Object.values(f.ids), f.draftId]) expect([id, rowKept(id), db.get('SELECT id FROM drafts WHERE id = ?', id)]).toEqual([id, false, null]);
     expect([f.a1, f.a2, f.draft, f.v1, stray].filter(has)).toEqual([]);
-    expect(db.all<{ id: string }>('SELECT id FROM children').map((r) => r.id)).toEqual([newBook]);
+    const sorted = [...books].sort();
+    expect(db.all<{ id: string }>('SELECT id FROM children ORDER BY id').map((r) => r.id)).toEqual(sorted);
+    expect(db.all<{ id: string }>('SELECT child_id AS id FROM child_member_prefs ORDER BY child_id').map((r) => r.id)).toEqual(sorted);
     // The 18+ answer and every other choice made before the erase go, so the age question shows again (D-026).
     for (const k of ['ageGate.passed', 'appearance', 'analytics.id', 'appLock.enabled', FIRST_RUN_DRAFT_SETTING, `child.bornCardHidden.${f.asha}`]) expect([k, db.get('SELECT key FROM settings WHERE key = ?', k)]).toEqual([k, null]);
     expect(db.get("SELECT key FROM settings WHERE key LIKE 'erase.everything.%'")).toBeNull();
@@ -722,6 +728,8 @@ describe('[DATA-REQ-024][F14-REQ-026] Erase everything on this phone, signed out
 
   it('[BL-775][DATA-REQ-024] the next launch after a failed erase removes every row and file that existed when it began, and keeps a letter written afterwards with its recording', async () => {
     const { app, f, stray } = await filled();
+    // sync_books is empty on a phone that never signed in; a row per book is planted so its rule is pinned too.
+    for (const id of [f.asha, f.avi]) db.run('INSERT INTO sync_books (child_id) VALUES (?)', id);
     failPartWay(app);
     const { late, lateNew, book } = writeAfter(app, f);
     expect([rowKept(LATE.spoken), rowKept(LATE.typed), has(late)]).toEqual([true, true, true]);
@@ -729,10 +737,13 @@ describe('[DATA-REQ-024][F14-REQ-026] Erase everything on this phone, signed out
     // The file can go now; the next time the app opens it finishes the erase.
     const next = await launch();
     expect(await next.all.resumeEraseAtLaunch()).toBe('erased');
-    expectOldGone(f, stray, book);
+    expectOldGone(f, stray, [f.asha, book]);
+    expect(db.all<{ id: string }>('SELECT child_id AS id FROM sync_books').map((r) => r.id)).toEqual([f.asha]);
     expect([rowKept(LATE.spoken), rowKept(LATE.typed), rowKept(LATE.newBook), has(late), has(lateNew)]).toEqual([true, true, true, true, true]);
     expect(next.store.getEntry(LATE.spoken)?.finalText).toBe('Asha, a letter after the failed erase.');
-    expect(next.store.listChildren().map((c) => c.id)).toEqual([book]);
+    expect(next.store.listChildren().map((c) => c.id).sort()).toEqual([f.asha, book].sort());
+    // The late letters are on Asha's shelf, and none of her old ones is.
+    expect(next.store.listEntriesForChild(f.asha).map((e) => e.id).sort()).toEqual([LATE.spoken, LATE.typed]);
     expect(next.store.listEntriesForChild(book).map((e) => e.id)).toEqual([LATE.newBook]);
     expect(next.store.eraseEverythingPending()).toBe(false);
     // Each kept letter's recording has its row: the sweep has nothing to bring back or report.
@@ -749,10 +760,11 @@ describe('[DATA-REQ-024][F14-REQ-026] Erase everything on this phone, signed out
     const newPicture = picture(LATE.spoken, 'mLate');
 
     expect(await app.all.eraseEverything()).toBe('erased');
-    expectOldGone(f, stray, book);
+    expectOldGone(f, stray, [f.asha, book]);
     expect([late, lateNew, newPicture].filter(has)).toEqual([late, lateNew, newPicture]);
     expect([has(oldPicture), db.all<{ id: string }>('SELECT id FROM entry_media').map((r) => r.id)]).toEqual([false, ['mLate']]);
     expect([rowKept(LATE.spoken), rowKept(LATE.typed), rowKept(LATE.newBook)]).toEqual([true, true, true]);
+    expect(app.store.listEntriesForChild(f.asha).map((e) => e.id).sort()).toEqual([LATE.spoken, LATE.typed]);
     expect(app.store.eraseEverythingPending()).toBe(false);
     expect(fetches).toBe(0);
   });
@@ -780,6 +792,57 @@ describe('[DATA-REQ-024][F14-REQ-026] Erase everything on this phone, signed out
     const next = await launch();
     expect(await next.all.resumeEraseAtLaunch()).toBe('erased');
     expect([rowKept(f.draftId), has(f.draft)]).toEqual([false, false]);
+    expectEmpty();
+  });
+
+  it('[BL-775] a take started after the mark in an old book keeps that book row for it; the book\'s old letter and recording still go (Karma ruling on #2102, point 1)', async () => {
+    const { app, f } = await filled();
+    failPartWay(app);
+    const t = take('0A1B2C3D-0000-4000-8000-00000000B0B9');
+    const d = app.store.createDraft({ childId: f.avi, captureMode: 'spoken', promptKey: null, audioUri: t, audioDurationMs: 2000, state: 'ready' }).id;
+    const next = await launch();
+    expect(await next.all.resumeEraseAtLaunch()).toBe('erased');
+    expect(next.store.listChildren().map((c) => [c.id, c.name])).toEqual([[f.avi, 'Avi']]);
+    expect(db.all<{ id: string }>('SELECT child_id AS id FROM child_member_prefs').map((r) => r.id)).toEqual([f.avi]);
+    expect([next.store.getDraft(d)?.childId, has(t), rowKept(f.ids.v1), has(f.v1)]).toEqual([f.avi, true, false, false]);
+    expect([rows('entries'), rows('drafts')]).toEqual([0, 1]);
+  });
+
+  it('[BL-775] a setting written after the mark that names an old book, letter or draft by id goes with it; one naming a kept or a new book, or a new letter, stays (Karma ruling on #2102, point 2)', async () => {
+    const { app, f, stray } = await filled();
+    failPartWay(app);
+    const { book } = writeAfter(app, f);
+    // Keys first written after the mark, as the app writes them (settings/children/[id].tsx, wipe.ts, author-language.ts).
+    const gone: Record<string, string> = {
+      [`child.bornCardHidden.${f.avi}`]: '2024-06-10', // its value is the child's due date
+      [`book.deletedAt.${f.avi}`]: '2026-10-03T10:00:00.000Z',
+      [`book.erasing.${f.avi}`]: '2026-10-03T10:00:01.000Z',
+      [`speech.letterLanguage.${f.draftId}`]: 'en-GB',
+      [`speech.letterLanguage.${f.ids.a1}`]: 'en-GB',
+    };
+    const kept: Record<string, string> = {
+      [`readTogether.sessions.${f.asha}`]: '1', // Asha's book is kept for the late letters, so its new setting is too
+      [`child.bornCardHidden.${book}`]: '2026-09-01',
+      [`speech.letterLanguage.${LATE.spoken}`]: 'en-GB',
+    };
+    for (const [k, v] of Object.entries({ ...gone, ...kept })) app.store.setSetting(k, v);
+    const next = await launch();
+    expect(await next.all.resumeEraseAtLaunch()).toBe('erased');
+    expectOldGone(f, stray, [f.asha, book]);
+    for (const k of Object.keys(gone)) expect([k, next.store.getSetting(k)]).toEqual([k, null]);
+    for (const [k, v] of Object.entries(kept)) expect([k, next.store.getSetting(k)]).toEqual([k, v]);
+  });
+
+  it('[BL-775][NS-09-R15] a let-go failure count written after the mark for an old draft goes with that draft', async () => {
+    const { app, f } = await filled();
+    failPartWay(app);
+    const key = `discard.failures.${f.draftId}`;
+    expect(app.store.getSetting(key)).toBeNull(); // not there when the mark was written
+    expect(app.store.beginDiscard(f.draftId)).toBe(true);
+    expect(app.store.noteDiscardFailure(f.draftId)).toBe(1); // its recording would not go
+    const next = await launch();
+    expect(await next.all.resumeEraseAtLaunch()).toBe('erased');
+    expect([next.store.getSetting(key), next.store.getDraft(f.draftId)]).toEqual([null, null]);
     expectEmpty();
   });
 

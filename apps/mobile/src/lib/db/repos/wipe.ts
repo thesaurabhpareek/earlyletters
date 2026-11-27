@@ -155,14 +155,18 @@ export function allAudioRows({ db }: RepoContext): { id: string; audioUri: strin
  *    picture and words existed before the mark.
  *  - `entry_media`: a picture goes with its letter or draft (NS-01-R16, as erasePictureOf does), so it is old when its
  *    own id is in the scope or its owner's id is.
- *  - `settings` `discard.failures.<draft id>`: goes with an old draft (NS-09-R15), whenever it was written.
+ *  - `settings`: a key that ends in `.<id>` of an old book, letter or draft goes with it, whenever it was written
+ *    (`child.bornCardHidden.<book>`, whose value is a due date, `discard.failures.<draft>` NS-09-R15, and the rest),
+ *    except for a book kept below (Karma ruling on #2102, point 2).
+ *  - `children`, `child_member_prefs`, `sync_books`: an old book that a kept letter or draft points to keeps these rows,
+ *    so the shelf lists that letter and Delete a book reaches it (keptBooks; Karma ruling on #2102, point 1). Its old
+ *    letters, drafts, pictures and settings still go.
  *  - A table with no one-column key (none today; erase-all.test.ts pins that) by rowid. SQLite can give a deleted
  *    newest rowid to a new row, so a new table must get a key before it relies on this.
  *  - A table not in the scope was made after the mark: nothing in it is old. The scope is trusted only under the
  *    schema version it was read at (readEraseScope), so an update that moved old rows into a new table cannot keep them.
  *  - The Find index (`letter_search*`) is not in it: it is dropped whole on every try and made again from the letters
  *    left (ADR 0028 D5).
- * A letter written after the mark is kept even when its book was old and goes: the book row existed before the erase.
  */
 export interface EraseScope {
   readonly schema: number;
@@ -171,7 +175,6 @@ export interface EraseScope {
 
 /** Tables whose rows share one id space (a draft becomes a letter under the same id). */
 const SHARED_IDS: Readonly<Record<string, readonly string[]>> = { entries: ['entries', 'drafts'], drafts: ['entries', 'drafts'] };
-const DISCARD_FAILURES_PREFIX = 'discard.failures.';
 /** SQLite's limit on bound values is 999 on older builds; stay well under it. */
 const CHUNK = 400;
 
@@ -245,6 +248,45 @@ function oldPictures(db: SqlDb, scope: EraseScope): Set<string> {
   );
 }
 
+/**
+ * Settings keys that end in `.<id>` for one of `ids` (`child.bornCardHidden.<book>`, `book.deletedAt.<book>`,
+ * `speech.letterLanguage.<letter>`, `discard.failures.<draft>`, and any later per-row key). Every dot is tried, so an id
+ * that holds a dot still matches.
+ */
+function keysNaming(db: SqlDb, ids: ReadonlySet<SqlParam>): string[] {
+  if (ids.size === 0) return [];
+  return db
+    .all<{ key: string }>('SELECT key FROM settings')
+    .map((r) => r.key)
+    .filter((key) => {
+      for (let i = key.indexOf('.'); i >= 0; i = key.indexOf('.', i + 1)) if (ids.has(key.slice(i + 1))) return true;
+      return false;
+    });
+}
+
+/** Tables keyed by a book's id: a book kept for a later letter keeps these rows (keptBooks). */
+const BOOK_ROWS: ReadonlySet<string> = new Set(['children', 'child_member_prefs', 'sync_books']);
+
+/**
+ * Old books that a letter or draft kept by this try still points to (Karma ruling on #2102, point 1). After a try ends
+ * `incomplete` every book on the shelf is old, so a letter written afterwards nearly always goes into one; erasing its
+ * book row would leave a letter that no shelf lists and no Delete a book reaches. Such a book keeps its book rows; its
+ * old letters, drafts, pictures and settings still go.
+ */
+function keptBooks(db: SqlDb, scope: EraseScope): Set<SqlParam> {
+  const books = oldIds(scope, 'children');
+  if (!books) return new Set();
+  const old = oldIds(scope, 'entries') ?? new Set<SqlParam>();
+  const kept = new Set<SqlParam>();
+  for (const t of ['entries', 'drafts']) {
+    if (!userTables(db).includes(t)) continue;
+    for (const r of db.all<{ id: string; child_id: string }>(`SELECT id, child_id FROM ${quote(t)}`)) {
+      if (!old.has(r.id) && books.has(r.child_id)) kept.add(r.child_id);
+    }
+  }
+  return kept;
+}
+
 /** The letters and drafts whose recordings this try removes: all of them with no scope, else the old ones. */
 export function audioRowsToErase(ctx: RepoContext, scope: EraseScope | null): { id: string; audioUri: string | null }[] {
   const rows = allAudioRows(ctx);
@@ -301,15 +343,18 @@ export function removeEverything({ db }: RepoContext, keepSettings: readonly str
   }
   // Pictures first: whether one is old reads its owner, which goes below.
   if (userTables(db).includes('entry_media')) deleteIn(db, 'entry_media', 'id', [...oldPictures(db, scope)]);
-  const oldDrafts = oldIds(scope, 'drafts') ?? new Set<SqlParam>();
+  const books = keptBooks(db, scope); // read before the letters and drafts that point to them go
+  // Settings that name an old book, letter or draft by id go with it, whenever they were written; a kept book's stay.
+  const namedIds = new Set<SqlParam>([...(oldIds(scope, 'children') ?? []), ...(oldIds(scope, 'entries') ?? [])].filter((id) => !books.has(id)));
   for (const t of userTables(db)) {
     if (t === 'entry_media') continue;
-    const old = oldIds(scope, t);
+    let old = oldIds(scope, t);
     if (!old) continue; // made after the erase began: nothing in it is old
+    if (BOOK_ROWS.has(t)) old = new Set([...old].filter((id) => !books.has(id)));
     if (t === 'settings') {
-      const keys = [...old].filter((k) => typeof k === 'string' && !keep.has(k));
-      for (const id of oldDrafts) if (!keep.has(`${DISCARD_FAILURES_PREFIX}${id}`)) keys.push(`${DISCARD_FAILURES_PREFIX}${id}`);
-      deleteIn(db, t, 'key', keys);
+      const keys = new Set([...old].filter((k): k is string => typeof k === 'string'));
+      for (const k of keysNaming(db, namedIds)) keys.add(k);
+      deleteIn(db, t, 'key', [...keys].filter((k) => !keep.has(k)));
     } else deleteIn(db, t, identityColumn(db, t), [...old]);
   }
 }
