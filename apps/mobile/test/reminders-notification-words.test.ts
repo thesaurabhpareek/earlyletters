@@ -126,7 +126,11 @@ describe('[NS-48-R26] the one-a-day budget has one enforced place', () => {
     expect([...kinds].sort()).toEqual(['birthday', 'evening', 'monthAge', 'typedDay']);
   });
 
-  it('the rule lives only in budget.ts: no other reminders module groups notes by day, and the planner ends on the chooser', () => {
+  // What this proves: the chooser is defined once, in budget.ts, and the planner calls it for the day notes and on the
+  // final plan. It does NOT prove the planner makes no day choice of its own: planner.ts also skips an evening on a day
+  // that already holds a typed, month or birthday note (`noteDays`), and that skip is why the final call changes no
+  // plan in these tests. Moving that skip into budget.ts is a follow-up (PR #2133, Not verified).
+  it('the chooser is defined only in budget.ts, and the planner calls it for day notes and on the final plan', () => {
     const dir = join(__dirname, '../src/lib/reminders');
     const others = readdirSync(dir).filter((f) => f.endsWith('.ts') && f !== 'budget.ts');
     for (const f of others) {
@@ -137,6 +141,7 @@ describe('[NS-48-R26] the one-a-day budget has one enforced place', () => {
     expect(budget).toMatch(/export function chooseOnePerDay/);
     const planner = readFileSync(join(dir, 'planner.ts'), 'utf8');
     const ret = planner.slice(planner.lastIndexOf('export function planReminders'));
+    expect(ret).toMatch(/const chosenNotes = chooseOnePerDay</);
     expect(ret).toMatch(/const oneADay = chooseOnePerDay\(out\.map/);
   });
 });
