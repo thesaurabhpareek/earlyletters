@@ -222,6 +222,8 @@ A-S08.bound (earliest day reached) and A-S08.interrupted need no words: the pick
 
 B-S08 (A-S09.afterKeep) shows "From Nani" as plain text (NS-16-R17). No line on this path says "invite", "family can add letters", "speaker", or asks a child or sibling to speak (NS-16-R5).
 
+Word status (CPO-100, 27 Nov 2026): the P rows above are approved as written, except `review.from.fieldHint`, which becomes "Up to 30 characters. Some alphabets count more characters than you see." In code these keys are `screenStates.from.*` (`packages/content/src/features/screen-states.en.ts`); the content PR that changes the hint there carries the approval into the code. Turning `EXPO_PUBLIC_SIGN_AS_OTHER` on in a store build still waits on the gates of CPrivO-24.
+
 ### 7.4 Another language (NS-17; A-S07.anotherLanguageOffer, A-S10)
 
 DESIGN picks one tap with an Undo for the T4 window (G-07); `content` agrees.

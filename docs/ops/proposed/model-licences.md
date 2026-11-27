@@ -67,9 +67,9 @@ Each record is one heading with the catalog id and one two-column table. The tes
 |---|---|
 | Status | default |
 | Licence | MIT |
-| Licence URL | https://github.com/snakers4/silero-vad |
-| Date read | 2026-11-25 |
-| Card read | Read: https://huggingface.co/ggml-org/whisper-vad (licence tag mit; the card says only that it holds VAD models converted to ggml for whisper.cpp and does not name Silero) and https://github.com/snakers4/silero-vad (repository licence MIT, "Published under permissive license (MIT)"). Open point for the exec review: on 25 Nov one badge on that GitHub page had the alt text "License: CC BY-NC 4.0" while its image pointed at MIT, and the page has no sentence that names the licence of the weights themselves. The catalog and both tags say MIT; the badge conflict is [UNVERIFIED] until someone reads the repository's LICENSE file at the release that produced v6.2.0. |
+| Licence URL | https://github.com/snakers4/silero-vad/blob/v6.2/LICENSE |
+| Date read | 2026-11-27 |
+| Card read | Read on 27 Nov 2026 (CAIO-17): the LICENSE file of snakers4/silero-vad at tag v6.2, which is the MIT License, "Copyright (c) 2020-present Silero Team", the same text as `scripts/licences/third-party/silero-vad.txt` and as on the main branch; its pyproject.toml at v6.2 ("License :: OSI Approved :: MIT License"); its README at v6.2 ("Published under permissive license (MIT)"). The model files sit in that repository (`src/silero_vad/data`). The README badge whose alt text says "License: CC BY-NC 4.0" shows an MIT image and links to the MIT LICENSE, at v6.2 and on the main branch; the sister repository snakers4/silero-models carries the same alt text on a CC BY-NC 4.0 badge, so the alt text reads as a leftover, not a licence term. The open point of 25 Nov is closed for the facts; whether the LICENSE file governs the weights is a legal reading sent to counsel with MIT as the default (CLO-47, proposed packet Q142). Read on 25 Nov and not re-read on 27 Nov: https://huggingface.co/ggml-org/whisper-vad (licence tag mit; the card does not name Silero), because the 27 Nov session could not reach huggingface.co [UNVERIFIED today]. |
 | Training-data terms (counsel Q9) | open. The GitHub page says only that Silero VAD "was trained on huge corpora that include over 6000 languages"; it names no corpus and no terms. |
 | Size in bytes | 885098 |
 | SHA-256 | 2aa269b785eeb53a82983a20501ddf7c1d9c48e33ab63a41391ac6c9f7fb6987 |
