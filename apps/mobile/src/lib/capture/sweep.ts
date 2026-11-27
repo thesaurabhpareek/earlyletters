@@ -20,6 +20,7 @@ import { Platform } from 'react-native';
 import {
   audioRows,
   deleteDraft,
+  eraseEverythingPending,
   finalizeDraftAudio,
   finishDiscard,
   getActiveChildId,
@@ -44,6 +45,15 @@ let started: Promise<SweepReport | null> | null = null;
 
 interface FoundFile extends SweepFile {
   createdAt: string;
+}
+
+/** Read once per sweep; a store that cannot say counts as no erase pending, the sweep's behaviour before BL-775. */
+function erasePending(): boolean {
+  try {
+    return eraseEverythingPending();
+  } catch {
+    return false;
+  }
 }
 
 /** Throws when a folder that exists cannot be listed; the sweep then changes nothing this launch. */
@@ -94,13 +104,17 @@ async function reconcile(): Promise<SweepReport> {
   // Probe only the takes a kill cut off (rare), never a live one.
   const cut = new Set(rows.drafts.filter((d) => d.state === 'recording' && d.audioUri && !skipDraftIds.includes(d.id)).map((d) => fileNameOf(d.audioUri!)));
   for (const f of files) if (f.bytes > 0 && cut.has(fileNameOf(f.uri))) f.playable = await probePlayable(f.uri);
-  const actions = planLaunchSweep({
+  const planned = planLaunchSweep({
     files,
     ...rows,
     reported: listOrphanAudio().map((o) => o.fileName),
     activeChildId: getActiveChildId(),
     skipDraftIds,
   });
+  // BL-775: while an Erase everything is pending (a try ended incomplete), a recording with no row existed before the
+  // erase began (every take since has its draft row first), so it is neither brought back as a draft nor listed: a
+  // new row would make it look newer than the erase, and the next try would keep it. The erase removes it.
+  const actions = erasePending() ? planned.filter((a) => a.kind !== 'reattach' && a.kind !== 'report') : planned;
   const createdAt = new Map(files.map((f) => [f.uri, f.createdAt]));
   const report = {} as SweepReport;
 
