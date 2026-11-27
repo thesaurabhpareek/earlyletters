@@ -153,8 +153,9 @@ export function cardRow(r: Row, today: number): CardRow {
   if (r.kind === 'dispute_or_third_party') {
     // Runbook section 0: an executor, a parent of an under-18 holder, or a custody or family dispute. The sender is not
     // the holder, so nothing is owed them by day 45 and a "what was done" reply or an extension notice would say the
-    // account exists (IAM-R09). The exec team read it on 27 Nov 2026 (not yet in a rulings file): off the clock. Days 35 to 44 are an internal
-    // check that no request about the sender's own data is inside it, since that one is on the clock from the same day.
+    // account exists (IAM-R09). The exec team read it on 27 Nov 2026 (not yet in a rulings file). Days 35 to 44 are an
+    // internal check that no request about the sender's own data, or for a living holder as their agent, is inside it,
+    // since that one is on the clock from the same day.
     const first = !r.acknowledged && day >= 1;
     const check = day >= FIRST_DAY && day < DUE_DAY;
     const counsel = check

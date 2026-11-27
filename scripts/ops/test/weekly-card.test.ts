@@ -145,6 +145,7 @@ Deno.test('[FR-BKO-13] a dispute or third-party request stays off the 45-day clo
     const inWindow = n >= 35 && n <= 44;
     for (const r of [at(n), at(n, { acknowledged: '' }), at(n, { extended: day(Math.max(n - 1, 0)) }), at(n, { legal_date: day(Math.max(n - 1, 0)) })]) {
       assert.equal(r.due, '-', String(n));
+      assert.equal(r.nextActionDate, TODAY, String(n));
       assert.equal(r.urgent, inWindow, `${n}: urgent only on days 35 to 44, acknowledged or not, whatever else the row holds`);
       assert.doesNotMatch(r.nextAction, /extension|what was done|P0|due today/, String(n));
       assert.equal(/; then with counsel, check/.test(r.nextAction), inWindow && /^first reply/.test(r.nextAction), String(n));
