@@ -1611,3 +1611,15 @@ Challenge record for CR-215 to CR-224 (24 Nov, afternoon): self-challenged only 
 - UNVERIFIED: whether App Store Connect's entered labels match the file (only the file was read); whether any production profile holds a `display_name` from Apple today.
 - Door: two-way. Way back: a later entry drafts the row as proposed if a published text starts to promise that no name is kept.
 - Revisit when: a Privacy, label or DATA_CLASSIFICATION text is reworded to say that no name from Apple is kept (that is a promise, and it then needs its own row), the app asks Apple for the name again, or NS-54-R2 is reworded so it no longer covers keeping. Karma
+
+### CR-234 The trust and safety gates follow any build that can reach someone outside the Family group (27 Nov 2026, Karma, recorded by stream 16; Claude role)
+- Question: FR-POL-03 and FR-POL-04 gate only the App Store build. The TestFlight `preview` profile already opens the two-parent book to Family testers. Should the gates cover TestFlight?
+- Tier and type: T2 (a test on a gate path, release mechanics); complicated. Consulted CCO (CCO-33) and CISO.
+- Options considered: (a) gate production only, as before; (b) gate every store-distributed profile; (c) gate every profile that can reach someone outside the internal Family group.
+- Ruling: (c). `packages/content/test/trust-and-safety-gate.test.ts` gains `reachesOutside(profile)`: store-distributed and either the App Store build or submit groups other than exactly ["Family"]. Both gates run on those profiles, reading a TestFlight profile as alpha the way the app does, and the test asserts that only `production` reaches outside today. Sending `preview` or `testflight` beyond Family in `eas.json` now fails the gate until the report set and the safety-removal runbook and tool are done. `report-set.md` and `safety-removal.md` say so.
+- Why: CR-184 treats the Family group as not outside sign-in. Apple guideline 2.2 holds TestFlight betas to the review guidelines, and the TestFlight overview sends a build added to an external group to App Review (both read 27 Nov 2026 on developer.apple.com). The BL-2027 pin test covers `eas.json` but not a group chosen by hand in App Store Connect.
+- Debate: self-challenged only.
+- Door: two-way. Way back: revert the predicate.
+- Not done here: a comment in `apps/mobile/test/eas-family-group-pin.test.ts` naming CR-234 (an existing shared test, not this stream's), a line in `docs/release/TESTFLIGHT.md`, and a FOUNDER_QUEUE row ("add no servers-on build to Friends or a public link in App Store Connect until the CR-234 gates are green"), which are the release owner's.
+- Revisit when: BL-1867 turns servers on in `testflight`, or a Friends build is planned.
+- Founder-only: no. Choosing a group in App Store Connect is a physical act. Karma

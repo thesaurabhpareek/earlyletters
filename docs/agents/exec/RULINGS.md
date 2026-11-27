@@ -2607,3 +2607,53 @@ The entries in this batch (three stacked PRs) record each role's own ruling on t
 - Door: two-way while the page is noindex and off `main`
 - Way back: keep the draft words; each recommendation is a separate line.
 - Revisit when: counsel answers on the draft, or CR-187 is applied and the 38-day evidence is recorded.
+
+### CMO-22 Support reply times: no public time; data requests say 45 days (27 Nov 2026, CMO via Karma's session, stream 16; Claude role, not a lawyer)
+- Question: what reply time do the contact, support and delete-account pages promise, and how do FR-MSG-12, FR-MSG-33, claims row EF1 and `packages/content/src/pages.en.ts:168` fit CL-099?
+- Verdict: RULED. CL-099 (Q-SUP-2, closed 20 Nov) and CR-187 already decide the policy; this aligns the documents to them. Lead CMO; consulted CLO, CCO, CPrivO.
+- Options considered: (a) publish 2 working days; (b) publish 10 business days; (c) no public time for support, and "write back within 45 days" for data requests.
+- Ruling: (c). Ordinary support states no time. A data or deletion request promises only that we confirm and write back within 45 days (Privacy Policy section 10). Acknowledging within 10 business days is an internal target. The 2 working days figure is an internal target, never published. FR-MSG-12, FR-MSG-33 (CPO-98), row EF1 and `CATALOG.md` section 9 change to match. `docs/legal/delete-account-page.md` lines 26 and 80 should take the CLO-41 wording ("Email us from the address on your account and we will confirm your request and write back within 45 days. ..."); that is legal text, so it waits for the founder's merge (D-125), and open PR #2066, which copies line 80, should not merge with "We reply within 10 business days". `pages.en.ts:168` and `:234` change or go with the file (open PR #2056 deletes it); that is the content stream's.
+- Why: no process in the repo keeps a published support time (`apps/web/src/lib/support/copy.ts` header). Route 1 is closed until BL-551 (CR-187). 11 CCR 7021 asks for confirmation within 10 business days and a reply within 45 days (read 27 Nov 2026 at https://www.law.cornell.edu/regulations/california/11-CCR-7021); whether CCPA applies at our size is for counsel to confirm, and we follow it either way.
+- Debate: self-challenged only. "A stated time builds trust" is answered by CL-099: a time we cannot keep is a false claim.
+- Door: two-way. Way back: publish a time once a process keeps it.
+- Revisit when: BL-551 ships, or support volume data exists.
+- Founder-only: the `docs/legal/delete-account-page.md` merge only (D-125). The rest is covered by the founder's 24 Nov approval of the exec team's defaults. Signed: Chief Marketing Officer (Claude role)
+
+### CPO-98 PRD reply-time rows follow CL-099 (27 Nov 2026, CPO via Karma's session, stream 16; Claude role)
+- Question: FR-MSG-12 and FR-MSG-33 ask for a published reply time, which CL-099 rules out.
+- Verdict: RULED. Consulted CTO (no build cost) and CMO (CMO-22).
+- Ruling: FR-MSG-12's reply target becomes "an internal reply target of 2 working days that is not published (CL-099, CMO-22)". FR-MSG-33 says what we answer and no time.
+- Why: the PRD must not require what a closed, founder-answered question forbids.
+- Door: two-way. Way back: revert the two cells.
+- Revisit when: CMO-22 is revisited.
+- Founder-only: no. Signed: Chief Product Officer (Claude role)
+
+### CLO-46 Abuse-material reports: interim handling; a licensed lawyer is needed before launch (27 Nov 2026, CLO via Karma's session, stream 16; Claude role, not a lawyer, not counsel)
+- Question: how do support and back office handle a report or attachment that may be child sexual abuse material, and what do we keep? FR-POL-02 said support does not "keep" an attachment; the macro said "Leave it where it is"; FR-BKO-35 deletes attachments when a ticket closes.
+- Verdict: the interim default is RULED. The evidence and reporting question is NEEDS EVIDENCE, and the evidence is a licensed US lawyer's advice before launch. It touches 18 U.S.C. 2258A, 2258E(6) and the federal possession and distribution offences, which the D-172 exec-team read cannot settle. Consulted CCO, CISO, CPrivO.
+- Options considered: (a) open it, judge it, report it; (b) delete it on sight; (c) leave it untouched where it arrived, acknowledge it, take the kind and date only to the exec team the same day, and take no step on the material until a licensed lawyer advises.
+- Ruling: (c). FR-POL-02 reads "does not open, preview, download, forward, copy, quote, move or delete" and drops "keep". FR-BKO-35 does not delete such a message, or one tied to legal process, until a lawyer advises. Only the founder can reach that mailbox; no Claude session or connector reads it. Only the founder files, and only after a lawyer advises; a Claude role never files. The macro body drops "and it's with the right person", which could read as passed to the authorities or as a promise that we act. `docs/ops/runbooks/child-safety-report.md` is a brief for the lawyer, not a procedure. Pointing the reporter to NCMEC's CyberTipline is left for the lawyer (its question 5), not added. Terms 9 does not change until a lawyer reads it.
+- Why: 2258A(a)(1) ties the duty to actual knowledge; (f) imposes no duty to monitor; (h) requires preservation once a report is made (one year, Pub. L. 118-59). Deleting could defeat preservation; opening the material without advice could create knowledge or worse. Read 27 Nov 2026 at https://www.law.cornell.edu/uscode/text/18/2258A and https://www.law.cornell.edu/uscode/text/18/2258E. The possession and distribution statutes were not read.
+- Debate: self-challenged only.
+- Door: the interim handling is two-way. A report, once filed, is one-way and needs the lawyer's advice.
+- Revisit when: a licensed lawyer advises.
+- Founder-only: yes for hiring the lawyer (money) and for Terms 9 and COUNSEL_PACKET Q50 (legal text). The interim support and PRD wording is covered by the founder's 24 Nov approval of the exec team's defaults. Signed: Chief Legal Officer (Claude role)
+
+### CCO-33 Apple 1.2: the two-parent book is treated as covered; the report set names a filter method (27 Nov 2026, CCO via Karma's session, stream 16; Claude role, not a lawyer)
+- Question: does App Store Review Guideline 1.2 apply to the two-parent book (NS-25), and is a "filter decision" enough for FR-POL-03?
+- Verdict: RULED on our process. Whether 1.2 applies is App Review's call. Consulted CLO, CPrivO, CPO.
+- Options considered: (a) treat NS-25 as outside 1.2; (b) covered, with a written filter decision; (c) covered, with a named filter method or a written reason why none applies.
+- Ruling: (c), failing closed. `report-set.md` renames its columns to "Report path and response time (internal, not published)" and "Filter method (or why none applies)", and the gate test checks that header. FR-POL-03 drops its UNVERIFIED line. The NS-25 row is added by the card when the two-parent book heads outside the Family group (CR-234); its filter is likely membership (only the invited co-parent can post) rather than scanning, which the card must confirm against the book model.
+- Why: 1.2 covers apps where users "create, generate, upload, share, or otherwise contribute content" and asks for "A method for filtering objectionable material from being posted to the app", a report mechanism with "timely responses", blocking and published contact (read 27 Nov 2026 at https://developer.apple.com/app-store/review/guidelines/). In NS-25 one parent's content reaches the other through our servers.
+- Debate: self-challenged only. A developer-forum claim that Apple sometimes waives the filter is anecdote and was not relied on.
+- Door: two-way.
+- Revisit when: App Review feedback arrives on a build with the co-parent.
+- Founder-only: no. The App Review notes become founder-class when written. Signed: Chief Compliance Officer (Claude role)
+
+### CPO-99 FR-MSG-14: nothing user-facing promises an invite email (27 Nov 2026, CPO via Karma's session, stream 16; Claude role)
+- Question: the exec-team read of FR-MSG-14 and CATALOG E-3: is the not-built decision right, and does anything a user sees still promise an invite email?
+- Verdict: NOT A QUESTION on the decision (Q-MSG-3 / CL-063, founder-answered 20 Nov). RULED on the wording. Consulted CMO, CPrivO, CLO.
+- Ruling: no user-facing text promises an invite email: the invite is a link the parent shares from their own phone (`apps/web/src/content/site.ts` /j page, Privacy Policy lines 90 and 147, store 1.0 drafts). FR-MSG-14's owner cell reads "legal: read by CLO and CPrivO under D-172 (CPO-99), not a lawyer's opinion". The header comment of `packages/content/src/emails/family.en.ts` (lines 4 to 6) is stale and should say the template is kept but not built in v1; that is the content stream's file. Follow-up: confirm `packages/content/src/features/account-deletion.en.ts:26` ("We will email them.", a notice to family contributors) cannot show in v1 (D-055).
+- Door: two-way.
+- Revisit when: invite email is proposed for a later release.
+- Founder-only: no. Signed: Chief Product Officer (Claude role)

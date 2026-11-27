@@ -9,7 +9,9 @@
  *   APPROVED and its access tool exists in supabase/migrations.
  *
  * "Store build" means what the app code means by it: the profile whose EXPO_PUBLIC_APP_ENV is `production`
- * (apps/mobile/src/lib/billing/alpha.ts isAlphaBuild: "Only `production` is the store"). That file and build-env.ts are not
+ * (apps/mobile/src/lib/billing/alpha.ts isAlphaBuild: "Only `production` is the store"). The FR-POL-03 and FR-POL-04 gates
+ * apply to every build that can reach someone outside the internal TestFlight group Family (CR-234): the store build, and
+ * any store-distributed profile whose submit groups are not exactly ["Family"] (the pin of BL-2027, CR-184). That file and build-env.ts are not
  * imported here because build-env.ts names React Native's `__DEV__`, which this package's typecheck does not know; a test
  * below reads isAlphaBuild's source so the two cannot drift. Each gate is a pure function, and each has a planted case that
  * shows it fails.
@@ -27,7 +29,7 @@ const RUNBOOKS = `${ROOT}docs/ops/runbooks/`;
 const MIGRATIONS = `${ROOT}supabase/migrations/`;
 
 type Env = Record<string, string>;
-type Profile = { name: string; env: Env };
+type Profile = { name: string; env: Env; distribution?: string; groups?: unknown };
 
 /**
  * Every EXPO_PUBLIC_* key, classified. `hosts` names the card when the switch, on, lets one person's content reach
@@ -53,16 +55,39 @@ const SWITCHES: Record<string, { hosts: string | null; why: string }> = {
 };
 
 function readProfiles(): Profile[] {
-  const eas = JSON.parse(readFileSync(EAS_JSON, 'utf8')) as { build: Record<string, { env?: Env; extends?: string }> };
+  const eas = JSON.parse(readFileSync(EAS_JSON, 'utf8')) as {
+    build: Record<string, { env?: Env; extends?: string; distribution?: string }>;
+    submit?: Record<string, { ios?: { groups?: unknown } }>;
+  };
   const envOf = (name: string): Env => {
     const p = eas.build[name];
     return { ...(p.extends ? envOf(p.extends) : {}), ...(p.env ?? {}) };
   };
-  return Object.keys(eas.build).map((name) => ({ name, env: envOf(name) }));
+  const distributionOf = (name: string): string | undefined => {
+    const p = eas.build[name];
+    return p.distribution ?? (p.extends ? distributionOf(p.extends) : undefined);
+  };
+  return Object.keys(eas.build).map((name) => ({
+    name,
+    env: envOf(name),
+    distribution: distributionOf(name),
+    groups: eas.submit?.[name]?.ios?.groups,
+  }));
 }
 
 function isStoreBuild(p: Profile): boolean {
   return (p.env.EXPO_PUBLIC_APP_ENV ?? '').trim() === 'production';
+}
+
+/**
+ * CR-234: can this build reach someone outside the internal Family group? EAS distributes to the store unless a profile
+ * says `internal`. A store-distributed profile stays inside only while its submit groups are exactly ["Family"]; the
+ * App Store build always reaches outside. A manual change in App Store Connect is not visible here (FOUNDER_QUEUE row).
+ */
+export function reachesOutside(p: Profile): boolean {
+  if ((p.distribution ?? 'store') !== 'store') return false;
+  if (isStoreBuild(p)) return true;
+  return JSON.stringify(p.groups) !== JSON.stringify(['Family']);
 }
 
 /** Is a switch on? Every switch so far is an `on` flag, read the way capabilities.ts reads one. */
@@ -74,6 +99,10 @@ function on(value: string | undefined): boolean {
 export function hostingSwitchOn(value: string | undefined): boolean {
   return !/^(|off|0|false)$/i.test((value ?? '').trim());
 }
+
+/** The report-set table header (CCO-33): Apple 1.2 asks for a filter method, so the last column names one. */
+export const REPORT_SET_HEADER =
+  '| Card | Report path and response time (internal, not published) | Block or remove path | Published contact | Filter method (or why none applies) |';
 
 /** A report-set row is complete when it names the card and fills all four cells (no TBD). */
 export function reportSetCards(md: string): Set<string> {
@@ -96,7 +125,7 @@ export function reportSetFindings(profiles: Profile[], switches: typeof SWITCHES
         out.push(`${p.name}: ${key} is not classified in trust-and-safety-gate.test.ts SWITCHES (does it host content? FR-POL-03)`);
         continue;
       }
-      if (s.hosts && isStoreBuild(p) && hostingSwitchOn(p.env[key]) && !reportSet.has(s.hosts)) {
+      if (s.hosts && reachesOutside(p) && hostingSwitchOn(p.env[key]) && !reportSet.has(s.hosts)) {
         out.push(`${p.name}: ${key} is on and ${s.hosts} has no complete row in docs/ops/runbooks/report-set.md (FR-POL-03)`);
       }
     }
@@ -122,10 +151,10 @@ export function safetyState(runbook: string | null, migrations: string[]): Safet
  */
 export function safetyRemovalFindings(profiles: Profile[], destination: typeof inviteDestination, state: SafetyState): string[] {
   const out: string[] = [];
-  for (const p of profiles.filter(isStoreBuild)) {
+  for (const p of profiles.filter(reachesOutside)) {
     const servers = on(p.env.EXPO_PUBLIC_SERVER_FEATURES);
-    // A store build is never alpha (isAlphaBuild: env !== 'production'); passed explicitly so the call matches the app's.
-    const alpha = false;
+    // The app's own rule (isAlphaBuild: env !== 'production'), so a TestFlight profile sent outside Family is read as alpha.
+    const alpha = !isStoreBuild(p);
     const opening = INVITE_ENTRIES.filter((e) => destination(e, servers, alpha) === 'flow');
     if (opening.length === 0) continue;
     const from = opening.join(', ');
@@ -162,15 +191,20 @@ describe('[FR-POL-02] a report of apparent child sexual abuse material gets an a
     expect(rows.map((s) => s.recipient)).toEqual(['The person who reported']);
     // No timing or follow-up promise to the reporter: the first action is internal, not a published time (FR-BKO-13).
     expect(bodyText(m!.body)).not.toMatch(/\b(today|tonight|tomorrow|within|hours?|days?|soon|let you know|keep you|update you|police|authorities)\b/i);
+    // CLO-46: "with the right person" could read as passed to the authorities, or as a promise that we act.
+    expect(bodyText(m!.body)).not.toMatch(/right person|passed (it )?on|handed (it )?over/i);
   });
 
-  it('[FR-POL-02] says never to open, forward or delete an attachment, to leave it where it is, and that the exec team gets the kind and date the same day', () => {
+  it('[FR-POL-02] says never to open, forward or delete an attachment, to leave the message where it arrived, and that the exec team gets the kind and date the same day', () => {
     const m = parseMacros(readMacrosFile()).get(KEY)!;
     expect(m.notes.Never).toMatch(/open/);
     expect(m.notes.Never).toMatch(/forward/);
     expect(m.notes.Never).toMatch(/quote/);
     expect(m.notes.Never).toMatch(/delete/);
-    expect(m.notes.Never).toMatch(/Leave it where it is/);
+    expect(m.notes.Never).toMatch(/move/);
+    expect(m.notes.Never).toMatch(/Leave the message where it arrived/);
+    expect(m.notes.Never).toMatch(/no Claude session or connector reads it/);
+    expect(m.notes['Same day']).toMatch(/only after a licensed lawyer advises/);
     expect(m.notes['Same day']).toMatch(/exec team/);
     expect(m.notes['Same day']).toMatch(/kind and the date only/);
     expect(m.notes['Before it']).toMatch(/M6/);
@@ -219,6 +253,16 @@ describe('[FR-POL-03] content that reaches another person needs its report set b
     expect(reportSetFindings(withFlag, planted, reportSetCards(tbd))).not.toEqual([]);
   });
 
+  it('[FR-POL-03] a hosting switch on in a TestFlight profile sent beyond Family needs its report set (CR-234)', () => {
+    const planted: typeof SWITCHES = { ...SWITCHES, EXPO_PUBLIC_SHARE_HOSTED: { hosts: 'NS-05 Level 2', why: 'planted' } };
+    const preview = profiles.find((p) => p.name === 'preview')!;
+    const flagged = { ...preview, env: { ...preview.env, EXPO_PUBLIC_SHARE_HOSTED: 'on' } };
+    expect(reportSetFindings([{ ...flagged, groups: ['Family'] }], planted, reportSetCards(reportSetMd))).toEqual([]);
+    expect(reportSetFindings([{ ...flagged, groups: ['Family', 'Friends'] }], planted, reportSetCards(reportSetMd))).toEqual([
+      'preview: EXPO_PUBLIC_SHARE_HOSTED is on and NS-05 Level 2 has no complete row in docs/ops/runbooks/report-set.md (FR-POL-03)',
+    ]);
+  });
+
   it('[FR-POL-03] a hosting switch fails closed: `1` or `true` counts as on', () => {
     expect(['on', 'ON', '1', 'true', 'yes'].every(hostingSwitchOn)).toBe(true);
     expect(['', ' ', 'off', '0', 'false', undefined].some(hostingSwitchOn)).toBe(false);
@@ -230,8 +274,13 @@ describe('[FR-POL-03] content that reaches another person needs its report set b
     expect(reportSetFindings(withNew, SWITCHES, reportSetCards(reportSetMd))[0]).toMatch(/EXPO_PUBLIC_SOMETHING_NEW is not classified/);
   });
 
-  it('[FR-POL-03] there is exactly one store build to check, and the app decides it the same way', () => {
+  it('[FR-POL-03] the table asks for a filter method, not only a decision (CCO-33)', () => {
+    expect(reportSetMd.split('\n')).toContain(REPORT_SET_HEADER);
+  });
+
+  it('[FR-POL-03] only the App Store build reaches outside Family today, and the app decides the store build the same way', () => {
     expect(profiles.filter(isStoreBuild).map((p) => p.name)).toEqual(['production']);
+    expect(profiles.filter(reachesOutside).map((p) => p.name)).toEqual(['production']);
     const alpha = readFileSync(`${ROOT}apps/mobile/src/lib/billing/alpha.ts`, 'utf8');
     expect(alpha).toMatch(/export function isAlphaBuild\(env: AppEnv\): boolean \{\s*return env !== 'production';\s*\}/);
   });
@@ -276,6 +325,21 @@ describe('[FR-POL-04] the two-parent book stays out of store builds until the sa
     const store = profiles.find(isStoreBuild)!;
     const serversOff = [{ ...store, env: { ...store.env, EXPO_PUBLIC_SERVER_FEATURES: 'off' } }];
     expect(safetyRemovalFindings(serversOff, serversOnly, safetyState(runbook, migrations))).toEqual([]);
+  });
+
+  it('[FR-POL-04] a TestFlight profile with servers on fails once it is sent beyond Family (CR-234)', () => {
+    const preview = profiles.find((p) => p.name === 'preview')!;
+    const state = safetyState(runbook, migrations);
+    const inside = [{ ...preview, env: { ...preview.env, EXPO_PUBLIC_SERVER_FEATURES: 'on' }, groups: ['Family'] }];
+    expect(safetyRemovalFindings(inside, inviteDestination, state)).toEqual([]);
+    for (const groups of [['Family', 'Friends'], ['Friends'], undefined]) {
+      const outside = [{ ...inside[0], groups }];
+      const findings = safetyRemovalFindings(outside, inviteDestination, state);
+      expect(findings.length, JSON.stringify(groups)).toBeGreaterThan(0);
+      expect(findings[0]).toMatch(/^preview: the two-parent book opens from /);
+    }
+    const internal = [{ ...inside[0], groups: ['Friends'], distribution: 'internal' }];
+    expect(safetyRemovalFindings(internal, inviteDestination, state)).toEqual([]);
   });
 
   it('[FR-POL-04] passes only when the runbook is APPROVED and its named tool is created in a migration', () => {
