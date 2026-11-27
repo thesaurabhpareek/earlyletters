@@ -68,9 +68,11 @@ Calculated rating 4+, **override to 18+** (Terms require 18 or older, D-006). Ma
 
 ## 5. Accessibility Nutrition Labels
 
-Voluntary. Draft Dark Interface: Yes (confirm on the release build). Leave VoiceOver, Voice Control, Larger Text,
-Sufficient Contrast, Differentiate Without Color and Reduced Motion unclaimed until an audit of every common task
-passes. Publish only after the app is live.
+Voluntary. Declare none for 1.0 (CDesO-22, CDesO-57): leave every feature unclaimed, Dark Interface included, until
+the device walk (BL-948) passes every common task with that feature on the release build: first launch, sign-in,
+purchase, settings and the primary tasks (Apple's rule, FR-CMP-06). The product page then shows that support is not
+indicated yet, which is true. Dark Interface is the first feature to weigh once the walk passes in Dark appearance;
+each declaration is its own exec ruling, entered only after the app is live.
 
 ## 6. Version 1.0
 
@@ -185,8 +187,11 @@ Launching in the United States on iPhone, iOS 17 or later.
 
 Draft Helpful Details:
 
+Note, not paste text: the accessibility line is held (CDesO-57). The block below has no accessibility line, and none is
+added until the device walk (BL-948) passes; then it names only what the walk confirmed, the same features section 5
+declares.
+
 ```text
-Accessibility: built to Dynamic Type, Reduce Motion and dark mode, with VoiceOver labels on the recording flow. [FOUNDER: keep only the items an on-device audit confirms; the Accessibility Nutrition Labels draft must say the same.]
 Privacy: speech-to-text runs on the iPhone, and recordings stay on the phone that made them. Signing in is required. The one-time speech model download is shown with its size, on Wi-Fi, and starts when the parent chooses.
 Team: made by an independent developer. [FOUNDER: add one line about yourself if you want it; no child's name or family detail.]
 Priority: this is our first and only app; the launch is our highest priority.
