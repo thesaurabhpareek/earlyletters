@@ -22,7 +22,7 @@ vi.mock('../src/lib/db/repos/open-native', () => ({
 }));
 
 const store = await import('../src/lib/store');
-const { lastMadeLetter, readPrefs, dayNamesOn } = await import('../src/lib/reminders/prefs');
+const { lastMadeLetter, plannerChildren, readPrefs, dayNamesOn } = await import('../src/lib/reminders/prefs');
 const { DEFAULT_PREFS, planReminders } = await import('../src/lib/reminders/planner');
 const { isoDate, parseIsoDate, zonedParts, zonedToEpoch, addDays } = await import('../src/lib/reminders/tz');
 const { reminderCopy } = await import('../src/lib/reminders/copy');
@@ -405,6 +405,14 @@ describe('[NS-48-R21] a quiet book adds nothing to a key', () => {
     const { avi } = books();
     store.updateChild(avi.id, { remindersOn: false });
     expect(lastMadeLetter()).toEqual({ at: Date.parse('2026-09-01T08:00:00.000Z'), kind: 'typed' });
+  });
+
+  it('[T2-068] a hidden book: the same, and it is no planner child, so it adds no name, band or kind', () => {
+    const { avi } = books();
+    expect(plannerChildren().map((c) => c.name)).toEqual(['Asha', 'Avi']);
+    store.hideChild(avi.id);
+    expect(lastMadeLetter()).toEqual({ at: Date.parse('2026-09-01T08:00:00.000Z'), kind: 'typed' });
+    expect(plannerChildren().map((c) => c.name)).toEqual(['Asha']);
   });
 
   it('every book quiet: the layers get nothing and the floor runs', () => {
