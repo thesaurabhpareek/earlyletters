@@ -19,7 +19,7 @@ vi.mock('@/lib/store', () => ({
   },
   deleteSetting: (k: string) => void h.settings.delete(k),
 }));
-vi.mock('../src/lib/auth/apple', () => ({ forgetAppleUser: async () => void h.calls.push('apple') }));
+vi.mock('../src/lib/auth/apple', () => ({ forgetAppleUser: async () => void h.calls.push('apple'), clearPendingAppleName: async () => void h.calls.push('pendingName') }));
 vi.mock('../src/lib/auth/pending', () => ({ clearPendingEmailRequest: async () => void h.calls.push('pending') }));
 
 import { removeEverything } from '../src/lib/db/repos/wipe';
@@ -38,10 +38,10 @@ beforeEach(() => {
 });
 
 describe('[BL-2002] the shared sign-out step', () => {
-  it('clears the draft, the Apple user id and the pending email request', async () => {
+  it('clears the draft, the Apple user id, an Apple name an older build left and the pending email request', async () => {
     await forgetSignOutLeftovers();
     expect(h.settings.has(FIRST_RUN_DRAFT_SETTING)).toBe(false);
-    expect(h.calls).toEqual(['apple', 'pending']);
+    expect(h.calls).toEqual(['apple', 'pendingName', 'pending']);
   });
 
   it('the next account reads no draft', async () => {
@@ -58,7 +58,7 @@ describe('[BL-2002] the shared sign-out step', () => {
   it('a store that cannot be read does not stop the Apple id and the pending request going', async () => {
     h.throwOnRead = true;
     await expect(forgetSignOutLeftovers()).resolves.toBeUndefined();
-    expect(h.calls).toEqual(['apple', 'pending']);
+    expect(h.calls).toEqual(['apple', 'pendingName', 'pending']);
   });
 
   it('clearing with no draft is a no-op', () => {

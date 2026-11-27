@@ -48,8 +48,25 @@ import {
   vendoredEntries,
   workspaceNames,
 } from '../../../scripts/licences/lib.mjs';
+import { storeListing } from '../../../packages/content/src/store.en';
 import { noticeKey, noticeText, notices, packNotice, type Notices } from '../src/lib/licences';
-import { SPEECH_MODELS, VAD_MODEL_ID, WHISPER_CPP_BUILD } from '../src/lib/models/catalog';
+import {
+  FIRST_PARTY,
+  LICENCE_RECORDS,
+  MODEL_LICENCE_RECORD_PATH,
+  MODEL_RECORD_FIELDS,
+  Q9_OPEN_SHIPPED,
+  appImageFiles,
+  configImagePaths,
+  imageSpecifiers,
+  languagesNamed,
+  licenceRecordProblems,
+  listedLanguageProblems,
+  parseModelLicenceRecords,
+  type LicenceRecord,
+  type ShippedAsset,
+} from './helpers/licence-records';
+import { LANGUAGE_MODELS, SPEECH_LANGUAGES, SPEECH_MODELS, VAD_MODEL_ID, WHISPER_CPP_BUILD, type SpeechLanguage } from '../src/lib/models/catalog';
 
 const REPO = join(__dirname, '..', '..', '..');
 const FILE = join(REPO, OUTPUT);
@@ -576,5 +593,153 @@ describe('the notices file layout', () => {
       { name: 'x', licence: 'MIT', text: null, repository: repo },
     ]);
     expect(same[2].noticeFrom).toBe('aa');
+  });
+});
+
+/*
+ * FR-LEG-13 (BL-1344): every speech pack, font, model or image a store build ships has a licence record (licence, URL,
+ * date read, and for model weights what the licence allows of the training data, counsel Q9), and the store listing
+ * names only languages whose packs have one. What ships is read from the repo, not from the records, so an asset
+ * added without a record fails here: a font file in packages/design-tokens/fonts, an image the app or a workspace
+ * package requires (or one next to it), an image under apps/mobile/assets, artwork in components.mjs NON_NPM, a pack
+ * in packs/text-rules, a default or candidate model in the catalog. The records live in test/helpers/licence-records.ts.
+ */
+const rel = (abs: string) => abs.slice(REPO.length + 1).split('\\').join('/');
+const filesUnder = (dir: string): string[] =>
+  readdirSync(dir).flatMap((n) => (statSync(join(dir, n)).isDirectory() ? filesUnder(join(dir, n)) : [join(dir, n)]));
+const textPack = (file: string): ShippedAsset => ({ kind: 'text-pack', id: rel(file), attribution: JSON.parse(readFileSync(file, 'utf8')).attribution ?? [] });
+const TEXT_PACKS = join(REPO, 'packs', 'text-rules');
+const IMAGE_FILE = /\.(png|jpe?g|gif|webp|svg|heic)$/i;
+
+function shippedImages(): string[] {
+  const assets = filesUnder(join(REPO, 'apps', 'mobile', 'assets')).filter((f) => IMAGE_FILE.test(f)).map(rel);
+  return [...new Set([...assets, ...appImageFiles(REPO)])].sort();
+}
+
+function shippedAssets(): ShippedAsset[] {
+  const fonts = filesUnder(join(REPO, 'packages', 'design-tokens', 'fonts')).filter((f) => /\.(ttf|otf|woff2?)$/i.test(f));
+  const packs = readdirSync(TEXT_PACKS).filter((n) => n.endsWith('.json'));
+  const models = Object.values(SPEECH_MODELS).filter((m) => m.status === 'default' || m.status === 'candidate');
+  return [
+    ...fonts.map((f): ShippedAsset => ({ kind: 'font', id: rel(f) })),
+    ...shippedImages().map((id): ShippedAsset => ({ kind: 'image', id })),
+    ...NON_NPM.filter((c) => c.kind === 'artwork').map((c): ShippedAsset => ({ kind: 'image', id: c.name })),
+    ...packs.map((n) => textPack(join(TEXT_PACKS, n))),
+    ...models.map((m): ShippedAsset => ({ kind: 'speech-model', id: m.id })),
+  ];
+}
+
+const modelRecords = () => parseModelLicenceRecords(readFileSync(join(REPO, MODEL_LICENCE_RECORD_PATH), 'utf8'));
+
+/** A language's packs: its recognisers on both tiers, the voice detector, its text-rules pack. */
+const packsFor = (code: string): ShippedAsset[] => {
+  if (!(SPEECH_LANGUAGES as readonly string[]).includes(code)) return [];
+  const tiers = LANGUAGE_MODELS[code as SpeechLanguage];
+  const models = [...new Set([VAD_MODEL_ID, ...tiers.full, ...tiers.compact])];
+  const pack = join(TEXT_PACKS, `${code}.json`);
+  return [...models.map((id): ShippedAsset => ({ kind: 'speech-model', id })), ...(existsSync(pack) ? [textPack(pack)] : [])];
+};
+
+/** Every word of the listing: the copy in packages/content and the EAS Metadata file built from it. */
+const listingText = () => {
+  const strings = (v: unknown): string[] => (typeof v === 'string' ? [v] : v && typeof v === 'object' ? Object.values(v).flatMap(strings) : []);
+  return [...strings(storeListing), readFileSync(join(REPO, 'apps', 'mobile', 'store.config.json'), 'utf8')].join('\n');
+};
+
+describe('[FR-LEG-13] every speech pack, font, model or image a store build ships has a licence record', () => {
+  it('[FR-LEG-13] lists what ships from the repo: fonts, images, the icon artwork, text packs and models', () => {
+    const kinds = new Set(shippedAssets().map((a) => a.kind));
+    expect([...kinds].sort()).toEqual(['font', 'image', 'speech-model', 'text-pack']);
+    expect(shippedAssets().filter((a) => a.kind === 'font').length).toBeGreaterThanOrEqual(7);
+  });
+
+  it('[FR-LEG-13] the image list follows what the app imports, into workspace packages (the lamp grain in design-tokens)', () => {
+    expect(appImageFiles(REPO)).toContain('packages/design-tokens/textures/grain.png');
+    expect(appImageFiles(REPO)).toContain('apps/mobile/assets/brand/splash.png');
+    expect(imageSpecifiers("export const t = require('./paper.png');\nimport a from '@scribe/design-tokens/textures/b.webp';\nconst c = 'd.png';")).toEqual([
+      './paper.png',
+      '@scribe/design-tokens/textures/b.webp',
+    ]);
+    expect(configImagePaths("icon: './assets/brand/icon.png', name: 'x.png'")).toEqual(['./assets/brand/icon.png']);
+  });
+
+  it('[FR-LEG-13] each one has a record with its licence, URL and date read, and each model a filled Q9 field (open is not an answer)', () => {
+    expect(licenceRecordProblems(shippedAssets(), LICENCE_RECORDS, modelRecords())).toEqual([]);
+  });
+
+  it('[FR-LEG-13] a shipped asset with no record fails: a new font, a new image, a model whose record is gone', () => {
+    const models = modelRecords();
+    models.delete('speech-model.silero-vad-v6.2.0');
+    const extra: ShippedAsset[] = [
+      { kind: 'font', id: 'packages/design-tokens/fonts/NewFace-Regular.ttf' },
+      { kind: 'image', id: 'apps/mobile/assets/ashas-sticker.png' },
+      { kind: 'image', id: 'apps/mobile/assets/brand/stock-photo.png' },
+      { kind: 'image', id: 'packages/design-tokens/textures/paper.png' },
+    ];
+    expect(licenceRecordProblems([...shippedAssets(), ...extra], LICENCE_RECORDS, models)).toEqual([
+      'speech-model.silero-vad-v6.2.0: no licence record',
+      'packages/design-tokens/fonts/NewFace-Regular.ttf: no licence record',
+      'apps/mobile/assets/ashas-sticker.png: no licence record',
+      'apps/mobile/assets/brand/stock-photo.png: no licence record',
+      'packages/design-tokens/textures/paper.png: no licence record',
+    ]);
+  });
+
+  it('[FR-LEG-13] a text pack attribution with no third-party record fails, and so does a record missing a field', () => {
+    const pack: ShippedAsset = { kind: 'text-pack', id: 'packs/text-rules/xx.json', attribution: ['Tables derived from SomeData, MIT License.'] };
+    expect(licenceRecordProblems([pack], LICENCE_RECORDS, new Map())).toEqual([
+      'packs/text-rules/xx.json: no licence record',
+      'packs/text-rules/xx.json: no licence record for attribution "Tables derived from SomeData, MIT Licens"',
+    ]);
+    const bare: LicenceRecord[] = LICENCE_RECORDS.map((r) => (r.name === 'Mukta' ? { ...r, url: '', dateRead: 'soon' } : r));
+    const mukta = shippedAssets().filter((a) => a.id.includes('Mukta-Regular'));
+    expect(licenceRecordProblems(mukta, bare, new Map())).toEqual([
+      'packages/design-tokens/fonts/Mukta-Regular.ttf: record has no URL',
+      'packages/design-tokens/fonts/Mukta-Regular.ttf: record has no date read (YYYY-MM-DD)',
+    ]);
+    const models = modelRecords();
+    models.get('speech-model.whisper-small-q5_1')!.delete(MODEL_RECORD_FIELDS.allows);
+    expect(licenceRecordProblems([{ kind: 'speech-model', id: 'speech-model.whisper-small-q5_1' }], [], models)).toEqual([
+      'speech-model.whisper-small-q5_1: record does not say what the licence allows of the training data (Q9)',
+    ]);
+  });
+
+  it('[FR-LEG-13] a pack that drops a third-party source from its attribution fails (the Unihan clause in zh.json)', () => {
+    const zh = shippedAssets().find((a) => a.id === 'packs/text-rules/zh.json')!;
+    const cut = { ...zh, attribution: zh.attribution!.map((l) => l.replace(/, from the Unicode Han Database \(Unihan\)[^,]*, Copyright Unicode, Inc\., Unicode License v3/, '')) };
+    expect(cut.attribution).not.toEqual(zh.attribution);
+    expect(licenceRecordProblems([cut], LICENCE_RECORDS, new Map())).toEqual(['packs/text-rules/zh.json: no attribution line names Unihan (Unihan kMandarin data)']);
+  });
+
+  it('[FR-LEG-13] each third-party record names the licence the Licenses page shows for it', () => {
+    const page = new Map(allEntries(notices).map((e) => [e.name, e.licence]));
+    for (const r of LICENCE_RECORDS.filter((x) => x.kind !== 'text-pack' && x.licence !== FIRST_PARTY)) expect(page.get(r.name), r.name).toBe(r.licence);
+    for (const r of LICENCE_RECORDS.filter((x) => x.readFrom)) expect(existsSync(join(REPO, r.readFrom!)), r.readFrom).toBe(true);
+  });
+});
+
+describe('[FR-LEG-13] the store listing names only languages whose packs have a licence record', () => {
+  it('[FR-LEG-13] the listing today names English, and every pack English needs has a record', () => {
+    expect(languagesNamed(listingText())).toContain('en');
+    expect(listedLanguageProblems(listingText(), packsFor, LICENCE_RECORDS, modelRecords())).toEqual([]);
+  });
+
+  it('[FR-LEG-13] Q9 open is accepted only for the models the English listing already ships, pinned', () => {
+    const english = packsFor('en').filter((a) => a.kind === 'speech-model').map((a) => a.id);
+    expect([...Q9_OPEN_SHIPPED].sort()).toEqual([...english].sort());
+  });
+
+  it('[FR-LEG-13] a listing that names Hindi fails while the Hindi model record leaves Q9 open', () => {
+    expect(modelRecords().get('speech-model.whisper-hindi-small-q5_1')!.get(MODEL_RECORD_FIELDS.allows)).toMatch(/^open\b/);
+    expect(listedLanguageProblems(`${listingText()}\nNow in Hindi.`, packsFor, LICENCE_RECORDS, modelRecords())).toEqual([
+      'hi: speech-model.whisper-hindi-small-q5_1: training-data terms (Q9) are open, and it is not one of the models the listing already ships',
+    ]);
+  });
+
+  it('[FR-LEG-13] a listing that names a language whose recogniser has no record fails', () => {
+    const models = modelRecords();
+    models.delete('speech-model.whisper-hindi-small-q5_1');
+    expect(listedLanguageProblems(`${listingText()}\nNow in Hindi too.`, packsFor, LICENCE_RECORDS, models)).toEqual(['hi: speech-model.whisper-hindi-small-q5_1: no licence record']);
+    expect(listedLanguageProblems('Letters in Klingon and English.', () => [], LICENCE_RECORDS, models)).toEqual(['en: the listing names it and it has no pack']);
   });
 });

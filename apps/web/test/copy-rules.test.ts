@@ -471,6 +471,15 @@ describe('rules carried over from the content package (BL-556)', () => {
     expect(variants, 'a shortened copy of trust.promise').toEqual([]);
   });
 
+  // RULE [BL-374] (D-082; ported from packages/content rules.test.ts by BL-556): no word a person reads keeps a promise
+  // D-082 retired. The content rule read the removed site.en.ts and pages.en.ts; the live site copy is read here.
+  it('[BL-374] never keeps a promise D-082 retired: "free, always", "writing stays open", "Plus is optional"', () => {
+    const RETIRED_PROMISES = /free, always|writing stays open|plus is optional|first book you start is free|\bplus is off\b/i;
+    for (const bad of ['The first book you start is free, always.', 'Writing stays open.', 'Plus is optional.', 'Plus is off.'])
+      expect(RETIRED_PROMISES.test(bad), bad).toBe(true);
+    expect(offenders(PROSE, RETIRED_PROMISES)).toEqual([]);
+  });
+
   // RULE (BL-393, D-074; ported from packages/content rules.test.ts by BL-556): never transcription, transcribe or
   // transcript in site copy. The word names the technology and reads as if the app writes.
   it('never says transcription, transcribe or transcript (BL-393, D-074)', () => {

@@ -2442,3 +2442,323 @@ The entries in this batch (three stacked PRs) record each role's own ruling on t
 - Way back: revert the one guard (and the `Platform` import) in `age-gate-screen.tsx`, with its pin in `android-double-announce.test.ts`.
 - Founder-only: no. Counsel has not read this call; it is a delegated default until counsel confirms, and nothing here is counsel-approved. The CCO approval line is not posted by this entry: it goes on PR #2007 against its own head, and a new push needs a new one.
 - Signed: Chief Compliance Officer (Claude role, not counsel)
+
+### CISO-21 BL-491 point 1: the typed word is the gate for Delete account in 1.0 (25 Nov 2026, CISO via Karma's session, stream 6; Claude role, not an auditor)
+- Question: step 5 of the deletion spec asks for re-authentication when the session is older than 24 h; the built S64 page gates the request on the typed word alone. Is that enough for the store build?
+- Verdict: RULED. Exec review in place of counsel (D-172; CR-176 class: legal and privacy). Lead CISO; challenger CLO; consulted CPrivO and CCO. This turns CISO-5's recommendation into the decision.
+- Options considered: (a) the typed word, with the compensating controls below (recommended); (b) build step 5 now (Face ID or passcode through LocalAuthentication, else the `reauthenticate-code` email) before the store build; (c) hide Delete account until (b) exists.
+- Ruling: (a). For 1.0 the typed word "delete" is the only gate. This is a recorded departure from step 5 of `docs/legal/DELETION_AND_EXPORT_SPEC.md` 2.6.1; the spec is not edited here (its own legal PR records the departure). Compensating controls: Cancel undoes the request for 30 days, from this phone or by signing in on another; the `account-deletion-scheduled` email goes to the account address; App lock, where the person turned it on, covers the whole app. When BL-782's device owner check (Face ID or passcode before Erase everything) lands, the Delete account confirm uses the same check in that build or the next, which meets step 5's first branch.
+- Why: someone holding an unlocked phone can already read every letter and, until BL-782, Erase everything with no check at all; a deletion request is less harmful than that, because it is undone for 30 days and the account owner is emailed. Option (c) removes in-app deletion while servers are on (Apple guideline 5.1.1(v), as quoted in the CLO skill section 9; not re-read this session). Option (b) is new auth UI on a CR-70 path just before the build. Risk and return: a mistaken or hostile request stays possible, and it is reversible with notice.
+- Debate (self-challenged only; no separate agent was available to this session): the CLO's strongest objection was "you are departing from the spec you wrote for counsel, and a reader could call that weaker than promised." Answer: the spec is internal and unpublished; the privacy policy draft says nothing about re-authentication (`docs/legal/privacy-policy.md:114`); the departure is on record here. The CISO's own objection: the email is the main control and nobody has seen it sent from the hosted project. Accepted, as the condition below.
+- Evidence: `docs/legal/DELETION_AND_EXPORT_SPEC.md:200` (step 5); `packages/content/src/features/account-deletion.en.ts:53-60` (`confirm`); `docs/emails/CATALOG.md:48,110`; `supabase/functions/purge-worker/emails.ts` (sends `account-deletion-scheduled`); `apps/mobile/src/components/app-lock/`; BL-782 (`docs/BACKLOG.md:3174`); `apps/mobile/eas.json` (production has `EXPO_PUBLIC_ACCOUNT_DELETION` on).
+- Conditions: before the first store build with Delete account on, a test account (fictional) on staging receives the `account-deletion-scheduled` email, and a reply to it reaches the support mailbox (its safety line says "Reply to this email and we will stop it", `packages/content/src/emails/account.en.ts:62`); both are UNVERIFIED today.
+- Door: two-way. Way back: add the step 5 check; no stored data changes.
+- Revisit when: BL-782 lands, or anyone reports a request they did not make.
+- Founder-only: no. Not legal advice; the exec team reads in place of counsel (D-172). Signed: Chief Information Security Officer (Claude role, not an auditor); concurred: Chief Legal Officer (Claude role, not a lawyer), Chief Privacy Officer (Claude role, not counsel)
+
+### CLO-44 BL-491 point 3: the "photos" intro is gone; `what.intro` ships (25 Nov 2026, CLO via Karma's session, stream 6; Claude role, not a lawyer)
+- Question: does the held intro that names "photos" ship, or which line names only what the build holds?
+- Verdict: NOT A QUESTION for "photos": that line is no longer in the repo (changed in #735). RULED for the line that ships, as an exec review in place of counsel (D-172; CR-176 class: legal and privacy). Lead CLO; consulted CPrivO and CDesO.
+- Ruling: the page draws `accountDeletionCopy.what.intro` (through `HELD.intro`): "Deleting your account removes your letters and books from our servers. You have 30 days to change your mind." It ships as is. It names only what the build holds on our servers: recording backup is off in every build profile, and v1.0 makes no photos. `introProposed`, which named a recording backup, is gone. S64 acceptance box 1, "No mention of photos anywhere in the flow", is met in today's strings: no shown string in `account-deletion.en.ts` names photos (only a code comment does). The per-book lines under the intro say which books stay with a co-parent, so "your letters and books" does not overclaim. The backup window (backups cleared within 38 days) is the privacy policy's to state (section 7), not this screen's.
+- Evidence: `packages/content/src/features/account-deletion.en.ts:15-19`; `apps/mobile/src/components/settings/delete-account.logic.ts:13-15`; `apps/mobile/src/app/settings/delete-account.tsx:233`; `apps/mobile/eas.json` (`EXPO_PUBLIC_BACKUP` off in all five profiles); `docs/legal/privacy-policy.md:114`.
+- Debate (self-challenged only): "a shared book is not removed, so 'your books' is untrue for a co-parent." Answer: the very next lines on the page name each book's outcome (`staysNone` and the rest), and CDesO-35 point 3 adds the line for a parent who left. Rejected as a reason to change the intro.
+- Conditions: before any store profile turns on recording backup or sends photos to our servers, this line names them or that build waits. `exportFirst.body` was not re-read for this ruling.
+- Door: two-way. Way back: one string.
+- Founder-only: no. Not legal advice (D-172). Signed: Chief Legal Officer (Claude role, not a lawyer)
+
+### CDesO-46 BL-491 point 5: a failed Cancel says the outcome isn't known yet (25 Nov 2026, CDesO via Karma's session, stream 6; Claude role)
+- Question: a failed Cancel deletion shows the shared line "Nothing has changed. Deleting an account needs a connection.", which can be read as the deletion being blocked. What does a failed cancel say?
+- Verdict: RULED (words and where they go). CR-176 class: legal and privacy. Lead CDesO with the content owner's pen; the CLO reads it as a deletion term in place of counsel (D-172) and concurs. "canceled" is in US spelling, as the WRITING-GUIDE "US or UK spelling" decision (CMO-RULED 21 Nov) rules for every new line. The older lines beside it keep their UK spelling for now (`scheduled.cancelled`, `open.restoringTitle` and `open.cancelling`, `account-deletion.en.ts:76,94,97`): that decision changes new lines only, so they wait for the spelling sweep and are not changed here.
+- Ruling: new key `accountDeletionCopy.errors.cancelFailed`: "It's not clear yet if the deletion was canceled. Tap Cancel deletion again." It is shown for a failed Cancel deletion press, offline or failed, on the open-deletion screen and on the Delete account scheduled page (the same press). A failed request keeps `failureLine`. The content test that says every error line contains "Nothing has changed." exempts `cancelFailed` the way it already exempts `loadFailed`, and asserts that it does not say it.
+- Why: `cancelDeletion` returns a call failure without reading the status again (`apps/mobile/src/lib/account-deletion/api.ts:122-126`), so after a lost answer the phone cannot know whether the server cancelled. WRITING-GUIDE section 8 (error messages) says to treat an unknown outcome as unknown. The line never suggests the person is out of the woods, names the one thing to do, and pressing again is harmless: the server answers false when nothing is open, and the phone then reads `none` as success.
+- Checked against the house rules: no dashes, straight apostrophe, contractions, no fear or loss words, no "safe", the button named by its visible label (`scheduled.cancelButton`).
+- Evidence: `apps/mobile/src/components/settings/delete-account.logic.ts:63-66`; `apps/mobile/src/components/settings/open-deletion.tsx:62`; `packages/content/src/features/account-deletion.en.ts:109-115`; `packages/content/WRITING-GUIDE.md` sections 5 and 8.
+- Debate (self-challenged only): "offline, the phone knows nothing was sent, so 'not clear' is evasive." Answer: the offline class also covers a connection lost mid-call, and one honest line for both is better than a second key that can be wrong. Rejected.
+- Door: two-way. Way back: drop the key; the press falls back to `failureLine`.
+- Founder-only: no. Signed: Chief Design Officer (Claude role); concurred: Chief Legal Officer (Claude role, not a lawyer)
+
+### CDesO-47 BL-492 point 1: no no-break space in strings; try a line-break setting, else accept (25 Nov 2026, CDesO via Karma's session, stream 6; Claude role)
+- Question: "phone." sits alone on the second line of `errors.crash.body` at 402 and 375 pt. A no-break space in the string, a layout fix, or accept?
+- Verdict: RULED.
+- Ruling: no U+00A0 in content strings. Design systems draws the crash body with `lineBreakStrategyIOS="push-out"` on iOS and `textBreakStrategy="balanced"` on Android. If the device check at 402 and 375 pt still leaves one word alone, accept it as is: a line break is not a reason to change words.
+- Why: an invisible character breaks exact-string pins (`rules.test.ts`, `test/launch-retry.test.ts:462`), search and translation, and it forces a wrap where an accessibility size may need one elsewhere. Both props are in React Native's own types (`node_modules/react-native/types_generated/Libraries/Text/TextProps.d.ts:51,77`). That Apple's push-out strategy avoids a lone last word is from memory and UNVERIFIED this session, hence the device check.
+- Debate (self-challenged only): "a string fix is one character and certain; the prop is uncertain." Answer: the cost lands on every future reader of the string, and the fallback is to accept, not to add the character.
+- Door: two-way. Way back: remove the prop.
+- Founder-only: no. Signed: Chief Design Officer (Claude role)
+
+### CPO-94 BL-493 point 1: accept the welcome while the first deletion-status read is out (25 Nov 2026, CPO via Karma's session, stream 6; Claude role)
+- Question: may a signed-in phone with no book and no note show the welcome while the first deletion-status read is out, or should the paper come first?
+- Verdict: RULED: accept. Lead CPO; consulted CDesO and CPrivO; challenger CISO.
+- Ruling: keep the welcome. The pins #1757 added (`[BL-493 point 1]` in `apps/mobile/test/account-deletion-gate-hook.test.ts`) stay as the record.
+- Why: the paper does not guard the case the row names. With no answer, the cap ends the paper after 3 s and the gate answers welcome (`CHECK_CAP_MS`, `apps/mobile/src/lib/account-deletion/use-first-run-gate.ts:41`; `chooseScreen`, `open-request.ts:232-243`), so an offline fresh install reaches the welcome either way, and every signed-in fresh install would pay up to 3 s for it. The harm is small: a letter started then stays on the phone (CPrivO-19 took BL-486 option (b)), and once the read lands the gate shows the deletion screen with Cancel.
+- Debate: the CISO's objection: "with BL-486 at option (b), this is the last guard on a fresh install." Answer: it is not a guard offline, which is the only time it matters; online the read lands in about the time the welcome takes to draw.
+- Door: two-way. Way back: answer `checking` for a signed-in phone with no book until the first read.
+- Revisit when: S1-35 or a tester shows a letter made during an open request.
+- Founder-only: no. Signed: Chief Product Officer (Claude role)
+
+### CPO-95 BL-493 point 2: keep the up-to-3 s paper; no remembered answer (25 Nov 2026, CPO via Karma's session, stream 6; Claude role)
+- Question: is a paper of up to 3 s on every Onboarding mount acceptable for a signed-in phone that holds a closed book, or should the last answer be kept for a short time?
+- Verdict: RULED: accept as is. Lead CPO; consulted CDesO; challenger CISO.
+- Ruling: no cache of the last answer. Only a signed-in phone with a closed book and no visible book sees the paper; with the server reachable it lasts one status read, and 3 s is the ceiling when offline or slow.
+- Why: remembering an answer needs a trust window on the deletion gate (a CR-70 path), and a stale "no request" answer would show the welcome to a phone whose account has a request open. The population is small and the cost is seconds.
+- Debate: the CDesO's objection: "every return to Onboarding blinks paper." Answer: true and bounded; it is measured on the phone in S1-35 before anyone builds a cache.
+- Door: two-way. Way back: none needed; a cache can be added later with its own rule.
+- Revisit when: S1-35 shows the paper on more than a cold launch, or a tester reports it.
+- Founder-only: no. Signed: Chief Product Officer (Claude role)
+
+### CPrivO-56 BL-494 point 4: after the purge, the step-1 line says the letters stay in Recently deleted (25 Nov 2026, CPrivO via Karma's session, stream 6; Claude role, not counsel)
+- Question: PR #2090 finds that after the day-30 purge a phone never learns its letters are gone, so they stay in Recently deleted with no end date and the shelf and card dates stop being true for them. Change the line, have the phone act on its own note, or something else?
+- Verdict: RULED. CR-176 class: legal and privacy. Exec review in place of counsel (D-172). Lead CPrivO; the CLO reads the words; consulted CDO and the sync owner (through #2090); challenger CISO.
+- Options considered: (a) change `what.onThisPhone` (recommended, with the card fix below); (b) the phone erases these letters once its note's date has passed; (c) both; (d) leave it.
+- Ruling: (a). `accountDeletionCopy.what.onThisPhone` becomes "On this phone, your letters stay. The ones already saved to your account move to Recently deleted. After your account is deleted, they stay there until you erase them." The code comment above it, which assumes a later pull erases them, is corrected in the same content PR. With it: the Recently deleted card does not draw "Kept here until {date}" once that date has passed (no new words; a mobile follow-up for Karma to file). On the same condition `shelfHelp` ("Letters you delete wait here for 30 days.", `strings.en.ts:919`) is not drawn while the shelf lists any letter whose 30 days have passed, so the shelf never states a clock that has stopped for the letters it shows. The rule covers every place that draws `shelfHelp`: the shelf itself (`settings/recently-deleted.tsx:150`) and the two rows that open it, where it is the subtitle (the Settings row, `settings/index.tsx:174`, and the first-run row, `onboarding.tsx:647`); a row drops the subtitle and keeps its title. For every other phone it stays as it is, because it is true there. No new words.
+- The route to the shelf: today a sole parent whose only book went with the account has no way to these letters after the purge. Read from the code, not run on a phone: the first-run row is drawn only when `listDeletedBooks()` is above 0 (`onboarding.tsx:195`, `first-run/recently-deleted-row.logic.ts`), that list holds only books deleted on the phone (`wipe.listDeleted`), and the pull's `closeBook` (`apps/mobile/src/lib/sync/merge.ts:886-890`) sets `server_state = 'deleted'` and marks no such book, so no row is drawn and nothing else on first run leads to Recently deleted. So the same mobile follow-up also draws the first-run row while the shelf lists any letter (`listDeleted()` above 0), with the same title and no new words, and its test shows a sole parent after the purge sees the row and finds those letters on the shelf with Erase there. The new line ships only in the same PR as that route. If the follow-up finds the letters cannot be listed or erased from there, the third sentence ships as "After your account is deleted, they stay on this phone." instead, and the reason goes in that PR. The privacy policy's Recently deleted line (`docs/legal/privacy-policy.md:113`, section 7, "Then it is erased") has the same gap for these letters; it is legal text, so the exec team's proposed exception rides the next legal PR (BL-783) and is not edited here.
+- Why: the line becomes true, and it tells the person the one thing that changes for them. (b) erases on the strength of the phone's own note. With recording backup off, the recordings exist only on that phone, and a note can be stale (a cancel made on another phone while this one was offline), so a wrong erase loses recordings for good: a one-way door on a person's own data. The letters left behind are on the person's own phone, under their control, and gone from our servers; nothing here keeps more on our side.
+- Debate: the CISO's objection: "letters of a deleted account stay on a phone forever." Answer: they are the person's own words on their own phone, and the line now says so; on a phone that still shows a book, Erase is one tap in Recently deleted and Erase everything exists. For a sole parent whose only book is gone after the purge there is no route today (the BL-776 row, CDesO-15, needs a deleted book, and the purge leaves none); the route above gives one, and "until you erase them" ships only with it. (b) waits for a proof that the account is gone (for example an auth answer that the user no longer exists), never the date alone.
+- Evidence: PR #2090 at f6936f6fef3cf54c86282ecc7fd3a8f89fc7e29d (merged as 18a2087a; its findings are tests, not run on a phone or staging); `packages/content/src/features/account-deletion.en.ts:32-38`; `packages/content/src/strings.en.ts:919,923`; `apps/mobile/src/lib/sync/merge.ts:886-890`; `apps/mobile/src/lib/store.ts:1079-1085,1309-1311`; `apps/mobile/src/app/onboarding.tsx:195,643-650`.
+- Second review (Review B on this PR) found the first version kept `shelfHelp` with no reason; accepted, and the shelf rule above was added. Its next pass found the first-run route the Debate leaned on is not there (read from the code); accepted, and the route and the fallback line above were added. Also accepted from the reviews: the gap between `prepare_account_purge` and the auth delete can last as long as the worker retries a failed step (up to 7 days), not seconds, so a phone that syncs a shared book in that gap erases the person's own letter there; the line stays true for the person's own phone in the common case and the gap goes to a follow-up row for the sync owner, which stream 6 files through stream 1 (the backlog owner).
+- Conditions: the line ships with #2090's finding on `develop` (merged as 18a2087a). If a later change lets the phone learn of the purge, the line goes back to two sentences.
+- Door: two-way for the words. Way back: restore the old string.
+- Founder-only: no. Not legal advice (D-172). Signed: Chief Privacy Officer (Claude role, not counsel); concurred: Chief Legal Officer (Claude role, not a lawyer)
+
+### CDesO-48 BL-494 point 6a: the signed-out open-deletion screens stay as they are (25 Nov 2026, CDesO via Karma's session, stream 6; Claude role)
+- Question: `open.restoringBody` is drawn while signed out, and the executing screen signed out offers Sign in, which cannot cancel. Accept or change?
+- Verdict: RULED: accept. Lead CDesO; consulted CPO and CPrivO.
+- Ruling: no change for 1.0. Restoring, signed out: the line sits above Sign in, which is the step that brings the letters back, and the state is reached only when a session ends in the seconds after a cancel. Executing, signed out: the body promises nothing about cancelling ("Your account is being deleted now. This can take up to a day."), the sheet no longer offers a cancel there (#1761), and Sign in keeps the phone usable with another account, so the screen is never a dead end. The dropped `waiting` result of `d.signOut()` stays: the sign-out finishes on its own and the screen has nothing to say.
+- Evidence: `apps/mobile/src/lib/account-deletion/open-request.ts:270-282` (`deletionView`); `packages/content/src/features/account-deletion.en.ts:78,92-95`; PR #1761 body, point 6(a).
+- Door: two-way. Revisit when: S1-35 shows the restoring screen signed out in normal use.
+- Founder-only: no. Signed: Chief Design Officer (Claude role)
+
+### CDesO-49 BL-495 point 7: the export ZIP README says what Export did, and gives the address (25 Nov 2026, CDesO via Karma's session, stream 6; Claude role)
+- Question: `errors.launch.readme` says "Nothing here was changed or removed" (claims row E8, unverified) and offers help with no address. Keep, or new words?
+- Verdict: RULED (the spec owner's wording, row KEEP lifted). CR-176 class: a claim in shipped words. The CLO reads it as a claim in place of counsel (D-172) and concurs.
+- Ruling: `errors.launch.readme` becomes, with `${brand.support.email}` from `packages/brand` (today `publisher.supportEmail`), four lines joined by `\n`:
+  "These are the files found on this phone when the book couldn't open.\nThe recordings folder holds your voice recordings; they play in any audio app.\nThe database folder holds the book's own files, copied exactly as they were on this phone.\nKeep this export where you can find it again. For help getting it back into the book, write to us at ${brand.support.email}."
+- Why: Export copies the files byte for byte and never opens the store (`apps/mobile/src/lib/resilience/recovery-export.logic.ts:1-7`, `recovery-export.ts:59-89`), so "copied exactly as they were on this phone" is provable; "Nothing here was changed or removed" is not, because Try again runs update steps that delete settings keys (claims row E8). "Somewhere safe" goes ("safe" is on the house never list), and the address is the live support mailbox. The second line is unchanged.
+- Debate (self-challenged only): the CLO's objection: "an address in a file that leaves the phone invites mail we cannot answer about a broken database." Answer: support already answers book problems at that address, and a README that says "write to us" with no address is the gap the critics named (L2). Rejected.
+- Evidence: `packages/content/src/strings.en.ts:1293-1310`; `packages/brand/index.ts:35,59-61`; `docs/design/EXPERIENCE_PASS_2026-10.md:1243`; WRITING-GUIDE section 0.
+- Door: two-way. Way back: one string. The S51 row in the experience pass changes from KEEP to CHG in the content PR.
+- Founder-only: no. Signed: Chief Design Officer (Claude role); concurred: Chief Legal Officer (Claude role, not a lawyer)
+
+### CDesO-50 BL-495 point 4: recovery screen actions go inline from AX1, as built (25 Nov 2026, CDesO via Karma's session, stream 6; Claude role)
+- Question: PR #1765 puts the recovery screen's buttons inline after the words from AX1. AX1 or AX3?
+- Verdict: RULED: AX1, as built.
+- Ruling: keep `plainActionsInline` at AX1. It is the threshold the sign-in sheet (`inlineFooter`, `apps/mobile/src/lib/auth/ui.tsx:93`) and StateScreen's pinned action already use (`useIsAccessibilitySize`, AX1 and above, `apps/mobile/src/lib/a11y.logic.ts:15`), so one rule holds across the app and one test covers it. At AX1 the words are short enough that the buttons follow them on screen; at AX3 and above the critics measured the words running past a pinned window on an SE 3.
+- Not verified: no device run; S1-34 (e) in `docs/qa/DEVICE_TEST_PLAN.md` is the check.
+- Door: two-way. Way back: change the threshold in one place.
+- Founder-only: no. Signed: Chief Design Officer (Claude role)
+
+### CDesO-51 BL-2242: the Listen screen reader ready line is approved as written (27 Nov 2026, CDesO via Karma's session; Claude role)
+- Question: `en.listen.ready.hintScreenReader` ("Double tap Start recording and talk.") is live on `develop` (`packages/content/src/strings.en.ts:305` at 0082f8e0; added by BL-1827, PR #1708) with no `PROPOSED` marker and no exec reading on record (BL-2242). Does it ship as written?
+- Tier and type: T1; clear. The council gave no tier; this one is set by precedent (CPO-1), UNVERIFIED as the council's.
+- Options considered: approve as written; change the words; keep it marked PROPOSED until a device walk
+- Ruling: approved as written; no word change. The line carries a one-line comment citing this entry (`strings.en.ts:305`, the line above `hintScreenReader`, which moves to `:306`).
+- Why: it names the control a screen reader announces ("Start recording", the `en.listen.ready.startA11y` label), it is a plain imperative, and it is glossary-safe. `packages/content/test/spoken-lines.test.ts:24-27` already pins the exact text and that it contains `startA11y`; `:29-32` keeps "the red circle" (BRAND.md:104) on the sighted line only. What VoiceOver speaks on a phone is UNVERIFIED: no device walk was read for this entry.
+- Door: two-way
+- Way back: a new reading changes the words, the comment and the pin in `spoken-lines.test.ts` together.
+- Revisit when: a VoiceOver walk shows the control announced under another name, or `startA11y` changes.
+
+### CPO-96 BL-390: close as agree in substance; the recordings-place words stay (27 Nov 2026, CPO via Karma's session; Claude role)
+- Question: BL-390's done-when asks for one identical sentence on where recordings live in the three in-app places. The three places say it in different words, each by an earlier ruling. Is the row done?
+- Tier and type: T1; clear. The council gave no tier; this one is set by precedent (CPO-1), UNVERIFIED as the council's.
+- Options considered: keep the row open until one sentence is used everywhere; close it as agree in substance; rewrite the three lines now
+- Ruling: close BL-390 as "agree in substance". The recordings-place words stay as they are. They are pinned by `packages/content/test/recordings-place.test.ts` (present on `develop` at 0082f8e0), which holds the one fact the places must share (kept on this phone, never "only" or "stays", no backup of ours) rather than one sentence. The BACKLOG done-when edit belongs to the stream that owns `docs/BACKLOG.md`; this entry does not edit it.
+- Why: the substance of the row, that no place promises more than the build does, is met and tested; the letter of it, one identical sentence, would undo rulings the test file names in its header (lawyer-2 H4, CCO-8, the 8 Nov CTO ruling). The row's other checks (the claims registry has one row per claim; the website, store listing and Subscription Terms agree) were not re-read for this entry: UNVERIFIED.
+- Door: two-way
+- Way back: reopen BL-390 and ask for one sentence.
+- Revisit when: recording backup ships (`claims-capabilities.test.ts` then gates the backup claim), or any of the three places changes its words.
+
+### CPrivO-57 D-061: the website's Private scene says the full registered promise word for word (27 Nov 2026, CPrivO via Karma's session; Claude role, not counsel)
+- Question: the website's Private scene (`site.scenes.s09`, headline "Private by default.", in `apps/web/src/content/site.ts`) says a shortened privacy promise that stops at "never use them for ads". Must it say the registered `en.trust.promise`?
+- Tier and type: T1; clear. The council gave no tier; this one is set by precedent (CPO-1), UNVERIFIED as the council's.
+- Options considered: keep the shortened line; say the full promise word for word, held equal by a test; drop the line from the scene
+- Ruling: the Private scene says the full registered promise `en.trust.promise` word for word, held equal by a test. Carried by open PR #2129 (head fe5089dc1a6ddb0927d4a5f62e60d80733daa3b7): the s09 point in `apps/web/src/content/site.ts`, and a test in `apps/web/test/copy-rules.test.ts` that the scene contains `en.trust.promise` and no shortened copy of it beside it. Not merged when this entry was written.
+- Why: D-061 says the privacy promise once, the same way, in a few set places; `packages/content/src/strings.en.ts:1583` says the store listing and website use `trust.promise` word for word. The shortened line leaves out the promise not to train machine learning models on the letters. This is the registered promise, not a new one. Filed as CPrivO, not CCO: `docs/agents/exec/COUNCIL.md:56` has the CMO own website claims and consult the CPrivO on privacy claims, `:62` gives personal data to the CPrivO, and no CCO entry in this file rules on `trust.promise`. Whether the website is live, and in which `SITE_MODE`, is UNVERIFIED (as in CMO-20).
+- Door: two-way
+- Way back: revert the s09 point and its test in #2129, or redeploy the previous website version.
+- Revisit when: `en.trust.promise` changes (the test then fails until the site follows).
+
+### CMO-21 D-139: the website title and brand line take the BRAND.md descriptor; four site lines held as PROPOSED (27 Nov 2026, CMO via Karma's session; Claude role)
+- Question: the website still introduces the product with the descriptor D-139 retired ("the baby memory book you fill by talking" and its variants). What changes, and what waits?
+- Tier and type: T1; clear. The council gave no tier; this one is set by precedent (CPO-1), UNVERIFIED as the council's.
+- Options considered: change every site line now; change the title and brand line to the registered words now and hold the lines that need new words; change nothing until all lines have approved words
+- Ruling: the website title (`site.meta.title`) and brand line (`site.brand.line`) take the BRAND.md descriptor word for word ("letters to your child, in your own words and voice"), carried by open PR #2129 with a test that pins both. Four more site lines still say the retired descriptor: `comingSoon.line`, `comingSoon.shareTitle`, `comingSoon.shareText` (`apps/web/src/content/site.ts:72`, `:90`, `:91` on `develop` at 0082f8e0) and `welcomeEmail.intro` (`:280`). Their replacements are new words. They are recorded here as PROPOSED, are not approved by this entry, and are held, not applied, until approved:
+  - `welcomeEmail.intro`: `${NAME} keeps letters to your child, in your own words and voice. It is coming to iPhone in the US. You will hear from us once more, at launch.`
+  - `comingSoon.line`: "Letters to your child, in your own words and voice. Say what happened today, out loud."
+  - `comingSoon.shareTitle`: `${NAME}: letters to your child`
+  - `comingSoon.shareText`: `${NAME}: letters to your child, in your own words and voice. A few words at the end of the day, said out loud.`
+  #2129's `copy-rules.test.ts` lists the four as the only lines allowed to keep the old descriptor (a shrink-only list); each leaves the list when its words change.
+- Why: D-139 replaces the old descriptor everywhere a parent reads first; BRAND.md lines 14 and 89 give one descriptor, with the line standing alone where the name is already on screen. The title and brand line take the registered words unchanged, so they add no new claim; the four lines need new sentences, which are new words. Filed as CMO, not CBO: `docs/agents/exec/COUNCIL.md:14` gives positioning and the website's claims to the CMO; the CBO's `:15` is business model and pricing, and this file has no CBO entry.
+- Door: two-way
+- Way back: revert the two lines and their test in #2129, or redeploy the previous website version.
+- Revisit when: the four PROPOSED lines are approved; each changed line then leaves the shrink-only list in the same PR.
+
+### CLO-45 BL-2128: recommended changes to the /delete-account words in draft PR #2066 (27 Nov 2026, CLO via Karma's session; Claude role, not legal advice)
+- Question: draft PR #2066 (head 5d1fe325813f7b6a21379aebcd90d6fced54751c) builds `/delete-account` from the counsel draft `docs/legal/delete-account-page.md` (1.1.0, draft-for-counsel). Which of its words should change before it publishes?
+- Tier and type: T1; clear. The council gave no tier; this one is set by precedent (CPO-1), UNVERIFIED as the council's.
+- Options considered: publish the draft words unchanged; recommend changes and hold them for counsel; rewrite the page in the PR
+- Ruling: recommended changes, all PROPOSED and held for counsel; the legal text merges under D-125. Lines are of `apps/web/src/lib/legal/delete-account-copy.ts` in #2066, with the draft's line in brackets:
+  - `next.items[1]` (`:44`; draft `:48`): the backups clause uses the registered data-policy wording on backups within 38 days (`docs/legal/data-policy.md:217`, "from database backups within 38 days"); today it says "from our backups within 38 days".
+  - `removed.items[0]` (`:51`; draft `:55`) becomes "Your letters, from every book on your account."
+  - `removed.items[3]` (`:54`; draft `:58`), the recording backup line, is dropped.
+  - `removed.items[5]` (`:56`; draft `:60`) takes the app's words "A copy you exported stays wherever you saved it." (`packages/content/src/features/account-deletion.en.ts:31`, `copies`).
+  - `kept.items[1]` (`:64`; draft `:69`), the activity-logs line, becomes "Activity logs, for 24 months, without your name or email."
+  The copy file's header (`:4-6`) says its words are the draft's unchanged, and `apps/web/test/delete-account.test.ts` fails if a word differs, so each change lands in the draft first, then in the copy file. This entry changes neither file.
+- Why: each change brings a page line into line with words already registered elsewhere: the data policy's published deletion clocks, and the app's own deletion screen. The council's reasons beyond that were not given for this record. Still blocked, whatever happens to these words: CR-187 and CR-193 Ruling D-15 (`docs/agents/cto/RULINGS.md:1229`, `:1293`; D-15 names draft lines 26 and 74 to 82, the email-started deletion lines); the evidence that backups clear within 38 days; and counsel's read. Not legal advice.
+- Door: two-way while the page is noindex and off `main`
+- Way back: keep the draft words; each recommendation is a separate line.
+- Revisit when: counsel answers on the draft, or CR-187 is applied and the 38-day evidence is recorded.
+
+### CPrivO-58 Typed-day words on the lock screen need names on too (27 Nov 2026, CPrivO via stream 11's session; Claude role)
+- Verdict: RULED. Owner: Chief Privacy Officer; consulted: CPO (scope), CDesO (how it reads); Karma concurs for the build.
+- Question: a typed day (NS-18) puts the parent's own words on the lock screen when day names are on and App lock is off (NS-18-R3, CL-119). The words are free text and can hold a child's name ("Rakhi with Avi"), so a name could reach the lock screen while "Names in notifications" is off, its default. FR-NTC-11 and NS-48-R11 say names off means no child name in any title or body.
+- Ruling: option A. The words show only when day names are on AND names on the lock screen are on AND App lock is off. In every other state the note carries the fixed line. The planner never reads or searches the words (option C, a name check on the text, is rejected: it misses nicknames and other scripts and would have the machine judge a parent's words). Option B (keep NS-18-R3 as written and narrow FR-NTC-11 to machine copy) is rejected: the parent who turned names off asked for no names on the lock screen, whoever wrote them.
+- Why I can rule it: blocking a leak and collecting less is inside my rights; this only removes text from a lock screen and adds nothing. Nothing in the app sets day names on today (the switch screen is BL-1015, blocked), so no family sees a change.
+- Evidence (read this session): `apps/mobile/src/lib/reminders/planner.ts` `typedDayCopy`; Review A on PR #2133 found 163 of 400 seeded plans put a child's name in a typed body with names off and day names on.
+- Effects: errata rows for NS-18-R3 ("words show with day names on and names on, App lock off") and NS-48-R27 wording, for the PM lane. BL-1015's switch help must say the words show only when names are shown too (CDesO). Implementation and tests: PR #2133 (BL-1324).
+- Door: two-way. Way back: drop the names condition in `typedDayCopy` and its tests.
+- Founder-only: no. Signed: Chief Privacy Officer (Claude role, not counsel)
+
+### CPO-97 NS-18-R3 errata follows CPrivO-58 (27 Nov 2026, CPO via stream 11's session; Claude role)
+- Verdict: RULED (requirement hygiene, concur with CPrivO-58). No release scope or date moves: day names cannot be turned on in any build yet.
+- Ruling: NS-18-R3 and FR-NTC-11 stop conflicting by reading NS-18-R3 as "the words show only with day names on and names on, App lock off". The errata rows for NS-18-R3 and NS-48-R27 go to the PM lane with the backlog reconcile.
+- Door: two-way.
+- Founder-only: no. Signed: Chief Product Officer (Claude role)
+
+### CDesO-52 BL-1657 (PR #2059): the add-child retry card words are approved as written (27 Nov 2026, CDesO via the stream 4 council session; Claude role)
+- Question: PR #2059 (head 00002725d1fe5da93774f8c96fd0c908b99d8ead) adds three PROPOSED keys for the card shown when making the book fails at the first-run finish step. Do they ship?
+- Tier and type: T2; clear (words a parent reads; tier set by this session from the CTO skill section 4 table).
+- Options considered: approve as written; change the body to name chosen answers as well as typed ones; hold until BL-2144 draws the card
+- Ruling: approved as written:
+  - `en.onboarding.finishRetry.title`: "The book isn't open yet"
+  - `en.onboarding.finishRetry.body`: "Everything you typed is still here."
+  - `en.onboarding.finishRetry.tryAgainButton`: "Try again"
+  Placement condition for BL-2144, no new words: while the card shows, it takes the place of the finish step's heading and body ("The book is open." and its line, `strings.en.ts:203-207`, drawn at `onboarding.tsx:605-610`), so the screen never says the book is open and not open at once.
+- Why: the card follows the error anatomy (WRITING-GUIDE section 8): what happened, what is still fine, one thing to do. The title is true: `addChildren` runs as one transaction (`onboarding.tsx:322-330`), so a throw leaves no book, and "yet" is honest because Try again makes it. The body is true while the screen is up: the names, date and sign-off stay in the component's state, and `booksMade` is set only after `addChildren` returns (`onboarding.tsx:331`). It avoids "on this phone" because keeping the first-run draft can fail quietly (`onboarding.tsx:255-264`). Answers that were picked rather than typed (the date, a sign-off chip) are kept too, so the line says less than is true, never more. No `{child}`, no gendered word, glossary words only, button 9 characters.
+- Debate (self-challenged only; no separate agent was available to this session): "the card sits on a screen whose heading already says the book is open." Accepted, as the placement condition above.
+- Door: two-way
+- Way back: revert the three keys; BL-2144 draws no card.
+- Revisit when: BL-2144 lands, or the finish step stops making the book in one transaction.
+- Signed: Chief Design Officer (Claude role); consulted: Chief Product Officer (Claude role)
+
+### CDesO-53 BL-873 (PR #2061): the four typed-day reminder pairs and the pre-sheet clause are approved as written; the key is reconciled with develop's on rebase (27 Nov 2026, CDesO via the stream 4 council session; Claude role)
+- Question: PR #2061 (head 62fb23e1c82019a6e133c9973284707536d21ab0) adds four fixed lock-screen pairs for a day the parent typed, and proposes one clause for a draft photo pre-sheet. Do they ship?
+- Tier and type: T2; clear (lock-screen words; tier set by this session from the CTO skill section 4 table).
+- Options considered: approve as written; reword the pairs; hold until BL-842 wires them
+- Ruling: approved as written, as `reminderCopy.neutral.typedDay`:
+  - "A day you added" / "Anything you'd like to say about it?"
+  - "How's the day going?" / "Talk or type a line about it."
+  - "Anything for the book?" / "One thing about the day is enough."
+  - "A word about the day?" / "Say it or type it, whenever suits you."
+  The clause, approved as written as the replacement for "and to offer you a few words about it" in the draft `memoryLibrary.ask.body1` (`docs/design/specs/MEMORY-LIBRARY-FLOWS-10nov.md:120`): "and then to talk about it, if you'd like."
+  Condition on the key: develop already has `reminderCopy.neutral.typedDay` as one PROPOSED pair ("A day you wanted to remember" / "Tap to see the words you added for today.", `packages/content/src/features/reminders.en.ts:35`), read as an object by `typedDayCopy` (`apps/mobile/src/lib/reminders/planner.ts:348-350` on develop at the merge of #2133, which added a `namesOn` parameter), for the same typed day. The PR turns the key into an array and is not mergeable against develop today. On rebase there is one fixed family for a typed day, the four pairs above; develop's single pair is not approved by this entry and goes. The planner picks one pair when the note is scheduled (NX-39-R26) and keeps CPrivO-58's rule (merged in #2133) on when the parent's own words take the body's place.
+- Why: each pair is an invitation that can be ignored, with no count, no chasing word (NX-39-R17), no place, photo, occasion or name (R25, R26), no "we", no exclamation mark and no placeholder, so the lock screen says the same whatever the parent typed. Every line is a question or a plain offer, and none claims what the app keeps (WRITING-GUIDE section 8, push notifications). "One thing about the day is enough" sits beside the guide's own "A line is plenty." "How's the day going?" carries no cheer, so it reads right on a hard day the parent chose to mark. The clause removes "offer you a few words", which says the app supplies words (the constitution), and "if you'd like" keeps it optional. The pre-sheet it belongs to is superseded in design by the Moments primer (CPO-41), so the clause lands in a draft spec only and reaches no parent.
+- Debate (self-challenged only): the CPrivO's objection: "four rotating titles let a lock-screen reader learn that a typed day exists." Answer: the single develop pair does the same, and no pair names the day or its words; the parent's words show only under CPrivO-58's three conditions.
+- Not ruled: the glossary proposals in the PR body (look, the list, forget, Hidden choices, a stretch); they are not words of this PR's keys.
+- Door: two-way
+- Way back: revert the array and the test; the planner keeps whatever single pair develop then has.
+- Revisit when: BL-842 wires the occasions planner, or the day-name switch (BL-1015) ships.
+- Signed: Chief Design Officer (Claude role); consulted: Chief Privacy Officer (Claude role, not counsel), Chief Marketing Officer (Claude role) for voice
+
+### CMO-23 BL-2129 (PR #2062): the /open other-phone line is approved as written (27 Nov 2026, CMO via the stream 4 council session; Claude role)
+- Question: PR #2062 (head 4255028ea673a48a62a0244cdfa21905eda18bb9) adds one line under the /open heading for a person on another kind of phone. Does it ship?
+- Tier and type: T3; clear (a public claim on the website; tier set by this session from the CTO skill section 4 table).
+- Options considered: approve as written; drop "For now"; show it only to visitors whose browser is not an iPhone
+- Ruling: approved as written: `site.openApp.notIphone`: "Not on an iPhone? For now, Early Letters is only on iPhone." (the name from `${NAME}`). Shown to everyone, as built; no user-agent check.
+- Why: the claim is true of every build: `supportsTablet: false` (`apps/mobile/app.config.ts:236`) and no Android build ships (D-013, iOS only at launch, and D-059, Android deferred; `apps/web/test/copy-rules.test.ts:243-244` bans an Android promise, and the line names no other platform). It is true before launch too, since testers have it on iPhone only. "For now" makes no promise and names no date; the same hedge is in shipped copy (`packages/content/src/pages.en.ts:191`). Showing it to everyone keeps the page static and reads nothing about the visitor, which is less data than a user-agent check.
+- Debate (self-challenged only): the CLO's objection: "'only' needs proof, and an iPhone app can run on an iPad in compatibility mode." Answer: the app is built and listed for iPhone only; Apple's compatibility mode is Apple's, not ours, and the line claims nothing about iPad. UNVERIFIED: how App Store Connect lists the iPad compatibility setting for this app.
+- Door: two-way
+- Way back: remove the one paragraph and the key, and redeploy the site.
+- Revisit when: an Android or iPad build is planned, or the site goes live (`launch.mode`).
+- Signed: Chief Marketing Officer (Claude role); consulted: Chief Legal Officer (Claude role, not a lawyer), Chief Compliance Officer (Claude role, not counsel)
+
+### CMO-24 BL-558 (PR #2063): the invite page's App Store line is approved, shown only once the site is in launch mode (27 Nov 2026, CMO via the stream 4 council session; Claude role)
+- Question: PR #2063 (head e45b5fd1fb13dbf8ebd7991f182e5a6364c7aeaa) adds a line to the /j invite page saying the App Store version has no invites, and uses it in `claims-capabilities.test.ts` as the page's qualifier. Does it ship, and when is it drawn?
+- Tier and type: T3; clear (a public claim about what a build does; tier set by this session from the CTO skill section 4 table).
+- Options considered: approve as written, shown always; approve the words, drawn only in launch mode; hold until the store build has invites
+- Ruling: approved as written: `site.invite.storeBuild`: "For now, the App Store version of Early Letters doesn't have invites." (the name from `${NAME}`). Display condition, no new words: the page draws it only when `launch.mode === 'live'`, the same switch /open already uses for its App Store words (`apps/web/src/app/open/page.tsx:31-40`, `apps/web/src/lib/launch.ts`). The string stays in `site.ts`, so the claims test still reads it, and the e2e checks that expect it are run in launch mode.
+- Why: the line is true of the store build: only an alpha build writes /j links (`inviteDestination`, per the PR) and the store build hides "I was invited" (B12-5). Before launch there is no App Store version, so the line would describe a product a visitor cannot find, and the only readers then are alpha invitees for whom the steps work. Holding a claim until its evidence exists is the CMO's (CMO skill section 4). "For now" names no date and promises no feature; BRAND.md pillar 3 bars a public line saying co-parent sharing is in the first release, and this line says the opposite. Glossary words only; no blame, no fear.
+- Debate (self-challenged only): the CCO's objection: "the claims test exempts the page's invite words because this line is on the page for everyone; hiding it before launch removes the qualifier." Answer: before launch no reader holds the store build, so the page's invite words describe the only build that can open them; from launch the line is drawn, which is when the store build exists.
+- Door: two-way
+- Way back: draw the line always, or remove it with the `QUALIFIED_PAGES` row, and redeploy.
+- Revisit when: the store build gets the invite flow (the PR's own test then fails until the line comes off).
+- Signed: Chief Marketing Officer (Claude role); consulted: Chief Legal Officer (Claude role, not a lawyer), Chief Compliance Officer (Claude role, not counsel), Chief Privacy Officer (Claude role, not counsel)
+
+### CDesO-54 BL-524 (PR #2082): the four typed family code lines are approved as written (27 Nov 2026, CDesO via the stream 4 council session; Claude role)
+- Question: CDesO-19 ruled the approach (keys first, council-locked, replaceable, no screen until BL-445's flag flips). PR #2082 (head df53226586393cedcd21b5ff04d6810e77188fdb) writes the four lines where the link words would be untrue for a code. Do these exact words ship?
+- Tier and type: T2; clear (words a parent reads before joining a shared book; tier set by this session from the CTO skill section 4 table).
+- Options considered: approve as written; align `rate_limited` with `accept.tryLater`; hold until BL-445 draws them
+- Ruling: approved as written:
+  - `familyCopy.code.askBody`: "You'll both read every letter in the book. Join only if you know who gave you this code."
+  - `familyCopy.code.errors.not_found`: "That code doesn't open an invite. Check it and try again, or ask for a new one."
+  - `familyCopy.code.errors.rate_limited`: "Codes can't be checked for a while. Try again later, or ask the person who invited you for the link."
+  - `familyCopy.code.errors.codes_paused`: "Codes aren't working right now. Ask the person who invited you to send the link instead."
+- Why: each answer matches what `supabase/functions/invite-redeem/handler.ts` does. `not_found` covers wrong, expired, used and cancelled codes on purpose (`:170-172`), so the line names no reason and blames no one. Both limits are on the code path only (`invite_redeem_by_code`, `:145`; per person, phone or address `:132,169,177`; global brake `:162-166`), so pointing the person to the link is a way that works. The retry window is an hour (`retry-after: 3600`), which "for a while" says without a number the build might change. `askBody` is `accept.askBody` with "this code" for "this link", "gave you" for "sent you" and a contraction; what it tells the person (both parents read every letter) is the existing join term, unchanged. No line names the child before joining (the `FAMILY_BEFORE_JOIN` scope), and none counts tries.
+- Debate (self-challenged only): the CPrivO's objection: "'ask the person who invited you' tells a guesser that an inviter exists." Answer: the line is the same for a wrong code and a real one (`not_found` hides which), so it reveals nothing a guess did not already assume.
+- Door: two-way
+- Way back: delete the `code` keys; BL-445 reads nothing.
+- Revisit when: `handler.ts` gains an answer (the PR's test then fails until it has words), or BL-445 draws the screen.
+- Signed: Chief Design Officer (Claude role); consulted: Chief Privacy Officer (Claude role, not counsel), Chief Product Officer (Claude role)
+
+### CDesO-55 BL-2145 (PR #2083): the photo-added-on-another-phone line is held (27 Nov 2026, CDesO via the stream 4 council session; Claude role)
+- Question: PR #2083 (head a8282fb5b8a8c7a9aaff18404c64e93d13e40cbe) adds `photosCopy.book.letter.otherPhone`, "This photo was added on another phone.", for a letter that has a photo record and no local file (BL-1660). Does it ship?
+- Tier and type: T2; complicated (a line about where a person's picture is; tier set by this session from the CTO skill section 4 table).
+- Options considered: approve as written; approve BL-852's "The photo is on the other phone."; hold until a phone can hold a record of a picture added elsewhere
+- Ruling: HOLD. Neither line is approved.
+- Why: in the build, a phone holds a photo record only for a picture added on that phone. `entry_media` is local and never pushed or pulled, and the push mapper sends `photo_path` null (`apps/mobile/src/lib/db/migrations.ts:432-434`); the pulled row's `photo_path` is the legacy column (`packages/api/src/server/sync.ts:618-619`), and the server refuses a new one (`supabase/migrations/20261110000000_photo_bucket_closed.sql`, pending). So the state BL-1660 names, a record and no file, means the picture was added on this phone and has since gone, which `book.letter.missing` ("Not on this phone anymore") already says. Drawn there, "added on another phone" would be untrue. The words themselves are plain and blame-free; what is missing is a state in which they are true.
+- What would unblock it: BL-1660 (or the sync owner) names a state in the shipped build in which a phone knows that a letter from another phone had a picture. That needs a marker on the wire, which is new data (NX-39-R33's banned keys and BL-1660's "no new data on the wire" both bear on it) and needs the CPrivO's reading first. Then this line is the starting text and is read again.
+- Debate (self-challenged only): "a co-parent's letter with a picture arrives on the other parent's phone, so the line is needed." Answer: that letter arrives with no picture record at all, so no code path can tell it apart from a letter without a picture; the line would have no state to show in.
+- Door: two-way
+- Way back: none needed; the key stays unmerged.
+- Revisit when: a sync change gives the second phone a picture marker, or BL-1660 is re-scoped.
+- Signed: Chief Design Officer (Claude role); consulted: Chief Privacy Officer (Claude role, not counsel), Chief Product Officer (Claude role)
+
+### CDesO-56 BL-1548 and BL-2137 (PR #2085): the Moments ask card, access-state and door words; one change (27 Nov 2026, CDesO via the stream 4 council session; Claude role)
+- Question: PR #2085 (head bf8badff38eec7d8262fbaebffb2596ec816ef2d) adds 15 PROPOSED Moments lines behind the off flag. This entry reads the 11 that are not the primer; CPrivO-59 reads the four primer lines. CDesO-18's two reason lines, carried in the same diff, are not read again.
+- Tier and type: T2; clear (words behind a flag that is off in every store profile, CR-196; tier set by this session from the CTO skill section 4 table).
+- Options considered: approve all as written; approve with changes; hold the set until the library module exists
+- Ruling: approved as written:
+  - `momentsTab.ask.title`: "Show days from your pictures?"
+  - `momentsTab.ask.accept`: "Show days"
+  - `momentsTab.ask.notNow`: "Not now"
+  - `momentsTab.state.limited`: "Choose pictures to start from."
+  - `momentsTab.state.denied`: "Days from your pictures are off."
+  - `momentsTab.state.restricted`: "Days from your pictures are turned off by a phone setting."
+  - `momentsTab.state.openSettings`: "Open Settings"
+  - `momentsTab.door.label`: "Choose pictures"
+  - `momentsTab.door.start`: "Start"
+  - `momentsTab.door.notNow`: "Not now"
+  Approved with change: `momentsTab.door.heading` becomes "Choose a picture to start a letter" (was "Choose pictures to start a letter"). Why: the first door takes one picture (CDesO-38), so a plural heading invites a choice the picker will not take; "a" is no count word and no limit line (NS-53-R294, BL-2134), passes the PR's door test, and the heading goes back to the plural in the PR that ships more than one. The row label keeps the plural: it is the door's name, pinned word for word by NS-53-R270 across the tab, the day sheet and capture Add.
+- Why: none of these lines claims what the app reads or sees, which leaves that claim to the primer alone (NS-53-R300, R278); none says "suggest" (R52), "never", "only", "safe" or "private"; "Settings" appears only where R187 allows. `state.limited` names the next step and not what the app can use in Limited mode: a mode-scoped claim there is counsel's flag KM2, and the line can say less until counsel reads it, which still meets R287's one calm line with the door. `state.restricted` names no reason and offers no button (R76), and a Screen Time or device-management restriction is a phone setting. Decline is the same "Not now" everywhere (R294).
+- Conditions: the counsel read before the flag turns on stands (CR-196; CPrivO-29 gate 1); these words do not shorten it.
+- Debate (self-challenged only): the CPO's objection: "'a picture' will be wrong the day six ship, and the label and heading now differ by more than a word." Answer: the heading follows the build it ships in, and the label and heading are not adjacent controls, so R270's one-word rule does not bind them.
+- Door: two-way
+- Way back: revert the keys; the flag is off.
+- Revisit when: the door takes more than one picture, or counsel answers KM2.
+- Signed: Chief Design Officer (Claude role); consulted: Chief Product Officer (Claude role), Chief Privacy Officer (Claude role, not counsel)
+
+### CPrivO-59 BL-1548 and BL-2137 (PR #2085): the Moments primer; body held, title changed, buttons approved (27 Nov 2026, CPrivO via the stream 4 council session; Claude role, not counsel)
+- Question: the primer is the agreement sheet before Apple's Photos alert (NS-53-R72, R192, PRIV-R21). Do its four lines in PR #2085 (head bf8badff38eec7d8262fbaebffb2596ec816ef2d) ship?
+- Tier and type: T3; complicated (consent wording for a read of personal data; tier set by this session from the CTO skill section 4 table).
+- Options considered: approve as written; approve the buttons and title and hold the body; hold the whole sheet
+- Ruling: approved as written: `momentsTab.primer.continue`: "Continue"; `momentsTab.primer.notNow`: "Not now". Approved with change: `momentsTab.primer.title` becomes "Days from your pictures" (was "Show days from your pictures?"). HOLD: `momentsTab.primer.body` ("{app} reads the date, time and place of your pictures on this phone, while this tab is open, to show you days to tell {child} about.").
+- Why the title changes: the ask card the parent has just answered carries the same question (CDesO-56), and the WRITING-GUIDE keeps a repeated line to one surface (section 7). The sheet's buttons, Continue and Not now, answer a statement better than a question. The new title removes the question and adds nothing.
+- Why the body holds: it states two facts no code yet makes true. No library module is in the build (`apps/mobile/src/lib/moments/library/source.ts`, `nullSource`: "no read, no ask"), so "while this tab is open" is UNVERIFIED, as the PR itself says. "On this phone" next to "place" is the claim CR-196 marks NEEDS EVIDENCE, because turning coordinates into a place name may send them to Apple. The place read is counsel's Q8(b) (H-11). A consent sentence that may be untrue is the one line on this sheet that cannot be read in later.
+- What would unblock the body: (1) the library module lands with a test that the read starts and stops with the tab in front; (2) evidence of where place names come from (on the phone or from a request), with the words changed if a request leaves; (3) counsel's read under CR-196 and CPrivO-29 gate 1. Then the body is read again, starting from these words.
+- Debate (self-challenged only): the CDesO's objection: "R192 asks for exactly these facts, so holding them stalls a P0 row." Answer: R192 asks that the primer say them, and they must be true when it does; the sheet is dark behind the flag (CR-196), so holding costs nothing a parent sees.
+- Door: two-way
+- Way back: revert the keys; the flag is off.
+- Revisit when: the library module lands, or counsel answers Q8(b).
+- Signed: Chief Privacy Officer (Claude role, not counsel); consulted: Chief Design Officer (Claude role), Chief Compliance Officer (Claude role, not counsel)
+
+### CPrivO-60 BL-448 (branch fix/content-deletion-words-s64): the book-deletion preheader is approved as written (27 Nov 2026, CPrivO via the stream 4 council session; Claude role, not counsel)
+- Question: CPrivO-18 had the export lines taken out of the book-deletion email. The branch (head 6ec84f359329593a99f0ae8e3215bc8fa4c2a02b, not a PR) rewrites the preheader without them. Does the new line ship?
+- Tier and type: T3; clear (a deletion term in an email; tier set by this session from the CTO skill section 4 table).
+- Options considered: approve as written; keep the old preheader's order ("Until then you can change your mind."); hold until a sender exists
+- Ruling: approved as written: `accountEmails['book-deletion-scheduled'].preheader`: "On {deletionDate}. You can change your mind until then."
+- Why: it says less than the line it replaces and adds nothing: the export offer goes, as CPrivO-18 ruled, and the date and the undo stay. It reads after the subject ("A book is set to be deleted") as one fact, with no fear or loss word, and sits beside the account email's preheader (`account.en.ts:46`) without copying it.
+- Conditions: nothing sends this email today (no function in `supabase/functions` names it, and `request_book_deletion` appears in `apps/mobile/src` only in comments, `settings/children/delete-book.tsx:28` and `lib/store.ts:1331`). Before a sender is wired, the same email's cancel path must be the app's real one: its body says "Settings, Your data", a section the Settings regroup removed (`packages/content/src/strings.en.ts:1404-1409`). That body line is not read by this entry; without a real path, "You can change your mind" names no way to do it.
+- Debate (self-challenged only): the CLO's objection: "approving a line in an email no one sends is reading in a vacuum." Answer: the reading is of words that only remove a claim; the condition stops the email going out before its cancel path is true.
+- Door: two-way
+- Way back: restore the previous preheader in one string.
+- Revisit when: a book-deletion request is wired in the app, or the email gets a sender.
+- Signed: Chief Privacy Officer (Claude role, not counsel); consulted: Chief Legal Officer (Claude role, not a lawyer), Chief Design Officer (Claude role)

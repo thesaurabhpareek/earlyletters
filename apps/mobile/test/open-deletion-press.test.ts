@@ -1,8 +1,8 @@
 /// <reference types="node" />
 /**
  * The press state of the deletion screen (components/settings/open-deletion.logic.ts), run in Node: Cancel deletion and
- * Try again are answered by the loading state, spoken, and followed by a line or a failure; a second press does nothing;
- * a call that never settles gives the buttons back (lens B S-1 and lens A A6 of the third review of PR #393). The
+ * Try again are answered by a busy primary (BL-494 point 3), spoken, and followed by a line or a failure; a second
+ * press does nothing; a call that never settles gives the buttons back (lens B S-1 and lens A A6 of the third review of PR #393). The
  * screen itself (open-deletion.tsx) only draws what this says.
  * Fictional family "Asha" only (CLAUDE.md).
  */

@@ -18,12 +18,15 @@
  *   review (transcript_status 'unreviewed', M17): the letter shows them, and it
  *   counts toward the free letters only when the author keeps them from Review
  *   (`keepReviewedWords`).
+ * - "Change words" on a saved letter (BL-413) changes final_text only. The
+ *   words as kept go to `author_base` once, so each change is an author edit
+ *   that can be put back on its own; raw_transcript and machine_edits stay.
  *
  * No defaults are read here: the caller passes the child and signature it
  * resolved (store.ts does that), so a repository never falls back to the
  * active child on its own.
  */
-import type { Edit, EditLevel } from '@scribe/core';
+import { applyAuthorEdits, diffAuthorEdits, type AuthorEdit, type Edit, type EditLevel } from '@scribe/core';
 import { changes, type RepoContext } from './context';
 import { reindexLetter } from '../../find/lifecycle';
 import type { EntrySyncState } from '../../sync/types';
@@ -138,7 +141,7 @@ export function upsert(ctx: RepoContext, e: Entry, defaults: InsertDefaults): vo
        occurred_precision, language, base_direction)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(id) DO UPDATE SET
-       final_text = excluded.final_text, machine_edits = excluded.machine_edits,
+       ${KEEP_BASE_IF_SAME_INCOMING}, final_text = excluded.final_text, machine_edits = excluded.machine_edits,
        edit_level = excluded.edit_level, in_book = excluded.in_book,
        sounds_like_me = excluded.sounds_like_me,
        child_id = CASE WHEN entries.synced_at IS NULL AND ? IS NOT NULL THEN ? ELSE entries.child_id END,
@@ -368,10 +371,104 @@ export function replaceWords(
   w: { final_text: string; machine_edits: unknown[]; edit_level: string },
 ): boolean {
   ctx.db.run(
-    'UPDATE entries SET final_text = ?, machine_edits = ?, edit_level = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL',
-    w.final_text, JSON.stringify(w.machine_edits ?? []), w.edit_level, ctx.now(), id,
+    `UPDATE entries SET ${KEEP_BASE_IF_SAME_WORDS}, final_text = ?, machine_edits = ?, edit_level = ?, updated_at = ?
+     WHERE id = ? AND deleted_at IS NULL`,
+    w.final_text, w.final_text, JSON.stringify(w.machine_edits ?? []), w.edit_level, ctx.now(), id,
   );
   return moved(ctx, id);
+}
+
+/**
+ * The rows whose words the author may change on the letter page (BL-413): their own (as `setOccurred`: with no
+ * account yet, only a row with no author), live, with words that have been read (not waiting, not waiting for review
+ * in Review), and not a quiet-day mark. One definition, so the page's offer and the writes never disagree.
+ */
+const WORDS_CHANGEABLE = `deleted_at IS NULL AND kind <> 'not_much' AND transcript_status IS NULL AND final_text <> ''
+       AND (author_id IS NULL OR author_id = ?)`;
+
+/**
+ * SET clause for every writer that replaces final_text from outside the letter page (a pull, a push answer, a conflict
+ * choice). SQLite reads the old row on the right of SET, so `final_text` here is the words before this write; the one
+ * `?` is the incoming words. Different words drop `author_base`; the same words (a push answer echoing ours) keep it.
+ */
+export const KEEP_BASE_IF_SAME_WORDS = 'author_base = CASE WHEN final_text IS ? THEN author_base ELSE NULL END';
+
+/**
+ * The same rule for an INSERT ... ON CONFLICT DO UPDATE writer of final_text (`upsert`, the pull of another author's
+ * row): there `entries.final_text` is the words before the write and `excluded.final_text` the incoming ones. Neither
+ * writer meets a row with an author_base today; the rule makes that hold for any later caller too.
+ */
+export const KEEP_BASE_IF_SAME_INCOMING =
+  'author_base = CASE WHEN entries.final_text IS excluded.final_text THEN entries.author_base ELSE NULL END';
+
+/** The author's changes to a saved letter: the words as kept (`author_base`) and each change since, against them. */
+export interface AuthorLayer {
+  base: string;
+  edits: AuthorEdit[];
+}
+
+/**
+ * The author's changes on the letter page, or null when there are none. Derived, never guessed: the word diff from the
+ * stored `author_base` to `final_text` (core diffAuthorEdits is exact, so applying every edit gives final_text back).
+ */
+export function authorLayer({ db }: RepoContext, id: string): AuthorLayer | null {
+  const r = db.get<{ author_base: string | null; final_text: string }>(
+    'SELECT author_base, final_text FROM entries WHERE id = ? AND deleted_at IS NULL',
+    id,
+  );
+  if (!r || r.author_base === null) return null;
+  return { base: r.author_base, edits: diffAuthorEdits(r.author_base, r.final_text) };
+}
+
+/** Whether `changeWords` would take words for this letter now (the same rows, read only). */
+export function canChangeWords({ db }: RepoContext, id: string, owner: string | null): boolean {
+  return db.get<{ t: number }>(`SELECT 1 AS t FROM entries WHERE id = ? AND ${WORDS_CHANGEABLE}`, id, owner ?? '') !== null;
+}
+
+/** A base the author's changes no longer differ from is let go: the letter reads as kept, with nothing to put back. */
+function dropSpentBase({ db }: RepoContext, id: string): void {
+  db.run('UPDATE entries SET author_base = NULL WHERE id = ? AND author_base = final_text', id);
+}
+
+/**
+ * "Change words" on a saved letter (BL-413). The person's words, trimmed at the ends and nothing else, become
+ * final_text; the words as kept are written to `author_base` the first time only, so every change stays a separate,
+ * reversible author edit against them. raw_transcript, machine_edits and edit_level are never touched: the machine
+ * adds nothing here. False for empty words, the same words, or a row `WORDS_CHANGEABLE` refuses.
+ */
+export function changeWords(ctx: RepoContext, id: string, text: string, owner: string | null): boolean {
+  const words = text.trim();
+  if (!words) return false;
+  ctx.db.run(
+    `UPDATE entries SET author_base = COALESCE(author_base, final_text), final_text = ?, updated_at = ?
+     WHERE id = ? AND final_text <> ? AND ${WORDS_CHANGEABLE}`,
+    words, ctx.now(), id, words, owner ?? '',
+  );
+  if (!moved(ctx, id)) return false;
+  dropSpentBase(ctx, id);
+  return true;
+}
+
+/**
+ * Put back one of the author's changes (BL-413): the letter reads as kept at that place and every other change stays.
+ * The change is named by its value, not its place in a list, so a tap on a row the store has moved past changes
+ * nothing. Written only over the words it was worked out from (`final_text = ?`). False when that change is not
+ * there, or the row is refused as in `changeWords`.
+ */
+export function putBackEdit(ctx: RepoContext, id: string, edit: AuthorEdit, owner: string | null): boolean {
+  const layer = authorLayer(ctx, id);
+  if (!layer) return false;
+  const at = layer.edits.findIndex((e) => e.start === edit.start && e.end === edit.end && e.replacement === edit.replacement);
+  if (at < 0) return false;
+  const words = applyAuthorEdits(layer.base, layer.edits.filter((_, i) => i !== at));
+  if (!words.trim()) return false;
+  ctx.db.run(
+    `UPDATE entries SET final_text = ?, updated_at = ? WHERE id = ? AND final_text = ? AND ${WORDS_CHANGEABLE}`,
+    words, ctx.now(), id, applyAuthorEdits(layer.base, layer.edits), owner ?? '',
+  );
+  if (!moved(ctx, id)) return false;
+  dropSpentBase(ctx, id);
+  return true;
 }
 
 /** A quiet-day mark already exists for this book on this day (F04 11.3; D-084 keeps one per day). */

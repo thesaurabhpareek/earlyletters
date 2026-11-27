@@ -37,9 +37,11 @@ YOUR CONSENT HISTORY
 
 When you are signed in, our server keeps a record of each time you agreed to, declined
 or acknowledged our terms, and each privacy choice you made or withdrew. account.json
-holds that record under "consent_history" when it could be read while the export was
-made. If it could not, "status" says why ("not_signed_in", "unavailable" or
-"different_account"), and nothing from this phone is left out because of it.
+holds that record under "consent_history". It is read from our server while the
+export is made; if our server cannot be reached, it is the last full record this phone
+read, and "read_at" says when. If neither was there, "status" says why
+("not_signed_in", "unavailable" or "different_account"), and nothing from this phone
+is left out because of it.
 
 YOUR PROFILE
 
@@ -57,9 +59,15 @@ To check a file on Windows:    certutil -hashfile audio\FILE SHA256
 FILE is the full name of the recording, ending in .m4a or .aac.
 The result should match the line for that file in manifest.json.
 
+PICTURES
+
+photos/     The pictures you added to letters, one folder per letter (JPEG).
+            Each is the copy kept in the app, with no location or other details in it.
+            data/entries.json says which letter each picture belongs to.
+
 KEEPING IT SAFE
 
 This export is not locked with a password. Keep it somewhere private,
 and keep a second copy somewhere else.
 
-Format early-letters-export, version 1.6.0. Questions: hello@earlyletters.com
+Format early-letters-export, version 1.7.0. Questions: hello@earlyletters.com
