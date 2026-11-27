@@ -138,7 +138,11 @@ describe('[RYT-08] read from a month', () => {
 
   it('source pins: the Book passes the starts behind the flag and opens Read together at the month; the row body still goes to the month', () => {
     const b = src('app/(tabs)/book.tsx');
-    expect(b).toMatch(/const starts = useMemo\(\(\) => \(readTheYearOn\(process\.env\.EXPO_PUBLIC_READ_THE_YEAR\) \? monthStarts\(chapters\) : undefined\), \[chapters\]\);/);
+    // The flag is read once into yearsOn (BL-2225 merged it with the year rows); the starts sit behind that same flag.
+    expect(b).toMatch(/const yearsOn = readTheYearOn\(process\.env\.EXPO_PUBLIC_READ_THE_YEAR\);/);
+    expect(b).toMatch(/const starts = useMemo\(\(\) => \(yearsOn \? monthStarts\(chapters\) : undefined\), \[chapters, yearsOn\]\);/);
+    // The Months button holds the whole book before it opens the sheet, so the starts cover every month (BL-2225 pages).
+    expect(b).toMatch(/holdWholeBook\(\);\s*setMonthsOpen\(true\);/);
     expect(b).toMatch(/onChoose=\{jumpTo\}/);
     expect(b).toMatch(/starts=\{starts\} onReadFrom=\{\(from\) => \{ setMonthsOpen\(false\); router\.push\(\{ pathname: '\/read-together', params: \{ childId: active\.id, from \} \}\); \}\}/);
     expect(src('components/book/months-sheet.tsx')).toMatch(/onPress=\{\(\) => onChoose\(row\)\}/);

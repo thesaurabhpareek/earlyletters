@@ -57,10 +57,11 @@ import { downloadingLine } from '@/lib/models/speech-download.logic';
 import { planFor } from '@/lib/models/speech-packs';
 import { springConfig, useMotion } from '@/lib/motion';
 import { isReadItBack } from '@/lib/read-it-back';
-import { deleteEntry, getSetting, listBookEntries, setSetting, subscribe, todayISO, undeleteEntry, type Entry } from '@/lib/store';
+import { bookArrivals, bookOutline, deleteEntry, getEntry, getSetting, listBookRange, setSetting, subscribe, todayISO, undeleteEntry, type Entry } from '@/lib/store';
 import { languageFor } from '@/lib/transcription-queue';
 import { useSpeechDownload, useWordsJob } from '@/lib/transcription-queue/use-words';
 import { bookHandoff, createArrivalGate, watchBook, firstBookViewThisSession, firstSeen, parseSeen, secondFreeOnArrival, withLeaving } from '@/components/book/book.logic';
+import { BOOK_PAGE, arrivalReach, createBookPages, monthsFromOutline } from '@/components/book/book-pages.logic';
 import { bookChapters, openerOf, type Chapter } from '@/components/book/chapters';
 import { BookRow, LetterCard } from '@/components/book/letter-card';
 import { letterWords } from '@/components/book/letter-words.logic';
@@ -101,10 +102,17 @@ export default function Book() {
   const params = useLocalSearchParams<{ arrived?: string; secondFree?: string }>();
   // This book's letters are read in the initialiser, so the first frame is the book and never the empty-book state
   // (a Book that mounts with `arrived` has to find its card on that first look). `read.childId` says whose letters
-  // these are, so the arrival waits for the right book.
-  const [read, setRead] = useState(() => ({ childId: active?.id ?? null, entries: active ? listBookEntries(active.id) : [] }));
+  // these are, so the arrival waits for the right book. The read is one chapter of rows (BL-2225, PRD 7.1): the next
+  // is read as the reader scrolls to it, an arrived letter dated back is read down to its day, and the whole book only
+  // for what needs it (the Months sheet, the Photos lens). `bookArrivals` tells a letter synced in below the pages
+  // held from the rows that were there, so it still washes when its page is read.
+  const [pages] = useState(() => createBookPages(listBookRange, BOOK_PAGE, bookArrivals));
+  const [read, setRead] = useState(() => ({ childId: active?.id ?? null, entries: active ? pages.first(active.id) : [] }));
   const entries = read.entries;
-  const loaded = read.childId === (active?.id ?? null);
+  const bookRead = read.childId === (active?.id ?? null);
+  // `pages` moves its floor just before the setRead that carries the rows, or inside the updater that computes them
+  // (watchBook's reread calls `first` on a child switch), so this render sees the floor its rows were read to.
+  const done = pages.done(active?.id ?? null);
   const leaving = useSyncExternalStore(bookHandoff.subscribe, bookHandoff.get, bookHandoff.get);
   const [washes, setWashes] = useState<Record<string, number>>({});
   const behind = useHiddenBehindCardPage();
@@ -158,7 +166,7 @@ export default function Book() {
     if (!active) return;
     // Subscribe, then read once more and keep that read only if it differs from the initialiser's: a change between the
     // initialiser's read and this subscribe is picked up at once (BL-1428).
-    return watchBook({ childId: active.id, read: listBookEntries, subscribe, set: setRead });
+    return watchBook({ childId: active.id, read: pages.reread, subscribe, set: setRead });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active?.id]);
 
@@ -166,10 +174,27 @@ export default function Book() {
   const shown = useMemo(() => (active ? withLeaving(entries, leaving, active.id) : []), [entries, leaving, active]);
   const chapters = useMemo(() => (active ? bookChapters(shown, active, today) : []), [shown, active, today]);
   const rows = useMemo(() => monthRows(chapters), [chapters]);
-  // Read a year together (NS-24, BL-947): year rows in Go to a month, behind EXPO_PUBLIC_READ_THE_YEAR.
-  const years = useMemo(() => (active && readTheYearOn(process.env.EXPO_PUBLIC_READ_THE_YEAR) ? yearRows(entries, active, today) : []), [entries, active, today]);
+  // Read a year together (NS-24, BL-947): year rows in Go to a month, behind EXPO_PUBLIC_READ_THE_YEAR. The sheet opens
+  // on the whole book (holdWholeBook), so its rows are the whole book's.
+  const yearsOn = readTheYearOn(process.env.EXPO_PUBLIC_READ_THE_YEAR);
+  const years = useMemo(() => (active && yearsOn ? yearRows(entries, active, today) : []), [entries, active, today, yearsOn]);
+  // While older pages are unread, the Months button and Read together still answer for the whole book: one aggregate
+  // row of dates and a flag, never words (BL-2225).
+  const outline = useMemo(() => (active && !done ? bookOutline(active.id) : null), [active, done, entries]);
+  const holdWholeBook = useCallback(() => {
+    if (!active || !bookRead || pages.done(active.id)) return;
+    setRead({ childId: active.id, entries: pages.all(active.id) });
+  }, [active, bookRead, pages]);
+  // The page joins what is held when React applies it, so a store change queued in the same tick is kept.
+  const readMore = useCallback(() => {
+    if (!active || !bookRead) return;
+    const id = active.id;
+    const join = pages.more(id);
+    if (join) setRead((held) => (held.childId === id ? { childId: id, entries: join(held.entries) } : held));
+  }, [active, bookRead, pages]);
   // Read from here (BL-1792): each month's first playable letter, behind the same flag; a month without one has no control.
-  const starts = useMemo(() => (readTheYearOn(process.env.EXPO_PUBLIC_READ_THE_YEAR) ? monthStarts(chapters) : undefined), [chapters]);
+  // The sheet opens on the whole book (holdWholeBook), so `chapters` is the whole book's whenever the sheet shows these.
+  const starts = useMemo(() => (yearsOn ? monthStarts(chapters) : undefined), [chapters, yearsOn]);
   const readBack = useMemo(() => new Set(entries.filter((e) => e.captureMode !== 'typed' && isReadItBack(e.id)).map((e) => e.id)), [entries]);
 
   const wash = useCallback((ids: string[]) => {
@@ -182,16 +207,27 @@ export default function Book() {
   useEffect(() => {
     if (!active || entries.length === 0) return;
     const raw = getSetting(SEEN_KEY);
-    const next = firstSeen(entries, (e) => isOwnEntry(e as Entry), parseSeen(raw));
+    // Not the older pages the reader scrolls to (BL-2225): the seen list starts from the first page, so a page read
+    // later would wash every letter of theirs on it. A letter that came into the store after the first page (synced in
+    // by the other parent, on any day) is not an older page: it washes once when it is read, as the whole read did.
+    const next = firstSeen(entries.filter((e) => !pages.olderPage(e.id)), (e) => isOwnEntry(e as Entry), parseSeen(raw));
     wash(next.wash);
     const value = JSON.stringify(next.seen);
     if (value !== raw) setSetting(SEEN_KEY, value);
-  }, [entries, active, wash]);
+  }, [entries, active, wash, pages]);
 
   // A kept letter arrives (5.8 row 5, P4 sets `arrived`): position the list on it under its opener at once, then, when
   // the Book is uncovered (Review dissolves away over it), wash it once and clear the param, so Back and tab taps
   // never replay it. The param stays until this book's letters are read and the card is found (P5 critics' pass, S1):
   // a Book that mounts with it, which is every first letter, must not lose the wash.
+  // The arrived card may be older than the pages held (a letter dated back, BL-2225): read down to its day, then look.
+  const reachDay = bookRead && active ? arrivalReach({ param: params.arrived, sections: chapters, childId: active.id, lookup: getEntry, holds: (day) => pages.holds(active.id, day) }) : null;
+  const loaded = bookRead && reachDay === null;
+  useEffect(() => {
+    if (!active || !reachDay) return;
+    const rows = pages.reach(active.id, reachDay);
+    if (rows) setRead({ childId: active.id, entries: rows });
+  }, [active, reachDay, pages]);
   const pendingScroll = useRef<{ sectionIndex: number; itemIndex: number } | null>(null);
   const scrollToArrival = useCallback(() => {
     const at = pendingScroll.current;
@@ -358,6 +394,11 @@ export default function Book() {
   useEffect(() => {
     if (params.arrived || !lensOn) setLensMode('months');
   }, [params.arrived, lensOn]);
+  // The Photos lens is the whole book's pictures: a page with none adds no rows, so the list would never grow to ask
+  // for the next one (onEndReached fires once per content length). It holds the whole book (BL-2225).
+  useEffect(() => {
+    if (showPhotos) holdWholeBook();
+  }, [showPhotos, holdWholeBook]);
   // Both lenses are the one SectionList below with different sections, so the header and its lens row stay mounted
   // across the switch and VoiceOver keeps its place on the option just chosen (NS-33-R3).
   const sections = useMemo(() => (showPhotos ? photoChapters(chapters, lens.photos) : chapters), [showPhotos, chapters, lens.photos]);
@@ -387,12 +428,19 @@ export default function Book() {
   for (const ch of chapters) for (const e of ch.data) indexOf.set(e.id, n++);
   const entering = (id: string) => (stagger ? enter(indexOf.get(id) ?? 99) : undefined);
 
-  const canRead = readableInBook(entries).length > 0;
+  const canRead = readableInBook(entries).length > 0 || !!outline?.readable;
   // Months goes to a month of the whole Book, so it is not offered while Photos shows. While the lens row is there its
   // name differs from the lens option "Months" (Voice Control, NS-01-R20e): a PROPOSED key for the founder.
   const months =
-    !showPhotos && showsMonthsButton(rows)
-      ? { label: lensOn ? photos.book.lens.monthsButton : bookCopy.monthsButton, hint: monthsHintFor(years.length > 0, bookCopy.monthsHint), onPress: () => setMonthsOpen(true) }
+    !showPhotos && (outline ? monthsFromOutline(outline, active) : showsMonthsButton(rows))
+      ? {
+          label: lensOn ? photos.book.lens.monthsButton : bookCopy.monthsButton,
+          hint: monthsHintFor(outline ? yearsOn && outline.readable : years.length > 0, bookCopy.monthsHint),
+          onPress: () => {
+            holdWholeBook();
+            setMonthsOpen(true);
+          },
+        }
       : null;
   const openSettings = () => router.push('/settings');
   const header = (
@@ -497,7 +545,9 @@ export default function Book() {
               sections={sections}
               keyExtractor={(e: Entry) => e.id}
               ListHeaderComponent={header}
-              ListFooterComponent={EndOfBook}
+              ListFooterComponent={done ? EndOfBook : null}
+              onEndReached={readMore}
+              onEndReachedThreshold={1}
               onViewableItemsChanged={onViewableItemsChanged}
               stickySectionHeadersEnabled={false}
               contentContainerStyle={{ paddingBottom: 40 }}
