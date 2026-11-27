@@ -318,6 +318,84 @@ describe('[BL-2159] a join on this phone asks the account again (NX-36-S17 cited
     run.unmount();
   });
 
+  it('[S17 follow-up from #2195] an account that already has its own book joins during "Opening your book": its own book landing is "arrived" (AC-07, AC-08), and it waits for the book first', async () => {
+    let hasLocalBook = false;
+    const run = renderHook(() => useNewPhone({ ...base, hasLocalBook }));
+    try {
+      h.asked[0]('hasBook'); // Asha's own book is on its way
+      await flush();
+      accountJoined.joined(); // an invite link opened over the opening screen, and accepted
+      expect(h.asked).toHaveLength(2); // the join still asks again (BL-2159)
+      expect(run.result.current.view).toBe('opening');
+      h.asked[1]('hasBook');
+      await flush();
+      expect(run.result.current.view).toBe('opening'); // BL-2159's wait: nothing before a book is here
+      syncEvent({ phase: 'syncing', lastSyncedAt: null });
+      hasLocalBook = true;
+      run.rerender();
+      expect(run.result.current.view).toBe('opening'); // the latch: the first cycle is not done yet
+      syncEvent({ phase: 'idle', lastSyncedAt: '2026-11-10T09:00:03.000Z' });
+      expect(run.result.current.view).toBe('arrived'); // the arrival line and Tonight, not the joiner's hand-over
+    } finally {
+      run.unmount();
+    }
+  });
+
+  it('[S17 follow-up from #2195] the join note does not outlive the asking: join, sign-out, a sign-in with no join, the account has a book, it lands: "arrived"', async () => {
+    let hasLocalBook = false;
+    let enabled = true;
+    const run = renderHook(() => useNewPhone({ ...base, enabled, hasLocalBook }));
+    try {
+      h.asked[0]('returningNoBook');
+      await flush();
+      accountJoined.joined(); // a joiner, marked to stand aside once the joined book is here
+      h.asked[1]('hasBook');
+      await flush();
+      enabled = false; // signed out before the book came
+      run.rerender();
+      expect(run.result.current.view).toBeNull();
+      enabled = true; // signed in again; no invite this time
+      run.rerender();
+      expect(h.asked).toHaveLength(3);
+      h.asked[2]('hasBook');
+      await flush();
+      expect(run.result.current.view).toBe('opening');
+      hasLocalBook = true;
+      run.rerender();
+      syncEvent({ phase: 'idle', lastSyncedAt: '2026-11-10T09:00:03.000Z' });
+      expect(run.result.current.view).toBe('arrived');
+    } finally {
+      run.unmount();
+    }
+  });
+
+  it('[S17 follow-up from #2195] the own-book note does not outlive the asking either: has a book, sign-out, a sign-in with no book that joins: the route stands aside (J21g, J21h)', async () => {
+    let hasLocalBook = false;
+    let enabled = true;
+    const run = renderHook(() => useNewPhone({ ...base, enabled, hasLocalBook }));
+    try {
+      h.asked[0]('hasBook');
+      await flush();
+      enabled = false;
+      run.rerender();
+      enabled = true;
+      run.rerender();
+      h.asked[1]('returningNoBook');
+      await flush();
+      expect(run.result.current.view).toBe('noBook');
+      accountJoined.joined();
+      h.asked[2]('hasBook');
+      await flush();
+      expect(run.result.current.view).toBe('opening');
+      hasLocalBook = true;
+      run.rerender();
+      syncEvent({ phase: 'idle', lastSyncedAt: '2026-11-10T09:00:03.000Z' });
+      expect(run.result.current.view).toBeNull();
+    } finally {
+      run.unmount();
+    }
+  });
+
   it('[BL-2159] with no invite nothing changes: a phone with no book still sees No book here yet, asked once', async () => {
     const run = renderHook(() => useNewPhone(base));
     h.asked[0]('returningNoBook');

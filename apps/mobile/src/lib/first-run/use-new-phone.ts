@@ -51,6 +51,10 @@ export function useNewPhone(o: { enabled: boolean; client: SupabaseClient | null
   const reasked = useRef(false);
   // BL-2159 follow-up: an invite was joined on this phone while this was asking. Cleared when nothing is being asked.
   const joinedHere = useRef(false);
+  // S17 follow-up from #2195: the account said it holds a book of its own before any join here. A join on top of that does
+  // not mark `joinedHere`: the first book to land is treated as the account's own and gives `arrived` (the arrival line and
+  // Tonight, AC-07, AC-08), as before #2078. Cleared when nothing is being asked.
+  const ownBook = useRef(false);
   const onlineNow = useRef(o.online);
   onlineNow.current = o.online;
   // The engine's status, read and followed only while active.
@@ -69,6 +73,7 @@ export function useNewPhone(o: { enabled: boolean; client: SupabaseClient | null
     began.current = null;
     reasked.current = false;
     joinedHere.current = false;
+    ownBook.current = false;
   }, [active]);
 
   useEffect(() => {
@@ -81,6 +86,8 @@ export function useNewPhone(o: { enabled: boolean; client: SupabaseClient | null
     void readAccountBooks(o.client).then((k) => {
       if (!alive) return;
       setKind(k);
+      // After a join this may be the joined book, but `joinedHere` is then already set and stays set until nothing is asked.
+      if (k === 'hasBook') ownBook.current = true;
       // R11: one automatic re-ask of a lost answer, inside the same window (never a second clock).
       if (k === 'unknown' && onlineNow.current && !reasked.current && Date.now() - start < OPENING_WAIT_MS) {
         reasked.current = true;
@@ -110,7 +117,7 @@ export function useNewPhone(o: { enabled: boolean; client: SupabaseClient | null
   useEffect(() => {
     if (!active) return;
     return accountJoined.subscribe(() => {
-      joinedHere.current = true;
+      if (!ownBook.current) joinedHere.current = true;
       began.current = null;
       reasked.current = false;
       setAttempt((n) => n + 1);
@@ -126,6 +133,7 @@ export function useNewPhone(o: { enabled: boolean; client: SupabaseClient | null
   if (!wait) return { view: 'opening', retry, startBook, hasBook };
   // A book joined on this phone is here: the join sheet and first run's welcome hand over to the Book (5.8 row 12), so the
   // route stands aside as it did before the re-ask. Leaving for Tonight here would replace the join sheet under the person.
+  // Never for an account that had said it holds its own book (`ownBook`): that book's arrival is the S17 one.
   if (joinHandsOver(joinedHere.current, o.hasLocalBook)) return { view: null, retry, startBook, hasBook };
   const s = sync ?? getSyncStatus();
   const view = openingView({

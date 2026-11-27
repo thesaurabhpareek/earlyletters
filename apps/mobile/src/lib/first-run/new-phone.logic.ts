@@ -109,6 +109,9 @@ export const accountJoined = createAccountJoinedSignal();
  * 5.8 row 12; components/family/welcome-handoff.logic.ts). Without this the re-ask after the join answers `arrived` while the
  * sheet is still open, and the route's arrival handover (app/onboarding.tsx) replaces the sheet with Tonight. Before the book
  * is here nothing changes: the route waits for it ("opening"), never "No book here yet". Pure; keeps nothing.
+ * It checks for any book on the phone, not the joined one (the signal carries no id). So `use-new-phone.ts` sets
+ * `joinedHere` only for an account that had not already said it holds a book of its own: for that account the first book
+ * to land gives the S17 arrival (spec AC-07, AC-08), as before #2078 (S17 follow-up from #2195).
  */
 export function joinHandsOver(joinedHere: boolean, hasLocalBook: boolean): boolean {
   return joinedHere && hasLocalBook;
