@@ -894,12 +894,38 @@ test("CR-149 rule 4 (fail closed by default): every tracked file the rule misses
   // The protected list is a deny list. This walks the real tree: a tracked file that gets no hit must be docs, a test,
   // a media asset, a UI component outside the protected folders, an experiment or one of the few named safe files.
   // A new file anywhere else fails here until someone adds it to the protected list or, after review, to SAFE.
-  const SAFE = [/^docs\//, /(?:^|\/)(?:test|tests|__tests__|e2e|e2e-web|fixtures)\//, /\.test\.[a-z]+$/, /^apps\/mobile\/src\/components\//,
-    /^apps\/web\/src\/(?:components|scenes|film)\//, /(?:^|\/)(?:assets|public)\//, /^experiments\//, /(?:^|\/)readme\.md$/i,
+  const SAFE = [/^docs\//, /(?:^|\/)(?:test|tests|__tests__|fixtures)\//, /\.test\.[a-z]+$/, /(?:^|\/)e2e(?:-web)?\/(?:flows|subflows)\//, /(?:^|\/)e2e(?:-web)?\/[^/]*\.(?:flow\.ts|md|txt)$/, /\.e2e\.ts$/,
+    /^apps\/mobile\/src\/components\/(?:asks|book|capture|content-blocks|find|language|motion|platform|player|resilience|speech|tonight|ui)\//,
+    /^apps\/web\/src\/(?:components|scenes|film)\//, /(?:^|\/)(?:assets|public)\/[^?#]*\.(?:png|jpe?g|gif|webp|avif|svg|ico|ttf|otf|woff2?|mp3|m4a|wav|mp4|webm)$/i,
+    /^experiments\//, /^apps\//, /(?:^|\/)readme\.md$/i,
     /^apps\/mobile\/components\.json$/, /^apps\/mobile\/src\/generated\/licences\.json$/, /^apps\/mobile\/src\/global\.css$/, /^apps\/mobile\/src\/uniwind-types\.d\.ts$/];
+  // Pin SAFE itself: a widened entry would let these unprotected-by-name paths through unseen.
+  for (const p of ["apps/mobile/src/newthing/x.ts", "packages/newpkg/src/x.ts", "apps/web/public/sw.js", "apps/web/public/_headers",
+    "apps/mobile/e2e/scripts/reset-prod.js", "apps/mobile/e2e/newdir/x.js", "apps/mobile/src/components/handover/x.tsx", "apps/mobile/src/components/onboarding/x.tsx", "apps/mobile/src/components/settings/x.ts", "apps/mobile/assets/x.json", "x.ts"]) {
+    assert.ok(!SAFE.some((re) => re.test(p)), `SAFE must not admit ${p}`);
+  }
   const owners = readFileSync(new URL("../../.github/CODEOWNERS", import.meta.url), "utf8");
   const tracked = execFileSync("git", ["ls-files"], { cwd: new URL("../..", import.meta.url), encoding: "utf8" }).split("\n").filter(Boolean);
   assert.ok(tracked.length > 1000, "git ls-files must list the tree");
   const unseen = tracked.filter((f) => protectedPathHits([f], owners).length === 0 && !SAFE.some((re) => re.test(f)));
   assert.deepEqual(unseen, [], "add each path to CR70_EXTRA_PATHS in merge-queue.mjs, or to SAFE here once a security review agrees it is safe");
+});
+
+test("CR-149 rule 4 and CR-70 (Review B, fifth pass): e2e scripts, sign-in and billing components, non-media public files and allowlists are protected", () => {
+  for (const p of ["apps/mobile/e2e/scripts/lib-guard.js", "apps/mobile/e2e/scripts/ensure-user.js", "apps/mobile/e2e/bin/run-suite.sh",
+    "apps/mobile/e2e/bin/run-p0-nightly.sh", "apps/mobile/e2e/bin/run-coparent.sh", "apps/mobile/e2e/scripts/reset-prod.js", "apps/mobile/e2e-web/support/x.ts",
+    "apps/web/e2e/playwright.config.ts", "apps/mobile/e2e/config.yaml", "apps/mobile/src/components/onboarding/new-phone-screens.tsx", "apps/mobile/src/components/onboarding/outage-screen.tsx",
+    "apps/mobile/src/components/onboarding/region-refused-screen.tsx", "apps/mobile/src/components/onboarding/handover.tsx",
+    "apps/mobile/src/components/settings/plan.logic.ts", "apps/mobile/src/components/child/child-store.ts", "docs/ops/action-pins-allowlist.txt",
+    "docs/qa/skip-allowlist.json", "apps/web/public/sw.js", "apps/web/public/_headers", "apps/web/public/export-format/v1.schema.json"]) {
+    assert.ok(rulesFor(p).includes("CR-70 path"), p);
+  }
+  for (const p of ["apps/web/public/og/card.png", "apps/mobile/assets/fonts/x.woff2"]) assert.ok(!rulesFor(p).includes("CR-70 path"), p);
+});
+
+test("CR-70: folders that CODEOWNERS also names are protected by the code list too, so a trimmed CODEOWNERS cannot drop them", () => {
+  const minimal = "*  @owner\ndocs/zzz-unused.md  @owner\n";
+  for (const p of ["packages/content/src/x.ts", "packages/brand/tokens.json", "docs/analytics/events.md", "agents/cto.md", ".claude/settings.json"]) {
+    assert.ok(rulesFor(p, [p], minimal).includes("CR-70 path"), p);
+  }
 });
