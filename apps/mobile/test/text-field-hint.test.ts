@@ -4,7 +4,8 @@
  * The helper is the field's accessibilityHint, so it is heard when the field takes focus, however the person got
  * there (swiping, the Form Controls rotor, a tap). It is also a visible line that stays in the accessibility tree,
  * so a person who has turned VoiceOver hints off still reaches it. Some helpers are input limits (the photo text and
- * place lines, "Up to 140 characters"), which WCAG 3.3.2 wants given to everyone. Hiding the line would cut it off for hints-off users;
+ * place lines, "Up to 140 characters", and the From sheet's "Up to 30 characters"), which WCAG 3.3.2 asks to be given
+ * as instructions to every user. Hiding the line would cut it off for hints-off users;
  * dropping it from the hint would cut it off for rotor users. One repeated line costs less than either, so the
  * review note on #2115 (a note in Review B, and note 2 of Review A) is closed by this test, not by a change.
  *
@@ -41,8 +42,11 @@ const rules = {
     && (s.match(/accessibilityLiveRegion=/g) ?? []).length === 1
     && /React\.useEffect\(\(\) => \{\s*if \(error\) announce\(error\);\s*\}, \[error\]\);/.test(s),
   // Nothing in the field leaves the accessibility tree or folds into one element: the helper and error lines stay
-  // readable with hints off.
-  nothingHidden: (s: string) => !/accessibilityElementsHidden|importantForAccessibility\s*=|aria-hidden|\baccessible\s*=/.test(s),
+  // readable with hints off. The words are refused as props and as object keys, and the only JSX spread allowed is the
+  // caller's `{...props}` on the TextInput, so a hiding spread on a wrapper (`{...hiddenBehind(true)}`) cannot slip in.
+  nothingHidden: (s: string) => !/accessibilityElementsHidden|importantForAccessibility|aria-hidden|\baccessible\b|hiddenBehind/.test(s)
+    && (s.match(/\{\s*\.\.\.[^}]*\}/g) ?? []).every((spread) => spread === '{...props}')
+    && (s.match(/\{\.\.\.props\}/g) ?? []).length === 1,
 };
 
 describe('[CR-235] TextField: the helper is the hint and a readable line; the error is live and never hidden', () => {
@@ -73,6 +77,12 @@ describe('[CR-235] TextField: the helper is the hint and a readable line; the er
     for (const attr of ['accessibilityElementsHidden', "importantForAccessibility='no-hide-descendants'", 'accessible={false}', 'aria-hidden']) {
       expect(rules.nothingHidden(hideHelper(attr)), attr).toBe(false);
     }
+    // The same through a spread on a wrapper, or the whole field folded into one element by a bare `accessible`.
+    const wrap = (open: string) => s.replace(helperLine, (m) => `${open}${m}`).replace(/(\{helper\}\s*<\/Text>)/, '$1</View>');
+    for (const open of ['<View {...hiddenBehind(true)}>', '<View {...{ accessible: false }}>', "<View {...Platform.select({ android: { importantForAccessibility: 'no-hide-descendants' } })}>"]) {
+      expect(rules.nothingHidden(wrap(open)), open).toBe(false);
+    }
+    expect(rules.nothingHidden(broken(/<View className=/, '<View accessible className='))).toBe(false);
     expect(rules.inputTakesTheHint(broken('aria-invalid=', 'accessibilityHint={undefined}\n      aria-invalid='))).toBe(false);
     expect(rules.oneVisibleLine(broken('{error ? (', '{helper}{error ? ('))).toBe(false);
     expect(rules.errorIsLive(broken('accessibilityLiveRegion="polite"', ''))).toBe(false);
