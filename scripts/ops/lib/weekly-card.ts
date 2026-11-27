@@ -2,7 +2,7 @@
  * The weekly request clock (BL-2102; FR-BKO-09, FR-BKO-13, FR-BKO-16). Reads the request log of
  * docs/ops/runbooks/data-requests-by-email.md section 1 (a CSV file on the founder's computer) and builds the
  * data-request part of the Monday card: every open request with its day, due date, next action date and next
- * action, any request on the clock at day 35 or later (and a dispute row at day 35 to 44) listed first.
+ * action, any request on the clock at day 35 or later (and an open dispute row at day 35 or later) listed first.
  *
  * Why a script: Privacy 10 promises a reply within 45 days (one extension if we say why). A row that passes day 45
  * with no notice is a P0 defect, and a by-hand count is how that gets missed.
@@ -155,19 +155,23 @@ export function cardRow(r: Row, today: number): CardRow {
     // holder, or a custody or family dispute. The sender is not the holder, so the card prompts no reply to them: a
     // "what was done" reply or an extension notice would say the account exists (IAM-R09). The exec team read it on
     // 27 Nov 2026 (not yet in a rulings file). Days 35 to 44 are an internal check: a request about the sender's own
-    // data inside it is on the clock from the same day, and whether the 45 days apply to a living holder's guardian is
-    // COUNSEL_PACKET Q49, so that goes to counsel before day 45.
+    // data inside it, or a request for a holder the email does not say died or cannot act, is on the clock from the
+    // same day, and whether the 45 days apply to a living holder's guardian is COUNSEL_PACKET Q49, so that goes to
+    // counsel before day 45. From day 45 the row stays first until it closes: an unanswered Q49 is never read as a no.
     const first = !r.acknowledged && day >= 1;
     const check = day >= FIRST_DAY && day < DUE_DAY;
+    const late = day >= DUE_DAY;
     const counsel = check
-      ? "with counsel: check no request about the sender's own data is inside it, and if one is, log it as its own row today with the same received date; if the sender acts for a living holder who cannot act, ask counsel before day 45 whether the 45 days apply (Q49)"
-      : 'with counsel: no reply beyond the fixed first reply; change nothing on any account';
+      ? "with counsel: check no request about the sender's own data is inside it, and if one is, log it as its own row today with the same received date; if the email does not say the holder died or cannot act, log it under its route's kind today with the same received date; if the sender acts for a living holder who cannot act, ask counsel before day 45 whether the 45 days apply (Q49)"
+      : late
+        ? 'with counsel: still open past day 44; if the sender acts for a living holder who cannot act and counsel has not said the 45 days do not apply, to counsel today (Q49); no reply beyond the fixed first reply; change nothing on any account'
+        : 'with counsel: no reply beyond the fixed first reply; change nothing on any account';
     return {
       ...offClock,
-      left: check ? DUE_DAY - day : offClock.left,
+      left: check ? DUE_DAY - day : late ? 0 : offClock.left,
       nextActionDate: iso(today),
-      nextAction: first ? `${firstMessage(r.kind)}${check ? `; then ${counsel.replace(/^with counsel: /, 'with counsel, ')}` : ''}` : counsel,
-      urgent: check,
+      nextAction: first ? `${firstMessage(r.kind)}${check || late ? `; then ${counsel.replace(/^with counsel: /, 'with counsel, ')}` : ''}` : counsel,
+      urgent: check || late,
     };
   }
   if (day > dueDay) {
@@ -190,7 +194,7 @@ export function cardRow(r: Row, today: number): CardRow {
   return { ...base, nextActionDate: iso(addDays(received, nextDay)), nextAction: label, urgent: day >= FIRST_DAY };
 }
 
-/** Rows to act on first (day 35 or later on the clock, a dispute row at day 35 to 44, or a letter's date passed), fewest days left first so a P0 leads; then the rest by next action date, then ticket. */
+/** Rows to act on first (day 35 or later on the clock, a dispute row at day 35 or later, or a letter's date passed), fewest days left first so a P0 leads; then the rest by next action date, then ticket. */
 export function order(a: CardRow, b: CardRow): number {
   if (a.urgent !== b.urgent) return a.urgent ? -1 : 1;
   if (a.urgent) return a.left - b.left || b.day - a.day || a.ticket.localeCompare(b.ticket);
