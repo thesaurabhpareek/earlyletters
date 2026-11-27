@@ -266,7 +266,8 @@ function pendingPlanNotices(scheduled: readonly { identifier: string }[]): numbe
  *   is not the fixed line is dismissed.
  * - `names` (FU-11b): names may no longer show (names off, or App lock on), so every delivered month, birthday or evening
  *   note of ours whose title or body is not on the name-free allowlists (payload.ts `publicTitleOk`, `publicBodyOk`) is
- *   dismissed. A note planned with names off is always on them, so it stays. A note with no text has nothing to show.
+ *   dismissed. A note planned with names off is always on them, so it stays. A title or body that reads back empty
+ *   fails closed: the platform may still show text it did not return, so the note goes (it costs only a name-free note).
  * Only our own notes (by our data or our id): anyone else's stay. The text is compared, never logged or kept.
  */
 async function dismissDelivered(rules: { words: boolean; names: boolean }): Promise<void> {
@@ -274,20 +275,21 @@ async function dismissDelivered(rules: { words: boolean; names: boolean }): Prom
   for (const n of await Notifications.getPresentedNotificationsAsync()) {
     const { identifier, content } = n.request;
     const words = rules.words && isOurTypedDayNote(n.request) && content.body !== fixed;
-    const named = rules.names && isOurNamableNote(n.request) && !(nameFree(content.title, publicTitleOk) && nameFree(content.body, publicBodyOk));
+    const named = rules.names && isOurNamableNote(n.request) && !(onList(content.title, publicTitleOk) && onList(content.body, publicBodyOk));
     if (words || named) await Notifications.dismissNotificationAsync(identifier).catch(() => {});
   }
 }
 
-/** A delivered text with nothing in it shows nothing; any other text must be on the allowlist. */
-function nameFree(text: string | null | undefined, ok: (t: string) => boolean): boolean {
-  return text == null || text === '' || ok(text);
+/** A delivered text on the allowlist. A missing or empty one is not: we cannot see what it shows, so it fails closed. */
+function onList(text: string | null | undefined, ok: (t: string) => boolean): boolean {
+  return text != null && text !== '' && ok(text);
 }
 
 /**
  * CPrivO-58 and FU-11b: the words or the names went off (or this is the first apply of the run with them off), so the
  * delivered notes that carry them go, once per change (`lastWordsShown`, `lastNamesShown`), never at every re-plan. A
- * failed read (no module on the web preview) never stops the plan: the next apply tries again.
+ * failed read (no module on the web preview) never fails the apply: the next apply tries again.
+ * Must not throw: it runs in `apply()`'s finally, where a throw would replace the plan's own error.
  */
 async function settleDelivered(wordsShown: boolean, namesShown: boolean): Promise<void> {
   if (wordsShown) lastWordsShown = true;
@@ -328,9 +330,10 @@ async function apply(): Promise<void> {
     // nothing to log: the keys hold a parent's words
   }
   clearDayNamesUnderAppLock();
-  // CPrivO-58, FU-11b: delivered notes are settled after the plan, so no note with the words or a name is still
-  // scheduled to fire after the read. In a finally, so the early returns in `applyPlan` settle them too: a delivered
-  // note can outlive its plan (a typed day already fired, or swept the day after).
+  // CPrivO-58, FU-11b: delivered notes are settled after the plan, so when the plan succeeds no note with the words or
+  // a name is still scheduled to fire after the read (on failure the latches reset and the next apply settles again).
+  // In a finally, so the early returns in `applyPlan` settle them too: a delivered note can outlive its plan (a typed
+  // day already fired, or swept the day after).
   const namesShown = readPrefs().namesOnLockScreen;
   const wordsShown = dayNamesOn() && namesShown;
   try {

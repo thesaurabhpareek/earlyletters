@@ -21,9 +21,12 @@ import type { AppEnv } from '../build-env';
 /**
  * Only the production build (App Store) installs the handlers. A preview build (the testflight and preview EAS
  * profiles) and a development build leave React Native's own handler alone, so a fatal throw crashes natively.
+ * Web never installs them (CR-245): Expo's web async import first tries the module and loads its chunk only
+ * when that throws, and our handler swallows that fatal, so every lazy import showed the recovery screen.
+ * The web build is a preview and never ships.
  */
-export function shouldInstallGlobalHandlers(appEnv: AppEnv): boolean {
-  return appEnv === 'production';
+export function shouldInstallGlobalHandlers(appEnv: AppEnv, platform: string): boolean {
+  return appEnv === 'production' && platform !== 'web';
 }
 
 /** Built-in error classes we can name without reading the error's words. Anything else is `error` or `non_error`. */

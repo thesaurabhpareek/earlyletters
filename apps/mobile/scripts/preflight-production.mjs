@@ -22,6 +22,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { envFileProblems } from './env-file-guard.mjs';
+import { G6_CARD_FLAGS } from '../../../scripts/release/store-flags.mjs';
 import { activityTypesOutsideAllowlist, createReport, ENTITLEMENT_ALLOWLIST, entitlementKeysOutsideAllowlist, expo, packManifestPublished, parseJsonOut, privacyManifestDeclared, secretKind, signingKeys, updateChannelMessage, updateChannelProblems } from './preflight-lib.mjs';
 
 export const PROFILE = 'production';
@@ -108,7 +109,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  *
  * Each result has an `id`: app-env, english-only, spoken-languages, analytics, servers, google-signin, backup, status-report,
  * account-deletion, signing-keys, pack-manifest, privacy-manifest, sign-in, version, project-id, update-channel, asc-app-id,
- * seams, secrets (and config when `expo config` failed).
+ * seams, card-flags, secrets (and config when `expo config` failed).
  */
 export function productionChecks(input) {
   const { results, pass, fail, unverified, check } = createReport();
@@ -353,6 +354,26 @@ export function productionChecks(input) {
       'seams',
     );
     unverified(`the EAS "${prof?.environment ?? PROFILE}" environment on expo.dev holds EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY for scribe-prod (a servers-on build with neither signs nobody in), no ${GOOGLE_FLAGS.join(' or ')}, no ${SEAM_FLAGS.join(' or ')} and no secret (this script cannot read it). Check the names with \`npx eas-cli@24.10.0 env:list --environment ${prof?.environment ?? PROFILE}\` in apps/mobile.`, 'eas-environment');
+  }
+
+  // Gate G6 and BL-2273: the card and phase flags. eas.json is one of three places a store build reads them from. A
+  // `--local` build also reads this shell, so a flag set there FAILs. The EAS environment on expo.dev is the third, and
+  // this script cannot read it (`eas env:list` needs an Expo sign-in), so it is an UNVERIFIED line naming every flag.
+  // EXPO_PUBLIC_ANALYTICS in the profile has its own check (analytics); in this shell it is checked here.
+  {
+    const profileOn = (v) => v !== undefined && !isOff(v);
+    const shellOn = (v) => String(v ?? '').trim() !== '' && !isOff(v);
+    const found = G6_CARD_FLAGS.flatMap((k) => [
+      ...(k !== 'EXPO_PUBLIC_ANALYTICS' && profileOn(env[k]) ? [`${k}=${JSON.stringify(env[k])} in the eas.json ${PROFILE} profile`] : []),
+      ...(shellOn(shell[k]) ? [`${k}=${JSON.stringify(shell[k])} in this shell`] : []),
+    ]);
+    check(
+      found.length === 0,
+      `no card or phase flag of gate G6 (${G6_CARD_FLAGS.length} names, scripts/release/store-flags.mjs G6_CARD_FLAGS) on in the ${PROFILE} profile or this shell`,
+      `${found.join('; ')}. Every card and phase flag stays off in the store build until gate G6 has its record (BL-958): write it "off" or remove it, and unset it in this shell before a \`--local\` build.`,
+      'card-flags',
+    );
+    unverified(`the EAS "${prof?.environment ?? PROFILE}" environment on expo.dev sets none of ${G6_CARD_FLAGS.join(', ')} to anything but off. eas.json and this shell are all that this script, gate G6 and store-flags.mjs read; a value there turns the card on in the store build. Check the names with \`npx eas-cli@24.10.0 env:list --environment ${prof?.environment ?? PROFILE}\` in apps/mobile (it needs an Expo sign-in).`, 'eas-environment-flags');
   }
 
   // No Supabase secret or service_role key in any env the build can read: every eas.json profile, this shell, .env* files.
