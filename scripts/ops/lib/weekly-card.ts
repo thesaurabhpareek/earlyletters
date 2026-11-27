@@ -140,7 +140,7 @@ const under13 = (day: number) =>
  * The log cannot tell who sent an age report, and section 11 says none of the clock's messages on an under_18 row go
  * to a parent (IAM-R09: any of them would say the account exists). So each clock step on that row says so itself.
  */
-export const HOLDER_ONLY = 'to the holder only; never to a parent (section 11)';
+export const HOLDER_ONLY = 'only if the holder wrote in, to the holder only; never to a parent or anyone else (section 11)';
 
 /** One open row on the card. `today` is a UTC day. */
 export function cardRow(r: Row, today: number): CardRow {
@@ -223,13 +223,16 @@ function clockRow(r: Row, today: number): CardRow {
       urgent: check || late,
     };
   }
+  // Section 0, safety row: the first message is the pointer to help, the day it arrives. So an unacknowledged safety
+  // row asks for it from day 0, not "day 7 follow-up", and is listed first until the date is logged in `acknowledged`,
+  // past the due date too.
+  const safetyFirst = r.kind === 'safety' && !r.acknowledged;
   if (day > dueDay) {
     const why = extended ? 'past the extended due date' : lateExtension ? 'the extension notice did not go before day 45' : 'past day 45 with no extension notice';
+    // A safety row still waiting for the pointer to help keeps asking for it, and keeps leading, past its due date.
+    if (safetyFirst) return { ...base, nextActionDate: iso(today), nextAction: `${firstMessage(r.kind!)}; then P0: ${why}; to counsel today`, urgent: true, lead: true };
     return { ...base, nextActionDate: iso(today), nextAction: `P0: ${why}; to counsel today`, urgent: true };
   }
-  // Section 0, safety row: the first message is the pointer to help, the day it arrives. So an unacknowledged safety
-  // row asks for it from day 0, not "day 7 follow-up", and is listed first until the date is logged in `acknowledged`.
-  const safetyFirst = r.kind === 'safety' && !r.acknowledged;
   if (!r.acknowledged && (day >= 1 || safetyFirst)) {
     // FR-BKO-13: the first message goes the day it is read.
     // An extended row on its day 90 is due today too; before that an extended row needs no extension step.

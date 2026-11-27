@@ -435,6 +435,13 @@ Deno.test('[FR-BKO-13] BL-237: a safety row with no first message logged leads t
     const c = card(...rows);
     assert.deepEqual(c.rows.map((r) => r.day), [0, 46, 45]);
   }
+  // Past its due date it still asks for the pointer to help first and still leads, ahead of another P0 (day 46, and day 91 once extended).
+  for (const late of [row('DREQ-20261212-1', 'safety', day(46), { acknowledged: '' }), row('DREQ-20261212-1', 'safety', day(91), { acknowledged: '', extended: day(61) })]) {
+    const c = card(row('DREQ-20261029-1', 'see_export', day(50)), late);
+    assert.deepEqual(c.rows.map((r) => r.kind), ['safety', 'see_export']);
+    assert.match(c.rows[0].nextAction, new RegExp(`^${SAFETY_FIRST.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}; then P0: `));
+    assert.match(c.rows[0].nextAction, /extended due date|past day 45/);
+  }
   // Once the pointer to help is logged it no longer leads: the row takes its place by days left.
   const logged = card(p0, row('DREQ-20261214-1', 'safety', day(38))).rows;
   assert.deepEqual(logged.map((r) => r.day), [46, 38]);
@@ -444,7 +451,7 @@ Deno.test('[FR-BKO-13] BL-237: a safety row with no first message logged leads t
 Deno.test('[FR-BKO-09] BL-237: every clock step on an under_18 row goes to the holder only, never to a parent; the P0 and the day 10 target do not carry it', () => {
   const at = (n: number, more = {}) => card(row('DREQ-20261204-1', 'under_18', day(n), more)).rows[0].nextAction;
   const holder = `; ${HOLDER_ONLY}`;
-  assert.equal(HOLDER_ONLY, 'to the holder only; never to a parent (section 11)');
+  assert.equal(HOLDER_ONLY, 'only if the holder wrote in, to the holder only; never to a parent or anyone else (section 11)');
   assert.equal(at(2), `day 7 follow-up${holder}`);
   assert.ok(at(20).endsWith(`then day 30 follow-up${holder}`), 'day 30 follow-up');
   assert.ok(at(31).endsWith(`then day 40 follow-up${holder}`), 'day 40 follow-up');
