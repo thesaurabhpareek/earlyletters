@@ -175,6 +175,8 @@ describe('[NS-53-G01] PC-T3, PC-T6: one cover, never two, with Moments focused',
     expect(html.replace(/<[^>]*>/g, '')).toBe(''); // PC-T6: no text, no day, place or name
     expect(html).not.toContain('Asha');
     expect(/data-testid="appLock\.cover\.mark"[^>]*data-label="([^"]*)"/.exec(html)?.[1]).toBe(appLockCopy.coverLabel);
+    // PC-T6, the VoiceOver half: the only label anywhere on the cover is the app name (no day, place or name).
+    expect([...html.matchAll(/\b[\w-]*label="([^"]*)"/gi)].map((m) => m[1])).toEqual([appLockCopy.coverLabel]);
     env.appState!('active');
     expect(draw()).not.toMatch(COVER);
 
@@ -220,7 +222,7 @@ describe('[NS-53-G01] PC-T3: the root layout mounts the lock layer once, and not
         return statSync(p).isDirectory() ? walk(p) : /\.tsx?$/.test(f) ? [p] : [];
       });
     const mounting = walk(root)
-      .filter((f) => /<AppLockLayer\b|createElement\(\s*AppLockLayer\b/.test(readFileSync(f, 'utf8')))
+      .filter((f) => /<AppLockLayer\b|\(\s*AppLockLayer\b|app-lock\/app-lock-layer['"]/.test(readFileSync(f, 'utf8')))
       .map((f) => relative(root, f));
     expect(mounting).toEqual([join('app', '_layout.tsx')]);
     const src = readFileSync(resolve(root, 'app/_layout.tsx'), 'utf8');
