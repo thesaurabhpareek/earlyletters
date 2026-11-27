@@ -24,6 +24,7 @@ pdf=no; [ -f "$J/Early-Letters-iOS-Journey.pdf" ] && pdf=yes
 
 mkdir -p "$(dirname "$OUT")"
 rm -f "$OUT"
-# Zip from the parent so the archive unpacks as journey/...; dotfiles and editor leftovers stay out.
-( cd "$J/.." && zip -q -r -X "$OUT" journey -x 'journey/.*' 'journey/*/.*' '*.html' )
+# Zip from the parent so the archive unpacks as journey/...; dotfiles and editor leftovers stay out, and so does
+# INDEX.text-only.md (build-index.mjs --text-only: a gitignored local reading copy, never part of the record).
+( cd "$J/.." && zip -q -r -X "$OUT" journey -x 'journey/.*' 'journey/*/.*' '*.html' 'journey/INDEX.text-only.md' )
 echo "pack-journey: $OUT ($steps steps, $shots screenshots, pdf=$pdf, $(du -h "$OUT" | cut -f1))"

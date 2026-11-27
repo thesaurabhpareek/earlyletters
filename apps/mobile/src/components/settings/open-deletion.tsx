@@ -15,7 +15,7 @@
  * when the book is still on its way.
  */
 import { router } from 'expo-router';
-import { useEffect, useRef, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { ActivityIndicator, Platform, View } from 'react-native';
 import { StateScreen } from '@/components/ui/state-screen';
 import { Text } from '@/components/ui/text';
@@ -28,10 +28,15 @@ import { haptic } from '@/lib/haptics';
 import { listChildren } from '@/lib/store';
 import { syncNow } from '@/lib/sync';
 import { cancelFailureLine } from './delete-account.logic';
-import { createPressController, deletionSignInParams, type PressController } from './open-deletion.logic';
+import { actedThisSession, createPressController, deletionSignInParams, shownRequest, type PressController } from './open-deletion.logic';
 
-export function OpenDeletionScreen({ request }: { request: OpenRequest }) {
+export function OpenDeletionScreen({ request: noted }: { request: OpenRequest }) {
   const d = useAccountDeletion();
+  // A cancel that found this request executing moves the screen at once, from the answer the hook already has (CDesO-59
+  // case 3), not on the next read.
+  const request = shownRequest(noted, d.status);
+  // The hook's session at the last Cancel deletion press: a failure is shown as that press's only in the same session.
+  const [pressedIn, setPressedIn] = useState<number | null>(null);
   // The press state (Cancel deletion, Try again) is open-deletion.logic.ts's: a press keeps the screen's words and its
   // primary shows `loading` (busy, a second press ignored), the quiet options wait, and they come back if it never
   // settles (BL-494 point 3). `acted`: nothing is shown as a failure until
@@ -63,7 +68,8 @@ export function OpenDeletionScreen({ request }: { request: OpenRequest }) {
   // Only while this view offers Cancel deletion: once the request is cancelled or being carried out, or the person has
   // signed out, there is nothing to tap again, so the line goes (BL-491). Signed out (a refresh after an auth refusal
   // removed the session) draws no failure line either: the signed-out view's body and Sign in button say what to do (CDesO-59).
-  const failure = press.acted && view.actions.includes('cancel') ? cancelFailureLine(d.error, d.signedIn) : null;
+  // A press made before a sign-out and sign-in on this same screen is not this session's (review follow-up on #2166).
+  const failure = actedThisSession(press.acted, pressedIn, d.session) && view.actions.includes('cancel') ? cancelFailureLine(d.error, d.signedIn) : null;
 
   // VoiceOver is told what changed: the screen becoming the "your letters are on their way back" state, and a failed
   // cancel (a live region alone is not spoken on iOS). The cancel on its way and a Try again that found nothing are
@@ -72,6 +78,9 @@ export function OpenDeletionScreen({ request }: { request: OpenRequest }) {
   const before = useRef(request.state);
   useEffect(() => {
     if (before.current !== 'cancelled' && request.state === 'cancelled') ctl.say(`${c.open.restoringTitle}. ${c.open.restoringBody}`);
+    // A request that turns executing while the screen is up (a Cancel deletion that found it so, CDesO-59 case 3) shows no
+    // failure line, so the change itself is spoken, with the executing view's own words.
+    if (before.current !== 'executing' && request.state === 'executing') ctl.say(`${c.open.executingTitle}. ${c.executing}`);
     before.current = request.state;
   }, [request.state, ctl]);
   useEffect(() => {
@@ -80,7 +89,10 @@ export function OpenDeletionScreen({ request }: { request: OpenRequest }) {
   }, [press.failedPresses]);
 
   const run: Record<DeletionAction, () => void> = {
-    cancel: () => ctl.cancel(),
+    cancel: () => {
+      setPressedIn(d.session);
+      ctl.cancel();
+    },
     // Executing has nothing to promise about cancelling, so it signs out at once; a scheduled request says first that it stays open.
     signOut: () => (request.state === 'executing' ? void d.signOut() : confirmSignOut(date, () => void d.signOut())),
     signIn: () => router.push({ pathname: '/sign-in', params: deletionSignInParams(request.state) }),

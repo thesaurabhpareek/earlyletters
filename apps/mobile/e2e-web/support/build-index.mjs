@@ -75,6 +75,10 @@ function main(argv) {
     console.error(`build-index: no steps folder at ${stepsDir}. Run the flows first (npm run e2e:web:journey -w @scribe/mobile).`);
     return 1;
   }
+  if (!fs.statSync(stepsDir).isDirectory()) {
+    console.error(`build-index: ${stepsDir} is not a folder. It should be the folder of step files the flows write; move the file away and run the flows (npm run e2e:web:journey -w @scribe/mobile).`);
+    return 1;
+  }
   const steps = [];
   for (const f of fs.readdirSync(stepsDir).filter((f) => f.endsWith('.json')).sort()) {
     let step;

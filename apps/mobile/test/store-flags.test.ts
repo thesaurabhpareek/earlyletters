@@ -31,7 +31,7 @@ describe('photo and Find flags in store profiles (BL-958)', () => {
     expect(storeFlagProblems(realEas())).toEqual([]);
   });
 
-  it('names exactly the six flags, and production is never an allowed profile before G6', () => {
+  it('names exactly the ten flags, and production is never an allowed profile before G6', () => {
     expect(STORE_FLAGS.map((f) => [f.env, f.card])).toEqual([
       ['EXPO_PUBLIC_PHOTOS', 'NS-01'],
       ['EXPO_PUBLIC_BOOK_SEARCH', 'NS-02'],
@@ -39,6 +39,11 @@ describe('photo and Find flags in store profiles (BL-958)', () => {
       ['EXPO_PUBLIC_BACKUP_LINE', 'NS-10'],
       ['EXPO_PUBLIC_SERVER_ERASE', 'BL-1854'],
       ['EXPO_PUBLIC_ANALYTICS', 'BL-1886'],
+      // NX-39 phase switches (BL-858)
+      ['EXPO_PUBLIC_MEDIA_METADATA', 'NX-39 P1'],
+      ['EXPO_PUBLIC_LIBRARY_CHOOSER', 'NX-39 P2a'],
+      ['EXPO_PUBLIC_MOMENTS_BACKGROUND', 'NX-39 P2c'],
+      ['EXPO_PUBLIC_OCCASIONS', 'NX-39 P4a'],
     ]);
     for (const f of STORE_FLAGS) expect(f.allowedOn).not.toContain('production');
   });

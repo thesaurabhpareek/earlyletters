@@ -1,4 +1,4 @@
-import { btn, firstRun, journey } from './support/app';
+import { btn, firstRun, journey, tab } from './support/app';
 import { expect, seeded, test } from './support/journey';
 
 test('[J15] export with letters', async ({ app, record }) => {
@@ -24,8 +24,7 @@ test('[J15] export with letters', async ({ app, record }) => {
 test('[J15b] export with nothing to export', async ({ app, record }) => {
   const step = journey(record, 'J15', 'export', 3, 'J15-01');
   await firstRun(app);
-  await app.getByText('Book', { exact: true }).last().click();
-  await app.getByRole('button', { name: 'Settings' }).click();
+  await tab(app, 'Me').click();
   await app.getByText('Export your book', { exact: true }).click();
   await expect(btn(app, 'Export everything')).toBeDisabled();
   await expect(app.getByText('You can export once the book has a letter.')).toBeVisible();

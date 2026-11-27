@@ -6,12 +6,13 @@
  * process against a scratch folder (`--dir`), with fictional step files, so the real record is never read or written.
  */
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 const SCRIPT = join(__dirname, '..', 'e2e-web', 'support', 'build-index.mjs');
+const PACK = join(__dirname, '..', 'e2e-web', 'support', 'pack-journey.sh');
 // Spawning Node takes well under a second on a quiet machine; a loaded runner can take several times that.
 const SPAWN_TIMEOUT_MS = 30_000;
 
@@ -127,6 +128,17 @@ describe('[journey record] the no-screenshot guard', () => {
     const missing = run();
     expect(missing.status).toBe(1);
     expect(missing.stderr).toMatch(/no steps folder/);
+  }, SPAWN_TIMEOUT_MS);
+
+  it('names a `steps` that is a file, not a folder, in its own words, exits 1, and writes nothing (BL-466)', () => {
+    rmSync(join(dir, 'steps'), { recursive: true });
+    writeFileSync(join(dir, 'steps'), 'not a folder\n');
+    const r = run();
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain(`build-index: ${join(dir, 'steps')} is not a folder`);
+    expect(r.stderr).not.toMatch(/ENOTDIR/);
+    expect(r.stderr).not.toMatch(/\bat \S+:\d+:\d+/);
+    expect(existsSync(join(dir, 'INDEX.md'))).toBe(false);
   }, SPAWN_TIMEOUT_MS);
 
   it('writes the index, with every Screen link, when every step has a shot', () => {
@@ -262,5 +274,41 @@ describe('[journey record] headings and header come from the current data', () =
     expect(md).not.toMatch(/Accounts, sign-in, sync, invites, delete account/);
     // The header points at the safe procedure instead of a bare "run these two commands".
     expect(md).toMatch(/only the journey-record pull request commits `steps\/` and this index/);
+  }, SPAWN_TIMEOUT_MS);
+});
+
+// pack-journey.sh finds the record from its own place (four folders up, then docs/release/journey), so the test copies it
+// into a scratch tree of the same shape and packs fictional files there; the real record is never read or zipped.
+const hasZip = spawnSync('zip', ['-v']).status === 0 && spawnSync('unzip', ['-v']).status === 0;
+describe.skipIf(!hasZip)('[journey record] the packed zip', () => {
+  let root: string;
+  beforeEach(() => {
+    root = mkdtempSync(join(tmpdir(), 'journey-pack-'));
+    const support = join(root, 'apps', 'mobile', 'e2e-web', 'support');
+    mkdirSync(support, { recursive: true });
+    copyFileSync(PACK, join(support, 'pack-journey.sh'));
+    const j = join(root, 'docs', 'release', 'journey');
+    mkdirSync(join(j, 'steps'), { recursive: true });
+    mkdirSync(join(j, 'screens'));
+    writeFileSync(join(j, 'README.md'), '# journey record\n');
+    writeFileSync(join(j, 'INDEX.md'), '# index\n');
+    writeFileSync(join(j, 'INDEX.text-only.md'), '> **TEXT ONLY. Do not commit this file.**\n');
+    writeFileSync(join(j, 'steps', 'J01-01.json'), JSON.stringify({ id: 'J01-01', journey: 'first-run', shot: 'screens/J01-01.png' }));
+    writeFileSync(join(j, 'screens', 'J01-01.png'), 'png');
+    writeFileSync(join(j, '.DS_Store'), '');
+    writeFileSync(join(j, 'report.html'), '<p>Asha</p>');
+  });
+  afterEach(() => rmSync(root, { recursive: true, force: true }));
+
+  it('leaves out INDEX.text-only.md (gitignored, never shared), dotfiles and *.html, and keeps the record (BL-466)', () => {
+    const out = join(root, 'out.zip');
+    const r = spawnSync('bash', [join(root, 'apps', 'mobile', 'e2e-web', 'support', 'pack-journey.sh'), out], { encoding: 'utf8' });
+    expect(r.status, r.stderr).toBe(0);
+    const list = spawnSync('unzip', ['-Z1', out], { encoding: 'utf8' });
+    expect(list.status, list.stderr).toBe(0);
+    const names = list.stdout.split('\n').filter(Boolean);
+    expect(names).toEqual(expect.arrayContaining(['journey/README.md', 'journey/INDEX.md', 'journey/steps/J01-01.json', 'journey/screens/J01-01.png']));
+    expect(names).not.toContain('journey/INDEX.text-only.md');
+    expect(names.filter((n) => /(^|\/)\.[^/]/.test(n) || n.endsWith('.html'))).toEqual([]);
   }, SPAWN_TIMEOUT_MS);
 });

@@ -6,7 +6,7 @@ import { readFileSync, existsSync, mkdirSync, writeFileSync, rmSync, mkdtempSync
 import { spawnSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildMap, render, COLUMNS } from './export-content-map.mjs';
+import { buildMap, render, COLUMNS, countBy } from './export-content-map.mjs';
 
 const dir = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'docs', 'content', 'map');
 const map = buildMap();
@@ -22,6 +22,19 @@ test('output is deterministic and sorted, ids are unique', () => {
   assert.equal(render(buildMap()).json, render(map).json);
   assert.equal(new Set(map.rows.map((r) => r.id)).size, map.rows.length);
   for (const r of map.rows) assert.deepEqual(Object.keys(r), COLUMNS);
+});
+// CR-237: nothing in the map moves when an unrelated string moves, so two content PRs only conflict on rows they share.
+test('no line numbers and no counts: the fields that changed on every unrelated string edit are gone', () => {
+  assert.equal(COLUMNS.includes('line'), false);
+  assert.deepEqual(Object.keys(map.meta).sort(), ['columns', 'note']);
+  assert.ok(map.rows.every((r) => !('line' in r)));
+  assert.ok(map.rows.every((r) => !/#L\d+(~\d+)?$/.test(r.id)), 'an id built from a line number would move with the line');
+  assert.equal(Object.values(countBy(map.rows, 'surface')).reduce((a, b) => a + b, 0), map.rows.length);
+});
+test('the JSON holds one row per line, so git merges it row by row like the CSV', () => {
+  const lines = render(map).json.split('\n');
+  assert.equal(lines.filter((l) => l.startsWith('  {"id":')).length, map.rows.length);
+  assert.deepEqual(JSON.parse(render(map).json), map);
 });
 test('the protected lines are flagged and no text is empty', () => {
   assert.ok(map.rows.some((r) => r.hold === 'protected' && /D-133/.test(r.hold_reason)));

@@ -30,7 +30,7 @@ import { CreditCardIcon } from 'phosphor-react-native/src/icons/CreditCard';
 import { FileTextIcon } from 'phosphor-react-native/src/icons/FileText';
 import { useRef, useState } from 'react';
 import { ActivityIndicator, ScrollView, View, type Text as RNText } from 'react-native';
-import { afterCancel, bookRowKey, bookRowLabel, cancelFailureLine, canDelete, confirmDay, failureLine, HELD, loadFailureLine, phoneLine, scheduledDay, whatHappens } from '@/components/settings/delete-account.logic';
+import { afterCancel, bookRowKey, bookRowLabel, cancelFailureLine, cancelPressedThisSession, canDelete, confirmDay, failureLine, HELD, loadFailureLine, phoneLine, scheduledDay, whatHappens } from '@/components/settings/delete-account.logic';
 import { shelfActions } from '@/components/book/shelf.logic';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -77,8 +77,11 @@ function DeleteAccountPage({ onRetry }: { onRetry: () => void }) {
   // so without this an old line would come back (and be announced again) on a later visit to step 2.
   const [tried, setTried] = useState(false);
   // The scheduled page's failure is a Cancel deletion's only once Cancel was pressed: then the line says the outcome is
-  // not known yet (BL-491 point 5), never "nothing has changed", which reads as if the request were blocked.
-  const [cancelTried, setCancelTried] = useState(false);
+  // not known yet (BL-491 point 5), never "nothing has changed", which reads as if the request were blocked. Pressed in
+  // this session only: after a sign-out and sign-in on the same page, a read that fails is the page's own failure again,
+  // not an answer to a press made before (review follow-up on #2166; the hook clears its error then too).
+  const [cancelTriedIn, setCancelTriedIn] = useState<number | null>(null);
+  const cancelTried = cancelPressedThisSession(cancelTriedIn, d.session);
   const step = stepFor(d.status, wanted);
   // Each step is its own page: VoiceOver starts at its heading (as onboarding's steps do, TDD 09 A11Y-F09).
   const confirmHeading = useRef<RNText>(null);
@@ -154,7 +157,7 @@ function DeleteAccountPage({ onRetry }: { onRetry: () => void }) {
             label={c.scheduled.cancelButton}
             testID="deleteAccount.cancel"
             onPress={async () => {
-              setCancelTried(true);
+              setCancelTriedIn(d.session);
               if (await d.cancel()) {
                 haptic('success');
                 toast.show({ message: c.scheduled.cancelled });
