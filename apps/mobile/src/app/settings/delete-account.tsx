@@ -30,7 +30,8 @@ import { CreditCardIcon } from 'phosphor-react-native/src/icons/CreditCard';
 import { FileTextIcon } from 'phosphor-react-native/src/icons/FileText';
 import { useRef, useState } from 'react';
 import { ActivityIndicator, ScrollView, View, type Text as RNText } from 'react-native';
-import { afterCancel, bookRowKey, bookRowLabel, cancelFailureLine, canDelete, confirmDay, failureLine, HELD, loadFailureLine, scheduledDay, whatHappens } from '@/components/settings/delete-account.logic';
+import { afterCancel, bookRowKey, bookRowLabel, cancelFailureLine, canDelete, confirmDay, failureLine, HELD, loadFailureLine, phoneLine, scheduledDay, whatHappens } from '@/components/settings/delete-account.logic';
+import { shelfActions } from '@/components/book/shelf.logic';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Text } from '@/components/ui/text';
@@ -250,7 +251,8 @@ function DeleteAccountPage({ onRetry }: { onRetry: () => void }) {
           </View>
         ))}
         {list.empty ? <Text variant="body">{list.empty}</Text> : null}
-        {list.books.length > 0 ? <Text variant="body">{c.what.onThisPhone}</Text> : null}
+        {/* CPrivO-56: "until you erase them" only where the shelf shows Erase now (the same capability as the shelf). */}
+        {list.books.length > 0 ? <Text variant="body">{phoneLine(shelfActions({ sync: capabilities.sync, serverErase: capabilities.serverErase }).eraseNow)}</Text> : null}
         {list.copies ? (
           <Text variant="subhead" tone="muted">
             {list.copies}

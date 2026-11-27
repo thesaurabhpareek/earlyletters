@@ -172,16 +172,23 @@ describe('[S64] the page', () => {
 
   it('step 1 says what happens to the letters on this phone (critics\' pass S4), only what the code does, and only when there are books', () => {
     const s = STATE.review();
-    expect(s).toContain('{list.books.length > 0 ? <Text variant="body">{c.what.onThisPhone}</Text> : null}');
-    expect(s.indexOf('{list.empty}')).toBeLessThan(s.indexOf('{c.what.onThisPhone}'));
-    expect(s.indexOf('{c.what.onThisPhone}')).toBeLessThan(s.indexOf('{list.copies}'));
+    const draw = '{phoneLine(shelfActions({ sync: capabilities.sync, serverErase: capabilities.serverErase }).eraseNow)}';
+    expect(s).toContain(`{list.books.length > 0 ? <Text variant="body">${draw}</Text> : null}`);
+    expect(s.indexOf('{list.empty}')).toBeLessThan(s.indexOf(draw));
+    expect(s.indexOf(draw)).toBeLessThan(s.indexOf('{list.copies}'));
     // The next pull moves the letters the account holds to Recently deleted; a letter that never reached the server is
     // not touched, and a sole parent's closed book is hidden, not emptied (merge.ts closeBook). In a sync build the
-    // phone's own launch sweep leaves a letter the server holds alone (entries.expiredLocalOnlyIds), so no date and no
-    // erase are promised: a later pull that says the server no longer holds it is what erases it, and after the purge
-    // the account is gone, so whether the phone gets that signal is unverified (S03). The line is true of both kinds.
-    expect(c.what.onThisPhone).toBe('On this phone, your letters stay. The ones already saved to your account move to Recently deleted.');
-    expect(c.what.onThisPhone).not.toMatch(/\{date\}|\buntil\b|\bon the day\b|\bafter\b|\b30 days\b|\berase/i);
+    // phone's own launch sweep leaves a letter the server holds alone (entries.expiredLocalOnlyIds), so no date is
+    // promised. After the purge the phone never learns the server's copies are gone (PR #2090), so they stay: the third
+    // sentence (CPrivO-56) names erasing only where the shelf shows Erase now, and says "on this phone" everywhere else.
+    expect(c.what.onThisPhone).toBe(
+      'On this phone, your letters stay. The ones already saved to your account move to Recently deleted. After your account is deleted, they stay there until you erase them.',
+    );
+    expect(c.what.onThisPhoneNoErase).toBe(
+      'On this phone, your letters stay. The ones already saved to your account move to Recently deleted. After your account is deleted, they stay on this phone.',
+    );
+    for (const line of [c.what.onThisPhone, c.what.onThisPhoneNoErase]) expect(line).not.toMatch(/\{date\}|\bon the day\b|\b30 days\b/i);
+    expect(c.what.onThisPhoneNoErase).not.toMatch(/\buntil\b|\berase/i);
   });
 
   it('step 1: "Keep a copy first" is a card with FileText and "Export everything" bordered', () => {

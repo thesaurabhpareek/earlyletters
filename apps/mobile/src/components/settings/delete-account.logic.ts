@@ -91,3 +91,11 @@ export function afterCancel(canGoBack: boolean): 'back' | 'settings' {
 export function canDelete(typed: string, busy: boolean): boolean {
   return confirmationMatches(typed) && !busy;
 }
+
+/**
+ * Step 1's line about this phone (CPrivO-56): "until you erase them" only where the shelf shows Erase now (pass
+ * `shelfActions(...).eraseNow`); a sync build without `EXPO_PUBLIC_SERVER_ERASE=on` gets the ruling's fallback.
+ */
+export function phoneLine(eraseNowShown: boolean): string {
+  return eraseNowShown ? c.what.onThisPhone : c.what.onThisPhoneNoErase;
+}

@@ -29,13 +29,17 @@ export const accountDeletionCopy = {
     noBooks: 'You have no books on your account yet.',
     // v1.0 has no family listening, so no recording ever sits on a family member's phone.
     copies: 'A copy you exported stays wherever you saved it.',
-    // What the phone does with the person's own letters (critics' pass 30 Oct 2026, S4), and no more than the code does.
-    // Letters the account already holds are marked deleted by the next pull and wait in Recently deleted; a letter that
-    // never reached the server is not touched (a book the pull closes is hidden, not emptied: closeBook, merge.ts). So the
-    // sentence says both and promises no date and no erase: in a sync build the phone's own sweep leaves a letter the
-    // server holds alone, and a later pull that says the server no longer holds it is the only thing that erases it
-    // there. For counsel's relay list.
-    onThisPhone: 'On this phone, your letters stay. The ones already saved to your account move to Recently deleted.',
+    // What the phone does with the person's own letters (critics' pass S4; CPrivO-56), and no more than the code does. The
+    // next pull marks the letters the account holds deleted (a book it closes is hidden, not emptied: closeBook); a letter
+    // that never reached the server is not touched. After the day-30 purge the phone never learns the server's copies are
+    // gone (PR #2090, merged as 18a2087a): every later pull fails and the sync build's own sweep leaves them, so they stay
+    // in Recently deleted. "Until you erase them" only where the shelf shows Erase now (the draw site picks by shelfActions);
+    // `onThisPhoneNoErase`, the ruling's fallback, everywhere else. If the phone later learns of the purge, both go back to
+    // the first two sentences (CPrivO-56 conditions). For counsel's relay list.
+    onThisPhone:
+      'On this phone, your letters stay. The ones already saved to your account move to Recently deleted. After your account is deleted, they stay there until you erase them.',
+    onThisPhoneNoErase:
+      'On this phone, your letters stay. The ones already saved to your account move to Recently deleted. After your account is deleted, they stay on this phone.',
   },
   exportFirst: {
     heading: 'Keep a copy first',
