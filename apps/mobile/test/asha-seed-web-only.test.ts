@@ -37,8 +37,10 @@ function files(dir: string): string[] {
   });
 }
 
-/** An import (static, dynamic or require) of the seed module, by relative path or the `@/dev` alias. */
-const IMPORTS_SEED = /(from\s+|import\(\s*|require\(\s*)['"](\.\/|\.\.\/dev\/|@\/dev\/)asha-seed['"]/;
+/** An import (static, dynamic or require) of the seed module, by any path that ends in `/asha-seed` (relative or alias). */
+const IMPORTS_SEED = /(from\s+|import\(\s*|require\(\s*)['"][^'"]*\/asha-seed(\.[jt]sx?)?['"]/;
+/** An import that names the web-only file outright (`store-ready.web`), which would carry the seed past platform resolution. */
+const IMPORTS_WEB_GATE = /(from\s+|import\(\s*|require\(\s*)['"][^'"]*\/store-ready\.web(\.[jt]sx?)?['"]/;
 
 describe('[BL-410] the Asha seed cannot reach a store build', () => {
   it('only the web-only store-ready file imports it', () => {
@@ -46,6 +48,13 @@ describe('[BL-410] the Asha seed cannot reach a store build', () => {
       .filter((f) => IMPORTS_SEED.test(readFileSync(f, 'utf8')))
       .map((f) => relative(SRC, f).split('\\').join('/'));
     expect(importers).toEqual(['dev/store-ready.web.ts']);
+  });
+
+  it('nothing imports the web-only store-ready file by its .web name', () => {
+    const importers = files(SRC)
+      .filter((f) => IMPORTS_WEB_GATE.test(readFileSync(f, 'utf8')))
+      .map((f) => relative(SRC, f).split('\\').join('/'));
+    expect(importers).toEqual([]);
   });
 
   it('the native store-ready file imports nothing', () => {
