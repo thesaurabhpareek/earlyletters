@@ -12,6 +12,9 @@
  * - 1 to 80 characters, counted as a person sees them (graphemes), any script (NS-18-R5, PROPOSED). Words of only
  *   spaces are empty.
  * - A day before today is refused (section 5). Today is accepted; the planner skips it if its time has passed.
+ * - A day past the plan horizon is refused (`TYPED_DAY_HORIZON_DAYS`, PROPOSED, BL-2247): today and the 91 days after,
+ *   the planner's month horizon (planner.ts `MONTH_HORIZON_DAYS`). It catches a mistyped year and bounds how long the
+ *   words wait on the phone.
  * - Deleted the day after delivery (NS-18-R7): `sweepPastTypedDays` removes every day before today, and runs before
  *   every plan (scheduler.ts). A day kept for today lets Home show the words after the tap.
  * - Removed at sign-out and account deletion (session.ts `endReminderSession`) and by Erase everything, which deletes
@@ -22,16 +25,18 @@
  * Not here: the Days page, the Add a day sheet and the Home line (screens, C-S24, D-S08, D-S09; another row).
  */
 import { deleteSetting, deleteSettings, getSetting, setSetting, settingKeysWithPrefix } from '../store';
-import { isoDate, parseIsoDate } from './tz';
-import type { TypedDayNote } from './planner';
+import { addDays, isoDate, parseIsoDate } from './tz';
+import { MONTH_HORIZON_DAYS, type TypedDayNote } from './planner';
 
 export const TYPED_DAY_PREFIX = 'typedDay.';
 /** The most characters a typed day holds (NS-18-R5, PROPOSED). */
 export const TYPED_WORDS_MAX = 80;
+/** A typed day may fall on today or up to this many days counted from today, today included (PROPOSED, BL-2247). */
+export const TYPED_DAY_HORIZON_DAYS = MONTH_HORIZON_DAYS;
 
 const DATE_KEY = /^typedDay\.(\d{4}-\d{2}-\d{2})$/;
 
-export type TypedDayError = 'typed_day_empty' | 'typed_day_too_long' | 'typed_day_past' | 'typed_day_bad_date';
+export type TypedDayError = 'typed_day_empty' | 'typed_day_too_long' | 'typed_day_past' | 'typed_day_too_far' | 'typed_day_bad_date';
 export type TypedDayCheck = { ok: true } | { ok: false; code: TypedDayError };
 
 export const parseTypedDaysFlag = (raw: string | undefined | null): boolean => (raw ?? '').trim().toLowerCase() === 'on';
@@ -75,6 +80,8 @@ export function normalTypedDate(date: string): string | null {
 export function checkTypedDay(date: string, words: string, today: string): TypedDayCheck {
   if (normalTypedDate(date) === null) return { ok: false, code: 'typed_day_bad_date' };
   if (date < today) return { ok: false, code: 'typed_day_past' };
+  const from = parseIsoDate(today);
+  if (from && date > isoDate(addDays(from, TYPED_DAY_HORIZON_DAYS - 1))) return { ok: false, code: 'typed_day_too_far' };
   if (words.trim().length === 0) return { ok: false, code: 'typed_day_empty' };
   if (typedWordsLength(words) > TYPED_WORDS_MAX) return { ok: false, code: 'typed_day_too_long' };
   return { ok: true };
