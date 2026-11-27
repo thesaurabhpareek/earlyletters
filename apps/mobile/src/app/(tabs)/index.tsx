@@ -258,7 +258,7 @@ export default function Tonight() {
     if (kept.kind !== 'quietDay') return;
     setNotSaved(false);
     haptic('soft');
-    announce(copy.notMuch.savedToast);
+    // QuietDayInline says "Marked as a quiet day." when it appears (PER4-018); a call here would say it twice.
     setKeptMark(kept.markId);
   };
 

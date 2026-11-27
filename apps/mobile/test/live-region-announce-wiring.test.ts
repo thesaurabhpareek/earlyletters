@@ -21,6 +21,9 @@ const WIRED: [string, string, string][] = [
   ['src/app/settings/plus.tsx', 'announce(notice)', '[notice]'],
   ['src/app/settings/storage.tsx', 'announce(phaseLine)', '[phaseLine]'],
   ['src/components/child/child-editors.tsx', 'announce(children)', '[children]'],
+  ['src/components/app-lock/no-passcode-line.tsx', 'announce(text, { queue: true })', '[text]'],
+  ['src/components/tonight/quiet-day-inline.tsx', 'announce(copy.notMuch.savedToast)', '[]'],
+  ['src/lib/auth/revocation-wait-line.tsx', 'announce(line)', '[line]'],
 ];
 
 describe('[PER4-018] converted screens announce what their live region shows', () => {
