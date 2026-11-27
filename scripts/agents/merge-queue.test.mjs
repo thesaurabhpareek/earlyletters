@@ -3,7 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
-import { STALE_UNKNOWN_MINUTES, securityLensHits, touchesSecurityLens, namedLenses, SECURITY_LENS_NAMES, SECURITY_LENS_CLASSES, buildQueue, workspaceOf, staleBase, parseReview, parseClaims, parseArgs, formatTable, suiteState, passOverRedSuite, hotFileHits, hotFileGroups, reviewState, touchesNative, clean, TRUSTED_ASSOCIATIONS, filesSince, UNREADABLE, parseCodeowners, protectedPathHits, touchesProtectedPath, classifyPr } from "./merge-queue.mjs";
+import { STALE_UNKNOWN_MINUTES, securityLensHits, touchesSecurityLens, namedLenses, SECURITY_LENS_NAMES, SECURITY_LENS_CLASSES, buildQueue, workspaceOf, staleBase, parseReview, parseClaims, parseArgs, formatTable, suiteState, passOverRedSuite, hotFileHits, hotFileGroups, reviewState, touchesNative, clean, TRUSTED_ASSOCIATIONS, filesSince, UNREADABLE, parseCodeowners, protectedPathHits, touchesProtectedPath, classifyPr, CR149_FLAG, cr149FlagOn, evaluateCr149, gitMergeTree, cr149Verdict, verdictFor } from "./merge-queue.mjs";
 
 const OLD = "c5cfa0cfaa96a0ba97ca5f34629747ab0badf438";
 const HEAD = "a83634ced2a5ecf32717bf833f941b892fc660b9";
@@ -937,4 +937,339 @@ test("CR-149 rule 1 and 4: an entry with only an old name, or a blank or non-str
     assert.equal(classifyPr([f]), "source", JSON.stringify(f));
   }
   assert.deepEqual(rulesFor("docs/a.md", [{ filename: "docs/a.md", previous_filename: null }]), []);
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+// CR-149 wiring behind a flag (BL-1571). fake149 wraps fake() and answers only the three reads CR-149 adds: the base
+// branch sha, CODEOWNERS at a sha and compare <head>...<sha>. Every other path goes to fake(), so existing tests see
+// nothing new.
+// ---------------------------------------------------------------------------------------------------------------------
+const DEV1 = "1111111111111111111111111111111111111111";
+const DEV2 = "2222222222222222222222222222222222222222";
+const DEV3 = "3333333333333333333333333333333333333333";
+const b64 = (text) => ({ encoding: "base64", content: Buffer.from(text).toString("base64").replace(/(.{60})/g, "$1\n") });
+function fake149({ shas = [DEV1], owners = b64(CODEOWNERS), devFiles = {}, defaultDevFiles, throwOn = null, ...opts } = {}) {
+  const calls = opts.calls ?? [];
+  const inner = fake({ ...opts, calls });
+  let reads = 0;
+  return async (path, o = {}) => {
+    const p = path.split("?")[0];
+    if (throwOn && throwOn.test(p)) { calls.push({ path, method: o.method }); throw new Error("502"); }
+    if (/\/branches\/develop$/.test(p)) {
+      calls.push({ path, method: o.method });
+      const sha = shas[Math.min(reads++, shas.length - 1)];
+      return sha === undefined ? {} : { commit: { sha } };
+    }
+    if (p.endsWith("/contents/.github/CODEOWNERS")) { calls.push({ path, method: o.method }); return typeof owners === "function" ? owners(/[?&]ref=([0-9a-f]{40})/.exec(path)?.[1]) : owners; }
+    const m = /\/compare\/([0-9a-f]{40})\.\.\.([0-9a-f]{40})$/.exec(p);
+    if (m) {
+      calls.push({ path, method: o.method });
+      const list = devFiles[m[2]] ?? defaultDevFiles ?? (opts.baseFiles ?? []).map((filename) => ({ filename }));
+      return { files: list.map((f) => (typeof f === "string" ? { filename: f } : f)) };
+    }
+    return inner(path, o);
+  };
+}
+const both149 = () => [review("A", HEAD), review("B", HEAD)];
+/** A PR the strict rule sends to NEEDS-UPDATE: both passes, green, behind by 3 with develop's files in a shared workspace. */
+const stale149 = (files, baseFiles) => ({ comments: both149(), files, behindBy: 3, baseFiles });
+const DOCS_PR = stale149(["docs/ops/notes.md"], ["docs/ops/other.md"]);
+const TEST_PR = stale149(["apps/mobile/test/foo.test.ts"], ["apps/mobile/src/components/books/Other.tsx"]);
+const SOURCE_PR = stale149(["apps/mobile/src/components/books/Card.tsx"], ["apps/mobile/src/components/books/Other.tsx"]);
+function treeStub(answer = "clean") {
+  const seen = [];
+  const fn = async (baseSha, head) => { seen.push([baseSha, head]); return typeof answer === "function" ? answer(baseSha, head) : answer; };
+  fn.seen = seen;
+  return fn;
+}
+const run149 = async (opts, { mergeTree = treeStub(), cr149 = true, quietMinutes = 10, notices = [] } = {}) => {
+  const calls = opts.calls ?? [];
+  const rows = await buildQueue({ api: fake149({ ...opts, calls }), now: NOW, quietMinutes, cr149, mergeTree, notices });
+  assert.equal(rows.length, 1);
+  return { r: rows[0], calls, mergeTree };
+};
+
+test("CR-149 flag: only the exact string 1 turns it on; everything else, and no env, is off", () => {
+  assert.equal(CR149_FLAG, "MERGE_QUEUE_CR149");
+  assert.equal(cr149FlagOn({ MERGE_QUEUE_CR149: "1" }), true);
+  for (const v of ["", "0", "true", "yes", "TRUE", " 1", "1 ", "on", undefined]) assert.equal(cr149FlagOn({ MERGE_QUEUE_CR149: v }), false, String(v));
+  assert.equal(cr149FlagOn({}), false);
+  assert.equal(cr149FlagOn(undefined), false);
+  assert.equal(cr149FlagOn(null), false);
+});
+
+test("CR-149 flag: process.env is read in one place only, main(), which passes cr149 to buildQueue", () => {
+  const src = readFileSync(new URL("./merge-queue.mjs", import.meta.url), "utf8");
+  assert.equal(src.match(/process\.env/g).length, 1);
+  assert.match(src, /cr149: cr149FlagOn\(process\.env\)/);
+});
+
+test("CR-149 flag off (default): a stale-base PR is NEEDS-UPDATE exactly, with no new call, no new field and no CR-149 note", async () => {
+  for (const cr149 of [undefined, false, "1"]) {
+    const calls = [];
+    const mergeTree = treeStub();
+    const rows = await buildQueue({ api: fake149({ ...DOCS_PR, calls }), now: NOW, mergeTree, ...(cr149 === undefined ? {} : { cr149 }) });
+    const r = rows[0];
+    assert.equal(r.verdict, "NEEDS-UPDATE", String(cr149));
+    assert.equal(r.mergeNote, undefined);
+    assert.equal("cr149" in r, false);
+    assert.ok(!calls.some((c) => /\/branches\/develop$/.test(c.path.split("?")[0]) || c.path.includes("/contents/") || /\/compare\/[0-9a-f]{40}\.\.\.[0-9a-f]{40}/.test(c.path)), "no CODEOWNERS, branch-sha or sha compare call");
+    assert.equal(mergeTree.seen.length, 0, "merge-tree never runs with the flag off");
+    assert.doesNotMatch(formatTable(rows), /CR-149/);
+  }
+  // The same calls and the same table as fake() alone: nothing CR-149 adds is reached.
+  const a = [];
+  const b = [];
+  const ra = await buildQueue({ api: fake({ ...DOCS_PR, calls: a }), now: NOW });
+  const rb = await buildQueue({ api: fake149({ ...DOCS_PR, calls: b }), now: NOW });
+  assert.deepEqual(b.map((c) => c.path), a.map((c) => c.path));
+  assert.equal(formatTable(rb), formatTable(ra));
+});
+
+test("CR-149 flag on: a docs-only PR with no overlap, a clean merge-tree, no protected path and a stable sha is READY CR-149", async () => {
+  const { r, calls, mergeTree } = await run149(DOCS_PR);
+  assert.equal(r.verdict, "READY CR-149 (no overlap, merge-tree clean, docs)");
+  assert.equal(r.mergeNote, `#7 ready for Karma to merge (CR-73, relaxed by CR-149) at ${HEAD}; checked against develop ${DEV1}: re-read develop just before merging and re-run this queue if it moved`);
+  assert.deepEqual([r.cr149.ok, r.cr149.class, r.cr149.baseSha, r.cr149.rereads, r.cr149.met], [true, "docs", DEV1, 0, ["rule 3", "rule 4", "rule 1", "rule 2", "rule 5"]]);
+  assert.deepEqual(mergeTree.seen, [[DEV1, HEAD]]);
+  assert.ok(calls.some((c) => c.path === `repos/thesaurabhpareek/earlyletters/contents/.github/CODEOWNERS?ref=${DEV1}`));
+  assert.ok(calls.some((c) => c.path === `repos/thesaurabhpareek/earlyletters/compare/${HEAD}...${DEV1}`));
+  assert.ok(calls.every((c) => c.method === "GET" && c.path.startsWith("repos/")));
+  const out = formatTable([r]);
+  assert.ok(out.includes(`note: #7 CR-149 (flag on): base behind by 3 in docs/ops, but no file overlap, merge-tree clean against develop ${DEV1}, checks green and two reviews at head, no protected path; class docs`));
+  assert.ok(out.split("\n").includes(r.mergeNote));
+  assert.doesNotMatch(out, /founder|your |paste|approve/i);
+});
+
+test("CR-149 flag on: a test-only PR is READY CR-149 (test); a source PR is told to run its tests and tsc on the scratch merge", async () => {
+  assert.equal((await run149(TEST_PR)).r.verdict, "READY CR-149 (no overlap, merge-tree clean, test)");
+  assert.equal(touchesProtectedPath(["apps/mobile/src/components/books/Card.tsx"], CODEOWNERS), false, "fixture path is not protected");
+  const { r } = await run149(SOURCE_PR);
+  assert.equal(r.verdict, "READY CR-149 (no overlap, merge-tree clean, source: run its tests and tsc on the scratch merge first)");
+  assert.match(r.mergeNote, /relaxed by CR-149\) at a83634ced2a5ecf32717bf833f941b892fc660b9; checked against develop 1{40}: .*; run its tests and tsc on the scratch merge first$/);
+  assert.match(formatTable([r]), /class source/);
+  // --only READY keeps matching: the filter accepts "READY " as a prefix.
+  assert.ok(r.verdict.startsWith("READY "));
+  assert.equal(cr149Verdict("weird"), cr149Verdict("source"), "an unknown class is source");
+});
+
+test("CR-149 rule 1: an overlapping file, or a develop rename whose old name is the PR's file, keeps NEEDS-UPDATE naming rule 1", async () => {
+  const shared = await run149({ ...DOCS_PR, defaultDevFiles: ["docs/ops/other.md", "docs/ops/notes.md"] });
+  assert.equal(shared.r.verdict, "NEEDS-UPDATE");
+  assert.equal(shared.r.cr149.failed, "rule 1: file overlap docs/ops/notes.md");
+  assert.equal(shared.r.mergeNote, undefined);
+  assert.equal(shared.mergeTree.seen.length, 0, "rule 2 is not reached");
+  assert.match(formatTable([shared.r]), /note: #7 CR-149 \(flag on\) kept the strict rule: rule 1: file overlap docs\/ops\/notes\.md/);
+  const renamed = await run149({ ...DOCS_PR, defaultDevFiles: [{ filename: "docs/ops/renamed.md", previous_filename: "docs/ops/notes.md" }] });
+  assert.equal(renamed.r.verdict, "NEEDS-UPDATE");
+  assert.match(renamed.r.cr149.failed, /^rule 1: /);
+});
+
+test("CR-149 rule 1 fails closed: a develop list of 300 files may be cut off, and a missing list, are overlap", async () => {
+  const many = Array.from({ length: 300 }, (_, i) => `docs/ops/f${i}.md`);
+  const cut = await run149({ ...DOCS_PR, defaultDevFiles: many });
+  assert.equal(cut.r.verdict, "NEEDS-UPDATE");
+  assert.equal(cut.r.cr149.failed, `rule 1: file overlap ${UNREADABLE}`);
+  const ok299 = await run149({ ...DOCS_PR, defaultDevFiles: many.slice(0, 299) });
+  assert.equal(ok299.r.verdict, "READY CR-149 (no overlap, merge-tree clean, docs)", "299 files is a full list");
+  const noList = await run149({ ...DOCS_PR, throwOn: /\/compare\/[0-9a-f]{40}\.\.\.[0-9a-f]{40}$/ });
+  assert.equal(noList.r.verdict, "NEEDS-UPDATE");
+  assert.match(noList.r.cr149.failed, /^rule 1: file overlap \(unreadable input\)/);
+});
+
+test("CR-149 rule 2: a merge-tree conflict, or one that could not run, keeps NEEDS-UPDATE naming rule 2", async () => {
+  const conflict = await run149(DOCS_PR, { mergeTree: treeStub("conflict") });
+  assert.equal(conflict.r.verdict, "NEEDS-UPDATE");
+  assert.equal(conflict.r.cr149.failed, "rule 2: merge-tree conflict");
+  for (const answer of ["error", "CLEAN", null, () => { throw new Error("spawn"); }]) {
+    const e = await run149(DOCS_PR, { mergeTree: treeStub(answer) });
+    assert.equal(e.r.verdict, "NEEDS-UPDATE", String(answer));
+    assert.equal(e.r.cr149.failed, "rule 2: merge-tree could not run");
+  }
+});
+
+test("CR-149 rule 4: a CR-70 path, a path only CODEOWNERS names, and an unreadable CODEOWNERS keep NEEDS-UPDATE naming rule 4", async () => {
+  const agents = await run149({ ...stale149(["scripts/agents/x.mjs"], ["scripts/agents/y.mjs"]), comments: [review("A", HEAD, "Lens: security\n"), review("B", HEAD)] });
+  assert.equal(agents.r.verdict, "NEEDS-UPDATE");
+  assert.equal(agents.r.cr149.failed, "rule 4: protected path scripts/agents/x.mjs (CR-70 path, CODEOWNERS /scripts/agents/)");
+  // docs/ops/owned/ is protected only by a CODEOWNERS line read at the develop sha.
+  const owned = stale149(["docs/ops/owned/x.md"], ["docs/ops/other.md"]);
+  assert.equal((await run149(owned)).r.verdict, "READY CR-149 (no overlap, merge-tree clean, docs)", "not owned in the real file");
+  const byOwners = await run149({ ...owned, owners: b64(`${CODEOWNERS}\n/docs/ops/owned/ @owner\n`) });
+  assert.equal(byOwners.r.verdict, "NEEDS-UPDATE");
+  assert.equal(byOwners.r.cr149.failed, "rule 4: protected path docs/ops/owned/x.md (CODEOWNERS /docs/ops/owned/)");
+  for (const owners of [null, {}, { encoding: "none", content: "" }, { encoding: "base64", content: "" }, { encoding: "base64", content: 7 }]) {
+    const u = await run149({ ...DOCS_PR, owners });
+    assert.equal(u.r.verdict, "NEEDS-UPDATE", JSON.stringify(owners));
+    assert.match(u.r.cr149.failed, /^rule 4: protected path docs\/ops\/notes\.md \(CODEOWNERS text (missing|empty)\)$/);
+  }
+  const thrown = await run149({ ...DOCS_PR, throwOn: /\/contents\// });
+  assert.match(thrown.r.cr149.failed, /^rule 4: .*CODEOWNERS text missing/);
+});
+
+test("CR-149 rule 5: develop moves once, so rules 4, 1 and 2 run again on the new sha, and a clean new state still passes", async () => {
+  const { r, calls, mergeTree } = await run149({ ...DOCS_PR, shas: [DEV1, DEV2, DEV2] });
+  assert.equal(r.verdict, "READY CR-149 (no overlap, merge-tree clean, docs)");
+  assert.deepEqual([r.cr149.baseSha, r.cr149.rereads], [DEV2, 1]);
+  assert.deepEqual(mergeTree.seen, [[DEV1, HEAD], [DEV2, HEAD]]);
+  for (const sha of [DEV1, DEV2]) {
+    assert.ok(calls.some((c) => c.path.endsWith(`/compare/${HEAD}...${sha}`)), `compare at ${sha}`);
+    assert.ok(calls.some((c) => c.path.endsWith(`CODEOWNERS?ref=${sha}`)), `CODEOWNERS at ${sha}`);
+  }
+  assert.match(r.mergeNote, new RegExp(`checked against develop ${DEV2}:`));
+  assert.match(formatTable([r]), /; re-run 1 time after develop moved/);
+});
+
+test("CR-149 rule 5: develop moving on every read is NEEDS-UPDATE, kept moving; a move that brings an overlap fails rule 1", async () => {
+  const moving = await run149({ ...DOCS_PR, shas: [DEV1, DEV2, DEV3, DEV1, DEV2] });
+  assert.equal(moving.r.verdict, "NEEDS-UPDATE");
+  assert.equal(moving.r.cr149.failed, "rule 5: develop kept moving");
+  assert.equal(moving.mergeTree.seen.length, 3, "the first run and two re-runs");
+  const overlap = await run149({ ...DOCS_PR, shas: [DEV1, DEV2, DEV2], devFiles: { [DEV1]: ["docs/ops/other.md"], [DEV2]: ["docs/ops/other.md", "docs/ops/notes.md"] } });
+  assert.equal(overlap.r.verdict, "NEEDS-UPDATE");
+  assert.equal(overlap.r.cr149.failed, "rule 1: file overlap docs/ops/notes.md");
+  assert.equal(overlap.r.cr149.baseSha, DEV2);
+});
+
+test("CR-149 rule 5: the re-run checks rules 4 and 2 again, so a protected path or a conflict that only the new sha has fails", async () => {
+  const owned = { ...DOCS_PR, shas: [DEV1, DEV2, DEV2] };
+  // CODEOWNERS gains an entry for the PR's folder only at the new sha.
+  const ownedLater = await run149({ ...owned, owners: (ref) => b64(ref === DEV2 ? `${CODEOWNERS}\n/docs/ops/ @owner\n` : CODEOWNERS) });
+  assert.equal(ownedLater.r.verdict, "NEEDS-UPDATE");
+  assert.equal(ownedLater.r.cr149.failed, "rule 4: protected path docs/ops/notes.md (CODEOWNERS /docs/ops/)");
+  assert.equal(ownedLater.r.cr149.baseSha, DEV2);
+  const conflictLater = await run149(owned, { mergeTree: treeStub((sha) => (sha === DEV2 ? "conflict" : "clean")) });
+  assert.equal(conflictLater.r.verdict, "NEEDS-UPDATE");
+  assert.equal(conflictLater.r.cr149.failed, "rule 2: merge-tree conflict");
+  assert.equal(conflictLater.r.cr149.baseSha, DEV2);
+});
+
+test("CR-149: only PRs into develop are relaxed; a PR into main keeps NEEDS-UPDATE with no CR-149 reads", async () => {
+  const calls = [];
+  const api = fake149({ ...DOCS_PR, calls });
+  const main = async (path, o) => {
+    const p = path.split("?")[0];
+    if (p.endsWith("/pulls")) return [{ number: 7, draft: false, head: { sha: HEAD }, base: { ref: "main" } }];
+    if (p.includes("/compare/main...")) return { behind_by: 3 };
+    if (p.endsWith("...main")) return { files: [{ filename: "docs/ops/other.md" }] };
+    if (p.endsWith("/branches/main/protection")) return PROT;
+    return api(path, o);
+  };
+  const [r] = await buildQueue({ api: main, now: NOW, quietMinutes: 10, cr149: true, mergeTree: treeStub(), base: "main" });
+  assert.equal(r.verdict, "NEEDS-UPDATE");
+  assert.equal(r.cr149, undefined);
+  assert.ok(!calls.some((c) => /\/branches\/[^/]+$|CODEOWNERS|\/compare\/[0-9a-f]{40}\.\.\.[0-9a-f]{40}$/.test(c.path.split("?")[0])), "no CR-149 read for a PR into main");
+});
+
+test("CR-149 rule 4: the two CR-229 paths (the NS register and the trace baseline) are protected", async () => {
+  for (const f of ["docs/product/prd/14-test-plan.md", "docs/ops/trace-ns-baseline.txt"]) {
+    assert.ok(protectedPathHits([f], CODEOWNERS).some((h) => h.rules.includes("CR-70 path")), f);
+    const dir = f.slice(0, f.lastIndexOf("/"));
+    const r = (await run149(stale149([f], [`${dir}/other.md`]))).r;
+    assert.equal(r.verdict, "NEEDS-UPDATE", f);
+    assert.match(r.cr149.failed, new RegExp(`^rule 4: protected path ${f.replace(/[.]/g, "\\.")} \\(CR-70 path`), f);
+  }
+});
+
+test("CR-149: an unreadable develop sha, or one that is not 40 hex, keeps NEEDS-UPDATE", async () => {
+  for (const shas of [[undefined], ["abc"], ["ab".repeat(20).toUpperCase()], [`${DEV1}0`], [7]]) {
+    const { r, mergeTree } = await run149({ ...DOCS_PR, shas });
+    assert.equal(r.verdict, "NEEDS-UPDATE", JSON.stringify(shas));
+    assert.equal(r.cr149.failed, "rule 5: develop sha unreadable");
+    assert.equal(mergeTree.seen.length, 0);
+  }
+  const reread = await run149({ ...DOCS_PR, shas: [DEV1, undefined] });
+  assert.equal(reread.r.cr149.failed, "rule 5: develop sha unreadable on the re-read");
+  const thrown = await run149({ ...DOCS_PR, throwOn: /\/branches\/develop$/ });
+  assert.equal(thrown.r.verdict, "NEEDS-UPDATE");
+  // evaluateCr149 refuses a head that is not 40 hex before any call.
+  const calls = [];
+  const res = await evaluateCr149({ get: async (p) => { calls.push(p); return {}; }, repo: "o/r", base: "develop", head: "abc", prFiles: ["docs/x.md"], mergeTree: treeStub() });
+  assert.deepEqual([res.ok, res.rule, calls.length], [false, "rule 5", 0]);
+});
+
+test("CR-149: an API throw inside the evaluation is a failed rule, not READY, and the rest of the queue still builds", async () => {
+  const extraPrs = [{ number: 9, draft: false, head: { sha: OLD }, base: { ref: "develop" } }];
+  const inner = fake149({ ...DOCS_PR, extraPrs });
+  const api = async (path, o) => {
+    const p = path.split("?")[0];
+    if (/\/(?:pulls|issues)\/9\//.test(p) || p.endsWith("/pulls/9")) return p.endsWith("/files") || p.endsWith("/comments") ? [] : { mergeable_state: "clean", changed_files: 0 };
+    if (p.includes(OLD)) return p.endsWith("/check-runs") ? { check_runs: [] } : { commit: { committer: { date: ago(60) } } };
+    if (p.includes("/contents/") || /\/compare\/[0-9a-f]{40}\.\.\.[0-9a-f]{40}$/.test(p)) throw new Error("gh api failed");
+    return inner(path, o);
+  };
+  const rows = await buildQueue({ api, now: NOW, cr149: true, mergeTree: treeStub() });
+  assert.deepEqual(rows.map((r) => [r.number, r.verdict]), [[7, "NEEDS-UPDATE"], [9, "NEEDS-REVIEW"]]);
+  assert.equal(rows[0].cr149.ok, false);
+  assert.match(rows[0].cr149.failed, /^rule 4: /);
+  // A get that throws on every call, straight into evaluateCr149: a failed rule, never ok.
+  const res = await evaluateCr149({ get: async () => { throw new Error("x"); }, repo: "o/r", base: "develop", head: HEAD, prFiles: ["docs/x.md"], mergeTree: treeStub() });
+  assert.deepEqual([res.ok, res.failed], [false, "rule 5: develop sha unreadable"]);
+  const half = await evaluateCr149({ get: async (p) => { if (p.includes("/branches/")) return { commit: { sha: DEV1 } }; throw new Error("x"); }, repo: "o/r", base: "develop", head: HEAD, prFiles: ["docs/x.md"], mergeTree: treeStub() });
+  assert.equal(half.ok, false);
+});
+
+test("CR-149 flag on: a relaxed PR that is not quiet yet is WAIT-QUIET; verdicts before NEEDS-UPDATE keep their place", async () => {
+  const young = await run149({ ...DOCS_PR, pushedMin: 2 });
+  assert.equal(young.r.verdict, "WAIT-QUIET");
+  assert.equal(young.r.cr149.ok, true);
+  assert.equal(young.r.mergeNote, undefined);
+  for (const [extra, want] of [[{ state: "dirty" }, "DIRTY"], [{ runs: [good[0]] }, "WAIT-CI"], [{ comments: [review("A", HEAD)] }, "NEEDS-REVIEW"], [{ compareFail: true }, "NEEDS-REVIEW"]]) {
+    const { r, mergeTree } = await run149({ ...DOCS_PR, ...extra });
+    assert.equal(r.verdict, want, JSON.stringify(extra));
+    assert.equal("cr149" in r, false, "the evaluation runs only where the strict rule says NEEDS-UPDATE");
+    assert.equal(mergeTree.seen.length, 0);
+  }
+  // Not behind in a shared workspace: the strict READY, untouched.
+  const fresh = await run149({ ...DOCS_PR, behindBy: 0 });
+  assert.equal(fresh.r.verdict, "READY");
+  assert.equal(fresh.r.mergeNote, `#7 ready for Karma to merge (CR-73) at ${HEAD}`);
+  // verdictFor alone: a cr149 that is not exactly ok true keeps NEEDS-UPDATE.
+  const row = { reviews: { A: true, B: true, blocked: {}, staleLenses: [] }, checks: { required: "success", macos: {} }, required: ["required"], mergeable_state: "clean", pushAgeMinutes: 60, staleBase: { behindBy: 1, shared: ["docs"] } };
+  for (const cr149 of [undefined, { ok: false }, { ok: "true", class: "docs" }, { ok: 1, class: "docs" }]) assert.equal(verdictFor({ ...row, cr149 }, 10), "NEEDS-UPDATE", JSON.stringify(cr149));
+  assert.equal(verdictFor({ ...row, cr149: { ok: true, class: "docs" } }, 10), "READY CR-149 (no overlap, merge-tree clean, docs)");
+});
+
+test("CR-149: formatTable prints the relaxed note and the failed note, and cleans what came from the API", async () => {
+  const ok = (await run149(DOCS_PR)).r;
+  const bad = (await run149({ ...DOCS_PR, defaultDevFiles: [{ filename: "docs/ops/notes.md" }] })).r;
+  const out = formatTable([ok, { ...bad, number: 8 }]);
+  assert.match(out, /note: #7 CR-149 \(flag on\): base behind by 3 in docs\/ops, but no file overlap, merge-tree clean against develop 1{40}, checks green and two reviews at head, no protected path; class docs/);
+  assert.match(out, /note: #8 CR-149 \(flag on\) kept the strict rule: rule 1: file overlap docs\/ops\/notes\.md/);
+  // A relaxed row does not also get the "update the branch" note; a row that kept the strict rule still does.
+  assert.doesNotMatch(out, /note: #7 base is behind develop by 3 commits that touch/);
+  assert.match(out, /note: #8 base is behind develop by 3 commits that touch docs\/ops: update the branch/);
+  const dirty = { ...bad, number: 8, cr149: { ...bad.cr149, failed: "rule 1: file overlap \u001b[31mdocs/x.md\u0007" } };
+  assert.doesNotMatch(formatTable([dirty]), /[\u001b\u0007]/);
+  assert.match(formatTable([dirty]), /kept the strict rule: rule 1: file overlap docs\/x\.md$/m);
+});
+
+test("CR-149 rule 2 default (gitMergeTree): refuses an argument that is not 40 hex without running git, reads only the exit code", async () => {
+  const ran = [];
+  const run = (cmd, args, opts, cb) => { ran.push({ cmd, args, opts }); cb(null, `${DEV3}\n`, "noise"); };
+  for (const [a, b] of [["abc", HEAD], [HEAD, "--output=/tmp/x"], [HEAD.toUpperCase(), HEAD], [HEAD, `${HEAD} --foo`], [undefined, HEAD], [HEAD, null]]) {
+    assert.equal(await gitMergeTree(a, b, { run }), "error", `${a} ${b}`);
+  }
+  assert.equal(ran.length, 0, "git never runs on a bad argument");
+  assert.equal(await gitMergeTree(DEV1, HEAD, { run }), "clean");
+  assert.deepEqual([ran[0].cmd, ran[0].args], ["git", ["merge-tree", "--write-tree", "--no-messages", DEV1, HEAD]]);
+  assert.equal(ran[0].opts.timeout, 60000);
+  assert.ok(ran[0].opts.maxBuffer > 0 && !ran[0].opts.shell);
+  const exit = (err, stdout = `${DEV3}\nconflict info\n`) => (cmd, args, opts, cb) => cb(err, stdout, "");
+  assert.equal(await gitMergeTree(DEV1, HEAD, { run: exit(Object.assign(new Error("x"), { code: 1 })) }), "conflict");
+  // git 2.43 exits 1 for a commit it cannot find too, with no tree id on stdout: that is "could not run", not a conflict.
+  assert.equal(await gitMergeTree(DEV1, HEAD, { run: exit(Object.assign(new Error("x"), { code: 1 }), "") }), "error");
+  assert.equal(await gitMergeTree(DEV1, HEAD, { run: exit(null, "") }), "error", "exit 0 without a tree id is not clean");
+  assert.equal(await gitMergeTree(DEV1, HEAD, { run: exit(null, "not a tree\n") }), "error");
+  for (const err of [{ code: 128 }, { code: 129 }, { code: 1, killed: true }, { code: null, signal: "SIGTERM" }, { code: "ENOENT" }, { code: "ERR_CHILD_PROCESS_STDIO_MAXBUFFER" }]) {
+    assert.equal(await gitMergeTree(DEV1, HEAD, { run: exit(Object.assign(new Error("x"), err)) }), "error", JSON.stringify(err));
+  }
+  assert.equal(await gitMergeTree(DEV1, HEAD, { run: () => { throw new Error("spawn"); } }), "error");
+});
+
+test("CR-149 rule 2 default (gitMergeTree): real git on this checkout's own HEAD merged with itself is clean; a missing commit is error", async () => {
+  const self = execFileSync("git", ["rev-parse", "HEAD"], { cwd: new URL("../..", import.meta.url), encoding: "utf8" }).trim();
+  assert.match(self, /^[0-9a-f]{40}$/);
+  assert.equal(await gitMergeTree(self, self), "clean");
+  assert.equal(await gitMergeTree("0".repeat(40), self), "error");
 });
