@@ -10,14 +10,15 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { CONSENT_COPY_KEY, consentFromCopy, encodeConsentCopy, readServerRecordsWithCopy, type ConsentCopyStore } from '../src/lib/export/consent-copy.logic';
+import { CONSENT_COPY_KEY, consentFromCopy, copyStoreFor, encodeConsentCopy, readServerRecordsWithCopy, type ConsentCopyStore } from '../src/lib/export/consent-copy.logic';
 import type { ReadOptions, ReadResult, ServerRecordsReader } from '../src/lib/export/server-records.logic';
+import type { OpenRequest } from '../src/lib/account-deletion/open-request';
 import { removeEverything } from '../src/lib/db/repos/wipe';
 import { nodeDb } from './helpers/node-db';
 
 const h = vi.hoisted(() => ({ settings: new Map<string, string>(), calls: [] as string[] }));
 vi.mock('@/lib/store', () => ({ getSetting: (k: string) => h.settings.get(k) ?? null, setSetting: (k: string, v: string) => void h.settings.set(k, v), deleteSetting: (k: string) => void h.settings.delete(k) }));
-vi.mock('../src/lib/auth/apple', () => ({ forgetAppleUser: async () => void h.calls.push('apple') }));
+vi.mock('../src/lib/auth/apple', () => ({ forgetAppleUser: async () => void h.calls.push('apple'), clearPendingAppleName: async () => void h.calls.push('pendingName') }));
 vi.mock('../src/lib/auth/pending', () => ({ clearPendingEmailRequest: async () => void h.calls.push('pending') }));
 
 import { deviceConsentCopy } from '../src/lib/export/consent-copy';
@@ -99,10 +100,27 @@ describe('[BL-528][LEGAL-REQ-034] no copy, or a copy that is not this account\'s
 
   it('no store (an account-deletion request is open): an offline export says `unavailable`', async () => {
     expect((await readServerRecordsWithCopy(opts({ reader: offline }), null)).consent.status).toBe('unavailable');
-    // The app passes no store while the phone's note says a request is open (export/device.ts, read in code).
+    // The app passes the store through copyStoreFor with the phone's note on the request (export/device.ts).
     const device = readFileSync(join(__dirname, '..', 'src/lib/export/device.ts'), 'utf8');
-    expect(device).toMatch(/requestOpen = deletionRequestOpen\(readOpenRequest\(\{ get: getSetting \}\), authUserId, Date\.now\(\)\)/);
-    expect(device).toMatch(/readServerRecordsWithCopy\([\s\S]*?\}, requestOpen \? null : deviceConsentCopy\)/);
+    expect(device).toMatch(/\}, copyStoreFor\(readOpenRequest\(\{ get: getSetting \}\), authUserId, Date\.now\(\), deviceConsentCopy\)\)/);
+  });
+
+  it('[DATA-REQ-053] while this account has a request open, the copy is neither read nor written', async () => {
+    const store = memoryStore();
+    await readServerRecordsWithCopy(opts(), store);
+    const saved = store.value;
+    const writes = store.writes;
+    const open: OpenRequest = { state: 'scheduled', requestId: 'req-1', scheduledFor: '2099-01-01T00:00:00.000Z', userId: ASHA_MAMA };
+    const now = Date.parse('2027-03-15T10:00:00.000Z');
+    expect(copyStoreFor(open, ASHA_MAMA, now, store)).toBeNull();
+    const offlineExport = await readServerRecordsWithCopy(opts({ reader: offline }), copyStoreFor(open, ASHA_MAMA, now, store));
+    expect(offlineExport.consent.status).toBe('unavailable');
+    const onlineExport = await readServerRecordsWithCopy(opts(), copyStoreFor(open, ASHA_MAMA, now, store));
+    expect(onlineExport.consent.status).toBe('included');
+    expect([store.writes, store.value]).toEqual([writes, saved]);
+    // No note, or a note for another account: the copy is used as usual.
+    expect(copyStoreFor(null, ASHA_MAMA, now, store)).toBe(store);
+    expect(copyStoreFor({ ...open, userId: ASHA_PAPA }, ASHA_MAMA, now, store)).toBe(store);
   });
 });
 
@@ -158,7 +176,7 @@ describe('[BL-528][CPrivO-21] the copy is deleted', () => {
     expect(h.settings.size).toBe(2);
     await forgetSignOutLeftovers();
     expect([...h.settings.keys()]).toEqual(['child.bornCardHidden.asha']);
-    expect(h.calls).toEqual(['apple', 'pending']);
+    expect(h.calls).toEqual(['apple', 'pendingName', 'pending']);
   });
 
   it('by Erase everything: every setting goes, the copy with them', () => {

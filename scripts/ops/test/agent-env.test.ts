@@ -244,6 +244,53 @@ Deno.test('[FR-BKO-21] an agent named outside any job, in workflow-level shell d
   }
 });
 
+Deno.test('[FR-BKO-21] an agent named outside the jobs counts for every job, but an on: path filter does not', () => {
+  const deploy = (on: string[], top: string[] = []) => [
+    'on:',
+    ...on,
+    ...top,
+    'jobs:',
+    '  deploy:',
+    '    runs-on: u',
+    '    environment: db-production',
+    '    steps:',
+    '      - run: echo hi',
+    '        env:',
+    `          K: \${{ secrets.${SR} }}`,
+    '',
+  ].join('\n');
+  for (const filter of ['paths', 'paths-ignore']) {
+    const on = ['  push:', `    ${filter}: ['claude', 'CLAUDE.md']`, '  schedule:', "    - cron: '0 3 * * *'"];
+    assert.deepEqual(scanWorkflow('deploy.yml', deploy(on, ['name: Deploy'])), [], `${filter} is never run`);
+  }
+  const agent = ['agent-environment', 'agent-allowlist'];
+  const cases: [string, string[], string[]][] = [
+    ['workflow env', ['  push:'], ['env:', '  CMD: npx -y @anthropic-ai/claude-code']],
+    ['workflow name, read through github.workflow', ['  push:'], ['name: claude -p go']],
+    ['dispatch input default', ['  workflow_dispatch:', '    inputs:', '      cmd:', '        default: npx -y @anthropic-ai/claude-code -p go'], []],
+    ['call input default', ['  workflow_call:', '    inputs:', '      cmd:', '        type: string', "        default: 'claude -p go'"], []],
+    ['choice option', ['  workflow_dispatch:', '    inputs:', '      cmd:', '        type: choice', "        options: ['claude -p go', 'echo hi']"], []],
+    ['input named paths', ['  workflow_dispatch:', '    inputs:', '      paths:', "        default: 'claude -p go'"], []],
+    ['call output value', ['  workflow_call:', '    outputs:', '      o:', "        value: 'claude -p go'"], []],
+    ['dispatch type, read as github.event.action', ['  repository_dispatch:', "    types: ['claude']"], []],
+    ['branch filter, read as github.ref_name', ['  push:', "    branches: ['claude']"], []],
+    ['branch-ignore filter', ['  push:', "    branches-ignore: ['claude']"], []],
+    ['tag filter', ['  push:', "    tags: ['claude']"], []],
+    ['tag-ignore filter', ['  push:', "    tags-ignore: ['claude']"], []],
+    ['pull_request branch filter, read as github.base_ref', ['  pull_request:', "    branches: ['claude']"], []],
+  ];
+  for (const [label, on, top] of cases) {
+    assert.deepEqual(scanWorkflow('deploy.yml', deploy(on, top)).map((f) => f.rule), agent, label);
+  }
+});
+
+Deno.test('[FR-BKO-21] a backslash before claude, or a line continuation right after it, still names the agent', () => {
+  for (const line of ['      - run: \\claude -p x', '      - run: |\n          claude\\\n            -p x']) {
+    const wf = one([], [line, '        env:', `          K: \${{ secrets.${SR} }}`].join('\n'), 'run');
+    assert.deepEqual(scanWorkflow('x.yml', wf), [{ file: 'x.yml', job: 'run', rule: 'agent-allowlist', secret: SR }], line);
+  }
+});
+
 Deno.test('[FR-BKO-21] an agent job with any environment key fails, a workflow-level whole read fails, and GitHub token reads are not stored secrets', () => {
   for (const env of ['~', "''", 'db-production']) {
     const wf = one([`    environment: ${env}`], '      - uses: anthropics/claude-code-action@v1', 'run');

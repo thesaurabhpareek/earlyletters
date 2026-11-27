@@ -28,6 +28,9 @@
  *   F14-REQ-039, schema 1.6.0) go in waiting/ and data/waiting.json: the person's own words (typed, or
  *   exactly as heard) and the original recording, byte for byte. Never a machine-tidied version: nothing
  *   was kept, so there is no verified edit set. Free in every plan state, like the rest of the export.
+ * - A letter's picture (1.7.0, ADR 0028 D2) goes in photos/<entry id>/<media id>.jpg: the stored copy, byte for byte,
+ *   which already carries no metadata. The letter's words and its text file never change because of it.
+ *   pack.ts holds back any picture whose bytes are not the stored copy or carry metadata (NS-01-R6, BL-1410).
  */
 import { brand } from '@scribe/brand';
 import { book as bookWords } from '@scribe/content';
@@ -72,6 +75,25 @@ export interface SnapshotEntry extends Entry {
   audioOnPhone: boolean;
   /** Its size on disk, when known (progress and space checks). */
   audioSizeOnPhone: number | null;
+  /** The letter's kept picture on this phone (1.7.0), or null/absent when it has none. */
+  photo?: SnapshotPhoto | null;
+}
+
+/** A letter's picture as the phone keeps it (the `entry_media` row and its file; ADR 0028 D1). */
+export interface SnapshotPhoto {
+  mediaId: string;
+  /** Where the stored copy is on this phone. */
+  uri: string;
+  /** The file exists on this phone. */
+  onPhone: boolean;
+  /** Size and SHA-256 of the stored copy when it was kept (`entry_media.bytes`, `.sha256`). */
+  bytes: number;
+  sha256: string;
+  width: number | null;
+  height: number | null;
+  /** The parent's own words and place for the picture, as typed. */
+  text: string | null;
+  place: string | null;
 }
 
 /** A version of an own letter's words kept on this phone that the letter does not show (a conflict copy). */
@@ -145,6 +167,20 @@ export interface AudioJob {
   sizeHint: number | null;
 }
 
+/** One picture to copy into the export (1.7.0). */
+export interface PhotoJob {
+  entryId: string;
+  uri: string;
+  path: string;
+  /** The stored copy's hash from `entry_media`: the exported bytes must match it, or the picture is held back. */
+  storedSha256: string;
+  sizeHint: number;
+  width: number | null;
+  height: number | null;
+  text: string | null;
+  place: string | null;
+}
+
 export interface BookJob {
   childId: string;
   path: string;
@@ -159,12 +195,26 @@ export interface AudioResult {
 }
 
 export interface ExportPlan {
-  /** Written first: README, schema, letters, index.html, then waiting/ text files. */
+  /** Written first: README, schema, letters, then waiting/ text files. index.html is planned here but written after the pictures (`readerFor`). */
   textFiles: TextFile[];
   books: BookJob[];
   audio: AudioJob[];
   /** Recordings of waiting letters (1.6.0), under waiting/; `entryId` is the draft id. */
   waitingAudio: AudioJob[];
+  /** Letters' pictures (1.7.0), under photos/. */
+  photos: PhotoJob[];
+  /**
+   * The offline reader showing only the pictures actually written (entry ids). `textFiles` holds the reader as planned,
+   * with every picture; pack.ts writes this one instead, after the pictures, so a picture held back at the last guard
+   * (NS-01-R6) never leaves a broken image in index.html.
+   */
+  readerFor: (written: ReadonlySet<string>) => string;
+  /**
+   * The README with or without the PICTURES section. `textFiles` holds it as planned; pack.ts writes this one, with the
+   * section only when a picture has already passed the last guard, so the README never describes a photos/ folder
+   * that is not in the export.
+   */
+  readmeFor: (withPhotos: boolean) => string;
 }
 
 export const MEDIA = {
@@ -214,6 +264,15 @@ export const audioPath = (entryId: string, audioUri?: string | null) => `audio/$
 /** A waiting letter's files (1.6.0). */
 export const waitingAudioPath = (draftId: string, audioUri?: string | null) => `waiting/${draftId}${recordingFileOf(audioUri).extension}`;
 export const waitingTextPath = (draftId: string) => `waiting/${draftId}.txt`;
+
+/** A picture's place in the export (ADR 0028 D2 and Q3): one folder per letter, the picture named by its own id. */
+/** A pixel size the schema can state: a whole number of at least 1, else unknown (a JPEG may declare 0). */
+const pixels = (n: number | null): number | null => (Number.isInteger(n) && (n as number) >= 1 ? n : null);
+
+export const exportPhotoPath = (entryId: string, mediaId: string) => `photos/${entryId}/${mediaId}.jpg`;
+
+/** The picture goes in when the letter has one and its stored copy is on this phone. */
+const photoOf = (e: SnapshotEntry): SnapshotPhoto | null => (e.photo && e.photo.onPhone ? e.photo : null);
 
 export function letterPath(folder: string, e: Pick<Entry, 'id' | 'occurredOn' | 'occurredPrecision'>): string {
   // A month-only letter's name carries no day: its stored day is only where its month of age starts (1.5.0).
@@ -405,7 +464,7 @@ export function langAttr(e: { language?: string | null }): string {
 
 // ── The offline reader (index.html) ──────────────────────────────────────
 
-function indexHtml(snapshot: ExportSnapshot, folders: Map<string, string>): string {
+function indexHtml(snapshot: ExportSnapshot, folders: Map<string, string>, written?: ReadonlySet<string>): string {
   const r = exportCopy.reader;
   const c = brand.colors;
   const sections = snapshot.children
@@ -432,7 +491,7 @@ function indexHtml(snapshot: ExportSnapshot, folders: Map<string, string>): stri
               const body = waiting(e) ? `<p class="note">${escapeHtml(exportCopy.letterFile.waitingForWords)}</p>` : paragraphs(e.finalText);
               return `<article${langAttr(e)}>
 <p class="date">${escapeHtml(entryDayDate(child, e, snapshot.locale))}${e.inBook ? '' : ` <span class="tag">${escapeHtml(r.privateLabel)}</span>`}</p>
-${body}
+${!written || written.has(e.id) ? figure(e) : ''}${body}
 <p class="sig" dir="auto">${escapeHtml(fill(copy.book.signature, { signsAs: signsAsOf(e, child) }))}</p>
 ${audio}
 <p class="file"><a href="${encodeURI(letterPath(folders.get(child.id)!, e))}">${escapeHtml(letterPath(folders.get(child.id)!, e))}</a></p>
@@ -459,6 +518,7 @@ article{border-top:1px solid ${c.line};padding:1.25rem 0}article.mark{padding:.5
 .tag{border:1px solid ${c.line};border-radius:999px;padding:0 .5rem;margin-inline-start:.5rem}
 .sig{text-align:end;font-style:italic}
 audio{width:100%;margin:.5rem 0}
+figure{margin:.75rem 0}figure img{display:block;max-width:100%;height:auto;border-radius:.5rem}figcaption{font-family:${SANS};font-size:.85rem;color:${c.inkMuted};margin-top:.35rem}
 a{color:${c.accent}}
 @media (prefers-color-scheme: dark){body{background:${c.paperDark};color:${c.inkDark}}article{border-color:${c.lineDark}}.date,.note,.file,.intro{color:${c.inkMutedDark}}h3,a{color:${c.accentDark}}}
 </style>
@@ -470,6 +530,17 @@ ${sections}
 </body>
 </html>
 `;
+}
+
+/**
+ * The picture above the letter in the offline reader (1.7.0): the file in photos/, with the parent's own words and place
+ * under it when they typed any. Nothing else is said about it.
+ */
+function figure(e: SnapshotEntry): string {
+  const p = photoOf(e);
+  if (!p) return '';
+  const caption = [p.text, p.place].filter((s): s is string => has(s)).map(escapeHtml).join(' &middot; ');
+  return `<figure><img src="${encodeURI(exportPhotoPath(e.id, p.mediaId))}" alt="${escapeHtml(p.text ?? '')}">${caption ? `<figcaption dir="auto">${caption}</figcaption>` : ''}</figure>\n`;
 }
 
 // ── The printable book (expo-print HTML) ─────────────────────────────────
@@ -558,9 +629,17 @@ ${body}
 
 // ── Plan and data files ──────────────────────────────────────────────────
 
-function readme(snapshot: ExportSnapshot): string {
+function readme(snapshot: ExportSnapshot, withPhotos: boolean): string {
+  // The pictures section only when this export holds a picture, so an export with none reads as it did before 1.7.0.
+  // It goes before KEEPING IT SAFE, so the README still ends on the format line.
+  const lines: string[] = [...exportCopy.readme];
+  if (withPhotos) {
+    const at = lines.indexOf('KEEPING IT SAFE');
+    if (at < 1) throw new Error('export README: the KEEPING IT SAFE heading the pictures section goes before is missing');
+    lines.splice(at - 1, 0, ...exportCopy.readmePhotos);
+  }
   return (
-    exportCopy.readme
+    lines
       .map((line) =>
         fill(line, {
           date: dayDate(snapshot.generatedAt.slice(0, 10), snapshot.locale),
@@ -578,8 +657,14 @@ export function planExport(snapshot: ExportSnapshot): ExportPlan {
   const byChild = new Map(snapshot.children.map((c) => [c.id, c]));
   const entries = oldestFirst(snapshot.entries.filter((e) => e.childId && byChild.has(e.childId)));
 
+  const photos: PhotoJob[] = entries.flatMap((e) => {
+    const p = photoOf(e);
+    if (!p) return [];
+    return [{ entryId: e.id, uri: p.uri, path: exportPhotoPath(e.id, p.mediaId), storedSha256: p.sha256, sizeHint: p.bytes, width: p.width, height: p.height, text: p.text, place: p.place }];
+  });
+
   const textFiles: TextFile[] = [
-    { path: 'README.txt', text: readme(snapshot), mediaType: MEDIA.txt },
+    { path: 'README.txt', text: readme(snapshot, photos.length > 0), mediaType: MEDIA.txt },
     { path: 'schema/export-v1.schema.json', text: `${JSON.stringify(exportJsonSchema, null, 2)}\n`, mediaType: MEDIA.json },
   ];
   for (const e of entries) {
@@ -587,6 +672,7 @@ export function planExport(snapshot: ExportSnapshot): ExportPlan {
     textFiles.push({ path: letterPath(folders.get(child.id)!, e), text: letterText(e, child, snapshot.locale), mediaType: MEDIA.txt });
   }
   textFiles.push({ path: 'index.html', text: indexHtml({ ...snapshot, entries }, folders), mediaType: MEDIA.html });
+  const readerFor = (written: ReadonlySet<string>) => indexHtml({ ...snapshot, entries }, folders, written);
   const waitingLetters = waitingOf(snapshot);
   for (const d of waitingLetters) {
     textFiles.push({ path: waitingTextPath(d.id), text: waitingText(d, byChild.get(d.childId)!, snapshot.locale), mediaType: MEDIA.txt });
@@ -621,7 +707,8 @@ export function planExport(snapshot: ExportSnapshot): ExportPlan {
     sizeHint: d.audioSizeOnPhone ?? d.audioBytes ?? null,
   }));
 
-  return { textFiles, books, audio, waitingAudio };
+  const readmeFor = (withPhotos: boolean) => readme(snapshot, withPhotos);
+  return { textFiles, books, audio, waitingAudio, photos, readerFor, readmeFor };
 }
 
 /** One recording as a data file writes it, with the hash of the file actually exported. */
@@ -649,10 +736,13 @@ export async function dataFiles(
   sha256Text: (text: string) => Promise<string>,
   /** Recordings of waiting letters actually written, by draft id (1.6.0). */
   waitingResults: Map<string, AudioResult> = new Map(),
+  /** Pictures actually written, by entry id (1.7.0). */
+  photoResults: Map<string, AudioResult> = new Map(),
 ): Promise<{ files: TextFile[]; audioMissing: number }> {
   const folders = childFolders(snapshot.children);
   const byChild = new Map(snapshot.children.map((c) => [c.id, c]));
   const jobs = new Map(plan.audio.map((j) => [j.entryId, j]));
+  const photoJobs = new Map(plan.photos.map((j) => [j.entryId, j]));
   const books = new Map(plan.books.map((b) => [b.childId, b.path]));
   const entries = oldestFirst(snapshot.entries.filter((e) => e.childId && byChild.has(e.childId)));
 
@@ -664,6 +754,13 @@ export async function dataFiles(
     const audio: ExportAudio | null = job && result ? exportedAudio(job, result) : null;
     // A planned recording that could not be read at packing time is "not on this device" too.
     const missing = audio ? null : job ? 'not_on_this_device' : audioMissingReason(e);
+    // A picture is described only when its file went in; one that was held back or could not be read is null.
+    const photoJob = photoJobs.get(e.id);
+    const photoResult = photoResults.get(e.id);
+    const photo: ExportEntry['photo'] =
+      photoJob && photoResult
+        ? { file: photoJob.path, bytes: photoResult.bytes, sha256: photoResult.sha256, width: pixels(photoJob.width), height: pixels(photoJob.height), text: photoJob.text, place: photoJob.place }
+        : null;
     const row: ExportEntry = {
       id: e.id,
       child_id: child.id,
@@ -679,7 +776,7 @@ export async function dataFiles(
       final_text: wordsOf(e),
       in_book: e.inBook,
       text_file: letterPath(folders.get(child.id)!, e),
-      photo: null,
+      photo,
       audio,
       audio_missing: missing ? { reason: missing } : null,
     };

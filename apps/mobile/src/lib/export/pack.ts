@@ -11,11 +11,13 @@
  * (`MAX_EXPORT_BYTES`); a one-year book is about 230 MB (C-NFR-007). Splitting
  * by child-year above 2 GB (spec 4.2) is not built yet.
  *
- * One file is in memory at a time. The sink receives the ZIP bytes in order.
+ * One file is in memory at a time, besides the first picture that passes the guard (kept from step 0 to step 4c).
+ * The sink receives the ZIP bytes in order.
  */
 import { strToU8, Zip, ZipPassThrough } from 'fflate';
 import { EXPORT_FORMAT, EXPORT_SCHEMA_VERSION, type Manifest, type ManifestFile } from './schema';
-import { dataFiles, exporterRole, MEDIA, planExport, type AudioResult, type ExportSnapshot } from './build.logic';
+import { carriesMetadata } from '../photos/strip';
+import { dataFiles, exporterRole, MEDIA, planExport, type AudioResult, type ExportSnapshot, type PhotoJob } from './build.logic';
 
 /** Below the 4 GiB limit of a ZIP without ZIP64, with room for headers. */
 export const MAX_EXPORT_BYTES = 3_900_000_000;
@@ -25,7 +27,7 @@ export interface ByteSink {
   write(chunk: Uint8Array): void;
 }
 
-export type ExportPhase = 'books' | 'letters' | 'recordings' | 'data' | 'checking';
+export type ExportPhase = 'books' | 'letters' | 'recordings' | 'pictures' | 'data' | 'checking';
 
 export interface PackProgress {
   phase: ExportPhase;
@@ -53,6 +55,8 @@ export interface PackResult {
   bytesWritten: number;
   /** Entry ids (and waiting letters' draft ids) whose recording no longer matches its capture hash (DATA-REQ-046). Ids only, never content. */
   mismatched: string[];
+  /** Entry ids whose picture was held back: its bytes were not the stored copy, or carried metadata (1.7.0). Ids only. */
+  photosHeldBack: string[];
 }
 
 export class ExportCancelledError extends Error {
@@ -77,10 +81,11 @@ export function estimateExportBytes(snapshot: ExportSnapshot): number {
   const plan = planExport(snapshot);
   const text = plan.textFiles.reduce((n, f) => n + f.text.length * 1.2, 0);
   const audio = [...plan.audio, ...plan.waitingAudio].reduce((n, a) => n + (a.sizeHint ?? 2_000_000), 0);
+  const photos = plan.photos.reduce((n, p) => n + p.sizeHint, 0);
   const books = plan.books.reduce((n, b) => n + estimatePdfBytes(b.letters), 0);
   const data = (snapshot.entries.length + (snapshot.waiting?.length ?? 0)) * 2_500;
-  const headers = (plan.textFiles.length + plan.audio.length + plan.waitingAudio.length + plan.books.length + 7) * 200;
-  return Math.ceil(text + audio + books + data + headers);
+  const headers = (plan.textFiles.length + plan.audio.length + plan.waitingAudio.length + plan.photos.length + plan.books.length + 7) * 200;
+  return Math.ceil(text + audio + photos + books + data + headers);
 }
 
 export async function packExport(snapshot: ExportSnapshot, deps: PackDeps): Promise<PackResult> {
@@ -112,6 +117,7 @@ export async function packExport(snapshot: ExportSnapshot, deps: PackDeps): Prom
   const total =
     plan.textFiles.reduce((n, f) => n + f.text.length, 0) +
     [...plan.audio, ...plan.waitingAudio].reduce((n, a) => n + (a.sizeHint ?? 1_000_000), 0) +
+    plan.photos.reduce((n, p) => n + p.sizeHint, 0) +
     plan.books.reduce((n, b) => n + estimatePdfBytes(b.letters), 0) +
     snapshot.entries.length * 2_500 +
     1;
@@ -143,12 +149,44 @@ export async function packExport(snapshot: ExportSnapshot, deps: PackDeps): Prom
 
   deps.onProgress?.({ phase: 'books', fraction: 0 });
 
-  // 1. README and schema first, so they sit at the top of the archive.
-  const [readme, schema, ...rest] = plan.textFiles;
-  for (const f of [readme, schema]) {
-    await add(f.path, strToU8(f.text), f.mediaType);
-    report('letters', f.text.length);
+  // The last guard before a picture leaves the phone (NS-01-R6, BL-1410), read once per picture: bytes that are not the
+  // copy the app stored (its `entry_media` hash), or that carry an Exif, XMP, IPTC or comment segment or anything after
+  // the end marker, are held back and the letter says `photo: null`. Fail closed: a picture that may hold a location
+  // never goes in, even if the stored copy was changed on disk after it was kept. Null when it vanished or is held back.
+  const photosHeldBack: string[] = [];
+  const checkedPhoto = async (job: PhotoJob): Promise<{ data: Uint8Array; sha256: string } | null> => {
+    let data: Uint8Array;
+    try {
+      data = await deps.readFile(job.uri);
+    } catch {
+      return null; // vanished between the snapshot and now: the letter says photo: null
+    }
+    const sha256 = await deps.sha256(data);
+    if (sha256 !== job.storedSha256 || carriesMetadata(data)) {
+      photosHeldBack.push(job.entryId);
+      return null;
+    }
+    return { data, sha256 };
+  };
+
+  // 0. The first picture that passes the guard, kept to write in step 4c, so the README describes photos/ only when
+  // a picture will be in it. Pictures before it that fail are judged here once and not read again.
+  let photoIndex = 0;
+  let firstPhoto: { data: Uint8Array; sha256: string } | null = null;
+  for (; photoIndex < plan.photos.length && !firstPhoto; photoIndex++) {
+    check();
+    firstPhoto = await checkedPhoto(plan.photos[photoIndex]);
+    if (!firstPhoto) report('pictures', plan.photos[photoIndex].sizeHint);
   }
+  if (firstPhoto) photoIndex--; // step 4c starts at the picture it keeps
+
+  // 1. README and schema first, so they sit at the top of the archive.
+  const [, schema, ...rest] = plan.textFiles;
+  const readme = plan.readmeFor(firstPhoto !== null);
+  await add('README.txt', strToU8(readme), MEDIA.txt);
+  report('letters', readme.length);
+  await add(schema.path, strToU8(schema.text), schema.mediaType);
+  report('letters', schema.text.length);
 
   // 2. One printable book per child.
   for (const b of plan.books) {
@@ -159,9 +197,10 @@ export async function packExport(snapshot: ExportSnapshot, deps: PackDeps): Prom
     await yieldToUi();
   }
 
-  // 3. Letters as text, and the offline reader.
+  // 3. Letters as text. The offline reader waits for the pictures (step 4d).
   let sinceYield = 0;
   for (const f of rest) {
+    if (f.path === 'index.html') continue;
     await add(f.path, strToU8(f.text), f.mediaType);
     report('letters', f.text.length);
     sinceYield += f.text.length;
@@ -213,9 +252,28 @@ export async function packExport(snapshot: ExportSnapshot, deps: PackDeps): Prom
     await yieldToUi();
   }
 
-  // 5. Data files, with the hashes of the recordings actually written.
+  // 4c. Letters' pictures (1.7.0): the stored copy, byte for byte, each through the guard above (the first one already).
+  const photoResults = new Map<string, AudioResult>();
+  for (; photoIndex < plan.photos.length; photoIndex++) {
+    check();
+    const job = plan.photos[photoIndex];
+    const ok = firstPhoto ?? (await checkedPhoto(job));
+    firstPhoto = null;
+    report('pictures', job.sizeHint);
+    if (!ok) continue;
+    await add(job.path, ok.data, 'image/jpeg', ok.sha256);
+    photoResults.set(job.entryId, { sha256: ok.sha256, bytes: ok.data.length });
+    await yieldToUi();
+  }
+
+  // 4d. The offline reader, showing only the pictures that went in.
+  const reader = plan.readerFor(new Set(photoResults.keys()));
+  await add('index.html', strToU8(reader), MEDIA.html);
+  report('letters', reader.length);
+
+  // 5. Data files, with the hashes of the recordings and pictures actually written.
   const sha256Text = (text: string) => deps.sha256(strToU8(text));
-  const data = await dataFiles(snapshot, plan, audioResults, sha256Text, waitingResults);
+  const data = await dataFiles(snapshot, plan, audioResults, sha256Text, waitingResults, photoResults);
   for (const f of data.files) {
     await add(f.path, strToU8(f.text), f.mediaType);
     report('data', f.text.length);
@@ -236,7 +294,7 @@ export async function packExport(snapshot: ExportSnapshot, deps: PackDeps): Prom
       audio_missing: data.audioMissing,
       // Letters only, as before 1.6.0; a waiting recording's integrity is in data/waiting.json.
       audio_mismatch: mismatched.length,
-      photos: 0,
+      photos: photoResults.size,
       books: plan.books.length,
     },
     files: [...files],
@@ -250,5 +308,5 @@ export async function packExport(snapshot: ExportSnapshot, deps: PackDeps): Prom
   if (zipError) throw zipError;
   if (!finished) throw new Error('export_zip_unfinished');
   deps.onProgress?.({ phase: 'data', fraction: 1 });
-  return { manifest, manifestSha256, bytesWritten: written, mismatched: [...mismatched, ...waitingMismatched] };
+  return { manifest, manifestSha256, bytesWritten: written, mismatched: [...mismatched, ...waitingMismatched], photosHeldBack };
 }

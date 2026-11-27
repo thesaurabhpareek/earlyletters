@@ -55,6 +55,13 @@ export const PLAIN_LAYOUT = {
 } as const;
 
 /**
+ * The line-break setting for a body that should not leave its last word alone (BL-492 point 1, CDesO-47): iOS pushes a
+ * word down so the last line is not a single word, Android balances the lines. A layout setting, never a no-break space
+ * in the words. Only the crash screen asks for it (error-boundary.tsx), so every other PlainScreen wraps as before.
+ */
+export const PLAIN_BODY_BALANCED = { lineBreakStrategyIOS: 'push-out', textBreakStrategy: 'balanced' } as const;
+
+/**
  * From AX1 the buttons follow the words inside the scroll instead of sitting under it (BL-495 point 4): at AX5 on an SE 3 the
  * pinned buttons leave about 297 pt for 1019 pt of words. The same threshold as StateScreen (pinned-action.logic.ts).
  */

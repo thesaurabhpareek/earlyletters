@@ -17,6 +17,8 @@ export function RootErrorBoundary({ retry }: ErrorBoundaryProps) {
     <PlainScreen
       title={e.title}
       body={e.body}
+      // "phone." sat alone on the second line at 402 and 375 pt: a line-break setting, not a no-break space (CDesO-47).
+      balanceBody
       actions={[
         { label: e.tryAgainButton, onPress: () => retry() },
         { label: e.tonightButton, kind: 'quiet', onPress: () => goToTonightAfterRetry(retry, (href) => router.replace(href as never)) },
