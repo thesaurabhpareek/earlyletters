@@ -12,12 +12,14 @@
  * - `signOut`: `waiting` while the outbox drains (the row says so with a spinner, F16, A-REQ-033), `closing` while
  *   the sign-out finishes (the row waits), else `ready`.
  * - `staySignedIn`: the "Stay signed in" button (BL-451), only while a sign-out the person asked for waits
- *   (`reason === 'user'`; an Apple revocation still signs out once the letters are up). Never while closing:
- *   `cancelSignOutWait()` gives no outcome and does nothing once the wait has ended.
+ *   (`reason === 'user'`; an Apple revocation, one noticed during the person's own wait included (BL-478), still signs
+ *   out once the letters are up). Never while closing: `cancelSignOutWait()` gives no outcome and does nothing once the
+ *   wait has ended.
  *
  * `waitEndedEarly(prev, next)`: a wait that ended before the queued letters were sent (a gate answer turned sync off,
  * or the session was lost), so the signed-out page can say they are kept on this phone (BL-451). A drained outbox is
- * the wait ending as it should, not early.
+ * the wait ending as it should, not early, whatever sync was when it drained (BL-478: a queue found empty when a gate
+ * answer turned sync off ends as drained, and a wait that began before the gate was read can drain with sync unknown).
  *
  * `nextEndedEarly(prev, next, shown)`: the signed-out page's early-end line, one state change at a time (account.tsx
  * calls it on each change). It turns on when the wait ends early, stays through the end of the sign-out and while
@@ -57,7 +59,8 @@ export function accountView(s: AuthState, claimPending: boolean): AccountView {
 export function waitEndedEarly(prev: AuthState, next: AuthState): boolean {
   if (prev.status !== 'signingOut' || !prev.waitingForUploads) return false;
   if (next.status === 'signedOut') return true;
-  return next.status === 'signingOut' && !next.waitingForUploads && next.sync !== 'on';
+  // Only a gate answer sets 'off' as a wait ends; every drained end keeps the sync it had ('on', or 'unknown').
+  return next.status === 'signingOut' && !next.waitingForUploads && next.sync === 'off';
 }
 
 export function nextEndedEarly(prev: AuthState, next: AuthState, shown: boolean): { shown: boolean; announce: boolean } {

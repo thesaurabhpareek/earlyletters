@@ -1,12 +1,12 @@
 // BL-1480: the release-candidate tag precondition (docs/ops/proposed/release-ios-launch-gate.md).
 import test from "node:test";
 import assert from "node:assert/strict";
-import { decideLaunchGate, decideTagCheckedRun, gate } from "./launch-gate.mjs";
+import { decideLaunchGate, decideTagCheckedRun, gate, isEntry } from "./launch-gate.mjs";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, writeFileSync, chmodSync, rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, chmodSync, rmSync, copyFileSync, symlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const MB = "a".repeat(40);
 const AFTER = "b".repeat(40);
@@ -56,6 +56,23 @@ test("[BL-1480] pull_request runs are not develop runs", () => {
   assert.equal(decide([run({ event: "pull_request" })]).ok, false);
 });
 
+test("[BL-1480] two runs at the same created_at: the higher id decides, in either list order", () => {
+  const at = "2026-11-22T03:00:00Z";
+  assert.equal(decide([run({ id: 1, created_at: at }), run({ id: 2, created_at: at, conclusion: "failure" })]).ok, false);
+  assert.equal(decide([run({ id: 2, created_at: at, conclusion: "failure" }), run({ id: 1, created_at: at })]).ok, false);
+  assert.equal(decide([run({ id: 1, created_at: at, conclusion: "failure" }), run({ id: 2, created_at: at })]).ok, true);
+  assert.equal(decide([run({ id: 2, created_at: at }), run({ id: 1, created_at: at, conclusion: "failure" })]).ok, true);
+});
+
+test("[BL-1480] runs that are not a list refuse and do not throw", () => {
+  for (const runs of [{}, { 0: run({}) }, "runs", 5, true, null, undefined]) {
+    let r;
+    assert.doesNotThrow(() => { r = decide(runs); }, JSON.stringify(runs));
+    assert.equal(r.ok, false, JSON.stringify(runs));
+    assert.match(r.message, /no iOS compile run on develop/);
+  }
+});
+
 test("[BL-1480] a missing merge base fails closed", () => {
   assert.equal(decide([run({})], { mergeBase: "" }).ok, false);
   assert.equal(decide([run({})], { mergeBase: undefined }).ok, false);
@@ -64,6 +81,15 @@ test("[BL-1480] a missing merge base fails closed", () => {
 test("[BL-1480] an ancestry check that throws fails closed", () => {
   const r = decide([run({})], { isAncestor: () => { throw new Error("bad object"); } });
   assert.equal(r.ok, false);
+});
+
+test("[BL-1574] an ancestry answer that is not exactly true refuses (a truthy string, undefined, 1, an object)", () => {
+  // gate() passes known.get(sha), which is undefined for a run it did not check; only the boolean true opens.
+  for (const answer of ["yes", "true", undefined, null, 1, {}, []]) {
+    const r = decide([run({})], { isAncestor: () => answer });
+    assert.equal(r.ok, false, JSON.stringify(answer) ?? "undefined");
+    assert.match(r.message, /no iOS compile run on develop at or after the merge base a{9}/);
+  }
 });
 
 test("[BL-1480] gate(): API error fails closed, never reads a token or logs more than the run id and conclusion", async () => {
@@ -76,18 +102,22 @@ test("[BL-1480] gate(): API error fails closed, never reads a token or logs more
 
 // BL-1574: main(), the part the workflow runs. Stub `gh` and `git` on PATH so no network or real repo is read.
 const SCRIPT = join(dirname(fileURLToPath(import.meta.url)), "launch-gate.mjs");
-function runMain(args, { runs = [], mergeBase = MB, ancestor = true } = {}) {
+function runMain(args, { runs = [], mergeBase = MB, ancestor = true, ancestorExit = ancestor ? 0 : 1, script = SCRIPT } = {}) {
   const dir = mkdtempSync(join(tmpdir(), "launch-gate-"));
   try {
     writeFileSync(join(dir, "runs.json"), JSON.stringify({ workflow_runs: runs }));
-    // The stubs check their arguments, so main() must ask for develop's runs of ios-compile.yml and the merge base of
-    // the --sha commit with origin/develop; any other call exits 3 and the gate fails closed.
+    // The stubs check their arguments, so main() must ask for develop's runs of ios-compile.yml, the merge base of the
+    // --sha commit with origin/develop, and `merge-base --is-ancestor <merge base> <a run's head_sha>` in that order;
+    // any other call exits 3 and the gate fails closed. Swapping the two --is-ancestor arguments therefore fails a test.
+    // ancestorExit is the --is-ancestor exit code: 0 is an ancestor, 1 is not, anything else is a read error (git uses 128).
     const sha = args[args.indexOf("--sha") + 1];
+    const heads = [...new Set(runs.map((r) => r?.head_sha).filter((h) => /^[0-9a-f]{40}$/.test(h ?? "")))];
+    const headCase = heads.length ? heads.join("|") : "no-run-head";
     writeFileSync(join(dir, "gh"), `#!/bin/sh\n[ "$1" = "api" ] && [ "$2" = "repos/o/r/actions/workflows/ios-compile.yml/runs?branch=develop&per_page=30" ] || exit 3\ncat "${join(dir, "runs.json")}"\n`);
-    writeFileSync(join(dir, "git"), `#!/bin/sh\nif [ "$1" = "merge-base" ] && [ "$2" = "--is-ancestor" ]; then exit ${ancestor ? 0 : 1}; fi\n[ "$1" = "merge-base" ] && [ "$2" = "${sha}" ] && [ "$3" = "origin/develop" ] || exit 3\necho ${mergeBase}\n`);
+    writeFileSync(join(dir, "git"), `#!/bin/sh\nif [ "$1" = "merge-base" ] && [ "$2" = "--is-ancestor" ]; then\n  [ "$#" = 4 ] && [ "$3" = "${mergeBase}" ] || exit 3\n  case "$4" in ${headCase}) exit ${ancestorExit};; *) exit 3;; esac\nfi\n[ "$1" = "merge-base" ] && [ "$2" = "${sha}" ] && [ "$3" = "origin/develop" ] || exit 3\necho ${mergeBase}\n`);
     chmodSync(join(dir, "gh"), 0o755);
     chmodSync(join(dir, "git"), 0o755);
-    const r = spawnSync(process.execPath, [SCRIPT, ...args], { env: { ...process.env, PATH: `${dir}:${process.env.PATH}` }, encoding: "utf8", timeout: 20000 });
+    const r = spawnSync(process.execPath, [script, ...args], { env: { ...process.env, PATH: `${dir}:${process.env.PATH}` }, encoding: "utf8", timeout: 20000 });
     return { code: r.status, out: r.stdout, err: r.stderr };
   } finally {
     rmSync(dir, { recursive: true, force: true });
@@ -115,11 +145,63 @@ test("[BL-1574] main(): no run on or after the merge base exits 1", () => {
   assert.match(r.out, /::error::Release candidate tag refused: no iOS compile run on develop/);
 });
 
+test("[BL-1574] main(): the --is-ancestor check gets the merge base first and the run's commit second", () => {
+  // A run at the merge base itself is the one case where a swap would not show, so the run here is after it. The
+  // tagged commit differs from the run's commit, so passing the tagged sha where the run's belongs also fails.
+  const tagged = "f".repeat(40);
+  const open = runMain(["--repo", "o/r", "--sha", tagged], { runs: [run({ head_sha: AFTER })] });
+  assert.equal(open.code, 0, open.out + open.err);
+  assert.match(open.out, /launch gate open: run 1 on b{9} concluded success \(merge base a{9}\)/);
+  const refused = runMain(["--repo", "o/r", "--sha", tagged], { runs: [run({ head_sha: AFTER })], ancestor: false });
+  assert.equal(refused.code, 1);
+  assert.match(refused.out, /no iOS compile run on develop at or after the merge base a{9}/, "a refusal for the run's order, not a read failure");
+});
+
 test("[BL-1574] main(): an open gate exits 0 with no ::error:: line", () => {
   const r = runMain(["--repo", "o/r", "--sha", AFTER], { runs: [run({})] });
   assert.equal(r.code, 0, r.out + r.err);
   assert.match(r.out, /launch gate open: run 1 on b{9} concluded success/);
   assert.doesNotMatch(r.out, /::error::/);
+});
+
+test("[BL-1574] main(): an --is-ancestor read error (git exit 128) is a read failure, not a refusal for the run's order", () => {
+  const r = runMain(["--repo", "o/r", "--sha", AFTER], { runs: [run({})], ancestorExit: 128 });
+  assert.equal(r.code, 1, r.out + r.err);
+  assert.match(r.out, /^::error::Release candidate tag refused: a read failed \(/m);
+  assert.doesNotMatch(r.out, /no iOS compile run on develop/);
+});
+
+test("[BL-1574] main() runs when the script path has a space or is reached through a symlink, so a refused gate exits 1", () => {
+  // The old entry check compared import.meta.url with `file://${argv[1]}`, which is false once the path needs URL
+  // escaping, so main() never ran and the job exited 0. The script needs nothing but node: builtins, so a copy runs.
+  const dir = mkdtempSync(join(tmpdir(), "launch gate "));
+  try {
+    const spaced = join(dir, "release scripts");
+    mkdirSync(spaced);
+    const copy = join(spaced, "launch-gate.mjs");
+    copyFileSync(SCRIPT, copy);
+    const link = join(dir, "linked-gate.mjs");
+    symlinkSync(copy, link);
+    for (const script of [copy, link]) {
+      const refused = runMain(["--repo", "o/r", "--sha", AFTER], { runs: [run({ conclusion: "failure" })], script });
+      assert.equal(refused.code, 1, `${script}: ${refused.out}${refused.err}`);
+      assert.match(refused.out, /^::error::Release candidate tag refused: run 1 on b{9} concluded failure/m, script);
+      const usage = runMain([], { script });
+      assert.equal(usage.code, 2, script);
+      assert.match(usage.err, USAGE, script);
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("[BL-1574] isEntry(): a missing argv[1] or another file is not the entry; the escaped path of this file is", () => {
+  const url = pathToFileURL("/x/launch gate/launch-gate.mjs").href;
+  assert.equal(isEntry(undefined, url), false);
+  assert.equal(isEntry("", url), false);
+  assert.equal(isEntry("/x/launch gate/other.mjs", url), false);
+  assert.equal(isEntry("/x/launch gate/launch-gate.mjs", url), true, "a path that does not exist on disk still compares by its URL");
+  assert.equal(isEntry(SCRIPT, pathToFileURL(SCRIPT).href), true);
 });
 
 // BL-1594: the tagged commit itself must be the commit a green iOS compile run checked.
@@ -153,6 +235,12 @@ test("[BL-1594] a run of another workflow on the tagged sha does not count", () 
   assert.equal(tag([tagRun({ path: null })]).ok, false);
 });
 
+test("[BL-1594] the path must be exactly .github/workflows/ios-compile.yml, not a file that only ends in that name", () => {
+  for (const path of [".github/workflows/evil-ios-compile.yml", "x/ios-compile.yml", "ios-compile.yml", "x/.github/workflows/ios-compile.yml", ".github/workflows/ios-compile.yml ", ".github/workflows/IOS-compile.yml"])
+    assert.equal(tag([tagRun({ path })]).ok, false, path);
+  assert.equal(tag([tagRun({ path: ".github/workflows/ios-compile.yml" })]).ok, true);
+});
+
 test("[BL-1594] only a workflow_dispatch run counts: a pull_request run builds the merge ref, and a skipped job can be green", () => {
   for (const event of ["pull_request", "push", "schedule", undefined]) assert.equal(tag([tagRun({ event })]).ok, false, String(event));
   assert.equal(tag([tagRun({ event: "pull_request", id: 2, created_at: "2026-11-24T05:00:00Z" }), tagRun({ conclusion: "failure" })]).ok, false, "a newer green PR run does not hide a red dispatch");
@@ -163,6 +251,15 @@ test("[BL-1594] a run on the tagged sha with no start time fails closed, in eith
   const timeless = tagRun({ id: 2, created_at: undefined, conclusion: "failure" });
   assert.equal(tag([green, timeless]).ok, false);
   assert.equal(tag([timeless, green]).ok, false);
+});
+
+test("[BL-1594] a run on the tagged sha with an empty start time fails closed, in either list order", () => {
+  assert.equal(tag([tagRun({ created_at: "" })]).ok, false, "a lone green run with an empty time");
+  const green = tagRun({ id: 1 });
+  const blank = tagRun({ id: 2, created_at: "", conclusion: "failure" });
+  assert.equal(tag([green, blank]).ok, false);
+  assert.equal(tag([blank, green]).ok, false);
+  assert.match(tag([green, blank]).message, /a run on the tagged commit d{9} has no start time/);
 });
 
 test("[BL-1594] a run still queued or in progress fails", () => {
@@ -177,6 +274,36 @@ test("[BL-1594] two runs on one sha: the newest decides, in either list order", 
   assert.equal(tag([red, green]).ok, false);
   const redOld = tagRun({ id: 3, created_at: "2026-11-23T01:00:00Z", conclusion: "failure" });
   assert.equal(tag([redOld, green]).ok, true);
+});
+
+test("[BL-1594] two runs on one sha at the same created_at: the higher id decides, in either list order", () => {
+  const at = "2026-11-24T01:00:00Z";
+  const green1 = tagRun({ id: 1, created_at: at });
+  const red2 = tagRun({ id: 2, created_at: at, conclusion: "failure" });
+  assert.equal(tag([green1, red2]).ok, false);
+  assert.equal(tag([red2, green1]).ok, false);
+  assert.match(tag([green1, red2]).message, /run 2 on d{9} concluded failure/);
+  const red1 = tagRun({ id: 1, created_at: at, conclusion: "failure" });
+  const green2 = tagRun({ id: 2, created_at: at });
+  assert.equal(tag([red1, green2]).ok, true);
+  assert.equal(tag([green2, red1]).ok, true);
+});
+
+test("[BL-1594] a sha that matches the tag in its first 39 characters but not the last does not count", () => {
+  const near = `${"d".repeat(39)}e`;
+  const r = tag([tagRun({ head_sha: near })]);
+  assert.equal(r.ok, false);
+  assert.match(r.message, /no iOS compile run checked the tagged commit d{9}/);
+  assert.equal(decideTagCheckedRun({ tagSha: near, runs: [tagRun({})] }).ok, false, "and the other way round");
+});
+
+test("[BL-1594] runs that are not a list refuse and do not throw", () => {
+  for (const runs of [{}, { 0: tagRun({}) }, "runs", 5, true, null, undefined]) {
+    let r;
+    assert.doesNotThrow(() => { r = tag(runs); }, JSON.stringify(runs));
+    assert.equal(r.ok, false, JSON.stringify(runs));
+    assert.match(r.message, /no iOS compile run checked the tagged commit/);
+  }
 });
 
 test("[BL-1594] a red, cancelled, skipped or empty conclusion fails; a missing or malformed tag sha fails closed", () => {

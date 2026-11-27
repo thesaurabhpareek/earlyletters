@@ -13,6 +13,7 @@ import {
   cancelDeletion, forgetAnalytics, loadBooks, loadStatus, requestDeletion, retryForget,
   type AnalyticsIds, type DeletionClient, type FlagStore,
 } from './api';
+import { clearConsentCopy } from '@/lib/export/consent-copy';
 import { bookImpacts, impactLines, showSubscriptionNotice, type ServerStatus, type SyncBook } from './logic';
 import { recordCancelled, recordRequested, recordStatus } from './note-store';
 
@@ -80,6 +81,8 @@ export function useAccountDeletion() {
     // First of all, before anything that can wait or fail: this phone now knows a request is open (open-request.ts).
     // Not under a second account: the note on the phone is the owner's (HO-911, same guard as refresh).
     if (bookVisibleNow()) recordRequested(r.value);
+    // BL-528 (CPrivO-21): the phone's copy of the consent record goes with the account (never throws; none kept while open).
+    clearConsentCopy();
     // Sharing stops at once (DELETION spec 2.6.1 step 7), then PostHog deletes this phone's persons through
     // analytics-forget. No analytics event is sent for the deletion flow (PM3 IN-K3, R-K3; BL-2175).
     await withdrawAnalytics().catch(() => {});
