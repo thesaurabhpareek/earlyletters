@@ -36,6 +36,9 @@ export const ALLOWED_PATHS = [
 
 const FOUNDER = String.raw`(?:the\s+)?(?:founder|saurabh|@thesaurabhpareek)(?:'s)?`;
 const VERB = String.raw`(?:approve|approval|approving|review|reviewing|merge|merging|comment|commenting|paste|pasting|sign[\s-]?off)`;
+/** The verbs of the two ask shapes only (CR-226, BL-2224): an ask of the founder to confirm or verify is an ask. `founder-must` and the
+ *  other patterns keep VERB, so a standing "founder to confirm" flag in a PRD or runbook does not trip. */
+const ASK_VERB = String.raw`(?:${VERB}|confirm|confirming|verify|verifying)`;
 /** Each pattern is tested alone (founder-ask.test.mjs). */
 export const PATTERNS = [
   ['phrase-review-needed', /founder\s+(?:review|approval|merge|sign[\s-]?off)\s+(?:needed|required)/i],
@@ -46,8 +49,8 @@ export const PATTERNS = [
   ['needs-founder-decision', /(?:^|[.;!?]\s+|\|\s*|(?:^|[|.;!?]\s*)[\w-]{1,20}(?:\s[\w-]{1,20})?:\s+)(?:this\s+|it\s+)?needs\s+a\s+founder\s+(?:decision|ruling|call|answer)\b/i],
   ['phrase-waiting', new RegExp(String.raw`waiting\s+(?:for|on)\s+${FOUNDER}`, 'i')],
   // "ask him to approve" counts only when the same line names the founder (before or after).
-  ['ask-him-to', new RegExp(String.raw`(?:(?<!\w)${FOUNDER}(?!\w)[^\n]{0,80}\b(?:ask|asks|asking|asked)\s+(?:him|her)\s+to\s+${VERB}\b|\b(?:ask|asks|asking|asked)\s+(?:him|her)\s+to\s+${VERB}\b[^\n]{0,80}(?<!\w)${FOUNDER}(?!\w))`, 'i')],
-  ['ask-founder-to', new RegExp(String.raw`\b(?:ask|asks|asking|asked|requests?|requesting|needs?|requires?|want|wants)\s+${FOUNDER}\s+to\s+${VERB}\b`, 'i')],
+  ['ask-him-to', new RegExp(String.raw`(?:(?<!\w)${FOUNDER}(?!\w)[^\n]{0,80}\b(?:ask|asks|asking|asked)\s+(?:him|her)\s+to\s+${ASK_VERB}\b|\b(?:ask|asks|asking|asked)\s+(?:him|her)\s+to\s+${ASK_VERB}\b[^\n]{0,80}(?<!\w)${FOUNDER}(?!\w))`, 'i')],
+  ['ask-founder-to', new RegExp(String.raw`\b(?:ask|asks|asking|asked|requests?|requesting|needs?|requires?|want|wants)\s+${FOUNDER}\s+to\s+${ASK_VERB}\b`, 'i')],
   // "ask Saurabh to take a look": the same ask shape with the softer verbs.
   ['ask-founder-to-look', new RegExp(String.raw`\b(?:ask|asks|asking|asked|requests?|requesting|needs?|requires?|want|wants)\s+${FOUNDER}\s+to\s+(?:take\s+a\s+look|have\s+a\s+look|look\s+(?:at|over)|weigh\s+in|check|ok|okay|green-?light|bless)\b`, 'i')],
   ['founder-must', new RegExp(String.raw`(?<!\w)${FOUNDER}\s+(?:must|should|needs\s+to|has\s+to|please|to)\s+${VERB}\b`, 'i')],

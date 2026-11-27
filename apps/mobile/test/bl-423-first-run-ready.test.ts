@@ -112,6 +112,8 @@ describe('[BL-423] Tonight, empty, shows Speak with no card in front', () => {
       'DraftCard',
       'CardSource',
       'ResurfacedCard',
+      // NS-14 (BL-941): drawn only with two or more books, so never on a first run's one book; its sheet opens on a tap.
+      'ChildSwitcher',
     ]);
     expect([...tags].filter((x) => !allowed.has(x))).toEqual([]);
   });
