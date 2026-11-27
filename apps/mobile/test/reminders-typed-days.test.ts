@@ -15,6 +15,7 @@ const os = vi.hoisted(() => ({
   permission: 'granted' as 'granted' | 'undetermined',
   scheduled: new Map<string, Req>(),
   presented: new Map<string, Req>(),
+  asked: 0,
 }));
 
 vi.mock('../src/lib/days', () => ({ endDaysSession: () => true })); // reminders/session clears the days store (NS-47-R15): test/days-store.test.ts
@@ -38,7 +39,10 @@ vi.mock('expo-notifications', () => {
     SchedulableTriggerInputTypes: { DATE: 'date', CALENDAR: 'calendar' },
     AndroidImportance: { DEFAULT: 3 },
     getPermissionsAsync: async () => perm(),
-    requestPermissionsAsync: async () => perm(),
+    requestPermissionsAsync: async () => {
+      os.asked += 1;
+      return perm();
+    },
     getAllScheduledNotificationsAsync: async () => [...os.scheduled.values()],
     cancelScheduledNotificationAsync: async (id: string) => void os.scheduled.delete(id),
     scheduleNotificationAsync: async (r: Req) => {
@@ -100,6 +104,11 @@ describe('[NS-18-R1] one notification on the typed day', () => {
     );
     expect(onDate(plan, '2026-11-05')).toHaveLength(1);
     expect(onDate(plan, '2026-10-30')).toHaveLength(0);
+  });
+
+  it('words that are only spaces make no note, as the keeping step would refuse them', () => {
+    const plan = planReminders(base({ typedDays: [{ date: '2026-11-05', words: '   ' }] }));
+    expect(onDate(plan, '2026-11-05').filter((n) => n.kind === 'typedDay')).toHaveLength(0);
   });
 
   it('a tap on a typed day opens Home, where the words are read back unchanged (the store keeps them as typed)', () => {
@@ -238,6 +247,7 @@ describe('typed days on the phone (real store and scheduler)', () => {
     vi.setSystemTime(NOW);
     typed.setTypedDaysBuildForTest(true);
     os.permission = 'granted';
+    os.asked = 0;
     os.scheduled.clear();
     os.presented.clear();
     store.closeStore();
@@ -269,6 +279,7 @@ describe('typed days on the phone (real store and scheduler)', () => {
     typed.saveTypedDay(plus(today(), 3), 'Nursery starts', today());
     expect(await reminders.rescheduleReminders()).toEqual({ ok: true });
     expect(ours()).toEqual([]);
+    expect(os.asked).toBe(0);
   });
 
   it('[NS-18-R3] the day-names switch is off by default, and App lock forces it off without changing what was chosen', () => {
@@ -282,6 +293,18 @@ describe('typed days on the phone (real store and scheduler)', () => {
 
   it('[NS-18-R3] scheduled with the switch off, the note iOS holds has the fixed line and not one word typed', async () => {
     typed.saveTypedDay(plus(today(), 2), CANARY, today());
+    await reminders.rescheduleReminders();
+    expect(ours()).toHaveLength(1);
+    expect(JSON.stringify([...os.scheduled.values()])).not.toContain('zq7canary');
+    expect(ours()[0]!.content).toMatchObject({ title: FIXED.title, body: FIXED.body });
+  });
+
+  it('[NS-18-R3] a note scheduled with the words is replaced by the fixed line once App lock turns on', async () => {
+    store.setSetting('notifications.dayNames', 'on');
+    typed.saveTypedDay(plus(today(), 2), CANARY, today());
+    await reminders.rescheduleReminders();
+    expect(ours()[0]!.content).toMatchObject({ title: FIXED.title, body: CANARY });
+    store.setSetting(APP_LOCK_KEYS.enabled, 'on');
     await reminders.rescheduleReminders();
     expect(ours()).toHaveLength(1);
     expect(JSON.stringify([...os.scheduled.values()])).not.toContain('zq7canary');

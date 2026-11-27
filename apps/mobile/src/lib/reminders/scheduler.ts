@@ -450,7 +450,7 @@ export async function forgetReminders(): Promise<void> {
   await chain;
 }
 
-/** The user turned reminders off: every scheduled nudge and note is removed. */
+/** The user turned reminders off: every scheduled nudge and note is removed, except a typed day's note, which still comes (W-G7). */
 export async function disableReminders(): Promise<ScheduleResult> {
   writePrefs({ enabled: false });
   return rescheduleReminders();

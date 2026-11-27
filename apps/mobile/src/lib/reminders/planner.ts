@@ -344,13 +344,13 @@ function typedDayCopy(t: TypedDayNote, dayNamesOn: boolean): { title: string; bo
   return { title: fixed.title, body: dayNamesOn ? t.words : fixed.body };
 }
 
-/** The typed days worth planning: a real date, today or later, words present, one a date (the first given wins). */
+/** The typed days worth planning: a real date, today or later, words present (not only spaces), one a date (the first given wins). */
 function typedCandidates(typed: readonly TypedDayNote[] | undefined, today: CalendarDate): { source: 'typedDay'; date: string; typed: TypedDayNote }[] {
   const seen = new Set<string>();
   const out: { source: 'typedDay'; date: string; typed: TypedDayNote }[] = [];
   for (const t of typed ?? []) {
     const d = parseIsoDate(t.date);
-    if (!d || isoDate(d) !== t.date || dayNumber(d) < dayNumber(today) || seen.has(t.date) || t.words.length === 0) continue;
+    if (!d || isoDate(d) !== t.date || dayNumber(d) < dayNumber(today) || seen.has(t.date) || t.words.trim().length === 0) continue;
     seen.add(t.date);
     out.push({ source: 'typedDay', date: t.date, typed: t });
   }
