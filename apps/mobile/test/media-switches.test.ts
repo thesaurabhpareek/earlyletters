@@ -8,7 +8,7 @@
  *  - the remote kill switches (`photos`, `photoMoments`, `videos`) pause and never start;
  *  - no screen or read can go round a switch, because each variable is read in one place;
  *  - Export and Erase never read a switch, and erase still removes a picture with every switch off;
- *  - each switch is written `off` in the `production` profile and is off in every store profile.
+ *  - each switch is off in the `production` profile and in every store profile (not written, or written `off`).
  *
  * Fixtures use the fictional family Asha. The kill-switch drill on a real TestFlight phone is not here: it is the
  * founder's device step (docs/release/media-phases-kill-switch-drill.md).
@@ -304,14 +304,17 @@ type Eas = { build: Record<string, { env?: Record<string, unknown>; distribution
 const readEas = (path = join(APP, 'eas.json')): Eas => JSON.parse(readFileSync(path, 'utf8'));
 const isOff = (v: unknown) => v === undefined || String(v).trim().toLowerCase() === 'off';
 
-/** Problems with the phase switches in one eas.json: production must write each `off`; every store profile must leave each off. */
+/**
+ * Problems with the phase switches in one eas.json: in production and in every store profile each switch is off, that
+ * is not written or written `off` (store-flags.mjs reads off the same way). The switches are not written today:
+ * test/config.test.ts pins the names each profile writes, and the build reads a missing name as off.
+ */
 function phaseSwitchProblems(eas: Eas): string[] {
   const problems: string[] = [];
-  const production = (resolveProfile(eas.build, 'production')?.env ?? {}) as Record<string, unknown>;
-  for (const s of MEDIA_PHASE_SWITCHES) if (production[s.env] !== 'off') problems.push(`production ${s.env}=${JSON.stringify(production[s.env])}`);
-  for (const name of storeProfiles(eas)) {
+  const names = new Set([...storeProfiles(eas), 'production']);
+  for (const name of [...names].sort()) {
     const env = (resolveProfile(eas.build, name)?.env ?? {}) as Record<string, unknown>;
-    for (const s of MEDIA_PHASE_SWITCHES) if (!isOff(env[s.env]) && name !== 'production') problems.push(`${name} ${s.env}=${JSON.stringify(env[s.env])}`);
+    for (const s of MEDIA_PHASE_SWITCHES) if (!isOff(env[s.env])) problems.push(`${name} ${s.env}=${JSON.stringify(env[s.env])}`);
   }
   return problems;
 }
@@ -330,26 +333,29 @@ describe('[NX-39-R39] the switches of section 3', () => {
     // Expo inlines only a read written out in full: each variable is read once, literally, in capabilities.ts.
     const code = stripComments(readFileSync(join(SRC, 'lib', 'capabilities.ts'), 'utf8'));
     for (const s of MEDIA_PHASE_SWITCHES) expect(code.match(new RegExp(`process\\.env\\.${s.env}\\b`, 'g'))?.length, s.env).toBe(1);
-    // production writes each one `off`, and no store profile turns one on
+    // production and every store profile leave each one off, and the build reads what production holds as off
     const eas = readEas();
     expect(storeProfiles(eas)).toContain('production');
     expect(phaseSwitchProblems(eas)).toEqual([]);
+    const production = (resolveProfile(eas.build, 'production')?.env ?? {}) as Record<string, string | undefined>;
+    for (const s of MEDIA_PHASE_SWITCHES) expect(parseServerFeatures(production[s.env]), s.env).toBe(false);
     // and the store-wide gates know every name: STORE_FLAGS (preflight and store-flags.test.ts) or G6's own list
     const g6 = readFileSync(join(APP, 'test', 'g6-production-flags-off.test.ts'), 'utf8');
     const storeFlagNames = STORE_FLAGS.map((f: { env: string }) => f.env);
     for (const s of MEDIA_PHASE_SWITCHES) expect(storeFlagNames.includes(s.env) || g6.includes(`'${s.env}'`), s.env).toBe(true);
   });
 
-  it('[NX-39-R39] mutant: a copy of eas.json with any one switch on, or unwritten, in production is caught', () => {
+  it('[NX-39-R39] mutant: a copy of eas.json with any one switch on in production or a store profile is caught', () => {
     for (const s of MEDIA_PHASE_SWITCHES) {
-      for (const value of ['on', ' ON ', undefined]) {
+      for (const value of ['on', ' ON ', 'true']) {
         const copy = readEas();
-        const env = { ...copy.build.production.env } as Record<string, unknown>;
-        if (value === undefined) delete env[s.env];
-        else env[s.env] = value;
-        copy.build.production.env = env;
-        expect(phaseSwitchProblems(copy), `${s.env}=${String(value)}`).toEqual([`production ${s.env}=${JSON.stringify(value)}`]);
+        copy.build.production.env = { ...copy.build.production.env, [s.env]: value };
+        expect(phaseSwitchProblems(copy), `${s.env}=${value}`).toEqual([`production ${s.env}=${JSON.stringify(value)}`]);
       }
+      // written `off` is as good as not written
+      const written = readEas();
+      written.build.production.env = { ...written.build.production.env, [s.env]: 'off' };
+      expect(phaseSwitchProblems(written), `${s.env}=off`).toEqual([]);
       const copy = readEas();
       copy.build.testflight.env = { ...copy.build.testflight.env, [s.env]: 'on' };
       expect(phaseSwitchProblems(copy), `testflight ${s.env}`).toEqual([`testflight ${s.env}="on"`]);

@@ -114,8 +114,9 @@
  *                     P4a `EXPO_PUBLIC_OCCASIONS`. NX-39 proposed the bare name MOMENTS for P2b; the name on develop is
  *                     `EXPO_PUBLIC_PHOTO_MOMENTS` (CR-69 A5 "one set", card 27 by CR-66, and the canary gate in
  *                     test/support/media-log-canary.ts), so P2b uses it and no second Moments flag exists. Only `on` is
- *                     on. Each is written `off` in the `production` profile and is off in every store profile until its
- *                     NX-39 gate is signed (scripts/release/store-flags.mjs and test/g6-production-flags-off.test.ts).
+ *                     on. Each is off in `production` and in every store profile until its NX-39 gate is signed: none is
+ *                     written in eas.json, which the build reads as off (test/config.test.ts pins the names a profile
+ *                     writes), and scripts/release/store-flags.mjs and test/g6-production-flags-off.test.ts refuse `on`.
  *                     A phase needs the phase it builds on: every picture phase needs P0, and P2c needs P2b, so turning
  *                     an earlier phase off removes every later one. The remote kill switches (`killSwitches.photos`,
  *                     `photoMoments`, `videos`) pause a phase in a build that has it and never start one
