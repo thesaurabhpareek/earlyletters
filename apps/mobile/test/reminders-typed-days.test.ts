@@ -238,6 +238,20 @@ describe('[NS-18-R5] typed words length', () => {
     expect(typed.checkTypedDay('2026-02-30', 'Never', today)).toEqual({ ok: false, code: 'typed_day_bad_date' });
     expect(typed.checkTypedDay(today, 'Today', today)).toEqual({ ok: true });
   });
+
+  it('[BL-2247, CPO-101] a day more than a year ahead is refused: today and the 366 days after are kept', () => {
+    expect(typed.TYPED_DAY_HORIZON_DAYS).toBe(367);
+    expect(plus(today, 366)).toBe('2027-11-02');
+    expect(typed.checkTypedDay(plus(today, 92), 'Nursery starts', today)).toEqual({ ok: true });
+    expect(typed.checkTypedDay('2027-11-01', 'Nursery starts', today)).toEqual({ ok: true }); // the same date next year
+    expect(typed.checkTypedDay('2027-11-02', 'Nursery starts', today)).toEqual({ ok: true });
+    expect(typed.checkTypedDay('2027-11-03', 'Nursery starts', today)).toEqual({ ok: false, code: 'typed_day_too_far' });
+    expect(typed.checkTypedDay('2062-11-01', 'Nursery starts', today)).toEqual({ ok: false, code: 'typed_day_too_far' });
+    // Across a leap day: the same date next year is 366 days on, and is kept; the day after it is not.
+    expect(typed.checkTypedDay('2028-03-01', 'Nursery starts', '2027-03-01')).toEqual({ ok: true });
+    expect(typed.checkTypedDay('2028-03-02', 'Nursery starts', '2027-03-01')).toEqual({ ok: false, code: 'typed_day_too_far' });
+    expect(typed.saveTypedDay('2027-11-03', 'Nursery starts', today)).toEqual({ ok: false, code: 'typed_day_too_far' });
+  });
 });
 
 describe('typed days on the phone (real store and scheduler)', () => {
@@ -322,6 +336,50 @@ describe('typed days on the phone (real store and scheduler)', () => {
     expect(ours()[0]!.content).toMatchObject({ title: FIXED.title, body: FIXED.body });
   });
 
+  it('[CPrivO-58] a note scheduled with the words is replaced by the fixed line once names go off, with App lock off', async () => {
+    store.setSetting('notifications.dayNames', 'on');
+    store.setSetting('notifications.lockScreenNames', 'on');
+    typed.saveTypedDay(plus(today(), 2), CANARY, today());
+    await reminders.rescheduleReminders();
+    expect(ours()[0]!.content).toMatchObject({ title: FIXED.title, body: CANARY });
+    reminders.writePrefs({ namesOnLockScreen: false });
+    expect(store.getSetting(APP_LOCK_KEYS.enabled)).toBeNull();
+    expect(dayNamesOn()).toBe(true);
+    await reminders.rescheduleReminders();
+    expect(ours()).toHaveLength(1);
+    expect(JSON.stringify([...os.scheduled.values()])).not.toContain('zq7canary');
+    expect(ours()[0]!.content).toMatchObject({ title: FIXED.title, body: FIXED.body });
+  });
+
+  it('[CPrivO-58] names, day names or App lock going off dismisses a delivered typed-day note with the words, and nothing else', async () => {
+    const shown = (identifier: string, body: string, data: unknown): Req => ({ identifier, content: { title: FIXED.title, body, data } });
+    const off: [string, () => void][] = [
+      ['names off', () => store.setSetting('notifications.lockScreenNames', 'off')],
+      ['day names off', () => store.setSetting('notifications.dayNames', 'off')],
+      ['App lock on', () => store.setSetting(APP_LOCK_KEYS.enabled, 'on')],
+    ];
+    for (const [label, turnOff] of off) {
+      store.setSetting('notifications.dayNames', 'on');
+      store.setSetting('notifications.lockScreenNames', 'on');
+      store.setSetting(APP_LOCK_KEYS.enabled, 'off');
+      await reminders.rescheduleReminders();
+      os.presented.clear();
+      const delivered = [
+        shown(`el.typed.${plus(today(), -1)}`, CANARY, { source: 'scribe.reminders', kind: 'typedDay' }),
+        shown(`el.typed.${today()}`, FIXED.body, { source: 'scribe.reminders', kind: 'typedDay' }),
+        shown('el.month.2026-11-01', 'Asha is 8 months', { source: 'scribe.reminders', kind: 'monthAge' }),
+        shown('someone-else', CANARY, { source: 'another.app', kind: 'typedDay' }),
+      ];
+      for (const d of delivered) os.presented.set(d.identifier, d);
+      // While the words may show, a re-plan leaves Notification Center alone.
+      await reminders.rescheduleReminders();
+      expect(os.presented.size, label).toBe(4);
+      turnOff();
+      await reminders.rescheduleReminders();
+      expect([...os.presented.keys()], label).toEqual([`el.typed.${today()}`, 'el.month.2026-11-01', 'someone-else']);
+    }
+  });
+
   it('the build switch off plans no typed day and cancels a pending one; the words stay on the phone', async () => {
     const day = plus(today(), 2);
     typed.saveTypedDay(day, 'Nursery starts', today());
@@ -366,7 +424,7 @@ describe('typed days on the phone (real store and scheduler)', () => {
   it('[NS-18-R6] account deletion ends the session through the same sign-out, so it clears typed days the same way (source)', () => {
     const src = (rel: string) => readFileSync(join(__dirname, '..', 'src', rel), 'utf8');
     expect(src('lib/account-deletion/use-account-deletion.ts')).toContain('signOut: auth.signOut');
-    expect(src('lib/reminders/session.ts')).toMatch(/for \(const key of REMINDER_SETTING_KEYS\) deleteSetting\(key\);\s*clearTypedDays\(\);/);
+    expect(src('lib/reminders/session.ts')).toMatch(/for \(const key of REMINDER_SETTING_KEYS\) deleteSetting\(key\);\s*\} catch \{[^}]*\}\s*try \{\s*clearTypedDays\(\);/);
   });
 
   it('[NS-18-R7] typed words do not linger: kept on the day, gone the day after, at the next plan', async () => {
