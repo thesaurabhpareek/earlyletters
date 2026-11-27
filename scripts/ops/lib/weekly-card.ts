@@ -80,10 +80,11 @@ export function parseLog(text: string): Row[] {
     if (cells.length !== header.length) throw new LogError(`line ${line} has ${cells.length} cells for ${header.length} columns (free text or a comma in a cell)`);
     const row: Row = { line };
     header.forEach((h, j) => {
-      if (!check(h as Field, cells[j])) throw new LogError(`line ${line}, ${h}: not a ${h} value the runbook allows`);
+      if (!check(h as Field, cells[j])) throw new LogError(`line ${line}, ${h}: not a value the runbook allows for this field`);
       if (cells[j] !== '') row[h as Field] = cells[j];
     });
     if (seen.has(row.ticket!)) throw new LogError(`line ${line}: ticket appears twice`);
+    if (row.ticket!.slice(5, 13) !== row.received!.replaceAll('-', '')) throw new LogError(`line ${line}, ticket: its date is not the received date (section 1)`);
     seen.add(row.ticket!);
     rows.push(row);
   });
@@ -92,11 +93,33 @@ export function parseLog(text: string): Row[] {
 
 const isOpen = (r: Row) => !r.completed;
 
+/** Dates that record a step already taken: none may be before `received` or after today. */
+const PAST_STEPS = ['acknowledged', 'verified', 'extended', 'completed'] as const;
+
+function checkDates(r: Row, today: number): void {
+  const received = parseDate(r.received!)!;
+  if (received > today) throw new LogError(`line ${r.line}, received: after today`);
+  for (const f of PAST_STEPS) {
+    const t = r[f] ? parseDate(r[f]!)! : null;
+    if (t !== null && t > today) throw new LogError(`line ${r.line}, ${f}: after today`);
+    if (t !== null && t < received) throw new LogError(`line ${r.line}, ${f}: before received`);
+  }
+}
+
+/** The first message for a kind (runbook section 0 rows, then section 1). */
+function firstMessage(kind: string): string {
+  return kind === 'safety'
+    ? 'first message not logged: send the pointer to help today, as the safety row says, and log it'
+    : 'first reply not logged: send what its section 0 row says today, the section 1 first reply unless the row says otherwise, and log it';
+}
+
 /** One open row on the card. `today` is a UTC day. */
 export function cardRow(r: Row, today: number): CardRow {
   const received = parseDate(r.received!)!;
   const day = Math.floor((today - received) / DAY_MS);
-  const extended = Boolean(r.extended);
+  // An extension counts only if the notice went by the due date; a later one does not move the clock (DSR-R12).
+  const extended = Boolean(r.extended) && parseDate(r.extended!)! <= addDays(received, DUE_DAY);
+  const lateExtension = Boolean(r.extended) && !extended;
   const dueDay = extended ? EXTENDED_DUE_DAY : DUE_DAY;
   const due = iso(addDays(received, dueDay));
   const base = { ticket: r.ticket!, kind: r.kind!, day, due };
@@ -113,11 +136,17 @@ export function cardRow(r: Row, today: number): CardRow {
     };
   }
   if (day > dueDay) {
-    return { ...base, nextActionDate: iso(today), nextAction: extended ? 'P0: past the extended due date; to counsel today' : 'P0: past day 45 with no extension notice; to counsel today', urgent: true };
+    const why = extended ? 'past the extended due date' : lateExtension ? 'the extension notice went after day 45' : 'past day 45 with no extension notice';
+    return { ...base, nextActionDate: iso(today), nextAction: `P0: ${why}; to counsel today`, urgent: true };
   }
   if (!r.acknowledged && day >= 1) {
-    // FR-BKO-13: the first reply goes the day it is read.
-    return { ...base, nextActionDate: iso(today), nextAction: 'first reply not logged: send the same first reply today and log it', urgent: day >= FIRST_DAY };
+    // FR-BKO-13: the first message goes the day it is read.
+    const later = extended || day < FIRST_DAY ? '' : day < DUE_DAY ? '; then finish, or send the extension notice with its reason before day 45' : '; it is due today';
+    return { ...base, nextActionDate: iso(today), nextAction: firstMessage(r.kind!) + later, urgent: day >= FIRST_DAY };
+  }
+  if (day === dueDay) {
+    const what = extended ? 'due today: reply with what was done' : 'due today: reply with what was done, or send the extension notice with its reason today';
+    return { ...base, nextActionDate: iso(today), nextAction: what, urgent: true };
   }
   if (!extended && day >= FIRST_DAY) {
     return { ...base, nextActionDate: iso(addDays(received, DUE_DAY - 1)), nextAction: 'finish, or send the extension notice with its reason before day 45', urgent: true };
@@ -139,11 +168,9 @@ export function buildCard(text: string, todayIso: string): Card {
   const today = parseDate(todayIso);
   if (today === null) throw new LogError('--today is not a YYYY-MM-DD date');
   const rows = parseLog(text)
+    .map((r) => (checkDates(r, today), r)) // closed rows too: a future `completed` would hide an open request
     .filter(isOpen)
-    .map((r) => {
-      if (parseDate(r.received!)! > today) throw new LogError(`line ${r.line}, received: after today`);
-      return cardRow(r, today);
-    })
+    .map((r) => cardRow(r, today))
     .sort(order);
   const urgent = rows.filter((r) => r.urgent).length;
   const lines = [

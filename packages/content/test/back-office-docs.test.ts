@@ -49,6 +49,17 @@ describe('the data-requests runbook', () => {
     expect(runbookKinds()).toEqual(cardKinds);
   });
 
+  it('[FR-BKO-09] every field the runbook table names is a column the weekly card reads, and the other way round', () => {
+    const table = section(RUNBOOK, '## 1. Receive it');
+    const rows = table.split('\n').filter((l) => /^\s*\| [a-z_, ]+ \|/.test(l) && !/\| Field \|/.test(l));
+    const named = rows.flatMap((l) => l.split('|')[1].split(',').map((f) => f.trim()));
+    const code = WEEKLY.match(/const DATE_FIELDS = \[([^\]]*)\]/)?.[1] ?? '';
+    const fields = WEEKLY.match(/export const FIELDS = \[([^\]]*)\]/)?.[1] ?? '';
+    const cardFields = [...`${fields} ${code}`.matchAll(/'([a-z_]+)'/g)].map((m) => m[1]);
+    expect(named.length).toBeGreaterThan(10);
+    expect([...named].sort()).toEqual([...new Set(cardFields)].sort());
+  });
+
   it('[FR-BKO-13] triage is the same day, with a ticket and a kind, no free text, and one first reply that never says whether an account exists', () => {
     const receive = section(RUNBOOK, '## 1. Receive it');
     expect(receive).toMatch(/Triage happens the day you read it \(FR-BKO-13\)/);
@@ -70,7 +81,7 @@ describe('the data-requests runbook', () => {
     expect(legal).toMatch(/`ops\.audit_log` row with runbook `legal_process` only when a step touches data/);
   });
 
-  it('[FR-BKO-13] adds no deletion promise: the closed route stays closed (CR-187)', () => {
+  it('[FR-BKO-09] the weekly card adds no deletion promise: the closed route stays closed (CR-187)', () => {
     expect(section(RUNBOOK, '## 3. Route 1')).toMatch(/CLOSED until BL-551/);
     expect(section(RUNBOOK, '## 11. The weekly card')).not.toMatch(/delet/i);
   });
@@ -86,7 +97,7 @@ describe('the founder-cannot-act plan', () => {
 
   it('[FR-BKO-18] gives the second person nothing before the policy sentence changes and counsel has read it', () => {
     expect(PLAN).toContain('Today only the founder has that access');
-    expect(PLAN).toMatch(/Before that person holds anything that can reach production, the Privacy Policy sentence .* changes and counsel has read the new one/);
+    expect(PLAN).toMatch(/Before that person holds anything that can reach production or the `hello@` mailbox, the Privacy Policy sentence .* changes and counsel has read the new one/);
     const never = section(PLAN, '## What they never do');
     expect(never).toMatch(/Read the mailbox for requests, or open a letter/);
   });

@@ -6,11 +6,11 @@ One page for the days the founder is ill, away or has lost his devices. Owner: `
 
 Second person: **not named.** The founder names one trusted person here, by role and relationship only (no name, email or phone number in the repo); until he does, the default below holds. Naming the person is the founder's step, outside BL-2102.
 
-Before that person holds anything that can reach production, the Privacy Policy sentence "Today only the founder has that access" (section 3) changes and counsel has read the new one (Q-BKO-3). Until then, the person holds nothing in the list below, and `docs/ops/ACCESS.md` lists only the founder under "Who holds production access today" (a test holds the two together).
+Before that person holds anything that can reach production or the `hello@` mailbox, the Privacy Policy sentence "Today only the founder has that access" (section 3) changes and counsel has read the new one (Q-BKO-3). Until then, the person holds nothing in the list below, and `docs/ops/ACCESS.md` lists only the founder under "Who holds production access today" (`packages/content/test/access-page.test.ts` holds the two together).
 
 ## What the second person would hold
 
-- A sealed recovery kit: the password manager's emergency kit and the console recovery codes (`docs/ops/ACCESS.md`, Consoles), opened only if the founder cannot act.
+- A sealed recovery kit: the password manager's emergency kit and the console recovery codes (`docs/ops/ACCESS.md`, Consoles; `docs/ops/SECURITY.md` section 3), opened only if the founder cannot act.
 - A one-page "pause and tell people" card: this page, printed.
 
 ## What they could do, and only this
