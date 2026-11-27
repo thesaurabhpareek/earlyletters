@@ -12,6 +12,7 @@ import {
   posthogBeforeSend,
   posthogHostFor,
   recordingProvider,
+  tierOf,
   type AnalyticsOptions,
   type PostHogLike,
 } from '../src';
@@ -150,7 +151,8 @@ describe('basics helpers and trackers send nothing before the parent says yes (B
     const policies: AnalyticsOptions['basicsPolicy'][] = [undefined, 'ask_first', 'collect_by_default'];
     for (const basicsPolicy of policies) {
       const provider = recordingProvider();
-      const analytics = createAnalytics({ provider, basicsPolicy, randomId: () => ID, flushIntervalMs: 0 });
+      // tierOf is the registry's, as the app passes it, so a registry tier change shows here (review of #2074).
+      const analytics = createAnalytics({ provider, basicsPolicy, tierOf, randomId: () => ID, flushIntervalMs: 0 });
       await analytics.init();
       const before = basicsPolicy === 'collect_by_default' ? 'dropped_disclosure_pending' : 'dropped_no_consent';
       expect(createBasics(analytics).tap('review_keep', 'tonight'), String(basicsPolicy)).toBe(before);
