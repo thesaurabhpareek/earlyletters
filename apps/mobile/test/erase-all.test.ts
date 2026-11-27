@@ -1059,6 +1059,70 @@ describe('[DATA-REQ-024][F14-REQ-026] Erase everything on this phone, signed out
     expect(fetches).toBe(0);
   });
 
+  // Karma ruling 7223212941 on #2102, point 1 (Review A 7223080007 and Review B 7222826702, must-fix 1). A mark left by a
+  // build before BL-775 has no scope, and one read under an older schema has none usable: nothing can tell old rows from
+  // new, so uploads wait (wipe.ts uploadsWaitForErase). Without this a sign-in would push the old books and letters.
+  it('[BL-775] a pending mark with no usable scope holds every upload: after a sign-in a sync pushes nothing, not even a kept letter, until the retry has removed everything (Karma ruling 7223212941, point 1)', async () => {
+    for (const spoil of ['no scope', 'schema changed']) {
+      const { app, f } = await filled();
+      failPartWay(app);
+      writeAfter(app, f);
+      if (spoil === 'no scope') db.run("DELETE FROM settings WHERE key = 'erase.everything.scope'");
+      else db.run('UPDATE settings SET value = json_set(value, \'$.schema\', 0) WHERE key = \'erase.everything.scope\'');
+      const s = await syncEngine();
+      expect(s.engine.start()?.outcome, spoil).toBe('claimed');
+      expect(ops().map((o) => o.entity_id), spoil).toContain(f.ids.v1); // the old books and letters are queued with the new
+      await s.engine.sync();
+      await s.engine.sync({ verify: true });
+      expect(s.calls, spoil).toContain('sync_pull');
+      expect([spoil, s.calls.filter((c) => c === 'sync_push'), s.pushed]).toEqual([spoil, [], []]);
+      expect(db.get<{ n: number }>('SELECT COUNT(*) AS n FROM sync_outbox WHERE sent_at IS NOT NULL OR attempts > 0')!.n, spoil).toBe(0);
+
+      // The retry removes everything present, as the failed line says, so nothing is left to upload afterwards.
+      const next = await launch();
+      expect(await next.all.resumeEraseAtLaunch(), spoil).toBe('erased');
+      expect(rows('sync_outbox'), spoil).toBe(0);
+      await s.engine.sync();
+      expect([spoil, s.pushed]).toEqual([spoil, []]);
+      s.engine.stop();
+    }
+    expect(fetches).toBe(0);
+  });
+
+  // Karma ruling 7223212941 on #2102, point 2 (Review A 7223080007, must-fix 2). The guard reads the queue tables through
+  // oldRowsLeft too: a retry whose only old row left is one queued op keeps uploads held, or that op's words would go.
+  it('[BL-775] uploads wait while only an old op is left in the queue: a retry that cannot remove one old letter\'s upload reports incomplete, and a sync pushes nothing (Karma ruling 7223212941, point 2)', async () => {
+    const { app, f } = await filled();
+    failPartWay(app);
+    const { book } = writeAfter(app, f);
+    const s = await syncEngine();
+    expect(s.engine.start()?.outcome).toBe('claimed');
+    expect(ops().map((o) => o.entity_id)).toContain(f.ids.v1);
+    // The old letter's op will not go (planted: SQLite skips that delete without an error); every other old row does.
+    db.exec(`CREATE TRIGGER hold_old_op BEFORE DELETE ON sync_outbox WHEN old.entity_id = '${f.ids.v1}' BEGIN SELECT RAISE(IGNORE); END`);
+    let next = await launch();
+    expect(await next.all.resumeEraseAtLaunch()).toBe('incomplete');
+    expect(next.store.eraseEverythingPending()).toBe(true);
+    const { oldRowsLeft, readEraseScope } = await import('../src/lib/db/repos/wipe');
+    expect(oldRowsLeft({ db }, readEraseScope({ db })!)).toEqual(['sync_outbox']); // the one old row left is that op
+    await s.engine.sync();
+    await s.engine.sync({ verify: true });
+    expect(s.calls).toContain('sync_pull');
+    expect([s.calls.filter((c) => c === 'sync_push'), s.pushed]).toEqual([[], []]);
+
+    // Once that op goes too, the kept ops upload and none names an old book or letter.
+    db.exec('DROP TRIGGER hold_old_op');
+    next = await launch();
+    expect(await next.all.resumeEraseAtLaunch()).toBe('erased');
+    await s.engine.sync();
+    expect(s.pushed.filter((o) => o.type === 'entry.upsert').map((o) => o.id).sort()).toEqual([LATE.spoken, LATE.typed, LATE.newBook].sort());
+    expect(s.pushed.map((o) => o.id)).toContain(book);
+    expect(namingOld(f, JSON.stringify(s.pushed))).toEqual([]);
+    expect(JSON.stringify(s.pushed)).not.toMatch(/Avi|2024-06-10|quiet morning|built a tower/);
+    s.engine.stop();
+    expect(fetches).toBe(0);
+  });
+
   it('[BL-775] the erase asks for one sync once it reports erased, so the kept ops upload at once after a sign-in, with no save, foreground or refresh (Karma ruling 7222053206, point 2; Review A)', async () => {
     const { app, f } = await filled();
     failPartWay(app);
