@@ -1,0 +1,401 @@
+/// <reference types="node" />
+/**
+ * Notification words and the one-a-day slot (BL-1324; NS-48-R9, R21, R26; FR-NTC-08, 09, 11).
+ * The planner is pure and is driven here with generated inputs from a seeded generator, so a failure prints its seed
+ * and replays. The quiet-book key rule also runs on a real store (node:sqlite), because the key layers read the newest
+ * letter from the store. Library-day notes (NS-46, BL-1012) are not built yet: when they land, they join the
+ * enumeration below. Fictional family Asha and Avi only.
+ */
+import { readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { entries } from '../src/lib/db/repos';
+import { SYNC_SETTING } from '../src/lib/sync/outbox';
+import { nodeDb } from './helpers/node-db';
+import { letter } from './helpers/store-fixture';
+
+vi.mock('expo-crypto', () => ({ getRandomBytes: (n: number) => new Uint8Array(n).fill(7) }));
+vi.mock('../src/lib/db/repos/open-native', () => ({
+  openNativeDb: () => {
+    throw new Error('native open must not be used in tests');
+  },
+}));
+
+const store = await import('../src/lib/store');
+const { lastMadeLetter, readPrefs, dayNamesOn } = await import('../src/lib/reminders/prefs');
+const { DEFAULT_PREFS, planReminders } = await import('../src/lib/reminders/planner');
+const { isoDate, parseIsoDate, zonedParts, zonedToEpoch, addDays } = await import('../src/lib/reminders/tz');
+const { reminderCopy } = await import('../src/lib/reminders/copy');
+const { APP_LOCK_KEYS } = await import('../src/lib/app-lock/prefs');
+const { selectNotificationKey } = await import('@scribe/core');
+type PlanInput = import('../src/lib/reminders/planner').PlanInput;
+type PlannerChild = import('../src/lib/reminders/planner').PlannerChild;
+type PlannedNotification = import('../src/lib/reminders/planner').PlannedNotification;
+type Cadence = import('../src/lib/reminders/planner').Cadence;
+type KeyInput = import('@scribe/core').KeyInput;
+
+const ZONES = ['America/Los_Angeles', 'America/New_York', 'Europe/London', 'Asia/Kolkata', 'Asia/Kathmandu', 'Australia/Lord_Howe', 'Pacific/Kiritimati', 'UTC'];
+const CADENCES: Cadence[] = ['off', 'weekly', 'fewTimes', 'everyEvening'];
+/** Names a lock screen must never show by default: each is a distinct word, so a substring check is exact. */
+const NAMES = ['Asha', 'Avi', 'Zoya'];
+/** Day and faith words a parent might type for a family or tradition day. */
+const DAY_WORDS = ['Diwali with Nani', 'Eid at the park', 'First Christmas', 'Rakhi with Avi', 'Shabbat dinner'];
+const FIXED = reminderCopy.neutral.typedDay;
+
+/** mulberry32: small, seeded, the same sequence on every machine. */
+function rng(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const START = Date.UTC(2026, 0, 1);
+const DAY = 86_400_000;
+
+/** A generated planner input: any zone, any day of a year (both clock changes included), any settings. */
+function generated(seed: number, over: Partial<PlanInput> = {}): PlanInput {
+  const r = rng(seed);
+  const pick = <T,>(xs: readonly T[]): T => xs[Math.floor(r() * xs.length)]!;
+  const timeZone = pick(ZONES);
+  const now = START + Math.floor(r() * 365 * DAY);
+  const t = zonedParts(now, timeZone);
+  const today = { y: t.y, m: t.m, d: t.d };
+  const children: PlannerChild[] = NAMES.slice(0, Math.floor(r() * 4)).map((name, i) => ({
+    id: `child-${name.toLowerCase()}`,
+    name,
+    birthday: isoDate(addDays(today, -Math.floor(r() * 900) + (r() < 0.1 ? 30 : 0))),
+    included: r() < 0.8,
+    quiet: r() < 0.2,
+  }));
+  const typedDays = Array.from({ length: Math.floor(r() * 6) }, () => ({
+    date: isoDate(addDays(today, Math.floor(r() * 70) - 3)),
+    words: pick(DAY_WORDS),
+  }));
+  return {
+    now,
+    timeZone,
+    prefs: {
+      ...DEFAULT_PREFS,
+      enabled: r() < 0.85,
+      paused: r() < 0.1,
+      cadence: pick(CADENCES),
+      days: [0, 1, 2, 3, 4, 5, 6].filter(() => r() < 0.4),
+      weeklyDay: Math.floor(r() * 7),
+      time: { hour: 7 + Math.floor(r() * 15), minute: pick([0, 15, 30, 45]) },
+      monthNotes: r() < 0.8,
+      namesOnLockScreen: r() < 0.5,
+    },
+    children,
+    typedDays,
+    dayNamesOn: r() < 0.5,
+    lastSaveAt: r() < 0.5 ? now - Math.floor(r() * 40 * DAY) : null,
+    lastForegroundAt: r() < 0.5 ? now - Math.floor(r() * 3 * 3_600_000) : null,
+    anchorAt: r() < 0.6 ? now - Math.floor(r() * 50 * DAY) : null,
+    lastLetter: r() < 0.6 ? { at: now - Math.floor(r() * 60 * DAY), kind: r() < 0.5 ? 'spoke' : 'typed' } : null,
+    monthHorizonDays: 120,
+    planPending: Math.floor(r() * 5),
+    ...over,
+  };
+}
+
+const SEEDS = Array.from({ length: 400 }, (_, i) => 1324_000 + i);
+const strings = (n: PlannedNotification) => [n.title, n.body, n.id];
+
+describe('[NS-48-R26] the one-a-day budget has one enforced place', () => {
+  it('no local date holds two budgeted notes, across every source, zone and setting (400 seeded plans)', () => {
+    for (const seed of SEEDS) {
+      const input = generated(seed);
+      const plan = planReminders(input);
+      const dates = plan.map((n) => n.date);
+      expect(new Set(dates).size, `seed ${seed}`).toBe(dates.length);
+      for (const n of plan) {
+        const p = zonedParts(n.fireAt, input.timeZone);
+        expect(isoDate({ y: p.y, m: p.m, d: p.d }), `seed ${seed} ${n.id}`).toBe(n.date);
+      }
+      expect(plan.length, `seed ${seed}`).toBeLessThanOrEqual(60);
+    }
+  });
+
+  it('the generated plans reach every source, so the property is not passing on empty plans', () => {
+    const kinds = new Set(SEEDS.flatMap((s) => planReminders(generated(s)).map((n) => n.kind)));
+    expect([...kinds].sort()).toEqual(['birthday', 'evening', 'monthAge', 'typedDay']);
+  });
+
+  it('the rule lives only in budget.ts: no other reminders module groups notes by day, and the planner ends on the chooser', () => {
+    const dir = join(__dirname, '../src/lib/reminders');
+    const others = readdirSync(dir).filter((f) => f.endsWith('.ts') && f !== 'budget.ts');
+    for (const f of others) {
+      const code = readFileSync(join(dir, f), 'utf8');
+      expect(code, f).not.toMatch(/function\s+\w*(OnePerDay|PerDay|oneADay)\b/);
+    }
+    const budget = readFileSync(join(dir, 'budget.ts'), 'utf8');
+    expect(budget).toMatch(/export function chooseOnePerDay/);
+    const planner = readFileSync(join(dir, 'planner.ts'), 'utf8');
+    const ret = planner.slice(planner.lastIndexOf('export function planReminders'));
+    expect(ret).toMatch(/const oneADay = chooseOnePerDay\(out\.map/);
+  });
+});
+
+describe('[FR-NTC-08] a parent-chosen day takes the slot as a typedDay', () => {
+  const LA = 'America/Los_Angeles';
+  const NOW = zonedToEpoch({ ...parseIsoDate('2026-10-05')!, hh: 12, mm: 0 }, LA);
+  const avi: PlannerChild = { id: 'child-avi', name: 'Avi', birthday: '2025-10-20', included: true };
+  const base = (over: Partial<PlanInput> = {}): PlanInput => ({
+    now: NOW,
+    timeZone: LA,
+    prefs: { ...DEFAULT_PREFS, enabled: true, cadence: 'everyEvening', namesOnLockScreen: true },
+    children: [avi],
+    lastSaveAt: null,
+    lastForegroundAt: null,
+    monthHorizonDays: 120,
+    ...over,
+  });
+
+  it('it takes the day from a birthday and from an evening nudge', () => {
+    const plan = planReminders(base({ typedDays: [{ date: '2026-10-20', words: 'Party' }, { date: '2026-10-07', words: 'Park' }] }));
+    expect(plan.filter((n) => n.date === '2026-10-20').map((n) => n.kind)).toEqual(['typedDay']);
+    expect(plan.filter((n) => n.date === '2026-10-07').map((n) => n.kind)).toEqual(['typedDay']);
+  });
+
+  it('it ignores recency: no key is chosen for it and the selector is never asked about its day', () => {
+    const asked: KeyInput[] = [];
+    const select = (k: KeyInput) => (asked.push(k), selectNotificationKey(k));
+    const lastLetter = { at: NOW - 3 * DAY, kind: 'spoke' as const };
+    const plan = planReminders(base({ typedDays: [{ date: '2026-10-07', words: 'Park' }], lastLetter, select }));
+    const t = plan.find((n) => n.kind === 'typedDay')!;
+    expect(t.key).toBeUndefined();
+    expect(t.variant).toBeUndefined();
+    expect(asked.length).toBe(plan.filter((n) => n.kind === 'evening').length);
+  });
+
+  it('it survives the back-off: past day 35 every evening is gone and the typed day still comes', () => {
+    const plan = planReminders(base({ anchorAt: NOW - 40 * DAY, typedDays: [{ date: '2026-10-09', words: 'Park' }] }));
+    expect(plan.filter((n) => n.kind === 'evening')).toEqual([]);
+    expect(plan.filter((n) => n.kind === 'typedDay').map((n) => n.date)).toEqual(['2026-10-09']);
+  });
+
+  it('the app never infers a day: with no typed day given there is never a typedDay note (400 seeded plans)', () => {
+    for (const seed of SEEDS) {
+      expect(planReminders(generated(seed, { typedDays: [] })).filter((n) => n.kind === 'typedDay'), `seed ${seed}`).toEqual([]);
+      expect(planReminders(generated(seed, { typedDays: undefined })).filter((n) => n.kind === 'typedDay'), `seed ${seed}`).toEqual([]);
+    }
+  });
+
+  it('every typedDay note is a day that was typed, at most one each', () => {
+    for (const seed of SEEDS) {
+      const input = generated(seed);
+      const typed = new Set((input.typedDays ?? []).map((t) => t.date));
+      const notes = planReminders(input).filter((n) => n.kind === 'typedDay');
+      for (const n of notes) expect(typed.has(n.date), `seed ${seed} ${n.date}`).toBe(true);
+    }
+  });
+});
+
+describe('[FR-NTC-11] no child name on a lock screen with names off or App lock on', () => {
+  it('names off: no title, body or id of any note holds a child name (400 seeded plans)', () => {
+    for (const seed of SEEDS) {
+      const input = generated(seed);
+      const plan = planReminders({ ...input, prefs: { ...input.prefs, namesOnLockScreen: false }, dayNamesOn: false });
+      for (const n of plan) for (const s of strings(n)) for (const name of NAMES) expect(s, `seed ${seed} ${n.id}`).not.toContain(name);
+    }
+  });
+
+  it('the same plans with names on do show names, so the check above can fail', () => {
+    const named = SEEDS.some((seed) => {
+      const input = generated(seed);
+      return planReminders({ ...input, prefs: { ...input.prefs, namesOnLockScreen: true } }).some((n) => NAMES.some((m) => n.title.includes(m) || n.body.includes(m)));
+    });
+    expect(named).toBe(true);
+  });
+});
+
+describe('[NS-48-R9] the catalogue honours the lock-screen rules', () => {
+  it('a typed family or faith day: the title is the neutral one in every switch state and never holds the words', () => {
+    for (const seed of SEEDS) {
+      for (const names of [false, true]) {
+        for (const dayNames of [false, true]) {
+          const input = generated(seed);
+          const plan = planReminders({ ...input, prefs: { ...input.prefs, namesOnLockScreen: names }, dayNamesOn: dayNames });
+          for (const n of plan.filter((p) => p.kind === 'typedDay')) {
+            expect(n.title, `seed ${seed}`).toBe(FIXED.title);
+            if (!dayNames) expect(n.body, `seed ${seed}`).toBe(FIXED.body);
+            for (const w of DAY_WORDS) expect(n.id).not.toContain(w);
+          }
+        }
+      }
+    }
+  });
+
+  it('the catalogue never overrides them: a selector that returns any key changes no typed, month or birthday note', () => {
+    const plain = (seed: number) => planReminders(generated(seed));
+    const odd = (seed: number) => planReminders(generated(seed, { select: () => 'not-a-key' }));
+    for (const seed of SEEDS.slice(0, 100)) {
+      const keep = (p: PlannedNotification[]) => p.filter((n) => n.kind !== 'evening').map((n) => `${n.id}|${n.title}|${n.body}`);
+      expect(keep(odd(seed)), `seed ${seed}`).toEqual(keep(plain(seed)));
+    }
+  });
+
+  it('no neutral line holds a day name or a faith word', () => {
+    const neutral = JSON.stringify(reminderCopy.neutral);
+    for (const w of ['Diwali', 'Eid', 'Christmas', 'Easter', 'Hanukkah', 'Ramadan', 'Passover', 'Rakhi', 'Shabbat', 'holiday', 'festival', 'faith', 'prayer']) {
+      expect(neutral.toLowerCase()).not.toContain(w.toLowerCase());
+    }
+  });
+});
+
+describe('[FR-NTC-09] a family or faith day stays neutral on the lock screen unless the day-name switch allows it', () => {
+  let close: () => void = () => {};
+  let seq = 0;
+  const newId = () => `0199a5b0-2222-7000-8000-${String(++seq).padStart(12, '0')}`;
+  beforeEach(() => {
+    store.closeStore();
+    const h = nodeDb();
+    close = h.close;
+    expect(store.openStore({ open: () => ({ db: h.db, close: () => {} }), now: () => '2026-10-05T19:00:00.000Z', newId }).ok).toBe(true);
+  });
+  afterEach(() => {
+    store.closeStore();
+    close();
+  });
+
+  it('the words show only with the day-name switch on and App lock off, in all four switch combinations', () => {
+    const LA = 'America/Los_Angeles';
+    const now = zonedToEpoch({ ...parseIsoDate('2026-10-05')!, hh: 12, mm: 0 }, LA);
+    const seen: Record<string, string> = {};
+    for (const day of ['off', 'on']) {
+      for (const lock of ['off', 'on']) {
+        store.setSetting('notifications.dayNames', day);
+        store.setSetting(APP_LOCK_KEYS.enabled, lock);
+        store.setSetting('notifications.lockScreenNames', 'on');
+        const plan = planReminders({
+          now,
+          timeZone: LA,
+          prefs: { ...readPrefs(), enabled: true },
+          children: [],
+          lastSaveAt: null,
+          lastForegroundAt: null,
+          typedDays: [{ date: '2026-10-07', words: 'Diwali with Nani' }],
+          dayNamesOn: dayNamesOn(),
+        });
+        const t = plan.find((n) => n.kind === 'typedDay')!;
+        expect(t.title).toBe(FIXED.title);
+        seen[`${day}/${lock}`] = t.body;
+      }
+    }
+    expect(seen).toEqual({ 'off/off': FIXED.body, 'off/on': FIXED.body, 'on/off': 'Diwali with Nani', 'on/on': FIXED.body });
+  });
+});
+
+describe('[FR-NTC-11] App lock keeps names off whatever the names switch says', () => {
+  let close: () => void = () => {};
+  let seq = 0;
+  const newId = () => `0199a5b0-4444-7000-8000-${String(++seq).padStart(12, '0')}`;
+  beforeEach(() => {
+    store.closeStore();
+    const h = nodeDb();
+    close = h.close;
+    expect(store.openStore({ open: () => ({ db: h.db, close: () => {} }), now: () => '2026-10-05T19:00:00.000Z', newId }).ok).toBe(true);
+  });
+  afterEach(() => {
+    store.closeStore();
+    close();
+  });
+
+  it('names on and App lock on: the planner is handed names off, and no note names a child; App lock off brings them back', () => {
+    const LA = 'America/Los_Angeles';
+    const now = zonedToEpoch({ ...parseIsoDate('2026-10-05')!, hh: 12, mm: 0 }, LA);
+    store.setSetting('notifications.lockScreenNames', 'on');
+    const plan = () =>
+      planReminders({
+        now,
+        timeZone: LA,
+        prefs: { ...readPrefs(), enabled: true, cadence: 'everyEvening' },
+        children: [{ id: 'child-avi', name: 'Avi', birthday: '2025-10-20', included: true }],
+        lastSaveAt: null,
+        lastForegroundAt: null,
+        monthHorizonDays: 120,
+      });
+    expect(plan().some((n) => n.title.includes('Avi') || n.body.includes('Avi'))).toBe(true);
+    store.setSetting(APP_LOCK_KEYS.enabled, 'on');
+    expect(readPrefs().namesOnLockScreen).toBe(false);
+    expect(plan().length).toBeGreaterThan(0);
+    for (const n of plan()) expect(`${n.title} ${n.body}`, n.id).not.toContain('Avi');
+    expect(store.getSetting('notifications.lockScreenNames')).toBe('on');
+  });
+});
+
+describe('[NS-48-R21] a quiet book adds nothing to a key', () => {
+  let close: () => void = () => {};
+  let raw: import('../src/lib/db/sql').SqlDb;
+  let seq = 0;
+  const ME = 'user-asha-mama';
+  const newId = () => `0199a5b0-3333-7000-8000-${String(++seq).padStart(12, '0')}`;
+  const eid = (i: number) => `0199a5b0-0000-7000-8000-${i.toString(16).padStart(12, '0')}`;
+  const put = (i: number, childId: string, over: Parameters<typeof letter>[0]) =>
+    entries.upsert({ db: raw, now: () => '2026-10-05T19:00:00.000Z', newId }, letter({ id: eid(i), childId, authorId: ME, ...over }), { childId, authorSignsAs: 'Mama' });
+
+  beforeEach(() => {
+    store.closeStore();
+    const h = nodeDb();
+    close = h.close;
+    raw = h.db;
+    expect(store.openStore({ open: () => ({ db: h.db, close: () => {} }), now: () => '2026-10-05T19:00:00.000Z', newId }).ok).toBe(true);
+    store.setSetting(SYNC_SETTING.owner, ME);
+  });
+  afterEach(() => {
+    store.closeStore();
+    close();
+  });
+
+  function books() {
+    const asha = store.addChild({ name: 'Asha', birthday: '2026-03-08', dueDate: null, signsAs: 'Mama' });
+    const avi = store.addChild({ name: 'Avi', birthday: '2025-10-20', dueDate: null, signsAs: 'Mama' });
+    put(1, asha.id, { capturedAt: '2026-09-01T08:00:00.000Z', captureMode: 'typed' });
+    put(2, avi.id, { capturedAt: '2026-10-04T08:00:00.000Z', captureMode: 'spoken' });
+    return { asha, avi };
+  }
+
+  it('a quieted book: its newer letter gives the key layers neither its date nor its kind', () => {
+    const { avi } = books();
+    expect(lastMadeLetter()).toEqual({ at: Date.parse('2026-10-04T08:00:00.000Z'), kind: 'spoke' });
+    store.setChildQuiet(avi.id, true);
+    expect(lastMadeLetter()).toEqual({ at: Date.parse('2026-09-01T08:00:00.000Z'), kind: 'typed' });
+  });
+
+  it('a book with "Include in my reminders" off: the same', () => {
+    const { avi } = books();
+    store.updateChild(avi.id, { remindersOn: false });
+    expect(lastMadeLetter()).toEqual({ at: Date.parse('2026-09-01T08:00:00.000Z'), kind: 'typed' });
+  });
+
+  it('every book quiet: the layers get nothing and the floor runs', () => {
+    const { asha, avi } = books();
+    store.setChildQuiet(asha.id, true);
+    store.setChildQuiet(avi.id, true);
+    expect(lastMadeLetter()).toBeNull();
+  });
+
+  it('in the pure planner, a quiet or excluded book changes no key input (400 seeded plans)', () => {
+    for (const seed of SEEDS.slice(0, 200)) {
+      const run = (extra: PlannerChild[]) => {
+        const asked: KeyInput[] = [];
+        const input = generated(seed);
+        planReminders({ ...input, children: [...input.children, ...extra], select: (k) => (asked.push(k), selectNotificationKey(k)) });
+        return asked;
+      };
+      const quiet: PlannerChild = { id: 'child-quiet', name: 'Mira', birthday: '2025-01-01', included: true, quiet: true };
+      const out: PlannerChild = { id: 'child-out', name: 'Neel', birthday: '2025-01-01', included: false };
+      const awake = generated(seed).children.filter((c) => !c.quiet);
+      // Only a list with an awake book: with none, "every book quiet" (NS-13-R12) decides the evenings, not the keys.
+      if (awake.length === 0) continue;
+      const before = run([]);
+      expect(run([quiet]), `seed ${seed}`).toEqual(before);
+      expect(run([out]), `seed ${seed}`).toEqual(before);
+    }
+  });
+});

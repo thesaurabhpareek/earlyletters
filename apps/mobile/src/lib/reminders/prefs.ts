@@ -165,10 +165,15 @@ export function lastOwnSaveAt(): number | null {
 /**
  * The newest letter this phone's user made, as the planner's layers read it (NS-48-R27): `at` (epoch ms of
  * `captured_at`) and the kind (`spoke` or `typed`; null when it cannot be told). One query, no entry text. Null when
- * nothing is made yet.
+ * nothing is made yet. Only books that are included and not quiet count: a quieted book, or one with "Include in my
+ * reminders" off, gives a key nothing, not its letter's date and not its kind (NS-48-R21, NS-32-R14). Smart quiet and
+ * the anchor still read every visible book (`lastOwnSaveAt`).
  */
 export function lastMadeLetter(): LastLetter | null {
-  const books = listChildren().map((c) => c.id);
+  const books = listChildren()
+    .filter((c) => c.remindersOn && c.quiet !== true)
+    .map((c) => c.id);
+  if (books.length === 0) return null;
   const row = newestMadeLetter(books, currentUserId());
   const at = row ? Date.parse(row.capturedAt) : NaN;
   return row && Number.isFinite(at) ? { at, kind: lastLetterKind(row.captureMode, row.kind) } : null;
