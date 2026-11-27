@@ -15,7 +15,7 @@ The two-parent book (NS-25) does not turn on in a store build until both of thes
 
 `packages/content/test/trust-and-safety-gate.test.ts` reads `apps/mobile/eas.json` and the co-parent rule in `apps/mobile/src/lib/family/entry.logic.ts` and fails if a store build can open the invite flow, from any entry, while either is missing. Today the rule is "servers on and an alpha build", so the App Store build has no invite flow and the gate holds.
 
-"Store build" here means the profile whose `EXPO_PUBLIC_APP_ENV` is `production`, as the app decides it (`isAlphaBuild` in `apps/mobile/src/lib/billing/alpha.ts`). It does not mean every profile with `distribution: store`: the `preview` and `testflight` profiles are also `distribution: store`, but their `APP_ENV` makes them alpha builds, so they do open the two-parent book to TestFlight testers today. A dispute between testers gets M14 and no limit, like any other.
+"Store build" here means the profile whose `EXPO_PUBLIC_APP_ENV` is `production`, as the app decides it (`isAlphaBuild` in `apps/mobile/src/lib/billing/alpha.ts`). It does not mean every profile with `distribution: store`: the `preview` and `testflight` profiles are also `distribution: store`, but their `APP_ENV` makes them alpha builds. Of the two, only `preview`, whose server switch is on, opens the two-parent book to TestFlight testers today; `testflight` has servers off until the BL-1867 flip (`docs/release/TESTFLIGHT.md`). A dispute between testers gets M14 and no limit, like any other.
 
 ## 0. Rules for the whole runbook
 - No action on one person's word. Both parents get the same first reply, macro M14 (`policy.familyDispute` in `docs/support/macros.md`).
