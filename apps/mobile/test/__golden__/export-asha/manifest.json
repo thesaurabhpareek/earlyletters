@@ -1,6 +1,6 @@
 {
   "format": "early-letters-export",
-  "format_version": "1.6.0",
+  "format_version": "1.7.0",
   "generated_at": "2027-03-15T10:00:00.000Z",
   "app_version": "1.0.0",
   "engine_version": 3,
@@ -21,13 +21,13 @@
     {
       "path": "README.txt",
       "bytes": 3275,
-      "sha256": "cfc040fee3ef6921bf7b9e8a95e49ea1cdc53df3a176ee6f636264195894ee4a",
+      "sha256": "877639c73bdae0b52551613295f6eaf6c85a0960ef1e2209533912b65b954e4c",
       "media_type": "text/plain; charset=utf-8"
     },
     {
       "path": "schema/export-v1.schema.json",
-      "bytes": 29259,
-      "sha256": "bc652d36c48207305ee2ffc8ee2da14cbad6d219bf6ef2efe351876785d325b9",
+      "bytes": 30398,
+      "sha256": "f131fb2ba3e69c3bec55649383841ebd24de8777e7988c573dfa85efbd42c1fe",
       "media_type": "application/json"
     },
     {
@@ -165,19 +165,19 @@
     {
       "path": "data/children.json",
       "bytes": 604,
-      "sha256": "4641055bb7d8cfbe6d4b97de0706cb068d66dac1f82efa3f2d65c14379724340",
+      "sha256": "10777df679dfa7715ca4568e6bc0d9edb14794c36f7819405e710ba7268bee95",
       "media_type": "application/json"
     },
     {
       "path": "data/entries.json",
       "bytes": 14950,
-      "sha256": "443595bfa08654373efdc39426d2dab47f6e4d523e649348de8dcad3bdb9ad0f",
+      "sha256": "c9df969c8e74f98cd47044d0fe3180ab0df5d325e9f9b4ca400dd686b449655c",
       "media_type": "application/json"
     },
     {
       "path": "data/account.json",
       "bytes": 1291,
-      "sha256": "3e2c6d45e6964e2f43e774ef69997b6857ed204e0b66e8342eef811c94b7d016",
+      "sha256": "bc1cb6c90df7c19847f230ca7609f031873e6870848e1b431fe15a88fefaee06",
       "media_type": "application/json"
     }
   ]
