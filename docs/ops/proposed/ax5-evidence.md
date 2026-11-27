@@ -13,7 +13,7 @@ Security lens: this proposal targets `.github/workflows/` (it adds one workflow 
 
 ## What it adds
 
-`docs/ops/proposed/workflows/a11y-evidence.patch` creates `.github/workflows/a11y-evidence.yml`: one job, `ax5` (its name reads "Unnamed-control check and emulation screenshots; not AX5 conformance"), path filtered, not a required check (a required check that never reports blocks merges that do not touch the app), the same pinned actions as the e2e-web proposal (`docs/ops/proposed/workflows/e2e-web.patch`). It is a separate file from `.github/workflows/web-e2e.yml`, which on develop runs the site checks for `apps/web` and is not related. It runs only `apps/mobile/e2e-web/j25-ax5-evidence.flow.ts` with `JOURNEY_SHOTS=1` and `A11Y_STRICT=1`, then uploads the four AX5 screenshots (Review, a letter, Settings, the Plus gate), their step JSON and the traces.
+`docs/ops/proposed/workflows/a11y-evidence.patch` creates `.github/workflows/a11y-evidence.yml`: one job, `ax5` (its name reads "Unnamed-control check and emulation screenshots; not AX5 conformance"), path filtered, not a required check (a required check that never reports blocks merges that do not touch the app), the same pinned actions as the e2e-web proposal (`docs/ops/proposed/workflows/e2e-web.patch`). It is a separate file from `.github/workflows/web-e2e.yml`, which on develop runs the site checks for `apps/web` and is not related. It runs only `apps/mobile/e2e-web/j25-ax5-evidence.flow.ts` with `JOURNEY_SHOTS=1` and `A11Y_STRICT=1`, then uploads the three AX5 screenshots (Review, a letter, Settings; the Plus gate is device evidence only since CR-240, DEVICE_TEST_PLAN V-06), their step JSON and the traces.
 
 ## What a green run means
 
@@ -26,7 +26,7 @@ A green `ax5` job is a floor, not accessibility evidence for the store or for co
 - A browser accessibility tree is not VoiceOver. It has no rotor, no focus order as iOS reads it, no traits and no grouping, so the device run stays BL-279 (BL-1619, BL-1626).
 - Web text scaling at 3.571 is not iOS Dynamic Type. Clipping and truncation on a phone at AX5 are not seen here.
 - It checks that a name exists, not that it is right: state and value, label-in-name, duplicate labels, decorative icons, clipped letter text and 44 pt targets are not checked. The same gaps hold for rules C1 and C2 in `apps/mobile/test/a11y-controls.test.ts`; BL-1624 carries the list.
-- It covers four screens (Review, a letter, Settings, the Plus gate), not the app.
+- It covers three screens (Review, a letter, Settings), not the app. The Plus gate at AX5 is not here: the seam build is an alpha build with no gate, so it is device evidence only (CR-240, DEVICE_TEST_PLAN V-06).
 - It is not required, so a red run does not block a merge; someone has to read it.
 
 ## Where 3.571 comes from
@@ -49,7 +49,7 @@ One `npm ci`, a Chromium install and four short flows. `apps/mobile/e2e-web/supp
 1. Apply it with the command at the top of this file.
 2. Run it by hand (workflow_dispatch). Expect four J25 steps and `ax5-evidence` with `J25-01.png` to `J25-04.png` and four JSON files.
 3. Open one JSON: `a11y.tree` lists roles and names in page order; `a11y.unnamed` is `[]`.
-4. Mutant: remove an `aria-label`/`accessibilityLabel` from a control on one of the four screens; the job fails naming the step.
+4. Mutant: remove an `aria-label`/`accessibilityLabel` from a control on one of the three screens; the job fails naming the step.
 
 ## Rollback
 
