@@ -379,6 +379,21 @@ export function deleteSetting(key: string): void {
   bus.emit('settings');
 }
 
+/** The setting keys that start with `prefix` (repos/settings.ts `settingKeysWithPrefix`). Keys only. */
+export function settingKeysWithPrefix(prefix: string): string[] {
+  return settings.settingKeysWithPrefix(ctx(), prefix);
+}
+
+/** Deletes several settings in one transaction and tells listeners once. */
+export function deleteSettings(keys: readonly string[]): void {
+  if (keys.length === 0) return;
+  const c = ctx();
+  c.db.transaction(() => {
+    for (const key of keys) settings.deleteSetting(c, key);
+  });
+  bus.emit('settings');
+}
+
 // ── Agreements (Before you begin; lib/agreements.logic.ts) ───────────────
 /** True when this phone holds an accept of `document`. Never logged. */
 export function hasAgreement(document: AgreementDocument): boolean {

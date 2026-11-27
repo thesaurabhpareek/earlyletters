@@ -36,6 +36,7 @@ vi.mock('../src/lib/reminders/prefs', async () => {
     lastOwnSaveAt: () => null,
     lastMadeLetter: () => null,
     anchorAt: () => null,
+    dayNamesOn: () => false,
     readOnSince: () => 0,
     writeOnSince: () => {},
     writePrefs: () => {},
