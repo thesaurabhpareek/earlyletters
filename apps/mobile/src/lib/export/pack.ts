@@ -4,23 +4,23 @@
  * as functions, so the same code runs on the phone (device.ts) and in the
  * Node golden test.
  *
- * ZIP: fflate's streaming `Zip` with `ZipPassThrough` (stored, no
- * compression: recordings and PDFs are already compressed, and stored
- * entries are the most widely readable). fflate writes a data descriptor
- * after each entry and has no ZIP64, so one export must stay under 4 GiB
- * (`MAX_EXPORT_BYTES`); a one-year book is about 230 MB (C-NFR-007). Splitting
- * by child-year above 2 GB (spec 4.2) is not built yet.
+ * ZIP: stored entries (no compression: recordings and PDFs are already
+ * compressed, and stored entries are the most widely readable), written by
+ * zip-writer.ts with a data descriptor after each entry. One export is one file
+ * at any size (BL-388): ZIP64 past 4 GiB; below it, the bytes fflate wrote. A
+ * one-year book is about 230 MB (C-NFR-007).
  *
  * One file is in memory at a time, besides the first picture that passes the guard (kept from step 0 to step 4c).
  * The sink receives the ZIP bytes in order.
  */
-import { strToU8, Zip, ZipPassThrough } from 'fflate';
+import { strToU8 } from 'fflate';
 import { EXPORT_FORMAT, EXPORT_SCHEMA_VERSION, type Manifest, type ManifestFile } from './schema';
 import { carriesMetadata } from '../photos/strip';
+import { ZipWriter } from './zip-writer';
 import { dataFiles, exporterRole, MEDIA, planExport, type AudioResult, type ExportSnapshot, type PhotoJob } from './build.logic';
 
-/** Below the 4 GiB limit of a ZIP without ZIP64, with room for headers. */
-export const MAX_EXPORT_BYTES = 3_900_000_000;
+/** Free space is the real limit (ExportLowSpaceError). This keeps offsets exact in a JS number (2^53 - 1, about 9 PB): ExportTooLargeError stays for an estimate no phone can hold. */
+export const MAX_EXPORT_BYTES = Number.MAX_SAFE_INTEGER;
 const CHUNK = 1 << 20; // 1 MiB: push size, and how often the UI gets a turn
 
 export interface ByteSink {
@@ -76,7 +76,7 @@ export class ExportTooLargeError extends Error {
 /** Rough size of a book PDF before it is rendered (progress and space checks only). */
 export const estimatePdfBytes = (letters: number) => 60_000 + letters * 3_000;
 
-/** Bytes the export will take, before it is made (space check and the 4 GiB guard). */
+/** Bytes the export will take, before it is made (the space check). */
 export function estimateExportBytes(snapshot: ExportSnapshot): number {
   const plan = planExport(snapshot);
   const text = plan.textFiles.reduce((n, f) => n + f.text.length * 1.2, 0);
@@ -99,20 +99,7 @@ export async function packExport(snapshot: ExportSnapshot, deps: PackDeps): Prom
 
   if (estimateExportBytes(snapshot) > MAX_EXPORT_BYTES) throw new ExportTooLargeError();
 
-  let written = 0;
-  let zipError: Error | null = null;
-  let finished = false;
-  const zip = new Zip((err, chunk, final) => {
-    if (err) {
-      zipError = err;
-      return;
-    }
-    if (chunk.length > 0) {
-      deps.sink.write(chunk);
-      written += chunk.length;
-    }
-    if (final) finished = true;
-  });
+  const zip = new ZipWriter((chunk) => deps.sink.write(chunk), { mtime });
 
   // Progress by planned bytes: text and data are small, recordings are most of it.
   const total =
@@ -132,19 +119,15 @@ export async function packExport(snapshot: ExportSnapshot, deps: PackDeps): Prom
   const add = async (path: string, data: Uint8Array, mediaType: string, sha256?: string) => {
     check();
     const hash = sha256 ?? (await deps.sha256(data));
-    const f = new ZipPassThrough(path);
-    f.mtime = mtime;
-    zip.add(f);
-    if (data.length === 0) f.push(new Uint8Array(0), true);
+    zip.begin(path, data.length);
     for (let off = 0; off < data.length; off += CHUNK) {
-      f.push(data.subarray(off, Math.min(data.length, off + CHUNK)), off + CHUNK >= data.length);
-      if (zipError) throw zipError;
+      zip.push(data.subarray(off, Math.min(data.length, off + CHUNK)));
       if (data.length > CHUNK) {
         await yieldToUi();
         check();
       }
     }
-    if (zipError) throw zipError;
+    zip.finish();
     files.push({ path, bytes: data.length, sha256: hash, media_type: mediaType });
   };
 
@@ -324,9 +307,7 @@ export async function packExport(snapshot: ExportSnapshot, deps: PackDeps): Prom
   await add('manifest.json', manifestBytes, MEDIA.json, manifestSha256);
   await add('manifest.sha256', strToU8(`${manifestSha256}  manifest.json\n`), MEDIA.txt);
 
-  zip.end();
-  if (zipError) throw zipError;
-  if (!finished) throw new Error('export_zip_unfinished');
+  const written = zip.end();
   deps.onProgress?.({ phase: 'data', fraction: 1 });
   return { manifest, manifestSha256, bytesWritten: written, mismatched: [...mismatched, ...waitingMismatched], photosHeldBack };
 }

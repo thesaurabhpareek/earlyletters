@@ -5,7 +5,9 @@
  * Reads through the ZIP's central directory, never by scanning for headers:
  * entries carry data descriptors, and a recording can contain any byte
  * pattern, so offsets from the directory are the only safe way to find each
- * file. Expects stored entries without ZIP64, which is what pack.ts writes.
+ * file. Expects stored entries, which is what pack.ts writes, ZIP64 included
+ * (past 4 GiB, BL-388); a ZIP64 record that points nowhere or disagrees with
+ * the 32-bit fields is a format problem, never guessed around.
  *
  * Problems are reported as fixed codes and counts only: never a file path (a folder is named after the
  * child), never file contents, never a reader's error text (it can quote a path). PRIV-R21.
@@ -26,7 +28,7 @@ export const PROBLEM_CODES = [
   'duplicate',
   'cancelled',
   'format:no_end_record',
-  'format:zip64_not_expected',
+  'format:bad_zip64',
   'format:bad_directory',
   'format:bad_local_header',
   'format:not_stored',
@@ -79,6 +81,13 @@ function result(found: ProblemCode[], filesChecked: number): VerifyResult {
 
 const u16 = (b: Uint8Array, i: number) => b[i] | (b[i + 1] << 8);
 const u32 = (b: Uint8Array, i: number) => (b[i] | (b[i + 1] << 8) | (b[i + 2] << 16) | (b[i + 3] << 24)) >>> 0;
+/** An 8-byte value, refused past 2^53 (an offset there could not be read exactly). */
+const u64 = (b: Uint8Array, i: number) => {
+  const v = u32(b, i) + u32(b, i + 4) * 0x1_0000_0000;
+  if (!Number.isSafeInteger(v) || i + 8 > b.length) throw new ZipFormatError('format:bad_zip64');
+  return v;
+};
+const MAX32 = 0xffffffff;
 // fflate's UTF-8 decoder: TextDecoder is not guaranteed in Hermes.
 const utf8 = (b: Uint8Array) => strFromU8(b);
 
@@ -91,7 +100,7 @@ export interface CentralEntry {
   localOffset: number;
 }
 
-/** The central directory of a ZIP without ZIP64. */
+/** The central directory, with ZIP64 values where the 32-bit fields say 0xFFFF or 0xFFFFFFFF (APPNOTE 4.3.14 to 4.5.3). */
 export async function readCentralDirectory(file: RandomAccess): Promise<CentralEntry[]> {
   const tailLength = Math.min(file.size, 22 + 0xffff);
   const tail = await file.read(file.size - tailLength, tailLength);
@@ -103,28 +112,55 @@ export async function readCentralDirectory(file: RandomAccess): Promise<CentralE
     }
   }
   if (eocd < 0) throw new ZipFormatError('format:no_end_record');
-  const count = u16(tail, eocd + 10);
-  const cdSize = u32(tail, eocd + 12);
-  const cdOffset = u32(tail, eocd + 16);
-  if (count === 0xffff || cdOffset === 0xffffffff) throw new ZipFormatError('format:zip64_not_expected');
+  let count = u16(tail, eocd + 10);
+  let cdSize = u32(tail, eocd + 12);
+  let cdOffset = u32(tail, eocd + 16);
+  // Where the directory must end: at the end record, or at the ZIP64 end record when there is one.
+  let cdEnd = file.size - tailLength + eocd;
+  const locator = cdEnd >= 20 ? await file.read(cdEnd - 20, 20) : new Uint8Array(0);
+  if (locator.length === 20 && u32(locator, 0) === 0x07064b50) {
+    // The locator sits right before the end record and points at the ZIP64 end record, which ends where it starts.
+    const at = u64(locator, 8);
+    const record = await file.read(at, 56);
+    if (u32(locator, 4) !== 0 || u32(locator, 16) !== 1 || record.length < 56 || u32(record, 0) !== 0x06064b50) throw new ZipFormatError('format:bad_zip64');
+    const [onDisk, total, size64, offset64] = [24, 32, 40, 48].map((i) => u64(record, i));
+    // One disk, and each 32-bit field either says "see ZIP64" or agrees with it.
+    const disagree = onDisk !== total || (count !== 0xffff && count !== total) || (cdSize !== MAX32 && cdSize !== size64) || (cdOffset !== MAX32 && cdOffset !== offset64);
+    if (disagree || at + 12 + u64(record, 4) !== cdEnd - 20 || u32(record, 16) !== 0 || u32(record, 20) !== 0) throw new ZipFormatError('format:bad_zip64');
+    [count, cdSize, cdOffset, cdEnd] = [total, size64, offset64, at];
+  } else if (count === 0xffff || cdSize === MAX32 || cdOffset === MAX32) {
+    throw new ZipFormatError('format:bad_zip64'); // says ZIP64 and has no ZIP64 end record
+  }
+  if (cdOffset + cdSize !== cdEnd) throw new ZipFormatError('format:bad_directory');
   const cd = await file.read(cdOffset, cdSize);
   const out: CentralEntry[] = [];
   let p = 0;
   for (let n = 0; n < count; n++) {
-    if (u32(cd, p) !== 0x02014b50) throw new ZipFormatError('format:bad_directory');
+    if (p + 46 > cd.length || u32(cd, p) !== 0x02014b50) throw new ZipFormatError('format:bad_directory');
     const nameLength = u16(cd, p + 28);
     const extraLength = u16(cd, p + 30);
     const commentLength = u16(cd, p + 32);
-    out.push({
+    const entry: CentralEntry = {
       method: u16(cd, p + 10),
       crc: u32(cd, p + 16),
       compressedSize: u32(cd, p + 20),
       size: u32(cd, p + 24),
       localOffset: u32(cd, p + 42),
       name: utf8(cd.subarray(p + 46, p + 46 + nameLength)),
-    });
+    };
+    const wide = (['size', 'compressedSize', 'localOffset'] as const).filter((k) => entry[k] === MAX32);
+    if (wide.length > 0) {
+      // The ZIP64 extra (id 1) holds, in this order, only the fields set to 0xFFFFFFFF.
+      const extra = cd.subarray(p + 46 + nameLength, p + 46 + nameLength + extraLength);
+      let x = 0;
+      while (x + 4 <= extra.length && u16(extra, x) !== 1) x += 4 + u16(extra, x + 2);
+      if (x + 4 > extra.length || u16(extra, x + 2) < 8 * wide.length) throw new ZipFormatError('format:bad_zip64');
+      wide.forEach((k, i) => (entry[k] = u64(extra, x + 4 + 8 * i)));
+    }
+    out.push(entry);
     p += 46 + nameLength + extraLength + commentLength;
   }
+  if (p !== cd.length) throw new ZipFormatError('format:bad_directory'); // more entries than the count says
   return out;
 }
 
