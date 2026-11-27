@@ -283,15 +283,16 @@ Every Monday, on your own computer, where the request log lives (never in a sess
 node scripts/ops/weekly-card.ts --log <path to the request log>
 ```
 
-It reads the log and prints one table: every open request with its ticket, kind, day (counted from the day it arrived, section 0 "The clock"), due date (received plus 45 days, or plus 90 once an extension notice went), next action date and next action. It prints tickets, kinds, numbers and dates only. Exit 0: nothing at day 35 or later. Exit 1: something is. Exit 2: it could not read the log, or the log holds a field or a value section 1 does not allow; the message names the line and the field, never the value. Fix the row, never the script.
+It reads the log and prints one table: every open request with its ticket, kind, day (counted from the day it arrived, section 0 "The clock"), due date (received plus 45 days, or plus 90 once an extension notice went), next action date and next action. It prints tickets, kinds, numbers and dates only. Days are counted in UTC: run late in a Pacific evening and it counts one day ahead, which errs early. Pass `--today YYYY-MM-DD` to set the day. Exit 0: nothing to act on first. Exit 1: a request is at day 35 or later, or a letter's named date has passed. Exit 2: it could not read the log, or the log holds a field or a value section 1 does not allow; the message names the line and the field, never the value. Fix the row, never the script.
 
-- **Order.** Any request at day 35 or later comes first, oldest first. The rest follow by next action date.
-- **Follow-ups.** The next action date walks day 7, day 30 and day 40, then the due date. Copy it into the row's `next_action` field.
+- **Order.** Any request at day 35 or later comes first, fewest days left to its due date first, so a P0 leads. An extended request stays in this group from day 35 to its day 90 due date. The rest follow by next action date.
+- **Follow-ups.** The next action date walks day 7, day 30 and day 40, then the due date (day 90 once extended). Copy it into the row's `next_action` field.
 - **Day 35 to 44.** Finish it, or send the extension notice with its reason before day 45 (DSR-R12), then put the date in `extended`. The card dates this step day 44.
-- **Day 45.** Due today: reply with what was done, or send the extension notice with its reason today.
-- **Past day 45 with no notice.** A P0 defect: it goes to counsel the same day (section 8 step 3). An extension notice that went after day 45 does not move the due date; the row stays a P0 until it is completed.
+- **Day 45.** Due today: reply with what was done. An extension notice now is late.
+- **Past day 45 with no notice.** A P0 defect: it goes to counsel the same day (section 8 step 3). An extension notice that did not go before day 45 does not move the due date; the row stays a P0 until it is completed.
 - **No first message logged** a day or more after it arrived: send what the kind's section 0 row says today (the section 1 first reply unless the row says otherwise; for `safety`, the pointer to help) and log the date in `acknowledged` (FR-BKO-13).
-- **`legal_process`.** Stays with counsel and off the 45-day clock: no reply until counsel says so. The card shows the date the letter names (`legal_date`), or today's date as a reminder to log one (FR-BKO-16).
+- **`legal_process`.** Stays with counsel and off the 45-day clock: no reply until counsel says so. The card shows the date the letter names (`legal_date`), or today's date as a reminder to log one (FR-BKO-16). Once that date has passed, it goes to counsel today and is listed first.
+- **`abuse_report`.** Off the 45-day clock too: after the fixed first reply (section 0, abuse row), the card says only "with counsel" and never asks for a reply about what was done or an extension notice, because either would say the reported account exists (IAM-R09).
 
 The rest of the Monday card (support tally, `ops-alert` issues, mail caps, helpline expiry, DMARC, open pauses) is FR-BKO-23 and is not built. If you cannot run the card yourself for a while, `founder-cannot-act.md` is the plan.
 

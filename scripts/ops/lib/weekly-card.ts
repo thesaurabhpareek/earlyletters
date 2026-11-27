@@ -33,7 +33,7 @@ export const FIRST_DAY = 35;
 
 type Field = (typeof FIELDS)[number];
 export type Row = Partial<Record<Field, string>> & { line: number };
-export type CardRow = { ticket: string; kind: string; day: number; due: string; nextActionDate: string; nextAction: string; urgent: boolean };
+export type CardRow = { ticket: string; kind: string; day: number; due: string; nextActionDate: string; nextAction: string; urgent: boolean; left: number };
 export type Card = { today: string; rows: CardRow[]; lines: string[] };
 
 export class LogError extends Error {}
@@ -117,26 +117,41 @@ function firstMessage(kind: string): string {
 export function cardRow(r: Row, today: number): CardRow {
   const received = parseDate(r.received!)!;
   const day = Math.floor((today - received) / DAY_MS);
-  // An extension counts only if the notice went by the due date; a later one does not move the clock (DSR-R12).
-  const extended = Boolean(r.extended) && parseDate(r.extended!)! <= addDays(received, DUE_DAY);
+  // An extension counts only if the notice went before day 45 (DSR-R12); a later one does not move the clock.
+  const extended = Boolean(r.extended) && parseDate(r.extended!)! < addDays(received, DUE_DAY);
   const lateExtension = Boolean(r.extended) && !extended;
   const dueDay = extended ? EXTENDED_DUE_DAY : DUE_DAY;
   const due = iso(addDays(received, dueDay));
-  const base = { ticket: r.ticket!, kind: r.kind!, day, due };
+  const left = dueDay - day;
+  const base = { ticket: r.ticket!, kind: r.kind!, day, due, left };
+  const offClock = { ...base, due: '-', left: Number.POSITIVE_INFINITY };
 
   if (r.kind === 'legal_process') {
     // FR-BKO-16, runbook section 0: no action, no disclosure, no reply until counsel says so. Not on the 45-day clock.
-    const next = r.legal_date ?? iso(today);
+    const named = r.legal_date ? parseDate(r.legal_date)! : null;
+    if (named !== null && named < today) {
+      return { ...offClock, left: Math.floor((named - today) / DAY_MS), nextActionDate: iso(today), nextAction: 'with counsel: the date the letter names has passed; to counsel today', urgent: true };
+    }
     return {
-      ...base,
-      due: '-',
-      nextActionDate: next,
+      ...offClock,
+      nextActionDate: r.legal_date ?? iso(today),
       nextAction: r.legal_date ? 'with counsel: no reply until counsel says so; the letter names this date' : 'with counsel: no reply until counsel says so; log any date the letter names',
       urgent: false,
     };
   }
+  if (r.kind === 'abuse_report') {
+    // Runbook section 0, abuse row: one fixed reply, nothing on any account changes, the founder decides with counsel.
+    // Not on the 45-day clock: a "what was done" reply or an extension notice would imply the account exists (IAM-R09).
+    const first = !r.acknowledged && day >= 1;
+    return {
+      ...offClock,
+      nextActionDate: iso(today),
+      nextAction: first ? firstMessage(r.kind) : 'with counsel: no reply beyond the fixed first reply; change nothing on any account',
+      urgent: false,
+    };
+  }
   if (day > dueDay) {
-    const why = extended ? 'past the extended due date' : lateExtension ? 'the extension notice went after day 45' : 'past day 45 with no extension notice';
+    const why = extended ? 'past the extended due date' : lateExtension ? 'the extension notice did not go before day 45' : 'past day 45 with no extension notice';
     return { ...base, nextActionDate: iso(today), nextAction: `P0: ${why}; to counsel today`, urgent: true };
   }
   if (!r.acknowledged && day >= 1) {
@@ -145,22 +160,20 @@ export function cardRow(r: Row, today: number): CardRow {
     return { ...base, nextActionDate: iso(today), nextAction: firstMessage(r.kind!) + later, urgent: day >= FIRST_DAY };
   }
   if (day === dueDay) {
-    const what = extended ? 'due today: reply with what was done' : 'due today: reply with what was done, or send the extension notice with its reason today';
-    return { ...base, nextActionDate: iso(today), nextAction: what, urgent: true };
+    return { ...base, nextActionDate: iso(today), nextAction: 'due today: reply with what was done', urgent: true };
   }
   if (!extended && day >= FIRST_DAY) {
     return { ...base, nextActionDate: iso(addDays(received, DUE_DAY - 1)), nextAction: 'finish, or send the extension notice with its reason before day 45', urgent: true };
   }
-  const steps = extended ? [dueDay] : [...FOLLOW_UPS, DUE_DAY];
-  const nextDay = steps.find((d) => d >= day) ?? dueDay;
+  const nextDay = [...FOLLOW_UPS, dueDay].find((d) => d >= day) ?? dueDay;
   const label = nextDay === dueDay ? 'due: reply with what was done' : `day ${nextDay} follow-up`;
   return { ...base, nextActionDate: iso(addDays(received, nextDay)), nextAction: label, urgent: day >= FIRST_DAY };
 }
 
-/** Day 35 or later first (oldest first), then the rest by next action date, then ticket. */
+/** Rows to act on first (day 35 or later, or a letter's date passed), fewest days left first so a P0 leads; then the rest by next action date, then ticket. */
 export function order(a: CardRow, b: CardRow): number {
   if (a.urgent !== b.urgent) return a.urgent ? -1 : 1;
-  if (a.urgent) return b.day - a.day || a.ticket.localeCompare(b.ticket);
+  if (a.urgent) return a.left - b.left || b.day - a.day || a.ticket.localeCompare(b.ticket);
   return a.nextActionDate.localeCompare(b.nextActionDate) || a.ticket.localeCompare(b.ticket);
 }
 
@@ -174,7 +187,7 @@ export function buildCard(text: string, todayIso: string): Card {
     .sort(order);
   const urgent = rows.filter((r) => r.urgent).length;
   const lines = [
-    `Data requests, week of ${todayIso}: ${rows.length} open, ${urgent} at day ${FIRST_DAY} or later`,
+    `Data requests, week of ${todayIso}: ${rows.length} open, ${urgent} to act on first`,
     '',
     '| ticket | kind | day | due | next action date | next action |',
     '|---|---|---|---|---|---|',

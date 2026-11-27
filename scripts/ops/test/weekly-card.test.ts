@@ -20,7 +20,7 @@ Deno.test('[FR-BKO-09] a request at day 35 or later is listed first, ahead of on
   );
   assert.deepEqual(c.rows.map((r) => r.ticket), ['DREQ-20261108-1', 'DREQ-20261212-1', 'DREQ-20261129-1']);
   assert.equal(c.rows[0].urgent, true);
-  assert.match(c.lines[0], /3 open, 1 at day 35 or later/);
+  assert.match(c.lines[0], /3 open, 1 to act on first/);
   // Whatever order the log is in, and in both directions of the comparison.
   const [late, soon] = [c.rows[0], c.rows[1]];
   assert.ok(soon.nextActionDate < late.nextActionDate, 'the fixture puts the late row behind on date');
@@ -85,7 +85,7 @@ Deno.test('[FR-BKO-09] day 44 asks for the extension, day 45 is due today, day 4
   const at = (n: number) => card(row('DREQ-20261030-1', 'see_export', day(n))).rows[0];
   assert.equal(at(44).nextAction, 'finish, or send the extension notice with its reason before day 45');
   assert.equal(at(44).nextActionDate, TODAY);
-  assert.equal(at(45).nextAction, 'due today: reply with what was done, or send the extension notice with its reason today');
+  assert.equal(at(45).nextAction, 'due today: reply with what was done');
   assert.equal(at(45).nextActionDate, TODAY);
   assert.equal(at(45).urgent, true);
   assert.equal(at(46).nextAction, 'P0: past day 45 with no extension notice; to counsel today');
@@ -93,13 +93,61 @@ Deno.test('[FR-BKO-09] day 44 asks for the extension, day 45 is due today, day 4
   assert.equal(ext90.nextAction, 'due today: reply with what was done');
 });
 
-Deno.test('[FR-BKO-09] an extension notice logged after day 45 does not move the clock: the row stays a P0', () => {
+Deno.test('[FR-BKO-09] an extension notice that did not go before day 45 does not move the clock: the row stays a P0', () => {
   const r = card(row('DREQ-20261025-1', 'see_export', day(50), { extended: day(2) })).rows[0];
-  assert.equal(r.nextAction, 'P0: the extension notice went after day 45; to counsel today');
+  assert.equal(r.nextAction, 'P0: the extension notice did not go before day 45; to counsel today');
   assert.equal(r.due, new Date(parseDate(day(50))! + 45 * 86_400_000).toISOString().slice(0, 10));
   const onDue = card(row('DREQ-20261025-1', 'see_export', day(50), { extended: day(5) })).rows[0];
-  assert.equal(onDue.nextAction, 'due: reply with what was done', 'a notice on day 45 itself is in time');
+  assert.equal(onDue.nextAction, 'P0: the extension notice did not go before day 45; to counsel today', 'a notice on day 45 itself is late');
+  const day44 = card(row('DREQ-20261025-1', 'see_export', day(50), { extended: day(6) })).rows[0];
+  assert.equal(day44.nextAction, 'due: reply with what was done', 'a notice on day 44 is in time');
 });
+
+Deno.test('[FR-BKO-09] an extended request still walks the day 30 and day 40 follow-ups before day 90', () => {
+  const r = card(row('DREQ-20261117-1', 'see_export', day(27), { extended: day(17) })).rows[0];
+  assert.equal(r.nextAction, 'day 30 follow-up');
+  assert.equal(card(row('DREQ-20261103-1', 'see_export', day(41), { extended: day(31) })).rows[0].nextAction, 'due: reply with what was done');
+});
+
+Deno.test('[FR-BKO-09] the rows to act on first are ordered by days left, so a P0 leads an older extended row', () => {
+  const c = card(row('DREQ-20260925-1', 'see_export', day(80), { extended: day(50) }), row('DREQ-20261029-1', 'see_export', day(46)), row('DREQ-20261030-1', 'see_export', day(44)));
+  assert.deepEqual(c.rows.map((r) => r.day), [46, 44, 80]);
+});
+
+Deno.test('[FR-BKO-13] an abuse report stays off the 45-day clock: one fixed first reply, then with counsel, never a "what was done" reply or an extension', () => {
+  for (const n of [2, 36, 45, 46, 60]) {
+    const r = card(row('DREQ-20261212-1', 'abuse_report', day(n))).rows[0];
+    assert.equal(r.nextAction, 'with counsel: no reply beyond the fixed first reply; change nothing on any account', String(n));
+    assert.equal(r.due, '-');
+    assert.equal(r.urgent, false);
+    assert.doesNotMatch(r.nextAction, /extension|what was done|P0/);
+  }
+  const first = card(row('DREQ-20261212-1', 'abuse_report', day(46), { acknowledged: '' })).rows[0];
+  assert.match(first.nextAction, /^first reply not logged: /);
+  assert.doesNotMatch(first.nextAction, /extension|due today/);
+});
+
+Deno.test('[FR-BKO-16] a letter whose named date has passed goes to counsel today and is listed first', () => {
+  const r = card(row('DREQ-20261101-1', 'legal_process', day(30), { legal_date: day(1) }), row('DREQ-20261108-1', 'see_export', day(36))).rows;
+  assert.equal(r[0].nextAction, 'with counsel: the date the letter names has passed; to counsel today');
+  assert.equal(r[0].urgent, true);
+  assert.equal(r[0].due, '-');
+});
+
+Deno.test('[FR-BKO-13] every closed-list field, a repeated column, an extra cell and a received date after today stop the card; a BOM does not', () => {
+  const base = row('DREQ-20261212-1', 'see_export', day(2));
+  const cells = base.split(',');
+  const at = (i: number, v: string) => log(cells.map((c, j) => (j === i ? v : c)).join(','));
+  for (const [i, field] of [[2, 'channel'], [11, 'verified_by'], [12, 'outcome']] as const) {
+    assert.throws(() => buildCard(at(i, 'asha'), TODAY), (e) => e instanceof LogError && new RegExp(`line 2, ${field}`).test(e.message), field);
+  }
+  assert.throws(() => buildCard([HEAD + ',kind', base + ',other'].join('\n'), TODAY), (e) => e instanceof LogError && /twice/.test(e.message));
+  assert.throws(() => buildCard(log(base + ',asha said hi'), TODAY), (e) => e instanceof LogError && /cells for/.test(e.message));
+  const ahead = row('DREQ-20261216-1', 'see_export', '2026-12-16', { acknowledged: '' });
+  assert.throws(() => buildCard(log(ahead), TODAY), (e) => e instanceof LogError && /received: after today/.test(e.message));
+  assert.equal(buildCard('\uFEFF' + log(base), TODAY).rows.length, 1);
+});
+
 
 Deno.test('[FR-BKO-13] an impossible date, a step dated after today or before received, or a ticket whose date is not received stops the card', () => {
   assert.throws(() => card(row('DREQ-20260230-1', 'see_export', '2026-02-30')), (e) => e instanceof LogError && /line 2, /.test(e.message));
