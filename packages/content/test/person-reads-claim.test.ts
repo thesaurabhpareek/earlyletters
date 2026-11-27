@@ -4,7 +4,7 @@
  *
  * FR-MSG-12. The footer line "A person reads every one." (src/emails/chrome.en.ts) must be a row in the claims
  * inventory with an owner, a mailbox read at least every working day, and a reply target. The row lives in
- * docs/reviews/2026-10-claims-inventory.md, section 3g, because docs/legal/** (where CLAIMS-1.0.md lives) is not
+ * docs/reviews/2026-10-claims-inventory.md, section 3h, because docs/legal/** (where CLAIMS-1.0.md lives) is not
  * edited by builders. The reply target must be the one docs/emails/CATALOG.md section 9 states, so the two cannot
  * drift apart. The auto-reply check is deliberately narrow: it scans the repository's own sources that can put words
  * in an email (packages/content/src, supabase/functions, supabase/templates) for wording that would tell a person no
