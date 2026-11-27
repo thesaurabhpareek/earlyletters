@@ -663,7 +663,7 @@ describe('the wiring that is read off the source (the behaviour is run in accoun
     // A failed Cancel says the outcome is not known yet, never "nothing has changed" (BL-491 point 5, CDesO-46).
     // Only while Cancel is offered (BL-491); signed out draws no failure line (CDesO-59).
     // Only for a press made in this session (review follow-up on #2166; run in open-deletion-cancel-failed.test.ts).
-    expect(s).toContain("const failure = actedThisSession(press.acted, pressedIn, d.session) && view.actions.includes('cancel') ? cancelFailureLine(d.error, d.signedIn) : null;");
+    expect(s).toContain("const failure = actedThisSession(press.acted, pressedIn, d.session) && view.actions.includes('cancel') ? cancelFailureLine(d.error, d.signedIn, d.outcomeUnknown) : null;");
     expect(s).not.toMatch(/failureLine\(/);
     expect(s).toContain('ctl.say(`${c.open.restoringTitle}. ${c.open.restoringBody}`);');
     expect(s).toContain('if (press.failedPresses > 0 && failure) announce(failure);');

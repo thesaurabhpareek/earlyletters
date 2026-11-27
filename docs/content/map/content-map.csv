@@ -2887,6 +2887,8 @@ strings.en.ts#en.settings.privacy.title,app screen,in-app,packages/content/src/s
 strings.en.ts#en.settings.privacy.analyticsLabel,app screen,in-app,packages/content/src/strings.en.ts,en,Share usage,11,,,,,,content,live on develop,content
 strings.en.ts#en.settings.privacy.analyticsHelp,app screen,in-app,packages/content/src/strings.en.ts,en,"How you use the app, like which screens you open. Never your letters, recordings or anyone's names.",99,,,,,,content,live on develop,content
 strings.en.ts#en.settings.privacy.analyticsOffNote,app screen,in-app,packages/content/src/strings.en.ts,en,Turning this off stops sharing right away. Nothing else changes.,64,,,,,,content,live on develop,content
+strings.en.ts#en.settings.privacy.testerLabel,app screen,in-app,packages/content/src/strings.en.ts,en,Team test phone,15,,,,,,content,live on develop,content
+strings.en.ts#en.settings.privacy.testerHelp,app screen,in-app,packages/content/src/strings.en.ts,en,"Test builds only. Marks this phone's usage counts as the {app} team's own, so they stay out of the totals.",106,,,,,,content,live on develop,content
 strings.en.ts#en.settings.privacy.sensitiveLabel,app screen,in-app,packages/content/src/strings.en.ts,en,Sync across your phones,23,,,,,,content,live on develop,content
 strings.en.ts#en.settings.privacy.sensitiveHelp,app screen,in-app,packages/content/src/strings.en.ts,en,Letters can hold health details about you or {child}. This row shows whether syncing is on.,91,,,,,,content,live on develop,content
 strings.en.ts#en.settings.privacy.sensitiveOn,app screen,in-app,packages/content/src/strings.en.ts,en,On,2,,,,,,content,live on develop,content

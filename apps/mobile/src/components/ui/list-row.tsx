@@ -19,7 +19,8 @@
  */
 import { CaretRightIcon } from 'phosphor-react-native/src/icons/CaretRight';
 import * as React from 'react';
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, View } from 'react-native';
+import { tokens } from '@scribe/design-tokens';
 import { Toggle } from '@/components/platform/toggle';
 import { Text } from '@/components/ui/text';
 import { useIsAccessibilitySize, useTheme } from '@/lib/a11y';
@@ -57,7 +58,7 @@ function rowHasLeading(row: React.ReactNode): boolean {
 
 /** The hairline between two rows: inset from the leading edge, never the row itself (list-row.logic.ts). */
 export function ListDivider({ inset = DIVIDER_INSET }: { inset?: number }) {
-  return <View accessible={false} importantForAccessibility="no" className="bg-border" style={{ height: StyleSheet.hairlineWidth, marginLeft: inset }} />;
+  return <View accessible={false} importantForAccessibility="no" className="bg-border" style={{ height: tokens.stroke.hairline, marginLeft: inset }} />;
 }
 
 export type ListRowProps = {

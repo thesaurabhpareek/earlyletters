@@ -131,6 +131,8 @@ const verify = read('app', '(auth)', 'sign-in', 'verify.tsx');
 const consent = read('app', '(auth)', 'sign-in', 'consent.tsx');
 const account = read('app', 'settings', 'account.tsx');
 const ui = read('lib', 'auth', 'ui.tsx');
+const provider = read('lib', 'auth', 'session-provider.tsx');
+const earlyEndLine = read('components', 'auth', 'use-early-end-line.ts');
 const SCREENS = { sheet, email, codeStep, verify, consent, account, ui };
 
 describe('[P8a] every word comes from packages/content', () => {
@@ -602,15 +604,26 @@ describe('[S56] Account', () => {
     expect(account).toMatch(/\{waitingToSignOut \? null : <ListRow title=\{a\.signOut\}/);
   });
 
-  it('[BL-451] a wait that ended before the letters were sent is said once on the signed-out page', () => {
-    // What the line does is nextEndedEarly's (account-view.test.ts). The page's part: each state change goes through it
-    // with the state before it, `previous` moves on only after, the effect runs on every change, and it announces.
-    expect(account).toMatch(
-      /useEffect\(\(\) => \{\s*const step = nextEndedEarly\(previous\.current, s, endedEarly\);\s*previous\.current = s;\s*if \(step\.shown !== endedEarly\) setEndedEarly\(step\.shown\);\s*if \(step\.announce\) announce\(a\.signOutEarly\);\s*\}, \[s, endedEarly, a\.signOutEarly\]\);/,
+  it('[BL-451][BL-479] a wait that ended before the letters were sent is said once on the signed-out page', () => {
+    // What the line does is nextEndedEarly's and heldEndedEarly's (account-view.test.ts); the provider and the page are
+    // run in test/session-provider-early-end.test.ts. Pinned here: CPO-105's shape. The provider moves the flag on every
+    // state change with the state before it (`endedEarlyFrom` moves on only after), in one place, and publishes it.
+    expect(provider).toMatch(
+      /useEffect\(\(\) => \{\s*const prev = endedEarlyFrom\.current;\s*endedEarlyFrom\.current = state;\s*setEndedEarly\(\(held\) => heldEndedEarly\(prev, state, held\)\);\s*\}, \[state\]\);/,
     );
-    expect(account).toMatch(/const previous = useRef\(s\);/);
-    expect(account.match(/previous\.current = /g), 'moved on in one place').toHaveLength(1);
-    expect(account.match(/setEndedEarly\(/g), 'set in one place').toHaveLength(1);
+    expect(provider).toMatch(/const endedEarlyFrom = useRef\(state\);/);
+    expect(provider).toMatch(/const \[endedEarly, setEndedEarly\] = useState<EndedEarly>\(NOT_ENDED_EARLY\);/);
+    expect(provider.match(/endedEarlyFrom\.current = /g), 'moved on in one place').toHaveLength(1);
+    expect(provider.match(/setEndedEarly\(/g), 'set in one place').toHaveLength(1);
+    expect(between(provider, 'const api = useMemo', '[state, sb,')).toMatch(/^\s*endedEarly,$/m);
+    expect(provider).toMatch(/\[state, sb, lastMethod, account, providerSignIn, remember, checkGate, claimPending, endedEarly\]/);
+    // The page keeps no copy of its own (the BL-479 point 1 bug: a page-local flag is lost when Account is not open).
+    expect(account).toMatch(/const endedEarly = useEarlyEndLine\(auth\.endedEarly, a\.signOutEarly\);/);
+    expect(account).not.toMatch(/nextEndedEarly|heldEndedEarly|setEndedEarly|const previous = useRef/);
+    expect(account).not.toMatch(/announce\(a\.signOutEarly\)/);
+    // The page speaks only a move of `said` it sees while open, from the count it found on arrival.
+    expect(earlyEndLine).toMatch(/const saidAtVisit = useRef\(held\.said\);/);
+    expect(earlyEndLine).toMatch(/if \(held\.said === saidAtVisit\.current\) return;\s*saidAtVisit\.current = held\.said;\s*announce\(line\);/);
     // Between the body and "Sign in" on the signed-out page.
     const out = between(account, 'if (!auth.signedIn) {', 'const provider');
     expect(out).toMatch(/fill\(a\.signedOutBody[\s\S]*\{endedEarly \? \(\s*<Text variant="body" testID="account\.signOutEarly">\s*\{a\.signOutEarly\}[\s\S]*label=\{a\.signIn\}/);

@@ -1755,6 +1755,16 @@ Way back: revert the commit.
 - Door: two-way. Way back: none needed.
 - Revisit when: a new open PR claims an id in CDesO-57 to 61. Karma
 
+### CR-245 BL-568's global error handlers install on native production only, never on web (27 Nov 2026, Karma via stream 14)
+- Question: the store web export shows "This page didn't open" on every lazy import. Do we stop installing the BL-568 handlers on web?
+- Tier and type: T2 (app code); complicated.
+- Options considered: do nothing; rethrow from our handler when the error reads as an unknown module (matches on error text, fragile across Metro versions); gate on platform so native production keeps the handlers and web never installs them; turn the lazy imports into static ones (changes bundling for a web-only symptom).
+- Ruling: `shouldInstallGlobalHandlers(appEnv, platform)` is true only for the production profile and a platform other than web. `startGlobalErrorHandlers` passes `Platform.OS`.
+- Why: on web, Expo's async import (`expo/src/async-require/asyncRequireModule.ts`) runs `importAll()` first and loads the split chunk only when that throws. Metro reports the missing module through `ErrorUtils.reportFatalError`, and our production handler records that first miss as a fatal fault and shows the recovery screen, even though the chunk is then fetched. Draft #2240's CI log showed it: every store seed variant hit "Requiring unknown module 2751" (a lazy chunk; in a local export of the same build, 2751 is the status-report chunk), while the unseeded store build and the seed-build control passed. With this fix merged in, all four store seed variants open the seeded Home, with the same console warnings as the control. Native loads the chunk before `importAll()`, so iOS and Android behaviour is unchanged. The 10 Nov founder line is about which profile installs the handlers, not which platform, and nothing on develop ships the web export.
+- Door: two-way.
+- Way back: revert the PR.
+- Revisit when: a web build ships to users. Karma
+
 ### CR-242 PR #2107's decode-uri-component ignore: the shim is fixed first; the ignore covers only the lockfile copy, with a reason that is true (27 Nov 2026, Karma via PR #2169, with CISO-22)
 - Question: the audit-gate ignore list from #2107 (`docs/ops/proposed/audit-ignore.json:13`) ignores GHSA-qr28-fpjm-wq7f in decode-uri-component, high, "Runs in the app". Accept it with an expiry and a reason, or require the fix?
 - Tier and type: T2 (a release gate and code the app bundles); complicated. Accepting a high advisory in shipped code is a residual-risk class, so the CISO rules with me (CISO-22) and I take the engineering half.

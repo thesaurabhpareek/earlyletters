@@ -20,7 +20,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SqlDb } from '../src/lib/db/sql';
 import { nodeDb } from './helpers/node-db';
 
-vi.mock('react', () => ({ useState: (init: unknown) => [typeof init === 'function' ? (init as () => unknown)() : init, () => {}] }));
+vi.mock('react', () => ({
+  useState: (init: unknown) => [typeof init === 'function' ? (init as () => unknown)() : init, () => {}],
+  useSyncExternalStore: (_subscribe: unknown, getSnapshot: () => unknown) => getSnapshot(),
+}));
 vi.mock('expo-crypto', () => ({ getRandomBytes: (n: number) => new Uint8Array(n).fill(7) }));
 vi.mock('../src/lib/db/repos/open-native', () => ({
   openNativeDb: () => {

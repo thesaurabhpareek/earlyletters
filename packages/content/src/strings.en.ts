@@ -1080,6 +1080,9 @@ export const en = {
       // PROPOSED (BL-389): "like" so the line does not read as the full list of what is sent (the registry has more than screens). Needs an exec-team reading (D-172).
       analyticsHelp: "How you use the app, like which screens you open. Never your letters, recordings or anyone's names.",
       analyticsOffNote: "Turning this off stops sharing right away. Nothing else changes.",
+      // Test builds only (BL-1250, CPrivO-61): never shown in the App Store build, and only where usage can be sent.
+      testerLabel: "Team test phone",
+      testerHelp: "Test builds only. Marks this phone's usage counts as the {app} team's own, so they stay out of the totals.",
       sensitiveLabel: "Sync across your phones",
       // Names the health category, as Washington and Connecticut consent requires (lawyer-2 H4, CHD policy HN-4).
       // D-128: build 2 has no withdrawal control yet, so the footer promises none. It returns before anyone outside the family signs in.

@@ -41,7 +41,7 @@ import { parsePhotosFlag, photoSurfaces, photosBuildEnabled, photosPaused, setPh
 import { photoStartShows } from '../src/lib/photos/start-shows';
 import type { StoredPhoto } from '../src/lib/photos/types';
 import { KILL_SWITCH_KEYS } from '../../../packages/api/src/kill-switches';
-import { resolveProfile, STORE_FLAGS, storeProfiles } from '../../../scripts/release/store-flags.mjs';
+import { G6_CARD_FLAGS, resolveProfile, STORE_FLAGS, storeProfiles } from '../../../scripts/release/store-flags.mjs';
 import { ashaSnapshot } from './helpers/asha-export';
 import { createDisk, iosContainer, type Disk } from './helpers/expo-fs-standin';
 import { nodeDb } from './helpers/node-db';
@@ -340,6 +340,45 @@ function nameMentions(file: string): Record<string, number> {
   const parsed = texts.join('\n');
   const stripped = stripComments(readFileSync(file, 'utf8'));
   return Object.fromEntries(SWITCH_NAMES.map((n) => [n, Math.max(parsed.match(nameIn(n))?.length ?? 0, stripped.match(nameIn(n))?.length ?? 0)]));
+}
+
+/** The two lists of the store gate (scripts/release/store-flags.mjs) that may name a switch, and how each names it. */
+const STORE_GATE_LISTS: Readonly<Record<string, 'env' | 'entry'>> = { STORE_FLAGS: 'env', G6_CARD_FLAGS: 'entry' };
+
+/**
+ * Every place the store gate's code names a switch other than as a name in one of its two lists (BL-2273): a STORE_FLAGS
+ * row's `env` string, or a string entry of G6_CARD_FLAGS, each inside nothing but array and object literals and
+ * `Object.freeze`, under a top-level declaration. Any `process` or `import.meta` in its code is one too, so the file
+ * cannot read a variable in any spelling. Empty means the file only names switches, for the gates that read the lists.
+ */
+function storeGateNameProblems(file: string): string[] {
+  const source = parse(file);
+  const problems: string[] = [];
+  const inList = (n: ts.Node): boolean => {
+    let child: ts.Node = n;
+    let viaEnv = false;
+    for (let p = n.parent; p; child = p, p = p.parent) {
+      if (ts.isArrayLiteralExpression(p) || ts.isObjectLiteralExpression(p)) continue;
+      if (ts.isPropertyAssignment(p) && p.initializer === child && ts.isIdentifier(p.name) && p.name.text === 'env' && !viaEnv) {
+        viaEnv = true;
+        continue;
+      }
+      if (ts.isCallExpression(p) && p.expression.getText(source) === 'Object.freeze' && p.arguments.includes(child as ts.Expression)) continue;
+      if (!ts.isVariableDeclaration(p) || p.initializer !== child || !ts.isIdentifier(p.name)) return false;
+      const how = STORE_GATE_LISTS[p.name.text];
+      return how !== undefined && (how === 'env') === viaEnv && p.parent.parent.parent === source;
+    }
+    return false;
+  };
+  const visit = (n: ts.Node): void => {
+    if (ts.isIdentifier(n) && n.text === 'process') problems.push(`process at ${n.getStart(source)}`);
+    if (ts.isMetaProperty(n)) problems.push(`import.meta at ${n.getStart(source)}`);
+    const text = ts.isIdentifier(n) || ts.isPrivateIdentifier(n) || ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n) || ts.isTemplateHead(n) || ts.isTemplateMiddle(n) || ts.isTemplateTail(n) || ts.isRegularExpressionLiteral(n) || ts.isJsxText(n) ? n.text : null;
+    if (text !== null && SWITCH_NAMES.some((s) => nameIn(s).test(text)) && !(ts.isStringLiteral(n) && SWITCH_NAMES.includes(n.text) && inList(n))) problems.push(`${text} at ${n.getStart(source)}`);
+    n.forEachChild(visit);
+  };
+  visit(source);
+  return problems;
 }
 
 /**
@@ -757,11 +796,15 @@ describe('[NX-39-R37] a phase switch removes screens and reads, never a data rig
       for (const n of SWITCH_NAMES) if (counts[rel][n] > 0) named[n].push(rel);
     }
     const CANARY_NAMES = ['EXPO_PUBLIC_PHOTO_MOMENTS', 'EXPO_PUBLIC_MOMENTS_BACKGROUND'];
-    // The store gate's list (preflight-testflight.mjs and store-flags.test.ts read it) names the switches it refuses
-    // `on` for. It is a Node script, reached now that the scan follows imports out of the walk (Review A M6); it may
-    // name them only while no file under src reaches it by import, so no bundle can hold it (checked below).
+    // The store gate (scripts/release/store-flags.mjs) is a Node script, reached now that the scan follows imports out
+    // of the walk (Review A M6). It names switches for the release gates only: each STORE_FLAGS row's `env`
+    // (preflight-testflight.mjs, store-flags.test.ts) and each entry of G6_CARD_FLAGS, which spreads those rows (gate
+    // G6 and both store preflights, BL-2273). The allowance is that one file, the names G6_CARD_FLAGS lists, once each,
+    // and only as names in those two lists with no `process` in the file (storeGateNameProblems), while no file under
+    // src reaches it by import, so no bundle can hold it (checked below). A list of switch names in any other file, a
+    // release script included, fails here: import G6_CARD_FLAGS, or add that file here in a reviewed diff.
     const STORE_GATE = 'scripts/release/store-flags.mjs';
-    const STORE_GATE_NAMES = SWITCH_NAMES.filter((n) => STORE_FLAGS.some((f: { env: string }) => f.env === n));
+    const STORE_GATE_NAMES = SWITCH_NAMES.filter((n) => (G6_CARD_FLAGS as readonly string[]).includes(n));
     for (const s of MEDIA_PHASE_SWITCHES) {
       const expected = [CAPS, ...(s.phase === 'photos' ? [FLAG] : []), ...(CANARY_NAMES.includes(s.env) ? [CANARY] : []), ...(STORE_GATE_NAMES.includes(s.env) ? [STORE_GATE] : [])];
       expect(named[s.env].sort(), s.env).toEqual(expected.sort());
@@ -779,6 +822,7 @@ describe('[NX-39-R37] a phase switch removes screens and reads, never a data rig
     // the store gate names each of its switches once, and nothing the app's code imports, at any depth, reaches it or
     // the canary list
     expect(counts[STORE_GATE]).toEqual(Object.fromEntries(SWITCH_NAMES.map((n) => [n, STORE_GATE_NAMES.includes(n) ? 1 : 0])));
+    expect(storeGateNameProblems(join(REPO, STORE_GATE))).toEqual([]);
     const appReach = closureOf(scanned.filter((f) => f.startsWith(SRC + sep))).map(repoRel);
     expect(appReach.length).toBeGreaterThan(500);
     expect(appReach).not.toContain(STORE_GATE);
@@ -881,6 +925,35 @@ describe('[NX-39-R37] a phase switch removes screens and reads, never a data rig
       rmSync(dir, { recursive: true, force: true });
     }
   });
+
+  it('[NX-39-R37] positive control: the store gate may name a switch only in its two lists, and never read one', () => {
+    const real = readFileSync(join(REPO, 'scripts', 'release', 'store-flags.mjs'), 'utf8');
+    const dir = mkdtempSync(join(tmpdir(), 'nx39-gate-'));
+    try {
+      const file = join(dir, 'store-flags.mjs');
+      const problemsWith = (code: string) => {
+        writeFileSync(file, code);
+        return storeGateNameProblems(file);
+      };
+      expect(problemsWith(real)).toEqual([]);
+      const entry = "  'EXPO_PUBLIC_VIDEO', // NS-52, card 27 (E38)\n";
+      expect(real).toContain(entry);
+      const mutants: Array<[string, string]> = [
+        ['a read in the file', `${real}\nexport const videoOn = process.env.EXPO_PUBLIC_VIDEO === 'on';\n`],
+        ['a read by a computed name', `${real}\nexport const on = (n) => process.env[n];\n`],
+        ['a second list of names', `${real}\nexport const MORE = Object.freeze(['EXPO_PUBLIC_VIDEO']);\n`],
+        ['a name in a G6 entry that is not a plain string', real.replace(entry, '  `EXPO_PUBLIC_VIDEO`,\n')],
+        ['a name in a STORE_FLAGS row that is not its env', real.replace("card: 'NX-39 P4a'", "card: 'EXPO_PUBLIC_OCCASIONS'")],
+        ['a name in a function', `${real}\nexport function f() { return ['EXPO_PUBLIC_VIDEO']; }\n`],
+      ];
+      for (const [label, code] of mutants) {
+        expect(code, label).not.toBe(real);
+        expect(problemsWith(code).length, label).toBeGreaterThan(0);
+      }
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
 });
 
 type Eas = { build: Record<string, { env?: Record<string, unknown>; distribution?: string; ios?: { simulator?: boolean }; extends?: string }> };
@@ -889,8 +962,9 @@ const isOff = (v: unknown) => v === undefined || String(v).trim().toLowerCase() 
 
 /**
  * Problems with the phase switches in one eas.json: in production and in every store profile each switch is off, that
- * is not written or written `off` (store-flags.mjs reads off the same way). The switches are not written today:
- * test/config.test.ts pins the names each profile writes, and the build reads a missing name as off.
+ * is not written or written `off` (store-flags.mjs reads off the same way). Every store profile writes each one as the
+ * literal `off` (BL-858, E9; test/config.test.ts pins the names and values each profile writes), and the build reads a
+ * missing name as off too, so either passes here.
  */
 function phaseSwitchProblems(eas: Eas): string[] {
   const problems: string[] = [];
@@ -1147,6 +1221,17 @@ process.stdin.on('end', () => {
 const COMPILE_CACHE = mkdtempSync(join(tmpdir(), 'nx39-compile-'));
 /** Every config child not yet settled, so a failing run waits for the rest before it asserts or removes a folder. */
 const liveChildren = new Set<Promise<string>>();
+/**
+ * A copy of eas.json with the seven switches taken out of every profile. The store profiles write each one as `off`
+ * (BL-858, E9), so the profile as written is no longer the unset case; the matrix below evaluates this copy for unset,
+ * and the profile as written as one more setting.
+ */
+function withoutSwitches(eas: Eas): Eas {
+  const copy = JSON.parse(JSON.stringify(eas)) as Eas;
+  for (const p of Object.values(copy.build)) if (p.env) for (const n of SWITCH_NAMES) delete p.env[n];
+  return copy;
+}
+
 /** Wait until every config child started so far has exited, passed or failed (Review B round 8, note 1). */
 async function allChildrenSettled(): Promise<void> {
   while (liveChildren.size) await Promise.allSettled([...liveChildren]);
@@ -1249,23 +1334,29 @@ describe('[NX-39-R39] no config path carries a switch into a build', () => {
     expect(profiles).toEqual(expect.arrayContaining(['preview', 'production', 'testflight']));
     const allOn = Object.fromEntries(SWITCH_NAMES.map((n) => [n, 'on']));
     const allOff = Object.fromEntries(SWITCH_NAMES.map((n) => [n, 'off']));
+    const bare = withoutSwitches(eas);
+    // Review A note 2 (mutants T2, T3): the bare copy holds no switch in any profile, and the eas.json it came from is
+    // left as read, so "unset" and "as written" each mean what their labels say.
+    for (const [name, p] of Object.entries(bare.build)) for (const n of SWITCH_NAMES) expect(p.env?.[n], `bare ${name} ${n}`).toBeUndefined();
+    expect(eas, 'withoutSwitches changed its input').toEqual(readEas());
     // On an EAS builder (EAS_BUILD, EAS_BUILD_PLATFORM and CI set) and off one (Review A M3), with NODE_ENV unset and
     // `production` (Review A N7), each evaluation in a fresh process (Review B R4).
     const runs: Array<{ label: string; unset: Promise<string>; other: Promise<string> }> = [];
     for (const builder of ['local', 'eas'] as const) {
       for (const nodeEnv of NODE_ENVS) {
         for (const profile of profiles) {
-          const unset = appConfigFor(eas, profile, {}, { builder, nodeEnv });
+          const unset = appConfigFor(bare, profile, {}, { builder, nodeEnv });
           const at = `${builder} NODE_ENV=${nodeEnv} ${profile}`;
-          // Each switch on alone, and every switch off and every switch on together: a value any switch copies into
-          // the config, or a branch on any one of them, changes one of these from unset.
-          for (const s of MEDIA_PHASE_SWITCHES) runs.push({ label: `${at} ${s.env}=on`, unset, other: appConfigFor(eas, profile, { [s.env]: 'on' }, { builder, nodeEnv }) });
-          runs.push({ label: `${at} every switch off`, unset, other: appConfigFor(eas, profile, allOff, { builder, nodeEnv }) });
-          runs.push({ label: `${at} every switch on`, unset, other: appConfigFor(eas, profile, allOn, { builder, nodeEnv }) });
+          // Each switch on alone, every switch off and every switch on together, and the profile as eas.json writes it:
+          // a value any switch copies into the config, or a branch on any one of them, changes one of these from unset.
+          for (const s of MEDIA_PHASE_SWITCHES) runs.push({ label: `${at} ${s.env}=on`, unset, other: appConfigFor(bare, profile, { [s.env]: 'on' }, { builder, nodeEnv }) });
+          runs.push({ label: `${at} every switch off`, unset, other: appConfigFor(bare, profile, allOff, { builder, nodeEnv }) });
+          runs.push({ label: `${at} every switch on`, unset, other: appConfigFor(bare, profile, allOn, { builder, nodeEnv }) });
+          runs.push({ label: `${at} as written in eas.json`, unset, other: appConfigFor(eas, profile, {}, { builder, nodeEnv }) });
         }
       }
     }
-    expect(runs.length).toBe(2 * NODE_ENVS.length * profiles.length * (MEDIA_PHASE_SWITCHES.length + 2));
+    expect(runs.length).toBe(2 * NODE_ENVS.length * profiles.length * (MEDIA_PHASE_SWITCHES.length + 3));
     // Every child exits before the first check, so a failing run leaves no child running past the test (Review B round
     // 8, note 1: afterAll then removed the cache under live children and left it behind).
     await Promise.allSettled(runs.flatMap((r) => [r.unset, r.other]));
@@ -1274,8 +1365,8 @@ describe('[NX-39-R39] no config path carries a switch into a build', () => {
       expect(JSON.parse(unset).ios.bundleIdentifier, r.label).toMatch(/\./);
       expect(other === unset, r.label).toBe(true);
     }
-    // 2 builders x 2 NODE_ENV x 3 profiles x 10 settings: 120 children, about 0.5 s each and one per core at once, so
-    // about 20 s alone on 4 cores. The limit leaves room for a full run sharing those cores.
+    // 2 builders x 2 NODE_ENV x 3 profiles x 11 settings: 132 children, about 0.5 s each and one per core at once, so
+    // about 22 s alone on 4 cores. The limit leaves room for a full run sharing those cores.
   }, 120_000);
 
   it('[NX-39-R39] positive control: the evaluation sees a switch copied into the config, at the top level, in the function, behind EAS_BUILD or NODE_ENV, or in a CommonJS or ES module helper', async () => {
@@ -1290,10 +1381,12 @@ describe('[NX-39-R39] no config path carries a switch into a build', () => {
     // Review A N7: B7 behind NODE_ENV === 'production', which vitest's NODE_ENV=test never met.
     const prodOnly = real.replace('    ...capabilityFlags(),\n', `    ...capabilityFlags(),\n    ...(process.env.NODE_ENV === 'production' ? { video: ${BUILT} } : {}),\n`);
     for (const mutant of [b7, top, easOnly, prodOnly]) expect(mutant).not.toBe(real);
+    // Unset means not written: production writes every switch as `off` (BL-858, E9), so compare against the bare copy.
+    const bare = withoutSwitches(eas);
     const differs = async (source: string, builder: Builder, nodeEnv: NodeEnv = 'unset') => {
       const [off, unset] = await Promise.all([
-        appConfigFor(eas, 'production', { EXPO_PUBLIC_VIDEO: 'off' }, { source, builder, nodeEnv }),
-        appConfigFor(eas, 'production', {}, { source, builder, nodeEnv }),
+        appConfigFor(bare, 'production', { EXPO_PUBLIC_VIDEO: 'off' }, { source, builder, nodeEnv }),
+        appConfigFor(bare, 'production', {}, { source, builder, nodeEnv }),
       ]);
       return off !== unset;
     };

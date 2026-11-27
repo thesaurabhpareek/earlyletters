@@ -1443,15 +1443,23 @@ function WordsStatus({ card, size, lengthMs, run }: { card: WordsCard; size: str
   );
 }
 
-/** A thin, determinate line: progress the parent can trust. */
+/**
+ * A thin, determinate line: progress the parent can trust. It sits on InlineState's raised card, so its track is
+ * `tokens.progress.thinTrack`: the fill holds 3:1 against it and the card in every palette (WCAG 1.4.11), where the
+ * old controlBorder track was 1.52:1. Colours are named, not `c[P.fill]`, so the lamp's status scan can read them;
+ * test/semantic-tokens.test.ts holds the names to the token roles.
+ */
 function ProgressLine({ value }: { value: number }) {
+  const { c } = useTheme();
+  const P = tokens.progress;
   const pct = Math.max(0, Math.min(100, Math.round(value * 100)));
   return (
     <View
-      className="h-1 w-full overflow-hidden rounded-full bg-input"
+      className="w-full overflow-hidden"
+      style={{ height: P.thin, borderRadius: tokens.radius.pill, backgroundColor: c.accentSoft }}
       accessibilityRole="progressbar"
       accessibilityValue={{ min: 0, max: 100, now: pct }}>
-      <View className="h-1 rounded-full bg-primary" style={{ width: `${pct}%` }} />
+      <View style={{ height: P.thin, borderRadius: tokens.radius.pill, width: `${pct}%`, backgroundColor: c.accent }} />
     </View>
   );
 }

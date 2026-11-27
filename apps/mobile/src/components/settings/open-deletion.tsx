@@ -69,7 +69,7 @@ export function OpenDeletionScreen({ request: noted }: { request: OpenRequest })
   // signed out, there is nothing to tap again, so the line goes (BL-491). Signed out (a refresh after an auth refusal
   // removed the session) draws no failure line either: the signed-out view's body and Sign in button say what to do (CDesO-59).
   // A press made before a sign-out and sign-in on this same screen is not this session's (review follow-up on #2166).
-  const failure = actedThisSession(press.acted, pressedIn, d.session) && view.actions.includes('cancel') ? cancelFailureLine(d.error, d.signedIn) : null;
+  const failure = actedThisSession(press.acted, pressedIn, d.session) && view.actions.includes('cancel') ? cancelFailureLine(d.error, d.signedIn, d.outcomeUnknown) : null;
 
   // VoiceOver is told what changed: the screen becoming the "your letters are on their way back" state, and a failed
   // cancel (a live region alone is not spoken on iOS). The cancel on its way and a Try again that found nothing are
@@ -78,8 +78,9 @@ export function OpenDeletionScreen({ request: noted }: { request: OpenRequest })
   const before = useRef(request.state);
   useEffect(() => {
     if (before.current !== 'cancelled' && request.state === 'cancelled') ctl.say(`${c.open.restoringTitle}. ${c.open.restoringBody}`);
-    // A request that turns executing while the screen is up (a Cancel deletion that found it so, CDesO-59 case 3) shows no
-    // failure line, so the change itself is spoken, with the executing view's own words.
+    // A request that turns executing while the screen is up shows no failure line, so the change itself is spoken, with
+    // the executing view's own words: after a Cancel deletion that found it so (CDesO-59 case 3), and as well when the
+    // screen's own read moves a scheduled note to executing, since the screen's words changed either way.
     if (before.current !== 'executing' && request.state === 'executing') ctl.say(`${c.open.executingTitle}. ${c.executing}`);
     before.current = request.state;
   }, [request.state, ctl]);

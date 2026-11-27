@@ -3,7 +3,7 @@
  * rules are in sign-as-other.logic.ts. Nothing here touches the network or Contacts (NS-16-R4): the list is this
  * phone's own typed names, in `settings`. Nothing here logs or tracks a name (PRIV-R10).
  */
-import { useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { deleteSetting, getEntry, getSetting, setSetting } from '@/lib/store';
 import {
   draftNameIsFor,
@@ -30,8 +30,14 @@ export function setSignAsOtherForTest(value: boolean | null): void {
 
 export const signAsOtherEnabled = (): boolean => testOverride ?? BUILD_VALUE;
 
-/** The signed config already on the phone (lib/remote `getRemoteConfig`); reading it makes no call. */
-export type RemoteConfigLoad = () => { getRemoteConfig(): { killSwitches?: Readonly<Record<string, unknown>> | null } | null };
+/**
+ * The signed config already on the phone (lib/remote `getRemoteConfig`); reading it makes no call. `subscribeRemoteConfig`
+ * tells Review when a new signed config is in use; a reader without it gives no updates, and the next draw still reads.
+ */
+export type RemoteConfigLoad = () => {
+  getRemoteConfig(): { killSwitches?: Readonly<Record<string, unknown>> | null } | null;
+  subscribeRemoteConfig?(listener: () => void): () => void;
+};
 
 /**
  * lib/remote imports react-native, so it is loaded late, only once the build flag is on, the way
@@ -57,6 +63,34 @@ export function signAsOtherPausedNow(load: RemoteConfigLoad = loadOverride ?? lo
 
 /** The From card may be drawn: the build flag on and no remote pause. The pause is read only with the flag on. */
 export const signAsOtherOffered = (): boolean => signAsOtherEnabled() && !signAsOtherPausedNow();
+
+/** The pause as Review draws it: read only with the flag on, so with it off the config is never read. */
+const pausedForReview = (): boolean => signAsOtherEnabled() && signAsOtherPausedNow();
+
+/**
+ * Hear a new signed config while Review is open: `useSyncExternalStore` over `subscribeRemoteConfig`, as lib/remote's
+ * `useRemoteConfig` does for the content blocks, with lib/remote loaded late as above. With the flag off nothing is
+ * loaded or heard, and a reader whose subscribe is missing or throws gives no updates, as reminders/library-days.ts
+ * `watchLibraryDaysPause` does (the next draw still reads the pause). Never throws.
+ */
+function subscribePause(onChange: () => void): () => void {
+  if (!signAsOtherEnabled()) return () => {};
+  try {
+    const remote = (loadOverride ?? loadRemote)();
+    return remote.subscribeRemoteConfig?.(onChange) ?? (() => {});
+  } catch {
+    return () => {};
+  }
+}
+
+/** The name typed for `draftId`, or '' when the store cannot be read: Review draws whatever the settings row does. */
+function typedFor(draftId: string): string {
+  try {
+    return parseDraftName(getSetting(SIGN_AS_DRAFT_SETTING), draftId);
+  } catch {
+    return '';
+  }
+}
 
 /** Names used before on this phone, most recent first. Never throws: a store that cannot be read has none. */
 export function recentFromNames(): string[] {
@@ -108,14 +142,16 @@ export type FromName = {
  */
 export function useFromName(input: { draftId: string | null; keptEntryId: string | null }): FromName {
   const { draftId, keptEntryId } = input;
-  // Read at each render, so a pause that lands while Review is open hides the card at its next draw; what Review
-  // shows and what Keep writes come from the same `offered` and `paused`. With the flag on the draft's typed name is
-  // read whether or not paused: a pause hides the control and never takes away a name already typed (G-18).
+  // Read at each render and heard when a new signed config lands, so a pause that lands while Review is open hides the
+  // card at once; what Review shows and what Keep writes come from the same `offered` and `paused`, both from this
+  // render's read. With the flag on the draft's typed name is read whether or not paused: a pause hides the control and
+  // never takes away a name already typed (G-18).
+  const pausedNow = useSyncExternalStore(subscribePause, pausedForReview, pausedForReview);
   const draft = draftId !== null && keptEntryId === null && signAsOtherEnabled();
-  const offered = draft && !signAsOtherPausedNow();
+  const offered = draft && !pausedNow;
   const paused = draft && !offered;
   const [kept] = useState<string | null>(() => (keptEntryId ? (getEntry(keptEntryId)?.authorSignsAs ?? null) : null));
-  const [typed, setTypedState] = useState<string>(() => (draft && draftId ? parseDraftName(getSetting(SIGN_AS_DRAFT_SETTING), draftId) : ''));
+  const [typed, setTypedState] = useState<string>(() => (draft && draftId ? typedFor(draftId) : ''));
   const [recent, setRecent] = useState<string[]>(() => (draft ? recentFromNames() : []));
   const [refusals, setRefusals] = useState(0);
   return {

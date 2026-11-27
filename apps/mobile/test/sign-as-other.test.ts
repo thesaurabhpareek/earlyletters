@@ -21,6 +21,7 @@ vi.mock('react', () => ({
     h.slots.push(slot);
     return [slot.init, (v: unknown) => void slot.sets.push(v)];
   },
+  useSyncExternalStore: (_subscribe: unknown, getSnapshot: () => unknown) => getSnapshot(),
 }));
 vi.mock('@/lib/store', () => ({
   getSetting: (k: string) => h.settings.get(k) ?? null,

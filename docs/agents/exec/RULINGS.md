@@ -2976,6 +2976,18 @@ The entries in this batch (three stacked PRs) record each role's own ruling on t
 - Door: two-way. Way back: restore the #2155 words.
 - Founder-only: no. Signed: Chief Design Officer (Claude role)
 
+### CPrivO-61 BL-1250: the tester switch (FH-10) is in the row's own scope; a visible tester row in non-store builds only (27 Nov 2026, CPrivO via the stream 16 council session; Claude role, not counsel)
+- Question: is FH-10 (the internal-tester switch, listed among the founder's open decisions in `docs/analytics/instrumentation/posthog-standard.md` section 9 with the default "yes") the founder's, and may the switch be a visible Settings row rather than a hidden gesture?
+- Tier and type: T3 class, ruled under CR-176; clear.
+- Options considered: a visible row in non-store builds (chosen); a hidden gesture; no switch, so `is_internal` is always false.
+- Ruling: built on the default "yes". One L2 device flag, `scribe.analytics.internal_tester`, holding exactly `true` while on and absent while off. A store build (app env `production`) never reads or writes it, and Settings > Privacy shows the row only in a build that is not a store build and can send usage (today none: analytics is off in every build, D-170). Label "Team test phone"; hint "Test builds only. Marks this phone's usage counts as the {app} team's own, so they stay out of the totals."
+- Why: the row's own scope says "one local switch, off and unreachable in a store install" (docs/BACKLOG.md, BL-1250); ER-A15; FH-11 was ruled the same way (CPrivO-26); the package already keeps a store build from being internal (`packages/analytics/src/client.ts` `isInternalEvent`). A visible row hides nothing about the data, and no row renders in the App Store build. Its code and two strings still ship there, unreachable, which is the same case as the unreachable server code that docs/DECISIONS.md already handles for guideline 2.5.19 through the Notes for Review.
+- Conditions: a test renders Settings > Privacy under the production app env and finds no row and no read of the setting (CCO); the row needs a build that can send usage (CPO); a DATA_CLASSIFICATION.md section 4.5 row beside `scribe.analytics.disclosure_shown` (proposed text in the BL-1250 PR body).
+- Debate (self-challenged only, one model family): "FH-10 sits under founder decisions." CR-176 retired that class and FH-11 was ruled the same way. "The founder's own App Store phone counts as an outside user." Accepted: that overcounts outside use and never hides any.
+- Door: two-way. Way back: remove the row and the key; `is_internal` falls back to false.
+- Revisit when: BL-1887 turns analytics on in a test build, or the production analytics gate (D-163) clears.
+- Signed: Chief Privacy Officer (Claude role, not counsel); consulted: Karma, CPO, CCO (Claude roles). CDesO and CDO were not run.
+
 ### CAIO-17 Silero VAD: the upstream files say MIT; the Licenses screen and licences.json stay MIT; the record's open point closes (27 Nov 2026, CAIO via Karma's session; Claude role, with CLO-47)
 - Question: a relayed report said the app's licence badge for Silero VAD says CC BY-NC 4.0 while the licence file, `licences.json` and the model licence record say MIT. Which is correct, and what should the app and the docs say?
 - Tier and type: T1; clear. The council gave no tier; this one is set by precedent (CPO-1), UNVERIFIED as the council's.

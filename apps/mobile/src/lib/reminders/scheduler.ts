@@ -47,11 +47,10 @@ const ANDROID_CHANNEL = 'reminders';
  * a typed day's words off, plus the time the re-plan takes, iOS still holds the notes planned before, which may name a
  * child or carry the words, and a delivered typed-day note still shows its words in Notification Center. Acceptable
  * while the app stays open: in the foreground our notes show no banner and join no list (`setNotificationHandler` in
- * `startReminders`), and the screen that changed the switch is in front of Notification Center. Not covered: the app
- * leaving the foreground inside the window. Nothing re-plans on the way out (the AppState listener acts on `active`
- * only) and iOS may suspend the app before the timer fires, so the old plan can stand until the next foreground and a
- * note due in between shows what was just turned off. The delay stays at 1.2 s: closing this gap would take a re-plan
- * on the way out, which this module does not do.
+ * `startReminders`), and the screen that changed the switch is in front of Notification Center. The app leaving the
+ * foreground inside the window: a write still waiting re-plans at once on `background` (`flushPendingReplan`), not after
+ * the timer. Best effort only: iOS may suspend the JS thread soon after `background`, before that re-plan reaches iOS, so
+ * the old plan can still stand until the next foreground (device check, not provable here). The delay stays at 1.2 s.
  */
 const STORE_DEBOUNCE_MS = 1200;
 const COLD_START_ROUTE_RETRIES = 5;
@@ -418,6 +417,18 @@ export function subscribeScheduleResult(fn: (r: ScheduleResult) => void): () => 
   };
 }
 
+/**
+ * The app went to the background (BL-2247 follow-up): a store write still inside its quiet time re-plans now, so the
+ * plan that reaches iOS is the one just set (a setting, a typed day, names off), not the one before it. Nothing waiting:
+ * nothing runs. Serialised like every re-plan (`chain`): one already running is never doubled, this one queues behind it,
+ * because the write it carries may have landed after the running one read the prefs. Best effort: iOS may suspend the
+ * JS thread before it finishes, and the next foreground re-plans anyway.
+ */
+function flushPendingReplan(): void {
+  if (!timer) return;
+  void rescheduleReminders(); // clears the timer, so it never fires a second re-plan later
+}
+
 function rescheduleSoon(delay = STORE_DEBOUNCE_MS): void {
   if (timer) clearTimeout(timer);
   timer = setTimeout(() => {
@@ -457,7 +468,13 @@ export function startReminders(): () => void {
   const unsubscribeStore = subscribe(() => rescheduleSoon());
   // A pause (or its end) arriving mid-session re-plans within the same debounce as a store write (NS-46-R42).
   const unsubscribePause = watchLibraryDaysPause(reader(), () => rescheduleSoon());
+  // 'inactive' is left alone: on iOS it also comes for Control Center, Notification Center, a call or the switcher while
+  // the app stays in front, and going home or to another app goes on to 'background', which flushes.
   const appState = AppState.addEventListener('change', (state) => {
+    if (state === 'background') {
+      flushPendingReplan();
+      return;
+    }
     if (state !== 'active') return;
     lastForegroundAt = Date.now();
     void rescheduleReminders(); // also picks up a new time zone, a new day, or permission changed in Settings

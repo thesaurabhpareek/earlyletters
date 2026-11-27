@@ -13,8 +13,9 @@
  * row, with a small spinner, and for a sign-out the person asked for "Stay signed in" sits under it
  * (cancelSignOutWait, BL-451); then the page fades to signed out over `fadeMs`. If the wait ended before
  * the newest letters were sent (sync turned off, or the session lost), the signed-out page says they are
- * kept on this phone, between the body and "Sign in", and announces it once (BL-451; only while this page
- * is open). Sign out is a row in `text`, not red, and its native confirm is not destructive either:
+ * kept on this phone, between the body and "Sign in" (BL-451). The auth provider holds that flag, so the line
+ * also shows on a later visit; it is announced once, only when it first shows while this page is open
+ * (BL-479 point 1, CPO-105). Sign out is a row in `text`, not red, and its native confirm is not destructive either:
  * nothing is deleted.
  * "Agree and sync" (for a person who chose "Keep on this phone") opens the sensitive-data step with its
  * words (S55, LEGAL-REQ-006); consent is never recorded in one tap from here.
@@ -27,7 +28,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, View } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 import { tokens } from '@scribe/design-tokens';
-import { accountView, nextEndedEarly } from '@/components/auth/account-view.logic';
+import { accountView } from '@/components/auth/account-view.logic';
+import { useEarlyEndLine } from '@/components/auth/use-early-end-line';
 import { BookCover } from '@/components/book/book-cover';
 import { useChildren } from '@/components/child/use-children';
 import { Button } from '@/components/ui/button';
@@ -68,17 +70,10 @@ function AccountSettings() {
   const client = auth.client;
   const view = accountView(s, auth.claimPending);
   const waitingToSignOut = view.signOut === 'waiting';
-  // BL-451: a wait that ended before the newest letters were sent; the signed-out page says where they are. Each
-  // state change goes through nextEndedEarly (pure, tested) with the state before it, so `previous` moves on after it.
-  // The flag is this page's own: if Account is not open when the wait ends, nothing is said (known).
-  const previous = useRef(s);
-  const [endedEarly, setEndedEarly] = useState(false);
-  useEffect(() => {
-    const step = nextEndedEarly(previous.current, s, endedEarly);
-    previous.current = s;
-    if (step.shown !== endedEarly) setEndedEarly(step.shown);
-    if (step.announce) announce(a.signOutEarly);
-  }, [s, endedEarly, a.signOutEarly]);
+  // BL-451: a wait that ended before the newest letters were sent; the signed-out page says where they are. The auth
+  // provider holds the flag (BL-479 point 1, CPO-105), so it shows on the next visit too; this page reads it, and says
+  // it once only when it first shows while the page is open (use-early-end-line.ts).
+  const endedEarly = useEarlyEndLine(auth.endedEarly, a.signOutEarly);
   // Only a sign-out that happens on this page fades; a visit shows the page at once.
   const wasSignedIn = useRef(auth.signedIn);
   const signedOutHere = wasSignedIn.current && !auth.signedIn;

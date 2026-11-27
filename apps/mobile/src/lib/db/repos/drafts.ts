@@ -6,7 +6,7 @@
  * book (store.ts eraseBook) and Erase everything (eraseEverythingLocal),
  * never here.
  */
-import { SIGN_AS_DRAFT_SETTING } from '../../capture/sign-as-other.logic';
+import { draftNameOwner, SIGN_AS_DRAFT_SETTING } from '../../capture/sign-as-other.logic';
 import type { SqlDb } from '../sql';
 import { changes, type RepoContext } from './context';
 import type { BaseDirection, CaptureMode, Draft, DraftKind, DraftState, OccurredPrecision } from './types';
@@ -183,10 +183,8 @@ export function beginDiscard({ db }: RepoContext, id: string): boolean {
  */
 export function forgetDraftFromName(db: SqlDb, ends: (draftId: string) => boolean): void {
   try {
-    const raw = db.get<{ value: string }>('SELECT value FROM settings WHERE key = ?', SIGN_AS_DRAFT_SETTING)?.value;
-    if (raw === undefined) return;
-    const draftId = (JSON.parse(raw) as { draftId?: unknown } | null)?.draftId;
-    if (typeof draftId === 'string' && ends(draftId)) db.run('DELETE FROM settings WHERE key = ?', SIGN_AS_DRAFT_SETTING);
+    const draftId = draftNameOwner(db.get<{ value: string }>('SELECT value FROM settings WHERE key = ?', SIGN_AS_DRAFT_SETTING)?.value);
+    if (draftId !== null && ends(draftId)) db.run('DELETE FROM settings WHERE key = ?', SIGN_AS_DRAFT_SETTING);
   } catch {
     // Unreadable: it names no draft.
   }

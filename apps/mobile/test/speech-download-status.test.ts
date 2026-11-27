@@ -126,11 +126,12 @@ describe('the first-run card line', () => {
     expect(doneLine(575).text).toBe('On this phone, 575 MB');
   });
 
-  it('the card draws from consentLine, offers Try again, and its track is controlBorder (bg-input)', () => {
+  it('the card draws from consentLine, offers Try again, and its track is the tinted-card thin track (BL-1752, not bg-input)', () => {
     const card = src('components/speech/speech-consent-card.tsx');
     expect(card).toMatch(/consentLine\(download, mb\)/);
     expect(card).toMatch(/line\.retry \?/);
-    expect(card).toMatch(/rounded-full bg-input/);
+    expect(card).toMatch(/borderRadius: tokens\.radius\.pill, backgroundColor: c\.bg\b/);
+    expect(card).not.toMatch(/bg-input/);
     expect(card).not.toMatch(/speechSettingsCopy\.downloading/);
   });
 });
