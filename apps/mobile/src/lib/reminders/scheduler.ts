@@ -49,7 +49,8 @@ const ANDROID_CHANNEL = 'reminders';
  * `startReminders`), and the screen that changed the switch is in front of Notification Center. Not covered: the app
  * leaving the foreground inside the window. Nothing re-plans on the way out (the AppState listener acts on `active`
  * only) and iOS may suspend the app before the timer fires, so the old plan can stand until the next foreground and a
- * note due in between shows what was just turned off. Timing is not changed here; the BL-2247 PR raises it.
+ * note due in between shows what was just turned off. The delay stays at 1.2 s: closing this gap would take a re-plan
+ * on the way out, which this module does not do.
  */
 const STORE_DEBOUNCE_MS = 1200;
 const COLD_START_ROUTE_RETRIES = 5;
@@ -151,6 +152,18 @@ function isOurs(data: unknown): data is { source: string; kind?: string } {
   return !!data && typeof data === 'object' && (data as { source?: unknown }).source === REMINDER_SOURCE;
 }
 
+type NoteRequest = { identifier: string; content: { data?: unknown } };
+
+/** A note of ours, scheduled or delivered: our data, or our id. The one test before we cancel or dismiss anything. */
+function isOurNote(r: NoteRequest): boolean {
+  return isOurs(r.content.data) || r.identifier.startsWith(ID_PREFIX);
+}
+
+/** A typed-day note of ours (a subset of `isOurNote`): our typed-day data, or our typed-day id. */
+function isOurTypedDayNote(r: NoteRequest): boolean {
+  return (isOurs(r.content.data) && r.content.data.kind === 'typedDay') || r.identifier.startsWith(TYPED_ID_PREFIX);
+}
+
 function triggerFor(p: PlannedNotification): Notifications.NotificationTriggerInput {
   if (Platform.OS === 'ios') {
     const [y, m, d] = p.date.split('-').map(Number);
@@ -240,8 +253,24 @@ async function dismissDeliveredTypedWords(): Promise<void> {
   const fixed = reminderCopy.neutral.typedDay.body;
   for (const n of await Notifications.getPresentedNotificationsAsync()) {
     const { identifier, content } = n.request;
-    const typedDay = (isOurs(content.data) && content.data.kind === 'typedDay') || identifier.startsWith(TYPED_ID_PREFIX);
-    if (typedDay && content.body !== fixed) await Notifications.dismissNotificationAsync(identifier).catch(() => {});
+    if (isOurTypedDayNote(n.request) && content.body !== fixed) await Notifications.dismissNotificationAsync(identifier).catch(() => {});
+  }
+}
+
+/**
+ * CPrivO-58: the words went off (or this is the first apply of the run with them off), so the delivered notes that
+ * carry them go, once per change (`lastWordsShown`). A failed read (no module on the web preview) never stops the plan:
+ * the next apply tries again.
+ */
+async function settleDeliveredWords(wordsShown: boolean): Promise<void> {
+  if (wordsShown) lastWordsShown = true;
+  else if (lastWordsShown !== false) {
+    try {
+      await dismissDeliveredTypedWords();
+      lastWordsShown = false;
+    } catch {
+      // nothing to log: the notes may hold a parent's words
+    }
   }
 }
 
@@ -255,19 +284,19 @@ async function apply(): Promise<void> {
   } catch {
     // nothing to log: the keys hold a parent's words
   }
-  // CPrivO-58: the words went off (or this is the first apply of the run with them off). Before the early returns
-  // below, because a delivered note can outlive its plan: a typed day already fired, or swept the day after. A failed
-  // read (no module on the web preview) never stops the plan: the next apply tries again.
+  // CPrivO-58: delivered notes are settled after the plan, so no note with the words is still scheduled to fire after
+  // the read. In a finally, so the early returns in `applyPlan` settle them too: a delivered note can outlive its plan
+  // (a typed day already fired, or swept the day after).
   const wordsShown = dayNamesOn() && readPrefs().namesOnLockScreen;
-  if (wordsShown) lastWordsShown = true;
-  else if (lastWordsShown !== false) {
-    try {
-      await dismissDeliveredTypedWords();
-      lastWordsShown = false;
-    } catch {
-      // nothing to log: the notes may hold a parent's words
-    }
+  try {
+    await applyPlan();
+  } finally {
+    await settleDeliveredWords(wordsShown);
   }
+}
+
+/** Replaces our scheduled notes with the current plan; touches nothing when the plan is unchanged. */
+async function applyPlan(): Promise<void> {
   // Reminders off and no typed day: nothing to plan and nothing to read. An empty plan already applied (`lastSignature`
   // is '') means none of ours is pending, so no read. The first apply after the switch goes off (or after a launch, or
   // a failure) still reads once, to cancel what was scheduled earlier (BL-1189). A typed or ticked day still comes when off.
@@ -280,9 +309,7 @@ async function apply(): Promise<void> {
   const signature = planSignature(plan);
   if (signature === lastSignature) return;
   for (const s of scheduled) {
-    if (isOurs(s.content.data) || s.identifier.startsWith(ID_PREFIX)) {
-      await Notifications.cancelScheduledNotificationAsync(s.identifier).catch(() => {});
-    }
+    if (isOurNote(s)) await Notifications.cancelScheduledNotificationAsync(s.identifier).catch(() => {});
   }
   for (const p of plan) {
     await Notifications.scheduleNotificationAsync({
@@ -310,6 +337,8 @@ export function rescheduleReminders(): Promise<ScheduleResult> {
       () => OK,
       () => {
         lastSignature = null;
+        // The plan may not have reached iOS, so a note with the words can still fire: the next apply settles again.
+        lastWordsShown = null;
         return FAILED;
       },
     ),
@@ -525,10 +554,10 @@ export async function forgetReminders(): Promise<void> {
     }
     try {
       for (const s of await Notifications.getAllScheduledNotificationsAsync()) {
-        if (isOurs(s.content.data) || s.identifier.startsWith(ID_PREFIX)) await Notifications.cancelScheduledNotificationAsync(s.identifier).catch(() => {});
+        if (isOurNote(s)) await Notifications.cancelScheduledNotificationAsync(s.identifier).catch(() => {});
       }
       for (const n of await Notifications.getPresentedNotificationsAsync()) {
-        if (isOurs(n.request.content.data) || n.request.identifier.startsWith(ID_PREFIX)) await Notifications.dismissNotificationAsync(n.request.identifier).catch(() => {});
+        if (isOurNote(n.request)) await Notifications.dismissNotificationAsync(n.request.identifier).catch(() => {});
       }
     } catch {
       // Nothing scheduled, or no notification module (web preview).

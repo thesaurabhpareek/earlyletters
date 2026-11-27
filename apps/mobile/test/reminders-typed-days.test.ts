@@ -16,6 +16,10 @@ const os = vi.hoisted(() => ({
   scheduled: new Map<string, Req>(),
   presented: new Map<string, Req>(),
   asked: 0,
+  /** How often Notification Center was read (the dismissal reads it; nothing else in a re-plan does). */
+  presentedReads: 0,
+  /** Makes the read of what iOS holds throw, so a re-plan fails before it replaces anything. */
+  failScheduledRead: false,
 }));
 
 vi.mock('../src/lib/days', () => ({ endDaysSession: () => true })); // reminders/session clears the days store (NS-47-R15): test/days-store.test.ts
@@ -43,13 +47,19 @@ vi.mock('expo-notifications', () => {
       os.asked += 1;
       return perm();
     },
-    getAllScheduledNotificationsAsync: async () => [...os.scheduled.values()],
+    getAllScheduledNotificationsAsync: async () => {
+      if (os.failScheduledRead) throw new Error('not now');
+      return [...os.scheduled.values()];
+    },
     cancelScheduledNotificationAsync: async (id: string) => void os.scheduled.delete(id),
     scheduleNotificationAsync: async (r: Req) => {
       os.scheduled.set(r.identifier, { identifier: r.identifier, content: r.content });
       return r.identifier;
     },
-    getPresentedNotificationsAsync: async () => [...os.presented.values()].map((request) => ({ request })),
+    getPresentedNotificationsAsync: async () => {
+      os.presentedReads += 1;
+      return [...os.presented.values()].map((request) => ({ request }));
+    },
     dismissNotificationAsync: async (id: string) => void os.presented.delete(id),
     setNotificationChannelAsync: async () => {},
     setNotificationHandler: () => {},
@@ -272,6 +282,8 @@ describe('typed days on the phone (real store and scheduler)', () => {
     typed.setTypedDaysBuildForTest(true);
     os.permission = 'granted';
     os.asked = 0;
+    os.presentedReads = 0;
+    os.failScheduledRead = false;
     os.scheduled.clear();
     os.presented.clear();
     store.closeStore();
@@ -378,6 +390,86 @@ describe('typed days on the phone (real store and scheduler)', () => {
       await reminders.rescheduleReminders();
       expect([...os.presented.keys()], label).toEqual([`el.typed.${today()}`, 'el.month.2026-11-01', 'someone-else']);
     }
+  });
+
+  const shown = (identifier: string, body: string, data?: unknown): Req => ({
+    identifier,
+    content: { title: FIXED.title, body, ...(data === undefined ? {} : { data }) },
+  });
+  const wordsOn = () => {
+    store.setSetting('notifications.dayNames', 'on');
+    store.setSetting('notifications.lockScreenNames', 'on');
+  };
+
+  it('[CPrivO-58] a delivered typed-day note ours by id alone, or by data alone, is dismissed when the words go off', async () => {
+    wordsOn();
+    await reminders.rescheduleReminders();
+    const delivered = [
+      shown(`el.typed.${plus(today(), -1)}`, CANARY), // our typed-day id, no data
+      shown('older-typed-note', CANARY, { source: 'scribe.reminders', kind: 'typedDay' }), // our data, not our id
+      shown('el.month.2026-11-01', CANARY), // ours by id, another kind: stays
+      shown('another-app-note', CANARY, { source: 'another.app', kind: 'typedDay' }), // not ours: stays
+    ];
+    for (const d of delivered) os.presented.set(d.identifier, d);
+    reminders.writePrefs({ namesOnLockScreen: false });
+    await reminders.rescheduleReminders();
+    expect([...os.presented.keys()]).toEqual(['el.month.2026-11-01', 'another-app-note']);
+  });
+
+  it('[CPrivO-58] while the words stay off, later re-plans never read Notification Center again', async () => {
+    wordsOn();
+    typed.saveTypedDay(plus(today(), 2), CANARY, today());
+    await reminders.rescheduleReminders();
+    const readsWhileOn = os.presentedReads;
+    reminders.writePrefs({ namesOnLockScreen: false });
+    await reminders.rescheduleReminders();
+    expect(os.presentedReads).toBe(readsWhileOn + 1);
+    reminders.writePrefs({ time: { hour: 19, minute: 0 } }); // a change that re-plans in full
+    await reminders.rescheduleReminders();
+    await reminders.rescheduleReminders(); // and one that changes nothing
+    expect(os.presentedReads).toBe(readsWhileOn + 1);
+  });
+
+  it('[CPrivO-58] the first apply of a run that starts with the words off dismisses delivered notes with the words', async () => {
+    // A fresh run: the scheduler, the store and the typed days load again, as at launch, over a store with the words off.
+    vi.resetModules();
+    const freshStore = await import('../src/lib/store');
+    const freshTyped = await import('../src/lib/reminders/typed-days');
+    const fresh = await import('../src/lib/reminders/scheduler');
+    const h = nodeDb();
+    try {
+      expect(freshStore.openStore({ open: () => ({ db: h.db, close: () => {} }), now: () => new Date(NOW).toISOString(), newId }).ok).toBe(true);
+      freshTyped.setTypedDaysBuildForTest(true);
+      const delivered = shown(`el.typed.${plus(today(), -1)}`, CANARY, { source: 'scribe.reminders', kind: 'typedDay' });
+      os.presented.set(delivered.identifier, delivered);
+      expect(await fresh.rescheduleReminders()).toEqual({ ok: true });
+      expect([...os.presented.keys()]).toEqual([]);
+      expect(os.presentedReads).toBe(1);
+    } finally {
+      freshTyped.setTypedDaysBuildForTest(null);
+      freshStore.closeStore();
+      h.close();
+    }
+  });
+
+  it('[CPrivO-58] a re-plan that fails after the words go off settles again: a note with the words that fires meanwhile is dismissed', async () => {
+    wordsOn();
+    const day = plus(today(), 2);
+    typed.saveTypedDay(day, CANARY, today());
+    await reminders.rescheduleReminders();
+    expect(os.scheduled.get(`el.typed.${day}`)!.content.body).toBe(CANARY);
+    reminders.writePrefs({ namesOnLockScreen: false });
+    os.failScheduledRead = true;
+    const readsBefore = os.presentedReads;
+    expect(await reminders.rescheduleReminders()).toEqual({ ok: false });
+    expect(os.presentedReads).toBe(readsBefore + 1); // the dismissal ran in the failed pass
+    // The plan never reached iOS, so the note with the words is still scheduled, and it fires.
+    expect(os.scheduled.get(`el.typed.${day}`)!.content.body).toBe(CANARY);
+    os.presented.set(`el.typed.${day}`, os.scheduled.get(`el.typed.${day}`)!);
+    os.scheduled.delete(`el.typed.${day}`);
+    os.failScheduledRead = false;
+    expect(await reminders.rescheduleReminders()).toEqual({ ok: true });
+    expect([...os.presented.keys()]).toEqual([]);
   });
 
   it('the build switch off plans no typed day and cancels a pending one; the words stay on the phone', async () => {

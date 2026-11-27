@@ -8,6 +8,7 @@
  * servers (letters and books); the proposed line that named a recording backup is gone from packages/content.
  */
 import { accountDeletionCopy as c } from '@scribe/content';
+import type { CancelFailure } from '@/lib/account-deletion/api';
 import { confirmationMatches, expectedDeletionDate, localDay } from '@/lib/account-deletion/logic';
 
 export const HELD = {
@@ -59,26 +60,44 @@ export function scheduledDay(status: { scheduledFor: string }): string {
 }
 
 /** The failure line for a Delete account request. Each one says that nothing has changed (S64). */
-export function failureLine(error: 'offline' | 'failed' | null): string | null {
+export function failureLine(error: CancelFailure | null): string | null {
   if (error === null) return null;
   return error === 'offline' ? c.errors.offline : c.errors.failed;
 }
 
 /**
- * The line for a Cancel deletion press that did not go through, offline or failed (BL-491 point 5, CDesO-46): here and on
- * the deletion screen. Not `failureLine`: cancelDeletion gives up on a lost answer without reading the status again, so
- * the phone does not know whether the server cancelled, and "nothing has changed" would read as if the person were safe
- * while the request may still be open. One line for both kinds: offline also covers a connection lost mid-call.
+ * The line for a Cancel deletion press that did not go through: here and on the deletion screen, for the same press.
+ *  - Offline or failed (BL-491 point 5, CDesO-46): not `failureLine`, because cancelDeletion gives up on a lost answer
+ *    without reading the status again, so the phone does not know whether the server cancelled, and "nothing has
+ *    changed" would read as if the person were safe while the request may still be open. Offline also covers a
+ *    connection lost mid-call.
+ *  - `limited`, the daily limit (SCRAT, CDesO-58): the outcome is known and pressing again does not help yet.
+ *  - `auth`, still refused after one refresh of the session (CDesO-59): nothing ran on the server, so "nothing has
+ *    changed" is true, with the date drawn above it.
+ *  - Signed out (`signedIn` false, the refresh removed the session): no line. The page's signed-out view, beside its
+ *    Sign in button, is the one place the sign-in words show (CDesO-59).
  */
-export function cancelFailureLine(error: 'offline' | 'failed' | null): string | null {
-  return error === null ? null : c.errors.cancelFailed;
+export function cancelFailureLine(error: CancelFailure | null, signedIn: boolean): string | null {
+  if (error === null || !signedIn) return null;
+  if (error === 'limited') return c.errors.cancelLimited;
+  if (error === 'auth') return c.errors.failed;
+  return c.errors.cancelFailed;
+}
+
+/**
+ * Whether a failure on the scheduled page is a Cancel deletion's: only when Cancel deletion was pressed (`pressedIn`, the
+ * hook's `session` at that press) in the session the page is in now. A press made before a sign-out and sign-in is not
+ * this session's, so a read that fails afterwards keeps the page's own line (review follow-up on #2166).
+ */
+export function cancelPressedThisSession(pressedIn: number | null, session: number): boolean {
+  return pressedIn !== null && pressedIn === session;
 }
 
 /**
  * The line when the page could not load (its status or its book lines). Nothing was tried, so "nothing has changed"
  * would be an odd thing to say there (BL-492 point 4); offline keeps its own line, which is true in both places.
  */
-export function loadFailureLine(error: 'offline' | 'failed' | null): string {
+export function loadFailureLine(error: CancelFailure | null): string {
   return error === 'offline' ? c.errors.offline : c.errors.loadFailed;
 }
 

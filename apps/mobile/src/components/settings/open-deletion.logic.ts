@@ -8,6 +8,8 @@
  * call that never settles would leave a screen with no button at all, Sign out included. After WORKING_CAP_MS the
  * buttons come back; the call itself is left to finish, and its answer still counts when it comes.
  */
+import type { ServerStatus } from '@/lib/account-deletion/logic';
+import type { OpenRequest } from '@/lib/account-deletion/open-request';
 
 /** How long a press may keep the buttons away. */
 export const WORKING_CAP_MS = 20_000;
@@ -175,4 +177,29 @@ export function createPressController(deps: PressDeps): PressController {
  */
 export function deletionSignInParams(state: 'scheduled' | 'held' | 'executing' | 'cancelled'): { trigger: 'settings'; reason?: 'cancel_deletion' } {
   return state === 'scheduled' || state === 'held' ? { trigger: 'settings', reason: 'cancel_deletion' } : { trigger: 'settings' };
+}
+
+/**
+ * The request the deletion screen draws. It is the phone's note (useFirstRunGate), except when the note still says
+ * scheduled and the account-deletion hook already holds the server's word that this same request is being carried out: a
+ * Cancel deletion that found it executing (CDesO-59 case 3), or the screen's own read. Then the screen moves to its
+ * executing state at once, instead of waiting for the note, which a status read may leave unwritten (HO-911, or an
+ * answer for an account that is no longer signed in).
+ *  - Same request id only: the hook's status is the signed-in account's, and a note for another request is its own.
+ *  - Scheduled notes only: a request never goes back from executing to scheduled, so the hook's answer is never older
+ *    than such a note. It can go from executing to held (a legal hold), and the gate's later read writes that to the note;
+ *    a held note is left as it is, so an older "executing" in the hook never hides it.
+ */
+export function shownRequest(note: OpenRequest, status: ServerStatus | null): OpenRequest {
+  if (note.state !== 'scheduled' || status?.state !== 'executing' || status.requestId !== note.requestId) return note;
+  return status;
+}
+
+/**
+ * Whether a failure may be shown as a Cancel deletion's: the person pressed it (`acted`) in the session the screen is in
+ * now (`pressedIn`, the hook's `session` at that press). After a sign-out and sign-in on the same mounted screen, a press
+ * made before is not this session's (review follow-up on #2166).
+ */
+export function actedThisSession(acted: boolean, pressedIn: number | null, session: number): boolean {
+  return acted && pressedIn !== null && pressedIn === session;
 }

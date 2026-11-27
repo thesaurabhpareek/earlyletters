@@ -11,7 +11,7 @@ import { usePlan } from '@/lib/billing';
 import { bookVisibleNow, currentUserId, deleteSetting, getSetting, listEntriesForChild, setSetting, uuidv7 } from '@/lib/store';
 import {
   cancelDeletion, forgetAnalytics, loadBooks, loadStatus, requestDeletion, retryForget,
-  type AnalyticsIds, type DeletionClient, type FlagStore,
+  type AnalyticsIds, type CancelFailure, type DeletionClient, type FlagStore,
 } from './api';
 import { clearConsentCopy } from '@/lib/export/consent-copy';
 import { bookImpacts, impactLines, showSubscriptionNotice, type ServerStatus, type SyncBook } from './logic';
@@ -39,9 +39,21 @@ export function useAccountDeletion() {
   const userId = authUserId(auth.state);
   const [status, setStatus] = useState<ServerStatus | null>(null);
   const [books, setBooks] = useState<SyncBook[] | null>(null);
-  const [error, setError] = useState<'offline' | 'failed' | null>(null);
+  // `limited` and `auth` come only from a Cancel deletion (CDesO-58, CDesO-59); a read or a request sets offline or failed.
+  const [error, setError] = useState<CancelFailure | null>(null);
   const [cancelled, setCancelled] = useState(false);
   const [busy, setBusy] = useState(false);
+  // The session this state belongs to: `n` counts the changes of the signed-in user in this mount, a sign-out included
+  // (the user becomes null). A failed press's error and a cancel's success are the last session's, so they go when it
+  // ends: without this, a person who signed out and back in on the same page met the old "not clear yet" line again
+  // (review follow-up on #2166). Adjusted during render, as React does for state that follows a prop, so no frame draws
+  // the old line. The pages tie their own "a cancel was pressed" to `session` for the same reason.
+  const [session, setSession] = useState({ of: userId, n: 0 });
+  if (session.of !== userId) {
+    setSession({ of: userId, n: session.n + 1 });
+    setError(null);
+    setCancelled(false);
+  }
 
   const refresh = useCallback(async () => {
     if (!client || !auth.signedIn) return;
@@ -96,8 +108,16 @@ export function useAccountDeletion() {
     if (!client) return false;
     setBusy(true);
     setError(null);
-    const r = await cancelDeletion(client);
+    const r = await cancelDeletion(client, userId);
     setBusy(false);
+    if (!r.ok && r.reason === 'executing') {
+      // Nothing was open to cancel because the deletion is being carried out (CDesO-59 case 3): no failure line, the page
+      // moves to its executing state, as its next read would. The note is written as refresh writes it, so the deletion
+      // screen (which draws from the note) moves too.
+      setStatus(r.status);
+      if (bookVisibleNow()) recordStatus(r.status, userId);
+      return false;
+    }
     if (!r.ok) {
       setError(r.reason);
       return false;
@@ -115,7 +135,7 @@ export function useAccountDeletion() {
     setStatus({ state: 'none' });
     setCancelled(true);
     return true;
-  }, [client]);
+  }, [client, userId]);
 
   return {
     configured: auth.configured,
@@ -126,6 +146,7 @@ export function useAccountDeletion() {
     error,
     cancelled,
     busy,
+    session: session.n,
     request,
     cancel,
     signOut: auth.signOut,

@@ -82,10 +82,26 @@ export function withConsentCopy(live: ExportConsentHistory, accountId: string, s
 
 /**
  * The store the export may use: none while an account-deletion request for this account is open (DATA-REQ-053), so the
- * copy is neither read nor written then. export/device.ts passes the phone's note on the request.
+ * copy is neither read nor written then. The note is read again at every read and write of the copy, not once per
+ * export: a request made on this phone while the server read is in flight writes its note, then deletes the copy
+ * (account-deletion/use-account-deletion.ts), and the export that finishes after it must not put the copy back (FU-13a).
+ * export/device.ts passes the phone's note on the request and the clock. A note that cannot be read counts as open:
+ * here no store is given, and later the read or write throws inside withConsentCopy, which then neither writes nor reads.
  */
-export function copyStoreFor(note: OpenRequest | null, authUserId: string | null | undefined, nowMs: number, store: ConsentCopyStore | null): ConsentCopyStore | null {
-  return deletionRequestOpen(note, authUserId, nowMs) ? null : store;
+export function copyStoreFor(note: () => OpenRequest | null, authUserId: string | null | undefined, now: () => number, store: ConsentCopyStore | null): ConsentCopyStore | null {
+  const open = () => deletionRequestOpen(note(), authUserId, now());
+  if (!store) return null;
+  try {
+    if (open()) return null;
+  } catch {
+    return null;
+  }
+  return {
+    read: () => (open() ? null : store.read()),
+    write: (value) => {
+      if (!open()) store.write(value);
+    },
+  };
 }
 
 /**
