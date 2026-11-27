@@ -11,7 +11,10 @@ import { copy } from '@/lib/copy';
 import { goToTonightAfterRetry } from '@/lib/resilience/recover-to-tonight';
 import { PlainScreen } from './plain-screen';
 
-export function RootErrorBoundary({ retry }: ErrorBoundaryProps) {
+export function RootErrorBoundary({ retry, error }: ErrorBoundaryProps) {
+  // DIAGNOSTIC ONLY (never merged).
+  // eslint-disable-next-line no-console
+  console.error('[DIAG boundary]', error instanceof Error ? `${error.name}: ${error.message}\n${error.stack ?? ''}` : String(error));
   const e = copy.errors.crash;
   return (
     <PlainScreen

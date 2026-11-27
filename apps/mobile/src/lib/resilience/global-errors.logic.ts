@@ -136,6 +136,9 @@ export function installGlobalErrorHandlers(deps: GlobalErrorDeps): boolean {
       if (inside) return;
       inside = true;
       try {
+        // DIAGNOSTIC ONLY (never merged): print what the production handler hides.
+        // eslint-disable-next-line no-console
+        console.error('[DIAG fault]', isFatal ? 'fatal' : 'non_fatal', error instanceof Error ? `${error.name}: ${error.message}\n${error.stack ?? ''}` : String(error));
         const rec = keep(isFatal ? 'fatal' : 'non_fatal', error);
         if (isFatal) {
           try {
