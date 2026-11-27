@@ -337,7 +337,7 @@ describe('review.tsx keeps a typed letter through its one Keep step', () => {
     // One rule for both (NS-15): the parent's pick on the draft, else the day it was said (about-day.logic reviewAboutDay).
     expect(save).toMatch(/const day = reviewAboutDay\(live, saidOnOf\(draft\)\);[\s\S]*occurredOn: day\.occurredOn,\s*occurredPrecision: day\.occurredPrecision,/);
     expect(review).toContain('const about = reviewAboutDay(draft, saidOnOf(draft));');
-    expect(review).toMatch(/const month = monthFor\(child, about\.occurredOn\);\s*const header = letterHeader\(\{ childName: child\.name, signsAs: child\.signsAs, month \}\);/);
+    expect(review).toMatch(/const month = monthFor\(child, about\.occurredOn\);\s*const header = letterHeader\(\{ childName: child\.name, signsAs: from\.shown\(child\.signsAs\), month \}\);/);
   });
 });
 
