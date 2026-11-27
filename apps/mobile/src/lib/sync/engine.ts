@@ -10,6 +10,7 @@
  * backing off. One cycle runs at a time; requests during a cycle merge into
  * one follow-up cycle.
  */
+import { ERASE_EVERYTHING_SETTING } from '../db/repos/wipe';
 import type { SqlDb } from '../db/sql';
 import { reconcileSearch } from '../find/lifecycle';
 import { backoffMs, classifyCallError, type CallFailure } from './errors';
@@ -181,6 +182,10 @@ export function createSyncEngine(deps: SyncEngineDeps): SyncEngine {
     const metSccon = new Set<string>();
     for (let round = 0; round < MAX_PUSH_ROUNDS; round++) {
       if (killed()) return 'stop';
+      // While an Erase everything mark stands nothing is uploaded (Karma ruling 7220668312 on #2102, point 3): a sign-in
+      // after a failed try queues the old books and letters (takeOwnership), and only the retry may decide which of those
+      // ops go. Its `erased` removes the mark, and uploads resume. 'ok', so the pull still runs.
+      if (readSetting(db, ERASE_EVERYTHING_SETTING) !== null) return 'ok';
       const batch = takeBatch(db, { now: iso(), onlyDeletes, maxOps: single ? 1 : 50, metSccon });
       if (batch.rows.length === 0) break;
       tx(() => markSent(db, batch.rows, iso()));

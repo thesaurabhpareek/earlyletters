@@ -18,6 +18,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { erasePlusLineShows, eraseNoteKeys, type ErasePlan } from '../src/components/settings/wipe.logic';
 import { OPEN_PRAGMAS } from '../src/lib/db/expo-adapter';
 import type { SqlDb } from '../src/lib/db/sql';
+import type { PushOp, RpcResult, SupabaseLike } from '../src/lib/sync/types';
 import { createDisk, iosContainer, layOutApp, namesIn, put, recorderDir, type Disk } from './helpers/expo-fs-standin';
 import { entryMediaStore } from '../src/lib/photos/entry-media';
 import { photosDirectory } from '../src/lib/photos/files';
@@ -895,6 +896,117 @@ describe('[DATA-REQ-024][F14-REQ-026] Erase everything on this phone, signed out
     expect(next.store.getSetting('sync.ownerId')).toBe(USER);
     expect([rowKept(LATE.newBook), has(lateNew), next.store.listEntriesForChild(book).map((e) => e.id)]).toEqual([true, true, [LATE.newBook]]);
     expect(next.store.eraseEverythingPending()).toBe(false);
+    expect(fetches).toBe(0);
+  });
+
+  // Karma ruling 7220668312 on #2102 (Reviews A and B at d2ec0ca3). A stand-in server for the real sync engine: it records
+  // every call and each push's ops, answers a pull with an empty page, and loses every push answer on the way (nothing is
+  // applied; the ops stay queued, as on a dropped connection).
+  async function syncEngine() {
+    const { createSyncEngine } = await import('../src/lib/sync/engine');
+    const calls: string[] = [];
+    const pushed: PushOp[] = [];
+    const supabase: SupabaseLike = {
+      async rpc(fn, args = {}): Promise<RpcResult> {
+        calls.push(fn);
+        if (fn === 'sync_pull') {
+          return { data: { reset: false, epoch: 1, epoch_started_at: new Date(T0).toISOString(), books: [], gone: [], more: false, held: { rows: [], cursor: null, more: false } }, error: null, status: 200 };
+        }
+        if (fn === 'sync_push') pushed.push(...(args as { p_ops: PushOp[] }).p_ops);
+        return { data: null, error: { message: 'network', code: '' } as never, status: 0 };
+      },
+    };
+    const engine = createSyncEngine({
+      db, supabase, userId: USER, newId: () => `0199a5b0-0000-7000-8000-${String(++seq).padStart(12, '0')}`,
+      setTimer: () => 0, clearTimer: () => {}, isActive: () => false,
+    });
+    return { engine, calls, pushed };
+  }
+  const firstRunBooks = (payload: string) => ((JSON.parse(payload) as PushOp).data.children as { id: string }[]).map((k) => k.id);
+
+  it('[BL-775] a first-run upload naming kept Asha, old Avi and a new book loses only Avi on the retry: Asha and the new book stay queued ahead of their late letters, and those upload (Karma ruling 7220668312, point 1; Review A)', async () => {
+    const { app, f, stray } = await filled();
+    failPartWay(app);
+    const { book } = writeAfter(app, f); // late letters in Asha's book and a new book, all before the sign-in
+    await signIn(app);
+    const firstRun = () => ops().filter((o) => o.type === 'book.first_run');
+    expect(firstRun().map((o) => firstRunBooks(o.payload))).toEqual([[f.asha, f.avi, book]]);
+    const [op] = firstRun();
+
+    const next = await launch();
+    expect(await next.all.resumeEraseAtLaunch()).toBe('erased');
+    expectOldGone(f, stray, [f.asha, book]);
+    // Rewritten in place, never deleted whole: the same op in the same place, Avi gone from it.
+    expect(firstRun().map((o) => [o.seq, o.entity_id, firstRunBooks(o.payload)])).toEqual([[op.seq, op.entity_id, [f.asha, book]]]);
+    expect(firstRun()[0].payload).not.toMatch(/Avi|2024-06-10/);
+    // The books that stay still wait for it (nothing else would queue their first upload), and it goes ahead of their letters.
+    expect(db.all('SELECT id, server_state AS s, first_run_batch AS b FROM children ORDER BY id')).toEqual(
+      [f.asha, book].sort().map((id) => ({ id, s: 'pending', b: op.entity_id })),
+    );
+    const late = ops().filter((o) => o.type === 'entry.upsert');
+    expect(late.map((o) => o.entity_id).sort()).toEqual([LATE.spoken, LATE.typed, LATE.newBook].sort());
+    expect(late.every((o) => o.seq > op.seq)).toBe(true);
+    const oldIds = [f.avi, f.draftId, ...Object.values(f.ids)];
+    for (const o of ops()) expect([o.seq, oldIds.filter((id) => o.entity_id === id || o.payload.includes(id))]).toEqual([o.seq, []]);
+
+    // The next sync uploads them: Asha's and the new book's first upload, then their late letters.
+    const s = await syncEngine();
+    s.engine.start();
+    await s.engine.sync();
+    expect(s.pushed[0].type).toBe('book.first_run');
+    expect(s.pushed[0].data.children).toEqual([expect.objectContaining({ id: f.asha }), expect.objectContaining({ id: book })]);
+    expect(s.pushed.filter((o) => o.type === 'entry.upsert').map((o) => o.id).sort()).toEqual([LATE.spoken, LATE.typed, LATE.newBook].sort());
+    expect(JSON.stringify(s.pushed)).not.toMatch(/Avi|2024-06-10|quiet morning|built a tower/);
+    s.engine.stop();
+  });
+
+  it('[BL-775] a refused write kept after the mark goes on the retry when it names an old book or letter, in a column or only in its payload; one naming only a kept book or a new letter stays (Karma ruling 7220668312, point 2)', async () => {
+    const { app, f, stray } = await filled();
+    failPartWay(app);
+    const { book } = writeAfter(app, f); // Asha's book is kept for the late letters
+    const refused = (opId: string, type: string, entityId: string, data: Record<string, unknown>) =>
+      db.run(
+        'INSERT INTO rejected_writes (op_id, type, entity_id, payload, code, rejected_at) VALUES (?, ?, ?, ?, ?, ?)',
+        opId, type, entityId, JSON.stringify({ op: opId, type, id: entityId, data }), '42501', new Date().toISOString(),
+      );
+    const R = (n: number) => `0199a5b0-0000-7000-8000-0000000d000${n}`;
+    // A refused write keeps a letter's whole words (merge.ts rejectOp): an old letter's go with it.
+    refused(R(1), 'entry.upsert', f.ids.v1, { child_id: f.avi, final_text: 'Avi, you built a tower.' });
+    // A refused first-run upload names its books only in its payload.
+    refused(R(2), 'book.first_run', R(9), { children: [{ id: f.avi, name: 'Avi', date_of_birth: '2024-06-10', due_date: null }] });
+    refused(R(3), 'prefs.upsert', f.asha, { signs_as: 'Mama' });
+    refused(R(4), 'entry.upsert', LATE.spoken, { child_id: f.asha, final_text: 'Asha, a letter after the failed erase.' });
+    refused(R(5), 'book.create', book, { name: 'Asha', date_of_birth: '2026-09-01', due_date: null });
+    const next = await launch();
+    expect(await next.all.resumeEraseAtLaunch()).toBe('erased');
+    expectOldGone(f, stray, [f.asha, book]);
+    expect(db.all<{ op_id: string }>('SELECT op_id FROM rejected_writes ORDER BY op_id').map((r) => r.op_id)).toEqual([R(3), R(4), R(5)]);
+  });
+
+  it('[BL-775] while the erase mark stands sync uploads nothing, and pulls still run: a sign-in after a failed try queues its ops, a sync sends none, and they go only once the retry reports erased (Karma ruling 7220668312, point 3)', async () => {
+    const { app, f } = await filled();
+    failPartWay(app);
+    writeAfter(app, f);
+    // The sign-in: the engine claims the phone (queuing the old books and letters with the new) and syncs straight away.
+    const s = await syncEngine();
+    expect(s.engine.start()?.outcome).toBe('claimed');
+    await s.engine.sync();
+    await s.engine.sync({ verify: true });
+    expect(s.calls).toContain('sync_pull');
+    expect([s.calls.filter((c) => c === 'sync_push'), s.pushed]).toEqual([[], []]);
+    expect(ops().map((o) => o.type)).toContain('book.first_run');
+    const sent = db.get<{ n: number }>('SELECT COUNT(*) AS n FROM sync_outbox WHERE sent_at IS NOT NULL OR attempts > 0')!.n;
+    expect(sent).toBe(0);
+
+    const next = await launch();
+    expect(await next.all.resumeEraseAtLaunch()).toBe('erased');
+    expect(next.store.eraseEverythingPending()).toBe(false);
+    await s.engine.sync();
+    expect(s.calls).toContain('sync_push');
+    expect(s.pushed.map((o) => o.type)).toContain('book.first_run');
+    expect(s.pushed.filter((o) => o.type === 'entry.upsert').map((o) => o.id).sort()).toEqual([LATE.spoken, LATE.typed, LATE.newBook].sort());
+    expect(JSON.stringify(s.pushed)).not.toMatch(/Avi|2024-06-10|quiet morning|built a tower/);
+    s.engine.stop();
     expect(fetches).toBe(0);
   });
 

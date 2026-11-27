@@ -314,6 +314,30 @@ function rowsNaming(db: SqlDb, table: string, ids: ReadonlySet<SqlParam>): SqlPa
     .map((r) => r.k as SqlParam);
 }
 
+/**
+ * A first-run upload names up to six books in one op (sync/ownership.ts takeOwnership). One that names an old book and a
+ * kept or new one loses only the old books, rewritten in place under its own op id and seq, so the books that stay keep
+ * their first upload ahead of their letters: nothing queues it again (a pending book is never re-queued). Karma ruling
+ * 7220668312 on #2102, point 1. One that names only old books is left whole, and goes with the other rows naming them.
+ */
+function trimFirstRunOps(db: SqlDb, ids: ReadonlySet<SqlParam>): void {
+  if (ids.size === 0 || !userTables(db).includes('sync_outbox')) return;
+  for (const r of db.all<{ seq: number; payload: string }>("SELECT seq, payload FROM sync_outbox WHERE type = 'book.first_run'")) {
+    let op: { data?: { children?: unknown } };
+    try {
+      op = JSON.parse(r.payload) as typeof op;
+    } catch {
+      continue; // unreadable: the payload text search below removes it if it names an old id
+    }
+    const kids = op.data?.children;
+    if (!Array.isArray(kids)) continue;
+    const left = kids.filter((k) => !ids.has((k as { id?: SqlParam } | null)?.id as SqlParam));
+    if (left.length === kids.length || left.length === 0) continue;
+    op.data!.children = left;
+    db.run('UPDATE sync_outbox SET payload = ? WHERE seq = ?', JSON.stringify(op), r.seq);
+  }
+}
+
 /** The ids this try erases: every old book, letter and draft, but a book kept for a later letter (keptBooks). */
 function idsErased(scope: EraseScope, books: ReadonlySet<SqlParam>): Set<SqlParam> {
   return new Set<SqlParam>([...(oldIds(scope, 'children') ?? []), ...(oldIds(scope, 'entries') ?? [])].filter((id) => !books.has(id)));
@@ -399,6 +423,7 @@ export function removeEverything({ db }: RepoContext, keepSettings: readonly str
   // Settings, and the rows of NAMES_BY, that name an old book, letter or draft by id go with it, whenever they were
   // written; a kept book's stay.
   const namedIds = idsErased(scope, books);
+  trimFirstRunOps(db, namedIds); // before the delete below, which would otherwise take the whole op
   for (const t of userTables(db)) {
     if (t === 'entry_media') continue;
     // A table made after the erase began holds no row that is old by its key; one that names an old id still goes.
