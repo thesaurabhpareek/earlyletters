@@ -24,6 +24,6 @@ How this was checked: for each patch, the lines it adds were looked up in the li
 
 ## Still open after this
 
-Three proposals apply to develop and wait for someone with an account that can push `.github/workflows/` (agent sessions cannot): `a11y-evidence.patch` (`ax5-evidence.md`), `e2e-web.patch`, `ios-compile-timing.patch`. A fourth is added with this file: `release-ios-launch-gate-output.patch` (`release-ios-launch-gate.md`, "Require the open line").
+Five proposals apply to develop and wait for someone with an account that can push `.github/workflows/` (agent sessions cannot): `a11y-evidence.patch` (`ax5-evidence.md`), `e2e-web.patch`, `ios-compile-timing.patch`, `testflight-checks-job.patch` (`testflight-checks-job.md`, CR-233), and `release-ios-launch-gate-output.patch`, added with this file (`release-ios-launch-gate.md`, "Require the open line").
 
 Docs outside `docs/ops/proposed/` that name a removed patch, left for their owners: `docs/release/RELEASE_PR_CARRY_LIST.md` lines 67 and 70 (the folder listing and the [UNVERIFIED] note, which this table answers), `docs/agents/cto/RULINGS.md` (ios-compile-batch), `docs/agents/exec/proposed/moments-rulings-security-legal-money.md` (ios-compile-eas-json), `docs/engineering/readiness-20nov/briefs/platform/BRIEF-CI-PIN-sha-pin-actions.md` (ci-pins), the comment in `apps/mobile/test/workflow-pins.test.ts` line 6, and `docs/ops/action-pins-allowlist.txt` line 4 (owned by its test, which compares the file with the base branch).

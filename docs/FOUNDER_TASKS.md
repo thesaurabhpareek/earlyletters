@@ -464,6 +464,11 @@ If the week runs short (it is about 22 hours of work against the 15 to 20 you pl
   - Steps: `docs/DECISIONS.md` D-004 points 3 to 5 (triggers: the public TestFlight link, paid marketing, 1,000 families, US $2,000 a month in proceeds, a first hire, Android, selling print; Apple's app-transfer conditions).
   - By: Fri 27 Nov. Blocks: the fast fallback if App Review cites 5.1.1(ix); Android (G-21); paid marketing (G-06, T5-03); print (BK-14).
 
+- [ ] **Accountant brief before the first Apple payout** (FR-FIN-22, BL-2102; no FT number, added 24 Nov 2026)
+  - Time: 1 hour to send, then the accountant's time. Cost: the accountant's fee [U].
+  - Steps: send the accountant brief, `docs/product/prd/functions/finance.md` section 7 (questions A1 to A9, with A10 from its section F5), to an engaged accountant. Real figures stay with you; the brief holds none.
+  - By: before the first Apple payout is expected (the trigger), and before the first Plus change that mentions storage (FR-FIN-32). Blocks: knowing how proceeds are reported and what estimated payments apply.
+
 - [ ] **FT-49 Launch-week switches**
   - Time: 1 hour. Cost: US $0 (it caps cost).
   - Steps: Supabase spend cap **off** after launch, with billing alerts at 150% of the monthly model (T5-23; a cap that blocks sign-in or sync is worse than an overage); PostHog billing limit; schedule the weekly insights run for Monday about 07:45 Pacific with the Query Read key from FT-24 and, once `reporting_reader` exists (IN-DA-03), its read-only login in the scheduler's secret store (until then run it locally; an `insights_reader` JWT no longer works after APPLY file 34, and the service key stays out of CI) (`docs/analytics/INSIGHTS_LOOP.md` sections 4 and 6; D-070: the agent writes files, the coordinator commits).
