@@ -1,10 +1,10 @@
-import { btn, journey } from './support/app';
+import { btn, journey, tapWhenStill } from './support/app';
 import { expect, seeded, test } from './support/journey';
 
 const open = async (app: import('@playwright/test').Page, text: RegExp) => {
   await seeded(app);
   await app.getByText('Book', { exact: true }).last().click();
-  await app.getByText(text).first().click();
+  await tapWhenStill(app.getByText(text).first());
   await expect(app.getByText('Spoken', { exact: false }).or(app.getByText('Typed', { exact: false })).first()).toBeVisible();
 };
 
@@ -115,7 +115,7 @@ test('[J10c] a letter waiting for words', async ({ app, record }) => {
   await app.getByText('Book', { exact: true }).last().click();
   // The Tonight screen stays in the page under the Book on the web, and its draft card carries the same words, so the
   // Book's own card is picked by its test id (as the other cards are).
-  await app.getByTestId('book.card').filter({ hasText: /waiting for its words/i }).first().click();
+  await tapWhenStill(app.getByTestId('book.card').filter({ hasText: /waiting for its words/i }).first());
   await expect(app.getByText(/waiting for its words/i).last()).toBeVisible();
   await expect(btn(app, 'Write the words')).toBeVisible();
   await step('unhappy', 'A letter waiting for its words', 'The page shows the app\'s own small, muted note instead of an empty page, with no signature under it, and "Write the words" opens the words sheet; the recording is there.');
@@ -125,7 +125,7 @@ test('[J10e] a recording with no words', async ({ app, record }) => {
   const step = journey(record, 'J10', 'letter-detail', 10, 'J10-01');
   await seeded(app, 'asha-quiet');
   await app.getByText('Book', { exact: true }).last().click();
-  await app.getByText(/No words in this one/).first().click();
+  await tapWhenStill(app.getByText(/No words in this one/).first());
   // The Book stays mounted behind the page, so look at the page's own (last) copy of the note.
   await expect(app.getByText('No words in this one. The recording is kept just as it is.').last()).toBeVisible();
   await expect(app.getByRole('button', { name: 'Record again' })).toHaveCount(0);
