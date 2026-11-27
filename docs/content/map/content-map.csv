@@ -121,7 +121,7 @@ apps/web/src/content/site.ts#site.meta.title,site,website,apps/web/src/content/s
 apps/web/src/content/site.ts#site.meta.description,site,website,apps/web/src/content/site.ts,60,en,Say a few words to your child about today. ${NAME} keeps them in your own words and your own voice.,99,,,,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#site.brand.line,site,website,apps/web/src/content/site.ts,65,en,"Letters to your child, in your own words and voice.",51,,,,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#site.skip,site,website,apps/web/src/content/site.ts,69,en,Skip the film,13,,,,,,cmo,live on develop,web-content
-apps/web/src/content/site.ts#site.comingSoon.line,site,website,apps/web/src/content/site.ts,72,en,"A baby book you fill by talking. Say what happened today, out loud, and it stays in your own words.",99,,,,,,cmo,live on develop,web-content
+apps/web/src/content/site.ts#site.comingSoon.line,site,website,apps/web/src/content/site.ts,72,en,"Letters to your child, in your own words and voice. Say what happened today, out loud.",86,,,,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#site.comingSoon.trust,site,website,apps/web/src/content/site.ts,74,en,"Private by default. Never sold, never used for ads.",51,,,,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#site.comingSoon.shareButton,site,website,apps/web/src/content/site.ts,75,en,Share with a friend,19,,,,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#site.comingSoon.howTitle,site,website,apps/web/src/content/site.ts,76,en,How it works,12,,,,,,cmo,live on develop,web-content
@@ -137,8 +137,8 @@ apps/web/src/content/site.ts#site.comingSoon.shareTelegram,site,website,apps/web
 apps/web/src/content/site.ts#site.comingSoon.shareCopy,site,website,apps/web/src/content/site.ts,87,en,Copy link,9,,,,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#site.comingSoon.shareMore,site,website,apps/web/src/content/site.ts,88,en,More,4,,,,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#site.comingSoon.shareVia,site,website,apps/web/src/content/site.ts,89,en,Share via,9,,,,,,cmo,live on develop,web-content
-apps/web/src/content/site.ts#site.comingSoon.shareTitle,site,website,apps/web/src/content/site.ts,90,en,"${NAME}, the baby memory book",29,,,,,,cmo,live on develop,web-content
-apps/web/src/content/site.ts#site.comingSoon.shareText,site,website,apps/web/src/content/site.ts,91,en,"${NAME}, a baby book you fill by talking. A few words at the end of the day, said out loud.",91,,,,,,cmo,live on develop,web-content
+apps/web/src/content/site.ts#site.comingSoon.shareTitle,site,website,apps/web/src/content/site.ts,90,en,${NAME}: letters to your child,30,,,,,,cmo,live on develop,web-content
+apps/web/src/content/site.ts#site.comingSoon.shareText,site,website,apps/web/src/content/site.ts,91,en,"${NAME}: letters to your child, in your own words and voice. A few words at the end of the day, said out loud.",110,,,,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#site.cta.prelaunch.eyebrow,site,website,apps/web/src/content/site.ts,97,en,Coming soon to iPhone,21,,,,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#site.cta.prelaunch.button,site,website,apps/web/src/content/site.ts,98,en,Tell me at launch,17,,,,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#site.cta.prelaunch.pill,site,website,apps/web/src/content/site.ts,99,en,Tell me at launch,17,,,,,,cmo,live on develop,web-content
@@ -259,7 +259,7 @@ apps/web/src/content/site.ts#site.welcomeEmail.subject,site,website,apps/web/src
 apps/web/src/content/site.ts#site.welcomeEmail.preheader,site,website,apps/web/src/content/site.ts,277,en,"One letter from the book, and what happens next.",48,,,,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#site.welcomeEmail.kicker,site,website,apps/web/src/content/site.ts,278,en,Welcome,7,,,,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#site.welcomeEmail.headline,site,website,apps/web/src/content/site.ts,279,en,You are on the list.,20,,,,,,cmo,live on develop,web-content
-apps/web/src/content/site.ts#site.welcomeEmail.intro,site,website,apps/web/src/content/site.ts,280,en,"${NAME} is the baby memory book you fill by talking. It is coming to iPhone in the US. You will hear from us once more, at launch.",130,,,,,,cmo,live on develop,web-content
+apps/web/src/content/site.ts#site.welcomeEmail.intro,site,website,apps/web/src/content/site.ts,280,en,"${NAME} keeps letters to your child, in your own words and voice. It is coming to iPhone in the US. You will hear from us once more, at launch.",143,,,,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#site.welcomeEmail.letterLabel,site,website,apps/web/src/content/site.ts,281,en,A sample letter,15,,,,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#site.welcomeEmail.letterTo,site,website,apps/web/src/content/site.ts,282,en,To [redacted],13,,,,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#site.welcomeEmail.letterMeta,site,website,apps/web/src/content/site.ts,283,en,"Month 9, Tuesday night",22,,,,,,cmo,live on develop,web-content
