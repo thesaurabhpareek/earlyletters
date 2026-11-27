@@ -22,11 +22,15 @@
 // no shell, every argument checked to be 40 lowercase hex). They write no ref, index or working-tree file (only tree and
 // blob objects into the local object store). Both commits must already be in the local clone, e.g. `git fetch origin
 // develop refs/pull/<n>/head`; the queue never fetches, and a missing commit is "could not run", which keeps the strict
-// rule. Use a full clone: in a partial (promisor) clone git may fetch a missing object from the remote by itself.
-// What the queue trusts: the checkout it runs from. merge-tree reads that checkout's own attributes (the working tree's
-// .gitattributes, $GIT_DIR/info/attributes and core.attributesFile), and a merge driver there can turn a conflict into a
-// clean merge; the PR's own .gitattributes is not used, and rule 4 holds any PR that changes one. So run it from a clean
-// develop checkout, never from a PR's worktree (there the script itself would be PR content anyway).
+// rule. Use a full clone: in a partial (promisor) clone git may fetch a missing object from the remote by itself
+// (GIT_TERMINAL_PROMPT=0 makes that fail at once rather than wait on a prompt). Grafts are off (GIT_GRAFT_FILE).
+// What the queue trusts: the checkout it runs from and the environment it runs in. merge-tree reads that checkout's own
+// attributes (the working tree's .gitattributes, $GIT_DIR/info/attributes, core.attributesFile, the system
+// gitattributes file, attr.tree and GIT_ATTR_SOURCE), and a merge driver configured there is a command merge-tree runs,
+// which can turn a conflict into a clean merge; its merge.* and other config, the commit-graph file and any inherited
+// GIT_DIR or GIT_CONFIG_* variables count too. The PR's own .gitattributes is not used, and rule 4 holds any PR that
+// changes one. So run it from a clean develop checkout with a plain environment, never from a PR's worktree (there the
+// script itself would be PR content anyway).
 //
 // Rules it applies:
 // - A review counts only if the FIRST LINE of a PR comment is exactly
@@ -434,6 +438,13 @@ export const cr149FlagOn = (env) => env?.[CR149_FLAG] === "1";
 /** The only base CR-149 relaxes: it rules on develop's churn. Every other base keeps the strict rule. */
 export const CR149_BASE = "develop";
 const SHA40 = /^[0-9a-f]{40}$/;
+/**
+ * The environment for the two local git reads: the caller's, with grafts turned off. `--no-replace-objects` does not
+ * cover `info/grafts`, so GIT_GRAFT_FILE points at a path that never exists, and a local graft cannot make git read a
+ * commit with other parents. GIT_TERMINAL_PROMPT=0 makes a partial clone that tries to fetch fail at once instead of
+ * waiting on a credential prompt until the timeout.
+ */
+const GIT_ENV = { ...process.env, GIT_GRAFT_FILE: "/nonexistent/merge-queue-no-grafts", GIT_TERMINAL_PROMPT: "0" };
 /** The repo root of this checkout (scripts/agents/../..): the only place the local `git merge-tree` runs. */
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -455,7 +466,7 @@ export function gitMergeTree(baseSha, head, { run = execFile, cwd = REPO_ROOT, t
   if (![baseSha, head].every((s) => typeof s === "string" && SHA40.test(s))) return Promise.resolve("error");
   return new Promise((resolve) => {
     try {
-      run("git", ["--no-replace-objects", "merge-tree", "--write-tree", "--no-messages", baseSha, head], { cwd, timeout, maxBuffer: 16 * 1024 * 1024, windowsHide: true }, (err, stdout) => {
+      run("git", ["--no-replace-objects", "merge-tree", "--write-tree", "--no-messages", baseSha, head], { cwd, timeout, maxBuffer: 16 * 1024 * 1024, windowsHide: true, env: GIT_ENV }, (err, stdout) => {
         const tree = String(stdout ?? "").split("\n", 1)[0];
         const wrote = SHA40.test(tree); // --write-tree printed a tree id
         if (err) return resolve(err.code === 1 && !err.killed && !err.signal && wrote ? "conflict" : "error");
@@ -505,7 +516,7 @@ export function gitModeCheck(baseSha, tree, { run = execFile, cwd = REPO_ROOT, t
   if (![baseSha, tree].every((s) => typeof s === "string" && SHA40.test(s))) return Promise.resolve("error");
   return new Promise((resolve) => {
     try {
-      run("git", ["--no-replace-objects", "diff-tree", "-r", "-z", "--raw", "--no-renames", "--ignore-submodules=none", baseSha, tree], { cwd, timeout, maxBuffer: 64 * 1024 * 1024, windowsHide: true }, (err, stdout) => {
+      run("git", ["--no-replace-objects", "diff-tree", "-r", "-z", "--raw", "--no-renames", "--ignore-submodules=none", baseSha, tree], { cwd, timeout, maxBuffer: 64 * 1024 * 1024, windowsHide: true, env: GIT_ENV }, (err, stdout) => {
         resolve(err ? "error" : readRawModes(String(stdout ?? "")));
       });
     } catch {
@@ -621,12 +632,13 @@ export function hotFileGroups(rows) {
 }
 
 /**
- * Characters that change how a line reads without showing themselves (FU-17b): bidi marks, embeddings, overrides and
- * isolates (U+061C, U+200E, U+200F, U+202A to U+202E, U+2066 to U+2069), zero-width and invisible characters (U+00AD,
- * U+180E, U+200B to U+200D, U+2060 to U+2064, U+FEFF), and the line and paragraph separators (U+2028, U+2029), which
- * some viewers draw as a new line.
+ * Characters that change how a line reads without showing themselves (FU-17b): every Unicode default-ignorable code
+ * point and every format character (bidi marks, embeddings, overrides and isolates; zero-width characters; the tag
+ * block U+E0000 to U+E007F, which can spell hidden ASCII that a reader agent would see; variation selectors; Hangul
+ * fillers), the interlinear annotation marks U+FFF9 to U+FFFB, and the line and paragraph separators U+2028 and U+2029,
+ * which some viewers draw as a new line. The `u` flag makes the astral ranges (tags, U+E0100 selectors) match whole.
  */
-const HIDDEN_RE = /[\u00ad\u061c\u180e\u200b-\u200f\u2028-\u202e\u2060-\u2064\u2066-\u2069\ufeff]/g;
+const HIDDEN_RE = /[\p{Default_Ignorable_Code_Point}\p{Cf}\u2028\u2029\ufff9-\ufffb]/gu;
 /** Strip ANSI escape sequences, control characters and HIDDEN_RE characters from anything printed. */
 export const clean = (v) => String(v ?? "").replace(/\u001b\[[0-9;?]*[ -\/]*[@-~]/g, "").replace(/[\u0000-\u001f\u007f-\u009f]/g, "").replace(HIDDEN_RE, "");
 

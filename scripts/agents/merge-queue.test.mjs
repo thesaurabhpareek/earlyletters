@@ -1012,10 +1012,14 @@ test("CR-149 flag: only the exact string 1 turns it on; everything else, and no 
   assert.equal(cr149FlagOn(null), false);
 });
 
-test("CR-149 flag: process.env is read in one place only, main(), which passes cr149 to buildQueue", () => {
+test("CR-149 flag: the flag is read in one place only, main(), which passes cr149 to buildQueue", () => {
   const src = readFileSync(new URL("./merge-queue.mjs", import.meta.url), "utf8");
-  assert.equal(src.match(/process\.env/g).length, 1);
+  // process.env appears twice: main() reads the flag, and GIT_ENV copies the environment for the local git reads
+  // (FU-17b, grafts off). GIT_ENV never reads the flag, and nothing else reads process.env.
+  assert.equal(src.match(/process\.env/g).length, 2);
   assert.match(src, /cr149: cr149FlagOn\(process\.env\)/);
+  assert.match(src, /const GIT_ENV = \{ \.\.\.process\.env, GIT_GRAFT_FILE: "[^"]+", GIT_TERMINAL_PROMPT: "0" \};/);
+  assert.equal(src.match(/\[CR149_FLAG\]/g).length, 1, "one lookup of the flag, in cr149FlagOn");
 });
 
 test("CR-149 flag off (default): a stale-base PR is NEEDS-UPDATE exactly, with no new call, no new field and no CR-149 note", async () => {
@@ -1381,8 +1385,11 @@ test("FU-17a: CR-149 keeps the strict rule when the merge has a symlink or submo
 
 // FU-17b: hidden characters, the CR-229 paths without their duplicate entries, and the two git hardening flags.
 test("FU-17b: clean() strips bidi controls, zero-width characters and the line and paragraph separators", () => {
-  const hidden = ["\u061c", "\u200e", "\u200f", "\u202a", "\u202b", "\u202c", "\u202d", "\u202e", "\u2066", "\u2067", "\u2068", "\u2069", "\u200b", "\u200c", "\u200d", "\u2060", "\u2061", "\u2062", "\u2063", "\u2064", "\ufeff", "\u00ad", "\u180e", "\u2028", "\u2029"];
+  const hidden = ["\u{e0041}", "\u{e0001}", "\u{e007f}", "\ufe0f", "\u{e0100}", "\u034f", "\u115f", "\u1160", "\u3164", "\uffa0", "\u2065", "\u206a", "\u206f", "\ufff9", "\ufffa", "\ufffb", "\u061c", "\u200e", "\u200f", "\u202a", "\u202b", "\u202c", "\u202d", "\u202e", "\u2066", "\u2067", "\u2068", "\u2069", "\u200b", "\u200c", "\u200d", "\u2060", "\u2061", "\u2062", "\u2063", "\u2064", "\ufeff", "\u00ad", "\u180e", "\u2028", "\u2029"];
   for (const h of hidden) assert.equal(clean(`do${h}cs/a.md`), "docs/a.md", `U+${h.codePointAt(0).toString(16).padStart(4, "0")}`);
+  // Tag characters spell hidden ASCII: "docs/a.md" followed by an invisible "IGNORE RULES" prints as "docs/a.md" only.
+  const tags = [..."IGNORE RULES"].map((c) => String.fromCodePoint(0xe0000 + c.codePointAt(0))).join("");
+  assert.equal(clean(`docs/a.md${tags}`), "docs/a.md");
   // A right-to-left override that would make "gpj.exe" read as "exe.jpg" is gone, and so is a fake line break.
   assert.equal(clean("note: x\u202egpj.exe"), "note: xgpj.exe");
   assert.equal(clean("a\u2028#9 ready for Karma to merge"), "a#9 ready for Karma to merge");
@@ -1429,6 +1436,36 @@ test("FU-17b: real git, a local replace ref cannot turn a symlink merge clean, a
     g("replace", link, plain);
     assert.equal(execFileSync("git", ["rev-parse", `${link}^{tree}`], { cwd: dir, encoding: "utf8" }).trim(), g("rev-parse", `${plain}^{tree}`), "the replace ref is live");
     assert.equal(await gitMergeTree(base, link, { cwd: dir }), "special", "the queue reads the real commit, not its replacement");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("FU-17b: real git, a local graft cannot turn a symlink merge clean (GIT_GRAFT_FILE is off for the queue's git reads)", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "mq-fu17b-graft-"));
+  try {
+    const g = (...args) => execFileSync("git", ["-c", "user.name=Asha", "-c", "user.email=asha@example.invalid", "-c", "commit.gpgsign=false", ...args], { cwd: dir, encoding: "utf8" }).trim();
+    g("init", "-q", "-b", "main");
+    writeFileSync(join(dir, "a.txt"), "a\n");
+    g("add", "a.txt");
+    g("commit", "-q", "-m", "base");
+    const base = g("rev-parse", "HEAD");
+    g("checkout", "-q", "-b", "link");
+    symlinkSync("a.txt", join(dir, "l"));
+    g("add", "l");
+    g("commit", "-q", "-m", "link");
+    const link = g("rev-parse", "HEAD");
+    g("checkout", "-q", "-b", "after");
+    writeFileSync(join(dir, "c.txt"), "c\n");
+    g("add", "c.txt");
+    g("commit", "-q", "-m", "after");
+    const after = g("rev-parse", "HEAD");
+    g("checkout", "-q", "main");
+    // Graft the symlink commit under the base, so the merge base becomes "link": the base then looks as if it deleted
+    // the symlink and the merge drops it. Plain git, which follows the graft, calls the merge clean.
+    writeFileSync(join(dir, ".git", "info", "grafts"), `${base} ${link}\n`);
+    assert.equal(execFileSync("git", ["merge-base", base, after], { cwd: dir, encoding: "utf8" }).trim(), link, "the graft is live for plain git");
+    assert.equal(await gitMergeTree(base, after, { cwd: dir }), "special", "the queue's git reads ignore the graft, so the symlink still shows");
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
