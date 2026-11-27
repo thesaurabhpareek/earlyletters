@@ -8,11 +8,14 @@
  * and is hidden when it is off, so its style must give that number (width 0) or it is counted as a fourth tab.
  *
  * The test runs the library's own function text, read from node_modules, with only its last comparison changed to return
- * the sum. If the library changes that function, the text no longer matches and this test fails, so the premise is checked
- * on every upgrade. Mutant (run by hand, see the PR): drop `width: 0` from momentsTabVisibility; the flag-off case fails.
+ * the sum. The pin test checks only the parts it lists (the start and end markers, the comparison, the 768 check, the
+ * numeric-width condition and the 125 default); any other library change that moves the sum (for example the library
+ * skipping hidden routes itself) is caught by the flag-off and flag-on sum tests instead, which then need updating.
+ * Mutant (run by hand, see the PR): drop `width: 0` from momentsTabVisibility; the flag-off case fails.
  *
- * Not proved here: the pixels on an iPad, and the result today. 4 x 125 = 500 is below 768, so the label position was the
- * same with or without the hidden route; this fixes the count, not a visible bug.
+ * Not proved here: the pixels on a device, and the result today. The sum is read only at 768 points wide or more, and
+ * there 4 x 125 = 500 fits as well as 375, so the label position was the same with or without the hidden route; below 768
+ * the library uses width > height and never reads the sum. This fixes the count, not a visible bug.
  */
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
