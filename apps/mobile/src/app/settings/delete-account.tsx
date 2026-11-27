@@ -30,7 +30,8 @@ import { CreditCardIcon } from 'phosphor-react-native/src/icons/CreditCard';
 import { FileTextIcon } from 'phosphor-react-native/src/icons/FileText';
 import { useRef, useState } from 'react';
 import { ActivityIndicator, ScrollView, View, type Text as RNText } from 'react-native';
-import { afterCancel, bookRowKey, bookRowLabel, canDelete, confirmDay, failureLine, HELD, loadFailureLine, scheduledDay, whatHappens } from '@/components/settings/delete-account.logic';
+import { afterCancel, bookRowKey, bookRowLabel, cancelFailureLine, canDelete, confirmDay, failureLine, HELD, loadFailureLine, phoneLine, scheduledDay, whatHappens } from '@/components/settings/delete-account.logic';
+import { shelfActions } from '@/components/book/shelf.logic';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Text } from '@/components/ui/text';
@@ -75,6 +76,9 @@ function DeleteAccountPage({ onRetry }: { onRetry: () => void }) {
   // Step 2 shows a failure only from its own Delete press: S14's hook keeps the last error until the next request,
   // so without this an old line would come back (and be announced again) on a later visit to step 2.
   const [tried, setTried] = useState(false);
+  // The scheduled page's failure is a Cancel deletion's only once Cancel was pressed: then the line says the outcome is
+  // not known yet (BL-491 point 5), never "nothing has changed", which reads as if the request were blocked.
+  const [cancelTried, setCancelTried] = useState(false);
   const step = stepFor(d.status, wanted);
   // Each step is its own page: VoiceOver starts at its heading (as onboarding's steps do, TDD 09 A11Y-F09).
   const confirmHeading = useRef<RNText>(null);
@@ -84,6 +88,7 @@ function DeleteAccountPage({ onRetry }: { onRetry: () => void }) {
 
   const header = <Stack.Screen options={{ title: c.title }} />;
   const failure = <ErrorLine message={failureLine(d.error)} />;
+  const cancelFailure = <ErrorLine message={cancelFailureLine(d.error)} />;
   // The page could not load: nothing was tried, so it does not say that nothing has changed.
   const loadFailure = <ErrorLine message={loadFailureLine(d.error)} />;
   const tryAgain = <Button variant="outline" size="lg" className="self-start" label={copy.common.tryAgainButton} onPress={onRetry} />;
@@ -139,7 +144,7 @@ function DeleteAccountPage({ onRetry }: { onRetry: () => void }) {
           <Text variant="body">{fill(c.scheduled.body, { date })}</Text>
           <Text variant="footnote">{c.scheduled.emailNote}</Text>
         </View>
-        {failure}
+        {cancelTried ? cancelFailure : failure}
         <View className="gap-2">
           <Button
             variant="outline"
@@ -149,6 +154,7 @@ function DeleteAccountPage({ onRetry }: { onRetry: () => void }) {
             label={c.scheduled.cancelButton}
             testID="deleteAccount.cancel"
             onPress={async () => {
+              setCancelTried(true);
               if (await d.cancel()) {
                 haptic('success');
                 toast.show({ message: c.scheduled.cancelled });
@@ -245,7 +251,8 @@ function DeleteAccountPage({ onRetry }: { onRetry: () => void }) {
           </View>
         ))}
         {list.empty ? <Text variant="body">{list.empty}</Text> : null}
-        {list.books.length > 0 ? <Text variant="body">{c.what.onThisPhone}</Text> : null}
+        {/* CPrivO-56: "until you erase them" only where the shelf shows Erase now (the same capability as the shelf). */}
+        {list.books.length > 0 ? <Text variant="body">{phoneLine(shelfActions({ sync: capabilities.sync, serverErase: capabilities.serverErase }).eraseNow)}</Text> : null}
         {list.copies ? (
           <Text variant="subhead" tone="muted">
             {list.copies}
