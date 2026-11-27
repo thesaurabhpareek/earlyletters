@@ -40,6 +40,17 @@ import { daysBuildEnabled, libraryDaysAllowed, remoteConfigReader, watchLibraryD
 /** Marks our notifications in `content.data`, so we never cancel anyone else's (defined in payload.ts). */
 export { REMINDER_SOURCE };
 const ANDROID_CHANNEL = 'reminders';
+/**
+ * A store write re-plans after this quiet time, so a burst of writes (a save touches several tables) plans once.
+ * What a person can see inside the window (BL-2247): for up to 1.2 s after names, day names or App lock turn names or
+ * a typed day's words off, plus the time the re-plan takes, iOS still holds the notes planned before, which may name a
+ * child or carry the words, and a delivered typed-day note still shows its words in Notification Center. Acceptable
+ * while the app stays open: in the foreground our notes show no banner and join no list (`setNotificationHandler` in
+ * `startReminders`), and the screen that changed the switch is in front of Notification Center. Not covered: the app
+ * leaving the foreground inside the window. Nothing re-plans on the way out (the AppState listener acts on `active`
+ * only) and iOS may suspend the app before the timer fires, so the old plan can stand until the next foreground and a
+ * note due in between shows what was just turned off. Timing is not changed here; the BL-2247 PR raises it.
+ */
 const STORE_DEBOUNCE_MS = 1200;
 const COLD_START_ROUTE_RETRIES = 5;
 const COLD_START_ROUTE_RETRY_MS = 200;
