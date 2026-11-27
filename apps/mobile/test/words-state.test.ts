@@ -289,7 +289,8 @@ describe('Review uses the card (source)', () => {
   const review = code(src('app/review.tsx'));
 
   it('one card for every state before the words, drawn as InlineState with its drawing and stillness', () => {
-    expect(review).toMatch(/<InlineState\s+kind=\{card\.kind\}\s+art=\{card\.art\}\s+still=\{card\.still\}/);
+    // `callerSpeaks`: the card says nothing of its own; Review says it (useWordsSaid), so no line is said twice (BL-1953).
+    expect(review).toMatch(/<InlineState\s+callerSpeaks\s+kind=\{card\.kind\}\s+art=\{card\.art\}\s+still=\{card\.still\}/);
     // Empty only with no bytes, the same rule as Tonight's card (review A H1).
     expect(review).toMatch(/const file = takeFile\(draft\);/);
     expect(review).toMatch(/emptyFile: file === 'empty',\s*unreadable: file === 'unreadable',/);
@@ -328,7 +329,9 @@ describe('Review uses the card (source)', () => {
   });
 
   it('[review B L4] a change of card is said aloud (VoiceOver ignores live regions on iOS): the title, then the longer-than-usual line when it appears', () => {
-    const status = review.slice(review.indexOf('function WordsStatus('), review.indexOf('const action = (a: WordsAction | null)'));
+    // WordsStatus says the card through useWordsSaid (components/capture/use-words-said.ts, moved there unchanged, BL-1953).
+    expect(review.slice(review.indexOf('function WordsStatus('), review.indexOf('const action = (a: WordsAction | null)'))).toMatch(/\buseWordsSaid\(card\);/);
+    const status = code(src('components/capture/use-words-said.ts'));
     // The first card is said once Review has dissolved in (focus lands on "Hear it", not on the card), with the
     // newest title; it is cleared on unmount, and replaced at once by a change of state (#271 lens B final note).
     expect(status).toMatch(/if \(!before\) \{\s*first\.current = setTimeout\(\(\) => \{\s*first\.current = null;\s*announce\(title\.current\);\s*\}, tokens\.motion\.route\.dissolveMs\);\s*return;\s*\}/);
