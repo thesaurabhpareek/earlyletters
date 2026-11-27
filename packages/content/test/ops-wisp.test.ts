@@ -62,4 +62,13 @@ describe('the WISP and the risk register (BL-241)', () => {
       expect(text, `${id} in the summary`).toMatch(new RegExp(`^\\| ${id} \\|.*\\| [1-5] \\| [1-5] \\| \\d+ \\|`, 'm'));
     }
   });
+
+  it('[LEGAL-REQ-028] every summary score is likelihood times impact', () => {
+    const text = read('docs/ops/RISK_REGISTER.md');
+    const scored = [...text.matchAll(/^\| (R-\d\d) \|.*\| ([1-5]) \| ([1-5]) \| (\d+) \|/gm)];
+    expect(scored.length).toBeGreaterThan(10);
+    for (const [, id, l, i, score] of scored) {
+      expect(Number(score), `${id} score`).toBe(Number(l) * Number(i));
+    }
+  });
 });
