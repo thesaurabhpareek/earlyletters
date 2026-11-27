@@ -980,7 +980,7 @@ describe('glossary (BRAND.md)', () => {
 
   it('never says transcription, transcribe or transcript in copy a parent reads (BL-393, D-074)', () => {
     // The word names the technology and reads as if the app writes (VOICE.md "Word for word"). Values only: key
-    // names, code and comments may keep the internal word. The website and pages (site.en.ts, pages.en.ts) are BL-556's.
+    // names, code and comments may keep the internal word. The live website copy is checked in apps/web/test/copy-rules.test.ts.
     expect(offenders([...IN_APP, ...EMAIL], /\btranscri\w*/i)).toEqual([]);
   });
 

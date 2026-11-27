@@ -428,6 +428,22 @@ describe('rules carried over from the content package (BL-556)', () => {
     expect(STILL_OLD.filter((p) => !found.includes(p)), 'fixed: remove from STILL_OLD').toEqual([]);
   });
 
+  // RULE (BL-393, D-074; ported from packages/content rules.test.ts by BL-556): never transcription, transcribe or
+  // transcript in site copy. The word names the technology and reads as if the app writes.
+  it('never says transcription, transcribe or transcript (BL-393, D-074)', () => {
+    expect(offenders(PROSE, /\btranscri\w*/i)).toEqual([]);
+  });
+
+  // RULE [BRAND-MOMENTS-1] (ported from packages/content rules.test.ts by BL-556): moment is a place, never a thing
+  // a person makes. Same pattern as MOMENT_MADE there; "Try again in a moment." passes.
+  const MOMENT_MADE =
+    /\b(?:your|my|our|their|new|these|those|favou?rite|precious|special|captured|saved|shared|recent|best)\s+moments?\b|\bmoments?\s+(?:from|you|we|with|captured|saved)\b|\b\d+\s+moments\b|\b(?:capture|save|record|share|write|add|make|keep)\s+(?:a|the|this|that|every|each|your)?\s*(?:precious\s+)?moments?\b|\bphoto moments?\b/i;
+  it('[BRAND-MOMENTS-1] never calls a moment a thing a person makes', () => {
+    expect(offenders(PROSE, MOMENT_MADE)).toEqual([]);
+    for (const bad of ['Save a moment', 'Capture every precious moment', 'Your moments']) expect(MOMENT_MADE.test(bad), bad).toBe(true);
+    for (const ok of ['Try again in a moment.', 'One moment.']) expect(MOMENT_MADE.test(ok), ok).toBe(false);
+  });
+
   // RULE (BRAND-MOMENTS-2, X1, Q-X1-12): the website does not say Moments until counsel clears the name.
   it('[BRAND-MOMENTS-2] does not say Moments', () => {
     expect(offenders(PROSE, /\bmoments\b/i)).toEqual([]);
