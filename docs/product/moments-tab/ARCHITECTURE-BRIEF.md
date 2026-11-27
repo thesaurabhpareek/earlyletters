@@ -5,7 +5,7 @@ Date: 21 Nov 2026
 Owner: `principal-architect` (standards steward; `mobile` builds, `security-architect` reviews native)
 Spec of record: `docs/product/prd/28-moments-tab.md` (v3, rows `NS-53-R<n>` written below as `R<n>`; section numbers are that file's)
 Read with: `docs/product/moments-tab/EXPERIENCE-AND-MOTION.md` (EM), `HARNESS-REPLAN-HYBRID.md` (HR), `FREEZE-CHECKLIST.md`, `docs/engineering/PRINCIPLES.md`
-Load when: you start designing any PR of the 41-item plan and do not want to read 2,400 lines first.
+Load when: you start designing any PR of the spec 19.4 plan and do not want to read 2,400 lines first.
 
 Fictional family Asha only. Evidence labels, used on every claim: a spec row id; `file:line` read this session on `origin/develop` at b02f13aa7; ASSUMED (a number or choice nobody measured); UNVERIFIED (a fact I did not read in a primary source). Every Apple API name is UNVERIFIED until the G1a spike and a read of Apple's own reference pages by `mobile` (EXH-ENG-17, HR section 2). Where this brief proposes a TypeScript shape, the shape is PROPOSED design, not an Apple fact. Spec line numbers are for `docs/product/prd/28-moments-tab.md` unless a file is named.
 
@@ -14,7 +14,7 @@ Fictional family Asha only. Evidence labels, used on every claim: a spec row id;
 1. The tab decides, the sheet chooses, capture speaks (EM section 0, line 14). Each surface does one job and hands over without a seam.
 2. One suggestion engine, pure TypeScript, in `packages/core/src/moments`; no platform import (CODE-R10, `docs/engineering/01-code-and-change.md:51`).
 3. Three native modules, each a thin adapter with a closed function list and a source scan: `scribe-library` (read, F2 only), `scribe-picker` (one plain Apple picker, F1), `scribe-photo` (strip only, untouched except PR 18d).
-4. Nothing library-derived is persisted except day keys, hidden-place keys and the parent's label, in `moments.json` (L4, outside `scribe.db`); nothing leaves the phone (17, 17.1, 10.2).
+4. Nothing library-derived is persisted except day keys, hidden-place keys and the parent's label, in `moments.json` (L4, outside `scribe.db`); nothing leaves the phone (PRD sections 17, 17.1 and 10.2).
 5. Every route into a letter ends in one `AttachRequest` and one stripper, then the existing `startCapture({source})` (R85, R88, R83).
 6. The door ships without the library chain; the library chain ships behind F2 only after every gate has a read-out (R278, R171, HR section 1 after the table).
 
@@ -23,7 +23,7 @@ Fictional family Asha only. Evidence labels, used on every claim: a spec row id;
 ### 1.1 Context
 
 ```
-                      phone only (nothing below crosses to our servers: 10.2, R116)
+                      phone only (nothing below crosses to our servers: PRD section 10.2, R116)
  +----------------------------------------------------------------------------------+
  | Apple Photos library          Apple's picker (out of process)    iOS permission  |
  |      |  (F2 only)                    |  (F1)                         sheet        |
@@ -102,7 +102,7 @@ Exactly these, no others; a scan lists the allowed Swift names and equals the `i
 
 `exportForAttach` asks PhotoKit for the original of one asset and writes it into `Caches/ImagePicker` under a plain name checked by the rule of R272. It does nothing else: no strip, no resize, no property read, one closed error code, no path over the bridge. So PR 18 never edits `scribe-photo`, and no PhotoKit name enters it.
 
-Naming drift to settle in PR 9 (not decided here): spec 10.1 step 1 calls the fetch `scanDates` (line 579); R220 says "fetch window". Default: R220's wording is the contract, because R220 is the later v3 fix and is the row the scan is written from.
+Naming drift to settle in PR 9 (not decided here): PRD section 10.1 step 1 calls the fetch `scanDates`; R220 says "fetch window". Default: R220's wording is the contract, because R220 is the later v3 fix and is the row the scan is written from.
 
 Day sheet items 5 (full image, player item) are in R220 even though D7 cut the viewer to one plain enlarge (R276, PR 20). Open question Q-8 asks whether the list should shrink; until answered the scan pins what R220 says.
 
@@ -201,8 +201,10 @@ tab focus / foreground ---------------------------------------------------------
       |   user library only, no hidden assets, no image data, so no iCloud download   [R111]
       v   columnar typed arrays: id, creationMs, kind, durationMs, subtype flags,
       |   favourite, burst id, place cell (see Q-2), plus `truncated`
-      v   core.exclude    drops no-date, screenshot, screen recording, animation,
-      |                   non-user-library; collapses bursts                       (no trace left)
+      v   core.exclude    drops no-date, screenshot, screen recording, animation;
+      |                   collapses bursts                                         (no trace left)
+      |                   (hidden and non-user-library never reach core: the fetch
+      |                   above excludes them, 7.1, E-B3-3, R38; erratum, PROPOSED)
       |                   (left-out pictures are gone: R56 DROPPED, BL-1967, E-4-7)
       v   core.place      cell -> place id (table injected); coordinates never reach a Moment
       v   core.group      local day via offsetAt(ms); sessions at SESSION_GAP; near-duplicates
@@ -495,7 +497,7 @@ Rule: no number in this table becomes a test threshold until G1b writes its read
 
 ## 8. The 41-item plan as an architecture critical path
 
-Source: HR section 1 table (41 items, five waves; 43 with PRs 6b and 19c from the 21 Nov design closure fold), spec 19.4. Sizes are ASSUMED changed lines. This section sorts them by what blocks what.
+Source: HR section 1 table (the 21 Nov list, five waves) and spec 19.4, which is the source of the item list; see spec 19.4 for the current count. Sizes are ASSUMED changed lines. This section sorts them by what blocks what.
 
 ### 8.1 The three spikes and what each decides
 
@@ -591,7 +593,7 @@ Architecture consequence: the code must work with `scribe-library` absent at eve
 | Apple's picker looks like Apple inside a paper app; first-time text, badge and numbers cannot be styled (RK-H1) | Trust seam | Frame only; never restyle Apple's view (EM 4.7, 4.10) |
 | Suggestions feel wrong or watching (RK-3, RK-4, RK-H2) | Place and occasion cards | Offline city-level table only; Not this place; Hide this place; the junk bar; G4 |
 | 20,000-item library slow on SE 3 (RK-6) | Launch and scroll | Date-window scans only; no launch work; section 7 |
-| Plan is 43 items and about 10,580 lines (HR line 60 and spec 19.4, ASSUMED; 41 and 10,130 before 6b and 19c) | Review load; each AT THE LINE item may split again | `stacked-prs`; CODE-R02 split plans recorded in 19.4 |
+| Plan is a long list of small PRs (see spec 19.4 for the current count and size, ASSUMED) | Review load; each AT THE LINE item may split again | `stacked-prs`; CODE-R02 split plans recorded in 19.4 |
 | Existing nav tests assert one capture entry and three tabs | Silent loosening | RV-02 signed first; the rewrite keeps the property "one doorway" |
 | Spec contradictions I found (Q-2, the `scanDates` name, the line 73 versus 75 citation, `routeForReminder`, `PlannedKind`) | Engineers start from different rows | This brief names a default for each; `product` owns the spec fix |
 

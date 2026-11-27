@@ -1,9 +1,9 @@
 # NS-53 Moments tab: test plan and requirement-to-test traceability
 
-Status: PROPOSED. Owner: `qa`. Date: 21 Nov 2026. Spec: `docs/product/prd/28-moments-tab.md` v3 (301 rows, section 19.4 PR plan of 41 items, section 26b row homes). Follow-up fix of PR #1430 after its reviews (that PR merged before these fixes landed, so they arrive as a second PR). Fictional family Asha only.
+Status: PROPOSED. Owner: `qa`. Date: 21 Nov 2026. Spec: `docs/product/prd/28-moments-tab.md` v3 (301 rows, section 19.4 PR plan, 41 items on 21 Nov 2026 (see spec 19.4 for the current count), section 26b row homes). Follow-up fix of PR #1430 after its reviews (that PR merged before these fixes landed, so they arrive as a second PR). Fictional family Asha only.
 Load when: you write or review any test for a Moments PR, or you plan the founder's device pass for Moments.
 
-This file answers one question for each of the 41 PRs of section 19.4 (the table in section 2 has 41 rows, counted; `prIdsIn19_4: 41` in the spec, and `node docs/product/moments-tab/row-homes.mjs` reports no problem). Some documents say 43: I found no document that defines 43, and I read it as the 41 PRs plus the two spikes that the backlog gives their own rows and that are not PRs (BL-1474, the G1a-P simulator spike, and BL-1475, the G3-x exclusion spike; `docs/BACKLOG.md` under the Moments block, BL-1448 to BL-1475). Spec 19.4's own heading and the BL-1448 plan ("Every one of the 41 items of 19.4 has one home row") say 41, so 41 is the PR count here and spikes are tracked by their gates, not by this table. The spec wins if it changes.
+This file answers one question for each PR of section 19.4 as the spec stood on 21 Nov 2026: the table in section 2 has 41 rows, counted, and on that date `node docs/product/moments-tab/row-homes.mjs` reported `prIdsIn19_4: 41` and no problem. The spec wins, and it has changed since: see spec 19.4 for the current count. The PRs added to 19.4 after that date (6b and 19c from the design closure fold, 3c from CPO-28) have no row in section 2 yet. The two spikes are not PRs and are tracked by their gates, not by this table (BL-1474, the G1a-P simulator spike, and BL-1475, the G3-x exclusion spike; `docs/BACKLOG.md` under the Moments block, BL-1448 to BL-1475).
 
 ## 0. What is true today (read before trusting any number)
 
