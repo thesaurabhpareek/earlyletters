@@ -70,7 +70,7 @@ describe('NS-53 verbs (7.4, D6)', () => {
     expect(VERBS).toHaveLength(5);
   });
 
-  it('[NS-53-R54] the two dropped verbs do not exist', () => {
+  it('[NS-53-R54][NS-53-R247] the two dropped verbs do not exist', () => {
     for (const gone of ['leaveOutPicture', 'useAlbum', 'leaveOut', 'chooseAlbum']) expect(isVerb(gone)).toBe(false);
     expect(isVerb('notThisOne')).toBe(true);
   });

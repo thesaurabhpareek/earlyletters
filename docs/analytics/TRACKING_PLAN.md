@@ -405,6 +405,8 @@ Crash reports (Sentry) follow the same switch (LEGAL-REQ-003): the Sentry bootst
 | `error_shown`, `sync_failed` | `components/ui` toast and errors; `lib/sync/engine.ts` after retries | design, sync | to wire |
 | Consent sheet | ask sequencer: show `<AnalyticsConsentSheet>` when `analyticsAskDue(...)`; call `recordAnalyticsOffer()` | coordinator (BL-023) | to wire |
 
+Moments v3 (the picker door, the host sheet, a pick and the library read; NS-53 PR 7, BL-1452) has no call site and no event: no wire code, no catalogue row, and `picker_unavailable` stays a local code. The decision and its row ids (NS-53-R83, R87, R167, R227, R251, R282, R284) are in `moments-measurement-note.md` section 11; `packages/analytics/test/moments-no-change.test.ts` guards it.
+
 Retired by wire-names step 2a (BL-2175, CR-213, CR-225), with their call sites: `app_cold_start`, `app_backgrounded`, `auth_sheet_shown`, `auth_method_selected`, `auth_email_sent`, `local_merge_choice`, `child_setting_changed`, `make_it_yours_card`, `goals_set`, `dictionary_term_added`, `family_letter_reviewed`, `member_removed`, `member_left`, `reminder_sent`, `moment_shown`, `resurface_shown`, `resurface_opened`, `export_shared`, `account_deletion`, `letter_deleted`, `book_opened` and `letter_opened`. Reach of the Book and of a letter is the `screen_view` of `book` and `letter_detail`. The reason for each is in `docs/analytics/instrumentation/WIRE-NAMES.md`, under Retired keys. A name that matches `FORBIDDEN_EVENT_PATTERNS` cannot come back without a new decision.
 
 ---

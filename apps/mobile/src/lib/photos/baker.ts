@@ -3,8 +3,8 @@
  * (modules/scribe-photo) with a destination this file builds, reads the upright, metadata-free JPEG written there, and
  * removes that temporary file whatever happened. Only a picked original in Caches/ImagePicker is ever handed over
  * (review N4), and the native call is bounded in time (N9). A missing native module, a uri outside that folder, a
- * timeout or any failure is `null`, which `commitPhoto` reports as `needs_rotation` or `not_jpeg` and stores nothing
- * for. Native error text is dropped (NX-39-R50). Pure (the native call and the files are parameters), so it is tested
+ * timeout or any failure is `null`, which `commitPhoto` reports as `needs_rotation`, `not_jpeg` or `too_large` and stores
+ * nothing for. Native error text is dropped (NX-39-R50). Pure (the native call and the files are parameters), so it is tested
  * in Node with stand-ins.
  */
 import type { OrientationBaker } from './types';

@@ -103,6 +103,17 @@ describe('[S52] the sign-in sheet', () => {
   it('adds no haptic of its own for an account (MOTION 6)', () => {
     expect(sheet).not.toMatch(/haptic\(/);
   });
+
+  it('[BL-490] the provider buttons play no haptic either: no call and no Button haptic prop (S52 Motion, CDesO-14)', () => {
+    // The sheet draws Apple, Google, email and passkey through these two; each used to play `tap` before its handler.
+    const apple = between(ui, 'export function AppleButton(', '\n}\n');
+    const provider = between(ui, 'export function ProviderButton(', '\n}\n');
+    for (const [name, body] of [['AppleButton', apple], ['ProviderButton', provider]] as const) {
+      expect(body, `${name} plays a haptic`).not.toMatch(/haptic\(|\shaptic=|playHaptic|Haptics\./);
+      // Each hands its press straight to the caller's handler, nothing in between.
+      expect(body, name).toMatch(/onPress=\{onPress\}/);
+    }
+  });
 });
 
 describe('[S52] [5.8 row 10] the sheet frame and its steps', () => {
