@@ -63,6 +63,16 @@ describe('the WISP and the risk register (BL-241)', () => {
     }
   });
 
+  it('[LEGAL-REQ-028] the summary and the rows list the same ids, in order, and the WISP names the same range', () => {
+    const text = read('docs/ops/RISK_REGISTER.md');
+    const rowIds = [...text.matchAll(/^### (R-\d\d) /gm)].map((m) => m[1]);
+    const summaryIds = [...text.matchAll(/^\| (R-\d\d) \|/gm)].map((m) => m[1]);
+    expect(summaryIds).toEqual(rowIds);
+    rowIds.forEach((id, n) => expect(id).toBe(`R-${String(n + 1).padStart(2, '0')}`));
+    const last = rowIds[rowIds.length - 1];
+    expect(read('docs/ops/WISP.md')).toContain(`with ids R-01 to ${last})`);
+  });
+
   it('[LEGAL-REQ-028] every summary score is likelihood times impact', () => {
     const text = read('docs/ops/RISK_REGISTER.md');
     const scored = [...text.matchAll(/^\| (R-\d\d) \|.*\| ([1-5]) \| ([1-5]) \| (\d+) \|/gm)];
