@@ -7,6 +7,7 @@
  *   the old 60 plus 4.
  * - At most one budgeted notification a local day: `chooseOnePerDay` keeps the highest rank. Ranks: a day the parent
  *   typed 1, birthday 2, `libraryDay` 3 (a ranked source inside the `typedDay` group, NOT a class), month 4, evening 5.
+ *   `heldDays` names the days a chosen day note holds, so a dropped day note still keeps an evening off its day.
  * - Every class has a registry row (group, priority, owner). There is no `occasion` class, by design (NS-32-R5).
  *   A class added to a group cannot raise the total (`addNotificationClass`).
  */
@@ -100,6 +101,17 @@ export function chooseOnePerDay<T extends BudgetCandidate>(candidates: readonly 
     if (!held || SOURCE_RANK[c.source] < SOURCE_RANK[held.source]) best.set(key, c);
   }
   return [...best.entries()].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)).map(([, v]) => v);
+}
+
+/**
+ * The days already held by a chosen day note (a typed day, a birthday or a month note), as zero-padded YYYY-MM-DD
+ * keys. Pass the output of `chooseOnePerDay` for the day notes; the planner skips an evening on any day in the set.
+ * Why it exists: a day note is chosen BEFORE the lead-time and quiet-hour drops, so a birthday or month note whose
+ * time has passed, or that lands in quiet hours, is dropped from the plan yet still holds its day. The final
+ * `chooseOnePerDay` on the plan cannot see a dropped note, so without this set an evening would fill that day.
+ */
+export function heldDays(chosen: readonly BudgetCandidate[]): Set<string> {
+  return new Set(chosen.map((c) => dayKey(c.date)));
 }
 
 /**

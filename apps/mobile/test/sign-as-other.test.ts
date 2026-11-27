@@ -29,7 +29,7 @@ vi.mock('@/lib/store', () => ({
   getEntry: (id: string) => h.entries.get(id) ?? null,
 }));
 vi.mock('@/lib/first-run/draft', () => ({ clearFirstRunDraft: () => {} }));
-vi.mock('../src/lib/auth/apple', () => ({ forgetAppleUser: async () => {} }));
+vi.mock('../src/lib/auth/apple', () => ({ forgetAppleUser: async () => {}, clearPendingAppleName: async () => {} }));
 vi.mock('../src/lib/auth/pending', () => ({ clearPendingEmailRequest: async () => {} }));
 
 import { forgetSignOutLeftovers } from '../src/lib/auth/sign-out-leftovers';
