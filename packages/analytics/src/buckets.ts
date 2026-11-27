@@ -19,6 +19,7 @@ export type ExportSizeBucket = PropValues<'keeping:export_complete', 'size_bucke
 export type ExportDurationBucket = PropValues<'keeping:export_complete', 'duration_bucket'>;
 export type ChildOrdinal = PropValues<'capture:letter_save', 'child_ordinal'>;
 export type HourBucket = PropValues<'notifications:schedule_update', 'hour_bucket'>;
+export type MsBucket = PropValues<'perf_measured', 'ms_bucket'>;
 
 const SEC = 1000;
 const MIN = 60 * SEC;
@@ -143,4 +144,15 @@ export function toV1Lang(code: string | null | undefined): Lang | null {
   const alias: Record<string, string> = { cmn: 'zh', zho: 'zh', chi: 'zh', hin: 'hi', spa: 'es', fra: 'fr', fre: 'fr', ara: 'ar', por: 'pt', eng: 'en' };
   const v = alias[primary] ?? primary;
   return (V1_LANGUAGES as readonly string[]).includes(v) ? (v as Lang) : null;
+}
+
+/** Milliseconds to the shared time bucket of `perf_measured` (`MS_BUCKET` in registry.ts). The number never leaves the phone. */
+export function msBucket(ms: number): MsBucket {
+  const v = n(ms);
+  if (v < 100) return 'lt_100ms';
+  if (v < 300) return '100_300ms';
+  if (v < SEC) return '300ms_1s';
+  if (v < 3 * SEC) return '1_3s';
+  if (v < 10 * SEC) return '3_10s';
+  return 'gt_10s';
 }
