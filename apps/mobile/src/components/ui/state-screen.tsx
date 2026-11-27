@@ -21,7 +21,8 @@
  * Motion: the block arrives with one 200 ms fade, which is also its Reduce Motion form. Loading
  * never spins: its drawing breathes (Breathe, 8 s, off under Reduce Motion) and the region is
  * announced as busy. Nothing else moves: no lamp, no draw-on, no breath in the hard moments.
- * Error and not-found are the same warm block as empty, never red.
+ * Error and not-found are the same warm block as empty, never red. A primary whose press is on its way passes
+ * `loading`: the button is busy (Button's own state) and the screen keeps its words (BL-494 point 3).
  * Accessibility: heading first; the picture is decorative; live region polite; actions are buttons
  * with their words as names.
  */
@@ -79,7 +80,7 @@ function Actions({ kind, primary, quiet }: Pick<Common, 'kind' | 'primary' | 'qu
   const main = layout.primary as ActionWithIcon | null;
   return (
     <View className="gap-1">
-      {main ? <Button size="lg" fullWidth label={main.label} icon={main.icon} onPress={main.onPress} testID={main.testID} /> : null}
+      {main ? <Button size="lg" fullWidth label={main.label} icon={main.icon} loading={main.loading} onPress={main.onPress} testID={main.testID} /> : null}
       {layout.quiet.map((a) => (
         <Button key={a.label} variant="quiet" fullWidth label={a.label} onPress={a.onPress} testID={a.testID} />
       ))}
