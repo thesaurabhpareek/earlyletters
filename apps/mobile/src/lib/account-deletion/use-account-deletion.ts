@@ -11,7 +11,7 @@ import { usePlan } from '@/lib/billing';
 import { bookVisibleNow, currentUserId, deleteSetting, getSetting, listEntriesForChild, setSetting, uuidv7 } from '@/lib/store';
 import {
   cancelDeletion, forgetAnalytics, loadBooks, loadStatus, requestDeletion, retryForget,
-  type AnalyticsIds, type DeletionClient, type FlagStore,
+  type AnalyticsIds, type CancelFailure, type DeletionClient, type FlagStore,
 } from './api';
 import { clearConsentCopy } from '@/lib/export/consent-copy';
 import { bookImpacts, impactLines, showSubscriptionNotice, type ServerStatus, type SyncBook } from './logic';
@@ -39,7 +39,8 @@ export function useAccountDeletion() {
   const userId = authUserId(auth.state);
   const [status, setStatus] = useState<ServerStatus | null>(null);
   const [books, setBooks] = useState<SyncBook[] | null>(null);
-  const [error, setError] = useState<'offline' | 'failed' | null>(null);
+  // `limited` and `auth` come only from a Cancel deletion (CDesO-58, CDesO-59); a read or a request sets offline or failed.
+  const [error, setError] = useState<CancelFailure | null>(null);
   const [cancelled, setCancelled] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -98,6 +99,14 @@ export function useAccountDeletion() {
     setError(null);
     const r = await cancelDeletion(client);
     setBusy(false);
+    if (!r.ok && r.reason === 'executing') {
+      // Nothing was open to cancel because the deletion is being carried out (CDesO-59 case 3): no failure line, the page
+      // moves to its executing state, as its next read would. The note is written as refresh writes it, so the deletion
+      // screen (which draws from the note) moves too.
+      setStatus(r.status);
+      if (bookVisibleNow()) recordStatus(r.status, userId);
+      return false;
+    }
     if (!r.ok) {
       setError(r.reason);
       return false;
@@ -115,7 +124,7 @@ export function useAccountDeletion() {
     setStatus({ state: 'none' });
     setCancelled(true);
     return true;
-  }, [client]);
+  }, [client, userId]);
 
   return {
     configured: auth.configured,

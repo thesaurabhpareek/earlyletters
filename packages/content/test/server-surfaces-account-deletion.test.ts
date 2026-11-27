@@ -92,7 +92,8 @@ describe('[P8c S64] accountDeletionCopy changes, word for word', () => {
     // `loadFailed` is the one line for a page that could not load: nothing was tried there (BL-492 point 4).
     // `cancelFailed` is a Cancel deletion that did not go through: the phone cannot know whether the server cancelled, so
     // "nothing has changed" would read as if the person were safe while the request may still be open (BL-491 point 5).
-    const exempt = new Set(['loadFailed', 'cancelFailed']);
+    // `cancelLimited` is a cancel the server refused for its daily limit: it says what did not happen and when to try (CDesO-58).
+    const exempt = new Set(['loadFailed', 'cancelFailed', 'cancelLimited']);
     for (const [key, text] of Object.entries(accountDeletionCopy.errors)) {
       if (exempt.has(key)) expect(text, key).not.toMatch(/nothing has changed/i);
       else expect(text, key).toContain('Nothing has changed.');
@@ -111,6 +112,15 @@ describe('[P8c S64] accountDeletionCopy changes, word for word', () => {
     // Never that the person is out of the woods, and the button by its visible label.
     expect(line).not.toMatch(/\bsafe\b/i);
     expect(line).toContain(`Tap ${accountDeletionCopy.scheduled.cancelButton} again.`);
+  });
+
+  it('[CDesO-58] a Cancel deletion refused by the daily limit says it was not canceled and when to try again', () => {
+    const line = accountDeletionCopy.errors.cancelLimited;
+    expect(line).toBe("The deletion wasn't canceled. There have been too many cancellations in the last day. Try again in 24 hours.");
+    expect(line).not.toBe(accountDeletionCopy.errors.cancelFailed);
+    expect(line).not.toMatch(/nothing has changed|\bsafe\b|\byou\b|tomorrow|few minutes/i);
+    // No button named: the press is refused for up to a day, so the line never sends the person back to it.
+    expect(line).not.toContain(accountDeletionCopy.scheduled.cancelButton);
   });
 });
 

@@ -109,7 +109,7 @@ export const accountDeletionCopy = {
   // Not "everything": the iPhone backup, exports and the Keychain letter count are not on this phone's storage (#672).
   notConfigured: `Accounts are not available on this phone right now, so an account cannot be deleted here. The letters on this phone stay until you delete the app. To delete your account, write to ${brand.support.email}.`,
 
-  // Each failure of a request says first, or says plainly, that nothing has changed (not loadFailed or cancelFailed).
+  // Each failure of a request says first, or says plainly, that nothing has changed (not loadFailed, cancelFailed or cancelLimited).
   errors: {
     offline: 'Nothing has changed. Deleting an account needs a connection.',
     failed: 'That did not go through. Nothing has changed.',
@@ -120,5 +120,10 @@ export const accountDeletionCopy = {
     // know whether the server cancelled before the answer was lost, so it must not say "nothing has changed", which
     // reads as if the person is safe while the request may still be open. Pressing again is harmless.
     cancelFailed: "It's not clear yet if the deletion was canceled. Tap Cancel deletion again.",
+    // A Cancel deletion the server refused for its daily limit, SQLSTATE SCRAT (CDesO-58): 5 cancellations per person in a
+    // rolling 24 hours. The whole call rolled back, so the outcome is known and pressing again does not help yet. "In 24
+    // hours" is the window itself, an upper bound that is always enough; the phone cannot know when the oldest counted
+    // cancellation leaves it. Not "nothing has changed": the line says what did not happen and when to try.
+    cancelLimited: "The deletion wasn't canceled. There have been too many cancellations in the last day. Try again in 24 hours.",
   },
 } as const;
