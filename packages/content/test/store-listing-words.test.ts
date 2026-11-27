@@ -5,43 +5,55 @@
  * This file is new on purpose: store-listing.test.ts (NS-38-R2, BL-1315) and claims-capabilities.test.ts (RT-REL-03)
  * are edited by other open work, so neither is touched here. Both are read, not imported: their helpers are local.
  *
- * The build is read from apps/mobile/eas.json as data (the content package imports no app code, CODE-R10), in the
- * `production` profile, which is the store build: servers on, so sign-in is required (D-160, D-170).
+ * The rows these rules read (one claims row per listing sentence, the What's New clauses and the allowed keywords)
+ * live in packages/content/src/store-claims.en.json, beside store.en.ts, so a copy edit moves its row there and never
+ * this file. That file is read here as data; the package index does not export it and the app never reads it.
  *
- * - FR-MKT-08. Every sentence of the description and the promotional text has a claims row below (CLAIMS_ROWS). A row
- *   names the build facts it needs (servers on, our recording backup off, English only) and its source: a row of the
- *   listing audit (docs/store/SCREENSHOT-COPY-AUDIT.md, the claims check of 21 to 23 Nov 2026), a D-id, or a repo file.
- *   The claims inventory (docs/reviews/2026-10-claims-inventory.md, section 3a) quotes the 28 Oct listing, whose lines
- *   are gone, so its rows cannot be matched to today's sentences; the audit is the newest per-line reading. A new
- *   sentence with no row fails, a row whose sentence is gone fails, and a row whose build fact is false fails. The test
- *   proves each line was read against a source and a build fact; it does not prove the source's verdict is right.
+ * The build is read from apps/mobile/eas.json as data, in the `production` profile (with any `extends` folded in by
+ * scripts/release/store-flags.mjs resolveProfile), which is the store build: servers on, so sign-in is required
+ * (D-160, D-170). The four web texts of FR-MKT-16 are imported from apps/web, as claims-capabilities.test.ts does.
+ *
+ * - FR-MKT-08. Every sentence of the description and the promotional text has a claims row. A row names the build
+ *   facts it needs (servers on, our recording backup off, English only) and its source: a row of the listing audit
+ *   (docs/store/SCREENSHOT-COPY-AUDIT.md, the claims check of 21 to 23 Nov 2026), a D-id, or a repo file. The claims
+ *   inventory (docs/reviews/2026-10-claims-inventory.md, section 3a) quotes the 28 Oct listing, whose lines are gone,
+ *   so its rows cannot be matched to today's sentences; the audit is the newest per-line reading. A new sentence with no
+ *   row fails, a row whose sentence is gone fails, and a row whose build fact is false fails. The test proves each line
+ *   was read against a source and a build fact; it does not prove the source's verdict is right.
  * - FR-MKT-09. What's New names a feature only by a registered clause whose card claim is in the description, names
  *   no feature whose build switch is off in production, and never says coming soon, beta, early access, preview or a
  *   count.
- * - FR-MKT-11. The keyword field holds only words on ALLOWED_KEYWORDS (each with its source) and fails on the
- *   backlog row's words and on a competitor's name, read from docs/research/competitors/us.md section 2.1.
+ * - FR-MKT-11. The keyword field holds only allowed words (each with its source) and fails on the FR row's named
+ *   words (the backlog row's eight plus "AI" and "grandparents"), on a price, on the name of a language this build does
+ *   not hear (read from packs/text-rules), and on a competitor's name (read from docs/research/competitors/us.md
+ *   section 2.1).
  * - FR-MKT-16. The four public texts that say what leaves the phone (the description's privacy paragraph, screenshot
- *   6's subline, the website's privacy points in site.ts s09, and /support) cite one label file, the one the label
- *   guard reads (scripts/release/label-effect.mjs LABEL_FILE). The label answers they rely on are pinned, so a label
+ *   6's subline, the website's privacy points in site.ts s09, and /support) are registered here and read from their
+ *   files; none of them cites a label file, so this registry is what ties them to the one the label guard reads
+ *   (LABEL_FILE, imported from scripts/release/label-effect.mjs). The label answers they rely on are pinned, so a label
  *   change fails here until those four texts are read again in the same pull request, and none of the four may state
  *   a practice the label in force contradicts.
  *
- * If a test fails on today's words, the content owner changes the words (D-172); the builder does not.
+ * If a test fails on today's words, the content owner changes the words and their rows (D-172); the builder does not.
  */
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { brand } from '@scribe/brand';
 import { storeListing } from '../src/store.en';
-import { en } from '../src/strings.en';
 import { authCopy } from '../src';
 import { site as webSite } from '../../../apps/web/src/content/site';
 import { supportCopy } from '../../../apps/web/src/lib/support/copy';
 
 const root = fileURLToPath(new URL('../../../', import.meta.url));
 const read = (rel: string) => readFileSync(join(root, rel), 'utf8');
+
+/** A repo script, imported at run time (the scripts are plain .mjs with no type declarations). */
+const script = async <T>(rel: string) => (await import(pathToFileURL(join(root, rel)).href)) as T;
+const { LABEL_FILE } = await script<{ LABEL_FILE: string }>('scripts/release/label-effect.mjs');
+const { resolveProfile } = await script<{ resolveProfile: (build: unknown, name: string) => { env?: Env } | null }>('scripts/release/store-flags.mjs');
 
 /** Sentences, split as store-listing.test.ts splits them: after . ! or ?, and at each line break. */
 const sentences = (text: string): string[] =>
@@ -57,26 +69,71 @@ const sentences = (text: string): string[] =>
 type Env = Record<string, string>;
 
 function profileEnv(name: string): Env {
-  const eas = JSON.parse(read('apps/mobile/eas.json')) as { build: Record<string, { env?: Env }> };
-  const env = eas.build[name]?.env;
-  if (!env) throw new Error(`apps/mobile/eas.json has no build.${name}.env`);
-  return env;
+  const eas = JSON.parse(read('apps/mobile/eas.json')) as { build?: unknown };
+  const profile = resolveProfile(eas.build, name);
+  if (!profile?.env || Object.keys(profile.env).length === 0) throw new Error(`apps/mobile/eas.json has no build.${name}.env`);
+  return profile.env;
 }
 
 const production = profileEnv('production');
 const on = (env: Env, key: string) => (env[key] ?? '').trim().toLowerCase() === 'on';
 
 /** Build facts a listing sentence can depend on. Each reads the env the way the app's own switch does. */
-type Need = 'servers on' | 'our backup off' | 'English only';
-const NEEDS: Readonly<Record<Need, (env: Env) => boolean>> = {
+const NEEDS = {
   // capabilities.ts: sign-in and sync follow EXPO_PUBLIC_SERVER_FEATURES; sign-in is required when it is on (D-160).
-  'servers on': (env) => on(env, 'EXPO_PUBLIC_SERVER_FEATURES'),
+  'servers on': (env: Env) => on(env, 'EXPO_PUBLIC_SERVER_FEATURES'),
   // Our recording backup (NS-08); the person's own iPhone backup is theirs and true in every build.
-  'our backup off': (env) => !on(env, 'EXPO_PUBLIC_BACKUP'),
+  'our backup off': (env: Env) => !on(env, 'EXPO_PUBLIC_BACKUP'),
   // English only by the switch and by the spoken-language list (D-121 item 1, D-125 item 2).
-  'English only': (env) =>
+  'English only': (env: Env) =>
     on(env, 'EXPO_PUBLIC_ENGLISH_ONLY') && (env.EXPO_PUBLIC_SPOKEN_LANGUAGES ?? 'en').split(',').map((c) => c.trim()).join(',') === 'en',
+} as const;
+type Need = keyof typeof NEEDS;
+
+// ---------------------------------------------------------------------------
+// The claims file: rows the content owner edits beside the copy.
+// ---------------------------------------------------------------------------
+
+const CLAIMS_FILE = 'packages/content/src/store-claims.en.json';
+
+/** A source: `audit:<row>` (a row of the listing audit), `D-nnn` (a decision of record) or a repo path. */
+type Row = { say: string; needs?: readonly Need[]; source: string };
+type Feature = { clause: string; claim: string; flag: string | null };
+type Claims = { claims: Row[]; whatsNewFrames: string[]; whatsNewFeatures: Feature[]; keywords: Record<string, string> };
+
+const PLACEHOLDERS: Readonly<Record<string, string>> = {
+  'brand.name': brand.name,
+  'brand.web.terms': brand.web.terms,
+  'brand.web.privacy': brand.web.privacy,
 };
+
+/** The claims file, checked for shape, with its brand placeholders filled. Throws on anything it cannot read. */
+function loadClaims(json: string): Claims {
+  const bad = (why: string): never => {
+    throw new Error(`${CLAIMS_FILE}: ${why}`);
+  };
+  const text = (v: unknown, where: string): string => (typeof v === 'string' && v.trim() !== '' ? v : bad(`${where} is not a sentence`));
+  const fill = (v: unknown, where: string) => text(v, where).replace(/\{([\w.]+)\}/g, (m, key: string) => PLACEHOLDERS[key] ?? bad(`${where}: unknown placeholder ${m}`));
+  const list = (v: unknown, where: string): unknown[] => (Array.isArray(v) ? v : bad(`${where} is not a list`));
+  const data = JSON.parse(json) as Record<string, unknown>;
+  const claims = list(data.claims, 'claims').map((r, i): Row => {
+    const row = r as Record<string, unknown>;
+    const needs = row.needs === undefined ? undefined : list(row.needs, `claims[${i}].needs`).map((n) => (typeof n === 'string' && n in NEEDS ? (n as Need) : bad(`claims[${i}]: unknown build fact ${JSON.stringify(n)}`)));
+    return { say: fill(row.say, `claims[${i}].say`), ...(needs ? { needs } : {}), source: text(row.source, `claims[${i}].source`) };
+  });
+  const whatsNewFrames = list(data.whatsNewFrames, 'whatsNewFrames').map((f, i) => fill(f, `whatsNewFrames[${i}]`));
+  const whatsNewFeatures = list(data.whatsNewFeatures, 'whatsNewFeatures').map((f, i): Feature => {
+    const row = f as Record<string, unknown>;
+    const flag = row.flag === null ? null : text(row.flag, `whatsNewFeatures[${i}].flag`);
+    return { clause: text(row.clause, `whatsNewFeatures[${i}].clause`), claim: text(row.claim, `whatsNewFeatures[${i}].claim`), flag };
+  });
+  const kw = data.keywords && typeof data.keywords === 'object' && !Array.isArray(data.keywords) ? (data.keywords as Record<string, unknown>) : bad('keywords is not a map');
+  const keywords = Object.fromEntries(Object.entries(kw).map(([w, src]) => [w, text(src, `keywords.${w}`)]));
+  return { claims, whatsNewFrames, whatsNewFeatures, keywords };
+}
+
+const CLAIMS = loadClaims(read(CLAIMS_FILE));
+const CLAIMS_ROWS = CLAIMS.claims;
 
 // ---------------------------------------------------------------------------
 // FR-MKT-08: one claims row per listing sentence.
@@ -96,100 +153,6 @@ function auditRows(markdown = read(AUDIT)): string[] {
   }
   return out;
 }
-
-/** A source: `audit:<row>` (a row of the listing audit), `D-nnn` (a decision of record) or a repo path. */
-type Row = { say: string; needs?: readonly Need[]; source: string };
-
-// The audit says the plain description lines (the opening paragraph, "A minute is plenty", "Names spelled your way")
-// passed the content rules and say nothing the build does not do, and gives them no row, so they cite the audit file.
-// The closing audience line has no audit row either; it cites the file too, and its truth is not checked here.
-const PLAIN = AUDIT;
-const [promise1, promise2] = sentences(en.trust.promise);
-const [voice1, voice2] = sentences(en.trust.voice);
-
-const CLAIMS_ROWS: readonly Row[] = [
-  // Promotional text.
-  { say: 'Tell your child about today.', source: 'audit:Promotional text' },
-  { say: 'A minute is plenty.', source: 'audit:Promotional text' },
-  { say: 'It stays in your words.', source: 'audit:Promotional text' },
-  { say: 'Every word we change is marked, and your original recording is kept unchanged.', source: 'audit:Promotional text' },
-  // Opening.
-  { say: `${brand.name}: letters to your child, in your own words and voice.`, source: 'D-139' },
-  { say: 'Tell your child one thing about today.', source: PLAIN },
-  { say: 'The first laugh, the long night, the song you made up in the car.', source: PLAIN },
-  { say: 'It becomes a letter in your own words, with your voice kept beside it.', source: PLAIN },
-  { say: 'Years from now, your child can read it, and hear how you sounded when you said it.', source: PLAIN },
-  // IT STAYS IN YOUR WORDS.
-  { say: 'IT STAYS IN YOUR WORDS', source: 'audit:IT STAYS IN YOUR WORDS' },
-  { say: 'Your words are written down on your phone, and the app only fixes small slips, like an um, a repeat or a name spelled your way.', source: 'audit:IT STAYS IN YOUR WORDS' },
-  { say: 'It never adds a word.', source: 'audit:IT STAYS IN YOUR WORDS' },
-  { say: 'Every word we change is marked, and you can put any of them back.', source: 'audit:IT STAYS IN YOUR WORDS' },
-  { say: 'We never rewrite your words, shorten them or write for you.', source: 'audit:IT STAYS IN YOUR WORDS' },
-  { say: 'A word can be misheard, so have a quick read before you keep a letter.', source: 'audit:IT STAYS IN YOUR WORDS' },
-  { say: 'Letters you type stay as you typed them.', source: 'audit:IT STAYS IN YOUR WORDS' },
-  // YOUR VOICE, KEPT.
-  { say: 'YOUR VOICE, KEPT', source: 'audit:YOUR VOICE, KEPT' },
-  { say: "Every letter you speak keeps its recording, on your phone and in your iPhone's own backup if you use one.", needs: ['our backup off'], source: 'audit:YOUR VOICE, KEPT' },
-  { say: voice1, source: 'D-061' },
-  { say: voice2, source: 'D-061' },
-  // READ TOGETHER AT BEDTIME.
-  { say: 'READ TOGETHER AT BEDTIME', source: 'audit:READ TOGETHER AT BEDTIME' },
-  { say: 'Open Read together and go through the book one letter at a time, oldest first.', source: 'audit:READ TOGETHER AT BEDTIME' },
-  { say: 'Listen to the letters you spoke, with the words on the screen.', source: 'audit:READ TOGETHER AT BEDTIME' },
-  { say: 'Typed letters are there too, for you to read aloud.', source: 'audit:READ TOGETHER AT BEDTIME' },
-  // A MINUTE IS PLENTY.
-  { say: 'A MINUTE IS PLENTY', source: PLAIN },
-  { say: "Some nights it's a sentence, some nights a long letter.", source: PLAIN },
-  { say: 'Stuck for words?', source: PLAIN },
-  { say: "There's a question to start with.", source: PLAIN },
-  { say: 'If today was quiet, tap "Not much today" and that\'s enough.', source: PLAIN },
-  { say: 'Nothing keeps score.', source: PLAIN },
-  // A BOOK THAT GROWS BY MONTH.
-  { say: 'A BOOK THAT GROWS BY MONTH', source: 'audit:A BOOK THAT GROWS BY MONTH' },
-  { say: "Each letter goes into your child's month of age, so the book reads in order.", source: 'audit:A BOOK THAT GROWS BY MONTH' },
-  { say: 'Expecting?', source: 'audit:A BOOK THAT GROWS BY MONTH' },
-  { say: 'Start before the birth, in a part of the book called Before You.', source: 'audit:A BOOK THAT GROWS BY MONTH' },
-  { say: 'Twins or more each get their own book.', source: 'audit:A BOOK THAT GROWS BY MONTH' },
-  // NAMES SPELLED YOUR WAY.
-  { say: 'NAMES SPELLED YOUR WAY', source: PLAIN },
-  { say: 'Add the names and home words you use, like a nickname or the name of a stuffed rabbit, so we spell them your way.', source: PLAIN },
-  // PRIVATE BY DEFAULT.
-  { say: 'PRIVATE BY DEFAULT', source: 'audit:PRIVATE BY DEFAULT' },
-  { say: promise1, source: 'D-061' },
-  { say: promise2, source: 'D-061' },
-  { say: 'You sign in to keep your book.', needs: ['servers on'], source: 'audit:PRIVATE BY DEFAULT' },
-  { say: "If you agree to sync, the words of your letters and your child's name and dates are kept on our servers so they reach a new phone.", needs: ['servers on'], source: 'audit:PRIVATE BY DEFAULT' },
-  { say: 'Recordings stay on the phone that made them.', needs: ['our backup off'], source: 'audit:PRIVATE BY DEFAULT' },
-  { say: 'Keep any letter just for you, out of the book.', source: 'audit:PRIVATE BY DEFAULT' },
-  { say: 'Delete one and it waits in Recently deleted for 30 days.', source: 'audit:PRIVATE BY DEFAULT' },
-  // REMINDERS, ONLY IF YOU WANT THEM.
-  { say: 'REMINDERS, ONLY IF YOU WANT THEM', source: 'audit:REMINDERS' },
-  { say: 'Reminders are off until you turn them on.', source: 'audit:REMINDERS' },
-  { say: 'You pick the days and the time, and none comes after 9:30 at night.', source: 'audit:REMINDERS' },
-  // TAKE IT WITH YOU.
-  { say: 'TAKE IT WITH YOU', source: 'audit:TAKE IT WITH YOU' },
-  { say: 'Export your book any time, for free: your letters, your recordings and a PDF of the book.', source: 'audit:TAKE IT WITH YOU' },
-  // IN ENGLISH.
-  { say: 'IN ENGLISH', needs: ['English only'], source: 'audit:IN ENGLISH' },
-  { say: 'This version writes down letters spoken in English.', needs: ['English only'], source: 'audit:IN ENGLISH' },
-  { say: 'The speech model is a one-time download, on Wi-Fi unless you turn on cellular data, 575 MB on most iPhones and smaller on some, and you choose when it starts.', source: 'audit:IN ENGLISH' },
-  { say: 'Until it is ready, your recordings are kept and the words follow.', source: 'audit:IN ENGLISH' },
-  // PLUS.
-  { say: 'PLUS', source: 'audit:PLUS' },
-  { say: 'Your first two letters are free, so you can see how it feels.', source: 'audit:PLUS' },
-  { say: 'To keep adding letters, choose Plus: $4.99 a month with the first month free, or $49.99 a year with the first 2 months free.', source: 'packages/content/src/pricing.ts' },
-  { say: 'The free months are for people new to Plus.', source: 'audit:PLUS' },
-  { say: "One plan covers every child's book and works with Family Sharing.", source: 'audit:PLUS' },
-  { say: 'A new letter past the free two waits until you decide.', source: 'audit:PLUS' },
-  { say: 'Every letter you have kept stays yours to read, play and export, with or without Plus.', source: 'audit:PLUS' },
-  { say: 'Payment is charged to your Apple Account.', source: 'audit:PLUS' },
-  { say: 'Plus renews automatically unless you turn off renewal at least 24 hours before the end of the current period.', source: 'audit:PLUS' },
-  { say: 'Manage or cancel any time in your Apple Account settings.', source: 'audit:PLUS' },
-  // Closing and legal links.
-  { say: 'For parents of babies and young children, from the first weeks to the first years.', source: PLAIN },
-  { say: `Terms of Service: ${brand.web.terms}`, source: 'audit:Terms and Privacy URLs' },
-  { say: `Privacy Policy: ${brand.web.privacy}`, source: 'audit:Terms and Privacy URLs' },
-];
 
 type Listing = { promotionalText: string; description: string };
 const listingSentences = (l: Listing) => [...sentences(l.promotionalText), ...sentences(l.description)];
@@ -227,13 +190,21 @@ describe('[FR-MKT-08] every description line is true of the sign-in-required sto
     expect(NEEDS['servers on'](production)).toBe(true);
   });
 
+  it('[FR-MKT-08] the claims file is data for this test only: the package index does not export it and no source imports it', () => {
+    expect(CLAIMS_ROWS.length).toBeGreaterThan(50);
+    const src = join(root, 'packages/content/src');
+    const files = readdirSync(src, { recursive: true, encoding: 'utf8' }).filter((f) => /\.tsx?$/.test(f));
+    expect(files.length).toBeGreaterThan(10);
+    expect(files.filter((f) => readFileSync(join(src, f), 'utf8').includes('store-claims'))).toEqual([]);
+  });
+
   it('[FR-MKT-08] every sentence of the description and the promotional text has a claims row', () => {
-    expect(unrowed(realListing), 'a listing sentence with no claims row: the content owner adds its row with a source').toEqual([]);
+    expect(unrowed(realListing), `a listing sentence with no claims row: the content owner adds its row with a source in ${CLAIMS_FILE}`).toEqual([]);
   });
 
   it('[FR-MKT-08] every claims row is still in the listing, so the rows move with the words', () => {
     const said = new Set(listingSentences(realListing));
-    expect(CLAIMS_ROWS.filter((r) => !said.has(r.say)).map((r) => r.say), 'rows whose sentence is gone: remove or reword the row').toEqual([]);
+    expect(CLAIMS_ROWS.filter((r) => !said.has(r.say)).map((r) => r.say), `rows whose sentence is gone: remove or reword the row in ${CLAIMS_FILE}`).toEqual([]);
     expect(new Set(CLAIMS_ROWS.map((r) => r.say)).size, 'one row per sentence').toBe(CLAIMS_ROWS.length);
   });
 
@@ -256,23 +227,43 @@ describe('[FR-MKT-08] every description line is true of the sign-in-required sto
     // shows only when sign-in cannot be reached; the listing does not describe an outage, so it names no accountless path.
     expect(storeListing.description).not.toContain('Without an account, your book stays on your phone.');
     expect(accountless(realListing)).toEqual([]);
-    expect(authCopy.outage.startLocal).toBe('Start on this phone');
+    expect(authCopy.outage.startLocal.trim()).not.toBe('');
   });
 
   it('[FR-MKT-08] [mutant] a description line with no claims row is caught', () => {
     const planted = 'Now with a shared family album.';
-    expect(unrowed({ ...realListing, description: `${realListing.description}\n${planted}` })).toEqual([planted]);
+    expect(unrowed({ ...realListing, description: `${realListing.description}\n${planted}` })).toContain(planted);
+  });
+
+  it('[FR-MKT-08] [mutant] a one-word copy edit is caught until its row in the claims file moves with it', () => {
+    const was = sentences(realListing.description).find((x) => x.split(' ').length > 4) ?? '';
+    const now = was.replace(' ', ' truly ');
+    const edited = { ...realListing, description: realListing.description.replace(was, now) };
+    expect(now).not.toBe(was);
+    expect(edited.description).not.toBe(realListing.description);
+    expect(unrowed(edited)).toContain(now);
+    const rows = CLAIMS_ROWS.map((r) => (r.say === was ? { ...r, say: now } : r));
+    expect(unrowed(edited, rows)).not.toContain(now);
+  });
+
+  it('[FR-MKT-08] [mutant] the claims file refuses a row with an unknown build fact or placeholder', () => {
+    const row = (r: object) => JSON.stringify({ claims: [r], whatsNewFrames: [], whatsNewFeatures: [], keywords: {} });
+    expect(() => loadClaims(row({ say: 'A line.', needs: ['servers maybe'], source: AUDIT }))).toThrow(/unknown build fact/);
+    expect(() => loadClaims(row({ say: '{brand.nickname} is here.', source: AUDIT }))).toThrow(/unknown placeholder/);
+    expect(() => loadClaims(row({ say: 'A line.' }))).toThrow(/source is not a sentence/);
   });
 
   it('[FR-MKT-08] [mutant] a row whose build fact is false is caught', () => {
-    expect(rowsFalseIn({ ...production, EXPO_PUBLIC_BACKUP: 'on' })).toContain('Recordings stay on the phone that made them.: needs our backup off');
-    expect(rowsFalseIn({ ...production, EXPO_PUBLIC_SERVER_FEATURES: 'off' })).toContain('You sign in to keep your book.: needs servers on');
-    expect(rowsFalseIn({ ...production, EXPO_PUBLIC_SPOKEN_LANGUAGES: 'en,es' })).toContain('IN ENGLISH: needs English only');
+    const rows = (n: Need): Row[] => [{ say: 'A planted line.', needs: [n], source: AUDIT }];
+    expect(rowsFalseIn({ ...production, EXPO_PUBLIC_BACKUP: 'on' }, rows('our backup off'))).toEqual(['A planted line.: needs our backup off']);
+    expect(rowsFalseIn({ ...production, EXPO_PUBLIC_SERVER_FEATURES: 'off' }, rows('servers on'))).toEqual(['A planted line.: needs servers on']);
+    expect(rowsFalseIn({ ...production, EXPO_PUBLIC_SPOKEN_LANGUAGES: 'en,es' }, rows('English only'))).toEqual(['A planted line.: needs English only']);
+    expect(rowsFalseIn(production, [...rows('our backup off'), ...rows('servers on'), ...rows('English only')])).toEqual([]);
   });
 
   it('[FR-MKT-08] [mutant] an accountless line is caught, and an Apple Account line is not', () => {
     const l = { ...realListing, description: `${realListing.description}\nWithout an account, your book stays on your phone.` };
-    expect(accountless(l)).toEqual(['Without an account, your book stays on your phone.']);
+    expect(accountless(l)).toContain('Without an account, your book stays on your phone.');
     expect(accountless({ ...realListing, description: 'Manage it in your Apple Account.' })).toEqual([]);
   });
 
@@ -287,29 +278,17 @@ describe('[FR-MKT-08] every description line is true of the sign-in-required sto
 // FR-MKT-09: What's New.
 // ---------------------------------------------------------------------------
 
-/** A What's New sentence that names no feature: the version line. */
-const WHATS_NEW_FRAMES = [`This is the first version of ${brand.name}.`];
-
-/**
- * The features What's New may name, each by its clause and the description heading that carries its enabled claim.
- * `flag` is the build switch that must be on in production, or null for a v1.0 core feature with no switch.
- */
-const WHATS_NEW_FEATURES: readonly { clause: RegExp; claim: string; flag: string | null }[] = [
-  { clause: /^talk or type a letter to your child$/i, claim: 'IT STAYS IN YOUR WORDS', flag: null },
-  { clause: /^keep your voice with it$/i, claim: 'YOUR VOICE, KEPT', flag: null },
-  { clause: /^read together at bedtime$/i, claim: 'READ TOGETHER AT BEDTIME', flag: null },
-  { clause: /^export your book any time$/i, claim: 'TAKE IT WITH YOU', flag: null },
-];
-
 /**
  * Features whose card has a build switch, or none yet in any store build, with the words that would name them
- * (marketing.md section 3a intent lines). While the switch is off, What's New may not use these words.
+ * (marketing.md section 3a intent lines). While the switch is off, What's New may not use these words. Each switch is
+ * read the way the app reads it.
  */
 const SWITCHED_FEATURES: readonly { card: string; words: RegExp; isOn: (env: Env) => boolean }[] = [
   { card: 'NS-01 photo with a letter', words: /\b(?:picture|photo)s?\b/i, isOn: (env) => on(env, 'EXPO_PUBLIC_PHOTOS') },
   { card: 'NS-02 Find', words: /\bfind\b|\bsearch\b/i, isOn: (env) => on(env, 'EXPO_PUBLIC_BOOK_SEARCH') },
   { card: 'NS-08 recording backup', words: /\bback(?:ed|s)? ?up\b|\bcloud\b/i, isOn: (env) => on(env, 'EXPO_PUBLIC_BACKUP') },
-  { card: 'NS-24 read the year back', words: /\b(?:a|the) year of letters\b|\bread (?:a|the) year\b/i, isOn: (env) => on(env, 'EXPO_PUBLIC_READ_THE_YEAR') },
+  // readTheYearOn (apps/mobile/src/components/book/read-year.logic.ts): only "1" is on, not "on".
+  { card: 'NS-24 read the year back', words: /\b(?:a|the) year of letters\b|\bread (?:a|the) year\b/i, isOn: (env) => env.EXPO_PUBLIC_READ_THE_YEAR === '1' },
   { card: 'Moments tab (Q-X1-12)', words: /\bmoments\b/i, isOn: (env) => on(env, 'EXPO_PUBLIC_MOMENTS_TAB') },
   // No store build has these: co-parent has no entry point in any store build (D-161, D-162), and NS-05 and NS-06 have
   // no build switch yet, so nothing turns them on.
@@ -331,19 +310,19 @@ const WHATS_NEW_NEVER: readonly RegExp[] = [
 ];
 
 /** What's New problems for this build: forbidden words, unregistered clauses, off features, missing claims. */
-function whatsNewProblems(text: string, env: Env, description = storeListing.description): string[] {
+function whatsNewProblems(text: string, env: Env, description = storeListing.description, features: readonly Feature[] = CLAIMS.whatsNewFeatures): string[] {
   const out: string[] = [];
   for (const re of WHATS_NEW_NEVER) if (re.test(text)) out.push(`never: ${re}`);
   for (const f of SWITCHED_FEATURES) if (!f.isOn(env) && f.words.test(text)) out.push(`switch off: ${f.card}`);
   for (const sentence of sentences(text)) {
-    if (WHATS_NEW_FRAMES.includes(sentence)) continue;
+    if (CLAIMS.whatsNewFrames.includes(sentence)) continue;
     const clauses = sentence
       .replace(/[.!?]$/, '')
       .split(/,\s*(?:and\s+)?|\s+and\s+/)
       .map((c) => c.trim())
       .filter(Boolean);
     for (const clause of clauses) {
-      const feature = WHATS_NEW_FEATURES.find((f) => f.clause.test(clause));
+      const feature = features.find((f) => f.clause.toLowerCase() === clause.toLowerCase());
       if (!feature) out.push(`no registered feature: ${clause}`);
       else if (feature.flag && !on(env, feature.flag)) out.push(`switch off: ${clause}`);
       else if (!sentences(description).includes(feature.claim)) out.push(`no claim in the description: ${feature.claim}`);
@@ -358,8 +337,9 @@ describe("[FR-MKT-09] What's New names a feature only through its enabled claim"
   });
 
   it('[FR-MKT-09] every registered feature has its claim heading in the description', () => {
+    expect(CLAIMS.whatsNewFeatures.length).toBeGreaterThan(0);
     const heads = new Set(sentences(storeListing.description));
-    expect(WHATS_NEW_FEATURES.filter((f) => !heads.has(f.claim)).map((f) => f.claim)).toEqual([]);
+    expect(CLAIMS.whatsNewFeatures.filter((f) => !heads.has(f.claim)).map((f) => f.claim)).toEqual([]);
   });
 
   const mutants: Array<[string, string]> = [
@@ -384,38 +364,40 @@ describe("[FR-MKT-09] What's New names a feature only through its enabled claim"
     expect(whatsNewProblems(line, production)).toContain('switch off: NS-02 Find');
     expect(whatsNewProblems(line, { ...production, EXPO_PUBLIC_BOOK_SEARCH: 'on' })).not.toContain('switch off: NS-02 Find');
   });
+
+  it('[FR-MKT-09] [mutant] read the year back is on only at "1", as the app reads its switch', () => {
+    const line = 'Read the year back at bedtime.';
+    expect(whatsNewProblems(line, { ...production, EXPO_PUBLIC_READ_THE_YEAR: 'on' })).toContain('switch off: NS-24 read the year back');
+    expect(whatsNewProblems(line, { ...production, EXPO_PUBLIC_READ_THE_YEAR: '1' })).not.toContain('switch off: NS-24 read the year back');
+  });
+
+  it('[FR-MKT-09] [mutant] a registered clause with a build switch passes only while that switch is on', () => {
+    const features = [...CLAIMS.whatsNewFeatures, { clause: 'find any letter', claim: 'TAKE IT WITH YOU', flag: 'EXPO_PUBLIC_EXAMPLE' }];
+    expect(whatsNewProblems('Find any letter.', production, storeListing.description, features)).toContain('switch off: Find any letter');
+    expect(whatsNewProblems('Find any letter.', { ...production, EXPO_PUBLIC_EXAMPLE: 'on' }, storeListing.description, features)).not.toContain('switch off: Find any letter');
+  });
 });
 
 // ---------------------------------------------------------------------------
 // FR-MKT-11: the keyword field.
 // ---------------------------------------------------------------------------
 
-const STAGED = 'docs/store/app-store-staged-1.0-proposal.md keyword row (31 Oct 2026)';
-const AUDITED = `${AUDIT} Keywords row`;
+/** The only keywords the field may hold, each with where it comes from. A new word needs its row in the claims file. */
+const ALLOWED_KEYWORDS = CLAIMS.keywords;
 
-/** The only keywords the field may hold, each with where it comes from. A new word needs its row here first. */
-const ALLOWED_KEYWORDS: Readonly<Record<string, string>> = {
-  diary: STAGED,
-  keepsake: STAGED,
-  memory: 'D-139 item 2: the keyword field carries "memory" so that search still matches',
-  book: 'D-139 item 2: the keyword field carries "book" so that search still matches',
-  voice: 'D-139 item 1: letters to your child, in your own words and voice',
-  newborn: STAGED,
-  toddler: STAGED,
-  child: 'D-139 item 1: letters to your child',
-  parenting: AUDITED,
-  audio: STAGED,
-  recorder: AUDITED,
-  bedtime: 'the description heading READ TOGETHER AT BEDTIME',
-  mom: STAGED,
-  dad: STAGED,
-  mama: AUDITED,
-};
-
-/** The backlog row's words (BL-1337 scope item 3). "photo book" is matched with and without its space. */
-const FORBIDDEN_KEYWORDS = ['kids', 'milestone', 'tracker', 'photo book', 'album', 'smart', 'share', 'backup'] as const;
+/**
+ * FR-MKT-11's named words (marketing.md section 3): the backlog row's eight plus "grandparents", matched inside a word
+ * ("grandparent" also refuses "grandparents"), and "photo book" with and without its space.
+ */
+const FORBIDDEN_KEYWORDS = ['kids', 'milestone', 'tracker', 'photo book', 'album', 'smart', 'share', 'grandparent', 'backup'] as const;
+/** FR-MKT-11's "AI", matched as a whole word only, so it refuses "AI" and "A.I." but not "daily" or "email". */
+const FORBIDDEN_WHOLE_WORDS = ['ai'] as const;
+/** FR-MKT-11's prices: a digit, a currency sign, or a word that names a price. */
+const PRICE_SIGN = /\d|[$\u00a2-\u00a5\u20ac\u20b9]/;
+const PRICE_WORD = /^(?:free|prices?|cheap|discounts?|sales?|trials?|deals?)$/;
 
 const COMPETITORS_DOC = 'docs/research/competitors/us.md';
+const PACKS_DIR = 'packs/text-rules';
 
 /**
  * Competitor and other-app names from the App Store table in docs/research/competitors/us.md section 2.1: the name
@@ -424,7 +406,7 @@ const COMPETITORS_DOC = 'docs/research/competitors/us.md';
  * the store name already uses (D-139), so it is "Apple Journal". The list holds the apps that table profiles; a rival
  * named only elsewhere in the research is not read.
  */
-export function competitorNames(markdown = read(COMPETITORS_DOC)): string[] {
+function competitorNames(markdown = read(COMPETITORS_DOC)): string[] {
   const start = markdown.indexOf('### 2.1 ');
   if (start < 0) return [];
   const section = markdown.slice(start, markdown.indexOf('\n## ', start + 1));
@@ -442,10 +424,34 @@ export function competitorNames(markdown = read(COMPETITORS_DOC)): string[] {
   return [...new Set(names)];
 }
 
-const squash = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+const squash = (s: string) => s.normalize('NFD').toLowerCase().replace(/[^a-z0-9]/g, '');
 
-/** Keyword field problems: words off the allowed list, the forbidden words, competitor names, the 100-byte limit. */
-function keywordProblems(field: string, competitors: readonly string[] = competitorNames()): string[] {
+/** The language packs the app knows: code, English name and native name (packs/text-rules/<code>.json). */
+function languagePacks(): { code: string; names: string[] }[] {
+  return readdirSync(join(root, PACKS_DIR))
+    .filter((f) => f.endsWith('.json'))
+    .map((f) => {
+      const pack = JSON.parse(read(`${PACKS_DIR}/${f}`)) as { language: string; name: { english: string; native: string } };
+      return { code: pack.language, names: [pack.name.english, ...pack.name.english.split(/\s+/), pack.name.native] };
+    });
+}
+
+/** What this build hears, as heard-languages.ts reads its two switches: English only wins, an unset list hears all. */
+function heardCodes(env: Env, codes: readonly string[]): string[] {
+  if (on(env, 'EXPO_PUBLIC_ENGLISH_ONLY')) return ['en'];
+  const listed = (env.EXPO_PUBLIC_SPOKEN_LANGUAGES ?? '').split(',').map((c) => c.trim().toLowerCase()).filter(Boolean);
+  return listed.length === 0 ? [...codes] : codes.filter((c) => c === 'en' || listed.includes(c));
+}
+
+/** Names of the languages this build does not hear yet, squashed (a name in another script squashes to nothing). */
+function unshippedLanguageNames(env: Env): string[] {
+  const packs = languagePacks();
+  const heard = new Set(heardCodes(env, packs.map((p) => p.code)));
+  return [...new Set(packs.filter((p) => !heard.has(p.code)).flatMap((p) => p.names.map(squash)).filter((n) => n.length >= 3))];
+}
+
+/** Keyword field problems: words off the allowed list, the named words, prices, languages, competitors, 100 bytes. */
+function keywordProblems(field: string, competitors: readonly string[] = competitorNames(), languages: readonly string[] = unshippedLanguageNames(production)): string[] {
   const out: string[] = [];
   const words = field.split(',').map((w) => w.trim());
   if (Buffer.byteLength(field, 'utf8') > 100) out.push('over 100 bytes');
@@ -453,10 +459,14 @@ function keywordProblems(field: string, competitors: readonly string[] = competi
   // Apple matches keywords in combination, so a forbidden phrase or a two-word name is also refused across two words.
   const singles = words.map(squash);
   const pairs = words.flatMap((a, i) => words.flatMap((b, j) => (i === j ? [] : [squash(`${a}${b}`)])));
+  const tokens = words.flatMap((w) => w.split(/[\s-]+/).map(squash)).filter(Boolean);
   for (const f of FORBIDDEN_KEYWORDS) {
     const k = squash(f);
     if (singles.some((w) => w.includes(k)) || (f.includes(' ') && pairs.includes(k))) out.push(`forbidden: ${f}`);
   }
+  for (const f of FORBIDDEN_WHOLE_WORDS) if (tokens.includes(f) || singles.includes(f)) out.push(`forbidden: ${f}`);
+  for (const w of words) if (PRICE_SIGN.test(w) || w.split(/[\s-]+/).some((t) => PRICE_WORD.test(squash(t)))) out.push(`price: ${w}`);
+  for (const name of languages) if (singles.includes(name) || tokens.includes(name) || pairs.includes(name)) out.push(`language: ${name}`);
   for (const name of competitors) {
     const k = squash(name);
     if (singles.includes(k) || pairs.includes(k)) out.push(`competitor: ${name}`);
@@ -471,11 +481,18 @@ describe('[FR-MKT-11] the keyword field holds only an allowed list of true words
     expect(names).toEqual(expect.arrayContaining(['Qeepsake', 'Tinybeans', 'FamilyAlbum', 'Day One', 'Apple Journal', 'Dujourbaby', 'Folio']));
   });
 
+  it('[FR-MKT-11] reads the language names from the packs, and the production build hears English alone', () => {
+    expect(heardCodes(production, languagePacks().map((p) => p.code))).toEqual(['en']);
+    expect(unshippedLanguageNames(production)).toEqual(expect.arrayContaining(['spanish', 'espanol', 'hindi', 'french', 'francais', 'chinese']));
+    expect(unshippedLanguageNames(production)).not.toContain('english');
+  });
+
   it("[FR-MKT-11] today's keyword field passes", () => {
     expect(keywordProblems(storeListing.keywords)).toEqual([]);
   });
 
-  it('[FR-MKT-11] every allowed word has a source, and none is forbidden or a competitor name', () => {
+  it('[FR-MKT-11] every allowed word has a source, and none is a named word, a price, a language or a competitor name', () => {
+    expect(Object.keys(ALLOWED_KEYWORDS).length).toBeGreaterThan(5);
     for (const [word, source] of Object.entries(ALLOWED_KEYWORDS)) {
       expect(source.trim(), word).not.toBe('');
       expect(word, 'one word, lower case, no space').toMatch(/^[a-z]+$/);
@@ -485,45 +502,69 @@ describe('[FR-MKT-11] the keyword field holds only an allowed list of true words
     expect(DECISIONS).toMatch(/^\| D-139 \|/m);
   });
 
-  const forbiddenMutants: Array<[string, string]> = [
-    ['kids', 'kids'],
-    ['milestone', 'milestones'],
-    ['tracker', 'tracker'],
-    ['photo book', 'photobook'],
-    ['photo book across two words', 'photo,book'],
-    ['album', 'album'],
-    ['smart', 'smart'],
-    ['share', 'share'],
-    ['backup', 'backup'],
-    ['a competitor name', 'qeepsake'],
-    ['a two-word competitor name across two words', 'tiny,voices'],
+  const forbiddenMutants: Array<[string, string, string]> = [
+    ['kids', 'kids', 'forbidden: kids'],
+    ['milestone', 'milestones', 'forbidden: milestone'],
+    ['tracker', 'tracker', 'forbidden: tracker'],
+    ['photo book', 'photobook', 'forbidden: photo book'],
+    ['photo book across two words', 'photo,book', 'forbidden: photo book'],
+    ['album', 'album', 'forbidden: album'],
+    ['smart', 'smart', 'forbidden: smart'],
+    ['share', 'share', 'forbidden: share'],
+    ['backup', 'backup', 'forbidden: backup'],
+    ['AI', 'AI', 'forbidden: ai'],
+    ['ai in lower case', 'ai', 'forbidden: ai'],
+    ['A.I.', 'A.I.', 'forbidden: ai'],
+    ['AI inside a two-word keyword', 'ai diary', 'forbidden: ai'],
+    ['grandparents', 'grandparents', 'forbidden: grandparent'],
+    ['grandparent', 'grandparent', 'forbidden: grandparent'],
+    ['a price with a currency sign', '$4.99', 'price: $4.99'],
+    ['a price without a sign', '49.99', 'price: 49.99'],
+    ['a price in euros', '\u20ac5', 'price: \u20ac5'],
+    ['the word free', 'free', 'price: free'],
+    ['the word trial', 'trial', 'price: trial'],
+    ['a language this build does not hear', 'spanish', 'language: spanish'],
+    ['a language by its own name', 'espanol', 'language: espanol'],
+    ['one word of a two-word language name', 'mandarin', 'language: mandarin'],
+    ['a competitor name', 'qeepsake', 'competitor: Qeepsake'],
+    ['a two-word competitor name across two words', 'tiny,voices', 'competitor: Tiny Voices'],
   ];
-  for (const [label, planted] of forbiddenMutants) {
+  for (const [label, planted, problem] of forbiddenMutants) {
     it(`[FR-MKT-11] [mutant] refuses a field with ${label}`, () => {
-      const problems = keywordProblems(`${planted},diary`);
-      expect(problems.some((p) => p.startsWith('forbidden') || p.startsWith('competitor'))).toBe(true);
+      expect(keywordProblems(`${planted},diary`)).toContain(problem);
     });
   }
 
-  it('[FR-MKT-11] [mutant] refuses a word outside the allowed list, such as AI, grandparents, a price or a language', () => {
-    for (const w of ['ai', 'grandparents', 'free', 'spanish', 'scrapbook']) expect(keywordProblems(`diary,${w}`)).toContain(`not allowed: ${w}`);
+  it('[FR-MKT-11] [mutant] "ai" is a whole word: daily, email and mail are not refused as AI', () => {
+    for (const w of ['daily', 'email', 'mail', 'aim']) {
+      const problems = keywordProblems(`diary,${w}`);
+      expect(problems, w).not.toContain('forbidden: ai');
+      expect(problems, w).toContain(`not allowed: ${w}`);
+    }
+  });
+
+  it('[FR-MKT-11] [mutant] a language name passes the language rule once the build hears that language, and only then', () => {
+    const hearsSpanish = { ...production, EXPO_PUBLIC_ENGLISH_ONLY: 'off', EXPO_PUBLIC_SPOKEN_LANGUAGES: 'en,es' };
+    expect(keywordProblems('spanish', competitorNames(), unshippedLanguageNames(hearsSpanish))).not.toContain('language: spanish');
+    expect(keywordProblems('hindi', competitorNames(), unshippedLanguageNames(hearsSpanish))).toContain('language: hindi');
+  });
+
+  it('[FR-MKT-11] [mutant] refuses a word outside the allowed list, such as a scrapbook or a lullaby', () => {
+    for (const w of ['scrapbook', 'lullaby', 'journey']) expect(keywordProblems(`diary,${w}`)).toContain(`not allowed: ${w}`);
   });
 
   it('[FR-MKT-11] [mutant] refuses a field over 100 bytes', () => {
-    expect(keywordProblems(`${storeListing.keywords},diary`)).toContain('over 100 bytes');
+    const word = Object.keys(ALLOWED_KEYWORDS)[0];
+    const field = Array.from({ length: Math.ceil(101 / (word.length + 1)) + 1 }, () => word).join(',');
+    expect(Buffer.byteLength(field, 'utf8')).toBeGreaterThan(100);
+    expect(keywordProblems(field)).toContain('over 100 bytes');
+    expect(keywordProblems(storeListing.keywords)).not.toContain('over 100 bytes');
   });
 });
 
 // ---------------------------------------------------------------------------
 // FR-MKT-16: a label change moves every public privacy line.
 // ---------------------------------------------------------------------------
-
-/** The label file, as the label guard names it (scripts/release/label-effect.mjs exports LABEL_FILE). */
-function guardLabelFile(source = read('scripts/release/label-effect.mjs')): string {
-  const m = /export const LABEL_FILE = '([^']+)';/.exec(source);
-  if (!m) throw new Error('LABEL_FILE not found in scripts/release/label-effect.mjs');
-  return m[1];
-}
 
 const privacyParagraph = (description: string): string => {
   const lines = description.split('\n');
@@ -532,21 +573,22 @@ const privacyParagraph = (description: string): string => {
 };
 const sixth = storeListing.screenshots.find((s) => s.id === '06-privacy');
 
-/** The four texts FR-MKT-16 moves with the label, each with its file and the label file it answers to. */
-const LABEL_TEXTS: readonly { id: string; file: string; label: string; text: string }[] = [
-  { id: 'store description privacy paragraph', file: 'packages/content/src/store.en.ts', label: 'docs/legal/app-store-privacy-labels.md', text: privacyParagraph(storeListing.description) },
-  { id: 'screenshot 6 subline', file: 'packages/content/src/store.en.ts', label: 'docs/legal/app-store-privacy-labels.md', text: sixth ? `${sixth.caption} ${sixth.subline}` : '' },
-  { id: 'website privacy points (site.ts s09)', file: 'apps/web/src/content/site.ts', label: 'docs/legal/app-store-privacy-labels.md', text: webSite.scenes.s09.points.join(' ') },
+type LabelText = { id: string; file: string; text: string };
+
+/** The four texts FR-MKT-16 moves with the label, each read from its file. All four answer to LABEL_FILE. */
+const LABEL_TEXTS: readonly LabelText[] = [
+  { id: 'store description privacy paragraph', file: 'packages/content/src/store.en.ts', text: privacyParagraph(storeListing.description) },
+  { id: 'screenshot 6 subline', file: 'packages/content/src/store.en.ts', text: sixth ? `${sixth.caption} ${sixth.subline}` : '' },
+  { id: 'website privacy points (site.ts s09)', file: 'apps/web/src/content/site.ts', text: webSite.scenes.s09.points.join(' ') },
   {
     id: '/support',
     file: 'apps/web/src/lib/support/copy.ts',
-    label: 'docs/legal/app-store-privacy-labels.md',
     text: supportCopy.sections.filter((s) => s.id === 'recordings' || s.id === 'privacy').flatMap((s) => s.blocks).join(' '),
   },
 ];
 
 /** The "Collected?" answer of each data type in section 3.2 of the label file, by "Category / Data type". */
-export function labelAnswers(markdown: string): Record<string, string> {
+function labelAnswers(markdown: string): Record<string, string> {
   const start = markdown.indexOf('### 3.2 Data types');
   if (start < 0) return {};
   const section = markdown.slice(start, markdown.indexOf('\n### ', start + 1));
@@ -572,6 +614,33 @@ const answersDigest = (answers: Record<string, string>) =>
     .digest('hex');
 
 /**
+ * Wordings that put a thing off the phone: our servers or the cloud, an upload or a sync, an account or "with us", a
+ * new or another phone, or leaving the phone. A sentence that names the thing and one of these states the practice.
+ */
+const OFF_PHONE = [
+  String.raw`our servers?`,
+  String.raw`the cloud`,
+  String.raw`backed up`,
+  String.raw`uploaded`,
+  String.raw`sent to us`,
+  String.raw`we (?:keep|store|save|hold)`,
+  String.raw`sync(?:s|ed|ing)?`,
+  String.raw`synchroni[sz](?:e|es|ed|ing)`,
+  String.raw`(?:to|in|on|with) (?:your|an|the|our) account`,
+  String.raw`(?:stored|kept|saved|held|stays?) with us`,
+  String.raw`(?:a|your|the|any) new (?:phone|iphone|device)s?`,
+  String.raw`(?:another|any other|every|all your) (?:phone|iphone|device)s?`,
+  String.raw`(?:leaves?|leaving|left) (?:the|your|this) phone`,
+  String.raw`off (?:the|your|this) phone`,
+].join('|');
+/** Verbs that put the thing named after them off the phone ("we back up your recordings", "sync your photos"). */
+const OFF_PHONE_VERB = String.raw`sync(?:s|ed|ing)?|back(?:s|ed)? up|upload(?:s|ed|ing)?|sends?`;
+
+/** A sentence that says the thing leaves the phone, as a regex over one sentence (no period in between). */
+const leavesThePhone = (thing: string) =>
+  new RegExp(String.raw`\b(?:${thing})\b[^.]*\b(?:${OFF_PHONE})\b|\b(?:${OFF_PHONE_VERB})\b(?:\s+\S+){0,3}?\s+(?:${thing})\b`, 'i');
+
+/**
  * Practices a text may not state while the label says the data is not collected. Read from the answers, so a label
  * that turns to Yes lifts the rule only for its own data type.
  */
@@ -580,18 +649,18 @@ function contradictions(texts: readonly { id: string; text: string }[], answers:
   const rules: { when: boolean; says: RegExp; why: string }[] = [
     {
       when: notCollected('User Content / Audio Data'),
-      says: /\brecordings?\b[^.]*\b(?:our servers?|the cloud|backed up|uploaded|sent to us|we keep)\b|\b(?:back(?:s|ed)? up|upload)\b[^.]*\brecordings?\b/i,
+      says: leavesThePhone(String.raw`recordings?|audio`),
       why: 'Audio Data is not collected: no recording leaves the phone',
     },
     {
       when: notCollected('User Content / Photos or Videos'),
-      says: /\b(?:photos?|pictures?|videos?)\b[^.]*\b(?:our servers?|the cloud|backed up|uploaded|synced)\b/i,
+      says: leavesThePhone(String.raw`photos?|pictures?|videos?`),
       why: 'Photos or Videos is not collected',
     },
     {
-      // Other User Content is collected (letter text syncs): no text may say the letters never leave the phone.
+      // Other User Content is collected (letter text syncs): no text may say the letters or the book never leave the phone.
       when: !notCollected('User Content / Other User Content'),
-      says: /\bletters?\b[^.]*\b(?:never leaves?|only on (?:your|this) phone|stays? on (?:your|this) phone)\b|\bnothing leaves\b/i,
+      says: /\b(?:letters?|book)\b[^.]*\b(?:never leaves?|only on (?:your|this) phone|stays? on (?:your|this) phone)\b|\bnothing leaves\b/i,
       why: 'Other User Content is collected: letter text syncs to our servers',
     },
     {
@@ -603,13 +672,17 @@ function contradictions(texts: readonly { id: string; text: string }[], answers:
   return texts.flatMap((t) => rules.filter((r) => r.when && r.says.test(t.text)).map((r) => `${t.id}: ${r.why}`));
 }
 
-describe('[FR-MKT-16] a privacy label change moves every public privacy line in one release', () => {
-  const labelFile = guardLabelFile();
-  const answers = labelAnswers(read(labelFile));
+/** The four texts with one sentence added to one of them, as a copy edit would add it. */
+const withPlanted = (id: string, sentence: string): LabelText[] => LABEL_TEXTS.map((t) => (t.id === id ? { ...t, text: `${t.text} ${sentence}` } : t));
 
-  it('[FR-MKT-16] the four texts cite the same label file, the one the label guard reads', () => {
+describe('[FR-MKT-16] a privacy label change moves every public privacy line in one release', () => {
+  const answers = labelAnswers(read(LABEL_FILE));
+
+  it('[FR-MKT-16] the four texts are registered here, read from their files and checked against the label file the label guard reads', () => {
+    expect(LABEL_FILE).toBe('docs/legal/app-store-privacy-labels.md');
+    expect(existsSync(join(root, LABEL_FILE)), LABEL_FILE).toBe(true);
+    expect(Object.keys(answers).length, `${LABEL_FILE} has its section 3.2 table`).toBeGreaterThan(5);
     expect(LABEL_TEXTS.map((t) => t.id)).toEqual(['store description privacy paragraph', 'screenshot 6 subline', 'website privacy points (site.ts s09)', '/support']);
-    expect(new Set(LABEL_TEXTS.map((t) => t.label))).toEqual(new Set([labelFile]));
     for (const t of LABEL_TEXTS) {
       expect(existsSync(join(root, t.file)), t.file).toBe(true);
       expect(t.text.trim(), `${t.id} is read`).not.toBe('');
@@ -623,7 +696,7 @@ describe('[FR-MKT-16] a privacy label change moves every public privacy line in 
   });
 
   it('[FR-MKT-16] the label answers match the pin: a label change fails until the four texts are read again', () => {
-    expect(answersDigest(answers), `the label answers in ${labelFile} changed: re-read ${LABEL_TEXTS.map((t) => t.id).join(', ')} and move PINNED_ANSWERS_SHA256 in the same pull request`).toBe(PINNED_ANSWERS_SHA256);
+    expect(answersDigest(answers), `the label answers in ${LABEL_FILE} changed: re-read ${LABEL_TEXTS.map((t) => t.id).join(', ')} and move PINNED_ANSWERS_SHA256 in the same pull request`).toBe(PINNED_ANSWERS_SHA256);
   });
 
   it('[FR-MKT-16] no one of the four texts states a practice the label in force contradicts', () => {
@@ -634,14 +707,43 @@ describe('[FR-MKT-16] a privacy label change moves every public privacy line in 
     expect(answersDigest({ ...answers, 'User Content / Audio Data': 'Yes' })).not.toBe(answersDigest(answers));
   });
 
-  it('[FR-MKT-16] [mutant] a text that says recordings leave the phone is refused while Audio Data is not collected', () => {
-    const planted = [...LABEL_TEXTS, { id: '/support', text: 'Your recordings are backed up to our servers.' }];
-    expect(contradictions(planted, answers)).toContain('/support: Audio Data is not collected: no recording leaves the phone');
-    expect(contradictions(planted, { ...answers, 'User Content / Audio Data': 'Yes' })).toEqual([]);
-  });
+  const AUDIO = 'Audio Data is not collected: no recording leaves the phone';
+  const PHOTOS = 'Photos or Videos is not collected';
+  const SITE = 'website privacy points (site.ts s09)';
+  const STORE = 'store description privacy paragraph';
+  const audioMutants: Array<[string, string]> = [
+    [SITE, 'Your recordings sync to your new phone.'],
+    [SITE, 'Your recordings are saved to your account.'],
+    [SITE, 'Your recordings are backed up to our servers.'],
+    ['/support', 'Recordings are saved to your account and reach a new phone.'],
+    ['/support', 'Recordings are stored with us so they come back on a new phone.'],
+    ['/support', 'We back up your recordings every night.'],
+    [STORE, 'Recordings leave the phone only to reach your new iPhone.'],
+    [STORE, 'We sync your recordings too.'],
+  ];
+  for (const [id, planted] of audioMutants) {
+    it(`[FR-MKT-16] [mutant] ${id} saying "${planted}" is refused while Audio Data is not collected`, () => {
+      const texts = withPlanted(id, planted);
+      expect(contradictions(texts, answers)).toContain(`${id}: ${AUDIO}`);
+      expect(contradictions(texts, { ...answers, 'User Content / Audio Data': 'Yes' })).not.toContain(`${id}: ${AUDIO}`);
+    });
+  }
 
-  it('[FR-MKT-16] [mutant] a text that says letters never leave the phone is refused while letter text is collected', () => {
-    const planted = [{ id: 'screenshot 6 subline', text: 'Your letters never leave your phone.' }];
-    expect(contradictions(planted, answers)).toEqual(['screenshot 6 subline: Other User Content is collected: letter text syncs to our servers']);
+  const photoMutants: Array<[string, string]> = [
+    [SITE, 'Your photos sync to your new phone.'],
+    ['/support', 'Pictures are saved to your account.'],
+    ['/support', 'We upload your videos so they reach another phone.'],
+  ];
+  for (const [id, planted] of photoMutants) {
+    it(`[FR-MKT-16] [mutant] ${id} saying "${planted}" is refused while Photos or Videos is not collected`, () => {
+      const texts = withPlanted(id, planted);
+      expect(contradictions(texts, answers)).toContain(`${id}: ${PHOTOS}`);
+      expect(contradictions(texts, { ...answers, 'User Content / Photos or Videos': 'Yes' })).not.toContain(`${id}: ${PHOTOS}`);
+    });
+  }
+
+  it('[FR-MKT-16] [mutant] a text that says letters or the book never leave the phone is refused while letter text is collected', () => {
+    expect(contradictions([{ id: 'screenshot 6 subline', text: 'Your letters never leave your phone.' }], answers)).toEqual(['screenshot 6 subline: Other User Content is collected: letter text syncs to our servers']);
+    expect(contradictions([{ id: 'screenshot 6 subline', text: 'Your book stays on your phone.' }], answers)).toEqual(['screenshot 6 subline: Other User Content is collected: letter text syncs to our servers']);
   });
 });
