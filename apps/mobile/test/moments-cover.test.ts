@@ -13,8 +13,8 @@
  * - PC-T6: the drawn cover holds no text and one spoken label, the app name, in the light and dark themes, each with
  *   and without Increase Contrast.
  * - PC-T8: the rule's source is printable ASCII and, read with the TypeScript scanner, holds only a closed list of
- *   word, string and punctuation tokens with one `(` (its own parameter list), so no call can be added without this
- *   test changing.
+ *   word, string and punctuation tokens with one `(` (its own parameter list), and its whole token sequence is frozen,
+ *   so no statement or call can be added without this test changing.
  *
  * Not proved here: the pixels iOS captures for the switcher, and whether the cover hides Apple's picker view; those
  * are the device rows D-15 (the tab body, gap G-12 in docs/security/MEDIA_THREAT_MODEL.md), D-20 and DM-09 (the
@@ -308,7 +308,9 @@ describe('[NS-53-G01] PC-T8 and the boundary with App lock', () => {
     const words: string[] = [];
     const strings: string[] = [];
     const other: string[] = [];
+    const all: string[] = [];
     for (let k = scanner.scan(); k !== ts.SyntaxKind.EndOfFileToken; k = scanner.scan()) {
+      all.push(scanner.getTokenText());
       if (k === ts.SyntaxKind.Identifier || (k >= ts.SyntaxKind.FirstKeyword && k <= ts.SyntaxKind.LastKeyword)) {
         words.push(scanner.getTokenText());
       } else if (k === ts.SyntaxKind.StringLiteral) {
@@ -336,6 +338,20 @@ describe('[NS-53-G01] PC-T8 and the boundary with App lock', () => {
     expect(other.filter((t) => t === '(')).toHaveLength(1);
     expect([...new Set(other)].sort()).toEqual(
       ['!', '!==', '&&', '(', ')', ',', ':', ';', '=', '===', '[', ']', '{', '|', '}'].sort(),
+    );
+    // The whole token sequence is frozen too, so no statement can be added, moved or changed even with tokens already
+    // on the lists (for example a bracket write such as `shouldCoverMoments['moments'] = route;`, which the lists
+    // alone let through). Comments are not tokens, so the doc comments can still change freely.
+    expect(all.join(' ')).toBe(
+      [
+        "import type { AppPhase } from '../app-lock/machine' ;",
+        "export type MomentsRouteClass = 'moments' | 'other' | 'none' ;",
+        "export const MOMENTS_ROUTE_CLASSES : readonly MomentsRouteClass [ ] = [ 'moments' , 'other' , 'none' ] ;",
+        "export const APP_PHASES : readonly AppPhase [ ] = [ 'active' , 'inactive' , 'background' ] ;",
+        'export function shouldCoverMoments ( route : MomentsRouteClass , appState : AppPhase ,',
+        'lockEnabled : boolean ) : boolean {',
+        "return route === 'moments' && appState !== 'active' && ! lockEnabled ; }",
+      ].join(' '),
     );
     expect(src).toMatch(/\bfunction shouldCoverMoments\(/);
   });
