@@ -1,9 +1,7 @@
-# Book tab, then the gear: Settings home (C-REQ-016: every row within 2 taps of here).
+# The Me tab: Settings home (C-REQ-016: every row within 2 taps of here). The Book has no gear since BL-938 (NS-22-R6).
 appId: ${APP_ID}
 ---
 - tapOn:
-    id: "tab.book"
-- tapOn:
-    id: "book.settings"
+    id: "tab.you"
 - assertVisible:
     id: "settings.screen"

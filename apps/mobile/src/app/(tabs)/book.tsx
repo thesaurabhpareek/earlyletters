@@ -3,9 +3,10 @@
  * S26, S36; 5.8 rows 5 and 7; proposals/book-page.md, the Book page redesign).
  * Benchmarks (docs/design/BENCHMARK.md, "Screens"; book-page.md 2): Day One and Apple Journal (the entry is the
  * object), Airbnb (card restraint), Calm and Headspace (one warm focal point).
- * - The cover band is the one lit object: "Asha's book", the age in words, Read together full width, the gear on the
- *   title row (CoverBand). It scrolls under a material bar that fades in with the inline title, the Months button,
- *   the gear and the compact month at the top of the list (the sticky header). Reduce Motion: the bar switches, no
+ * - The cover band is the one lit object: "Asha's book", the age in words, Read together full width, and on the
+ *   title row Go to a month and More for this book (CoverBand; NS-22 fixed order, BL-938; no gear, Settings is Me).
+ *   It scrolls under a material bar that fades in with the inline title, the Months button, More for this book and
+ *   the compact month at the top of the list (the sticky header). Reduce Motion: the bar switches, no
  *   fade. Reduce Transparency and Increase Contrast: the bar is solid (BlurSurface).
  * - Months are chapters: a typographic heading, "This month" on the current one only (MonthOpener). No explainer
  *   box, no counts of gaps; the count line lives in the Months sheet, which lists only months with letters.
@@ -18,7 +19,7 @@
  * puts it back with the wash (S36). Lamp: the still `book` scene, sharing the tabs' light.
  */
 import { Redirect, router, useFocusEffect, useLocalSearchParams, useNavigation } from 'expo-router';
-import { GearSixIcon } from 'phosphor-react-native/src/icons/GearSix';
+import { DotsThreeIcon } from 'phosphor-react-native/src/icons/DotsThree';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { SectionList, View } from 'react-native';
 import Animated, {
@@ -77,6 +78,8 @@ import { photosPausedNow } from '@/lib/photos/pause';
 import { usePhotosLens } from '@/lib/photos/hooks';
 import { EndOfBook } from '@/components/book/end-of-book';
 import { MonthsSheet } from '@/components/book/months-sheet';
+import { BookMenu } from '@/components/book/book-menu';
+import { bookMenuHint } from '@/components/book/book-menu.logic';
 import { monthsHintFor, readTheYearOn, yearRows } from '@/components/book/read-year.logic';
 import { monthStarts } from '@/components/book/read-from-here.logic';
 import { QuietDayRow } from '@/components/book/quiet-day-row';
@@ -123,6 +126,9 @@ export default function Book() {
   // The Months sheet, the chapter at the top of the list (the bar's compact month), whether the bar is up (its
   // buttons take touches and VoiceOver only then), and the list's cross-fade for a jump to a month.
   const [monthsOpen, setMonthsOpen] = useState(false);
+  // More for this book (NS-22-R3): Quiet and Hide, within 2 taps of the Book.
+  const [menuOpen, setMenuOpen] = useState(false);
+  const closeMenu = useCallback(() => setMenuOpen(false), []);
   const [topKey, setTopKey] = useState<string | null>(null);
   const [barUp, setBarUp] = useState(false);
   const listFade = useSharedValue(1);
@@ -446,7 +452,8 @@ export default function Book() {
           },
         }
       : null;
-  const openSettings = () => router.push('/settings');
+  // The end control (NS-22-R3): the gear has left the Book; Settings is Me (R6).
+  const more = { label: copy.book.menu.label, hint: bookMenuHint(children.length), onPress: () => setMenuOpen(true) };
   const header = (
     <Settle run={firstView && !params.arrived} reduced={reduced}>
       <View className="px-5 pb-2" style={{ paddingTop: insets.top + 4 }}>
@@ -457,12 +464,21 @@ export default function Book() {
           age={coverAge(active, today)}
           switcher={children.length > 1 ? <ChildSwitcher /> : null}
           readTogether={canRead ? { label: copy.readTogether.title, hint: fill(copy.readTogether.subtitle, { child }), onPress: () => router.push({ pathname: '/read-together', params: { childId: active.id } }) } : null}
+          lens={
+            // The lens switch (design spec 01 section 5.1): under the cover band and above the chapters, Months and Photos,
+            // shown only while a kept, open letter has a picture (NS-01-R10). Before Go to a month in the tree (NS-22).
+            lensOn ? (
+              <View className="pt-2">
+                <LensRow mode={lensMode} onChange={setLensMode} />
+              </View>
+            ) : null
+          }
           months={chapters.length > 0 ? months : null}
-          settings={{ label: copy.settings.title, onPress: openSettings }}
+          more={more}
         />
         {/* The arrival line (NX-36-S17 2.3): plain text above the first chapter, callout, muted, 12 pt below; not a card,
-            no icon, no button, no dismiss, no line limit. VoiceOver reaches it after the cover band above (the title, Read
-            together, Months, Settings) and before the list. */}
+            no icon, no button, no dismiss, no line limit. VoiceOver reaches it after the header above (the title, Read
+            together, the lens choice, Go to a month, More for this book) and before the list. */}
         {arrivalLine ? (
           <Text variant="callout" tone="muted" style={{ marginBottom: tokens.space[3] }} testID="book.arrivalLine">
             {authCopy.newPhone.arrivedPlain}
@@ -476,20 +492,13 @@ export default function Book() {
             <Button label={authCopy.newPhone.recordingsElsewhereDismiss} variant="quiet" size="sm" onPress={dismissBackupLine} />
           </View>
         ) : null}
-        {/* The lens switch (design spec 01 section 5.1): under the cover band and above the chapters, Months and Photos,
-            shown only while a kept, open letter has a picture (NS-01-R10). */}
-        {lensOn ? (
-          <View className="pt-2">
-            <LensRow mode={lensMode} onChange={setLensMode} />
-          </View>
-        ) : null}
         {/* P8c (S62): <RestoreLine /> from components/backup/restore-line.tsx sits here, above the first opener, while
             recordings come back to a new phone. It lands with P8c's file. */}
       </View>
     </Settle>
   );
 
-  // The inline bar after scroll (book-page.md 2): the title, Months and the gear, then the compact month at the top of
+  // The inline bar after scroll (book-page.md 2): the title, Go to a month and More for this book, then the compact month at the top of
   // the list, which wraps and never truncates. It cross-fades in with the scroll; while it is out, nothing in it takes a
   // touch or is read (the band is in view with the same buttons).
   const compact = compactMonth(sections, topKey ?? sections[0]?.key ?? null); // the list on screen, so the bar's month is one of its sections (N4)
@@ -508,7 +517,7 @@ export default function Book() {
             {title}
           </Text>
           {months ? <Button variant="quiet" size="sm" label={months.label} accessibilityHint={months.hint} onPress={months.onPress} testID="book.bar.months" /> : null}
-          <IconButton icon={GearSixIcon} label={copy.settings.title} onPress={openSettings} className="-mr-2" testID="book.bar.settings" />
+          <IconButton icon={DotsThreeIcon} label={more.label} accessibilityHint={more.hint} onPress={more.onPress} className="-mr-2" testID="book.bar.more" />
         </View>
         {compact ? (
           <View accessible accessibilityRole="header" accessibilityLabel={compact.a11yLabel} className="flex-row flex-wrap items-baseline gap-x-3" testID="book.bar.month">
@@ -595,6 +604,8 @@ export default function Book() {
           </>
         )}
       </Animated.View>
+      {/* Empty or not: Quiet and Hide apply to a book with no letters too (B-S01.empty). */}
+      <BookMenu open={menuOpen} child={active} books={children.length} onClose={closeMenu} />
     </View>
   );
 }

@@ -584,6 +584,12 @@ export const en = {
       noName: "Year {n}",
       rowA11y: "Opens Read together at the first letter of this year.",
     },
+    // PROPOSED (BL-938, NS-22-R3; B-S01, B-S02): the Book header's end control and its sheet title. The hint is given
+    // only when the menu holds Hide (two or more books); with one book the menu holds Quiet only.
+    menu: {
+      label: "More for this book",
+      labelA11y: "Quiet or hide this book.",
+    },
     // v1.0 makes no notes (S26).
     chapterSubtitleOne: "1 letter",
     chapterLetters: "{count} letters",
@@ -1220,7 +1226,7 @@ export const en = {
       offLabel: "Turn Quiet off",
       quietedToast: "{child}'s book is quiet for you.",
       offToast: "Quiet is off for {child}'s book.",
-      saveFailed: "That did not save. {child}'s book is as it was.",
+      saveFailed: "That did not save, so {child}'s book is as it was.",
     },
     sharing: {
       pickerTitle: "Which books?",

@@ -1414,7 +1414,7 @@ features/export.en.ts#exportCopy.readme.63,app screen,in-app,packages/content/sr
 features/export.en.ts#exportCopy.readme.64,app screen,in-app,packages/content/src/features/export.en.ts,en,and keep a second copy somewhere else.,38,,,,,,content,live on develop,content
 features/export.en.ts#exportCopy.readme.66,app screen,in-app,packages/content/src/features/export.en.ts,en,"Format {format}, version {version}. Questions: {email}",54,,,,,,content,live on develop,content
 features/export.en.ts#exportCopy.readmePhotos.3,app screen,in-app,packages/content/src/features/export.en.ts,en,"photos/     The pictures you added to letters, one folder per letter (JPEG).",76,,,,,,content,live on develop,content
-features/export.en.ts#exportCopy.readmePhotos.4,app screen,in-app,packages/content/src/features/export.en.ts,en,"            Each is the copy kept in the app, with no location or other details in it.",86,,,,,,content,live on develop,content
+features/export.en.ts#exportCopy.readmePhotos.4,app screen,in-app,packages/content/src/features/export.en.ts,en,"            Each is the copy kept in the app, with no location, date or camera details in it.",93,,,,,,content,live on develop,content
 features/export.en.ts#exportCopy.readmePhotos.5,app screen,in-app,packages/content/src/features/export.en.ts,en,            data/entries.json says which letter each picture belongs to.,72,,,,,,content,live on develop,content
 features/family.en.ts#familyCopy.members.you,app screen,in-app,packages/content/src/features/family.en.ts,en,You,3,,,,,,content,live on develop,content
 features/family.en.ts#familyCopy.members.coParent,app screen,in-app,packages/content/src/features/family.en.ts,en,Co-parent,9,,,,,,content,live on develop,content
@@ -2580,6 +2580,8 @@ strings.en.ts#en.book.years.y5,app screen,in-app,packages/content/src/strings.en
 strings.en.ts#en.book.years.yN,app screen,in-app,packages/content/src/strings.en.ts,en,{child}'s year {n},18,,,,,,content,live on develop,content
 strings.en.ts#en.book.years.noName,app screen,in-app,packages/content/src/strings.en.ts,en,Year {n},8,,,,,,content,live on develop,content
 strings.en.ts#en.book.years.rowA11y,app screen,in-app,packages/content/src/strings.en.ts,en,Opens Read together at the first letter of this year.,53,,,,,,content,live on develop,content
+strings.en.ts#en.book.menu.label,app screen,in-app,packages/content/src/strings.en.ts,en,More for this book,18,,,,,,content,live on develop,content
+strings.en.ts#en.book.menu.labelA11y,app screen,in-app,packages/content/src/strings.en.ts,en,Quiet or hide this book.,24,,,,,,content,live on develop,content
 strings.en.ts#en.book.chapterSubtitleOne,app screen,in-app,packages/content/src/strings.en.ts,en,1 letter,8,,,,,,content,live on develop,content
 strings.en.ts#en.book.chapterLetters,app screen,in-app,packages/content/src/strings.en.ts,en,{count} letters,15,,,,,,content,live on develop,content
 strings.en.ts#en.book.chapterNotes,app screen,in-app,packages/content/src/strings.en.ts,en,{count} notes,13,,,,,,content,live on develop,content
@@ -2964,7 +2966,7 @@ strings.en.ts#en.children.quiet.help,app screen,in-app,packages/content/src/stri
 strings.en.ts#en.children.quiet.offLabel,app screen,in-app,packages/content/src/strings.en.ts,en,Turn Quiet off,14,,,,,,content,live on develop,content
 strings.en.ts#en.children.quiet.quietedToast,app screen,in-app,packages/content/src/strings.en.ts,en,{child}'s book is quiet for you.,32,,,,,,content,live on develop,content
 strings.en.ts#en.children.quiet.offToast,app screen,in-app,packages/content/src/strings.en.ts,en,Quiet is off for {child}'s book.,32,,,,,,content,live on develop,content
-strings.en.ts#en.children.quiet.saveFailed,app screen,in-app,packages/content/src/strings.en.ts,en,That did not save. {child}'s book is as it was.,47,,,,,,content,live on develop,content
+strings.en.ts#en.children.quiet.saveFailed,app screen,in-app,packages/content/src/strings.en.ts,en,"That did not save, so {child}'s book is as it was.",50,,,,,,content,live on develop,content
 strings.en.ts#en.children.sharing.pickerTitle,app screen,in-app,packages/content/src/strings.en.ts,en,Which books?,12,,,,,,content,live on develop,content
 strings.en.ts#en.children.sharing.oneBookNote,app screen,in-app,packages/content/src/strings.en.ts,en,This invite is for {child}'s book only.,39,,,,,,content,live on develop,content
 strings.en.ts#en.children.sharing.separateNote,app screen,in-app,packages/content/src/strings.en.ts,en,Each child's book has its own family list. Inviting someone to one book doesn't open the others.,96,,,,,,content,live on develop,content
