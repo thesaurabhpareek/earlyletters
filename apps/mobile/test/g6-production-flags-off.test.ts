@@ -15,31 +15,16 @@ import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { STORE_FLAGS, resolveProfile, storeProfiles } from '../../../scripts/release/store-flags.mjs';
+import { G6_CARD_FLAGS, STORE_FLAGS, resolveProfile, storeProfiles } from '../../../scripts/release/store-flags.mjs';
 
 const APP = join(__dirname, '..');
 
 /**
- * Every EXPO_PUBLIC_* card flag of the new scope that may never be on in a store profile before gate G6. PHOTOS and
- * BOOK_SEARCH (and ANALYTICS, BL-1886) come from STORE_FLAGS (scripts/release/store-flags.mjs, BL-958), so this list cannot drift from it; the
- * rest have no code behind them yet and are named by the cards and errata: E38 (PHOTO_MOMENTS, VIDEO, and MEDIA_SYNC for
- * variant B only), card 21 (DAYS, DAYS_ASK, SUGGESTIONS). EXPO_PUBLIC_MEDIA_ATTACH is retired (plan 17b, E38) and is
- * not pinned. Not here, on purpose: EXPO_PUBLIC_SERVER_FEATURES, BACKUP, STATUS_REPORT, ACCOUNT_DELETION
- * (alpha and server switches with their own pins in capabilities.test.ts and preflight-production.test.ts).
+ * Every EXPO_PUBLIC_* card flag of the new scope that may never be on in a store profile before gate G6. The list lives
+ * in scripts/release/store-flags.mjs (G6_CARD_FLAGS, BL-2273) so the store preflights name the same flags; the names
+ * are pinned below, so a flag cannot leave it unseen.
  */
-const CARD_FLAGS = [
-  ...STORE_FLAGS.map((f: { env: string }) => f.env),
-  'EXPO_PUBLIC_DAYS', // NS-46, card 21
-  'EXPO_PUBLIC_TYPED_DAYS', // NS-18, card 09 section 10 (BL-982)
-  'EXPO_PUBLIC_DAYS_ASK', // card 21 flags line (E57 says no new flag; absent or off either way)
-  'EXPO_PUBLIC_SUGGESTIONS', // NS-49, card 21
-  'EXPO_PUBLIC_PHOTO_MOMENTS', // NS-51, card 27 (E38)
-  'EXPO_PUBLIC_VIDEO', // NS-52, card 27 (E38)
-  'EXPO_PUBLIC_MEDIA_SYNC', // variant B only (E38, handoff 24)
-  'EXPO_PUBLIC_READ_THE_YEAR', // NS-24, BL-947 (the year rows in Go to a month)
-  'EXPO_PUBLIC_MOMENTS_TAB', // NS-53, card 28, F1 (the shell is dark until the founder turns it on in a profile)
-  'EXPO_PUBLIC_SIGN_AS_OTHER', // NS-16, BL-980: a child-input flag (PRIV-R20); counsel Q45, Q46, Q48, Q54 gate it (CPrivO-24)
-] as string[];
+const CARD_FLAGS = [...G6_CARD_FLAGS] as string[];
 
 type Eas = { build?: Record<string, { env?: Record<string, unknown>; distribution?: string; ios?: { simulator?: boolean }; extends?: string }> };
 
@@ -143,6 +128,24 @@ describe('G6: store builds ship with the new-scope flags off', () => {
     expect(flagsOn(eas)).toEqual([]);
     // every store profile, not only production (preview and testflight go to real phones too)
     expect(storeProfiles(eas)).toContain('production');
+  });
+
+  it('[NS-49-R25, BL-2273] G6 the card flag list is STORE_FLAGS then the ten named flags, read from store-flags.mjs', () => {
+    const fromTable = STORE_FLAGS.map((f: { env: string }) => f.env);
+    expect(CARD_FLAGS.slice(0, fromTable.length)).toEqual(fromTable);
+    expect(CARD_FLAGS.slice(fromTable.length)).toEqual([
+      'EXPO_PUBLIC_DAYS',
+      'EXPO_PUBLIC_TYPED_DAYS',
+      'EXPO_PUBLIC_DAYS_ASK',
+      'EXPO_PUBLIC_SUGGESTIONS',
+      'EXPO_PUBLIC_PHOTO_MOMENTS',
+      'EXPO_PUBLIC_VIDEO',
+      'EXPO_PUBLIC_MEDIA_SYNC',
+      'EXPO_PUBLIC_READ_THE_YEAR',
+      'EXPO_PUBLIC_MOMENTS_TAB',
+      'EXPO_PUBLIC_SIGN_AS_OTHER',
+    ]);
+    expect(Object.isFrozen(G6_CARD_FLAGS)).toBe(true);
   });
 
   it('[NS-49-R25] G6 no photo-library usage string, PhotoKit call, background mode or journaling entitlement is configured', () => {

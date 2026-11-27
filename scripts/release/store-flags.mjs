@@ -9,6 +9,14 @@
  * Read by apps/mobile/scripts/preflight-testflight.mjs (every alpha build checks every store profile, production
  * included) and by apps/mobile/test/store-flags.test.ts, which runs in `npm test`: in CI on every pull request, and in
  * the `checks` job of release-ios.yml that every ios-v*-rc tag passes before its production build starts.
+ *
+ * eas.json alone is not proof of what a store build ships (BL-2273). A value in the EAS environment on expo.dev that a
+ * profile's `environment` names, or a variable in the shell of a `--local` build, also reaches the build, and neither
+ * this table nor gate G6 (apps/mobile/test/g6-production-flags-off.test.ts) can see it. So both store preflights
+ * (preflight-testflight.mjs and preflight-production.mjs) print an UNVERIFIED line that names every flag in
+ * G6_CARD_FLAGS below, and the production preflight FAILs on one set in its own shell. Reading the hosted environment
+ * (`eas env:list`) needs an Expo sign-in, so it stays a check by hand and is not done here. Which value wins when
+ * eas.json `env` and the EAS environment both set a name was not checked.
  */
 
 /**
@@ -81,3 +89,26 @@ export function storeFlagProblems(eas, flags = STORE_FLAGS) {
 export function storeFlagMessage({ profile, env, value, card }) {
   return `eas.json store profile "${profile}" sets ${env}=${JSON.stringify(value)}. The ${card} flag stays off in every store profile until the card's Rollout turns it on in preview and testflight (an eas.json PR that also adds those profiles to STORE_FLAGS in scripts/release/store-flags.mjs), and in production only after gate G6 (BL-958).`;
 }
+
+/**
+ * Every EXPO_PUBLIC_* card and phase flag of the new scope that may never be on in a store profile before gate G6.
+ * Gate G6 (apps/mobile/test/g6-production-flags-off.test.ts) and both store preflights read this one list, so they name
+ * the same flags (BL-2273). The STORE_FLAGS rows come first, so a row added there joins every reader. The rest have no
+ * code behind them yet and are named by the cards and errata: E38 (PHOTO_MOMENTS, VIDEO, and MEDIA_SYNC for variant B
+ * only), card 21 (DAYS, DAYS_ASK, SUGGESTIONS). EXPO_PUBLIC_MEDIA_ATTACH is retired (plan 17b, E38) and is not pinned.
+ * Not here, on purpose: EXPO_PUBLIC_SERVER_FEATURES, BACKUP, STATUS_REPORT, ACCOUNT_DELETION (alpha and server
+ * switches with their own pins in capabilities.test.ts and preflight-production.test.ts).
+ */
+export const G6_CARD_FLAGS = Object.freeze([
+  ...STORE_FLAGS.map((f) => f.env),
+  'EXPO_PUBLIC_DAYS', // NS-46, card 21
+  'EXPO_PUBLIC_TYPED_DAYS', // NS-18, card 09 section 10 (BL-982)
+  'EXPO_PUBLIC_DAYS_ASK', // card 21 flags line (E57 says no new flag; absent or off either way)
+  'EXPO_PUBLIC_SUGGESTIONS', // NS-49, card 21
+  'EXPO_PUBLIC_PHOTO_MOMENTS', // NS-51, card 27 (E38)
+  'EXPO_PUBLIC_VIDEO', // NS-52, card 27 (E38)
+  'EXPO_PUBLIC_MEDIA_SYNC', // variant B only (E38, handoff 24)
+  'EXPO_PUBLIC_READ_THE_YEAR', // NS-24, BL-947 (the year rows in Go to a month)
+  'EXPO_PUBLIC_MOMENTS_TAB', // NS-53, card 28, F1 (the shell is dark until the founder turns it on in a profile)
+  'EXPO_PUBLIC_SIGN_AS_OTHER', // NS-16, BL-980: a child-input flag (PRIV-R20); counsel Q45, Q46, Q48, Q54 gate it (CPrivO-24)
+]);
