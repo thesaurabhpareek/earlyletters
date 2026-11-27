@@ -807,7 +807,8 @@ export function formatTable(allRows) {
   const blockedNotes = rows.filter((r) => Object.keys(r.reviews.blocked).length).map((r) => `note: #${r.number} review not met, newest at head: ${Object.entries(r.reviews.blocked).map(([l, w]) => `${l}=${clean(w)}`).join(", ")}`);
   const held = rows.filter((r) => r.reviews.untrusted.length).map((r) => `note: #${r.number} held back, Review ${r.reviews.untrusted.join("/")} PASS at head came from a commenter who is not OWNER, MEMBER or COLLABORATOR (ignored)`);
   const lensNotes = rows.filter((r) => r.reason).map((r) => (r.reason === "base compare failed" ? `note: #${r.number} base compare failed: could not read how far the base moved, so a stale base cannot be ruled out` : r.reason === "file list incomplete" ? `note: #${r.number} file list incomplete (CR-73): the files read do not match the PR's changed_files, so the security lens cannot be checked` : `note: #${r.number} security lens missing (CR-73): touches ${r.securityHits.join(", ")}; no counted review names the security or security-architect lens`));
-  const baseNotes = rows.filter((r) => r.staleBase?.behindBy > 0).map((r) => (r.staleBase.shared.length
+  // A row CR-149 relaxed gets only its CR-149 note below, not the "update the branch" one, which would contradict it.
+  const baseNotes = rows.filter((r) => r.staleBase?.behindBy > 0 && r.cr149?.ok !== true).map((r) => (r.staleBase.shared.length
     ? `note: #${r.number} base is behind ${r.base} by ${r.staleBase.behindBy} commits that touch ${r.staleBase.shared.map(clean).join(", ")}: update the branch, wait for required, and get fresh reviews (a new commit voids both)`
     : `note: #${r.number} base is behind ${r.base} by ${r.staleBase.behindBy} commits, none in a workspace this PR touches; still ready`));
   const cr149Notes = rows.filter((r) => r.cr149).map((r) => (r.cr149.ok

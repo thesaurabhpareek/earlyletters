@@ -1196,6 +1196,9 @@ test("CR-149: formatTable prints the relaxed note and the failed note, and clean
   const out = formatTable([ok, { ...bad, number: 8 }]);
   assert.match(out, /note: #7 CR-149 \(flag on\): base behind by 3 in docs\/ops, but no file overlap, merge-tree clean against develop 1{40}, checks green and two reviews at head, no protected path; class docs/);
   assert.match(out, /note: #8 CR-149 \(flag on\) kept the strict rule: rule 1: file overlap docs\/ops\/notes\.md/);
+  // A relaxed row does not also get the "update the branch" note; a row that kept the strict rule still does.
+  assert.doesNotMatch(out, /note: #7 base is behind develop by 3 commits that touch/);
+  assert.match(out, /note: #8 base is behind develop by 3 commits that touch docs\/ops: update the branch/);
   const dirty = { ...bad, number: 8, cr149: { ...bad.cr149, failed: "rule 1: file overlap \u001b[31mdocs/x.md\u0007" } };
   assert.doesNotMatch(formatTable([dirty]), /[\u001b\u0007]/);
   assert.match(formatTable([dirty]), /kept the strict rule: rule 1: file overlap docs\/x\.md$/m);
