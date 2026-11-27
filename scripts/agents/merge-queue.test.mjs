@@ -1,9 +1,11 @@
 // Tests for merge-queue.mjs. A fake API is injected: no network, no gh, no real repo state.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, mkdtempSync, writeFileSync, symlinkSync, rmSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { execFileSync } from "node:child_process";
-import { STALE_UNKNOWN_MINUTES, securityLensHits, touchesSecurityLens, namedLenses, SECURITY_LENS_NAMES, SECURITY_LENS_CLASSES, buildQueue, workspaceOf, staleBase, parseReview, parseClaims, parseArgs, formatTable, suiteState, passOverRedSuite, hotFileHits, hotFileGroups, reviewState, touchesNative, clean, TRUSTED_ASSOCIATIONS, filesSince, UNREADABLE, parseCodeowners, protectedPathHits, touchesProtectedPath, classifyPr, CR149_FLAG, cr149FlagOn, evaluateCr149, gitMergeTree, cr149Verdict, verdictFor } from "./merge-queue.mjs";
+import { STALE_UNKNOWN_MINUTES, securityLensHits, touchesSecurityLens, namedLenses, SECURITY_LENS_NAMES, SECURITY_LENS_CLASSES, buildQueue, workspaceOf, staleBase, parseReview, parseClaims, parseArgs, formatTable, suiteState, passOverRedSuite, hotFileHits, hotFileGroups, reviewState, touchesNative, clean, TRUSTED_ASSOCIATIONS, filesSince, UNREADABLE, parseCodeowners, protectedPathHits, touchesProtectedPath, classifyPr, CR149_FLAG, cr149FlagOn, evaluateCr149, gitMergeTree, gitModeCheck, readRawModes, SPECIAL_MODES, cr149Verdict, verdictFor } from "./merge-queue.mjs";
 
 const OLD = "c5cfa0cfaa96a0ba97ca5f34629747ab0badf438";
 const HEAD = "a83634ced2a5ecf32717bf833f941b892fc660b9";
@@ -1259,7 +1261,8 @@ test("CR-149: formatTable prints the relaxed note and the failed note, and clean
 
 test("CR-149 rule 2 default (gitMergeTree): refuses an argument that is not 40 hex without running git, reads only the exit code", async () => {
   const ran = [];
-  const run = (cmd, args, opts, cb) => { ran.push({ cmd, args, opts }); cb(null, `${DEV3}\n`, "noise"); };
+  // merge-tree prints the tree id; the mode check that follows (diff-tree) prints nothing, an empty diff.
+  const run = (cmd, args, opts, cb) => { ran.push({ cmd, args, opts }); cb(null, args[0] === "merge-tree" ? `${DEV3}\n` : "", "noise"); };
   for (const [a, b] of [["abc", HEAD], [HEAD, "--output=/tmp/x"], [HEAD.toUpperCase(), HEAD], [HEAD, `${HEAD} --foo`], [undefined, HEAD], [HEAD, null]]) {
     assert.equal(await gitMergeTree(a, b, { run }), "error", `${a} ${b}`);
   }
@@ -1268,7 +1271,9 @@ test("CR-149 rule 2 default (gitMergeTree): refuses an argument that is not 40 h
   assert.deepEqual([ran[0].cmd, ran[0].args], ["git", ["merge-tree", "--write-tree", "--no-messages", DEV1, HEAD]]);
   assert.equal(ran[0].opts.timeout, 60000);
   assert.ok(ran[0].opts.maxBuffer > 0 && !ran[0].opts.shell);
-  const exit = (err, stdout = `${DEV3}\nconflict info\n`) => (cmd, args, opts, cb) => cb(err, stdout, "");
+  assert.deepEqual([ran[1].cmd, ran[1].args], ["git", ["diff-tree", "-r", "-z", "--raw", "--no-renames", "--ignore-submodules=none", DEV1, DEV3]], "FU-17a: the mode check runs on the tree merge-tree wrote");
+  assert.ok(ran[1].opts.timeout > 0 && !ran[1].opts.shell);
+  const exit = (err, stdout = `${DEV3}\nconflict info\n`) => (cmd, args, opts, cb) => cb(err, args[0] === "merge-tree" ? stdout : "", "");
   assert.equal(await gitMergeTree(DEV1, HEAD, { run: exit(Object.assign(new Error("x"), { code: 1 })) }), "conflict");
   // git 2.43 exits 1 for a commit it cannot find too, with no tree id on stdout: that is "could not run", not a conflict.
   assert.equal(await gitMergeTree(DEV1, HEAD, { run: exit(Object.assign(new Error("x"), { code: 1 }), "") }), "error");
@@ -1285,4 +1290,91 @@ test("CR-149 rule 2 default (gitMergeTree): real git on this checkout's own HEAD
   assert.match(self, /^[0-9a-f]{40}$/);
   assert.equal(await gitMergeTree(self, self), "clean");
   assert.equal(await gitMergeTree("0".repeat(40), self), "error");
+});
+
+// FU-17a: CR-70's mode check. The files API shows no file mode, so a symlink or a submodule is found on the merge itself.
+const RAW = (src, dst, status, path) => `:${src} ${dst} ${"a".repeat(40)} ${"b".repeat(40)} ${status}\0${path}\0`;
+
+test("FU-17a: readRawModes finds mode 120000 or 160000 on either side of any entry, and fails closed on output it cannot read", () => {
+  assert.deepEqual([...SPECIAL_MODES].sort(), ["120000", "160000"]);
+  assert.equal(readRawModes(""), "ok", "an empty diff has nothing to refuse");
+  assert.equal(readRawModes(RAW("000000", "100644", "A", "docs/a.md") + RAW("100644", "100755", "M", "scripts/x.sh")), "ok");
+  for (const [src, dst, status] of [["000000", "120000", "A"], ["120000", "000000", "D"], ["100644", "120000", "T"], ["120000", "100644", "T"], ["000000", "160000", "A"], ["160000", "000000", "D"], ["160000", "160000", "M"], ["120000", "120000", "M"]]) {
+    assert.equal(readRawModes(RAW("100644", "100644", "M", "docs/a.md") + RAW(src, dst, status, "link")), "special", `${src} ${dst} ${status}`);
+  }
+  // A rename read with --no-renames is a delete and an add: a symlink on the old path still counts.
+  assert.equal(readRawModes(RAW("120000", "000000", "D", "old") + RAW("000000", "100644", "A", "new")), "special");
+  for (const bad of [
+    "junk\0path\0",
+    `:100644 100644 ${"a".repeat(40)} ${"b".repeat(40)} M\0\0`, // header with an empty path
+    `:100644 100644 ${"a".repeat(40)} ${"b".repeat(40)} M\0`, // header and no path
+    `:100644 100644 ${"a".repeat(40)} ${"b".repeat(40)} R100\0old\0new\0`, // a rename record: --no-renames never prints one
+    `:10064 100644 ${"a".repeat(40)} ${"b".repeat(40)} M\0a\0`,
+    `:100644 100644 ${"a".repeat(39)} ${"b".repeat(40)} M\0a\0`,
+    "docs/a.md\0",
+    undefined,
+    null,
+  ]) {
+    assert.equal(readRawModes(bad), "error", JSON.stringify(bad));
+  }
+});
+
+test("FU-17a: gitModeCheck runs diff-tree on 40-hex arguments only, through execFile with no shell, and any failure is error", async () => {
+  const ran = [];
+  const out = (err, stdout) => (cmd, args, opts, cb) => { ran.push({ cmd, args, opts }); cb(err, stdout, "noise"); };
+  for (const [a, b] of [["abc", DEV3], [DEV1, "--output=/tmp/x"], ["A".repeat(40), DEV3], [undefined, DEV3], [DEV1, null]]) {
+    assert.equal(await gitModeCheck(a, b, { run: out(null, "") }), "error", `${a} ${b}`);
+  }
+  assert.equal(ran.length, 0, "git never runs on a bad argument");
+  assert.equal(await gitModeCheck(DEV1, DEV3, { run: out(null, "") }), "ok");
+  assert.deepEqual([ran[0].cmd, ran[0].args], ["git", ["diff-tree", "-r", "-z", "--raw", "--no-renames", "--ignore-submodules=none", DEV1, DEV3]]);
+  assert.ok(!ran[0].opts.shell && ran[0].opts.maxBuffer > 0 && ran[0].opts.timeout > 0);
+  assert.equal(await gitModeCheck(DEV1, DEV3, { run: out(null, RAW("000000", "120000", "A", "l")) }), "special");
+  assert.equal(await gitModeCheck(DEV1, DEV3, { run: out(Object.assign(new Error("x"), { code: 128 }), "") }), "error");
+  assert.equal(await gitModeCheck(DEV1, DEV3, { run: out(null, "garbage") }), "error");
+  assert.equal(await gitModeCheck(DEV1, DEV3, { run: () => { throw new Error("spawn"); } }), "error");
+  // Wired into gitMergeTree: a clean merge whose tree has a symlink is "special", and a mode check that fails is "error".
+  const both = (diff) => (cmd, args, opts, cb) => cb(diff instanceof Error && args[0] === "diff-tree" ? diff : null, args[0] === "merge-tree" ? `${DEV3}\n` : diff instanceof Error ? "" : diff, "");
+  assert.equal(await gitMergeTree(DEV1, HEAD, { run: both(RAW("000000", "160000", "A", "vendor/x")) }), "special");
+  assert.equal(await gitMergeTree(DEV1, HEAD, { run: both(Object.assign(new Error("x"), { code: 128 })) }), "error");
+  assert.equal(await gitMergeTree(DEV1, HEAD, { run: both("not raw") }), "error");
+});
+
+test("FU-17a: real git, a scratch repo: a merge that adds a symlink or a submodule is special, a plain file merge is clean", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "mq-fu17a-"));
+  try {
+    const g = (...args) => execFileSync("git", ["-c", "user.name=Asha", "-c", "user.email=asha@example.invalid", "-c", "commit.gpgsign=false", ...args], { cwd: dir, encoding: "utf8" }).trim();
+    g("init", "-q", "-b", "main");
+    writeFileSync(join(dir, "a.txt"), "a\n");
+    g("add", "a.txt");
+    g("commit", "-q", "-m", "base");
+    const base = g("rev-parse", "HEAD");
+    const branch = (name, fn) => { g("checkout", "-q", "-b", name, base); fn(); g("commit", "-q", "-m", name); return g("rev-parse", "HEAD"); };
+    const plain = branch("plain", () => { writeFileSync(join(dir, "b.txt"), "b\n"); g("add", "b.txt"); });
+    const link = branch("link", () => { symlinkSync("a.txt", join(dir, "l")); g("add", "l"); });
+    const sub = branch("sub", () => g("update-index", "--add", "--cacheinfo", `160000,${base},vendor/x`));
+    const typeChange = branch("typechange", () => { g("rm", "-q", "a.txt"); symlinkSync("b", join(dir, "a.txt")); g("add", "a.txt"); });
+    g("checkout", "-q", "main");
+    const mt = (h) => gitMergeTree(base, h, { cwd: dir });
+    assert.equal(await mt(plain), "clean");
+    assert.equal(await mt(link), "special", "a new symlink");
+    assert.equal(await mt(sub), "special", "a new submodule (gitlink)");
+    assert.equal(await mt(typeChange), "special", "a file turned into a symlink");
+    // The other way round: the base has the symlink and the head removes it. Both sides of an entry count.
+    assert.equal(await gitMergeTree(link, base, { cwd: dir }), "clean", "head is an ancestor: the merge is the base, no change");
+    const unlink = (() => { g("checkout", "-q", "-b", "unlink", link); g("rm", "-q", "l"); g("commit", "-q", "-m", "unlink"); return g("rev-parse", "HEAD"); })();
+    assert.equal(await gitMergeTree(link, unlink, { cwd: dir }), "special", "removing a symlink is a 120000 entry on the source side");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("FU-17a: CR-149 keeps the strict rule when the merge has a symlink or submodule, and says why", async () => {
+  const { r, mergeTree } = await run149(DOCS_PR, { mergeTree: treeStub("special") });
+  assert.equal(r.verdict, "NEEDS-UPDATE");
+  assert.equal(r.cr149.ok, false);
+  assert.equal(r.cr149.rule, "rule 2");
+  assert.match(r.cr149.failed, /symlink or submodule \(CR-70 mode check\)/);
+  assert.equal(mergeTree.seen.length, 1);
+  assert.match(formatTable([r]), /kept the strict rule: rule 2: the merge adds or changes a symlink or submodule/);
 });
