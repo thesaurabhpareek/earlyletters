@@ -96,7 +96,7 @@ vi.mock('expo-network', () => ({
 
 import { setServerFeaturesForTests } from '../src/lib/capabilities';
 import { RESTORE_WAIT_MS } from '../src/lib/first-run/gate.logic';
-import { OPENING_WAIT_MS } from '../src/lib/first-run/new-phone.logic';
+import { OPENING_WAIT_MS, accountJoined } from '../src/lib/first-run/new-phone.logic';
 import { useFirstRunRoute } from '../src/lib/first-run/use-first-run-route';
 import { renderHook } from './helpers/mini-react';
 
@@ -657,6 +657,27 @@ describe('[NX-36-S17] a returning account on a new phone: the child step is unre
     expect(run.result.current).toMatchObject({ step: 'openTonight', arrivedFromAccount: true, mayBeginBook: true });
     expect(seen).toEqual(['openingBook', 'openingBook', 'openingBook', 'openTonight']);
     expect(seen).not.toContain('childStep');
+  });
+
+  it('[BL-2159] J21g/J21h: a book joined on this phone arrives under the join sheet: Tonight with no arrival handover, so the sheet\'s "Open the book" (or Close onto the welcome) is the way in', async () => {
+    const run = await signedIn();
+    // Unmounted even when an expectation fails, so the join listener never reaches the next test.
+    try {
+      h.asked[0]('returningNoBook');
+      await flush();
+      expect(run.result.current).toMatchObject({ step: 'noBookHere' });
+      accountJoined.joined(); // the join sheet accepted the invite
+      h.asked[1]('hasBook');
+      await flush();
+      expect(run.result.current).toMatchObject({ step: 'openingBook', screen: 'opening', arrivedFromAccount: false }); // BL-2159: the wait
+      syncEvent({ phase: 'syncing', lastSyncedAt: null });
+      bookLands();
+      syncEvent({ phase: 'idle', lastSyncedAt: '2026-11-10T10:00:05.000Z' });
+      // Not arrivedFromAccount: app/onboarding.tsx would router.replace('/') under the open join sheet.
+      expect(run.result.current).toMatchObject({ step: 'openTonight', screen: 'steps', arrivedFromAccount: false, mayBeginBook: true });
+    } finally {
+      run.unmount();
+    }
   });
 
   it('[NX-36-S17] the account is new: the child step, as before S17; a reconnect under it asks nothing', async () => {
