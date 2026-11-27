@@ -512,6 +512,23 @@ const listRowMinFor = (fontScale: number): number => (isAccessibilityScale(fontS
 const stroke = { hairline: 0.5, control: 1, selected: 1.5, focus: 2, editMark: 1.5 } as const;
 
 /**
+ * Progress lines (DSR-026, BL-1752): heights in pt and the colour roles they draw with.
+ * - `hairline`: Read together's place in the book, kept a line rather than a counter (no counting gaps).
+ * - `sweep`: the indeterminate line while a join is on its way (join-ask).
+ * - `bar`: measured progress, the export copy.
+ * `fill` is the accent at full strength. The line is the only sighted cue of where you are, so it needs 3:1 against
+ * the page it sits on (WCAG 1.4.11); the old 40 percent accent was under that (CDO-B-048), and test/tokens.test.ts
+ * keeps it failing so it does not come back. `track` is the decorative line colour, where a bar has a track.
+ */
+const progress = { hairline: 2, sweep: 3, bar: 8, fill: 'accent', track: 'line' } as const satisfies {
+  hairline: number;
+  sweep: number;
+  bar: number;
+  fill: keyof typeof light;
+  track: keyof typeof light;
+};
+
+/**
  * Picture sizes in pt (NS-01-R3, R39, R42; A-S06, B-S04). A picture is fitted and never cropped, so these are maximum
  * boxes: the frame takes the picture's own proportions inside them. Draw the frame with `mediaFrame` and `stroke.control`.
  * Set by design: thumbMaxPt (Ready), thumbAxMaxPt (88 pt from AX3), lensThumbPt (72 pt on the long side).
@@ -631,6 +648,7 @@ export const tokens = {
   actionsStack,
   listRowMinFor,
   stroke,
+  progress,
   picture,
   focusRing,
 } as const;

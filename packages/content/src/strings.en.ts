@@ -206,6 +206,18 @@ export const en = {
       body: "Say one thing about {child} today. That is a letter.",
       cta: "Write the first one",
     },
+
+    // BL-1657 (wired by BL-2144): the calm card when making the book fails at the finish step. What happened, then
+    // what's still fine, then one way on. "Still here" and not "on this phone": the answers stay on the screen, while
+    // keeping the first-run draft can itself fail quietly (onboarding.tsx). No {child}: with twins the line would need
+    // "books". While the card shows it takes the place of `finish.title` and `finish.body`, so the screen never says
+    // the book is open and not open at once (CDesO-52's placement condition for BL-2144).
+    // Exec reading CDesO-52 (BL-1657): approved as written.
+    finishRetry: {
+      title: "The book isn't open yet",
+      body: "Everything you typed is still here.",
+      tryAgainButton: "Try again",
+    },
   },
 
   tonight: {
@@ -989,8 +1001,8 @@ export const en = {
       // F17 6.2 F step 3: speech stays, it holds nothing of the person's.
       speechStays: "Your spoken language stays ready, because it holds nothing of yours. You can remove it in Storage.",
       onThisPhone: "This happens on this phone only. Nothing is sent anywhere.",
-      // Privacy Review A on #520 and the council of 8 Nov: the same facts the deletion page states (pages.en.ts, "What
-      // stays"). Read straight after the body; names exports because the screen itself offers "Save a copy first?".
+      // Privacy Review A on #520 and the council of 8 Nov: the same facts the deletion page stated ("What stays", in
+      // pages.en.ts until BL-556 removed it). Read straight after the body; names exports because the screen itself offers "Save a copy first?".
       backups: "Exports you already saved, and backups of this phone such as iCloud Backup, are not changed.",
       // Council on #520 (founder decision, 8 Nov): the account-deletion screen's Plus line (features/account-deletion.en.ts
       // subscription.body) with this screen's own first words. Store build only, and only while Plus will renew

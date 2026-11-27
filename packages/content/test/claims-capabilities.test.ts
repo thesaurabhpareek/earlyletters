@@ -11,9 +11,13 @@
  * and judges each one against the production profile: `apps/mobile/eas.json` `build.production.env`, read through
  * `apps/mobile/src/lib/capabilities.ts`, the same code the app runs.
  *
- * Not read: `packages/content/src/site.en.ts` and `pages.en.ts`. Nothing that ships imports them (apps/web depends
- * only on @scribe/brand and @scribe/design-tokens); they are read by the content lint tests alone. BL-556 deletes or
- * rewires them. The emails are not read either: no production build sends them.
+ * The website's words have one source, `apps/web/src/content/site.ts` and the copy under `apps/web/src`: BL-556
+ * removed `packages/content/src/site.en.ts` and `pages.en.ts`, which nothing rendered. The emails are not read: no
+ * production build sends them.
+ *
+ * A page that only a build with a capability links to, and that says on the page, for everyone, that the store build
+ * does not have it, is judged with that line in view (`QUALIFIED_PAGES`, BL-558): its claims of that one capability are
+ * true while the line is on the page word for word and the store build still lacks the capability.
  *
  * A claim is one match of a rule's pattern in one string. `KNOWN_VIOLATIONS` lists today's false claims, each by the
  * string's key, the rule, the claim's words, the change that removes it (`removedBy`) and why. A second claim in a
@@ -328,9 +332,45 @@ type Claim = { key: string; rule: RuleId; claim: string };
 const surfaceCache = new Map<Profile, Leaf[]>();
 const cachedSurfaces = (p: Profile) => surfaceCache.get(p) ?? surfaceCache.set(p, surfaces(p)).get(p)!;
 
+/**
+ * Pages reached only from a link that a build with the capability writes, which tell every reader, on the page, that the
+ * App Store version does not have it (BL-558). On such a page a claim of that rule is not a promise about the store build:
+ * the page itself says the store build lacks it. The exemption holds only while
+ *  - the qualifier string is on the surface and says exactly `says` (so rewording it away brings every row back), and
+ *  - the rule is still false in the profile (once the store build has the flow, the qualifier is the false line, and the
+ *    test below fails until it is taken off the page).
+ * CMO-24: the /j page draws the qualifier only once the site is in launch mode (`launch.mode === 'live'`), when an App
+ * Store version exists; before launch the only readers hold a build that can open the invite, so the page's invite words
+ * are true for them. apps/web/test/invite-store-build.test.ts proves the line is in the server HTML in launch mode and
+ * absent before it; this test reads the line from the word table, where it stays in both modes.
+ */
+type QualifiedPage = { prefix: string; rule: RuleId; qualifier: string; says: RegExp; why: string };
+
+export const QUALIFIED_PAGES: readonly QualifiedPage[] = [
+  {
+    prefix: 'web.site.invite.',
+    rule: 'coParent',
+    qualifier: 'web.site.invite.storeBuild',
+    says: /^For now, the App Store version of \S.* doesn't have invites\.$/,
+    why: 'Only an alpha build writes /j invite links (entry.logic inviteDestination: servers on AND alpha); the page says the App Store version has no invites.',
+  },
+];
+
+/** Is the claim on a qualified page whose qualifier is in place? */
+function qualified(rule: RuleId, key: string, leaves: readonly Leaf[]): boolean {
+  return QUALIFIED_PAGES.some(
+    (q) => q.rule === rule && key.startsWith(q.prefix) && leaves.some((l) => l.path === q.qualifier && q.says.test(l.text)),
+  );
+}
+
 function claims(p: Profile): Claim[] {
-  return cachedSurfaces(p).flatMap(({ path, text }) =>
-    RULES.flatMap((r) => claimsOf(r, text).filter((claim) => !claimTrue(r, p, claim)).map((claim) => ({ key: path, rule: r.id, claim }))),
+  const all = cachedSurfaces(p);
+  return all.flatMap(({ path, text }) =>
+    RULES.flatMap((r) =>
+      claimsOf(r, text)
+        .filter((claim) => !claimTrue(r, p, claim) && !qualified(r.id, path, all))
+        .map((claim) => ({ key: path, rule: r.id, claim })),
+    ),
   );
 }
 
@@ -347,31 +387,17 @@ function claims(p: Profile): Claim[] {
 type KnownViolation = Claim & { removedBy: string; reason: string };
 
 const KNOWN_VIOLATIONS: readonly KnownViolation[] = [
-
-  // Co-parent lines about a person being invited or joining: the switch is on in the store build, but "I was invited" is hidden
-  // there (B12-5), so nobody can join. They become true when the join door is shown, or the copy changes (BL-557, BL-558).
-  { key: 'web.site.invite.title', rule: 'coParent', claim: 'invite', removedBy: 'BL-558', reason: '"An invite to share a book": production cannot invite.' },
-  { key: 'web.site.invite.line', rule: 'coParent', claim: 'invited', removedBy: 'BL-558', reason: '"Someone invited you to share a book": production cannot invite.' },
-  { key: 'web.site.invite.body', rule: 'coParent', claim: 'invite', removedBy: 'BL-558', reason: 'Says the invite opens in the app; production has no invites.' },
-  { key: 'web.site.invite.steps[0]', rule: 'coParent', claim: 'invite', removedBy: 'BL-558', reason: 'Step "Copy the invite": production has no invites.' },
-  { key: 'web.site.invite.steps[1]', rule: 'coParent', claim: 'invited', removedBy: 'BL-558', reason: 'Step "I was invited": a door production hides (BL-391).' },
-  { key: 'web.site.invite.steps[2]', rule: 'coParent', claim: 'invite', removedBy: 'BL-558', reason: 'Step "Paste the invite": production has no invites.' },
-  { key: 'web.site.invite.copy', rule: 'coParent', claim: 'invite', removedBy: 'BL-558', reason: 'Button "Copy the invite": production has no invites.' },
-  { key: 'web.site.invite.copied', rule: 'coParent', claim: 'invited', removedBy: 'BL-558', reason: 'Points to "I was invited", which production hides.' },
-  { key: 'web.site.invite.copyFailed', rule: 'coParent', claim: 'invited', removedBy: 'BL-558', reason: 'Points to "I was invited", which production hides.' },
-  { key: 'web.site.invite.missing', rule: 'coParent', claim: 'invite', removedBy: 'BL-558', reason: '"This page opened without its invite": production has no invites.' },
-  { key: 'web.site.invite.missing', rule: 'coParent', claim: 'invited', removedBy: 'BL-558', reason: 'Points to "I was invited", which production hides.' },
-  { key: 'web.site.invite.noScript', rule: 'coParent', claim: 'invited', removedBy: 'BL-558', reason: 'Points to "I was invited", which production hides.' },
-  { key: 'web.site.invite.notYou', rule: 'coParent', claim: 'invite', removedBy: 'BL-558', reason: '"If you were not expecting an invite": production has no invites.' },
+  // Empty. The 13 co-parent rows for the /j invite page (web.site.invite.*) went with BL-558: the page now says the App Store
+  // version has no invites, and QUALIFIED_PAGES reads its words with that line in view.
 ];
 
 /**
  * Today's count. Lower it when rows go; never raise it: a new false claim is fixed in the copy, not listed. It was 17 before
- * PR #698. Servers on made the sign-in and sync rows true (the authConfirm row went); the co-parent rows stay because the store
- * build hides the join door. PR #502 removed the two exactWords rows (D-133).
+ * PR #698. Servers on made the sign-in and sync rows true (the authConfirm row went); PR #502 removed the two exactWords rows
+ * (D-133); BL-558 removed the last 13, the /j invite page's co-parent rows (QUALIFIED_PAGES).
  * STORE_BUILD_CLAIMS below says which claims the store build may make and why.
  */
-const KNOWN_VIOLATIONS_CAP = 13;
+const KNOWN_VIOLATIONS_CAP = 0;
 
 const id = (c: Claim) => `${c.key} [${c.rule}] "${c.claim}"`;
 
@@ -456,7 +482,7 @@ describe('public claims match the production profile (RT-REL-03)', () => {
     expect(keys.some((k) => k.startsWith('web:scenes/S04Exact.tsx'))).toBe(true);
     expect(keys.some((k) => k.startsWith('web:lib/legal/privacy-copy.ts'))).toBe(true);
     expect(keys.some((k) => k.startsWith('features.billing.'))).toBe(true);
-    expect(keys.some((k) => k.startsWith('site.')), 'site.en.ts is not shipped, so it is not read').toBe(false);
+    expect(keys.some((k) => k.startsWith('site.')), 'only the website copy apps/web renders is read (BL-556)').toBe(false);
   });
 
   it('makes no new claim the production build cannot keep', () => {
@@ -471,6 +497,34 @@ describe('public claims match the production profile (RT-REL-03)', () => {
 
   it('caps the list at today\'s count', () => {
     expect(KNOWN_VIOLATIONS.length).toBeLessThanOrEqual(KNOWN_VIOLATIONS_CAP);
+  });
+
+  it('BL-558: exempts a qualified page only while its qualifier is on it and the store build still lacks the capability', () => {
+    const all = cachedSurfaces(profile);
+    for (const q of QUALIFIED_PAGES) {
+      const line = all.find((l) => l.path === q.qualifier);
+      expect(line, `${q.qualifier} is read`).toBeDefined();
+      expect(line!.text, `${q.qualifier} says the App Store version lacks it`).toMatch(q.says);
+      expect(q.why.trim()).not.toBe('');
+      // The qualifier is true only while the store build lacks the capability. When it gains it, take the line off the page
+      // and delete the QUALIFIED_PAGES row; the page's own claims are then true by the profile.
+      expect(RULES.find((r) => r.id === q.rule)!.trueWhen(profile), `${q.rule} is now true of the store build: ${q.qualifier} is false`).toBe(false);
+      // The page does carry claims of the rule, so the row does work; a row that exempts nothing goes.
+      const onPage = all.filter((l) => l.path.startsWith(q.prefix)).flatMap((l) => claimsOf(RULES.find((r) => r.id === q.rule)!, l.text));
+      expect(onPage.length, `${q.prefix} has ${q.rule} claims`).toBeGreaterThan(0);
+    }
+  });
+
+  it('BL-558: without its qualifier, a qualified page\'s claims count again, and only that rule is exempt', () => {
+    const page: Leaf[] = [
+      { path: 'web.site.invite.line', text: 'Someone invited you to share a book.' },
+      { path: 'web.site.invite.storeBuild', text: "For now, the App Store version of Asha's app doesn't have invites." },
+    ];
+    expect(qualified('coParent', 'web.site.invite.line', page)).toBe(true);
+    expect(qualified('coParent', 'web.site.invite.line', page.slice(0, 1))).toBe(false);
+    expect(qualified('coParent', 'web.site.invite.line', [page[0], { ...page[1], text: 'Invites are here.' }])).toBe(false);
+    expect(qualified('sync', 'web.site.invite.line', page)).toBe(false);
+    expect(qualified('coParent', 'web.site.scenes.s01.line', page)).toBe(false);
   });
 
   it('names, for every known violation, the change that removes it and why', () => {

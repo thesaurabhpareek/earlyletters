@@ -1,0 +1,333 @@
+{
+  "about": "Claims rows for the store listing (BL-1337; FR-MKT-08, FR-MKT-09, FR-MKT-11). Read by packages/content/test/store-listing-words.test.ts, never by the app, and not exported from the package. When a sentence of store.en.ts changes, change its row here in the same pull request: say is the sentence exactly as the listing has it, needs names the build facts it depends on ('servers on', 'our backup off', 'English only'), and source is audit:<row of docs/store/SCREENSHOT-COPY-AUDIT.md>, a D-id or a repo path. {brand.name}, {brand.web.terms} and {brand.web.privacy} are filled from packages/brand. whatsNewFrames are What's New sentences that name no feature; whatsNewFeatures are the only clauses What's New may name, each with the description heading of its claim and the production build switch it needs (null for a v1.0 feature with none); keywords are the only words the keyword field may hold, each with its source.",
+  "claims": [
+    {
+      "say": "Tell your child about today.",
+      "source": "audit:Promotional text"
+    },
+    {
+      "say": "A minute is plenty.",
+      "source": "audit:Promotional text"
+    },
+    {
+      "say": "It stays in your words.",
+      "source": "audit:Promotional text"
+    },
+    {
+      "say": "Every word we change is marked, and your original recording is kept unchanged.",
+      "source": "audit:Promotional text"
+    },
+    {
+      "say": "{brand.name}: letters to your child, in your own words and voice.",
+      "source": "D-139"
+    },
+    {
+      "say": "Tell your child one thing about today.",
+      "source": "docs/store/SCREENSHOT-COPY-AUDIT.md"
+    },
+    {
+      "say": "The first laugh, the long night, the song you made up in the car.",
+      "source": "docs/store/SCREENSHOT-COPY-AUDIT.md"
+    },
+    {
+      "say": "It becomes a letter in your own words, with your voice kept beside it.",
+      "source": "docs/store/SCREENSHOT-COPY-AUDIT.md"
+    },
+    {
+      "say": "Years from now, your child can read it, and hear how you sounded when you said it.",
+      "source": "docs/store/SCREENSHOT-COPY-AUDIT.md"
+    },
+    {
+      "say": "IT STAYS IN YOUR WORDS",
+      "source": "audit:IT STAYS IN YOUR WORDS"
+    },
+    {
+      "say": "Your words are written down on your phone, and the app only fixes small slips, like an um, a repeat or a name spelled your way.",
+      "source": "audit:IT STAYS IN YOUR WORDS"
+    },
+    {
+      "say": "It never adds a word.",
+      "source": "audit:IT STAYS IN YOUR WORDS"
+    },
+    {
+      "say": "Every word we change is marked, and you can put any of them back.",
+      "source": "audit:IT STAYS IN YOUR WORDS"
+    },
+    {
+      "say": "We never rewrite your words, shorten them or write for you.",
+      "source": "audit:IT STAYS IN YOUR WORDS"
+    },
+    {
+      "say": "A word can be misheard, so have a quick read before you keep a letter.",
+      "source": "audit:IT STAYS IN YOUR WORDS"
+    },
+    {
+      "say": "Letters you type stay as you typed them.",
+      "source": "audit:IT STAYS IN YOUR WORDS"
+    },
+    {
+      "say": "YOUR VOICE, KEPT",
+      "source": "audit:YOUR VOICE, KEPT"
+    },
+    {
+      "say": "Every letter you speak keeps its recording, on your phone and in your iPhone's own backup if you use one.",
+      "needs": [
+        "our backup off"
+      ],
+      "source": "audit:YOUR VOICE, KEPT"
+    },
+    {
+      "say": "We never imitate your voice.",
+      "source": "D-061"
+    },
+    {
+      "say": "Your original recording is always kept exactly as you made it.",
+      "source": "D-061"
+    },
+    {
+      "say": "READ TOGETHER AT BEDTIME",
+      "source": "audit:READ TOGETHER AT BEDTIME"
+    },
+    {
+      "say": "Open Read together and go through the book one letter at a time, oldest first.",
+      "source": "audit:READ TOGETHER AT BEDTIME"
+    },
+    {
+      "say": "Listen to the letters you spoke, with the words on the screen.",
+      "source": "audit:READ TOGETHER AT BEDTIME"
+    },
+    {
+      "say": "Typed letters are there too, for you to read aloud.",
+      "source": "audit:READ TOGETHER AT BEDTIME"
+    },
+    {
+      "say": "A MINUTE IS PLENTY",
+      "source": "docs/store/SCREENSHOT-COPY-AUDIT.md"
+    },
+    {
+      "say": "Some nights it's a sentence, some nights a long letter.",
+      "source": "docs/store/SCREENSHOT-COPY-AUDIT.md"
+    },
+    {
+      "say": "Stuck for words?",
+      "source": "docs/store/SCREENSHOT-COPY-AUDIT.md"
+    },
+    {
+      "say": "There's a question to start with.",
+      "source": "docs/store/SCREENSHOT-COPY-AUDIT.md"
+    },
+    {
+      "say": "If today was quiet, tap \"Not much today\" and that's enough.",
+      "source": "docs/store/SCREENSHOT-COPY-AUDIT.md"
+    },
+    {
+      "say": "Nothing keeps score.",
+      "source": "docs/store/SCREENSHOT-COPY-AUDIT.md"
+    },
+    {
+      "say": "A BOOK THAT GROWS BY MONTH",
+      "source": "audit:A BOOK THAT GROWS BY MONTH"
+    },
+    {
+      "say": "Each letter goes into your child's month of age, so the book reads in order.",
+      "source": "audit:A BOOK THAT GROWS BY MONTH"
+    },
+    {
+      "say": "Expecting?",
+      "source": "audit:A BOOK THAT GROWS BY MONTH"
+    },
+    {
+      "say": "Start before the birth, in a part of the book called Before You.",
+      "source": "audit:A BOOK THAT GROWS BY MONTH"
+    },
+    {
+      "say": "Twins or more each get their own book.",
+      "source": "audit:A BOOK THAT GROWS BY MONTH"
+    },
+    {
+      "say": "NAMES SPELLED YOUR WAY",
+      "source": "docs/store/SCREENSHOT-COPY-AUDIT.md"
+    },
+    {
+      "say": "Add the names and home words you use, like a nickname or the name of a stuffed rabbit, so we spell them your way.",
+      "source": "docs/store/SCREENSHOT-COPY-AUDIT.md"
+    },
+    {
+      "say": "PRIVATE BY DEFAULT",
+      "source": "audit:PRIVATE BY DEFAULT"
+    },
+    {
+      "say": "Your letters and recordings are private.",
+      "source": "D-061"
+    },
+    {
+      "say": "We never sell them, never use them for ads and never use them to train machine learning models.",
+      "source": "D-061"
+    },
+    {
+      "say": "You sign in to keep your book.",
+      "needs": [
+        "servers on"
+      ],
+      "source": "audit:PRIVATE BY DEFAULT"
+    },
+    {
+      "say": "If you agree to sync, the words of your letters and your child's name and dates are kept on our servers so they reach a new phone.",
+      "needs": [
+        "servers on"
+      ],
+      "source": "audit:PRIVATE BY DEFAULT"
+    },
+    {
+      "say": "Recordings stay on the phone that made them.",
+      "needs": [
+        "our backup off"
+      ],
+      "source": "audit:PRIVATE BY DEFAULT"
+    },
+    {
+      "say": "Keep any letter just for you, out of the book.",
+      "source": "audit:PRIVATE BY DEFAULT"
+    },
+    {
+      "say": "Delete one and it waits in Recently deleted for 30 days.",
+      "source": "audit:PRIVATE BY DEFAULT"
+    },
+    {
+      "say": "REMINDERS, ONLY IF YOU WANT THEM",
+      "source": "audit:REMINDERS"
+    },
+    {
+      "say": "Reminders are off until you turn them on.",
+      "source": "audit:REMINDERS"
+    },
+    {
+      "say": "You pick the days and the time, and none comes after 9:30 at night.",
+      "source": "audit:REMINDERS"
+    },
+    {
+      "say": "TAKE IT WITH YOU",
+      "source": "audit:TAKE IT WITH YOU"
+    },
+    {
+      "say": "Export your book any time, for free: your letters, your recordings and a PDF of the book.",
+      "source": "audit:TAKE IT WITH YOU"
+    },
+    {
+      "say": "IN ENGLISH",
+      "needs": [
+        "English only"
+      ],
+      "source": "audit:IN ENGLISH"
+    },
+    {
+      "say": "This version writes down letters spoken in English.",
+      "needs": [
+        "English only"
+      ],
+      "source": "audit:IN ENGLISH"
+    },
+    {
+      "say": "The speech model is a one-time download, on Wi-Fi unless you turn on cellular data, 575 MB on most iPhones and smaller on some, and you choose when it starts.",
+      "source": "audit:IN ENGLISH"
+    },
+    {
+      "say": "Until it is ready, your recordings are kept and the words follow.",
+      "source": "audit:IN ENGLISH"
+    },
+    {
+      "say": "PLUS",
+      "source": "audit:PLUS"
+    },
+    {
+      "say": "Your first two letters are free, so you can see how it feels.",
+      "source": "audit:PLUS"
+    },
+    {
+      "say": "To keep adding letters, choose Plus: $4.99 a month with the first month free, or $49.99 a year with the first 2 months free.",
+      "source": "packages/content/src/pricing.ts"
+    },
+    {
+      "say": "The free months are for people new to Plus.",
+      "source": "audit:PLUS"
+    },
+    {
+      "say": "One plan covers every child's book and works with Family Sharing.",
+      "source": "audit:PLUS"
+    },
+    {
+      "say": "A new letter past the free two waits until you decide.",
+      "source": "audit:PLUS"
+    },
+    {
+      "say": "Every letter you have kept stays yours to read, play and export, with or without Plus.",
+      "source": "audit:PLUS"
+    },
+    {
+      "say": "Payment is charged to your Apple Account.",
+      "source": "audit:PLUS"
+    },
+    {
+      "say": "Plus renews automatically unless you turn off renewal at least 24 hours before the end of the current period.",
+      "source": "audit:PLUS"
+    },
+    {
+      "say": "Manage or cancel any time in your Apple Account settings.",
+      "source": "audit:PLUS"
+    },
+    {
+      "say": "For parents of babies and young children, from the first weeks to the first years.",
+      "source": "docs/store/SCREENSHOT-COPY-AUDIT.md"
+    },
+    {
+      "say": "Terms of Service: {brand.web.terms}",
+      "source": "audit:Terms and Privacy URLs"
+    },
+    {
+      "say": "Privacy Policy: {brand.web.privacy}",
+      "source": "audit:Terms and Privacy URLs"
+    }
+  ],
+  "whatsNewFrames": [
+    "This is the first version of {brand.name}."
+  ],
+  "whatsNewFeatures": [
+    {
+      "clause": "talk or type a letter to your child",
+      "claim": "IT STAYS IN YOUR WORDS",
+      "flag": null
+    },
+    {
+      "clause": "keep your voice with it",
+      "claim": "YOUR VOICE, KEPT",
+      "flag": null
+    },
+    {
+      "clause": "read together at bedtime",
+      "claim": "READ TOGETHER AT BEDTIME",
+      "flag": null
+    },
+    {
+      "clause": "export your book any time",
+      "claim": "TAKE IT WITH YOU",
+      "flag": null
+    }
+  ],
+  "keywords": {
+    "diary": "docs/store/app-store-staged-1.0-proposal.md keyword row (31 Oct 2026)",
+    "keepsake": "docs/store/app-store-staged-1.0-proposal.md keyword row (31 Oct 2026)",
+    "memory": "D-139 item 2: the keyword field carries \"memory\" so that search still matches",
+    "book": "D-139 item 2: the keyword field carries \"book\" so that search still matches",
+    "voice": "D-139 item 1: letters to your child, in your own words and voice",
+    "newborn": "docs/store/app-store-staged-1.0-proposal.md keyword row (31 Oct 2026)",
+    "toddler": "docs/store/app-store-staged-1.0-proposal.md keyword row (31 Oct 2026)",
+    "child": "D-139 item 1: letters to your child",
+    "parenting": "docs/store/SCREENSHOT-COPY-AUDIT.md Keywords row",
+    "audio": "docs/store/app-store-staged-1.0-proposal.md keyword row (31 Oct 2026)",
+    "recorder": "docs/store/SCREENSHOT-COPY-AUDIT.md Keywords row",
+    "bedtime": "the description heading READ TOGETHER AT BEDTIME",
+    "mom": "docs/store/app-store-staged-1.0-proposal.md keyword row (31 Oct 2026)",
+    "dad": "docs/store/app-store-staged-1.0-proposal.md keyword row (31 Oct 2026)",
+    "mama": "docs/store/SCREENSHOT-COPY-AUDIT.md Keywords row"
+  }
+}

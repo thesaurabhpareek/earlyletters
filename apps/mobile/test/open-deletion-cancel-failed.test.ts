@@ -100,3 +100,54 @@ describe('[BL-491 point 5] a failed Cancel deletion on the deletion screen', () 
     expect(shown(r.result.current).body).not.toContain(c.errors.offline);
   });
 });
+
+describe('[BL-491] the cancel-failed line goes once nothing on the screen can be canceled', () => {
+  type Req = { state: 'scheduled'; requestId: string; scheduledFor: string } | { state: 'executing'; requestId: string } | { state: 'cancelled'; at: string };
+
+  /** The deletion screen after one Cancel deletion that failed offline; `now` is the request the screen is drawn with. */
+  async function afterFailedCancel() {
+    const now: { request: Req } = { request };
+    h.d = {
+      signedIn: true,
+      error: null,
+      cancel: async () => {
+        h.d.error = 'offline';
+        return false;
+      },
+      signOut: async () => undefined,
+    };
+    const r = renderHook(() => OpenDeletionScreen({ request: now.request }));
+    shown(r.result.current).primary!.onPress();
+    await settle();
+    r.rerender();
+    expect(shown(r.result.current).body).toContain(c.errors.cancelFailed);
+    return { r, now };
+  }
+
+  it('the request turns canceled while the screen is open (the cancel went through after all)', async () => {
+    const { r, now } = await afterFailedCancel();
+    now.request = { state: 'cancelled', at: '2099-11-19T09:00:00.000Z' };
+    r.rerender();
+    const after = shown(r.result.current);
+    expect(after.body).not.toContain(c.errors.cancelFailed);
+    expect(after.kind).toBe('empty');
+  });
+
+  it('the request is being carried out', async () => {
+    const { r, now } = await afterFailedCancel();
+    now.request = { state: 'executing', requestId: 'req-asha' };
+    r.rerender();
+    expect(shown(r.result.current).body).not.toContain(c.errors.cancelFailed);
+    expect(shown(r.result.current).kind).toBe('empty');
+  });
+
+  it('the person signs out of this phone: the screen offers Sign in, not Cancel deletion', async () => {
+    const { r } = await afterFailedCancel();
+    h.d.signedIn = false;
+    r.rerender();
+    const after = shown(r.result.current);
+    expect(after.primary?.label).toBe(c.signedOut.button);
+    expect(after.body).not.toContain(c.errors.cancelFailed);
+    expect(after.kind).toBe('empty');
+  });
+});
