@@ -18,6 +18,8 @@ const os = vi.hoisted(() => ({
   presented: new Map<string, { identifier: string; content: { data?: unknown } }>(),
   /** Makes the read of what iOS holds scheduled throw (BL-1009). Off unless a test turns it on. */
   failScheduledRead: false,
+  /** Each cancel and dismiss, in order, so a test can check which comes first. */
+  calls: [] as string[],
 }));
 
 /** Makes one clean-up step throw, to prove the others still run (BL-2247). Off unless a test turns it on. */
@@ -72,13 +74,19 @@ vi.mock('expo-notifications', () => {
       if (os.failScheduledRead) throw new Error('not now');
       return [...os.scheduled.values()];
     },
-    cancelScheduledNotificationAsync: async (id: string) => void os.scheduled.delete(id),
+    cancelScheduledNotificationAsync: async (id: string) => {
+      os.calls.push(`cancel:${id}`);
+      os.scheduled.delete(id);
+    },
     scheduleNotificationAsync: async (r: Req) => {
       os.scheduled.set(r.identifier, { identifier: r.identifier, content: r.content });
       return r.identifier;
     },
     getPresentedNotificationsAsync: async () => [...os.presented.values()].map((request) => ({ request })),
-    dismissNotificationAsync: async (id: string) => void os.presented.delete(id),
+    dismissNotificationAsync: async (id: string) => {
+      os.calls.push(`dismiss:${id}`);
+      os.presented.delete(id);
+    },
     setNotificationChannelAsync: async () => {},
     setNotificationHandler: () => {},
     addNotificationResponseReceivedListener: () => ({ remove: () => {} }),
@@ -288,6 +296,20 @@ describe('[NS-13-R14] sign out removes reminders (real store and scheduler)', ()
     // The other steps still ran: the settings and the typed days are gone.
     for (const key of reminders.REMINDER_SETTING_KEYS) expect(store.getSetting(key), key).toBeNull();
     expect(store.settingKeysWithPrefix('typedDay.')).toEqual([]);
+  });
+
+  it('[BL-1009] at sign-out every scheduled note of ours is cancelled before any delivered one is dismissed', async () => {
+    reminders.writePrefs({ enabled: true, cadence: 'everyEvening', namesOnLockScreen: true });
+    await reminders.rescheduleReminders();
+    expect(os.scheduled.size).toBeGreaterThan(1);
+    os.presented.set('el.birthday.2026-03-01', { identifier: 'el.birthday.2026-03-01', content: { data: { source: REMINDER_SOURCE, kind: 'birthday' } } });
+    os.presented.set('el.evening.2026-10-16', { identifier: 'el.evening.2026-10-16', content: { data: { source: REMINDER_SOURCE, kind: 'evening' } } });
+    os.calls = [];
+    await reminders.endReminderSession();
+    const cancels = os.calls.filter((c) => c.startsWith('cancel:')).length;
+    expect(cancels).toBeGreaterThan(1);
+    expect(os.calls.filter((c) => c.startsWith('dismiss:'))).toHaveLength(2);
+    expect(os.calls.slice(0, cancels).every((c) => c.startsWith('cancel:'))).toBe(true);
   });
 
   it('[NS-13-R13] killed right after Sign out, before the clear: the next launch clears A\'s reminders before B signs in', async () => {

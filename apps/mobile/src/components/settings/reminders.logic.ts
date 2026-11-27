@@ -95,6 +95,7 @@ export function switchFooter(on: boolean): string {
  */
 export function nextLine(input: { on: boolean; permission: ReminderPermission | null; next: Pick<NextPlanned, 'date' | 'hour' | 'minute'> | null; formatTime: (t: ReminderTime) => string }): string | null {
   if (!input.on) return null;
+  // On the Reminders screen this shows only while a turn-on is in flight (the switch draws off when denied, BL-428).
   if (input.permission === 'denied') return reminderCopy.settings.notSendingYet;
   if (!input.next) return null;
   return fill(reminderCopy.settings.nextLine, { weekday: reminderCopy.weekdays[weekdayOfIso(input.next.date)]!, time: input.formatTime(input.next) });

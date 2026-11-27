@@ -20,9 +20,17 @@ export function visibleTabIds(momentsOn: boolean): readonly ('index' | 'moments'
  * The extra Tabs.Screen options: nothing when on; when off, no button and no room in the bar. Never `href`: expo-router's
  * tabs throw "Cannot use `href` and `tabBarButton` together" (build/layouts/TabsClient.js), and the layout sets tabBarButton
  * on iOS. This object is spread last, so its tabBarButton replaces the layout's.
+ *
+ * `width: 0` (BL-1545): on a screen 768 points wide or more, the library decides beside-icon labels by adding up each
+ * route's item width, 125 unless the item style gives a number (shouldUseHorizontalLabels in expo-router's bundled
+ * bottom-tabs BottomTabBar.js). `display: 'none'` hides the item but gives no number, so without it the hidden route
+ * counted as a fourth tab. With it the sum counts the tabs shown (test/moments-tab-ipad-sizing.test.ts).
  */
-export function momentsTabVisibility(momentsOn: boolean): { tabBarButton?: () => null; tabBarItemStyle?: { display: 'none' } } {
-  return momentsOn ? {} : { tabBarButton: () => null, tabBarItemStyle: { display: 'none' } };
+export function momentsTabVisibility(momentsOn: boolean): {
+  tabBarButton?: () => null;
+  tabBarItemStyle?: { display: 'none'; width: 0 };
+} {
+  return momentsOn ? {} : { tabBarButton: () => null, tabBarItemStyle: { display: 'none', width: 0 } };
 }
 
 /**
