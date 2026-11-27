@@ -152,14 +152,15 @@ export function cardRow(r: Row, today: number): CardRow {
   }
   if (r.kind === 'dispute_or_third_party') {
     // Runbook section 0: an executor, relative or guardian of a holder who died or cannot act, a parent of an under-18
-    // holder, or a custody or family dispute. The sender is not the holder, so nothing is owed them by day 45, and a
+    // holder, or a custody or family dispute. The sender is not the holder, so the card prompts no reply to them: a
     // "what was done" reply or an extension notice would say the account exists (IAM-R09). The exec team read it on
-    // 27 Nov 2026 (not yet in a rulings file). Days 35 to 44 are an internal check that no request about the sender's
-    // own data is inside it, since that one is on the clock from the same day.
+    // 27 Nov 2026 (not yet in a rulings file). Days 35 to 44 are an internal check: a request about the sender's own
+    // data inside it is on the clock from the same day, and whether the 45 days apply to a living holder's guardian is
+    // COUNSEL_PACKET Q49, so that goes to counsel before day 45.
     const first = !r.acknowledged && day >= 1;
     const check = day >= FIRST_DAY && day < DUE_DAY;
     const counsel = check
-      ? "with counsel: check no request about the sender's own data is inside it; if one is, log it as its own row today with the same received date"
+      ? "with counsel: check no request about the sender's own data is inside it, and if one is, log it as its own row today with the same received date; if the sender acts for a living holder who cannot act, ask counsel before day 45 whether the 45 days apply (Q49)"
       : 'with counsel: no reply beyond the fixed first reply; change nothing on any account';
     return {
       ...offClock,

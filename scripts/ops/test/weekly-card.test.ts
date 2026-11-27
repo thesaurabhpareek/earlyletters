@@ -129,7 +129,7 @@ Deno.test('[FR-BKO-13] an abuse report stays off the 45-day clock: one fixed fir
 
 Deno.test('[FR-BKO-13] a dispute or third-party request stays off the 45-day clock; days 35 to 44 check for a request of the sender\'s own', () => {
   const counsel = 'with counsel: no reply beyond the fixed first reply; change nothing on any account';
-  const check = "with counsel: check no request about the sender's own data is inside it; if one is, log it as its own row today with the same received date";
+  const check = "with counsel: check no request about the sender's own data is inside it, and if one is, log it as its own row today with the same received date; if the sender acts for a living holder who cannot act, ask counsel before day 45 whether the 45 days apply (Q49)";
   const at = (n: number, more = {}) => card(row('DREQ-20261212-1', 'dispute_or_third_party', day(n), more)).rows[0];
   for (const n of [2, 34, 45, 46, 60]) {
     const r = at(n);
@@ -155,6 +155,9 @@ Deno.test('[FR-BKO-13] a dispute or third-party request stays off the 45-day clo
   assert.match(at(1, { acknowledged: '' }).nextAction, /^first reply not logged: /);
   assert.match(at(2, { acknowledged: '' }).nextAction, /^first reply not logged: /);
   assert.match(at(38, { acknowledged: '' }).nextAction, /^first reply not logged: .*; then with counsel, check no request about the sender's own data/);
+  const firstOnly = at(2, { acknowledged: '' }).nextAction;
+  assert.equal(at(46, { acknowledged: '' }).nextAction, firstOnly, 'outside days 35 to 44 an unacknowledged row shows the first reply alone');
+  assert.equal(firstOnly, 'first reply not logged: send what its section 0 row says today, the section 1 first reply unless the row says otherwise, and log it');
   // An urgent check row sorts with the others by days left; an off-clock row never leads.
   const c = card(
     row('DREQ-20261212-1', 'dispute_or_third_party', day(38)),
