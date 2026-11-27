@@ -14,6 +14,12 @@ Agents cannot edit `.github/workflows/`. Under BL-1869 this step goes into the `
             node scripts/trace.mjs --no-write --check
             exit 0
           fi
+          if [ "$BASE_REF" != develop ]; then
+            # Until main's baseline holds the CR-227 and CR-228 seeds, a PR into main would read them as grown.
+            # Remove this branch once the release PR that carries them has merged into main.
+            node scripts/trace.mjs --no-write --check
+            exit 0
+          fi
           git fetch --depth=1 origin "$BASE_REF"
           # Fail closed: develop and main both hold the baseline, so a base copy that cannot be read fails the step.
           git show "origin/$BASE_REF:docs/ops/trace-ns-baseline.txt" > "$RUNNER_TEMP/ns-base.txt"
@@ -35,7 +41,9 @@ What the step trusts. Only the baseline's base copy comes from the target branch
 
 That list does not close the gap, and this doc does not claim it does. Any PR can take a baselined row out of the gate, with exit 0 and none of the four files touched, by adding a title that cites the id in a test file, even one no runner runs, an e2e-web flow, a Maestro tag, or a `(device)` mark on the card row. The line then reads as stale, which is logged on every run. Each of those is a claim that the row is covered, and only review checks it is true. So a reviewer of any PR whose run shows a new stale line checks that the row's new coverage proves the row.
 
-How the base copy is taken. The step reads `docs/ops/trace-ns-baseline.txt` from `origin/<base branch>` at the time the job runs, so `grown` compares the PR's baseline with the target branch's tip. A one-time seed (CR-227, CR-228) adds lines, so the PR that carries it reads as `grown` against the base copy it starts from; it can pass only when it merges before the step is applied, after which the seed is in every later base copy. That is why the step waited for #2050, which merged on 27 Nov 2026 (below).
+How the base copy is taken. The step reads `docs/ops/trace-ns-baseline.txt` from `origin/<base branch>` at the time the job runs, so `grown` compares the PR's baseline with the target branch's tip. A one-time seed (CR-227, CR-228) adds lines, so the PR that carries it reads as `grown` against the base copy it starts from; it can pass only when it merges before the step is applied, after which the seed is in every later base copy of that branch. That is why the step waited for #2050, which merged into develop on 27 Nov 2026 (below). Main is a second base branch with its own copy, and on 27 Nov main (`7429febb`) holds neither seed: this branch checked against main's copy exits 1 on 188 `grown` lines (the 18 CR-227 and 170 CR-228 lines; Review B on #2052). So the drafted step reads the base copy only for PRs into develop, and runs the plain check on PRs into main, until the release PR that carries the seeds has merged into main. Then that branch of the step comes out.
+
+One more gap, stated plainly. A new P0 row covered only by a title in a test file no runner runs is not open, so it exits 0 with no notice at all (Review A on #2052). Whether a test file is run is the test runners' configuration, which this gate does not read.
 
 ## Failures on develop (BL-2033, full checkout, 24 Nov 2026)
 
@@ -72,7 +80,7 @@ After #2050 merged (27 Nov 2026, full checkout of this branch merged with develo
 | develop `f7b4ca9e` | `--no-write --check --ns-base <copy of develop's baseline>` | 0 | 0 FAIL, 0 `grown`, 15 stale |
 | develop `f7b4ca9e` | `--no-write --check --ns-base <a file that does not exist>` | 1 | the missing base file |
 
-So BL-1869 can apply the step as drafted now.
+So BL-1869 can apply the step as drafted now for PRs into develop; PRs into main get the base-copy check after the next release merges into main.
 
 ## The two ways to a step that fails only on the ratchet
 
