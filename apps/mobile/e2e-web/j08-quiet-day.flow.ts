@@ -110,8 +110,9 @@ test('[J08c] marks saved by older builds: the old sentence is never shown, and a
   // Two old marks exist: one on a day with a letter (hidden), one on a day without (listed).
   await expect(app.getByText('A quiet day')).toHaveCount(1);
   await expect(app.getByText(/ordinary day|Just Asha, and us/)).toHaveCount(0);
-  // The count of letters moved to the Months sheet: the old marks do not change it (the day with a letter keeps its letter).
-  await expectMonthCount(app, 6, /\d+ letters?/);
+  // The count of letters moved to the Months sheet. The rule is chapters.ts countLine ("Quiet days are never counted"; D-084
+  // and the P5 critics pass). BL-2011: with the two old marks seeded, Month 6 still says exactly its two letters, nothing added.
+  await expectMonthCount(app, 6, '2 letters, from Mama');
   await expect(btn(app, /^From Mama\./).first()).toBeVisible();
   await step('happy', 'An older quiet day, shown as a mark', 'A "Not much today" saved by an older build holds a template sentence in the old row. The Book ignores that text and shows the same small "A quiet day" row; on a day that already has a letter no mark is listed. Counts say letters only. (Seeded fictional family Asha, with older-build rows.)');
   // Long press (touch emulation) or the row's remove action; the web build exposes it as a long press.
