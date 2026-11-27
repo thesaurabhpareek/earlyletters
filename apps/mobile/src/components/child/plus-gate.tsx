@@ -257,7 +257,7 @@ export function PlusGate({ childName, lapsed = false, lettersKept, heldOn = 'ton
           borderTopLeftRadius: tokens.radius.xl,
           borderTopRightRadius: tokens.radius.xl,
           overflow: 'hidden',
-          ...(scheme === 'dark' ? { borderWidth: StyleSheet.hairlineWidth, borderColor: c.line } : null),
+          ...(scheme === 'dark' ? { borderWidth: tokens.stroke.hairline, borderColor: c.line } : null),
         }}>
         {/* A visible way out in the header (ruling E3): the shared Close, back to the letter with nothing changed. */}
         {onDismiss ? <ModalHeader onClose={onDismiss} /> : null}
@@ -285,7 +285,7 @@ function HeldCard({ held, entering, tilt, surface }: { held: HeldLetter; enterin
   const e = tokens.elevation[1];
   const edge =
     scheme === 'dark'
-      ? { borderWidth: StyleSheet.hairlineWidth, borderColor: c.line }
+      ? { borderWidth: tokens.stroke.hairline, borderColor: c.line }
       : Platform.OS === 'web'
         ? { boxShadow: e.web }
         : { shadowColor: e.shadowColor, shadowOpacity: e.shadowOpacity, shadowRadius: e.shadowRadius, shadowOffset: e.shadowOffset, elevation: e.elevation };
