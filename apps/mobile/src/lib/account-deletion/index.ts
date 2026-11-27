@@ -14,8 +14,8 @@ export {
   showSubscriptionNotice, stepFor, type BookImpact, type ServerStatus, type Step, type SyncBook,
 } from './logic';
 export {
-  cancelDeletion, FORGET_PENDING_KEY, forgetAnalytics, loadBooks, loadStatus, requestDeletion, retryForget,
-  type AnalyticsIds, type ApiOutcome, type DeletionClient, type FlagStore,
+  CANCEL_LIMIT_CODE, cancelDeletion, FORGET_PENDING_KEY, forgetAnalytics, loadBooks, loadStatus, requestDeletion, retryForget,
+  type AnalyticsIds, type ApiOutcome, type CancelFailure, type CancelOutcome, type DeletionClient, type FlagStore,
 } from './api';
 export {
   CANCELLED_WAIT_MS, chooseScreen, countedNote, deletionView, liveNote, NOTE_GRACE_MS, noteAfterCancel, noteAfterRead,

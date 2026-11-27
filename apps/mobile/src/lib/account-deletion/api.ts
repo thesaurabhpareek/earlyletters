@@ -11,7 +11,8 @@
  */
 import { parseStatus, type ServerStatus, type SyncBook } from './logic';
 
-type Result = { data: unknown; error: { code?: string; message?: string } | null };
+/** `status` is the HTTP status supabase-js puts beside `error` (401 for a token PostgREST refused). */
+type Result = { data: unknown; error: { code?: string; message?: string } | null; status?: number };
 
 /** The slice of the Supabase client this module needs (structurally matches supabase-js). */
 export interface DeletionClient {
@@ -26,9 +27,28 @@ export interface DeletionClient {
     };
   };
   functions: { invoke(name: string, opts: { body: unknown; headers?: Record<string, string> }): Promise<{ data: unknown; error: unknown }> };
+  /**
+   * supabase-js `auth.refreshSession()`, used once after a Cancel deletion refused for auth (CDesO-59). Optional so the
+   * fakes in tests that never reach it need not draw it; the app's client always has it. Without it, the refusal stands.
+   */
+  auth?: { refreshSession(): PromiseLike<{ data: { session: unknown } | null; error: unknown }> };
 }
 
 export type ApiOutcome<T> = { ok: true; value: T } | { ok: false; reason: 'offline' | 'failed' };
+
+/**
+ * A Cancel deletion press that did not cancel, by what the phone can tell (CDesO-58, CDesO-59):
+ *  - `limited`: the server's daily limit (SQLSTATE SCRAT); the call rolled back, so the request is as it was;
+ *  - `auth`: refused for auth, and still refused after one refresh of the session (or the refresh itself failed);
+ *    nothing ran on the server. If the refresh removed the session, the page shows its signed-out view instead;
+ *  - `executing`: nothing was open to cancel because the deletion is being carried out; `status` is the read that said so;
+ *  - `offline`, `failed`: anything else, where the outcome may be unknown or a retry may work.
+ */
+export type CancelFailure = 'offline' | 'failed' | 'limited' | 'auth';
+export type CancelOutcome =
+  | { ok: true; value: true }
+  | { ok: false; reason: CancelFailure }
+  | { ok: false; reason: 'executing'; status: Extract<ServerStatus, { state: 'executing' }> };
 
 const offline = (e: unknown): boolean => {
   const m = String((e as { message?: unknown })?.message ?? '');
@@ -45,21 +65,61 @@ export const READ_TIMEOUT_MS = 15_000;
 
 const TIMED_OUT = Symbol('timed out');
 
-async function call<T>(fn: () => PromiseLike<Result>, read: (data: unknown) => T, timeoutMs?: number): Promise<ApiOutcome<T>> {
+/**
+ * One call, with what the server said when it refused: its SQLSTATE or PostgREST code (`code`, null when there was no
+ * answer to read) and the HTTP status. Kept so Cancel deletion can tell the daily limit and an auth refusal from the rest
+ * (CDesO-58, CDesO-59); every other caller reads only `reason`, through `call`.
+ */
+type Attempt<T> = { ok: true; value: T } | { ok: false; reason: 'offline' | 'failed'; code: string | null; status?: number };
+
+async function attempt<T>(fn: () => PromiseLike<Result>, read: (data: unknown) => T, timeoutMs?: number): Promise<Attempt<T>> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     const pending = Promise.resolve(fn());
     const got = timeoutMs === undefined
       ? await pending
       : await Promise.race([pending, new Promise<typeof TIMED_OUT>((res) => (timer = setTimeout(() => res(TIMED_OUT), timeoutMs)))]);
-    if (got === TIMED_OUT) return { ok: false, reason: 'offline' };
-    const { data, error } = got;
-    if (error) return { ok: false, reason: offline(error) ? 'offline' : 'failed' };
+    if (got === TIMED_OUT) return { ok: false, reason: 'offline', code: null };
+    const { data, error, status } = got;
+    if (error) {
+      const code = typeof error.code === 'string' && error.code ? error.code : null;
+      return { ok: false, reason: offline(error) ? 'offline' : 'failed', code, ...(typeof status === 'number' ? { status } : {}) };
+    }
     return { ok: true, value: read(data) };
   } catch (e) {
-    return { ok: false, reason: offline(e) ? 'offline' : 'failed' };
+    return { ok: false, reason: offline(e) ? 'offline' : 'failed', code: null };
   } finally {
     clearTimeout(timer);
+  }
+}
+
+async function call<T>(fn: () => PromiseLike<Result>, read: (data: unknown) => T, timeoutMs?: number): Promise<ApiOutcome<T>> {
+  const r = await attempt(fn, read, timeoutMs);
+  return r.ok ? r : { ok: false, reason: r.reason };
+}
+
+/**
+ * The refusals that mean "not signed in as far as the server can tell" (CDesO-59 case 1): `28000` from require_user(),
+ * `42501` for a call made with no token (the anon role has no grant), and PostgREST's `PGRST301` to `PGRST303` or HTTP
+ * 401 for a token that expired just before supabase-js refreshed it. Nothing ran on the server in any of them.
+ */
+const CANCEL_AUTH_CODES = new Set(['28000', '42501', 'PGRST301', 'PGRST302', 'PGRST303']);
+
+/** The daily limit on cancellations (5 per person in a rolling 24 h), raised after the call rolled back (CDesO-58). */
+export const CANCEL_LIMIT_CODE = 'SCRAT';
+
+function authRefused(r: { code: string | null; status?: number }): boolean {
+  return (r.code !== null && CANCEL_AUTH_CODES.has(r.code)) || r.status === 401;
+}
+
+/** One refresh of the session with supabase-js's own stored refresh token; true only when a session came back. */
+async function refreshed(client: DeletionClient): Promise<boolean> {
+  if (!client.auth) return false;
+  try {
+    const { data, error } = await client.auth.refreshSession();
+    return !error && !!data?.session;
+  } catch {
+    return false;
   }
 }
 
@@ -117,13 +177,29 @@ export async function requestDeletion(client: DeletionClient, hadActiveSubscript
 /**
  * Cancels the open request. The server answers false when nothing was open to cancel, which is fine when the request
  * was already cancelled (an earlier try whose answer was lost, or another phone) and not when it is still open or
- * executing, so a false answer is checked against the status, read as the screen reads it.
+ * executing, so a false answer is checked against the status, read as the screen reads it. Executing is returned with
+ * that read, so the page moves to its executing state instead of showing a failure (CDesO-59 case 3).
+ *
+ * A refusal for auth (CDesO-59 case 1) is not answered at once: the session is refreshed and the cancel sent once more,
+ * and that second answer decides as for any press. One retry, never a loop, and never for any other refusal: a dropped
+ * connection or a 5xx may have reached the server, and the status check above is what settles those. SCRAT is the daily
+ * limit (CDesO-58); the call rolled back, so it is reported as `limited`, never as an unknown outcome.
  */
-export async function cancelDeletion(client: DeletionClient): Promise<ApiOutcome<boolean>> {
-  const r = await call(() => client.rpc('cancel_account_deletion'), (d) => d === true);
-  if (!r.ok || r.value) return r;
+export async function cancelDeletion(client: DeletionClient): Promise<CancelOutcome> {
+  const send = () => attempt(() => client.rpc('cancel_account_deletion'), (d) => d === true);
+  let r = await send();
+  if (!r.ok && authRefused(r)) {
+    if (!(await refreshed(client))) return { ok: false, reason: 'auth' };
+    r = await send();
+    if (!r.ok && authRefused(r)) return { ok: false, reason: 'auth' };
+  }
+  if (!r.ok) return { ok: false, reason: r.code === CANCEL_LIMIT_CODE ? 'limited' : r.reason };
+  if (r.value) return { ok: true, value: true };
   const s = await readStatus(client);
-  return s.ok && s.value.state === 'none' ? { ok: true, value: true } : { ok: false, reason: s.ok ? 'failed' : s.reason };
+  if (!s.ok) return { ok: false, reason: s.reason };
+  if (s.value.state === 'none') return { ok: true, value: true };
+  if (s.value.state === 'executing') return { ok: false, reason: 'executing', status: s.value };
+  return { ok: false, reason: 'failed' };
 }
 
 /** Where the "forget my analytics ids" retry flag lives (device settings, L2). */
