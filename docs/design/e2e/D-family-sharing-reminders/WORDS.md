@@ -262,8 +262,8 @@ Why the bodies change: "A year of letters" says a year of letters exists. A pare
 
 | Key | Status | Title | Body | Shown when |
 |---|---|---|---|---|
-| `reminderCopy.neutral.typedDay` | PROPOSED | A day you wanted to remember | Tap to see the words you added for today. | `.typedDay` (show-words off, the default) |
-| (the parent's words) | PROPOSED rule | A day you wanted to remember | the words exactly as typed: no quotes, no prefix, nothing added | `.typedDay.words` (show-words on) |
+| `reminderCopy.neutral.typedDay` | PROPOSED | A day you wanted to remember | Tap to see the words you added for today. | `.typedDay` (day names off, the default; or Names in notifications off; or App lock on; CPrivO-58) |
+| (the parent's words) | PROPOSED rule | A day you wanted to remember | the words exactly as typed: no quotes, no prefix, nothing added | `.typedDay.words` (day names on AND Names in notifications on AND App lock off; CPrivO-58) |
 
 Kept under `reminderCopy.neutral` so the rules test's length and rhythm checks read it. The typed words are not copy and are never checked or changed.
 
@@ -567,7 +567,7 @@ What happened, and what the parent can do. No blame, no fear.
 | evening | `reminderCopy.neutral.evening[n]`, rotated | the same row | `notifications.evening[n]` | `notifications.placeholder.evening` | Home | name by default, letter words, count, Plus, Keep, due date |
 | monthAge | Month {month} begins | A new month in the book is open. | `notifications.monthOpen` | `notifications.placeholder.month` | Book | as above |
 | birthday | A birthday today | The book is here whenever you want to read it together. | Happy birthday to {child} | `notifications.placeholder.birthday` | Book | as above; "a year of" |
-| typedDay | A day you wanted to remember | Tap to see the words you added for today. | the names switch does not apply; the show-words switch puts the words in the body | `notifications.placeholder.typedDay` | Home, words above the prompt | our words added to theirs; countdowns, "days until" |
+| typedDay | A day you wanted to remember | Tap to see the words you added for today. | the parent's words take the body only with day names on AND names on the lock screen on AND App lock off, otherwise the fixed line (CPrivO-58). Was: the names switch does not apply; the show-words switch puts the words in the body | `notifications.placeholder.typedDay` | Home, words above the prompt | our words added to theirs; countdowns, "days until" |
 | plan | Plus | `billing.reminders.*` with {date} | never a name | `notifications.placeholder.plan` | Me, Plan | price, child, letter, allowance, Keep |
 
 ## 9. The pilot artefacts the parent sees (NS-03; not app screens; D-S23)
@@ -739,7 +739,7 @@ Everything here is PROPOSED intent for `content` (the founder approves words bef
 | Section 2, G1 and the placeholders | "A note for tonight" was already replaced | Confirmed: one neutral line for every budgeted category, "Something for the book, whenever you have a minute."; plan "A reminder about your plan." No "note", no "tonight" |
 | D-S10.birthday, `reminderCopy.neutral.birthday` title; G3 | Keep "A birthday today" for v1.0 | GAP-LOG D G-D21 default: with names off the title is "Something for the book today"; "A birthday today" only when names are on. Founder and CPrivO decide. The body "The book is here whenever you want to read it together." stays |
 | D-S06 `reminderCopy.typedDay.sectionTitle`, `addButton`, `sectionHelp`, `remindersOffNote` | Days to remember section on D-S06 | The typed-day list is on the Days page C-S24 ("Days you added"). D-S06 carries one row `Days` and, with Reminders off, the line below. `sectionHelp` and `addButton` move to C-S24's wording (area C) |
-| D-S06 `settings.privacy.lockScreenLabel` help (`namesHelpOff`) | No names on the lock screen, except in your own words if you choose to show them. | No names on the lock screen. This is for your child's name; days have their own choice in Days. (NS-47-R14; the typed-day clause leaves because the one day-names switch covers typed words) |
+| D-S06 `settings.privacy.lockScreenLabel` help (`namesHelpOff`) | No names on the lock screen, except in your own words if you choose to show them. | No names on the lock screen. This is for your child's name; days have their own choice in Days. (NS-47-R14; the typed-day clause leaves because typed words show only with the day-names switch on, this names switch on and App lock off, CPrivO-58. Was: because the one day-names switch covers typed words) |
 | D-S08 `showWordsLabel`, `showWordsHelpOff`, `showWordsHelpOn`, D-S09 `detailWordsOn`, `detailWordsOff` | A per-day switch and its help lines | Retired pending the ruling on RV-8 against G-D14. Replacements below. If Karma keeps G-D14 the lines return unchanged |
 | D-S11 `.libraryDay` rows (days review) | A landing line for a ticked day | None: the day slip on Home is the one way (RV-6) |
 | "35 days" wherever a help line says it | A platform limit | Never said to a parent; it is NS-13's policy (RV-4) |
@@ -776,7 +776,7 @@ Never in these lines: "private", "secure", "invisible", "nobody can tell", "unde
 | Key | Status | Title | Body | Shown when |
 |---|---|---|---|---|
 | `days.lock.title.neutral` | PROPOSED | Something for the book today | | `libraryDay-neutral`, `twoDays`, every day with the switch off or App lock on |
-| `days.lock.body.neutral` | PROPOSED | | Whenever you have a minute. | Words changed by F-08d (#1391, reminders.en.ts `lockBody`); RULED 20 Nov (ruling 3, NS-47-R38 reading B): one fixed string, no `{child}` and no child word in any switch state; the P0 test stays (G-D26 closed). Words PROPOSED, founder approves |
+| `days.lock.body.neutral` | EXISTING | | Whenever you have a minute. | Words changed by F-08d (#1391, reminders.en.ts `lockBody`); RULED 20 Nov (ruling 3, NS-47-R38 reading B): one fixed string, no `{child}` and no child word in any switch state; the P0 test stays (G-D26 closed). Built by #1391; in-app word approval still open (CPrivO-9) |
 | `days.lock.body.quiet` | PROPOSED | | The book is open if you want it. | `libraryDay-quiet`; no question mark (NS-46-R37) |
 | `days.name.<id>` | PROPOSED | the day's own name | the neutral body | `libraryDay-public` (allowlist only), `libraryDay-named` (switch on, App lock off) |
 | `notifications.placeholder.libraryDay` | PROPOSED | | Something for the book, whenever you have a minute. | `libraryDay-hidden` |

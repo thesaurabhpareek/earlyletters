@@ -3,7 +3,7 @@
  * Wires the pure parts (logic.ts, api.ts) to the app's auth session, local
  * store, analytics and Plus state. Network only on the screen, never at launch.
  */
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { analyticsIdsForDeletion, forgetAnalyticsIds, forgetAnalyticsIdsSome, withdrawAnalytics } from '@/lib/analytics';
 import { authUserId } from '@/lib/auth/machine.logic';
 import { useAuth } from '@/lib/auth/session-provider';
@@ -42,13 +42,39 @@ export function useAccountDeletion() {
   // `limited` and `auth` come only from a Cancel deletion (CDesO-58, CDesO-59); a read or a request sets offline or failed.
   const [error, setError] = useState<CancelFailure | null>(null);
   const [cancelled, setCancelled] = useState(false);
+  // CDesO-64: a Cancel deletion ended `offline` or `failed`, so the phone does not know whether that press cancelled, and
+  // the date the page draws rests on a read from before it. Kept until something settles the request (a status read that
+  // went through, a cancel that succeeds, `executing`, `limited`); an `auth` refusal reads nothing, so it keeps the mark,
+  // and the page says the outcome is not known instead of "Nothing has changed" (cancelFailureLine).
+  const [outcomeUnknown, setOutcomeUnknown] = useState(false);
   const [busy, setBusy] = useState(false);
+  // The session this state belongs to: `n` counts the changes of the signed-in user in this mount, a sign-out included
+  // (the user becomes null). A failed press's error and a cancel's success are the last session's, so they go when it
+  // ends: without this, a person who signed out and back in on the same page met the old "not clear yet" line again
+  // (review follow-up on #2166). Adjusted during render, as React does for state that follows a prop, so no frame draws
+  // the old line. The pages tie their own "a cancel was pressed" to `session` for the same reason.
+  const [session, setSession] = useState({ of: userId, n: 0 });
+  if (session.of !== userId) {
+    setSession({ of: userId, n: session.n + 1 });
+    setError(null);
+    setCancelled(false);
+    setOutcomeUnknown(false);
+  }
+  // The session as last committed, for an answer that arrives later: a cancel pressed in one session and answered after a
+  // sign-out (and perhaps a sign-in) belongs to the session that ended, so it changes nothing here. Without this, a late
+  // `failed` drew "Nothing has changed" under the new session's date, or a late `executing` moved the new session's page
+  // (review Shoulds on #2217).
+  const liveSession = useRef(session.n);
+  useEffect(() => {
+    liveSession.current = session.n;
+  }, [session.n]);
 
   const refresh = useCallback(async () => {
     if (!client || !auth.signedIn) return;
     const [s, b] = await Promise.all([loadStatus(client), loadBooks(client)]);
     if (s.ok) {
       setStatus(s.value);
+      setOutcomeUnknown(false);
       // What the server says about the open request is remembered on this phone, so a phone that lists no book
       // (a sole parent's book goes with the request) shows the deletion screen and never the welcome (open-request.ts).
       // For the account that asked: an answer that lands after another account has signed in is dropped.
@@ -97,18 +123,26 @@ export function useAccountDeletion() {
     if (!client) return false;
     setBusy(true);
     setError(null);
-    const r = await cancelDeletion(client);
+    const pressedIn = liveSession.current;
+    const r = await cancelDeletion(client, userId);
     setBusy(false);
+    // An answer for a session that has ended is dropped whole, the phone's note included: the note is only the phone's
+    // memory of the request, and the new session's own read puts it right.
+    if (liveSession.current !== pressedIn) return false;
     if (!r.ok && r.reason === 'executing') {
       // Nothing was open to cancel because the deletion is being carried out (CDesO-59 case 3): no failure line, the page
       // moves to its executing state, as its next read would. The note is written as refresh writes it, so the deletion
       // screen (which draws from the note) moves too.
       setStatus(r.status);
+      setOutcomeUnknown(false);
       if (bookVisibleNow()) recordStatus(r.status, userId);
       return false;
     }
     if (!r.ok) {
       setError(r.reason);
+      // `limited` is raised only once an open request is found, so the request is known to be open (CDesO-58, CDesO-64).
+      if (r.reason === 'offline' || r.reason === 'failed') setOutcomeUnknown(true);
+      else if (r.reason === 'limited') setOutcomeUnknown(false);
       return false;
     }
     // A co-parent's book never left, so the note goes. A sole parent's book is on the server again and comes back with
@@ -122,6 +156,7 @@ export function useAccountDeletion() {
       /* the screen goes on: the cancel itself went through */
     }
     setStatus({ state: 'none' });
+    setOutcomeUnknown(false);
     setCancelled(true);
     return true;
   }, [client, userId]);
@@ -133,8 +168,10 @@ export function useAccountDeletion() {
     lines,
     subscriptionNotice,
     error,
+    outcomeUnknown,
     cancelled,
     busy,
+    session: session.n,
     request,
     cancel,
     signOut: auth.signOut,

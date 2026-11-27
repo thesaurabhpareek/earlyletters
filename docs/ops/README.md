@@ -8,6 +8,8 @@ Labels: **Verified** means checked on an opened vendor page or in installed libr
 | File | For |
 |---|---|
 | [SECURITY.md](SECURITY.md) | Every secret and who holds it, key rotation, least privilege, the Supabase settings checklist, the Sign in with Apple key for token revocation |
+| [WISP.md](WISP.md) | Written information security programme, short form (LEGAL-REQ-028): who owns security, what it covers, the safeguards and where each lives. Draft for the CISO read |
+| [RISK_REGISTER.md](RISK_REGISTER.md) | The security risks found in these documents, scored, with controls, owner role and next action. Draft for the CISO read |
 | [DOMAINS.md](DOMAINS.md) | earlyletters.com and earlyletters.app at Porkbun: account security, every DNS record, DMARC plan, CAA, Vercel, packs CDN, universal links, addresses, security.txt |
 | [PACKS_HOSTING.md](PACKS_HOSTING.md) | Language packs, speech models and signed documents on `packs.earlyletters.app`: signing key, bucket, upload, verify, rollback, cost |
 | [well-known/](well-known/) | Files the website must serve: `apple-app-site-association`, `security.txt` |

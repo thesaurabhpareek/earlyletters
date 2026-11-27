@@ -35,11 +35,13 @@ describe('the bar shows at low progress', () => {
     expect(card).not.toMatch(/shownPercent\(line\.bar\) \?\? 0/);
   });
 
-  it('track controlBorder (bg-input, never bg-border), fill accent (bg-primary), grown by scaleX, never width', () => {
+  it('track the tinted-card thin track (never bg-border or bg-input), fill accent, grown by scaleX, never width', () => {
     const bar = card.slice(card.indexOf('function ProgressLine'));
-    expect(bar).toMatch(/rounded-full bg-input/);
-    expect(bar).not.toMatch(/bg-border/);
-    expect(bar).toMatch(/bg-primary/);
+    // BL-1752: accent on controlBorder (bg-input) was under 3:1 (WCAG 1.4.11); test/semantic-tokens.test.ts holds the
+    // named colours to tokens.progress.
+    expect(bar).toMatch(/backgroundColor: c\.bg\b/);
+    expect(bar).not.toMatch(/bg-border|bg-input/);
+    expect(bar).toMatch(/backgroundColor: c\.accent\b/);
     expect(bar).toMatch(/scaleX: scale\.value/);
     expect(bar).toMatch(/transformOrigin: 'left'/);
     expect(bar).not.toMatch(/width: `/);

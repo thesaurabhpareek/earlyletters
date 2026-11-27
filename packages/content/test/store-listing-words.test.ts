@@ -115,15 +115,23 @@ function loadClaims(json: string): Claims {
   const text = (v: unknown, where: string): string => (typeof v === 'string' && v.trim() !== '' ? v : bad(`${where} is not a sentence`));
   const fill = (v: unknown, where: string) => text(v, where).replace(/\{([\w.]+)\}/g, (m, key: string) => PLACEHOLDERS[key] ?? bad(`${where}: unknown placeholder ${m}`));
   const list = (v: unknown, where: string): unknown[] => (Array.isArray(v) ? v : bad(`${where} is not a list`));
-  const data = JSON.parse(json) as Record<string, unknown>;
+  /** A misspelled key would be read as missing (a "neds" row loses its build fact), so every key must be known. */
+  const keysOf = (v: unknown, where: string, known: readonly string[]): Record<string, unknown> => {
+    const o = v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : bad(`${where || 'the file'} is not an object`);
+    for (const k of Object.keys(o)) if (!known.includes(k)) bad(`${where ? `${where}: ` : ''}unknown key ${JSON.stringify(k)}`);
+    return o;
+  };
+  const data = keysOf(JSON.parse(json), '', ['about', 'claims', 'whatsNewFrames', 'whatsNewFeatures', 'keywords']);
   const claims = list(data.claims, 'claims').map((r, i): Row => {
-    const row = r as Record<string, unknown>;
-    const needs = row.needs === undefined ? undefined : list(row.needs, `claims[${i}].needs`).map((n) => (typeof n === 'string' && n in NEEDS ? (n as Need) : bad(`claims[${i}]: unknown build fact ${JSON.stringify(n)}`)));
+    const row = keysOf(r, `claims[${i}]`, ['say', 'needs', 'source']);
+    const needList = row.needs === undefined ? undefined : list(row.needs, `claims[${i}].needs`);
+    if (needList && needList.length === 0) bad(`claims[${i}].needs is empty`);
+    const needs = needList?.map((n) => (typeof n === 'string' && Object.hasOwn(NEEDS, n) ? (n as Need) : bad(`claims[${i}]: unknown build fact ${JSON.stringify(n)}`)));
     return { say: fill(row.say, `claims[${i}].say`), ...(needs ? { needs } : {}), source: text(row.source, `claims[${i}].source`) };
   });
   const whatsNewFrames = list(data.whatsNewFrames, 'whatsNewFrames').map((f, i) => fill(f, `whatsNewFrames[${i}]`));
   const whatsNewFeatures = list(data.whatsNewFeatures, 'whatsNewFeatures').map((f, i): Feature => {
-    const row = f as Record<string, unknown>;
+    const row = keysOf(f, `whatsNewFeatures[${i}]`, ['clause', 'claim', 'flag']);
     const flag = row.flag === null ? null : text(row.flag, `whatsNewFeatures[${i}].flag`);
     return { clause: text(row.clause, `whatsNewFeatures[${i}].clause`), claim: text(row.claim, `whatsNewFeatures[${i}].claim`), flag };
   });
@@ -251,6 +259,16 @@ describe('[FR-MKT-08] every description line is true of the sign-in-required sto
     expect(() => loadClaims(row({ say: 'A line.', needs: ['servers maybe'], source: AUDIT }))).toThrow(/unknown build fact/);
     expect(() => loadClaims(row({ say: '{brand.nickname} is here.', source: AUDIT }))).toThrow(/unknown placeholder/);
     expect(() => loadClaims(row({ say: 'A line.' }))).toThrow(/source is not a sentence/);
+  });
+
+  it('[FR-MKT-08] [mutant] the claims file refuses a key it does not know, so a misspelled "needs" cannot drop a build fact', () => {
+    const file = (o: object) => JSON.stringify({ claims: [], whatsNewFrames: [], whatsNewFeatures: [], keywords: {}, ...o });
+    expect(() => loadClaims(file({ claims: [{ say: 'A line.', neds: ['servers on'], source: AUDIT }] }))).toThrow(/claims\[0\]: unknown key "neds"/);
+    expect(() => loadClaims(file({ whatsNewFeatures: [{ clause: 'a clause', claim: 'A claim', flag: null, flg: 'X' }] }))).toThrow(/whatsNewFeatures\[0\]: unknown key "flg"/);
+    expect(() => loadClaims(file({ keyword: {} }))).toThrow(/unknown key "keyword"/);
+    expect(() => loadClaims(file({ claims: [{ say: 'A line.', needs: ['toString'], source: AUDIT }] }))).toThrow(/unknown build fact "toString"/);
+    expect(() => loadClaims(file({ claims: [{ say: 'A line.', needs: [], source: AUDIT }] }))).toThrow(/claims\[0\]\.needs is empty/);
+    expect(loadClaims(file({ about: 'A note.', claims: [{ say: 'A line.', needs: ['servers on'], source: AUDIT }] })).claims).toEqual([{ say: 'A line.', needs: ['servers on'], source: AUDIT }]);
   });
 
   it('[FR-MKT-08] [mutant] a row whose build fact is false is caught', () => {
@@ -614,31 +632,57 @@ const answersDigest = (answers: Record<string, string>) =>
     .digest('hex');
 
 /**
- * Wordings that put a thing off the phone: our servers or the cloud, an upload or a sync, an account or "with us", a
- * new or another phone, or leaving the phone. A sentence that names the thing and one of these states the practice.
+ * Wordings that put a thing off the phone: our servers, the cloud or a named cloud, a backup, an upload or a sync, an
+ * account or "with us", a new, next or another phone, coming back or being restored, or leaving the phone. A sentence
+ * that names the thing and one of these states the practice.
  */
 const OFF_PHONE = [
-  String.raw`our servers?`,
+  String.raw`(?:our|secure|remote) (?:\w+ )?servers?`,
   String.raw`the cloud`,
+  String.raw`online`,
+  String.raw`icloud|google drive|dropbox`,
+  String.raw`(?:our|a|the) (?:\w+ )?backups?`,
   String.raw`backed up`,
   String.raw`uploaded`,
   String.raw`sent to us`,
   String.raw`we (?:keep|store|save|hold)`,
   String.raw`sync(?:s|ed|ing)?`,
   String.raw`synchroni[sz](?:e|es|ed|ing)`,
-  String.raw`(?:to|in|on|with) (?:your|an|the|our) account`,
-  String.raw`(?:stored|kept|saved|held|stays?) with us`,
+  String.raw`(?:to|in|on|with) (?:your|an|the|our) (?:\w+ ){0,2}account`,
+  String.raw`(?:stored|kept|saved|held|stays?|safe) with us`,
   String.raw`(?:a|your|the|any) new (?:phone|iphone|device)s?`,
   String.raw`(?:another|any other|every|all your) (?:phone|iphone|device)s?`,
+  String.raw`(?:your|a|the) next (?:phone|iphone|device)s?`,
+  String.raw`follows? you`,
+  String.raw`comes? back`,
+  String.raw`restor(?:e|es|ed|ing)`,
   String.raw`(?:leaves?|leaving|left) (?:the|your|this) phone`,
   String.raw`off (?:the|your|this) phone`,
 ].join('|');
 /** Verbs that put the thing named after them off the phone ("we back up your recordings", "sync your photos"). */
 const OFF_PHONE_VERB = String.raw`sync(?:s|ed|ing)?|back(?:s|ed)? up|upload(?:s|ed|ing)?|sends?`;
 
+/**
+ * "We" holding the thing named after it ("we store your recordings", "we keep a copy of every recording"). Up to two
+ * words may sit between "we" and the verb ("we really do store"), unless one of them denies it: "we never store your
+ * recordings" and "we don't keep them" state no practice. Only this branch reads a denial; the other two refuse "we
+ * never upload your recordings" too, which errs on the safe side. A sentence that ends by keeping the thing on the
+ * phone ("we keep your recordings on the phone that made them") states no practice either (see ON_THE_PHONE).
+ */
+const WE_HOLD = String.raw`\bwe(?:'ll|'d)?\s+(?:(?!(?:never|not|no|don't|won't|cannot|can't)(?![\w']))[\w']+\s+){0,2}(?:keep|store|save|hold|copy)s?\b(?:\s+[^\s.]+){0,4}?\s+`;
+/**
+ * The words that keep the thing on the phone, read in the we-branch only and only right after the thing, closing the
+ * sentence: "we keep your recordings on the phone that made them." Anything after the phone ("and back them up") or
+ * before it ("so you can play them on your phone") leaves the line refused.
+ */
+const ON_THE_PHONE = String.raw`(?!\s+(?:only\s+)?on (?:this|your|the) phone(?: that made (?:them|it))?\s*(?:[.!?;]|$))`;
+
 /** A sentence that says the thing leaves the phone, as a regex over one sentence (no period in between). */
 const leavesThePhone = (thing: string) =>
-  new RegExp(String.raw`\b(?:${thing})\b[^.]*\b(?:${OFF_PHONE})\b|\b(?:${OFF_PHONE_VERB})\b(?:\s+\S+){0,3}?\s+(?:${thing})\b`, 'i');
+  new RegExp(
+    String.raw`\b(?:${thing})\b[^.]*\b(?:${OFF_PHONE})\b|\b(?:${OFF_PHONE_VERB})\b(?:\s+[^\s.]+){0,3}?\s+(?:${thing})\b|${WE_HOLD}(?:${thing})\b${ON_THE_PHONE}`,
+    'i',
+  );
 
 /**
  * Practices a text may not state while the label says the data is not collected. Read from the answers, so a label
@@ -649,7 +693,7 @@ function contradictions(texts: readonly { id: string; text: string }[], answers:
   const rules: { when: boolean; says: RegExp; why: string }[] = [
     {
       when: notCollected('User Content / Audio Data'),
-      says: leavesThePhone(String.raw`recordings?|audio`),
+      says: leavesThePhone(String.raw`recordings?|audio|voice(?: notes?| memos?| recordings?)?`),
       why: 'Audio Data is not collected: no recording leaves the phone',
     },
     {
@@ -720,6 +764,30 @@ describe('[FR-MKT-16] a privacy label change moves every public privacy line in 
     ['/support', 'We back up your recordings every night.'],
     [STORE, 'Recordings leave the phone only to reach your new iPhone.'],
     [STORE, 'We sync your recordings too.'],
+    [STORE, 'We store your recordings safely.'],
+    [SITE, 'We keep a copy of every recording.'],
+    ['/support', 'Your voice is kept on our servers.'],
+    [SITE, 'Recordings are kept online.'],
+    [STORE, 'Your recordings follow you to your next phone.'],
+    ['/support', 'Recordings come back if you lose your phone.'],
+    ['/support', 'Recordings are restored when you sign in again.'],
+    [SITE, 'Recordings are kept in iCloud.'],
+    [STORE, 'Your voice notes go to our backup.'],
+    [SITE, 'We really do store your recordings.'],
+    ['/support', "We'll keep your recordings."],
+    [SITE, 'Recordings reach your next phone.'],
+    [SITE, 'Your recordings follow you everywhere.'],
+    ['/support', 'We copy your recordings.'],
+    [STORE, 'Recordings are kept on our secure servers.'],
+    [SITE, 'Recordings are stored on secure servers.'],
+    ['/support', 'Recordings go into a nightly backup.'],
+    [SITE, 'Your recordings are safe with us.'],
+    ['/support', `Recordings are saved to your ${brand.name} account.`],
+    [STORE, 'We keep your recordings on the phone and on our servers.'],
+    [SITE, 'We keep your recordings on your phone and back them up nightly.'],
+    ['/support', 'We keep your recordings safe, not just on your phone.'],
+    [STORE, 'We store your recordings so you can play them on your phone.'],
+    [SITE, 'We keep your recordings, so you can free up space on your phone.'],
   ];
   for (const [id, planted] of audioMutants) {
     it(`[FR-MKT-16] [mutant] ${id} saying "${planted}" is refused while Audio Data is not collected`, () => {
@@ -729,10 +797,35 @@ describe('[FR-MKT-16] a privacy label change moves every public privacy line in 
     });
   }
 
+  const trueAudioLines = [
+    'We never store your recordings.',
+    'We do not keep your recordings.',
+    'We would never ever store your recordings.',
+    'We no longer store your recordings.',
+    "We don't keep your recordings.",
+    "We won't store your recordings.",
+    'We cannot store your recordings.',
+    "We can't keep your recordings.",
+    'We keep your recordings only on this phone.',
+    'We keep your recordings on the phone that made them.',
+    'We keep it simple. Recordings stay on this phone.',
+    'We keep it short. Your recordings are private.',
+    'We back up nothing. Recordings stay on this phone.',
+    'Recordings are kept on the phone that made them.',
+    'Keep your recordings on this phone.',
+    'Your voice stays on this phone.',
+  ];
+  for (const planted of trueAudioLines) {
+    it(`[FR-MKT-16] [mutant] "${planted}" is not refused: it keeps the recording on the phone`, () => {
+      expect(contradictions(withPlanted(SITE, planted), answers)).toEqual([]);
+    });
+  }
+
   const photoMutants: Array<[string, string]> = [
     [SITE, 'Your photos sync to your new phone.'],
     ['/support', 'Pictures are saved to your account.'],
     ['/support', 'We upload your videos so they reach another phone.'],
+    [SITE, 'We store your photos safely.'],
   ];
   for (const [id, planted] of photoMutants) {
     it(`[FR-MKT-16] [mutant] ${id} saying "${planted}" is refused while Photos or Videos is not collected`, () => {

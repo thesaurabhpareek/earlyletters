@@ -10,6 +10,7 @@
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 import { authCopy } from '@scribe/content';
 
@@ -25,6 +26,103 @@ const between = (src: string, from: string, to: string) => {
   return src.slice(a, b);
 };
 
+/**
+ * useCloseSheet (lib/auth/ui.tsx) may only navigate (BL-452 point 4). Read from the syntax tree, not by matching call
+ * names, so a write cannot hide behind a navigation-shaped name. Returns what breaks the rule, empty when it holds:
+ * - an aliased receiver: inside the hook, the only names are the hooks, `navigation`, `parent` and expo-router's
+ *   `router`, so `const kv = someStore; kv.replace(...)` is a stranger name, not a `replace` call;
+ * - an optional call: `persist?.(...)` is a call like any other (a CallExpression with a `?.` token);
+ * - a subpath store import: every module ui.tsx loads is checked by path segment, so `@/lib/store/settings` and
+ *   `../db/letters` fail as `@/lib/store` does;
+ * - a transitive write: every callee is one of eight exact calls on those bindings, `router`, `useNavigation` and
+ *   `useCallback` must come from expo-router and react and be declared nowhere else in the file, and the callback is
+ *   written inline, so a local helper or a wrapped router (whose body writes) cannot be reached from the hook.
+ */
+const CLOSE_NAMES = new Set(['useNavigation', 'useCallback', 'navigation', 'parent', 'router']);
+const CLOSE_CALLS = new Set(['useNavigation', 'useCallback', 'navigation.getParent', 'parent.canGoBack', 'parent.goBack', 'router.canGoBack', 'router.back', 'router.replace']);
+const CLOSE_LOCALS = { navigation: 'useNavigation()', parent: 'navigation.getParent()' } as Record<string, string>;
+const CLOSE_IMPORTS = { router: 'expo-router', useNavigation: 'expo-router', useCallback: 'react' } as Record<string, string>;
+const STORE_MODULE = /(^|\/)(store|db)(\/|$)|secure-?stor/i;
+function closeSheetProblems(src: string): string[] {
+  const file = ts.createSourceFile('ui.tsx', src, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const out: string[] = [];
+  const declared = new Map<string, number>();
+  const modules: string[] = [];
+  let hook: ts.FunctionDeclaration | undefined;
+  const walk = (n: ts.Node) => {
+    if (ts.isImportDeclaration(n) || ts.isExportDeclaration(n)) {
+      if (n.moduleSpecifier && ts.isStringLiteral(n.moduleSpecifier)) modules.push(n.moduleSpecifier.text);
+    } else if (ts.isCallExpression(n) && (n.expression.kind === ts.SyntaxKind.ImportKeyword || (ts.isIdentifier(n.expression) && n.expression.text === 'require'))) {
+      const [arg] = n.arguments;
+      modules.push(arg && ts.isStringLiteralLike(arg) ? arg.text : '<computed module>');
+    }
+    if (ts.isFunctionDeclaration(n) && n.name?.text === 'useCloseSheet') hook = n;
+    const name = (n as { name?: ts.Node }).name;
+    const declares = ts.isVariableDeclaration(n) || ts.isFunctionDeclaration(n) || ts.isParameter(n) || ts.isBindingElement(n) || ts.isClassDeclaration(n) || ts.isImportSpecifier(n) || ts.isImportClause(n) || ts.isNamespaceImport(n) || ts.isImportEqualsDeclaration(n);
+    if (declares && name && ts.isIdentifier(name)) declared.set(name.text, (declared.get(name.text) ?? 0) + 1);
+    ts.forEachChild(n, walk);
+  };
+  walk(file);
+
+  for (const m of modules) if (STORE_MODULE.test(m)) out.push(`ui.tsx loads a store module: ${m}`);
+  for (const [local, from] of Object.entries(CLOSE_IMPORTS)) {
+    const bound = file.statements.some(
+      (st) =>
+        ts.isImportDeclaration(st) &&
+        ts.isStringLiteral(st.moduleSpecifier) &&
+        st.moduleSpecifier.text === from &&
+        st.importClause?.namedBindings &&
+        ts.isNamedImports(st.importClause.namedBindings) &&
+        st.importClause.namedBindings.elements.some((e) => e.name.text === local && (e.propertyName?.text ?? local) === local && !e.isTypeOnly),
+    );
+    if (!bound) out.push(`${local} is not imported from ${from}`);
+    if ((declared.get(local) ?? 0) !== 1) out.push(`${local} is declared ${declared.get(local) ?? 0} times in ui.tsx`);
+  }
+  if (!hook?.body) return [...out, 'useCloseSheet not found'];
+
+  const callee = (e: ts.Expression): string =>
+    ts.isIdentifier(e) ? e.text : ts.isPropertyAccessExpression(e) && ts.isIdentifier(e.expression) ? `${e.expression.text}.${e.name.text}` : `<${ts.SyntaxKind[e.kind]}>`;
+  const inHook = (n: ts.Node) => {
+    if (ts.isCallExpression(n)) {
+      const c = callee(n.expression);
+      if (!CLOSE_CALLS.has(c)) out.push(`call ${n.getText(file)}`);
+      if (c === 'useCallback' && !(n.arguments[0] && (ts.isArrowFunction(n.arguments[0]) || ts.isFunctionExpression(n.arguments[0])))) out.push('useCallback is not given its callback inline');
+    } else if (ts.isNewExpression(n) || ts.isTaggedTemplateExpression(n) || ts.isElementAccessExpression(n) || ts.isDeleteExpression(n) || ts.isAwaitExpression(n)) {
+      out.push(`${ts.SyntaxKind[n.kind]} ${n.getText(file)}`);
+    } else if (ts.isBinaryExpression(n) && n.operatorToken.kind >= ts.SyntaxKind.FirstAssignment && n.operatorToken.kind <= ts.SyntaxKind.LastAssignment) {
+      out.push(`assignment ${n.getText(file)}`);
+    } else if ((ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && (n.operator === ts.SyntaxKind.PlusPlusToken || n.operator === ts.SyntaxKind.MinusMinusToken)) {
+      out.push(`update ${n.getText(file)}`);
+    } else if (ts.isVariableDeclaration(n)) {
+      const name = n.name.getText(file);
+      if (CLOSE_LOCALS[name] !== n.initializer?.getText(file).replace(/\s/g, '')) out.push(`declaration ${n.getText(file)}`);
+    } else if (ts.isPropertyAccessExpression(n) && !CLOSE_CALLS.has(callee(n))) {
+      out.push(`access ${n.getText(file)}`);
+    } else if (ts.isIdentifier(n)) {
+      const p = n.parent;
+      const isPropertyName = ts.isPropertyAccessExpression(p) && p.name === n;
+      if (!isPropertyName && !CLOSE_NAMES.has(n.text)) out.push(`name ${n.text}`);
+    }
+    ts.forEachChild(n, inHook);
+  };
+  ts.forEachChild(hook.body, inHook);
+  return out;
+}
+
+/**
+ * The scan as it stood before BL-452, kept only so each fixture below proves it closes a miss the old scan had:
+ * call names matched by a regex inside the slice, and a store import matched only at the package root.
+ */
+function closeSheetProblemsBefore452(src: string): string[] {
+  const slice = src.slice(src.indexOf('export function useCloseSheet'), src.indexOf('export function SheetFrame'));
+  const calls = [...slice.matchAll(/([A-Za-z_$][\w$]*)\s*\(/g)].map((m) => m[1]);
+  const NAVIGATION = new Set(['useCloseSheet', 'useNavigation', 'useCallback', 'getParent', 'canGoBack', 'goBack', 'back', 'replace', 'if']);
+  const out = calls.filter((c) => !NAVIGATION.has(c)).map((c) => `call ${c}`);
+  if (!calls.includes('getParent') || !calls.includes('goBack')) out.push('no getParent or goBack');
+  if (/from '@\/lib\/(?:store|db)'|from '\.\.\/store'|secure-storage|setSetting/.test(src)) out.push('store import');
+  return out;
+}
+
 const layout = read('app', '(auth)', '_layout.tsx');
 const sheet = read('app', '(auth)', 'sign-in', 'index.tsx');
 const email = read('app', '(auth)', 'sign-in', 'email.tsx');
@@ -33,6 +131,8 @@ const verify = read('app', '(auth)', 'sign-in', 'verify.tsx');
 const consent = read('app', '(auth)', 'sign-in', 'consent.tsx');
 const account = read('app', 'settings', 'account.tsx');
 const ui = read('lib', 'auth', 'ui.tsx');
+const provider = read('lib', 'auth', 'session-provider.tsx');
+const earlyEndLine = read('components', 'auth', 'use-early-end-line.ts');
 const SCREENS = { sheet, email, codeStep, verify, consent, account, ui };
 
 describe('[P8a] every word comes from packages/content', () => {
@@ -66,14 +166,60 @@ describe('[S52] the sign-in sheet', () => {
     // track() stores and sends nothing before analytics consent (packages/analytics client; off in v1.0, D-088,
     // test/analytics-off-v1.test.ts), and close() is navigation. The sheet reaches no local store at all.
     expect(sheet).not.toMatch(/from '@\/lib\/(?:store|db)|setSetting|secureStorage/);
-    // close() is useCloseSheet (lib/auth/ui.tsx): it may only navigate. Every call in its body is a navigation call,
-    // so a write added there (a setting, the Keychain, the store) fails here.
+    // close() is useCloseSheet (lib/auth/ui.tsx): it may only navigate, so a write added there (a setting, the
+    // Keychain, the store), directly or through a helper, fails here (closeSheetProblems, BL-452 point 4).
+    expect(closeSheetProblems(ui)).toEqual([]);
     const closeSheet = between(ui, 'export function useCloseSheet', 'export function SheetFrame');
-    const calls = [...closeSheet.matchAll(/([A-Za-z_$][\w$]*)\s*\(/g)].map((m) => m[1]);
-    const NAVIGATION = new Set(['useCloseSheet', 'useNavigation', 'useCallback', 'getParent', 'canGoBack', 'goBack', 'back', 'replace', 'if']);
-    expect(calls.filter((c) => !NAVIGATION.has(c))).toEqual([]);
-    expect(calls).toEqual(expect.arrayContaining(['getParent', 'goBack']));
-    expect(ui).not.toMatch(/from '@\/lib\/(?:store|db)'|from '\.\.\/store'|secure-storage|setSetting/);
+    expect(closeSheet).toMatch(/navigation\.getParent\(\)/);
+    expect(closeSheet).toMatch(/parent\.goBack\(\)/);
+    expect(ui).not.toMatch(/setSetting/);
+  });
+
+  describe('[BL-452 point 4] the close-sheet scan catches what the name scan missed', () => {
+    const hookBody = 'if (parent?.canGoBack()) parent.goBack();';
+    const copyImport = "import { copy } from '@/lib/copy';";
+    const addImport = (line: string) => ui.replace(copyImport, `${copyImport}\n${line}`);
+    /** Each mutant of ui.tsx, and the finding the new scan must report for it. */
+    const mutants: Record<string, [src: string, caughtAs: string]> = {
+      // A write through an aliased receiver whose method shares a navigation name.
+      'aliased receiver': [
+        addImport("import { sheetMemory } from '@/lib/sheet-memory';").replace(hookBody, `const memo = sheetMemory;\n    memo.replace('closed');\n    ${hookBody}`),
+        "call memo.replace('closed')",
+      ],
+      // A write by optional-call syntax: `name?.(` has no `(` straight after the name.
+      'optional call': [
+        addImport("import { persist } from '@/lib/keep';").replace(hookBody, `persist?.('sheet', 'closed');\n    ${hookBody}`),
+        "call persist?.('sheet', 'closed')",
+      ],
+      // Store modules imported by subpath, which the root-only pattern did not match.
+      'subpath store import': [addImport("import { useLetters } from '@/lib/store/letters';"), 'ui.tsx loads a store module: @/lib/store/letters'],
+      'subpath db import': [addImport("import { openDb } from '../db/open';"), 'ui.tsx loads a store module: ../db/open'],
+      // A transitive write: a helper declared outside the hook, named like a navigation call, writes then navigates.
+      'transitive write through a local helper': [
+        ui
+          .replace('export function useCloseSheet', "function replace(to: string) {\n  persistSheet('closed');\n  router.replace(to);\n}\n\nexport function useCloseSheet")
+          .replace("else router.replace('/');", "else replace('/');"),
+        "call replace('/')",
+      ],
+      // A transitive write: `router` comes from a wrapper module whose back() writes.
+      'transitive write through a wrapped router': [
+        ui.replace("import { router, useNavigation } from 'expo-router';", "import { useNavigation } from 'expo-router';\nimport { router } from '@/lib/remembering-router';"),
+        'router is not imported from expo-router',
+      ],
+    };
+
+    it('the real hook passes both scans', () => {
+      expect(closeSheetProblems(ui)).toEqual([]);
+      expect(closeSheetProblemsBefore452(ui)).toEqual([]);
+    });
+
+    for (const [name, [src, caughtAs]] of Object.entries(mutants)) {
+      it(`${name}: missed before BL-452, caught now`, () => {
+        expect(src, 'the mutant was not applied').not.toBe(ui);
+        expect(closeSheetProblemsBefore452(src)).toEqual([]);
+        expect(closeSheetProblems(src)).toContain(caughtAs);
+      });
+    }
   });
 
   it('the kill path shows only its line, with no way in', () => {
@@ -458,15 +604,26 @@ describe('[S56] Account', () => {
     expect(account).toMatch(/\{waitingToSignOut \? null : <ListRow title=\{a\.signOut\}/);
   });
 
-  it('[BL-451] a wait that ended before the letters were sent is said once on the signed-out page', () => {
-    // What the line does is nextEndedEarly's (account-view.test.ts). The page's part: each state change goes through it
-    // with the state before it, `previous` moves on only after, the effect runs on every change, and it announces.
-    expect(account).toMatch(
-      /useEffect\(\(\) => \{\s*const step = nextEndedEarly\(previous\.current, s, endedEarly\);\s*previous\.current = s;\s*if \(step\.shown !== endedEarly\) setEndedEarly\(step\.shown\);\s*if \(step\.announce\) announce\(a\.signOutEarly\);\s*\}, \[s, endedEarly, a\.signOutEarly\]\);/,
+  it('[BL-451][BL-479] a wait that ended before the letters were sent is said once on the signed-out page', () => {
+    // What the line does is nextEndedEarly's and heldEndedEarly's (account-view.test.ts); the provider and the page are
+    // run in test/session-provider-early-end.test.ts. Pinned here: CPO-105's shape. The provider moves the flag on every
+    // state change with the state before it (`endedEarlyFrom` moves on only after), in one place, and publishes it.
+    expect(provider).toMatch(
+      /useEffect\(\(\) => \{\s*const prev = endedEarlyFrom\.current;\s*endedEarlyFrom\.current = state;\s*setEndedEarly\(\(held\) => heldEndedEarly\(prev, state, held\)\);\s*\}, \[state\]\);/,
     );
-    expect(account).toMatch(/const previous = useRef\(s\);/);
-    expect(account.match(/previous\.current = /g), 'moved on in one place').toHaveLength(1);
-    expect(account.match(/setEndedEarly\(/g), 'set in one place').toHaveLength(1);
+    expect(provider).toMatch(/const endedEarlyFrom = useRef\(state\);/);
+    expect(provider).toMatch(/const \[endedEarly, setEndedEarly\] = useState<EndedEarly>\(NOT_ENDED_EARLY\);/);
+    expect(provider.match(/endedEarlyFrom\.current = /g), 'moved on in one place').toHaveLength(1);
+    expect(provider.match(/setEndedEarly\(/g), 'set in one place').toHaveLength(1);
+    expect(between(provider, 'const api = useMemo', '[state, sb,')).toMatch(/^\s*endedEarly,$/m);
+    expect(provider).toMatch(/\[state, sb, lastMethod, account, providerSignIn, remember, checkGate, claimPending, endedEarly\]/);
+    // The page keeps no copy of its own (the BL-479 point 1 bug: a page-local flag is lost when Account is not open).
+    expect(account).toMatch(/const endedEarly = useEarlyEndLine\(auth\.endedEarly, a\.signOutEarly\);/);
+    expect(account).not.toMatch(/nextEndedEarly|heldEndedEarly|setEndedEarly|const previous = useRef/);
+    expect(account).not.toMatch(/announce\(a\.signOutEarly\)/);
+    // The page speaks only a move of `said` it sees while open, from the count it found on arrival.
+    expect(earlyEndLine).toMatch(/const saidAtVisit = useRef\(held\.said\);/);
+    expect(earlyEndLine).toMatch(/if \(held\.said === saidAtVisit\.current\) return;\s*saidAtVisit\.current = held\.said;\s*announce\(line\);/);
     // Between the body and "Sign in" on the signed-out page.
     const out = between(account, 'if (!auth.signedIn) {', 'const provider');
     expect(out).toMatch(/fill\(a\.signedOutBody[\s\S]*\{endedEarly \? \(\s*<Text variant="body" testID="account\.signOutEarly">\s*\{a\.signOutEarly\}[\s\S]*label=\{a\.signIn\}/);

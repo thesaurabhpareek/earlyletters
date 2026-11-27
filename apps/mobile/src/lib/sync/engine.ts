@@ -10,6 +10,7 @@
  * backing off. One cycle runs at a time; requests during a cycle merge into
  * one follow-up cycle.
  */
+import { ERASE_EVERYTHING_SETTING, uploadsWaitForErase } from '../db/repos/wipe';
 import type { SqlDb } from '../db/sql';
 import { reconcileSearch } from '../find/lifecycle';
 import { backoffMs, classifyCallError, type CallFailure } from './errors';
@@ -179,8 +180,18 @@ export function createSyncEngine(deps: SyncEngineDeps): SyncEngine {
     // Held uploads that met SCCON themselves in this pass, so never applied: they need not go ahead of a let-go
     // (takeBatch), and the let-go goes next. One sent ahead and answered leaves the queue or stops held ops.
     const metSccon = new Set<string>();
+    // Set once this pass has read the old rows clean under a standing erase mark, so the read runs at most once a pass.
+    let eraseRowsClean = false;
     for (let round = 0; round < MAX_PUSH_ROUNDS; round++) {
       if (killed()) return 'stop';
+      // While an Erase everything retry still has old rows to remove nothing is uploaded (Karma rulings 7220668312 point 3
+      // and 7222053206 point 1, on #2102): a sign-in after a failed try queues the old books and letters (takeOwnership),
+      // and only the retry may decide which of those ops go. Once its rows read clean the kept ops go, even while a later
+      // step keeps the mark (wipe.ts uploadsWaitForErase). 'ok', so the pull still runs.
+      if (!eraseRowsClean && readSetting(db, ERASE_EVERYTHING_SETTING) !== null) {
+        if (uploadsWaitForErase(db)) return 'ok';
+        eraseRowsClean = true;
+      }
       const batch = takeBatch(db, { now: iso(), onlyDeletes, maxOps: single ? 1 : 50, metSccon });
       if (batch.rows.length === 0) break;
       tx(() => markSent(db, batch.rows, iso()));

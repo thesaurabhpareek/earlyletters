@@ -17,10 +17,20 @@
 // Read-only: every call is a GET through `gh api` (REST; GraphQL is blocked). There is no
 // write path in this file. No token is read or printed here; `gh` holds its own login.
 // The one exception, only with the CR-149 flag on: a local `git merge-tree --write-tree --no-messages <base sha> <head>`
-// in this checkout (execFile, no shell, both arguments checked to be 40 lowercase hex). It sends nothing to GitHub and
-// writes no ref, index or working-tree file (only tree and blob objects into the local object store). It needs both
-// commits already in the local clone, e.g. `git fetch origin develop refs/pull/<n>/head`; the queue never fetches, and a
-// missing commit is "could not run", which keeps the strict rule.
+// in this checkout, then `git diff-tree -r -z --raw --no-renames --ignore-submodules=none <base sha> <tree>` on the tree
+// it wrote (CR-70's mode check), both as `git --no-replace-objects` so a local replace ref cannot swap a commit (execFile,
+// no shell, every argument checked to be 40 lowercase hex). They write no ref, index or working-tree file (only tree and
+// blob objects into the local object store). Both commits must already be in the local clone, e.g. `git fetch origin
+// develop refs/pull/<n>/head`; the queue never fetches, and a missing commit is "could not run", which keeps the strict
+// rule. Use a full clone: in a partial (promisor) clone git may fetch a missing object from the remote by itself
+// (GIT_TERMINAL_PROMPT=0 makes that fail at once rather than wait on a prompt). Grafts are off (GIT_GRAFT_FILE).
+// What the queue trusts: the checkout it runs from and the environment it runs in. merge-tree reads that checkout's own
+// attributes (the working tree's .gitattributes, $GIT_DIR/info/attributes, core.attributesFile, the system
+// gitattributes file, attr.tree and GIT_ATTR_SOURCE), and a merge driver configured there is a command merge-tree runs,
+// which can turn a conflict into a clean merge; its merge.* and other config, the commit-graph file and any inherited
+// GIT_DIR or GIT_CONFIG_* variables count too. The PR's own .gitattributes is not used, and rule 4 holds any PR that
+// changes one. So run it from a clean develop checkout with a plain environment, never from a PR's worktree (there the
+// script itself would be PR content anyway).
 //
 // Rules it applies:
 // - A review counts only if the FIRST LINE of a PR comment is exactly
@@ -73,7 +83,10 @@
 //             package.json, native paths, migrations; an unreadable CODEOWNERS protects every path)
 //     rule 1  no file in common with the files develop changed since the merge base (compare `<head>...<base sha>`,
 //             filesSince, renames on both sides; a list of 300 files may be cut off and counts as overlap)
-//     rule 2  `git merge-tree --write-tree` of the base sha and the head is clean (conflict or could not run: strict)
+//     rule 2  `git merge-tree --write-tree` of the base sha and the head is clean (conflict or could not run: strict),
+//             and CR-70's mode check passes on that merge: `git diff-tree -r -z --raw --no-renames
+//             --ignore-submodules=none <base sha> <tree>` shows no mode 120000 (symlink) or 160000 (submodule) on either
+//             side of any entry (one: strict, with a note)
 //     rule 5  the base sha is read again; if it moved, rules 4, 1 and 2 run again on the new sha (at most 2 times, then
 //             "kept moving"). The merge call stays sha-pinned, and the ready line says to re-read the base first.
 //   Only PRs into develop (CR149_BASE) are relaxed; main, release branches and any other --base keep the strict rule.
@@ -281,9 +294,8 @@ export const CR70_EXTRA_PATHS = [
   /^apps\/mobile\/src\/lib\/backup\//i, /^apps\/mobile\/src\/lib\/analytics\//i, /(?:^|\/)\.?well-known\//i, /^apps\/mobile\/src\/lib\//i, /^apps\/web\/src\/lib\//i, /^packages\/api\//i, /^apps\/mobile\/src\/components\/family\//i, /^apps\/mobile\/src\/components\/app-lock\//i, /^packages\/core\//i, /^apps\/mobile\/src\/dev\//i, /^apps\/mobile\/src\/app\/_layout\.tsx$/i, /^packs\//i, /^apps\/mobile\/storekit\//i, /^apps\/mobile\/shims\//i, /(?:^|\/)tsconfig[^/]*\.json$/i, /(?:^|\/)migrations[-_]applied(?:\/|\.txt$)/i, /^apps\/mobile\/src\/app\//i, /^apps\/web\/src\/app\//i, /^apps\/web\/src\/content\//i, /^packages\/emails\//i, /^scripts\//i, /(?:^|\/)\.gitignore$/i, /(?:^|\/)\.nvmrc$/i, /(?:^|\/)agents\.md$/i, /(?:^|\/)vitest[^/]*\.config\.[a-z]+$/i, /(?:^|\/)env\.d\.ts$/i, /^apps\/mobile\/web-preview\//i, /^licen[cs]e(?:\.[a-z]+)?$/i, /^apps\/mobile\/src\/components\/(?:onboarding|settings|child|account|auth|gate|consent|photos)\//i, /(?:^|\/)e2e(?:-web)?\/(?:scripts|bin|ci|kill|support)\//i, /(?:^|\/)e2e(?:-web)?\/[^/]*config[^/]*$/i, /(?:^|\/)e2e\/(?:flows|subflows)\//i, /^experiments\//i, /^docs\/store\/(?:compliance|listing)\//i, /(?:^|\/)playwright[^/]*\.config\.[a-z]+$/i, /(?:^|\/)(?:public|assets)\/(?![^?#]*\.(?:png|jpe?g|gif|webp|avif|svg|ico|ttf|otf|woff2?|mp3|m4a|wav|mp4|webm)$)/i,
   /^apps\/mobile\/src\/app\/invite\//i, /^apps\/web\/src\/app\/j\//i, /^docs\/ops\/backup\//i, /(?:^|\/)\.git(?:modules|attributes)$/i,
   /^docs\/ops\/proposed\/standing-merge-delegation-decision\.md$/i,
-  // CR-229 (24 Nov 2026) added these to the CR-73 list: the trace gate reads them from the PR itself, so a PR could weaken
-  // the check that gates it. scripts/trace.mjs and scripts/trace.test.mjs are already held by /^scripts\//.
-  /^docs\/product\/prd\/14-test-plan\.md$/i, /^docs\/ops\/trace-ns-baseline\.txt$/i,
+  // CR-229's four trace gate paths are not repeated here: SECURITY_LENS_CLASSES holds them as its "trace gate" class
+  // (#2170), and protectedPathHits reads that list too, lowercasing the path, so case does not let one through.
   /auth|sign[-_]?in|sign[-_]?out|sign[-_]?up|log[-_]?in|log[-_]?out|session|token|vault|account|delet|erase|wipe|purge|forget|recover|restore|export|backup|invite|native-intent|deep[-_]?link|app[-_]?lock|biometric|face[-_]?id|password|secret|cred|jwt|crypt|key|agreement|age[-_]?gate|integrity|canonical|signature|signed|verif|hmac|unsubscribe|rate[-_]?limit|same[-_]?origin|unlock|passcode|hash|nonce|sso|mfa|totp|permission|role|admin|rls|csrf|cors|escrow|owner|presign|cookie|trust|identity|middleware|magic|otp|keychain|secure[-_]?stor|passkey|billing|payment|purchase|subscription|paywall|entitlement|iap|plus|security|supabase|privacy|terms|legal|consent|allow[-_]?list|deny[-_]?list|block[-_]?list/i,
 ];
 /** Lockfiles of any package manager, anywhere in the tree (CR-149 rule 4 says "no lockfile", not only the root one). */
@@ -426,28 +438,86 @@ export const cr149FlagOn = (env) => env?.[CR149_FLAG] === "1";
 /** The only base CR-149 relaxes: it rules on develop's churn. Every other base keeps the strict rule. */
 export const CR149_BASE = "develop";
 const SHA40 = /^[0-9a-f]{40}$/;
+/**
+ * The environment for the two local git reads: the caller's, with grafts turned off. `--no-replace-objects` does not
+ * cover `info/grafts`, so GIT_GRAFT_FILE points at a path that never exists, and a local graft cannot make git read a
+ * commit with other parents. GIT_TERMINAL_PROMPT=0 makes a partial clone that tries to fetch fail at once instead of
+ * waiting on a credential prompt until the timeout.
+ */
+const GIT_ENV = { ...process.env, GIT_GRAFT_FILE: "/nonexistent/merge-queue-no-grafts", GIT_TERMINAL_PROMPT: "0" };
 /** The repo root of this checkout (scripts/agents/../..): the only place the local `git merge-tree` runs. */
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 /**
- * CR-149 rule 2, default implementation: `git merge-tree --write-tree --no-messages <baseSha> <head>` in this checkout,
- * through execFile (never a shell). Returns "clean" (exit 0), "conflict" (exit 1) or "error" (anything else: an argument
+ * CR-149 rule 2, default implementation: `git --no-replace-objects merge-tree --write-tree --no-messages <baseSha> <head>`
+ * in this checkout, through execFile (never a shell). Returns "clean" (exit 0 and gitModeCheck "ok" on the tree it wrote), "special"
+ * (exit 0, but gitModeCheck found a symlink or submodule), "conflict" (exit 1) or "error" (anything else: an argument
  * that is not 40 lowercase hex, a commit missing from the local clone, a timeout, an output over maxBuffer, a git older
  * than 2.38 without --write-tree). git 2.43 also exits 1 for "not something we can merge" (a missing commit), so exit 0
  * and exit 1 count only when stdout's first line is the 40-hex tree id that --write-tree prints; otherwise "error".
- * That first line is the only thing read; stdout and stderr are never printed or returned.
+ * That first line is the only thing read; stdout and stderr are never printed or returned. A mode check that cannot run
+ * is "error", never "clean".
  * Both commits must already be in the local clone (for example `git fetch origin develop refs/pull/<n>/head`); the
  * queue never fetches. merge-tree writes tree and blob objects into the local object store, but no ref, no index and no
- * working-tree file, and it reads and writes nothing on GitHub. `run` and `cwd` are injectable for tests only.
+ * working-tree file, and it writes nothing on GitHub (in a full clone it reads nothing from it either; see the header).
+ * `run` and `cwd` are injectable for tests only.
  */
 export function gitMergeTree(baseSha, head, { run = execFile, cwd = REPO_ROOT, timeout = 60000 } = {}) {
   if (![baseSha, head].every((s) => typeof s === "string" && SHA40.test(s))) return Promise.resolve("error");
   return new Promise((resolve) => {
     try {
-      run("git", ["merge-tree", "--write-tree", "--no-messages", baseSha, head], { cwd, timeout, maxBuffer: 16 * 1024 * 1024, windowsHide: true }, (err, stdout) => {
-        const wrote = SHA40.test(String(stdout ?? "").split("\n", 1)[0]); // --write-tree printed a tree id
-        if (!err) return resolve(wrote ? "clean" : "error");
-        resolve(err.code === 1 && !err.killed && !err.signal && wrote ? "conflict" : "error");
+      run("git", ["--no-replace-objects", "merge-tree", "--write-tree", "--no-messages", baseSha, head], { cwd, timeout, maxBuffer: 16 * 1024 * 1024, windowsHide: true, env: GIT_ENV }, (err, stdout) => {
+        const tree = String(stdout ?? "").split("\n", 1)[0];
+        const wrote = SHA40.test(tree); // --write-tree printed a tree id
+        if (err) return resolve(err.code === 1 && !err.killed && !err.signal && wrote ? "conflict" : "error");
+        if (!wrote) return resolve("error");
+        gitModeCheck(baseSha, tree, { run, cwd, timeout }).then((m) => resolve(m === "ok" ? "clean" : m), () => resolve("error"));
+      });
+    } catch {
+      resolve("error");
+    }
+  });
+}
+
+/** CR-70's file modes that need a person: a symlink (120000) and a submodule, or gitlink (160000). */
+export const SPECIAL_MODES = new Set(["120000", "160000"]);
+/** One header record of `git diff-tree --raw -z` without renames: ":<src mode> <dst mode> <src sha> <dst sha> <status>". */
+const RAW_HEADER = /^:([0-7]{6}) ([0-7]{6}) [0-9a-f]{40} [0-9a-f]{40} [ADMTUX]$/;
+
+/**
+ * Pure: reads `git diff-tree -r -z --raw --no-renames` output. "ok" when no entry has mode 120000 or 160000 on either
+ * side (an empty diff is "ok"), "special" when one does, and "error" for anything it cannot read: a header that does not
+ * match RAW_HEADER, a header with no path after it, or a path that is not followed by a header. Fails closed.
+ */
+export function readRawModes(out) {
+  if (typeof out !== "string") return "error";
+  if (out === "") return "ok";
+  const parts = out.split("\0");
+  if (parts.at(-1) === "") parts.pop(); // -z ends the last path with NUL
+  let special = false;
+  for (let i = 0; i < parts.length; i += 2) {
+    const m = RAW_HEADER.exec(parts[i]);
+    if (!m || !parts[i + 1]) return "error";
+    if (SPECIAL_MODES.has(m[1]) || SPECIAL_MODES.has(m[2])) special = true;
+  }
+  return special ? "special" : "ok";
+}
+
+/**
+ * CR-70's mode check on the CR-149 scratch merge (FU-17a). The files API shows no file mode, so CR-70 checks the dry-run
+ * merge itself: `git --no-replace-objects diff-tree -r -z --raw --no-renames --ignore-submodules=none <baseSha> <tree>`
+ * in this checkout, through execFile (never a shell), both arguments 40 lowercase hex. -r lists files inside folders; a submodule shows
+ * as one 160000 entry, and --ignore-submodules=none keeps a .gitmodules `ignore` setting from hiding it; --no-renames
+ * lists a rename as a delete and an add, so the modes of both its paths are read. Returns "ok", "special" (a mode
+ * 120000 or 160000 entry on either side) or "error" (a bad argument, a non-zero exit, a timeout, output it cannot
+ * read). Only the modes are read; no path, stdout or stderr is printed or returned.
+ */
+export function gitModeCheck(baseSha, tree, { run = execFile, cwd = REPO_ROOT, timeout = 60000 } = {}) {
+  if (![baseSha, tree].every((s) => typeof s === "string" && SHA40.test(s))) return Promise.resolve("error");
+  return new Promise((resolve) => {
+    try {
+      run("git", ["--no-replace-objects", "diff-tree", "-r", "-z", "--raw", "--no-renames", "--ignore-submodules=none", baseSha, tree], { cwd, timeout, maxBuffer: 64 * 1024 * 1024, windowsHide: true, env: GIT_ENV }, (err, stdout) => {
+        resolve(err ? "error" : readRawModes(String(stdout ?? "")));
       });
     } catch {
       resolve("error");
@@ -511,6 +581,7 @@ export async function evaluateCr149({ get, repo, base, head, prFiles, mergeTree,
     } catch {
       merged = "error";
     }
+    if (merged === "special") return fail("rule 2", "the merge adds or changes a symlink or submodule (CR-70 mode check)");
     if (merged !== "clean") return fail("rule 2", `merge-tree ${merged === "conflict" ? "conflict" : "could not run"}`);
     out.met.push("rule 2");
     const again = await readSha();
@@ -560,8 +631,16 @@ export function hotFileGroups(rows) {
   return [...by].map(([file, set]) => ({ file, prs: [...set].sort((a, b) => a - b) })).filter((g) => g.prs.length > 1).sort((a, b) => a.file.localeCompare(b.file));
 }
 
-/** Strip ANSI escape sequences and control characters from anything printed. */
-export const clean = (v) => String(v ?? "").replace(/\u001b\[[0-9;?]*[ -\/]*[@-~]/g, "").replace(/[\u0000-\u001f\u007f-\u009f]/g, "");
+/**
+ * Characters that change how a line reads without showing themselves (FU-17b): every Unicode default-ignorable code
+ * point and every format character (bidi marks, embeddings, overrides and isolates; zero-width characters; the tag
+ * block U+E0000 to U+E007F, which can spell hidden ASCII that a reader agent would see; variation selectors; Hangul
+ * fillers), the interlinear annotation marks U+FFF9 to U+FFFB, and the line and paragraph separators U+2028 and U+2029,
+ * which some viewers draw as a new line. The `u` flag makes the astral ranges (tags, U+E0100 selectors) match whole.
+ */
+const HIDDEN_RE = /[\p{Default_Ignorable_Code_Point}\p{Cf}\u2028\u2029\ufff9-\ufffb]/gu;
+/** Strip ANSI escape sequences, control characters and HIDDEN_RE characters from anything printed. */
+export const clean = (v) => String(v ?? "").replace(/\u001b\[[0-9;?]*[ -\/]*[@-~]/g, "").replace(/[\u0000-\u001f\u007f-\u009f]/g, "").replace(HIDDEN_RE, "");
 
 /**
  * Strict first line: `## Review A|B at <40 lowercase hex>: <verdict words>`.

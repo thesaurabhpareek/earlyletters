@@ -20,7 +20,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { INVITE_ENTRIES, inviteDestination } from '../../../apps/mobile/src/lib/family/entry.logic';
-import { parseServerFeatures } from '../../../apps/mobile/src/lib/capabilities';
+import { MEDIA_PHASE_SWITCHES, parseServerFeatures } from '../../../apps/mobile/src/lib/capabilities';
 import { ASKS_FOR_MATERIAL, bodyText, parseMacros, parseSends, readMacrosFile } from './support/macros-file';
 
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
@@ -52,6 +52,34 @@ const SWITCHES: Record<string, { hosts: string | null; why: string }> = {
   EXPO_PUBLIC_ENGLISH_ONLY: { hosts: null, why: 'languages the build hears' },
   EXPO_PUBLIC_SPOKEN_LANGUAGES: { hosts: null, why: 'languages the build hears' },
   EXPO_PUBLIC_PHOTOS: { hosts: null, why: 'pictures stay on the phone; media on our servers is FR-POL-14 and needs its own row here first' },
+  // The other six NX-39 phase switches (BL-858; read in apps/mobile/src/lib/capabilities.ts). NX-39 K7, R33 and R54 keep
+  // every phase local: no media and no field derived from it (date, place, moment, occasion) in any sync payload, and no
+  // server table or bucket for P0 to P4. A phase that would send media or a derived field to our servers, or to the other
+  // parent, is a new switch with its own row here, read against FR-POL-03 and FR-POL-14 (Q-PM-3).
+  EXPO_PUBLIC_MEDIA_METADATA: {
+    hosts: null,
+    why: 'P1 reads the date, and a city worked out on the phone, from a photo the parent chose, for their own letter; neither syncs (NX-39 R33)',
+  },
+  EXPO_PUBLIC_LIBRARY_CHOOSER: {
+    hosts: null,
+    why: 'P2a lets the parent pick several of their own photos for a letter; they stay on the phone like P0\'s (NX-39 R33, R54)',
+  },
+  EXPO_PUBLIC_PHOTO_MOMENTS: {
+    hosts: null,
+    why: 'P2b suggests a day from the dates of the parent\'s own photos, shown only to them on their phone; no moment or date syncs (NX-39 R33)',
+  },
+  EXPO_PUBLIC_MOMENTS_BACKGROUND: {
+    hosts: null,
+    why: 'P2c makes the same date reads as P2b while the app is closed; nothing leaves the phone and nothing is shown to anyone else',
+  },
+  EXPO_PUBLIC_VIDEO: {
+    hosts: null,
+    why: 'P3 keeps a video on the phone and in the parent\'s own export by choice, never uploaded or synced, so it cannot reach the other parent through us (NX-39 R22, R33, R54); a video on our servers is FR-POL-14 and the separate EXPO_PUBLIC_MEDIA_SYNC switch (variant B), which needs its own row here first',
+  },
+  EXPO_PUBLIC_OCCASIONS: {
+    hosts: null,
+    why: 'P4a days the parent types, with local reminders on their own phone only; no occasion syncs or is sent from a server (NX-39 R26, R33), so the other parent never sees one through us',
+  },
 };
 
 type EasJson = {
@@ -280,6 +308,16 @@ describe('[FR-POL-03] content that reaches another person needs its report set b
     const store = profiles.find(isStoreBuild)!;
     const withNew = [{ ...store, env: { ...store.env, EXPO_PUBLIC_SOMETHING_NEW: 'on' } }];
     expect(reportSetFindings(withNew, SWITCHES, reportSetCards(reportSetMd))[0]).toMatch(/EXPO_PUBLIC_SOMETHING_NEW is not classified/);
+  });
+
+  it('[FR-POL-03] each NX-39 phase switch eas.json writes fails the real profiles once its row is taken out (BL-858)', () => {
+    const written = MEDIA_PHASE_SWITCHES.map((s) => s.env).filter((k) => profiles.some((p) => k in p.env));
+    expect(written.length).toBeGreaterThan(0);
+    for (const key of written) {
+      const without = Object.fromEntries(Object.entries(SWITCHES).filter(([k]) => k !== key));
+      const findings = reportSetFindings(profiles, without, reportSetCards(reportSetMd));
+      expect(findings, key).toEqual(profiles.filter((p) => key in p.env).map((p) => `${p.name}: ${key} is not classified in trust-and-safety-gate.test.ts SWITCHES (does it host content? FR-POL-03)`));
+    }
   });
 
   it('[FR-POL-03] the table asks for a filter method, not only a decision (CCO-33)', () => {

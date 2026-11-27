@@ -14,7 +14,8 @@ const ROOT = path.resolve(__dirname, '../..'); // apps/mobile
  *    that need many letters or a transcript (the web has no speech model) show on the real screens.
  *  - server-on: server features on (D-100; the TestFlight alpha of D-106) for the co-parent flows (j21-coparent.flow.ts).
  *    It points at a Supabase host nothing listens on; the flows answer with a mocked server (support/mock-server.ts).
- *  - store (BL-1991): seed with the production app env, so the store app's Plus and free-letter behaviour shows (the others are alpha).
+ *  - store (BL-1991): the production app env, so the store app's Plus and free-letter behaviour shows (the others are alpha).
+ *    It is built with the preview switch and `?seed=` works there since CR-245, but no flow seeds it (CR-240).
  *  - seam (BL-410): seed plus the web presentation seam (`?e2eFontScale=`, `?e2eLang=`); the only build with the e2e switch.
  * All under .results/ or the two older dist folders, which git ignores.
  */

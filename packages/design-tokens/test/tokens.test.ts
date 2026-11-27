@@ -375,6 +375,38 @@ describe('design tokens: hairline and progress lines (BL-1752)', () => {
       expect(ratio(c[tokens.progress.fill], c[tokens.progress.track])).toBeGreaterThanOrEqual(3);
     });
   }
+  it('[DSR-026] the thin line inside a card is named: 4 pt, for Review\'s words line and the speech download line', () => {
+    expect(tokens.progress.thin).toBe(4);
+    expect(tokens.progress.thin).toBeLessThan(tokens.progress.bar);
+  });
+  /**
+   * A thin line's two tracks, each with the card it sits in. WCAG 1.4.11 asks the fill to stand 3:1 against what it
+   * touches: its track and the card at the line's ends. The track itself is decorative (no accent-strength colour can
+   * also sit 3:1 from a near-white card), but it must differ from its card, so the line's full length still reads.
+   */
+  const THIN_TRACKS = [
+    { role: 'thinTrack', card: 'surfaceRaised', use: 'Review, on a raised card' },
+    { role: 'thinTrackOnTint', card: 'accentSoft', use: 'the speech card, tinted' },
+  ] as const;
+  for (const mode of MODES) {
+    for (const hc of [false, true]) {
+      const tag = `${mode}${hc ? ' + Increase Contrast' : ''}`;
+      for (const { role, card, use } of THIN_TRACKS) {
+        it(`[DSR-026] ${tag}: ${use}: the thin line's fill passes 3:1 (WCAG 1.4.11) on its track and on its card`, () => {
+          const c = palette(mode, hc);
+          const track = tokens.progress[role];
+          expect(ratio(c[tokens.progress.fill], c[track]), `${tokens.progress.fill} on ${track}`).toBeGreaterThanOrEqual(3);
+          expect(ratio(c[tokens.progress.fill], c[card]), `${tokens.progress.fill} on ${card}`).toBeGreaterThanOrEqual(3);
+          expect(c[track], `${track} is not the card colour`).not.toBe(c[card]);
+          expect(ratio(c[track], c[card]), `${track} reads apart from ${card}`).toBeGreaterThan(1.1);
+        });
+      }
+      it(`[DSR-026] ${tag}: the old thin-line pairing, accent on controlBorder (bg-input), stays under 3:1, so it is not brought back`, () => {
+        const c = palette(mode, hc);
+        expect(ratio(c.accent, c.controlBorder)).toBeLessThan(3);
+      });
+    }
+  }
   it('[CDO-B-048] the old Read together line, accent at 40 percent on paper, stays under 3:1, so it is not brought back', () => {
     // 0x66 = 40 percent alpha, composited over the page by ratio().
     for (const mode of MODES) expect(ratio(`${tokens[mode].accent}66`, tokens[mode].bg), mode).toBeLessThan(3);

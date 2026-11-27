@@ -2,7 +2,8 @@
  * The weekly request clock (BL-2102; FR-BKO-09, FR-BKO-13, FR-BKO-16). Reads the request log of
  * docs/ops/runbooks/data-requests-by-email.md section 1 (a CSV file on the founder's computer) and builds the
  * data-request part of the Monday card: every open request with its day, due date, next action date and next
- * action, any request on the clock at day 35 or later (and an open dispute row at day 35 or later) listed first.
+ * action, any request on the clock at day 35 or later (and an open dispute row at day 35 or later, and an under_18 row
+ * from day 10, the under-13 internal target) listed first.
  *
  * Why a script: Privacy 10 promises a reply within 45 days (one extension if we say why). A row that passes day 45
  * with no notice is a P0 defect, and a by-hand count is how that gets missed.
@@ -30,6 +31,13 @@ export const FOLLOW_UPS = [7, 30, 40] as const;
 export const DUE_DAY = 45;
 export const EXTENDED_DUE_DAY = 90;
 export const FIRST_DAY = 35;
+/**
+ * Route 4's 10 days for an under-13 holder (runbook section 11, under_18 row; underage-account.md "within 10 days of
+ * learning"). The log cannot tell an under-13 holder from a 13 to 17 one, so every open under_18 row is flagged from
+ * this day: a missed under-13 deletion would otherwise surface only at day 35. It is an internal target, not the
+ * legal clock: the 45-day due date, the follow-ups and the P0 stay as they are.
+ */
+export const UNDER_13_DAY = 10;
 
 type Field = (typeof FIELDS)[number];
 export type Row = Partial<Record<Field, string>> & { line: number };
@@ -106,15 +114,37 @@ function checkDates(r: Row, today: number): void {
   }
 }
 
-/** The first message for a kind (runbook section 0 rows, then section 1). */
+/**
+ * The first message for a kind (runbook section 0 rows, then section 1). The safety row's first message is the
+ * pointer to help, not the section 1 reply: local emergency services and the help the app shows by region, no
+ * data-request process started that day, the data request answered afterwards. Every other kind defers to its own
+ * row (abuse fixed reply, M14, the under-18 refusal, the pointer to help when a third party is in danger), which is
+ * the section 1 first reply unless the row says otherwise.
+ */
 function firstMessage(kind: string): string {
   return kind === 'safety'
-    ? 'first message not logged: send the pointer to help today, as the safety row says, and log it'
+    ? 'first message not logged: send the pointer to help today, not the section 1 reply: local emergency services and the help the app shows by region in Settings, If you are struggling; start no data-request process today and answer the data request afterwards; log it'
     : 'first reply not logged: send what its section 0 row says today, the section 1 first reply unless the row says otherwise, and log it';
 }
 
+const UNDER_13_NEXT = 'day 10 under-13 internal target: if the holder is under 13, finish Route 4 by then; an internal target, not the legal 45-day clock';
+const under13 = (day: number) =>
+  `under-13 internal target: day 10 ${day === UNDER_13_DAY ? 'is today' : 'has passed'}; if the holder is under 13, finish Route 4 today; an internal target, not the legal 45-day clock`;
+
 /** One open row on the card. `today` is a UTC day. */
 export function cardRow(r: Row, today: number): CardRow {
+  const c = clockRow(r, today);
+  // An under_18 row from day 10 is flagged for today on top of its clock step. Not a P0 row: that already goes to
+  // counsel today, and its wording stays the one the clock gives.
+  if (r.kind !== 'under_18' || c.day < UNDER_13_DAY || c.nextAction.startsWith('P0: ')) return c;
+  const target = under13(c.day);
+  // The first message still goes first (FR-BKO-13); otherwise the target is today's step and the clock step follows.
+  // On day 10 itself the walk's own step is the target, so it is not said twice.
+  const nextAction = c.nextAction === UNDER_13_NEXT ? target : c.nextAction.startsWith('first ') ? `${c.nextAction}; then ${target}` : `${target}; then ${c.nextAction}`;
+  return { ...c, nextActionDate: iso(today), nextAction, urgent: true };
+}
+
+function clockRow(r: Row, today: number): CardRow {
   const received = parseDate(r.received!)!;
   const day = Math.floor((today - received) / DAY_MS);
   // An extension counts only if the notice went before day 45 (DSR-R12); a later one does not move the clock.
@@ -180,7 +210,8 @@ export function cardRow(r: Row, today: number): CardRow {
   }
   if (!r.acknowledged && day >= 1) {
     // FR-BKO-13: the first message goes the day it is read.
-    const later = extended || day < FIRST_DAY ? '' : day < DUE_DAY ? '; then finish, or send the extension notice with its reason before day 45' : '; it is due today';
+    // An extended row on its day 90 is due today too; before that an extended row needs no extension step.
+    const later = day < FIRST_DAY ? '' : day === dueDay ? '; it is due today' : extended ? '' : '; then finish, or send the extension notice with its reason before day 45';
     return { ...base, nextActionDate: iso(today), nextAction: firstMessage(r.kind!) + later, urgent: day >= FIRST_DAY };
   }
   if (day === dueDay) {
@@ -189,12 +220,13 @@ export function cardRow(r: Row, today: number): CardRow {
   if (!extended && day >= FIRST_DAY) {
     return { ...base, nextActionDate: iso(addDays(received, DUE_DAY - 1)), nextAction: 'finish, or send the extension notice with its reason before day 45', urgent: true };
   }
-  const nextDay = [...FOLLOW_UPS, dueDay].find((d) => d >= day) ?? dueDay;
-  const label = nextDay === dueDay ? 'due: reply with what was done' : `day ${nextDay} follow-up`;
+  const steps: readonly number[] = r.kind === 'under_18' ? [FOLLOW_UPS[0], UNDER_13_DAY, ...FOLLOW_UPS.slice(1)] : FOLLOW_UPS;
+  const nextDay = [...steps, dueDay].find((d) => d >= day) ?? dueDay;
+  const label = nextDay === dueDay ? 'due: reply with what was done' : nextDay === UNDER_13_DAY && r.kind === 'under_18' ? UNDER_13_NEXT : `day ${nextDay} follow-up`;
   return { ...base, nextActionDate: iso(addDays(received, nextDay)), nextAction: label, urgent: day >= FIRST_DAY };
 }
 
-/** Rows to act on first (day 35 or later on the clock, a dispute row at day 35 or later, or a letter's date passed), fewest days left first so a P0 leads, a row on the clock before one off it on a tie; then the rest by next action date, then ticket. */
+/** Rows to act on first (day 35 or later on the clock, a dispute row at day 35 or later, an under_18 row from day 10, or a letter's date passed), fewest days left first so a P0 leads, a row on the clock before one off it on a tie; then the rest by next action date, then ticket. */
 export function order(a: CardRow, b: CardRow): number {
   if (a.urgent !== b.urgent) return a.urgent ? -1 : 1;
   // On a tie in days left, a row on the clock comes before one off it, so a request due today is never behind a dispute row.

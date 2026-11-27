@@ -1,4 +1,4 @@
-import { btn, dateInput, journey, passAgeGate, startOnboarding, toChildStep } from './support/app';
+import { btn, dateInput, journey, passAgeGate, startOnboarding, tab, toChildStep } from './support/app';
 import { expect, test } from './support/journey';
 
 test('[J03] more than one child: twins in first run, the switcher, settings, and the Plus gate for another book', async ({ app, record }) => {
@@ -31,7 +31,7 @@ test('[J03] more than one child: twins in first run, the switcher, settings, and
   await app.getByRole('button', { name: 'Close' }).first().click({ force: true });
   await expect(app.getByText('Whose book?')).toBeHidden();
 
-  await app.getByRole('button', { name: 'Settings' }).click();
+  await tab(app, 'Me').click();
   await expect(app.getByText('Add a child').last()).toBeVisible();
   await step('happy', 'Settings, with both children listed', 'Each child has a row; "Add a child" sits below them.');
   // The row on Settings home (a hidden "Asha" on the Book's cover under the stack also matches by text).

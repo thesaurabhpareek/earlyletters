@@ -324,6 +324,7 @@ describe('typed days on the phone (real store and scheduler)', () => {
     expect(dayNamesOn()).toBe(true);
     store.setSetting(APP_LOCK_KEYS.enabled, 'on');
     expect(dayNamesOn()).toBe(false);
+    // prefs.ts never overwrites it; the next re-plan clears it (BL-1009, test/reminders-named-notes.test.ts).
     expect(store.getSetting('notifications.dayNames')).toBe('on');
   });
 
@@ -365,12 +366,13 @@ describe('typed days on the phone (real store and scheduler)', () => {
 
   it('[CPrivO-58] names, day names or App lock going off dismisses a delivered typed-day note with the words, and nothing else', async () => {
     const shown = (identifier: string, body: string, data: unknown): Req => ({ identifier, content: { title: FIXED.title, body, data } });
-    const off: [string, () => void][] = [
-      ['names off', () => store.setSetting('notifications.lockScreenNames', 'off')],
-      ['day names off', () => store.setSetting('notifications.dayNames', 'off')],
-      ['App lock on', () => store.setSetting(APP_LOCK_KEYS.enabled, 'on')],
+    // Names off and App lock on also take the month note that names a child (FU-11b, test/reminders-named-notes.test.ts).
+    const off: [string, () => void, boolean][] = [
+      ['names off', () => store.setSetting('notifications.lockScreenNames', 'off'), true],
+      ['day names off', () => store.setSetting('notifications.dayNames', 'off'), false],
+      ['App lock on', () => store.setSetting(APP_LOCK_KEYS.enabled, 'on'), true],
     ];
-    for (const [label, turnOff] of off) {
+    for (const [label, turnOff, namesGo] of off) {
       store.setSetting('notifications.dayNames', 'on');
       store.setSetting('notifications.lockScreenNames', 'on');
       store.setSetting(APP_LOCK_KEYS.enabled, 'off');
@@ -388,7 +390,7 @@ describe('typed days on the phone (real store and scheduler)', () => {
       expect(os.presented.size, label).toBe(4);
       turnOff();
       await reminders.rescheduleReminders();
-      expect([...os.presented.keys()], label).toEqual([`el.typed.${today()}`, 'el.month.2026-11-01', 'someone-else']);
+      expect([...os.presented.keys()], label).toEqual([`el.typed.${today()}`, ...(namesGo ? [] : ['el.month.2026-11-01']), 'someone-else']);
     }
   });
 
@@ -407,7 +409,7 @@ describe('typed days on the phone (real store and scheduler)', () => {
     const delivered = [
       shown(`el.typed.${plus(today(), -1)}`, CANARY), // our typed-day id, no data
       shown('older-typed-note', CANARY, { source: 'scribe.reminders', kind: 'typedDay' }), // our data, not our id
-      shown('el.month.2026-11-01', CANARY), // ours by id, another kind: stays
+      shown('el.month.2026-11-01', reminderCopy.neutral.lockBody), // ours by id, another kind, name-free: stays
       shown('another-app-note', CANARY, { source: 'another.app', kind: 'typedDay' }), // not ours: stays
     ];
     for (const d of delivered) os.presented.set(d.identifier, d);

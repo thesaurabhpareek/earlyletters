@@ -167,16 +167,25 @@ describe('[BL-568] wiring', () => {
     expect(src).toMatch(/if \(globalFault\.fault\) return <GlobalFaultScreen/);
   });
 
-  it('[BL-568] only the production profile installs the handler; testflight, preview and development keep the native crash', async () => {
-    expect(shouldInstallGlobalHandlers('production')).toBe(true);
-    for (const env of ['preview', 'development'] as const) expect(shouldInstallGlobalHandlers(env), env).toBe(false);
+  it('[BL-568, CR-245] only the production profile on iOS and Android installs the handler; testflight, preview and development keep the native crash', async () => {
+    for (const os of ['ios', 'android']) expect(shouldInstallGlobalHandlers('production', os), os).toBe(true);
+    for (const env of ['preview', 'development'] as const)
+      for (const os of ['ios', 'android', 'web']) expect(shouldInstallGlobalHandlers(env, os), `${env} ${os}`).toBe(false);
     const { readFileSync } = await import('node:fs');
     const src = readFileSync(new URL('../src/lib/resilience/global-errors.ts', import.meta.url), 'utf8');
-    expect(src).toMatch(/!shouldInstallGlobalHandlers\(APP_ENV\)/);
+    expect(src).toMatch(/!shouldInstallGlobalHandlers\(APP_ENV, Platform\.OS\)/);
+    expect(src).toMatch(/^import \{ Platform \} from 'react-native';$/m);
     // The testflight EAS profile is a preview build (EXPO_PUBLIC_APP_ENV), so it is covered by the line above.
     const eas = JSON.parse(readFileSync(new URL('../eas.json', import.meta.url), 'utf8')).build;
     expect(eas.testflight.env.EXPO_PUBLIC_APP_ENV).toBe('preview');
     expect(eas.preview.env.EXPO_PUBLIC_APP_ENV).toBe('preview');
     expect(eas.production.env.EXPO_PUBLIC_APP_ENV).toBe('production');
+  });
+
+  it('[BL-568, CR-245] web never installs the handler, even in production', () => {
+    // Expo's web async import runs the module first and loads its chunk only if that throws. Our handler
+    // records that first miss as a fatal fault, so a production web build showed the recovery screen on every
+    // lazy import (#2240).
+    expect(shouldInstallGlobalHandlers('production', 'web')).toBe(false);
   });
 });

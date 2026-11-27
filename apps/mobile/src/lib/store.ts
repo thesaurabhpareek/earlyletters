@@ -79,6 +79,7 @@ import {
   heldEverSent,
   getDraftRow,
   getEntryRow,
+  pendingCount,
   syncOwner,
   enqueueEntryUpsert,
   enqueuePrefs,
@@ -91,6 +92,7 @@ import {
   type ConflictCopy,
   type EnqueueContext,
 } from './sync/outbox';
+import { claimRestoredBook } from './sync/ownership';
 import { signalOutbox } from './sync/signal';
 import { ALL_GROUPS, type FieldGroup } from './sync/types';
 
@@ -901,14 +903,33 @@ export function bookOutline(childId: string): entries.BookOutline {
   return bookVisibleNow() ? entries.bookOutline(ctx(), childId) : { firstLetterOn: null, lastLetterOn: null, readable: false };
 }
 
+/** The setting that keeps one book's wash mark, next to the Book's seen list: a book id in the key, a row number as the value. */
+export const BOOK_READ_MARK_PREFIX = 'book.readMark.';
+
 /**
- * Which of one book's rows came into the store after the Book read its first page (BL-2225): the other parent's
- * letter synced in below the pages held still washes once when its page is read. The mark is a row number, never
- * words, so it is read whether or not the book may be shown; the ids are not.
+ * Which of one book's rows came into the store since this phone last read that book (BL-2225, CTO ruling on #2147):
+ * the other parent's letter synced in below the pages held, at launch or while another book was on screen, washes
+ * once when its page is read. `mark` is the newest row now; `kept` and `keep` are the book's mark across launches
+ * (book.tsx keeps it in the first-seen effect, after the seen list). Marks are row numbers, never words, so they are
+ * read whether or not the book may be shown; the arrivals are not.
  */
 export const bookArrivals = {
   mark: (): number => entries.rowMark(ctx()),
-  since: (childId: string, mark: number): string[] => shown(() => entries.idsSince(ctx(), childId, mark)),
+  since: (childId: string, mark: number): entries.RowArrival[] => shown(() => entries.arrivalsSince(ctx(), childId, mark)),
+  /** The book's kept mark, or null when none is kept or it is not a row number. */
+  kept: (childId: string): number | null => {
+    const n = Number(settings.getSetting(ctx(), BOOK_READ_MARK_PREFIX + childId));
+    return Number.isSafeInteger(n) && n > 0 ? n : null;
+  },
+  /**
+   * Keeps the book's mark. Written without a change event: no screen shows it, and an event would send every store
+   * listener (the Book's own reread among them) round again for a number. Erasing the book takes it with the book's
+   * other keys (wipe.ts), and Erase everything with every setting.
+   */
+  keep: (childId: string, mark: number): void => {
+    if (!Number.isSafeInteger(mark) || mark <= 0 || bookArrivals.kept(childId) === mark) return;
+    settings.setSetting(ctx(), BOOK_READ_MARK_PREFIX + childId, String(mark));
+  },
 };
 
 /** How many letters one book holds (quiet-day marks not counted), counted in SQL (BL-434). */
@@ -1396,10 +1417,22 @@ export function deleteBook(id: string): boolean {
   return done;
 }
 
-/** Restore the book from Recently deleted: every letter, draft and choice comes back as it was. */
+/**
+ * Restore the book from Recently deleted: every letter, draft and choice comes back as it was. On a phone that has
+ * signed in since the book was deleted, the first sign-in left it on the phone (BL-559); restoring it claims it for the
+ * account now, in the same transaction (sync/ownership.ts claimRestoredBook).
+ */
 export function restoreBook(id: string): boolean {
-  const done = wipe.unmarkDeleted(ctx(), id);
-  if (done) bus.emit('children', 'entries', 'drafts', 'settings');
+  const c = ctx();
+  let done = false;
+  c.db.transaction(() => {
+    done = wipe.unmarkDeleted(c, id);
+    if (done) claimRestoredBook(c.db, id, enqueueContext(c));
+  });
+  if (done) {
+    bus.emit('children', 'entries', 'drafts', 'settings');
+    signalOutbox();
+  }
   return done;
 }
 
@@ -1475,8 +1508,12 @@ export function onBookErased(hook: (bookId: string) => void): () => void {
 }
 
 // ── Erase everything on this phone (BL-387; F17 6.2 F; DATA-REQ-024) ─────
-/** Removes every recording file, listening copy, temporary copy and export left on this phone. Throws when one will not go. */
-export type DeviceFilesEraser = () => void;
+export type { KeptFiles } from './db/repos/wipe';
+/**
+ * Removes every recording file, listening copy, temporary copy and export left on this phone, except the recordings and
+ * pictures `kept` names (rows written after a failed erase, BL-775). Throws when one will not go.
+ */
+export type DeviceFilesEraser = (kept?: wipe.KeptFiles) => void;
 
 /** Whether an Erase everything began and has not finished (a kill, or a file that would not go). */
 export function eraseEverythingPending(): boolean {
@@ -1485,26 +1522,95 @@ export function eraseEverythingPending(): boolean {
 
 /**
  * Erase everything, the store's part (signed out only, F17 6.2 F step 1). In order:
- *  1. the pending mark, so a kill at any later point is finished at the next launch (a mark is only ever written on
- *     a phone that had not signed in);
- *  2. each letter's and draft's recording, listening copy and temporary copies (`eraseAudio`);
- *  3. every other recording file, listening copy, temporary copy and export left on the phone (`eraseFiles`);
- *  4. every row of every table, settings included, in one transaction; the mark stays.
+ *  1. the pending mark and, in the same transaction, its scope: what exists on the phone now (wipe.ts EraseScope), so a
+ *     kill at any later point is finished at the next launch, and a later try removes only that. A mark is only ever
+ *     written by this function on a phone that had not signed in, or by eraseThisPhoneLocal once the drain left
+ *     nothing; both write it with its scope (writeEraseMark);
+ *  2. each old letter's and draft's recording, listening copy and temporary copies (`eraseAudio`);
+ *  3. every other recording file, listening copy, temporary copy and export left on the phone (`eraseFiles`), except
+ *     the recordings and pictures of rows written since the mark;
+ *  4. the old rows of every table, settings included, in one transaction; the mark and its scope stay.
+ * Steps 2 to 4 are eraseMarked, which both callers run. On the first try nothing is newer than the mark, so all of it
+ * goes. After a try that ended `incomplete` the person may keep writing; a retry and the launch resume run these same
+ * steps against the scope read in step 1, so a letter written in between, its recording and its picture are kept
+ * (BL-775). A mark with no usable scope (a build before BL-775, or the schema changed since) removes everything present,
+ * as the failed line says.
  * The caller then clears the Keychain (the free-letter count goes after the rows, so a relaunch cannot raise it
  * again from letters still present) and calls finishEraseEverything. Files go before rows, so the sweep never finds
  * a recording without its row to bring back. Nothing is queued or sent.
- * Returns 'signed_in' when the phone has signed in (nothing begun), 'incomplete' when a file would not go (the mark
- * stays; a later try or the next launch finishes), 'erased' when the rows are gone.
+ * A sign-in can still happen while the mark stands and queue uploads of the old books and letters; with a scope, a row
+ * that names an old book, letter or draft goes whenever it was written (wipe.ts NAMES_BY), and step 4 is read back.
+ * Returns 'signed_in' when the phone has signed in (nothing begun), 'incomplete' when a file would not go or the
+ * read-back still finds a row naming an old id (the mark stays; a later try or the next launch finishes), 'erased'
+ * when the rows are gone.
  */
 export function eraseEverythingLocal(eraseAudio: AudioEraser, eraseFiles: DeviceFilesEraser): 'erased' | 'incomplete' | 'signed_in' {
   const c = ctx();
   if (!eraseEverythingPending()) {
     if (!localDeletionAllowed()) return 'signed_in';
-    settings.setSetting(c, wipe.ERASE_EVERYTHING_SETTING, c.now());
+    writeEraseMark(c);
   }
+  return eraseMarked(c, eraseAudio, eraseFiles);
+}
+
+/**
+ * Erase this phone only (F17-REQ-026, F17-U38, BL-559), before the outbox drains: what would stop it. A count of the
+ * things only this phone holds that will not drain (wipe.ts onlyOnThisPhone, a queued row counted as on its way), plus
+ * queued ops the drain does not send (a book the server refused, held ops for a server without held drafts, an erase
+ * waiting for a server that can erase). 0 means signing out with the F02 guard leaves nothing that only this phone has.
+ * Not a count of letters: a screen reads it as none or some.
+ */
+export function eraseThisPhoneBlockers(): number {
+  const c = ctx();
+  return wipe.onlyOnThisPhone(c, { queuedOnItsWay: true }) + (outboxRows(c) - pendingCount(c.db));
+}
+
+function outboxRows(c: RepoContext): number {
+  return c.db.get<{ n: number }>('SELECT COUNT(*) AS n FROM sync_outbox')!.n;
+}
+
+/**
+ * Erase this phone only, the store's part, once the session is gone (lib/erase-everything.ts eraseThisPhone; F17 6.2 F
+ * step 2). The same wipe as Erase everything, and only when the drain has left nothing: no row in the outbox and nothing
+ * the server has not acknowledged (wipe.ts onlyOnThisPhone, nothing counted as on its way). Otherwise 'not_drained' and
+ * nothing begun, so a sign-out that ended before the queue emptied (the session lost mid-wait, a guard that did not
+ * wait) never costs a letter. A phone that never signed in passes too. Nothing here is sent; the drain sent it before.
+ * The mark and its scope are the same as Erase everything's, so a kill part way is finished at the next launch
+ * (resumeEraseAtLaunch) and a retry removes only what existed at the mark.
+ */
+export function eraseThisPhoneLocal(eraseAudio: AudioEraser, eraseFiles: DeviceFilesEraser): 'erased' | 'incomplete' | 'not_drained' {
+  const c = ctx();
+  if (!eraseEverythingPending()) {
+    if (!eraseThisPhoneAllowed()) return 'not_drained';
+    writeEraseMark(c); // with its scope, so a retry after a failed try keeps work written since (BL-775)
+  }
+  return eraseMarked(c, eraseAudio, eraseFiles);
+}
+
+/** Whether eraseThisPhoneLocal would begin: everything this phone holds of the account is on the server. */
+export function eraseThisPhoneAllowed(): boolean {
+  const c = ctx();
+  return localDeletionAllowed() || (outboxRows(c) === 0 && wipe.onlyOnThisPhone(c, { queuedOnItsWay: false }) === 0);
+}
+
+/**
+ * The mark and its scope, in one transaction: a mark without its scope would fall back to erasing everything present,
+ * new work included. The scope is taken before the mark, so the mark is not part of what it lists.
+ */
+function writeEraseMark(c: RepoContext): void {
+  c.db.transaction(() => {
+    const scope = wipe.takeEraseScope(c);
+    settings.setSetting(c, wipe.ERASE_EVERYTHING_SETTING, c.now());
+    settings.setSetting(c, wipe.ERASE_EVERYTHING_SCOPE, scope);
+  });
+}
+
+/** Steps 2 to 4 of Erase everything, once the mark is written, against the scope the mark was written with. */
+function eraseMarked(c: RepoContext, eraseAudio: AudioEraser, eraseFiles: DeviceFilesEraser): 'erased' | 'incomplete' {
+  const scope = wipe.readEraseScope(c);
   try {
-    for (const r of wipe.allAudioRows(c)) eraseAudio(r.audioUri, r.id);
-    eraseFiles();
+    for (const r of wipe.audioRowsToErase(c, scope)) eraseAudio(r.audioUri, r.id);
+    eraseFiles(wipe.keptFiles(c, scope)); // read after step 2: an old draft's picture is gone by now
   } catch {
     return 'incomplete';
   }
@@ -1513,18 +1619,24 @@ export function eraseEverythingLocal(eraseAudio: AudioEraser, eraseFiles: Device
   const stoppedAt = settings.getSetting(c, AGE_STOPPED_AT);
   const stopRunning = stoppedAt !== null && decideGate({ passed: false, stoppedAt }, Date.parse(c.now())).decision === 'stop';
   // ADR 0028 D5 step 3: Find's index is dropped before the rows go; deleting the rows of an FTS5 table's shadow tables
-  // one by one would corrupt it. It is made again, empty, by the next launch's catch-up. Whatever the Find switch says.
+  // one by one would corrupt it. It is made again by the next launch's catch-up, from the letters left. Whatever the Find switch says.
   dropSearchIndex(c.db);
-  c.db.transaction(() => wipe.removeEverything(c, stopRunning ? [AGE_STOPPED_AT] : []));
+  c.db.transaction(() => wipe.removeEverything(c, stopRunning ? [AGE_STOPPED_AT] : [], scope));
+  // Karma ruling on #2102, point 4: `erased` only once nothing naming an old id is left, so a row the rules above
+  // missed keeps the mark (and the next try) instead of waiting in the outbox to upload erased words.
+  const left = scope !== null && wipe.oldRowsLeft(c, scope).length > 0;
   compactAfterErase(c, true);
   bus.emit('settings', 'children', 'entries', 'drafts', 'orphan_audio');
-  return 'erased';
+  return left ? 'incomplete' : 'erased';
 }
 
-/** The last step of Erase everything: removes the pending mark. The phone is now as on first run. */
+/** The last step of Erase everything: removes the pending mark and its scope together. The phone is now as on first run, but for what was written after a failed try. */
 export function finishEraseEverything(): void {
   const c = ctx();
-  settings.deleteSetting(c, wipe.ERASE_EVERYTHING_SETTING);
+  c.db.transaction(() => {
+    settings.deleteSetting(c, wipe.ERASE_EVERYTHING_SCOPE);
+    settings.deleteSetting(c, wipe.ERASE_EVERYTHING_SETTING);
+  });
   compactAfterErase(c);
   bus.emit('settings', 'children', 'entries', 'drafts', 'orphan_audio');
 }

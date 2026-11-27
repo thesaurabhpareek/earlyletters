@@ -119,9 +119,11 @@ describe('wiring', () => {
     expect(w).toMatch(/if \(!\(whole > lastPct\)\) return;/);
   });
 
-  it('the Review bar track is controlBorder (bg-input), and a moving percent resets the no-progress clock', () => {
+  it('the Review bar draws on the thin-line track (BL-1752, not bg-input), and a moving percent resets the no-progress clock', () => {
     const r = src('app/review.tsx');
-    expect(r).toMatch(/h-1 w-full overflow-hidden rounded-full bg-input/);
+    // Accent on controlBorder (bg-input) was under 3:1; test/semantic-tokens.test.ts holds the colours to the tokens.
+    expect(r).toMatch(/height: P\.thin, borderRadius: tokens\.radius\.pill, backgroundColor: c\.accentSoft/);
+    expect(r).not.toMatch(/bg-input/);
     expect(r).toMatch(/progressKey = `[^`]*fraction/);
   });
 });

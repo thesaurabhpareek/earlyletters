@@ -516,16 +516,34 @@ const stroke = { hairline: 0.5, control: 1, selected: 1.5, focus: 2, editMark: 1
  * - `hairline`: Read together's place in the book, kept a line rather than a counter (no counting gaps).
  * - `sweep`: the indeterminate line while a join is on its way (join-ask).
  * - `bar`: measured progress, the export copy.
+ * - `thin`: a measured line inside a card: Review's words line and the speech download line.
  * `fill` is the accent at full strength. The line is the only sighted cue of where you are, so it needs 3:1 against
  * the page it sits on (WCAG 1.4.11); the old 40 percent accent was under that (CDO-B-048), and test/tokens.test.ts
  * keeps it failing so it does not come back. `track` is the decorative line colour, where a bar has a track.
+ * The export bar's `track` under Increase Contrast (fill on track 1.41:1 light, 1.32:1 dark) waits on a design ruling,
+ * so it stays as it is here.
+ * A thin line's track depends on the card under it, because 1.4.11 asks the fill for 3:1 against what it touches:
+ * `thinTrack` on a raised card or the page, `thinTrackOnTint` in a card tinted `accentSoft`. Both hold 3:1 against the
+ * fill in light, dark and both Increase Contrast palettes; the old `controlBorder` track was 1.52:1 at best.
  */
-const progress = { hairline: 2, sweep: 3, bar: 8, fill: 'accent', track: 'line' } as const satisfies {
+const progress = {
+  hairline: 2,
+  sweep: 3,
+  bar: 8,
+  thin: 4,
+  fill: 'accent',
+  track: 'line',
+  thinTrack: 'accentSoft',
+  thinTrackOnTint: 'bg',
+} as const satisfies {
   hairline: number;
   sweep: number;
   bar: number;
+  thin: number;
   fill: keyof typeof light;
   track: keyof typeof light;
+  thinTrack: keyof typeof light;
+  thinTrackOnTint: keyof typeof light;
 };
 
 /**

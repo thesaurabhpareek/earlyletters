@@ -157,7 +157,7 @@ function Cover({ name, signsAs, size, state, openOnMount = false, animate }: { n
           <View style={{ width: m.textWidth, height: m.flyleafName.lines * m.flyleafName.lineHeight }}>
             <NameLines set={coverName(name, size, 'open')} surface={c.surfaceRaised} crossFade={false} />
           </View>
-          <View style={{ position: 'absolute', left: m.pad * 1.5, right: m.pad * 1.5, top: m.height / 2, height: StyleSheet.hairlineWidth * 2, backgroundColor: c.line }} />
+          <View style={{ position: 'absolute', left: m.pad * 1.5, right: m.pad * 1.5, top: m.height / 2, height: tokens.stroke.hairline, backgroundColor: c.line }} />
           {signature ? <FootLine set={signature} size={size} surface={c.surfaceRaised} crossFade={false} /> : null}
         </Animated.View>
       </View>
