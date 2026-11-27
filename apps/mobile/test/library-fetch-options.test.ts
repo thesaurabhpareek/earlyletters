@@ -14,18 +14,18 @@
  * - `hidden-assets`: a file names `includeHiddenAssets` (any case, any value, including the Objective-C setter). The
  *   reason to name it is to turn it on; what PhotoKit does by default is UNVERIFIED (G1a-L).
  * - `no-source-option`: a file makes more `PHFetchOptions` than it has source assignments, so at least one options
- *   object never names a source. Counted forms: `PHFetchOptions()`, `PHFetchOptions.init()`, `: PHFetchOptions = .init()`,
- *   Objective-C `[PHFetchOptions new]`, `[PHFetchOptions alloc]` and `PHFetchOptions.new`.
- * - `source-not-user-library`: a source assignment whose value is not the user library alone (an iCloud Shared Album or
- *   synced source, a raw value, a variable), or any mention of `includeAssetSourceTypes` (any case) that is not a
+ *   object never names a source. Counted forms: `PHFetchOptions()`, `PHFetchOptions.init()`, `: PHFetchOptions =
+ *   .init()`, Objective-C `[PHFetchOptions new]`, `[PHFetchOptions alloc]` and `PHFetchOptions.new`.
+ * - `source-not-user-library`: a source assignment whose value is not the user library alone (an iCloud Shared Album
+ *   or synced source, a raw value, a variable), or any mention of `includeAssetSourceTypes` (any case) that is not a
  *   plain assignment or the Objective-C setter: a later `insert`, `formUnion`, `|=`, a key-value write, a key path, an
- *   `inout` call or an object key. A value is read to the end of its line (or the first `;`), a `[ ... ]` value to its
- *   closing bracket, and lines that go on with `.` or `|` are read as part of it, stepping over blank and comment
- *   lines between.
- * - `nil-options`: an asset fetch (`fetchAssets`, `fetchKeyAssets`, and the Objective-C `fetchAssets...:` forms, read to
- *   the next `;`, even one inside a string) that passes the literal `nil` as `options:` or `with:`. Swift arguments are read to the
- *   matching parenthesis, skipping string literals. This also flags an identifier fetch with `options: nil`, which the
- *   library PR should know.
+ *   `inout` call or an object key. A value is read to the end of its line (or the first `;` or `]`), a `[ ... ]` value
+ *   to its closing bracket and on to the end of that line, and lines that go on with `.` or `|` are read as part of
+ *   it, stepping over blank and comment lines between.
+ * - `nil-options`: an asset fetch (`fetchAssets`, `fetchKeyAssets`, and the Objective-C `fetchAssets...:` forms, read
+ *   to the next `;`, even one inside a string) that passes the literal `nil` as `options:` or `with:`. Swift arguments
+ *   are read to the matching parenthesis, skipping string literals. This also flags an identifier fetch with `options:
+ *   nil`, which the library PR should know.
  *
  * Positive controls: each rule has fixtures the scan must flag, and the clean fixtures must come back empty, so the
  * scan cannot pass by finding nothing or by flagging everything.
@@ -36,9 +36,11 @@
  *   source assignments on the same one passes;
  * - options built in one file and passed in from another, or a variable that holds nil at run time (no data flow);
  * - C and C++ headers other than `.h`, and any file outside the two folders;
- * - comment and string forms the stripper does not know, any of which can blank code: a TypeScript regex literal that
- *   holds `//` or a quote, a template literal over several lines, JSX text holding `/*`, a Swift raw string
- *   (`#"..."#`) and a nested block comment;
+ * - comment and string forms the stripper does not know, any of which can blank code: a TypeScript or Swift regex
+ *   literal that holds `//` or a quote, a template literal over several lines, JSX text holding `//` or `/*`, a Swift
+ *   raw string (`#"..."#`) and a nested block comment;
+ * - a value that goes on with `+` or `^` on the next line, or past an `#if` line, and a key built by joining strings;
+ * - a fetch function passed around unapplied and later called with nil;
  * - nil written another way (`.none`, `Optional.none`, `(nil)`), and a `PHFetchOptions` made by a form not listed
  *   above (a typealias, `[PHFetchOptions.alloc init]`, or `o = .init()` after a separate declaration).
  * BL-1527 stays open until the fetch PR lands with this test green against its code.
@@ -109,8 +111,9 @@ function balanced(code: string, open: number): string {
 const USER_LIBRARY_ONLY = /^\[?\s*(?:(?:PHAssetSourceType)?\.typeUserLibrary|PHAssetSourceTypeUserLibrary)\s*,?\s*\]?$/;
 
 /**
- * The value assigned at each source assignment: to the end of its line (or the first `;` or `]`), or to the matching
- * bracket when it starts with `[`, plus any following lines that start with `.` or `|`.
+ * The value assigned at each source assignment: to the end of its line (or the first `;` or `]`), or, when it starts
+ * with `[`, to the matching bracket and then on to the end of that line, plus any following lines that start with `.`
+ * or `|`.
  */
 function sourceValues(code: string): string[] {
   const values: string[] = [];
@@ -118,6 +121,7 @@ function sourceValues(code: string): string[] {
   for (const m of code.matchAll(re)) {
     const at = (m.index ?? 0) + m[0].length;
     let raw = code[at] === '[' ? balanced(code, at) : (/^[^\n;\]]*/.exec(code.slice(at))?.[0] ?? '');
+    if (code[at] === '[') raw += /^[^\n;]*/.exec(code.slice(at + raw.length))?.[0] ?? ''; // `[...] as T` or `[...].union(...)`
     // A value may go on over the next lines: a Swift member chain (`.union(...)` on its own line) or an Objective-C
     // `| PHAssetSourceType...`. Blank lines and comment lines (already blanked) between them are stepped over.
     const NEXT = /^[^\S\n]*(?:\n[^\S\n]*)+([.|][^\n;]*)/;
@@ -272,6 +276,16 @@ const FIXTURES: readonly { name: string; src: string; expect: Rule[] }[] = [
   {
     name: 'a member chain on a later line, after a comment line and a blank line',
     src: 'let o = PHFetchOptions()\no.includeAssetSourceTypes = .typeUserLibrary\n  // shared albums too\n\n  .union(.typeCloudShared)\n',
+    expect: ['source-not-user-library'],
+  },
+  {
+    name: 'a bracketed value with a cast, widened on the next line',
+    src: 'let o = PHFetchOptions()\no.includeAssetSourceTypes = [.typeUserLibrary] as PHAssetSourceType\n  .union(.typeCloudShared)\n',
+    expect: ['source-not-user-library'],
+  },
+  {
+    name: 'a bracketed value widened on the same line',
+    src: 'let o = PHFetchOptions()\no.includeAssetSourceTypes = [.typeUserLibrary].union(.typeiTunesSynced)\n',
     expect: ['source-not-user-library'],
   },
   {
