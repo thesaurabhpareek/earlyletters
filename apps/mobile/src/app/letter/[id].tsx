@@ -50,8 +50,9 @@ import { StateScreen } from '@/components/ui/state-screen';
 import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { useToast } from '@/components/ui/toast';
-import { useFontScale, useTheme } from '@/lib/a11y';
+import { announce, useFontScale, useTheme } from '@/lib/a11y';
 import { track } from '@/lib/analytics/track';
+import { useSaidOnChange } from '@/lib/said-on-change';
 import { copy, fill } from '@/lib/copy';
 import { letterDateline } from '@/lib/dates';
 import { carriesWords, playUnderDateline } from '@/lib/play-placement.logic';
@@ -392,6 +393,13 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
     />
   ) : null;
 
+  // "Words are ready. Read it back." (D-086): its card is a polite live region, which iOS does not read, so VoiceOver
+  // hears the heading once when the words arrive while the letter is open (PER4-018). Opening on the card says nothing,
+  // as the live region would not; the page says it, not the card, because the card mounts on both. The same condition
+  // that draws the card below (test/live-region-said-on-change.test.ts pins the two together).
+  const readItBack = editable && words === 'words' && (unread || !!entry.wordsUnreviewed);
+  useSaidOnChange(readItBack ? wordsCopy.waiting.readyBody : null, (line) => announce(line));
+
   const aa = (
     <Pressable
       onPress={() => setSizeOpen(true)}
@@ -703,24 +711,29 @@ function WaitingCard({ entry, kind, onWrite }: { entry: Entry; kind: WordsCardKi
   const { failed, retryable, packWait } = state;
   // D-111 item 4: a language this build does not hear yet; the letter waits for its language (from the job, no read).
   const languageWait = state.languageWait ? waitingForLanguageNote(job) : null;
-  const p = download.progress;
-  const reason = failed
-    ? copy.errors.transcriptionFailed.body
-    : languageWait
-      ? languageWait
-      : packWait
-        ? download.hold === 'waiting_for_wifi'
-          ? wordsCopy.pack.waitingForWifi
-          : download.hold === 'no_space'
-            ? wordsCopy.pack.noSpace
-            : p !== null
-              ? downloadingLine(p, (n) => fill(wordsCopy.pack.progress, { n }))
-              : fill(wordsCopy.pack.sizeLine, { size: Math.round(planFor([language]).bytes / 1e6) })
-        : null;
+  const reasonAt = (p: number | null) =>
+    failed
+      ? copy.errors.transcriptionFailed.body
+      : languageWait
+        ? languageWait
+        : packWait
+          ? download.hold === 'waiting_for_wifi'
+            ? wordsCopy.pack.waitingForWifi
+            : download.hold === 'no_space'
+              ? wordsCopy.pack.noSpace
+              : p !== null
+                ? downloadingLine(p, (n) => fill(wordsCopy.pack.progress, { n }))
+                : fill(wordsCopy.pack.sizeLine, { size: Math.round(planFor([language]).bytes / 1e6) })
+          : null;
+  const progress = download.progress;
+  const reason = reasonAt(progress);
+  // VoiceOver hears the reason once when it changes (PER4-018; iOS does not read the live region below): the phase, not
+  // each percent, as Settings > Storage does. A moving download is said as the card's own line below 1%, "Downloading".
+  useSaidOnChange(reasonAt(progress === null ? null : 0), (line) => announce(line));
 
   const primary = retryable ? (
     <Button size="md" label={w.retryButton} onPress={() => retryWords(entry.id)} testID="letter.retry" />
-  ) : packWait && p === null ? (
+  ) : packWait && progress === null ? (
     <Button size="md" label={w.readyButton} onPress={() => void startSpeechDownload(language)} testID="letter.getReady" />
   ) : null;
 
@@ -740,6 +753,8 @@ function WordsSheet({ entryId, open, onClose }: { entryId: string; open: boolean
   // The store refused the words (the letter has words now, or is on the server): the typing stays, the sheet stays open,
   // and the person is told their words are still here. Nothing typed is ever dropped.
   const [refused, setRefused] = useState(false);
+  // The refusal line is a polite live region, which iOS does not read: VoiceOver hears it once when it shows (PER4-018).
+  useSaidOnChange(refused ? copy.review.saveFailed : null, (line) => announce(line));
   return (
     <Sheet open={open} onClose={onClose} title={w.writeLabel} testID="letter.writeWords">
       <View className="gap-3 pb-2">
