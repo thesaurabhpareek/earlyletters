@@ -85,14 +85,37 @@ export function openingView(i: OpeningInput): OpeningView {
  * the joined sheet before the book arrives shows "No book here yet", whose "Start a book" makes a second, empty book.
  * An event, not a value: it carries no id or name and keeps nothing, so the answer is still never stored. Listened to only
  * while the hook is asking; with no listener it does nothing.
+ * Round 2 of the S17 follow-up from #2195: the sheet also says when an accept begins (`joining`, before `acceptInvite`) and
+ * when it is over, joined or not (`settled`, in its `finally`). While one is under way (`inProgress`), the account's answer
+ * may already count the joined book, so the hook does not let a `hasBook` answer that arrives then mark the book as the
+ * account's own; it holds it until the accept is over (dropped on `joined`, kept on a failed accept). The flag lives in
+ * memory for the length of one accept (the sheet runs one at a time); nothing is stored.
  */
+export type AccountJoinEvent = 'joined' | 'settled';
+
 export function createAccountJoinedSignal() {
-  const listeners = new Set<() => void>();
+  const listeners = new Set<(e: AccountJoinEvent) => void>();
+  let open = false;
+  const emit = (e: AccountJoinEvent) => listeners.forEach((l) => l(e));
   return {
-    joined(): void {
-      listeners.forEach((l) => l());
+    /** An accept is about to be sent. Always paired with `settled`. */
+    joining(): void {
+      open = true;
     },
-    subscribe(listener: () => void): () => void {
+    /** The accept went through and the joined book is not on the phone yet. */
+    joined(): void {
+      emit('joined');
+    },
+    /** The accept is over, joined or not (the sheet's `finally`). */
+    settled(): void {
+      open = false;
+      emit('settled');
+    },
+    /** An accept was sent and is not over yet. */
+    inProgress(): boolean {
+      return open;
+    },
+    subscribe(listener: (e: AccountJoinEvent) => void): () => void {
       listeners.add(listener);
       return () => {
         listeners.delete(listener);
@@ -109,6 +132,9 @@ export const accountJoined = createAccountJoinedSignal();
  * 5.8 row 12; components/family/welcome-handoff.logic.ts). Without this the re-ask after the join answers `arrived` while the
  * sheet is still open, and the route's arrival handover (app/onboarding.tsx) replaces the sheet with Tonight. Before the book
  * is here nothing changes: the route waits for it ("opening"), never "No book here yet". Pure; keeps nothing.
+ * It checks for any book on the phone, not the joined one (the signal carries no id). So `use-new-phone.ts` sets
+ * `joinedHere` only for an account that had not already said it holds a book of its own: for that account the first book
+ * to land gives the S17 arrival (spec AC-07, AC-08), as before #2078 (S17 follow-up from #2195).
  */
 export function joinHandsOver(joinedHere: boolean, hasLocalBook: boolean): boolean {
   return joinedHere && hasLocalBook;

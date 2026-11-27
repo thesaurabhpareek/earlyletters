@@ -321,4 +321,10 @@ describe('[BL-2159] the join sheet tells the route that the account has a book n
     expect(hook).toMatch(/accountJoined\.subscribe\(/);
     expect(hook).not.toMatch(/getSetting|setSetting|AsyncStorage|SecureStore|secureStorage/);
   });
+
+  it('[S17 follow-up from #2195, round 2] the sheet marks the accept as under way before it is sent, and over in its finally (a failed accept too)', () => {
+    const sheet = read('app', 'invite', 'index.tsx');
+    expect(sheet).toMatch(/accountJoined\.joining\(\);\n\s+try \{\n\s+const childId = await acceptInvite\(auth\.client, t\);/);
+    expect(sheet).toMatch(/await fail\(e, 'accept', t\);\n\s+\} finally \{\n\s+accountJoined\.settled\(\);/);
+  });
 });

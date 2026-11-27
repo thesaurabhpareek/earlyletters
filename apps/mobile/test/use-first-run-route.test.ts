@@ -680,6 +680,25 @@ describe('[NX-36-S17] a returning account on a new phone: the child step is unre
     }
   });
 
+  it('[S17 follow-up from #2195] an account with its own book accepts an invite during "Opening your book": its book lands, Tonight with the arrival handover (AC-07, AC-08)', async () => {
+    const run = await signedIn();
+    try {
+      h.asked[0]('hasBook');
+      await flush();
+      accountJoined.joined(); // the join sheet accepted the invite over the opening screen
+      h.asked[1]('hasBook');
+      await flush();
+      expect(run.result.current).toMatchObject({ step: 'openingBook', screen: 'opening', arrivedFromAccount: false });
+      syncEvent({ phase: 'syncing', lastSyncedAt: null });
+      bookLands();
+      expect(run.result.current).toMatchObject({ step: 'openingBook', screen: 'opening' });
+      syncEvent({ phase: 'idle', lastSyncedAt: '2026-11-10T10:00:05.000Z' });
+      expect(run.result.current).toMatchObject({ step: 'openTonight', arrivedFromAccount: true, mayBeginBook: true });
+    } finally {
+      run.unmount();
+    }
+  });
+
   it('[NX-36-S17] the account is new: the child step, as before S17; a reconnect under it asks nothing', async () => {
     const run = await signedIn();
     h.asked[0]('new');
