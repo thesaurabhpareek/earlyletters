@@ -5,7 +5,7 @@ import { ScrollView, View } from 'react-native';
 import Animated, { FadeOut, LinearTransition, ReduceMotion } from 'react-native-reanimated';
 import { tokens } from '@scribe/design-tokens';
 import { ConfirmSheet } from '@/components/book/confirm-sheet';
-import { eraseOutcome, restoredLine, shelfActions, shelfBookDays, shelfDateLine, shelfRow, type ShelfRowView } from '@/components/book/shelf.logic';
+import { eraseOutcome, keptUntilPassed, restoredLine, shelfActions, shelfBookDays, shelfCanRestore, shelfDateLine, shelfHelpShown, shelfRow, type ShelfRowView } from '@/components/book/shelf.logic';
 import { ExcerptFade } from '@/components/motion/excerpt-fade';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -19,7 +19,7 @@ import { eraseDeletedBook, eraseDeletedLetter } from '@/lib/capture/erase';
 import { copy, fill, pendingCopy } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
 import { useReducedMotion } from '@/lib/motion';
-import { getActiveChild, getChild, listDeleted, listDeletedBooks, isBookLeft, restoreBook, subscribeTo, undeleteEntry, type DeletedBook, type DeletedEntry } from '@/lib/store';
+import { getActiveChild, getChild, listDeleted, listDeletedBooks, isBookClosed, isBookLeft, restoreBook, subscribeTo, undeleteEntry, type DeletedBook, type DeletedEntry } from '@/lib/store';
 import { authorOf } from '@/components/child/child-store';
 import { bookCopy } from '@/components/book/copy';
 
@@ -40,6 +40,9 @@ import { bookCopy } from '@/components/book/copy';
  * A build that syncs shows Erase now once the server erase exists (S63, F17-REQ-025, BL-1854): it queues one id-only
  * `entry.erase` and the server purges its copy. The card also shows its date line, from the server's deleted_at plus 30
  * days, and a letter left alone goes at the server purge.
+ *
+ * After the account purge (CPrivO-56) a letter the server held stays here, past its date: such a card shows only its
+ * deleted day, the help line is not drawn, and a letter of a book the pull closed offers no Restore.
  */
 export default function RecentlyDeleted() {
   return (
@@ -62,6 +65,8 @@ function Shelf() {
   useEffect(() => subscribeTo('entries', () => setRows(read())), [read]);
   useEffect(() => subscribeTo(['children', 'settings'], () => setBooks(listDeletedBooks())), []);
   const actions = shelfActions({ sync: capabilities.sync, serverErase: capabilities.serverErase });
+  // CPrivO-56: read once per render, the phone's own day, as the cards' dates are.
+  const now = Date.now();
 
   const restore = (e: DeletedEntry) => {
     haptic('tap');
@@ -112,7 +117,7 @@ function Shelf() {
     <Card key={`book-${b.id}`} radius="md" padding={4} className="gap-3" testID="shelf.book">
       <View accessible className="gap-2">
         <Text variant="headline">{fill(d.bookCardTitle, { child: b.name })}</Text>
-        <Text variant="footnote">{shelfDateLine(shelfBookDays(b.deletedAt), d)}</Text>
+        <Text variant="footnote">{shelfDateLine(shelfBookDays(b.deletedAt), d, keptUntilPassed(b.deletedAt, now))}</Text>
       </View>
       <View className="flex-row flex-wrap items-center gap-2">
         <Button variant="secondary" size="md" label={d.restoreBookButton} onPress={() => restoreTheBook(b)} testID="shelf.restoreBook" />
@@ -146,13 +151,23 @@ function Shelf() {
   return (
     <ScrollView contentContainerClassName="gap-4 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
       <Stack.Screen options={{ title: d.recentlyDeleted }} />
-      <Text variant="subhead" tone="muted">
-        {d.shelfHelp}
-      </Text>
+      {shelfHelpShown([...books, ...rows], now) ? (
+        <Text variant="subhead" tone="muted">
+          {d.shelfHelp}
+        </Text>
+      ) : null}
       {bookCards}
       {rows.map((e) => (
         <Animated.View key={e.id} layout={layout} exiting={FadeOut.duration(reduced ? tokens.motion.fadeMs : tokens.motion.exitMs).reduceMotion(ReduceMotion.Never)}>
-          <ShelfCard v={shelfRow(e, undefined, bookOf(e))} from={signatureOf(e)} eraseNow={actions.eraseNow} canRestore={!(e.childId && isBookLeft(e.childId))} onRestore={() => restore(e)} onErase={() => setErasing(e.id)} />
+          <ShelfCard
+            v={shelfRow(e, undefined, bookOf(e))}
+            from={signatureOf(e)}
+            past={keptUntilPassed(e.deletedAt, now)}
+            eraseNow={actions.eraseNow}
+            canRestore={shelfCanRestore({ left: !!e.childId && isBookLeft(e.childId), closed: !!e.childId && isBookClosed(e.childId) })}
+            onRestore={() => restore(e)}
+            onErase={() => setErasing(e.id)}
+          />
         </Animated.View>
       ))}
       <ConfirmSheet
@@ -181,12 +196,12 @@ function signatureOf(e: DeletedEntry): string {
   return signsAs ? fill(copy.book.signature, { signsAs }) : '';
 }
 
-function ShelfCard({ v, from, eraseNow, canRestore, onRestore, onErase }: { v: ShelfRowView; from: string; eraseNow: boolean; canRestore: boolean; onRestore: () => void; onErase: () => void }) {
+function ShelfCard({ v, from, past, eraseNow, canRestore, onRestore, onErase }: { v: ShelfRowView; from: string; past: boolean; eraseNow: boolean; canRestore: boolean; onRestore: () => void; onErase: () => void }) {
   const d = copy.settings.delete;
   const { c } = useTheme();
   const note = v.fullText === null;
   const words = v.fullText ?? (v.words === 'waiting' ? pendingCopy.book.waitingForWords : bookCopy.nobodySpoke);
-  const dates = shelfDateLine(v, d);
+  const dates = shelfDateLine(v, d, past);
   return (
     <Card radius="md" padding={4} className="gap-3" testID="shelf.card">
       <View accessible accessibilityLabel={[words, note ? null : from, v.letterDate, dates].filter(Boolean).join('. ')} className="gap-2">

@@ -1,0 +1,22 @@
+diff --git a/.github/workflows/release-ios.yml b/.github/workflows/release-ios.yml
+index 49b3e840..29324c8b 100644
+--- a/.github/workflows/release-ios.yml
++++ b/.github/workflows/release-ios.yml
+@@ -65,7 +65,16 @@ jobs:
+         env:
+           GH_TOKEN: ${{ github.token }}
+           REPO: ${{ github.repository }}
+-        run: node scripts/release/launch-gate.mjs --repo "$REPO" --sha "$GITHUB_SHA"
++        # The job passes only on the script's own open line, not on exit 0 alone: a script that never reaches main()
++        # exits 0 with no output (the BL-1574 entry-check bug), and that must refuse the tag too.
++        # docs/ops/proposed/release-ios-launch-gate.md, "Require the open line".
++        run: |
++          set -euo pipefail
++          node scripts/release/launch-gate.mjs --repo "$REPO" --sha "$GITHUB_SHA" | tee "$RUNNER_TEMP/launch-gate.txt"
++          if ! grep -qE '^launch gate open: run [0-9]+ on [0-9a-f]{9} concluded success \(merge base [0-9a-f]{9}\)$' "$RUNNER_TEMP/launch-gate.txt"; then
++            echo "::error::Release candidate tag refused: the launch gate printed no open line, so it did not decide."
++            exit 1
++          fi
+ 
+   classify:
+     name: classify tag

@@ -1,7 +1,7 @@
 # Pins the CURRENT state of the native sources (NSC-01, BL-1045). No security-architect read is recorded here yet.
 # Format: sha256sum, two spaces, path under modules/. Do not edit by hand.
 # Anyone re-pinning (node scripts/native-sources.mjs --write <commit sha>) must have the security read recorded in the PR first.
-# pinned-head: 5d87f1c0dc0488e80b2af34b984a06fe70ced69c
+# pinned-head: 8e50c535ef002f3b5821916dd7747f99022c5201
 245bca8696c413b21a394746aeac316eaf9234ab97babd2f23a6c6c4aa683a71  scribe-audio/android/build.gradle
 fd6a87323a386117805a6280c8ff94b0e97b6643cc430ba957abe1be0dae0843  scribe-audio/android/src/main/java/expo/modules/scribeaudio/ScribeAudioModule.kt
 9869d4af1c29e95bf3c101299d29f62e00059d3cd60375bbf692e7f2f0c3fa33  scribe-audio/expo-module.config.json
@@ -19,7 +19,7 @@ a6ba32a3abd92ede6a59afc1913f509d0382f8b2c2e26a1afd1f51b881a5f4aa  scribe-keys/io
 e14fc722df16600454f9d88f2646564b8823a15d9be4e9a2395ccad905316853  scribe-photo/expo-module.config.json
 73c14f85181829dc75dde2a3ecd3dbb34c6eb4408da9fa23e87f64d5f2fa2d14  scribe-photo/index.ts
 382a65a792f7d7c8c655c0cb17cb864822d1acc7dba0f066051b44a31ec17bce  scribe-photo/ios/ScribePhoto.podspec
-46aba79cb7fda41c8061d6fcb0233407b598476cb672029c4689cbebd2b51bbe  scribe-photo/ios/ScribePhotoModule.swift
+48b21417292cc4995b1f91297b2700284c11f6435b4a59492343de4eb075446c  scribe-photo/ios/ScribePhotoModule.swift
 c8c14a932fc0e82eb1d732d399006fef0928733dfbc4d15176d733c2e75515b6  scribe-store/android/build.gradle
 571f2735faf5e857752ee057ac8ef63425576a721616c60b86ee5d4c0a2d682f  scribe-store/android/src/main/AndroidManifest.xml
 d9ab2c25117595da7222f905f397d92da76387b6efba946195e04702f98e2be1  scribe-store/android/src/main/java/expo/modules/scribestore/ScribeStoreModule.kt

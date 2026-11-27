@@ -627,7 +627,7 @@ describe('Info.plist keys are an allowlist in every build (BL-2131, LEGAL-REQ-00
     // The strip phase runs only when the configuration is not Debug. EAS (@expo/build-tools resolveBuildConfiguration)
     // uses ios.buildConfiguration when set, else Debug when developmentClient is on, else Release, after following
     // `extends`. So resolve each profile the same way.
-    type Profile = { extends?: string; developmentClient?: boolean; ios?: { buildConfiguration?: string; developmentClient?: boolean } };
+    type Profile = { extends?: string; distribution?: string; developmentClient?: boolean; ios?: { buildConfiguration?: string; developmentClient?: boolean } };
     const profiles = easFile.build as Record<string, Profile>;
     const resolve = (name: string, seen: string[] = []): Profile => {
       expect(seen, `eas.json extends loop at ${name}`).not.toContain(name);
@@ -635,7 +635,11 @@ describe('Info.plist keys are an allowlist in every build (BL-2131, LEGAL-REQ-00
       const base = own.extends ? resolve(own.extends, [...seen, name]) : {};
       return { ...base, ...own, ios: { ...(base.ios ?? {}), ...(own.ios ?? {}) } };
     };
-    for (const name of ['preview', 'testflight', 'production']) {
+    // The uploadable builds are every profile whose resolved distribution is not internal (EAS defaults to store), so a
+    // new store profile is checked here without anyone adding it to a list.
+    const uploadable = Object.keys(profiles).filter((name) => (resolve(name).distribution ?? 'store') !== 'internal');
+    expect(uploadable, 'production is always uploadable, so an empty or broken list cannot pass').toContain('production');
+    for (const name of uploadable) {
       const p = resolve(name);
       const devClient = p.ios?.developmentClient ?? p.developmentClient ?? false;
       expect(p.ios?.buildConfiguration ?? (devClient ? 'Debug' : 'Release'), name).toBe('Release');

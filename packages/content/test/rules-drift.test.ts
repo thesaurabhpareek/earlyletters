@@ -172,3 +172,75 @@ describe('content rules drift', () => {
     expect(line).toMatch(/NOTIFICATION_PATH\.test\(l\.path\)/);
   });
 });
+
+/**
+ * The BRAND.md glossary rows handoff 24 section 1.11 names under RV-3 (GAP-LOG RV-3, Q-FD-26): "note" is the word
+ * for something a person makes, never for what the app sends, which is a reminder or a message. rules.test.ts
+ * enforces the email half of that row by its own regex; nothing else ties the row to the rules or the copy, so
+ * the row could be reworded, or the rule dropped, and every rule test would stay green. These tests read the row.
+ * If one fails, the row, the rule and the copy disagree: settle which one is right, never loosen the test.
+ */
+const BRAND_MD = readFileSync(join(__dirname, '..', 'BRAND.md'), 'utf8');
+
+type GlossaryRow = { concept: string; use: string; banned: string; notes: string };
+/** The rows of the `## Glossary` table, header and separator left out. */
+function glossaryRows(): GlossaryRow[] {
+  const start = BRAND_MD.indexOf('\n## Glossary\n');
+  if (start < 0) return [];
+  const rest = BRAND_MD.slice(start + 1);
+  const end = rest.indexOf('\n## ');
+  const section = end < 0 ? rest : rest.slice(0, end);
+  return section
+    .split('\n')
+    .filter((l) => l.startsWith('| '))
+    .slice(1)
+    .map((l) => {
+      const [concept, use, banned, notes, ...extra] = l.slice(1, -1).split('|').map((c) => c.trim());
+      // A fifth cell means a pipe inside a cell or a new column: either way this parse no longer reads the row.
+      expect(extra, l).toEqual([]);
+      return { concept, use, banned, notes };
+    });
+}
+const NOTE = /\bnotes?\b/i;
+const ROW_MADE = 'Short piece someone makes';
+const ROW_SENT = /^What we send\b/;
+
+describe('content rules drift: the BRAND.md glossary rows the handoff names (RV-3)', () => {
+  it('[NS-48-R28, RV-3] the glossary keeps one row for a note a person makes and one for what the app sends', () => {
+    const rows = glossaryRows();
+    expect(rows.length).toBeGreaterThan(20);
+    const made = rows.filter((r) => r.concept === ROW_MADE);
+    const sent = rows.filter((r) => ROW_SENT.test(r.concept));
+    expect(made.length, ROW_MADE).toBe(1);
+    expect(sent.length, 'What we send').toBe(1);
+    // A note is something a person makes.
+    expect(made[0].use).toBe('note');
+    expect(made[0].notes).toMatch(/Only ever something a person makes/);
+    // What the app sends is a reminder or a message, and "note" is banned for it.
+    expect(sent[0].use.split(';').map((w) => w.trim())).toEqual(['reminder', 'message']);
+    expect(sent[0].banned).toMatch(/^note$/);
+    // One term per concept: no other row offers "note" as the word to use.
+    expect(rows.filter((r) => r.concept !== ROW_MADE && NOTE.test(r.use)).map((r) => r.concept)).toEqual([]);
+  });
+
+  it('[NS-48-R28, RV-3] the lines the "What we send" row quotes are still lines the package says', () => {
+    const sent = glossaryRows().find((r) => ROW_SENT.test(r.concept));
+    const quoted = [...(sent?.notes ?? '').matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+    expect(quoted.length).toBeGreaterThan(0);
+    const said = new Set(leaves(content).map((l) => l.text));
+    expect(quoted.filter((q) => !said.has(q))).toEqual([]);
+  });
+
+  it('[NS-48-R28, RV-3] rules.test.ts still holds the row\'s email rule: no "note" in anything sent by email', () => {
+    const rule = /it\('uses "note" only for something people make, never for what we send', \(\) => \{\n\s*expect\(offenders\(EMAIL, \/\\bnotes\?\\b\/i\)\)\.toEqual\(\[\]\);/;
+    expect(RULES).toMatch(rule);
+  });
+
+  it('[NS-48-R28, RV-3] no notification or reminder line calls what the app sends a note, wherever the key lives', () => {
+    // Lock-screen text is what the app sends, as email is; the row bans the word for both. A key may keep an
+    // internal name such as monthNotesLabel: only the words are read.
+    const scoped = [...leaves(en, 'en'), ...leaves(features, 'features')].filter((l) => NOTIFICATION_PATH.test(l.path));
+    expect(scoped.length).toBeGreaterThan(30);
+    expect(scoped.filter((l) => NOTE.test(l.text)).map((l) => `${l.path}: ${l.text}`)).toEqual([]);
+  });
+});

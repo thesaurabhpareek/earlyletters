@@ -18,6 +18,35 @@ const os = vi.hoisted(() => ({
   presented: new Map<string, { identifier: string; content: { data?: unknown } }>(),
 }));
 
+/** Makes one clean-up step throw, to prove the others still run (BL-2247). Off unless a test turns it on. */
+const fail = vi.hoisted(() => ({ deleteSetting: false, clearTypedDays: false, thrown: 0 }));
+vi.mock('../src/lib/store', async (importOriginal) => {
+  const real = await importOriginal<typeof import('../src/lib/store')>();
+  return {
+    ...real,
+    deleteSetting: (key: string) => {
+      if (fail.deleteSetting) {
+        fail.thrown += 1;
+        throw new Error('store closed');
+      }
+      real.deleteSetting(key);
+    },
+  };
+});
+vi.mock('../src/lib/reminders/typed-days', async (importOriginal) => {
+  const real = await importOriginal<typeof import('../src/lib/reminders/typed-days')>();
+  return {
+    ...real,
+    clearTypedDays: () => {
+      if (fail.clearTypedDays) {
+        fail.thrown += 1;
+        throw new Error('store closed');
+      }
+      real.clearTypedDays();
+    },
+  };
+});
+
 vi.mock('../src/lib/days', () => ({ endDaysSession: () => true })); // reminders/session clears the days store (NS-47-R15): test/days-store.test.ts
 vi.mock('../src/lib/moments', () => ({ endMomentsSession: () => true })); // reminders/session clears the moments file too: test/moments-hooks.test.ts
 vi.mock('expo-crypto', () => ({ getRandomBytes: (n: number) => new Uint8Array(n).fill(7) }));
@@ -156,6 +185,9 @@ describe('[NS-13-R14] sign out removes reminders (real store and scheduler)', ()
   const newId = () => `0199a5b0-0000-7000-8000-${String(++seq).padStart(12, '0')}`;
 
   beforeEach(() => {
+    fail.deleteSetting = false;
+    fail.clearTypedDays = false;
+    fail.thrown = 0;
     os.scheduled.clear();
     os.presented.clear();
     store.closeStore();
@@ -194,6 +226,7 @@ describe('[NS-13-R14] sign out removes reminders (real store and scheduler)', ()
     expect([...os.presented.keys()]).toEqual(['someone-else-shown']);
     for (const key of reminders.REMINDER_SETTING_KEYS) expect(store.getSetting(key), key).toBeNull();
     expect([...reminders.REMINDER_SETTING_KEYS].sort()).toEqual([
+      'notifications.dayNames', // the one day-names switch (NS-18-R3, BL-982): reset at sign-out
       'notifications.lockScreenNames',
       'reminders.cadence',
       'reminders.days',
@@ -208,6 +241,31 @@ describe('[NS-13-R14] sign out removes reminders (real store and scheduler)', ()
     // Kept per phone: the open book and the ask count (design OQ-13.6 default).
     expect(store.getSetting('activeChildId')).toBe(activeBefore);
     expect(store.getSetting('asks.reminderPrimes')).toBe('1');
+  });
+
+  it('[BL-2247] a failing settings clear still clears every typed day and removes every reminder of ours', async () => {
+    reminders.writePrefs({ enabled: true, cadence: 'everyEvening' });
+    await reminders.rescheduleReminders();
+    expect(os.scheduled.size).toBeGreaterThan(0);
+    store.setSetting('typedDay.2026-10-20', 'Nursery starts'); // after the plan, so no sweep takes it first
+    fail.deleteSetting = true;
+    await reminders.endReminderSession();
+    expect(fail.thrown).toBe(1); // the first key threw, so the settings clear stopped there
+    expect(store.settingKeysWithPrefix('typedDay.')).toEqual([]);
+    expect(os.scheduled.size).toBe(0);
+  });
+
+  it('[BL-2247] a failing typed-day clear still clears the reminder settings and removes every reminder of ours', async () => {
+    reminders.writePrefs({ enabled: true, cadence: 'everyEvening', namesOnLockScreen: true });
+    await reminders.rescheduleReminders();
+    expect(os.scheduled.size).toBeGreaterThan(0);
+    store.setSetting('typedDay.2026-10-20', 'Nursery starts');
+    fail.clearTypedDays = true;
+    await reminders.endReminderSession();
+    expect(fail.thrown).toBe(1);
+    expect(store.settingKeysWithPrefix('typedDay.')).toEqual(['typedDay.2026-10-20']); // the clear really failed
+    for (const key of reminders.REMINDER_SETTING_KEYS) expect(store.getSetting(key), key).toBeNull();
+    expect(os.scheduled.size).toBe(0);
   });
 
   it('[NS-13-R13] killed right after Sign out, before the clear: the next launch clears A\'s reminders before B signs in', async () => {

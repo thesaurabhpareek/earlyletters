@@ -1,0 +1,5 @@
+{
+  "ignore": [
+    { "id": "GHSA-86w9-cpqp-85rv", "package": "node-forge", "reason": "Build tool only in this fixture.", "added": "2026-01-01", "expires": "2026-02-01" }
+  ]
+}

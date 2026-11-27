@@ -11,12 +11,12 @@ import { packExport } from '../src/lib/export/pack';
 import { EXPORT_FORMAT, EXPORT_SCHEMA_VERSION, exportJsonSchema, type EntriesFile } from '../src/lib/export/schema';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ASHA_AUDIO, ashaSnapshot, sha256Hex } from './helpers/asha-export';
+import { ASHA_FILES, ashaSnapshot, sha256Hex } from './helpers/asha-export';
 
 async function ashaZip(snapshot = ashaSnapshot()): Promise<Record<string, Uint8Array>> {
   const chunks: Uint8Array[] = [];
   await packExport(snapshot, {
-    readFile: async (uri) => ASHA_AUDIO[uri] ?? Promise.reject(new Error('missing')),
+    readFile: async (uri) => ASHA_FILES[uri] ?? Promise.reject(new Error('missing')),
     sha256: async (d) => sha256Hex(d),
     renderPdf: async () => new TextEncoder().encode('%PDF-1.4\n%%EOF\n'),
     sink: { write: (c) => chunks.push(c.slice()) },
@@ -89,7 +89,7 @@ describe('export schema', () => {
     expect(validate({ ...account, consent_on_this_phone: { age_confirmed: true, usage_sharing: 'maybe' } })).toBe(false);
   });
 
-  for (const version of ['1.0.0', '1.1.0', '1.2.0', '1.3.0', '1.4.0', '1.5.0']) {
+  for (const version of ['1.0.0', '1.1.0', '1.2.0', '1.3.0', '1.4.0', '1.5.0', '1.6.0']) {
     it(`[DATA-REQ-055] still reads every ${version} file (kept in __golden__/export-asha/_v${version})`, () => {
       const dir = join(__dirname, '__golden__', 'export-asha', `_v${version}`);
       const cases: [string, string][] = [
@@ -108,6 +108,21 @@ describe('export schema', () => {
       }
     });
   }
+
+  describe('[BL-933] photo (1.7.0)', () => {
+    const photo = validator('photo');
+    const ok = { file: 'photos/e2/m-asha-0001.jpg', bytes: 140, sha256: 'a'.repeat(64), width: 4, height: 4, text: 'Your first bath.', place: null };
+
+    it('accepts a picture at its path, with or without size, words and place', () => {
+      expect(photo(ok), JSON.stringify(photo.errors)).toBe(true);
+      expect(photo({ ...ok, width: null, height: null, text: null }), JSON.stringify(photo.errors)).toBe(true);
+    });
+
+    it('rejects an extra field (a location has no place to go) and a path outside photos/', () => {
+      expect(photo({ ...ok, latitude: 37.77 })).toBe(false);
+      for (const file of ['audio/e2.m4a', 'photos/../data/entries.json', 'photos/../x.jpg', 'photos/./m.jpg', 'photos/e2/m.png', 'photos/e2/m_1.jpg', 'photos/m.jpg']) expect(photo({ ...ok, file }), file).toBe(false);
+    });
+  });
 
   describe('[BL-529, LEGAL-REQ-034] profile (1.4.0)', () => {
     const profile = validator('profile');

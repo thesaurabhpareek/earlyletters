@@ -45,7 +45,8 @@ import { AppNote } from '@/components/book/app-note';
 import { bookCopy } from '@/components/book/copy';
 import { letterWords } from '@/components/book/letter-words.logic';
 import { readableInBook, showsSignature } from '@/components/book/quiet-day.logic';
-import { lettersInYear, endOfYearLine, readTheYearOn } from '@/components/book/read-year.logic';
+import { endOfYearLine, readTheYearOn } from '@/components/book/read-year.logic';
+import { readTogetherPlan } from '@/components/book/read-from-here.logic';
 import { buttonPlacement, pageButtonsClass, turnControls, type TurnButton } from '@/components/book/turn-controls.logic';
 import { getActiveChild, getChild, getSetting, listEntriesForChild, setSetting, type Child, type Entry } from '@/lib/store';
 
@@ -56,10 +57,14 @@ const END = 'end';
 
 export default function ReadTogether() {
   const rt = copy.readTogether;
-  const { childId, year } = useLocalSearchParams<{ childId?: string; year?: string }>();
+  const { childId, year, from } = useLocalSearchParams<{ childId?: string; year?: string; from?: string }>();
   const child = (childId ? getChild(childId) : null) ?? getActiveChild();
   const counted = useRef(false);
-  const [index, setIndex] = useState(0);
+  // Only what readableInBook lets through (D-084); the whole book oldest first, or one year. `from` opens it at a letter
+  // (Read from here, BL-1792); a year wins over it, and a stale `from` opens at the first letter (read-from-here.logic.ts).
+  const plan = useMemo(() => (child ? readTogetherPlan(readableInBook(listEntriesForChild(child.id)), child, { yearsOn: readTheYearOn(process.env.EXPO_PUBLIC_READ_THE_YEAR), year, from }) : { letters: [], start: 0 }), [child?.id, year, from]); // eslint-disable-line react-hooks/exhaustive-deps
+  const letters = plan.letters;
+  const [index, setIndex] = useState(plan.start);
   const [direction, setDirection] = useState<PageDirection>('next');
   // "Keep playing": after a recording ends, turn the page and start the next voice.
   const [autoNext, setAutoNext] = useState(() => getSetting(KEEP_PLAYING) === '1');
@@ -70,8 +75,6 @@ export default function ReadTogether() {
   // From AX1 up the buttons are the end of the letter's scroll, not pinned (BL-1791).
   const placement = buttonPlacement(accessibilitySize);
   useUnlitRoom();
-
-  const letters = useMemo(() => (child ? (year && readTheYearOn(process.env.EXPO_PUBLIC_READ_THE_YEAR) ? lettersInYear(listEntriesForChild(child.id), child, year) : readableInBook(listEntriesForChild(child.id))).reverse() : []), [child?.id, year]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // One session per opening, counted once (analytics only; nothing limits sessions).
   const session = useRef<{ startedAt: number; furthest: number } | null>(null);
@@ -224,12 +227,18 @@ function PageButtons({ turn, placement, index, go }: { turn: ReturnType<typeof t
   );
 }
 
-/** How far along: a 2 pt hairline under the top bar, accent at 40 percent. Never "1 / 5"; VoiceOver hears "Letter 1 of 5". */
+/**
+ * How far along: the progress hairline under the top bar. Never "1 / 5"; VoiceOver hears "Letter 1 of 5".
+ * It is the only sighted cue of the place, so the fill is full strength (3:1 on the page, CDO-B-048), not a faded accent.
+ * The colour is named, not `c[P.fill]`: a computed key hides it from the lamp's status-colour scan (test/lamp.test.ts);
+ * test/semantic-tokens.test.ts holds it equal to `tokens.progress.fill`.
+ */
 function Progress({ fraction, label }: { fraction: number; label: string }) {
   const { c } = useTheme();
+  const P = tokens.progress;
   return (
-    <View accessible accessibilityRole="text" accessibilityLabel={label} testID="readTogether.progress" style={{ height: 2 }}>
-      <View style={{ height: 2, width: `${Math.round(fraction * 1000) / 10}%`, backgroundColor: c.accent, opacity: 0.4 }} />
+    <View accessible accessibilityRole="text" accessibilityLabel={label} testID="readTogether.progress" style={{ height: P.hairline }}>
+      <View style={{ height: P.hairline, width: `${Math.round(fraction * 1000) / 10}%`, backgroundColor: c.accent }} />
     </View>
   );
 }

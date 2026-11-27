@@ -15,6 +15,7 @@ import { endMomentsSession } from '../moments';
 import { deleteSetting, getSetting, setSetting } from '../store';
 import { REMINDER_SESSION_KEY, REMINDER_SETTING_KEYS } from './prefs';
 import { forgetReminders } from './scheduler';
+import { clearTypedDays } from './typed-days';
 
 /** True when the person signed in here is gone: signed out (no user id now), or another account signed in. */
 export function sessionEnded(previousUserId: string | null, userId: string | null): boolean {
@@ -50,14 +51,20 @@ export async function settleReminderSession(previousUserId: string | null, userI
 }
 
 /**
- * Clears the reminder settings first, so a re-plan already queued by the store plans nothing, then removes every
- * reminder of ours, scheduled or delivered. Local only. Never throws.
+ * Clears the reminder settings and every typed day first (NS-18-R6), so a re-plan already queued by the store plans
+ * nothing, then removes every reminder of ours, scheduled or delivered. Each step has its own guard, so a failure in
+ * one never skips another. Local only. Never throws.
  */
 export async function endReminderSession(): Promise<void> {
   try {
     for (const key of REMINDER_SETTING_KEYS) deleteSetting(key);
   } catch {
     // The store is closed (an erase is under way, and it forgets reminders itself).
+  }
+  try {
+    clearTypedDays();
+  } catch {
+    // The same; nothing to log: the keys hold a parent's words
   }
   await forgetReminders();
 }

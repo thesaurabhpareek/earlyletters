@@ -59,6 +59,9 @@ test('[J01] first run: the age question, the promise, the child, the signature, 
   // S05: a tap on the waiting Continue raises the reason with its warning mark and moves focus to the empty field.
   await btn(app, 'Continue').click({ force: true });
   await expect(app.getByTestId('onboarding.reason.raised')).toBeVisible();
+  // S05 focus (EXPERIENCE_PASS S05, onboarding.tsx nudge; BL-2011): with no name typed this build has no date block yet (it
+  // arrives with the first letter), so what is missing is the name, and the tap moves focus there, as J22 does for its code.
+  await expect(nameField(app)).toBeFocused();
 
   const long = 'A'.repeat(90);
   await nameField(app).fill(long);

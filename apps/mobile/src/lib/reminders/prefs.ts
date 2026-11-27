@@ -15,6 +15,9 @@
  * | `notifications.lockScreenNames` | `on` / `off` | `off` (D-025; remote config later, D-035) |
  * | `reminders.onSince` | epoch ms, when reminders were last turned on (the anchor's second half, NS-13 R27) | absent |
  * | `reminders.session` | `on` or absent | absent; `on` while these reminders belong to a signed-in session (session.ts) |
+ * | `notifications.dayNames` | `on` / `off` | `off`; the one day-names switch: a typed day's words on the lock screen, only with names on too (NS-18-R3, CL-119, CPrivO-58) |
+ *
+ * Typed days keep their own keys, `typedDay.<yyyy-mm-dd>` (typed-days.ts), cleared with these at sign-out.
  *
  * While the app lock is on, names are off whatever that key says (F17-REQ-015; CDesO and CCO rule): the stored choice
  * is kept, not overwritten, and comes back if the lock is turned off. Turning the lock on or off writes a setting, so
@@ -54,6 +57,7 @@ const K = {
   names: 'notifications.lockScreenNames',
   session: 'reminders.session',
   onSince: 'reminders.onSince',
+  dayNames: 'notifications.dayNames',
 } as const;
 
 /** Every reminder setting above: cleared when the session ends (session.ts; NS-13-R14). */
@@ -124,6 +128,15 @@ export function lockScreenNamesOn(): boolean {
 }
 
 /**
+ * The one day-names switch, effective value (NS-18-R3, NS-47-R12, E45): stored on AND App lock off. Off by default.
+ * App lock wins without overwriting the stored choice, as for names. The switch's screen is another row (C-S24).
+ */
+export function dayNamesOn(): boolean {
+  if (appLockOn()) return false;
+  return onOff(K.dayNames, false);
+}
+
+/**
  * Visible books, with each child's "Include in my reminders" switch and "Quiet this book" (`child_member_prefs.quiet_at`,
  * read as `Child.quiet`). Hidden books are never reminded; the planner gives a quiet book nothing (planner.ts).
  */
@@ -152,10 +165,15 @@ export function lastOwnSaveAt(): number | null {
 /**
  * The newest letter this phone's user made, as the planner's layers read it (NS-48-R27): `at` (epoch ms of
  * `captured_at`) and the kind (`spoke` or `typed`; null when it cannot be told). One query, no entry text. Null when
- * nothing is made yet.
+ * nothing is made yet. Only books that are included and not quiet count: a quieted book, or one with "Include in my
+ * reminders" off, gives a key nothing, not its letter's date and not its kind (NS-48-R21, NS-32-R14). Smart quiet and
+ * the anchor still read every visible book (`lastOwnSaveAt`).
  */
 export function lastMadeLetter(): LastLetter | null {
-  const books = listChildren().map((c) => c.id);
+  const books = listChildren()
+    .filter((c) => c.remindersOn && c.quiet !== true)
+    .map((c) => c.id);
+  if (books.length === 0) return null;
   const row = newestMadeLetter(books, currentUserId());
   const at = row ? Date.parse(row.capturedAt) : NaN;
   return row && Number.isFinite(at) ? { at, kind: lastLetterKind(row.captureMode, row.kind) } : null;

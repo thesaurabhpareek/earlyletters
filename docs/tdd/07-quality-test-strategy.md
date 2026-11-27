@@ -335,7 +335,7 @@ Pre: Mama is creator of Asha's book with co-parent Papa and contributor Nani; Ma
 2. Continue; assert the subscription notice with a manage link appears before the final confirm.
 3. Assert the co-parent line says Mama's letters leave the shared book.
 4. Type to confirm. Assert the scheduled page: the date 30 days out, Cancel deletion and Sign out of this phone (S64; the app stays signed in until that tap).
-5. Sign in again within the window; tap Cancel deletion; assert letters are back.
+5. Within the window, on the scheduled page (the app is still signed in), tap Cancel deletion; assert letters are back.
 6. Repeat to completion with clock +31 days and the purge worker run; then run `ops/verify-deletion.mjs` against the local stack: no rows or objects for Mama except pseudonymised acceptances and the suppression hash; Papa still reads the book and Nani's letters remain.
 
 **E2E-10 Export** (C-REQ-017, LEGAL-REQ-034, DATA-REQ-050 to -053, TC-17)

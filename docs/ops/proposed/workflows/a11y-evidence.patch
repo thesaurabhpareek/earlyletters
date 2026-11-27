@@ -6,7 +6,7 @@ index 000000000..b1fab1cf5
 @@ -0,0 +1,68 @@
 +# AX5 and accessibility-tree evidence (BL-409, apps/mobile/e2e-web/j25-ax5-evidence.flow.ts). Owner: QA. PROPOSED (docs/ops/proposed/workflows/a11y-evidence.patch).
 +#
-+# Unnamed-control check and emulation screenshots; not AX5 conformance. Drives Review, a letter, Settings, the Plus gate in Chromium (seam build), uploads the four
++# Unnamed-control check and emulation screenshots; not AX5 conformance. Drives Review, a letter and Settings in Chromium (seam build), uploads the three
 +# screenshots and the step JSON (roles, names, order), and fails when any recorded step has a control with no accessible
 +# name (A11Y_STRICT=1). Emulation evidence, not device evidence. Path filtered and NOT a required check, like web-e2e.yml:
 +# a required check that never reports blocks merges that do not touch the app.

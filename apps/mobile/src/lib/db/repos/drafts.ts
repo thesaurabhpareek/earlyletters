@@ -6,6 +6,8 @@
  * book (store.ts eraseBook) and Erase everything (eraseEverythingLocal),
  * never here.
  */
+import { SIGN_AS_DRAFT_SETTING } from '../../capture/sign-as-other.logic';
+import type { SqlDb } from '../sql';
 import { changes, type RepoContext } from './context';
 import type { BaseDirection, CaptureMode, Draft, DraftKind, DraftState, OccurredPrecision } from './types';
 
@@ -127,14 +129,17 @@ export function setKind({ db }: RepoContext, id: string, kind: DraftKind): boole
 
 /**
  * The date the letter is about, and how exactly it is known. A month-precision
- * date is stored as the first of that month. Null clears it (the local date of
+ * date is stored as given: the day DateSheet stores for a month, the first day
+ * of that month of the child's age (date-change.logic monthChoiceDay), exactly
+ * as entries.setOccurred stores it. Never the calendar month's first day: for a
+ * child born on the 13th that day is in the month of age before, so Keep would
+ * file the letter a month early (NS-15-R2). Null clears it (the local date of
  * the draft's creation is used at save). False for a malformed date or precision.
  */
 export function setOccurred({ db }: RepoContext, id: string, occurredOn: string | null, precision: OccurredPrecision): boolean {
   if (precision !== 'day' && precision !== 'month') return false;
   if (occurredOn !== null && !ISO_DAY.test(occurredOn)) return false;
-  const day = occurredOn !== null && precision === 'month' ? `${occurredOn.slice(0, 8)}01` : occurredOn;
-  db.run('UPDATE drafts SET occurred_on = ?, occurred_precision = ? WHERE id = ?', day, precision, id);
+  db.run('UPDATE drafts SET occurred_on = ?, occurred_precision = ? WHERE id = ?', occurredOn, precision, id);
   return changes(db) === 1;
 }
 
@@ -163,7 +168,28 @@ export function beginDiscard({ db }: RepoContext, id: string): boolean {
     "UPDATE drafts SET state = 'discarding', review_put_back = NULL, review_view = NULL, review_text = NULL, review_base = NULL WHERE id = ?",
     id,
   );
-  return changes(db) === 1;
+  const done = changes(db) === 1;
+  // Its typed From name too, now, not when the file finally goes: the draft is already off every list.
+  if (done) forgetDraftFromName(db, (d) => d === id);
+  return done;
+}
+
+/**
+ * The From name typed for one draft (NS-16 section 6, `signAs.draft`; BL-980 review B finding 1) is someone else's
+ * name, L3, phone only. It goes whenever its draft ends without becoming a letter (Let it go, Delete, a book's erase)
+ * and when the row goes at Keep, whether or not Review drew the From card. One slot holds one draft's name, so a name
+ * typed for another draft stays. A slot that cannot be read names no draft and is left as it is. Never throws into
+ * the removal it rides on: a settings row is not worth keeping a draft for.
+ */
+export function forgetDraftFromName(db: SqlDb, ends: (draftId: string) => boolean): void {
+  try {
+    const raw = db.get<{ value: string }>('SELECT value FROM settings WHERE key = ?', SIGN_AS_DRAFT_SETTING)?.value;
+    if (raw === undefined) return;
+    const draftId = (JSON.parse(raw) as { draftId?: unknown } | null)?.draftId;
+    if (typeof draftId === 'string' && ends(draftId)) db.run('DELETE FROM settings WHERE key = ?', SIGN_AS_DRAFT_SETTING);
+  } catch {
+    // Unreadable: it names no draft.
+  }
 }
 
 /**
@@ -235,6 +261,7 @@ export function finishDiscard({ db }: RepoContext, id: string): boolean {
     db.run("DELETE FROM drafts WHERE id = ? AND state = 'discarding'", id);
     done = changes(db) === 1;
     if (done) db.run('DELETE FROM settings WHERE key = ?', failuresKey(id));
+    if (done) forgetDraftFromName(db, (d) => d === id);
   });
   return done;
 }
@@ -335,6 +362,7 @@ export function setReview(
 export function remove({ db }: RepoContext, id: string): void {
   db.run('DELETE FROM drafts WHERE id = ?', id);
   db.run('DELETE FROM settings WHERE key = ?', failuresKey(id));
+  forgetDraftFromName(db, (d) => d === id); // Keep, Delete and the sweep all remove a draft here
 }
 
 export function audioRows({ db }: RepoContext): { id: string; audioUri: string | null; state: string }[] {

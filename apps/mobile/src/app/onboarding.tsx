@@ -37,9 +37,9 @@ import { XIcon } from 'phosphor-react-native/src/icons/X';
 import type { Icon as PhosphorIcon } from 'phosphor-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { appleSignInAvailable } from '@/lib/auth/apple';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View, type Text as RNText, type TextInput } from 'react-native';
+import { AccessibilityInfo, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View, type Text as RNText, type TextInput } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
-import { CHILD_NAME_MAX, SIGNS_AS_MAX, checkSignsAs, clampText, languageInfo, nearLimit, textLength, type LanguageCode } from '@scribe/core';
+import { CHILD_NAME_MAX, SIGNS_AS_MAX, clampText, languageInfo, nearLimit, textLength, type LanguageCode } from '@scribe/core';
 import { tokens } from '@scribe/design-tokens';
 import { BookCover } from '@/components/book/book-cover';
 import { CoverHeading, useCoverPlace } from '@/components/child/cover-heading';
@@ -47,7 +47,7 @@ import { DateField, type DateFieldHandle } from '@/components/child/date-field';
 import { dateRange } from '@/components/child/date-field.logic';
 import { languageCopy } from '@/components/language/copy';
 import { LanguagePicker } from '@/components/language/language-picker';
-import { firstRunBookNames, firstRunChildBlock } from '@/components/onboarding/child-step.logic';
+import { firstRunBookNames, firstRunChildBlock, firstRunSignsAsBlock } from '@/components/onboarding/child-step.logic';
 import { showOnboardingLanguageRow } from '@/components/onboarding/language-row.logic';
 import { PromiseSample } from '@/components/onboarding/promise-sample';
 import { WelcomeLockup } from '@/components/onboarding/welcome-lockup';
@@ -89,7 +89,8 @@ import { haptic } from '@/lib/haptics';
 import { useMotion } from '@/lib/motion';
 import { ensureTextRules } from '@/lib/language/packs';
 import { useSpokenLanguage } from '@/lib/language/spoken-language';
-import { addChildren, getActiveChildId, getSetting, listChildren, listDeletedBooks, setActiveChildId, setSetting, subscribe, subscribeTo, todayISO } from '@/lib/store';
+import { addChildren, getActiveChildId, getSetting, listChildren, listDeleted, listDeletedBooks, setActiveChildId, setSetting, subscribe, subscribeTo, todayISO } from '@/lib/store';
+import { shelfHelpShown } from '@/components/book/shelf.logic';
 import { firstRunWelcome, welcomeMayLeave } from '@/components/family/welcome-handoff.logic';
 import { CheckingScreen, OpenDeletionScreen } from '@/components/settings/open-deletion';
 import { useFirstRunGate } from '@/lib/account-deletion';
@@ -117,6 +118,13 @@ function readDraft() {
 }
 
 /** "Asha", "Asha and Dev", "Asha, Dev and Nina". */
+/** The welcome's Recently deleted row (BL-776, CPrivO-56): what waits on the shelf, and whether `shelfHelp` holds for it. */
+function readShelf() {
+  const books = listDeletedBooks();
+  const letters = listDeleted();
+  return { books: books.length, letters: letters.length, help: shelfHelpShown([...books, ...letters], Date.now()) };
+}
+
 function joinNames(names: string[], fallback: string): string {
   const n = names.map((x) => x.trim()).filter(Boolean);
   if (n.length === 0) return fallback;
@@ -192,8 +200,9 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
   const doors = visibleCoParentDoors(capabilities.coParent, PLUS_ALPHA);
   const [languageOpen, setLanguageOpen] = useState(false);
   // BL-776: a deleted book waiting on this phone keeps its way back on the first screen (existing words, no new line).
-  const [deletedBookCount, setDeletedBookCount] = useState(() => listDeletedBooks().length);
-  useEffect(() => subscribeTo(['children', 'settings'], () => setDeletedBookCount(listDeletedBooks().length)), []);
+  // CPrivO-56: so does a deleted letter, and the row drops its subtitle once anything there is past its 30 days.
+  const [shelf, setShelf] = useState(readShelf);
+  useEffect(() => subscribeTo(['children', 'settings', 'entries'], () => setShelf(readShelf())), []);
 
   // The cover: the name after each typing pause; a chip's signature at once, a typed one after a pause.
   const coverName = useSettled(names[0] ?? '', COVER_PAUSE_MS);
@@ -346,7 +355,7 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
   const today = todayISO();
   const childBlock = firstRunChildBlock({ names, expecting, birthday, dueDate, today });
   // Twins or more: the reason agrees in number with the title (S06).
-  const signsAsBlock = checkSignsAs(signsAs).ok ? null : fill(namedCount > 1 ? o.signsAs.needSignsAsMany : o.signsAs.needSignsAs, { child });
+  const signsAsBlock = firstRunSignsAsBlock({ signsAs, child, many: namedCount > 1 });
   const block = step === 'child' ? childBlock : step === 'signsAs' ? signsAsBlock : null;
   const disabled = block !== null;
   const cta = { welcome: o.welcome.startButton, promise: o.promise.cta, child: o.child.cta, signsAs: o.signsAs.cta, finish: o.finish.cta }[step];
@@ -354,6 +363,19 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
 
   // A new reason (or a new step) starts quiet again; only a tap on the waiting Continue raises it.
   useEffect(() => setNudged(false), [block, step]);
+
+  /** As the date control does (DateField focus): keyboard focus on the web preview, VoiceOver focus on a phone, so no keyboard rises under VoiceOver. */
+  const focusFirstName = () => {
+    const field = nameFields.current[0];
+    if (!field) return;
+    if (Platform.OS === 'web') {
+      field.focus();
+      return;
+    }
+    try {
+      AccessibilityInfo.sendAccessibilityEvent(field as unknown as Parameters<typeof AccessibilityInfo.sendAccessibilityEvent>[0], 'focus');
+    } catch {}
+  };
 
   /** The waiting Continue was tapped: say why with the warning mark, and move focus to what is missing. */
   const nudge = () => {
@@ -366,7 +388,9 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
     }
     const missing = names.length > 1 ? names.findIndex((n) => !n.trim()) : -1;
     if (missing >= 0) nameFields.current[missing]?.focus();
-    else dateField.current?.focus();
+    else if (dateField.current) dateField.current.focus();
+    // No date control drawn: servers off it arrives with the first letter of the name (S05, dateBlockShown), so the name is what is missing.
+    else focusFirstName();
   };
 
   // Controls never animate in (MOTION principle 2). On every step but the last they follow the step's content in the scroll;
@@ -640,11 +664,11 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
               ) : null}
             </View>
           )}
-          {recentlyDeletedRowShown({ step, deletedBookCount }) && (
+          {recentlyDeletedRowShown({ step, deletedBookCount: shelf.books, deletedLetterCount: shelf.letters }) && (
             <ListSection>
               <ListRow
                 title={copy.settings.delete.recentlyDeleted}
-                subtitle={copy.settings.delete.shelfHelp}
+                subtitle={shelf.help ? copy.settings.delete.shelfHelp : undefined}
                 trailing="chevron"
                 onPress={() => router.push(RECENTLY_DELETED_HREF as Href)}
               />

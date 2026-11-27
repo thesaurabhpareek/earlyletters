@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { drafts, entries, letters } from '../src/lib/db/repos';
 import { EntryTombstonedError } from '../src/lib/db/repos/entries';
 import { fixture, letter, rawRow, seedChild, type Fixture } from './helpers/store-fixture';
+import { keepQuietDay } from '../src/lib/capture/quiet-day-save.logic';
 
 let f: Fixture;
 const defaults = { childId: null, authorSignsAs: null };
@@ -193,6 +194,92 @@ describe('words for a waiting letter are set once', () => {
   });
 });
 
+describe('[BL-413] a background-words letter is marked for reading, and the mark clears once it is read', () => {
+  const w = { rawTranscript: 'Asha you clapped', machineEdits: [], finalText: 'Asha you clapped', editLevel: 'verbatim' as const, engineVersion: 3 };
+  beforeEach(() => entries.upsert(f.ctx, letter({ id: 'w1', rawTranscript: '', finalText: '', transcriptStatus: 'waiting' }), defaults));
+
+  it('words set in the background wait for review: marked, and listed for Review', () => {
+    entries.setWordsOnce(f.ctx, 'w1', w);
+    expect(entries.get(f.ctx, 'w1')).toMatchObject({ wordsUnreviewed: true, finalText: 'Asha you clapped' });
+    expect(entries.listWordsToReview(f.ctx, 'child-asha').map((e) => e.id)).toEqual(['w1']);
+  });
+
+  it('read in Review, the mark clears once, and the words are not touched', () => {
+    entries.setWordsOnce(f.ctx, 'w1', w);
+    expect(entries.markWordsReviewed(f.ctx, 'w1')).toBe(true);
+    expect(entries.get(f.ctx, 'w1')).toMatchObject({ wordsUnreviewed: false, finalText: 'Asha you clapped', rawTranscript: 'Asha you clapped' });
+    expect(entries.listWordsToReview(f.ctx, 'child-asha')).toEqual([]);
+    expect(entries.markWordsReviewed(f.ctx, 'w1')).toBe(false);
+  });
+});
+
+describe('[BL-413] Change words on a saved letter: a person edit, raw untouched, each edit put back on its own', () => {
+  const KEPT = 'Usher laughed at the rain today.';
+  const edits = [{ type: 'filler' as const, start: 0, end: 3, original: 'um ', replacement: '', source: 'rule' as const }];
+  const OWNER = '11111111-1111-1111-1111-111111111111';
+  const row = () => rawRow(f.db, 'l1') as { raw_transcript: string; machine_edits: string; final_text: string; edit_level: string; author_base: string | null };
+  beforeEach(() => entries.upsert(f.ctx, letter({ id: 'l1', rawTranscript: 'um Usher laughed at the rain today', machineEdits: edits, finalText: KEPT }), defaults));
+
+  it('the person\'s words become the letter\'s; raw_transcript, the machine edits and the edit level stay', () => {
+    const before = row();
+    expect(entries.changeWords(f.ctx, 'l1', '  Asha laughed at the rain today.  ', null)).toBe(true);
+    expect(row()).toMatchObject({ final_text: 'Asha laughed at the rain today.', raw_transcript: before.raw_transcript, machine_edits: before.machine_edits, edit_level: before.edit_level, author_base: KEPT });
+  });
+
+  it('every edit is stored against the words as kept, which are written once', () => {
+    entries.changeWords(f.ctx, 'l1', 'Asha laughed at the rain today.', null);
+    entries.changeWords(f.ctx, 'l1', 'Asha laughed in the rain today.', null);
+    const layer = entries.authorLayer(f.ctx, 'l1')!;
+    expect(layer.base).toBe(KEPT);
+    expect(layer.edits).toEqual([
+      { start: 0, end: 5, replacement: 'Asha' },
+      { start: 14, end: 16, replacement: 'in' },
+    ]);
+  });
+
+  it('each edit is put back on its own, and the others stay', () => {
+    entries.changeWords(f.ctx, 'l1', 'Asha laughed in the rain today.', null);
+    const [name, word] = entries.authorLayer(f.ctx, 'l1')!.edits;
+    expect(entries.putBackEdit(f.ctx, 'l1', word, null)).toBe(true);
+    expect(row().final_text).toBe('Asha laughed at the rain today.');
+    expect(entries.authorLayer(f.ctx, 'l1')!.edits).toEqual([name]);
+  });
+
+  it('with every edit put back the letter reads exactly as kept and nothing is left to put back', () => {
+    entries.changeWords(f.ctx, 'l1', 'Asha laughed in the rain today.', null);
+    for (const e of [...entries.authorLayer(f.ctx, 'l1')!.edits].reverse()) expect(entries.putBackEdit(f.ctx, 'l1', e, null)).toBe(true);
+    expect(row()).toMatchObject({ final_text: KEPT, author_base: null });
+    expect(entries.authorLayer(f.ctx, 'l1')).toBeNull();
+  });
+
+  it('a put back for an edit that is no longer there changes nothing', () => {
+    entries.changeWords(f.ctx, 'l1', 'Asha laughed at the rain today.', null);
+    expect(entries.putBackEdit(f.ctx, 'l1', { start: 0, end: 5, replacement: 'Ravi' }, null)).toBe(false);
+    expect(row().final_text).toBe('Asha laughed at the rain today.');
+  });
+
+  it('refuses empty words and the same words, writing nothing', () => {
+    expect(entries.changeWords(f.ctx, 'l1', '   ', null)).toBe(false);
+    expect(entries.changeWords(f.ctx, 'l1', KEPT, null)).toBe(false);
+    expect(row()).toMatchObject({ final_text: KEPT, author_base: null });
+  });
+
+  it('refuses a letter still waiting, words still waiting for Review, a quiet-day mark, a deleted letter and another author\'s', () => {
+    entries.upsert(f.ctx, letter({ id: 'w1', rawTranscript: '', finalText: '', transcriptStatus: 'waiting' }), defaults);
+    entries.upsert(f.ctx, letter({ id: 'w2', rawTranscript: '', finalText: '', transcriptStatus: 'waiting' }), defaults);
+    entries.setWordsOnce(f.ctx, 'w2', { rawTranscript: 'Asha clapped', machineEdits: [], finalText: 'Asha clapped', editLevel: 'verbatim', engineVersion: 3 });
+    entries.upsert(f.ctx, letter({ id: 'q1', kind: 'not_much', finalText: 'Quiet.' }), defaults);
+    entries.upsert(f.ctx, letter({ id: 'd1' }), defaults);
+    entries.tombstone(f.ctx, 'd1');
+    entries.upsert(f.ctx, letter({ id: 'o1', authorId: '22222222-2222-2222-2222-222222222222' }), defaults);
+    for (const id of ['w1', 'w2', 'q1', 'd1', 'o1']) {
+      expect(entries.canChangeWords(f.ctx, id, OWNER)).toBe(false);
+      expect(entries.changeWords(f.ctx, id, 'Asha splashed.', OWNER)).toBe(false);
+    }
+    expect(entries.canChangeWords(f.ctx, 'l1', OWNER)).toBe(true);
+  });
+});
+
 describe('typed words for a waiting letter (D-086, "Write the words")', () => {
   beforeEach(() => entries.upsert(f.ctx, letter({ id: 'w1', rawTranscript: '', finalText: '', transcriptStatus: 'waiting' }), defaults));
 
@@ -334,5 +421,25 @@ describe('reads', () => {
     entries.upsert(f.ctx, letter({ id: 'c', occurredOn: '2026-10-01', capturedAt: '2026-10-01T11:00:00.000Z' }), defaults);
     entries.upsert(f.ctx, letter({ id: 'r', childId: 'child-ravi' }), defaults);
     expect(entries.listForChild(f.ctx, 'child-asha').map((e) => e.id)).toEqual(['c', 'b', 'a']);
+  });
+});
+
+describe('[BL-372, D-084] "Not much today" against the store', () => {
+  it('two taps on one day leave one mark, with no words written by the app', () => {
+    let n = 0;
+    const tap = () =>
+      keepQuietDay({
+        day: '2026-10-03',
+        now: '2026-10-03T20:00:00.000Z',
+        id: () => `q${++n}`,
+        entries: () => entries.listForChild(f.ctx, 'child-asha'),
+        save: (mark) => entries.upsert(f.ctx, mark, { childId: 'child-asha', authorSignsAs: 'Mama' }),
+      });
+    expect(tap()).toEqual({ kind: 'quietDay', markId: 'q1' });
+    expect(tap()).toEqual({ kind: 'quietDay', markId: 'q1' });
+    const marks = f.db.all<{ raw_transcript: string; final_text: string; in_book: number }>(
+      "SELECT raw_transcript, final_text, in_book FROM entries WHERE kind = 'not_much' AND occurred_on = '2026-10-03'",
+    );
+    expect(marks).toEqual([{ raw_transcript: '', final_text: '', in_book: 0 }]);
   });
 });

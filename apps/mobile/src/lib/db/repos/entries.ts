@@ -18,12 +18,15 @@
  *   review (transcript_status 'unreviewed', M17): the letter shows them, and it
  *   counts toward the free letters only when the author keeps them from Review
  *   (`keepReviewedWords`).
+ * - "Change words" on a saved letter (BL-413) changes final_text only. The
+ *   words as kept go to `author_base` once, so each change is an author edit
+ *   that can be put back on its own; raw_transcript and machine_edits stay.
  *
  * No defaults are read here: the caller passes the child and signature it
  * resolved (store.ts does that), so a repository never falls back to the
  * active child on its own.
  */
-import type { Edit, EditLevel } from '@scribe/core';
+import { applyAuthorEdits, diffAuthorEdits, type AuthorEdit, type Edit, type EditLevel } from '@scribe/core';
 import { changes, type RepoContext } from './context';
 import { reindexLetter } from '../../find/lifecycle';
 import type { EntrySyncState } from '../../sync/types';
@@ -138,7 +141,7 @@ export function upsert(ctx: RepoContext, e: Entry, defaults: InsertDefaults): vo
        occurred_precision, language, base_direction)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(id) DO UPDATE SET
-       final_text = excluded.final_text, machine_edits = excluded.machine_edits,
+       ${KEEP_BASE_IF_SAME_INCOMING}, final_text = excluded.final_text, machine_edits = excluded.machine_edits,
        edit_level = excluded.edit_level, in_book = excluded.in_book,
        sounds_like_me = excluded.sounds_like_me,
        child_id = CASE WHEN entries.synced_at IS NULL AND ? IS NOT NULL THEN ? ELSE entries.child_id END,
@@ -198,10 +201,101 @@ export function listForBook({ db }: RepoContext, childId: string): Entry[] {
     .map(fromRow);
 }
 
+/** Which of one book's days a Book read covers (BL-2225): `from` and `before` are YYYY-MM-DD, `limit` caps the rows. */
+export interface BookRange {
+  /** Only days on or after this one. */
+  from?: string | null;
+  /** Only days before this one: the keyset of the next chapter of rows, never an OFFSET. */
+  before?: string | null;
+  limit?: number | null;
+}
+
+/**
+ * Live letters of one book in a range of days, newest first, without their edit lists (BL-2225: the Book reads one
+ * chapter of rows at a time). Same order as `listForBook`. The keyset is `occurred_on` alone, so each bound is a range
+ * on `entries_child (child_id, occurred_on)` and a `LIMIT` stops the walk early; the caller keeps whole days.
+ */
+export function listBookRange({ db }: RepoContext, childId: string, range: BookRange = {}): Entry[] {
+  const where = ['deleted_at IS NULL', 'child_id = ?'];
+  const params: (string | number)[] = [childId];
+  if (range.from) {
+    where.push('occurred_on >= ?');
+    params.push(range.from);
+  }
+  if (range.before) {
+    where.push('occurred_on < ?');
+    params.push(range.before);
+  }
+  if (range.limit != null) params.push(range.limit);
+  return db
+    .all<EntryRow>(
+      `SELECT ${SHOWN_COLS} FROM entries WHERE ${where.join(' AND ')} ORDER BY occurred_on DESC, captured_at DESC, id DESC${range.limit != null ? ' LIMIT ?' : ''}`,
+      ...params,
+    )
+    .map(fromRow);
+}
+
+/** What the Book needs to know of the letters it has not read yet (BL-2225): one row, no words. */
+export interface BookOutline {
+  /** The oldest and newest day with a letter or note (quiet-day marks are not letters); null in a book of marks only. */
+  firstLetterOn: string | null;
+  lastLetterOn: string | null;
+  /** Whether Read together has anything to read: kept in the book, has words, not a mark (as `readableInBook`). */
+  readable: boolean;
+}
+
+/** The Book's outline in one aggregate over the book's rows: no row is parsed and one row comes back (BL-2225). */
+export function bookOutline({ db }: RepoContext, childId: string): BookOutline {
+  const r = db.get<{ first: string | null; last: string | null; readable: number | null }>(
+    `SELECT min(CASE WHEN kind <> 'not_much' THEN occurred_on END) AS first,
+            max(CASE WHEN kind <> 'not_much' THEN occurred_on END) AS last,
+            max(in_book = 1 AND kind <> 'not_much' AND transcript_status IS NOT 'waiting') AS readable
+     FROM entries WHERE deleted_at IS NULL AND child_id = ?`,
+    childId,
+  );
+  return { firstLetterOn: r?.first ?? null, lastLetterOn: r?.last ?? null, readable: r?.readable === 1 };
+}
+
+/**
+ * The newest row in the store now, as SQLite's rowid (BL-2225). A row inserted later (synced in or kept) gets a larger
+ * one: the table has no AUTOINCREMENT, so a new rowid is the largest held plus one, and an update keeps its rowid.
+ * One row back, read off the end of the rowid tree. Its one gap: if the newest row is purged before a new one comes
+ * in, the new one may not count as come in, so it misses a wash; no row that was there washes for it.
+ */
+export function rowMark({ db }: RepoContext): number {
+  return db.get<{ m: number | null }>('SELECT max(rowid) AS m FROM entries')?.m ?? 0;
+}
+
+/**
+ * Ids of one book's live rows that came into the store after `mark` (rowMark), BL-2225. A range on the rowid, so only
+ * the rows added since are visited: `+child_id` keeps SQLite off the child indexes, which would walk the whole book.
+ */
+export function idsSince({ db }: RepoContext, childId: string, mark: number): string[] {
+  return db.all<{ id: string }>('SELECT id FROM entries WHERE rowid > ? AND +child_id = ? AND deleted_at IS NULL', mark, childId).map((r) => r.id);
+}
+
 /** How many live letters a book holds (quiet-day marks are not letters), counted in SQL and never loaded (BL-434). */
 export function countLetters({ db }: RepoContext, childId: string): number {
   return (
     db.get<{ n: number }>("SELECT count(*) AS n FROM entries WHERE deleted_at IS NULL AND child_id = ? AND kind <> 'not_much'", childId)?.n ?? 0
+  );
+}
+
+/**
+ * How many people wrote the live letters of one book, counted in SQL (BL-421: a card names its writer only when there
+ * is more than one). A writer is an `author_id`; a row with none is this phone's user's (the ledger's rule, as in
+ * `newestMadeLetter`), so it counts as the owner, and letters from before the first sign-in never make a second
+ * writer of the same person. Never `author_signs_as`: a renamed signature is the same person. Quiet-day marks are not
+ * letters, so a mark alone never makes a book shared.
+ */
+export function countWriters({ db }: RepoContext, childId: string, owner: string | null): number {
+  return (
+    db.get<{ n: number }>(
+      `SELECT count(DISTINCT CASE WHEN author_id IS NULL OR author_id = ? THEN '' ELSE author_id END) AS n
+       FROM entries WHERE deleted_at IS NULL AND child_id = ? AND kind <> 'not_much'`,
+      owner ?? '',
+      childId,
+    )?.n ?? 0
   );
 }
 
@@ -368,10 +462,104 @@ export function replaceWords(
   w: { final_text: string; machine_edits: unknown[]; edit_level: string },
 ): boolean {
   ctx.db.run(
-    'UPDATE entries SET final_text = ?, machine_edits = ?, edit_level = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL',
-    w.final_text, JSON.stringify(w.machine_edits ?? []), w.edit_level, ctx.now(), id,
+    `UPDATE entries SET ${KEEP_BASE_IF_SAME_WORDS}, final_text = ?, machine_edits = ?, edit_level = ?, updated_at = ?
+     WHERE id = ? AND deleted_at IS NULL`,
+    w.final_text, w.final_text, JSON.stringify(w.machine_edits ?? []), w.edit_level, ctx.now(), id,
   );
   return moved(ctx, id);
+}
+
+/**
+ * The rows whose words the author may change on the letter page (BL-413): their own (as `setOccurred`: with no
+ * account yet, only a row with no author), live, with words that have been read (not waiting, not waiting for review
+ * in Review), and not a quiet-day mark. One definition, so the page's offer and the writes never disagree.
+ */
+const WORDS_CHANGEABLE = `deleted_at IS NULL AND kind <> 'not_much' AND transcript_status IS NULL AND final_text <> ''
+       AND (author_id IS NULL OR author_id = ?)`;
+
+/**
+ * SET clause for every writer that replaces final_text from outside the letter page (a pull, a push answer, a conflict
+ * choice). SQLite reads the old row on the right of SET, so `final_text` here is the words before this write; the one
+ * `?` is the incoming words. Different words drop `author_base`; the same words (a push answer echoing ours) keep it.
+ */
+export const KEEP_BASE_IF_SAME_WORDS = 'author_base = CASE WHEN final_text IS ? THEN author_base ELSE NULL END';
+
+/**
+ * The same rule for an INSERT ... ON CONFLICT DO UPDATE writer of final_text (`upsert`, the pull of another author's
+ * row): there `entries.final_text` is the words before the write and `excluded.final_text` the incoming ones. Neither
+ * writer meets a row with an author_base today; the rule makes that hold for any later caller too.
+ */
+export const KEEP_BASE_IF_SAME_INCOMING =
+  'author_base = CASE WHEN entries.final_text IS excluded.final_text THEN entries.author_base ELSE NULL END';
+
+/** The author's changes to a saved letter: the words as kept (`author_base`) and each change since, against them. */
+export interface AuthorLayer {
+  base: string;
+  edits: AuthorEdit[];
+}
+
+/**
+ * The author's changes on the letter page, or null when there are none. Derived, never guessed: the word diff from the
+ * stored `author_base` to `final_text` (core diffAuthorEdits is exact, so applying every edit gives final_text back).
+ */
+export function authorLayer({ db }: RepoContext, id: string): AuthorLayer | null {
+  const r = db.get<{ author_base: string | null; final_text: string }>(
+    'SELECT author_base, final_text FROM entries WHERE id = ? AND deleted_at IS NULL',
+    id,
+  );
+  if (!r || r.author_base === null) return null;
+  return { base: r.author_base, edits: diffAuthorEdits(r.author_base, r.final_text) };
+}
+
+/** Whether `changeWords` would take words for this letter now (the same rows, read only). */
+export function canChangeWords({ db }: RepoContext, id: string, owner: string | null): boolean {
+  return db.get<{ t: number }>(`SELECT 1 AS t FROM entries WHERE id = ? AND ${WORDS_CHANGEABLE}`, id, owner ?? '') !== null;
+}
+
+/** A base the author's changes no longer differ from is let go: the letter reads as kept, with nothing to put back. */
+function dropSpentBase({ db }: RepoContext, id: string): void {
+  db.run('UPDATE entries SET author_base = NULL WHERE id = ? AND author_base = final_text', id);
+}
+
+/**
+ * "Change words" on a saved letter (BL-413). The person's words, trimmed at the ends and nothing else, become
+ * final_text; the words as kept are written to `author_base` the first time only, so every change stays a separate,
+ * reversible author edit against them. raw_transcript, machine_edits and edit_level are never touched: the machine
+ * adds nothing here. False for empty words, the same words, or a row `WORDS_CHANGEABLE` refuses.
+ */
+export function changeWords(ctx: RepoContext, id: string, text: string, owner: string | null): boolean {
+  const words = text.trim();
+  if (!words) return false;
+  ctx.db.run(
+    `UPDATE entries SET author_base = COALESCE(author_base, final_text), final_text = ?, updated_at = ?
+     WHERE id = ? AND final_text <> ? AND ${WORDS_CHANGEABLE}`,
+    words, ctx.now(), id, words, owner ?? '',
+  );
+  if (!moved(ctx, id)) return false;
+  dropSpentBase(ctx, id);
+  return true;
+}
+
+/**
+ * Put back one of the author's changes (BL-413): the letter reads as kept at that place and every other change stays.
+ * The change is named by its value, not its place in a list, so a tap on a row the store has moved past changes
+ * nothing. Written only over the words it was worked out from (`final_text = ?`). False when that change is not
+ * there, or the row is refused as in `changeWords`.
+ */
+export function putBackEdit(ctx: RepoContext, id: string, edit: AuthorEdit, owner: string | null): boolean {
+  const layer = authorLayer(ctx, id);
+  if (!layer) return false;
+  const at = layer.edits.findIndex((e) => e.start === edit.start && e.end === edit.end && e.replacement === edit.replacement);
+  if (at < 0) return false;
+  const words = applyAuthorEdits(layer.base, layer.edits.filter((_, i) => i !== at));
+  if (!words.trim()) return false;
+  ctx.db.run(
+    `UPDATE entries SET final_text = ?, updated_at = ? WHERE id = ? AND final_text = ? AND ${WORDS_CHANGEABLE}`,
+    words, ctx.now(), id, applyAuthorEdits(layer.base, layer.edits), owner ?? '',
+  );
+  if (!moved(ctx, id)) return false;
+  dropSpentBase(ctx, id);
+  return true;
 }
 
 /** A quiet-day mark already exists for this book on this day (F04 11.3; D-084 keeps one per day). */

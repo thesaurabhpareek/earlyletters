@@ -180,7 +180,8 @@ describe('two parents, three phones, one server (protocol v1)', () => {
     ids.first = writeLetter(mama, ASHA, 'You found your feet today.', { language: 'en-GB' });
     ids.month = writeLetter(mama, ASHA, 'The month you learned to wave.', { month: '2026-09-17' });
     expect(outbox(mama)).toEqual([]); // nothing queues before the first sign-in
-    expect(mama.store.getEntry(ids.month)).toMatchObject({ occurredOn: '2026-09-01', occurredPrecision: 'month' });
+    // A month keeps the day the date sheet gives for it (NS-15-R2), never the calendar month's first day.
+    expect(mama.store.getEntry(ids.month)).toMatchObject({ occurredOn: '2026-09-17', occurredPrecision: 'month' });
 
     await mama.signIn();
     expect(outbox(mama)).toEqual([]);
@@ -1482,7 +1483,7 @@ describe('the held draft state table, ADR 0025 section 9: two phones of one auth
     expect(await history(id)).not.toContain('You drew a sun, and gave it to me.');
   }, 60_000);
 
-  it('[table C, an edit after a second Keep, before its pull row] the server keeps the first keep\'s raw transcript and refuses the edit (SCIMM): the edit stays as a conflict copy the author sees and goes up once picked; a pull row that comes while it waits gives it the letter\'s raw transcript, and it applies (review K re-check 4)', async () => {
+  it('[table C, an edit after a second Keep, before its pull row] the server keeps the first keep\'s raw transcript and refuses the edit (SCIMM): the edit stays as a conflict copy the author sees and goes up once picked; an edit that waits through a consent pause gets no pull row then (FR-PRV-20), keeps this phone\'s raw transcript, and once consent is back is refused (SCIMM) and kept as a second conflict copy, nothing lost (review K re-check 4)', async () => {
     const id = await shared('You found the torch.');
     Q.store.setDraftTyped(id, 'You found the torch under the bed.');
     keep(Q, id);
@@ -1509,8 +1510,8 @@ describe('the held draft state table, ADR 0025 section 9: two phones of one auth
     await Q.sync();
     expect(local(Q, id)?.final_text).toBe('You found the torch under the bed, and read with it.');
 
-    // When the pull row comes while the edit still waits (here a consent pause), the edit takes the letter's
-    // raw transcript too, and applies as the letter.
+    // An edit that waits through a consent pause: the pull of that pause brings no content row (FR-PRV-20), so
+    // the edit keeps this phone's raw transcript and does not apply as the letter.
     const id2 = await shared('You hid the spoon.');
     Q.store.setDraftTyped(id2, 'You hid the spoon in the plant.');
     keep(Q, id2);
@@ -1521,7 +1522,7 @@ describe('the held draft state table, ADR 0025 section 9: two phones of one auth
     await server.sensitiveConsent(MAMA, 'withdraw');
     try {
       editWords(P, id2, 'You hid the spoon in the plant, and laughed.');
-      expect((await P.sync(w.s)).phase).toBe('paused_consent'); // the edit waits; this pull brings the letter's row
+      expect((await P.sync(w.s)).phase).toBe('paused_consent'); // the edit waits; this pull brings no content row
       // FR-PRV-20: during the consent pause the pull brings no content rows, so the letter's raw transcript does
       // not arrive; nothing local is deleted or rewound, and the edit still waits with this phone's own raw transcript.
       expect(local(P, id2)).toMatchObject({ final_text: 'You hid the spoon in the plant, and laughed.', raw_transcript: 'You hid the spoon and the fork.' });

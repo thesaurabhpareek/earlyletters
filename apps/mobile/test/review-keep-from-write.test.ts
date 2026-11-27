@@ -334,10 +334,10 @@ describe('review.tsx keeps a typed letter through its one Keep step', () => {
   });
 
   it('the header names the month from the same day the entry is kept on', () => {
-    const day = 'draft.createdAt ? todayISO(new Date(draft.createdAt)) : todayISO()';
-    expect(save).toContain(`occurredOn: ${day},`);
-    expect(review).toContain(`const occurredOn = ${day};`);
-    expect(review).toMatch(/const month = monthFor\(child, occurredOn\);\s*const header = letterHeader\(\{ childName: child\.name, signsAs: child\.signsAs, month \}\);/);
+    // One rule for both (NS-15): the parent's pick on the draft, else the day it was said (about-day.logic reviewAboutDay).
+    expect(save).toMatch(/const day = reviewAboutDay\(live, saidOnOf\(draft\)\);[\s\S]*occurredOn: day\.occurredOn,\s*occurredPrecision: day\.occurredPrecision,/);
+    expect(review).toContain('const about = reviewAboutDay(draft, saidOnOf(draft));');
+    expect(review).toMatch(/const month = monthFor\(child, about\.occurredOn\);\s*const header = letterHeader\(\{ childName: child\.name, signsAs: from\.shown\(child\.signsAs\), month \}\);/);
   });
 });
 

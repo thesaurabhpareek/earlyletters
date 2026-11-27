@@ -1,7 +1,7 @@
 /**
  * The press state of the deletion screen (open-deletion.tsx), as a small pure reducer and a controller around it, so it
  * is tested in Node (test/open-deletion-press.test.ts) instead of read off the screen's source. A press is Cancel
- * deletion or Try again: the screen answers it with the loading state (no buttons to press twice), speaks it, and says
+ * deletion or Try again: the screen answers it with a busy primary (no buttons to press twice), speaks it, and says
  * afterwards what happened. Nothing here touches React Native; the screen gives the controller what it needs.
  *
  * Why it can end without an answer. cancelDeletion and the pull have no timeout of their own (critics' pass L7), so a

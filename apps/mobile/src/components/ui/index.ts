@@ -18,8 +18,8 @@ export { PinnedActionLayout, type PinnedActionLayoutProps } from './pinned-actio
 export { PINNED_ACTION, isPinned } from './pinned-action.logic';
 export { Separator } from './separator';
 export { Sheet, type SheetProps } from './sheet';
-export { InlineState, StateScreen, StateScreenView, type InlineStateProps, type StateScreenProps } from './state-screen';
-export { STATE_SPEC, actionLayout, stateA11y, type StateAction, type StateKind } from './state-screen.logic';
+export { InlineState, StateScreen, StateScreenView, stateA11y, type InlineStateProps, type StateScreenProps } from './state-screen';
+export { STATE_SPEC, actionLayout, stateSpoken, type StateAction, type StateKind } from './state-screen.logic';
 export { Text, TextClassContext, TextVariantContext, maxScaleFor, typeStyle, type TextProps, type TextVariant, type Tone } from './text';
 export { TextField, type TextFieldProps } from './text-field';
 export { Toast, ToastHost, useToast, type ToastOptions } from './toast';

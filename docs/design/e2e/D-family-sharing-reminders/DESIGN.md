@@ -31,7 +31,7 @@ Cards NS-05, NS-13, NS-18, NS-25, NS-32, NS-07 C5 and NS-03 keep their ids and r
 | NS-32 section 3 priority list, NS-32-R3, R5 | typed day (the parent typed), birthday, `libraryDay`, `monthAge`, `evening` (DL-2, NS-46-R7, R29); `libraryDay` is a ranked source inside the `typedDay` group, not a class (N-2) | Section 5.1; D-S10 gains `libraryDay` states, no new registry row |
 | NS-32-R4b "up to 64 total" | 60 pending in total, plan notices kept first within it (errata E13; NS-46-R9) | Section 5.3 |
 | NS-32-R12, R13 | plus the library-day neutral title and one neutral body per tone, one names rule per layer (NS-47-R12, R13, R36, R38; NS-46-R36, R37) | Sections 5.2, 5.4 |
-| NS-18-R3 (each typed day's words on the lock screen) | all day words, typed or ticked, follow one switch `notifications.dayNames` (NS-47-R37, RV-8; the NS-18-R3 errata row waits for Karma) | D-S08, D-S09, section 5.4. Conflicts with the G-D14 per-day switch ruling: flagged in section 15 |
+| NS-18-R3 (each typed day's words on the lock screen) | all day words, typed or ticked, follow one switch `notifications.dayNames` (NS-47-R37, RV-8); a typed day's own words show only with day names on AND names in notifications on AND App lock off, otherwise the fixed line (CPrivO-58, CPO-97; errata PROPOSED below the table) | D-S08, D-S09, section 5.4. Conflicts with the G-D14 per-day switch ruling: flagged in section 15 |
 | NS-13-R6a, R33 names switch | `notifications.lockScreenNames` covers the child's name only (NS-47-R14) | D-S06 help line |
 | NS-13 section 3a "35 days" | NS-13's own policy, not an iOS rule (RV-4) | Words only |
 | NS-13-R18, R19, R27 (anchor, back-off) | hard prerequisites of the catalogue's recency axis (NS-48 section 22) | Section 5.5 recency artefacts are drawn but flagged "after the anchor" |
@@ -41,6 +41,10 @@ Cards NS-05, NS-13, NS-18, NS-25, NS-32, NS-07 C5 and NS-03 keep their ids and r
 | `NOTIFICATIONS.md`, `COPY_INVENTORY.md` evening list | NS-48 catalogue: `ntc.*` keys, 6 variants per grid cell, the built 8 as the floor (N-1, N-7) | D-S26, WORDS.md section 18 |
 | "note" for what the app sends (WORDS G1, plan placeholder intent) | "reminder" in every parent-facing string; "note" is what a person makes (RV-3, BRAND glossary) | Words only; no screen change |
 | First-run areas keyed to NS-38 to NS-45 (card 19) | NS-39-R2 (no permission prompt in first run), NS-41-R6 and O-5 (a second account sees no reminder of the first), NS-43 and NS-44 "Not in scope: reminders", NS-45 (sign-out, session ended elsewhere, Delete account) | J-D10 position, J-D18 |
+
+**PROPOSED errata (CPrivO-58 and CPO-97 in `docs/agents/exec/RULINGS.md`; for the PM lane, not applied to cards 09 or 21).**
+- NS-18-R3, PROPOSED (card 09 `09-capture.md` row as it would read): "Given the default, Then the body is the fixed line and never the typed words; Given the parent turned showing on, Then the body is their words unchanged only while `notifications.dayNames` is on, `notifications.lockScreenNames` is on and App lock is off, and the fixed line in every other state; the typed words of a day (ticked or typed) follow the day-name switch `notifications.dayNames`, off by default and forced off with App lock (E45), and the names switch (CPrivO-58 option A)".
+- NS-48-R27, PROPOSED (card 21): its "newest by `captured_at` over visible books" would read "newest by `captured_at` over the visible books that are included in reminders and not quiet, null when none is"; `lastOwnSaveAt` and smart quiet still read every visible book. CPrivO-58 names this row but gives no words; these follow what #2133 built (its PR body), and the PM lane confirms them.
 
 ## 1. Rules this area applies (from the frame and the brief)
 
@@ -896,7 +900,7 @@ No new colour or motion token. Open name requests still owned upstream: `layout.
 | G-D07 | NS-13-R14 | Should the sign-out sheet (C-S03) say reminders stop? | WORDS.md proposes `account.signOut.remindersLine` for area C. Design has no objection (it is true and calm); area C decides whether D1's sheet carries it |
 | G-D08 | NS-13-R13 | Where B's ask card can appear after B's first letter on A's phone | As G-D05 |
 | G-D09 | NS-18 section 4 step 2 "at the reminder time" | The time when reminders are off, or never set | The stored time, default 20:30 |
-| G-D10 | NS-18 section 5 "a day in the past" | Is today accepted? | Today only while today's reminder time is still ahead (reconciled with WORDS.md G6) |
+| G-D10 | NS-18 section 5 "a day in the past" | Is today accepted? | No: the picker starts tomorrow and its last day is today plus 366 days (CPO-101; WORDS.md G6). Was: today only while today's reminder time is still ahead. PROPOSED NS-18 section 5 errata row, in CPO-101's words: "A day more than a year ahead: not offered by the picker; refused if it arrives (`typed_day_too_far`)" |
 | G-D11 | NS-18 section 5 "reminders turned off" | What the parent sees when notifications are not allowed | Save works; one line says it will be sent once allowed |
 | G-D12 | NS-25 section 5 "invite expired" | The link page has no server and cannot know expiry | Expiry is shown in the app at peek (D-S15.error-expired) |
 | G-D13 | NS-18-R5 | How the 80-character limit is shown without a counter | No counter; a paste over 80 is kept and Save shows one line (D-S08) |
