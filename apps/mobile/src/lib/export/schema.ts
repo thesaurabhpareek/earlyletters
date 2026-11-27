@@ -90,7 +90,7 @@ import { brand } from '@scribe/brand';
 /**
  * 1.7.0 (BL-933, ADR 0028 D2 and Amendment A5, NS-01-R14, NX-39-R32; DELETION_AND_EXPORT_SPEC 4.2 as fixed by
  * BL-868): a letter's picture goes in the export. `photos/<entry id>/<media id>.jpg` is the copy the app keeps, the
- * re-encoded JPEG with no Exif, XMP, IPTC or location, byte for byte (never the original the parent picked; there is no
+ * JPEG stripped of Exif, XMP, IPTC and location (re-encoded only when it had to be turned upright), byte for byte (never the original the parent picked; there is no
  * option for originals). `entries[].photo` becomes an object for a letter whose picture is in this export (the file,
  * its size and SHA-256, its pixel size when known, and the parent's own words and place for it, as typed), and stays
  * null otherwise. Letters in Recently deleted carry no picture. Only allowed values widen, so every earlier v1 export
@@ -120,7 +120,7 @@ export interface ExportAudio {
 }
 
 /**
- * A letter's picture (1.7.0, ADR 0028 D2): the stored copy, re-encoded with no metadata, at `file`. `text` and `place`
+ * A letter's picture (1.7.0, ADR 0028 D2): the stored copy, with no metadata, at `file`. `text` and `place`
  * are the parent's own words for it, exactly as typed; null when they typed none. Nothing here is read from the picture.
  */
 export interface ExportPhoto {
@@ -500,7 +500,8 @@ export const exportJsonSchema = {
       additionalProperties: false,
       required: ['file', 'bytes', 'sha256', 'width', 'height', 'text', 'place'],
       properties: {
-        file: { type: 'string', pattern: '^photos/[^/]+/[^/]+\\.jpg$' },
+        // No `.` or `..` folder; the file name is a stored picture's own id (photos/types.ts isStoredName).
+        file: { type: 'string', pattern: '^photos/[^/.][^/]*/[0-9A-Za-z-]{1,64}\\.jpg$' },
         bytes: { type: 'integer', minimum: 0 },
         sha256,
         width: { type: ['integer', 'null'], minimum: 1 },

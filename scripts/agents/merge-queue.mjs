@@ -12,9 +12,15 @@
 //   node scripts/agents/merge-queue.mjs --base <branch>    list PRs into that base (default develop)
 //   node scripts/agents/merge-queue.mjs --all-bases       list every base; other bases show OTHER-BASE, no ready line
 //   node scripts/agents/merge-queue.mjs --repo owner/name  default thesaurabhpareek/earlyletters (validated)
+//   MERGE_QUEUE_CR149=1 node scripts/agents/merge-queue.mjs  CR-149 relaxed NEEDS-UPDATE (flag ships off; see below)
 //
 // Read-only: every call is a GET through `gh api` (REST; GraphQL is blocked). There is no
 // write path in this file. No token is read or printed here; `gh` holds its own login.
+// The one exception, only with the CR-149 flag on: a local `git merge-tree --write-tree --no-messages <base sha> <head>`
+// in this checkout (execFile, no shell, both arguments checked to be 40 lowercase hex). It sends nothing to GitHub and
+// writes no ref, index or working-tree file (only tree and blob objects into the local object store). It needs both
+// commits already in the local clone, e.g. `git fetch origin develop refs/pull/<n>/head`; the queue never fetches, and a
+// missing commit is "could not run", which keeps the strict rule.
 //
 // Rules it applies:
 // - A review counts only if the FIRST LINE of a PR comment is exactly
@@ -57,6 +63,22 @@
 //   are off, so GitHub does not stop it; 21 Nov, #1128 and #839). behind_by > 0 with no shared workspace stays READY and
 //   prints a note with the count. If either compare call fails, is not a number, or the base file list may be cut
 //   off (300 files), the verdict is NEEDS-REVIEW with reason "base compare failed", never READY.
+// - CR-149 (BL-1571), behind the flag MERGE_QUEUE_CR149: on only when it is exactly "1" ("true", "yes" and the rest are
+//   off). It is read in one place (main) and passed to buildQueue as `cr149`; the flag ships off and turning it on is
+//   Karma's. Way back (CR-149): unset it and the strict rule above is back, unchanged. With it on, a row the strict rule
+//   sends to NEEDS-UPDATE (all earlier checks passed) skips that verdict only when all of these hold, else it stays
+//   NEEDS-UPDATE with a note naming the rule that failed:
+//     rule 3  two counted reviews and every required check success at head (already proved to reach NEEDS-UPDATE)
+//     rule 4  no protected path (protectedPathHits: the CR-70 list plus .github/CODEOWNERS read at the base sha, lockfiles,
+//             package.json, native paths, migrations; an unreadable CODEOWNERS protects every path)
+//     rule 1  no file in common with the files develop changed since the merge base (compare `<head>...<base sha>`,
+//             filesSince, renames on both sides; a list of 300 files may be cut off and counts as overlap)
+//     rule 2  `git merge-tree --write-tree` of the base sha and the head is clean (conflict or could not run: strict)
+//     rule 5  the base sha is read again; if it moved, rules 4, 1 and 2 run again on the new sha (at most 2 times, then
+//             "kept moving"). The merge call stays sha-pinned, and the ready line says to re-read the base first.
+//   Only PRs into develop (CR149_BASE) are relaxed; main, release branches and any other --base keep the strict rule.
+//   A source PR (from paths only, classifyPr) is told to run its own tests and tsc on the scratch merge; the queue reports
+//   that as required and does not run it. Every read error or odd shape fails closed (strict rule), never READY.
 // - Claims: lines of docs/agents/CLAIMS.md (if present, not required) that mention
 //   `#<pr>`. Holder = the cell after the PR in a table row, else `by <x>`, `holder: <x>`
 //   or `@<x>` on the line (U: the file's format is not fixed anywhere yet).
@@ -73,6 +95,7 @@
 //   NEEDS-REVIEW   a counted PASS is missing and no older-sha review exists, or the PR touches the
 //                  security-lens trigger list and no counted review names that lens (reason)
 //   NEEDS-UPDATE   otherwise ready, but the base is behind and the new base commits touch a workspace the PR touches
+//                  (with the CR-149 flag on, only when a CR-149 rule fails; the note names it)
 //   STALE-REVIEW   a counted PASS is missing at head, and one exists at an older sha
 //   CI-FAIL        a required context concluded with something other than success
 //   WATCH-RED      native/lockfile PR and a macOS check is red (names the check)
@@ -82,6 +105,9 @@
 //                  date cannot be parsed (unknown age is never quiet)
 //   READY          both PASS at head, every required context success, macOS rule met,
 //                  mergeable_state clean or unstable, head quiet long enough
+//   READY CR-149 (no overlap, merge-tree clean, docs|test)   flag on: as READY, but the base is behind in a shared
+//                  workspace and every CR-149 rule holds; the ready line names the base sha it was checked against
+//   READY CR-149 (no overlap, merge-tree clean, source: run its tests and tsc on the scratch merge first)   the same, source
 import { execFile } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -106,7 +132,8 @@ export const NATIVE_PATHS = [
 ];
 export const touchesNative = (files) => files.some((f) => [f.filename ?? f, f.previous_filename].some((n) => typeof n === "string" && NATIVE_PATHS.some((re) => re.test(n))));
 /**
- * CR-73 security-lens trigger list: the CR-70 founder-only path list, unchanged in content. The list no
+ * CR-73 security-lens trigger list: the CR-70 founder-only path list, unchanged in content, plus the four trace gate
+ * paths CR-229 added to it (the "trace gate" class). The list no
  * longer routes a PR to the founder; it sets one condition instead (a counted review that names the
  * `security` or `security-architect` lens). A report only: nothing here merges or blocks a merge call.
  */
@@ -126,6 +153,8 @@ export const SECURITY_LENS_CLASSES = [
   { name: "next.config", re: /^apps\/web\/next\.config\./ }, { name: "vercel.json", re: /(?:^|\/)vercel\.json$/ },
   { name: "web scripts", re: /^apps\/web\/scripts\// }, { name: "web api", re: /^apps\/web\/src\/app\/api\// }, { name: "supabase", re: /^supabase\// },
   { name: "engine files", re: /^packages\/core\/src\/(?:verify|meaning|types|pipeline|plan)\.ts$/ },
+  // CR-229 (24 Nov 2026): the trace gate runs the PR's own copy of these, so a PR could weaken the check that gates it.
+  { name: "trace gate", re: /^(?:scripts\/trace(?:\.test)?\.mjs|docs\/ops\/trace-ns-baseline\.txt|docs\/product\/prd\/14-test-plan\.md)$/ },
 ];
 export const SECURITY_LENS_PATHS = SECURITY_LENS_CLASSES.map((c) => c.re);
 /** Pure: the changed paths (new name or old name of a rename) that are on the security-lens trigger list, in order, once each. */
@@ -195,6 +224,308 @@ export function staleBase({ behindBy, prFiles, baseFiles }) {
   const mine = new Set(workspacesOf(prFiles));
   return { behindBy, shared: behindBy > 0 ? workspacesOf(baseFiles).filter((w) => mine.has(w)).sort() : [] };
 }
+
+// ---------------------------------------------------------------------------------------------------------------------
+// CR-149 checks as pure functions (BL-1570). No network, no verdict change: nothing in buildQueue or verdictFor calls
+// these yet. BL-1571 wires them in behind a flag that ships off. Every function fails closed: an input it cannot read,
+// or a path it does not recognise, counts as overlap, as protected or as source, and never as a safe docs PR, because a
+// wrong "safe" lets a PR skip the NEEDS-UPDATE rule while a wrong "unsafe" only keeps the strict rule.
+// ---------------------------------------------------------------------------------------------------------------------
+
+/** Returned as an overlap entry when an input cannot prove "no overlap" (not an array, a cut-off page, a bad entry). */
+export const UNREADABLE = "(unreadable input)";
+/** Both names of a changed file: `filename`, and `previous_filename` for a rename. Null when the entry is not readable. */
+const namesOf = (f) => {
+  if (typeof f === "string") return f.length ? [f] : null;
+  // The new name is required: an entry with only an old name is unreadable, never an empty change (fail closed).
+  if (typeof f?.filename !== "string" || !f.filename.length) return null;
+  const old = f.previous_filename;
+  if (old === undefined || old === null) return [f.filename];
+  return typeof old === "string" && old.length ? [f.filename, old] : null;
+};
+
+/**
+ * CR-149 rule 1: the files a PR changed since its merge base (`baseToHeadFiles`) that develop also changed since that
+ * merge base (`developFiles`), sorted, once each. A rename counts on both sides: its old name and its new name are both
+ * compared, so a PR that edits `a.ts` while develop renames `a.ts` to `b.ts` (or the other way round) overlaps.
+ * Failure mode guarded: a missed rename lets a PR merge onto a file that no longer exists under that name.
+ * Names compare without case (`Docs/a.md` and `docs/a.md` overlap): a case-insensitive checkout maps one onto the other,
+ * and a wrong overlap only keeps the strict rule. The PR's own spelling is returned.
+ * Fail closed: a non-array, a list marked `capped` (paged() cut it off, so it may be incomplete) or an entry with no
+ * readable name returns [UNREADABLE], which is non-empty and so counts as overlap.
+ */
+export function filesSince(baseToHeadFiles, developFiles) {
+  const sides = [baseToHeadFiles, developFiles];
+  if (sides.some((s) => !Array.isArray(s) || s.capped)) return [UNREADABLE];
+  const [mine, theirs] = sides.map((s) => s.map(namesOf));
+  if ([...mine, ...theirs].some((n) => n === null)) return [UNREADABLE];
+  const dev = new Set(theirs.flat().map((n) => n.toLowerCase()));
+  return [...new Set(mine.flat().filter((n) => dev.has(n.toLowerCase())))].sort();
+}
+
+/**
+ * CR-70 founder-only paths (as CR-73 restated them) that SECURITY_LENS_CLASSES does not already hold, plus the CR-149
+ * rule 4 names (auth, billing, the analytics allowlist, apps/mobile/src/lib/db, CODEOWNERS wherever it sits). Auth,
+ * billing and privacy have no path list anywhere, so they match as a substring of the whole path, case-insensitive, with
+ * no delimiter on either side: `useAuth.ts`, `token-vault.ts`, `account-deletion/` and `AuthProvider.tsx` all hit. It is
+ * broad on purpose ("author" and "tokens" hit too): a false hit only keeps the strict rule, a miss lets a PR skip it.
+ * A name rule cannot see what a file reads, so the folders whose files read the session (apps/mobile/src/lib/backup,
+ * apps/mobile/src/lib/analytics) are listed whole. `.well-known/` decides which app a sign-in link opens. `.gitmodules`
+ * and `.gitattributes` change what a checkout holds. Legal text, docs/DECISIONS.md and the standing merge delegation
+ * decision (CR-70's "this rule") are CR-73's "does not move" list.
+ */
+export const CR70_EXTRA_PATHS = [
+  /(?:^|\/)claude\.md$/i, /^packages\/content\//, /^packages\/brand\//, /^packages\/analytics\//, /^docs\/analytics\//,
+  /^agents\//, /^\.claude\//, /^apps\/mobile\/src\/lib\/db\//, /(?:^|\/)codeowners$/i, /^docs\/legal\//, /^apps\/web\/content\/legal\//,
+  /^apps\/mobile\/src\/app\/settings\/(?:legal|privacy)\.tsx$/, /^docs\/decisions\.md$/i,
+  /^apps\/mobile\/src\/lib\/backup\//i, /^apps\/mobile\/src\/lib\/analytics\//i, /(?:^|\/)\.?well-known\//i, /^apps\/mobile\/src\/lib\//i, /^apps\/web\/src\/lib\//i, /^packages\/api\//i, /^apps\/mobile\/src\/components\/family\//i, /^apps\/mobile\/src\/components\/app-lock\//i, /^packages\/core\//i, /^apps\/mobile\/src\/dev\//i, /^apps\/mobile\/src\/app\/_layout\.tsx$/i, /^packs\//i, /^apps\/mobile\/storekit\//i, /^apps\/mobile\/shims\//i, /(?:^|\/)tsconfig[^/]*\.json$/i, /(?:^|\/)migrations[-_]applied(?:\/|\.txt$)/i, /^apps\/mobile\/src\/app\//i, /^apps\/web\/src\/app\//i, /^apps\/web\/src\/content\//i, /^packages\/emails\//i, /^scripts\//i, /(?:^|\/)\.gitignore$/i, /(?:^|\/)\.nvmrc$/i, /(?:^|\/)agents\.md$/i, /(?:^|\/)vitest[^/]*\.config\.[a-z]+$/i, /(?:^|\/)env\.d\.ts$/i, /^apps\/mobile\/web-preview\//i, /^licen[cs]e(?:\.[a-z]+)?$/i, /^apps\/mobile\/src\/components\/(?:onboarding|settings|child|account|auth|gate|consent|photos)\//i, /(?:^|\/)e2e(?:-web)?\/(?:scripts|bin|ci|kill|support)\//i, /(?:^|\/)e2e(?:-web)?\/[^/]*config[^/]*$/i, /(?:^|\/)e2e\/(?:flows|subflows)\//i, /^experiments\//i, /^docs\/store\/(?:compliance|listing)\//i, /(?:^|\/)playwright[^/]*\.config\.[a-z]+$/i, /(?:^|\/)(?:public|assets)\/(?![^?#]*\.(?:png|jpe?g|gif|webp|avif|svg|ico|ttf|otf|woff2?|mp3|m4a|wav|mp4|webm)$)/i,
+  /^apps\/mobile\/src\/app\/invite\//i, /^apps\/web\/src\/app\/j\//i, /^docs\/ops\/backup\//i, /(?:^|\/)\.git(?:modules|attributes)$/i,
+  /^docs\/ops\/proposed\/standing-merge-delegation-decision\.md$/i,
+  // CR-229 (24 Nov 2026) added these to the CR-73 list: the trace gate reads them from the PR itself, so a PR could weaken
+  // the check that gates it. scripts/trace.mjs and scripts/trace.test.mjs are already held by /^scripts\//.
+  /^docs\/product\/prd\/14-test-plan\.md$/i, /^docs\/ops\/trace-ns-baseline\.txt$/i,
+  /auth|sign[-_]?in|sign[-_]?out|sign[-_]?up|log[-_]?in|log[-_]?out|session|token|vault|account|delet|erase|wipe|purge|forget|recover|restore|export|backup|invite|native-intent|deep[-_]?link|app[-_]?lock|biometric|face[-_]?id|password|secret|cred|jwt|crypt|key|agreement|age[-_]?gate|integrity|canonical|signature|signed|verif|hmac|unsubscribe|rate[-_]?limit|same[-_]?origin|unlock|passcode|hash|nonce|sso|mfa|totp|permission|role|admin|rls|csrf|cors|escrow|owner|presign|cookie|trust|identity|middleware|magic|otp|keychain|secure[-_]?stor|passkey|billing|payment|purchase|subscription|paywall|entitlement|iap|plus|security|supabase|privacy|terms|legal|consent|allow[-_]?list|deny[-_]?list|block[-_]?list/i,
+];
+/** Lockfiles of any package manager, anywhere in the tree (CR-149 rule 4 says "no lockfile", not only the root one). */
+export const LOCKFILE_RE = /(?:^|\/)(?:package-lock\.json|npm-shrinkwrap\.json|yarn\.lock|pnpm-lock\.ya?ml|bun\.lockb?|deno\.lock|podfile\.lock|gemfile\.lock|cargo\.lock|poetry\.lock|composer\.lock|gradle\.lockfile)$/i;
+/** Every `.env*` file or directory, matched by name anywhere (CR-70: "every `.env*` file, matched by file name, anywhere"). */
+export const ENV_RE = /(?:^|\/)\.env[^/]*(?:\/|$)/i;
+/** Any directory named migrations, anywhere: supabase/migrations is the one today, a second one must not slip through. */
+export const MIGRATION_RE = /(?:^|\/)migrations\//i;
+/** Patterns that cover the whole repo; CR-149 correction 1 says the `*` catch-all line is not a path of its own. */
+const CATCH_ALL = new Set(["*", "**", "/*", "/**"]);
+
+/**
+ * Pure: the path patterns of a CODEOWNERS file, read from the text passed in (never from disk here), as
+ * { patterns: [{ pattern, re }], error }. GitHub's syntax: `#` starts a comment, the first token is a gitignore-style
+ * pattern, a leading `/` or an inner `/` anchors it to the root, a trailing `/` means a directory, `*` and `?` stay inside
+ * one segment and `**` crosses segments. A pattern matches the path itself or anything under it. GitHub does not support
+ * `!`, `[ ]` or `\` escapes; a line that uses one, or text that is not a string, sets `error`, and touchesProtectedPath
+ * then treats every path as protected (fail closed: a rule we cannot read must not shrink the protected list).
+ */
+export function parseCodeowners(text) {
+  if (typeof text !== "string") return { patterns: [], error: "CODEOWNERS text missing" };
+  const patterns = [];
+  let entries = 0;
+  for (const raw of text.replace(/\r/g, "").split("\n")) {
+    const line = raw.trim();
+    if (!line || line.startsWith("#")) continue;
+    entries += 1;
+    const pattern = line.split(/\s+/)[0];
+    if (CATCH_ALL.has(pattern)) continue;
+    if (/[![\]\\]/.test(pattern)) return { patterns: [], error: `CODEOWNERS pattern not supported: ${clean(pattern)}` };
+    const dirOnly = pattern.endsWith("/");
+    const body = pattern.replace(/^\/+/, "").replace(/\/+$/, "");
+    if (!body) return { patterns: [], error: "CODEOWNERS pattern empty" };
+    const anchored = pattern.startsWith("/") || body.includes("/");
+    const glob = body.split("/").map((seg) => (seg === "**" ? "\u0000" : seg.replace(/[.+^${}()|]/g, "\\$&").replace(/\*/g, "[^/]*").replace(/\?/g, "[^/]"))).join("/")
+      .replace(/^\u0000\//, "(?:.*/)?").replace(/\/\u0000$/, "/.*").replace(/\/\u0000\//g, "/(?:.*/)?").replace(/\u0000/g, ".*");
+    patterns.push({ pattern, re: new RegExp(`^${anchored ? "" : "(?:.*/)?"}${glob}${dirOnly ? "/.+" : "(?:/.*)?"}$`, "i") });
+  }
+  // An empty file (or only comments) is a read gone wrong, not a repo with no owners: fail closed.
+  if (entries === 0) return { patterns: [], error: "CODEOWNERS text empty" };
+  // The real file opens with the `*` line, so a read cut short after it would look like "no owners": fail closed.
+  if (patterns.length === 0) return { patterns: [], error: "CODEOWNERS has no entry beyond the catch-all" };
+  return { patterns, error: null };
+}
+
+/** A path we can match safely: relative, forward slashes, no `.` or `..` segment, printable ASCII only (a zero-width or
+ * full-width character could slip past the name rule). Else unknown, so protected and source. */
+const readablePath = (p) => typeof p === "string" && p.length > 0 && !p.startsWith("/") && !p.includes("\\") && /^[\x20-\x7e]+$/.test(p)
+  && p.split("/").every((s) => s && s !== "." && s !== "..");
+const anyRe = (res, p) => res.some((re) => re.test(p) || re.test(p.toLowerCase()));
+
+/**
+ * Pure: CR-149 rule 4 (as CR-149 correction 1, BL-1569, reads it) for each changed path, both names of a rename, as
+ * [{ path, rules: [names] }] in input order, every rule that matched named so the verdict can say which one. The rules:
+ * the CR-70 path list (SECURITY_LENS_CLASSES plus CR70_EXTRA_PATHS), every CODEOWNERS entry in `codeowners` (the file's
+ * text, so a path added there later is covered with no change here; CR-70: where the two differ, CODEOWNERS wins), a
+ * `.env` file anywhere, a lockfile, a package.json change, a CR-74 native path (NATIVE_PATHS) and a migration.
+ * package.json: any change to one counts as a dependency change. We are not given the patch, so we cannot prove only a
+ * non-dependency key moved (scripts, name, version), and "scripts" itself runs in `npm ci` and EAS (CR-70).
+ * Matching ignores case as well (a case-insensitive checkout maps `IOS/` onto `ios/`), which can only add hits.
+ * Fail closed: a non-array or capped file list, an empty list, an entry with no readable name, a path that is absolute
+ * or holds `.`, `..`, a backslash or any character outside printable ASCII, and unreadable, empty or catch-all-only
+ * CODEOWNERS text each give a hit.
+ */
+export function protectedPathHits(files, codeowners) {
+  if (!Array.isArray(files) || files.capped) return [{ path: UNREADABLE, rules: ["unreadable file list"] }];
+  if (!files.length) return [{ path: UNREADABLE, rules: ["empty file list"] }];
+  const owners = parseCodeowners(codeowners);
+  const hits = [];
+  const add = (path, rules) => {
+    const old = hits.find((h) => h.path === path);
+    if (old) old.rules = [...new Set([...old.rules, ...rules])];
+    else hits.push({ path, rules });
+  };
+  for (const f of files) {
+    const names = namesOf(f);
+    if (!names) { add(UNREADABLE, ["unreadable entry"]); continue; }
+    for (const p of names) {
+      if (!readablePath(p)) { add(clean(p) || UNREADABLE, ["unknown path"]); continue; }
+      const rules = [];
+      if (anyRe(SECURITY_LENS_PATHS, p) || anyRe(CR70_EXTRA_PATHS, p)) rules.push("CR-70 path");
+      if (owners.error) rules.push(owners.error);
+      for (const o of owners.patterns) if (o.re.test(p)) rules.push(`CODEOWNERS ${o.pattern}`);
+      if (ENV_RE.test(p)) rules.push(".env file");
+      if (LOCKFILE_RE.test(p)) rules.push("lockfile");
+      if (/(?:^|\/)package\.json$/i.test(p)) rules.push("package.json dependency change");
+      if (anyRe(NATIVE_PATHS, p)) rules.push("native path (CR-74)");
+      if (MIGRATION_RE.test(p)) rules.push("migration");
+      if (rules.length) add(p, rules);
+    }
+  }
+  return hits;
+}
+/** Pure: true when CR-149 rule 4 keeps the strict rule for this PR (any hit, including a fail-closed one). */
+export const touchesProtectedPath = (files, codeowners) => protectedPathHits(files, codeowners).length > 0;
+
+/**
+ * Docs: Markdown anywhere, or `.mdx` and `.txt` under docs/, outside the folders where a Markdown file is an instruction
+ * an agent or CI acts on. A `.txt` or `.mdx` anywhere else may be built or read (a web `public/` file, MDX pages), and a
+ * `.txt` that a check or build reads is source wherever it sits: the baselines and allowlists scripts compare against
+ * (docs/ops/trace-ns-baseline.txt, CR-227), the store review notes, the migrations-applied lists, well-known files,
+ * requirements*.txt and CMakeLists.txt.
+ */
+const DOC_RE = /\.md$|^docs\/.*\.(?:mdx|txt)$/i;
+const MACHINE_READ_TXT_RE = /(?:baseline|allowlist|denylist|migrations-applied|notes-for-review|requirements)[^/]*\.txt$|(?:^|\/)cmakelists\.txt$|(?:^|\/)\.?well-known\//i;
+const NOT_DOCS_RE = /^(?:\.claude|agents|\.github)\/|(?:^|\/)(?:claude|agents)\.md$/i;
+/** Tests: a file inside a test folder, or a file named *.test.* or *.spec.* (CR-149's first uses: apps/mobile/test, e2e-web). */
+const TEST_RE = /(?:^|\/)(?:test|tests|__tests__|e2e|e2e-web|__fixtures__|fixtures)\/|\.(?:test|spec)\.[a-z0-9]+$/i;
+const NOT_TEST_RE = /^\.github\//i;
+
+/**
+ * Pure: CR-149's PR class from the changed paths only, never from a label or a title (labels and titles are written by
+ * the PR's author, so they cannot vouch for it). `docs` when every name is docs, `test` when every name is a test, else
+ * `source`. A PR that mixes tests and docs is neither test-only nor docs-only, so it is `source` and needs its own tests
+ * and tsc on the scratch merge (QA's condition in CR-149). Both names of a rename count, so moving a source file into a
+ * test folder is still `source`. Fail closed: a non-array, capped or empty list, an unreadable entry or an unknown path
+ * gives `source`, never `docs`.
+ */
+export function classifyPr(files) {
+  if (!Array.isArray(files) || files.capped || !files.length) return "source";
+  const names = files.map(namesOf);
+  if (names.some((n) => n === null)) return "source";
+  const all = names.flat();
+  if (!all.every(readablePath)) return "source";
+  if (all.every((p) => DOC_RE.test(p) && !NOT_DOCS_RE.test(p) && !MACHINE_READ_TXT_RE.test(p))) return "docs";
+  if (all.every((p) => TEST_RE.test(p) && !NOT_TEST_RE.test(p))) return "test";
+  return "source";
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// CR-149 wiring (BL-1571), behind a flag that ships off. Turning it on is Karma's; turning it off again restores the
+// strict NEEDS-UPDATE rule with no other change (CR-149 "Way back"). With the flag off none of this runs: no extra call,
+// no extra field, the same verdicts and the same table.
+// ---------------------------------------------------------------------------------------------------------------------
+
+/** The one environment variable that turns CR-149 on. Read in one place only: main() passes the result to buildQueue. */
+export const CR149_FLAG = "MERGE_QUEUE_CR149";
+/** Exactly the string "1" is on; anything else ("true", "yes", "0", empty, missing) is off, so a typo keeps the strict rule. */
+export const cr149FlagOn = (env) => env?.[CR149_FLAG] === "1";
+/** The only base CR-149 relaxes: it rules on develop's churn. Every other base keeps the strict rule. */
+export const CR149_BASE = "develop";
+const SHA40 = /^[0-9a-f]{40}$/;
+/** The repo root of this checkout (scripts/agents/../..): the only place the local `git merge-tree` runs. */
+const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
+
+/**
+ * CR-149 rule 2, default implementation: `git merge-tree --write-tree --no-messages <baseSha> <head>` in this checkout,
+ * through execFile (never a shell). Returns "clean" (exit 0), "conflict" (exit 1) or "error" (anything else: an argument
+ * that is not 40 lowercase hex, a commit missing from the local clone, a timeout, an output over maxBuffer, a git older
+ * than 2.38 without --write-tree). git 2.43 also exits 1 for "not something we can merge" (a missing commit), so exit 0
+ * and exit 1 count only when stdout's first line is the 40-hex tree id that --write-tree prints; otherwise "error".
+ * That first line is the only thing read; stdout and stderr are never printed or returned.
+ * Both commits must already be in the local clone (for example `git fetch origin develop refs/pull/<n>/head`); the
+ * queue never fetches. merge-tree writes tree and blob objects into the local object store, but no ref, no index and no
+ * working-tree file, and it reads and writes nothing on GitHub. `run` and `cwd` are injectable for tests only.
+ */
+export function gitMergeTree(baseSha, head, { run = execFile, cwd = REPO_ROOT, timeout = 60000 } = {}) {
+  if (![baseSha, head].every((s) => typeof s === "string" && SHA40.test(s))) return Promise.resolve("error");
+  return new Promise((resolve) => {
+    try {
+      run("git", ["merge-tree", "--write-tree", "--no-messages", baseSha, head], { cwd, timeout, maxBuffer: 16 * 1024 * 1024, windowsHide: true }, (err, stdout) => {
+        const wrote = SHA40.test(String(stdout ?? "").split("\n", 1)[0]); // --write-tree printed a tree id
+        if (!err) return resolve(wrote ? "clean" : "error");
+        resolve(err.code === 1 && !err.killed && !err.signal && wrote ? "conflict" : "error");
+      });
+    } catch {
+      resolve("error");
+    }
+  });
+}
+
+/** CODEOWNERS text at a sha, or undefined (so parseCodeowners fails closed) when the read throws or is not base64. */
+async function codeownersAt(get, repo, sha) {
+  try {
+    const r = await get(`repos/${repo}/contents/.github/CODEOWNERS?ref=${sha}`);
+    if (r?.encoding !== "base64" || typeof r.content !== "string") return undefined;
+    return Buffer.from(r.content, "base64").toString("utf8");
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * CR-149 for one PR that the strict rule would send to NEEDS-UPDATE. The caller has already proved rule 3 (two counted
+ * reviews at head and every required check success at head), so it is recorded as met. Per base sha, in this order:
+ * rule 4 (CODEOWNERS read at that sha, protectedPathHits), rule 1 (compare `<head>...<baseSha>`, filesSince), rule 2
+ * (mergeTree). Then rule 5: the base sha is read again, and if it moved rules 4, 1 and 2 run again on the new sha, up to
+ * maxRereads times. Returns { ok, rule, failed, baseSha, class, overlap, protectedHits, rereads, met }. Fails closed:
+ * every read error or unexpected shape is a failed rule (ok false), never ok.
+ */
+export async function evaluateCr149({ get, repo, base, head, prFiles, mergeTree, maxRereads = 2 }) {
+  const out = { ok: false, rule: null, failed: null, baseSha: null, class: classifyPr(prFiles), overlap: [], protectedHits: [], rereads: 0, met: [] };
+  const fail = (rule, why) => ({ ...out, ok: false, rule, failed: `${rule}: ${why}` });
+  const readSha = async () => {
+    try {
+      const sha = (await get(`repos/${repo}/branches/${encodeURIComponent(base)}`))?.commit?.sha;
+      return typeof sha === "string" && SHA40.test(sha) ? sha : null;
+    } catch {
+      return null;
+    }
+  };
+  if (typeof head !== "string" || !SHA40.test(head)) return fail("rule 5", "head sha is not 40 hex, so the merge cannot be sha-pinned");
+  let sha = await readSha();
+  if (!sha) return fail("rule 5", `${clean(base)} sha unreadable`);
+  for (;;) {
+    out.baseSha = sha;
+    out.met = ["rule 3"];
+    const hits = protectedPathHits(prFiles, await codeownersAt(get, repo, sha)).map((h) => ({ path: clean(h.path), rules: h.rules.map(clean) }));
+    out.protectedHits = hits;
+    if (hits.length) return fail("rule 4", `protected path ${hits[0].path} (${hits[0].rules.join(", ")})`);
+    out.met.push("rule 4");
+    let dev;
+    try {
+      dev = (await get(`repos/${repo}/compare/${head}...${sha}`))?.files;
+    } catch {
+      dev = undefined;
+    }
+    if (!Array.isArray(dev) || dev.length >= COMPARE_FILE_CAP) dev = Object.assign(Array.isArray(dev) ? [...dev] : [], { capped: true });
+    out.overlap = filesSince(prFiles, dev).map(clean);
+    if (out.overlap.length) return fail("rule 1", `file overlap ${out.overlap.slice(0, 2).join(", ")}`);
+    out.met.push("rule 1");
+    let merged;
+    try {
+      merged = await mergeTree(sha, head);
+    } catch {
+      merged = "error";
+    }
+    if (merged !== "clean") return fail("rule 2", `merge-tree ${merged === "conflict" ? "conflict" : "could not run"}`);
+    out.met.push("rule 2");
+    const again = await readSha();
+    if (!again) return fail("rule 5", `${clean(base)} sha unreadable on the re-read`);
+    if (again === sha) return { ...out, ok: true, rule: "CR-149", met: [...out.met, "rule 5"] };
+    if (out.rereads >= maxRereads) return fail("rule 5", `${clean(base)} kept moving`);
+    out.rereads += 1;
+    sha = again;
+  }
+}
+
+/** The relaxed verdict: starts with "READY " so `--only READY` still matches it, and names the class (unknown is source). */
+export const cr149Verdict = (cls) => (cls === "docs" || cls === "test"
+  ? `READY CR-149 (no overlap, merge-tree clean, ${cls})`
+  : "READY CR-149 (no overlap, merge-tree clean, source: run its tests and tsc on the scratch merge first)");
 
 /** AIE-G20 (AIE-R46): the check whose result a reviewer's focused run can hide. */
 export const SUITE_CHECK = "tests and content rules";
@@ -350,8 +681,10 @@ export function verdictFor(row, quietMinutes) {
   }
   if (!["clean", "unstable"].includes(row.mergeable_state)) return "WAIT-CI";
   if (row.reason) return "NEEDS-REVIEW"; // CR-73: reported, not a gate
-  if (row.staleBase?.shared.length) return "NEEDS-UPDATE";
+  const relaxed = row.cr149?.ok === true; // CR-149, set only by buildQueue with the flag on
+  if (row.staleBase?.shared.length && !relaxed) return "NEEDS-UPDATE";
   if (!(row.pushAgeMinutes >= quietMinutes)) return "WAIT-QUIET"; // unknown age (null) is not quiet
+  if (row.staleBase?.shared.length) return cr149Verdict(row.cr149.class);
   return "READY";
 }
 
@@ -371,7 +704,7 @@ async function paged(api, path, notices = []) {
 }
 
 /** api(path, { method: "GET" }) -> parsed JSON. Injected so tests never touch the network. */
-export async function buildQueue({ api, repo = DEFAULT_REPO, now = new Date(), quietMinutes = 10, claims = {}, notices = [], base = "develop", allBases = false }) {
+export async function buildQueue({ api, repo = DEFAULT_REPO, now = new Date(), quietMinutes = 10, claims = {}, notices = [], base = "develop", allBases = false, cr149 = false, mergeTree = gitMergeTree }) {
   const get = (path) => api(path, { method: "GET" });
   const prs = (await paged(get, `repos/${repo}/pulls?state=open`, notices)).filter((p) => !p.draft && (allBases || p.base.ref === base));
   const protection = new Map();
@@ -446,8 +779,22 @@ export async function buildQueue({ api, repo = DEFAULT_REPO, now = new Date(), q
       }
     }
     row.verdict = verdictFor(row, quietMinutes);
+    if (cr149 === true && row.verdict === "NEEDS-UPDATE" && p.base.ref === CR149_BASE) {
+      // CR-149 runs only where the strict rule says NEEDS-UPDATE, so rule 3 (reviews and checks at head) is already met.
+      // CR-149 is a ruling about develop; a PR into main or a release branch keeps the strict rule whatever --base says.
+      try {
+        row.cr149 = await evaluateCr149({ get, repo, base: p.base.ref, head, prFiles: files, mergeTree });
+      } catch {
+        row.cr149 = { ok: false, rule: "CR-149", failed: "CR-149 evaluation failed" };
+      }
+      row.verdict = verdictFor(row, quietMinutes);
+    }
     row.watch = Object.entries(row.checks.macos).filter(([, v]) => v !== "success").map(([n, v]) => `${n.split(" ")[0]}:${v}`);
     if (row.verdict === "READY" && !row.otherBase) row.mergeNote = `#${row.number} ready for Karma to merge (CR-73) at ${row.head}`;
+    else if (row.cr149?.ok && !row.otherBase && row.verdict === cr149Verdict(row.cr149.class)) {
+      row.mergeNote = `#${row.number} ready for Karma to merge (CR-73, relaxed by CR-149) at ${row.head}; checked against ${row.base} ${row.cr149.baseSha}: re-read ${row.base} just before merging and re-run this queue if it moved`
+        + (row.cr149.class === "docs" || row.cr149.class === "test" ? "" : "; run its tests and tsc on the scratch merge first");
+    }
     return row;
   };
   const rows = [];
@@ -470,9 +817,14 @@ export function formatTable(allRows) {
   const blockedNotes = rows.filter((r) => Object.keys(r.reviews.blocked).length).map((r) => `note: #${r.number} review not met, newest at head: ${Object.entries(r.reviews.blocked).map(([l, w]) => `${l}=${clean(w)}`).join(", ")}`);
   const held = rows.filter((r) => r.reviews.untrusted.length).map((r) => `note: #${r.number} held back, Review ${r.reviews.untrusted.join("/")} PASS at head came from a commenter who is not OWNER, MEMBER or COLLABORATOR (ignored)`);
   const lensNotes = rows.filter((r) => r.reason).map((r) => (r.reason === "base compare failed" ? `note: #${r.number} base compare failed: could not read how far the base moved, so a stale base cannot be ruled out` : r.reason === "file list incomplete" ? `note: #${r.number} file list incomplete (CR-73): the files read do not match the PR's changed_files, so the security lens cannot be checked` : `note: #${r.number} security lens missing (CR-73): touches ${r.securityHits.join(", ")}; no counted review names the security or security-architect lens`));
-  const baseNotes = rows.filter((r) => r.staleBase?.behindBy > 0).map((r) => (r.staleBase.shared.length
+  // A row CR-149 relaxed gets only its CR-149 note below, not the "update the branch" one, which would contradict it.
+  const baseNotes = rows.filter((r) => r.staleBase?.behindBy > 0 && r.cr149?.ok !== true).map((r) => (r.staleBase.shared.length
     ? `note: #${r.number} base is behind ${r.base} by ${r.staleBase.behindBy} commits that touch ${r.staleBase.shared.map(clean).join(", ")}: update the branch, wait for required, and get fresh reviews (a new commit voids both)`
     : `note: #${r.number} base is behind ${r.base} by ${r.staleBase.behindBy} commits, none in a workspace this PR touches; still ready`));
+  const cr149Notes = rows.filter((r) => r.cr149).map((r) => (r.cr149.ok
+    ? `note: #${r.number} CR-149 (flag on): base behind by ${r.staleBase?.behindBy} in ${(r.staleBase?.shared ?? []).map(clean).join(", ")}, but no file overlap, merge-tree clean against ${r.base} ${clean(r.cr149.baseSha)}, checks green and two reviews at head, no protected path; class ${clean(r.cr149.class)}`
+      + (r.cr149.rereads > 0 ? `; re-run ${r.cr149.rereads} time${r.cr149.rereads === 1 ? "" : "s"} after ${r.base} moved` : "")
+    : `note: #${r.number} CR-149 (flag on) kept the strict rule: ${clean(r.cr149.failed)}`));
   const redNotes = rows.filter(passOverRedSuite).map((r) => `note: #${r.number} PASS over a red suite (AIE-G20): a counted PASS stands at head, but \`${SUITE_CHECK}\` is failure; read its log before merging`);
   const hotNotes = hotFileGroups(rows).map((g) => `note: ${g.prs.map((n) => `#${n}`).join(", ")} all change ${clean(g.file)} (AIE-G21): merge #${g.prs[0]} first, then update the next and get fresh reviews (each merge voids the next one's reviews)`);
   const asks = rows.filter((r) => r.mergeNote).map((r) => r.mergeNote);
@@ -480,7 +832,7 @@ export function formatTable(allRows) {
   const parked = stale.length
     ? ["", `stale-unknown (${stale.length}): mergeability unknown and head older than 7 days; not in the table above, no ready line`, ...stale.map((r) => `  #${r.number} base ${r.base}, last push ${days(r)} days ago, head ${r.head}`)]
     : [];
-  return [line(head), ...body.map(line), "", "rev: AB = counted PASS at this head; lowercase = PASS only at an older sha; - = none. suite: conclusion of `tests and content rules` at head, - = no run", ...blockedNotes, ...held, ...lensNotes, ...baseNotes, ...redNotes, ...hotNotes, ...asks, ...parked].join("\n");
+  return [line(head), ...body.map(line), "", "rev: AB = counted PASS at this head; lowercase = PASS only at an older sha; - = none. suite: conclusion of `tests and content rules` at head, - = no run", ...blockedNotes, ...held, ...lensNotes, ...baseNotes, ...cr149Notes, ...redNotes, ...hotNotes, ...asks, ...parked].join("\n");
 }
 
 function ghApi(path, { method = "GET" } = {}) {
@@ -518,7 +870,7 @@ async function main() {
   const claimsFile = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "docs", "agents", "CLAIMS.md");
   const claims = existsSync(claimsFile) ? parseClaims(readFileSync(claimsFile, "utf8")) : {};
   const notices = [];
-  let rows = await buildQueue({ api: ghApi, repo: o.repo, quietMinutes: o.quietMinutes, claims, notices, base: o.base, allBases: o.allBases });
+  let rows = await buildQueue({ api: ghApi, repo: o.repo, quietMinutes: o.quietMinutes, claims, notices, base: o.base, allBases: o.allBases, cr149: cr149FlagOn(process.env) });
   if (o.only) rows = rows.filter((r) => r.verdict === o.only || r.verdict.startsWith(`${o.only} `));
   for (const n of new Set(notices)) console.error(n);
   console.log(o.json ? JSON.stringify(rows, (k, v) => (v === Infinity ? null : v), 2) : formatTable(rows));

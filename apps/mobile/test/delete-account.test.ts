@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { accountDeletionCopy as c } from '@scribe/content';
-import { afterCancel, bookRowKey, bookRowLabel, canDelete, confirmDay, failureLine, HELD, loadFailureLine, scheduledDay, whatHappens } from '@/components/settings/delete-account.logic';
+import { afterCancel, bookRowKey, bookRowLabel, cancelFailureLine, canDelete, confirmDay, failureLine, HELD, loadFailureLine, scheduledDay, whatHappens } from '@/components/settings/delete-account.logic';
 import { bookImpacts, impactLines, localDay, type SyncBook } from '@/lib/account-deletion/logic';
 
 const SRC = join(__dirname, '..', 'src');
@@ -109,6 +109,34 @@ describe('[S64] failures and the typed word', () => {
     for (const kind of ['offline', 'failed'] as const) expect(failureLine(kind)).toContain('Nothing has changed.');
   });
 
+  it('[BL-491 point 5] a failed Cancel deletion says it may not have cancelled, offline or failed; a failed request keeps its line (CDesO-46)', () => {
+    expect(cancelFailureLine(null)).toBeNull();
+    for (const kind of ['offline', 'failed'] as const) {
+      expect(cancelFailureLine(kind), kind).toBe("It's not clear yet if the deletion was canceled. Tap Cancel deletion again.");
+      expect(cancelFailureLine(kind), kind).toBe(c.errors.cancelFailed);
+      expect(cancelFailureLine(kind), kind).not.toMatch(/nothing has changed/i);
+    }
+    // The request's own failure is unchanged.
+    expect(failureLine('offline')).toBe('Nothing has changed. Deleting an account needs a connection.');
+    expect(failureLine('failed')).toBe(c.errors.failed);
+  });
+
+  it('[BL-491 point 5] the scheduled page shows the cancel line only once Cancel deletion was pressed; step 2 keeps the request line', () => {
+    const s = STATE.scheduled();
+    expect(page).toContain('const cancelFailure = <ErrorLine message={cancelFailureLine(d.error)} />;');
+    expect(s).toContain('{cancelTried ? cancelFailure : failure}');
+    // Marked before the call, so the hook's error after a failed cancel is read as the cancel's.
+    expect(s).toMatch(/onPress=\{async \(\) => \{\s*setCancelTried\(true\);\s*if \(await d\.cancel\(\)\) \{/);
+    expect(STATE.confirm()).toContain('{tried ? failure : null}');
+    expect(STATE.confirm()).not.toContain('cancelFailure');
+  });
+
+  it('[BL-491 point 5] the scheduled page starts with no Cancel deletion pressed, so a failed read keeps its own line', () => {
+    expect(page).toContain('const [cancelTried, setCancelTried] = useState(false);');
+    expect(page.match(/setCancelTried\(/g)).toHaveLength(1);
+    expect(page).toContain('setCancelTried(true);');
+  });
+
   it('enables Delete account only for the typed word, and never while a request is on its way', () => {
     expect(canDelete('delete', false)).toBe(true);
     expect(canDelete('  DELETE ', false)).toBe(true);
@@ -150,16 +178,23 @@ describe('[S64] the page', () => {
 
   it('step 1 says what happens to the letters on this phone (critics\' pass S4), only what the code does, and only when there are books', () => {
     const s = STATE.review();
-    expect(s).toContain('{list.books.length > 0 ? <Text variant="body">{c.what.onThisPhone}</Text> : null}');
-    expect(s.indexOf('{list.empty}')).toBeLessThan(s.indexOf('{c.what.onThisPhone}'));
-    expect(s.indexOf('{c.what.onThisPhone}')).toBeLessThan(s.indexOf('{list.copies}'));
+    const draw = '{phoneLine(shelfActions({ sync: capabilities.sync, serverErase: capabilities.serverErase }).eraseNow)}';
+    expect(s).toContain(`{list.books.length > 0 ? <Text variant="body">${draw}</Text> : null}`);
+    expect(s.indexOf('{list.empty}')).toBeLessThan(s.indexOf(draw));
+    expect(s.indexOf(draw)).toBeLessThan(s.indexOf('{list.copies}'));
     // The next pull moves the letters the account holds to Recently deleted; a letter that never reached the server is
     // not touched, and a sole parent's closed book is hidden, not emptied (merge.ts closeBook). In a sync build the
-    // phone's own launch sweep leaves a letter the server holds alone (entries.expiredLocalOnlyIds), so no date and no
-    // erase are promised: a later pull that says the server no longer holds it is what erases it, and after the purge
-    // the account is gone, so whether the phone gets that signal is unverified (S03). The line is true of both kinds.
-    expect(c.what.onThisPhone).toBe('On this phone, your letters stay. The ones already saved to your account move to Recently deleted.');
-    expect(c.what.onThisPhone).not.toMatch(/\{date\}|\buntil\b|\bon the day\b|\bafter\b|\b30 days\b|\berase/i);
+    // phone's own launch sweep leaves a letter the server holds alone (entries.expiredLocalOnlyIds), so no date is
+    // promised. After the purge the phone never learns the server's copies are gone (PR #2090), so they stay: the third
+    // sentence (CPrivO-56) names erasing only where the shelf shows Erase now, and says "on this phone" everywhere else.
+    expect(c.what.onThisPhone).toBe(
+      'On this phone, your letters stay. The ones already saved to your account move to Recently deleted. After your account is deleted, they stay there until you erase them.',
+    );
+    expect(c.what.onThisPhoneNoErase).toBe(
+      'On this phone, your letters stay. The ones already saved to your account move to Recently deleted. After your account is deleted, they stay on this phone.',
+    );
+    for (const line of [c.what.onThisPhone, c.what.onThisPhoneNoErase]) expect(line).not.toMatch(/\{date\}|\bon the day\b|\b30 days\b/i);
+    expect(c.what.onThisPhoneNoErase).not.toMatch(/\buntil\b|\berase/i);
   });
 
   it('step 1: "Keep a copy first" is a card with FileText and "Export everything" bordered', () => {
@@ -273,7 +308,7 @@ describe('[S64] the page', () => {
   it('every failure is one ErrorLine (WarningCircle, announced), never red text alone', () => {
     expect(page).toContain('const failure = <ErrorLine message={failureLine(d.error)} />;');
     expect(page).not.toMatch(/text-destructive|tone="destructive"/);
-    expect(STATE.scheduled()).toContain('{failure}');
+    expect(STATE.scheduled()).toContain('{cancelTried ? cancelFailure : failure}');
     expect(STATE.loading()).toMatch(/\{d\.error \? \(\s*<>\s*\{loadFailure\}\s*\{tryAgain\}/);
   });
 

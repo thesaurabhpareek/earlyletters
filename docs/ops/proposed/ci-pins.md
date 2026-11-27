@@ -1,6 +1,8 @@
 # Proposal: pin every workflow action to a full commit sha (SEC-R10, BRIEF CI-PIN, CR-71 A5)
 
-Status: proposal, 20 Nov 2026. This pull request changes nothing under `.github/`. A tag such as `actions/checkout@v4` can be moved by its owner, and the action then runs with our token. 17 uses are still by tag; every other use already carries a sha.
+Status, 27 Nov 2026: applied. No `@v<n>` use is left in the four workflows and `docs/ops/action-pins-allowlist.txt` holds comment lines only. The patch file was removed because it no longer applied; it is at `ba634177` in git history, and `docs/ops/proposed/workflows-retired.md` gives the live lines.
+
+Original status: proposal, 20 Nov 2026. This pull request changes nothing under `.github/`. A tag such as `actions/checkout@v4` can be moved by its owner, and the action then runs with our token. 17 uses are still by tag; every other use already carries a sha.
 
 ## The exact change
 

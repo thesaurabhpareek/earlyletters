@@ -346,7 +346,7 @@
       "properties": {
         "file": {
           "type": "string",
-          "pattern": "^photos/[^/]+/[^/]+\\.jpg$"
+          "pattern": "^photos/[^/.][^/]*/[0-9A-Za-z-]{1,64}\\.jpg$"
         },
         "bytes": {
           "type": "integer",

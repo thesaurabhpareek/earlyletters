@@ -78,11 +78,45 @@ export interface ConsentStoreOptions {
    * when the whole batch is acknowledged. Anything else (false, a throw, a rejection, a 429) keeps every id in the list.
    */
   forgetRetired?: (ids: string[]) => boolean | Promise<boolean>;
+  /**
+   * Told how many stored retired ids `settleRetired` dropped before a batch (BL-2239): repeats of an earlier id and
+   * ids that are not UUIDs. Counts only: the type carries no id, so a log line built from it cannot hold one.
+   */
+  onRetiredCleaned?: (counts: { duplicates: number; malformed: number }) => void;
 }
 
 export const MAX_RETIRED_IDS = 20;
 /** The most ids one `analytics-forget` call takes (`ANALYTICS_FORGET_MAX_IDS` in packages/api; a test keeps them equal). */
 export const MAX_FORGET_BATCH = 21;
+/** What `analytics-forget` accepts as an id (`UUID_RE` in packages/api and the function); a test keeps them in step. */
+export const FORGETTABLE_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * The retired list without repeats (compared without case, the first and so newest copy kept) and without ids that are
+ * not UUIDs (BL-2239). The function dedupes ids and refuses a body with a malformed one, so either would make every
+ * batch that holds it fail forever and keep up to 21 good ids with it. Dropping a repeat loses nothing: its first
+ * copy stays. A non-UUID id can never be forgotten by the server, so keeping it only blocks the others.
+ */
+export function cleanRetiredIds(list: readonly string[]): { ids: string[]; duplicates: number; malformed: number } {
+  const seen = new Set<string>();
+  const ids: string[] = [];
+  let duplicates = 0;
+  let malformed = 0;
+  for (const x of list) {
+    if (typeof x !== 'string' || !FORGETTABLE_ID_RE.test(x)) {
+      malformed++;
+      continue;
+    }
+    const key = x.toLowerCase();
+    if (seen.has(key)) {
+      duplicates++;
+      continue;
+    }
+    seen.add(key);
+    ids.push(x);
+  }
+  return { ids, duplicates, malformed };
+}
 
 export function memoryStorage(initial: Record<string, string> = {}): KeyValueStorage & { dump(): Record<string, string> } {
   const data = new Map(Object.entries(initial));
@@ -286,11 +320,23 @@ export class ConsentStore {
    * (a second only if more than `MAX_FORGET_BATCH` overflow). The ids leave the list only after `forgetRetired`
    * acknowledges the whole batch; any refusal (a 429 too) stops the loop and removes nothing of that batch, so the next
    * call retries. Without a callback nothing is removed. The list may be longer than the cap meanwhile: deleting data is
-   * never traded for a tidy list.
+   * never traded for a tidy list. Before the first batch, repeated and non-UUID stored ids are dropped and the cleaned
+   * list written back (BL-2239), so one bad id cannot hold a batch; only their counts reach `onRetiredCleaned`.
    */
   async settleRetired(): Promise<void> {
     const forget = this.options.forgetRetired;
     if (!forget) return;
+    // Before any batch: one repeated or malformed stored id would otherwise hold a whole batch of 21 (BL-2239).
+    const clean = cleanRetiredIds(this.snap.retired);
+    if (clean.duplicates + clean.malformed > 0) {
+      this.snap.retired = clean.ids;
+      await this.storage.set(STORAGE_KEYS.retired, JSON.stringify(this.snap.retired));
+      try {
+        this.options.onRetiredCleaned?.({ duplicates: clean.duplicates, malformed: clean.malformed });
+      } catch {
+        // A failing log hook must not stop the settle: the list is already written.
+      }
+    }
     while (this.snap.retired.length > MAX_RETIRED_IDS) {
       const overflow = this.snap.retired.slice(MAX_RETIRED_IDS);
       const batch = overflow.slice(-MAX_FORGET_BATCH);

@@ -245,7 +245,7 @@ describe('[F02-REQ-018] verifyEmailLinkPkce: GET /verify without following the r
     // A sign-out Supabase makes itself, and the under-18 stop, drop it too (review 3, finding 1).
     expect(src).toMatch(/event === 'SIGNED_OUT'\) \{[^}]*?void forgetSignOutLeftovers\(\);\s*dispatch\(\{ type: 'SIGNED_OUT' \}\)/);
     expect(src).toMatch(/await forgetSignOutLeftovers\(\);\s*onUnder18\?\.\(\);/);
-    expect(readFileSync(join(__dirname, '..', 'src/lib/auth/sign-out-leftovers.ts'), 'utf8')).toMatch(/await forgetAppleUser\(\);\s*await clearPendingEmailRequest\(\);/);
+    expect(readFileSync(join(__dirname, '..', 'src/lib/auth/sign-out-leftovers.ts'), 'utf8')).toMatch(/await forgetAppleUser\(\);\s*await clearPendingAppleName\(\);[^\n]*\s*await clearPendingEmailRequest\(\);/); // E100: an older build's Apple name goes too
   });
 });
 

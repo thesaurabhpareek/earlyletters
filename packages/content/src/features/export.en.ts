@@ -37,6 +37,9 @@ export const exportCopy = {
     tooBigTitle: 'This book is too big for one file',
     lowSpaceBody: 'This phone needs more free space. Free some up, then try again.',
     integrityNote: 'A recording changed after it was saved. It is included as it is now, and the data file marks it.',
+    /** Shown when the last guard held a picture back (NS-01-R6): not the stored copy, or it carries metadata. The letter is still there. */
+    photoHeldBackOne: 'One picture did not pass the privacy check, so it was left out. Its letter is still in the export.',
+    photoHeldBackMany: 'Some pictures did not pass the privacy check, so they were left out. Their letters are still in the export.',
   },
 
   /** Header lines at the top of each letters/*.txt file. */
@@ -127,9 +130,11 @@ export const exportCopy = {
     '',
     'When you are signed in, our server keeps a record of each time you agreed to, declined',
     'or acknowledged our terms, and each privacy choice you made or withdrew. account.json',
-    'holds that record under "consent_history" when it could be read while the export was',
-    'made. If it could not, "status" says why ("not_signed_in", "unavailable" or',
-    '"different_account"), and nothing from this phone is left out because of it.',
+    'holds that record under "consent_history". It is read from our server while the',
+    'export is made; if our server cannot be reached, it is the last full record this phone',
+    'read, and "read_at" says when. If neither was there, "status" says why',
+    '("not_signed_in", "unavailable" or "different_account"), and nothing from this phone',
+    'is left out because of it.',
     '',
     'YOUR PROFILE',
     '',
@@ -153,5 +158,17 @@ export const exportCopy = {
     'and keep a second copy somewhere else.',
     '',
     'Format {format}, version {version}. Questions: {email}',
+  ],
+  /**
+   * Added before KEEPING IT SAFE only when the export holds a picture (schema 1.7.0, BL-933; DELETION_AND_EXPORT_SPEC 4.2).
+   * PROPOSED words: `content` owns the final wording (spec 4.2, the README line).
+   */
+  readmePhotos: [
+    '',
+    'PICTURES',
+    '',
+    'photos/     The pictures you added to letters, one folder per letter (JPEG).',
+    '            Each is the copy kept in the app, with no location or other details in it.',
+    '            data/entries.json says which letter each picture belongs to.',
   ],
 } as const;
