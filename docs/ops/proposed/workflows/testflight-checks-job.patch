@@ -1,7 +1,25 @@
 diff --git a/.github/workflows/testflight.yml b/.github/workflows/testflight.yml
-index 3970c027..ecba3d1b 100644
+index 3970c027..30ad1f4f 100644
 --- a/.github/workflows/testflight.yml
 +++ b/.github/workflows/testflight.yml
+@@ -1,7 +1,7 @@
+ # Builds the iOS app in the cloud and (optionally) uploads it to TestFlight. Dispatch only (the pull_request run
+ # below builds nothing): run it from the
+ # Actions tab, on `develop`, for one of the two alpha profiles below (D-106). A run on an `ios-v*` tag passes
+-# the job's if but is refused by the testflight environment's deployment refs (develop only) until the founder
++# the jobs' if but is refused by the testflight environment's deployment refs (develop only) until the founder
+ # decides where release-candidate builds run (AUTOMATION.md 2.0 says app-store).
+ #   testflight  alpha build 1, server features off
+ #   preview     alpha build 2, server features on against staging (its Supabase values come from the
+@@ -10,7 +10,7 @@
+ # Apple accounts, so every assumption below is UNVERIFIED until the first real run. Builds, submits and store
+ # actions run here or on the founder's own computer, never in an agent sandbox (it cannot reach expo.dev or
+ # App Store Connect). Further release workflows come through docs/release/AUTOMATION.md.
+-# The pull_request trigger (paths: this file only) builds nothing: the job's if skips every pull request run before the
++# The pull_request trigger (paths: this file only) builds nothing: the jobs' if skips every pull request run before the
+ # environment or a secret is read. The run only registers the workflow, so the API should be able to dispatch it on develop before AF-05 (a dispatch is untested).
+ #
+ # What it expects, by name (nothing else; no value is ever in this repository):
 @@ -69,17 +69,15 @@ env:
    PROFILE: ${{ inputs.profile }}
  
@@ -9,10 +27,10 @@ index 3970c027..ecba3d1b 100644
 -  build:
 -    name: testflight build
 -    # App builds come from `develop` (TestFlight) or an ios-v tag (docs/DEVELOPMENT.md).
-+  # CR-233: the tests and typecheck run here, in a job with no environment and no secret. The build job below starts
-+  # from its own clean checkout, so nothing a test writes or leaves running can reach the step that holds EXPO_TOKEN
-+  # (a process an earlier step starts lives until the job ends, and can read a later step's environment).
-+  # release-ios.yml already splits checks from its build the same way.
++  # CR-233: every check runs here, in a job with no environment and no secret: the typecheck, the tests, the
++  # preflight (which starts vitest, `expo config` and `expo prebuild`) and the seam guard (which runs `expo export`).
++  # A process an earlier step starts lives until its job ends and runs as the same user, so none of that code may
++  # share a job with EXPO_TOKEN. The build job below starts from its own clean checkout and runs only eas-cli.
 +  checks:
 +    name: testflight checks
      if: github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/tags/ios-v')
@@ -23,13 +41,13 @@ index 3970c027..ecba3d1b 100644
 -    # (ADR 0022 decision 5, C1 builds after the freeze) is refused by those refs until the founder decides
 -    # whether the tag joins them or that build moves to app-store.
 -    environment: testflight
-+    timeout-minutes: 30
++    timeout-minutes: 45
      steps:
        - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
          with:
-@@ -97,6 +95,31 @@ jobs:
-       - name: Tests
-         run: npm test
+@@ -113,6 +111,32 @@ jobs:
+           case "$PROFILE" in testflight|preview) ;; *) echo "unknown profile"; exit 1 ;; esac
+           node .github/scripts/seam-guard.mjs --profile "$PROFILE"
  
 +  build:
 +    name: testflight build
@@ -47,15 +65,16 @@ index 3970c027..ecba3d1b 100644
 +      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 +        with:
 +          persist-credentials: false
-+      # CR-233: this job holds EXPO_TOKEN, so it installs from the lockfile with no restored cache and with
-+      # install scripts off (as release-ios.yml says for jobs that hold secrets). The preflight and the seam
-+      # guard below were run after `npm ci --ignore-scripts` on 27 Nov 2026 and both passed.
++      # CR-233: this job holds EXPO_TOKEN, so it restores no cache (package-manager-cache: false keeps it off even if
++      # package.json gains a packageManager field) and installs with install scripts off. What still runs beside
++      # the token: eas-cli (npx installs it with its own scripts) and the app.config.ts and config plugins it loads.
 +      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
 +        with:
 +          node-version: 22
++          package-manager-cache: false
 +      - name: Install from the lockfile, no cache, no install scripts
 +        run: npm ci --ignore-scripts --no-audit --no-fund
 +
-       # Configuration only; needs no secrets. Fails the run on any FAIL, passes on WARN (read the log).
-       - name: Preflight
-         run: |
+       - name: Build on EAS
+         working-directory: apps/mobile
+         env:
