@@ -22,7 +22,8 @@ import { capabilities } from '@/lib/capabilities';
 import { copy, fill } from '@/lib/copy';
 import { childRowTitle } from '@/components/child/child-settings.logic';
 import { remindersSummary } from '@/lib/reminders';
-import { currentUserId, getActiveChild, listChildren, listHiddenChildren, listLeftBooks, localDeletionAllowed, subscribe, type Child } from '@/lib/store';
+import { currentUserId, getActiveChild, listChildren, listDeleted, listDeletedBooks, listHiddenChildren, listLeftBooks, localDeletionAllowed, subscribe, type Child } from '@/lib/store';
+import { shelfHelpShown } from '@/components/book/shelf.logic';
 import { backupCopy } from '@scribe/content';
 
 /**
@@ -81,7 +82,15 @@ function backupRowValue(): string | undefined {
 }
 
 export default function Settings() {
-  const read = () => ({ children: listChildren(), hidden: hiddenBooksRow(listHiddenChildren()), left: leftBookRows(listLeftBooks()), appearance: getAppearance(), reminders: remindersSummary() });
+  const read = () => ({
+    children: listChildren(),
+    hidden: hiddenBooksRow(listHiddenChildren()),
+    left: leftBookRows(listLeftBooks()),
+    appearance: getAppearance(),
+    reminders: remindersSummary(),
+    // CPrivO-56: the Recently deleted row drops its subtitle while the shelf lists anything past its 30 days.
+    shelfHelp: shelfHelpShown([...listDeletedBooks(), ...listDeleted()], Date.now()),
+  });
   const [s, setS] = useState(read);
   useEffect(() => subscribe(() => setS(read())), []);
   // Reminders and appearance change on their own screens: re-read when Settings comes back.
@@ -171,7 +180,7 @@ export default function Settings() {
       <ListSection title={h.sections.letters}>
         <ListRow title={h.whereLive} trailing="chevron" onPress={go(ROUTES.whereLive)} testID="settings.whereLive" />
         <ListRow title={h.exportLabel} subtitle={h.exportHelp} trailing="chevron" onPress={go(ROUTES.export)} />
-        <ListRow title={copy.settings.delete.recentlyDeleted} subtitle={copy.settings.delete.shelfHelp} trailing="chevron" onPress={go(ROUTES.recentlyDeleted)} />
+        <ListRow title={copy.settings.delete.recentlyDeleted} subtitle={s.shelfHelp ? copy.settings.delete.shelfHelp : undefined} trailing="chevron" onPress={go(ROUTES.recentlyDeleted)} />
         {/* Encrypted backup (WP-F08-B5c): only in a build with capabilities.backup on; gate.ts loads nothing otherwise. */}
         {backupInBuild() ? <ListRow title={backupCopy.title} value={backupRowValue()} trailing="chevron" onPress={go(ROUTES.backup)} /> : null}
         <ListRow title={h.storageLabel} subtitle={h.storageHelp} trailing="chevron" onPress={go(ROUTES.storage)} />

@@ -112,7 +112,7 @@ describe('a refused restore says so (BL-1959, entry.restore)', () => {
     const s = read('app/settings/recently-deleted.tsx');
     expect(s).toMatch(/const restored = undeleteEntry\(e\.id\);[\s\S]*?if \(!restored\) return toast\.show\(\{ message: d\.restoreRefusedToast \}\);/);
     expect(s).not.toMatch(/letter_deleted|analytics\/track/); // the shelf imports no analytics module (CR-225, R-K3)
-    expect(s).toMatch(/canRestore=\{!\(e\.childId && isBookLeft\(e\.childId\)\)\}/);
+    expect(s).toMatch(/canRestore=\{shelfCanRestore\(\{ left: !!e\.childId && isBookLeft\(e\.childId\), closed: !!e\.childId && isBookClosed\(e\.childId\) \}\)\}/);
   });
 
   it.each(['app/(tabs)/book.tsx', 'app/letter/[id].tsx'])('[BL-1959] Undo in %s shows the refusal toast and nothing else when the store refuses', (p) => {

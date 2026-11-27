@@ -90,14 +90,27 @@ describe('[P8c S64] accountDeletionCopy changes, word for word', () => {
 
   it('says in every failure that nothing has changed, and first when offline', () => {
     // `loadFailed` is the one line for a page that could not load: nothing was tried there (BL-492 point 4).
+    // `cancelFailed` is a Cancel deletion that did not go through: the phone cannot know whether the server cancelled, so
+    // "nothing has changed" would read as if the person were safe while the request may still be open (BL-491 point 5).
+    const exempt = new Set(['loadFailed', 'cancelFailed']);
     for (const [key, text] of Object.entries(accountDeletionCopy.errors)) {
-      if (key === 'loadFailed') expect(text, key).not.toMatch(/nothing has changed/i);
+      if (exempt.has(key)) expect(text, key).not.toMatch(/nothing has changed/i);
       else expect(text, key).toContain('Nothing has changed.');
     }
     expect(accountDeletionCopy.errors.loadFailed).toBe("That didn't load. Try again in a moment.");
     expect(accountDeletionCopy.errors.offline.startsWith('Nothing has changed.')).toBe(true);
+    expect(accountDeletionCopy.errors.offline).not.toBe(accountDeletionCopy.errors.cancelFailed);
     // No blame on the person: the line says what the request needs, never "you are offline".
     expect(ALL.filter((l) => /\byou are offline\b|\bplease try again\b/i.test(l.text)).map((l) => l.path)).toEqual([]);
+  });
+
+  it('[BL-491 point 5] a failed Cancel deletion says the outcome is not known yet and names the one thing to do (CDesO-46)', () => {
+    const line = accountDeletionCopy.errors.cancelFailed;
+    expect(line).toBe("It's not clear yet if the deletion was canceled. Tap Cancel deletion again.");
+    expect(line).not.toMatch(/nothing has changed/i);
+    // Never that the person is out of the woods, and the button by its visible label.
+    expect(line).not.toMatch(/\bsafe\b/i);
+    expect(line).toContain(`Tap ${accountDeletionCopy.scheduled.cancelButton} again.`);
   });
 });
 
@@ -105,12 +118,15 @@ describe('[P8c S64] accountDeletionCopy changes, word for word', () => {
  * The lines added after the critics' pass of 30 October 2026 (docs/design/reviews/P6C_P8C_CRITICS_PASS_2026-10-30.md,
  * M1, S3, S4; coordinator D-117). They are not S64 text, so they are pinned here apart from CHANGED above.
  * `what.onThisPhone` is for counsel's relay list: it says only what the code does (the next pull moves the letters the
- * account holds to Recently deleted; a letter that never reached the server is not touched); no date and no erase are
- * promised, because in a sync build the phone's own sweep leaves a letter the server holds alone.
+ * account holds to Recently deleted; a letter that never reached the server is not touched). CPrivO-56 adds a third
+ * sentence (after the purge they stay); it names erasing only where Erase now is shown, `onThisPhoneNoErase` elsewhere.
  */
 describe('[critics pass 30 Oct 2026] the lines for the deletion screen, the sign-out confirm and the phone', () => {
   const ADDED_LINES: Record<string, string> = {
-    'what.onThisPhone': 'On this phone, your letters stay. The ones already saved to your account move to Recently deleted.',
+    'what.onThisPhone':
+      'On this phone, your letters stay. The ones already saved to your account move to Recently deleted. After your account is deleted, they stay there until you erase them.',
+    'what.onThisPhoneNoErase':
+      'On this phone, your letters stay. The ones already saved to your account move to Recently deleted. After your account is deleted, they stay on this phone.',
     'scheduled.signOutBody': 'Your deletion stays scheduled for {date}. Sign in again any time before then to cancel it.',
     'signedOut.body': 'Sign in to delete your account, or to cancel a deletion you started. Letters that are only on this phone stay here until you delete the app.',
     'signedOut.scheduledBody': 'Your account will be deleted on {date}. Sign in to cancel the deletion.',
@@ -126,8 +142,16 @@ describe('[critics pass 30 Oct 2026] the lines for the deletion screen, the sign
     for (const [key, words] of Object.entries(ADDED_LINES)) expect(at(key), key).toBe(words);
   });
 
-  it('the phone line promises no date and no erase', () => {
-    expect(accountDeletionCopy.what.onThisPhone).not.toMatch(/\{date\}|\buntil\b|\bafter\b|\b30 days\b|\berase|\bon the day\b/i);
+  it('[CPrivO-56] the phone lines promise no date; only the Erase now line names erasing, and both keep the first two sentences', () => {
+    const { onThisPhone, onThisPhoneNoErase } = accountDeletionCopy.what;
+    for (const line of [onThisPhone, onThisPhoneNoErase]) {
+      expect(line).not.toMatch(/\{date\}|\b30 days\b|\bon the day\b/i);
+      expect(line.split(/(?<=\.) /)).toHaveLength(3);
+      expect(line.startsWith('On this phone, your letters stay. The ones already saved to your account move to Recently deleted. ')).toBe(true);
+    }
+    expect(onThisPhone.endsWith('After your account is deleted, they stay there until you erase them.')).toBe(true);
+    expect(onThisPhoneNoErase).not.toMatch(/\berase|\buntil\b/i);
+    expect(onThisPhoneNoErase.endsWith('After your account is deleted, they stay on this phone.')).toBe(true);
   });
 
   it('the deletion screen reuses the scheduled page\'s title, date line, Cancel deletion and sign-out words, so it cannot drift from them', () => {
