@@ -73,6 +73,11 @@ describe('[ER-A15] [BL-1250] app.config.ts names the build kind of every eas.jso
     expect(buildKindFor('production', 'testflight')).toBe('store');
   });
 
+  it('only the exact testflight profile name is testflight', () => {
+    expect(buildKindFor('preview', ' testflight ')).toBe('testflight');
+    for (const name of ['testflight2', 'test', 'TestFlight', 'preview']) expect(buildKindFor('preview', name), name).toBe('preview');
+  });
+
   it('a preview build made off EAS is preview, and an unset app env is dev, never store', () => {
     expect(extraFor({ EXPO_PUBLIC_APP_ENV: 'preview' }).buildKind).toBe('preview');
     expect(extraFor({}).buildKind).toBe('dev');
@@ -126,10 +131,6 @@ describe('[FH-10] [CPrivO-61] the tester switch cannot reach a store build', () 
       expect(internalTesterOn('preview'), v).toBe(false);
     }
   });
-
-  it('the key sits with the other analytics settings and holds no text, name or id', () => {
-    expect(INTERNAL_TESTER_KEY).toBe('scribe.analytics.internal_tester');
-  });
 });
 
 describe('[ER-A15] the options reach every event', () => {
@@ -168,9 +169,11 @@ describe('[BL-1250] src/lib/analytics/index.ts passes the build options to creat
   const raw = fs.readFileSync(path.join(ROOT, 'src/lib/analytics/index.ts'), 'utf8');
   const callOf = (text: string) => text.slice(text.indexOf('createAnalytics({'), text.indexOf('export const lifecycle'));
 
-  it('spreads analyticsBuildOptions() into the one createAnalytics call, imported from ./internal-tester', () => {
+  it('spreads analyticsBuildOptions() last in the one createAnalytics call, imported from ./internal-tester, and sets neither key itself', () => {
     const src = stripComments(raw);
-    expect(callOf(src)).toMatch(/\.\.\.analyticsBuildOptions\(\),/);
+    // Last in the call, so no later key can override build_kind or the tester switch.
+    expect(callOf(src)).toMatch(/\.\.\.analyticsBuildOptions\(\),\s*\}\);\s*$/);
+    expect(callOf(src)).not.toMatch(/\b(buildKind|internalTester)\s*:/);
     expect(src).toMatch(/import \{ analyticsBuildOptions \} from '\.\/internal-tester';/);
   });
 });

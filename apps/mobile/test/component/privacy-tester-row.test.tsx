@@ -16,6 +16,16 @@ const h = vi.hoisted(() => ({
   reads: [] as string[],
 }));
 
+// List rows stood in so the tester row's value and handler can be read; the other rows only need to render their titles.
+const rows = vi.hoisted(() => new Map<string, { value: boolean; onValueChange: (v: boolean) => void }>());
+vi.mock('@/components/ui/list-row', () => ({
+  ListSection: ({ children }: { children: unknown }) => children,
+  ListRow: ({ title, testID }: { title: string; testID?: string }) => `[${testID ?? ''}] ${title}`,
+  ToggleRow: (p: { title: string; description?: string; value: boolean; onValueChange: (v: boolean) => void; testID?: string }) => {
+    if (p.testID) rows.set(p.testID, { value: p.value, onValueChange: p.onValueChange });
+    return `[${p.testID ?? ''}] ${p.title} ${p.description ?? ''} value=${String(p.value)}`;
+  },
+}));
 vi.mock('expo-router', () => ({ router: { push: () => undefined }, Stack: { Screen: () => null }, useFocusEffect: () => undefined }));
 vi.mock('expo-web-browser', () => ({ openBrowserAsync: async () => undefined }));
 vi.mock('expo-constants', () => ({ default: { get expoConfig() { return { extra: { buildKind: h.extraBuildKind } }; } } }));
@@ -45,6 +55,7 @@ async function render(opts: { appEnv: typeof h.appEnv; extra?: unknown; analytic
   h.analytics = opts.analytics ?? true;
   h.settings.clear();
   h.reads.length = 0;
+  rows.clear();
   if (opts.stored !== undefined) h.settings.set(KEY, opts.stored);
   vi.resetModules();
   const { default: PrivacySettings } = await import('@/app/settings/privacy');
@@ -67,6 +78,7 @@ describe('[BL-1250] [CPrivO-61] the tester switch on Settings > Privacy', { time
   it('a TestFlight build that can send usage renders the row, showing the stored switch', async () => {
     const html = await render({ appEnv: 'preview', extra: 'testflight', stored: 'true' });
     expect(html).toContain(ROW);
+    expect(rows.get(ROW)?.value).toBe(true);
     expect(html).toContain('Team test phone');
     // The public name is filled in from packages/brand; the raw placeholder never shows.
     expect(html).not.toContain('{app}');
@@ -79,7 +91,16 @@ describe('[BL-1250] [CPrivO-61] the tester switch on Settings > Privacy', { time
     expect(h.reads).not.toContain(KEY);
   });
 
-  it('a development build that can send usage renders the row', async () => {
+  it('a development build that can send usage renders the row, off while nothing is stored', async () => {
     expect(await render({ appEnv: 'development', extra: 'dev' })).toContain(ROW);
+    expect(rows.get(ROW)?.value).toBe(false);
+  });
+
+  it('turning the row on stores exactly "true", and turning it off removes the setting', async () => {
+    await render({ appEnv: 'preview', extra: 'testflight' });
+    rows.get(ROW)!.onValueChange(true);
+    expect(h.settings.get(KEY)).toBe('true');
+    rows.get(ROW)!.onValueChange(false);
+    expect(h.settings.has(KEY)).toBe(false);
   });
 });
