@@ -578,6 +578,32 @@ describe('[BL-2159] a join on this phone asks the account again (NX-36-S17 cited
     }
   });
 
+  it('[S17 follow-up from #2195, round 2] a held answer does not outlive the asking: held during an accept, sign-out, a sign-in with no book, the accept ends, a join: the route stands aside', async () => {
+    let hasLocalBook = false;
+    let enabled = true;
+    const run = renderHook(() => useNewPhone({ ...base, enabled, hasLocalBook }));
+    try {
+      accountJoined.joining();
+      h.asked[0]('hasBook'); // held
+      await flush();
+      enabled = false; // signed out while the accept was out
+      run.rerender();
+      enabled = true; // another account, with no book
+      run.rerender();
+      accountJoined.settled(); // the old accept ends with no join
+      h.asked[1]('returningNoBook');
+      await flush();
+      expect(run.result.current.view).toBe('noBook');
+      join();
+      h.asked[2]('hasBook');
+      await flush();
+      lands(run, () => (hasLocalBook = true));
+      expect(run.result.current.view).toBeNull();
+    } finally {
+      run.unmount();
+    }
+  });
+
   it('[BL-2159] with no invite nothing changes: a phone with no book still sees No book here yet, asked once', async () => {
     const run = renderHook(() => useNewPhone(base));
     h.asked[0]('returningNoBook');
