@@ -128,7 +128,7 @@ describe('catalogue rules', () => {
  * BL-1948 item 2 (NS-54-R26, NS-41-R16): no property in the catalogue is shaped to hold a phone number or a sign-in
  * code, before any phone step exists (BL-1902). `isPiiLike` only sees a run of 7 digits or more, so a partial (the
  * last four of a number) or a 6-digit code needs its own rule here: an enum value with a run of 4 or more digits, an
- * int whose max is 10000 or more, or a property named for a phone, number, digit, OTP or code is rejected. The rule
+ * int that can reach 10000 or more in size (either end of its range, so a large negative min counts too), or a property named for a phone, number, digit, OTP or code is rejected. The rule
  * reads REGISTRY, EVENTS and GLOBAL_PROPS as they are, so a property added later is covered without a change here.
  */
 const DIGIT_RUN = /\d{4,}/;
@@ -156,7 +156,9 @@ function phoneShapedProps(event: string, props: Readonly<Record<string, PropSpec
   for (const [key, spec] of Object.entries(props)) {
     if (PHONE_SHAPED_NAME.test(key) && !exceptionHolds(event, key, spec)) out.push(`${event}.${key}: name`);
     if (spec.type === 'enum') for (const v of spec.values) if (DIGIT_RUN.test(v)) out.push(`${event}.${key}: value ${v}`);
-    if (spec.type === 'int' && spec.max >= INT_MAX_LIMIT) out.push(`${event}.${key}: max ${spec.max}`);
+    if (spec.type === 'int' && Math.max(Math.abs(spec.min), Math.abs(spec.max)) >= INT_MAX_LIMIT) {
+      out.push(`${event}.${key}: range ${spec.min} to ${spec.max}`);
+    }
   }
   return out;
 }
@@ -178,9 +180,12 @@ describe('[NS-54-R26] no catalogue property is shaped to hold a phone number or 
     expect(phoneShapedProps('x:y_z', { bucket: oneOf('100_364', '365_plus') })).toEqual([]);
   });
 
-  it('rejects an int whose max is 10000 or more, and lets 9999 through', () => {
-    expect(phoneShapedProps('x:y_z', { tries: int(0, 10000) })).toEqual(['x:y_z.tries: max 10000']);
-    expect(phoneShapedProps('x:y_z', { tries: int(0, 999999) })).toEqual(['x:y_z.tries: max 999999']);
+  it('rejects an int that can reach 10000 or more at either end, and lets 9999 through', () => {
+    expect(phoneShapedProps('x:y_z', { tries: int(0, 10000) })).toEqual(['x:y_z.tries: range 0 to 10000']);
+    expect(phoneShapedProps('x:y_z', { tries: int(0, 999999) })).toEqual(['x:y_z.tries: range 0 to 999999']);
+    // A large negative min carries a full number as well as a large max does (review of #2137).
+    expect(phoneShapedProps('x:y_z', { tries: int(-9999999999, 0) })).toEqual(['x:y_z.tries: range -9999999999 to 0']);
+    expect(phoneShapedProps('x:y_z', { tries: int(-9999, 9999) })).toEqual([]);
     expect(phoneShapedProps('x:y_z', { tries: int(0, 9999) })).toEqual([]);
   });
 
