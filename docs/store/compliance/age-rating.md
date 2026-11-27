@@ -24,7 +24,7 @@ The app is for adults. The 18+ entry gate is decided (D-006, PRD-REQ-019), built
 
 ### 1.2 Resulting rating and override
 
-The answers above should calculate to the lowest tier (4+). In App Information, set the **age rating override to 18+** (Apple lets you raise the minimum age above the calculated one). Reason: D-006 says adults only, the gate blocks under-18s, and a lower public rating would contradict it. OPEN-17 asks the founder to confirm.
+The answers above should calculate to the lowest tier (4+). In App Information, set the **age rating override to 18+** (Apple lets you raise the minimum age above the calculated one). Reason: D-006 says adults only, the gate blocks under-18s, and a lower public rating would contradict it. OPEN-17 stays open: Karma and the exec team decide it (CR-176, D-168), with counsel as the OPEN register in `README.md` lists.
 
 Also in App Store Connect:
 

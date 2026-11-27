@@ -30,7 +30,7 @@ describe('the Moments tab shell', () => {
     expect(screen).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(|\b\d+px\b|fontSize|duration|withTiming|Animated/i);
   });
 
-  it('the heading is a heading with an accessibility label, and flag off sends a link to Home', () => {
+  it('[NS-53-R1] the heading is a heading with an accessibility label, and flag off sends a link to Home', () => {
     expect(screen).toMatch(/asHeading/);
     expect(screen).toMatch(/accessibilityLabel=\{label\}/);
     expect(screen).toMatch(/if \(!MOMENTS_TAB_ON\) return <Redirect href="\/" \/>/);

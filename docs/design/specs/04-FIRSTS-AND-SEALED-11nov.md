@@ -226,7 +226,7 @@ Door lines.
 
 | # | Question | Default |
 |---|---|---|
-| Q1 | When are Firsts built? (NX-44 FD-1) | In scope (founder: include all new scope). Specified now; build sequenced after Share one letter (Level 1, Build 14 in the PRD README) ships and the five-parent study has run, earliest Build 15. Not cancelled. Needs the founder to confirm that reading (index Q4a) |
+| Q1 | When are Firsts built? (NX-44 FD-1) | In scope (founder: include all new scope). Specified now; build sequenced after Share one letter (Level 1, Build 14 in the PRD README) ships and the five-parent study has run, earliest Build 15. Not cancelled. That reading is for Karma and the exec team to rule (index Q4a; CR-176, D-168) |
 | Q2 | When are sealed letters built? | In scope. Specified now; build sequenced after Share one letter (Level 1, Build 14 in the PRD README) ships and the five-parent study has run, earliest Build 15. Needs the truth rule, counsel on minors, and `data-architect` on the seal field (B6a) before any build |
 | Q3 | If built, "Firsts" as the lens name? | The word is `content`'s; it is already the founder's/NX-44's working word |
 | Q4 | A reminder on the opening day | None. The Home slot on that day is the only surface |

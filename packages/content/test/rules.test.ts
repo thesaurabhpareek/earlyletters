@@ -645,6 +645,17 @@ describe('brand name and v1.0 claims', () => {
     expect(offenders(keepAndPlan, /\b(we will|will always) remind\b|\bguarantee/i)).toEqual([]);
   });
 
+  it('[BL-374] no word a person reads keeps a promise D-082 retired: "free, always", "writing stays open", "Plus is optional"', () => {
+    // The sweep above reads only the Plus lines; the row's Done-when is every string in packages/content/src and the
+    // app's copy files (EVERY: content, store, website reference, pages, emails, feature-local app copy). "Plus is off"
+    // was a status sentence that became the plain value "Free" (membership.status.free); comments may still say it.
+    const RETIRED_PROMISES = /free, always|writing stays open|plus is optional|first book you start is free|\bplus is off\b/i;
+    for (const bad of ['The first book you start is free, always.', 'Writing stays open.', 'Plus is optional.', 'Plus is off.'])
+      expect(RETIRED_PROMISES.test(bad), bad).toBe(true);
+    expect(RETIRED_PROMISES.test(features.billing.store.promise)).toBe(false);
+    expect(offenders(EVERY, RETIRED_PROMISES)).toEqual([]);
+  });
+
   it('[F5, PL-8] no app string names a trial length; the F5 lines say what is true and count nothing', () => {
     // D-083: trial eligibility varies, so "a month free" can be false; Apple's sheet shows the trial to those it applies to.
     // The two registered Plus-sheet lines that still name one are retired only through counsel and a version bump of
@@ -981,6 +992,12 @@ describe('glossary (BRAND.md)', () => {
     expect(offenders(COPY, /\btid(y|ied|ies|ying|ier)\b|\bcleaned up\b/i)).toEqual([]);
   });
 
+  it('never says transcription, transcribe or transcript in copy a parent reads (BL-393, D-074)', () => {
+    // The word names the technology and reads as if the app writes (VOICE.md "Word for word"). Values only: key
+    // names, code and comments may keep the internal word. The website and pages (site.en.ts, pages.en.ts) are BL-556's.
+    expect(offenders([...IN_APP, ...EMAIL], /\btranscri\w*/i)).toEqual([]);
+  });
+
   it('says "small fix", never edit, correct, clean or improve, where the app talks about its fixes (D-086)', () => {
     const where = (l: Leaf) => /^(en\.review|en\.onboarding\.promise|en\.book\.provenance|features\.words|features\.speech)\b/.test(l.path);
     const BANNED = /\bedit(s|ed|ing)?\b|\bcorrect(s|ed|ing|ion|ions)?\b|\bclean(s|ed|ing)?\b|\bimprov\w*/i;
@@ -1261,6 +1278,14 @@ describe('[EXPERIENCE_PASS_2026-10 P8] every feature copy file has per-surface r
       const reason = SURFACE_OPT_OUT[key]!;
       expect(weLines.map((l) => l.path).filter((p) => !reason.includes(p)), key).toEqual([]);
     }
+  });
+
+  // BL-462 point 4, reminders: BL-474 took its one "we" line out, and reminder-copy-no-we.test.ts guards only the
+  // lock-screen paths. A "we" anywhere else in the opt-out file (the Settings screen words) must be named in the reason too.
+  it('names any "we" line of the reminders opt-out in its reason (none today, BL-474)', () => {
+    const weLines = leaves(features.reminders).filter((l) => /\b(?:we|our|us)\b/i.test(l.text));
+    const reason = SURFACE_OPT_OUT.reminders!;
+    expect(weLines.map((l) => l.path).filter((p) => !reason.includes(p))).toEqual([]);
   });
 
   // BL-462 point 5 (mutant B07): the deletion screen names the child where the book stays.

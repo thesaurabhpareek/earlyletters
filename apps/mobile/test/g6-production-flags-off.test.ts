@@ -30,6 +30,7 @@ const APP = join(__dirname, '..');
 const CARD_FLAGS = [
   ...STORE_FLAGS.map((f: { env: string }) => f.env),
   'EXPO_PUBLIC_DAYS', // NS-46, card 21
+  'EXPO_PUBLIC_TYPED_DAYS', // NS-18, card 09 section 10 (BL-982)
   'EXPO_PUBLIC_DAYS_ASK', // card 21 flags line (E57 says no new flag; absent or off either way)
   'EXPO_PUBLIC_SUGGESTIONS', // NS-49, card 21
   'EXPO_PUBLIC_PHOTO_MOMENTS', // NS-51, card 27 (E38)
