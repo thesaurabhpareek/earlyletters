@@ -19,6 +19,7 @@ const uniwindResolve = uniwindConfig.resolver.resolveRequest;
 const path = require('path');
 const sqliteChannelFix = path.join(__dirname, 'web-preview', 'sqlite-worker-channel.js');
 const routerHistoryFix = path.join(__dirname, 'web-preview', 'router-memory-history.js');
+const sqlitePoolFix = path.join(__dirname, 'web-preview', 'sqlite-access-handle-pool-vfs.js');
 // Every platform: expo-router > query-string 7 needs decode-uri-component 0.2.2, whose fallback for a
 // malformed link is exponential (GHSA-vcc3-ghjq-m6fr; security review L6, G-22). The fixed 0.5.0 is
 // ESM-only, so the bundle gets a CommonJS copy of its decoder instead (shims/decode-uri-component.js).
@@ -38,6 +39,16 @@ uniwindConfig.resolver.resolveRequest = (context, moduleName, platform) => {
   }
   if (platform === 'web' && context.originModulePath === sqliteChannelFix) {
     const origin = path.join(path.dirname(require.resolve('expo-sqlite/package.json')), 'web', 'WorkerChannel.ts');
+    return context.resolveRequest({ ...context, originModulePath: origin }, moduleName, platform);
+  }
+  // Web only: expo-sqlite 57.0.3's OPFS pool is refilled only when empty, so a page that ends during the first setup
+  // leaves too few files and migration 1 cannot open its journal (BL-464). Swap in a copy that tops the pool up
+  // (web-preview/sqlite-access-handle-pool-vfs.js); its ./AccessHandlePoolVFS import resolves to the installed file.
+  if (platform === 'web' && context.originModulePath.includes(`expo-sqlite${path.sep}web${path.sep}`) && moduleName === './wa-sqlite/AccessHandlePoolVFS') {
+    return { type: 'sourceFile', filePath: sqlitePoolFix };
+  }
+  if (platform === 'web' && context.originModulePath === sqlitePoolFix && moduleName === './AccessHandlePoolVFS') {
+    const origin = path.join(path.dirname(require.resolve('expo-sqlite/package.json')), 'web', 'wa-sqlite', 'AccessHandlePoolVFS.js');
     return context.resolveRequest({ ...context, originModulePath: origin }, moduleName, platform);
   }
   // Web only: expo-router 57.0.24 waits 100 ms for the popstate of its own history.go, then takes a late one for the
