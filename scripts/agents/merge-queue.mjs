@@ -196,6 +196,191 @@ export function staleBase({ behindBy, prFiles, baseFiles }) {
   return { behindBy, shared: behindBy > 0 ? workspacesOf(baseFiles).filter((w) => mine.has(w)).sort() : [] };
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+// CR-149 checks as pure functions (BL-1570). No network, no verdict change: nothing in buildQueue or verdictFor calls
+// these yet. BL-1571 wires them in behind a flag that ships off. Every function fails closed: an input it cannot read,
+// or a path it does not recognise, counts as overlap, as protected or as source, and never as a safe docs PR, because a
+// wrong "safe" lets a PR skip the NEEDS-UPDATE rule while a wrong "unsafe" only keeps the strict rule.
+// ---------------------------------------------------------------------------------------------------------------------
+
+/** Returned as an overlap entry when an input cannot prove "no overlap" (not an array, a cut-off page, a bad entry). */
+export const UNREADABLE = "(unreadable input)";
+/** Both names of a changed file: `filename`, and `previous_filename` for a rename. Null when the entry is not readable. */
+const namesOf = (f) => {
+  if (typeof f === "string") return f.length ? [f] : null;
+  // The new name is required: an entry with only an old name is unreadable, never an empty change (fail closed).
+  if (typeof f?.filename !== "string" || !f.filename.length) return null;
+  const old = f.previous_filename;
+  if (old === undefined || old === null) return [f.filename];
+  return typeof old === "string" && old.length ? [f.filename, old] : null;
+};
+
+/**
+ * CR-149 rule 1: the files a PR changed since its merge base (`baseToHeadFiles`) that develop also changed since that
+ * merge base (`developFiles`), sorted, once each. A rename counts on both sides: its old name and its new name are both
+ * compared, so a PR that edits `a.ts` while develop renames `a.ts` to `b.ts` (or the other way round) overlaps.
+ * Failure mode guarded: a missed rename lets a PR merge onto a file that no longer exists under that name.
+ * Names compare without case (`Docs/a.md` and `docs/a.md` overlap): a case-insensitive checkout maps one onto the other,
+ * and a wrong overlap only keeps the strict rule. The PR's own spelling is returned.
+ * Fail closed: a non-array, a list marked `capped` (paged() cut it off, so it may be incomplete) or an entry with no
+ * readable name returns [UNREADABLE], which is non-empty and so counts as overlap.
+ */
+export function filesSince(baseToHeadFiles, developFiles) {
+  const sides = [baseToHeadFiles, developFiles];
+  if (sides.some((s) => !Array.isArray(s) || s.capped)) return [UNREADABLE];
+  const [mine, theirs] = sides.map((s) => s.map(namesOf));
+  if ([...mine, ...theirs].some((n) => n === null)) return [UNREADABLE];
+  const dev = new Set(theirs.flat().map((n) => n.toLowerCase()));
+  return [...new Set(mine.flat().filter((n) => dev.has(n.toLowerCase())))].sort();
+}
+
+/**
+ * CR-70 founder-only paths (as CR-73 restated them) that SECURITY_LENS_CLASSES does not already hold, plus the CR-149
+ * rule 4 names (auth, billing, the analytics allowlist, apps/mobile/src/lib/db, CODEOWNERS wherever it sits). Auth,
+ * billing and privacy have no path list anywhere, so they match as a substring of the whole path, case-insensitive, with
+ * no delimiter on either side: `useAuth.ts`, `token-vault.ts`, `account-deletion/` and `AuthProvider.tsx` all hit. It is
+ * broad on purpose ("author" and "tokens" hit too): a false hit only keeps the strict rule, a miss lets a PR skip it.
+ * A name rule cannot see what a file reads, so the folders whose files read the session (apps/mobile/src/lib/backup,
+ * apps/mobile/src/lib/analytics) are listed whole. `.well-known/` decides which app a sign-in link opens. `.gitmodules`
+ * and `.gitattributes` change what a checkout holds. Legal text, docs/DECISIONS.md and the standing merge delegation
+ * decision (CR-70's "this rule") are CR-73's "does not move" list.
+ */
+export const CR70_EXTRA_PATHS = [
+  /(?:^|\/)claude\.md$/i, /^packages\/content\//, /^packages\/brand\//, /^packages\/analytics\//, /^docs\/analytics\//,
+  /^agents\//, /^\.claude\//, /^apps\/mobile\/src\/lib\/db\//, /(?:^|\/)codeowners$/i, /^docs\/legal\//, /^apps\/web\/content\/legal\//,
+  /^apps\/mobile\/src\/app\/settings\/(?:legal|privacy)\.tsx$/, /^docs\/decisions\.md$/i,
+  /^apps\/mobile\/src\/lib\/backup\//i, /^apps\/mobile\/src\/lib\/analytics\//i, /(?:^|\/)\.?well-known\//i, /^apps\/mobile\/src\/lib\//i, /^apps\/web\/src\/lib\//i, /^packages\/api\//i, /^apps\/mobile\/src\/components\/family\//i, /^apps\/mobile\/src\/components\/app-lock\//i, /^packages\/core\//i, /^apps\/mobile\/src\/dev\//i, /^apps\/mobile\/src\/app\/_layout\.tsx$/i, /^packs\//i, /^apps\/mobile\/storekit\//i, /^apps\/mobile\/shims\//i, /(?:^|\/)tsconfig[^/]*\.json$/i, /(?:^|\/)migrations[-_]applied(?:\/|\.txt$)/i, /^apps\/mobile\/src\/app\//i, /^apps\/web\/src\/app\//i, /^apps\/web\/src\/content\//i, /^packages\/emails\//i, /^scripts\//i, /(?:^|\/)\.gitignore$/i, /(?:^|\/)\.nvmrc$/i, /(?:^|\/)agents\.md$/i, /(?:^|\/)vitest[^/]*\.config\.[a-z]+$/i, /(?:^|\/)env\.d\.ts$/i, /^apps\/mobile\/web-preview\//i, /^licen[cs]e(?:\.[a-z]+)?$/i, /^apps\/mobile\/src\/components\/(?:onboarding|settings|child|account|auth|gate|consent|photos)\//i, /(?:^|\/)e2e(?:-web)?\/(?:scripts|bin|ci|kill|support)\//i, /(?:^|\/)e2e(?:-web)?\/[^/]*config[^/]*$/i, /(?:^|\/)e2e\/(?:flows|subflows)\//i, /^experiments\//i, /^docs\/store\/(?:compliance|listing)\//i, /(?:^|\/)playwright[^/]*\.config\.[a-z]+$/i, /(?:^|\/)(?:public|assets)\/(?![^?#]*\.(?:png|jpe?g|gif|webp|avif|svg|ico|ttf|otf|woff2?|mp3|m4a|wav|mp4|webm)$)/i,
+  /^apps\/mobile\/src\/app\/invite\//i, /^apps\/web\/src\/app\/j\//i, /^docs\/ops\/backup\//i, /(?:^|\/)\.git(?:modules|attributes)$/i,
+  /^docs\/ops\/proposed\/standing-merge-delegation-decision\.md$/i,
+  /auth|sign[-_]?in|sign[-_]?out|sign[-_]?up|log[-_]?in|log[-_]?out|session|token|vault|account|delet|erase|wipe|purge|forget|recover|restore|export|backup|invite|native-intent|deep[-_]?link|app[-_]?lock|biometric|face[-_]?id|password|secret|cred|jwt|crypt|key|agreement|age[-_]?gate|integrity|canonical|signature|signed|verif|hmac|unsubscribe|rate[-_]?limit|same[-_]?origin|unlock|passcode|hash|nonce|sso|mfa|totp|permission|role|admin|rls|csrf|cors|escrow|owner|presign|cookie|trust|identity|middleware|magic|otp|keychain|secure[-_]?stor|passkey|billing|payment|purchase|subscription|paywall|entitlement|iap|plus|security|supabase|privacy|terms|legal|consent|allow[-_]?list|deny[-_]?list|block[-_]?list/i,
+];
+/** Lockfiles of any package manager, anywhere in the tree (CR-149 rule 4 says "no lockfile", not only the root one). */
+export const LOCKFILE_RE = /(?:^|\/)(?:package-lock\.json|npm-shrinkwrap\.json|yarn\.lock|pnpm-lock\.ya?ml|bun\.lockb?|deno\.lock|podfile\.lock|gemfile\.lock|cargo\.lock|poetry\.lock|composer\.lock|gradle\.lockfile)$/i;
+/** Every `.env*` file or directory, matched by name anywhere (CR-70: "every `.env*` file, matched by file name, anywhere"). */
+export const ENV_RE = /(?:^|\/)\.env[^/]*(?:\/|$)/i;
+/** Any directory named migrations, anywhere: supabase/migrations is the one today, a second one must not slip through. */
+export const MIGRATION_RE = /(?:^|\/)migrations\//i;
+/** Patterns that cover the whole repo; CR-149 correction 1 says the `*` catch-all line is not a path of its own. */
+const CATCH_ALL = new Set(["*", "**", "/*", "/**"]);
+
+/**
+ * Pure: the path patterns of a CODEOWNERS file, read from the text passed in (never from disk here), as
+ * { patterns: [{ pattern, re }], error }. GitHub's syntax: `#` starts a comment, the first token is a gitignore-style
+ * pattern, a leading `/` or an inner `/` anchors it to the root, a trailing `/` means a directory, `*` and `?` stay inside
+ * one segment and `**` crosses segments. A pattern matches the path itself or anything under it. GitHub does not support
+ * `!`, `[ ]` or `\` escapes; a line that uses one, or text that is not a string, sets `error`, and touchesProtectedPath
+ * then treats every path as protected (fail closed: a rule we cannot read must not shrink the protected list).
+ */
+export function parseCodeowners(text) {
+  if (typeof text !== "string") return { patterns: [], error: "CODEOWNERS text missing" };
+  const patterns = [];
+  let entries = 0;
+  for (const raw of text.replace(/\r/g, "").split("\n")) {
+    const line = raw.trim();
+    if (!line || line.startsWith("#")) continue;
+    entries += 1;
+    const pattern = line.split(/\s+/)[0];
+    if (CATCH_ALL.has(pattern)) continue;
+    if (/[![\]\\]/.test(pattern)) return { patterns: [], error: `CODEOWNERS pattern not supported: ${clean(pattern)}` };
+    const dirOnly = pattern.endsWith("/");
+    const body = pattern.replace(/^\/+/, "").replace(/\/+$/, "");
+    if (!body) return { patterns: [], error: "CODEOWNERS pattern empty" };
+    const anchored = pattern.startsWith("/") || body.includes("/");
+    const glob = body.split("/").map((seg) => (seg === "**" ? "\u0000" : seg.replace(/[.+^${}()|]/g, "\\$&").replace(/\*/g, "[^/]*").replace(/\?/g, "[^/]"))).join("/")
+      .replace(/^\u0000\//, "(?:.*/)?").replace(/\/\u0000$/, "/.*").replace(/\/\u0000\//g, "/(?:.*/)?").replace(/\u0000/g, ".*");
+    patterns.push({ pattern, re: new RegExp(`^${anchored ? "" : "(?:.*/)?"}${glob}${dirOnly ? "/.+" : "(?:/.*)?"}$`, "i") });
+  }
+  // An empty file (or only comments) is a read gone wrong, not a repo with no owners: fail closed.
+  if (entries === 0) return { patterns: [], error: "CODEOWNERS text empty" };
+  // The real file opens with the `*` line, so a read cut short after it would look like "no owners": fail closed.
+  if (patterns.length === 0) return { patterns: [], error: "CODEOWNERS has no entry beyond the catch-all" };
+  return { patterns, error: null };
+}
+
+/** A path we can match safely: relative, forward slashes, no `.` or `..` segment, printable ASCII only (a zero-width or
+ * full-width character could slip past the name rule). Else unknown, so protected and source. */
+const readablePath = (p) => typeof p === "string" && p.length > 0 && !p.startsWith("/") && !p.includes("\\") && /^[\x20-\x7e]+$/.test(p)
+  && p.split("/").every((s) => s && s !== "." && s !== "..");
+const anyRe = (res, p) => res.some((re) => re.test(p) || re.test(p.toLowerCase()));
+
+/**
+ * Pure: CR-149 rule 4 (as CR-149 correction 1, BL-1569, reads it) for each changed path, both names of a rename, as
+ * [{ path, rules: [names] }] in input order, every rule that matched named so the verdict can say which one. The rules:
+ * the CR-70 path list (SECURITY_LENS_CLASSES plus CR70_EXTRA_PATHS), every CODEOWNERS entry in `codeowners` (the file's
+ * text, so a path added there later is covered with no change here; CR-70: where the two differ, CODEOWNERS wins), a
+ * `.env` file anywhere, a lockfile, a package.json change, a CR-74 native path (NATIVE_PATHS) and a migration.
+ * package.json: any change to one counts as a dependency change. We are not given the patch, so we cannot prove only a
+ * non-dependency key moved (scripts, name, version), and "scripts" itself runs in `npm ci` and EAS (CR-70).
+ * Matching ignores case as well (a case-insensitive checkout maps `IOS/` onto `ios/`), which can only add hits.
+ * Fail closed: a non-array or capped file list, an empty list, an entry with no readable name, a path that is absolute
+ * or holds `.`, `..`, a backslash or any character outside printable ASCII, and unreadable, empty or catch-all-only
+ * CODEOWNERS text each give a hit.
+ */
+export function protectedPathHits(files, codeowners) {
+  if (!Array.isArray(files) || files.capped) return [{ path: UNREADABLE, rules: ["unreadable file list"] }];
+  if (!files.length) return [{ path: UNREADABLE, rules: ["empty file list"] }];
+  const owners = parseCodeowners(codeowners);
+  const hits = [];
+  const add = (path, rules) => {
+    const old = hits.find((h) => h.path === path);
+    if (old) old.rules = [...new Set([...old.rules, ...rules])];
+    else hits.push({ path, rules });
+  };
+  for (const f of files) {
+    const names = namesOf(f);
+    if (!names) { add(UNREADABLE, ["unreadable entry"]); continue; }
+    for (const p of names) {
+      if (!readablePath(p)) { add(clean(p) || UNREADABLE, ["unknown path"]); continue; }
+      const rules = [];
+      if (anyRe(SECURITY_LENS_PATHS, p) || anyRe(CR70_EXTRA_PATHS, p)) rules.push("CR-70 path");
+      if (owners.error) rules.push(owners.error);
+      for (const o of owners.patterns) if (o.re.test(p)) rules.push(`CODEOWNERS ${o.pattern}`);
+      if (ENV_RE.test(p)) rules.push(".env file");
+      if (LOCKFILE_RE.test(p)) rules.push("lockfile");
+      if (/(?:^|\/)package\.json$/i.test(p)) rules.push("package.json dependency change");
+      if (anyRe(NATIVE_PATHS, p)) rules.push("native path (CR-74)");
+      if (MIGRATION_RE.test(p)) rules.push("migration");
+      if (rules.length) add(p, rules);
+    }
+  }
+  return hits;
+}
+/** Pure: true when CR-149 rule 4 keeps the strict rule for this PR (any hit, including a fail-closed one). */
+export const touchesProtectedPath = (files, codeowners) => protectedPathHits(files, codeowners).length > 0;
+
+/**
+ * Docs: Markdown anywhere, or `.mdx` and `.txt` under docs/, outside the folders where a Markdown file is an instruction
+ * an agent or CI acts on. A `.txt` or `.mdx` anywhere else may be built or read (a web `public/` file, MDX pages), and a
+ * `.txt` that a check or build reads is source wherever it sits: the baselines and allowlists scripts compare against
+ * (docs/ops/trace-ns-baseline.txt, CR-227), the store review notes, the migrations-applied lists, well-known files,
+ * requirements*.txt and CMakeLists.txt.
+ */
+const DOC_RE = /\.md$|^docs\/.*\.(?:mdx|txt)$/i;
+const MACHINE_READ_TXT_RE = /(?:baseline|allowlist|denylist|migrations-applied|notes-for-review|requirements)[^/]*\.txt$|(?:^|\/)cmakelists\.txt$|(?:^|\/)\.?well-known\//i;
+const NOT_DOCS_RE = /^(?:\.claude|agents|\.github)\/|(?:^|\/)(?:claude|agents)\.md$/i;
+/** Tests: a file inside a test folder, or a file named *.test.* or *.spec.* (CR-149's first uses: apps/mobile/test, e2e-web). */
+const TEST_RE = /(?:^|\/)(?:test|tests|__tests__|e2e|e2e-web|__fixtures__|fixtures)\/|\.(?:test|spec)\.[a-z0-9]+$/i;
+const NOT_TEST_RE = /^\.github\//i;
+
+/**
+ * Pure: CR-149's PR class from the changed paths only, never from a label or a title (labels and titles are written by
+ * the PR's author, so they cannot vouch for it). `docs` when every name is docs, `test` when every name is a test, else
+ * `source`. A PR that mixes tests and docs is neither test-only nor docs-only, so it is `source` and needs its own tests
+ * and tsc on the scratch merge (QA's condition in CR-149). Both names of a rename count, so moving a source file into a
+ * test folder is still `source`. Fail closed: a non-array, capped or empty list, an unreadable entry or an unknown path
+ * gives `source`, never `docs`.
+ */
+export function classifyPr(files) {
+  if (!Array.isArray(files) || files.capped || !files.length) return "source";
+  const names = files.map(namesOf);
+  if (names.some((n) => n === null)) return "source";
+  const all = names.flat();
+  if (!all.every(readablePath)) return "source";
+  if (all.every((p) => DOC_RE.test(p) && !NOT_DOCS_RE.test(p) && !MACHINE_READ_TXT_RE.test(p))) return "docs";
+  if (all.every((p) => TEST_RE.test(p) && !NOT_TEST_RE.test(p))) return "test";
+  return "source";
+}
+
 /** AIE-G20 (AIE-R46): the check whose result a reviewer's focused run can hide. */
 export const SUITE_CHECK = "tests and content rules";
 /** Pure: conclusion of the newest run of SUITE_CHECK at the head ("pending" if unfinished), or "-" if there is none. */

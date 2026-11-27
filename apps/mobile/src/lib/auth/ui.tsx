@@ -36,7 +36,6 @@ import { BackButton, ModalHeader } from '@/components/ui/screen-header';
 import { Text } from '@/components/ui/text';
 import { announce, useFocusOnMount, useIsAccessibilitySize, useScheme, useTheme } from '@/lib/a11y';
 import { copy } from '@/lib/copy';
-import { haptic } from '@/lib/haptics';
 import { authCopy } from './copy';
 import { useAuth } from './session-provider';
 import { RevocationWaitLine } from './revocation-wait-line';
@@ -211,10 +210,8 @@ export function AppleButton({ onPress, disabled, signIn }: { onPress: () => void
         buttonStyle={dark ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
         cornerRadius={SHEET.button / 2}
         style={{ height: SHEET.button, width: '100%' }}
-        onPress={() => {
-          haptic('tap');
-          onPress();
-        }}
+        // No haptic: an account is not an outcome in the letter's sense (S52 Motion, MOTION 6; CDesO-14, BL-490).
+        onPress={onPress}
       />
     </View>
   );
@@ -272,10 +269,8 @@ export function ProviderButton({ kind, label, onPress, disabled, busy, busyLabel
     <Button
       variant="outline"
       size="lg"
-      onPress={() => {
-        haptic('tap');
-        onPress();
-      }}
+      // No haptic, as the Apple button above (S52 Motion, MOTION 6; CDesO-14, BL-490).
+      onPress={onPress}
       disabled={busy ? false : disabled}
       loading={busy}
       accessibilityLabel={shown}

@@ -34,6 +34,18 @@ The five new build paths now hold a PR on both macOS checks in `merge-queue.mjs`
 
 Limits: the gate proves the tip of `develop`, not the tagged commit; and a writer who can push a tag on a branch carrying an edited gate can bypass it, so the `ios-v*` tag ruleset and the `app-store` approval stay the real controls.
 
+## Edges of the wired gate and their tests (BL-1480, BL-1574)
+
+The `launch-gate` job runs `main()`, which reads through `gate()` and decides with `decideLaunchGate`. These rows name the edges that a mutant of the script survived before a test pinned them.
+
+| Failure mode | Result | Test in `scripts/release/launch-gate.test.mjs` |
+|---|---|---|
+| `runs` is not a list (an object, a string, a number) | refused as no runs, does not throw | `[BL-1480] runs that are not a list` |
+| The ancestry answer is not exactly `true` (a truthy string, `undefined` for a run with no `head_sha`, `1`, an object) | refused, "no iOS compile run on develop at or after the merge base" | `[BL-1574] an ancestry answer that is not exactly true refuses` |
+| `git merge-base --is-ancestor` fails with an exit code other than 0 or 1 (git uses 128 for a bad object or missing history) | exit 1, "a read failed", not a refusal for the run's order | `[BL-1574] main(): an --is-ancestor read error (git exit 128)` |
+| The script path has a space or another character that needs URL escaping, or is reached through a symlink | `main()` still runs, so a refused gate exits 1 (the old entry check skipped `main()` and the job exited 0) | `[BL-1574] main() runs when the script path has a space or is reached through a symlink` |
+| `process.argv[1]` is missing, empty or another file | not the entry, `main()` does not run and nothing throws | `[BL-1574] isEntry(): a missing argv[1] or another file is not the entry` |
+
 ## Tag equals checked commit (BL-1594, proposal, not wired)
 
 Status: PROPOSED. The pure function exists and is tested; no workflow calls it. Karma applies workflow edits.

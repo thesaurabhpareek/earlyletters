@@ -46,9 +46,11 @@ private struct Refused: Error {}
 /// here, and a folder is never removed or written over (review N-B1). No network, no location, no permission request,
 /// no logging. DEVICE ONLY: this file cannot run in Node; the tests read it as source text (test/photos-device.test.ts).
 public class ScribePhotoModule: Module {
-  /// The longest side kept, in pixels. A phone photo is about 4000; this bounds the output and never enlarges.
-  private static let longestSide = 4096
-  private static let quality = 0.9
+  /// The longest side kept, in pixels (ruling T3, NS-01-R37a): 4,032 px, the long side of a 12 MP phone photo. A larger
+  /// picture comes down to exactly this; a smaller one keeps its own size (R37b), so nothing is ever enlarged.
+  private static let longestSide = 4032
+  /// JPEG quality of every re-encode (ruling T3, NS-01-R37c).
+  private static let quality = 0.85
   /// The largest canvas decoded, read from the file's own properties before any decode: well above a 48 MP still.
   private static let maxPixels = 150_000_000
   /// The container types a picked still may be. Anything else (PDF, TIFF, RAW, GIF and the rest) is refused unread. A
