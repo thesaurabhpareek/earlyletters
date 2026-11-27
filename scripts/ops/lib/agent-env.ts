@@ -34,16 +34,18 @@ export const AGENT_SECRET_ALLOWLIST = ['ANTHROPIC_API_KEY', 'CLAUDE_CODE_OAUTH_T
 export const PRODUCTION_POWER =
   /SERVICE_ROLE|SERVICE_KEY|SECRET|SIGNING|PRIVATE_KEY|BACKUP|ESCROW|KEK|PASSWORD|(?:^|_)PROD(?:_|$)|PRODUCTION|ACCESS_TOKEN|DB_URL|VERCEL_TOKEN|1PASSWORD|OP_SERVICE_ACCOUNT|OP_CONNECT|BITWARDEN|LASTPASS|DASHLANE|KEEPER|VAULT/i;
 
-/** Workflows whose every job runs an agent, whatever its steps say. */
+/** Workflows whose every job runs an agent, whatever its steps say; a job that calls one is an agent job too. */
 export const AGENT_WORKFLOWS = ['agents.yml', 'claude.yml'];
+const CALLS_AGENT_WORKFLOW = new RegExp(String.raw`(?:^|/)(?:${AGENT_WORKFLOWS.map((f) => f.replace('.', '\.')).join('|')})(?:@|$)`);
 
 /**
  * A job runs an agent engine: Anthropic's actions, the npm or Python packages, the native installer, OpenCode, or
- * `claude` as a word anywhere in the job's strings (behind `sudo`, `timeout`, `env`, a path or a quote, and even in
- * a step name or an echo: a false alarm here costs an edit, a miss costs a key).
+ * `claude` as a word in any of the job's strings, after a space, quote, slash, bracket or shell operator and before
+ * one, a redirect or a dot (behind `sudo`, `timeout`, `env` or a path, and even in a step name or an echo: a false
+ * alarm here costs an edit, a miss costs a key). A job that calls an agent workflow is an agent job.
  */
 const AGENT_STEP =
-  /anthropics\/claude-code-|@anthropic-ai\/claude-(?:code|agent-sdk)|claude[-_]agent[-_]sdk|claude\.ai\/install|\bopencode\b|(?:^|[\s`'"(/;&|{!=])claude(?=[\s`'";)|&}]|$)/i;
+  /anthropics\/claude-code\b|@anthropic-ai\/claude-(?:code|agent-sdk)|claude[-_]agent[-_]sdk|claude\.ai\/install|\bopencode\b|(?:^|[\s`'"(/;&|{!=,[:-])claude(?=[\s`'";)|&}<>.,\]:]|$)/i;
 
 /** GitHub's own token is not a stored secret. */
 const NOT_A_STORED_SECRET = new Set(['GITHUB_TOKEN']);
@@ -123,7 +125,8 @@ export function parse(workflow: string): { root: Record<string, unknown>; jobs: 
   let root: unknown;
   try {
     const doc = parseDocument(workflow, { uniqueKeys: true, merge: false, prettyErrors: false });
-    if (doc.errors.length || doc.warnings.length) return null;
+    // A %YAML directive switches the schema (1.1 applies merge keys even with merge: false), so only plain 1.2 is read.
+    if (doc.errors.length || doc.warnings.length || doc.directives?.yaml?.explicit) return null;
     root = doc.toJS({ maxAliasCount: 100 });
   } catch {
     return null;
@@ -144,7 +147,7 @@ export function jobsOf(workflow: string): Job[] {
       name,
       environment: hasLiteralEnvironment(job.environment),
       secrets: names,
-      runsAgent: stringsOf(job).some((s) => AGENT_STEP.test(s)),
+      runsAgent: stringsOf(job).some((s) => AGENT_STEP.test(s)) || (typeof job.uses === 'string' && CALLS_AGENT_WORKFLOW.test(job.uses)),
       handsOutAll: whole || ('secrets' in job && !isMap(job.secrets)),
     };
   });
@@ -152,6 +155,14 @@ export function jobsOf(workflow: string): Job[] {
 
 /** Every finding in one workflow file. `file` is its base name, which decides whether it is an agent workflow. */
 export function scanWorkflow(file: string, workflow: string): Finding[] {
+  try {
+    return scan(file, workflow);
+  } catch {
+    return [{ file, job: '*', rule: 'unparsed' }]; // a recursive alias overflows the walk: report it, never pass it
+  }
+}
+
+function scan(file: string, workflow: string): Finding[] {
   const parsed = parse(workflow);
   if (!parsed) return [{ file, job: '*', rule: 'unparsed' }];
   const out: Finding[] = [];
