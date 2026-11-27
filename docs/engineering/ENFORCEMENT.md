@@ -143,7 +143,7 @@ Gap ids defined here:
 | IAM-R03 | MUST | `require_content_consent()`; `security_family.test.mjs`; access matrix | enforced on develop (writes, invite acceptance); not yet for "no account before Terms" | BL-581 |
 | IAM-R04 | MUST NOT | `apps/mobile/test/age-gate.test.ts`; `classification.test.mjs` | enforced on develop | |
 | IAM-R05 | MUST | `sign-in-rules-source.test.ts` (only `signInWithOtp` in `email.ts`, `signInWithIdToken` apple or google, `auth.passkey` in `passkey.ts`) | enforced on develop | none (BL-727) |
-| IAM-R06 | MUST NOT | `packages/content/test/emails.test.ts:126` (copy); `sign-in-rules-source.test.ts` (no `signInWithPassword`, `resetPasswordForEmail`, `signUp` under `apps/mobile/src`) | enforced on develop | none (BL-727) |
+| IAM-R06 | MUST NOT | `packages/content/test/emails.test.ts:126` (copy); `sign-in-rules-source.test.ts` (no `signInWithPassword`, `resetPasswordForEmail`, `signUp`, and no `updateUser` that sets a password, under `apps/mobile/src`) | enforced on develop | none (BL-727) |
 | IAM-R07 | MUST NOT | `auth_config.test.mjs` (anonymous sign-ins off); access matrix `:680` (anonymous policy), `:652` (`require_user`); `sign-in-rules-source.test.ts` (app source ban) | enforced on develop (server, config, app source) | MONO-01 (lint rule) |
 | IAM-R08 | MUST | `apple-token/handler.test.ts`; `purge-worker/test/lib.test.ts`, `worker.test.ts` | enforced on develop (nonce hash: review) | |
 | IAM-R09 | MUST | `auth_config.test.mjs`; `auth-links`, `deep-link.allowlist`, `auth-email-link` tests; `sign-in-rules-source.test.ts` (`shouldCreateUser: true`, no-reveal) | enforced on develop | BL-581 (may change no-reveal) |
@@ -159,7 +159,7 @@ Gap ids defined here:
 | IAM-R20 | MUST | `db_followup_family_cap.test.mjs:139-159`; `v1_gate_coparent.test.mjs:190-195` | enforced on develop | |
 | IAM-R21 | MUST | `data_governance.test.mjs:87`; `db_followup_family_cap.test.mjs:95-97` (SCLPG) | enforced on develop | |
 | IAM-R22 | MUST | review | not yet | BL-728, DB-17 |
-| IAM-R23 | MUST NOT | `sign-in-rules-source.test.ts` reads `agents.yml` and `claude.yml` (no `SUPABASE` or `SERVICE_ROLE` secret, no computed key, no `secrets: inherit`) | enforced on develop (agents.yml); review (interactive sessions) | BL-603 |
+| IAM-R23 | MUST NOT | `sign-in-rules-source.test.ts` reads `agents.yml` and `claude.yml` (no `SUPABASE` or `SERVICE_ROLE` secret, no computed key, no `secrets: inherit`) | enforced on develop (agents.yml, claude.yml); review (interactive sessions) | BL-603 |
 | IAM-R24 | MUST | `access_matrix.test.mjs:618` (tables, views), `:643` (functions); review (deny cells, Storage) | enforced on develop | |
 | SEC-R01 | MUST | review; `docs/security/threat-model.md` | not yet | handoff to `security` |
 | SEC-R02 | MUST | `docs/ops/SECRETS.md` | file on develop (#1094); no check that every secret has a row | PINF-05, WS-18 |

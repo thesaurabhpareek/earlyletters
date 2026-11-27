@@ -17,7 +17,8 @@
  * provider 'facebook'; `signInWithOtp` outside email.ts; `shouldCreateUser: false` in email.ts; a
  * `secrets.SUPABASE_SERVICE_ROLE_KEY` line in a copy of agents.yml. After Review B at c298a03: a destructured `auth`, a
  * chain split over two lines, `sb.auth['signInWithIdToken']`, an aliased client calling `signInWithOtp`,
- * `updateUser({ password })`, provider 'facebook' in google.ts, and a SUPABASE secret in claude.yml.
+ * `updateUser({ password: p })`, provider 'facebook' in google.ts, and a SUPABASE secret in claude.yml. After the
+ * reviews at 1c6bd8d: `updateUser({ password })`, `updateUser({ 'password': p })`, and a `)` before the password key.
  */
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
@@ -72,7 +73,7 @@ export function signInFindings(file: string, text: string): string[] {
     }
   }
   // Setting a password on the signed-in account is the other way email plus password sign-in could appear (IAM-R06).
-  if (/\bupdateUser\s*\(\s*\{[^)]*\bpassword\s*:/.test(text)) out.push(`${file}: sets a password with updateUser`);
+  if (/\bupdateUser\s*\(\s*\{[^}]*?\bpassword\b/.test(text)) out.push(`${file}: sets a password with updateUser`);
   // A call on a Supabase auth client: `sb.auth.signInX(`, `sb?.auth.signInX(`, `client.auth?.signInX(`, a chain split
   // over lines, and `sb.auth['signInX'](`. For the two allowed names a bare `auth.` (a destructured client) counts too;
   // for any other name the leading dot is kept, because the app's own AuthApi is also called `auth`
@@ -144,6 +145,9 @@ describe('BL-727 sign-in methods in the app source', () => {
 
   it('[IAM-R06] positive control: setting a password with updateUser is reported', () => {
     expect(signInFindings('lib/x.ts', 'await sb.auth.updateUser({ password: next })')).toEqual(['lib/x.ts: sets a password with updateUser']);
+    expect(signInFindings('lib/x.ts', 'await sb.auth.updateUser({ password })')).toEqual(['lib/x.ts: sets a password with updateUser']);
+    expect(signInFindings('lib/x.ts', "await sb.auth.updateUser({ 'password': p })")).toEqual(['lib/x.ts: sets a password with updateUser']);
+    expect(signInFindings('lib/x.ts', 'await sb.auth.updateUser({ email: f(a), password: p })')).toEqual(['lib/x.ts: sets a password with updateUser']);
     expect(signInFindings('lib/x.ts', 'await sb.auth.updateUser({ data: { name } })')).toEqual([]);
   });
 
