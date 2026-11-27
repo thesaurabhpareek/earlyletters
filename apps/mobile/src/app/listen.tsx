@@ -527,7 +527,7 @@ export default function Listen() {
   // The ready line shows the sighted words in every case; with a screen reader on only its label changes (BL-2241).
   const ready = readyLine(p.ready, screenReader);
   const line = room.line === 'none' ? null : room.line === 'readyHint' ? ready.text : room.line === 'paused' ? t.paused : quiet ? t.stillHere : t.listening;
-  const lineLabel = room.line === 'readyHint' ? ready.text : line;
+  const lineLabel = room.line === 'readyHint' ? ready.label : line;
   // While capturing nothing on this screen changes what VoiceOver reads (07 line 276, F04-REQ-041): the live region is
   // off, and every label (the clock, Finish's hint, the line, Pause / Keep talking) holds still; they catch up once
   // capture stops (listen.logic `stableLabels`).
