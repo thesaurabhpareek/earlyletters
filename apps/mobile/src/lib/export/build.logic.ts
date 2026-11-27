@@ -209,6 +209,12 @@ export interface ExportPlan {
    * (NS-01-R6) never leaves a broken image in index.html.
    */
   readerFor: (written: ReadonlySet<string>) => string;
+  /**
+   * The README with or without the PICTURES section. `textFiles` holds it as planned; pack.ts writes this one, with the
+   * section only when a picture has already passed the last guard, so the README never describes a photos/ folder
+   * that is not in the export.
+   */
+  readmeFor: (withPhotos: boolean) => string;
 }
 
 export const MEDIA = {
@@ -627,7 +633,11 @@ function readme(snapshot: ExportSnapshot, withPhotos: boolean): string {
   // The pictures section only when this export holds a picture, so an export with none reads as it did before 1.7.0.
   // It goes before KEEPING IT SAFE, so the README still ends on the format line.
   const lines: string[] = [...exportCopy.readme];
-  if (withPhotos) lines.splice(lines.lastIndexOf('KEEPING IT SAFE') - 1, 0, ...exportCopy.readmePhotos);
+  if (withPhotos) {
+    const at = lines.indexOf('KEEPING IT SAFE');
+    if (at < 1) throw new Error('export README: the KEEPING IT SAFE heading the pictures section goes before is missing');
+    lines.splice(at - 1, 0, ...exportCopy.readmePhotos);
+  }
   return (
     lines
       .map((line) =>
@@ -697,7 +707,8 @@ export function planExport(snapshot: ExportSnapshot): ExportPlan {
     sizeHint: d.audioSizeOnPhone ?? d.audioBytes ?? null,
   }));
 
-  return { textFiles, books, audio, waitingAudio, photos, readerFor };
+  const readmeFor = (withPhotos: boolean) => readme(snapshot, withPhotos);
+  return { textFiles, books, audio, waitingAudio, photos, readerFor, readmeFor };
 }
 
 /** One recording as a data file writes it, with the hash of the file actually exported. */
