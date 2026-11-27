@@ -167,7 +167,7 @@ describe('[BL-568] wiring', () => {
     expect(src).toMatch(/if \(globalFault\.fault\) return <GlobalFaultScreen/);
   });
 
-  it('[BL-568] only the production profile installs the handler; testflight, preview and development keep the native crash', async () => {
+  it('[BL-568, CR-245] only the production profile on iOS and Android installs the handler; testflight, preview and development keep the native crash', async () => {
     for (const os of ['ios', 'android']) expect(shouldInstallGlobalHandlers('production', os), os).toBe(true);
     for (const env of ['preview', 'development'] as const)
       for (const os of ['ios', 'android', 'web']) expect(shouldInstallGlobalHandlers(env, os), `${env} ${os}`).toBe(false);
@@ -182,7 +182,7 @@ describe('[BL-568] wiring', () => {
     expect(eas.production.env.EXPO_PUBLIC_APP_ENV).toBe('production');
   });
 
-  it('[BL-568, CR-245] web never installs the handler, even in production, so lazy chunks load', () => {
+  it('[BL-568, CR-245] web never installs the handler, even in production', () => {
     // Expo's web async import runs the module first and loads its chunk only if that throws. Our handler
     // swallows the fatal, so a production web build showed the recovery screen on every lazy import (#2240).
     expect(shouldInstallGlobalHandlers('production', 'web')).toBe(false);

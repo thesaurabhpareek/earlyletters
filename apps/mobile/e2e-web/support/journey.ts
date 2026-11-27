@@ -54,7 +54,7 @@ export async function seeded(page: Page, kind: SeedKind = 'asha', path = '/', op
 /**
  * Open the store build (BL-1991): the same app with the production app env, so the free letters, the Keep step that asks for
  * Plus and the Plan screen's store words are the ones a store customer sees. The other builds are alpha (Plus is not part of
- * the test there). Use it for a flow that begins with firstRun. The seed switch does not work on it yet (every `?seed=` shows "This page didn't open" there), so no flow seeds a family on it.
+ * the test there). Use it for a flow that begins with firstRun. No flow seeds a family on it (CR-240), though `?seed=` works there since CR-245.
  */
 export async function onStore(page: Page) {
   await page.goto(`${process.env.E2E_WEB_STORE_URL}/`);
