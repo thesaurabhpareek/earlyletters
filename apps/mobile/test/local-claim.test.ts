@@ -4,7 +4,8 @@
  * stores' owner, signing out puts them back to 'local', and "Keep in this account" adopts the local files BEFORE the
  * claim is confirmed. The stores' own rules are in days-store.test.ts and moments-store.test.ts.
  * Mutants: drop the setOwner call on sign-in; drop the setOwner('local') on sign-out; confirm before adopting; skip
- * either store's adopt; a hash of the wrong length.
+ * either store's adopt; a hash of the wrong length. BL-1559 adds the claim choice through the auth store here, and the
+ * five claim cases over real files (and the owner-check mutant) in auth-claim-is-explicit.test.ts.
  */
 import { createHash } from 'node:crypto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -73,6 +74,43 @@ describe('[CPO-30] sign-in and sign-out set the owner of both device-only stores
     auth.publishAuth({ status: 'ready', userId: ASHA, sync: 'on' } as never);
     auth.publishAuth(signedOut());
     expect(h.calls).toEqual([]);
+  });
+});
+
+describe('[BL-1559] the claim choice through the auth store, in the provider\'s order', () => {
+  // The stores here are stand-ins that record calls; the same flows over real files are in auth-claim-is-explicit.test.ts.
+  it('[E-S24] Keep: both stores adopt under the key BEFORE the released sign-in sets the owner (setOwner first would delete the local file)', async () => {
+    const off = bindDeviceOnlyOwners();
+    auth.setClaimReaders({ owner: () => null, hasLocalData: () => true });
+    auth.publishAuth({ status: 'ready', userId: ASHA, sync: 'on' } as never);
+    expect(h.calls).toEqual([]); // waiting on the choice
+    if (await adoptDeviceOnlyLocal(ASHA)) auth.confirmAccountClaim(ASHA);
+    const key = ownerKey(ASHA);
+    expect(h.calls).toEqual([`days.adopt:${key}`, `moments.adopt:${key}`, `days.setOwner:${key}`, `moments.setOwner:${key}`]);
+    off();
+  });
+
+  it('[CPO-30] Not my account: no key is ever set, and the sign-out only puts the owner back to local', () => {
+    const off = bindDeviceOnlyOwners();
+    auth.setClaimReaders({ owner: () => null, hasLocalData: () => true });
+    auth.publishAuth({ status: 'ready', userId: ASHA, sync: 'on' } as never);
+    auth.publishAuth(signedOut());
+    expect(h.calls).toEqual(['days.setOwner:local', 'moments.setOwner:local']); // a no-op on a store already local: the file stays
+    expect(h.calls.some((c) => c.includes('adopt') || c.endsWith(ownerKey(ASHA)))).toBe(false);
+    off();
+  });
+
+  it('[NS-47-R7] a second account gets its own key, never the first account\'s', () => {
+    const off = bindDeviceOnlyOwners();
+    auth.setClaimReaders({ owner: () => ASHA, hasLocalData: () => true });
+    auth.publishAuth({ status: 'ready', userId: ASHA, sync: 'on' } as never);
+    auth.publishAuth(signedOut());
+    h.calls.length = 0;
+    auth.setClaimReaders({ owner: () => ASHA, hasLocalData: () => true }); // the phone's letters stay the first account's
+    auth.publishAuth({ status: 'ready', userId: ASHA_PARTNER, sync: 'on' } as never);
+    expect(h.calls).toEqual([`days.setOwner:${ownerKey(ASHA_PARTNER)}`, `moments.setOwner:${ownerKey(ASHA_PARTNER)}`]);
+    expect(ownerKey(ASHA_PARTNER)).not.toBe(ownerKey(ASHA));
+    off();
   });
 });
 

@@ -203,8 +203,8 @@ describe('Asha export (golden)', () => {
   });
 
   it('[F09-REQ-003, RT-BK-05] a month-only letter never states a day: precision in entries.json, month-only datelines everywhere (schema 1.5.0)', async () => {
-    // Since 1.5.0; 1.6.0 added waiting letters (PL-2). Exact, so the next bump updates this line on purpose.
-    expect(EXPORT_SCHEMA_VERSION).toBe('1.6.0');
+    // Since 1.5.0; 1.6.0 added waiting letters (PL-2), 1.7.0 pictures (BL-933). Exact, so the next bump updates this line on purpose.
+    expect(EXPORT_SCHEMA_VERSION).toBe('1.7.0');
     const { zip } = await makeExport();
     const files = unzipSync(zip);
     const entries = JSON.parse(strFromU8(files['data/entries.json'])) as EntriesFile;

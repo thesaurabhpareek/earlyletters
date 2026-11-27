@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { DictionaryTerm } from '@scribe/core';
 import {
   DAY_MS,
@@ -23,6 +23,8 @@ import {
   type QueueState,
 } from '../src/lib/transcription-queue/machine';
 import { cleanSpoken, spokenEditLevel } from '../src/lib/transcription-queue/clean';
+import { nodeDb } from './helpers/node-db';
+import { letter } from './helpers/store-fixture';
 
 const T0 = 1_000_000;
 
@@ -388,5 +390,75 @@ describe('[TF1-DL] a download that keeps stopping waits for a tap after MAX_STOP
     const h = retryHarness();
     for (let i = 0; i < 3 * MAX_STOPPED_RUNS; i++) h.retries.failed('en', i % 2 ? 'offline' : 'download_failed');
     expect(h.retries.gaveUp('en')).toBe(false);
+  });
+});
+
+describe('[BL-413, TDD 03 FM-9] words-set-once: words that arrive in the background are set once and read first', () => {
+  // The queue's native edges are stubbed for this block only (as in left-book-followups.test.ts), then the queue, the
+  // store and read-it-back load fresh and run for real. The pure queue tests above keep the modules they imported.
+  async function load() {
+    vi.resetModules();
+    vi.doMock('react-native', () => ({ AppState: { currentState: 'active', addEventListener: () => ({ remove: () => {} }) } }));
+    vi.doMock('../modules/scribe-audio', () => ({ ScribeAudio: {} }));
+    vi.doMock('../src/lib/build-env', () => ({ devShortcutsAllowed: false }));
+    vi.doMock('../src/lib/capture/adts-file', () => ({ removeWholeFrameCopies: () => {} }));
+    vi.doMock('../src/lib/audio-enhance', () => ({ copyForLetter: async () => {} }));
+    vi.doMock('../src/lib/analytics/track', () => ({ trackTranscriptionCompleted: () => {} }));
+    vi.doMock('../src/lib/language', () => ({ getSpokenLanguages: () => ({ languages: [] }) }));
+    vi.doMock('../src/lib/transcribe-sample', () => ({ createSampleTranscriber: () => ({ id: 'sample', isSample: true, availability: async () => 'native-module-missing', transcribe: async () => { throw new Error('no sample'); } }) }));
+    vi.doMock('../src/lib/models/whisper-runtime', () => ({ whisperModule: () => ({}), releaseContexts: async () => {} }));
+    vi.doMock('../src/lib/models/speech-consent', () => ({ migrateSpeechConsent: () => {}, setSpeechDownloadChoice: () => {}, speechAutoStartAllowed: () => false }));
+    vi.doMock('../src/lib/models/speech-packs', () => ({
+      bindSpeechPacks: () => {}, combineProgress: () => null, speechDownloadMotion: () => ({ progress: null, stage: null }),
+      ensureSpeechFor: async () => ({ ok: true }), installedPathsFor: () => ({ asr: '/a', vad: '/v', asrId: 'x' }),
+      onSpeechPacksBound: () => () => {}, planFor: () => ({ packs: [], asr: {}, bytes: 0 }), recordMemoryFailure: () => {},
+      speechPackHost: () => ({ onProgress: () => () => {}, packPath: () => '/p', removePack: async () => {} }), speechPacksForLanguage: () => [],
+    }));
+    vi.doMock('../src/lib/transcribe-whisper', () => ({ createWhisperTranscriber: () => ({ id: 'whisper', isSample: false, availability: async () => null, transcribe: async () => ({ raw: '' }) }) }));
+    vi.doMock('expo-crypto', () => ({ getRandomBytes: (n: number) => new Uint8Array(n).fill(7) }));
+    vi.doMock('../src/lib/db/repos/open-native', () => ({ openNativeDb: () => { throw new Error('native open must not be used in tests'); } }));
+    const store = await import('../src/lib/store');
+    const { isReadItBack } = await import('../src/lib/read-it-back');
+    const queue = await import('../src/lib/transcription-queue');
+    const h = nodeDb();
+    let seq = 0;
+    const newId = () => `0199a5b0-0000-7000-8000-${String(++seq).padStart(12, '0')}`;
+    store.openStore({ open: () => ({ db: h.db, close: () => {} }), now: () => '2026-10-03T09:00:00.000Z', newId });
+    closeAll = () => {
+      store.closeStore();
+      h.close();
+    };
+    const asha = store.addChild({ name: 'Asha', birthday: null, dueDate: null, signsAs: 'Mama' });
+    const e = letter({ childId: asha.id, rawTranscript: '', finalText: '', transcriptStatus: 'waiting' } as never);
+    store.saveEntry(e);
+    const arrive = (said: string) => queue.deliver(e.id, { raw: said } as never, false);
+    return { store, isReadItBack, arrive, id: e.id, childId: asha.id };
+  }
+  let closeAll = () => {};
+  afterEach(() => {
+    closeAll();
+    closeAll = () => {};
+    vi.resetModules();
+  });
+
+  it('the first words become the raw, marked "words arrived, please read" and waiting for Review; a second arrival changes nothing', async () => {
+    const { store, isReadItBack, arrive, id, childId } = await load();
+    arrive('You laughed at the rain.');
+    expect(store.getEntry(id)).toMatchObject({ rawTranscript: 'You laughed at the rain.', finalText: 'You laughed at the rain.', wordsUnreviewed: true });
+    expect(isReadItBack(id)).toBe(true);
+    expect(store.listWordsToReview(childId).map((e) => e.id)).toEqual([id]);
+    arrive('You laughed at the train.');
+    expect(store.getEntry(id)).toMatchObject({ rawTranscript: 'You laughed at the rain.', finalText: 'You laughed at the rain.' });
+  });
+
+  it('kept from Review, the mark clears once, and only then can the words be changed on the letter page', async () => {
+    const { store, arrive, id, childId } = await load();
+    arrive('You laughed at the rain.');
+    expect(store.canChangeLetterWords(id)).toBe(false);
+    expect(store.keepReviewedWords(id)).toBe(true);
+    expect(store.getEntry(id)?.wordsUnreviewed).toBe(false);
+    expect(store.listWordsToReview(childId)).toEqual([]);
+    expect(store.keepReviewedWords(id)).toBe(false);
+    expect(store.canChangeLetterWords(id)).toBe(true);
   });
 });

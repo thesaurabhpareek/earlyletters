@@ -51,7 +51,7 @@ cd apps/mobile && npx eas-cli@24.10.0 env:list --environment production   # name
 
 `scribe-prod` exists and holds the full schema (#602, #634, #636, #637 and #700 (with its phone side, #701) merged and applied; see the table below); session security (#657, #632, #633) and #617 merged; the purge worker runs on production; the legal pages are live; the privacy label is answered as the worksheet says; and the D-### entry and the D-124 go/no-go are recorded. The runbook is `proposals/prod-bringup-runbook.md`.
 
-Schema prerequisites, merge state checked with the GitHub API on 11 Nov 2026 (all merged to `develop`; whether each migration is applied on the hosted database is not checked by code and the founder must confirm it):
+Schema prerequisites, merge state checked with the GitHub API on 11 Nov 2026 (all merged to `develop`; whether each migration is applied on the hosted database is not checked by code; see the pointer under "Hand checks" below):
 
 | PR | Merged to `develop` | Apply requirement |
 |---|---|---|
@@ -63,5 +63,5 @@ Schema prerequisites, merge state checked with the GitHub API on 11 Nov 2026 (al
 | #657, #632, #633, #617 (session security) | Yes, 11 Nov 2026 | Code only, no migration step here |
 
 ## Hand checks the preflight cannot do
-- Nothing in code checks the project ref in the Supabase URL or key. The founder must verify the EAS `production` environment values by hand (`env:list --environment production`, compare with `scribe-prod`). Follow-up: a project-ref allowlist in the preflight.
+- Nothing in code checks the project ref in the Supabase URL or key. The two hosted read-backs (each migration above applied on `scribe-prod`, and the EAS `production` environment values against `scribe-prod`) are a physical act, one entry in `docs/release/FOUNDER_QUEUE.md` (BL-2224). Follow-up: a project-ref allowlist in the preflight.
 - Generated store text (`docs/store/app-store.md`, `apps/mobile/store.config.json`, from `packages/content` `store.en.ts` and `app-review.en.ts`) must not be pushed with `eas metadata:push` until counsel has settled the Build 12 wording.

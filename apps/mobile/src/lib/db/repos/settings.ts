@@ -12,3 +12,12 @@ export function setSetting({ db }: RepoContext, key: string, value: string): voi
 export function deleteSetting({ db }: RepoContext, key: string): void {
   db.run('DELETE FROM settings WHERE key = ?', key);
 }
+
+/**
+ * Every key that starts with `prefix`, in key order. For a family of per-item keys (typed days, `typedDay.<date>`) that
+ * has to be listed or cleared whole. Compares the leading characters exactly: no LIKE, so `_` and `%` in a prefix mean
+ * themselves. Keys only, never values.
+ */
+export function settingKeysWithPrefix({ db }: RepoContext, prefix: string): string[] {
+  return db.all<{ key: string }>('SELECT key FROM settings WHERE substr(key, 1, ?) = ? ORDER BY key', prefix.length, prefix).map((r) => r.key);
+}
