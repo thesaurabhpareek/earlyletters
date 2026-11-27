@@ -27,7 +27,7 @@ Status: DRAFT. This is not a procedure. It is the brief a licensed US lawyer rea
 
 - 18 U.S.C. 2258A, read 27 Nov 2026 at https://www.law.cornell.edu/uscode/text/18/2258A: (a)(1) report "as soon as reasonably possible after obtaining actual knowledge"; (f) no duty to monitor; (h) preservation.
 - 18 U.S.C. 2258E(6), the definition of provider, read 27 Nov 2026 at https://www.law.cornell.edu/uscode/text/18/2258E.
-- Terms 9 (`docs/legal/terms-of-service.md`); FR-POL-02 (`docs/product/prd/functions/support.md`); FR-BKO-12, FR-BKO-13 and FR-BKO-35 (`docs/product/prd/functions/back-office.md`); COUNSEL_PACKET Q50 (`docs/legal/COUNSEL_PACKET.md`, which the founder merges).
+- Terms 9 (`docs/legal/terms-of-service.md`); FR-POL-02 (`docs/product/prd/functions/support.md`); FR-BKO-12, FR-BKO-13 and FR-BKO-35 (`docs/product/prd/functions/back-office.md`); COUNSEL_PACKET Q50 (`docs/legal/COUNSEL_PACKET.md`, legal text that Karma merges under D-168 item 5 once counsel has seen it).
 
 ## 4. When this file becomes a procedure
 

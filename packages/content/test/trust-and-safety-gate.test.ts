@@ -73,6 +73,8 @@ export function profilesFrom(eas: EasJson): Profile[] {
     name,
     env: envOf(name),
     distribution: distributionOf(name),
+    // Groups come from the submit profile of the same name, and submit `extends` is not followed. A missing value reads as
+    // outside, so this fails closed; a build sent with a differently named submit profile is not seen here (CR-234).
     groups: eas.submit?.[name]?.ios?.groups,
   }));
 }
@@ -339,7 +341,7 @@ describe('[FR-POL-04] the two-parent book stays out of builds that reach outside
   const serversOn = (ps: Profile[]): Profile[] =>
     ps.map((p) => (isStoreBuild(p) ? { ...p, env: { ...p.env, EXPO_PUBLIC_SERVER_FEATURES: 'on' } } : p));
 
-  it('[FR-POL-04] fails when only one entry opens in the store build, whichever entry it is', () => {
+  it('[FR-POL-04] fails when only one entry opens in a build that reaches outside Family, whichever entry it is', () => {
     const state = safetyState(runbook, migrations);
     for (const entry of INVITE_ENTRIES) {
       const oneOpens: typeof inviteDestination = (e, s, a) => (e === entry && s ? 'flow' : inviteDestination(e, s, a));
