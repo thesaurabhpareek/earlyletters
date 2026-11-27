@@ -451,12 +451,17 @@ describe('[BL-2225] the wash mark is kept per book next to the seen list, across
   const papaSigns = (e: Pick<Entry, 'id'>) => (e as Entry).authorSignsAs === 'Papa';
   let h: ReturnType<typeof nodeDb>;
   let sent: { sql: string; rows: number }[] = [];
+  /** Every write sent since the launch. */
+  let wrote: string[] = [];
   /** A launch: the store opened over the same file, as the root layout opens it. */
   const launch = () => {
     store.closeStore();
     const { seen, spy } = counting(h.db);
     sent = seen;
-    expect(store.openStore({ open: () => ({ db: spy, close: () => {} }), now: () => NOW }).ok).toBe(true);
+    const writes: string[] = [];
+    wrote = writes;
+    const db: SqlDb = { ...spy, run: (sql, ...p) => (writes.push(sql), h.db.run(sql, ...p)) };
+    expect(store.openStore({ open: () => ({ db, close: () => {} }), now: () => NOW }).ok).toBe(true);
   };
   const papa = (n: number, childId: string, on: string) =>
     entries.upsert({ db: store.localSqlDb(), now: () => NOW, newId: () => id(99_998) }, letter({ id: id(n), childId, occurredOn: on, capturedAt: NOW, authorSignsAs: 'Papa', inBook: true }), { childId, authorSignsAs: 'Papa' });
@@ -489,6 +494,14 @@ describe('[BL-2225] the wash mark is kept per book next to the seen list, across
           held = join(held);
           effect();
         }
+      },
+      /**
+       * A child switch to this book, the render before watchBook's reread: `active` is this book while the rows held,
+       * and `pages`, are still the other book's (watchBook reads in a state updater), and the first-seen effect runs.
+       */
+      switchedFrom(other: { held: () => Entry[] }) {
+        held = other.held();
+        effect();
       },
       held: () => held,
     };
@@ -549,6 +562,50 @@ describe('[BL-2225] the wash mark is kept per book next to the seen list, across
     expect(washed).toEqual([id(9310)]);
   });
 
+  it('[BL-2225] each book keeps its own mark: a letter of theirs synced in at launch into the book opened second washes, after the other book is read to its end', () => {
+    // Asha's mark is kept, then the app closes; the next launch's sync brings a letter of theirs for Asha long ago.
+    const washed: string[] = [];
+    book(createBookPages(store.listBookRange, BOOK_PAGE, store.bookArrivals), ASHA, washed).open();
+    launch();
+    papa(9330, ASHA, '2022-01-10');
+    // Nia is read first, to its end: Nia's mark passes every row now, the letter's row among them.
+    const pages = createBookPages(store.listBookRange, BOOK_PAGE, store.bookArrivals);
+    const nia = book(pages, NIA, washed);
+    nia.open();
+    nia.scrollToEnd();
+    expect(store.bookArrivals.kept(NIA)).toBe(store.bookArrivals.mark());
+    // Then Asha: her own mark is still below the letter, so it washes once its page is read.
+    const asha = book(pages, ASHA, washed);
+    asha.open();
+    expect(ids(asha.held())).not.toContain(id(9330));
+    asha.scrollToEnd();
+    expect(washed).toEqual([id(9330)]);
+  });
+
+  it('[BL-2225] each book keeps its own mark: on a child switch the effect that runs before the reread keeps nothing for the new book, so a letter of theirs synced into it washes', () => {
+    const washed: string[] = [];
+    // Nia's mark is kept, then the app closes; the next launch's sync brings a letter of theirs for Nia long ago.
+    book(createBookPages(store.listBookRange, BOOK_PAGE, store.bookArrivals), NIA, washed).open();
+    launch();
+    papa(9340, NIA, '2022-01-11');
+    // Asha is read to her end, so the mark in hand is the newest row, above the letter's.
+    const pages = createBookPages(store.listBookRange, BOOK_PAGE, store.bookArrivals);
+    const asha = book(pages, ASHA, washed);
+    asha.open();
+    asha.scrollToEnd();
+    expect(pages.keepMark(ASHA)).toBe(store.bookArrivals.mark());
+    // The switch to Nia: the render before the reread keeps nothing under Nia's key (Asha's mark is not Nia's).
+    const nia = book(pages, NIA, washed);
+    const niaMark = store.bookArrivals.kept(NIA);
+    nia.switchedFrom(asha);
+    expect(pages.keepMark(NIA)).toBeNull();
+    expect(store.bookArrivals.kept(NIA)).toBe(niaMark);
+    nia.open();
+    expect(ids(nia.held())).not.toContain(id(9340));
+    nia.scrollToEnd();
+    expect(washed).toEqual([id(9340)]);
+  });
+
   it('[BL-2225] the kept mark passes every letter come in and held, and stops below the first one still unread', () => {
     const washed: string[] = [];
     const mark = () => entries.rowMark({ db: store.localSqlDb(), now: () => NOW, newId: () => id(1) });
@@ -592,6 +649,25 @@ describe('[BL-2225] the wash mark is kept per book next to the seen list, across
     expect(markSql).not.toMatch(/\bWHERE\b/);
     expect(plan(keptSql, 'book.readMark.' + ASHA).join(' ')).toMatch(/^SEARCH settings USING (INDEX sqlite_autoindex_settings_1|PRIMARY KEY) \(key=\?\)$/);
     expect(keptSql).toMatch(/FROM settings WHERE key = \?/);
+  });
+
+  it('[BL-2225] the kept mark is written without a change event, and a mark unchanged is not written again', () => {
+    // A change event would send the Book's own reread round, its first-seen effect would keep again, and so on.
+    launch();
+    const events: string[] = [];
+    const off = store.subscribeTo(['settings', 'children', 'entries', 'drafts', 'orphan_audio'], (t) => events.push(...t));
+    const offAny = store.subscribe(() => events.push('any'));
+    const now = store.bookArrivals.mark();
+    const to = store.bookArrivals.kept(ASHA) === now ? now - 1 : now;
+    wrote.length = 0;
+    store.bookArrivals.keep(ASHA, to);
+    expect(wrote.filter((sql) => /INTO settings/.test(sql))).toHaveLength(1);
+    expect(store.bookArrivals.kept(ASHA)).toBe(to);
+    store.bookArrivals.keep(ASHA, to);
+    expect(wrote.filter((sql) => /INTO settings/.test(sql))).toHaveLength(1);
+    expect(events).toEqual([]);
+    off();
+    offAny();
   });
 
   it('[BL-2225] the kept mark holds a row number under a book id: no words, no name', () => {
