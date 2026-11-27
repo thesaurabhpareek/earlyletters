@@ -5,15 +5,20 @@
  * deleted book's erase, and the pull removing a held draft that another phone kept. A name typed for another draft
  * stays. Real SQLite (node:sqlite) under the store facade. Fictional Asha family only.
  *
- * Mutant this file was written to catch: the draft's removal leaves `signAs.draft` in settings (drafts.ts
- * forgetDraftFromName made a no-op). On develop before this change every "goes" test here is red.
+ * Mutants this file was written to catch: the draft's removal leaves `signAs.draft` in settings (drafts.ts
+ * forgetDraftFromName made a no-op), and merge.ts adoptHeldDraft drops the draft row without its call (review A
+ * finding 3 and review B finding 2 on #2179). On develop before this change every "goes" test here is red.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { letItGo } from '../src/lib/capture/let-it-go.logic';
 import { serializeDraftName, SIGN_AS_DRAFT_SETTING } from '../src/lib/capture/sign-as-other.logic';
 import { removeBook } from '../src/lib/db/repos/wipe';
 import type { SqlDb } from '../src/lib/db/sql';
+import { applyPullPage } from '../src/lib/sync/merge';
+import { SYNC_SETTING, writeSetting } from '../src/lib/sync/outbox';
+import type { PullResponse } from '../src/lib/sync/types';
 import { nodeDb } from './helpers/node-db';
+import { fixture, insertBook } from './helpers/store-fixture';
 
 vi.mock('expo-crypto', () => ({ getRandomBytes: (n: number) => new Uint8Array(n).fill(7) }));
 vi.mock('../src/lib/db/repos/open-native', () => ({
@@ -105,6 +110,38 @@ describe('[NS-16 s6][PRIV] the typed From name goes with its draft', () => {
     expect(slot()).toBe(serializeDraftName(other.id, 'Dada'));
     db.transaction(() => removeBook({ db, now: () => '2026-10-03T09:00:00.000Z', newId }, 'no-such-book'));
     expect(slot()).toBe(serializeDraftName(other.id, 'Dada'));
+  });
+
+  it('[NS-16 s6] the pull adopting a held draft that another phone kept forgets the name typed for it here', () => {
+    const NOW = '2026-10-03T09:00:00.000Z';
+    const ME = '11111111-1111-1111-1111-111111111111';
+    const f = fixture();
+    try {
+      insertBook(f.db, { id: 'c1', name: 'Asha', signsAs: 'Mama' });
+      writeSetting(f.db, SYNC_SETTING.owner, ME);
+      writeSetting(f.db, SYNC_SETTING.heldServer, '1');
+      f.db.run(
+        "INSERT INTO drafts (id, child_id, capture_mode, created_at, audio_uri, audio_duration_ms, state, held_kind, held_v) VALUES ('h1', 'c1', 'spoken', ?, 'file:///asha/x.m4a', 3000, 'ready', 'held_letter', '870')",
+        NOW,
+      );
+      // The letter kept on the other phone, already here (it arrives in its book).
+      f.db.run(
+        `INSERT INTO entries (id, kind, occurred_on, captured_at, capture_mode, edit_level, engine_version, raw_transcript, machine_edits, final_text,
+           in_book, updated_at, child_id, author_id, transcript_status)
+         VALUES ('h1', 'letter', '2026-10-02', ?, 'spoken', 'verbatim', 5, 'you sang', '[]', 'you sang', 1, ?, 'c1', ?, 'ready')`,
+        NOW, NOW, ME,
+      );
+      f.db.run('INSERT INTO settings (key, value) VALUES (?, ?)', SIGN_AS_DRAFT_SETTING, serializeDraftName('h1', 'Nani'));
+      applyPullPage(
+        f.db,
+        { reset: false, epoch: 1, epoch_started_at: NOW, books: [], gone: [], more: false, held: { rows: [{ id: 'h1', gone: 'kept', updated_at: NOW, v: '881' }], cursor: '900:00000000-0000-0000-0000-000000000000', more: false } } as unknown as PullResponse,
+        NOW,
+      );
+      expect(f.db.get('SELECT id FROM drafts WHERE id = ?', 'h1')).toBeNull(); // adopted: the draft row went
+      expect(f.db.get('SELECT value FROM settings WHERE key = ?', SIGN_AS_DRAFT_SETTING)).toBeNull(); // mutant: adopt leaves the name
+    } finally {
+      f.close();
+    }
   });
 
   it('[NS-16 s6] a slot that cannot be read is left alone (it names no draft) and never blocks the draft going', () => {

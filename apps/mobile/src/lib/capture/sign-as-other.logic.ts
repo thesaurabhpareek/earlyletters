@@ -27,7 +27,8 @@ export const parseSignAsOtherFlag = (raw: string | undefined | null): boolean =>
 /**
  * The remote pause (`killSwitches.signAsOther`, packages/api kill-switches.ts; GAP-LOG G-18). Only the boolean `true`
  * pauses: an absent config, a config signed before the key existed and any other value read as not paused. A pause
- * hides the From card and never turns it on; the build flag alone does that.
+ * hides the From card for a draft with no typed name and never turns it on; the build flag alone does that. A draft
+ * that already carries a typed name keeps it at Keep, shown and not editable (`signatureForKeep`, `paused`).
  */
 export const signAsOtherPaused = (config: { killSwitches?: Readonly<Record<string, unknown>> | null } | null | undefined): boolean =>
   config?.killSwitches?.signAsOther === true;
@@ -57,10 +58,20 @@ export function checkFromName(raw: string): FromNameCheck {
 /**
  * The signature Keep writes. With the control not offered (flag off, or a letter already kept) it is the parent's,
  * whatever was typed, so a stale typed name can never reach a build that does not show it.
+ *
+ * `paused` is the remote pause with the build flag on (GAP-LOG A G-18): the control is hidden, but a name already typed
+ * for this draft is kept as its signature, shown and not editable, as a kept letter's name is (NS-16-R17); the pause
+ * never changes who a letter says spoke. With no typed name it is the parent's. A typed name Keep would refuse (over
+ * 30) cannot be put right while the control is hidden, and the pause never stops Keep, so that draft signs as the
+ * parent; it is never cut to fit (NS-16-R6).
  */
 export type KeepSignature = { ok: true; authorSignsAs: string; other: string | null } | { ok: false; code: typeof SIGN_AS_TOO_LONG };
 
-export function signatureForKeep(input: { typed: string; parentSignsAs: string; offered: boolean }): KeepSignature {
+export function signatureForKeep(input: { typed: string; parentSignsAs: string; offered: boolean; paused?: boolean }): KeepSignature {
+  if (input.paused) {
+    const c = checkFromName(input.typed);
+    return c.ok && c.name !== null ? { ok: true, authorSignsAs: c.name, other: c.name } : { ok: true, authorSignsAs: input.parentSignsAs, other: null };
+  }
   if (!input.offered) return { ok: true, authorSignsAs: input.parentSignsAs, other: null };
   const c = checkFromName(input.typed);
   if (!c.ok) return c;
