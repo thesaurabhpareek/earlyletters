@@ -29,8 +29,9 @@
  * - Typed days (NS-18, BL-982; `typedDays`): one note on the day, at the reminder time, and it outranks every other
  *   note that day (NS-13-R29, NS-18-R2). The back-off, smart quiet and quiet books never drop it (NS-18-R4), and it
  *   comes with Reminders off too, while notifications are allowed (GAP-LOG D W-G7, G-D09). Title and body are the
- *   fixed line unless `dayNamesOn` (NS-18-R3); then the body is the parent's words unchanged. More typed days than
- *   slots: nearest first, the rest at a later plan.
+ *   fixed line unless `dayNamesOn` and names on the lock screen are both on (NS-18-R3 with FR-NTC-11, CPrivO-58);
+ *   then the body is the parent's words unchanged. The words may hold a child's name, so names off always means the
+ *   fixed line. More typed days than slots: nearest first, the rest at a later plan.
  *
  * - Back-off (NS-13 section 3a; R3, R4, R18): counted from the anchor day (`anchorAt`). Evening nudges follow the
  *   cadence on days 1 to 7, then at most one in each 7-day block on days 8 to 35, then nothing. Month and birthday
@@ -141,7 +142,8 @@ export interface PlanInput {
   typedDays?: readonly TypedDayNote[];
   /**
    * The one day-names switch, effective value (prefs.ts `dayNamesOn`: stored on and App lock off). Off or absent: a
-   * typed day's body is the fixed line and never the words (NS-18-R3, CL-119).
+   * typed day's body is the fixed line and never the words (NS-18-R3, CL-119). On is not enough by itself: the words
+   * show only when `prefs.namesOnLockScreen` is on too, because they may name a child (FR-NTC-11, CPrivO-58).
    */
   dayNamesOn?: boolean;
   /**
@@ -338,10 +340,14 @@ function monthNoteCopy(note: DayNote, names: boolean): { title: string; body: st
   };
 }
 
-/** The typed day's words for the lock screen: the fixed line by default, the words unchanged only with day names on. */
-function typedDayCopy(t: TypedDayNote, dayNamesOn: boolean): { title: string; body: string } {
+/**
+ * The typed day's words for the lock screen: the fixed line by default. The words, unchanged, only with day names on
+ * and names on (both already false under App lock). The parent's words may hold a child's name, and names off means no
+ * name on a lock screen in any note (FR-NTC-11, NS-48-R11, CPrivO-58). The words are never read or searched here.
+ */
+function typedDayCopy(t: TypedDayNote, dayNamesOn: boolean, namesOn: boolean): { title: string; body: string } {
   const fixed = reminderCopy.neutral.typedDay;
-  return { title: fixed.title, body: dayNamesOn ? t.words : fixed.body };
+  return { title: fixed.title, body: dayNamesOn && namesOn ? t.words : fixed.body };
 }
 
 /** The typed days worth planning: a real date, today or later, words present (not only spaces), one a date (the first given wins). */
@@ -408,7 +414,7 @@ export function planReminders(input: PlanInput): PlannedNotification[] {
     const date = parseIsoDate(t.date)!;
     const fireAt = at(date, time, timeZone);
     if (fireAt <= now + MIN_LEAD_MS || inQuietHours(fireAt, timeZone, window)) return null;
-    const c = typedDayCopy(t, input.dayNamesOn === true);
+    const c = typedDayCopy(t, input.dayNamesOn === true, prefs.namesOnLockScreen === true);
     return { id: `${ID_PREFIX}typed.${t.date}`, kind: 'typedDay', date: t.date, hour: time.hour, minute: time.minute, fireAt, title: c.title, body: c.body };
   };
   // Reminders off (or the old pause): a typed day is the parent's own ask, so it still comes (W-G7). Nothing else does.
