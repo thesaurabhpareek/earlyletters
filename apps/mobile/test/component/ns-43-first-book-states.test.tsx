@@ -104,6 +104,7 @@ vi.mock('@/lib/store', () => ({
   setSetting: () => undefined,
   deleteSetting: () => undefined,
   listChildren: () => [],
+  listDeleted: () => [],
   listDeletedBooks: () => [],
   setActiveChildId: () => undefined,
   subscribe: () => () => undefined,
