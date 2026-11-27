@@ -24,8 +24,8 @@
  *   it, stepping over blank and comment lines between.
  * - `nil-options`: an asset fetch (`fetchAssets`, `fetchKeyAssets`, and the Objective-C `fetchAssets...:` forms, read
  *   to the next `;`, even one inside a string) that passes the literal `nil` as `options:` or `with:`. Swift arguments
- *   are read to the matching parenthesis, skipping string literals. This also flags an identifier fetch with `options:
- *   nil`, which the library PR should know.
+ *   are read to the matching parenthesis, skipping one-line string literals. This also flags an identifier fetch with
+ *   `options: nil`, which the library PR should know.
  *
  * Positive controls: each rule has fixtures the scan must flag, and the clean fixtures must come back empty, so the
  * scan cannot pass by finding nothing or by flagging everything.
@@ -40,7 +40,11 @@
  *   literal that holds `//` or a quote, a template literal over several lines, JSX text holding `//` or `/*`, a Swift
  *   raw string (`#"..."#`) and a nested block comment;
  * - a value that goes on with `+` or `^` on the next line, or past an `#if` line, and a key built by joining strings;
- * - a fetch function passed around unapplied and later called with nil;
+ * - a fetch function passed around unapplied and later called with nil, `NULL` in Objective-C, a multi-line string or
+ *   a regex literal holding a parenthesis inside a fetch's arguments, and a key spelled with a unicode escape;
+ * - a local variable or a string that reads like a source assignment, which raises the file's count of assignments;
+ * - a fetch of a collection (the Hidden smart album, a shared album) rather than of assets: the library PR should add
+ *   a rule for it;
  * - nil written another way (`.none`, `Optional.none`, `(nil)`), and a `PHFetchOptions` made by a form not listed
  *   above (a typealias, `[PHFetchOptions.alloc init]`, or `o = .init()` after a separate declaration).
  * BL-1527 stays open until the fetch PR lands with this test green against its code.
@@ -279,8 +283,8 @@ const FIXTURES: readonly { name: string; src: string; expect: Rule[] }[] = [
     expect: ['source-not-user-library'],
   },
   {
-    name: 'a bracketed value with a cast, widened on the next line',
-    src: 'let o = PHFetchOptions()\no.includeAssetSourceTypes = [.typeUserLibrary] as PHAssetSourceType\n  .union(.typeCloudShared)\n',
+    name: 'a bracketed value widened on the next line',
+    src: 'let o = PHFetchOptions()\no.includeAssetSourceTypes = [.typeUserLibrary]\n    .union(.typeCloudShared)\n',
     expect: ['source-not-user-library'],
   },
   {
@@ -323,7 +327,7 @@ const FIXTURES: readonly { name: string; src: string; expect: Rule[] }[] = [
   { name: 'key assets with nil options', src: 'let r = PHAsset.fetchKeyAssets(in: album, options: nil)\n', expect: ['nil-options'] },
   {
     name: 'fetch with nil options after a string holding a parenthesis',
-    src: 'let r = PHAsset.fetchAssets(withLocalIdentifiers: [")"], options: nil)\n',
+    src: 'let r = PHAsset.fetchAssets(withLocalIdentifiers: ids.filter { $0 != ")" }, options: nil)\n',
     expect: ['nil-options'],
   },
   {
