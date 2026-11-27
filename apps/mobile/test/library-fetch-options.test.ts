@@ -13,14 +13,17 @@
  * still caught):
  * - `hidden-assets`: a file names `includeHiddenAssets` (any case, any value, including the Objective-C setter). The
  *   reason to name it is to turn it on; what PhotoKit does by default is UNVERIFIED (G1a-L).
- * - `no-source-option`: a file makes more `PHFetchOptions` (Swift `PHFetchOptions()` or `.init()`, Objective-C `new` or
- *   `alloc`) than it has source assignments, so at least one options object never names a source.
+ * - `no-source-option`: a file makes more `PHFetchOptions` than it has source assignments, so at least one options
+ *   object never names a source. Counted forms: `PHFetchOptions()`, `PHFetchOptions.init()`, `: PHFetchOptions = .init()`,
+ *   Objective-C `[PHFetchOptions new]`, `[PHFetchOptions alloc]` and `PHFetchOptions.new`.
  * - `source-not-user-library`: a source assignment whose value is not the user library alone (an iCloud Shared Album or
- *   synced source, a raw value, a variable), or any later change to the source set (`insert`, `formUnion`, `|=` and
- *   the like). A multi-line `[ ... ]` value is read to its closing bracket.
- * - `nil-options`: an asset fetch (`fetchAssets`, `fetchKeyAssets`, and the Objective-C `fetchAssets...:` forms) that
- *   passes a literal `nil` as its options, whatever else its arguments hold. This also flags an identifier fetch with
- *   `options: nil`, which the library PR should know.
+ *   synced source, a raw value, a variable), a later change by `insert`, `formUnion`, `union`, `update`, `remove`,
+ *   `subtract` or a compound assignment such as `|=`, or a key-value write naming "includeAssetSourceTypes". A
+ *   multi-line `[ ... ]` value is read to its closing bracket, and lines that go on with `.` are read as part of it.
+ * - `nil-options`: an asset fetch (`fetchAssets`, `fetchKeyAssets`, and the Objective-C `fetchAssets...:` forms, read to
+ *   the end of the statement) that passes the literal `nil` as `options:` or `with:`. Swift arguments are read to the
+ *   matching parenthesis, skipping string literals. This also flags an identifier fetch with `options: nil`, which the
+ *   library PR should know.
  *
  * Positive controls: each rule has fixtures the scan must flag, and the clean fixtures must come back empty, so the
  * scan cannot pass by finding nothing or by flagging everything.
@@ -31,8 +34,10 @@
  *   source assignments on the same one passes;
  * - options built in one file and passed in from another, or a variable that holds nil at run time (no data flow);
  * - C and C++ headers other than `.h`, and any file outside the two folders;
- * - a TypeScript regex literal that holds `//` or a quote, which the stripper reads as a comment or string start and
- *   can blank the rest of that line.
+ * - comment and string forms the stripper does not know, any of which can blank code: a TypeScript regex literal that
+ *   holds `//` or a quote, a template literal over several lines, JSX text holding `/*`, a Swift raw string
+ *   (`#"..."#`) and a nested block comment;
+ * - nil written another way (`.none`, `Optional.none`) and a source set changed through a function call (`inout`).
  * BL-1527 stays open until the fetch PR lands with this test green against its code.
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs';
@@ -84,6 +89,11 @@ function balanced(code: string, open: number): string {
   const stack: string[] = [];
   for (let i = open; i < code.length; i++) {
     const ch = code[i];
+    if (ch === '"') {
+      i++;
+      while (i < code.length && code[i] !== '"' && code[i] !== '\n') i += code[i] === '\\' ? 2 : 1;
+      continue;
+    }
     if (ch in pairs) stack.push(pairs[ch]);
     else if (ch === stack[stack.length - 1]) {
       stack.pop();
@@ -101,7 +111,13 @@ function sourceValues(code: string): string[] {
   const re = /includeAssetSourceTypes\s*=(?!=)\s*|setIncludeAssetSourceTypes\s*:\s*/g;
   for (const m of code.matchAll(re)) {
     const at = (m.index ?? 0) + m[0].length;
-    const raw = code[at] === '[' ? balanced(code, at) : (/^[^\n;\]]*/.exec(code.slice(at))?.[0] ?? '');
+    let raw = code[at] === '[' ? balanced(code, at) : (/^[^\n;\]]*/.exec(code.slice(at))?.[0] ?? '');
+    // A Swift member chain may go on over the next lines (`.union(...)` on its own line): read those lines too.
+    let rest = code.slice(at + raw.length);
+    for (let m2 = /^[^\S\n]*\n([^\S\n]*\.[^\n;]*)/.exec(rest); m2; m2 = /^[^\S\n]*\n([^\S\n]*\.[^\n;]*)/.exec(rest)) {
+      raw += ' ' + m2[1];
+      rest = rest.slice(m2[0].length);
+    }
     values.push(raw.replace(/\s+/g, ' ').trim());
   }
   return values;
@@ -112,19 +128,24 @@ export function scanFetchOptions(src: string): Rule[] {
   const found = new Set<Rule>();
   if (/includeHiddenAssets/i.test(code)) found.add('hidden-assets');
 
-  const made = (code.match(/\bPHFetchOptions\s*(?:\.\s*init\s*)?\(|\[\s*PHFetchOptions\s+(?:new|alloc)\b/g) ?? []).length;
+  const made = (
+    code.match(
+      /\bPHFetchOptions\s*(?:\.\s*init\s*)?\(|:\s*PHFetchOptions\s*[!?]?\s*=\s*\.init\s*\(|\[\s*PHFetchOptions\s+(?:new|alloc)\b|\bPHFetchOptions\s*\.\s*new\b/g,
+    ) ?? []
+  ).length;
   const sources = sourceValues(code);
   if (made > sources.length) found.add('no-source-option');
   for (const v of sources) if (!USER_LIBRARY_ONLY.test(v)) found.add('source-not-user-library');
   if (/includeAssetSourceTypes\s*(?:\??\.\s*(?:insert|formUnion|union|update|remove|subtract|formSymmetricDifference|formIntersection)\b|[|&^+-]=)/.test(code)) {
     found.add('source-not-user-library');
   }
+  if (/["']includeAssetSourceTypes["']/.test(code)) found.add('source-not-user-library'); // a key-value write
 
   for (const m of code.matchAll(/\bfetch(?:Key)?Assets\s*\(/g)) {
     const args = balanced(code, (m.index ?? 0) + m[0].length - 1);
     if (/(?:\boptions|\bwith)\s*:\s*nil\b/.test(args)) found.add('nil-options');
   }
-  if (/\bfetch(?:Key)?Assets\w*:[^;\]]*?(?:[Oo]ptions|[Ww]ith)\s*:\s*nil\b/.test(code)) found.add('nil-options');
+  if (/\bfetch(?:Key)?Assets\w*:[^;]*?(?:[Oo]ptions|[Ww]ith)\s*:\s*nil\b/.test(code)) found.add('nil-options');
   if (/\bfetch(?:Key)?Assets\w*Options\s*:\s*nil\b/.test(code)) found.add('nil-options');
   return [...found].sort();
 }
@@ -207,6 +228,8 @@ const FIXTURES: readonly { name: string; src: string; expect: Rule[] }[] = [
     src: 'let a = PHFetchOptions()\nlet b = PHFetchOptions()\na.includeAssetSourceTypes = .typeUserLibrary\nPHAsset.fetchAssets(with: a)\nPHAsset.fetchAssets(with: b)\n',
     expect: ['no-source-option'],
   },
+  { name: 'no source option, made by a typed .init()', src: 'let o: PHFetchOptions = .init()\nPHAsset.fetchAssets(with: o)\n', expect: ['no-source-option'] },
+  { name: 'Objective-C, no source option, made by .new', src: 'PHFetchOptions *o = PHFetchOptions.new;\no.fetchLimit = 10;\n', expect: ['no-source-option'] },
   { name: 'Objective-C, no source option', src: 'PHFetchOptions *o = [PHFetchOptions new];\no.fetchLimit = 10;\n', expect: ['no-source-option'] },
   {
     name: "iCloud Shared Album pictures, which are other people's",
@@ -231,6 +254,16 @@ const FIXTURES: readonly { name: string; src: string; expect: Rule[] }[] = [
     expect: ['source-not-user-library'],
   },
   {
+    name: 'a source widened by a member chain on the next line',
+    src: 'let o = PHFetchOptions()\no.includeAssetSourceTypes = .typeUserLibrary\n  .union(.typeCloudShared)\n',
+    expect: ['source-not-user-library'],
+  },
+  {
+    name: 'a source widened by a key-value write',
+    src: 'let o = PHFetchOptions()\no.includeAssetSourceTypes = .typeUserLibrary\no.setValue(7, forKey: "includeAssetSourceTypes")\n',
+    expect: ['source-not-user-library'],
+  },
+  {
     name: 'Objective-C source widened with |=',
     src: 'PHFetchOptions *o = [PHFetchOptions new];\no.includeAssetSourceTypes = PHAssetSourceTypeUserLibrary;\no.includeAssetSourceTypes |= PHAssetSourceTypeCloudShared;\n',
     expect: ['source-not-user-library'],
@@ -243,6 +276,16 @@ const FIXTURES: readonly { name: string; src: string; expect: Rule[] }[] = [
     expect: ['nil-options'],
   },
   { name: 'key assets with nil options', src: 'let r = PHAsset.fetchKeyAssets(in: album, options: nil)\n', expect: ['nil-options'] },
+  {
+    name: 'fetch with nil options after a string holding a parenthesis',
+    src: 'let r = PHAsset.fetchAssets(withLocalIdentifiers: [")"], options: nil)\n',
+    expect: ['nil-options'],
+  },
+  {
+    name: 'Objective-C fetch with nil options after a bracketed argument',
+    src: 'PHFetchResult *r = [PHAsset fetchAssetsWithLocalIdentifiers:@[localId] options:nil];\n',
+    expect: ['nil-options'],
+  },
   { name: 'Objective-C fetch with nil options', src: 'PHFetchResult *r = [PHAsset fetchAssetsWithOptions:nil];\n', expect: ['nil-options'] },
 ];
 
