@@ -331,6 +331,40 @@ describe('[F16-REQ-028] sync wire contract v1', () => {
     expect(r.ok).toBe(true);
   });
 
+  it('[FR-PRV-20] a closed sync_books answer (withheld consent) parses with the closed shape, as built (BL-1919)', () => {
+    // 20261123100000: per book only id, role, name and members (role, is_me, signs_as); no invites key at all.
+    const r = parseSyncBooks({
+      epoch: 1, first_run_open: false, withheld: 'consent',
+      books: [{
+        id: ASHA_CHILD, role: 'parent', name: 'Asha',
+        members: [{ role: 'parent', is_me: true, signs_as: 'Papa' }, { role: 'contributor', is_me: false, signs_as: null }],
+      }],
+    });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.value.withheld).toBe('consent');
+    expect(r.value.books[0]).toEqual({
+      id: ASHA_CHILD, role: 'parent', name: 'Asha',
+      members: [{ role: 'parent', is_me: true, signs_as: 'Papa' }, { role: 'contributor', is_me: false, signs_as: null }],
+    });
+    expect(r.value.books[0]).not.toHaveProperty('invites');
+  });
+
+  it('[FR-PRV-20] the closed shape is read only under withheld consent; without it the strict schema holds (BL-1919)', () => {
+    const closedBook = { id: ASHA_CHILD, role: 'parent', name: 'Asha', members: [{ role: 'parent', is_me: true, signs_as: 'Papa' }] };
+    // Same rows, no marker: a full-shape answer missing its fields is invalid, never quietly read as closed.
+    expect(parseSyncBooks({ epoch: 1, first_run_open: false, books: [closedBook] }).ok).toBe(false);
+    // A closed answer must still be well formed: a member without is_me is invalid.
+    expect(parseSyncBooks({
+      epoch: 1, first_run_open: false, withheld: 'consent',
+      books: [{ ...closedBook, members: [{ role: 'parent', signs_as: 'Papa' }] }],
+    }).ok).toBe(false);
+    // An unknown withheld value is not the closed marker and fails the strict picklist.
+    expect(parseSyncBooks({ epoch: 1, first_run_open: false, withheld: 'other', books: [] }).ok).toBe(false);
+    // A closed answer with no books (the account has none) parses.
+    expect(parseSyncBooks({ epoch: null, first_run_open: true, withheld: 'consent', books: [] }).ok).toBe(true);
+  });
+
   it('[NX-31-R3] a book with an empty name still parses (the first book may have no name)', () => {
     const r = parseSyncBooks({
       epoch: 1, first_run_open: false,

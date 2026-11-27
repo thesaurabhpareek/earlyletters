@@ -16,7 +16,8 @@ import { en } from '../../../packages/content/src/strings.en';
 import { alt as ogAlt } from '../src/app/opengraph-image';
 import * as siteModule from '../src/content/site';
 
-type Leaf = { path: string; text: string; lang?: string; meta?: boolean };
+/** `after` is the source of the `${...}` expression just before a template piece, when there is one. */
+type Leaf = { path: string; text: string; lang?: string; meta?: boolean; after?: string };
 
 const WEB_ROOT = fileURLToPath(new URL('..', import.meta.url));
 const COPY_ROOTS = ['src/scenes/parts', 'src/lib/legal', 'src/lib/support'];
@@ -71,7 +72,8 @@ function fileLeaves(file: string): Leaf[] {
       ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node) || ts.isTemplateHead(node) || ts.isTemplateMiddle(node) || ts.isTemplateTail(node);
     if (isPiece && node.text.trim() !== '' && node.text !== 'use client') {
       const path = `${name}:${source.getLineAndCharacterOfPosition(node.getStart()).line + 1}`;
-      out.push({ path, text: node.text, meta: NON_PROSE.test(node.text) });
+      const after = (ts.isTemplateMiddle(node) || ts.isTemplateTail(node)) && ts.isTemplateSpan(node.parent) ? node.parent.expression.getText() : undefined;
+      out.push({ path, text: node.text, meta: NON_PROSE.test(node.text), ...(after ? { after } : {}) });
     }
     ts.forEachChild(node, visit);
   };
@@ -167,6 +169,51 @@ describe('no machine-writing claims', () => {
       (l) => /\bre-?writ|\brewrote/i.test(l.text) && !/\b(never|not|don'?t|won'?t|no)\b[^.]{0,40}\bre-?writ/i.test(l.text),
     );
     expect(bad.map((l) => `${l.path}: ${l.text}`)).toEqual([]);
+  });
+
+  // RULE (the constitution, CLAUDE.md: the machine may remove and repair, never add meaning): the app, the product or
+  // "we" is never the one that writes, drafts or composes the family's letter, book or words. The AI-word list above
+  // misses a plain sentence like "The app writes your letter from what you say."; this closes it. The subject is the
+  // app, "we" or "it" (with "we'll" and "it'll"), the product name from packages/brand (with or without "app"), or
+  // `{app}`. A copy file writes the name as `${brand.name}` or `${NAME}`, and the walker reads the text after it as its
+  // own piece, so those pieces are read here with the name put back in front. The object must be the family's letter,
+  // book, page, story or words, so "We'll write once more, at launch." passes.
+  const escapeRe = (t: string) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const AUTHOR = String.raw`(?:\b(?:(?:the\s+)?${escapeRe(brand.name)}(?:\s+app)?|the app|our app|it|we)\b|\{app\})(?:'ll)?(?:\s+(?:can|will|then|also|just|helps?(?: you)?))?\s+`;
+  const FAMILY_WORDS = String.raw`(?:letters?|books?|entr(?:y|ies)|story|stories|words|pages?)`;
+  const MACHINE_AUTHOR = new RegExp(
+    String.raw`${AUTHOR}(?:(?:writes?|wrote|drafts?|composes?|creates?|makes?|builds?|puts? together)\s+(?:up\s+)?(?:your|the|a|their|each|every)\s+(?:[\w']+\s+){0,2}?${FAMILY_WORDS}\b(?!\s+(?:easy|simple|safe|ready|private)\b)|turns?\s+(?:what|your|the|them|this|these)\b[^.!?]{0,40}?\binto\s+(?:a|your|the)\s+(?:[\w']+\s+)?${FAMILY_WORDS}\b)`,
+    'i',
+  );
+  const NAMED_PROSE = PROSE.map((l) => (l.after === 'brand.name' || l.after === 'NAME' ? { ...l, text: `${brand.name}${l.text}` } : l));
+  it('never makes the app the author of the letter, book or words', () => {
+    for (const bad of [
+      'The app writes your letter from what you say.',
+      `${brand.name} drafts the letter for you.`,
+      'It composes a page from your voice.',
+      'We create your book.',
+      `${brand.name} can write the letter.`,
+      "We'll write your letter.",
+      "It'll make your book.",
+      `${brand.name} makes your child's book.`,
+      'The app turns what you say into a letter.',
+      'Our app helps write your letters.',
+      `The ${brand.name} app writes your letter.`,
+    ])
+      expect(MACHINE_AUTHOR.test(bad), bad).toBe(true);
+    for (const ok of [
+      "We'll write once more, at launch.",
+      'Write to us any time:',
+      `You write the letter. ${brand.name} keeps it.`,
+      'It makes the book easy to share.',
+      'Any letter shown on this site is a sample, written for it.',
+      ' wrote the sample letters on this site.',
+      'Keep writing and it turns into a book.',
+    ])
+      expect(MACHINE_AUTHOR.test(ok), ok).toBe(false);
+    expect(offenders(NAMED_PROSE, MACHINE_AUTHOR)).toEqual([]);
+    // The walker records what comes before a template piece, so a `${brand.name}` line is read with the name.
+    expect(NAMED_PROSE.some((l) => l.after === 'brand.name' && l.text.startsWith(brand.name))).toBe(true);
   });
 });
 

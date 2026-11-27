@@ -118,7 +118,7 @@ describe('[FR-MSG-12] "A person reads every one" is a claims row with an owner, 
     const mailbox = row['Mailbox and cadence'] ?? '';
     expect(mailbox).toMatch(/hello@earlyletters\.com/);
     expect(mailbox).toMatch(/at least every working day/i);
-    // Reply target: the same "within N working days" the catalog's section 9 states, and where it will be stated.
+    // Reply target: the same internal "within N working days" the catalog's section 9 states, and the cell names the help centre (CMO-22).
     const target = row['Reply target'] ?? '';
     const catalogTarget = /replies (within \d+ working days)/.exec(read(CATALOG))?.[1];
     expect(catalogTarget, 'CATALOG.md no longer states a reply target').toBeDefined();

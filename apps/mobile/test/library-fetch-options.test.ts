@@ -341,6 +341,44 @@ const FIXTURES: readonly { name: string; src: string; expect: Rule[] }[] = [
     expect: ['nil-options'],
   },
   { name: 'Objective-C fetch with nil options', src: 'PHFetchResult *r = [PHAsset fetchAssetsWithOptions:nil];\n', expect: ['nil-options'] },
+  // Each of the next five fails if the part of the scan it names is turned off.
+  {
+    name: 'the stripper steps over an escaped quote: a hidden flag after a string holding an escaped quote and //',
+    src: 'let s = "a \\" // b"; o.includeHiddenAssets = true\n',
+    expect: ['hidden-assets'],
+  },
+  {
+    name: 'the stripper keeps a Swift triple-quote block whole: a hidden flag after a block holding /*',
+    src: ['let s = """', '  /* not a comment', '  """; o.includeHiddenAssets = true', ''].join('\n'),
+    expect: ['hidden-assets'],
+  },
+  {
+    name: 'a mention of the source in another case still counts as a write',
+    src: [
+      'let o = PHFetchOptions()',
+      'o.includeAssetSourceTypes = [.typeUserLibrary]',
+      'o.setValue(7, forKey: "IncludeAssetSourceTypes")',
+      'let r = PHAsset.fetchAssets(with: o)',
+      '',
+    ].join('\n'),
+    expect: ['source-not-user-library'],
+  },
+  {
+    name: 'a comparison (==) is not a source assignment, so a second options object is still missing its source',
+    src: [
+      'let a = PHFetchOptions()',
+      'a.includeAssetSourceTypes = [.typeUserLibrary]',
+      'let b = PHFetchOptions()',
+      'if b.includeAssetSourceTypes == [.typeUserLibrary] { }',
+      '',
+    ].join('\n'),
+    expect: ['no-source-option', 'source-not-user-library'],
+  },
+  {
+    name: 'the argument reader steps over an escaped quote: nil options after a string holding an escaped quote and a parenthesis',
+    src: 'let r = PHAsset.fetchAssets(withLocalIdentifiers: "a\\")", options: nil)\n',
+    expect: ['nil-options'],
+  },
 ];
 
 describe('[NS-53-R38] the scan flags every banned fixture and passes the clean ones (positive controls)', () => {

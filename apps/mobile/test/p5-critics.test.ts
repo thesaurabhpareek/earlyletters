@@ -125,9 +125,12 @@ describe('[S1] the arrival wash survives a Book that mounts with `arrived`', () 
     const screen = code(src('app/(tabs)/book.tsx'));
 
     it('reads the letters in the state initialiser, so the first frame is the book and not the empty-book state', () => {
-      expect(screen).toMatch(/useState\(\(\) => \(\{ childId: active\?\.id \?\? null, entries: active \? listBookEntries\(active\.id\) : \[\] \}\)\)/);
+      // BL-2225: the initialiser reads the first page of the book (pages.first), not the whole book.
+      expect(screen).toMatch(/useState\(\(\) => \(\{ childId: active\?\.id \?\? null, entries: active \? pages\.first\(active\.id\) : \[\] \}\)\)/);
       expect(screen).not.toMatch(/useState<Entry\[\]>\(\[\]\)/);
-      expect(screen).toMatch(/const loaded = read\.childId === \(active\?\.id \?\? null\);/);
+      expect(screen).toMatch(/const bookRead = read\.childId === \(active\?\.id \?\? null\);/);
+      // BL-2225: an arrived card older than the pages held waits until its day is read before the gate looks.
+      expect(screen).toMatch(/const loaded = bookRead && reachDay === null;/);
     });
 
     it('asks the gate with the read state, positions at once, and washes and clears the param together once uncovered', () => {
@@ -162,7 +165,7 @@ describe('[S1] the arrival wash survives a Book that mounts with `arrived`', () 
     });
 
     it('follows the store through watchBook: subscribe, then one catch-up read, then a reread on every change (BL-1428)', () => {
-      expect(screen).toMatch(/return watchBook\(\{ childId: active\.id, read: listBookEntries, subscribe, set: setRead \}\);/);
+      expect(screen).toMatch(/return watchBook\(\{ childId: active\.id, read: pages\.reread, subscribe, set: setRead \}\);/);
       expect(screen).not.toMatch(/\n\s*reread\(\);\n/);
     });
   });
@@ -247,8 +250,9 @@ describe('[S9] j10c picks the Book\'s own card', () => {
   it('selects the card by test id, because the Tonight screen under the Book carries the same words on the web', () => {
     const j10 = flow('j10-letter.flow.ts');
     const waiting = j10.slice(j10.indexOf("test('[J10c]"), j10.indexOf("test('[J10e]"));
-    expect(waiting).toMatch(/app\.getByTestId\('book\.card'\)\.filter\(\{ hasText: \/waiting for its words\/i \}\)\.first\(\)\.click\(\);/);
-    expect(waiting).not.toMatch(/app\.getByText\(\/waiting for its words\/i\)\.first\(\)\.click\(\)/);
+    // The tap goes through tapWhenStill (BL-2019) or a plain click; either way the card is picked by its test id.
+    expect(waiting).toMatch(/(?:tapWhenStill\()?app\.getByTestId\('book\.card'\)\.filter\(\{ hasText: \/waiting for its words\/i \}\)\.first\(\)(?:\.click\(\)|\));/);
+    expect(waiting).not.toMatch(/app\.getByText\(\/waiting for its words\/i\)\.first\(\)/);
     // The id it picks is the one the card sets.
     expect(code(src('components/book/letter-card.tsx'))).toMatch(/testID="book\.card"/);
   });
@@ -398,7 +402,8 @@ describe('[L4] Read together shows on the Book for what it can read', () => {
 
   it('the Book asks the same question as the screen (source)', () => {
     const book = code(src('app/(tabs)/book.tsx'));
-    expect(book).toMatch(/const canRead = readableInBook\(entries\)\.length > 0;/);
+    // BL-2225: the pages held, or, while older pages are unread, the store's outline of the whole book.
+    expect(book).toMatch(/const canRead = readableInBook\(entries\)\.length > 0 \|\| !!outline\?\.readable;/);
     expect(book).toMatch(/readTogether=\{canRead \? \{/);
     expect(book).not.toMatch(/entries\.some\(\(e\) => e\.inBook && !isQuietMark\(e\)\)/);
     expect(code(src('app/read-together.tsx'))).toMatch(/readableInBook\(listEntriesForChild\(child\.id\)\)/);

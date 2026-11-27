@@ -61,8 +61,9 @@ export function OpenDeletionScreen({ request }: { request: OpenRequest }) {
   const date = request.state === 'scheduled' || request.state === 'held' ? longDate(localDay(request.scheduledFor)) : '';
   const view = deletionView(request, { signedIn: d.signedIn, date, tryAgainLabel: copy.common.tryAgainButton });
   // Only while this view offers Cancel deletion: once the request is cancelled or being carried out, or the person has
-  // signed out, there is nothing to tap again, so the line goes (BL-491).
-  const failure = press.acted && view.actions.includes('cancel') ? cancelFailureLine(d.error) : null;
+  // signed out, there is nothing to tap again, so the line goes (BL-491). Signed out (a refresh after an auth refusal
+  // removed the session) draws no failure line either: the signed-out view's body and Sign in button say what to do (CDesO-59).
+  const failure = press.acted && view.actions.includes('cancel') ? cancelFailureLine(d.error, d.signedIn) : null;
 
   // VoiceOver is told what changed: the screen becoming the "your letters are on their way back" state, and a failed
   // cancel (a live region alone is not spoken on iOS). The cancel on its way and a Try again that found nothing are

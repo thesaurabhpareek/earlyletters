@@ -91,6 +91,7 @@ import {
   type ConflictCopy,
   type EnqueueContext,
 } from './sync/outbox';
+import { claimRestoredBook } from './sync/ownership';
 import { signalOutbox } from './sync/signal';
 import { ALL_GROUPS, type FieldGroup } from './sync/types';
 
@@ -886,10 +887,30 @@ export function newestWaitingDraftAt(childIds: readonly string[]): string | null
   return bookVisibleNow() ? drafts.newestWaitingAt(ctx(), childIds) : null;
 }
 
-/** The Book's read: one book's letters newest first, without their edit lists (BL-434). */
+/** One book's whole read: its letters newest first, without their edit lists (BL-434). The Book pages through listBookRange (BL-2225). */
 export function listBookEntries(childId: string): Entry[] {
   return shown(() => entries.listForBook(ctx(), childId));
 }
+
+/** The Book's paged read: one book's letters in a range of days, newest first, without edit lists (BL-2225). */
+export function listBookRange(childId: string, range: entries.BookRange): Entry[] {
+  return shown(() => entries.listBookRange(ctx(), childId, range));
+}
+
+/** What the Book knows of the letters it has not read yet: dates and a flag, never words (BL-2225). */
+export function bookOutline(childId: string): entries.BookOutline {
+  return bookVisibleNow() ? entries.bookOutline(ctx(), childId) : { firstLetterOn: null, lastLetterOn: null, readable: false };
+}
+
+/**
+ * Which of one book's rows came into the store after the Book read its first page (BL-2225): the other parent's
+ * letter synced in below the pages held still washes once when its page is read. The mark is a row number, never
+ * words, so it is read whether or not the book may be shown; the ids are not.
+ */
+export const bookArrivals = {
+  mark: (): number => entries.rowMark(ctx()),
+  since: (childId: string, mark: number): string[] => shown(() => entries.idsSince(ctx(), childId, mark)),
+};
 
 /** How many letters one book holds (quiet-day marks not counted), counted in SQL (BL-434). */
 export function countBookLetters(childId: string): number {
@@ -1376,10 +1397,22 @@ export function deleteBook(id: string): boolean {
   return done;
 }
 
-/** Restore the book from Recently deleted: every letter, draft and choice comes back as it was. */
+/**
+ * Restore the book from Recently deleted: every letter, draft and choice comes back as it was. On a phone that has
+ * signed in since the book was deleted, the first sign-in left it on the phone (BL-559); restoring it claims it for the
+ * account now, in the same transaction (sync/ownership.ts claimRestoredBook).
+ */
 export function restoreBook(id: string): boolean {
-  const done = wipe.unmarkDeleted(ctx(), id);
-  if (done) bus.emit('children', 'entries', 'drafts', 'settings');
+  const c = ctx();
+  let done = false;
+  c.db.transaction(() => {
+    done = wipe.unmarkDeleted(c, id);
+    if (done) claimRestoredBook(c.db, id, enqueueContext(c));
+  });
+  if (done) {
+    bus.emit('children', 'entries', 'drafts', 'settings');
+    signalOutbox();
+  }
   return done;
 }
 

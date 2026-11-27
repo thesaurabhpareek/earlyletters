@@ -295,6 +295,7 @@ apps/web/src/content/site.ts#site.authConfirm.notYou,site,website,apps/web/src/c
 apps/web/src/content/site.ts#site.authConfirm.home,site,website,apps/web/src/content/site.ts,en,Back to ${NAME},15,,,,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#site.openApp.title,site,website,apps/web/src/content/site.ts,en,Open ${NAME},12,,,,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#site.openApp.line,site,website,apps/web/src/content/site.ts,en,Open ${NAME} on your iPhone.,28,,,,,,cmo,live on develop,web-content
+apps/web/src/content/site.ts#site.openApp.notIphone,site,website,apps/web/src/content/site.ts,en,"Not on an iPhone? For now, ${NAME} is only on iPhone.",53,,,,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#site.openApp.body,site,website,apps/web/src/content/site.ts,en,"If ${NAME} is on this phone, tap below. If it isn't, you can get it from the App Store.",87,,,,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#site.openApp.bodyPrelaunch,site,website,apps/web/src/content/site.ts,en,"If ${NAME} is on this phone, tap below.",39,,,,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#site.openApp.open,site,website,apps/web/src/content/site.ts,en,Open ${NAME},12,,,,,,cmo,live on develop,web-content
@@ -304,6 +305,7 @@ apps/web/src/content/site.ts#site.openApp.home,site,website,apps/web/src/content
 apps/web/src/content/site.ts#site.invite.title,site,website,apps/web/src/content/site.ts,en,An invite to share a book,25,,,,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#site.invite.line,site,website,apps/web/src/content/site.ts,en,Someone invited you to share a book.,36,,,,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#site.invite.body,site,website,apps/web/src/content/site.ts,en,This invite opens in ${NAME} on an iPhone.,42,,,,,,cmo,live on develop,web-content
+apps/web/src/content/site.ts#site.invite.storeBuild,site,website,apps/web/src/content/site.ts,en,"For now, the App Store version of ${NAME} doesn't have invites.",63,,,,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#site.invite.steps.0,site,website,apps/web/src/content/site.ts,en,"Tap ""Copy the invite"".",22,,,,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#site.invite.steps.1,site,website,apps/web/src/content/site.ts,en,"Open ${NAME} and tap ""I was invited"".",37,,,,,,cmo,live on develop,web-content
 apps/web/src/content/site.ts#site.invite.steps.2,site,website,apps/web/src/content/site.ts,en,Paste the invite.,17,,,,,,cmo,live on develop,web-content
@@ -532,10 +534,10 @@ emails/account.en.ts#accountEmails.account-deleted.body.2,email,email body,packa
 emails/account.en.ts#accountEmails.account-deleted.body.3,email,email body,packages/content/src/emails/account.en.ts,en,"If you have Plus, it is not cancelled by this. Billing continues through Apple until you cancel: on your iPhone, open Settings, tap your name, then Subscriptions.",162,,,,,,content,live on develop,content
 emails/account.en.ts#accountEmails.account-deleted.body.5,email,email body,packages/content/src/emails/account.en.ts,en,Thank you for keeping your letters with us. This is the last email we will send to this address.,96,,,,,,content,live on develop,content
 emails/account.en.ts#accountEmails.book-deletion-scheduled.subject,email,email subject,packages/content/src/emails/account.en.ts,en,A book is set to be deleted,27,,,,,,content,live on develop,content
-emails/account.en.ts#accountEmails.book-deletion-scheduled.preheader,email,email preheader,packages/content/src/emails/account.en.ts,en,"On {deletionDate}. Until then you can export it, or change your mind.",69,,,,,,content,live on develop,content
+emails/account.en.ts#accountEmails.book-deletion-scheduled.preheader,email,email preheader,packages/content/src/emails/account.en.ts,en,On {deletionDate}. You can change your mind until then.,55,,,,,,content,live on develop,content
 emails/account.en.ts#accountEmails.book-deletion-scheduled.heading,email,email body,packages/content/src/emails/account.en.ts,en,We have your request,20,,,,,,content,live on develop,content
 emails/account.en.ts#accountEmails.book-deletion-scheduled.body.0,email,email body,packages/content/src/emails/account.en.ts,en,"On {requestDate} you asked to delete one of your books. It will be deleted on {deletionDate}, with every letter and recording in it.",132,,,,,,content,live on develop,content
-emails/account.en.ts#accountEmails.book-deletion-scheduled.body.1,email,email body,packages/content/src/emails/account.en.ts,en,"To see which book, or to cancel, open the app and go to Settings, Your data. You can export everything in it first, free.",121,,,,,,content,live on develop,content
+emails/account.en.ts#accountEmails.book-deletion-scheduled.body.1,email,email body,packages/content/src/emails/account.en.ts,en,"To see which book, or to cancel, open the app and go to Settings, Your data.",76,,,,,,content,live on develop,content
 emails/account.en.ts#accountEmails.book-deletion-scheduled.facts.0.label,email,email body,packages/content/src/emails/account.en.ts,en,Requested on,12,,,,,,content,live on develop,content
 emails/account.en.ts#accountEmails.book-deletion-scheduled.facts.0.value,email,email body,packages/content/src/emails/account.en.ts,en,{requestDate},13,,,,,,content,live on develop,content
 emails/account.en.ts#accountEmails.book-deletion-scheduled.facts.1.label,email,email body,packages/content/src/emails/account.en.ts,en,Deletion date,13,,,,,,content,live on develop,content
@@ -1007,6 +1009,7 @@ features/account-deletion.en.ts#accountDeletionCopy.errors.offline,error,in-app 
 features/account-deletion.en.ts#accountDeletionCopy.errors.failed,error,in-app error,packages/content/src/features/account-deletion.en.ts,en,That did not go through. Nothing has changed.,45,,,,,,content,live on develop,content
 features/account-deletion.en.ts#accountDeletionCopy.errors.loadFailed,error,in-app error,packages/content/src/features/account-deletion.en.ts,en,That didn't load. Try again in a moment.,40,,,,,,content,live on develop,content
 features/account-deletion.en.ts#accountDeletionCopy.errors.cancelFailed,error,in-app error,packages/content/src/features/account-deletion.en.ts,en,It's not clear yet if the deletion was canceled. Tap Cancel deletion again.,75,,,,,,content,live on develop,content
+features/account-deletion.en.ts#accountDeletionCopy.errors.cancelLimited,error,in-app error,packages/content/src/features/account-deletion.en.ts,en,The deletion wasn't canceled. There have been too many cancellations in the last day. Try again in 24 hours.,108,,,,,,content,live on develop,content
 features/app-lock.en.ts#appLockLines.beforeSwitch.faceId,app screen,in-app,packages/content/src/features/app-lock.en.ts,en,Face ID or your iPhone passcode opens your book. {app} is only told yes or no.,78,,,,,,content,live on develop,content
 features/app-lock.en.ts#appLockLines.beforeSwitch.touchId,app screen,in-app,packages/content/src/features/app-lock.en.ts,en,Touch ID or your iPhone passcode opens your book. {app} is only told yes or no.,79,,,,,,content,live on develop,content
 features/app-lock.en.ts#appLockLines.beforeSwitch.passcode,app screen,in-app,packages/content/src/features/app-lock.en.ts,en,Your iPhone passcode opens your book. {app} is only told yes or no.,67,,,,,,content,live on develop,content
@@ -1485,6 +1488,10 @@ features/family.en.ts#familyCopy.accept.close,app screen,in-app,packages/content
 features/family.en.ts#familyCopy.accept.tryAgain,app screen,in-app,packages/content/src/features/family.en.ts,en,Try again,9,,,,,,content,live on develop,content
 features/family.en.ts#familyCopy.accept.pasteAnother,app screen,in-app,packages/content/src/features/family.en.ts,en,Paste another link,18,,,,,,content,live on develop,content
 features/family.en.ts#familyCopy.accept.tryLater,app screen,in-app,packages/content/src/features/family.en.ts,en,"Wait a little while, then try again.",36,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.code.askBody,app screen,in-app,packages/content/src/features/family.en.ts,en,You'll both read every letter in the book. Join only if you know who gave you this code.,88,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.code.errors.not_found,error,in-app error,packages/content/src/features/family.en.ts,en,"That code doesn't open an invite. Check it and try again, or ask for a new one.",79,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.code.errors.rate_limited,error,in-app error,packages/content/src/features/family.en.ts,en,"Codes can't be checked for a while. Try again later, or ask the person who invited you for the link.",100,,,,,,content,live on develop,content
+features/family.en.ts#familyCopy.code.errors.codes_paused,error,in-app error,packages/content/src/features/family.en.ts,en,Codes aren't working right now. Ask the person who invited you to send the link instead.,88,,,,,,content,live on develop,content
 features/family.en.ts#familyCopy.leave.row,app screen,in-app,packages/content/src/features/family.en.ts,en,Leave {child}'s book,20,,,,,,content,live on develop,content
 features/family.en.ts#familyCopy.leave.title,app screen,in-app,packages/content/src/features/family.en.ts,en,Leave {child}'s book?,21,,,,,,content,live on develop,content
 features/family.en.ts#familyCopy.leave.keep,app screen,in-app,packages/content/src/features/family.en.ts,en,Leave my letters in the book,28,,,,,,content,live on develop,content
@@ -1618,9 +1625,9 @@ features/moments-tab.en.ts#momentsTabCopy.card.letterHere,app screen,in-app,pack
 features/moments-tab.en.ts#momentsTabCopy.card.example,app screen,in-app,packages/content/src/features/moments-tab.en.ts,en,An example,10,,,,,,content,live on develop,content
 features/moments-tab.en.ts#momentsTabCopy.reason.marked,app screen,in-app,packages/content/src/features/moments-tab.en.ts,en,A day you marked,16,,,,Pictures from this day,,content,live on develop,content
 features/moments-tab.en.ts#momentsTabCopy.reason.birthday,app screen,in-app,packages/content/src/features/moments-tab.en.ts,en,On {child}'s birthday,21,,,,Pictures from this day,,content,live on develop,content
-features/moments-tab.en.ts#momentsTabCopy.reason.monthDay,app screen,in-app,packages/content/src/features/moments-tab.en.ts,en,From a month day for {child},28,,,,Pictures from this day,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.reason.monthDay,app screen,in-app,packages/content/src/features/moments-tab.en.ts,en,The day of the month {child} was born,37,,,,Pictures from this day,,content,live on develop,content
 features/moments-tab.en.ts#momentsTabCopy.reason.kept,app screen,in-app,packages/content/src/features/moments-tab.en.ts,en,A day you kept close,20,,,,Pictures from this day,,content,live on develop,content
-features/moments-tab.en.ts#momentsTabCopy.reason.heart,app screen,in-app,packages/content/src/features/moments-tab.en.ts,en,Pictures you hearted,20,,,,Pictures from this day,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.reason.heart,app screen,in-app,packages/content/src/features/moments-tab.en.ts,en,Pictures you marked as favorites,32,,,,Pictures from this day,,content,live on develop,content
 features/moments-tab.en.ts#momentsTabCopy.reason.video,app screen,in-app,packages/content/src/features/moments-tab.en.ts,en,A video from this day,21,,,,Pictures from this day,,content,live on develop,content
 features/moments-tab.en.ts#momentsTabCopy.reason.year,app screen,in-app,packages/content/src/features/moments-tab.en.ts,en,Pictures from this day in {year},32,,,,Pictures from this day,,content,live on develop,content
 features/moments-tab.en.ts#momentsTabCopy.reason.run,app screen,in-app,packages/content/src/features/moments-tab.en.ts,en,Pictures from these days,24,,,,Pictures from this day,,content,live on develop,content
@@ -1634,6 +1641,20 @@ features/moments-tab.en.ts#momentsTabCopy.teach.name,app screen,in-app,packages/
 features/moments-tab.en.ts#momentsTabCopy.teach.keepClose,app screen,in-app,packages/content/src/features/moments-tab.en.ts,en,Keep this day close,19,,,,,,content,live on develop,content
 features/moments-tab.en.ts#momentsTabCopy.teach.notThisOne,app screen,in-app,packages/content/src/features/moments-tab.en.ts,en,Not this one,12,,,,,,content,live on develop,content
 features/moments-tab.en.ts#momentsTabCopy.teach.hideDay,app screen,in-app,packages/content/src/features/moments-tab.en.ts,en,Hide this day,13,,,,,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.ask.title,app screen,in-app,packages/content/src/features/moments-tab.en.ts,en,Show days from your pictures?,29,,,,,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.ask.accept,app screen,in-app,packages/content/src/features/moments-tab.en.ts,en,Show days,9,,,,,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.ask.notNow,app screen,in-app,packages/content/src/features/moments-tab.en.ts,en,Not now,7,,,,,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.primer.title,app screen,in-app,packages/content/src/features/moments-tab.en.ts,en,Days from your pictures,23,,,,,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.primer.continue,app screen,in-app,packages/content/src/features/moments-tab.en.ts,en,Continue,8,,,,,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.primer.notNow,app screen,in-app,packages/content/src/features/moments-tab.en.ts,en,Not now,7,,,,,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.state.limited,app screen,in-app,packages/content/src/features/moments-tab.en.ts,en,Choose pictures to start from.,30,,,,,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.state.denied,app screen,in-app,packages/content/src/features/moments-tab.en.ts,en,Days from your pictures are off.,32,,,,,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.state.restricted,app screen,in-app,packages/content/src/features/moments-tab.en.ts,en,Days from your pictures are turned off by a phone setting.,58,,,,,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.state.openSettings,app screen,in-app,packages/content/src/features/moments-tab.en.ts,en,Open Settings,13,,,,,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.door.label,app screen,in-app,packages/content/src/features/moments-tab.en.ts,en,Choose pictures,15,,,,,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.door.heading,app screen,in-app,packages/content/src/features/moments-tab.en.ts,en,Choose a picture to start a letter,34,,,,,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.door.start,app screen,in-app,packages/content/src/features/moments-tab.en.ts,en,Start,5,,,,,,content,live on develop,content
+features/moments-tab.en.ts#momentsTabCopy.door.notNow,app screen,in-app,packages/content/src/features/moments-tab.en.ts,en,Not now,7,,,,,,content,live on develop,content
 features/new-device.en.ts#newDevicePageCopy.heldEmailLine,app screen,in-app,packages/content/src/features/new-device.en.ts,en,On that page you can choose to sign that device out. Nothing is signed out until you press the button.,102,,,,,,content,live on develop,content
 features/new-device.en.ts#newDevicePageCopy.title,app screen,in-app,packages/content/src/features/new-device.en.ts,en,Was this you?,13,,,,,,content,live on develop,content
 features/new-device.en.ts#newDevicePageCopy.what,app screen,in-app,packages/content/src/features/new-device.en.ts,en,"Your account was signed in on {device}, {when}.",47,,,,,,content,live on develop,content
@@ -2364,6 +2385,9 @@ strings.en.ts#en.onboarding.invite.laterButton,app screen,in-app,packages/conten
 strings.en.ts#en.onboarding.finish.title,app screen,in-app,packages/content/src/strings.en.ts,en,The book is open.,17,,,,,,content,live on develop,content
 strings.en.ts#en.onboarding.finish.body,app screen,in-app,packages/content/src/strings.en.ts,en,Say one thing about {child} today. That is a letter.,52,,,,,,content,live on develop,content
 strings.en.ts#en.onboarding.finish.cta,app screen,in-app,packages/content/src/strings.en.ts,en,Write the first one,19,,,,,,content,live on develop,content
+strings.en.ts#en.onboarding.finishRetry.title,app screen,in-app,packages/content/src/strings.en.ts,en,The book isn't open yet,23,,,,,,content,live on develop,content
+strings.en.ts#en.onboarding.finishRetry.body,app screen,in-app,packages/content/src/strings.en.ts,en,Everything you typed is still here.,35,,,,,,content,live on develop,content
+strings.en.ts#en.onboarding.finishRetry.tryAgainButton,app screen,in-app,packages/content/src/strings.en.ts,en,Try again,9,,,,,,content,live on develop,content
 strings.en.ts#en.tonight.greeting.earlyMorning,app screen,in-app,packages/content/src/strings.en.ts,en,"Early start, {name}.",20,,,,,,content,live on develop,content
 strings.en.ts#en.tonight.greeting.morning,app screen,in-app,packages/content/src/strings.en.ts,en,"Good morning, {name}.",21,,,,,,content,live on develop,content
 strings.en.ts#en.tonight.greeting.midday,app screen,in-app,packages/content/src/strings.en.ts,en,"Hello, {name}.",14,,,,,,content,live on develop,content
@@ -2631,6 +2655,9 @@ strings.en.ts#en.readTogether.empty,app screen,in-app,packages/content/src/strin
 strings.en.ts#en.readTogether.endOfMonth,app screen,in-app,packages/content/src/strings.en.ts,en,That was Month {month}.,23,,,,,,content,live on develop,content
 strings.en.ts#en.readTogether.endOfYear,app screen,in-app,packages/content/src/strings.en.ts,en,That was {label}.,17,,,,,,content,live on develop,content
 strings.en.ts#en.readTogether.endOfBefore,app screen,in-app,packages/content/src/strings.en.ts,en,That was every letter from Before You.,38,,,,,,content,live on develop,content
+strings.en.ts#en.readTogether.fromHere,app screen,in-app,packages/content/src/strings.en.ts,en,Read from here,14,,,,,,content,live on develop,content
+strings.en.ts#en.readTogether.fromHereLetterA11y,app screen,in-app,packages/content/src/strings.en.ts,en,Opens Read together at this letter.,35,,,,,,content,live on develop,content
+strings.en.ts#en.readTogether.fromHereMonthA11y,app screen,in-app,packages/content/src/strings.en.ts,en,Opens Read together at the first letter of this month.,54,,,,,,content,live on develop,content
 strings.en.ts#en.readTogether.endOfBook,app screen,in-app,packages/content/src/strings.en.ts,en,That's every letter so far.,27,,,,,,content,live on develop,content
 strings.en.ts#en.readTogether.againButton,app screen,in-app,packages/content/src/strings.en.ts,en,Read it again,13,,,,,,content,live on develop,content
 strings.en.ts#en.readTogether.nextMonthButton,app screen,in-app,packages/content/src/strings.en.ts,en,On to Month {month},19,,,,,,content,live on develop,content

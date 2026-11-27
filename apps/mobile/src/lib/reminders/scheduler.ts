@@ -40,6 +40,18 @@ import { daysBuildEnabled, libraryDaysAllowed, remoteConfigReader, watchLibraryD
 /** Marks our notifications in `content.data`, so we never cancel anyone else's (defined in payload.ts). */
 export { REMINDER_SOURCE };
 const ANDROID_CHANNEL = 'reminders';
+/**
+ * A store write re-plans after this quiet time, so a burst of writes (a save touches several tables) plans once.
+ * What a person can see inside the window (BL-2247): for up to 1.2 s after names, day names or App lock turn names or
+ * a typed day's words off, plus the time the re-plan takes, iOS still holds the notes planned before, which may name a
+ * child or carry the words, and a delivered typed-day note still shows its words in Notification Center. Acceptable
+ * while the app stays open: in the foreground our notes show no banner and join no list (`setNotificationHandler` in
+ * `startReminders`), and the screen that changed the switch is in front of Notification Center. Not covered: the app
+ * leaving the foreground inside the window. Nothing re-plans on the way out (the AppState listener acts on `active`
+ * only) and iOS may suspend the app before the timer fires, so the old plan can stand until the next foreground and a
+ * note due in between shows what was just turned off. The delay stays at 1.2 s: closing this gap would take a re-plan
+ * on the way out, which this module does not do.
+ */
 const STORE_DEBOUNCE_MS = 1200;
 const COLD_START_ROUTE_RETRIES = 5;
 const COLD_START_ROUTE_RETRY_MS = 200;
@@ -58,6 +70,13 @@ let timer: ReturnType<typeof setTimeout> | null = null;
 let chain: Promise<ScheduleResult> = Promise.resolve(OK);
 let lastResult: ScheduleResult = OK;
 const resultListeners = new Set<(r: ScheduleResult) => void>();
+/**
+ * Whether a typed day's words may show (CPrivO-58: day names on and names on, so App lock off), as the last apply saw
+ * it. Null before the first apply of this run, so a launch with the words off checks Notification Center once.
+ */
+let lastWordsShown: boolean | null = null;
+/** The planner's typed-day ids (planner.ts `typedNote`). */
+const TYPED_ID_PREFIX = `${ID_PREFIX}typed.`;
 
 /**
  * The signed config reader for the library days pause (BL-1008). Built on first use and only when the build switch is
@@ -131,6 +150,18 @@ export async function getReminderPermissionDetail(): Promise<{ permission: Remin
 
 function isOurs(data: unknown): data is { source: string; kind?: string } {
   return !!data && typeof data === 'object' && (data as { source?: unknown }).source === REMINDER_SOURCE;
+}
+
+type NoteRequest = { identifier: string; content: { data?: unknown } };
+
+/** A note of ours, scheduled or delivered: our data, or our id. The one test before we cancel or dismiss anything. */
+function isOurNote(r: NoteRequest): boolean {
+  return isOurs(r.content.data) || r.identifier.startsWith(ID_PREFIX);
+}
+
+/** A typed-day note of ours (a subset of `isOurNote`): our typed-day data, or our typed-day id. */
+function isOurTypedDayNote(r: NoteRequest): boolean {
+  return (isOurs(r.content.data) && r.content.data.kind === 'typedDay') || r.identifier.startsWith(TYPED_ID_PREFIX);
 }
 
 function triggerFor(p: PlannedNotification): Notifications.NotificationTriggerInput {
@@ -212,6 +243,37 @@ function pendingPlanNotices(scheduled: readonly { identifier: string }[]): numbe
   return scheduled.filter((s) => s.identifier.startsWith(PLAN_ID_PREFIX)).length;
 }
 
+/**
+ * A re-plan replaces only what is still scheduled: a typed-day note already delivered keeps the parent's words in
+ * Notification Center after names, day names or App lock turn them off. So when the words may no longer show, every
+ * delivered typed-day note of ours whose body is not the fixed line is dismissed. Only our own typed-day notes (by our
+ * data or our typed-day id): anyone else's, and our other kinds, stay. The body is compared, never logged or kept.
+ */
+async function dismissDeliveredTypedWords(): Promise<void> {
+  const fixed = reminderCopy.neutral.typedDay.body;
+  for (const n of await Notifications.getPresentedNotificationsAsync()) {
+    const { identifier, content } = n.request;
+    if (isOurTypedDayNote(n.request) && content.body !== fixed) await Notifications.dismissNotificationAsync(identifier).catch(() => {});
+  }
+}
+
+/**
+ * CPrivO-58: the words went off (or this is the first apply of the run with them off), so the delivered notes that
+ * carry them go, once per change (`lastWordsShown`). A failed read (no module on the web preview) never stops the plan:
+ * the next apply tries again.
+ */
+async function settleDeliveredWords(wordsShown: boolean): Promise<void> {
+  if (wordsShown) lastWordsShown = true;
+  else if (lastWordsShown !== false) {
+    try {
+      await dismissDeliveredTypedWords();
+      lastWordsShown = false;
+    } catch {
+      // nothing to log: the notes may hold a parent's words
+    }
+  }
+}
+
 async function apply(): Promise<void> {
   // A phone that turned reminders on before the anchor existed starts its count now (once), never stops at once.
   if (readPrefs().enabled && readOnSince() === null) writeOnSince(Date.now());
@@ -222,6 +284,19 @@ async function apply(): Promise<void> {
   } catch {
     // nothing to log: the keys hold a parent's words
   }
+  // CPrivO-58: delivered notes are settled after the plan, so no note with the words is still scheduled to fire after
+  // the read. In a finally, so the early returns in `applyPlan` settle them too: a delivered note can outlive its plan
+  // (a typed day already fired, or swept the day after).
+  const wordsShown = dayNamesOn() && readPrefs().namesOnLockScreen;
+  try {
+    await applyPlan();
+  } finally {
+    await settleDeliveredWords(wordsShown);
+  }
+}
+
+/** Replaces our scheduled notes with the current plan; touches nothing when the plan is unchanged. */
+async function applyPlan(): Promise<void> {
   // Reminders off and no typed day: nothing to plan and nothing to read. An empty plan already applied (`lastSignature`
   // is '') means none of ours is pending, so no read. The first apply after the switch goes off (or after a launch, or
   // a failure) still reads once, to cancel what was scheduled earlier (BL-1189). A typed or ticked day still comes when off.
@@ -234,9 +309,7 @@ async function apply(): Promise<void> {
   const signature = planSignature(plan);
   if (signature === lastSignature) return;
   for (const s of scheduled) {
-    if (isOurs(s.content.data) || s.identifier.startsWith(ID_PREFIX)) {
-      await Notifications.cancelScheduledNotificationAsync(s.identifier).catch(() => {});
-    }
+    if (isOurNote(s)) await Notifications.cancelScheduledNotificationAsync(s.identifier).catch(() => {});
   }
   for (const p of plan) {
     await Notifications.scheduleNotificationAsync({
@@ -264,6 +337,8 @@ export function rescheduleReminders(): Promise<ScheduleResult> {
       () => OK,
       () => {
         lastSignature = null;
+        // The plan may not have reached iOS, so a note with the words can still fire: the next apply settles again.
+        lastWordsShown = null;
         return FAILED;
       },
     ),
@@ -479,10 +554,10 @@ export async function forgetReminders(): Promise<void> {
     }
     try {
       for (const s of await Notifications.getAllScheduledNotificationsAsync()) {
-        if (isOurs(s.content.data) || s.identifier.startsWith(ID_PREFIX)) await Notifications.cancelScheduledNotificationAsync(s.identifier).catch(() => {});
+        if (isOurNote(s)) await Notifications.cancelScheduledNotificationAsync(s.identifier).catch(() => {});
       }
       for (const n of await Notifications.getPresentedNotificationsAsync()) {
-        if (isOurs(n.request.content.data) || n.request.identifier.startsWith(ID_PREFIX)) await Notifications.dismissNotificationAsync(n.request.identifier).catch(() => {});
+        if (isOurNote(n.request)) await Notifications.dismissNotificationAsync(n.request.identifier).catch(() => {});
       }
     } catch {
       // Nothing scheduled, or no notification module (web preview).

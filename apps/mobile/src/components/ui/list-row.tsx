@@ -77,9 +77,15 @@ export type ListRowProps = {
   accessibilityRole?: 'button' | 'link';
   /** E2E id (apps/mobile/e2e/TESTID_REQUESTS.md); inert for VoiceOver. */
   testID?: string;
+  /** A taller floor than 44 pt, for a row the spec sizes (Read from here on a letter page: target.primary). Applies to a
+   * row with onPress only: a static row is not a target, so it keeps its own height. */
+  minHeight?: number;
+  /** A second thing the row does, as a VoiceOver action on the one element (Read from here on a month row, RYT-10). */
+  accessibilityActions?: readonly { name: string; label: string }[];
+  onAccessibilityAction?: (event: { nativeEvent: { actionName: string } }) => void;
 };
 
-export function ListRow({ title, subtitle, leading, trailing = 'none', actionWord, value: valueProp, variant = 'default', onPress, disabled, accessibilityHint, accessibilityRole = 'button', testID }: ListRowProps) {
+export function ListRow({ title, subtitle, leading, trailing = 'none', actionWord, value: valueProp, variant = 'default', onPress, disabled, accessibilityHint, accessibilityRole = 'button', minHeight, accessibilityActions, onAccessibilityAction, testID }: ListRowProps) {
   const { c } = useTheme();
   const ax = useIsAccessibilitySize();
   const value = typeof trailing === 'string' && trailing !== 'chevron' && trailing !== 'none' ? trailing : (valueProp ?? null);
@@ -133,6 +139,9 @@ export function ListRow({ title, subtitle, leading, trailing = 'none', actionWor
       accessibilityLabel={label}
       accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled: !!disabled }}
+      accessibilityActions={accessibilityActions}
+      onAccessibilityAction={onAccessibilityAction}
+      style={minHeight ? { minHeight } : undefined}
       className={cn(rowClass, 'active:bg-secondary', Platform.select({ web: 'outline-none focus-visible:bg-secondary' }))}>
       {body}
     </Pressable>
