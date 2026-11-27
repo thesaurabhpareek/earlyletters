@@ -71,7 +71,12 @@ import { settleDraft, settleForKeep } from '@/components/capture/review-settle.l
 import { LetterSheet } from '@/components/capture/letter-sheet';
 import { SavedMoment } from '@/components/capture/saved-moment';
 import { Transcript } from '@/components/capture/transcript';
+import { useWordsSaid } from '@/components/capture/use-words-said';
 import { monthFor } from '@/components/book/chapters';
+import { entryDateline, entryDatelineA11y } from '@/components/book/date-change.logic';
+import { DateSheet } from '@/components/book/date-sheet';
+import { reviewAboutDay } from '@/components/capture/about-day.logic';
+import { ReviewDayLine } from '@/components/capture/review-day-line';
 import {
   DEFAULT_VIEW_SETTING,
   arrivalParams,
@@ -108,6 +113,7 @@ import {
   type WordsCard,
 } from '@/components/capture/words-state.logic';
 import { isOwnEntry } from '@/components/child/child-store';
+import { useFromName } from '@/lib/capture/sign-as-other';
 import { PlusGate } from '@/components/child/plus-gate';
 import { holdOnce, holdWithoutSheet, storedWords } from '@/components/child/plus-gate.logic';
 import { WhoseBookSheet } from '@/components/child/whose-book-sheet';
@@ -158,10 +164,12 @@ import {
   saveVoiceOnlyFromDraft,
   setActiveChildId,
   setDraftChild,
+  setDraftOccurred,
   setDraftReview,
   setSetting,
   todayISO,
   type Draft,
+  type OccurredPrecision,
 } from '@/lib/store';
 import { languageFor, requestWords, retryWords, sampleWordsFor, spokenFor, startSpeechDownload } from '@/lib/transcription-queue';
 import { showReviewAsk } from '@/lib/models/speech-consent.logic';
@@ -196,6 +204,11 @@ function keepLaterLetter(id: string, inBook: boolean): void {
   clearReadItBack(id);
 }
 
+/** The local calendar day a draft was said (its `createdAt`): the about-day until the parent picks another (NS-15). */
+function saidOnOf(draft: Pick<Draft, 'createdAt'>): string {
+  return draft.createdAt ? todayISO(new Date(draft.createdAt)) : todayISO();
+}
+
 /** Any letter on this phone yet, in any book (hidden books count). */
 function hasAnyLetter(): boolean {
   return [...listChildren(), ...listHiddenChildren()].some((c) => listEntriesForChild(c.id).length > 0);
@@ -220,6 +233,8 @@ export default function Review() {
   const [later] = useState<Draft | null>(() => (!draftId && entryId ? laterWordsDraft(getEntry(entryId), isOwnEntry) : null));
   const [draft, setDraft] = useState<Draft | null>(() => (draftId ? getDraft(draftId) : later));
   const [childId, setChildId] = useState(draft?.childId ?? '');
+  // NS-16 (BL-980): the From name, settable only on a draft before Keep; a kept letter shows its stored one.
+  const from = useFromName({ draftId: later ? null : (draftId ?? null), keptEntryId: later ? (entryId ?? null) : null });
   const child = childId ? getChild(childId) : null;
 
   const typed = draft?.typedText != null && draft.typedText.trim().length > 0;
@@ -518,6 +533,23 @@ export default function Review() {
     setWash(false);
   };
 
+  // The day this letter is about (NS-15-R1): the dateline opens DateSheet, and Save writes the pick to the draft at
+  // once (setDraftOccurred), so a held draft, a kill before Keep and Keep itself all keep it. The words are never read
+  // for a date (NS-15-R4). A letter whose words arrived later is kept already: its letter page moves it. Never gated by
+  // a plan (NS-15-R15). A write that does not finish shows the generic line, as the letter page does.
+  const [dateOpen, setDateOpen] = useState(false);
+  const openDay = () => {
+    haptic('tap');
+    setDateOpen(true);
+  };
+  const changeDay = (next: { occurredOn: string; precision: OccurredPrecision }) => {
+    setDateOpen(false);
+    if (!draft || later) return;
+    if (!setDraftOccurred(draft.id, next.occurredOn, next.precision)) return toast.show({ message: copy.errors.generic.title });
+    haptic('tap');
+    setDraft((d) => (d ? { ...d, occurredOn: next.occurredOn, occurredPrecision: next.precision } : d));
+  };
+
   const pickChild = () => {
     if (listChildren().length < 2 || !draft || later) return; // a saved letter stays in its book
     haptic('tap');
@@ -606,6 +638,8 @@ export default function Review() {
   const holding = useRef(false);
   const save = async (inBook: boolean) => {
     if (!draft || !child || saving.current || isSample) return; // sample words are never saved
+    const signature = from.signatureFor(child.signsAs); // NS-16-R6: over 30 is refused before anything is written or uploaded
+    if (!signature.ok) return;
     saving.current = true;
     heldInBook.current = inBook;
     writer.flush(); // the words on screen are on the draft before Keep (a held letter keeps them; a kept one takes them)
@@ -622,6 +656,8 @@ export default function Review() {
       }
       // The row as it is now: a save that finished after Review opened has the real length and file (BL-563).
       const live = getDraft(draft.id) ?? draft;
+      // The day it is about (NS-15-R2): the parent's pick on the live row, else the day it was said; captured_at stays.
+      const day = reviewAboutDay(live, saidOnOf(draft));
       const firstLetter = !hasAnyLetter();
       // A letter whose words arrived later is already saved: its words count now, at this Keep (later-words.logic).
       if (later) keepLaterLetter(draft.id, inBook);
@@ -630,7 +666,8 @@ export default function Review() {
         {
           id: draft.id,
           kind: 'letter',
-          occurredOn: draft.createdAt ? todayISO(new Date(draft.createdAt)) : todayISO(),
+          occurredOn: day.occurredOn,
+          occurredPrecision: day.occurredPrecision,
           capturedAt: draft.createdAt,
           captureMode,
           editLevel: view === 'exact' ? 'verbatim' : level,
@@ -642,7 +679,7 @@ export default function Review() {
           inBook,
           soundsLikeMe: null, // "Does this sound like you?" is not asked in v1.0 (D-086); the field stays null
           childId: child.id,
-          authorSignsAs: child.signsAs,
+          authorSignsAs: signature.authorSignsAs,
           audioUri: live.audioUri,
           audioDurationMs: live.audioDurationMs,
           audioSha256: audio.sha256,
@@ -650,6 +687,7 @@ export default function Review() {
         },
         audio.exists,
       )) throw new Error('book_left'); // BL-1959: nothing was written and the draft is intact, so Review says the save did not work
+      from.kept(signature);
       // letter_saved went when the recording was kept; keeping its words later is not a second letter.
       if (!later) trackLetterSaved({
         mode: typed ? 'typed' : 'spoken',
@@ -682,6 +720,8 @@ export default function Review() {
   /** Keep the recording as a letter waiting for its words (private until the parent adds it). */
   const keepRecordingOnly = async () => {
     if (!draft || !child || saving.current) return;
+    const signature = from.signatureFor(child.signsAs); // NS-16-R6, as in save
+    if (!signature.ok) return;
     saving.current = true;
     player.pause();
     await setAudioMode('idle').catch(() => {}); // as in save: the saved moment is said at once
@@ -705,8 +745,9 @@ export default function Review() {
       const fresh = getDraft(draft.id) ?? draft;
       saveVoiceOnlyFromDraft(
         { ...fresh, audioSha256: audio.sha256, audioBytes: audio.bytes },
-        { childId: child.id, authorSignsAs: child.signsAs, inBook: false, engineVersion: ENGINE_VERSION, audioExists: audio.exists },
+        { childId: child.id, authorSignsAs: signature.authorSignsAs, inBook: false, engineVersion: ENGINE_VERSION, audioExists: audio.exists },
       );
+      from.kept(signature);
       trackLetterSaved({
         mode: 'spoken',
         inBook: false,
@@ -794,10 +835,11 @@ export default function Review() {
   const foldedShow = foldedControlsShow({ applies, open: foldOpen });
   const countText = countRowText({ kind: line === 'count' ? 'count' : 'other', applied: applied.length, other: countTextFor(applied.length) });
 
-  // The letter sheet's header (S17): the month it files into, from the day it was said.
-  const occurredOn = draft.createdAt ? todayISO(new Date(draft.createdAt)) : todayISO();
-  const month = monthFor(child, occurredOn);
-  const header = letterHeader({ childName: child.name, signsAs: child.signsAs, month });
+  // The letter sheet's header (S17): the month it files into, from the day it is about (NS-15-R2): the parent's pick,
+  // else the day it was said. Never a date read from the words (NS-15-R4).
+  const about = reviewAboutDay(draft, saidOnOf(draft));
+  const month = monthFor(child, about.occurredOn);
+  const header = letterHeader({ childName: child.name, signsAs: from.shown(child.signsAs), month });
   const openE = openEdit !== null ? applied[openEdit] : null;
   const markTiming = markCardTiming(motion.reduced);
   const many = listChildren().length > 1;
@@ -1084,7 +1126,15 @@ export default function Review() {
                   header={header}
                   editing={editing}
                   onChangeBook={many && !later ? pickChild : undefined}
-                  changeLabel={fill(pendingCopy.review.toChildA11y, { child: child.name })}>
+                  changeLabel={fill(pendingCopy.review.toChildA11y, { child: child.name })}
+                  from={from}>
+                  {/* Line 2 of the header: the day it is about, a control for the author until the words are being changed. */}
+                  <ReviewDayLine
+                    text={entryDateline(child, about)}
+                    spoken={entryDatelineA11y(child, about)}
+                    hint={copy.book.entryMenu.changeDate}
+                    onPress={!later && !editing ? openDay : undefined}
+                  />
                   {editing ? (
                     // Edit in place on the same sheet (S18): no inner box, the caret in the letter face; the sheet's edge
                     // is the accent line. The system draws Full Keyboard Access's own focus ring.
@@ -1225,6 +1275,9 @@ export default function Review() {
         onSelect={chooseChild}
         onClose={() => setPickerOpen(false)}
       />
+      {!later && (
+        <DateSheet open={dateOpen} child={child} entry={about} todayISO={todayISO()} onClose={() => setDateOpen(false)} onSave={changeDay} />
+      )}
       {keepSheet}
     </SafeAreaView>
   );
@@ -1362,42 +1415,16 @@ const WORDS_TEST_ID: Record<WordsAction, string> = {
  * its drawing still. One primary, at most one quiet action (components/capture/words-state.logic.ts).
  */
 function WordsStatus({ card, size, lengthMs, run }: { card: WordsCard; size: string; lengthMs: number | null; run: Record<WordsAction, () => void> }) {
-  // VoiceOver ignores live regions on iOS, so the state is said aloud: the card's own title (never the letter's words)
-  // once Review has dissolved in (VoiceOver's focus lands on "Hear it", not on the card), again on each change of state,
-  // and the longer-than-usual line when it appears (TDD 09 V1, BL-399).
-  const said = useRef<{ state: string; later: boolean } | null>(null);
-  const title = useRef(card.title);
-  title.current = card.title;
-  const first = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(
-    () => () => {
-      if (first.current) clearTimeout(first.current);
-    },
-    [],
-  );
-  useEffect(() => {
-    const now = { state: card.state, later: card.state === 'writing' && card.primary === 'keep' };
-    const before = said.current;
-    said.current = now;
-    if (!before) {
-      first.current = setTimeout(() => {
-        first.current = null;
-        announce(title.current);
-      }, tokens.motion.route.dissolveMs);
-      return;
-    }
-    if (before.state !== now.state) {
-      if (first.current) clearTimeout(first.current);
-      first.current = null;
-      announce(card.title);
-    } else if (!before.later && now.later) announce(card.body ?? card.title);
-  }, [card.state, card.primary, card.quiet, card.title]);
+  // VoiceOver is told the card's state once Review has dissolved in, on each change of state and when the longer line
+  // appears; never on each part (use-words-said.ts). The card itself says nothing of its own (`callerSpeaks`).
+  useWordsSaid(card);
   const action = (a: WordsAction | null) => (a ? { label: wordsActionLabel(a, size), onPress: run[a], testID: WORDS_TEST_ID[a] } : undefined);
   const primary = action(card.primary);
   const quiet = action(card.quiet);
   const length = card.state === 'writing' ? clockOf(lengthMs) : null;
   return (
     <InlineState
+      callerSpeaks
       kind={card.kind}
       art={card.art}
       still={card.still}

@@ -31,7 +31,7 @@ const { countAfterSave, keepSheetFor } = await import('../src/lib/billing/keep-s
 const { configureLedgerStorage } = await import('../src/lib/billing/letter-ledger');
 const { laterWordsDraft } = await import('../src/components/capture/later-words.logic');
 const { typedFinalText } = await import('../src/components/capture/review-view.logic');
-const { flagReadItBack, isReadItBack } = await import('../src/lib/read-it-back');
+const { clearReadItBack, flagReadItBack, isReadItBack } = await import('../src/lib/read-it-back');
 const { takeOwnership } = await import('../src/lib/sync/ownership');
 const { billingCopy } = await import('../src/lib/billing/copy');
 
@@ -89,6 +89,7 @@ async function reviewKeep(id: string, inBook: boolean): Promise<{ outcome: 'kept
   const wordsOnScreen = typedFinalText(d!.typedText!);
   if (await keepSheetFor(wordsOnScreen)) return { outcome: 'sheet', noted: false, wordsOnScreen };
   expect(store.keepReviewedWords(id, inBook)).toBe(true);
+  clearReadItBack(id); // keepLaterLetter's second step (pinned below)
   return { outcome: 'kept', noted: await countAfterSave(wordsOnScreen), wordsOnScreen };
 }
 
@@ -133,6 +134,46 @@ describe('[#53] the letter page never counts: it hands the keep to Review', () =
     store.keepReviewedWords(v);
     expect(laterWordsDraft(store.getEntry(v), own)).toBeNull(); // kept already
     expect(laterWordsDraft(null, own)).toBeNull();
+  });
+});
+
+/** The Book card's "Ready to read back" line, as book.tsx decides it (pinned below). */
+const bookCardFlag = (id: string) => store.getEntry(id)!.captureMode !== 'typed' && isReadItBack(id);
+/** The letter page's "Words are ready. Read it back." card, as the letter page decides it (pinned below). */
+const pageCardFlag = (id: string) => isReadItBack(id) || store.getEntry(id)!.wordsUnreviewed === true;
+
+describe('[BL-413] the read-it-back flag on the Book card and the letter page clears once Review\'s Keep reads the letter', () => {
+  it('words arrive: both show; Review\'s Keep: both gone, and they stay gone', async () => {
+    const v = voiceOnly();
+    wordsArrive(v, 'You laughed at the rain.');
+    expect(bookCardFlag(v)).toBe(true);
+    expect(pageCardFlag(v)).toBe(true);
+    expect((await reviewKeep(v, true)).outcome).toBe('kept');
+    expect(bookCardFlag(v)).toBe(false);
+    expect(pageCardFlag(v)).toBe(false);
+    store.closeStore();
+    expect(store.openStore({ open: () => ({ db: raw, close: () => {} }), now, newId }).ok).toBe(true);
+    expect(bookCardFlag(v)).toBe(false);
+    expect(pageCardFlag(v)).toBe(false);
+  });
+
+  it('only that letter\'s flag goes: another letter waiting to be read back keeps its card', async () => {
+    const a = voiceOnly();
+    const b = voiceOnly();
+    wordsArrive(a, 'You sang.');
+    wordsArrive(b, 'You clapped.');
+    await reviewKeep(a, true);
+    expect(bookCardFlag(a)).toBe(false);
+    expect(bookCardFlag(b)).toBe(true);
+    expect(pageCardFlag(b)).toBe(true);
+  });
+
+  it('the Book card and the letter page read the flag this way', () => {
+    const book = read('app/(tabs)/book.tsx');
+    const page = read('app/letter/[id].tsx');
+    expect(book).toMatch(/entries\.filter\(\(e\) => e\.captureMode !== 'typed' && isReadItBack\(e\.id\)\)/);
+    expect(page).toMatch(/useState\(\(\) => isReadItBack\(entry\.id\)\)/);
+    expect(page).toMatch(/\(unread \|\| entry\.wordsUnreviewed\)/);
   });
 });
 

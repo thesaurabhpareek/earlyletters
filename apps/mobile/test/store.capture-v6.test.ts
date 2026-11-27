@@ -60,11 +60,13 @@ describe('[WP-F04-03] Review\'s choices live on the draft and reach the letter',
     const c = asha();
     const d = typedDraft(c);
     expect(store.setDraftKind(d.id, 'note')).toBe(true);
+    // A month is kept as the day the date sheet gives for it (the first day of that month of age), never moved to the
+    // calendar month's first day, which can be in the month of age before (NS-15-R2).
     expect(store.setDraftOccurred(d.id, '2026-09-17', 'month')).toBe(true);
     expect(store.setDraftLanguage(d.id, 'hi-IN')).toBe(true);
-    expect(store.getDraft(d.id)).toMatchObject({ kind: 'note', occurredOn: '2026-09-01', occurredPrecision: 'month', language: 'hi-IN' });
+    expect(store.getDraft(d.id)).toMatchObject({ kind: 'note', occurredOn: '2026-09-17', occurredPrecision: 'month', language: 'hi-IN' });
     save(d.id, c);
-    expect(store.getEntry(d.id)).toMatchObject({ kind: 'note', occurredOn: '2026-09-01', occurredPrecision: 'month', language: 'hi-IN', baseDirection: 'ltr' });
+    expect(store.getEntry(d.id)).toMatchObject({ kind: 'note', occurredOn: '2026-09-17', occurredPrecision: 'month', language: 'hi-IN', baseDirection: 'ltr' });
     expect(store.getDraft(d.id)).toBeNull();
   });
 

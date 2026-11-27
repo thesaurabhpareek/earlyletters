@@ -24,7 +24,18 @@ npx tsx scripts/size/measure.ts --thinning-report "App Thinning Size Report.txt"
 
 The script runs `expo export --platform ios` with Hermes bytecode (what ships) and without (plain JS with a source map), attributes every byte of the bundle to an npm package or app folder, lists app dependencies that put nothing in the JS bundle, lists fonts and images over 100 KB, reads an IPA's central directory (main executable, frameworks, JS bundle, asset catalog) and parses the thinning report. It writes `dist/size/report.md` and `report.json` and exits 1 when over budget. To make the thinning report on a Mac: export the archive with `xcodebuild -exportArchive` and an export options plist whose `thinning` key is `<thin-for-all-variants>` (Apple, same page).
 
-Release checklist line: run the script with `--thinning-report` (or read App Store Connect's size table for the TestFlight build) and paste the verdict into the release notes. A JS-only run belongs in CI on every pull request.
+Release checklist line: run the script with `--thinning-report` (or read App Store Connect's size table for the TestFlight build) and paste the verdict into the release notes. A JS-only run belongs in CI on every pull request (the `size-gate` job, proposed in `docs/ops/proposed/size-gate.md`).
+
+Release checklist, in order (BL-2130; it feeds the "App size" line of `docs/ops/RELEASE.md`):
+
+- [ ] Once the `size-gate` job is pasted: it is green on the pull request run at the release head (bytecode under 12 MB and JS assets under 3 MB, no waiver, compared with `docs/ops/size-baseline.json`). The job runs on pull requests and on pushes to develop only, not on a push to `main` or `release/*`, so there is no run on the release commit itself. It measures the development-config bundle (no `EXPO_PUBLIC_APP_ENV` is set), not the production store profile; `docs/ops/proposed/size-gate.md` says why that is enough for the gate.
+- [ ] After the first native build (the first EAS iOS build of the release, before it goes to testers): export its archive with thinning, run `npx tsx scripts/size/measure.ts --thinning-report "App Thinning Size Report.txt"`, and fill the App Thinning figures below from the report, or from App Store Connect's size table for that TestFlight build, which is authoritative. The largest variant's download must be under 40 MB before submission (decision 15). Who: the archive export with thinning needs a Mac with the archive, and App Store Connect's size table needs an Apple sign-in, so getting the report or reading the table is a founder physical act (CLAUDE.md, approval rule); Karma adds it as a line to `docs/release/FOUNDER_QUEUE.md` when the first native build exists, as that file's own rule says. Running `measure.ts` on the report and filling the table below is an agent's step.
+
+| App Thinning figure | Value |
+|---|---|
+| Largest variant, download (compressed) | filled after the first native build |
+| Largest variant, install (uncompressed) | filled after the first native build |
+| Build and source (EAS build id; thinning report or App Store Connect) | filled after the first native build |
 
 ## 3. Today (develop at the 3 Oct wave snapshot, JS only)
 

@@ -29,8 +29,15 @@
  * - Typed days (NS-18, BL-982; `typedDays`): one note on the day, at the reminder time, and it outranks every other
  *   note that day (NS-13-R29, NS-18-R2). The back-off, smart quiet and quiet books never drop it (NS-18-R4), and it
  *   comes with Reminders off too, while notifications are allowed (GAP-LOG D W-G7, G-D09). Title and body are the
- *   fixed line unless `dayNamesOn` (NS-18-R3); then the body is the parent's words unchanged. More typed days than
- *   slots: nearest first, the rest at a later plan.
+ *   fixed line unless `dayNamesOn` and names on the lock screen are both on (NS-18-R3 with FR-NTC-11, CPrivO-58);
+ *   then the body is the parent's words unchanged. The words may hold a child's name, so names off always means the
+ *   fixed line. More typed days than slots: nearest first, the rest at a later plan.
+ * - Ticked library days (NS-46, BL-1319; `libraryDays`): a ranked source inside the `typedDay` group, never a class of
+ *   its own (NS-46-R4, R29). The days module resolves ticks to local dates; the planner sees only the date, never a day
+ *   id, a name or a content key. One note a date however many days share it (NS-46-R8), at the reminder time, with the
+ *   one neutral title and body, id `el.day.<isoDate>`. Order on a shared date: typed day, birthday, library day, month,
+ *   evening (NS-46-R7, `budget.ts`). With Reminders off (or the old pause) a ticked day still comes, as a typed day
+ *   does, and nothing else does: the day-only gate (NS-46-R31, BL-1007).
  *
  * - Back-off (NS-13 section 3a; R3, R4, R18): counted from the anchor day (`anchorAt`). Evening nudges follow the
  *   cadence on days 1 to 7, then at most one in each 7-day block on days 8 to 35, then nothing. Month and birthday
@@ -41,7 +48,7 @@
 import { en } from '@scribe/content';
 import { eligibleFloorIndexes, floorIndexOfKey, recencyBand, selectNotificationKey, type KeyInput, type KeySelector, type LastLetterKind } from '@scribe/core';
 import { childLabel, fill } from '../copy';
-import { budgetedSlots, chooseOnePerDay, PLAN_MAX, TOTAL_MAX } from './budget';
+import { budgetedSlots, chooseOnePerDay, heldDays, PLAN_MAX, TOTAL_MAX } from './budget';
 import { reminderCopy } from './copy';
 import {
   addDays,
@@ -96,6 +103,14 @@ export interface TypedDayNote {
   words: string;
 }
 
+/**
+ * One ticked library day on one local date, YYYY-MM-DD (NS-46-R4). Only the date: the day's id, name and content key
+ * stay inside the days module, so nothing here can put them in an identifier or a payload.
+ */
+export interface LibraryDayNote {
+  date: string;
+}
+
 /** The newest made letter as the layers read it (NS-48-R27): epoch ms of `captured_at` and its kind, null when unknown. */
 export interface LastLetter {
   at: number;
@@ -139,9 +154,12 @@ export interface PlanInput {
   window?: ReminderWindow;
   /** Days the parent typed (typed-days.ts `readTypedDays`). Absent or empty: none. */
   typedDays?: readonly TypedDayNote[];
+  /** Ticked library days already resolved to local dates by the days module. Absent or empty: none (BL-1012 feeds it). */
+  libraryDays?: readonly LibraryDayNote[];
   /**
    * The one day-names switch, effective value (prefs.ts `dayNamesOn`: stored on and App lock off). Off or absent: a
-   * typed day's body is the fixed line and never the words (NS-18-R3, CL-119).
+   * typed day's body is the fixed line and never the words (NS-18-R3, CL-119). On is not enough by itself: the words
+   * show only when `prefs.namesOnLockScreen` is on too, because they may name a child (FR-NTC-11, CPrivO-58).
    */
   dayNamesOn?: boolean;
   /**
@@ -159,7 +177,7 @@ export interface ReminderWindow {
   latest: number;
 }
 
-export type PlannedKind = 'evening' | 'monthAge' | 'birthday' | 'typedDay';
+export type PlannedKind = 'evening' | 'monthAge' | 'birthday' | 'typedDay' | 'libraryDay';
 
 export interface PlannedNotification {
   /** Stable per day and kind, so a re-plan that changes nothing changes no ids. */
@@ -338,10 +356,14 @@ function monthNoteCopy(note: DayNote, names: boolean): { title: string; body: st
   };
 }
 
-/** The typed day's words for the lock screen: the fixed line by default, the words unchanged only with day names on. */
-function typedDayCopy(t: TypedDayNote, dayNamesOn: boolean): { title: string; body: string } {
+/**
+ * The typed day's words for the lock screen: the fixed line by default. The words, unchanged, only with day names on
+ * and names on (both already false under App lock). The parent's words may hold a child's name, and names off means no
+ * name on a lock screen in any note (FR-NTC-11, NS-48-R11, CPrivO-58). The words are never read or searched here.
+ */
+function typedDayCopy(t: TypedDayNote, dayNamesOn: boolean, namesOn: boolean): { title: string; body: string } {
   const fixed = reminderCopy.neutral.typedDay;
-  return { title: fixed.title, body: dayNamesOn ? t.words : fixed.body };
+  return { title: fixed.title, body: dayNamesOn && namesOn ? t.words : fixed.body };
 }
 
 /** The typed days worth planning: a real date, today or later, words present (not only spaces), one a date (the first given wins). */
@@ -353,6 +375,19 @@ function typedCandidates(typed: readonly TypedDayNote[] | undefined, today: Cale
     if (!d || isoDate(d) !== t.date || dayNumber(d) < dayNumber(today) || seen.has(t.date) || t.words.trim().length === 0) continue;
     seen.add(t.date);
     out.push({ source: 'typedDay', date: t.date, typed: t });
+  }
+  return out;
+}
+
+/** The ticked days worth planning: a real date, today or later, one a date however many days share it (NS-46-R8). */
+function libraryCandidates(days: readonly LibraryDayNote[] | undefined, today: CalendarDate): { source: 'libraryDay'; date: string; library: LibraryDayNote }[] {
+  const seen = new Set<string>();
+  const out: { source: 'libraryDay'; date: string; library: LibraryDayNote }[] = [];
+  for (const l of days ?? []) {
+    const d = parseIsoDate(l.date);
+    if (!d || isoDate(d) !== l.date || dayNumber(d) < dayNumber(today) || seen.has(l.date)) continue;
+    seen.add(l.date);
+    out.push({ source: 'libraryDay', date: l.date, library: { date: l.date } });
   }
   return out;
 }
@@ -408,12 +443,24 @@ export function planReminders(input: PlanInput): PlannedNotification[] {
     const date = parseIsoDate(t.date)!;
     const fireAt = at(date, time, timeZone);
     if (fireAt <= now + MIN_LEAD_MS || inQuietHours(fireAt, timeZone, window)) return null;
-    const c = typedDayCopy(t, input.dayNamesOn === true);
+    const c = typedDayCopy(t, input.dayNamesOn === true, prefs.namesOnLockScreen === true);
     return { id: `${ID_PREFIX}typed.${t.date}`, kind: 'typedDay', date: t.date, hour: time.hour, minute: time.minute, fireAt, title: c.title, body: c.body };
   };
-  // Reminders off (or the old pause): a typed day is the parent's own ask, so it still comes (W-G7). Nothing else does.
+  const library = libraryCandidates(input.libraryDays, today);
+  /** A ticked day's note: the one neutral line, never the day's name or id (NS-46-R4); null when passed or quiet. */
+  const libraryNote = (l: LibraryDayNote): PlannedNotification | null => {
+    const date = parseIsoDate(l.date)!;
+    const fireAt = at(date, time, timeZone);
+    if (fireAt <= now + MIN_LEAD_MS || inQuietHours(fireAt, timeZone, window)) return null;
+    const c = reminderCopy.neutral.libraryDay;
+    return { id: `${ID_PREFIX}day.${l.date}`, kind: 'libraryDay', date: l.date, hour: time.hour, minute: time.minute, fireAt, title: c.title, body: c.body };
+  };
+  // Reminders off (or the old pause): the day-only gate (NS-46-R31). A typed day and a ticked day are the parent's own
+  // ask, so they still come (W-G7); evening, month and birthday notes do not. On a shared date the typed day wins.
   if (!prefs.enabled || prefs.paused) {
-    const only = typed.map((c) => typedNote(c.typed)).filter((n): n is PlannedNotification => n !== null);
+    const only = chooseOnePerDay<{ source: 'typedDay' | 'libraryDay'; date: string; typed?: TypedDayNote; library?: LibraryDayNote }>([...typed, ...library])
+      .map((c) => (c.typed ? typedNote(c.typed) : libraryNote(c.library!)))
+      .filter((n): n is PlannedNotification => n !== null);
     return only.sort((a, b) => a.fireAt - b.fireAt || a.id.localeCompare(b.id)).slice(0, max);
   }
 
@@ -451,23 +498,29 @@ export function planReminders(input: PlanInput): PlannedNotification[] {
   // One budgeted note a local day (NS-32-R1, R1b, R3): a birthday and a month-day on one date are one note, the
   // birthday. The day's one note is chosen BEFORE the lead-time and quiet-hour drops, so a passed birthday note still
   // holds its day and nothing of lower rank fills it in.
-  // A typed day is in the same choice, so it holds its day against a birthday or month note (NS-18-R2, NS-13-R29).
-  const chosenNotes = chooseOnePerDay<{ source: 'typedDay' | DayNote['kind']; date: string; note?: DayNote; typed?: TypedDayNote }>([
+  // A typed day is in the same choice, so it holds its day against a birthday or month note (NS-18-R2, NS-13-R29), and
+  // so is a ticked day, ranked after a birthday and before a month note (NS-46-R7).
+  const chosenNotes = chooseOnePerDay<{ source: 'typedDay' | 'libraryDay' | DayNote['kind']; date: string; note?: DayNote; typed?: TypedDayNote; library?: LibraryDayNote }>([
     ...typed,
+    ...library,
     ...[...notes.values()].map((note) => ({ source: note.kind, date: isoDate(note.date), note })),
   ]);
-  const noteDays = new Set<number>();
+  // Every chosen day note holds its day, even one dropped below for lead time or quiet hours (budget.ts `heldDays`).
+  const noteDays = heldDays(chosenNotes);
   for (const chosen of chosenNotes) {
     if (chosen.typed) {
-      noteDays.add(dayNumber(parseIsoDate(chosen.typed.date)!));
       const n = typedNote(chosen.typed);
+      if (n) out.push(n);
+      continue;
+    }
+    if (chosen.library) {
+      const n = libraryNote(chosen.library);
       if (n) out.push(n);
       continue;
     }
     const note = chosen.note!;
     const t = note.kind === 'birthday' ? birthdayTime : time;
     const fireAt = at(note.date, t, timeZone);
-    noteDays.add(dayNumber(note.date));
     if (fireAt <= now + MIN_LEAD_MS || inQuietHours(fireAt, timeZone, window)) continue;
     const c = monthNoteCopy(note, prefs.namesOnLockScreen);
     out.push({
@@ -495,7 +548,7 @@ export function planReminders(input: PlanInput): PlannedNotification[] {
       const date = addDays(today, n - dayNumber(today));
       if (!weekdays.includes(weekdayOf(date))) continue;
       if (anchorDay !== null && !eveningDayAllowed(n - anchorDay, date, weekdays)) continue;
-      if (noteDays.has(n)) continue; // the typed day, month or birthday note is today's one note
+      if (noteDays.has(isoDate(date))) continue; // the typed day, month or birthday note is today's one note
       const fireAt = at(date, time, timeZone);
       if (fireAt <= now + MIN_LEAD_MS || fireAt < quietUntil || inQuietHours(fireAt, timeZone, window)) continue;
       const ordinal = slotOrdinal(date, weekdays);

@@ -18,7 +18,8 @@
  * - A restore never deletes anything here: see enterRestoreMode.
  */
 import { prefsRow, upsertPrefs } from '../db/repos/children';
-import { KEEP_BASE_IF_SAME_WORDS, WORDS_UNREVIEWED } from '../db/repos/entries';
+import { KEEP_BASE_IF_SAME_INCOMING, KEEP_BASE_IF_SAME_WORDS, WORDS_UNREVIEWED } from '../db/repos/entries';
+import { forgetDraftFromName } from '../db/repos/drafts';
 import type { SqlDb } from '../db/sql';
 import {
   ALL_GROUPS,
@@ -551,6 +552,7 @@ function adoptHeldDraft(db: SqlDb, id: string, now: string): void {
   db.run("DELETE FROM sync_outbox WHERE entity_id = ? AND type IN ('held.upsert', 'held.discard') AND sent_at IS NULL AND attempts = 0", id);
   db.run('DELETE FROM drafts WHERE id = ?', id);
   db.run('DELETE FROM settings WHERE key = ?', `discard.failures.${id}`); // NS-09-R15: a count goes with its draft
+  forgetDraftFromName(db, (d) => d === id); // NS-16 s6: kept on another phone, which signed it there
 }
 
 // ── Held drafts in the pull (F16 6.2 I; S07 PulledHeld, PulledHeldGone) ─────
@@ -714,7 +716,7 @@ function mergeOtherRow(db: SqlDb, row: PulledRow, owner: string | null, epoch: n
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', '[]', ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, 'synced',
        COALESCE(?, 'day'), COALESCE(?, 'ltr'))
      ON CONFLICT(id) DO UPDATE SET
-       kind = excluded.kind, occurred_on = excluded.occurred_on, edit_level = excluded.edit_level,
+       ${KEEP_BASE_IF_SAME_INCOMING}, kind = excluded.kind, occurred_on = excluded.occurred_on, edit_level = excluded.edit_level,
        prompt_key = excluded.prompt_key, final_text = excluded.final_text, in_book = excluded.in_book,
        sounds_like_me = excluded.sounds_like_me, updated_at = excluded.updated_at, deleted_at = NULL,
        synced_at = excluded.synced_at, author_signs_as = excluded.author_signs_as, approval = excluded.approval,

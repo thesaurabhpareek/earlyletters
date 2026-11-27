@@ -67,6 +67,7 @@ const KILL_SWITCHES_OFF: Record<KillSwitchKey, boolean> = {
   signIn: false,
   libraryDays: false,
   bookSearch: false,
+  signAsOther: false,
 };
 
 const KillSwitchesSchema = v.fallback(
@@ -84,6 +85,7 @@ const KillSwitchesSchema = v.fallback(
     signIn: bool(false),
     libraryDays: bool(false),
     bookSearch: bool(false),
+    signAsOther: bool(false),
   }),
   { ...KILL_SWITCHES_OFF },
 );

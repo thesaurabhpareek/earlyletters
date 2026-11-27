@@ -5,7 +5,7 @@
 import { describe, expect, it } from 'vitest';
 import { LINE_ART_NAMES as ART_NAMES } from './line-art.data';
 import { tokens } from '@scribe/design-tokens';
-import { STATE_LAYOUT, STATE_SPEC, actionLayout, stateA11y, stateVisual, type StateKind } from './state-screen.logic';
+import { STATE_LAYOUT, STATE_SPEC, actionLayout, stateSpoken, stateVisual, type StateKind } from './state-screen.logic';
 
 const KINDS: StateKind[] = ['empty', 'error', 'notFound', 'loading'];
 const go = { label: 'Go', onPress: () => {} };
@@ -18,15 +18,23 @@ describe('state spec', () => {
   });
   it('loading is busy and announced politely; it never carries a primary action', () => {
     expect(STATE_SPEC.loading).toMatchObject({ busy: true, live: 'polite', allowsPrimary: false });
-    expect(stateA11y('loading')).toEqual({ accessibilityLiveRegion: 'polite', accessibilityState: { busy: true } });
   });
+  // The role props built from these (stateA11y) live in state-screen.tsx: test/component/state-screen-live.test.tsx.
   it('error is announced politely, never assertively, and is not busy (a calm card, not an alarm)', () => {
-    expect(stateA11y('error')).toEqual({ accessibilityLiveRegion: 'polite' });
-    for (const k of KINDS) expect(JSON.stringify(stateA11y(k))).not.toContain('assertive');
+    expect(STATE_SPEC.error).toMatchObject({ live: 'polite', busy: false });
+    for (const k of KINDS) expect(JSON.stringify(STATE_SPEC[k])).not.toContain('assertive');
   });
   it('empty and not-found are static: no announcement, no busy state', () => {
-    expect(stateA11y('empty')).toEqual({});
-    expect(stateA11y('notFound')).toEqual({});
+    expect(STATE_SPEC.empty).toMatchObject({ live: 'none', busy: false });
+    expect(STATE_SPEC.notFound).toMatchObject({ live: 'none', busy: false });
+  });
+  it('[PER4-018] what VoiceOver is told of a polite state: its heading and sentence, or its spoken name; nothing for a static kind', () => {
+    expect(stateSpoken('error', { title: "That didn't load", body: 'Try again in a moment.' })).toBe("That didn't load. Try again in a moment.");
+    expect(stateSpoken('error', { title: 'Not right now.', body: 'Try again in a moment.' })).toBe('Not right now. Try again in a moment.');
+    expect(stateSpoken('loading', { title: "Opening Asha's book" })).toBe("Opening Asha's book");
+    expect(stateSpoken('loading', { title: 'Getting ready', label: 'Getting ready, 3 of 12' })).toBe('Getting ready, 3 of 12');
+    expect(stateSpoken('empty', { title: 'Nothing here yet', body: 'Asha has no letters yet.' })).toBeNull();
+    expect(stateSpoken('notFound', { title: 'Not found' })).toBeNull();
   });
 });
 

@@ -2,7 +2,8 @@
 /**
  * LetterCard (COMPONENTS 2.5, EXPERIENCE_PASS S26; book-page.md 2 "Letter card", BL-660): dateline, up to three
  * lines of the person's words (two at accessibility sizes) ending on a whole word, the fade covering only that last
- * word (ExcerptFade, BL-659); the signature in the `signature` italic; the Private tag; and a quiet "Voice 1:06"
+ * word (ExcerptFade, BL-659); the signature in the `signature` italic, only in a book more than one person writes
+ * (BL-421, `useBookIsShared`; VoiceOver hears it on every signed card); the Private tag; and a quiet "Voice 1:06"
  * marker with a small waveform glyph, never a fake play button. One VoiceOver element with a composed label that
  * carries every word of the letter (D-027) and the recording's length in words; the excerpt is cut visually only
  * (never an ellipsis glyph, the stored letter never cut). At accessibility sizes the footer stacks.
@@ -39,7 +40,8 @@ import { entryDateline, entryDatelineA11y } from './date-change.logic';
 import { AppNote } from './app-note';
 import { bookExcerptLines, cardFooterStacks, voiceMarker } from './book-page.logic';
 import { bookCopy } from './copy';
-import { cardLabel } from './letter-card.logic';
+import { useBookIsShared } from './book-writers';
+import { cardLabel, cardShowsSignature } from './letter-card.logic';
 import { letterWords } from './letter-words.logic';
 import { showsSignature } from './quiet-day.logic';
 
@@ -92,10 +94,14 @@ export function LetterCard({ entry, child, onPress, wash, reason, photo }: Props
   // unsigned, never in the letter's type (D-084).
   const { note, text } = excerptOf(entry);
   const signed = showsSignature(words);
+  const shared = useBookIsShared(child.id);
+  // The eye sees the writer only where it tells two writers apart (BL-421); VoiceOver hears it on every signed card.
+  const drawsSignature = cardShowsSignature({ signed, shared });
   const rtl = !note && isRtl(text);
   const lines = bookExcerptLines(fontScale);
   const stacked = cardFooterStacks(fontScale);
   const voice = spoken ? voiceMarker(entry.audioDurationMs) : null;
+  const footer = drawsSignature || !entry.inBook || Boolean(reason) || voice !== null;
 
   const label = cardLabel({
     signature: signed ? signature : null,
@@ -144,25 +150,28 @@ export function LetterCard({ entry, child, onPress, wash, reason, photo }: Props
         textBlock
       )}
 
-      <View className={stacked ? 'items-start gap-1 pt-0.5' : 'flex-row flex-wrap items-center gap-x-3 gap-y-1 pt-0.5'}>
-        {signed ? <Text variant="signature">{signature}</Text> : null}
-        {!entry.inBook && <PrivateChip color={c.text} />}
-        {stacked ? null : <View className="flex-1" />}
-        {reason || voice ? (
-          // Said in the card's own label; hidden here so VoiceOver hears it once.
-          <View className="flex-row flex-wrap items-center gap-1.5" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-            {reason ? <Text variant="footnote">{reason}</Text> : null}
-            {voice ? (
-              <View className="flex-row items-center gap-1.5" testID="book.card.voice">
-                <WaveformIcon size={14} color={c.textMuted} weight="regular" />
-                <Text variant="footnote" style={{ fontVariant: ['tabular-nums'] }}>
-                  {voice.text}
-                </Text>
-              </View>
-            ) : null}
-          </View>
-        ) : null}
-      </View>
+      {/* A typed letter kept in a one-writer book has nothing for this row (BL-421): no row, so no empty gap under its words. */}
+      {footer ? (
+        <View className={stacked ? 'items-start gap-1 pt-0.5' : 'flex-row flex-wrap items-center gap-x-3 gap-y-1 pt-0.5'}>
+          {drawsSignature ? <Text variant="signature">{signature}</Text> : null}
+          {!entry.inBook && <PrivateChip color={c.text} />}
+          {stacked ? null : <View className="flex-1" />}
+          {reason || voice ? (
+            // Said in the card's own label; hidden here so VoiceOver hears it once.
+            <View className="flex-row flex-wrap items-center gap-1.5" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+              {reason ? <Text variant="footnote">{reason}</Text> : null}
+              {voice ? (
+                <View className="flex-row items-center gap-1.5" testID="book.card.voice">
+                  <WaveformIcon size={14} color={c.textMuted} weight="regular" />
+                  <Text variant="footnote" style={{ fontVariant: ['tabular-nums'] }}>
+                    {voice.text}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+          ) : null}
+        </View>
+      ) : null}
     </Card>
   );
 }

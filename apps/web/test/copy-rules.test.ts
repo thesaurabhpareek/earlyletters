@@ -12,10 +12,12 @@ import { fileURLToPath } from 'node:url';
 import { brand } from '@scribe/brand';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
+import { en } from '../../../packages/content/src/strings.en';
 import { alt as ogAlt } from '../src/app/opengraph-image';
 import * as siteModule from '../src/content/site';
 
-type Leaf = { path: string; text: string; lang?: string; meta?: boolean };
+/** `after` is the source of the `${...}` expression just before a template piece, when there is one. */
+type Leaf = { path: string; text: string; lang?: string; meta?: boolean; after?: string };
 
 const WEB_ROOT = fileURLToPath(new URL('..', import.meta.url));
 const COPY_ROOTS = ['src/scenes/parts', 'src/lib/legal', 'src/lib/support'];
@@ -70,7 +72,8 @@ function fileLeaves(file: string): Leaf[] {
       ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node) || ts.isTemplateHead(node) || ts.isTemplateMiddle(node) || ts.isTemplateTail(node);
     if (isPiece && node.text.trim() !== '' && node.text !== 'use client') {
       const path = `${name}:${source.getLineAndCharacterOfPosition(node.getStart()).line + 1}`;
-      out.push({ path, text: node.text, meta: NON_PROSE.test(node.text) });
+      const after = (ts.isTemplateMiddle(node) || ts.isTemplateTail(node)) && ts.isTemplateSpan(node.parent) ? node.parent.expression.getText() : undefined;
+      out.push({ path, text: node.text, meta: NON_PROSE.test(node.text), ...(after ? { after } : {}) });
     }
     ts.forEachChild(node, visit);
   };
@@ -86,6 +89,12 @@ const ALL: Leaf[] = [
 ];
 /** Words in English, as a person reads them: no links, codes or other languages. */
 const PROSE = ALL.filter((l) => !l.meta && (l.lang === undefined || l.lang === 'en'));
+/**
+ * PROSE without the registered D-061 promise (`en.trust.promise`, exact text only). Its "never use them to train machine
+ * learning models" is a promise that nothing is done to the letters, not a claim that software writes or that a child
+ * learns, so only the two word bans it trips (machine learning; learn) read this list. Every other rule reads PROSE.
+ */
+const PROSE_BUT_PROMISE = PROSE.filter((l) => l.text !== en.trust.promise);
 
 const offenders = (items: Leaf[], re: RegExp) => items.filter((l) => re.test(l.text)).map((l) => `${l.path}: ${l.text}`);
 
@@ -148,7 +157,7 @@ describe('no machine-writing claims', () => {
     expect(bad.map((l) => `${l.path}: ${l.text}`)).toEqual([]);
     expect(
       offenders(
-        PROSE,
+        PROSE_BUT_PROMISE,
         /\b(artificial intelligence|machine learning|LLM|GPT|chatbot|algorithms?|ghostwrit\w*|auto-?(write|writes|writing|complete)|writes? (it )?for you|smart|magic(al)?|generat(e|es|ed|ing)|polish(ed|es|ing)?|perfect(ed|s)?|enhanc(e|ed|es|ing))\b/i,
       ),
     ).toEqual([]);
@@ -161,6 +170,51 @@ describe('no machine-writing claims', () => {
     );
     expect(bad.map((l) => `${l.path}: ${l.text}`)).toEqual([]);
   });
+
+  // RULE (the constitution, CLAUDE.md: the machine may remove and repair, never add meaning): the app, the product or
+  // "we" is never the one that writes, drafts or composes the family's letter, book or words. The AI-word list above
+  // misses a plain sentence like "The app writes your letter from what you say."; this closes it. The subject is the
+  // app, "we" or "it" (with "we'll" and "it'll"), the product name from packages/brand (with or without "app"), or
+  // `{app}`. A copy file writes the name as `${brand.name}` or `${NAME}`, and the walker reads the text after it as its
+  // own piece, so those pieces are read here with the name put back in front. The object must be the family's letter,
+  // book, page, story or words, so "We'll write once more, at launch." passes.
+  const escapeRe = (t: string) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const AUTHOR = String.raw`(?:\b(?:(?:the\s+)?${escapeRe(brand.name)}(?:\s+app)?|the app|our app|it|we)\b|\{app\})(?:'ll)?(?:\s+(?:can|will|then|also|just|helps?(?: you)?))?\s+`;
+  const FAMILY_WORDS = String.raw`(?:letters?|books?|entr(?:y|ies)|story|stories|words|pages?)`;
+  const MACHINE_AUTHOR = new RegExp(
+    String.raw`${AUTHOR}(?:(?:writes?|wrote|drafts?|composes?|creates?|makes?|builds?|puts? together)\s+(?:up\s+)?(?:your|the|a|their|each|every)\s+(?:[\w']+\s+){0,2}?${FAMILY_WORDS}\b(?!\s+(?:easy|simple|safe|ready|private)\b)|turns?\s+(?:what|your|the|them|this|these)\b[^.!?]{0,40}?\binto\s+(?:a|your|the)\s+(?:[\w']+\s+)?${FAMILY_WORDS}\b)`,
+    'i',
+  );
+  const NAMED_PROSE = PROSE.map((l) => (l.after === 'brand.name' || l.after === 'NAME' ? { ...l, text: `${brand.name}${l.text}` } : l));
+  it('never makes the app the author of the letter, book or words', () => {
+    for (const bad of [
+      'The app writes your letter from what you say.',
+      `${brand.name} drafts the letter for you.`,
+      'It composes a page from your voice.',
+      'We create your book.',
+      `${brand.name} can write the letter.`,
+      "We'll write your letter.",
+      "It'll make your book.",
+      `${brand.name} makes your child's book.`,
+      'The app turns what you say into a letter.',
+      'Our app helps write your letters.',
+      `The ${brand.name} app writes your letter.`,
+    ])
+      expect(MACHINE_AUTHOR.test(bad), bad).toBe(true);
+    for (const ok of [
+      "We'll write once more, at launch.",
+      'Write to us any time:',
+      `You write the letter. ${brand.name} keeps it.`,
+      'It makes the book easy to share.',
+      'Any letter shown on this site is a sample, written for it.',
+      ' wrote the sample letters on this site.',
+      'Keep writing and it turns into a book.',
+    ])
+      expect(MACHINE_AUTHOR.test(ok), ok).toBe(false);
+    expect(offenders(NAMED_PROSE, MACHINE_AUTHOR)).toEqual([]);
+    // The walker records what comes before a template piece, so a `${brand.name}` line is read with the name.
+    expect(NAMED_PROSE.some((l) => l.after === 'brand.name' && l.text.startsWith(brand.name))).toBe(true);
+  });
 });
 
 describe('site vocabulary', () => {
@@ -168,7 +222,7 @@ describe('site vocabulary', () => {
   it('avoids the banned words', () => {
     const BANNED =
       /\b(learn(s|ed|ing|er|ers)?|ABC|early learning|literac(y|ies)|educat(ion|ional)|AI[- ]?(written|generated|powered)|generat(e|es|ed|ing)|legacy|hereafter|cherish(es|ed|ing)?|precious|journey(s|ed|ing)?|unlock(s|ed|ing)?|seamless(ly)?|magic(al)?|effortless(ly)?)\b/i;
-    expect(offenders(PROSE, BANNED)).toEqual([]);
+    expect(offenders(PROSE_BUT_PROMISE, BANNED)).toEqual([]);
   });
 
   // RULE (claims and trust rulings, 1 Nov 2026, docs/exec-rulings-claims-trust-2026-11-01.md, Q1, Q5 and Q6): no "exactly as you
@@ -302,5 +356,237 @@ describe('copy files', () => {
   it('has no copy-like file the rules cannot read', () => {
     const copyLike = COPY_ROOTS.flatMap((r) => listFiles(join(WEB_ROOT, r))).filter((f) => /(copy|strings|text|words)/i.test(basename(f)));
     expect(copyLike.filter((f) => !COPY_FILE.test(basename(f))).map((f) => relative(WEB_ROOT, f))).toEqual([]);
+  });
+});
+
+/**
+ * The bans packages/content/test/rules.test.ts applied to the retired website copy (packages/content/src/site.en.ts and
+ * pages.en.ts, which nothing rendered; BL-556 removed them). The live website words are site.ts and the copy files
+ * walked above, so each of those rules now reads them here. Patterns are copied from rules.test.ts; where this file
+ * already held a rule (dashes, emoji, exclamation marks, fear, AI, rewrite, he and him, son and daughter, "exactly as
+ * you said it", grandparents, highlighting) it is not repeated.
+ */
+describe('rules carried over from the content package (BL-556)', () => {
+  const WORDS = ALL.filter((l) => !l.meta);
+
+  // RULE (C-REQ-005, PRD.md K-03): nothing promises a daily rhythm. "One day" (someday) passes.
+  it('[C-REQ-005] promises no daily rhythm', () => {
+    const DAILY =
+      /\b(daily|nightly|every (?:single )?(?:day|night)|each (?:day|night)|(?:once|twice|one|words?|minutes?|letters?|notes?|nudges?|reminders?) (?:a|per) (?:day|night))\b/i;
+    expect(offenders(PROSE, DAILY)).toEqual([]);
+  });
+
+  // RULE (LEGAL-REQ-045, App Review 2.3.8): the app is for adults; the site never presents it as for children or as
+  // something a child uses alone.
+  it('[LEGAL-REQ-045] has no "kids" and no child-directed phrases', () => {
+    const CHILD = String.raw`(?:\b(?:kids?|child|children|toddlers?|little ones?|bab(?:y|ies))\b|\{child\})`;
+    const CHILD_DIRECTED = new RegExp(
+      [
+        String.raw`\bkids?\b|\bkiddos?\b`,
+        String.raw`\bchildren'?s app\b`,
+        String.raw`\bfor (?:children|kids|babies|toddlers|little ones)\b`,
+        String.raw`\b(?:child|kid|baby|toddler)-?(?:friendly|safe)\b`,
+        String.raw`\bfor ages \d+`,
+        String.raw`${CHILD} (?:can|could|will|gets? to|is able to|are able to) (?:tap|listen|play|use|record|explore|press|swipe)\b`,
+        String.raw`${CHILD}[^.!?]{0,60}\b(?:on (?:their|his|her) own|by (?:themselves|themself|himself|herself)|(?:all )?alone)\b`,
+        String.raw`\b(?:listen|play|tap|explore) alone\b`,
+        String.raw`\blet (?:them|your (?:child|children|little ones?|kids?)|\{child\}) (?:listen|use|play|tap|record|explore)\b`,
+      ].join('|'),
+      'i',
+    );
+    expect(offenders(PROSE, CHILD_DIRECTED)).toEqual([]);
+  });
+
+  // RULE (K-32): digital only, no print or ordering a book. "Printable" (the PDF book) passes.
+  it('[K-32] mentions no print or ordering a book', () => {
+    const PRINT =
+      /\b(print(?:s|ed|ing|er|ers)?|hardcover|hardback|paperback|softcover|hard ?copy|hard ?copies|photo ?books?|physical (?:book|books|copy|copies)|order (?:(?:a|your|the|more|extra) )?(?:book|books|copy|copies)|shipping|ships to|delivered to your door)\b/i;
+    expect(offenders(WORDS, PRINT)).toEqual([]);
+  });
+
+  // RULE (D-060, K-13): no release is called a beta.
+  it('[K-13] never says beta', () => {
+    expect(offenders(WORDS, /\bbeta\b/i)).toEqual([]);
+  });
+
+  // RULE (PRD-REQ-009, K-05): any shutdown notice says 90 days.
+  it('[PRD-REQ-009] every shutdown notice says 90 days', () => {
+    const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const COMPANY = String.raw`(?:\b(?:we|us|the company|the service|the app|our (?:company|service|app))\b|\{app\}|\b${escape(brand.name)}\b)`;
+    const SHUT = new RegExp(
+      String.raw`${COMPANY}[^.!?]{0,40}?\b(?:close|closes|closing|shut(?:s|ting)? down|wind(?:s|ing)? down|cease operations|stop(?:s|ping)? operating|discontinu\w*)\b|\b(?:shutdown|wind-down)\b`,
+      'i',
+    );
+    const WORDS_TO_DIGITS: Record<string, string> = { seven: '7', ten: '10', fourteen: '14', thirty: '30', sixty: '60', ninety: '90' };
+    const DAY_NUMBERS = /\b(\d+|seven|ten|fourteen|thirty|sixty|ninety)(?:\s*\(\d+\))?(?:-day|\s+(?:calendar\s+|business\s+)?days?)\b/gi;
+    const MONTHS = /\b(\d+|one|two|three|four|six|twelve)(?:\s*\(\d+\))?(?:-month|\s+months?)\b/gi;
+    const numbersIn = (text: string) => [
+      ...[...text.matchAll(DAY_NUMBERS)].map((m) => WORDS_TO_DIGITS[m[1].toLowerCase()] ?? m[1]),
+      ...[...text.matchAll(MONTHS)].map((m) => `${m[1]} months`),
+    ];
+    const bad = PROSE.filter((l) => SHUT.test(l.text) && numbersIn(l.text).some((n) => n !== '90'));
+    expect(bad.map((l) => `${l.path}: ${l.text}`)).toEqual([]);
+  });
+
+  // RULE (CR-25, BRAND.md internal terms): take, entry, draft (as nouns) and language pack stay inside.
+  it('[CR-25] says no internal word: take, entry, draft or language pack', () => {
+    const NUMBER_WORDS = 'two|three|four|five|six|seven|eight|nine|ten';
+    const TAKE_NOUN = new RegExp(
+      [
+        '\\b(?:a|an|this|that|each|every|one|per)\\s+take\\b',
+        '\\b(?:the|your|any)\\s+takes?\\b',
+        `(?:\\b(?:these|those|many|some|all|both|several|${NUMBER_WORDS}|\\d+)|\\{count\\})\\s+takes\\b`,
+        '^takes\\s+(?:that|which|may|are|were)\\b',
+      ].join('|'),
+      'i',
+    );
+    const ENTRY = /(?<!data\/)\bentr(?:y|ies)\b(?!\.json)/i;
+    const DRAFT_NOUN = /\bdrafts\b|\b(?:a|an|the|your|each|this|that|any|saved|unsaved|as|in)\s+draft\b/i;
+    const PACK = /\b(?:language|languages|speech|text[\s-]+rules?|rule|model)[\s-]+packs?\b/i;
+    for (const re of [TAKE_NOUN, ENTRY, DRAFT_NOUN, PACK]) expect(offenders(PROSE, re), String(re)).toEqual([]);
+  });
+
+  // RULE (D-055, D-056, D-059, D-073): no claim the v1.0 build cannot keep.
+  it('makes no v1.0 overclaim: mixing languages, words appearing, any language, family listening', () => {
+    const V1_OVERCLAIM = /\b(vault mode|one sentence|mid-sentence|any mix|words appear|highlight|20 languages|any language|hear each other|family can (hear|listen))/i;
+    expect(offenders(PROSE, V1_OVERCLAIM)).toEqual([]);
+    expect(offenders(PROSE, /while the words appear/i)).toEqual([]);
+  });
+
+  // RULE (D-061): never fearful or absolute about security.
+  it('never sounds fearful or absolute about security', () => {
+    const FEARFUL = /\b(hack(ed|ers?|s)?|breach(es)?|leak(s|ed)?|spy(ing)?|steal|creepy|scary|don'?t worry|military[- ]grade|bank[- ]level|unhackable|completely secure|end-to-end|HIPAA)\b|100%/i;
+    expect(offenders(PROSE, FEARFUL)).toEqual([]);
+  });
+
+  // RULE (BRAND.md glossary): the fixes are never tidying; a month is never a chapter; Plus is Plus; Apple Account;
+  // sign-in buttons named as the providers name them; one descriptor.
+  it('keeps to the BRAND.md glossary', () => {
+    expect(offenders(PROSE, /\btid(y|ied|ies|ying|ier)\b|\bcleaned up\b/i)).toEqual([]);
+    expect(offenders(PROSE, /\bchapters?\b/i)).toEqual([]);
+    expect(offenders(PROSE, /Early Letters Plus|Book Plus|\b(Premium|Pro)\b|Plus Yearly/)).toEqual([]);
+    expect(offenders(PROSE, new RegExp(`${brand.name} Plus`))).toEqual([]);
+    expect(offenders(PROSE, /\bApple ID\b|\bstore account\b|\biCloud account\b/i)).toEqual([]);
+    expect(offenders(PROSE, /\b(Google|Apple) sign-in\b|\b(Google|Apple) login\b|\bmagic link\b/i)).toEqual([]);
+    expect(offenders(PROSE, /\bletters to your child,? in your (?:own )?voice\b/i)).toEqual([]);
+  });
+
+  // RULE (D-139, 1 Nov 2026): the old descriptor ("the baby memory book you fill by talking") and its variants are
+  // retired; the one descriptor is BRAND.md's, word for word. The site's title and brand line carry it. The four lines
+  // in STILL_OLD still say the old one: their replacements are new words that wait for approval, so they stay listed.
+  // The list only shrinks: a line that no longer says it must leave the list, and no new line may join it.
+  const OLD_DESCRIPTOR = /\b(?:baby |memory )+book (?:that )?(?:you|parents|families) fill by talking\b|\bbaby memory book\b|\bfill(?:s|ed|ing)? (?:it )?by talking\b/i;
+  it('the retired descriptor pattern catches its variants and lets the registered one pass (D-139, BL-556)', () => {
+    for (const bad of [
+      'the baby memory book you fill by talking',
+      'A baby book you fill by talking.',
+      'a memory book parents fill by talking',
+      `${brand.name}, the baby memory book`,
+      'the book you fill by talking',
+    ])
+      expect(OLD_DESCRIPTOR.test(bad), bad).toBe(true);
+    for (const ok of ['Letters to your child, in your own words and voice.', 'Say what happened today, out loud.', 'memory book'])
+      expect(OLD_DESCRIPTOR.test(ok), ok).toBe(false);
+  });
+
+  it('uses the retired descriptor only in the lines still listed (D-139, BL-556)', () => {
+    const STILL_OLD = [
+      'site.ts:site.comingSoon.line',
+      'site.ts:site.comingSoon.shareTitle',
+      'site.ts:site.comingSoon.shareText',
+      'site.ts:site.welcomeEmail.intro',
+    ];
+    const found = PROSE.filter((l) => OLD_DESCRIPTOR.test(l.text)).map((l) => l.path);
+    expect(found.filter((p) => !STILL_OLD.includes(p)), 'new lines with the retired descriptor').toEqual([]);
+    expect(STILL_OLD.filter((p) => !found.includes(p)), 'fixed: remove from STILL_OLD').toEqual([]);
+  });
+
+  // RULE (D-139, BRAND.md "Early Letters + the descriptor"): the title says the name and the descriptor; the brand line,
+  // under the name on screen, says the descriptor alone. Both word for word.
+  it('says the registered descriptor in the title and the brand line (D-139, BL-556)', () => {
+    expect(siteModule.site.meta.title).toBe(`${brand.name}: letters to your child, in your own words and voice`);
+    expect(siteModule.site.brand.line).toBe('Letters to your child, in your own words and voice.');
+  });
+
+  // RULE (D-061): the privacy promise is one sentence, said the same way everywhere. packages/content says the website
+  // uses `trust.promise` word for word; the site copies it (site.ts does not depend on packages/content), so the copy is
+  // held equal here, and no shortened variant of it may stand beside it.
+  it('says the D-061 privacy promise in the Private scene word for word (D-061, BL-556)', () => {
+    const points: readonly string[] = siteModule.site.scenes.s09.points;
+    expect(points).toContain(en.trust.promise);
+    const variants = points.filter((p) => p !== en.trust.promise && /^Your letters and recordings are private\b/i.test(p));
+    expect(variants, 'a shortened copy of trust.promise').toEqual([]);
+  });
+
+  // RULE [BL-374] (D-082; ported from packages/content rules.test.ts by BL-556): no word a person reads keeps a promise
+  // D-082 retired. The content rule read the removed site.en.ts and pages.en.ts; the live site copy is read here.
+  it('[BL-374] never keeps a promise D-082 retired: "free, always", "writing stays open", "Plus is optional"', () => {
+    const RETIRED_PROMISES = /free, always|writing stays open|plus is optional|first book you start is free|\bplus is off\b/i;
+    for (const bad of ['The first book you start is free, always.', 'Writing stays open.', 'Plus is optional.', 'Plus is off.'])
+      expect(RETIRED_PROMISES.test(bad), bad).toBe(true);
+    expect(offenders(PROSE, RETIRED_PROMISES)).toEqual([]);
+  });
+
+  // RULE (BL-393, D-074; ported from packages/content rules.test.ts by BL-556): never transcription, transcribe or
+  // transcript in site copy. The word names the technology and reads as if the app writes.
+  it('never says transcription, transcribe or transcript (BL-393, D-074)', () => {
+    expect(offenders(PROSE, /\btranscri\w*/i)).toEqual([]);
+  });
+
+  // RULE [BRAND-MOMENTS-1] (ported from packages/content rules.test.ts by BL-556): moment is a place, never a thing
+  // a person makes. Same pattern as MOMENT_MADE there; "Try again in a moment." passes.
+  const MOMENT_MADE =
+    /\b(?:your|my|our|their|new|these|those|favou?rite|precious|special|captured|saved|shared|recent|best)\s+moments?\b|\bmoments?\s+(?:from|you|we|with|captured|saved)\b|\b\d+\s+moments\b|\b(?:capture|save|record|share|write|add|make|keep)\s+(?:a|the|this|that|every|each|your)?\s*(?:precious\s+)?moments?\b|\bphoto moments?\b/i;
+  it('[BRAND-MOMENTS-1] never calls a moment a thing a person makes', () => {
+    expect(offenders(PROSE, MOMENT_MADE)).toEqual([]);
+    for (const bad of ['Save a moment', 'Capture every precious moment', 'Your moments']) expect(MOMENT_MADE.test(bad), bad).toBe(true);
+    for (const ok of ['Try again in a moment.', 'One moment.']) expect(MOMENT_MADE.test(ok), ok).toBe(false);
+  });
+
+  // RULE (BL-556; was "never types the brand name" over packages/content/src): the brand name is never typed in
+  // site copy. site.ts and the copy files take it from packages/brand (NAME), so a rename reaches every line.
+  it('never types the brand name in site.ts or the copy files', () => {
+    const name = new RegExp(brand.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    const files = [fileURLToPath(new URL('../src/content/site.ts', import.meta.url)), ...COPY_FILES];
+    const bad = files.flatMap(fileLeaves).filter((l) => name.test(l.text));
+    expect(bad.map((l) => `${l.path}: ${l.text}`)).toEqual([]);
+  });
+
+  // RULE (BRAND-MOMENTS-2, X1, Q-X1-12): the website does not say Moments until counsel clears the name.
+  it('[BRAND-MOMENTS-2] does not say Moments', () => {
+    expect(offenders(PROSE, /\bmoments\b/i)).toEqual([]);
+  });
+
+  // RULE (D-055): v1.0 public copy makes no gift, approval or contributor promise.
+  it('makes no gift, approval or contributor promise', () => {
+    expect(offenders(PROSE, /\bgifts?\b|\bapprov(e|es|ed|al)\b|\bcontributors?\b/i)).toEqual([]);
+  });
+
+  // RULE (claims and trust rulings, 1 Nov 2026, Q5 row 1): only the fixes the first build makes.
+  it('promises no grammar fixes and no fix to any misheard word (Q5 row 1)', () => {
+    expect(offenders(PROSE, /grammar|we was|misheard word/i)).toEqual([]);
+  });
+
+  // RULE: the site fills no placeholders, so a {word} would show as typed.
+  it('shows no unfilled {placeholder}', () => {
+    expect(offenders(PROSE, /\{\w+\}/)).toEqual([]);
+  });
+
+  // RULE: buttons stay short. A key named button or cta is a button; the keys inside `cta.live` (a badge label, a QR
+  // hint and alt text) are not, so only the last key counts here.
+  it('keeps buttons to 22 characters', () => {
+    const buttons = ALL.filter((l) => l.path.startsWith('site.ts:') && /(button|cta)$/i.test(l.path.split('.').pop() ?? ''));
+    expect(buttons.length).toBeGreaterThan(0);
+    expect(buttons.filter((b) => b.text.length > 22).map((b) => `${b.path}: ${b.text}`)).toEqual([]);
+  });
+
+  // RULE (claims and trust rulings Q3, D-121, D-126): the site describes the first build only. The /j invite page
+  // (`site.invite`) is the one exception: its claims are listed in packages/content/test/claims-capabilities.test.ts
+  // KNOWN_VIOLATIONS and BL-558 decides them. No other line may say these words.
+  it('describes the first build only: no invite, sync, backup, gift or mixed languages (Q3)', () => {
+    const held = /private by design|invite|grandparent|co-parent|backs up|backed up|sync|vault|cloud|gift|same sentence/i;
+    const INVITE_PAGE = 'site.ts:site.invite.';
+    expect(offenders(PROSE.filter((l) => !l.path.startsWith(INVITE_PAGE)), held)).toEqual([]);
+    expect(PROSE.some((l) => l.path.startsWith(INVITE_PAGE) && held.test(l.text)), 'the invite page no longer says these: drop the exception').toBe(true);
   });
 });

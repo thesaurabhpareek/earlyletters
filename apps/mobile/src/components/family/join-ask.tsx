@@ -89,14 +89,15 @@ export function WaitingBar() {
   }, [reduced, active, width, x]);
   const segment = Math.round(width / 3);
   const style = useAnimatedStyle(() => ({ transform: [{ translateX: x.value * (width - segment) }] }));
+  const P = tokens.progress;
   return (
     <View
       onLayout={(e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width)}
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
-      style={{ height: 3, borderRadius: 2, backgroundColor: c.line, overflow: 'hidden' }}>
+      style={{ height: P.sweep, borderRadius: tokens.radius.pill, backgroundColor: c.line, overflow: 'hidden' }}>
       {/* Reduce Motion: the segment rests at the start, still. */}
-      <Animated.View style={[{ width: segment, height: 3, borderRadius: 2, backgroundColor: c.accent }, style]} />
+      <Animated.View style={[{ width: segment, height: P.sweep, borderRadius: tokens.radius.pill, backgroundColor: c.accent }, style]} />
     </View>
   );
 }

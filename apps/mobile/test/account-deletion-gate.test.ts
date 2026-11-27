@@ -659,7 +659,9 @@ describe('the wiring that is read off the source (the behaviour is run in accoun
     expect(s).not.toMatch(/kind=\{[^}]*'loading'/);
     expect(s).toContain('primary={first ? { ...act(first), loading: working } : undefined}');
     expect(s).toContain('quiet={working ? [] : rest.map(act)}');
-    expect(s).toContain('const failure = press.acted ? failureLine(d.error) : null;');
+    // A failed Cancel says the outcome is not known yet, never "nothing has changed" (BL-491 point 5, CDesO-46).
+    expect(s).toContain("const failure = press.acted && view.actions.includes('cancel') ? cancelFailureLine(d.error) : null;");
+    expect(s).not.toMatch(/failureLine\(/);
     expect(s).toContain('ctl.say(`${c.open.restoringTitle}. ${c.open.restoringBody}`);');
     expect(s).toContain('if (press.failedPresses > 0 && failure) announce(failure);');
     expect(s).toContain('cancel: () => ctl.cancel(),');
