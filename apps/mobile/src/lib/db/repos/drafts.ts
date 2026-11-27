@@ -127,14 +127,17 @@ export function setKind({ db }: RepoContext, id: string, kind: DraftKind): boole
 
 /**
  * The date the letter is about, and how exactly it is known. A month-precision
- * date is stored as the first of that month. Null clears it (the local date of
+ * date is stored as given: the day DateSheet stores for a month, the first day
+ * of that month of the child's age (date-change.logic monthChoiceDay), exactly
+ * as entries.setOccurred stores it. Never the calendar month's first day: for a
+ * child born on the 13th that day is in the month of age before, so Keep would
+ * file the letter a month early (NS-15-R2). Null clears it (the local date of
  * the draft's creation is used at save). False for a malformed date or precision.
  */
 export function setOccurred({ db }: RepoContext, id: string, occurredOn: string | null, precision: OccurredPrecision): boolean {
   if (precision !== 'day' && precision !== 'month') return false;
   if (occurredOn !== null && !ISO_DAY.test(occurredOn)) return false;
-  const day = occurredOn !== null && precision === 'month' ? `${occurredOn.slice(0, 8)}01` : occurredOn;
-  db.run('UPDATE drafts SET occurred_on = ?, occurred_precision = ? WHERE id = ?', day, precision, id);
+  db.run('UPDATE drafts SET occurred_on = ?, occurred_precision = ? WHERE id = ?', occurredOn, precision, id);
   return changes(db) === 1;
 }
 
