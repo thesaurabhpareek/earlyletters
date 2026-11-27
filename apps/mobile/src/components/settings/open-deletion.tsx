@@ -9,10 +9,10 @@
  * cancels; after a cancel it says the book is coming back and waits for it (the phone is pulled at once, and the route
  * leaves for the Book when the book arrives, see useFirstRunGate). While the request is being carried out it only
  * explains, with Sign out (Sign in when signed out) as the way out. The words and buttons are lib/account-deletion/
- * open-request.ts deletionView, from accountDeletionCopy. A failure of something the person pressed keeps its line under
- * the date and says that nothing has changed, as the Delete account page does; a press keeps the screen and is answered
- * by its button's busy state (StateScreen's primary `loading`) and spoken (announce), and Try again says when the book is
- * still on its way.
+ * open-request.ts deletionView, from accountDeletionCopy. A failed Cancel deletion keeps its line under the date and says
+ * it is not clear yet whether it went through (BL-491 point 5), as the Delete account page does; a press keeps the screen
+ * and is answered by its button's busy state (StateScreen's primary `loading`) and spoken (announce), and Try again says
+ * when the book is still on its way.
  */
 import { router } from 'expo-router';
 import { useEffect, useRef, useSyncExternalStore } from 'react';
@@ -27,7 +27,7 @@ import { longDate } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
 import { listChildren } from '@/lib/store';
 import { syncNow } from '@/lib/sync';
-import { failureLine } from './delete-account.logic';
+import { cancelFailureLine } from './delete-account.logic';
 import { createPressController, deletionSignInParams, type PressController } from './open-deletion.logic';
 
 export function OpenDeletionScreen({ request }: { request: OpenRequest }) {
@@ -36,7 +36,7 @@ export function OpenDeletionScreen({ request }: { request: OpenRequest }) {
   // primary shows `loading` (busy, a second press ignored), the quiet options wait, and they come back if it never
   // settles (BL-494 point 3). `acted`: nothing is shown as a failure until
   // the person has pressed Cancel deletion: the passive read on a cold launch with no connection sets the hook's error,
-  // and "Nothing has changed. Deleting an account needs a connection." would be an answer to a question nobody asked
+  // and "It's not clear yet if the deletion was canceled." would be an answer to a question nobody asked
   // (a Try again does not count: it is a pull, and says "still on their way" when it finds nothing).
   const latest = useRef(d);
   latest.current = d;
@@ -60,7 +60,7 @@ export function OpenDeletionScreen({ request }: { request: OpenRequest }) {
   const working = press.working !== null;
   const date = request.state === 'scheduled' || request.state === 'held' ? longDate(localDay(request.scheduledFor)) : '';
   const view = deletionView(request, { signedIn: d.signedIn, date, tryAgainLabel: copy.common.tryAgainButton });
-  const failure = press.acted ? failureLine(d.error) : null;
+  const failure = press.acted ? cancelFailureLine(d.error) : null;
 
   // VoiceOver is told what changed: the screen becoming the "your letters are on their way back" state, and a failed
   // cancel (a live region alone is not spoken on iOS). The cancel on its way and a Try again that found nothing are
