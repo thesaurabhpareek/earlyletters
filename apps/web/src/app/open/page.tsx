@@ -6,7 +6,9 @@
  * Rules: no token (the link carries none), no analytics, no third-party script, no request on load. "Open the app"
  * uses the app's own scheme with nothing after it. The App Store link shows only once the site is in launch mode
  * (a valid NEXT_PUBLIC_APP_STORE_URL, src/lib/launch.ts); before that there is no store page to point at, so the
- * page never shows a dead link. Never indexed. The words are `site.openApp` (content rules: test/copy-rules.test.ts).
+ * page never shows a dead link. A person on another kind of phone reads that it is iPhone only for now, under the
+ * heading, for everyone (no user-agent check). Never indexed. The words are `site.openApp` (content rules:
+ * test/copy-rules.test.ts).
  */
 import type { Metadata } from 'next';
 import Link from 'next/link';
@@ -32,6 +34,8 @@ export default function OpenPage() {
   return (
     <main className={styles.page}>
       <h1 className={styles.line}>{copy.line}</h1>
+      {/* Always shown, never chosen by user agent: the page stays static and reads nothing about the visitor (BL-2129). */}
+      <p className={styles.small}>{copy.notIphone}</p>
       <p className={styles.body}>{live ? copy.body : copy.bodyPrelaunch}</p>
       <a className={styles.open} href={OPEN_APP_HREF}>
         {copy.open}

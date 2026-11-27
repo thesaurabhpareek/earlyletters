@@ -12,6 +12,7 @@
  */
 import { createHash } from 'node:crypto';
 import type { Page } from '@playwright/test';
+import { familyCopy } from '@scribe/content';
 import { btn, CHILD, journey, passAgeGateToSignIn, SIGNS_AS } from './support/app';
 import { allowConsoleError, expect, test } from './support/journey';
 import { ASHA_BOOK, MAMA, mockServer, PAPA, pgError, stubShareSheet, type MockServer } from './support/mock-server';
@@ -408,4 +409,58 @@ test('[J21d] a child\'s settings: "Write this book together" opens the invite, a
   await app.getByText('Write this book together').click();
   await expect(app.getByText(`Invite ${CHILD}'s co-parent`)).toBeVisible();
   await step('happy', 'From a child\'s settings', 'With the switch on the row opens the invite itself. "Family can read" (the family-contributor switch) stays hidden: contributors are not in v1.0 (B1).');
+});
+
+test('[J21k] a parent of a two-parent book: the family page ends in Leave, the sheet asks first, and Leave calls leave_child', async ({ app, record }) => {
+  // BL-481 group 5 (CR-236 item 2): Leave is offered (LEAVE_BOOK_OFFERED). Papa signs in on a fresh install and the account's
+  // book, which Mama shares, comes down with the first pull (S17's Opening your book), so the phone lists two parents.
+  test.setTimeout(120_000);
+  const step = journey(record, 'J21', 'co-parent-sharing', 40, 'J21-07');
+  const l = familyCopy.leave;
+  const m = await mockServer(app, { user: PAPA, email: 'papa@example.invalid' });
+  let left = false;
+  m.rpc('sync_books', () => ({ body: { epoch: 1, first_run_open: false, books: left ? [] : [{ id: ASHA_BOOK, role: 'parent', name: CHILD, members: [], invites: [] }] } }));
+  m.rpc('sync_push', () => ({ body: { results: [], paused: false, stopped: false } }));
+  m.rpc('sync_pull', () => ({ body: pulled(!left) }));
+  m.rpc('leave_child', () => {
+    left = true;
+    return { body: 'left' };
+  });
+  await openOn(app);
+  await passAgeGateToSignIn(app);
+  await signInWithEmail(app, 'papa@example.invalid');
+  // The book arrives and the phone leaves first run for Home; then the book's settings row opens the family page.
+  await expect(app.getByRole('tab', { name: 'Book' }).or(app.getByText('Book', { exact: true }).last()).first()).toBeVisible({ timeout: 30_000 });
+  await app.getByText('Book', { exact: true }).last().click();
+  await app.getByTestId('book.settings').click();
+  // `visible`: the Book stays in the tree under Settings on the web, with the child's name in it.
+  await app.getByText(CHILD, { exact: true }).filter({ visible: true }).first().click();
+  await app.getByText(familyCopy.bookRow.label, { exact: true }).filter({ visible: true }).first().click();
+  await expect(app).toHaveURL(/\/family/);
+  await expect(app.getByText(familyCopy.members.coParent, { exact: true }).filter({ visible: true }).first()).toBeVisible();
+  const leaveRow = app.getByTestId('family.leave');
+  await expect(leaveRow).toBeVisible();
+  await expect(leaveRow).toContainText(l.row.replace('{child}', CHILD));
+  expect(m.rpcCalls('leave_child'), 'nothing leaves before the sheet').toHaveLength(0);
+  await step('happy', 'The family page, two parents', 'With a co-parent on this phone the page shows both signatures and no invite card, and ends in one quiet row, "Leave Asha\'s book", plain text, not red and not lit (S60, BL-1961). A sole parent has no such row.', undefined, { settle: 1800 });
+
+  await leaveRow.click();
+  await expect(app).toHaveURL(/\/invite\/leave/);
+  await expect(app.getByTestId('leave.screen')).toBeVisible();
+  await expect(app.getByText(l.title.replace('{child}', CHILD)).filter({ visible: true }).first()).toBeVisible();
+  // Nothing chosen: Leave waits. (The web build gives the choice cards no aria-checked, so the button is what is checked.)
+  await expect(app.getByTestId('leave.choice.keep')).toBeVisible();
+  await expect(app.getByTestId('leave.choice.take_out')).toBeVisible();
+  await expect(app.getByTestId('leave.confirm')).toBeDisabled();
+  await step('happy', 'Leave the book?', 'One sheet: the title, two equal choices with nothing chosen (leave my letters in the book, or take them out), what each means, and the line about what cannot be taken back. Leave the book waits, outlined, until a choice is made; Stay is the one filled button and closes.');
+
+  await app.getByTestId('leave.choice.keep').click();
+  await expect(app.getByTestId('leave.confirm')).toBeEnabled();
+  await step('happy', 'A choice made', 'With a choice made, Leave the book turns to the quiet destructive style and can be pressed. Nothing has been asked of the server yet.');
+
+  await app.getByTestId('leave.confirm').click();
+  await expect(app.getByText(l.done.replace('{child}', CHILD), { exact: true })).toBeVisible({ timeout: 15_000 });
+  expect(m.rpcCalls('leave_child')).toHaveLength(1);
+  expect(m.rpcCalls('leave_child')[0].body).toEqual({ p_child: ASHA_BOOK, p_keep_in_book: true });
+  await step('happy', 'Left the book', 'One leave_child, after the press, with the choice the person made; a sync follows so the other parent\'s letters leave this phone. The sheet closes and the family page says it in its toast: this person\'s own letters stay theirs.', undefined, { settle: 120 });
 });
