@@ -125,11 +125,20 @@ export async function typeLetter(page: Page, text: string, to: 'book' | 'private
 /**
  * The reminder card after the phone's first letter (C-REQ-001 Rev, DR-12 B; components/asks/reminder-prime-ask.tsx):
  * answers "No reminders" so a journey about something else can go on over the Book. Asserts the card was there.
+ * Callable right after Keep or once the Book is on. It waits for each step the app takes before the card, each with
+ * its own budget: the saved moment shows; it holds 3 s from the save on the web, which reports a screen reader
+ * (SCREEN_READER_HOLD_MS, review-view.logic.ts), then Review leaves for the Book; only then does review.tsx land()
+ * start the card's 880 ms timer (signInAfterLandingMs). One 8 s wait from the Keep tap missed the card in 23 of 50 runs
+ * at 8 workers on 4 cores, though it always came: the hold took up to 12.3 s there, the card up to 5.3 s after it.
  */
 export async function noRemindersAfterFirstLetter(page: Page) {
-  await expect(page.getByRole('heading', { name: 'A gentle nudge, now and then?' })).toBeVisible({ timeout: 8000 });
+  const saved = page.getByTestId('review.saved');
+  const card = page.getByRole('heading', { name: 'A gentle nudge, now and then?' });
+  await expect(saved.or(selectedTab(page, 'Book')).first(), 'the letter was saved').toBeVisible();
+  await expect(saved, 'the saved moment handed over to the Book').toHaveCount(0, { timeout: 15_000 });
+  await expect(card).toBeVisible();
   await btn(page, 'No reminders').click();
-  await expect(page.getByRole('heading', { name: 'A gentle nudge, now and then?' })).toHaveCount(0);
+  await expect(card).toHaveCount(0);
 }
 
 /** Local calendar day `days` from today (negative = earlier), YYYY-MM-DD, in the browser's time zone (the same machine). */
