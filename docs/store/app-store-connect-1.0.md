@@ -187,8 +187,11 @@ Launching in the United States on iPhone, iOS 17 or later.
 
 Draft Helpful Details:
 
+Note, not paste text: the accessibility line is held (CDesO-57). The block below has no accessibility line, and none is
+added until the device walk (BL-948) passes; then it names only what the walk confirmed, the same features section 5
+declares.
+
 ```text
-Accessibility: held (CDesO-57). Send no accessibility line until the device walk (BL-948) passes; then name only what the walk confirmed, the same features section 5 declares.
 Privacy: speech-to-text runs on the iPhone, and recordings stay on the phone that made them. Signing in is required. The one-time speech model download is shown with its size, on Wi-Fi, and starts when the parent chooses.
 Team: made by an independent developer. [FOUNDER: add one line about yourself if you want it; no child's name or family detail.]
 Priority: this is our first and only app; the launch is our highest priority.
