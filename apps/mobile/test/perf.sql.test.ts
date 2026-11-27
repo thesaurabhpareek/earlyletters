@@ -165,7 +165,9 @@ describe('[BL-1402] the local store at five years, SQL path on a CI machine', ()
       return rows;
     };
     const t = time(SAMPLES, () => {
-      const first = createBookPages(read).first(ASHA); // the Book's read on focus (book.tsx initialiser)
+      const pages = createBookPages(read);
+      pages.first(ASHA); // the Book's read on focus (book.tsx initialiser)
+      const first = pages.reread(ASHA); // watchBook's catch-up read, from the floor
       const chapters = bookChapters(first, asha, '2026-11-01');
       expect(monthRows(chapters).length).toBeGreaterThan(0);
       entries.bookOutline(f.ctx, ASHA); // the Months button and Read together while older pages are unread

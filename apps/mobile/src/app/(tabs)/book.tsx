@@ -57,11 +57,11 @@ import { downloadingLine } from '@/lib/models/speech-download.logic';
 import { planFor } from '@/lib/models/speech-packs';
 import { springConfig, useMotion } from '@/lib/motion';
 import { isReadItBack } from '@/lib/read-it-back';
-import { bookOutline, deleteEntry, getSetting, listBookRange, setSetting, subscribe, todayISO, undeleteEntry, type Entry } from '@/lib/store';
+import { bookOutline, deleteEntry, getEntry, getSetting, listBookRange, setSetting, subscribe, todayISO, undeleteEntry, type Entry } from '@/lib/store';
 import { languageFor } from '@/lib/transcription-queue';
 import { useSpeechDownload, useWordsJob } from '@/lib/transcription-queue/use-words';
 import { bookHandoff, createArrivalGate, watchBook, firstBookViewThisSession, firstSeen, parseSeen, secondFreeOnArrival, withLeaving } from '@/components/book/book.logic';
-import { BOOK_PAGE, arrivalNeedsRest, createBookPages, monthsFromOutline } from '@/components/book/book-pages.logic';
+import { arrivalReach, createBookPages, monthsFromOutline } from '@/components/book/book-pages.logic';
 import { bookChapters, openerOf, type Chapter } from '@/components/book/chapters';
 import { BookRow, LetterCard } from '@/components/book/letter-card';
 import { letterWords } from '@/components/book/letter-words.logic';
@@ -102,12 +102,14 @@ export default function Book() {
   // This book's letters are read in the initialiser, so the first frame is the book and never the empty-book state
   // (a Book that mounts with `arrived` has to find its card on that first look). `read.childId` says whose letters
   // these are, so the arrival waits for the right book. The read is one chapter of rows (BL-2225, PRD 7.1): the next
-  // is read as the reader scrolls to it, and the whole book only for what needs it (Months, an older arrived letter).
+  // is read as the reader scrolls to it, an arrived letter dated back is read down to its day, and the whole book only
+  // for what needs it (the Months sheet, the Photos lens).
   const [pages] = useState(() => createBookPages(listBookRange));
   const [read, setRead] = useState(() => ({ childId: active?.id ?? null, entries: active ? pages.first(active.id) : [] }));
   const entries = read.entries;
   const bookRead = read.childId === (active?.id ?? null);
-  // `pages` changes only together with a setRead, so this render already sees its latest state.
+  // `pages` moves its floor only just before the setRead that carries the rows (never inside an updater), so this
+  // render already sees its latest state.
   const done = pages.done(active?.id ?? null);
   const leaving = useSyncExternalStore(bookHandoff.subscribe, bookHandoff.get, bookHandoff.get);
   const [washes, setWashes] = useState<Record<string, number>>({});
@@ -178,14 +180,16 @@ export default function Book() {
   // row of dates and a flag, never words (BL-2225).
   const outline = useMemo(() => (active && !done ? bookOutline(active.id) : null), [active, done, entries]);
   const holdWholeBook = useCallback(() => {
-    if (!active || pages.done(active.id)) return;
+    if (!active || !bookRead || pages.done(active.id)) return;
     setRead({ childId: active.id, entries: pages.all(active.id) });
-  }, [active, pages]);
+  }, [active, bookRead, pages]);
+  // The page joins what is held when React applies it, so a store change queued in the same tick is kept.
   const readMore = useCallback(() => {
-    if (!active || read.childId !== active.id) return;
-    const next = pages.more(active.id, read.entries);
-    if (next) setRead({ childId: active.id, entries: next });
-  }, [active, pages, read]);
+    if (!active || !bookRead) return;
+    const id = active.id;
+    const join = pages.more(id);
+    if (join) setRead((held) => (held.childId === id ? { childId: id, entries: join(held.entries) } : held));
+  }, [active, bookRead, pages]);
   const readBack = useMemo(() => new Set(entries.filter((e) => e.captureMode !== 'typed' && isReadItBack(e.id)).map((e) => e.id)), [entries]);
 
   const wash = useCallback((ids: string[]) => {
@@ -198,23 +202,26 @@ export default function Book() {
   useEffect(() => {
     if (!active || entries.length === 0) return;
     const raw = getSetting(SEEN_KEY);
-    // Only the first page: the other parent's new letters arrive at the top, and an older page read later is not new.
-    const next = firstSeen(entries.slice(0, BOOK_PAGE), (e) => isOwnEntry(e as Entry), parseSeen(raw));
+    // Not the older pages the reader scrolls to (BL-2225): the seen list starts from the first page, so a page read
+    // later would wash every letter of theirs on it. A letter that arrives by a store change still washes, wherever it is.
+    const next = firstSeen(entries.filter((e) => !pages.olderPage(e.id)), (e) => isOwnEntry(e as Entry), parseSeen(raw));
     wash(next.wash);
     const value = JSON.stringify(next.seen);
     if (value !== raw) setSetting(SEEN_KEY, value);
-  }, [entries, active, wash]);
+  }, [entries, active, wash, pages]);
 
   // A kept letter arrives (5.8 row 5, P4 sets `arrived`): position the list on it under its opener at once, then, when
   // the Book is uncovered (Review dissolves away over it), wash it once and clear the param, so Back and tab taps
   // never replay it. The param stays until this book's letters are read and the card is found (P5 critics' pass, S1):
   // a Book that mounts with it, which is every first letter, must not lose the wash.
-  // The arrived card may be older than the pages held (a letter dated back): hold the rest of the book, then look.
-  const arrivalWaits = arrivalNeedsRest(params.arrived, chapters, done);
-  const loaded = bookRead && !arrivalWaits;
+  // The arrived card may be older than the pages held (a letter dated back, BL-2225): read down to its day, then look.
+  const reachDay = bookRead && active ? arrivalReach({ param: params.arrived, sections: chapters, childId: active.id, lookup: getEntry, holds: (day) => pages.holds(active.id, day) }) : null;
+  const loaded = bookRead && reachDay === null;
   useEffect(() => {
-    if (bookRead && arrivalWaits) holdWholeBook();
-  }, [bookRead, arrivalWaits, holdWholeBook]);
+    if (!active || !reachDay) return;
+    const rows = pages.reach(active.id, reachDay);
+    if (rows) setRead({ childId: active.id, entries: rows });
+  }, [active, reachDay, pages]);
   const pendingScroll = useRef<{ sectionIndex: number; itemIndex: number } | null>(null);
   const scrollToArrival = useCallback(() => {
     const at = pendingScroll.current;
@@ -381,6 +388,11 @@ export default function Book() {
   useEffect(() => {
     if (params.arrived || !lensOn) setLensMode('months');
   }, [params.arrived, lensOn]);
+  // The Photos lens is the whole book's pictures: a page with none adds no rows, so the list would never grow to ask
+  // for the next one (onEndReached fires once per content length). It holds the whole book (BL-2225).
+  useEffect(() => {
+    if (showPhotos) holdWholeBook();
+  }, [showPhotos, holdWholeBook]);
   // Both lenses are the one SectionList below with different sections, so the header and its lens row stay mounted
   // across the switch and VoiceOver keeps its place on the option just chosen (NS-33-R3).
   const sections = useMemo(() => (showPhotos ? photoChapters(chapters, lens.photos) : chapters), [showPhotos, chapters, lens.photos]);

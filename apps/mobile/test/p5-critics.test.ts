@@ -129,8 +129,8 @@ describe('[S1] the arrival wash survives a Book that mounts with `arrived`', () 
       expect(screen).toMatch(/useState\(\(\) => \(\{ childId: active\?\.id \?\? null, entries: active \? pages\.first\(active\.id\) : \[\] \}\)\)/);
       expect(screen).not.toMatch(/useState<Entry\[\]>\(\[\]\)/);
       expect(screen).toMatch(/const bookRead = read\.childId === \(active\?\.id \?\? null\);/);
-      // BL-2225: an arrived card older than the pages held waits for the rest of the book before the gate looks.
-      expect(screen).toMatch(/const loaded = bookRead && !arrivalWaits;/);
+      // BL-2225: an arrived card older than the pages held waits until its day is read before the gate looks.
+      expect(screen).toMatch(/const loaded = bookRead && reachDay === null;/);
     });
 
     it('asks the gate with the read state, positions at once, and washes and clears the param together once uncovered', () => {
