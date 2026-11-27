@@ -10,7 +10,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const h = vi.hoisted(() => ({
   spoken: [] as string[],
-  d: {} as { signedIn: boolean; error: 'offline' | 'failed' | null; cancel: () => Promise<boolean>; signOut: () => Promise<void> },
+  d: {} as {
+    signedIn: boolean;
+    error: 'offline' | 'failed' | null;
+    cancel: () => Promise<boolean>;
+    signOut: () => Promise<void>;
+    /** The hook's session count and status (use-account-deletion.ts); the older cases here leave them out. */
+    session?: number;
+    status?: { state: 'executing'; requestId: string; scheduledFor?: string } | null;
+  },
 }));
 
 vi.mock('react', async () => (await import('./helpers/mini-react')).reactStandIn);
@@ -33,9 +41,10 @@ vi.mock('@/lib/account-deletion', async () => {
 
 import { accountDeletionCopy as c } from '@scribe/content';
 import { OpenDeletionScreen } from '../src/components/settings/open-deletion';
+import { shownRequest } from '../src/components/settings/open-deletion.logic';
 import { renderHook } from './helpers/mini-react';
 
-type Shown = { kind: string; body: string; primary?: { label: string; onPress: () => void } };
+type Shown = { kind: string; title: string; body: string; primary?: { label: string; onPress: () => void }; quiet?: Array<{ label: string }> };
 type El = { type?: unknown; props?: { children?: unknown } & Record<string, unknown> };
 
 /** The props the screen hands StateScreen, found in the returned tree. */
@@ -149,5 +158,85 @@ describe('[BL-491] the cancel-failed line goes once nothing on the screen can be
     expect(after.primary?.label).toBe(c.signedOut.button);
     expect(after.body).not.toContain(c.errors.cancelFailed);
     expect(after.kind).toBe('empty');
+  });
+});
+
+describe('[BL-491] a failed Cancel deletion does not come back after a sign-out and sign-in on the same screen (review follow-up on #2166)', () => {
+  it('the old press is not this session\'s: a read that fails after signing in again shows no cancel line; a new press does', async () => {
+    h.d = {
+      signedIn: true,
+      session: 0,
+      error: null,
+      cancel: async () => {
+        h.d.error = 'offline';
+        return false;
+      },
+      signOut: async () => undefined,
+    };
+    const r = renderHook(() => OpenDeletionScreen({ request }));
+    shown(r.result.current).primary!.onPress();
+    await settle();
+    r.rerender();
+    expect(shown(r.result.current).body).toContain(c.errors.cancelFailed);
+
+    // Signed out (the hook counts the session), then in again. The error is left as it was here, as a read that failed
+    // after the new sign-in would leave it: the screen must not show it as the old press's.
+    Object.assign(h.d, { signedIn: false, session: 1 });
+    r.rerender();
+    Object.assign(h.d, { signedIn: true, session: 2 });
+    r.rerender();
+    const after = shown(r.result.current);
+    expect(after.primary?.label).toBe(c.scheduled.cancelButton);
+    expect(after.body).not.toContain(c.errors.cancelFailed);
+    expect(after.kind).toBe('empty');
+
+    // A press in this session that fails says so again.
+    h.d.error = null;
+    after.primary!.onPress();
+    await settle();
+    r.rerender();
+    expect(shown(r.result.current).body).toContain(c.errors.cancelFailed);
+  });
+});
+
+describe('[CDesO-59 case 3] a Cancel deletion that finds the request executing moves the screen at once (review follow-up on #2191)', () => {
+  it('draws the executing view from the answer the hook already has, says it, and shows no failure line', async () => {
+    h.d = {
+      signedIn: true,
+      session: 0,
+      error: null,
+      status: null,
+      // The hook's cancel on an executing answer: no error, its status is the read that said so (use-account-deletion.ts).
+      // The note is not rewritten here, as under HO-911's guard.
+      cancel: async () => {
+        h.d.status = { state: 'executing', requestId: 'req-asha', scheduledFor: request.scheduledFor };
+        return false;
+      },
+      signOut: async () => undefined,
+    };
+    const r = renderHook(() => OpenDeletionScreen({ request }));
+    shown(r.result.current).primary!.onPress();
+    await settle();
+    r.rerender();
+    const after = shown(r.result.current);
+    expect(after.title).toBe(c.open.executingTitle);
+    expect(after.body).toBe(c.executing);
+    expect(after.kind).toBe('empty');
+    expect(after.primary?.label).toBe(c.scheduled.doneButton);
+    expect(after.body).not.toContain(c.errors.cancelFailed);
+    expect(h.spoken).toContain(`${c.open.executingTitle}. ${c.executing}`);
+  });
+
+  it('takes the hook\'s word only for the same request, and only over a note that still says scheduled', () => {
+    const executing = { state: 'executing' as const, requestId: 'req-asha', scheduledFor: request.scheduledFor };
+    expect(shownRequest(request, executing)).toEqual(executing);
+    expect(shownRequest(request, null)).toBe(request);
+    expect(shownRequest(request, { state: 'executing', requestId: 'req-other' })).toBe(request);
+    expect(shownRequest(request, { state: 'scheduled', requestId: 'req-asha', scheduledFor: request.scheduledFor })).toBe(request);
+    // A request can go from executing to held (a legal hold): a held note is newer than any executing answer, and stays.
+    const held = { ...request, state: 'held' as const };
+    expect(shownRequest(held, executing)).toBe(held);
+    const cancelled = { state: 'cancelled' as const, at: '2099-11-19T09:00:00.000Z' };
+    expect(shownRequest(cancelled, executing)).toBe(cancelled);
   });
 });
