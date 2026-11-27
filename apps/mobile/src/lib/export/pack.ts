@@ -16,7 +16,7 @@
 import { strToU8, Zip, ZipPassThrough } from 'fflate';
 import { EXPORT_FORMAT, EXPORT_SCHEMA_VERSION, type Manifest, type ManifestFile } from './schema';
 import { carriesMetadata } from '../photos/strip';
-import { dataFiles, exporterRole, MEDIA, planExport, type AudioResult, type ExportSnapshot } from './build.logic';
+import { dataFiles, exporterRole, MEDIA, planExport, type AudioResult, type ExportSnapshot, type PhotoJob } from './build.logic';
 
 /** Below the 4 GiB limit of a ZIP without ZIP64, with room for headers. */
 export const MAX_EXPORT_BYTES = 3_900_000_000;
@@ -148,12 +148,44 @@ export async function packExport(snapshot: ExportSnapshot, deps: PackDeps): Prom
 
   deps.onProgress?.({ phase: 'books', fraction: 0 });
 
-  // 1. README and schema first, so they sit at the top of the archive.
-  const [readme, schema, ...rest] = plan.textFiles;
-  for (const f of [readme, schema]) {
-    await add(f.path, strToU8(f.text), f.mediaType);
-    report('letters', f.text.length);
+  // The last guard before a picture leaves the phone (NS-01-R6, BL-1410), read once per picture: bytes that are not the
+  // copy the app stored (its `entry_media` hash), or that carry an Exif, XMP, IPTC or comment segment or anything after
+  // the end marker, are held back and the letter says `photo: null`. Fail closed: a picture that may hold a location
+  // never goes in, even if the stored copy was changed on disk after it was kept. Null when it vanished or is held back.
+  const photosHeldBack: string[] = [];
+  const checkedPhoto = async (job: PhotoJob): Promise<{ data: Uint8Array; sha256: string } | null> => {
+    let data: Uint8Array;
+    try {
+      data = await deps.readFile(job.uri);
+    } catch {
+      return null; // vanished between the snapshot and now: the letter says photo: null
+    }
+    const sha256 = await deps.sha256(data);
+    if (sha256 !== job.storedSha256 || carriesMetadata(data)) {
+      photosHeldBack.push(job.entryId);
+      return null;
+    }
+    return { data, sha256 };
+  };
+
+  // 0. The first picture that passes the guard, kept to write in step 4c, so the README describes photos/ only when
+  // a picture will be in it. Pictures before it that fail are judged here once and not read again.
+  let photoIndex = 0;
+  let firstPhoto: { data: Uint8Array; sha256: string } | null = null;
+  for (; photoIndex < plan.photos.length && !firstPhoto; photoIndex++) {
+    check();
+    firstPhoto = await checkedPhoto(plan.photos[photoIndex]);
+    if (!firstPhoto) report('pictures', plan.photos[photoIndex].sizeHint);
   }
+  if (firstPhoto) photoIndex--; // step 4c starts at the picture it keeps
+
+  // 1. README and schema first, so they sit at the top of the archive.
+  const [, schema, ...rest] = plan.textFiles;
+  const readme = plan.readmeFor(firstPhoto !== null);
+  await add('README.txt', strToU8(readme), MEDIA.txt);
+  report('letters', readme.length);
+  await add(schema.path, strToU8(schema.text), schema.mediaType);
+  report('letters', schema.text.length);
 
   // 2. One printable book per child.
   for (const b of plan.books) {
@@ -219,31 +251,17 @@ export async function packExport(snapshot: ExportSnapshot, deps: PackDeps): Prom
     await yieldToUi();
   }
 
-  // 4c. Letters' pictures (1.7.0): the stored copy, byte for byte. The last guard before a picture leaves the phone
-  // (NS-01-R6, BL-1410): bytes that are not the copy the app stored (its `entry_media` hash), or that carry an Exif, XMP,
-  // IPTC or comment segment, are held back and the letter says `photo: null`. Fail closed: a picture that may hold a
-  // location never goes in, even if the stored copy was changed on disk after it was kept.
+  // 4c. Letters' pictures (1.7.0): the stored copy, byte for byte, each through the guard above (the first one already).
   const photoResults = new Map<string, AudioResult>();
-  const photosHeldBack: string[] = [];
-  for (const job of plan.photos) {
+  for (; photoIndex < plan.photos.length; photoIndex++) {
     check();
-    let data: Uint8Array;
-    try {
-      data = await deps.readFile(job.uri);
-    } catch {
-      // Vanished between the snapshot and now: the letter says photo: null.
-      report('pictures', job.sizeHint);
-      continue;
-    }
-    const sha256 = await deps.sha256(data);
-    if (sha256 !== job.storedSha256 || carriesMetadata(data)) {
-      photosHeldBack.push(job.entryId);
-      report('pictures', job.sizeHint);
-      continue;
-    }
-    await add(job.path, data, 'image/jpeg', sha256);
-    photoResults.set(job.entryId, { sha256, bytes: data.length });
+    const job = plan.photos[photoIndex];
+    const ok = firstPhoto ?? (await checkedPhoto(job));
+    firstPhoto = null;
     report('pictures', job.sizeHint);
+    if (!ok) continue;
+    await add(job.path, ok.data, 'image/jpeg', ok.sha256);
+    photoResults.set(job.entryId, { sha256: ok.sha256, bytes: ok.data.length });
     await yieldToUi();
   }
 

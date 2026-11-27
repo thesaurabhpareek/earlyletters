@@ -37,6 +37,9 @@ export const exportCopy = {
     tooBigTitle: 'This book is too big for one file',
     lowSpaceBody: 'This phone needs more free space. Free some up, then try again.',
     integrityNote: 'A recording changed after it was saved. It is included as it is now, and the data file marks it.',
+    /** Shown when the export left a picture out because it could not be checked (NS-01-R6): the letter itself is still there. */
+    photoHeldBackOne: 'One picture could not be checked, so it was left out. Its letter is still in the export.',
+    photoHeldBackMany: 'Some pictures could not be checked, so they were left out. Their letters are still in the export.',
   },
 
   /** Header lines at the top of each letters/*.txt file. */
