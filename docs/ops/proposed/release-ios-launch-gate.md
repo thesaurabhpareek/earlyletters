@@ -1,6 +1,6 @@
 # Proposal: refuse a release candidate tag unless develop launches green (BL-1480, CR-74)
 
-Status: applied on 22 Nov 2026 in PR #1641 (Karma, CR-73; the patch is `docs/ops/proposed/workflows/release-ios-launch-gate.patch`). The text below is the original proposal. Door: two-way (delete the job and the `needs` line).
+Status: applied on 22 Nov 2026 in PR #1641 (Karma, CR-73). The patch `docs/ops/proposed/workflows/release-ios-launch-gate.patch` was removed on 27 Nov 2026: it is applied, so it no longer applies; it is at `ba634177` in git history (`docs/ops/proposed/workflows-retired.md`). The section "Require the open line" at the end is a new, unapplied proposal. The text below is the original proposal. Door: two-way (delete the job and the `needs` line).
 
 ## Why
 
@@ -72,3 +72,29 @@ The check: `decideTagCheckedRun({ tagSha, runs })` in `scripts/release/launch-ga
 | A green run on exactly the tagged sha | open | `[BL-1594] a green run on exactly the tagged sha opens` |
 
 Cost if wired: one more macOS run per RC (on the release branch), against the EAS and Actions budgets in `docs/ops/RELEASE.md` 3.4. Way back: remove the call; the function stays pure and unused.
+
+## Require the open line (BL-1574 review follow-up, proposal, not applied)
+
+Status: PROPOSED, 27 Nov 2026. Patch: `docs/ops/proposed/workflows/release-ios-launch-gate-output.patch` (one step in `release-ios.yml`). Agent sessions cannot push `.github/workflows/`; whoever applies it uses an account that can, deletes the patch in the same commit and marks this section applied.
+
+Why: the `launch-gate` job passes when `node scripts/release/launch-gate.mjs` exits 0. Before #2100 the script's entry check could skip `main()` (a path with a space, or one reached through a symlink), and then it printed nothing and exited 0, so the job passed without deciding. #2100 fixed that path, and its Review B (note 2) asked for defence in depth: the job should pass only on the line the script prints when the gate is open, so any later way of skipping `main()` fails the tag instead of opening it.
+
+The change: the step's `run:` becomes a block under `set -euo pipefail` that pipes the script through `tee` into `$RUNNER_TEMP/launch-gate.txt` (so the log still shows the line), then requires a whole line matching
+
+`^launch gate open: run [0-9]+ on [0-9a-f]{9} concluded success \(merge base [0-9a-f]{9}\)$`
+
+which is the message `decideLaunchGate` returns when it opens (`scripts/release/launch-gate.mjs` line 35). With no such line the step prints `::error::Release candidate tag refused: the launch gate printed no open line, so it did not decide.` and exits 1. `pipefail` keeps the script's own exit 1 or 2 even when the line is there. Nothing else changes: same job, permissions, token and checkout.
+
+| Script output and exit | Step | Test in `scripts/ci/launch-gate-output-step.test.mjs` |
+|---|---|---|
+| the open line, exit 0 | passes, line in the log | `the step passes on the open line with exit 0` |
+| nothing, exit 0 (`main()` skipped) | refused with the `::error::` line | `refuses: no output and exit 0` and the `::error::` case |
+| the refusal, exit 1; the usage line, exit 2 | refused | `refuses: the refusal and exit 1`, `the usage line and exit 2` |
+| the open line, exit 1 | refused (pipefail) | `refuses: the open line but exit 1` |
+| `tagged commit checked: ...` (BL-1594's line), exit 0 | refused: it is not the launch gate's line | `refuses: the tag-check line` |
+| the open line indented, with text after it, a short sha, or `concluded failure` | refused | four `refuses:` cases |
+
+The test reads the `run:` block from the patch itself and runs it under `bash -e` (as the runner does) with a stub `node` on `PATH`; the open line it feeds is built by calling `decideLaunchGate`, so a change to the script's wording fails the test before it can fail a release. Mutants tried on the patch (no pipefail, either anchor dropped, the check skipped, a loose sha, exit 0 on a miss, any conclusion): each fails at least one test. The patched `release-ios.yml` lints clean: `node scripts/ci/workflow-lint.mjs` printed `0 finding(s): 0 pin, 0 prt`.
+
+Coupling: the regex and the script's message must change together. The test above fails when only one of them does. Door: two-way (put back the one-line `run:`). Not verified: not run on a GitHub runner; the test uses the local `bash`.
+
