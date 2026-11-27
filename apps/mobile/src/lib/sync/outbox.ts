@@ -24,6 +24,7 @@
  */
 import { LANGUAGE_CODES, clampText } from '@scribe/core';
 import { prefsRow } from '../db/repos/children';
+import { BOOK_DELETED_PREFIX } from '../db/repos/wipe';
 import type { SqlDb } from '../db/sql';
 import { ALL_GROUPS, type EntryData, type FieldGroup, type HeldDraftData, type PushOp, type PushOpType, type WordsGroup } from './types';
 
@@ -213,6 +214,27 @@ export function getChildRow(db: SqlDb, id: string): LocalChildRow | null {
 
 const isOwn = (owner: string, r: LocalEntryRow) => r.author_id === null || r.author_id === owner;
 
+/**
+ * Whether a book still takes this phone's letter and held-draft uploads (FU-10c): it is not one this person left
+ * (`server_state` 'left', BL-1959), not one the server closed as deleted ('deleted', closeBook), and not one waiting in
+ * Recently deleted on this phone (`book.deletedAt.<id>`, db/repos/wipe.ts; BL-559 keeps such a book 'local' after
+ * sign-in). Failure mode it stops: a later caller of `enqueueEntryUpsert` or `enqueueHeldDraft` (the letter page's
+ * Change words, BL-413, was the first) queues a person's words for a book the server never got, or no longer lets
+ * them write to. The store's own guards (store.ts entryBookLeft, entryBookClosed) stay; this one holds for every
+ * caller. A letter with no book, or a book with no row here, is decided as before (entrySnapshot holds a bookless one).
+ */
+export function bookTakesUploads(db: SqlDb, childId: string | null): boolean {
+  if (!childId) return true;
+  return (
+    db.get<{ n: number }>(
+      `SELECT 1 AS n WHERE EXISTS (SELECT 1 FROM children WHERE id = ? AND server_state IN ('left', 'deleted'))
+       OR EXISTS (SELECT 1 FROM settings WHERE key = ?)`,
+      childId,
+      BOOK_DELETED_PREFIX + childId,
+    ) == null
+  );
+}
+
 // ── Queue primitives ──────────────────────────────────────────────────────
 export function opsFor(db: SqlDb, entityId: string): OutboxRow[] {
   return db.all<OutboxRow>('SELECT * FROM sync_outbox WHERE entity_id = ? ORDER BY lane, seq', entityId);
@@ -256,12 +278,17 @@ export function refreshEntryState(db: SqlDb, id: string): void {
 }
 
 // ── Letters ───────────────────────────────────────────────────────────────
-/** A save or an edit of one's own letter. `groups` are the field groups the write changed. */
+/**
+ * A save or an edit of one's own letter. `groups` are the field groups the write changed. Nothing is queued for a
+ * letter of a book that no longer takes uploads (bookTakesUploads): its local write stands, as every edit in such a
+ * book does, and a book restored from Recently deleted sends the letter whole (ownership.ts claimRestoredBook).
+ */
 export function enqueueEntryUpsert(db: SqlDb, id: string, groups: readonly FieldGroup[], ctx: EnqueueContext): void {
   const owner = syncOwner(db);
   if (!owner) return;
   const r = getEntryRow(db, id);
   if (!r || !isOwn(owner, r) || r.deleted_at !== null) return;
+  if (!bookTakesUploads(db, r.child_id)) return; // FU-10c: a left, closed or Recently deleted book; nothing is queued
   // A voice-only letter waiting for its words goes up as an author-only held row (F16 6.2 I waiting_letter).
   if (r.transcript_status === 'waiting' && r.child_id && !r.server_version) return enqueueHeld(db, id, heldFromWaiting(r), r.held_v ?? null, ctx);
   const data = entrySnapshot(r);
@@ -529,13 +556,14 @@ function enqueueHeld(db: SqlDb, id: string, data: HeldDraftData | null, heldV: s
 
 /**
  * A held draft changed, or was just held (store.ts holdDraft and the draft
- * setters): queue its held row. Does nothing before the first sign-in, or for a
- * draft that was never held.
+ * setters): queue its held row. Does nothing before the first sign-in, for a
+ * draft that was never held, or for a draft of a book that no longer takes
+ * uploads (bookTakesUploads).
  */
 export function enqueueHeldDraft(db: SqlDb, draftId: string, ctx: EnqueueContext): void {
   if (!syncOwner(db)) return;
   const d = getDraftRow(db, draftId);
-  if (!d) return;
+  if (!d || !bookTakesUploads(db, d.child_id)) return; // FU-10c: as enqueueEntryUpsert
   enqueueHeld(db, draftId, heldFromDraft(d), d.held_v, ctx, d.held_typed);
 }
 
