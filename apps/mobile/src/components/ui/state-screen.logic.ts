@@ -86,11 +86,14 @@ export function stateVisual(kind: StateKind, o: { art?: LineArtName; glyph?: unk
   return { slot, art, breathes: kind === 'loading' && slot === 'art', drawsOn: false };
 }
 
-/** Role props for the block, so every state announces itself the same way. */
-export function stateA11y(kind: StateKind): { accessibilityLiveRegion?: 'polite'; accessibilityState?: { busy: boolean } } {
-  const s = STATE_SPEC[kind];
-  return {
-    ...(s.live === 'polite' ? { accessibilityLiveRegion: 'polite' as const } : {}),
-    ...(s.busy ? { accessibilityState: { busy: true } } : {}),
-  };
+/**
+ * What VoiceOver is told when a state that is already showing changes in place (PER4-018): the words a polite state
+ * shows, heading first, or the spoken name when the screen gives one. Null for a static kind (empty, not found), which
+ * says nothing. state-screen.tsx says it with announce(), because iOS does not read the block's live region.
+ */
+export function stateSpoken(kind: StateKind, o: { title: string; body?: string; label?: string }): string | null {
+  if (STATE_SPEC[kind].live !== 'polite') return null;
+  if (o.label) return o.label;
+  if (!o.body) return o.title;
+  return /[.!?]$/.test(o.title) ? `${o.title} ${o.body}` : `${o.title}. ${o.body}`;
 }

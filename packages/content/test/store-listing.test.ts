@@ -9,6 +9,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { brand } from '@scribe/brand';
+import { LANGUAGES, MIN_STATUS, statusAtLeast, type Review } from '@scribe/core';
 import { storeListing } from '../src/store.en';
 
 const root = fileURLToPath(new URL('../../../', import.meta.url));
@@ -218,5 +219,226 @@ describe('[BL-1855] the Plus paragraph does not say where a held letter waits', 
     expect(storeListing.description.length).toBeLessThanOrEqual(4000);
     expect(storeListing.keywords.length).toBeLessThanOrEqual(100);
     expect(storeListing.subtitle.length).toBeLessThanOrEqual(30);
+  });
+});
+
+/**
+ * NS-17-R4 and FR-LOC-22 (BL-1315): the listing names a spoken language only once that language ships in the store build,
+ * and store metadata is en-US alone at 1.0. The shipped list is not typed here. It is read from the pack registry
+ * (packs/text-rules/*.json) and the production profile in apps/mobile/eas.json: a language ships when the production build
+ * hears it (EXPO_PUBLIC_ENGLISH_ONLY, EXPO_PUBLIC_SPOKEN_LANGUAGES, read as lib/language/heard-languages.ts reads them) and
+ * every table of its pack meets the engine's bar (MIN_STATUS), with each native-reviewed table signed by a role and a date.
+ * A language either test refuses is named in the failure, so the content owner can word the line (D-172); the fix is in
+ * the words or in the pack and build, never in this test.
+ */
+type Pack = { code: string; names: string[]; signed: boolean };
+
+function readPacks(): Pack[] {
+  const dir = join(root, 'packs/text-rules');
+  return readdirSync(dir)
+    .filter((f) => f.endsWith('.json'))
+    .map((f) => {
+      const pack = JSON.parse(readFileSync(join(dir, f), 'utf8')) as Record<string, unknown> & {
+        language: string;
+        name: { english: string; native: string };
+      };
+      const tables = (Object.keys(MIN_STATUS) as Array<keyof typeof MIN_STATUS>).filter((k) => pack[k] !== undefined);
+      const signed = tables.every((k) => {
+        const review = (pack[k] as { review?: Review }).review;
+        if (!review || !statusAtLeast(review.status, MIN_STATUS[k])) return false;
+        return review.status !== 'native-reviewed' || (Boolean(review.by?.trim()) && /^\d{4}-\d{2}-\d{2}$/.test(review.date ?? ''));
+      });
+      // Every name a listing could use for the language: the pack's own names and the picker's search aliases.
+      const aliases = LANGUAGES.find((l) => l.code === pack.language)?.aliases ?? [];
+      // The length floor applies only to words split from the English name ("Mandarin Chinese"), so a short word
+      // there cannot match by chance; a whole name, native or alias, counts at any length (Chinese is two characters).
+      const words = pack.name.english.split(/\s+/).filter((n) => n.length > 2);
+      const names = [pack.name.english, ...words, pack.name.native, ...aliases].filter((n) => n.trim().length > 0);
+      return { code: pack.language, names: [...new Set(names)], signed };
+    });
+}
+
+/** What the production (store) build hears: English alone when English-only is on, else English plus the listed codes. */
+function heardByStoreBuild(codes: string[]): string[] {
+  const env = (JSON.parse(readFileSync(join(root, 'apps/mobile/eas.json'), 'utf8')) as {
+    build: Record<string, { env?: Record<string, string> }>;
+  }).build.production?.env ?? {};
+  if (env.EXPO_PUBLIC_ENGLISH_ONLY === 'on') return ['en'];
+  const listed = env.EXPO_PUBLIC_SPOKEN_LANGUAGES?.trim();
+  if (!listed) return codes;
+  const picked = listed.split(',').map((c) => c.trim());
+  return codes.filter((c) => c === 'en' || picked.includes(c));
+}
+
+/** The shipped languages: heard by the store build, and its pack signed. English is the bundled pack and always heard. */
+const shippedOf = (packs: Pack[], heard: string[]): Set<string> =>
+  new Set(packs.filter((p) => p.signed && heard.includes(p.code)).map((p) => p.code));
+
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+/** A whole-word match in any script: letters or marks on either side make it part of another word. */
+// Scripts written without spaces between words (Han, kana, Thai) have no word edge to look for, so a name in
+// one of them matches wherever it appears; every other name must stand as a whole word in any script.
+const UNSPACED_SCRIPT = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Thai}]/u;
+const nameRe = (name: string) =>
+  UNSPACED_SCRIPT.test(name)
+    ? new RegExp(escapeRe(name), 'iu')
+    : new RegExp(`(?<![\\p{L}\\p{M}])${escapeRe(name)}(?![\\p{L}\\p{M}])`, 'iu');
+
+/** Each sentence that names a language that does not ship, with the language code. */
+function namesUnshipped(sentences: string[], packs: Pack[], shipped: Set<string>): string[] {
+  const out: string[] = [];
+  for (const sentence of sentences) {
+    for (const pack of packs) {
+      if (!shipped.has(pack.code) && pack.names.some((n) => nameRe(n).test(sentence))) out.push(`${pack.code}: ${sentence}`);
+    }
+  }
+  return out;
+}
+
+/** Every listing field a person reads, in the source and in the EAS Metadata file that is pushed, as sentences. */
+function storeSentences(): string[] {
+  const config = JSON.parse(readFileSync(join(root, 'apps/mobile/store.config.json'), 'utf8')) as {
+    apple: { info: Record<string, Record<string, unknown>> };
+  };
+  const pushed = Object.values(config.apple.info).flatMap((fields) =>
+    Object.values(fields).flatMap((v) => (typeof v === 'string' ? [v] : Array.isArray(v) ? v.map(String) : [])),
+  );
+  const source = [
+    storeListing.appName,
+    storeListing.subtitle,
+    ...listingText(real),
+    ...storeListing.screenshots.map((s) => s.subline),
+  ];
+  return [...source, ...listingText({ ...real, description: pushed.join('\n'), captions: [] })];
+}
+
+describe('[NS-17-R4] the listing names only shipped languages', () => {
+  const packs = readPacks();
+  const shipped = shippedOf(packs, heardByStoreBuild(packs.map((p) => p.code)));
+
+  it('[NS-17-R4] reads the shipped list from the pack registry and the store build, with English in it', () => {
+    expect(packs.length).toBeGreaterThan(1);
+    expect(packs.map((p) => p.code)).toContain('en');
+    expect([...shipped]).toContain('en');
+  });
+
+  it('[NS-17-R4] the listing names no language whose pack does not ship in the build', () => {
+    expect(namesUnshipped(storeSentences(), packs, shipped)).toEqual([]);
+  });
+
+  it('[NS-17-R4] the listing names each language that ships', () => {
+    const text = storeSentences().join('\n');
+    const unnamed = packs.filter((p) => shipped.has(p.code) && !p.names.some((n) => nameRe(n).test(text))).map((p) => p.code);
+    expect(unnamed).toEqual([]);
+  });
+
+  it('[NS-17-R4] [mutant] a planted Spanish line is refused while Spanish does not ship', () => {
+    const planted = 'Speak in Spanish too.';
+    expect(shipped.has('es')).toBe(false);
+    expect(namesUnshipped([...storeSentences(), planted], packs, shipped)).toEqual([`es: ${planted}`]);
+  });
+
+  it('[NS-17-R4] [mutant] a language name in the keywords or a caption is read like any other sentence', () => {
+    expect(namesUnshipped(['diary,keepsake,french'], packs, shipped)).toEqual(['fr: diary,keepsake,french']);
+    expect(namesUnshipped(['Letters in Mandarin.'], packs, shipped)).toEqual(['zh: Letters in Mandarin.']);
+  });
+
+  it('[NS-17-R4] [mutant] a two-character native name inside unspaced text is refused (Chinese)', () => {
+    const planted = 'Now in \u4e2d\u6587 too.'; // the zh pack's native name, written as escapes to keep this file ASCII
+    expect(shipped.has('zh')).toBe(false);
+    expect(namesUnshipped([planted], packs, shipped)).toEqual([`zh: ${planted}`]);
+    expect(namesUnshipped(['\u6211\u4eec\u7684\u4e2d\u6587\u4fe1'], packs, shipped)).toHaveLength(1);
+  });
+
+  it('[NS-17-R4] [mutant] the same line passes once Spanish ships, so the rule reads the shipped list', () => {
+    const esSigned = packs.map((p) => (p.code === 'es' ? { ...p, signed: true } : p));
+    expect(namesUnshipped(['Speak in Spanish too.'], esSigned, shippedOf(esSigned, ['en', 'es']))).toEqual([]);
+    // A signed pack is not enough: the store build has to hear the language too.
+    expect(namesUnshipped(['Speak in Spanish too.'], esSigned, shippedOf(esSigned, ['en']))).toHaveLength(1);
+  });
+
+  it('[NS-17-R4] [mutant] a word that only contains a language name is not a language name', () => {
+    expect(namesUnshipped(['A frenchy toast.'], packs, shipped)).toEqual([]);
+  });
+});
+
+/**
+ * FR-LOC-22 store metadata locales. The source of a locale's store words is `packages/content/src/store.<locale>.ts`
+ * (`store.en.ts` is en-US), and the pushed file is `apps/mobile/store.config.json`, whose `apple.info` keys are the
+ * locales. A locale other than en-US is accepted only when its language ships (as above) and its source file carries
+ * the native parent-reviewer's sign-off in the pack review shape, `review: { by: '<role>', date: 'YYYY-MM-DD' }`.
+ */
+type LocaleFile = { locale: string; text: string };
+const EN_US = 'en-US';
+const localeOfFile = (f: string) => (f === 'store.en.ts' ? EN_US : /^store\.([A-Za-z]{2,3}(?:-[A-Za-z0-9]+)*)\.ts$/.exec(f)?.[1]);
+const signedReview = /\breview:\s*\{\s*by:\s*(['"])[^'"\n]+\1\s*,\s*date:\s*(['"])\d{4}-\d{2}-\d{2}\2\s*,?\s*\}/;
+
+function readLocaleFiles(): LocaleFile[] {
+  const dir = join(root, 'packages/content/src');
+  return readdirSync(dir)
+    .map((f) => ({ f, locale: localeOfFile(f) }))
+    .filter((x): x is { f: string; locale: string } => Boolean(x.locale))
+    .map(({ f, locale }) => ({ locale, text: readFileSync(join(dir, f), 'utf8') }));
+}
+
+function pushedLocales(): string[] {
+  const config = JSON.parse(readFileSync(join(root, 'apps/mobile/store.config.json'), 'utf8')) as {
+    apple: { info: Record<string, unknown> };
+  };
+  return Object.keys(config.apple.info);
+}
+
+/** Each locale the rule refuses, with why. en-US is the approved English listing and needs no further sign-off. */
+function localeViolations(files: LocaleFile[], pushed: string[], shipped: Set<string>): string[] {
+  const out: string[] = [];
+  const reviewed = new Set<string>();
+  for (const { locale, text } of files) {
+    if (locale === EN_US) continue;
+    const language = locale.split('-')[0].toLowerCase();
+    if (!shipped.has(language)) out.push(`${locale}: language ${language} does not ship in the build`);
+    else if (!signedReview.test(text)) out.push(`${locale}: no reviewer role and date`);
+    else reviewed.add(locale);
+  }
+  for (const locale of pushed) {
+    if (locale !== EN_US && !reviewed.has(locale)) out.push(`${locale}: pushed without a shipped, reviewed source file`);
+  }
+  return out;
+}
+
+describe('[FR-LOC-22] store metadata is en-US only at 1.0', () => {
+  const packs = readPacks();
+  const shipped = shippedOf(packs, heardByStoreBuild(packs.map((p) => p.code)));
+  const version = (JSON.parse(readFileSync(join(root, 'apps/mobile/version.json'), 'utf8')) as { version: string }).version;
+
+  it('[FR-LOC-22] every store locale but en-US ships its language and carries a reviewer role and date', () => {
+    expect(localeViolations(readLocaleFiles(), pushedLocales(), shipped)).toEqual([]);
+  });
+
+  it('[FR-LOC-22] at 1.0 the only store words are en-US, in the source and in the pushed file', () => {
+    if (!/^1\.0\./.test(version)) return;
+    expect(readLocaleFiles().map((f) => f.locale)).toEqual([EN_US]);
+    expect(pushedLocales()).toEqual([EN_US]);
+  });
+
+  const review = "review: { by: 'native speaker and parent, es-MX', date: '2026-12-01' },";
+  it('[FR-LOC-22] [mutant] a locale file for a language that does not ship is refused, even with a review', () => {
+    expect(localeViolations([{ locale: 'es-MX', text: review }], [EN_US], shipped)).toEqual(['es-MX: language es does not ship in the build']);
+  });
+
+  it('[FR-LOC-22] [mutant] a shipped language without a reviewer role and date is refused', () => {
+    const withEs = new Set([...shipped, 'es']);
+    expect(localeViolations([{ locale: 'es-MX', text: "review: { by: '', date: '2026-12-01' }," }], [EN_US], withEs)).toEqual([
+      'es-MX: no reviewer role and date',
+    ]);
+    expect(localeViolations([{ locale: 'es-MX', text: "review: { by: 'native speaker' }," }], [EN_US], withEs)).toHaveLength(1);
+  });
+
+  it('[FR-LOC-22] [mutant] a shipped, reviewed locale is accepted, so the rule is not a blanket refusal', () => {
+    const withEs = new Set([...shipped, 'es']);
+    expect(localeViolations([{ locale: 'es-MX', text: review }], [EN_US, 'es-MX'], withEs)).toEqual([]);
+  });
+
+  it('[FR-LOC-22] [mutant] a locale pushed to the store with no source file is refused', () => {
+    expect(localeViolations([], [EN_US, 'fr-FR'], shipped)).toEqual(['fr-FR: pushed without a shipped, reviewed source file']);
   });
 });

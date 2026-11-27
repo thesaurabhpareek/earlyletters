@@ -41,7 +41,10 @@ import {
   PushResultErrSchema,
   PushResultOkSchema,
   PUSH_OP_TYPES,
+  SyncBookClosedSchema,
+  SyncBookMemberClosedSchema,
   SyncBookSchema,
+  SyncBooksClosedResponseSchema,
   SyncBooksResponseSchema,
   WORDS_VERSION_COLUMNS,
   type AcceptInviteArgs,
@@ -270,6 +273,20 @@ describe('[F16 6.2 D] sync_books equals SyncBooksResponseSchema (review A 7 on #
     expect(built.size).toBeGreaterThan(15);
     for (const k of built) expect(known.has(k), `sync_books sends ${k}, which the contract would drop`).toBe(true);
     for (const k of known) expect(built.has(k) || PENDING_BOOK_KEYS.includes(k), `${k} is in the contract but sync_books never sends it`).toBe(true);
+  });
+});
+
+describe('[FR-PRV-20] the closed branch of sync_books equals SyncBooksClosedResponseSchema (BL-1919)', () => {
+  const body = newestDefinition('sync_books');
+  const gate = body.indexOf('if not coalesce((select g.terms_current');
+  const branch = gate >= 0 ? body.slice(gate, body.indexOf('\n  end if;', gate)) : '';
+  const known = new Set([SyncBooksClosedResponseSchema, SyncBookClosedSchema, SyncBookMemberClosedSchema].flatMap(schemaKeys));
+
+  it('every key the closed branch builds is in the closed schema, and every closed-schema key is built there', () => {
+    expect(branch, 'the consent-gate branch of sync_books was not found').toContain("'withheld', 'consent'");
+    const built = builtKeys(branch);
+    for (const k of built) expect(known.has(k), `closed sync_books sends ${k}, which the closed schema would drop`).toBe(true);
+    for (const k of known) expect(built.has(k), `${k} is in the closed schema but the closed branch never sends it`).toBe(true);
   });
 });
 

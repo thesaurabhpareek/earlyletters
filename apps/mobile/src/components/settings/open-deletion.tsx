@@ -60,11 +60,15 @@ export function OpenDeletionScreen({ request }: { request: OpenRequest }) {
   const working = press.working !== null;
   const date = request.state === 'scheduled' || request.state === 'held' ? longDate(localDay(request.scheduledFor)) : '';
   const view = deletionView(request, { signedIn: d.signedIn, date, tryAgainLabel: copy.common.tryAgainButton });
-  const failure = press.acted ? cancelFailureLine(d.error) : null;
+  // Only while this view offers Cancel deletion: once the request is cancelled or being carried out, or the person has
+  // signed out, there is nothing to tap again, so the line goes (BL-491). Signed out (a refresh after an auth refusal
+  // removed the session) draws no failure line either: the signed-out view's body and Sign in button say what to do (CDesO-59).
+  const failure = press.acted && view.actions.includes('cancel') ? cancelFailureLine(d.error, d.signedIn) : null;
 
   // VoiceOver is told what changed: the screen becoming the "your letters are on their way back" state, and a failed
   // cancel (a live region alone is not spoken on iOS). The cancel on its way and a Try again that found nothing are
   // spoken by the controller (say). Android: announce() does nothing there (lib/a11y.ts), so those lines also go to the live-region node below.
+  // StateScreen's own in-place line is off (`callerSpeaks`), so none of these is said twice.
   const before = useRef(request.state);
   useEffect(() => {
     if (before.current !== 'cancelled' && request.state === 'cancelled') ctl.say(`${c.open.restoringTitle}. ${c.open.restoringBody}`);
@@ -90,6 +94,7 @@ export function OpenDeletionScreen({ request }: { request: OpenRequest }) {
   return (
     <View className="flex-1">
       <StateScreen
+        callerSpeaks
         kind={failure ? 'error' : 'empty'}
         art="page"
         title={view.title}

@@ -660,7 +660,8 @@ describe('the wiring that is read off the source (the behaviour is run in accoun
     expect(s).toContain('primary={first ? { ...act(first), loading: working } : undefined}');
     expect(s).toContain('quiet={working ? [] : rest.map(act)}');
     // A failed Cancel says the outcome is not known yet, never "nothing has changed" (BL-491 point 5, CDesO-46).
-    expect(s).toContain('const failure = press.acted ? cancelFailureLine(d.error) : null;');
+    // Only while Cancel is offered (BL-491); signed out draws no failure line (CDesO-59).
+    expect(s).toContain("const failure = press.acted && view.actions.includes('cancel') ? cancelFailureLine(d.error, d.signedIn) : null;");
     expect(s).not.toMatch(/failureLine\(/);
     expect(s).toContain('ctl.say(`${c.open.restoringTitle}. ${c.open.restoringBody}`);');
     expect(s).toContain('if (press.failedPresses > 0 && failure) announce(failure);');

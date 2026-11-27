@@ -104,6 +104,17 @@ export function createAccountJoinedSignal() {
 export const accountJoined = createAccountJoinedSignal();
 
 /**
+ * BL-2159 follow-up (J21g, J21h): once a book joined on this phone is here, the new-phone route stands aside (the hook answers
+ * no view). The joined sheet's "Open the book", or its Close onto first run's welcome, hands over to the Book (EXPERIENCE_PASS
+ * 5.8 row 12; components/family/welcome-handoff.logic.ts). Without this the re-ask after the join answers `arrived` while the
+ * sheet is still open, and the route's arrival handover (app/onboarding.tsx) replaces the sheet with Tonight. Before the book
+ * is here nothing changes: the route waits for it ("opening"), never "No book here yet". Pure; keeps nothing.
+ */
+export function joinHandsOver(joinedHere: boolean, hasLocalBook: boolean): boolean {
+  return joinedHere && hasLocalBook;
+}
+
+/**
  * R12 (NS-10, BL-978a): the one line that names HOW this phone is signed in, for a parent who finds the wrong account on a
  * shared screen. The method only, never the address (a shared phone may show it to the other person). Reuses
  * `auth.account.signedInWith.*` (no new words). Null when the method is not known. Pure; reads nothing.

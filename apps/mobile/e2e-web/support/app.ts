@@ -1,5 +1,5 @@
 /** Shared moves for the journey flows. Only fictional family data ("Asha"); everything goes through the real screens. */
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import { authCopy, en } from '@scribe/content';
 import { bookCopy } from '../../src/components/book/copy';
 import { canary, expect, type Recorder } from './journey';
@@ -10,6 +10,26 @@ export const CHILD = 'Asha';
 export const SIGNS_AS = 'Mama';
 
 export const btn = (page: Page, name: string | RegExp) => page.getByRole('button', { name });
+
+/**
+ * BL-2019: tap a Book card only once its entrance has ended. On the Book's first view each card comes in with a CSS
+ * animation (FadeInDown, Reanimated on the web). A click while the card still moves finds it "not stable" and retries,
+ * and Playwright's later retries scroll the card to an edge of the list first (block "end", then "start"). Scrolled to
+ * the top, the card sits where the Book's compact bar comes up as soon as the list scrolls, so the bar can land over it
+ * between the press and the release: the press is cancelled and the letter never opens. The wait is on the animations
+ * of the card and every element above it, which is the state a person taps in. No delay and no retry.
+ */
+export async function tapWhenStill(target: Locator) {
+  await target.waitFor();
+  const moving = () =>
+    target.evaluate((el) => {
+      let n = 0;
+      for (let e: Element | null = el; e; e = e.parentElement) n += e.getAnimations().filter((a) => a.playState === 'running').length;
+      return n;
+    });
+  await expect.poll(moving, { message: 'the card is still coming in (its entrance animation)' }).toBe(0);
+  await target.click();
+}
 
 /** The agreement box on Before you begin (F2): a native checkbox named by its sentence. */
 export const agreeBox = (page: Page) => page.getByRole('checkbox', { name: 'I agree to the Terms of Service and Privacy Policy.' });
@@ -133,14 +153,18 @@ export const currentMonthOpener = (page: Page) => page.getByRole('heading', { na
 /**
  * The count line of a month, as the Months sheet says it ("2 letters, from Mama"): the Book's opener no longer carries it.
  * Opens the sheet, reads that month's row, closes the sheet. Restores what J09b, J18 and J08c proved before the opener
- * dropped the count (BL-1991): the number of letters and who wrote them.
+ * dropped the count (BL-1991, BL-2011): the number of letters and who wrote them.
+ * The row's whole text must be the month and this line, nothing more (BL-2011): a part match let "12 letters" pass for
+ * "2 letters", and J08c's old /\d+ letters?/ passed "2 letters and 1 note" when a quiet-day mark was counted.
  */
-export async function expectMonthCount(page: Page, months: number, line: RegExp) {
+export async function expectMonthCount(page: Page, months: number, line: string) {
   await page.getByTestId('book.months').click();
   const sheet = page.getByTestId('book.monthsSheet');
   await expect(sheet).toBeVisible();
-  const row = sheet.locator('[data-testid^="book.month."]').filter({ hasText: bookCopy.chapterAge.replace('{n}', String(months)) });
-  await expect(row).toContainText(line);
+  const title = bookCopy.chapterAge.replace('{n}', String(months));
+  const row = sheet.locator('[data-testid^="book.month."]').filter({ hasText: title });
+  // The row is a ListRow: its title, then its subtitle, with no other text (months-sheet.tsx).
+  await expect(row).toHaveText(`${title}${line}`);
   await sheet.getByRole('button', { name: 'Close' }).click();
   await expect(sheet).toBeHidden();
 }

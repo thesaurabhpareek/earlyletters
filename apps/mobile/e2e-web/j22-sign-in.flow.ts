@@ -172,11 +172,11 @@ test('[J22] "I already have a book": the sheet, Not now, email, a wrong code, an
 });
 
 test('[J22b] DR-12 B: the reminder card after the first letter; Keep the book on the first save of session 2, over the Book', async ({ app, record }) => {
-  // Known failure on develop: BL-2006. This journey keeps a signed-out local book (the first letter, then the Keep the book ask in
+  // Known failure on develop: BL-2160 (which decides what J22b is for now). This journey keeps a signed-out local book (the first letter, then the Keep the book ask in
   // session 2), but the server-on build now signs a person in before the first book, and the local start is offered only on the
   // outage screen (NX-31 R17, R18). Reaching the ask needs a decision on the journey, not a word change. No assertion changed.
   // Remove this line when that is decided: a pass turns the job red.
-  test.fail(true, 'Known failure BL-2006: remove this line in the PR that fixes it');
+  test.fail(true, 'Known failure BL-2160: remove this line in the PR that fixes it');
   // SET-01, SET-02 (docs/reviews/2026-10-31/setup.md). This journey used to show the sheet after the first letter, which
   // was the bug: the first ask slot is the reminder card (F13-REQ-023), and Keep the book waits for session 2 or letter 2.
   test.setTimeout(150_000);

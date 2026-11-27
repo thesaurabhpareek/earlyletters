@@ -9,6 +9,7 @@ import { MicrophoneIcon } from 'phosphor-react-native/src/icons/Microphone';
 import { WarningCircleIcon } from 'phosphor-react-native/src/icons/WarningCircle';
 import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
+import { tokens } from '@scribe/design-tokens';
 import { BookCover } from '@/components/book/book-cover';
 import { exportEmpty, exportFailure, INSIDE } from '@/components/settings/export.logic';
 import { useHelpLink } from '@/components/settings/help-fallback';
@@ -244,7 +245,8 @@ export default function ExportScreen() {
 
       {running && (
         <View className="gap-3">
-          <Text accessibilityLiveRegion="polite" className="text-base text-foreground">
+          {/* A ramp variant, not a raw size class, so the line follows Dynamic Type like the rest of the screen (CDO-A-016). */}
+          <Text variant="subhead" accessibilityLiveRegion="polite">
             {phaseText}
           </Text>
           <View
@@ -252,14 +254,12 @@ export default function ExportScreen() {
             accessibilityRole="progressbar"
             accessibilityLabel={s.progressA11y}
             accessibilityValue={{ min: 0, max: 100, now: percent }}
-            className="h-2 overflow-hidden rounded-full"
-            style={{ backgroundColor: c.line }}>
+            className="overflow-hidden"
+            style={{ height: tokens.progress.bar, borderRadius: tokens.radius.pill, backgroundColor: c.line }}>
             {/* No animation: the width steps with progress, so Reduce Motion needs nothing extra. */}
             <View className="h-full" style={{ width: `${percent}%`, backgroundColor: c.accent }} />
           </View>
-          <Button variant="secondary" onPress={stop} className="self-start">
-            <Text>{s.cancelButton}</Text>
-          </Button>
+          <Button variant="secondary" onPress={stop} className="self-start" label={s.cancelButton} />
         </View>
       )}
 
@@ -272,6 +272,9 @@ export default function ExportScreen() {
             </Text>
           </View>
           {state.result.mismatched > 0 && <Text className="text-sm leading-5 text-muted-foreground">{s.integrityNote}</Text>}
+          {state.result.photosHeldBack > 0 && (
+            <Text className="text-sm leading-5 text-muted-foreground">{state.result.photosHeldBack === 1 ? s.photoHeldBackOne : s.photoHeldBackMany}</Text>
+          )}
         </View>
       )}
       {help.sheet}

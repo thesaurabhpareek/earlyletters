@@ -1,6 +1,8 @@
 /// <reference types="node" />
 /**
- * Notification words and the one-a-day slot (BL-1324; NS-48-R9, R21, R26; FR-NTC-08, 09, 11).
+ * Notification words and the one-a-day slot (BL-1324; NS-48-R9, R21, R26; FR-NTC-08, 09, 11), and the words of a
+ * planned note across generated plans (BL-1323; FR-NTC-01 to 05 and 10; the pure key function is proved in
+ * packages/core/test/notification-layers.test.ts).
  * The planner is pure and is driven here with generated inputs from a seeded generator, so a failure prints its seed
  * and replays. The quiet-book key rule also runs on a real store (node:sqlite), because the key layers read the newest
  * letter from the store. Library-day notes (NS-46, BL-1012) are not built yet: when they land, they join the
@@ -22,12 +24,15 @@ vi.mock('../src/lib/db/repos/open-native', () => ({
 }));
 
 const store = await import('../src/lib/store');
-const { lastMadeLetter, readPrefs, dayNamesOn } = await import('../src/lib/reminders/prefs');
+const { lastMadeLetter, plannerChildren, readPrefs, dayNamesOn } = await import('../src/lib/reminders/prefs');
 const { DEFAULT_PREFS, planReminders } = await import('../src/lib/reminders/planner');
+const { budgetedSlots, PLAN_MAX } = await import('../src/lib/reminders/budget');
 const { isoDate, parseIsoDate, zonedParts, zonedToEpoch, addDays } = await import('../src/lib/reminders/tz');
 const { reminderCopy } = await import('../src/lib/reminders/copy');
 const { APP_LOCK_KEYS } = await import('../src/lib/app-lock/prefs');
-const { selectNotificationKey } = await import('@scribe/core');
+const { FLOOR_KEYS, floorIndexOfKey, layeredSelector, recencyBand, selectNotificationKey } = await import('@scribe/core');
+const { en } = await import('@scribe/content');
+const { dayNumber } = await import('../src/lib/reminders/tz');
 type PlanInput = import('../src/lib/reminders/planner').PlanInput;
 type PlannerChild = import('../src/lib/reminders/planner').PlannerChild;
 type PlannedNotification = import('../src/lib/reminders/planner').PlannedNotification;
@@ -117,7 +122,7 @@ describe('[NS-48-R26] the one-a-day budget has one enforced place', () => {
         const p = zonedParts(n.fireAt, input.timeZone);
         expect(isoDate({ y: p.y, m: p.m, d: p.d }), `seed ${seed} ${n.id}`).toBe(n.date);
       }
-      expect(plan.length, `seed ${seed}`).toBeLessThanOrEqual(60);
+      expect(plan.length, `seed ${seed}`).toBeLessThanOrEqual(budgetedSlots(input.planPending ?? PLAN_MAX));
     }
   });
 
@@ -127,9 +132,8 @@ describe('[NS-48-R26] the one-a-day budget has one enforced place', () => {
   });
 
   // What this proves: the chooser is defined once, in budget.ts, and the planner calls it for the day notes and on the
-  // final plan. It does NOT prove the planner makes no day choice of its own: planner.ts also skips an evening on a day
-  // that already holds a typed, month or birthday note (`noteDays`), and that skip is why the final call changes no
-  // plan in these tests. Moving that skip into budget.ts is a follow-up (PR #2133, Not verified).
+  // final plan. The days a chosen day note holds (even one later dropped for lead time or quiet hours) are named by
+  // budget.ts `heldDays` too (BL-2246): the planner calls it and builds no day set of its own for the note days.
   it('the chooser is defined only in budget.ts, and the planner calls it for day notes and on the final plan', () => {
     const dir = join(__dirname, '../src/lib/reminders');
     const others = readdirSync(dir).filter((f) => f.endsWith('.ts') && f !== 'budget.ts');
@@ -139,10 +143,15 @@ describe('[NS-48-R26] the one-a-day budget has one enforced place', () => {
     }
     const budget = readFileSync(join(dir, 'budget.ts'), 'utf8');
     expect(budget).toMatch(/export function chooseOnePerDay/);
+    expect(budget).toMatch(/export function heldDays\(/);
     const planner = readFileSync(join(dir, 'planner.ts'), 'utf8');
     const ret = planner.slice(planner.lastIndexOf('export function planReminders'));
     expect(ret).toMatch(/const chosenNotes = chooseOnePerDay</);
     expect(ret).toMatch(/const oneADay = chooseOnePerDay\(out\.map/);
+    expect(ret).toMatch(/const noteDays = heldDays\(chosenNotes\)/);
+    expect(ret).toMatch(/noteDays\.has\(/);
+    expect(planner).not.toMatch(/new Set<number>\(\)/);
+    for (const f of others) expect(readFileSync(join(dir, f), 'utf8'), f).not.toMatch(/function\s+heldDays\b/);
   });
 });
 
@@ -197,6 +206,7 @@ describe('[FR-NTC-08] a parent-chosen day takes the slot as a typedDay', () => {
       const typed = new Set((input.typedDays ?? []).map((t) => t.date));
       const notes = planReminders(input).filter((n) => n.kind === 'typedDay');
       for (const n of notes) expect(typed.has(n.date), `seed ${seed} ${n.date}`).toBe(true);
+      expect(new Set(notes.map((n) => n.date)).size, `seed ${seed}`).toBe(notes.length);
     }
   });
 });
@@ -407,6 +417,14 @@ describe('[NS-48-R21] a quiet book adds nothing to a key', () => {
     expect(lastMadeLetter()).toEqual({ at: Date.parse('2026-09-01T08:00:00.000Z'), kind: 'typed' });
   });
 
+  it('[T2-068] a hidden book: the same, and it is no planner child, so it adds no name, band or kind', () => {
+    const { avi } = books();
+    expect(plannerChildren().map((c) => c.name)).toEqual(['Asha', 'Avi']);
+    store.hideChild(avi.id);
+    expect(lastMadeLetter()).toEqual({ at: Date.parse('2026-09-01T08:00:00.000Z'), kind: 'typed' });
+    expect(plannerChildren().map((c) => c.name)).toEqual(['Asha']);
+  });
+
   it('every book quiet: the layers get nothing and the floor runs', () => {
     const { asha, avi } = books();
     store.setChildQuiet(asha.id, true);
@@ -431,5 +449,170 @@ describe('[NS-48-R21] a quiet book adds nothing to a key', () => {
       expect(run([quiet]), `seed ${seed}`).toEqual(before);
       expect(run([out]), `seed ${seed}`).toEqual(before);
     }
+  });
+});
+
+// BL-1323. The checks below read the words a parent would see, so they run on the planner's output, not on templates.
+const evenings = (input: PlanInput) => planReminders(input).filter((n) => n.kind === 'evening');
+const words = (n: PlannedNotification) => `${n.title} ${n.body}`;
+const escape = (t: string) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+/** A content template as a pattern: its blanks take a name of the fixture family or a weekday, nothing else. */
+const asPattern = (t: string) =>
+  new RegExp(`^${escape(t).replace(/\\\{child\\\}/g, `(?:${NAMES.join('|')})`).replace(/\\\{weekday\\\}/g, `(?:${reminderCopy.weekdays.join('|')})`)}$`);
+
+describe('[FR-NTC-01] every key the planner is given exists in content, named and neutral', () => {
+  it('the floor keys and the built variants are one to one, and every planned evening carries its key words (400 seeded plans)', () => {
+    expect(FLOOR_KEYS.length).toBe(en.notifications.evening.length);
+    expect(FLOOR_KEYS.length).toBe(reminderCopy.neutral.evening.length);
+    let seen = 0;
+    for (const seed of SEEDS) {
+      for (const n of evenings(generated(seed))) {
+        const i = floorIndexOfKey(n.key ?? '');
+        expect(i, `seed ${seed} ${n.id}`).not.toBeNull();
+        const v = [en.notifications.evening[i!], reminderCopy.neutral.evening[i!]];
+        expect(v.some((t) => asPattern(t.title).test(n.title) && asPattern(t.body).test(n.body)), `seed ${seed} ${words(n)}`).toBe(true);
+        seen++;
+      }
+    }
+    expect(seen).toBeGreaterThan(1000);
+  });
+});
+
+describe('[FR-NTC-02] the catalogue on or off plans the same (id, date, time, class) set (400 seeded plans)', () => {
+  // Floor keys in another order, none evening-worded, so the planner honours them and the words really change.
+  const ON = layeredSelector({
+    recency: { r1: [{ key: 'floor.5', evening: false }], r2: [{ key: 'floor.2', evening: false }], r3: [{ key: 'floor.7', evening: false }], r4: [{ key: 'floor.4', evening: false }] },
+    kind: { spoke: [{ key: 'floor.0', evening: false }], typed: [{ key: 'floor.5', evening: false }] },
+  });
+  const shape = (l: PlannedNotification[]) => l.map((n) => `${n.id}|${n.kind}|${n.date}|${n.hour}:${n.minute}|${n.fireAt}`);
+
+  it('only the key and the words differ, whatever the zone, cadence, books, anchor and last letter', () => {
+    let changed = 0;
+    for (const seed of SEEDS) {
+      const off = planReminders(generated(seed));
+      const on = planReminders({ ...generated(seed), select: ON });
+      expect(shape(on), `seed ${seed}`).toEqual(shape(off));
+      if (on.some((n, i) => n.key !== off[i].key)) changed++;
+    }
+    expect(changed).toBeGreaterThan(30); // the catalogue was really on in many plans
+  });
+});
+
+describe('[FR-NTC-03] a plan reads no clock: every input is the one the plan was given', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('the same input planned under two very different system clocks gives the same notes, keys and words (100 seeded plans)', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(Date.UTC(2026, 0, 1, 3));
+    const early = SEEDS.slice(0, 100).map((s) => planReminders(generated(s)));
+    vi.setSystemTime(Date.UTC(2031, 6, 15, 22));
+    expect(SEEDS.slice(0, 100).map((s) => planReminders(generated(s)))).toEqual(early);
+  });
+});
+
+describe('[FR-NTC-04] every note from day 1 to day 35 is a question or an invitation and never names the gap', () => {
+  const GAP = /\b(in a row|missed|miss(?:es|ing)?|since|streaks?|away|while|lately|been|gone|absent|quiet)\b/i;
+  const COUNT = /\d|\b(?:one|two|three|four|five|six|seven|week|weeks|days|nights)\s+(?:days?|nights?|weeks?|letters?|ago)\b/i;
+  const COMPARE_OR_JUDGE = /\b(than|again|still|yet|back|longer|more|less|good job|well done|great|proud|should|behind|finally)\b/i;
+  const ASKS = (n: PlannedNotification) => /\?/.test(words(n)) || /^(Say|Tell|Talk)\b/.test(n.title);
+
+  it('r1 to r4 words ask or invite, with no gap, count, comparison or judgement (400 seeded plans)', () => {
+    const bands = new Set<string>();
+    for (const seed of SEEDS) {
+      // As generated, and with a letter made today so the next days are r1 and r2.
+      for (const input of [generated(seed), generated(seed, { lastLetter: { at: generated(seed).now, kind: 'spoke' } })]) {
+        if (!input.lastLetter) continue;
+        const last = dayNumber(zonedParts(input.lastLetter.at, input.timeZone));
+        for (const n of evenings(input)) {
+          const band = recencyBand(dayNumber(parseIsoDate(n.date)!), last);
+          if (!band) continue;
+          bands.add(band);
+          const text = words(n);
+          expect(ASKS(n), `seed ${seed} ${band} ${text}`).toBe(true);
+          for (const re of [GAP, COUNT, COMPARE_OR_JUDGE]) expect(text, `seed ${seed} ${band}`).not.toMatch(re);
+        }
+      }
+    }
+    expect([...bands].sort()).toEqual(['r1', 'r2', 'r3', 'r4']);
+  });
+
+  it('with the shipped (empty) catalogue the words cannot grow with the gap: the same slot reads the same at any recency', () => {
+    let compared = 0;
+    for (const seed of SEEDS.slice(0, 100)) {
+      const input = generated(seed, { lastLetter: null });
+      const fresh = evenings({ ...input, lastLetter: { at: input.now, kind: 'spoke' } });
+      const old = evenings({ ...input, lastLetter: { at: input.now - 30 * DAY, kind: 'typed' } });
+      const byId = new Map(old.map((n) => [n.id, words(n)]));
+      for (const n of fresh) {
+        if (!byId.has(n.id)) continue;
+        expect(byId.get(n.id), `seed ${seed} ${n.id}`).toBe(words(n));
+        compared++;
+      }
+    }
+    expect(compared).toBeGreaterThan(200);
+  });
+});
+
+describe('[FR-NTC-10] every planned variant fits the lock screen and the house text rules, named and neutral', () => {
+  const MARKS = /[\u2013\u2014\u2018\u2019\u201C\u201D\u2026!]|\p{Extended_Pictographic}/u;
+  const DAY_COUNT = /(?:\b\d+|\{\w+\}|\b(?:two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|fourteen|thirty))\s+(?:days?|nights?)\b/i;
+  const GAP = /\b(in a row|missed|miss(?:es|ing)? (?:a|one|any)|since (?:your|the) last|streaks?|(?:days?|nights?|weeks?) since|(?:days?|nights?) (?:off|away))\b/i;
+  const DAILY = /\b(daily|nightly|every (?:single )?(?:day|night)|each (?:day|night)|(?:once|twice|one|words?|minutes?|letters?|notes?|nudges?|reminders?) (?:a|per) (?:day|night))\b/i;
+  const MACHINE = /\b(AI|A\.I\.|artificial intelligence|smart|magic(al)?|generat(e|es|ed|ing)|polish(ed|es|ing)?|perfect(ed|s)?|enhanc(e|ed|es|ing)|rewrit\w*)\b/i;
+
+  it('title at most 40, body at most 110, and none of the banned marks or words (400 seeded plans, both renderings)', () => {
+    const rendered = new Set<boolean>();
+    for (const seed of SEEDS) {
+      for (const names of [false, true]) {
+        const input = generated(seed);
+        for (const n of evenings({ ...input, prefs: { ...input.prefs, namesOnLockScreen: names } })) {
+          rendered.add(NAMES.some((name) => words(n).includes(name)));
+          expect(n.title.length, `seed ${seed} ${n.title}`).toBeLessThanOrEqual(40);
+          expect(n.body.length, `seed ${seed} ${n.body}`).toBeLessThanOrEqual(110);
+          for (const re of [MARKS, DAY_COUNT, GAP, DAILY, MACHINE]) expect(words(n), `seed ${seed}`).not.toMatch(re);
+        }
+      }
+    }
+    expect([...rendered].sort()).toEqual([false, true]); // named and neutral were both checked
+  });
+});
+
+describe('[FR-NTC-05] the last letter gives the words its kind and date only, never its text', () => {
+  let close: () => void = () => {};
+  let raw: import('../src/lib/db/sql').SqlDb;
+  let seq = 0;
+  const ME = 'user-asha-mama';
+  const newId = () => `0199a5b0-5555-7000-8000-${String(++seq).padStart(12, '0')}`;
+  const eid = (i: number) => `0199a5b0-0000-7000-8000-${i.toString(16).padStart(12, '0')}`;
+
+  beforeEach(() => {
+    store.closeStore();
+    const h = nodeDb();
+    close = h.close;
+    raw = h.db;
+    expect(store.openStore({ open: () => ({ db: h.db, close: () => {} }), now: () => '2026-10-05T19:00:00.000Z', newId }).ok).toBe(true);
+    store.setSetting(SYNC_SETTING.owner, ME);
+  });
+  afterEach(() => {
+    store.closeStore();
+    close();
+  });
+
+  it('two letters that differ only in their words give the same last letter, and it holds none of them', () => {
+    const asha = store.addChild({ name: 'Asha', birthday: '2026-03-08', dueDate: null, signsAs: 'Mama' });
+    const said = [
+      ['um Asha splashed in the puddle by the gate', 'Asha splashed in the puddle by the gate.'],
+      ['the swing went so high and Asha sang a long long song about the moon', 'The swing went so high, and Asha sang a long song about the moon.'],
+    ];
+    const seen = said.map(([rawTranscript, finalText], i) => {
+      const over = { id: eid(0x51 + i), childId: asha.id, authorId: ME, capturedAt: '2026-10-04T08:00:00.000Z', captureMode: 'spoken' as const, rawTranscript, finalText };
+      entries.upsert({ db: raw, now: () => '2026-10-05T19:00:00.000Z', newId }, letter(over), { childId: asha.id, authorSignsAs: 'Mama' });
+      return lastMadeLetter();
+    });
+    expect(seen[0]).toEqual({ at: Date.parse('2026-10-04T08:00:00.000Z'), kind: 'spoke' });
+    expect(seen[1]).toEqual(seen[0]);
+    for (const word of ['puddle', 'gate', 'swing', 'moon']) expect(JSON.stringify(seen)).not.toContain(word);
   });
 });

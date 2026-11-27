@@ -23,10 +23,15 @@ function watch(page: Page) {
 }
 
 test('[J02] under 18: the calm stop, the 24 hour wait, the way back', async ({ app, record }) => {
-  // Known failure on develop: BL-2008. After "I answered by mistake" the stop screen (gate.stop) stays and the question
-  // does not return. Whether the flow or the screen is wrong is not decided yet (age gate, a legal path: any screen change
-  // goes through exec-team review). No assertion changed. Remove this line when BL-2008 is fixed: a pass turns the job red.
-  test.fail(true, 'Known failure BL-2008: remove this line in the PR that fixes it');
+  // Known failure on develop: BL-2008. Diagnostic run without this marker (CR-236 item 1, PR #2180, web journeys run
+  // 46016298215, 27 Nov 2026): every step up to the click passed (after 25 hours the way back stopped waiting, the
+  // "I answered by mistake" button was visible and not aria-hidden) and the click went through, then the line
+  // `expect(app.getByTestId('gate.stop'), ...).toHaveCount(0)` failed: "the stop screen is still showing after
+  // "I answered by mistake"", gate.stop resolved to 1 element for the whole 10 s, and the page reported 0 errors. So the
+  // screen does not go back to the question; the flow matches age-gate.test.ts (the relaunch test below passes). A screen
+  // row is needed: the age gate is a legal path, so no screen or logic change without exec-team review. No assertion
+  // changed. Remove this line in the PR that fixes the screen: a pass turns the job red.
+  test.fail(true, 'Known failure BL-2008: the stop screen stays after "I answered by mistake"; needs a screen row');
   const why = watch(app);
   const step = journey(record, 'J02', 'under-18', 1, 'J01-01');
   await app.getByRole('radio', { name: 'No' }).click();

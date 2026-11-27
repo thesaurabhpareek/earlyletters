@@ -50,8 +50,9 @@ import { StateScreen } from '@/components/ui/state-screen';
 import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { useToast } from '@/components/ui/toast';
-import { useFontScale, useTheme } from '@/lib/a11y';
+import { announce, useFontScale, useTheme } from '@/lib/a11y';
 import { track } from '@/lib/analytics/track';
+import { useSaidOnChange } from '@/lib/said-on-change';
 import { copy, fill } from '@/lib/copy';
 import { letterDateline } from '@/lib/dates';
 import { carriesWords, playUnderDateline } from '@/lib/play-placement.logic';
@@ -102,6 +103,8 @@ import { CARD_TEXT_GAP, CARD_TEXT_INSET, PrivateChip, excerptOf } from '@/compon
 import { letterWords } from '@/components/book/letter-words.logic';
 import { wordsCardKind, wordsCardState, type WordsCardKind } from '@/components/book/words-card.logic';
 import { isQuietMark, showsSignature } from '@/components/book/quiet-day.logic';
+import { readsFromLetter } from '@/components/book/read-from-here.logic';
+import { readTheYearOn } from '@/components/book/read-year.logic';
 import { ReadingSizeSheet } from '@/components/book/reading-size-sheet';
 import { authorOf, getReadingSize, isOwnEntry, setReadingSize, type ReadingSize } from '@/components/child/child-store';
 
@@ -377,6 +380,25 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
   // The words card: a recording waiting for its words, or one with no words that the store can still take words for (S3).
   const wordsCard = readOnly ? null : wordsCardKind({ own, words, canWrite: words === 'nobodySpoke' && canTypeWordsFor(entry.id) });
   const changeWords = offersChangeWords({ editable, hasWords: words === 'words', canChange: editable && canChangeLetterWords(entry.id) });
+  // Read from here (BL-1792, spec 13 section 5): the first row of this letter's list, only on a letter Read together can
+  // play (never private or waiting; RYT-07), on the other parent's letters too (reading is not editing). Behind the flag.
+  const readFromRow = readsFromLetter(entry, { yearsOn: readTheYearOn(process.env.EXPO_PUBLIC_READ_THE_YEAR), leftBook: readOnly }) ? (
+    <ListRow
+      title={copy.readTogether.fromHere}
+      leading={<BookOpenIcon size={20} color={c.text} />}
+      minHeight={tokens.target.primary}
+      accessibilityHint={copy.readTogether.fromHereLetterA11y}
+      onPress={() => router.push({ pathname: '/read-together', params: { childId: child.id, from: entry.id } })}
+      testID="letter.readFromHere"
+    />
+  ) : null;
+
+  // "Words are ready. Read it back." (D-086): its card is a polite live region, which iOS does not read, so VoiceOver
+  // hears the heading once when the words arrive while the letter is open (PER4-018). Opening on the card says nothing,
+  // as the live region would not; the page says it, not the card, because the card mounts on both. The same condition
+  // that draws the card below (test/live-region-said-on-change.test.ts pins the two together).
+  const readItBack = editable && words === 'words' && (unread || !!entry.wordsUnreviewed);
+  useSaidOnChange(readItBack ? wordsCopy.waiting.readyBody : null, (line) => announce(line));
 
   const aa = (
     <Pressable
@@ -522,6 +544,7 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
         {editable && (
           <View style={{ marginHorizontal: 20 - CARD_TEXT_INSET }}>
             <ListSection>
+              {readFromRow}
               {changeWords && (
                 <ListRow
                   title={copy.review.editTextButton}
@@ -549,6 +572,11 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
                 accessibilityHint={copy.book.entryMenu.deleteHint}
               />
             </ListSection>
+          </View>
+        )}
+        {!editable && readFromRow && (
+          <View style={{ marginHorizontal: 20 - CARD_TEXT_INSET }}>
+            <ListSection>{readFromRow}</ListSection>
           </View>
         )}
         {readOnly && own && (
@@ -683,24 +711,29 @@ function WaitingCard({ entry, kind, onWrite }: { entry: Entry; kind: WordsCardKi
   const { failed, retryable, packWait } = state;
   // D-111 item 4: a language this build does not hear yet; the letter waits for its language (from the job, no read).
   const languageWait = state.languageWait ? waitingForLanguageNote(job) : null;
-  const p = download.progress;
-  const reason = failed
-    ? copy.errors.transcriptionFailed.body
-    : languageWait
-      ? languageWait
-      : packWait
-        ? download.hold === 'waiting_for_wifi'
-          ? wordsCopy.pack.waitingForWifi
-          : download.hold === 'no_space'
-            ? wordsCopy.pack.noSpace
-            : p !== null
-              ? downloadingLine(p, (n) => fill(wordsCopy.pack.progress, { n }))
-              : fill(wordsCopy.pack.sizeLine, { size: Math.round(planFor([language]).bytes / 1e6) })
-        : null;
+  const reasonAt = (p: number | null) =>
+    failed
+      ? copy.errors.transcriptionFailed.body
+      : languageWait
+        ? languageWait
+        : packWait
+          ? download.hold === 'waiting_for_wifi'
+            ? wordsCopy.pack.waitingForWifi
+            : download.hold === 'no_space'
+              ? wordsCopy.pack.noSpace
+              : p !== null
+                ? downloadingLine(p, (n) => fill(wordsCopy.pack.progress, { n }))
+                : fill(wordsCopy.pack.sizeLine, { size: Math.round(planFor([language]).bytes / 1e6) })
+          : null;
+  const progress = download.progress;
+  const reason = reasonAt(progress);
+  // VoiceOver hears the reason once when it changes (PER4-018; iOS does not read the live region below): the phase, not
+  // each percent, as Settings > Storage does. A moving download is said as the card's own line below 1%, "Downloading".
+  useSaidOnChange(reasonAt(progress === null ? null : 0), (line) => announce(line));
 
   const primary = retryable ? (
     <Button size="md" label={w.retryButton} onPress={() => retryWords(entry.id)} testID="letter.retry" />
-  ) : packWait && p === null ? (
+  ) : packWait && progress === null ? (
     <Button size="md" label={w.readyButton} onPress={() => void startSpeechDownload(language)} testID="letter.getReady" />
   ) : null;
 
@@ -720,6 +753,8 @@ function WordsSheet({ entryId, open, onClose }: { entryId: string; open: boolean
   // The store refused the words (the letter has words now, or is on the server): the typing stays, the sheet stays open,
   // and the person is told their words are still here. Nothing typed is ever dropped.
   const [refused, setRefused] = useState(false);
+  // The refusal line is a polite live region, which iOS does not read: VoiceOver hears it once when it shows (PER4-018).
+  useSaidOnChange(refused ? copy.review.saveFailed : null, (line) => announce(line));
   return (
     <Sheet open={open} onClose={onClose} title={w.writeLabel} testID="letter.writeWords">
       <View className="gap-3 pb-2">

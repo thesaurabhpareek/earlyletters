@@ -33,6 +33,10 @@ export const reminderCopy = {
     // PROPOSED words, behind the G3 words gate (NS-18-R3; WORDS.md D-S10.typedDay). A day the parent typed: this title
     // always, and this body unless the day-names switch is on (then the body is their words, unchanged).
     typedDay: { title: 'A day you wanted to remember', body: 'Tap to see the words you added for today.' },
+    // PROPOSED words, behind the G3 words gate (WORDS.md D-S10 section 18.4: `days.lock.title.neutral` and
+    // `days.lock.body.neutral`). A ticked library day: one fixed title and body, whatever the day and however many days
+    // share the date; never its name, id or tradition (NS-46-R4, R8, R39).
+    libraryDay: { title: NEUTRAL_TITLE, body: LOCK_BODY_NEUTRAL },
   },
   /** Two or more books turn a month on the same day (twins, or siblings born on the same day of the month). */
   together: {
