@@ -8,7 +8,9 @@
  * Devanagari, an Arabic letter, Year 2, and a hidden second book. Two quiet-day marks (D-084): a
  * current one with no words, and one saved by an older build that holds the template sentence and
  * was moved into the book (the old menu allowed it): neither is a letter, neither may print. One picture
- * (schema 1.7.0): Mama's first letter after the birth carries the stored copy, with her words and place for it.
+ * (schema 1.7.0): Mama's first letter after the birth carries the stored copy, with her words and place for it. A
+ * typed letter that is waiting (1.6.0), and two recordings in no letter (1.8.0, BL-388): one still on this phone, one
+ * whose file is gone.
  */
 import { createHash } from 'node:crypto';
 import type { Edit } from '@scribe/core';
@@ -51,8 +53,13 @@ export const ASHA_AUDIO: Record<string, Uint8Array> = {
   'file:///doc/audio/e10.m4a': fakeAudio('e10', 900),
 };
 
-/** Every file "on the phone", by uri: the recordings and the stored copy of e2's picture (no metadata, ADR 0028 D1). */
-export const ASHA_FILES: Record<string, Uint8Array> = { ...ASHA_AUDIO, [ASHA_PHOTO_URI]: ASHA_PHOTO };
+/** A recording in no letter (1.8.0), in the recorder's folder, as the sweep found it. */
+export const ASHA_STRAY = 'recording-5a1e0000-0000-4000-8000-000000000388.m4a';
+export const ASHA_STRAY_URI = `file:///doc/ExpoAudio/${ASHA_STRAY}`;
+export const ASHA_STRAY_AUDIO = fakeAudio('stray', 1_500);
+
+/** Every file "on the phone", by uri: the recordings, the stored copy of e2's picture (no metadata, ADR 0028 D1) and the stray. */
+export const ASHA_FILES: Record<string, Uint8Array> = { ...ASHA_AUDIO, [ASHA_PHOTO_URI]: ASHA_PHOTO, [ASHA_STRAY_URI]: ASHA_STRAY_AUDIO };
 
 const filler = (raw: string, word: string): Edit => {
   const start = raw.indexOf(word);
@@ -150,6 +157,16 @@ export function ashaSnapshot(): ExportSnapshot {
       }),
       entry({ id: 'e9', occurredOn: '2027-03-10', captureMode: 'typed', finalText: 'One year and two days. You walked to the door and waved.', editLevel: 'verbatim' }),
       entry({ id: 'd1', childId: DEV, occurredOn: '2025-01-05', captureMode: 'typed', finalText: 'First snow.', editLevel: 'verbatim' }),
+    ],
+    waiting: [{
+      id: 'w9', childId: ASHA, captureMode: 'typed', promptKey: null, audioUri: null, audioDurationMs: null, rawTranscript: null,
+      typedText: 'You pointed at the moon and said ball.', state: 'ready', audioSha256: null, audioBytes: null, recoveredAt: null,
+      kind: 'letter', occurredOn: '2027-03-14', occurredPrecision: 'day', language: null, baseDirection: 'ltr', held: false,
+      inBookChoice: null, createdAt: '2027-03-14T18:00:00.000Z', audioOnPhone: false, audioSizeOnPhone: null,
+    }],
+    orphans: [
+      { fileName: ASHA_STRAY, bytes: ASHA_STRAY_AUDIO.length, foundAt: '2027-02-01T08:00:00.000Z', uri: ASHA_STRAY_URI, onPhone: true },
+      { fileName: 'recording-5a1e0000-0000-4000-8000-000000000389.aac', bytes: 2_048, foundAt: '2027-02-02T08:00:00.000Z', uri: null, onPhone: false },
     ],
     // The 18+ gate was answered yes; v1.0 never asks about usage sharing.
     consent: phoneConsent(true, null),

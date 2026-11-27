@@ -65,9 +65,16 @@ photos/     The pictures you added to letters, one folder per letter (JPEG).
             Each is the copy kept in the app, with no location or other details in it.
             data/entries.json says which letter each picture belongs to.
 
+NOT IN THE BOOK
+
+not-in-the-book/ holds recordings found on this phone that are not part of any letter.
+They are kept as they were, byte for byte. Open them in any music or video player.
+data/not_in_the_book.json lists each one and when this phone found it. One that is
+no longer on this phone is listed there with no file.
+
 KEEPING IT SAFE
 
 This export is not locked with a password. Keep it somewhere private,
 and keep a second copy somewhere else.
 
-Format early-letters-export, version 1.7.0. Questions: hello@earlyletters.com
+Format early-letters-export, version 1.8.0. Questions: hello@earlyletters.com

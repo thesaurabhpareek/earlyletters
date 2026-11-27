@@ -97,7 +97,16 @@ import { brand } from '@scribe/brand';
  * still validates; the 1.6.0 schema allows only `photo: null`, so it rejects a 1.7.0 entries.json that holds a
  * picture. Read each export with the schema it carries.
  */
-export const EXPORT_SCHEMA_VERSION = '1.7.0';
+/**
+ * 1.8.0 (BL-388, LEGAL-REQ-034; the screen promises "every letter and recording"): recordings found on this phone
+ * in no letter and no draft (the launch sweep's `orphan_audio` list, Settings > Where letters live) go in
+ * `not-in-the-book/<file name>`, byte for byte, and `data/not_in_the_book.json` lists each one: its file name, its
+ * path (null when the file is no longer on this phone), size, SHA-256 (null with no file) and when the phone found it.
+ * Present only when there is at least one, and only in an export by the account that owns this phone's letters (or
+ * signed out; device.ts). A new optional file, so every earlier v1 export still validates; the 1.7.0 schema has no
+ * `notInTheBookFile`, so read each export with the schema it carries.
+ */
+export const EXPORT_SCHEMA_VERSION = '1.8.0';
 
 /** "early-letters-export", from packages/brand (the name lives only there). */
 export const EXPORT_FORMAT = `${brand.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}-export`;
@@ -372,6 +381,25 @@ export interface WaitingFile {
   waiting: ExportWaitingLetter[];
 }
 
+/** One recording in `data/not_in_the_book.json` (1.8.0): on this phone, in no letter or draft. It has no author. */
+export interface ExportNotInTheBook {
+  /** The file's name on this phone. */
+  file_name: string;
+  /** `not-in-the-book/<file name>`, or null when the file is no longer on this phone. */
+  path: string | null;
+  /** Size of the exported file; with no file, the size the phone noted when it found it (null if unknown). */
+  bytes: number | null;
+  sha256: string | null;
+  found_at: string;
+}
+
+/** `data/not_in_the_book.json`, present only when this phone lists at least one such recording (1.8.0). */
+export interface NotInTheBookFile {
+  schema_version: string;
+  format: string;
+  recordings: ExportNotInTheBook[];
+}
+
 export interface ManifestFile {
   path: string;
   bytes: number;
@@ -407,7 +435,7 @@ export const exportJsonSchema = {
   $id: `${brand.web.origin}/export-format/v1.schema.json`,
   title: `${brand.name} export, format 1`,
   description:
-    'Schema for data/entries.json, data/children.json, data/account.json, data/other-versions.json and data/waiting.json (each when present) and manifest.json in an export.',
+    'Schema for data/entries.json, data/children.json, data/account.json, data/other-versions.json, data/waiting.json and data/not_in_the_book.json (each when present) and manifest.json in an export.',
   $defs: {
     audio: {
       type: 'object',
@@ -489,6 +517,30 @@ export const exportJsonSchema = {
                   { type: 'null' },
                 ],
               },
+            },
+          },
+        },
+      },
+    },
+    // Since 1.8.0: data/not_in_the_book.json, recordings in no letter or draft (BL-388).
+    notInTheBookFile: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['schema_version', 'format', 'recordings'],
+      properties: {
+        ...header,
+        recordings: {
+          type: 'array',
+          items: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['file_name', 'path', 'bytes', 'sha256', 'found_at'],
+            properties: {
+              file_name: { type: 'string', minLength: 1 },
+              path: { type: ['string', 'null'], pattern: '^not-in-the-book/[^/.][^/]*$' },
+              bytes: { type: ['integer', 'null'], minimum: 0 },
+              sha256: { anyOf: [sha256, { type: 'null' }] },
+              found_at: { type: 'string', minLength: 10 },
             },
           },
         },
@@ -806,6 +858,7 @@ export const exportJsonSchema = {
     { $ref: '#/$defs/childrenFile' },
     { $ref: '#/$defs/accountFile' },
     { $ref: '#/$defs/waitingFile' },
+    { $ref: '#/$defs/notInTheBookFile' },
     { $ref: '#/$defs/manifest' },
   ],
 } as const;

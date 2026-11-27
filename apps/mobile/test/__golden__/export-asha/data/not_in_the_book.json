@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.8.0",
+  "format": "early-letters-export",
+  "recordings": [
+    {
+      "file_name": "recording-5a1e0000-0000-4000-8000-000000000388.m4a",
+      "path": "not-in-the-book/recording-5a1e0000-0000-4000-8000-000000000388.m4a",
+      "bytes": 1500,
+      "sha256": "16e07b98e6d414a656f1b57e36f4c7ed6bf44717c7b747c4e8552c78059c4043",
+      "found_at": "2027-02-01T08:00:00.000Z"
+    },
+    {
+      "file_name": "recording-5a1e0000-0000-4000-8000-000000000389.aac",
+      "path": null,
+      "bytes": 2048,
+      "sha256": null,
+      "found_at": "2027-02-02T08:00:00.000Z"
+    }
+  ]
+}
