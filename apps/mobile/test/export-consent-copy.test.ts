@@ -137,6 +137,8 @@ describe('[BL-528][LEGAL-REQ-034] no copy, or a copy that is not this account\'s
     expect((await readServerRecordsWithCopy(opts({ reader: offline }), copy)).consent.status).toBe('unavailable');
     expect((await readServerRecordsWithCopy(opts(), copy)).consent.status).toBe('included');
     expect(store.writes).toBe(1);
+    // Nor one that cannot be read when the export starts: no store at all, and the export does not throw.
+    expect(copyStoreFor(() => { throw new Error('database locked'); }, ASHA_MAMA, Date.now, store)).toBeNull();
   });
 });
 
