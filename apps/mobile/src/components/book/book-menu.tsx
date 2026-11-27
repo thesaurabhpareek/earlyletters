@@ -4,9 +4,9 @@
  * books. One tap opens it and one more acts, so both are within 2 taps of the Book; Hide then asks Me's confirm.
  *
  * The sheet closes before anything acts, and closes when the app goes inactive, so a menu not acted on changes
- * nothing (NS-22 s6, Interrupted). Haptics: success after Quiet changes, as in Me; none on open.
+ * nothing (NS-22 s6, Interrupted). A second tap while it closes does nothing. Haptics: success after Quiet changes, as in Me; none on open.
  */
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Alert, AppState } from 'react-native';
 import type { Child } from '@/lib/store';
 import { hideChild, setChildQuiet } from '@/lib/store';
@@ -27,8 +27,16 @@ export function BookMenu({ open, child, books, onClose }: { open: boolean; child
     return () => sub.remove();
   }, [open, onClose]);
 
+  // One act per opening: the rows stay tappable while the sheet animates out, so a double tap must not undo itself.
+  const acted = useRef(false);
+  useEffect(() => {
+    if (open) acted.current = false;
+  }, [open]);
+
   const quiet = child.quiet === true;
   const act = (id: 'quiet' | 'hide') => {
+    if (acted.current) return;
+    acted.current = true;
     onClose();
     if (id === 'quiet') {
       const r = toggleQuiet({ id: child.id, name: child.name, quiet, set: setChildQuiet });

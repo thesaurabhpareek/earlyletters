@@ -1,4 +1,4 @@
-import { btn, journey } from './support/app';
+import { btn, journey, tab } from './support/app';
 import { expect, seeded, test } from './support/journey';
 
 const open = async (app: import('@playwright/test').Page, text: RegExp) => {
@@ -62,9 +62,9 @@ test('[J10] a letter: the page, the original words, reading size, make private, 
   await step('happy', 'Undo restores the letter', 'The card is back in its place, exactly as it was, with a soft wash for a moment.');
 });
 
-/** From the Book: Settings, Recently deleted. */
+/** Settings (the Me tab), then Recently deleted. */
 const toShelf = async (app: import('@playwright/test').Page) => {
-  await app.getByTestId('book.settings').click();
+  await tab(app, 'Me').click();
   await app.getByText('Recently deleted', { exact: true }).first().click();
 };
 

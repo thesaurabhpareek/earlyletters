@@ -12,7 +12,7 @@
  */
 import { createHash } from 'node:crypto';
 import type { Page } from '@playwright/test';
-import { btn, CHILD, journey, passAgeGateToSignIn, SIGNS_AS } from './support/app';
+import { btn, CHILD, journey, passAgeGateToSignIn, SIGNS_AS, tab } from './support/app';
 import { allowConsoleError, expect, test } from './support/journey';
 import { ASHA_BOOK, MAMA, mockServer, PAPA, pgError, stubShareSheet, type MockServer } from './support/mock-server';
 
@@ -304,11 +304,10 @@ test('[J21g] invitee: once the book is on this phone, "Open the book" lands on t
   // Family is a pushed page, not a tab (founder, 11 Nov 2026): open it by its address.
   await openOn(app, '/family?seed=asha');
   await stays(/\/family/);
-  // The family page covers the tabs (it has its own Close); Close returns to the room under it, then Settings is the gear on the Book.
+  // The family page covers the tabs (it has its own Close); Close returns to the room under it, then Settings is the Me tab (the Book has no gear since BL-938).
   await btn(app, 'Close').click();
-  await app.getByText('Book', { exact: true }).last().click();
-  await app.getByRole('button', { name: 'Settings' }).click();
-  await stays(/\/settings/);
+  await tab(app, 'Me').click();
+  await stays(/\/you/);
 });
 
 test('[J21h] invitee: Close on the joined sheet, with the book here, hands over to the Book (no joined light: only Open leaves the mark)', async ({ app }) => {
@@ -399,8 +398,7 @@ test('[J21d] a child\'s settings: "Write this book together" opens the invite, a
   const step = journey(record, 'J21', 'co-parent-sharing', 30);
   await mockServer(app, { user: MAMA });
   await openOn(app, '/?seed=asha');
-  await app.getByText('Book', { exact: true }).last().click();
-  await app.getByTestId('book.settings').click();
+  await tab(app, 'Me').click();
   await app.getByText(CHILD, { exact: true }).first().click();
   await expect(app.getByText('Write this book together')).toBeVisible();
   await expect(app.getByText(/Family can read/)).toHaveCount(0);

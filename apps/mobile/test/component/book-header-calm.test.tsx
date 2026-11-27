@@ -60,11 +60,12 @@ describe('[BL-938] the Book header, rendered', () => {
     expect(tag('book.readTogether')).toMatch(/min-height:\s*(4[89]|[5-9]\d)px/);
   });
 
-  it('[NS-22-R3] the end control is named More for this book, and carries the hint it is given', () => {
-    const html = renderMarkup(<CoverBand {...full} />);
-    expect(html).toContain('aria-label="More for this book"');
-    const one = renderMarkup(<CoverBand {...full} more={{ label: 'More for this book', onPress: noop }} />);
-    expect(one).toContain('data-testid="book.more"');
+  it('[NS-22-R3] the end control is named More for this book, with or without a hint', () => {
+    // react-native-web drops accessibilityHint, so the hint wiring is pinned in book-header-calm.test.ts.
+    const tag = (html: string) => html.slice(html.lastIndexOf('<', at(html, 'book.more')), html.indexOf('>', at(html, 'book.more')));
+    expect(tag(renderMarkup(<CoverBand {...full} />))).toContain('aria-label="More for this book"');
+    const one = tag(renderMarkup(<CoverBand {...full} more={{ label: 'More for this book', onPress: noop }} />));
+    expect(one).toContain('aria-label="More for this book"');
   });
 
   it('[NS-22-R4] empty book header: no Read together, lens or Go to a month drawn; the title, age and More stay', () => {

@@ -3,9 +3,10 @@
  * S26, S36; 5.8 rows 5 and 7; proposals/book-page.md, the Book page redesign).
  * Benchmarks (docs/design/BENCHMARK.md, "Screens"; book-page.md 2): Day One and Apple Journal (the entry is the
  * object), Airbnb (card restraint), Calm and Headspace (one warm focal point).
- * - The cover band is the one lit object: "Asha's book", the age in words, Read together full width, the gear on the
- *   title row (CoverBand). It scrolls under a material bar that fades in with the inline title, the Months button,
- *   the gear and the compact month at the top of the list (the sticky header). Reduce Motion: the bar switches, no
+ * - The cover band is the one lit object: "Asha's book", the age in words, Read together full width, and on the
+ *   title row Go to a month and More for this book (CoverBand; NS-22 fixed order, BL-938; no gear, Settings is Me).
+ *   It scrolls under a material bar that fades in with the inline title, the Months button, More for this book and
+ *   the compact month at the top of the list (the sticky header). Reduce Motion: the bar switches, no
  *   fade. Reduce Transparency and Increase Contrast: the bar is solid (BlurSurface).
  * - Months are chapters: a typographic heading, "This month" on the current one only (MonthOpener). No explainer
  *   box, no counts of gaps; the count line lives in the Months sheet, which lists only months with letters.

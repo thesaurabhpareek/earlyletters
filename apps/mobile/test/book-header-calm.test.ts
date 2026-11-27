@@ -29,6 +29,8 @@ describe('[BL-938] [NS-22-R3] quiet and hide in 2 taps', () => {
     const bar = book.slice(book.indexOf('const topBar'), book.indexOf('return (\n    <View className="flex-1 bg-background"'));
     expect(bar).toMatch(/label=\{more\.label\}[^>]*onPress=\{more\.onPress\}[^>]*testID="book\.bar\.more"/);
     expect(bar).not.toMatch(/settings/);
+    // The hint reaches VoiceOver through the IconButton (react-native-web drops it, so the pin is here).
+    expect(code('components/book/cover-band.tsx')).toMatch(/label=\{more\.label\} accessibilityHint=\{more\.hint\}[^>]*testID="book\.more"/);
   });
 
   it('the menu is mounted outside the empty-book branch, so an empty book can be quieted or hidden too', () => {
@@ -66,8 +68,9 @@ describe('[BL-938] [NS-22-R3] quiet and hide in 2 taps', () => {
     expect(menu).toMatch(/hideChild\(child\.id\);/);
   });
 
-  it('the menu closes before it acts, and when the app goes inactive (nothing changes without a tap)', () => {
-    expect(menu).toMatch(/const act = \(id: 'quiet' \| 'hide'\) => \{\s*onClose\(\);/);
+  it('the menu acts once per opening, closes before it acts, and closes when the app goes inactive', () => {
+    expect(menu).toMatch(/const act = \(id: 'quiet' \| 'hide'\) => \{\s*if \(acted\.current\) return;\s*acted\.current = true;\s*onClose\(\);/);
+    expect(menu).toMatch(/if \(open\) acted\.current = false;/);
     expect(menu).toMatch(/AppState\.addEventListener\('change', \(s\) => \{\s*if \(s !== 'active'\) onClose\(\);/);
   });
 });

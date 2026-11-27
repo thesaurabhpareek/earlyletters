@@ -1,11 +1,10 @@
-import { btn, dateInput, dayOffset, firstRun, journey, passAgeGate, startOnboarding, toChildStep } from './support/app';
+import { btn, dateInput, dayOffset, firstRun, journey, passAgeGate, startOnboarding, tab, toChildStep } from './support/app';
 import { expect, test } from './support/journey';
 import type { Page } from '@playwright/test';
 
-/** Settings > Asha's book, from Tonight. */
+/** Me (Settings home), then Asha's book. */
 async function openChildSettings(app: Page, name: string) {
-  await app.getByText('Book', { exact: true }).last().click();
-  await app.getByRole('button', { name: 'Settings' }).click();
+  await tab(app, 'Me').click();
   // The row on Settings home (a hidden "Asha" on the Book's cover under the stack also matches by text).
   await app.getByRole('button', { name, exact: true }).click();
   await expect(app.getByText(/Birthday|Due date/).first()).toBeVisible();

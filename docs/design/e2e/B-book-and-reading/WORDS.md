@@ -457,7 +457,7 @@ Words where `DESIGN.md` carries an intent and this file proposes different words
 | R1 | Go to a month keeps the built "Months" label (B-S01 layout row 1; VC list) | "Go to a month" | NS-22 s3 renames it; with the lens, two controls named "Months" in one bar break Voice Control |
 | R2 | "Unquiet this book" | "Turn Quiet off" | card gap G2 |
 | R3 | Quiet toast "Quiet for now." | "{child}'s book is quiet for you." | says for whom (Quiet is per person); "for now" hints at a time limit Quiet does not have |
-| R4 | Quiet failure "That did not change. Try again." | "That did not save. {child}'s book is as it was." | names what did not finish and what is true (VOICE.md) |
+| R4 | Quiet failure "That did not change. Try again." | "That did not save, so {child}'s book is as it was." | names what did not finish and what is true (VOICE.md) |
 | R5 | Lens group label "Show" | "Show letters by" | VoiceOver hears a whole phrase before "Months, selected" |
 | R6 | Photos lens VoiceOver "Has a photo" | "Photo with this letter" (built `photos.book.photos.a11yCard`) | one fixed phrase everywhere (NS-01-R9a) |
 | R7 | Index footnote "Still getting ready." | "Find is getting ready on this phone." | NS-02 s16 bans "still"; card gap G8 |
