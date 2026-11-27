@@ -13,6 +13,7 @@
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, posix, relative } from 'node:path';
+import ts from 'typescript';
 import { describe, expect, it, vi } from 'vitest';
 import { brand } from '@scribe/brand';
 import { verifyEdits } from '@scribe/core';
@@ -39,13 +40,16 @@ import { registerReminderCategory, REMINDER_CATEGORY } from '../src/lib/reminder
 import { REMINDER_SOURCE, routeForReminder } from '../src/lib/reminders/payload';
 import { consumeListenStart, resetListenStart } from '../src/lib/resilience/start-intent';
 import { cleanSpoken } from '../src/lib/transcription-queue/clean';
-import { importSpecifiers } from './helpers/import-reader';
+import { importSpecifiers, stripComments } from './helpers/import-reader';
 import { fixture, insertBook } from './helpers/store-fixture';
 
 const ROOT = join(__dirname, '..');
 const SRC = join(ROOT, 'src');
-/** Source without comments, so a comment that names a rule never counts as code. */
-const code = (t: string) => t.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\{\/\*[\s\S]*?\*\/\}/g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+/**
+ * Source without comments, so a comment that names a rule never counts as code. The reader keeps strings whole, so a
+ * `//` inside a specifier ('@/lib//capture/x') is part of the path, not a comment that hides the rest of the line.
+ */
+const code = stripComments;
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {
@@ -56,7 +60,9 @@ function walk(dir: string, out: string[] = []): string[] {
   return out;
 }
 type Files = Map<string, string>;
-const files: Files = new Map(walk(SRC).map((p) => [relative(SRC, p).split('\\').join('/'), code(readFileSync(p, 'utf8'))]));
+/** The tree as written, for the parser below (which reads comments and line numbers itself). */
+const rawFiles: Files = new Map(walk(SRC).map((p) => [relative(SRC, p).split('\\').join('/'), readFileSync(p, 'utf8')]));
+const files: Files = new Map([...rawFiles].map(([f, t]) => [f, code(t)]));
 const src = (f: string) => files.get(f) ?? '';
 
 /** Home's module: the one screen that starts a letter, and its components (NAV-TAB-ROLES P1). A folder is not a screen, so
@@ -166,9 +172,12 @@ function literalBreaches(fs: Files): string[] {
 const specsOf = new Map<string, string[]>();
 const specs = (t: string) => specsOf.get(t) ?? specsOf.set(t, importSpecifiers(t)).get(t)!;
 const EXTS = ['', ...['.ts', '.tsx'].flatMap((e) => ['', '.ios', '.android', '.native', '.web'].flatMap((p) => [p + e, `/index${p}${e}`]))];
-/** The files in the map that `spec`, imported from `f`, names (`@/` is src; a package is none of them). */
+/**
+ * The files in the map that `spec`, imported from `f`, names (`@/` is src; a package is none of them). Both forms are
+ * normalised the same way, so `..`, `.` and `//` in an alias path name the file Metro bundles, not a key no file has.
+ */
 function resolve(fs: Files, f: string, spec: string): string[] {
-  const base = spec.startsWith('@/') ? spec.slice(2) : spec.startsWith('.') ? posix.normalize(posix.join(posix.dirname(f), spec)) : null;
+  const base = spec.startsWith('@/') ? posix.normalize(spec.slice(2)) : spec.startsWith('.') ? posix.normalize(posix.join(posix.dirname(f), spec)) : null;
   return base === null ? [] : EXTS.map((e) => base + e).filter((x) => fs.has(x));
 }
 /**
@@ -181,6 +190,32 @@ function importers(fs: Files): Map<string, Set<string>> {
   const by = new Map<string, Set<string>>();
   for (const [f, t] of fs) for (const spec of [...specs(t), ...lazyImports(t)]) for (const to of resolve(fs, f, spec)) (by.get(to) ?? by.set(to, new Set()).get(to)!).add(f);
   return by;
+}
+
+/**
+ * NS-35-R1: every walk above reads a specifier as written. Metro bundles any `require(x)` or `import(x)` whose argument
+ * Babel can fold to a string (a template, a sum, a const), so such a call reaches a file no walk sees. The rule is
+ * closed instead: every runtime `require(` and `import(` call in src takes exactly one plain quoted string. Parsed, so a
+ * comment, a string, `typeof import('x')` (a type) and a method such as `jest.requireActual` are not calls here.
+ */
+function specifierBreaches(fs: Files): { calls: number; breaches: string[] } {
+  let calls = 0;
+  const breaches: string[] = [];
+  for (const [f, t] of fs) {
+    const sf = ts.createSourceFile(f, t, ts.ScriptTarget.Latest, true, f.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
+    const visit = (n: ts.Node): void => {
+      if (ts.isCallExpression(n) && (n.expression.kind === ts.SyntaxKind.ImportKeyword || (ts.isIdentifier(n.expression) && n.expression.text === 'require'))) {
+        calls++;
+        if (n.arguments.length !== 1 || !ts.isStringLiteral(n.arguments[0])) {
+          const line = sf.getLineAndCharacterOfPosition(n.getStart(sf)).line + 1;
+          breaches.push(`${f}:${line} ${n.expression.getText(sf)}(${n.arguments.map((a) => a.getText(sf)).join(', ')}) takes no plain string`);
+        }
+      }
+      ts.forEachChild(n, visit);
+    };
+    visit(sf);
+  }
+  return { calls, breaches };
 }
 
 /**
@@ -462,6 +497,13 @@ describe('[NS-35-R1] only Home starts', () => {
     expect(exportedValues(src('components/tonight/draft-card.logic.ts'))).toContain('draftCard');
   });
 
+  it('[NS-35-R1] every require( and import( in src takes one plain string, so every walk reads where it points', () => {
+    const { calls, breaches } = specifierBreaches(rawFiles);
+    expect(breaches).toEqual([]);
+    // The parser sees src's real lazy loads (auth-store, billing, sync, the native modules), so a scan of nothing fails.
+    expect(calls).toBeGreaterThan(10);
+  });
+
   it('[NS-35-R1] the doorway sources in the closed list start nothing until their handlers are built', () => {
     for (const source of CAPTURE_DOORWAYS) expect(planCapture({ source })).toEqual({ kind: 'reserved', source });
   });
@@ -727,6 +769,36 @@ describe('each scanner fails on a planted breach', () => {
     expect(renderBreaches(screen)).toEqual(['app/(tabs)/book.tsx draws app/(tabs)/book.tsx, which starts a letter']);
     // A lazy import of a route-free module, or a type written with typeof import(), starts nothing.
     expect(renderBreaches(plant('app/family.tsx', `${src('app/family.tsx')}\ntype P = typeof import('@/lib/capture/start-capture.logic');\nconst j = () => void import('@/lib/nav/tab-jobs');`))).toEqual([]);
+  });
+
+  it('[NS-35-R1] fixture: an alias path with .. or a doubled slash names the same file, and is a start', () => {
+    const book = src('app/(tabs)/book.tsx');
+    for (const spec of ['@/lib/capture/../capture/start-capture.logic', '@/lib//capture/start-capture.logic', '@/lib/./capture/start-capture.logic']) {
+      const b = plant('app/(tabs)/book.tsx', `import { CAPTURE_ROUTES } from '${spec}';\n${book}\nconst go = () => router.push(CAPTURE_ROUTES[0]);`);
+      expect(renderBreaches(b), spec).toEqual(['app/(tabs)/book.tsx draws app/(tabs)/book.tsx, which starts a letter']);
+    }
+    // The lazy form goes through the same resolve.
+    const lazy = plant('app/family.tsx', `${src('app/family.tsx')}\nconst go = async () => (await import('@/lib//capture/start-capture')).startCapture;`);
+    expect(renderBreaches(lazy)).toEqual(['app/family.tsx draws app/family.tsx, which starts a letter']);
+  });
+
+  it('[NS-35-R1] fixture: a default import from a route file counts as a taken name', () => {
+    const b = plant('app/(tabs)/book.tsx', `import plan from '@/lib/capture/start-capture.logic';\n${src('app/(tabs)/book.tsx')}`);
+    expect(routeImports(b, 'app/(tabs)/book.tsx', src('app/(tabs)/book.tsx'))).toEqual([]);
+    expect(routeImports(b, 'app/(tabs)/book.tsx', b.get('app/(tabs)/book.tsx')!)).toEqual(['default from lib/capture/start-capture.logic.ts']);
+  });
+
+  it('[NS-35-R1] fixture: a template, a string sum or a const-bound specifier is caught with its file and line', () => {
+    const at = (body: string) => specifierBreaches(new Map([['app/(tabs)/book.tsx', `import { router } from 'expo-router';\n// require(P) in a comment is no call\n${body}`]])).breaches;
+    expect(at("export const go = async () => { const m = await import(`@/lib/capture/${'start-capture.logic'}`); router.push(m.CAPTURE_ROUTES[0]); };")).toEqual([
+      "app/(tabs)/book.tsx:3 import(`@/lib/capture/${'start-capture.logic'}`) takes no plain string",
+    ]);
+    expect(at('const m = require(`@/lib/capture/start-capture.logic`);')).toEqual(['app/(tabs)/book.tsx:3 require(`@/lib/capture/start-capture.logic`) takes no plain string']);
+    expect(at("const m = require('@/lib/capture/' + 'start-capture.logic');")).toEqual(["app/(tabs)/book.tsx:3 require('@/lib/capture/' + 'start-capture.logic') takes no plain string"]);
+    expect(at("const P = '@/lib/capture/start-capture.logic';\nconst m = require(P);")).toEqual(['app/(tabs)/book.tsx:4 require(P) takes no plain string']);
+    expect(at("const P = '@/lib/capture/start-capture.logic';\nconst m = await import(P);")).toEqual(['app/(tabs)/book.tsx:4 import(P) takes no plain string']);
+    // A plain string, a type written with typeof import(), a method named require and a string are not breaches.
+    expect(at("const a = require('@/lib/nav/tab-jobs');\nvoid import('@/lib/nav/tab-jobs');\ntype T = typeof import('@/lib/capture/start-capture.logic');\nconst b = jest.requireActual(P);\nconst c = 'require(P)';")).toEqual([]);
   });
 
   it('[NS-35-R3] fixture: a notification tap handler that starts a capture is caught', () => {
