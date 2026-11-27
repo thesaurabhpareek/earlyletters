@@ -35,6 +35,7 @@ import {
   type PostHogLike,
   type Violation,
 } from '@scribe/analytics';
+import { BUILD_KIND, makeInternalTester } from './build-kind';
 import { makeForgetRetiredId } from './forget-retired';
 import { currentAuthUserId } from '@/lib/auth/auth-store';
 import { analyticsEnabled, capabilities, postHogKeyForBuild } from '@/lib/capabilities';
@@ -72,6 +73,12 @@ function onViolation(v: Violation): void {
 type PostHogClientFactory = (distinctId: string) => Promise<PostHogLike>;
 const createClient: PostHogClientFactory | null = null;
 
+/**
+ * The internal-tester switch (FH-10, BL-1250): off and unreachable in a store build (./build-kind). Not exported:
+ * nothing in the app can turn it on yet.
+ */
+const internalTester = makeInternalTester(BUILD_KIND, { get: getSetting, set: setSetting, remove: deleteSetting });
+
 const provider = KEY && createClient ? createLazyPostHogAdapter({ create: createClient }) : noopProvider;
 
 export const analytics = createAnalytics({
@@ -88,6 +95,9 @@ export const analytics = createAnalytics({
   onViolation,
   // Sampling rates come from remote config when volume needs it (TRACKING_PLAN 5.3); empty at launch.
   sampleRates: {},
+  // `build_kind` and `is_internal` on every event (ER-A15, BL-1250); a store build is never internal.
+  buildKind: BUILD_KIND,
+  internalTester: internalTester.isOn,
 });
 
 export const lifecycle = createLifecycle({ analytics, storage: settingsStorage });
