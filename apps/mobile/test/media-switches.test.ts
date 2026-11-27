@@ -94,6 +94,37 @@ const walk = (dir: string): string[] =>
     return statSync(p).isDirectory() ? walk(p) : /\.(ts|tsx)$/.test(n) && !/\.test\./.test(n) ? [p] : [];
   });
 
+const parse = (file: string) =>
+  ts.createSourceFile(file, readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true, file.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
+
+/** Every source file under src a bundle could hold, JavaScript included, tests excluded. */
+const walkCode = (dir: string): string[] =>
+  readdirSync(dir).flatMap((n) => {
+    const p = join(dir, n);
+    return statSync(p).isDirectory() ? walkCode(p) : /\.(ts|tsx|js|jsx|mjs|cjs)$/.test(n) && !/\.test\./.test(n) ? [p] : [];
+  });
+
+const SWITCH_NAMES: string[] = MEDIA_PHASE_SWITCHES.map((s) => s.env);
+const nameIn = (name: string) => new RegExp(`(?<![A-Za-z0-9_$])${name}(?![A-Za-z0-9_$])`, 'g');
+
+/**
+ * How many times each switch variable is named in a file's code: in an identifier, a string, a template or JSX text
+ * (as the parser reads them, so an escape such as `\\u005f` counts), or in the comment-stripped source text, whichever
+ * is more. Comments do not count. Any spelling Expo inlines (`process.env.NAME`, `process.env?.NAME`,
+ * `process.env['NAME']`, `process['env'].NAME`) names the variable, so this sees every read whatever its spelling.
+ */
+function nameMentions(file: string): Record<string, number> {
+  const texts: string[] = [];
+  const visit = (n: ts.Node): void => {
+    if (ts.isIdentifier(n) || ts.isPrivateIdentifier(n) || ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n) || ts.isTemplateHead(n) || ts.isTemplateMiddle(n) || ts.isTemplateTail(n) || ts.isRegularExpressionLiteral(n) || ts.isJsxText(n)) texts.push(n.text);
+    n.forEachChild(visit);
+  };
+  visit(parse(file));
+  const parsed = texts.join('\n');
+  const stripped = stripComments(readFileSync(file, 'utf8'));
+  return Object.fromEntries(SWITCH_NAMES.map((n) => [n, Math.max(parsed.match(nameIn(n))?.length ?? 0, stripped.match(nameIn(n))?.length ?? 0)]));
+}
+
 /** Resolve a module specifier written in `from` to a file under src, or null (a package, or not a source file). */
 function resolveImport(from: string, spec: string): string | null {
   const base = spec.startsWith('@/') ? join(SRC, spec.slice(2)) : spec.startsWith('.') ? join(dirname(from), spec) : null;
@@ -142,18 +173,32 @@ const SWITCH_READERS = ['mediaPhaseMayRun', 'mediaPhaseBuilt', 'photosBuildEnabl
  * `file#function` for every reference to a switch reader in these files (the enclosing named function, or `<module>`).
  * Any reference counts, not only a call: a copy into a local (`const gate = mediaPhaseMayRun`), `.call`, `.apply` or
  * `.bind`, or passing it as a value would each go round a call-only scan. An import or export specifier and the name a
- * declaration gives (a function's own name, an object key) are not references.
+ * declaration gives (a function's own name, an object key) are not references, with one exception: an export that
+ * renames a reader (`export { mediaPhaseBuilt as phaseOn } from './capabilities'`) is a reference where it is written,
+ * and the new name is a reader in every file scanned (Review B N3: a barrel alias imported by erase-everything.ts).
  */
 function switchReads(files: string[]): string[] {
   const found: string[] = [];
-  for (const file of files) {
-    const sf = ts.createSourceFile(file, readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true, file.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
+  const parsed = files.map((file) => ({ file, sf: parse(file) }));
+  // Names a reader is exported under, across the files, until no new one turns up (an alias of an alias is one too).
+  const exported = new Set(SWITCH_READERS);
+  for (let size = -1; size !== exported.size; ) {
+    size = exported.size;
+    for (const { sf } of parsed) {
+      const visitExports = (n: ts.Node): void => {
+        if (ts.isExportSpecifier(n) && exported.has((n.propertyName ?? n.name).text)) exported.add(n.name.text);
+        n.forEachChild(visitExports);
+      };
+      visitExports(sf);
+    }
+  }
+  for (const { file, sf } of parsed) {
     // A reader imported under another name (`import { mediaPhaseMayRun as gate }`) is still a reader.
-    const readers = new Set(SWITCH_READERS);
+    const readers = new Set(exported);
     sf.forEachChild((st) => {
       const named = ts.isImportDeclaration(st) ? st.importClause?.namedBindings : undefined;
       if (named && ts.isNamedImports(named)) {
-        for (const el of named.elements) if (SWITCH_READERS.includes((el.propertyName ?? el.name).text)) readers.add(el.name.text);
+        for (const el of named.elements) if (exported.has((el.propertyName ?? el.name).text)) readers.add(el.name.text);
       }
     });
     const visit = (n: ts.Node, owner: string): void => {
@@ -162,6 +207,7 @@ function switchReads(files: string[]): string[] {
       else if (ts.isVariableDeclaration(n) && n.initializer && (ts.isArrowFunction(n.initializer) || ts.isFunctionExpression(n.initializer))) here = n.name.getText(sf);
       // a reader using a reader is the definition itself (mediaPhaseBuilt recurses through `needs`), not a use
       if (ts.isIdentifier(n) && readers.has(n.text) && !isDeclaredName(n) && !SWITCH_READERS.includes(here)) found.push(`${relative(SRC, file)}#${here}`);
+      if (ts.isExportSpecifier(n) && n.propertyName && n.propertyName.text !== n.name.text && readers.has(n.propertyName.text)) found.push(`${relative(SRC, file)}#${here}`);
       n.forEachChild((c) => visit(c, here));
     };
     visit(sf, '<module>');
@@ -170,10 +216,18 @@ function switchReads(files: string[]): string[] {
 }
 
 /**
- * The data-right entry points: Export (lib/export, the one module its screen calls) and Erase everything. Erase now
- * and the 30-day purge call `erasePictureOf` from the store's audio eraser, so the store is in Erase's closure.
+ * The data-right entry points: the Export and Erase everything screens and the logic behind them (Review B N4: a switch
+ * read in the Export screen itself), lib/export and Erase everything. Erase now and the 30-day purge call
+ * `erasePictureOf` from the store's audio eraser, so the store is in Erase's closure.
  */
-const DATA_RIGHT_ENTRIES = [join(SRC, 'lib', 'export', 'index.ts'), join(SRC, 'lib', 'erase-everything.ts'), join(SRC, 'lib', 'photos', 'device.ts')];
+const DATA_RIGHT_ENTRIES = [
+  join(SRC, 'app', 'settings', 'export.tsx'),
+  join(SRC, 'app', 'settings', 'erase.tsx'),
+  join(SRC, 'components', 'settings', 'wipe.logic.ts'),
+  join(SRC, 'lib', 'export', 'index.ts'),
+  join(SRC, 'lib', 'erase-everything.ts'),
+  join(SRC, 'lib', 'photos', 'device.ts'),
+];
 /**
  * The one switch read allowed inside that closure: `registerPhotoDevice` registers the picker (a screen's input) and
  * returns early when P0 is off. It is not called by any data right; the erasers and the sweep in the same file read no
@@ -253,7 +307,7 @@ describe('[NX-39-R37] a phase switch removes screens and reads, never a data rig
 
     // Export and Erase read no switch: in everything they import, the only switch read is the picker registration.
     const closure = closureOf(DATA_RIGHT_ENTRIES);
-    expect(closure.map((f) => relative(SRC, f))).toEqual(expect.arrayContaining(['lib/export/index.ts', 'lib/erase-everything.ts', 'lib/store.ts', 'lib/photos/device.ts']));
+    expect(closure.map((f) => relative(SRC, f))).toEqual(expect.arrayContaining(['app/settings/export.tsx', 'app/settings/erase.tsx', 'components/settings/wipe.logic.ts', 'lib/export/index.ts', 'lib/erase-everything.ts', 'lib/store.ts', 'lib/photos/device.ts']));
     expect(switchReads(closure)).toEqual(ALLOWED_IN_DATA_RIGHTS);
 
     // Export works with every switch off: the plan is the same as with every switch on (nothing a switch hides is
@@ -293,6 +347,13 @@ describe('[NX-39-R37] a phase switch removes screens and reads, never a data rig
       expect(switchReads([file])).toEqual([expect.stringMatching(/copy\.ts#<module>$/)]);
       writeFileSync(file, "import { mediaPhaseBuilt } from './capabilities';\nexport function eraseEverything() {\n  return mediaPhaseBuilt.call(null, 'photos');\n}\n");
       expect(switchReads([file])).toEqual([expect.stringMatching(/copy\.ts#eraseEverything$/)]);
+      // Review B N3: a barrel that renames a reader, and the eraser that imports the new name, are both reads.
+      const barrel = join(dir, 'barrel.ts');
+      writeFileSync(barrel, "export { mediaPhaseBuilt as phaseOn } from './capabilities';\n");
+      writeFileSync(file, "import { phaseOn } from './barrel';\nexport function eraseEverything() {\n  if (phaseOn('video')) return;\n}\n");
+      expect(switchReads([barrel, file])).toEqual([expect.stringMatching(/barrel\.ts#<module>$/), expect.stringMatching(/copy\.ts#eraseEverything$/)]);
+      writeFileSync(barrel, "import { mediaPhaseMayRun } from './capabilities';\nexport { mediaPhaseMayRun as gate };\n");
+      expect(switchReads([barrel])).toEqual([expect.stringMatching(/barrel\.ts#<module>$/)]);
       // and the names an import or a declaration gives are not reads
       writeFileSync(file, "import { mediaPhaseBuilt } from './capabilities';\nexport { mediaPhaseBuilt };\nexport const keys = { mediaPhaseBuilt: 1 };\n");
       expect(switchReads([file])).toEqual([]);
@@ -329,14 +390,47 @@ describe('[NX-39-R37] a phase switch removes screens and reads, never a data rig
     }
   });
 
-  it('[NX-39-R37] no screen or read goes round a switch: each phase variable is read in capabilities.ts only (and P0 in lib/photos/flag.ts)', () => {
-    const readers = (env: string) =>
-      walk(SRC)
-        .filter((f) => new RegExp(`process\\.env\\.${env}\\b`).test(stripComments(readFileSync(f, 'utf8'))))
-        .map((f) => relative(SRC, f))
-        .sort();
+  it('[NX-39-R37] no screen or read goes round a switch: each phase variable is named in capabilities.ts only (and P0 in lib/photos/flag.ts), in any spelling', () => {
+    // Expo inlines `process.env.NAME`, `process.env?.NAME`, `process.env['NAME']` and `process['env'].NAME` alike
+    // (babel-preset-expo, plugins/inline-env-vars), so the scan is for the bare name anywhere in code (Review B N1, N2).
+    const named: Record<string, string[]> = Object.fromEntries(SWITCH_NAMES.map((n) => [n, []]));
+    const counts: Record<string, Record<string, number>> = {};
+    for (const f of walkCode(SRC)) {
+      const rel = relative(SRC, f);
+      counts[rel] = nameMentions(f);
+      for (const n of SWITCH_NAMES) if (counts[rel][n] > 0) named[n].push(rel);
+    }
     for (const s of MEDIA_PHASE_SWITCHES) {
-      expect(readers(s.env), s.env).toEqual(s.phase === 'photos' ? ['lib/capabilities.ts', 'lib/photos/flag.ts'] : ['lib/capabilities.ts']);
+      expect(named[s.env].sort(), s.env).toEqual(s.phase === 'photos' ? ['lib/capabilities.ts', 'lib/photos/flag.ts'] : ['lib/capabilities.ts']);
+    }
+    // capabilities.ts names each one twice, its row in MEDIA_PHASE_SWITCHES and its one read (R39 pins both), so a
+    // second read in another spelling there (N1: `process.env?.EXPO_PUBLIC_VIDEO` in mediaPhaseMayRun) fails here.
+    expect(counts['lib/capabilities.ts']).toEqual(Object.fromEntries(SWITCH_NAMES.map((n) => [n, 2])));
+    // flag.ts names P0's once, in its one read, and no other switch.
+    expect(counts['lib/photos/flag.ts']).toEqual(Object.fromEntries(SWITCH_NAMES.map((n) => [n, n === 'EXPO_PUBLIC_PHOTOS' ? 1 : 0])));
+  });
+
+  it('[NX-39-R37] positive control: a switch name in any spelling Expo inlines is counted, and a comment is not', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'nx39-names-'));
+    try {
+      const file = join(dir, 'flag.ts');
+      const cases: Array<[string, number]> = [
+        ["export const a = !!process.env?.EXPO_PUBLIC_VIDEO;\n", 1],
+        ["export const a = !!process.env['EXPO_PUBLIC_VIDEO'];\n", 1],
+        ['export const a = process["env"]?.EXPO_PUBLIC_VIDEO !== undefined;\n', 1],
+        ['export const a = process.env?.["EXPO_PUBLIC_VIDEO"];\n', 1],
+        ["export const a = process.env['EXPO\\u005fPUBLIC_VIDEO'];\n", 1],
+        ["export const a = process.env[`EXPO_PUBLIC_VIDEO`];\n", 1],
+        ["const s = '/*';\nexport const a = process.env?.EXPO_PUBLIC_VIDEO;\nconst t = '*/';\n", 1],
+        ['// process.env?.EXPO_PUBLIC_VIDEO\n/* process.env.EXPO_PUBLIC_VIDEO */\nexport const a = 1;\n', 0],
+        ["export const a = process.env.EXPO_PUBLIC_VIDEO_X;\n", 0],
+      ];
+      for (const [code, n] of cases) {
+        writeFileSync(file, code);
+        expect(nameMentions(file).EXPO_PUBLIC_VIDEO, code).toBe(n);
+      }
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
     }
   });
 });
@@ -397,6 +491,12 @@ describe('[NX-39-R39] the switches of section 3', () => {
     expect(buildValues).toBeDefined();
     expect(buildValues!.split('\n')).toEqual(MEDIA_PHASE_SWITCHES.map((s) => `  ${s.phase}: parseServerFeatures(process.env.${s.env}),`));
     expect(code).toMatch(/const own = mediaPhaseTestOverride\[phase\] \?\? MEDIA_PHASE_BUILD_VALUE\[phase\];/);
+    // and nothing else touches the build values or the test override: MEDIA_PHASE_BUILD_VALUE is named at its
+    // declaration and in the `own` line only, so no later write (guarded by the environment, say) can turn a phase on
+    // after the pinned block (Review A N2); the override is named where it is declared, read in `own`, and in
+    // setMediaPhaseForTests (copied, then replaced).
+    expect(code.match(/\bMEDIA_PHASE_BUILD_VALUE\b/g)?.length).toBe(2);
+    expect(code.match(/\bmediaPhaseTestOverride\b/g)?.length).toBe(4);
     for (const s of MEDIA_PHASE_SWITCHES) {
       expect(code.match(new RegExp(`process\\.env\\.${s.env}\\b`, 'g'))?.length, s.env).toBe(1);
       expect(code, s.env).toMatch(new RegExp(`\\n  ${s.phase}: parseServerFeatures\\(process\\.env\\.${s.env}\\),\\n`));
@@ -414,7 +514,8 @@ describe('[NX-39-R39] the switches of section 3', () => {
   });
 
   it('[NX-39-R39] each switch is off for every value but `on`, read from the environment as a build reads it', async () => {
-    // A fresh copy of capabilities.ts per value, with the variable set in process.env, as a bundle inlines it.
+    // A fresh copy of capabilities.ts per value, with the variable set in process.env, as a bundle inlines it, read
+    // through both mediaPhaseBuilt and mediaPhaseMayRun.
     // `on` is matched after trim and lower-case (parseServerFeatures, the rule of every switch in capabilities.ts and of
     // lib/photos/flag.ts), so `On` and ` ON ` are on; store-flags.mjs and G6 refuse any written value but `off` anyway.
     const OFF_VALUES: Array<string | undefined> = [undefined, '', '   ', 'off', ' OFF ', 'Off', 'true', '1', 'yes', 'no', 'onn', 'o n', 'enabled'];
@@ -428,6 +529,13 @@ describe('[NX-39-R39] the switches of section 3', () => {
       }
       vi.resetModules();
       const fresh = await import('../src/lib/capabilities');
+      // What a screen asks, mediaPhaseMayRun, must give the same answer as the build value with no remote config and
+      // with every remote key false (Review B N1: a second read of the variable inside mediaPhaseMayRun).
+      const noKeys = { killSwitches: Object.fromEntries(PAUSE_KEYS.map((k) => [k, false])) };
+      for (const p of PHASES) {
+        expect(fresh.mediaPhaseMayRun(p, null), `${p} may run, ${JSON.stringify(env)}`).toBe(fresh.mediaPhaseBuilt(p));
+        expect(fresh.mediaPhaseMayRun(p, noKeys), `${p} may run, keys false, ${JSON.stringify(env)}`).toBe(fresh.mediaPhaseBuilt(p));
+      }
       return Object.fromEntries(PHASES.map((p) => [p, fresh.mediaPhaseBuilt(p)])) as Record<MediaPhase, boolean>;
     };
     try {
