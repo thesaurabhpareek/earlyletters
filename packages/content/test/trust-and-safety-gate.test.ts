@@ -5,7 +5,7 @@
  * - FR-POL-03: a build switch that lets one person's content reach another through our servers may not be on in a store
  *   build unless its card has a complete row in docs/ops/runbooks/report-set.md. Every EXPO_PUBLIC_* key in eas.json must
  *   be classified below, so a new switch cannot slip past the gate unread.
- * - FR-POL-04: the two-parent book (NS-25) does not open in a store build until docs/ops/runbooks/safety-removal.md is
+ * - FR-POL-04: the two-parent book (NS-25) does not open in a build that reaches outside Family until docs/ops/runbooks/safety-removal.md is
  *   APPROVED and its access tool exists in supabase/migrations.
  *
  * "Store build" means what the app code means by it: the profile whose EXPO_PUBLIC_APP_ENV is `production`
@@ -88,7 +88,7 @@ function isStoreBuild(p: Profile): boolean {
 /**
  * CR-234: can this build reach someone outside the internal Family group? EAS distributes to the store unless a profile
  * says `internal`, so only an exact `internal` is exempt; any other value, a typo included, counts as store. A store-distributed profile stays inside only while its submit groups are exactly ["Family"]; the
- * App Store build always reaches outside. A manual change in App Store Connect is not visible here (FOUNDER_QUEUE row).
+ * App Store build always reaches outside. A manual change in App Store Connect is not visible here; a FOUNDER_QUEUE row for it is pending with the release owner (CR-234).
  */
 export function reachesOutside(p: Profile): boolean {
   if (p.distribution === 'internal') return false;
@@ -121,7 +121,7 @@ export function reportSetCards(md: string): Set<string> {
   return cards;
 }
 
-/** FR-POL-03: what fails, empty when every hosting switch that is on in a store build has its report set. */
+/** FR-POL-03: what fails, empty when every hosting switch that is on in a build that reaches outside Family (CR-234) has its report set. */
 export function reportSetFindings(profiles: Profile[], switches: typeof SWITCHES, reportSet: Set<string>): string[] {
   const out: string[] = [];
   for (const p of profiles) {
@@ -151,7 +151,7 @@ export function safetyState(runbook: string | null, migrations: string[]): Safet
 }
 
 /**
- * FR-POL-04: what fails, empty when no store build opens the invite flow from any entry, or both conditions hold.
+ * FR-POL-04: what fails, empty when no build that reaches outside Family (CR-234) opens the invite flow from any entry, or both conditions hold.
  * The app decides each entry on its own (`app/invite/index.tsx` asks for `invite_join`, `family.tsx` for `family_tab`, the
  * link watcher for `invite_link`, and so on), so every entry in INVITE_ENTRIES is checked, not one.
  */
@@ -209,7 +209,7 @@ describe('[FR-POL-02] a report of apparent child sexual abuse material gets an a
     expect(m.notes.Never).toMatch(/delete/);
     expect(m.notes.Never).toMatch(/\bmove\b/);
     expect(m.notes.Never).toMatch(/Leave the message where it arrived/);
-    expect(m.notes.Never).toMatch(/no Claude session or connector reads it/);
+    expect(m.notes.Never).toMatch(/no Claude session or connector may read it/);
     expect(m.notes['Same day']).toMatch(/only after a licensed lawyer advises/);
     expect(m.notes['Same day']).toMatch(/exec team/);
     expect(m.notes['Same day']).toMatch(/kind and the date only/);
@@ -241,7 +241,7 @@ describe('[FR-POL-02] a report of apparent child sexual abuse material gets an a
   });
 });
 
-describe('[FR-POL-03] content that reaches another person needs its report set before a store build turns it on', () => {
+describe('[FR-POL-03] content that reaches another person needs its report set before a build that reaches outside Family turns it on', () => {
   it('[FR-POL-03] every EXPO_PUBLIC switch in eas.json is classified, and no hosting switch is on without its report set', () => {
     expect(reportSetFindings(profiles, SWITCHES, reportSetCards(reportSetMd))).toEqual([]);
   });
@@ -293,6 +293,7 @@ describe('[FR-POL-03] content that reaches another person needs its report set b
         tfChild: { extends: 'tf' },
         tfGrandchild: { extends: 'tfChild' },
         typo: { distribution: 'Store' },
+        prodFamily: { env: { EXPO_PUBLIC_APP_ENV: 'production' } },
       },
       submit: {
         devChild: { ios: { groups: ['Friends'] } },
@@ -300,10 +301,11 @@ describe('[FR-POL-03] content that reaches another person needs its report set b
         tfGrandchild: { ios: { groups: ['Friends'] } },
         typo: { ios: { groups: ['Friends'] } },
         tf: { ios: { groups: ['Family'] } },
+        prodFamily: { ios: { groups: ['Family'] } },
       },
     });
     expect(ps.find((p) => p.name === 'devChild')!.distribution).toBe('internal');
-    expect(ps.filter(reachesOutside).map((p) => p.name)).toEqual(['tfChild', 'tfGrandchild', 'typo']);
+    expect(ps.filter(reachesOutside).map((p) => p.name)).toEqual(['tfChild', 'tfGrandchild', 'typo', 'prodFamily']);
   });
 
   it('[FR-POL-03] only the App Store build reaches outside Family today, and the app decides the store build the same way', () => {
@@ -314,7 +316,7 @@ describe('[FR-POL-03] content that reaches another person needs its report set b
   });
 });
 
-describe('[FR-POL-04] the two-parent book stays out of store builds until the safety-removal runbook and its tool exist', () => {
+describe('[FR-POL-04] the two-parent book stays out of builds that reach outside Family until the safety-removal runbook and its tool exist', () => {
   it('[FR-POL-04] safety-removal.md exists as a draft for the exec-team counsel read', () => {
     expect(runbook).not.toBeNull();
     expect(runbook!).toMatch(/^Status: (DRAFT|APPROVED)\b/m);
@@ -322,7 +324,7 @@ describe('[FR-POL-04] the two-parent book stays out of store builds until the sa
     expect(runbook!).toMatch(/^Tool: /m);
   });
 
-  it('[FR-POL-04] no store build opens the invite flow while the runbook or the tool is missing', () => {
+  it('[FR-POL-04] no build that reaches outside Family opens the invite flow while the runbook or the tool is missing', () => {
     expect(safetyRemovalFindings(profiles, inviteDestination, safetyState(runbook, migrations))).toEqual([]);
   });
 

@@ -5,7 +5,7 @@ Status: DRAFT. This is not a procedure. It is the brief a licensed US lawyer rea
 ## 1. The interim rule, until a lawyer advises
 
 - Nobody opens, previews, downloads, forwards, copies, quotes, moves or deletes the material, an attachment or a link. The message stays where it arrived.
-- Only the founder can reach that mailbox. No Claude session, connector or script reads it.
+- Only the founder can reach that mailbox. No Claude session, connector or script may read it. Which mail service receives `hello@` is UNVERIFIED (claims row EF1).
 - The only reply is the acknowledgement, macro `policy.abuseMaterialReport` in `docs/support/macros.md` (FR-POL-02). If a child is in danger now, the safety pointer goes first (FR-SUP-16).
 - The founder takes the kind and the date, never the email or a link, to the exec team the same day.
 - Nobody files a report with NCMEC until the lawyer has advised. A Claude role never files.
@@ -21,6 +21,7 @@ Status: DRAFT. This is not a procedure. It is the brief a licensed US lawyer rea
 5. Is the acknowledgement wording acceptable, and should it point the reporter to NCMEC's CyberTipline?
 6. Is Terms 9 ("We report apparent child sexual abuse material to the National Center for Missing and Exploited Children as US law requires") accurate for us?
 7. What does the founder do with a message that turns out to be wrongly flagged?
+8. 2258A(a)(1) asks for a report "as soon as reasonably possible after obtaining actual knowledge". Does the interim rule, that nobody files until you have advised, fit that, and what should the founder do with a report that arrives before you are engaged?
 
 ## 3. Sources
 
