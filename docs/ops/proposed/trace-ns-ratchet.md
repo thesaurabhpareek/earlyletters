@@ -18,9 +18,13 @@ What it fails on. Plain `--check` exits 1 on any of these (`scripts/trace.mjs`, 
 - NS `added`: a P0 row (or cross-cutting id) with no test title that is not in `docs/ops/trace-ns-baseline.txt`, or a bracketed NS id in a test title that no card defines and the baseline does not list;
 - NS `gone`: a baseline line whose row was removed or lowered from P0, or whose cited id vanished, until the author runs `--update-ns-baseline` (it only shrinks);
 - NS `grown`: a baseline line the base branch's copy lacks (only with `--ns-base`);
-- a baseline deleted while the base branch has one.
+- a baseline deleted while the base branch has one;
+- an `--ns-base` file that does not exist (exit 1);
+- a card or register the NS parser cannot read: under `--check` the error is thrown and the script exits 2 (in report mode it is logged and skipped).
 
-A baseline line whose row now has a test is reported as `stale baseline line` and does not fail.
+A baseline line is `stale` when its id is no longer open, that is, when any active test title cites the id. That is all it means. `it.fails`, `it.todo` and `.skip` titles are not active (`scripts/trace.mjs:241`, and `:634` skips them), but a describe title is, and so is a passing test of another clause of the row, so a row can read as stale while its main clause is still red or not built. A stale line is logged as `stale baseline line` and does not fail. Six stale lines are kept on purpose for that reason (NS-21-R12, NS-01-R50, NS-44-R1, NS-17-R5, NS-17-R7, NS-17-R8; CR-228 names each test and line). The log line still says to delete every stale line, so whoever runs `--update-ns-baseline` puts those six back in the same commit. The gate therefore proves that every open P0 row is either cited by a test title or listed in the baseline; it does not prove that a cited row's test passes in full.
+
+How the base copy is taken. The step reads `docs/ops/trace-ns-baseline.txt` from `origin/<base branch>` at the time the job runs, so `grown` compares the PR's baseline with the target branch's tip. A one-time seed (CR-227, CR-228) adds lines, so the PR that carries it reads as `grown` against the base copy it starts from; it can pass only when it merges before the step is applied, after which the seed is in every later base copy. That is why the step waited for #2050, which merged on 27 Nov 2026 (below).
 
 ## Failures on develop (BL-2033, full checkout, 24 Nov 2026)
 
@@ -33,9 +37,31 @@ Command, on `develop` at `89ccadd1` (a full checkout with every test file): `nod
 | NS `added` | 176 | 174 NS-53 rows (G01, G03, G04, G05 and 170 R rows); NS-21-R12b (a title no card defines); NS-51-R43 (a P0 row with no test title) |
 | NS `gone` | 0 | none |
 | NS `grown` | 0 | none (the base copy is develop's own) |
-| stale baseline line (report only) | 67 | rows that have a test now; they do not fail |
+| stale baseline line (report only) | 67 | lines whose id an active test title now cites (a describe title counts; `it.fails` and `it.todo` titles do not); they do not fail. Six of them still have their main clause in `it.fails` or `it.todo` (see above) |
 
-So the five v2 ids no longer stand in the way. Every failure left is the NS ratchet's own, and all 176 are cleared by the BL-2238 pull request (#2050): four rows get their ids on the tests that prove them, two ids are fixed at their source, the other 170 NS-53 rows are seeded once under CR-228, and the 67 stale lines are deleted. On that branch the same command exits 0.
+So the five v2 ids no longer stand in the way. Every failure left is the NS ratchet's own, and all 176 are cleared by the BL-2238 pull request (#2050): three NS-53 rows (R1, R221, R247) and NS-51-R43 get their ids on the tests that carry them; NS-21-R12b is retitled `[NS-21-R12]`; NS-53-R56's priority cell is corrected to DROPPED, as its own text says (a data fix, not a test id); the other 170 NS-53 rows are seeded once under CR-228; and 61 of the 67 stale lines are deleted, the six above kept.
+
+The same commands, run again on 25 Nov 2026 (full checkouts):
+
+| Where | Command | Exit | What it prints |
+|---|---|---|---|
+| develop `ba8f3357` | `--no-write --check` | 1 | 176 `added`, 67 stale |
+| develop `ba8f3357` | `--no-write --check --ns-base <copy of develop's baseline>` | 1 | 176 `added`, 0 `grown`, 67 stale |
+| #2050 at `9af68366` | `--no-write --check` | 0 | 0 FAIL, 6 stale (the six kept lines) |
+| #2050 at `9af68366` | `--no-write --check --ns-base <copy of develop's baseline>` | 1 | 170 `grown` (the NS-53 seed: "was added to the baseline; it may only shrink"), 6 stale |
+| #2050 at `9af68366` | `--no-write --check --ns-base <copy of #2050's own baseline>` | 0 | 0 FAIL, 6 stale |
+
+The fourth row is what the drafted step would have printed on #2050's own PR, and the fifth is what it prints on later PRs once develop's copy holds the seed. So the step was to be applied only after #2050 merged, never before.
+
+After #2050 merged (27 Nov 2026, full checkout of this branch merged with develop `f7b4ca9e`, whose baseline is the same file):
+
+| Where | Command | Exit | What it prints |
+|---|---|---|---|
+| develop `f7b4ca9e` | `--no-write --check` | 0 | 0 FAIL, 15 stale (the six kept lines, and nine whose ids tests merged since now cite) |
+| develop `f7b4ca9e` | `--no-write --check --ns-base <copy of develop's baseline>` | 0 | 0 FAIL, 0 `grown`, 15 stale |
+| develop `f7b4ca9e` | `--no-write --check --ns-base <a file that does not exist>` | 1 | the missing base file |
+
+So BL-1869 can apply the step as drafted now.
 
 ## The two ways to a step that fails only on the ratchet
 
@@ -43,4 +69,4 @@ So the five v2 ids no longer stand in the way. Every failure left is the NS ratc
 
 (b) Add a ratchet-only flag or scope to `scripts/trace.mjs` (a code row, owner qa engineer, with its own test), so CI does not wait on the v2 or NS clean-up.
 
-Recommended and ruled: (a). See CR-229 in `docs/agents/cto/RULINGS.md`. (b) would add a second path through `main` for a problem that no longer exists, and a ratchet-only step would let a duplicate or undefined v2 id merge unseen. The answer to 07 Q8 (whether `--check` blocks merges) is yes, through this step, once #2050 has merged and BL-1869 applies it.
+Recommended and ruled: (a). See CR-229 in `docs/agents/cto/RULINGS.md`. (b) would add a second path through `main` for a problem that no longer exists, and a ratchet-only step would let a duplicate or undefined v2 id merge unseen. The answer to 07 Q8 (whether `--check` blocks merges) is yes, through this step, once #2050 has merged and BL-1869 applies it. What it blocks is a row neither cited nor listed. A row whose main clause is in `it.fails` or `it.todo` still passes when a describe title or a test of another clause cites it, which CR-229 records as a revisit trigger.

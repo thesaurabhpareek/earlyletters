@@ -67,8 +67,8 @@ beforeEach(() => {
   Object.assign(h, { excluded: new Set(), mode: 'stick', written: 0, hold: null });
 });
 
-describe('[R221] the file holds exactly the R221 members', () => {
-  it('a write has v, owner, dayKeys, labels, hiddenPlaces and homePlace and nothing else', async () => {
+describe('[NS-53-R221] the file holds exactly the R221 members', () => {
+  it('[NS-53-R247] a write has v, owner, dayKeys, labels, hiddenPlaces and homePlace and nothing else', async () => {
     expect(await writeMoments(expoMomentsPort()!, file())).toBe('ok');
     expect(Object.keys(onDisk()).sort()).toEqual(['dayKeys', 'hiddenPlaces', 'homePlace', 'labels', 'owner', 'v']);
   });
@@ -168,7 +168,7 @@ describe('[R250] the file is out of the backup, read back', () => {
   });
 });
 
-describe('[R221] the owner check fails closed', () => {
+describe('[NS-53-R221] the owner check fails closed', () => {
   it('a file of another owner is never read or overwritten, and reads as empty', async () => {
     seed(JSON.stringify(file(A)));
     const s = fresh(B);
@@ -191,7 +191,7 @@ describe('[R221] the owner check fails closed', () => {
     expect(names()).toEqual([MOMENTS_FILE]);
   });
 
-  it('a new sign-in removes another signed-in owner\'s file and a local file nobody adopted, and keeps the same owner\'s own', async () => {
+  it('[NS-51-R43] a new sign-in removes another signed-in owner\'s file and a local file nobody adopted, and keeps the same owner\'s own', async () => {
     seed(JSON.stringify(file(A)));
     fresh(A).setOwner(B);
     expect(names()).toEqual([]);
@@ -205,7 +205,7 @@ describe('[R221] the owner check fails closed', () => {
   });
 });
 
-describe('[CDO-24] the claim step adopts a local file only on an explicit confirm; sign-out keeps it', () => {
+describe('[CDO-24][NS-51-R43] the claim step adopts a local file only on an explicit confirm; sign-out keeps it', () => {
   it('adoptLocal rewrites a local file to the new owner with every row, and the new owner reads it after setOwner', async () => {
     seed(JSON.stringify(file('local')));
     const s = fresh('local');

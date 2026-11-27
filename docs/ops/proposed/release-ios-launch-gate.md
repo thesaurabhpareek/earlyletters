@@ -34,23 +34,40 @@ The five new build paths now hold a PR on both macOS checks in `merge-queue.mjs`
 
 Limits: the gate proves the tip of `develop`, not the tagged commit; and a writer who can push a tag on a branch carrying an edited gate can bypass it, so the `ios-v*` tag ruleset and the `app-store` approval stay the real controls.
 
+## Edges of the wired gate and their tests (BL-1480, BL-1574)
+
+The `launch-gate` job runs `main()`, which reads through `gate()` and decides with `decideLaunchGate`. These rows name the edges that a mutant of the script survived before a test pinned them.
+
+| Failure mode | Result | Test in `scripts/release/launch-gate.test.mjs` |
+|---|---|---|
+| `runs` is not a list (an object, a string, a number) | refused as no runs, does not throw | `[BL-1480] runs that are not a list` |
+| The ancestry answer is not exactly `true` (a truthy string, `undefined` for a run with no `head_sha`, `1`, an object) | refused, "no iOS compile run on develop at or after the merge base" | `[BL-1574] an ancestry answer that is not exactly true refuses` |
+| `git merge-base --is-ancestor` fails with an exit code other than 0 or 1 (git uses 128 for a bad object or missing history) | exit 1, "a read failed", not a refusal for the run's order | `[BL-1574] main(): an --is-ancestor read error (git exit 128)` |
+| The script path has a space or another character that needs URL escaping, or is reached through a symlink | `main()` still runs, so a refused gate exits 1 (the old entry check skipped `main()` and the job exited 0) | `[BL-1574] main() runs when the script path has a space or is reached through a symlink` |
+| `process.argv[1]` is missing, empty or another file | not the entry, `main()` does not run and nothing throws | `[BL-1574] isEntry(): a missing argv[1] or another file is not the entry` |
+
 ## Tag equals checked commit (BL-1594, proposal, not wired)
 
 Status: PROPOSED. The pure function exists and is tested; no workflow calls it. Karma applies workflow edits.
 
 Why: the gate above proves the tip of `develop` (a green run at or after the merge base). It does not prove the tagged commit. A fix cherry-picked onto `release/<x.y>` makes a new sha that no `iOS compile` run has seen, and that sha can be tagged.
 
-The check: `decideTagCheckedRun({ tagSha, runs })` in `scripts/release/launch-gate.mjs` passes only when the newest `workflow_dispatch` run of `ios-compile.yml` whose `head_sha` equals the tagged sha has status `completed` and conclusion `success`. A `pull_request` run does not count: it builds the merge ref, not its `head_sha`, and its `compile` job can be skipped by the paths filter while the run is green. On refusal the message says to dispatch `iOS compile` on the release branch at the commit to be tagged, not on `develop`. Read by the workflow, `runs` would come from `GET repos/<repo>/actions/workflows/ios-compile.yml/runs?head_sha=<tag sha>`, which needs a dispatch of `iOS compile` on the release branch before the tag is pushed.
+The check: `decideTagCheckedRun({ tagSha, runs })` in `scripts/release/launch-gate.mjs` passes only when the newest `workflow_dispatch` run whose `path` is exactly `.github/workflows/ios-compile.yml` and whose `head_sha` equals the tagged sha has status `completed` and conclusion `success`. A `pull_request` run does not count: it builds the merge ref, not its `head_sha`, and its `compile` job can be skipped by the paths filter while the run is green. On refusal the message says to dispatch `iOS compile` on the release branch at the commit to be tagged, not on `develop`. Read by the workflow, `runs` would come from `GET repos/<repo>/actions/workflows/ios-compile.yml/runs?head_sha=<tag sha>`, which needs a dispatch of `iOS compile` on the release branch before the tag is pushed.
 
 | Failure mode | Result | Test in `scripts/release/launch-gate.test.mjs` |
 |---|---|---|
 | Cherry-pick onto the release branch: only the parent was checked | refused, "no iOS compile run checked the tagged commit" | `[BL-1594] a cherry-pick onto the release branch` |
 | A moved or re-made tag: runs exist for the old sha only | refused | `[BL-1594] a moved or re-made tag` |
-| A run for another workflow on the tagged sha, or a run with no `path` | refused (the run's `path` must end in `/ios-compile.yml`) | `[BL-1594] a run of another workflow` |
+| A run for another workflow on the tagged sha, or a run with no `path` | refused (the run's `path` must be exactly `.github/workflows/ios-compile.yml`) | `[BL-1594] a run of another workflow` |
+| A run whose `path` only ends in `ios-compile.yml`, such as `.github/workflows/evil-ios-compile.yml` or `x/ios-compile.yml` | refused, the path must match exactly | `[BL-1594] the path must be exactly .github/workflows/ios-compile.yml` |
 | A `pull_request`, `push` or other non-dispatch run on the tagged sha | refused, only `workflow_dispatch` counts | `[BL-1594] only a workflow_dispatch run counts` |
 | A run on the tagged sha with no `created_at` | refused, fails closed whatever the list order | `[BL-1594] a run on the tagged sha with no start time` |
+| A run on the tagged sha with an empty `created_at` | refused, fails closed whatever the list order | `[BL-1594] a run on the tagged sha with an empty start time` |
 | A run still queued or in progress | refused, "is <status>, not finished" | `[BL-1594] a run still queued or in progress` |
-| Two runs on one sha, one failed | the newest by `created_at` decides, whatever the list order | `[BL-1594] two runs on one sha` |
+| Two runs on one sha, one failed | the newest by `created_at` decides, whatever the list order | `[BL-1594] two runs on one sha: the newest decides` |
+| Two runs on one sha with the same `created_at` | the higher run id decides, whatever the list order | `[BL-1594] two runs on one sha at the same created_at` |
+| A run whose `head_sha` matches the tag in its first 39 characters but not the last | refused, the sha must match in full | `[BL-1594] a sha that matches the tag in its first 39 characters` |
+| `runs` is not a list (an object, a string, a number) | refused as no runs, does not throw | `[BL-1594] runs that are not a list` |
 | Red, cancelled, skipped or empty conclusion; missing or malformed tag sha (also when a run carries that same malformed sha) | refused, fails closed | `[BL-1594] a red, cancelled, skipped ...` |
 | A green run on exactly the tagged sha | open | `[BL-1594] a green run on exactly the tagged sha opens` |
 
