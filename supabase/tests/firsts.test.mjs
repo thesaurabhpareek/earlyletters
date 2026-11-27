@@ -223,6 +223,18 @@ check('[mutant] with the trigger restored the same write is SCCON again', (await
 // B gives consent again, so the pull mutants below have a pull to read (a withdrawn caller pulls an empty page, FR-PRV-20).
 await as(B, `select public.record_policy_act('sensitive-data', '1.0.0', 'accept', 'consent_sheet', 'consent.sensitive', '1.0.0', 'ios')`);
 
+// Mutant 1b: first_label left out of the approval reset, so a relative's new label keeps the parent's earlier yes.
+const noReset = familyRules.replace('(new.final_text, new.first_label) is distinct from (old.final_text, old.first_label)',
+  'new.final_text is distinct from old.final_text');
+check('[mutant] the reset mutant differs from the trigger (the mutant is real)', noReset !== familyRules);
+const LRel2 = await letter(N);
+await as(A, `select public.review_family_letter($1, 'added')`, [LRel2]);
+await sys(noReset);
+await mark(N, LRel2, 'Asha said dog');
+check('[mutant] without first_label in the reset a relative\'s new label stays added, so the pending check can fail',
+  (await apr(LRel2)).approval === 'added');
+await sys(familyRules);
+
 // Mutant 2: the tombstone guard without the two columns, so a deleted letter's label changes (round the consent gate).
 const noTomb = guard.replace(/\n\s*-- BL-2143[^\n]*\n\s*or new\.first_mark is distinct from old\.first_mark\n\s*or new\.first_label is distinct from old\.first_label\)/, ')');
 check('[mutant] the tombstone mutant differs from the guard (the mutant is real)', noTomb !== guard);
