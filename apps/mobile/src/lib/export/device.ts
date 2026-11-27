@@ -32,7 +32,7 @@ import { storedPhotoFile } from '../photos/files';
 import { currentUserId, localSqlDb, dictionaryFor, getSetting, listChildren, listConflicts, listEntriesForChild, listHiddenChildren, listWaitingForExport, getDraftReview, myRoleIn, listClosedBooks, listDeletedEntriesForChild, listLeftBooks, listLeftBookEntries, type Entry } from '../store';
 import { paperFor, phoneConsent, waitingChangedWords, type ExportSnapshot, type SnapshotChild, type SnapshotEntry, type SnapshotPhoto } from './build.logic';
 import { noConsentHistory, noProfile, postgrestReader, type PostgrestLike, type ServerRecordsReader } from './server-records.logic';
-import { readServerRecordsWithCopy } from './consent-copy.logic';
+import { copyStoreFor, readServerRecordsWithCopy } from './consent-copy.logic';
 import { deviceConsentCopy } from './consent-copy';
 import type { ExportDictionaryTerm } from './schema';
 import { estimateExportBytes, ExportCancelledError, ExportTooLargeError, MAX_EXPORT_BYTES, packExport, type ByteSink, type ExportPhase } from './pack';
@@ -204,12 +204,12 @@ function supabaseReader(): ServerRecordsReader | null {
 
 /**
  * Adds the server's consent record and the person's profile to a snapshot (never throws; Stop ends the read at once;
- * see server-records.logic.ts). Offline, the phone's copy of the last full consent read (BL-528, consent-copy.logic.ts),
- * which is neither read nor written while an account-deletion request is open: the request deleted it.
+ * see server-records.logic.ts). When the server cannot be read, the phone's copy of the last full consent read (BL-528,
+ * consent-copy.logic.ts), which is neither read nor written while this phone holds a note that a deletion request is
+ * open (copyStoreFor). On the phone that made the request, the request also deleted it.
  */
 export async function withServerRecords(snapshot: ExportSnapshot, signal?: { aborted: boolean }): Promise<ExportSnapshot> {
   const authUserId = currentAuthUserId();
-  const requestOpen = deletionRequestOpen(readOpenRequest({ get: getSetting }), authUserId, Date.now());
   const server = await readServerRecordsWithCopy({
     authUserId,
     ownerId: currentUserId(),
@@ -217,7 +217,7 @@ export async function withServerRecords(snapshot: ExportSnapshot, signal?: { abo
     timeoutMs: ENDPOINT_CLASSES.read_rpc.timeoutMs,
     now: () => new Date(),
     cancelled: () => signal?.aborted === true,
-  }, requestOpen ? null : deviceConsentCopy);
+  }, copyStoreFor(readOpenRequest({ get: getSetting }), authUserId, Date.now(), deviceConsentCopy));
   return { ...snapshot, consentHistory: server.consent, profile: server.profile };
 }
 
