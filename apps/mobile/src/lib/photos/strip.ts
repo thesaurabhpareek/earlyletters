@@ -96,7 +96,8 @@ export function stripJpeg(input: Uint8Array): StripResult {
       continue;
     }
     let keep = decoderMarker(marker); // the allow list; APPn are decided below
-    if (marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc && segEnd - body >= 5) {
+    // The first frame's size is the one a decoder uses; a later frame header cannot change what the size checks see.
+    if (width === null && marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc && segEnd - body >= 5) {
       height = (b[body + 1] << 8) | b[body + 2]; // start of frame: precision, height, width
       width = (b[body + 3] << 8) | b[body + 4];
     }

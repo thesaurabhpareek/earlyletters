@@ -331,6 +331,59 @@
         }
       }
     },
+    "photo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "file",
+        "bytes",
+        "sha256",
+        "width",
+        "height",
+        "text",
+        "place"
+      ],
+      "properties": {
+        "file": {
+          "type": "string",
+          "pattern": "^photos/[^/]+/[^/]+\\.jpg$"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "width": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "height": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "text": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "place": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
     "edit": {
       "type": "object",
       "additionalProperties": false,
@@ -468,7 +521,14 @@
           "pattern": "^letters/"
         },
         "photo": {
-          "type": "null"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/photo"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "audio": {
           "anyOf": [
