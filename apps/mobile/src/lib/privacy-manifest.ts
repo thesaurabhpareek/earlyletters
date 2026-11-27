@@ -137,7 +137,7 @@ interface CollectedRow {
  */
 const COLLECTED_ROWS: readonly CollectedRow[] = [
   // The parent's signature, "what {child} calls you" (signs_as in book prefs and on letters). Sign in with
-  // Apple asks for the email only and keeps no name (O-8, CR-232).
+  // Apple asks for the email only and keeps no new name (O-8).
   { type: 'NSPrivacyCollectedDataTypeName', when: 'serverFeatures' },
   // Sign-in by email link and code (Supabase Auth); Apple's relay address; account and deletion notices.
   { type: 'NSPrivacyCollectedDataTypeEmailAddress', when: 'serverFeatures' },
