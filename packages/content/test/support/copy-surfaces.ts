@@ -328,6 +328,26 @@ const AUTH_BUTTONS = [
   'sheet.busy',
 ];
 
+/**
+ * CDesO-63 (BL-479 point 4): `authCopy` labels on a pressable control that were on no list until the scan in
+ * auth-pressable-labels.test.ts found them. That test holds each to 22 characters, as written and with the Asha
+ * fixtures, the same rule rules.test.ts applies to `AUTH_BUTTONS`. They sit in their own list only because
+ * rules.test.ts pins `AUTH_BUTTONS` at 28 keys (BL-462 point 2) and that file is another stream's; moving them into
+ * `AUTH_BUTTONS` with the pin raised to 35 is the follow-up.
+ */
+export const AUTH_PRESSABLE = [
+  // ListRows with onPress on Account; finishSetup is also the account gate's Button (lib/auth/ui.tsx).
+  'account.finishSetup',
+  'account.passkeyFallbackName',
+  'account.addPasskey',
+  'account.signOutOthers',
+  // The terms step's two ListRows with onPress, and Welcome's two quiet Buttons.
+  'consent.terms.termsLink',
+  'consent.terms.privacyLink',
+  // The quiet Button under the new-phone line on Book.
+  'newPhone.recordingsElsewhereDismiss',
+] as const;
+
 /** Every label P8b's screens put on a button (the keys do not end in "Button", so they are listed). */
 const FAMILY_BUTTONS = [
   'card.button',
