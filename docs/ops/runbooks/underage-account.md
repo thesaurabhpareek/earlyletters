@@ -10,6 +10,8 @@ Promise being kept (Privacy Policy, COPPA paragraph; LEGAL-REQ-002):
 - **13 to 17:** we close the account and, where the law allows, offer an export first.
 - **Under 13:** the inviter is told neutrally (LEGAL-REQ-002). We do the same for 13 to 17, as a matter of practice.
 
+**A question for counsel:** this file calls the under-13 10 days a Privacy Policy promise, while `data-requests-by-email.md` (its first table, Route 4) reads the 0.9.0 text as giving an under-18 closure no time. Which reading is right, and which text and version binds the 10 days, is for counsel; until counsel answers, both files keep their reading.
+
 Engineering reading, confirm with counsel. Owner: `regulatory-affairs` with `ops`; the Chief Compliance Officer (council role) reviews changes to this file.
 
 ## 0. Rules for the whole runbook
