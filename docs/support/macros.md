@@ -96,7 +96,7 @@ ${brand.name}
 ```macro policy.abuseMaterialReport
 Hi,
 
-Thanks for telling us. We've received your report, and it's with the right person today.
+Thanks for telling us. We've received your report, and it's with the right person.
 
 There's nothing more you need to send.
 

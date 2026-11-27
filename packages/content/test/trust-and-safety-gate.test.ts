@@ -165,6 +165,7 @@ describe('[FR-POL-02] a report of apparent child sexual abuse material gets an a
     const m = parseMacros(readMacrosFile()).get(KEY)!;
     expect(m.notes.Never).toMatch(/open/);
     expect(m.notes.Never).toMatch(/forward/);
+    expect(m.notes.Never).toMatch(/quote/);
     expect(m.notes.Never).toMatch(/delete/);
     expect(m.notes.Never).toMatch(/Leave it where it is/);
     expect(m.notes['Same day']).toMatch(/exec team/);
@@ -179,6 +180,10 @@ describe('[FR-POL-02] a report of apparent child sexual abuse material gets an a
       'You can paste the address of the page in your reply.',
       'Could you show us the video?',
       'Post the link here and we will look.',
+      'Please forward the email to us.',
+      'Send us what you saw.',
+      'Reply with the details so we can act.',
+      'Tell us where you saw it.',
     ]) {
       expect(asks(`Hi,\n\nThanks. ${planted}\n`), planted).not.toEqual([]);
     }

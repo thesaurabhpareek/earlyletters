@@ -128,6 +128,10 @@ describe('[FR-POL-07] one neutral reply to a report that someone is under 18', (
       'There is no account with that email.',
       'An account under that address exists.',
       'Could you tell us how old they are?',
+      'We have no record of anyone using that address.',
+      "We've disabled their profile.",
+      "We've taken action on this.",
+      'What year were they born?',
     ]) {
       expect(under18Problems(`Hi,\n\nThanks. ${planted}\n`), planted).not.toEqual([]);
     }

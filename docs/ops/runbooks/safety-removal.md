@@ -19,7 +19,7 @@ The two-parent book (NS-25) does not turn on in a store build until both of thes
 
 ## 0. Rules for the whole runbook
 - No action on one person's word. Both parents get the same first reply, macro M14 (`policy.familyDispute` in `docs/support/macros.md`).
-- If the message says someone is in danger, the safety pointer (M6, FR-SUP-16) goes first, and nothing else happens that day.
+- If the message says someone is in danger, the safety pointer (M6, FR-SUP-16) goes first, and nothing else happens that day. M6 is not written yet; until it is, use the interim pointer in `data-requests-by-email.md` section 0, the safety row.
 - We never delete a letter to settle a dispute. A limit is reversible and hides; it does not remove.
 - The limited person's own letters stay theirs to export (Terms 7.3).
 - Counsel is the second reader for any limit, because the founder has no second reviewer, and every limit is recorded for the quarterly card (FR-BKO-14 (d); Q-BKO-5).
@@ -33,13 +33,13 @@ The two-parent book (NS-25) does not turn on in a store build until both of thes
 - An `ops.audit_log` row with runbook `safety_removal` only when a step touches data. The value exists in `ops.audit_log` (`supabase/migrations/20261004200000_ops_deletion_worker.sql`). The tool itself will write one `access_limit` row per use (FR-BKO-14); that value is not in the table's check yet and comes with BL-1360.
 
 ## 2. Decide
-Counsel's questions go through the CLO. One is still open, so until it is answered the answer to every request is M14 and no limit.
+Counsel's questions go through the CLO. One is still open (the evidence standard, which also covers court orders we cannot verify), so until it is answered the answer to every request is M14 and no limit.
 | Question | State | Where it is recorded |
 |---|---|---|
 | What evidence is enough to limit access (a court order, a protective order, something less) | Open | COUNSEL_PACKET Q50 |
 | Who decides, when the company is one person with no second reviewer | Answered (default accepted 20 Nov): counsel is the second reader for any act that limits or ends an account | Q-BKO-5 in `back-office.md` section 10; FR-BKO-14 (d) |
 | Whether the limited person is told, and when | Answered (default accepted 20 Nov): counsel decides case by case; by default no notice beyond the neutral in-app line (FR-BKO-15), and the one content-free email of FR-BKO-27 only if counsel says it is safe | Q-BKO-4 in `back-office.md` section 10 |
-| Whether a court order we cannot verify changes anything | Open, under the evidence standard | Terms 4.4; Q50 |
+| Whether a court order we cannot verify changes anything | Part of the evidence standard above | Terms 4.4; Q50 |
 
 ## 3. Limit access (when the tool exists and counsel has said yes)
 Not written. The tool (BL-2103) is a service-role function that limits one member's read of one book's server rows. It is reversible, never deletes a letter and writes one audit row. Its steps, and the test in `supabase/tests` that shows it hides and restores access, come with that row.
