@@ -15,9 +15,10 @@
  * removed `packages/content/src/site.en.ts` and `pages.en.ts`, which nothing rendered. The emails are not read: no
  * production build sends them.
  *
- * A page that only a build with a capability links to, and that says on the page, for everyone, that the store build
- * does not have it, is judged with that line in view (`QUALIFIED_PAGES`, BL-558): its claims of that one capability are
- * true while the line is on the page word for word and the store build still lacks the capability.
+ * A page that only a build with a capability links to, and that says on the page that the store build does not have
+ * it, is judged with that line in view (`QUALIFIED_PAGES`, BL-558): its claims of that one capability are true while
+ * the line is on the page word for word and the store build still lacks the capability. The page may draw the line
+ * only once the store build exists (CMO-24: /j draws it in launch mode); before then no reader holds the store build.
  *
  * A claim is one match of a rule's pattern in one string. `KNOWN_VIOLATIONS` lists today's false claims, each by the
  * string's key, the rule, the claim's words, the change that removes it (`removedBy`) and why. A second claim in a

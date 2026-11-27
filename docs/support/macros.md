@@ -88,15 +88,15 @@ ${brand.name}
 - Trigger: anyone writes that they have seen, or are sending, sexual material involving a child, in the app or anywhere tied to it.
 - Before it: if the report says a child is in danger now, the safety pointer (M6, FR-SUP-16) is the first and only reply that day, and this acknowledgement waits. M6 is not written yet (`docs/support/safety-routing.md` does not exist, FR-SUP-16). Until it is, the pointer is the interim one in `data-requests-by-email.md` section 0, the safety row: local emergency services and the help the app shows by region.
 - Send to: the person who reported. An acknowledgement only.
-- Never: open, download, preview, forward, copy, quote or delete any attachment or link. Leave it where it is. Do not reply with questions.
-- Same day: the founder takes it to the exec team, which is the counsel under D-172. The exec team gets the kind and the date only, never the email or a link. Only the founder can file a report; a Claude role cannot.
-- Open for the counsel read: whether "leave it where it is" meets the preservation duty that follows a report (18 U.S.C. 2258A(h)), and what the founder does with the mail after filing. The written procedure for the reporting duty in Terms 9 is not in this file (`docs/product/prd/functions/back-office.md`, `child-safety-report.md` is missing).
+- Never: open, download, preview, forward, copy, quote, move or delete any attachment or link. Leave the message where it arrived. Only the founder can reach that mailbox; no Claude session or connector may read it (UNVERIFIED which mail service receives `hello@`, claims row EF1). Do not reply with questions.
+- Same day: the founder takes it to the exec team, which is the counsel under D-172. The exec team gets the kind and the date only, never the email or a link. Only the founder can file a report, and only once legal advice is recorded; a Claude role never files (CLO-46).
+- Flagged for a licensed US lawyer before launch (CLO-46 recommends it; under D-172 there is no outside lawyer, so engaging one is the founder's decision): whether we are a provider under 18 U.S.C. 2258E(6), whether an unopened report gives us actual knowledge under 2258A(a)(1), what a report obliges us to preserve under 2258A(h) and how that fits leaving the message unopened, and what the founder does with the mail after filing. The questions are in `docs/ops/runbooks/child-safety-report.md`. This handling is an interim default until legal advice is recorded. The written procedure for the reporting duty in Terms 9 is not in this file (`docs/product/prd/functions/back-office.md`; `child-safety-report.md` is a brief for the lawyer, not a procedure).
 - Source: Terms 9 ("We report apparent child sexual abuse material to the National Center for Missing and Exploited Children as US law requires").
 
 ```macro policy.abuseMaterialReport
 Hi,
 
-Thanks for telling us. We've received your report, and it's with the right person.
+Thanks for telling us. We've received your report.
 
 There's nothing more you need to send.
 

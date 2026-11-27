@@ -154,6 +154,6 @@ describe('[P6d] the screen', () => {
     expect(seed).toMatch(/if \(opts\.hidden\) \{[\s\S]*addChild\(\{ name: 'Avi'[\s\S]*hideChild\(avi\.id\);/);
     expect(code('dev/store-ready.web.ts')).toMatch(/hidden: seed === 'asha-hidden'/);
     // Only in a preview build, like every seed.
-    expect(code('dev/store-ready.web.ts')).toMatch(/if \(preview && \([^)]*seed === 'asha-hidden'\)\)/);
+    expect(code('dev/store-ready.web.ts')).toMatch(/if \(preview && \([^)]*seed === 'asha-hidden'[^)]*\)\)/);
   });
 });

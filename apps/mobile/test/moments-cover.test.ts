@@ -10,6 +10,11 @@
  * - PC-T3: the real AppLockLayer, rendered with Moments focused, draws exactly one cover going inactive and going to
  *   background with the lock off, and exactly one going to background with the lock on; no file in src but the lock
  *   layer mounts `PrivacyCover`, and no file but the root layout mounts `AppLockLayer`, which it does once.
+ * - PC-T6: the drawn cover holds no text and one spoken label, the app name, in the light and dark themes, each with
+ *   and without Increase Contrast.
+ * - PC-T8: the rule's source is printable ASCII and, read with the TypeScript scanner, holds only a closed list of
+ *   word, string and punctuation tokens with one `(` (its own parameter list), and its whole token sequence is frozen,
+ *   so no statement or call can be added without this test changing.
  *
  * Not proved here: the pixels iOS captures for the switcher, and whether the cover hides Apple's picker view; those
  * are the device rows D-15 (the tab body, gap G-12 in docs/security/MEDIA_THREAT_MODEL.md), D-20 and DM-09 (the
@@ -22,11 +27,13 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 // react-dom ships no types here and no dependency is added for them: a typed require keeps tsc clean.
 const { renderToStaticMarkup } = createRequire(import.meta.url)('react-dom/server') as { renderToStaticMarkup: (e: unknown) => string };
+import ts from 'typescript';
 import { describe, expect, it, vi } from 'vitest';
 
 const env = vi.hoisted(() => ({
   settings: new Map<string, string>(),
   appState: null as null | ((s: string) => void),
+  theme: { scheme: 'light' as 'light' | 'dark', highContrast: false },
 }));
 
 type P = { children?: ReactNode; testID?: string; style?: unknown; accessibilityLabel?: string } & Record<string, unknown>;
@@ -35,7 +42,8 @@ type P = { children?: ReactNode; testID?: string; style?: unknown; accessibility
  * `accessibilityHint`, `accessibilityValue`, `aria-valuetext` and `accessibilityActions` among them) reach the markup
  * as attributes whose names end in `label`: every string or number inside them, at any depth (an action's `name` and
  * `label` included), becomes one attribute, so PC-T6 can read them. The mark's own `accessibilityLabel` stays
- * `data-label`. Props with other names (style, colours, path data) are not read.
+ * `data-label`. Props with other names (style, colours, path data) are not read. A plain `animatedProps` object (which
+ * Reanimated copies onto the native view) is merged into the props first, so a label passed that way is read too.
  */
 const SPOKEN = /label|hint|value|text|description|action|name|title/i;
 const leaves = (v: unknown): string[] =>
@@ -50,8 +58,11 @@ const spoken = (p: P): Record<string, string> => {
   }
   return out;
 };
-const tag = (name: string) => (p: P) =>
-  h('div', { 'data-kind': name, 'data-testid': p.testID, 'data-label': p.accessibilityLabel, ...spoken(p) }, p.children);
+const tag = (name: string) => (props: P) => {
+  const extra = props.animatedProps && typeof props.animatedProps === 'object' ? (props.animatedProps as P) : {};
+  const p: P = { ...props, ...extra };
+  return h('div', { 'data-kind': name, 'data-testid': p.testID, 'data-label': p.accessibilityLabel, ...spoken(p) }, p.children);
+};
 
 vi.mock('../src/lib/store', () => ({
   getSetting: (k: string) => env.settings.get(k) ?? null,
@@ -92,7 +103,18 @@ vi.mock('@/components/ui/button', () => ({ Button: tag('button') }));
 vi.mock('@/components/ui/toast', () => ({ useToast: () => ({ show: () => {} }) }));
 vi.mock('@/lib/a11y', () => ({
   useFocusOnMount: () => {},
-  useTheme: () => ({ c: { bg: '#fff', text: '#000' }, scheme: 'light', highContrast: false, reduceTransparency: false }),
+  useTheme: () => ({
+    // A different palette for each scheme and Increase Contrast setting, as the real paletteFor(scheme, highContrast).
+    c: {
+      'light/false': { bg: '#fff', text: '#000' },
+      'light/true': { bg: '#fefefe', text: '#010101' },
+      'dark/false': { bg: '#000', text: '#fff' },
+      'dark/true': { bg: '#020202', text: '#fdfdfd' },
+    }[`${env.theme.scheme}/${env.theme.highContrast}`],
+    scheme: env.theme.scheme,
+    highContrast: env.theme.highContrast,
+    reduceTransparency: false,
+  }),
 }));
 
 const { shouldCoverMoments, MOMENTS_ROUTE_CLASSES, APP_PHASES } = await import('../src/lib/moments/cover');
@@ -199,6 +221,21 @@ describe('[NS-53-G01] PC-T3, PC-T6: one cover, never two, with Moments focused',
     // PC-T6, the VoiceOver half: every label, hint, value, action, name or title prop on the drawn cover (as the mock
     // above reads them) says the app name, once, and nothing else (no day, place or name).
     expect([...html.matchAll(/\b[\w-]*label="([^"]*)"/gi)].map((m) => m[1])).toEqual([appLockCopy.coverLabel]);
+    // The same in the dark theme and with Increase Contrast, in each scheme: one cover, no text, the app name alone.
+    const eachTheme = (phase: string) => {
+      for (const scheme of ['light', 'dark'] as const) {
+        for (const highContrast of [false, true]) {
+          env.theme = { scheme, highContrast };
+          const themed = draw();
+          expect(themed.match(COVER), `${phase}, ${scheme}, high contrast ${highContrast}`).toHaveLength(1);
+          expect(themed.replace(/<[^>]*>/g, '')).toBe('');
+          expect(themed).not.toContain('Asha');
+          expect([...themed.matchAll(/\b[\w-]*label="([^"]*)"/gi)].map((m) => m[1])).toEqual([appLockCopy.coverLabel]);
+        }
+      }
+      env.theme = { scheme: 'light', highContrast: false };
+    };
+    eachTheme('inactive');
     env.appState!('active');
     expect(draw()).not.toMatch(COVER);
 
@@ -206,6 +243,7 @@ describe('[NS-53-G01] PC-T3, PC-T6: one cover, never two, with Moments focused',
     expect(shouldCoverMoments('moments', 'background', false)).toBe(true);
     env.appState!('background');
     expect(draw().match(COVER)).toHaveLength(1);
+    eachTheme('background'); // the moment iOS takes the snapshot: the same checks in every theme
     env.appState!('active');
     expect(draw()).not.toMatch(COVER);
 
@@ -257,10 +295,65 @@ describe('[NS-53-G01] PC-T8 and the boundary with App lock', () => {
     const src = readFileSync(resolve(__dirname, '../src/lib/moments/cover.ts'), 'utf8');
     const importLines = src.split('\n').filter((l) => /^\s*(?:import|export)\b[^=]*\bfrom\b|^\s*import\s*['"(]/.test(l));
     expect(importLines).toEqual(["import type { AppPhase } from '../app-lock/machine';"]); // one type-only import, no side-effect import
-    const code = src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/[^\n]*/g, ' ');
-    expect(code).not.toMatch(/\bfetch\s*\(|\bAppState\b|\bReact\b/);
+    // Every character is printable ASCII or a newline: no tab, no lone carriage return (which ends a `//` comment for
+    // the compiler), no line or paragraph separator and no non-ASCII letter.
+    expect(src).not.toMatch(/[^\n\x20-\x7E]/);
+    // The source is read token by token with the TypeScript compiler's own scanner, so comments and strings are split
+    // off exactly as the compiler splits them. Every word and string token must come from a closed list, so a
+    // multi-line import, `fetch?.(`, `XMLHttpRequest`, `navigator.sendBeacon` or `console['log']` cannot get in
+    // without this list changing in the same PR. There is one `(` (the function's own parameter list), so no call can
+    // be added even with words already on the list; `from` once, so no second module reference; and no `/` token and
+    // no template, so no regex literal, division or template literal.
+    const scanner = ts.createScanner(ts.ScriptTarget.Latest, true, ts.LanguageVariant.Standard, src);
+    const words: string[] = [];
+    const strings: string[] = [];
+    const other: string[] = [];
+    const all: string[] = [];
+    for (let k = scanner.scan(); k !== ts.SyntaxKind.EndOfFileToken; k = scanner.scan()) {
+      all.push(scanner.getTokenText());
+      if (k === ts.SyntaxKind.Identifier || (k >= ts.SyntaxKind.FirstKeyword && k <= ts.SyntaxKind.LastKeyword)) {
+        words.push(scanner.getTokenText());
+      } else if (k === ts.SyntaxKind.StringLiteral) {
+        strings.push(scanner.getTokenText());
+      } else {
+        other.push(scanner.getTokenText());
+      }
+    }
+    const code = [...words, ...strings, ...other].join(' ');
+    expect(code).not.toMatch(/\bfetch\b|\bAppState\b|\bReact\b/);
     expect(src).not.toMatch(/console\.|track\(|analytics\.|logger/);
     expect(src).not.toMatch(/\bimport\s*\(|\brequire\s*\(|setSetting|getSetting/); // no dynamic import or store call either
+    expect([...new Set(strings)].sort()).toEqual(
+      ["'../app-lock/machine'", "'active'", "'background'", "'inactive'", "'moments'", "'none'", "'other'"],
+    );
+    expect([...new Set(words)].sort()).toEqual(
+      [
+        'APP_PHASES', 'AppPhase', 'MOMENTS_ROUTE_CLASSES', 'MomentsRouteClass', 'appState', 'boolean', 'const',
+        'export', 'from', 'function', 'import', 'lockEnabled', 'readonly', 'return', 'route', 'shouldCoverMoments',
+        'type',
+      ].sort(),
+    );
+    expect(words.filter((w) => w === 'import')).toHaveLength(1);
+    expect(words.filter((w) => w === 'from')).toHaveLength(1);
+    expect(other.filter((t) => t === '(')).toHaveLength(1);
+    expect([...new Set(other)].sort()).toEqual(
+      ['!', '!==', '&&', '(', ')', ',', ':', ';', '=', '===', '[', ']', '{', '|', '}'].sort(),
+    );
+    // The whole token sequence is frozen too, so no statement can be added, moved or changed even with tokens already
+    // on the lists (for example a bracket write such as `shouldCoverMoments['moments'] = route;`, which the lists
+    // alone let through). Comments are not tokens, so the doc comments can still change freely.
+    expect(all.join(' ')).toBe(
+      [
+        "import type { AppPhase } from '../app-lock/machine' ;",
+        "export type MomentsRouteClass = 'moments' | 'other' | 'none' ;",
+        "export const MOMENTS_ROUTE_CLASSES : readonly MomentsRouteClass [ ] = [ 'moments' , 'other' , 'none' ] ;",
+        "export const APP_PHASES : readonly AppPhase [ ] = [ 'active' , 'inactive' , 'background' ] ;",
+        'export function shouldCoverMoments ( route : MomentsRouteClass , appState : AppPhase ,',
+        'lockEnabled : boolean ) : boolean {',
+        "return route === 'moments' && appState !== 'active' && ! lockEnabled ; }",
+      ].join(' '),
+    );
+    expect(src).toMatch(/\bfunction shouldCoverMoments\(/);
   });
 
   it('App lock never reads the Moments rule (machine, controller and layer do not import it)', () => {

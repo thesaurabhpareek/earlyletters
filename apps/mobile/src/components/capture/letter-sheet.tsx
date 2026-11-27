@@ -65,7 +65,8 @@ export function LetterHeaderRow({ header, onChangeBook, changeLabel, from }: { h
         </View>
       )}
       {from?.offered ? (
-        // NS-16: the From line is a control only before Keep, behind EXPO_PUBLIC_SIGN_AS_OTHER.
+        // NS-16: the From line is a control only before Keep, behind EXPO_PUBLIC_SIGN_AS_OTHER and not paused; paused,
+        // a name already typed shows here as plain text (G-18).
         <FromNameControl from={from} label={header.from} />
       ) : (
         <Text variant="letterDateline" caps tone="muted" accessibilityLabel={header.from} testID="review.sheet.from">
