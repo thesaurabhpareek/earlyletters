@@ -238,12 +238,16 @@ export interface ExportPolicyAct {
 
 /**
  * The server's consent record (LEGAL-REQ-034: `my_policy_state` and the full
- * acceptance rows). It lives on the server and the phone keeps no copy, so it
- * is read while the export is made. `status` says whether it is here:
- *  - `included`: read for the signed-in account that owns this phone's letters;
+ * acceptance rows). It lives on the server and is read while the export is
+ * made; after each full read the phone keeps a copy for that account (BL-528,
+ * consent-copy.logic.ts). `status` says whether it is here:
+ *  - `included`: read for the signed-in account that owns this phone's letters,
+ *    either now or, when the server cannot be read, this phone's copy from the
+ *    last successful read; `read_at` says when it was read either way;
  *  - `not_signed_in`: no account on this phone, so there is no server record;
  *  - `different_account`: the signed-in account does not own this phone's letters;
- *  - `unavailable`: signed in, but it could not be read (offline, timeout, error).
+ *  - `unavailable`: signed in, but it could not be read (offline, timeout, error)
+ *    and this phone holds no copy for this account.
  * Only `included` carries rows. The phone's own answers are in `consent_on_this_phone`.
  */
 export interface ExportConsentHistory {

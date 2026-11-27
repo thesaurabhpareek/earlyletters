@@ -80,6 +80,30 @@ export function openingView(i: OpeningInput): OpeningView {
 }
 
 /**
+ * BL-2159: an invite was accepted on this phone (app/invite/index.tsx), so the account now holds a book it did not hold
+ * when `use-new-phone.ts` asked. A signed-in invitee is asked before the join and answers "no book"; without this, closing
+ * the joined sheet before the book arrives shows "No book here yet", whose "Start a book" makes a second, empty book.
+ * An event, not a value: it carries no id or name and keeps nothing, so the answer is still never stored. Listened to only
+ * while the hook is asking; with no listener it does nothing.
+ */
+export function createAccountJoinedSignal() {
+  const listeners = new Set<() => void>();
+  return {
+    joined(): void {
+      listeners.forEach((l) => l());
+    },
+    subscribe(listener: () => void): () => void {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+  };
+}
+
+export const accountJoined = createAccountJoinedSignal();
+
+/**
  * R12 (NS-10, BL-978a): the one line that names HOW this phone is signed in, for a parent who finds the wrong account on a
  * shared screen. The method only, never the address (a shared phone may show it to the other person). Reuses
  * `auth.account.signedInWith.*` (no new words). Null when the method is not known. Pure; reads nothing.
