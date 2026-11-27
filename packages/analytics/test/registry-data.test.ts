@@ -28,7 +28,7 @@ const rows = Object.entries(REGISTRY) as [string, RegistryRow][];
 const WIRE_NAMES: string[] = Object.values(WIRE_ROWS).flatMap((r) => (r.status === 'ruled' || r.status === 'named' ? [r.wire] : r.status === 'pattern' ? expandPattern(r) : []));
 const SNAKE = /^[a-z0-9]+(?:_[a-z0-9]+)*$/;
 /** Properties the client adds to every event (catalog.ts GLOBAL_PROPS, moved in P5). */
-const GLOBALS = ['schema_version', 'child_count_bucket', 'sample_pct'];
+const GLOBALS = ['schema_version', 'build_kind', 'is_internal', 'child_count_bucket', 'sample_pct'];
 const NEVER = /religion|region|background|ethnic|birth|dob|due|child_name|name|transcript|audio_url|photo|entry|text|body|note/;
 
 /**

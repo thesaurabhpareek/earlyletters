@@ -22,7 +22,7 @@ import { tokens } from '@scribe/design-tokens';
 import { loadFonts } from '@/components/ui/fonts';
 import { getSettingIfOpen } from '@/lib/store';
 import { DrawingBoundary } from './drawing-boundary';
-import { PLAIN_LAYOUT, PLAIN_TYPE, plainActionsInline, plainArt, plainButton } from './plain-screen.styles';
+import { PLAIN_BODY_BALANCED, PLAIN_LAYOUT, PLAIN_TYPE, plainActionsInline, plainArt, plainButton } from './plain-screen.styles';
 
 export type PlainAction = { label: string; onPress: () => void; kind?: 'primary' | 'quiet'; busy?: boolean };
 
@@ -55,9 +55,10 @@ function PageDrawing({ wash, line }: { wash: string; line: string }) {
 
 /**
  * `noteKey` tells a new note from the last one when the words are the same (a second failed Try again says what the first
- * did): a different key is a new line, announced again. Never shown.
+ * did): a different key is a new line, announced again. Never shown. `balanceBody` draws the body with
+ * PLAIN_BODY_BALANCED, so its last word is not left alone on a line (BL-492 point 1); without it the body wraps as before.
  */
-export function PlainScreen({ title, body, hint, note, noteKey, actions }: { title: string; body: string; hint?: string; note?: string; noteKey?: number; actions: PlainAction[] }) {
+export function PlainScreen({ title, body, balanceBody, hint, note, noteKey, actions }: { title: string; body: string; balanceBody?: boolean; hint?: string; note?: string; noteKey?: number; actions: PlainAction[] }) {
   const scheme = useSchemeSafely();
   const c = tokens[scheme];
   // The safe area as the app launched (a constant: no provider to read it from).
@@ -150,7 +151,7 @@ export function PlainScreen({ title, body, hint, note, noteKey, actions }: { tit
             <Text ref={heading} accessibilityRole="header" maxFontSizeMultiplier={PLAIN_TYPE.title.maxScale} style={{ ...PLAIN_TYPE.title.style, color: c.text, textAlign: 'center' }}>
               {title}
             </Text>
-            <Text maxFontSizeMultiplier={PLAIN_TYPE.body.maxScale} style={{ ...PLAIN_TYPE.body.style, color: c.textMuted, textAlign: 'center' }}>
+            <Text {...(balanceBody ? PLAIN_BODY_BALANCED : null)} maxFontSizeMultiplier={PLAIN_TYPE.body.maxScale} style={{ ...PLAIN_TYPE.body.style, color: c.textMuted, textAlign: 'center' }}>
               {body}
             </Text>
             {hint ? (
