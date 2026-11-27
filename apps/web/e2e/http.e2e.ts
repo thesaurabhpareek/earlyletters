@@ -24,6 +24,8 @@ test.describe('robots.txt and sitemap.xml', () => {
     expect(locs).toEqual([siteOrigin, ...legalSlugs.map((slug) => `${siteOrigin}/${slug}`)]);
     expect(xml, 'the versioned test texts are noindex and unlisted').not.toContain('/legal/');
     expect(xml).not.toMatch(/\/lab|\/api|\/unsubscribe|\/health-privacy|\/subprocessors|\/delete-account/);
+    // /delete-account is served (BL-2128) but noindex and never listed until its text is read (CR-193 D-15).
+    expect(locs.map((l) => new URL(l).pathname)).not.toContain('/delete-account');
     // Only url and lastmod; no changefreq or priority hints.
     expect(xml).not.toMatch(/<changefreq>|<priority>/);
     for (const slug of legalSlugs) expect(xml).toContain(`<lastmod>${legalPage(slug, {}).lastUpdated}`);

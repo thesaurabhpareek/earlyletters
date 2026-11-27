@@ -1,5 +1,7 @@
-/** /privacy and /terms (short pages, words in src/lib/legal/*-copy.ts), the routes taken off for now, the 404 page and the closed lab. */
+/** /privacy and /terms (short pages, words in src/lib/legal/*-copy.ts), /delete-account, the routes taken off for now, the 404 page and the closed lab. */
+import { brand } from '@scribe/brand';
 import { site } from '../src/content/site';
+import { deleteAccountCopy, deleteAccountMailto } from '../src/lib/legal/delete-account-copy';
 import { legalCopy } from '../src/lib/legal/legal-copy';
 import { formatDate, legalPage, legalSlugs } from '../src/lib/legal/pages';
 import { siteCopy } from '../src/lib/legal/site-copy';
@@ -63,6 +65,69 @@ test.describe('legal pages', () => {
     await page.locator('main').getByRole('link', { name: 'Privacy Policy' }).click();
     await expect(page).toHaveURL(/\/privacy$/);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(legalPage('privacy', {}).title);
+  });
+});
+
+test.describe('/delete-account (BL-2128)', () => {
+  const c = deleteAccountCopy;
+
+  test('one h1, every key of the draft on the page, a way home, noindex', async ({ page }) => {
+    const response = await page.goto('/delete-account');
+    expect(response?.status()).toBe(200);
+    expect(new URL(brand.web.deleteAccount).pathname).toBe('/delete-account');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(c.title);
+    await expect(page).toHaveTitle(c.metaTitle);
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', 'https://earlyletters.com/delete-account');
+    await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', c.metaDescription);
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
+    const main = page.locator('main');
+    await expect(main.getByText(c.intro)).toBeVisible();
+    for (const s of [c.inApp, c.next, c.removed, c.kept, c.email, c.other]) {
+      await expect(page.getByRole('heading', { level: 2, name: s.heading })).toBeVisible();
+    }
+    await expect(main.getByText(c.inApp.lead)).toBeVisible();
+    await expect(main.locator('ol > li')).toHaveText(c.inApp.steps.map((s) => `${s.lead} ${s.body}`));
+    for (const item of [...c.next.items, ...c.removed.items, ...c.kept.items, ...c.email.items]) {
+      await expect(main.locator('li', { hasText: item })).toHaveCount(1);
+    }
+    await expect(main.getByText(c.kept.lead)).toBeVisible();
+    await expect(main.getByText(c.email.websiteList)).toBeVisible();
+    await expect(main.getByText(c.other.body)).toBeVisible();
+    await expect(main.getByRole('link', { name: c.email.button })).toHaveAttribute('href', deleteAccountMailto);
+    await expect(main.getByRole('link', { name: legalCopy.contact }).first()).toHaveAttribute('href', `mailto:${legalCopy.contact}`);
+    await expect(main.getByRole('link', { name: 'Privacy Policy' })).toHaveAttribute('href', c.other.href);
+    await expect(page.getByRole('link', { name: legalCopy.backHome })).toHaveAttribute('href', '/');
+  });
+
+  test('shows no counsel mark or internal reference, and loads nothing from another origin and no analytics', async ({ page, request }) => {
+    const html = await (await request.get('/delete-account')).text();
+    const requests: string[] = [];
+    page.on('request', (r) => requests.push(r.url()));
+    await page.goto('/delete-account');
+    await page.waitForLoadState('networkidle');
+    const text = await page.locator('main').innerText();
+    for (const mark of DRAFT_MARKS) {
+      expect(html, `${mark.name} in the HTML the server sends for /delete-account`).not.toMatch(mark.pattern);
+      expect(text, `${mark.name} in what a visitor reads on /delete-account`).not.toMatch(mark.pattern);
+    }
+    for (const mark of INTERNAL_MARKS) expect(text, `${mark} on /delete-account`).not.toMatch(mark);
+    // Apple is named on purpose (billing through Apple and Sign in with Apple): CR-193 D-15 allows a name the Privacy text
+    // names, and /legal/privacy/0.9.0 names Apple. Every other service on the list stays off the page.
+    expect(text.replace(/\bApple\b/g, ''), 'a service the website does not use, named on /delete-account').not.toMatch(NOT_USED_SERVICES);
+    expect(text, 'a bracketed placeholder on /delete-account').not.toMatch(/[[\]{}]/);
+    const own = new URL(page.url()).origin;
+    expect(requests.filter((u) => !u.startsWith(own) && !u.startsWith('data:')), 'requests to another origin').toEqual([]);
+    expect(requests.filter((u) => /_vercel\/insights|va\.vercel-scripts|analytics/i.test(u)), 'analytics requests').toEqual([]);
+  });
+
+  test('is not linked from the footer, the home page or the other legal pages', async ({ page }) => {
+    expect(site.footer.links.map((l) => l.href)).not.toContain('/delete-account');
+    for (const from of ['/', '/privacy', '/terms']) {
+      await page.goto(from);
+      await expect(page.locator('a[href="/delete-account"]'), `a link to /delete-account on ${from}`).toHaveCount(0);
+    }
   });
 });
 
