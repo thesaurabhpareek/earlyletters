@@ -1704,3 +1704,13 @@ Way back: revert the commit.
 - Door: two-way.
 - Way back: revert the test-only PRs; a marker comes back in one line.
 - Revisit when: the J02 trace is read; BL-2160 is ruled; the journey CI job lands. Karma
+
+### CR-245 BL-568's global error handlers install on native production only, never on web (27 Nov 2026, Karma via stream 14)
+- Question: the store web export shows "This page didn't open" on every lazy import. Do we stop installing the BL-568 handlers on web?
+- Tier and type: T2 (app code); complicated.
+- Options considered: do nothing; rethrow from our handler when the error reads as an unknown module (matches on error text, fragile across Metro versions); gate on platform so native production keeps the handlers and web never installs them; turn the lazy imports into static ones (changes bundling for a web-only symptom).
+- Ruling: `shouldInstallGlobalHandlers(appEnv, platform)` is true only for the production profile and a platform other than web. `startGlobalErrorHandlers` passes `Platform.OS`.
+- Why: on web, Expo's async import (`expo/src/async-require/asyncRequireModule.ts`) runs `importAll()` first and loads the split chunk only when that throws. Metro reports the missing module through `ErrorUtils.reportFatalError`, and our production handler records it and does not rethrow, so the chunk never loads. Draft #2240 showed it: every store seed variant hit "Requiring unknown module 2751" (the status-report chunk), while the unseeded store build and the seed-build control passed. Native loads the chunk before `importAll()`, so iOS and Android behaviour is unchanged. The 10 Nov founder line is about which profile installs the handlers, not which platform, and nothing on develop ships the web export.
+- Door: two-way.
+- Way back: revert the PR.
+- Revisit when: a web build ships to users. Karma
