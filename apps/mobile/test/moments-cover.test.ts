@@ -136,6 +136,18 @@ describe('[NS-53-G01][NS-53-R232] every row the Moments rule covers is already c
   }
 });
 
+describe('[NS-53-G01] a cold launch that is not in front is covered too, lock off or on', () => {
+  for (const lockOn of [false, true]) {
+    for (const phase of ['inactive', 'background'] as const) {
+      it(`launch while ${phase}, App lock ${lockOn ? 'on' : 'off'}: the root cover is up`, () => {
+        const s = reduce(INITIAL, { type: 'launch', enabled: lockOn, grace: DEFAULT_GRACE, phase });
+        expect(s.phase).toBe(phase);
+        expect(coverShown(s)).toBe(true);
+      });
+    }
+  }
+});
+
 describe('[NS-53-G01] PC-T3, PC-T6: one cover, never two, with Moments focused', () => {
   const COVER = /data-testid="appLock\.cover"/g;
 
