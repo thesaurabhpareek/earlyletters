@@ -84,8 +84,9 @@ test('[J10f] Recently deleted: restore, and erase now', async ({ app, record }) 
   await expect(app.getByText('No deleted letters.')).toBeVisible();
   await step('happy', 'Restored', 'Restore lifts the card out and puts the letter back in the book exactly as it was; the toast says "Back in Asha\'s book." with "Open". The shelf is empty: the page drawing and "No deleted letters.", with no repeated heading.');
 
+  // Back from the shelf lands on the Me tab; the Book is a tab away (the Book has no gear since BL-938).
   await app.goBack();
-  await app.goBack();
+  await tab(app, 'Book').click();
   await app.getByText(/rained all morning/).last().click();
   await deleteOpenLetter(app);
   await toShelf(app);
