@@ -13,7 +13,7 @@ What changed from the 3 Oct morning version:
 
 Requirements are cited, never copied. Sources: `docs/prd/PRD.md` (PRD-REQ, conflict log K-##), `docs/prd/A-*.md`, `B-*.md`, `C-*.md` (A/B/C-REQ, -NFR), `docs/legal/ENGINEERING_REQUIREMENTS.md` (LEGAL-REQ), `docs/legal/DELETION_AND_EXPORT_SPEC.md` (DATA-REQ). If a PRD line and a LEGAL-REQ disagree, LEGAL-REQ wins until the founder decides. Decisions: D-### in `docs/DECISIONS.md`; open questions: Q-### in `docs/agents/DEBATES.md`; design detail: TDD ## (`docs/tdd/`).
 
-**Numbering.** From 23 Nov 2026: BL-1700 to BL-1839 are the design review tickets, BL-1840 to BL-1852 are wave 10 follow-ups, and BL-1853 to BL-1858 are the evidence-trace follow-ups (last section of this file); BL-1957 to BL-1982 are the review follow-ups of 23 Nov; BL-1983 and BL-1991 to BL-1998 are the follow-ups of 23 to 24 Nov (section "Follow-ups from 23 to 24 Nov 2026"); BL-2003, BL-2004 and BL-2025 to BL-2027 are the BL-1867 split and its follow-ups of 24 Nov (section "Alpha lane split of 24 Nov 2026"); BL-2017 to BL-2019 and BL-2021 to BL-2023 are the Web journeys plan rows of 24 Nov 2026 (last section of this file; BL-2020 is the sheet row, BL-2016 is open PR #1907); BL-2219 to BL-2223 are the follow-ups of 24 Nov 2026, third batch (the section added by PR #2023, "Review follow-ups of 24 Nov 2026, third batch"); BL-2225 to BL-2227 are the BL-434 remainder rows of 24 Nov 2026 (filed by BL-1631, placed right after BL-434); BL-2236 is the `firstRun.draft` data-map row of 24 Nov 2026 (the remainder of BL-1989), and BL-2237 is the journey index generator line (the remainder of BL-2023); both are the last rows of this file; BL-2242 to BL-2244 are the follow-ups of the status sync of 24 Nov 2026, fourth batch (the last section of this file); allocate the next id with `node scripts/agents/next-id.mjs`. Existing ids (BL-001 to BL-321) never change. **BL-055 to BL-099 are never used** (TDD 03 and TDD 09 proposed colliding numbers there; the appendix maps every TDD proposal). New ids from this consolidation: BL-322 to BL-326 (security review follow-ups) and BL-330 to BL-349. Free for later splits: BL-123 to BL-129, BL-131 to BL-133, BL-138, BL-139, BL-149, BL-152, BL-153, BL-155, BL-161 to BL-169, BL-179 to BL-189, BL-197 to BL-199, BL-204, BL-207 to BL-209, BL-223 to BL-230, BL-246, BL-253, BL-254, BL-274, BL-281, BL-285, BL-287, BL-290 to BL-299, BL-315, BL-316, BL-318, BL-327 to BL-329; BL-351 to BL-369 are the brand, email and web handoffs, and BL-370 to BL-434 are the M-JR journey review block (4 Oct 2026); BL-435 is free; BL-436 to BL-440 are release engineering (ADR 0022, 13 Oct 2026; BL-440 is listed first because it is the v1.0 blocker); BL-441 to BL-443 are the coverage baseline follow-ups (`docs/qa/COVERAGE.md`, PR #180, 16 Oct 2026); BL-444 is the left-books follow-up (D-113, PR #184, 23 Oct 2026); BL-445 is the typed-code follow-up (D-120, 27 Oct 2026); BL-446 to BL-456 are the review follow-ups of 28 Oct 2026 (section "Review follow-ups (28 Oct 2026)"); BL-457 to BL-474 are the second wave of 28 Oct 2026 (section "Review follow-ups, wave 2 (28 Oct 2026)"); BL-475 to BL-484 are the third wave of 30 Oct 2026 (section "Review follow-ups, wave 3 (30 Oct 2026)"); BL-485 to BL-497 are the fourth wave of 30 Oct 2026 (section "Review follow-ups, wave 4 (30 Oct 2026)"); BL-499 to BL-508 are the fifth wave of 30 Oct 2026 (section "Review follow-ups, wave 5 (30 Oct 2026)"; BL-498 is not used: the id script counted the earlier "next block starts at BL-498" as taken); BL-509 to BL-527 are the sixth wave of 31 Oct 2026 (section "Review follow-ups, wave 6 (31 Oct 2026)"); BL-528 is the offline consent-record gap (CR-35, CCO-4, PR #456), filed beside BL-323; BL-529 is the export's profile fields (LEGAL-REQ-034, PR #469); BL-530 to BL-550 are M13 (section "M13. Reminders, nudges and photo moments", 1 Nov 2026); BL-006 to BL-008, BL-017 to BL-019, BL-025 to BL-029, BL-038, BL-039, BL-045 to BL-047, BL-126 to BL-128, BL-181 to BL-188, BL-198, BL-208, BL-291 to BL-298 and BL-328 are the proposed P0-gap rows of 20 Nov 2026 (section "Locked pack: P0 rows with no backlog row"); BL-129, BL-132, BL-138, BL-139, BL-162, BL-163, BL-168, BL-254, BL-287, BL-290, BL-299, BL-327 and BL-329 are the proposed quality-catalogue gap rows and the perf profile row of 20 Nov 2026 (section "Locked pack: quality-catalogue P0 gap rows and the perf profile"); all of these leave the free list above; `node scripts/agents/next-id.mjs` prints BL-1000, which the dispatcher cannot read yet, so run it for the next free id only after the four-digit fix. BL-1001 to BL-1020 are used (section "Build 13 start: build-sequence rows"); BL-1021 to BL-1149 are used (section "First-run build steps, instrumentation and the P0 rows the groups missed", 21 Nov 2026); BL-1150 to BL-1156 are used (section "Review follow-ups from 20 to 21 Nov 2026 (proposed)"); BL-1183 to BL-1208 and BL-1269 and BL-1270 are used (section "Review follow-ups from post-merge reviews, 21 Nov 2026 (proposed)"; BL-1209 and BL-1210 were renumbered to BL-1269 and BL-1270); BL-1209 to BL-1234 are owned by PR #1194 and BL-1235 to BL-1268 by PR #1201; BL-1537 to BL-1561 and BL-1574 to BL-1581 are used (section "Follow-ups from the reviews of PRs #1470 to #1484"); BL-1643 to BL-1664 are used (section "Follow-ups from the merged PRs #1511 and #1569 to #1582") and BL-1665 to BL-1673 are used (follow-ups filed after PRs #1594 to #1607, then BL-1672 and BL-1673 from the days-store and e2e-web reviews); BL-1840 to BL-1852 are used (section "Follow-ups from wave 10"); BL-1911 to BL-1950 are used (section "Follow-ups from the merged PRs #1667 to #1696"); BL-1952 to BL-1956 are used (section "Status sync of 23 Nov 2026"); BL-1957 to BL-1982 are used (section "Follow-ups from the reviews of 23 Nov 2026", filed by the product agent; BL-1957 and BL-1958 are the titles on PRs #1778 and #1772, both merged); BL-1984 to BL-1990 and BL-2002 are used (section "Closeout of 23 Nov 2026: rows from the executive rulings"; BL-1714 gets its row there; BL-2002 is filed after BL-1990, not at the end of the file, so it does not collide with other open PRs that add rows there; BL-2000 was claimed by open PR #1831 and BL-2001 by PRs #1822 and #1831, so this row uses BL-2002); BL-1859 to BL-1885 are used (section "Launch status pass: remainders of the narrow launch set and the release cut", rows BL-1877 to BL-1885 are follow-ups filed by the product agent); `next-id.mjs` skips BL-1000 because it counts the prose mentions of it above and in the notes. BL-1562 to BL-1573 are used (section "Reconciliation follow-ups, 22 Nov 2026"); BL-1951 is used (beside BL-1535).
+**Numbering.** From 23 Nov 2026: BL-1700 to BL-1839 are the design review tickets, BL-1840 to BL-1852 are wave 10 follow-ups, and BL-1853 to BL-1858 are the evidence-trace follow-ups (last section of this file); BL-1957 to BL-1982 are the review follow-ups of 23 Nov; BL-1983 and BL-1991 to BL-1998 are the follow-ups of 23 to 24 Nov (section "Follow-ups from 23 to 24 Nov 2026"); BL-2003, BL-2004 and BL-2025 to BL-2027 are the BL-1867 split and its follow-ups of 24 Nov (section "Alpha lane split of 24 Nov 2026"); BL-2017 to BL-2019 and BL-2021 to BL-2023 are the Web journeys plan rows of 24 Nov 2026 (last section of this file; BL-2020 is the sheet row, BL-2016 is open PR #1907); BL-2219 to BL-2223 are the follow-ups of 24 Nov 2026, third batch (the section added by PR #2023, "Review follow-ups of 24 Nov 2026, third batch"); BL-2225 to BL-2227 are the BL-434 remainder rows of 24 Nov 2026 (filed by BL-1631, placed right after BL-434); BL-2236 is the `firstRun.draft` data-map row of 24 Nov 2026 (the remainder of BL-1989), and BL-2237 is the journey index generator line (the remainder of BL-2023); both are the last rows of this file; BL-2242 to BL-2244 are the follow-ups of the status sync of 24 Nov 2026, fourth batch (section "Follow-ups of the status sync of 24 Nov 2026, fourth batch"); BL-2245 to BL-2283 are the follow-ups of 27 Nov 2026 (the last section of this file; BL-2246 to BL-2248 were picked by stream 11 in its PRs before they had rows and are filed there as records); allocate the next id with `node scripts/agents/next-id.mjs`. Existing ids (BL-001 to BL-321) never change. **BL-055 to BL-099 are never used** (TDD 03 and TDD 09 proposed colliding numbers there; the appendix maps every TDD proposal). New ids from this consolidation: BL-322 to BL-326 (security review follow-ups) and BL-330 to BL-349. Free for later splits: BL-123 to BL-129, BL-131 to BL-133, BL-138, BL-139, BL-149, BL-152, BL-153, BL-155, BL-161 to BL-169, BL-179 to BL-189, BL-197 to BL-199, BL-204, BL-207 to BL-209, BL-223 to BL-230, BL-246, BL-253, BL-254, BL-274, BL-281, BL-285, BL-287, BL-290 to BL-299, BL-315, BL-316, BL-318, BL-327 to BL-329; BL-351 to BL-369 are the brand, email and web handoffs, and BL-370 to BL-434 are the M-JR journey review block (4 Oct 2026); BL-435 is free; BL-436 to BL-440 are release engineering (ADR 0022, 13 Oct 2026; BL-440 is listed first because it is the v1.0 blocker); BL-441 to BL-443 are the coverage baseline follow-ups (`docs/qa/COVERAGE.md`, PR #180, 16 Oct 2026); BL-444 is the left-books follow-up (D-113, PR #184, 23 Oct 2026); BL-445 is the typed-code follow-up (D-120, 27 Oct 2026); BL-446 to BL-456 are the review follow-ups of 28 Oct 2026 (section "Review follow-ups (28 Oct 2026)"); BL-457 to BL-474 are the second wave of 28 Oct 2026 (section "Review follow-ups, wave 2 (28 Oct 2026)"); BL-475 to BL-484 are the third wave of 30 Oct 2026 (section "Review follow-ups, wave 3 (30 Oct 2026)"); BL-485 to BL-497 are the fourth wave of 30 Oct 2026 (section "Review follow-ups, wave 4 (30 Oct 2026)"); BL-499 to BL-508 are the fifth wave of 30 Oct 2026 (section "Review follow-ups, wave 5 (30 Oct 2026)"; BL-498 is not used: the id script counted the earlier "next block starts at BL-498" as taken); BL-509 to BL-527 are the sixth wave of 31 Oct 2026 (section "Review follow-ups, wave 6 (31 Oct 2026)"); BL-528 is the offline consent-record gap (CR-35, CCO-4, PR #456), filed beside BL-323; BL-529 is the export's profile fields (LEGAL-REQ-034, PR #469); BL-530 to BL-550 are M13 (section "M13. Reminders, nudges and photo moments", 1 Nov 2026); BL-006 to BL-008, BL-017 to BL-019, BL-025 to BL-029, BL-038, BL-039, BL-045 to BL-047, BL-126 to BL-128, BL-181 to BL-188, BL-198, BL-208, BL-291 to BL-298 and BL-328 are the proposed P0-gap rows of 20 Nov 2026 (section "Locked pack: P0 rows with no backlog row"); BL-129, BL-132, BL-138, BL-139, BL-162, BL-163, BL-168, BL-254, BL-287, BL-290, BL-299, BL-327 and BL-329 are the proposed quality-catalogue gap rows and the perf profile row of 20 Nov 2026 (section "Locked pack: quality-catalogue P0 gap rows and the perf profile"); all of these leave the free list above; `node scripts/agents/next-id.mjs` prints BL-1000, which the dispatcher cannot read yet, so run it for the next free id only after the four-digit fix. BL-1001 to BL-1020 are used (section "Build 13 start: build-sequence rows"); BL-1021 to BL-1149 are used (section "First-run build steps, instrumentation and the P0 rows the groups missed", 21 Nov 2026); BL-1150 to BL-1156 are used (section "Review follow-ups from 20 to 21 Nov 2026 (proposed)"); BL-1183 to BL-1208 and BL-1269 and BL-1270 are used (section "Review follow-ups from post-merge reviews, 21 Nov 2026 (proposed)"; BL-1209 and BL-1210 were renumbered to BL-1269 and BL-1270); BL-1209 to BL-1234 are owned by PR #1194 and BL-1235 to BL-1268 by PR #1201; BL-1537 to BL-1561 and BL-1574 to BL-1581 are used (section "Follow-ups from the reviews of PRs #1470 to #1484"); BL-1643 to BL-1664 are used (section "Follow-ups from the merged PRs #1511 and #1569 to #1582") and BL-1665 to BL-1673 are used (follow-ups filed after PRs #1594 to #1607, then BL-1672 and BL-1673 from the days-store and e2e-web reviews); BL-1840 to BL-1852 are used (section "Follow-ups from wave 10"); BL-1911 to BL-1950 are used (section "Follow-ups from the merged PRs #1667 to #1696"); BL-1952 to BL-1956 are used (section "Status sync of 23 Nov 2026"); BL-1957 to BL-1982 are used (section "Follow-ups from the reviews of 23 Nov 2026", filed by the product agent; BL-1957 and BL-1958 are the titles on PRs #1778 and #1772, both merged); BL-1984 to BL-1990 and BL-2002 are used (section "Closeout of 23 Nov 2026: rows from the executive rulings"; BL-1714 gets its row there; BL-2002 is filed after BL-1990, not at the end of the file, so it does not collide with other open PRs that add rows there; BL-2000 was claimed by open PR #1831 and BL-2001 by PRs #1822 and #1831, so this row uses BL-2002); BL-1859 to BL-1885 are used (section "Launch status pass: remainders of the narrow launch set and the release cut", rows BL-1877 to BL-1885 are follow-ups filed by the product agent); `next-id.mjs` skips BL-1000 because it counts the prose mentions of it above and in the notes. BL-1562 to BL-1573 are used (section "Reconciliation follow-ups, 22 Nov 2026"); BL-1951 is used (beside BL-1535).
 
 **Counsel and the SE 3 sitting (D-172, 23 Nov 2026).** The founder replied "1. Simulate it. No real person" and "2. No real counsel. It's my exec team counsel." Karma's reading, not his words: the iPhone SE 3 sitting (BL-1700, BL-1705, BL-1786) is run by agents as a simulation, labelled "simulated", and is not evidence for the SE 3 gate; and "counsel" in a row, gate or Done-when line below that cites D-125 item 9, D-168 item 4 or D-170 item 3, or that waits on counsel engagement or a counsel question, now means exec-team review (CLO, CCO and Chief Privacy Officer roles, Claude roles and not licensed lawyers; not legal advice), with `docs/legal/COUNSEL_PACKET.md` as the checklist. "Counsel must confirm" stays as the honest label for what no licensed lawyer has checked. Rows whose status line named counsel as the only unblocker are rewritten; a row that still says counsel in its Scope or Gate is read this way until its next edit. This does not re-route the founder's own gates, which are read as written: D-163 (production analytics, including counsel's answer on no-consent basics), D-170 (production analytics only when D-163's gate clears) and D-166 Q130. Counsel-locked strings and `docs/legal/**` stay behind a recorded exec-team review and the D-168 route (Karma merges); no agent edits them first. BL-1714 (five real parents) is unchanged.
 
@@ -39,7 +39,7 @@ Severity tags: **[Critical]** blocks launch or makes a published statement false
 
 ## Release-critical open rows, in build order (23 Nov 2026)
 
-These four rows moved here from their milestone sections so the dispatcher, which takes the first ready row in file order, reaches them first. Each row is unchanged apart from the status edits named in its own line. Source: the status audit of 23 Nov 2026 (develop `863d10b41`). Order: BL-389 (consent words; needs approval under D-168 and gates D-170 tester builds, BL-1887 and BL-1886), BL-476 point 1, BL-251 (package half in draft PR #1372, app half not built, gated on analytics), BL-221.
+These four rows moved here from their milestone sections so the dispatcher, which takes the first ready row in file order, reaches them first. Each row is unchanged apart from the status edits named in its own line. Source: the status audit of 23 Nov 2026 (develop `863d10b41`). Order: BL-389 (consent words; needs approval under D-168 and gates D-170 tester builds, BL-1887 and BL-1886), BL-476 point 1, BL-251 (package half merged in PR #1372, app half not built, gated on analytics), BL-221.
 
 Other open and not blocking: BL-1953 and BL-1954 (live region), BL-1893 (linking rules; `enable_manual_linking` is false and Google comes after submission per D-171), BL-897 (document the `config.toml` values; hosted values are unverified), BL-841 and BL-867 (the internal exec-team checklist and CLAIMS.md for the 1.0 build), and the drafts #757, #759 and #760, which stay until Build 14 "on" is scheduled.
 
@@ -64,7 +64,7 @@ Other open and not blocking: BL-1953 and BL-1954 (live region), BL-1893 (linking
 
 #### BL-251 Consent version and pending acts
 - Status: partly done (PR #1372 merged as `6121db1cc` on 23 Nov 2026: the package half, consent version and pending acts in `packages/analytics/test/consent-version.test.ts`; left: the app half, which waits on BL-1235 points P5 to P8 and the tester notice BL-1887; status sync of 27 Nov 2026). Was: ready. Mode: agent. Owner: analytics engineer.
-- Gate: production analytics stays off until D-163's production gate clears (D-170 item 1); the package half is draft PR #1372 (open, not merged) and the app half waits for the PostHog SDK and adapter (BL-1235 points P5 to P8) and the tester notice (BL-1887). Nothing in this row turns analytics on in a build.
+- Gate: production analytics stays off until D-163's production gate clears (D-170 item 1); the package half merged in PR #1372 (`6121db1cc`, 23 Nov 2026) and the app half waits for the PostHog SDK and adapter (BL-1235 points P5 to P8; P7 is done, BL-2122, PR #2074) and the tester notice (BL-1887). Nothing in this row turns analytics on in a build.
 
 #### BL-221 Keep-and-leave end-to-end run [High]
 - Status: done (PR #1769 merged as `bb14608a2`; read against the Done-when line on 24 Nov 2026 by the product agent from the PR's changed files and subject, no device run). Mode: agent (author the flow and the seam request; the simulator run is a Mac device row). Owner: qa engineer. Milestone: M15. Depends on: none. Note: the old blocker BL-275 is stale, because E2E-01 to E2E-20 exist.
@@ -201,7 +201,7 @@ Exact steps, time, cost and deadlines are in `docs/FOUNDER_TASKS.md`. This secti
 - Split: BL-2124 secrets and dependency audit; BL-2125 denylist, bundle grep and placeholder scan; BL-2126 Semgrep and SQL lint (needs a decision). Agents cannot edit `.github/workflows/`: each row ships its script, tests and proposed step text, and Karma applies the step.
 
 #### BL-2124 CI scans A: dependency audit gate with a dated ignore list, OSV, and the secret-scan decision (from BL-117)
-- Status: ready. Mode: agent. Owner: security engineer. Milestone: M15. Size: S. Depends on: none.
+- Status: done (PR #2107 merged as `0acb21146`: `scripts/ci/audit-gate.mjs` with one dated ignore list and its tests; the CI step and an advisory OSV job are proposal text in `docs/ops/proposed/osv-scan.md`, and the secret-scan choice (Option A by default) waits on the CTO and CISO read in `docs/ops/proposed/secret-scan.md`; status sync of 27 Nov 2026, afternoon). Was: ready. Mode: agent. Owner: security engineer. Milestone: M15. Size: S. Depends on: none.
 - Satisfies: SEC-R03, SEC-R08 (`docs/engineering/06-security-engineering.md`); CODE-R17.
 - Scope: (1) `scripts/ci/audit-gate.mjs`, following `docs/ops/proposed/npm-audit.md` and `docs/ops/proposed/harvest-pr-30.md`: run `npm audit --omit=dev --json`, fail on any high or critical advisory not on the one ignore list, `.github/audit-ignore.json` (the path those two files and SEC-R08 describe; there is no second list under `scripts/ci/`, and the PR updates the SEC-R08 text in `docs/engineering/06-security-engineering.md` if it names a different path); every ignore entry has an advisory id, a reason and an expiry, and an entry with no reason or a past expiry fails the gate (SEC-R08); the report names advisory ids and package names only. (2) The OSV scan is a job text in `docs/ops/proposed/osv-scan.md`, advisory, for Karma to paste; nothing under `.github/` changes. (3) Secrets: record in `docs/ops/proposed/secret-scan.md` that the own scanner (`scripts/packs/secret-scan.mjs`, `apps/mobile/test/secret-scan.test.ts`, runs in `npm test`) is the secret scan and gitleaks is not added (Option A of that file), pending the council answer in the PR body.
 - Wiring: add the new test file to the root `test` script in `package.json` (it lists `node --test` files by name).
@@ -209,7 +209,7 @@ Exact steps, time, cost and deadlines are in `docs/FOUNDER_TASKS.md`. This secti
 - Test: `scripts/ci/audit-gate.test.mjs` (new, fixtures under `scripts/ci/fixtures/`).
 
 #### BL-2125 CI scans B: SDK denylist, release-bundle dev-bypass grep and placeholder scan (from BL-117)
-- Status: ready. Mode: agent. Owner: security engineer. Milestone: M15. Size: S. Depends on: none.
+- Status: done (PR #2140 merged as `7933c92f2`: the SDK and import denylist, the release-bundle dev-bypass check and the placeholder scan, each with tests; the CI steps are proposal text; status sync of 27 Nov 2026, afternoon). Was: ready. Mode: agent. Owner: security engineer. Milestone: M15. Size: S. Depends on: none.
 - Satisfies: LEGAL-REQ-016 (`docs/legal/ENGINEERING_REQUIREMENTS.md`); PRIV-R13; BL-216 (dev bypass off in preview and production).
 - Scope: (1) `scripts/guards/sdk-denylist.mjs` with its list in `scripts/guards/sdk-denylist.json`, each entry named (an npm package name or an import specifier, with the class it belongs to): lockfile packages are matched on exact names, never by substring, and imports under `apps/` and `packages/` on exact specifiers. First entries: the LEGAL-REQ-016 classes (Meta, AppsFlyer, Adjust, Branch, Google Mobile Ads, AdSupport, AppTrackingTransparency) and the row's other classes (HealthKit, face and diarization libraries, speech synthesis and voice cloning), each as its real package name read from the registry at build time; (2) `scripts/guards/bundle-dev-bypass.mjs <exported bundle>`: fails when `onContinueDev` or a true `devShortcutsAllowed` reaches a preview or production export (the symbols live in `apps/mobile/src/lib/build-env.ts`); it reads the bundle as text and never evaluates it; the CI step that feeds it the export is proposed text in `docs/ops/proposed/` for Karma; (3) a placeholder scan: fails a preview or production build whose `packages/brand` publisher values still hold `TODO` (`legalName` today), with development builds exempt. No test covers the publisher `TODO` at `packages/brand/index.ts` line 30 today (`apps/mobile/test/release-config.test.ts` does not), so (3) is new.
 - Wiring: add both test files to the root `test` script in `package.json`.
@@ -1029,7 +1029,7 @@ Source: branch `feat/email-brand-library`, the reviews in `docs/reviews/2026-10-
 - Test: `apps/web/e2e/pages.e2e.ts`, `apps/web/e2e/http.e2e.ts` (the sitemap case at line 26), a unit test of `delete-account-copy.ts` keys.
 
 #### BL-2129 Website: "iPhone only for now" on /open for Android (from BL-364)
-- Status: ready. Mode: agent. Owner: content, web lane (E1). Milestone: M9. Size: XS. Depends on: none.
+- Status: done (PR #2188 merged as `866fda422`: iPhone only for now on /open for Android, as CMO-23 reads it; the web journeys were not rerun here; status sync of 27 Nov 2026, afternoon). Was: ready. Mode: agent. Owner: content, web lane (E1). Milestone: M9. Size: XS. Depends on: none.
 - Satisfies: D-042; Brief decision 13.
 - Scope: content proposes one line for a person on a non-iPhone phone, as a new key in `site.openApp` in `apps/web/src/content/site.ts`, read against `packages/content/WRITING-GUIDE.md`. Recommended default: the line is always on the page under the existing "Open on your iPhone" line (no user-agent reading, the page stays static, nothing is fingerprinted); the exec team approves the words (CR-176). Then add it to `apps/web/src/app/open/page.tsx`. The AASA file and its test (`apps/web/src/app/.well-known/apple-app-site-association/route.test.ts`) are unchanged and must pass.
 - Done when: the page shows the line, `apps/web/src/content` copy-rules tests pass, and the e2e `links.e2e.ts` and `pages.e2e.ts` cases for `/open` pass.
@@ -1130,7 +1130,7 @@ Note on D-051: `docs/DECISIONS.md` on `develop` has D-051 "Standard over custom"
 - Test: Journey J10 (`j10-letter.flow.ts`: steps J10-01, J10-05, J10-06 extended with the confirm, the Undo button and a new Recently deleted step); delete, restore and purge cases in `apps/mobile/test/store.entries.test.ts`; 30-day purge case in `apps/mobile/test/sweep.test.ts`.
 
 #### BL-372 Notes the app writes are not signed as the parent: "Not much today", "nobody spoke", "Dear Asha," [Critical]
-- Status: ready (FT-52 answered by D-084 and D-103; verify Done-when on develop, then close). Mode: agent. Owner: content, mobile engineer. Milestone: M-JR. Size: M.
+- Status: done (PR #2184 merged as `1b20116b8`: the three surfaces with no red test now have one; the rest of Done-when already held on develop with tests; status sync of 27 Nov 2026, afternoon). Was: ready (FT-52 answered by D-084 and D-103; verify Done-when on develop, then close). Mode: agent. Owner: content, mobile engineer. Milestone: M-JR. Size: M.
 - Severity: blocker. Raised by: product, design, quality (8 findings). Steps: J07-01, J08-02, J08-03, J10-10; system-wide (`_journey` entries).
 - Founder question: FT-52 in `docs/FOUNDER_TASKS.md`. Nothing here is decided; the task starts when the question is answered.
 - Satisfies: CLAUDE.md constitution ("the machine may remove and repair, never add meaning"; no feature may write a person's words); `packages/content/VOICE.md` (never imply AI writes anything).
@@ -1143,9 +1143,10 @@ Note on D-051: `docs/DECISIONS.md` on `develop` has D-051 "Standard over custom"
 - Severity: blocker. Raised by: product, design (4 findings). Steps: J01-03, J03-05, J06-10; system-wide (`_journey` entries).
 - Founder question: FT-53 in `docs/FOUNDER_TASKS.md`. Nothing here is decided; the task starts when the question is answered.
 - Satisfies: D-051 (on `main`, not on `develop`; see FT-53); PRD-REQ-015; `packages/core/src/plan.ts` `decide()`.
-- Scope: After the answers in FT-53: a quiet free-letters counter, a gate on letter creation that uses `decide()` (reads, playback and export never consult entitlement for letters that already exist), the paywall at the third letter that never discards the in-progress letter (held on the phone, Plus offered, saved when Plus starts), a lapsed-member state, and the allowance as one config constant (default 2). A quiet one-time line after the second letter (wording from FT-53). "Plus" tag on Add a child in the Whose book sheet. New events are content-free and pass the analytics allowlist.
-- Done when: With 2 saved letters, saving the 3rd shows the Plus sheet and keeps the typed or recorded letter on the phone; once Plus starts the held letter saves. A lapsed member can read, play and export every letter and cannot add one. The allowance is read from one constant. A unit test proves `decide()` never gates read, play or export. New analytics events pass the allowlist test.
-- Test: Journeys J12 (`j12-plus.flow.ts`: J12-01 plus a new "third letter" step) and J03 (J03-08); `apps/mobile/test/billing-plan.test.ts`; `decide()` cases in `packages/core` plan tests.
+- Scope: After the answers in FT-53: a quiet free-letters counter, a gate on letter creation that uses `decide()` (reads, playback and export never consult entitlement for letters that already exist), the paywall at the third letter that never discards the in-progress letter (held on the phone, Plus offered; after Plus starts the person taps Keep on each held letter, D-083), a lapsed-member state, and the allowance as one config constant (default 2). A quiet one-time line after the second letter (wording from FT-53). "Plus" tag on Add a child in the Whose book sheet. New events are content-free and pass the analytics allowlist.
+- Done when: With 2 saved letters, saving the 3rd shows the Plus sheet and keeps the typed or recorded letter on the phone; once Plus starts, the person taps Keep on each held letter (D-083). A lapsed member can read, play and export every letter and cannot add one. The allowance is read from one constant. A unit test proves `decide()` never gates read, play or export. New analytics events pass the allowlist test.
+- Test: Journeys J07 (`[J07d]`, two letters kept, the third held), J04 (`[J04f]`, a letter held at the Keep step waits on Home) and J06 (`[J06e]`, `[J06f]`, Keep reaches the Plus gate on the store build); J12 has no third-letter step. `apps/mobile/test/billing-plan.test.ts`; `decide()` cases in `packages/core` plan tests.
+- Note: 27 Nov 2026, product, status sync afternoon. The Scope, Done when and Test lines above were corrected to D-083 and to the journeys on develop, as the QA check `docs/qa/BL-373-free-letters-check.md` (PR #2183) lists. Was: Scope "saved when Plus starts"; Done when "once Plus starts the held letter saves"; Test "Journeys J12 (`j12-plus.flow.ts`: J12-01 plus a new 'third letter' step) and J03 (J03-08)".
 
 #### BL-374 Plan, Settings, gate and store-facing strings follow the membership model: no "free, always" (D-051) [Critical]
 - Status: done (PR #2055 merged as `d3d2c37fd`: a banned-phrase case in `packages/content/test/rules.test.ts` sweeps every copy file for the retired promises, zero hits; Plan, Keep gate and Settings open with "Your first two letters are free." like the listing and the website, compared by reading; journeys not re-recorded; status sync of 27 Nov 2026). Was: ready (verify only: banned phrases enforced in rules.test.ts; check Plan, gate and Settings strings against the listing and the website line, then close). Mode: agent. Owner: content, payments engineer. Milestone: M-JR. Size: M.
@@ -1307,7 +1308,7 @@ Note on D-051: `docs/DECISIONS.md` on `develop` has D-051 "Standard over custom"
 - Test: New size and plist steps in `.github/workflows/ci.yml`; entitlement allowlist case in `apps/mobile/test/config.test.ts`.
 
 #### BL-2130 Size gate in CI: the 12 MB hard budget and the baseline (from BL-392)
-- Status: ready. Mode: agent. Owner: platform. Milestone: M-JR. Size: S. Depends on: none.
+- Status: done (PR #2177 merged as `bdbcd1b02`: the proposed size-gate step pastes onto the current `ci.yml`, with the baseline steps and a paste test; applying it is a workflow change; status sync of 27 Nov 2026, afternoon). Was: ready. Mode: agent. Owner: platform. Milestone: M-JR. Size: S. Depends on: none.
 - Satisfies: D-065 (download under 40 MB); LEGAL-REQ-007; `docs/ops/proposed/size-gate.md`.
 - Scope: `scripts/size/measure.ts --check` already fails over the hard 12 MB bytecode and 3 MB asset budgets with no waiver (`scripts/size/lib.ts`). Left: (1) re-read `docs/ops/proposed/workflows/size-gate-step.yml` against the current `ci.yml` (its `needs:` job and the paste point exist) and fix the text so Karma can paste it; (2) write the baseline procedure in `size-gate.md`: the first run of the pasted job on develop uploads the measurement, a follow-up PR commits `docs/ops/size-baseline.json` from it (this sandbox cannot export the bundle); (3) add the App Thinning line to the release checklist in `docs/ops/APP_SIZE.md` as a step after the first native build (the figure itself is filled then). Nothing under `.github/` changes in this PR.
 - Done when: the step text applies to `ci.yml` with `git apply --check` or a paste at the named line, the procedure is written, and the size cases in `scripts/size/lib.test.ts` pass (over 12 MB fails with no waiver).
@@ -1475,7 +1476,7 @@ Note on D-051: `docs/DECISIONS.md` on `develop` has D-051 "Standard over custom"
 - Test: `scripts/ci/proposed-patch-applies.test.mjs` (new).
 
 #### BL-410 Extend the journey capture: locales, AX5, interruption states, missing screens [High]
-- Status: partly done (PR #1971 merged as `964fd0618`: `j26-missing-screens.flow.ts` captures Legal and Spoken language; left: the other screens in Scope, the interruption and the short, silent and model-missing end states, and committing the regenerated journey step files, including J20-02 with the new j20-crash note (with BL-495 point 3); status sync of 27 Nov 2026). Was: ready. Mode: agent. Owner: QA engineer. Milestone: M-JR. Size: M.
+- Status: partly done (PR #1971 merged as `964fd0618`: Legal and Spoken language captured; PR #2186 as `376161c81`: J26c to J26e capture Tonight before the birth, a second draft waiting and a long Book; left: the other screens in Scope, the interruption and the short, silent and model-missing end states, and committing the regenerated journey step files, including J20-02 with the new j20-crash note (with BL-495 point 3); status sync of 27 Nov 2026, afternoon). Was: partly done (PR #1971 merged as `964fd0618`: `j26-missing-screens.flow.ts` captures Legal and Spoken language; left: the other screens in Scope, the interruption and the short, silent and model-missing end states, and committing the regenerated journey step files, including J20-02 with the new j20-crash note (with BL-495 point 3); status sync of 27 Nov 2026); before that: ready. Mode: agent. Owner: QA engineer. Milestone: M-JR. Size: M.
 - Remaining: the web-only seam for Dynamic Type and language (PR #1467, `0afe4a230`), the J24 capture loop (hi, es, zh, fr, ar, pt at default, AX3 and AX5; PRs #1504 and #1595, J24-01 to J24-15) and J25 (AX5 evidence) are merged and are not rebuilt here. Left: the screens and the interruption and end states listed in Scope, as one new flow `j26-missing-screens.flow.ts` (J26 is the next free flow id; use `journey(record, 'J26', ...)` and the step-id support of BL-1643 so ids cannot collide). Rendered text sizes on web wait on `typeStyle` in `components/ui/text.tsx` (design systems).
 - Severity: major. Raised by: product, design (4 findings). Steps: J01-12, J05-08; system-wide (`_journey` entries).
 - Satisfies: BACKLOG Definition of Done 9; LEGAL-REQ-051; D-056 (seven spoken languages).
@@ -1567,7 +1568,7 @@ Note on D-051: `docs/DECISIONS.md` on `develop` has D-051 "Standard over custom"
 - Test: Journeys J04 (J04-02), J06, J10 (J10-05), J02 (J02-04) with a layout-shift measurement in the web run.
 
 #### BL-421 Book list: the month placeholder is one quiet line, voice letters show a play glyph, author only when there is more than one
-- Status: ready. Mode: agent. Owner: design systems. Milestone: M-JR. Size: S.
+- Status: done (PR #2146 merged as `c0cb8aa9e`: a Book card names the writer only when two people write in the book, and the voice marker stays the waveform glyph; status sync of 27 Nov 2026, afternoon). Was: ready. Mode: agent. Owner: design systems. Milestone: M-JR. Size: S.
 - Severity: minor. Raised by: design (2 findings). Steps: J09-03.
 - Satisfies: DESIGN_LANGUAGE ("celebrate what exists, never count gaps").
 - Scope: Rewritten 23 Nov 2026 from the audit: the "Month 7 is open" text is gone, and voice letters carry a waveform marker, "never a fake play button" (`apps/mobile/src/components/book/letter-card.tsx` line 5), so the first two points are met by another design. What is left is the open design question: the signature shows on every card with words, and the row asked for the author only when more than one person writes. Default, if nobody answers: keep the waveform marker, and show the author only with more than one writer.
@@ -1682,7 +1683,7 @@ Note on D-051: `docs/DECISIONS.md` on `develop` has D-051 "Standard over custom"
 - Remainder (split 24 Nov 2026 by BL-1631): BL-2225 (Book paging by chapter), BL-2226 (the J01-14 and J09-03 runs), BL-2227 (switch-child timing).
 
 #### BL-2225 Book pages by chapter instead of loading and chaptering every letter in memory
-- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M-JR. Size: M. Depends on: none.
+- Status: done (PR #2147 merged as `f9462b9dd`: the Book reads one chapter of rows at a time through `store.listBookRange`, at most 60 rows, not every letter; status sync of 27 Nov 2026, afternoon). Was: ready. Mode: agent. Owner: mobile engineer. Milestone: M-JR. Size: M. Depends on: none.
 - Priority: Medium. Gate: before the Book reaches a large family book.
 - Satisfies: PRD 7.1 (chapter of 60 letters p95 500 ms, switch child p95 300 ms); BL-111 (same as BL-434).
 - Problem and evidence: review A and B on PR #1541 (filed by BL-1631): Tonight reads and the Book count are done, but the Book still loads and chapters every letter in memory.
@@ -1763,7 +1764,7 @@ Found in the PR reviews of 28 Oct 2026 (#311, #312, #358, #359, #360, #361, #362
 - Done when: the exec-team review's answer is recorded here; a held request shows what the answer says and not a past date; a test covers `held` in `stepFor`.
 
 #### BL-448 Deletion words and docs agree with the S64 page: emails, website page, register rows, spec, run sheets
-- Status: ready (RULED by council (batch 6): points 1, 2, 3 content and 6; points 4 and 5 move to BL-783 and the counsel relay; see RULINGS batch 6). Mode: agent. Owner: content (emails, pages), qa engineer (run sheets and test plans), legal (counsel relay). Milestone: M9. Size: M. Depends on: none.
+- Status: partly done (PR #2056 merged as `171ca7dfb`: point 3; PR #2188 as `866fda422`: points 1, 2 and 6, with the book-deletion preheader per CPrivO-60, the export sentence removed per CPrivO-18, and the QA docs; left: the email body's Settings, Your data path must be fixed before anything sends it (CPrivO-60), and the request email's co-parent wording was not read here; points 4 and 5 are BL-783; PRs #2059, #2062, #2063, #2082 and #2085 were closed unmerged as superseded by #2188; status sync of 27 Nov 2026, afternoon). Was: ready (RULED by council (batch 6): points 1, 2, 3 content and 6; points 4 and 5 move to BL-783 and the counsel relay; see RULINGS batch 6). Mode: agent. Owner: content (emails, pages), qa engineer (run sheets and test plans), legal (counsel relay). Milestone: M9. Size: M. Depends on: none.
 - Priority: Medium.
 - Satisfies: none given. DATA-REQ-053 is cited in item 5. S64 is the Delete account page of `docs/design/EXPERIENCE_PASS_2026-10.md`.
 - Why: six places say something the app does not do (from the review of #358, lens A, and its delta; checked on develop at 8301ac8, after #358 merged and fixed AL-07.3, AL-07.5 and E2E-09 steps 1 and 4):
@@ -1930,7 +1931,6 @@ Found in the independent reviews of 28 Oct 2026 (#370, #373, #375, #380, #381, #
 
 #### BL-462 Content rules guard: follow-ups to the fold into `rules.test.ts` (#380, P7-5)
 - Status: done (PR #1364 merged as `3389dda9b` and PR #2081 as `dcd1fed6f`: points 1 to 5 each have a test that fails on its mutant; left as it is, point 4: `billing.plan.restoreFailed` keeps "Please try again" as registered text, pinned in `experience-pass.test.ts`, and the other five lines no longer say it; point 6 needs no edit, `docs/legal/in-app-disclosures.md` 3.4.0 no longer quotes the old promise; status sync of 27 Nov 2026). Was: ready. Mode: agent. Owner: content, legal (point 6). Milestone: M11. Size: M (one PR per point is fine). Depends on: none.
-- Remaining: PR #1364 (`3389dda9b`) did points 1 to 5; point 6 (counsel's next read) is not recorded in this row.
 - Priority: Low.
 - Gate: none.
 - Satisfies: none given.
@@ -1977,7 +1977,7 @@ Found in the independent reviews of 28 Oct 2026 (#370, #373, #375, #380, #381, #
 - Done when: both PRs are mergeable and their checks pass on the rebased head.
 
 #### BL-466 Repo hygiene in the journey scripts and `.gitignore`
-- Status: partly done (point 1 done in `.gitignore`; points 2 and 3 are missing). Mode: agent. Owner: platform (point 1), qa engineer (points 2 and 3). Milestone: M12. Size: S. Depends on: none.
+- Status: done (point 1 in `.gitignore`; PR #2204 merged as `885760ae2`: points 2 and 3, the zip leaves out `INDEX.text-only.md` and `build-index` explains a steps file, with tests in `apps/mobile/test/journey-index.test.ts`; status sync of 27 Nov 2026, afternoon). Was: partly done (point 1 done in `.gitignore`; points 2 and 3 are missing). Mode: agent. Owner: platform (point 1), qa engineer (points 2 and 3). Milestone: M12. Size: S. Depends on: none.
 - Priority: Low.
 - Gate: none.
 - Satisfies: none given.
@@ -2143,7 +2143,7 @@ Found in the merged PR bodies of #372 (the sign-in code step), #387 (the spec as
 - Done when: (1) a test fails on a fixture with a repeated id and passes on the real flows; (2) no flow note carries a fixed date and the README says so; (3) the three words are gone from flow titles and notes; (4) a regenerated J06-09 has "Kept in Month 7" and "Added to Asha's book." in its text and screenshot, and J06-11 and J07-07 the chip line; (5) `INDEX.md` shows "?" with no ".".
 
 #### BL-481 Journey steps no web flow reaches: add flows or accept phone-only checks
-- Status: ready (RULED by council (batch 6): per group: flows for 1 and 2; phone-only for 3 and 4; not offered for 5 and 6 until their features are on). Mode: agent. Owner: qa engineer, design systems. Milestone: M12. Size: M. Depends on: none.
+- Status: partly done (PR #2187 merged as `9ab7a856d`: signed-in flows J16c and J21k for groups 2 and 5, and device plan row DJ-X2 for groups 3, 4 and 6; left: group 1 and the S entry lines in `EXPERIENCE_PASS_2026-10.md`; status sync of 27 Nov 2026, afternoon). Was: ready (RULED by council (batch 6): per group: flows for 1 and 2; phone-only for 3 and 4; not offered for 5 and 6 until their features are on). Mode: agent. Owner: qa engineer, design systems. Milestone: M12. Size: M. Depends on: none.
 - Priority: Low.
 - Gate: none.
 - Satisfies: none given.
@@ -2222,7 +2222,7 @@ Found in the P8a critics' pass of 28 Oct (its Later table, `docs/design/reviews/
 - Done when: the choice is recorded here and, as the founder decides, in `docs/DECISIONS.md`; with (a) or (b) a test shows a signed-in account reads On or Off and a signed-out phone reads Not signed in; with (a) a withdrawal records `withdraw` with `method='settings_toggle'`, new letters stop within one sync cycle and Export is offered (LEGAL-REQ-006's second bullet); with (c) the counsel note is sent and the S1-27 (j) line is updated.
 
 #### BL-486 A server guard: a new book, or a joined book, while an account-deletion request is open [Medium]
-- Status: ready (RULED by council (batch 6): option (b), accept and say so; data architect and sync owner write the purge test first; the confirm-step line is PROPOSED and counsel reads it; see RULINGS batch 6). Mode: pair. Owner: data architect (S02), sync owner (S03), mobile engineer (S14: the line for a refusal). Milestone: M9. Size: M. Depends on: none.
+- Status: partly done (PR #2077 merged as `2d9a28d46`: `supabase/tests/purge_book_made_during_request.test.mjs` proves on the real SQL that the day-30 purge deletes a book made or joined during the request, as option (b) reads; left: option (b)'s confirm-step line, PROPOSED, for the counsel read; status sync of 27 Nov 2026, afternoon). Was: ready (RULED by council (batch 6): option (b), accept and say so; data architect and sync owner write the purge test first; the confirm-step line is PROPOSED and counsel reads it; see RULINGS batch 6). Mode: pair. Owner: data architect (S02), sync owner (S03), mobile engineer (S14: the line for a refusal). Milestone: M9. Size: M. Depends on: none.
 - Priority: Medium for alpha build 2, whose testers are friends and family and where the cost is a book started during the 30 days that goes with the account at day 30 (point 2, unverified); High before a store build that turns sign-in on, because the phone is then the only guard. The phone's guard is thin (point 5): since #393 only a sole parent's phone loses the "Begin the book" route.
 - Gate: the first build real families use with sign-in on (as BL-446). A migration needs the founder's `approve-migration` label.
 - Satisfies: none given. Cited: LEGAL-REQ-029 and C-REQ-019 (`docs/legal/ENGINEERING_REQUIREMENTS.md:224`, the in-app deletion with its 30-day undo).
@@ -2330,7 +2330,7 @@ Found in the P8a critics' pass of 28 Oct (its Later table, `docs/design/reviews/
 - Done when: each point has a test (the hook stand-in or `decideGate`) that fails on its mutant, or is recorded here as left as it is.
 
 #### BL-494 The deletion screen after #393: the sign-in sheet's words, TalkBack, a loading action, what the phone does after day 30, and what the stand-in cannot see
-- Status: ready. Mode: agent. Owner: mobile engineer (S14), content (point 1), design systems (point 3), sync owner (S03: point 4), qa engineer (point 5). Milestone: M9. Size: M (one PR per point is fine). Depends on: none.
+- Status: partly done (PR #2120 merged as `fcae33c09`: the StateScreen primary shows loading and Cancel deletion keeps its screen (point 3); PR #2144 as `d1e95f8a4`: step 1 says what CPrivO-56 rules after the day-30 purge (point 4); left, as the second split of 27 Nov reads it: the point 5 phone checks and point 6 (a); points 1 and 2 were not reread here; status sync of 27 Nov 2026, afternoon). Was: ready. Mode: agent. Owner: mobile engineer (S14), content (point 1), design systems (point 3), sync owner (S03: point 4), qa engineer (point 5). Milestone: M9. Size: M (one PR per point is fine). Depends on: none.
 - Priority: Low; point 4 Medium, because it decides whether a line on step 1 stays true.
 - Gate: none for points 1 to 3; point 4 before the first store build with sign-in on.
 - Satisfies: none given. Cited: C-REQ-019 (`docs/legal/ENGINEERING_REQUIREMENTS.md:224`).
@@ -2618,7 +2618,7 @@ All six belong to resuming PR #306 (`fix/invite-redeem-by-code`) under BL-445. T
 - Done when: the wording matches the retention schedule and the purge test covers the rows.
 
 #### BL-524 #306: typed-code app copy, including `codes_paused`
-- Status: ready (RULED by council (batch 6): first step of BL-445; words only, no screen uses them until the BL-445 flag flips). Mode: agent. Owner: content, family owner (S04). Size: S. Depends on: none.
+- Status: done (PR #2188 merged as `866fda422`: the typed-code app copy, `codes_paused` included, as CDesO-54 reads it; no screen uses it until the BL-445 flag flips; status sync of 27 Nov 2026, afternoon). Was: ready (RULED by council (batch 6): first step of BL-445; words only, no screen uses them until the BL-445 flag flips). Mode: agent. Owner: content, family owner (S04). Size: S. Depends on: none.
 - Problem and evidence: the client needs words for each typed-code answer, including `codes_paused` (the global brake); none exist in `packages/content` (`familyCopy` has link words only, D-120).
 - Done when: every answer the endpoint can give has words in `packages/content`, passing the content rules.
 
@@ -2675,18 +2675,18 @@ All six belong to resuming PR #306 (`fix/invite-redeem-by-code`) under BL-445. T
 ### Claims test follow-ups (1 Nov 2026, PR #498)
 `packages/content/test/claims-capabilities.test.ts` lists each false claim with the item that removes it. Each item below closes when its rows are gone from `KNOWN_VIOLATIONS`.
 #### BL-556 Delete or rewire the website copy nothing ships
-- Status: ready. Mode: agent. Owner: content, web lane. Milestone: M12. Size: S. Depends on: none.
+- Status: done (PR #2056 merged as `171ca7dfb`: `site.en.ts` and `pages.en.ts`, which nothing rendered, are gone; PR #2129 as `ab2e5982c`: the website says the D-061 promise and the D-139 descriptor word for word; status sync of 27 Nov 2026, afternoon). Was: ready. Mode: agent. Owner: content, web lane. Milestone: M12. Size: S. Depends on: none.
 - **BL-556 Delete or rewire the website copy nothing ships.** Status: ready. Owner: `content` with `web`. When: after the 9 Nov go/no-go (D-130). Scope: `packages/content/src/site.en.ts` and `pages.en.ts` are exported from `@scribe/content`, but no app imports them: earlyletters.com renders `apps/web/src/content/site.ts` and `apps/web` depends only on `@scribe/brand` and `@scribe/design-tokens`. They still say seven languages, co-parent and "exactly as you said it", and the content lint tests read them as if they were live. Either delete them (and the tests that read only them), or make `apps/web` import them and delete its own copy. Done when: one source of website words, and the claims test reads it.
 #### BL-557 The packaged first-run privacy card promises invites
 - Status: done (PR #1644, `26785ee8b`: the v1 first-run privacy line no longer promises invites, and `packages/content/test/claims-capabilities.test.ts` has no row for it; read on 24 Nov 2026, not run; no CCO review of the new line is recorded in the repo: #1644 is titled as a wave 10 ruling, size S, and the change removes a claim rather than adding one). Mode: agent. Owner: content. Milestone: M12. Size: S. Depends on: none.
 - **BL-557 The packaged first-run privacy card promises invites.** Status: done (see the row above). Owner: `content`, review by the CCO (privacy claim, LEGAL-REQ-044). When: after the 9 Nov go/no-go (D-130). Scope: `stories.story.private.v1.line` in `packages/content/src/stories.en.ts` says "Only you and the people you invite can read these letters"; the production profile has no co-parent and no invite (`apps/mobile/eas.json`, D-121). Give the on-device build a true line (a new card id, so the deck order holds) and keep v1 for a build with server features. Done when: the claims test row for it is removed.
 #### BL-558 The website's invite and sign-in pages while no store build has servers
-- Status: ready. Mode: agent. Owner: web lane. Milestone: M12. Size: S. Depends on: none.
+- Status: done (PR #2188 merged as `866fda422`: the invite and sign-in pages' words as CMO-24 reads them; the claims rows are gone and `QUALIFIED_PAGES` lists the pages; status sync of 27 Nov 2026, afternoon). Was: ready. Mode: agent. Owner: web lane. Milestone: M12. Size: S. Depends on: none.
 - **BL-558 The website's invite and sign-in pages while no store build has servers.** Status: ready. Owner: `web`, with `product`. When: before the first store build is public (D-121). Scope: `apps/web/src/content/site.ts` `invite.*` (the `/j` page: "Someone invited you to share a book", "I was invited") and `authConfirm.title` ("Finish signing in") describe co-parent invites and sign-in (and the app's "I was invited", which BL-391 hides in v1.0), which the production profile does not have. Only a build with server features (the alpha) sends links to them. Decide: keep them for those links and say on the page that the App Store version does not have invites or sign-in yet, or serve the pages only once a store build turns servers on. Done when: the claims test rows for `web.site.invite.*` and `web.site.authConfirm.title` are removed, by changing the words or because production turns the capability on.
 
 ### Release-path follow-ups (1 Nov 2026, CR-45 lanes)
 #### BL-559 Deleted books never leave the phone at first sign-in
-- Status: ready. Mode: agent. Owner: sync owner, privacy engineer. Milestone: M12. Size: S. Depends on: none.
+- Status: partly done (PR #2116 merged as `be299e0dc`: parts 1 and 2, a book in Recently deleted is not claimed, queued or backed up at first sign-in; left: part 3, the signed-in Erase everything (F17-REQ-026), now BL-2262; guards BL-2260 and BL-2261 are in open PR #2218; status sync of 27 Nov 2026, afternoon). Was: ready. Mode: agent. Owner: sync owner, privacy engineer. Milestone: M12. Size: S. Depends on: none.
 - **BL-559 Deleted books never leave the phone at first sign-in.** Status: ready. Owner: `sync` with `privacy`. When: before sign-in is switched on for anyone (D-121). Scope: `apps/mobile/src/lib/sync/ownership.ts` (lines 54 and 78 at #520's head) must skip books in Recently deleted. `backup/local-store.ts` (line 54) must not back up their recordings. The signed-in erase flow (F17-REQ-026) must exist. Found by the privacy review of #520. Done when: tests prove a book deleted on the phone is never uploaded or backed up, and a signed-in Erase everything reaches the server.
 #### BL-560 The Plus line on Write
 - Status: done in code (#668, a8bf1576; #508, which it waited for, merged as 9898add2). Mode: agent. Owner: mobile engineer. Milestone: M12. Size: S. Depends on: none.
@@ -3775,7 +3775,7 @@ Written 19 Nov 2026 by Karma with the CPO role, docs only. Source: `docs/roadmap
 #### BL-930 Reword NFR rows 42 and 216 to what the built hand-offs can meet (N-01)
 - Status: done (PR #2048 merged as `f0f430ec5`: rows 42 and 216 of `docs/prd/v2/06-nfr.md` reworded as the Scope says, and `docs/qa/run-sheets/NS-34-SE3-SPEED.md` (BL-929) cites them; status sync of 27 Nov 2026). Was: ready (RULED by council (batch 6): rulings on CONFIRM 2 and FOUNDER 1 to 3 recorded as a CPO ruling; an interactive session as product edits docs/prd/v2/06-nfr.md; the Low Power Mode guard is a separate row behind BL-878; see RULINGS batch 6). Mode: pair. Owner: qa engineer. Milestone: M15. Size: S.
 - Who: an interactive session as `product` writes it (the `product` agent has no backlog owner name, so the dispatcher cannot assign it); `product` edits the requirement file; `design-systems` reviews.
-- Scope: in `docs/prd/v2/06-nfr.md`, row 42 becomes: a transition starts within 100 ms, controls are usable by 350 ms, no frame is over 16.7 ms, the named hand-offs are bounded by `sequenceMaxMs` (900 ms) and the save hand-off by `hardCeilingMs` (2000 ms). Row 216 becomes: loops change opacity only, run only on the focused screen, and do not run under Reduce Motion. Each keeps a device and a test line.
+- Scope: in `docs/prd/v2/06-nfr.md`, row 42 becomes: a transition starts within 100 ms, controls are usable by 350 ms, no frame is over 16.7 ms, the named hand-offs are bounded by `sequenceMaxMs` (900 ms) and the save hand-off by `hardCeilingMs` (2000 ms). Row 216 becomes: loops change opacity only, run only on the focused screen, and do not run under Reduce Motion. Each keeps a device and a test line. As merged (PR #2048), row 216 also keeps a fourth clause, no loops in Low Power Mode, per CPO-62 FOUNDER 3 with CONFIRM 2 reading (b); the shared guard is BL-2281, behind BL-878. CPO-62 FOUNDER 2 takes Review to the Book after Keep out of the 900 ms list; the NS-34 card line and the design's row 5 get their erratum in BL-2282.
 - Done when: the rows are merged and BL-929 cites them.
 
 #### BL-931 Photo with a letter, as small reviewable PRs (N-11, NS-01)
@@ -4124,7 +4124,7 @@ How the harness reads this section: a row is eligible when its Status is `ready`
 - Done when: the P0 rows pass and the grants test is green.
 
 #### BL-980 Someone else speaks: the From name on Review (NS-16)
-- Status: partly done (PR #2093 merged as `98e6c9ef8`: From name on Review behind `EXPO_PUBLIC_SIGN_AS_OTHER`, off in every build, with `[NS-16-R4]`, R5, R6, R15 and R18 in `apps/mobile/test/sign-as-other.test.ts`; left: the P0 rows NS-16-R3, R9 and R16 have no titled test, and the follow-up gaps (the draft name cleared when its draft is deleted, the remote pause, the hosted EAS value check) are assigned outside this row; status sync of 27 Nov 2026). Was: ready (RULED by council (batch 6): behind EXPO_PUBLIC_SIGN_AS_OTHER, off in production; counsel Q45, Q46, Q48, Q54 and the hosted migration apply gate the flip, not the code). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S.
+- Status: partly done (PR #2093 merged as `98e6c9ef8`: From name on Review behind `EXPO_PUBLIC_SIGN_AS_OTHER`, off in every build; PR #2179 as `b267fb3ff`: the draft's From name is cleared when its draft ends, and the remote pause `killSwitches.signAsOther`; left: the P0 rows NS-16-R3, R9 and R16 have no titled test, and the check of the hosted EAS value of the flag; status sync of 27 Nov 2026, afternoon). Was: partly done (PR #2093 merged as `98e6c9ef8`: From name on Review behind `EXPO_PUBLIC_SIGN_AS_OTHER`, off in every build, with `[NS-16-R4]`, R5, R6, R15 and R18 in `apps/mobile/test/sign-as-other.test.ts`; left: the P0 rows NS-16-R3, R9 and R16 have no titled test, and the follow-up gaps (the draft name cleared when its draft is deleted, the remote pause, the hosted EAS value check) are assigned outside this row; status sync of 27 Nov 2026); before that: ready (RULED by council (batch 6): behind EXPO_PUBLIC_SIGN_AS_OTHER, off in production; counsel Q45, Q46, Q48, Q54 and the hosted migration apply gate the flip, not the code). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S.
 - Satisfies: NS-16-R1 to NS-16-R18; ruling D9.
 - Scope: `entries.author_signs_as`, 1 to 30 characters, set on Review only and only before the letter's first upload (insert-only in sync; a later change is ignored today, and the card requires the app to say so); the instruction line to the parent (D9), no consent record; erase and sign-out clear the local name list; Find does not index it (founder default). Behind the PRIV-R20 `child-input` flag, off in production.
 - Fails on old code: `[NS-16-R6]` (over 30 characters refused before upload).
@@ -4285,7 +4285,7 @@ Written by `product` for Step 0.2 of `docs/product/prd/24-engineering-handoff.md
 - Source: `24-engineering-handoff.md` section 2 and step 0.3.
 
 #### BL-1003 Content rules drift test: every key family is under ALL, notification scope paths, VOICE.md line 70 (step 1.1, Drop A)
-- Status: partly done (PR #1031, merged as `052b42c8b`, built `packages/content/test/rules-drift.test.ts` with the `[NS-48-R28]` tests and the shared notification scope pattern; remains: the BRAND.md glossary rows the scope names, not checked here [U]; VOICE.md was corrected by later content PRs). Mode: agent. Owner: content. Milestone: M15. Size: S. Depends on: none.
+- Status: done (PR #1031 merged as `052b42c8b`; PR #2205 as `e42d673de`: four `[NS-48-R28, RV-3]` tests pin the two BRAND.md glossary rows RV-3 covers; the RV-3 rows still to be added wait on the G3 words; status sync of 27 Nov 2026, afternoon). Was: partly done (PR #1031, merged as `052b42c8b`, built `packages/content/test/rules-drift.test.ts` with the `[NS-48-R28]` tests and the shared notification scope pattern; remains: the BRAND.md glossary rows the scope names, not checked here [U]; VOICE.md was corrected by later content PRs). Mode: agent. Owner: content. Milestone: M15. Size: S. Depends on: none.
 - Refines: BL-297 (NS-48, FR-NTC). Drop: A (the rules-test coverage of Drop A).
 - Satisfies: NS-48-R28.
 - Scope: in `packages/content/test/rules.test.ts`, a drift test that fails when a key family exists in `packages/content/src` and is not in `ALL`; the new families `days.*`, `culture.*`, `ntc.*`, `notifications.dayNames.*`, `features.photos.suggestions.*` named so a later words PR is covered on arrival; the notification scope paths (exclamation budget, 40 and 110 limit, rhythm); `VOICE.md` line 70 corrected and the BRAND.md glossary rows the handoff names. No words are written (they wait for G3). If a rule test fails, fix the copy, not the test.
@@ -4317,7 +4317,7 @@ Written by `product` for Step 0.2 of `docs/product/prd/24-engineering-handoff.md
 - Source: `24-engineering-handoff.md` section 1.9 and step 1.4; card 21 (Rows by drop, NS-49).
 
 #### BL-1007 Day-only reminder gate and the first-tick permission door (step 2.4, Drop B)
-- Status: ready (RULED by council (batch 6): dispatch the code dark; words are PROPOSED and the Days surface stays off until counsel (G2) and the founder words approval (G3)). Mode: agent. Owner: reminders owner. Milestone: M15. Size: S. Depends on: BL-966.
+- Status: done (PR #2178 merged as `265d78a28`: ticked days plan with reminders off, dark as ruled; the first-tick permission door has no caller until the Days surface is on; status sync of 27 Nov 2026, afternoon). Was: ready (RULED by council (batch 6): dispatch the code dark; words are PROPOSED and the Days surface stays off until counsel (G2) and the founder words approval (G3)). Mode: agent. Owner: reminders owner. Milestone: M15. Size: S. Depends on: BL-966.
 - Refines: BL-295. Drop: B.
 - Satisfies: NS-46-R31.
 - Scope: `libraryDay` and `typedDay` plan while evening, month and birthday do not (a gate beside `prefs.enabled`); permission is asked once, through one `turnOnReminders`-style door, at the first tick; the planner and `scheduler.ts` keep their other gates.
@@ -6385,7 +6385,7 @@ Every row was filed `proposed`; Karma or the founder sets `ready`, and the statu
 - Test: `apps/mobile/test/ns-43-first-book-fields.test.ts` (unit and source pin), extending `first-run-child-name.test.ts` where a case already lives there.
 
 #### BL-1165 First book: returning account, English-only build, AX5 and VoiceOver, server refusal
-- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
+- Status: done (PR #2139 merged as `bceb47e48`: tests for the returning account, the English-only build, AX5 and refused books; the R13 device row stays a device row; status sync of 27 Nov 2026, afternoon). Was: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
 - Satisfies: NS-43-R8, NS-43-R11, NS-43-R13, NS-43-R14.
 - Note: Scoped by product. Same stale dependency as BL-1164, dropped for the same reason. The AX5 and VoiceOver device pass of NS-43-R13 is a device row: product adds its row to `docs/release/FOUNDER_QUEUE.md` when a build exists to run it on; the agent part is the render test.
 - Scope: (1) A test per id, written first: R8 a returning account whose book may be on its way never sees the first-book screens (NS-10-R0; read `use-first-run-route.ts`); R11 an English-only build shows no language row and no 'other languages are coming' line (a content scan on the first-run surfaces, the same pattern as the English-only hold test); R13 every field, choice and reason on the first-book screens is reachable and read in order at AX5 on SE 3 and with VoiceOver (a render test plus the accessibility labels in order; the device pass stays a device row); R14 a refused first-run book stays on the phone, deletes nothing and shows no error on Home. (2) Change code only where a test fails. A refusal or reason line that a test finds missing goes to the content owner as a PROPOSED key (packages/content/WRITING-GUIDE.md); the builder writes no customer-facing word. The card (NS-43) is the source of truth; nothing here changes a requirement row.
@@ -6540,7 +6540,7 @@ Source: `docs/analytics/instrumentation/ENGINEERING-REQUIREMENTS-21nov.md` (#120
 - Test: `packages/analytics/test/registry.test.ts` (rule tests).
 
 #### BL-2122 PostHog adapter P7: basics helper and call-site constants (from BL-1235)
-- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: S. Depends on: none.
+- Status: done (PR #2074 merged as `3d423b74b`: `packages/analytics/src/basics.ts` (`createBasics`: tap, impress, perf, startPerf, newSession) and `msBucket` in `buckets.ts`, the last piece of P7; status sync of 27 Nov 2026, afternoon). Was: ready. Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: S. Depends on: none.
 - Gate: nothing in this row turns analytics on in any build; the default stays `basicsPolicy` `ask_first` (D-163).
 - Satisfies: none claimed: build work for D-163 (ER-A00).
 - Scope: P7 of the plan, read against what is on develop first: `trackers.ts`, `buckets.ts`, `lifecycle.ts`, `observe.ts`, `support.ts`, `helpers.test.ts` and `observe.test.ts` already exist, so the missing piece is `packages/analytics/src/basics.ts` (`createBasics`), its one export line in `index.ts`, and the tests in `consent-crash.test.ts` that call `createBasics` or `createTrackers` (split out of the describe P4 left behind). It needs P2 and P4 only (both merged), so it can land before P5 and P6; the `index.ts` export lines are one line each, so a merge conflict there is resolved by keeping both.
@@ -6548,7 +6548,7 @@ Source: `docs/analytics/instrumentation/ENGINEERING-REQUIREMENTS-21nov.md` (#120
 - Test: `packages/analytics/test/consent-crash.test.ts`, `packages/analytics/test/helpers.test.ts`.
 
 #### BL-2123 PostHog adapter P8: the shipped registry tests and the canary (from BL-1235)
-- Status: blocked (BL-2148, BL-2149, BL-2122). Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: S. Depends on: BL-2148, BL-2149, BL-2122.
+- Status: blocked (BL-2148, BL-2149). Was: blocked (BL-2148, BL-2149, BL-2122). Mode: agent. Owner: analytics engineer. Milestone: before the production readiness build. Size: S. Depends on: BL-2148, BL-2149, BL-2122.
 - Gate: nothing in this row turns analytics on in any build.
 - Satisfies: none claimed: build work for D-163 (ER-A00); unblocks BL-2003.
 - Scope: P8 of the plan: the shipped-registry tests in `registry.test.ts` (static rules, the 25 events, no literal event names in sources; about 110 lines) and `registry-canary.test.ts` (about 72 lines: it imports `createBasics`, `createTrackers` and `posthogBeforeSend`, hence last). Then set BL-1235 done in the same PR with the four PR numbers as evidence.
@@ -6889,7 +6889,7 @@ Every row is `proposed`: Karma or the founder sets `ready`. Owner and Depends on
 - Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; a docs test fails when a language in a store profile has no dossier or no committed gate summary; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
 
 #### BL-1315 Languages: the store listing names only the language that ships (en-US at 1.0)
-- Status: ready. Mode: agent. Owner: content. Milestone: M15. Size: S. Depends on: none.
+- Status: done (PR #2175 merged as `1989d0cca`: the store listing names a spoken language only once it ships, and store metadata is en-US alone at 1.0; follow-ups BL-2264 and BL-2265; status sync of 27 Nov 2026, afternoon). Was: ready. Mode: agent. Owner: content. Milestone: M15. Size: S. Depends on: none.
 - Satisfies: NS-17-R4, FR-LOC-22.
 - Note: Scoped by product: a split of the old 7-id row. The dependencies on BL-965 and BL-958 are dropped because the test reads the shipped list and the listing, neither of which waits on the words packet or the store flags. Public wording: the exec team reads it before it publishes (D-172); the builder writes no customer-facing word. CR-200 holds: the listing, Settings and website add no language list, no coming soon row and no dates.
 - Scope: (1) Two tests added to `packages/content/test/store-listing.test.ts`, written first: `[NS-17-R4]` the listing names a language only if its pack ships in the build (the shipped list is read from the pack registry, not typed in the test); `[FR-LOC-22]` store metadata is en-US only at 1.0, and any other locale file fails the test unless its language ships and carries a reviewer role and date. (2) Change `packages/content/src/store.en.ts` only where a test fails, through the content owner. The translated text, the rules file and the prompt set are BL-2101. The card (NS-17) is the source of truth; nothing here changes a requirement row.
@@ -6923,7 +6923,7 @@ Every row is `proposed`: Karma or the founder sets `ready`. Owner and Depends on
 - Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; the AX5 and VoiceOver walk of E-S03 and the consent surfaces is one named device check recorded in gates.md, and a phone restored from an iCloud backup showing the book signed out with no duplicate after sign-in (NS-38-R8) is a second named device check recorded there; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
 
 #### BL-1319 Days: the planner order, one note a day, nothing recurs, one slip at a time
-- Status: ready (BL-537 is superseded by BL-943 PR 1, #1248; waits on BL-966 and BL-963, listed in Depends on; the NS-50-R11 id waits for BL-963). Mode: agent. Owner: mobile engineer, content. Milestone: M15. Size: S. Depends on: BL-966, BL-963.
+- Status: partly done (PR #2178 merged as `265d78a28`: the planner order, one note a day and nothing recurs; left: NS-50-R11, one slip at a time on Home; status sync of 27 Nov 2026, afternoon). Was: ready (BL-537 is superseded by BL-943 PR 1, #1248; waits on BL-966 and BL-963, listed in Depends on; the NS-50-R11 id waits for BL-963). Mode: agent. Owner: mobile engineer, content. Milestone: M15. Size: S. Depends on: BL-966, BL-963.
 - Satisfies: NS-46-R4, NS-46-R5, NS-46-R7, NS-46-R8, NS-50-R11.
 - Scope: tests first, then code or words only where a test fails, for the 5 rows above: libraryDay as a source of the typedDay group with no new class, a typed day deleted the day after, the order of two notes on one date, two ticked days on one date resolved with synthetic ids zz-test-day-a and zz-test-day-b, and at most one slip rank on Home with no count of things waiting. One PR. The card (NS-46 and NS-50) is the source of truth; nothing here changes a row. The rest of BL-295 is in the other rows of this split.
 - Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; the planner property test holds no local date with two budgeted notes; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
@@ -6947,13 +6947,13 @@ Every row is `proposed`: Karma or the founder sets `ready`. Owner and Depends on
 - Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; a network fake asserts the library request carries no query, header or path derived from ticks; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
 
 #### BL-1323 Notification words: the pure choice of a key, the same plan with the catalogue on or off
-- Status: ready (BL-537 is superseded by BL-943 PR 1, #1248; BL-1004 already built the pure function and the on or off parity; waits on BL-966, listed in Depends on). Mode: agent. Owner: reminders owner. Milestone: M15. Size: S. Depends on: BL-966.
+- Status: partly done (PR #2182 merged as `73032554e`: titled tests for FR-NTC-01 to 05 and FR-NTC-10; left: FR-NTC-04 shorter and more open waits on the G3 recency words, and FR-NTC-10 for names over 19 to 21 characters needs a ruling; status sync of 27 Nov 2026, afternoon). Was: ready (BL-537 is superseded by BL-943 PR 1, #1248; BL-1004 already built the pure function and the on or off parity; waits on BL-966, listed in Depends on). Mode: agent. Owner: reminders owner. Milestone: M15. Size: S. Depends on: BL-966.
 - Satisfies: FR-NTC-01, FR-NTC-02, FR-NTC-03, FR-NTC-04, FR-NTC-05, FR-NTC-10.
 - Scope: tests first, then code or words only where a test fails, for the 6 rows above: the pure function in packages/core that returns a catalogue key from the inputs, the same (id, date, time, class) set with the catalogue on or off, every input computable at plan time, copy that gets shorter and more open as the gap grows and never names the gap, a question that follows the last letter's kind without repeating it, and the length and character limits. One PR. The card (NS-48) is the source of truth; nothing here changes a row. The rest of BL-297 is in the other rows of this split.
 - Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; a packages/core property test passes for determinism and for on or off parity; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
 
 #### BL-1324 Notification words: a ticked day takes the slot, lock-screen words, names off, quiet books
-- Status: ready (RULED by council (batch 6): BL-966 core merged; BL-537 is superseded by BL-943 (PR #1248)). Mode: agent. Owner: reminders owner. Milestone: M15. Size: S. Depends on: none.
+- Status: partly done (PR #2133 merged as `18369a34a`: titled tests for NS-48-R9, R21, R26, FR-NTC-08, 09 and 11, and the p0 gaps list none of them; follow-ups BL-2246 (the one-a-day rule's second home), BL-2247 and BL-2248 merged; left: the neutral lock-screen words on a locked device as one named check, and the NS-18-R3 and NS-48-R27 errata, in open PR #2206 (BL-2249); status sync of 27 Nov 2026, afternoon). Was: ready (RULED by council (batch 6): BL-966 core merged; BL-537 is superseded by BL-943 (PR #1248)). Mode: agent. Owner: reminders owner. Milestone: M15. Size: S. Depends on: none.
 - Satisfies: NS-48-R9, NS-48-R21, NS-48-R26, FR-NTC-08, FR-NTC-09, FR-NTC-11.
 - Scope: tests first, then code or words only where a test fails, for the 6 rows above: a parent-chosen day taking the one budgeted slot as a typedDay, the neutral lock-screen title and body for a family, faith or national day or names off, no child name unless Names in notifications is on and App lock is off, a quieted or hidden book contributing nothing to any key, and the one-a-day rule living only in budget.ts, with the NS-48-R26 property test proving no local date holds two budgeted notes across all sources. One PR. The card (NS-48) is the source of truth; nothing here changes a row. The rest of BL-297 is in the other rows of this split.
 - Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; the lock-screen enumeration test passes; the neutral lock-screen words on a locked device are one named check in the PR; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
@@ -7235,7 +7235,7 @@ Every row is `proposed`: Karma or the founder sets `ready`. Owner and Depends on
 - Test: `packages/content/test/support-macros.test.ts` (unit, reads the macro file).
 
 #### BL-2104 Policy: an abuse-material report gets an acknowledgement only, the report set before any sharing card, and the safety-removal runbook
-- Status: ready. Mode: agent. Owner: content, legal. Milestone: M15. Size: S. Depends on: none.
+- Status: done (PR #2148 merged as `6cfe7fd7e`: the exec-team defaults for the five open policy questions (CMO-22, CPO-98, CLO-46, CCO-33, CPO-99) and CR-234 on which builds the safety gates follow; status sync of 27 Nov 2026, afternoon). Was: ready. Mode: agent. Owner: content, legal. Milestone: M15. Size: S. Depends on: none.
 - Satisfies: FR-POL-02, FR-POL-03, FR-POL-04.
 - Note: The counsel read of the runbook and the procedure is an exec-team review recorded in `docs/agents/cto/RULINGS.md`, not a founder step.
 - Scope: Split from BL-1335. (1) FR-POL-02 a report of apparent child sexual abuse material is answered by an acknowledgement only; no attachment is opened, forwarded or kept; the exec team, which is the counsel under D-172, takes it the same day (the written procedure is outside this row; the macro and a test that the macro asks for no attachment are in it). (2) FR-POL-03 a docs check fails when a flag that lets one person's content reach another through our servers is on and the report, block and contact set is absent. (3) FR-POL-04 `docs/ops/runbooks/safety-removal.md` as a draft marked for the exec-team counsel read (D-172) and the check that the card does not turn on in a store build until the runbook and the access tool (BL-2103) both exist. The words are the content owner's and the legal owner's; the builder writes none.
@@ -7249,7 +7249,7 @@ Every row is `proposed`: Karma or the founder sets `ready`. Owner and Depends on
 - Done when: every id above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; the forbidden-phrase test lists every public file it reads and passes; the drawn tab bar test fails on a Family tab; no public file holds a promise outside the registry; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
 
 #### BL-1337 Store listing words: every line true of the submitted build, What's New, keywords, a privacy label change moves every public line
-- Status: ready. Mode: agent. Owner: content. Milestone: M15. Size: S. Depends on: none.
+- Status: done (PR #2176 merged as `1c64bdb5e`: `packages/content/test/store-listing-words.test.ts` and `packages/content/src/store-claims.en.json` keep the listing lines, What's New and keywords true of the store build; follow-ups BL-2263 and BL-2266; status sync of 27 Nov 2026, afternoon). Was: ready. Mode: agent. Owner: content. Milestone: M15. Size: S. Depends on: none.
 - Satisfies: FR-MKT-08, FR-MKT-09, FR-MKT-11, FR-MKT-16.
 - Note: Scoped by product: screenshots and the preview video (FR-MKT-12, FR-MKT-15) moved to BL-2105 because they wait on the first release build. The old dependencies on BL-965 and BL-958 are dropped for the same reason as BL-1315. Public wording: the exec team reads it before it publishes (D-172); the builder writes no customer-facing word.
 - Scope: (1) FR-MKT-08 a test that every description line is true of the sign-in-required build; the accountless line is checked and rewritten by the content owner if only the outage path remains. (2) FR-MKT-09 What's New names a feature only through its card's enabled claim, with no coming soon, beta or count. (3) FR-MKT-11 the 100 character keyword field holds only an allowed list of true words and fails on kids, milestone, tracker, photo book, album, smart, share, backup or a competitor name. (4) FR-MKT-16 a label change moves the store privacy paragraph, the sixth screenshot subline, the website privacy points and the support page in one release (a test that the four texts cite the same label file). Function review: `docs/product/prd/functions/marketing.md`; nothing here changes a requirement row.
@@ -7323,7 +7323,7 @@ Every row is `proposed`: Karma or the founder sets `ready`. Owner and Depends on
 - Test: `packages/content/test/legal-docs.test.ts` (unit) and a flag-text test.
 
 #### BL-1344 Legal records: a licence record for every speech pack, font and model, an agreement records only a published version, the sign-as-someone-else clause
-- Status: ready. Mode: agent. Owner: legal. Milestone: M15. Size: S. Depends on: BL-949.
+- Status: partly done (PR #2156 merged as `b0414aac0`: parts 1 and 3, a licence record for every shipped asset and the sign-as-other Terms gate; left: part 2 (FR-LEG-20), its test in `packages/content/test`; status sync of 27 Nov 2026, afternoon). Was: ready. Mode: agent. Owner: legal. Milestone: M15. Size: S. Depends on: BL-949.
 - Satisfies: FR-LEG-13, FR-LEG-15, FR-LEG-20.
 - Note: Scoped by product. The dependency on BL-973 is dropped. The printable-file ids moved to BL-2107.
 - Scope: (1) FR-LEG-13 a licence record (licence, URL, date read, and for models what the licence allows) for every speech pack, font, model or image before it ships in a store build: extend `apps/mobile/src/lib/licences.ts` and its test so a shipped asset with no record fails; the store listing names only languages whose pack has a record. (2) FR-LEG-20 an agreement records only a published version in the policy version sequence, served byte for byte at the versioned link, and a test fails on a draft revision number. (3) FR-LEG-15 when the sign-a-letter-as-someone-else card is on, a test checks the Terms clause exists; the clause text is a counsel-draft. Files under `docs/legal/` are placed by the legal owner. Function review: `docs/product/prd/functions/legal.md`; nothing here changes a requirement row.
@@ -8030,7 +8030,7 @@ Founder ruling of 21 Nov: the first Moments release ships with the photo library
 - Done when: BL-2136, BL-2137 and BL-2134 are done; navigation tests, schema tests (corrupt, higher version, rename-write) and the content rules pass, including the mode-scoped claim test (R300).
 
 #### BL-2136 Moments PR 6b: the scoped cover for the Moments tab and its sheets (from BL-1433)
-- Status: ready. Mode: agent. Owner: mobile engineer, privacy engineer. Milestone: M15. Size: S. Depends on: none.
+- Status: done (PR #2113 merged as `cd268565e`: `shouldCoverMoments` with its 18-row truth table, covered by the root cover; PR #2174 as `41a3fb270`: the review gaps of #2113 closed with mutants; status sync of 27 Nov 2026, afternoon). Was: ready. Mode: agent. Owner: mobile engineer, privacy engineer. Milestone: M15. Size: S. Depends on: none.
 - Gate: the Moments flag is off in every profile (no `EXPO_PUBLIC_MOMENTS_TAB` in `apps/mobile/eas.json`); nothing here is reachable in a build.
 - Satisfies: NS-53-R102, NS-53-R232, NS-53-G01.
 - Scope: PR 6b of spec 26b, about 200 lines in about 6 files, after PR 6 (merged #1482). Source: `docs/design/moments-tab/components/04-privacy-cover-moments.md` (PC-T1). (1) the pure `shouldCoverMoments(route, appState, lockEnabled)` in `apps/mobile/src/lib/moments/` with its full 18-row truth table as a test (PC-T1); (2) a focused-route signal for the Moments tab and its sheets; (3) the wiring beside `AppLockLayer` in `apps/mobile/src/app/_layout.tsx` that reuses `PrivacyCover` so one cover is mounted and never two, drawn in `FullWindowOverlay` from `react-native-screens` as the app lock layer is (a view in the ordinary tree sits beneath the sheet and the picker). The order of two `FullWindowOverlay` siblings is UNVERIFIED and is read at DM-09, a device row: say so in the PR body. App lock never reads or sets this signal; `machine.ts` and `coverShown` are untouched. A `privacy` read of the diff is part of the review.
@@ -8038,7 +8038,7 @@ Founder ruling of 21 Nov: the first Moments release ships with the photo library
 - Test: `apps/mobile/test/moments-cover.test.ts` (new).
 
 #### BL-2137 Moments PR 12b: the ask card, the primer and the access-state words (from BL-1433)
-- Status: ready. Mode: agent. Owner: content. Milestone: M15. Size: S. Depends on: none.
+- Status: partly done (PR #2188 merged as `866fda422`: the ask card and the access-state words; left: `primer.body`, held by CPrivO-59; status sync of 27 Nov 2026, afternoon). Was: ready. Mode: agent. Owner: content. Milestone: M15. Size: S. Depends on: none.
 - Gate: the Moments flag is off in every profile; the words stay PROPOSED until the exec team approves them (CR-176).
 - Satisfies: NS-53-R2, R8, R9, R11, R12, R25, R42, R52, R72, R104, R159, R160, R187, R191, R192, R196, R198, R235, R256, R260, R278, R285, R294, R300 (the PR 12 rows of spec 26b; R80, R81 and R193 are a read of these words by the paperwork, not built here); PRIV-R21.
 - Scope: in `packages/content/src/features/moments-tab.en.ts`, the strings PR 12a left out on purpose: the ask card and the primer, where the primer names date, time and place and carries the Shown, Records, Never and Decline lines (PRIV-R21; the same four lines in `docs/product/moments-tab/COPY-DRAFTS.md` are the starting text, not new words), and the access-state lines (limited, denied, restricted, Open Settings). Out of scope and named in the file header: the door and host-sheet words (BL-2134), the value lines (O-48), the set-aside word on the card face (O-59), the Me row and the empty-Recent action. Read `WRITING-GUIDE.md` and BRAND.md first; no counts, no names of scenes or people; the mode-scoped claim test (R300) must pass; the words go to the PR body once for approval.
@@ -8808,7 +8808,7 @@ Each row below cites its PR or review. A row that waits for an open PR is `propo
 - Test: `node --test scripts/agents/merge-queue.test.mjs`.
 
 #### BL-1571 merge-queue: relax NEEDS-UPDATE for no-overlap PRs behind a flag (CR-149)
-- Status: ready. Mode: agent. Owner: platform. Milestone: M15. Size: M. Depends on: BL-1570.
+- Status: done (PR #2157 merged as `3a56ec0b5`: the merge queue applies CR-149's relaxed NEEDS-UPDATE rule behind `MERGE_QUEUE_CR149=1`, which ships off; status sync of 27 Nov 2026, afternoon). Was: ready. Mode: agent. Owner: platform. Milestone: M15. Size: M. Depends on: BL-1570.
 - Priority: Medium. Gate: `scripts/agents/**` is a CR-70 path: two counted reviews, one a `security` lens, a fresh builder agent, and Karma approves. The flag ships off; turning it on is Karma's.
 - Satisfies: none given. Cited: CR-149 rules 1 to 5 and its "Way back".
 - Problem and evidence: see BL-1570. This row wires the checks into the verdict.
@@ -8927,7 +8927,7 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Done when: the flag defaults to off in every profile; the import test still passes; one mutant for the default.
 
 #### BL-1548 Moments PR 12b, part 1: the access-state lines, Open Settings, and the door and host words
-- Status: ready. Mode: agent. Owner: content. Milestone: M15. Size: S. Depends on: none.
+- Status: done (PR #2188 merged as `866fda422`, carrying PR #2085's commit: the access-state lines, Open Settings, and the door and host words; status sync of 27 Nov 2026, afternoon). Was: ready. Mode: agent. Owner: content. Milestone: M15. Size: S. Depends on: none.
 - Satisfies: NS-53 PR 12.
 - Note: Scoped by product from the list in the old row (what PR #1479, part 12a, left out). Part 2 (the ask card and primer, Not now on the card face, the Me row Turn off, the notification and email lines) is BL-2120. The requirement id is cited as the old row cited it (NS-53 PR 12); the NS-53 row for each key is not re-read here.
 - Scope: In `packages/content/src/features/moments-tab.en.ts`, as PROPOSED keys, each with Shown, Records, Never and Decline lines where a person agrees to something (COORDINATION section 10): (1) `state.limited`, `state.denied` and `state.restricted` and Open Settings, marked as a counsel flag (KM2); (2) the door and host words. The content rules test (`packages/content/test/rules.test.ts`) passes and every line that needs an exec-team read or a council answer carries its marker. No copy is final, and the keys stay behind the flag that is off.
@@ -9006,7 +9006,7 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Done when: a written result is filed; BL-1497 then moves to done.
 
 #### BL-1557 Moments strings: approval of 'From a month day for {child}' and 'hearted'
-- Status: ready (RULED by council (batch 6): strings "Pictures you marked as favorites" and "The day of the month {child} was born"; content applies them in moments-tab.en.ts; the founder may veto at the first in-app read, it is not a gate). Mode: agent. Owner: content. Milestone: M15. Size: XS. Depends on: none.
+- Status: done (PR #2084 merged as `ae1506233`: the two Moments reason lines take the council's ruled words, pinned by the reason-list test; status sync of 27 Nov 2026, afternoon). Was: ready (RULED by council (batch 6): strings "Pictures you marked as favorites" and "The day of the month {child} was born"; content applies them in moments-tab.en.ts; the founder may veto at the first in-app read, it is not a gate). Mode: agent. Owner: content. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Medium. Gate: none.
 - Satisfies: NS-53 PR 12 (not re-read here).
 - Problem and evidence: PR #1479 carries both as PROPOSED.
@@ -9628,7 +9628,7 @@ Each row cites its PR. Rows are `proposed` until Karma or the founder sets `read
 - Done when: one test per wire, each with a mutant.
 
 #### BL-1657 Add child: the calm retry card for a failing addChild
-- Status: ready. Mode: agent. Owner: content. Milestone: M15. Size: XS. Depends on: none.
+- Status: done (PR #2188 merged as `866fda422`: the calm retry card words as read in CDesO-52; status sync of 27 Nov 2026, afternoon). Was: ready. Mode: agent. Owner: content. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none.
 - Satisfies: Refines BL-378 (PR #1582); PRD 7.4 durability (cited from BL-378).
 - Problem and evidence: a failing `addChild` has no calm retry card because the words do not exist (no retry key in `packages/content` for the first-run finish step; `apps/mobile/src/app/onboarding.tsx` is where it fails).
@@ -10011,7 +10011,7 @@ Queue order (the dispatcher takes the first `ready` row an agent owns, in file o
 - Done when: the spec is in `docs/design/` and BL-1736 and BL-1792 cite it.
 
 #### BL-1792 "Read from here": start Read together at a month or the letter in view
-- Status: ready. Mode: agent. Owner: mobile engineer, content. Milestone: M15. Size: M. Depends on: BL-1735 (the dispatcher picks it only once BL-1735 is `done`, which follows the merge of the spec).
+- Status: done (PR #2097 merged as `b35f7d472`: Read from here starts Read together at a month or at the letter in view; open PR #2214 adds device row S1-206 and its words; status sync of 27 Nov 2026, afternoon). Was: ready. Mode: agent. Owner: mobile engineer, content. Milestone: M15. Size: M. Depends on: BL-1735 (the dispatcher picks it only once BL-1735 is `done`, which follows the merge of the spec).
 - Priority: P1. Gate: BL-1735 `done`. The list order is checked: see section 3 of the spec. Lane: mobile. File order with the other letter-page and Read together rows: after BL-1790, BL-1789, BL-1791 and BL-1823 (last). BL-1798 builds after BL-1791; the two do not collide (spec section 5).
 - Spec: `docs/design/specs/13-READ-A-YEAR-TOGETHER-23nov.md`, section 5 (entry points, `from` param, whole-book list) and requirements RYT-06 to RYT-11. The build stays behind `EXPO_PUBLIC_READ_THE_YEAR` until the founder answers question 1 in the spec.
 - Satisfies: PER3-007 (P1).
@@ -10029,7 +10029,7 @@ Queue order (the dispatcher takes the first `ready` row an agent owns, in file o
 - Done when: the tokens and tests exist and pass.
 
 #### BL-1752 Missing tokens exist and screens use them
-- Status: ready (BL-1751 is ruled, CDESO-7, and done in PR #1808, so nothing is waited for). Mode: agent. Owner: design systems, mobile engineer. Milestone: M15. Size: M. Depends on: none.
+- Status: partly done (PR #2154 merged as `acc4f2800`: the hairline and the three progress lines come from tokens, and Read together's place line is drawn at full accent; left: icon sizes, gutters and tab tops, press opacity, the web date field, the cover band button, Review's progress line and the speech card download bar (which fail 1.4.11), the `StyleSheet.hairlineWidth` files, and a per-screen progress token pin; status sync of 27 Nov 2026, afternoon). Was: ready (BL-1751 is ruled, CDESO-7, and done in PR #1808, so nothing is waited for). Mode: agent. Owner: design systems, mobile engineer. Milestone: M15. Size: M. Depends on: none.
 - Priority: P2. Gate: none. Lane: design-systems (tokens), mobile (swap).
 - Satisfies: DSR-006, DSR-007, DSR-008, DSR-026, DSR-027, CDO-B-003, CDO-B-048, CDO-B-051, CDO-A-016 (all P2).
 - Problem and evidence: no tokens for gutter, hairline, progress bar, icon sizes, scrim or press opacity.
@@ -10816,7 +10816,7 @@ Rows for notes the reviews of these pull requests left open. Rows BL-1918 to BL-
 - Done when: the three behaviours have a test each that fails under its mutant, and `npm test -w apps/mobile` passes.
 
 #### BL-1919 Sync consent gate: shape, security pack and test hygiene (follow-up to #1676, merged 29ea7945)
-- Status: ready. Mode: agent. Owner: data architect. Milestone: M15. Size: S. Depends on: none.
+- Status: done (PR #2103 merged as `6f867cd69`: items 1 to 4, a closed-shape `sync_books` schema, the S-1 security answer for the built consent gate, the Family tab keeps invites while closed, and one sync test title; items 5 and 6 are BL-2146; status sync of 27 Nov 2026, afternoon). Was: ready. Mode: agent. Owner: data architect. Milestone: M15. Size: S. Depends on: none.
 - Satisfies: FR-PRV-20 (`docs/product/prd/functions/privacy.md`); the consent gate of #1676; `docs/engineering/readiness-20nov/security/SECURITY-OPEN-QUESTIONS.md` row S-1; `packages/api` sync schemas.
 - Scope: items 1 to 4 of the original six; items 5 and 6 are BL-2146. (1) the S-1 answer in `SECURITY-OPEN-QUESTIONS.md` describes the gate before it landed: bring the text to the built behaviour of `20261123100000_sync_pull_consent_gate.sql` (header lines 5 to 7, body lines 125 to 140): when terms are not current, age is not attested or sensitive-data is not given, `sync_pull` returns one normal empty page, with `withheld: 'consent'`, for the caller's own rows and other members' rows alike; no error, no cursor moves, the held cursor is echoed; export and account deletion stay open. The old S-1 answer (own rows always served) is stale and is the only text to change; (2) `SyncBookSchema` (`packages/api/src/server/sync.ts`, strict) does not describe the closed shape (a book with only id, role, name and members of role, is_me, signs_as): a written reason already exists at `packages/api/src/server/sync.ts` lines 872 to 876 (no caller parses the closed shape strictly), so the work is: add a closed-shape schema next to it and use it where a closed row is read, or keep the reason and say so in the PR body; (3) the pending-invites list is empty while a book is closed: check the Family screen does not read that as "no invites" and add a test if it does; (4) the title near line 1485 of `apps/mobile/test/sync-two-phone.test.ts` still says "and it applies": correct it to what is checked.
 - Done when: each of the four has its change and test (or a written reason in the PR body), and `npm test -w packages/api` and `npm test -w apps/mobile` pass.
@@ -11002,7 +11002,7 @@ Rows for notes the reviews of these pull requests left open. Rows BL-1918 to BL-
 - Done when: each gap has a planted line that is caught or a line in the doc that names it, and the canary tests pass.
 
 #### BL-1948 Before BL-1902: a catalogue test and phone-step outcomes (follow-up to #1695; items 2 and 3)
-- Status: ready. Mode: agent. Owner: analytics engineer. Milestone: M15. Size: S. Depends on: none.
+- Status: done (PR #2137 merged as `1db68fa70`: items 2 and 3, catalogue and registry checks that reject phone-shaped props; item 1 was already done on develop and is pinned; status sync of 27 Nov 2026, afternoon). Was: ready. Mode: agent. Owner: analytics engineer. Milestone: M15. Size: S. Depends on: none.
 - Satisfies: NS-54-R26; NS-41-R16; `packages/analytics`.
 - Scope: items 2 and 3 of the original five, inside `packages/analytics`; items 4 and 5 (the mobile canary side) are BL-2147. Item 1 (one `PII_PATTERNS` list) is already done on develop: `pii.ts` says it is the only copy, `validate.ts` re-exports `isPiiLike`, and `pii.test.ts` (lines 3 and 4, 43, 82 and 83) pins one list and no second copy. (2) a catalogue test that rejects an enum value with a run of 4 or more digits, an int `max` of 10000 or more, and a property name matching phone, number, digit, otp or code; (3) phone-step events carry only enum or bool outcomes: pin it in the registry data test. The catalogue and registry tests read `REGISTRY` as it is on develop, so a phone event added later is covered without a change here.
 - Done when: each of the two fails under a planted case or a mutant (an enum value `"1234"`; an int property with max 10000; a property named `phoneCode`), and `npm test -w @scribe/analytics` and `npm run typecheck` pass.
@@ -11041,7 +11041,7 @@ Sources: the merged PRs #1654 to #1658, #1664, #1674 and #1681 to #1683, and the
 - Done when: the answer is recorded, and either the other parent no longer receives the column with a test that fails on a widened pull, or the test header names the ruling.
 
 #### BL-1953 Shrink the live-region baseline: 11 files have a live region and no announce call
-- Status: partly done (PR #1891 merged as `2a963ab3a` and PR #2118 as `49201e643`: nine files left the baseline of `apps/mobile/test/live-region-announce.test.ts` and call `announce(`; left: `src/app/letter/[id].tsx` and `src/components/ui/state-screen.logic.ts`, so the row stays open; status sync of 27 Nov 2026). Was: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-1828 (the test in PR #1700 must be merged first).
+- Status: done (PR #2181 merged as `082b24277`: the letter page and the state screens announce their live changes, and the baseline of `apps/mobile/test/live-region-announce.test.ts` is empty; status sync of 27 Nov 2026, afternoon). Was: partly done (PR #1891 merged as `2a963ab3a` and PR #2118 as `49201e643`: nine files left the baseline of `apps/mobile/test/live-region-announce.test.ts` and call `announce(`; left: `src/app/letter/[id].tsx` and `src/components/ui/state-screen.logic.ts`, so the row stays open; status sync of 27 Nov 2026); before that: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-1828 (the test in PR #1700 must be merged first).
 - Priority: P2. Gate: none. Lane: mobile.
 - Satisfies: PER4-018 (P2); refines BL-1828; sweep and announcement table are BL-1703.
 - Problem and evidence: PR #1700 adds `apps/mobile/test/live-region-announce.test.ts` with a shrink-only baseline of 11 files that use `accessibilityLiveRegion` and never call `announce(` or `announceForAccessibility(`. Read on develop at 9bbabb71c, the same 11 files are: `apps/mobile/src/app/family.tsx`, `letter/[id].tsx`, `plus/confirmed.tsx`, `settings/app-lock.tsx`, `settings/backup.tsx`, `settings/plus.tsx`, `settings/storage.tsx`, `apps/mobile/src/components/child/child-editors.tsx`, `components/tonight/quiet-day-inline.tsx`, `components/ui/state-screen.logic.ts` and `lib/auth/revocation-wait-line.tsx`.
@@ -11181,7 +11181,7 @@ Source: review notes on PRs #1869, #1871 and #1872, passed to the product agent 
 - Scope: (1) add the 029a client-half mapping to WP-F16-15 in the same PR as the test that shows phone 1 reading the newer words; until then the row names it as untested. (2) For WP-F16-14 and WP-F16-17, either set their status from Built to the honest value (built, no test) or file the test rows for 029a, 029b and 029c; the product agent picks per package after reading each. (3) Put F14-REQ-043b to WP-F14-15b to the product owner as one question in the journal under Founder; do not map it until answered.
 - Done when: no work package shows Built for a requirement it has no test for, or its status says no test; the 029a client half points at WP-F16-15 once its test merges; the 043b answer is recorded.
 - Source: the review note on PR #1869. Not verified: the work-package file and the PR diff were not opened; the package ids are the note's.
-- Note: 24 Nov 2026, product. Done when, clause by clause: clauses 1 and 2 are met by PR #2039 (one file, `docs/prd/v2/features/F16-sync.md`: 029a server and client halves point at tests, 029b tested with a named gap, 029c says no test; read from the PR, nothing run). Clause 3 is not: the 043b answer is not recorded. What is known: F14-REQ-043b is already listed in WP-F14-15a, 15b and 15c (`docs/prd/v2/features/F14-billing.md`), so the mapping exists; the only test seen proves the reverse order (switch off at purchase, on later), and no test covers "on at purchase, later turned off"; the missing test is BL-2240. Review A (red-team) posted CHANGES after the merge: the WP-F16-17 Status sentence names the wrong nearest 029c tests and omits `apps/mobile/test/sync-two-phone.test.ts` "[table repeat, Keep applied]" (one retry, answers dup, no letter count, no 3 retries). That cell edit is still to make; the product agent does it on its next run, and the row flips to `done` when it and the 043b record are in.
+- Note: 24 Nov 2026, product. Done when, clause by clause: clauses 1 and 2 are met by PR #2039 (one file, `docs/prd/v2/features/F16-sync.md`: 029a server and client halves point at tests, 029b tested with a named gap, 029c says no test; read from the PR, nothing run). Clause 3 is not: the 043b answer is not recorded. What is known: F14-REQ-043b is already listed in WP-F14-15a, 15b and 15c (`docs/prd/v2/features/F14-billing.md`), so the mapping exists; the test seen already ran in the requirement's order in the code's terms (the kill switch on pauses reporting) but did not carry the 043b id, and no test covered the other order (reporting on at purchase, then paused, then resumed); BL-2240 (PR #2047) added both. Corrected 27 Nov 2026; was: "the only test seen proves the reverse order (switch off at purchase, on later), and no test covers "on at purchase, later turned off"; the missing test is BL-2240." Review A (red-team) posted CHANGES after the merge: the WP-F16-17 Status sentence names the wrong nearest 029c tests and omits `apps/mobile/test/sync-two-phone.test.ts` "[table repeat, Keep applied]" (one retry, answers dup, no letter count, no 3 retries). That cell edit is still to make; the product agent does it on its next run, and the row flips to `done` when it and the 043b record are in.
 
 #### BL-2032 Decide whether "no name kept" on Apple sign-in is its own NS-54 row
 - Status: done (PR #2131 merged as `75b45db88`: CR-232 maps the "no name kept" test to NS-54-R2, under whose describe both tests sit; status sync of 27 Nov 2026). Was: ready. Mode: agent. Owner: product manager. Milestone: M15. Size: XS. Depends on: none.
@@ -11923,7 +11923,7 @@ Source: the review work of 23 to 24 Nov 2026 (the e2e-web run, PR #1835, PR #182
 - Source: review work of 23 to 24 Nov 2026, finding read on 24 Nov. Not verified: the stub and the two file lines were read in the finding; the suite was not run and `expo-file-system`'s web build was not opened here.
 
 #### BL-2008 e2e-web J02 "I answered by mistake" leaves the stop screen in place
-- Status: ready (J02 is marked as a known failure in PR #1912 `07940e2b0`, which is not a fix; the cause is still open). Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
+- Status: partly done (PR #2180 merged as `6658057a8`: the diagnostic run CR-236 item 1 asks for; the flow matches the logic and the stop screen stays after I answered by mistake; the marker is back; the screen row is BL-2283; left: the J02 marker comment names BL-2283; status sync of 27 Nov 2026, afternoon). Was: ready (J02 is marked as a known failure in PR #1912 `07940e2b0`, which is not a fix; the cause is still open). Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
 - Priority: Medium. Gate: exec-team review before any change to the age gate screen or logic (legal path; the flow-only fix needs none).
 - Satisfies: refines BL-1991; journey J02 (under 18); BL-561 (the age question and a thumb slip, needs-founder, needs counsel) and the `partly done` BL-426 (under-18 stop: the way back is built, the come back tomorrow sentence and register line are missing), both cited and not changed; LEGAL-REQ-002 cases in `apps/mobile/test/age-gate.test.ts`, cited and not changed.
 - Problem and evidence: on 23 to 24 Nov, after "I answered by mistake" is pressed in `apps/mobile/e2e-web/j02-under-18.flow.ts`, the stop screen stays and the flow cannot go on to the age question. BL-1991 notes the J02 button count case may be a real change in the screen; this is the next step of the same journey.
@@ -11933,7 +11933,7 @@ Source: the review work of 23 to 24 Nov 2026 (the e2e-web run, PR #1835, PR #182
 - See also (24 Nov 2026): BL-2161 asks about the "Array buffer allocation failed" page error reported in the handoff for J02 and J04h (not reproduced; only the J04h comment at `j04-tonight.flow.ts:170` names it).
 
 #### BL-2009 e2e-web J06e and J25 need the seeded store build, and the seed hook does not work on the store build: say so in the code and find the way
-- Status: ready (J06e and J25 are marked as known failures in PR #1912 `07940e2b0`, which is not a fix; the cause is still open). Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
+- Status: done (PR #2193 merged as `da170b620`, per CR-240 option (a): the J25 web case for the Plus gate at AX5 is dropped and stays device evidence (DEVICE_TEST_PLAN V-06), and the comments no longer call the store build seeded; J06e passed in web journeys job 140607854221; the store-build seed crash is not understood and has no row yet; open PR #2208 fixes the device plan line; status sync of 27 Nov 2026, afternoon). Was: ready (J06e and J25 are marked as known failures in PR #1912 `07940e2b0`, which is not a fix; the cause is still open). Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
 - Priority: Medium. Gate: none.
 - Satisfies: refines BL-1991; journeys J06 (J06e), J25 (Plus gate at AX5).
 - Problem and evidence: `apps/mobile/e2e-web/support/builds.ts` (the `store` entry, line 34) and `support/global-setup.ts` (line 17) both say the store build is "seeded" (`EXPO_PUBLIC_WEB_PREVIEW: '1'` with `EXPO_PUBLIC_APP_ENV: 'production'`). On 23 to 24 Nov J06e (`j06-review.flow.ts:74`, Keep needs Plus past the free letters) and the J25 Plus gate case fail, and the handoff says the seed hook (`?seed=asha`) does not work on the store build, so the comments are wrong.
@@ -11944,7 +11944,7 @@ Source: the review work of 23 to 24 Nov 2026 (the e2e-web run, PR #1835, PR #182
 - Note: 24 Nov 2026, product, status sync, fourth batch. The J06e text in this row is stale: PR #1939 fixed J06e on the store build (see the See also line), but `[J06e]` failed again in web journeys run 45428180578 (head `8e910a93c`), at the age gate step and not at the Keep gate. That failure is now part of BL-2243. This row keeps the J25 Plus gate question (AX5 seam in production, ruling B-9).
 
 #### BL-2010 e2e-web J04h: the Home tab click times out (an array buffer failure)
-- Status: ready (J04h is marked as a known failure in PR #1912 `07940e2b0`, which is not a fix; the cause is still open). Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
+- Status: done (PR #2145 merged as `f32ff9d7c`: the web database channel reuses one lock buffer and one result buffer, so long web sessions stop failing with Array buffer allocation failed; J04h passed in web journeys job 140607854221; status sync of 27 Nov 2026, afternoon). Was: ready (J04h is marked as a known failure in PR #1912 `07940e2b0`, which is not a fix; the cause is still open). Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
 - Priority: Medium. Gate: none.
 - Satisfies: refines BL-1991; journey J04 (J04h).
 - Problem and evidence: `[J04h]` (`apps/mobile/e2e-web/j04-tonight.flow.ts:169`, a test build past the free letters) times out clicking the Home tab; the console shows an array buffer failure. J04h needs the store build (BL-1991 comments in `support/builds.ts`), so this may be the same cause as the store-build seed row, or a separate crash.
@@ -11954,7 +11954,7 @@ Source: the review work of 23 to 24 Nov 2026 (the e2e-web run, PR #1835, PR #182
 - See also (24 Nov 2026): BL-2161 asks whether J02 and J04h share one cause for the array buffer failure reported in the handoff (not reproduced).
 
 #### BL-2011 e2e-web: restore or replace the lost J01 focus assertion and the J09b, J18 and J08c per-month letter count assertions
-- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
+- Status: done (PR #2160 merged as `044902b88`: J09b, J18 and J08c check the whole Months row count; PR #2200 as `62dccb914`: the waiting Continue focuses the name before the date block shows, and J01 has its name-step focus check back; status sync of 27 Nov 2026, afternoon). Was: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
 - Priority: Medium. Gate: none.
 - Satisfies: refines BL-1991; journeys J01, J08, J09, J18.
 - Problem and evidence: when the flows were brought to the current words, assertions were lost: J01 no longer checks `nameField(app)` `toBeFocused()` on the name step (`j01-first-run.flow.ts`, which uses `nameField` at lines 64 to 70), and J09b (`j09-book.flow.ts:25`), J18 (`j18-dark-mode.flow.ts:26`) and J08c (`j08-quiet-day.flow.ts:104`) no longer check the per-month letter count. A flow that checks less proves less.
@@ -12053,7 +12053,7 @@ Source: the Web journeys CI plan of 24 Nov 2026. Ids skip BL-2020 (the sheet row
 - Source: the Web journeys plan, 24 Nov 2026. Verified: the PR number and title were read from the PR list. Reading: the effect on cancellations is expected, not measured.
 
 #### BL-2018 e2e-web J21 and J22: all 16 failing tests stop in the shared `support/app.ts` helper, which waits for a button the server-on welcome does not have
-- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: M. Depends on: none.
+- Status: done (PR #2172 merged as `8796e302f`: the J21 and J22b `test.fail` markers name the live rows that own them; the counts promised in a code comment were not read here; status sync of 27 Nov 2026, afternoon). Was: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: M. Depends on: none.
 - Priority: High. Gate: none. Do not touch product code in this row.
 - Satisfies: supersedes BL-2006; refines BL-1991 and BL-1673; journeys J21 and J22.
 - Problem and evidence: reported by ops from the run logs, 24 Nov 2026: all 16 failing J21 and J22 tests fail at `apps/mobile/e2e-web/support/app.ts` line 22, waiting for the "Begin the book" button (in `passAgeGate`, `expect(btn(page, 'Begin the book')).toBeVisible()`; the line was read on develop `1af33abc2`). What is known: all 16 stop at that one wait, which is a symptom and not a single fix. The same line is shared with J01, J17 and J20; those pass today (read in the log of web journeys run 45346203356, a PR head: b9b7f4a is the head of branch `test/eas-family-group-pin`, not a develop head), so a change to the helper must keep them green. J22 needs a rewrite against `WelcomeSignIn`, because its flows go on to click "I already have a book", which that screen does not have. J21's cause past the wait is unread, so it may or may not clear once the wait is fixed. Verified in source: the server-on welcome is `WelcomeSignIn` (`apps/mobile/src/components/onboarding/welcome-sign-in.tsx`), heading "Sign in to begin your book.", buttons "Sign in with email" and "I was invited". BL-2006 assumed a word had moved; a different screen is shown instead, so swapping a word will not do. PR #1916 marks J21 and J22 as known failures (`test.fail`) with their cause; its title and markers cite BL-2006, which this row replaces, so re-point those markers to BL-2018 when this row is built. Expect a staged fix, and drop each marker as its test passes: `test.fail` also stays green when a test breaks later for a new reason.
@@ -12063,7 +12063,7 @@ Source: the Web journeys CI plan of 24 Nov 2026. Ids skip BL-2020 (the sheet row
 - See also (24 Nov 2026, corrected after #1939): the helper wait named above is fixed on develop (`40de45e` added `passAgeGateToSignIn`, which waits for the sign-in welcome), so the problem text above is a record of the 24 Nov morning reading. J21 (line 45), J21i (line 165), J21j (line 178) and J22b (`j22-sign-in.flow.ts:179`) still carry `test.fail` markers that cite BL-2006, for a probable screen bug (BL-2159) and a journey decision (BL-2160). Keep those markers until those rows land; step 4 re-points them to the row that owns them.
 
 #### BL-2019 e2e-web J10, J10b, J10e and J10f fail on some heads and pass on others: find out why
-- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
+- Status: done (PR #2192 merged as `fe18a15fb`: the web router waits 1 s for its own Back, so the delete toast stays (the app cause); PR #2189 as `2957b1e40`: the flows tap a Book card only once its entrance has ended (the flow cause); status sync of 27 Nov 2026, afternoon). Was: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
 - Priority: Medium. Gate: none.
 - Satisfies: refines BL-1991 and BL-1673; journey J10 (`apps/mobile/e2e-web/j10-letter.flow.ts`).
 - Problem and evidence: reported by ops, 24 Nov 2026: J10, J10b, J10e and J10f failed on 4 of 10 heads, so the failure is intermittent; no row covers them (BL-1991 lists flows by group, and BL-2006 to BL-2011 name others). Reading, not shown: a timing or order dependence; the cause is not known.
@@ -12105,7 +12105,7 @@ J02 (BL-2008) gets no new row: it stays an exec-team read of BL-426 and BL-561 t
 Each item below either got a row here or was linked to the row that already owns it. Linked, not duplicated: the J14 "This page didn't open" error is BL-2007 (done, PR #1914; web only, not an iPhone defect); the J04h array buffer failure is BL-2010; J02 "I answered by mistake" is BL-2008; the J25 Plus gate and J06e seed hook are BL-2009; the J21 and J22 helper wait is BL-2018 (BL-2006 is superseded by it); the question of making the web journeys check required is BL-2022 (Karma decides, after 10 green nightlies); the signed-out withdrawal route is BL-1062 and the persons_queued_for_deletion read is BL-1061, both under BL-1252. Numbers read from `node scripts/agents/next-id.mjs` (BL-2159) and from the open PR patches (the highest id any open PR adds is BL-2121).
 
 #### BL-2159 A signed-in phone that joins an invite and closes the joined sheet before the book arrives shows "No book here yet" instead of the join wait
-- Status: partly done (PR #2078 merged as `6b1683cd4`: the route asks the account again after an accept, tested in `apps/mobile/test/use-new-phone-hook.test.ts` and `new-phone-route.test.ts`; left: J21, J21i and J21j still carry their `test.fail` markers in `apps/mobile/e2e-web/j21-coparent.flow.ts` (BL-2018), so the Done-when line is not met; status sync of 27 Nov 2026). Was: ready (probable screen bug, read in code and in the flow comments, not reproduced on a phone or in a browser). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
+- Status: partly done (PR #2078 merged as `6b1683cd4`: the route asks the account again after an accept; PR #2195 as `935649d22`: a book joined under the open join sheet keeps Open the book, so J21g and J21h pass; left: J21, J21i and J21j still carry their `test.fail` markers in `apps/mobile/e2e-web/j21-coparent.flow.ts`; status sync of 27 Nov 2026, afternoon). Was: partly done (PR #2078 merged as `6b1683cd4`: the route asks the account again after an accept, tested in `apps/mobile/test/use-new-phone-hook.test.ts` and `new-phone-route.test.ts`; left: J21, J21i and J21j still carry their `test.fail` markers in `apps/mobile/e2e-web/j21-coparent.flow.ts` (BL-2018), so the Done-when line is not met; status sync of 27 Nov 2026); before that: ready (probable screen bug, read in code and in the flow comments, not reproduced on a phone or in a browser). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: none.
 - Priority: High. Gate: none for the logic; any change to the words on either screen waits for content and the D-168 route (no customer copy changes in this row).
 - Satisfies: refines BL-2018 and BL-1991; NX-36-S17 (the "Opening your book" question, `apps/mobile/src/lib/first-run/new-phone.logic.ts`), cited and not changed; journeys J21, J21i and J21j.
 - Problem and evidence: a phone that is signed in and has no book asks the account once when the first-run route mounts (`apps/mobile/src/lib/first-run/use-new-phone.ts`: the question is asked in the effect keyed on `[active, attempt]`, and `attempt` moves only on Try again, on the one automatic re-ask of a lost answer and on the connection returning). The person then joins an invite (`accept_child_invite`), and the answer held in the hook still says "no book". Closing the joined sheet before the book has reached the phone shows "No book here yet" with "Start a book" (the new-phone screens), where the person has just joined a book and should see the welcome's join wait ("the book is on its way to this phone", `onboarding.joinWait`, `components/family/join-wait.tsx`). Tapping "Start a book" from there would begin a second, empty book beside the one just joined. J21 (line 45), J21i (line 165) and J21j (line 178) of `apps/mobile/e2e-web/j21-coparent.flow.ts` carry `test.fail` markers that name this cause; their markers cite BL-2006, which BL-2018 replaced; the helper wait is already fixed on develop (`passAgeGateToSignIn`, #1939), so the markers now stand for this cause alone.
@@ -12123,7 +12123,7 @@ Each item below either got a row here or was linked to the row that already owns
 - Source: the 24 Nov 2026 journey reading (the J22b comment at `j22-sign-in.flow.ts:175` to `:178`). Not verified: R17 and R18 were read through that comment only; the NX-31 file was not opened.
 
 #### BL-2161 e2e-web J02 and J04h: "Array buffer allocation failed" page errors; say whether the app or the browser run is short of memory
-- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
+- Status: done (PR #2145 merged as `f32ff9d7c` (BL-2010): the page error came from the app's web database channel, not the browser; J04h passed in web journeys job 140607854221, and J02's diagnostic run 46016298215 (PR #2180) reported 0 page errors; J02's own failure is the stop screen, BL-2283; status sync of 27 Nov 2026, afternoon). Was: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
 - Priority: Medium. Gate: none.
 - Satisfies: refines BL-2008 and BL-2010 (the two rows that carry the symptoms) and BL-1991; journeys J02 and J04 (J04h).
 - Problem and evidence: the handoff of 24 Nov 2026 reports that the page errors of J04h and J02 include "Array buffer allocation failed". Reported in the handoff, not reproduced: the only mention in the repo is the J04h known-failure comment (`j04-tonight.flow.ts:170`), and nothing in `j02-under-18.flow.ts` names it. If real, it may be a real memory defect in a screen (a buffer that grows, a recording or image read held whole), or a limit of the headless browser and the seeded data on the runner. BL-2010 asks about J04h only and BL-2008 reads the age gate; neither asks whether the same message has one cause.
@@ -12132,7 +12132,7 @@ Each item below either got a row here or was linked to the row that already owns
 - Source: the 24 Nov 2026 journey reading. Not verified: the J02 half is reported in the handoff only; no log was opened here and nothing was reproduced. Step (1) may find that J02 does not raise it.
 
 #### BL-2162 Add a journey for Review to Keep on the store build
-- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
+- Status: partly done (PR #2161 merged as `2a291531b`: J06f walks Review to Keep to the Plus gate on the store build; left: the journey INDEX lists J06f after the next journey-record run; status sync of 27 Nov 2026, afternoon). Was: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
 - Priority: Medium. Gate: none.
 - Satisfies: refines BL-1991; journeys J06 and J25 (the Plus gate). J25's seam question stays with BL-2009.
 - Problem and evidence: J06e (`apps/mobile/e2e-web/j06-review.flow.ts` lines 75 to 99, no `test.fail`; develop `40de45e`, PR #1939, "J06e reaches the Plus gate on the store build") already reaches the Keep gate on the store build: it types the two free letters through first run, as J07d does, and the third letter's Keep opens the gate from the write page. What J06e does not walk is Review to Keep: its own comment says reaching the gate from Review needs a seeded draft, which the store build cannot hold (comment at line 92). No journey opens Review, chooses Keep and sees the Plus gate on the store build. J25's Plus gate case is the other place the gate is captured, and it needs the AX5 seam build, which the production profile refuses (ruling B-9, `docs/ops/PRODUCTION_VARIABLES.md` line 40; the preflight FAILs on `EXPO_PUBLIC_E2E` and `EXPO_PUBLIC_WEB_PREVIEW`). That is the J25 point of BL-2009, which now owns only the seam question: this row does not decide it.
@@ -12358,7 +12358,7 @@ Order, from CR-212: the generated table (step 1, merged), then the rename, then 
 - Source: exec read of #1908 (head 379b0fa8, 24 Nov 2026). Not verified: the line numbers are as the read gave them and were not re-checked against `develop`, so check them before editing; sign-out and the backup-exclusion setting were not read.
 
 #### BL-2192 Per-person rate limit for `new-device-fill`
-- Status: ready. Mode: agent. Owner: sync owner. Milestone: M15. Size: S. Depends on: none.
+- Status: done (PR #2119 merged as `d9bd7f5d1`: a per-person limit of 10 fills an hour on the new-device fill, answering false past it; the hosted apply is not done; status sync of 27 Nov 2026, afternoon). Was: ready. Mode: agent. Owner: sync owner. Milestone: M15. Size: S. Depends on: none.
 - Priority: Low. Gate: the change is to a function's behaviour, so `security` reviews it.
 - Satisfies: SEC-R13 (as the Edge Function read named it; cited, not changed); `docs/engineering/PRINCIPLES.md` (cited).
 - Problem and evidence: the Edge Function read for release PR #1979 found that `new-device-fill` has no per-person rate limit in the function (cost is one RPC, and the update touches only a pending row). It takes identity from the `sub` and `session_id` claims, decoded and not verified in code (`supabase/functions/new-device-fill/handler.ts:47-54`), and relies on the gateway's JWT check. What is already covered, read on `develop` at `2fa2a3866`: `.github/scripts/functions-deploy.mjs` lists `new-device-email` in `NO_VERIFY_JWT` and leaves `new-device-fill` out, so the deploy workflow passes `--no-verify-jwt` to the first only; `plan` fails when a function's `index.ts` header and that list disagree (`headerDeploy`, line 240 area; tests in `.github/scripts/functions-deploy.test.mjs`, including "every function header matches NO_VERIFY_JWT"); and `confirm` checks the gateway setting after each deploy. `supabase/config.toml` has no `[functions.*]` block for any function, so a pin there for these two alone would be a one-off; the earlier read's "comment only" finding and its drift-test idea are already met by the deploy script, so they are dropped from this row. Not covered: a hand deploy outside the workflow, which is the founder's act (the header says "Deploy (founder only)").
@@ -12636,7 +12636,7 @@ Source: reviews of merged PRs #1998, #2007, #2008, #2010, #2012, #2024 and #2026
 - Status: done (PR #2047 merged as `f80747139`: the test is `[F14-REQ-032] [F14-REQ-043b] kill switch on (reporting paused)` in `apps/mobile/test/billing-status-report.test.ts`, and it fails when the stored consent facts are dropped on a pause; status sync of 27 Nov 2026). Was: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: none.
 - Priority: Low. Gate: none. Lane: qa.
 - Satisfies: F14-REQ-043b (cited, not changed); refines BL-2031.
-- Problem and evidence: F14-REQ-043b (`docs/prd/v2/features/F14-billing.md`) says that with the `statusReport` kill switch on at purchase and turned off later, the next report still carries the consent facts captured at purchase. The requirement is listed in WP-F14-15a, 15b and 15c. The only test seen proves the reverse order (switch off at purchase, on later); none covers on at purchase, then off. Read from the PR #2039 review and the work-package table on 24 Nov 2026; the test files were not opened here.
+- Problem and evidence: F14-REQ-043b (`docs/prd/v2/features/F14-plus.md` line 432; there is no F14-billing.md) says that with the `statusReport` kill switch on at purchase and turned off later, the next report still carries the consent facts captured at purchase. The requirement is listed in WP-F14-15a, 15b and 15c. In the code the kill switch on pauses reporting (`mayRun` in `apps/mobile/src/lib/capabilities.ts` is `killSwitches.statusReport !== true`), so the test seen, `[F14-REQ-032] off (kill switch)`, already ran in the requirement's order (paused at purchase, resumed later) but did not carry the 043b id; no test covered the other order (reporting on at purchase, then paused, then resumed). Corrected 27 Nov 2026 from PR #2047. Was: "The only test seen proves the reverse order (switch off at purchase, on later); none covers on at purchase, then off." Read from the PR #2039 review and the work-package table on 24 Nov 2026; the test files were not opened here.
 - Scope: one test, in the WP-F14-15a client test file (the file that holds the `[F14-REQ-043b]` case) or, if a server test shows the same thing more honestly, in the status-report server test: record a purchase with the switch on, turn it off, send the next report, and check the report carries the consent facts stored at purchase (lost facts: 0). Title it `[F14-REQ-043b]` and say in a comment which order it proves. If the code does not satisfy it, do not change the code here: file the defect as its own row.
 - Done when: the test exists, fails when the stored consent facts are dropped on the switch-off, and passes otherwise; its title is named in this row's Status when done, so BL-2031 can record the 043b answer.
 - Source: PR #2039 and its reviews, 24 Nov 2026. Not verified: which file and which order the existing test uses.
@@ -12662,7 +12662,7 @@ Source: reviews of merged PRs #1998, #2007, #2008, #2010, #2012, #2024 and #2026
 - Source: status sync of 24 Nov 2026, fourth batch (review of the live copy). Not verified: whether a reading exists outside the files above.
 
 #### BL-2243 e2e-web store-build journeys J01e, J04f, J06e, J07d and J12 fail at the age gate: find the first bad commit
-- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
+- Status: done (PR #2143 merged as `724a460a1`: the first bad commit is `5cba8e16` (PR #2038); `whisper.rn` is never loaded on the web, so the store web build opens past the age gate; J01e, J04f, J06e, J07d and J12 passed in web journeys job 140607854221, on PR #2189's head over develop of 27 Nov, 16:10 UTC; status sync of 27 Nov 2026, afternoon). Was: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: none.
 - Priority: Medium. Gate: none.
 - Satisfies: refines BL-1991 and BL-2009; journeys J01 (J01e), J04 (J04f), J06 (J06e), J07 (J07d), J12.
 - Problem and evidence: in the production-env web export (the `store` build, `apps/mobile/e2e-web/support/builds.ts`) these five flows fail in `passAgeGate` at the wait for "Begin the book" (`apps/mobile/e2e-web/support/app.ts` line 22). They passed in web journeys run 45354795653 (head `3442f313`, 08:17Z, 24 Nov) and failed in the runs on `19276e95` and `8e910a93` (run 45428180578: 104 passed, 9 failed). The cause is not known; a local bisect is under way. `[J04h]` also failed in run 45428180578 and may share the cause.
@@ -12671,10 +12671,365 @@ Source: reviews of merged PRs #1998, #2007, #2008, #2010, #2012, #2024 and #2026
 - Source: status sync of 24 Nov 2026, fourth batch (CI run 45428180578). Not verified: the bisect has not finished; the runs were read from the job log, not re-run.
 
 #### BL-2244 J19 "a link to Listen does not start recording by itself" looks for a ready line the web no longer shows
-- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: BL-2241.
+- Status: done (PR #2172 merged as `8796e302f`: J19 reads its ready line from `@scribe/content` and checks the control's label; J19 passed in web journeys job 140607854221; status sync of 27 Nov 2026, afternoon). Was: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: XS. Depends on: BL-2241.
 - Priority: Low. Gate: BL-2241 rules first (design lens), because it decides which words the screen shows.
 - Satisfies: refines BL-1954; journey J19 (J19-01).
 - Problem and evidence: `apps/mobile/e2e-web/j19-errors.flow.ts` line 34 waits for "Tap the red circle and talk.". Since PR #2037 (BL-1954) the ready line is "Double tap Start recording and talk." whenever `useScreenReader()` is true, and on react-native-web `isScreenReaderEnabled` always resolves true, so the flow failed in web journeys run 45428180578. Read in the job log and the flow; not run.
 - Scope: change the J19 expectation to what web renders after BL-2241 rules (assert on a test id, or on the words from `@scribe/content`, not a hard-coded string). Change nothing else in the flow.
 - Done when: `[J19] a link to Listen does not start recording by itself` passes on a web journeys run.
 - Source: status sync of 24 Nov 2026, fourth batch (CI run 45428180578). Not verified: the web value of `useScreenReader()` was read from the PR text, not from the hook.
+
+## Follow-ups of 27 Nov 2026 (BL-2245 to BL-2283; filed by the product agent, docs only)
+
+Filed on develop `e42d673de` (27 Nov 2026, 17:18 UTC) from the second split of 27 Nov (stream follow-ups marked FU with no id yet), the reviews and Not verified lines of the PRs merged that day, and three rulings that asked for rows (CPO-62 FOUNDER 2 and 3, CR-236 item 1). BL-2246, BL-2247 and BL-2248 were picked by stream 11 in its own PRs before they had rows; they are filed here as records. "Owner" names the roster owner, then the stream that holds the work. A row whose PR is open says `in-review`; open PRs were read at 17:20 UTC.
+
+#### BL-2245 Moments 10.1 step 2: the platform fetch drops non-user-library assets, not core (FU-8a)
+- Status: in-review (PR #2207). Mode: agent. Owner: product manager (stream 8). Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: NS-53-R38 (wording only, no row changes); refines BL-1967.
+- Problem and evidence: `docs/product/prd/28-moments-tab.md` section 10.1 step 2 (line 613) says core drops non-user-library assets, while section 7.1, erratum E-B3-3 (line 372) and R38 say the platform fetch does (user library only). `docs/product/moments-tab/ARCHITECTURE-BRIEF.md` line 205 lists "non-user-library" under `core.exclude`. Named in PR #2174's Not verified.
+- Scope: step 2 and the brief's `core.exclude` list say what 7.1 and E-B3-3 say, marked erratum, PROPOSED; the PR says whether `packages/core/src/moments/exclude.ts` reads the source bit (if it does, that is a code row, not this one). The BL-1967 history line may cite PR #1881.
+- Done when: step 2, the brief and the code agree on where non-user-library assets are dropped, and the PR body says what `exclude.ts` does.
+- Source: second split of 27 Nov 2026 (stream 8), from PR #2174. Not verified: PR #2207 was read from its body only; it reports that `exclude.ts` does not read the source bit.
+
+#### BL-2246 Reminders: the days a day note holds live in budget.ts (record of PR #2165)
+- Status: done (PR #2165 merged as `b211fe9bb`: `heldDays(chosen)` in `apps/mobile/src/lib/reminders/budget.ts` names the days a typed, month or birthday note holds, and `planReminders` calls it; no behaviour change; status sync of 27 Nov 2026, afternoon). Mode: agent. Owner: reminders owner (stream 11). Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: NS-32-R1, NS-48-R26.
+- Problem and evidence: PR #2133 (BL-1324) said in its Not verified that `planner.ts` also skipped an evening on a day that held a day note, so the one-a-day rule had a second home outside `budget.ts`. Stream 11 picked this id in PR #2165 before the row existed.
+- Scope: as merged; this row records the id.
+- Done when: met by PR #2165.
+- Source: PR #2165, and the Not verified list of PR #2133. Not verified: read from the PR body; the tests were not run here.
+
+#### BL-2247 Reminders: delivered typed-day words cleared when the words go off, a last day for a typed day, and missing tests (record of PR #2168)
+- Status: done (PR #2168 merged as `9bf7e69d6`: a re-plan dismisses our delivered typed-day notes that still show the parent's words once names, day names or App lock turn them off; a typed day keeps today and the 366 days after it (CPO-101); tests for NS-48-R21 with a hidden book and for names off alone at scheduler level; status sync of 27 Nov 2026, afternoon). Mode: agent. Owner: reminders owner (stream 11). Milestone: M15. Size: S. Depends on: none.
+- Priority: Medium. Gate: none.
+- Satisfies: NS-48-R21, NS-18-R3, NS-18-R6, FR-NTC-08, FR-NTC-11, NS-48-R26; CPrivO-58, CPO-101.
+- Problem and evidence: the follow-ups PR #2133 (BL-1324) listed under Not verified: delivered notes kept their words in Notification Center, the hidden-book case (test-plan row T2-068) was untested, and nothing capped how far ahead a typed day could be. Stream 11 picked this id in PR #2168 before the row existed.
+- Scope: as merged; this row records the id. The notes that name a child (month age, birthday, evening) are BL-2267.
+- Done when: met by PR #2168.
+- Source: PR #2168 and its four reviews. Not verified: read from the PR body; the tests were not run here.
+
+#### BL-2248 Reminders: a failed re-plan settles delivered typed-day words again (record of PR #2201)
+- Status: done (PR #2201 merged as `c3733a805`: the failure branch of `rescheduleReminders` resets `lastWordsShown` beside `lastSignature`, the dismissal runs after the cancel in a `finally`, one `isOurNote` rule serves the cancel and `forgetReminders`, and tests cover a note that is ours by id only and by data only; status sync of 27 Nov 2026, afternoon). Mode: agent. Owner: reminders owner (stream 11). Milestone: M15. Size: S. Depends on: none.
+- Priority: Medium. Gate: none.
+- Satisfies: FR-NTC-11, NS-48-R11, NS-18-R6; CPrivO-58.
+- Problem and evidence: the four reviews of PR #2168 (BL-2247): a throw in the plan step left the "words dismissed" latch set, so a worded note could still fire and stay; the session tests did not prove the injected throw fired; two "is this note ours" checks had drifted. Stream 11 named this id in the second split of 27 Nov.
+- Scope: as merged; this row records the id.
+- Done when: met by PR #2201.
+- Source: second split of 27 Nov 2026 (stream 11), reviews of PR #2168, PR #2201. Not verified: PR #2201 says one session test still passes on the pre-#2168 shape; that gap is not filed as a row.
+
+#### BL-2249 Area D design docs: day names follow CPrivO-58, the picker follows CPO-101, and the NS-18-R3 and NS-48-R27 errata (FU-11a)
+- Status: in-review (PR #2206). Mode: agent. Owner: content (stream 11). Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none (errata text is PROPOSED).
+- Satisfies: NS-18-R3, NS-48-R27 (errata, PROPOSED); CPrivO-58, CPO-97, CPO-101.
+- Problem and evidence: `docs/design/e2e/D-family-sharing-reminders/DESIGN.md` line 34 (the NS-18-R3 row) and `MOTION.md` line 121 (D-M64) say day names alone show the parent's words; CPrivO-58 rules the words show only with names on, day names on and App lock off. G-D10 (`DESIGN.md` line 899) does not cite CPO-101 (the picker starts tomorrow, last day 366 days on). PR #2133 left the NS-18-R3 and NS-48-R27 errata to the PM lane.
+- Scope: the three lines point at the rulings; the NS-18-R3 and NS-48-R27 errata are written as PROPOSED text beside them. No locked card is edited.
+- Done when: no line in area D's design docs says day names alone show words, G-D10 cites CPO-101, and the errata text is in place marked PROPOSED.
+- Source: second split of 27 Nov 2026 (stream 11); PR #2133 Not verified; CPrivO-58 Effects line. Not verified: PR #2206 (which also closes the BL-1536 remainder) was read from its body only.
+
+#### BL-2250 Export: the consent copy can be written again after a deletion request cleared it (FU-13a)
+- Status: in-review (PR #2203). Mode: agent. Owner: export owner (stream 13). Milestone: M15. Size: S. Depends on: none.
+- Priority: Medium. Gate: none.
+- Satisfies: DATA-REQ-053, CPrivO-21; refines BL-528.
+- Problem and evidence: the open-request gate is read once, before the server read, so a deletion request made while an online read is in flight can see the consent copy written again after it was cleared (reviews of PR #2125, stream 13's "consent copy race").
+- Scope: re-read the request note right before the write, in `apps/mobile/src/lib/export/device.ts` and `consent-copy.logic.ts`, with a test in `apps/mobile/test/export-consent-copy.test.ts` that interleaves the request and the read and fails on the old order.
+- Done when: the interleaved test fails on the old code and passes; no copy is written once a request note exists.
+- Source: second split of 27 Nov 2026 (stream 13), reviews of PR #2125. Not verified: PR #2203 reports a second path (a request made while another account's book is shown) that it leaves unchanged; read from its body, not filed here.
+
+#### BL-2251 Export: a second phone that never read the deletion request keeps refreshing the consent copy (FU-13b)
+- Status: needs-decision (CPrivO-62, held in open PR #2169). Mode: agent. Owner: export owner, privacy engineer (stream 13). Milestone: M15. Size: S. Depends on: BL-2250.
+- Priority: Medium. Gate: the CPrivO-62 ruling merges first.
+- Satisfies: DATA-REQ-053, CPrivO-21; refines BL-528.
+- Problem and evidence: a second signed-in phone that never read the request note keeps writing the consent copy until sign-out or Erase everything, because only the phone that made the request writes the note (stream 13's "second phone without the request note", routed to the exec team in the second split). Open PR #2169 records CPrivO-62: before writing the copy, the export reads the account's open deletion request in the same online read, with no server signal, and fails closed.
+- Scope: once CPrivO-62 is merged, build it as ruled in `apps/mobile/src/lib/export/` with a two-phone test; no migration unless the ruling asks for one.
+- Done when: a test with a second phone that never saw the note writes no copy while a request is open, and fails on the old code.
+- Source: second split of 27 Nov 2026 (stream 13 route to the exec team); PR #2169. Not verified: CPrivO-62 is read from the open PR, not from develop.
+
+#### BL-2252 Export wording fixes: README details, the held-back line, the pack header and the data-map qualifier (FU-13c)
+- Status: ready. Mode: agent. Owner: content, export owner (stream 13). Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: words are PROPOSED for content.
+- Satisfies: refines BL-528 and BL-933.
+- Problem and evidence: from the reviews of PRs #2155 and #2125: the README says "no location or other details" though the ICC profile stays (should be "no location, date or camera details"); the held-back line says "could not be checked" where the picture "did not pass a check"; the `pack.ts` header still says "one file in memory at a time"; `docs/ops/proposed/bl-528-consent-copy-data-map-line.md` lacks its qualifier (unused until sign-out or Erase everything, and inside the device backup and the recovery ZIP).
+- Scope: the four wording fixes in `packages/content/src/features/export.en.ts`, the `apps/mobile/src/lib/export/pack.ts` comment and the proposal file, with the content map regenerated. DELETION_AND_EXPORT_SPEC 4.2 is in `docs/legal` and goes to legal-gate; this row does not edit it.
+- Done when: the four lines say what is true, marked PROPOSED where they are customer words; `npm test -w packages/content` passes.
+- Source: second split of 27 Nov 2026 (stream 13), reviews of PRs #2155 and #2125. Not verified: the lines were read from the split, not reopened on develop.
+
+#### BL-2253 Export tests: each picture's bytes match its own source, progress once per picture, skipped letters, the held-back line (FU-13d)
+- Status: ready. Mode: agent. Owner: export owner, qa engineer (stream 13). Milestone: M15. Size: S. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: refines BL-933 and BL-388.
+- Problem and evidence: the reviews of PRs #2155 and #2111 found gaps: with two pictures that both pass, nothing checks that each `photos/` file holds its own source's bytes (a `firstPhoto = null` mutant survives); picture progress is not checked to be reported once each; `photosByLetter` skips have no unit test; the held-back line has no component test.
+- Scope: tests only, in `apps/mobile/test/export-photos.test.ts` and new test files; each new test is shown to fail on its mutant.
+- Done when: the four tests exist, each fails on its named mutant and passes on develop.
+- Source: second split of 27 Nov 2026 (stream 13), reviews of PRs #2155 and #2111. Not verified: the mutants were not run here.
+
+#### BL-2254 Account deletion: the cancel-limit line, one resend after an auth refusal, and a cancel that finds the deletion executing (record, FU-6a)
+- Status: done (PR #2191 merged as `b86245ba2`: `errors.cancelLimited` shows for the daily limit, an auth refusal refreshes the session and sends once more, and a false answer while `executing` shows the executing state, with tests that fail on develop's code; status sync of 27 Nov 2026, afternoon). Mode: agent. Owner: mobile engineer, content (stream 6). Milestone: M15. Size: M. Depends on: none.
+- Priority: Medium. Gate: none.
+- Satisfies: CDesO-58, CDesO-59.
+- Problem and evidence: every refused Cancel deletion showed `cancelFailed`, even when the server said why (second split of 27 Nov, stream 6).
+- Scope: as merged. Review follow-ups on the same lines are open PR #2217 (CDesO-59 cases 1 and 3), not filed here.
+- Done when: met by PR #2191.
+- Source: second split of 27 Nov 2026 (stream 6); rulings CDesO-58 and CDesO-59 (PR #2167). Not verified: read from the PR body; the tests were not run here.
+
+#### BL-2255 Book: a refused Undo says what is true, and a closed book shows the Write to us line (FU-6b)
+- Status: blocked (the open PR #2128 edits `(tabs)/book.tsx`). Mode: agent. Owner: mobile engineer, content (stream 6). Milestone: M15. Size: S. Depends on: none.
+- Priority: Medium. Gate: none; the ruling CDesO-60 is merged (PR #2167).
+- Satisfies: CDesO-60.
+- Problem and evidence: a refused Undo of a delete shows success when the letter is already live, and a closed book or a missing row shows no `restoreFailedToast` with "Write to us" (a review Should on PR #2144, ruled as CDesO-60).
+- Scope: the Undo toast in `apps/mobile/src/app/(tabs)/book.tsx` and the letter page `apps/mobile/src/app/letter/[id].tsx` pick the line CDesO-60 gives for each case, with a test per case and its mutant.
+- Done when: each CDesO-60 case has a test that fails on the old code; the words are the ruled keys.
+- Source: second split of 27 Nov 2026 (stream 6, newly blocked), review of PR #2144. Not verified: whether the other PRs the split named on these files (#2097, #2147, #2181, all now merged) changed the toast; not reread.
+
+#### BL-2256 Weekly card: the safety first-message text follows its row, the legal_date boundary, the P0 wording, the under-18 target (FU-15a)
+- Status: ready. Mode: agent. Owner: platform (stream 15). Milestone: M15. Size: S. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: refines BL-2102.
+- Problem and evidence: review notes on the weekly card that PR #2162 did not take: the safety first-message text does not follow its section 0 row; the `legal_date` boundary and the extended P0 wording are not pinned by a test; the under-18 internal 10-day target is not flagged on the card.
+- Scope: `scripts/ops/lib/weekly-card.ts` and `scripts/ops/test/weekly-card.test.ts` only; one test per item.
+- Done when: each of the four items has a test that fails on its mutant.
+- Source: second split of 27 Nov 2026 (stream 15), reviews of PR #2162. Not verified: the review notes were read from the split, not from the PR.
+
+#### BL-2257 Merge queue: refuse symlink and gitlink modes on the CR-149 merge (CR-70's mode check) (FU-17a)
+- Status: in-review (PR #2213). Mode: agent. Owner: platform (stream 17). Milestone: M15. Size: S. Depends on: none.
+- Priority: Medium. Gate: none.
+- Satisfies: CR-70, CR-149.
+- Problem and evidence: the merge queue does not run CR-70's mode check on the merge it builds, so a symlink (mode 120000) or a gitlink (160000) could reach develop through it (reviews of PRs #2157 and #2170).
+- Scope: `scripts/agents/merge-queue.mjs` reads `git diff-tree -r --raw <base> <tree>` and refuses either mode on both paths; tests in `merge-queue.test.mjs`.
+- Done when: a test with each mode fails the queue, and fails on the old code.
+- Source: second split of 27 Nov 2026 (stream 17), reviews of PRs #2157 and #2170. Not verified: PR #2213 was read from its title and Satisfies line only.
+
+#### BL-2258 Merge queue hardening: bidi and zero-width characters, ready lines at line start, the attributes the queue trusts (FU-17b)
+- Status: ready. Mode: agent. Owner: platform (stream 17). Milestone: M15. Size: XS. Depends on: BL-2257.
+- Priority: Low. Gate: none.
+- Satisfies: CR-70, CR-149.
+- Problem and evidence: same reviews as BL-2257: `clean()` keeps bidi and zero-width characters; ready lines match anywhere, not at line start (`^#\d+ ready`); the header does not say the queue trusts the local checkout's `.gitattributes` and `info/attributes`; the `CR70_EXTRA_PATHS` CR-229 entries duplicate the trace-gate class.
+- Scope: the four changes in `scripts/agents/merge-queue.mjs` and `merge-queue.test.mjs`, after BL-2257 (same files).
+- Done when: each change has a test that fails on the old code; the duplicate entries are gone and the suite passes.
+- Source: second split of 27 Nov 2026 (stream 17), reviews of PRs #2157 and #2170. Not verified: not reread on develop.
+
+#### BL-2259 Account deletion names only forgettable analytics ids, once (FU-5a)
+- Status: in-review (PR #2219). Mode: agent. Owner: analytics engineer (stream 5). Milestone: M15. Size: XS. Depends on: none.
+- Priority: Medium. Gate: none.
+- Satisfies: PRD-REQ-018, ER-A04; refines BL-2239.
+- Problem and evidence: `forgetAnalytics` in `apps/mobile/src/lib/account-deletion/api.ts` (lines 230 to 265) sends `ids` in batches of 21 with no shape check and no dedupe, while `packages/analytics/src/consent.ts` already has `FORGETTABLE_ID_RE` (line 92) and `cleanRetiredIds` (line 100); the live id read at `consent.ts` line 248 is not checked either (reviews of PR #2049, BL-2239).
+- Scope: the deletion path passes its ids through the same check and dedupe as retired ids, with a test that a malformed or repeated id is not sent.
+- Done when: the test fails on the old code; no malformed or repeated id reaches the forget call.
+- Source: reviews of PR #2049 (BL-2239). Not verified: PR #2219 was read from its title and Satisfies line only.
+
+#### BL-2260 Sync: queue a letter or a held draft only while its book takes uploads from this phone (FU-10c)
+- Status: in-review (PR #2218). Mode: agent. Owner: sync owner, privacy engineer (stream 10). Milestone: M12. Size: S. Depends on: none.
+- Priority: High. Gate: none.
+- Satisfies: refines BL-559 and BL-413.
+- Problem and evidence: `enqueueEntryUpsert` (`apps/mobile/src/lib/sync/outbox.ts` lines 260 to 264 at PR #2116's head) and `enqueueHeldDraft` (lines 535 to 539) check only the owner and the tombstone, not Recently deleted, while `enqueueBookUpdate` and `enqueuePrefs` skip a `local` book. So "nothing of a book in Recently deleted uploads after sign-in" rests on every caller; BL-413's `writeWords` (`store.ts` lines 1021 to 1034) is such a caller. Not reachable today (Review B of PR #2116, findings 1 at both heads).
+- Scope: both enqueuers return without queuing for a book that must not upload, as the guarded enqueuers do, with a probe test that a queued `entry.upsert` for such a book never appears.
+- Done when: the probe test fails on the old code and passes.
+- Source: reviews of PR #2116 (BL-559). Not verified: PR #2218 was read from its body only.
+
+#### BL-2261 Letter page: words of a letter in Recently deleted cannot be changed, and one shared "book not deleted" helper (FU-10d)
+- Status: in-review (PR #2218). Mode: agent. Owner: mobile engineer, sync owner (stream 10). Milestone: M12. Size: S. Depends on: none.
+- Priority: Medium. Gate: none.
+- Satisfies: refines BL-559 and BL-413.
+- Problem and evidence: `writeWords` (`apps/mobile/src/lib/store.ts` lines 1021 to 1034), `canChangeLetterWords` (lines 1052 to 1055) and `WORDS_CHANGEABLE` (`apps/mobile/src/lib/db/repos/entries.ts` lines 386 to 387) do not check Recently deleted, and the "book not deleted" SQL is written three times (`wipe.ts` line 27 `BOOK_NOT_DELETED_SQL`, `ownership.ts` line 41, `backup/local-store.ts` line 59). Review B of PR #2116.
+- Scope: the word writers refuse a letter whose book is in Recently deleted, with a test; the three copies of the SQL become one helper.
+- Done when: the test fails on the old code; one definition of the helper remains.
+- Source: reviews of PR #2116 (BL-559). Not verified: PR #2218 covers FU-10c and FU-10d together; whether it also merges the three SQL copies was not read.
+
+#### BL-2262 Signed-in Erase everything: offer account deletion first, otherwise drain the outbox and wipe this phone only (F17-REQ-026, the open part of BL-559)
+- Status: ready. Mode: agent. Owner: sync owner, privacy engineer (stream 10). Milestone: M12. Size: M. Depends on: BL-2260.
+- Priority: High. Gate: before sign-in is switched on for anyone (D-121, as BL-559). Any new words are PROPOSED for content; no server change is expected (F17-REQ-026 leaves the server rows unchanged), and any new function is a migration file only, with no hosted apply.
+- Satisfies: F17-REQ-026, F17-U38, BL-559 part 3; WP-F17-15 (signed-in half).
+- Problem and evidence: PR #2116 closed BL-559 parts 1 and 2 and says the signed-in flow does not exist: `apps/mobile/src/lib/erase-everything.ts` lines 3 and 4 refuse a phone that has signed in, `eraseEverythingLocal` (`store.ts` line 1417) returns `signed_in`, the Settings row shows only when `localDeletionAllowed()` (`app/settings/index.tsx` lines 179 and 180), and `app/settings/erase.tsx` line 62 refuses a signed-in phone. `docs/prd/v2/features/F17-settings-privacy.md` line 585 records WP-F17-15 as not built.
+- Scope: on a signed-in phone, Erase everything offers account deletion first; Erase this phone only drains the outbox (a book in Recently deleted still never uploads, BL-2260), then wipes the local store and signs out, and is not a ledger reset (F17-U38: "Sending your last letters first." then Welcome). The signed-out reset (DATA-REQ-024) is unchanged.
+- Done when: the F17-REQ-026 case passes as a titled `[F17-REQ-026]` integration test: with 2 queued ops and 5 own letters on the server, both ops reach the server, the local store is empty, the server rows are unchanged, and after signing in again the ledger reads at least 5, never 0.
+- Source: PR #2116 body and both reviews (BL-559 part 3). Not verified: the F17 lines were read on develop; nothing was run.
+
+#### BL-2263 Store listing test: subject-first off-phone wordings, and claims rows with unknown keys (FU-7b)
+- Status: ready. Mode: agent. Owner: content (stream 7). Milestone: M15. Size: XS. Depends on: none.
+- Priority: Medium. Gate: none.
+- Satisfies: FR-MKT-08, FR-MKT-16 (no requirement row changes); refines BL-1337.
+- Problem and evidence: in `packages/content/test/store-listing-words.test.ts` (PR #2176), `OFF_PHONE` lists `we (keep|store|save|hold)` only after the thing, so "We store your recordings safely." passes; and `loadClaims` ignores unknown keys, so a row written with "neds" for "needs" silently drops its build fact (with production backup on and both backup rows misspelt, the row test passed). Review B2 of PR #2176.
+- Scope: `OFF_PHONE_VERB` also catches the subject-first verbs; `loadClaims` refuses a row with an unknown key. Tests only, plus the data file if a row must change.
+- Done when: "We store your recordings safely." fails the FR-MKT-16 test, a misspelt key fails `loadClaims`, and both tests fail on the old code.
+- Source: reviews of PR #2176 (BL-1337). Not verified: the mutants were not rerun here.
+
+#### BL-2264 Trace baseline: drop the stale NS-17-R4 line (record, FU-7c)
+- Status: done (PR #2202 merged as `951263bc6`: the `NS-17-R4` line left `docs/ops/trace-ns-baseline.txt`, and `trace.mjs --check` prints 50 stale lines; status sync of 27 Nov 2026, afternoon). Mode: agent. Owner: qa engineer (stream 7). Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: BL-964 (gate G0 baseline hygiene); follow-up to BL-1315.
+- Problem and evidence: PR #2175 (BL-1315) added `[NS-17-R4]` tests, so the baseline line went stale (review note 6 of PR #2175).
+- Scope: as merged.
+- Done when: met by PR #2202.
+- Source: review of PR #2175; PR #2202. Not verified: whether the eight `[NS-17-R4]` tests fully prove the row (PR #2202 leaves that to the CR-229 reviewer).
+
+#### BL-2265 Store listing test: a Han alias inside a longer Han word names no language (FU-7d)
+- Status: in-review (PR #2211). Mode: agent. Owner: content (stream 7). Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: NS-17-R4 (no change to the requirement); follow-up to BL-1315.
+- Problem and evidence: since PR #2175, a language name in an unspaced script (Han, kana, Thai) matches anywhere in a sentence, so the alias for "huayu" matches inside the word for "Chinese language" and "guoyu" inside the word for "foreign language school"; it fails closed (refuses a true line). The JSDoc at line 278 is stale. Review note 3 of PR #2175.
+- Scope: in `packages/content/test/store-listing.test.ts`, an alias inside a longer Han word does not count, with a positive and a negative case; the JSDoc says what the check does.
+- Done when: both cases pass and the negative case fails on the old code.
+- Source: review of PR #2175 (BL-1315). Not verified: PR #2211 was read from its body only.
+
+#### BL-2266 Content owner's guide: a listing sentence edit moves its row in store-claims.en.json (FU-7e)
+- Status: ready. Mode: agent. Owner: content (stream 7). Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: FR-MKT-08, FR-MKT-09, FR-MKT-11 (process only); refines BL-1337.
+- Problem and evidence: PR #2176's body says every listing sentence edit now needs its row in `packages/content/src/store-claims.en.json` changed in the same PR, a keyword change needs its row with a source, and a new What's New sentence needs its clause or frame. No guide a content editor reads says so; only the PR body does.
+- Scope: one short paragraph where listing copy is edited (the header comment of `packages/content/src/store.en.ts` and the content guide that covers store copy), naming the file and the three cases. No customer words change.
+- Done when: the rule is written where a listing edit starts, and `npm test -w packages/content` passes.
+- Source: PR #2176 body (BL-1337). Not verified: which guide file the content owner prefers was not asked.
+
+#### BL-2267 Reminders: delivered notes that name a child are cleared when names go off (FU-11b)
+- Status: in-review (PR #2215). Mode: agent. Owner: reminders owner, privacy engineer (stream 11). Milestone: M15. Size: S. Depends on: none.
+- Priority: High (privacy: a child's name stays on the lock screen after the parent turned names off). Gate: none.
+- Satisfies: FR-NTC-11, NS-18-R6; CPrivO-58.
+- Problem and evidence: PR #2168 (BL-2247) dismisses delivered typed-day notes when the words go off, but a delivered month-age, birthday or evening note that names the child stays in Notification Center after Names in notifications is turned off or App lock is turned on (reviews of PR #2168; PR #2133's Not verified named the same gap).
+- Scope: on the change to names off, a re-plan dismisses our delivered notes of those kinds whose title or body is not one of the public lines; others' notifications and notes already showing a public line stay; a test per kind, and a test that nothing is dismissed again on every later re-plan.
+- Done when: each kind's test fails on the old code; no delivered note of ours names a child after names go off.
+- Source: reviews of PR #2168; PR #2133 Not verified. Not verified: PR #2215 (which also carries the BL-1009 remainder) was read from its body only.
+
+#### BL-2268 e2e-web: the first-letter reminder card misses its 8 s wait under load (FU-3a)
+- Status: ready. Mode: agent. Owner: qa engineer (stream 3). Milestone: M15. Size: S. Depends on: none.
+- Priority: Medium. Gate: none.
+- Satisfies: refines BL-1991; journeys J06 (J06e, J06f).
+- Problem and evidence: `noRemindersAfterFirstLetter` in `apps/mobile/e2e-web/support/app.ts` (lines 128 to 132 on develop; line 109 at PR #2161's head) waits 8 s for the heading "A gentle nudge, now and then?". In PR #2161's local runs it did not show in 7 of 14 runs while the 15-minute load average was 17.6 on 4 cores; in 16 runs at lower load it showed after 4.3 to 4.9 s. Cause not found. J06e and J06f use the helper.
+- Scope: find what the card waits on (a timer, the save, the plan read) and wait on that signal, or give the wait a reason in a comment with a bound that holds on a loaded runner. Do not weaken what the flow proves.
+- Done when: the helper passes 20 of 20 repeats on a loaded runner, or the PR names the cause and a row for it.
+- Source: PR #2161 Not verified. Not verified: the timing is from that PR's body; nothing was run here.
+
+#### BL-2269 Security lens covers the four CR-229 trace gate paths (record, FU-17c)
+- Status: done (PR #2170 merged as `23344b6b0`: the security lens names the four trace gate paths of CR-229; status sync of 27 Nov 2026, afternoon). Mode: agent. Owner: platform (stream 17). Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: CR-229.
+- Problem and evidence: the trace gate paths CR-229 names were not in the security lens's path list.
+- Scope: as merged.
+- Done when: met by PR #2170.
+- Source: PR #2170. Not verified: read from the PR title; the lens file was not reopened.
+
+#### BL-2270 Trace ratchet proposal: remove the main-branch exception once the seeds reach main (FU-3b)
+- Status: ready. Mode: agent. Owner: qa engineer (stream 3). Milestone: M15. Size: XS. Depends on: BL-1871.
+- Priority: Low. Gate: the release PR that carries the CR-227 and CR-228 seeds has merged into main (BL-1871); BL-1869 applies the step to CI.
+- Satisfies: CR-227, CR-228; refines BL-1869.
+- Problem and evidence: `docs/ops/proposed/trace-ns-ratchet.md` lines 19 to 23 carry an `if [ "$BASE_REF" = main ]` branch because main's baseline lacks the CR-227 and CR-228 seeds (27 Nov), and say to remove it once the release PR carrying the seeds has merged into main.
+- Scope: delete that branch and its comment from the proposal; if BL-1869 has already applied the step to `ci.yml`, the same edit there is a founder-applied workflow change and this row says so instead.
+- Done when: the proposal has no main-branch exception, or the PR names where the applied step still carries it.
+- Source: `docs/ops/proposed/trace-ns-ratchet.md` (CR-227, CR-228). Not verified: whether BL-1869 has applied the step.
+
+#### BL-2271 Moments spec: R267 no longer calls O-13 and O-14 open, and the brief's stale line and section cites (FU-8b)
+- Status: in-review (PR #2207). Mode: agent. Owner: product manager (stream 8). Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none (erratum, PROPOSED).
+- Satisfies: NS-53-R267, NS-53-R247 (wording only).
+- Problem and evidence: `docs/product/prd/28-moments-tab.md` line 1337 (NS-53-R267) calls O-13 and O-14 OPEN and names `LEAVE_OUT_ENABLED` and `ALBUMS_ENABLED`, which R247 deletes; O-13 and O-14 are closed (lines 1446 and 1447). `docs/product/moments-tab/ARCHITECTURE-BRIEF.md` line 105 cites "line 579" for 10.1 step 1 (now about line 612), and lines 17 and 26 cite a bare "10.2". Reviews of PR #2174.
+- Scope: R267 matches the closed questions, marked erratum, PROPOSED; the brief cites sections, not line numbers.
+- Done when: R267 and the brief say what the spec decided, with no line-number cite.
+- Source: reviews of PR #2174 (BL-2136). Not verified: PR #2207 was read from its body only.
+
+#### BL-2272 Release-artifact check: the store bundle carries every phase switch off (FU-858a)
+- Status: blocked (open PR #2124, BL-858, adds the seven switches this check reads; it merges first). Mode: agent. Owner: platform, security engineer (stream 1). Milestone: M15. Size: M. Depends on: none.
+- Priority: Medium. Gate: PR #2124 merges first. BL-858 itself stays open after that until its drill is recorded, so it is not a Depends on here.
+- Satisfies: NX-39-R37, NX-39-R39; refines BL-858.
+- Problem and evidence: PR #2124's static scan cannot prove what the bundler emits. Its body names four ways past it, kept out of that PR on purpose: a custom Babel transformer (`transformer.babelTransformerPath` in `metro.config.js`; Review B M8), a local config plugin that writes code at prebuild (`withDangerousMod`; Review B M7), a dotenv file loaded from outside the app root (`config/phases.env`; Review B M3), and a test file under `src/app` that Expo Router's `require.context` bundles with no import (Review A M7, Review B M6).
+- Scope: build the store bundle for each store profile (`expo export:embed`, or read `main.jsbundle` from the archive) and assert all seven inlined phase switch values are off, next to the size gate. A workflow file change is a proposal under `docs/ops/proposed/`.
+- Done when: the check fails on a bundle with any one switch on (each of the four routes above as a case) and passes on the store profiles.
+- Source: PR #2124 body and reviews (BL-858). Not verified: the PR is open; its final head may change these notes.
+
+#### BL-2273 EAS dashboard environment values reach store builds unseen by store-flags and gate G6 (FU-858b)
+- Status: ready. Mode: agent. Owner: platform, security engineer (stream 1). Milestone: M15. Size: S. Depends on: none.
+- Priority: Medium. Gate: reading the hosted EAS environment is a founder step if it needs his account; the agent part is the check and its report line.
+- Satisfies: NX-39-R39; gate G6; refines BL-858.
+- Problem and evidence: a value set in the EAS `production` or `preview` environment on expo.dev (or a shell variable on a `--local` build) reaches the store build through `environment`, and neither `scripts/release/store-flags.mjs` nor gate G6 sees it; the production preflight's UNVERIFIED line names none of the card flags (Review B of PR #2124, a gap that predates it).
+- Scope: the preflight lists every card and phase flag as UNVERIFIED unless read from the hosted environment, and `store-flags.mjs` documents that `eas.json` alone is not proof; if the EAS CLI can read the environment without secrets, add that read.
+- Done when: a store preflight names each card and phase flag it could not read from the hosted environment, with a test.
+- Source: review of PR #2124 (BL-858). Not verified: whether `eas.json` `env` wins over the EAS environment was not checked.
+
+#### BL-2274 Photos flag: `setPhotosForTest` refuses to run outside tests (FU-858c)
+- Status: ready. Mode: agent. Owner: mobile engineer (stream 1). Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: NS-01 flags; refines BL-931 and BL-858.
+- Problem and evidence: `setPhotosForTest` in `apps/mobile/src/lib/photos/flag.ts` (line 12) is marked "Tests only." but has no guard, while PR #2124 gave `setMediaPhaseForTests` a tests-only throw (Review B M5 of PR #2124).
+- Scope: the same tests-only guard and a test that it throws outside the test runner.
+- Done when: the test fails on the old code.
+- Source: review of PR #2124. Not verified: callers of `setPhotosForTest` outside tests were not searched.
+
+#### BL-2275 Phase switch closure: the Settings rows and layouts that reach Export and Erase (FU-858d)
+- Status: blocked (open PR #2124, BL-858, holds the R37 test this row extends; it merges first). Mode: agent. Owner: mobile engineer, security engineer (stream 1). Milestone: M15. Size: S. Depends on: none.
+- Priority: Medium. Gate: PR #2124 merges first.
+- Satisfies: NX-39-R37; LEGAL-REQ-050 (data rights are never gated).
+- Problem and evidence: the R37 data-right closure in PR #2124 starts at the Export and Erase screens, not at the rows and layouts that reach them, so wrapping the Export row of `apps/mobile/src/app/settings/index.tsx` in a phase switch passes every test (Review A note L2, round 7).
+- Scope: add `app/settings/index.tsx` and `app/settings/_layout.tsx` to the closure, or a rule that the Export and Erase rows are never behind a switch, with the L2 mutant as a case.
+- Done when: the L2 mutant fails the R37 test.
+- Source: PR #2124 body and Review A (BL-858). Not verified: the PR is open.
+
+#### BL-2276 id-collisions: three-digit CR ids and the exec ruling ids are not checked (FU-1a)
+- Status: ready. Mode: agent. Owner: platform (stream 1). Milestone: M15. Size: S. Depends on: none.
+- Priority: Medium. Gate: none.
+- Satisfies: refines the id-collision check of #108, #122 and #128.
+- Problem and evidence: `scripts/agents/id-collisions.mjs` checks CR ids with `/^#{2,4} +CR-(\d{2})\b(?!-)/` (two digits only), while `docs/agents/cto/RULINGS.md` now has 90 three-digit `### CR-` headings (CR-230 to CR-241 among them); and `KINDS` has no exec ruling family, though `docs/agents/exec/RULINGS.md` holds CPO, CPrivO, CDesO, CLO, CCO, CISO, CDO, CMO, CAIO and CFO headings that open PRs add in parallel (CPrivO-62 in open PR #2169, for one). Read on develop.
+- Scope: CR accepts two or three digits in RULINGS.md (the docs/legal CR-001 family stays out); one kind per exec prefix, read from the exec RULINGS.md headings; tests in `id-collisions.test.mjs`, and `next-id.mjs` prints the next free id of each.
+- Done when: a fixture with two open PRs claiming the same CR-2xx or CPrivO id reports a collision, and the tests fail on the old code.
+- Source: stream 1 follow-ups of 27 Nov 2026 (coordinator brief), checked by code reading. Not verified: the full test suite was not run.
+
+#### BL-2277 Agents check: a backlog Status word outside the vocabulary fails (FU-1b)
+- Status: ready. Mode: agent. Owner: platform (stream 1). Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: ADR 0011 (status values).
+- Problem and evidence: `scripts/agents/check.mjs` reads every backlog row through `parseBacklog` (`scripts/agents/lib.mjs` line 92 takes the first word as the status) but never checks the word. On develop two rows start with words outside the status values of ADR 0011 and this file's header: BL-348 (`decided`) and BL-2177 (`next`). The dispatcher reads neither as ready or blocked.
+- Scope: a warning, then an error once the two rows are fixed, for a status word outside that list; fix the two rows' words in the same PR (`done` or `partly done` for BL-348 by its own text, `blocked (BL-2216)` for BL-2177).
+- Done when: a fixture row with `Status: in review` fails the check, and the two rows read a listed word.
+- Source: stream 1 follow-ups of 27 Nov 2026 (coordinator brief), checked by code reading. Not verified: other tools that may rely on the two odd words were not searched.
+
+#### BL-2278 Tone lint runs in a check, and its two current findings are fixed (FU-1c)
+- Status: ready. Mode: agent. Owner: platform (stream 1). Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none.
+- Satisfies: `docs/agents/WRITING-STYLE.md` (dashes, curly quotes, ellipsis, emoji, banned words in harness documents).
+- Problem and evidence: `scripts/agents/tone-lint.mjs` checks `docs/agents` (the rulings logs included) for dashes, curly quotes, ellipsis, emoji and banned words, but it is advisory and no check runs it; `node scripts/agents/tone-lint.mjs --check` exits 1 on develop (one new banned word in `docs/agents/harness-v2/EVIDENCE-AND-GREEN.md`, one stale baseline line for `LESSONS-2026-11-08.md`). `scripts/lint/lint.mjs` covers code files only.
+- Scope: fix the two findings, then run `tone-lint --check` from `scripts/agents/check.mjs` (or the agents step that CI already runs), with a test that a dash in a rulings log fails it.
+- Done when: `tone-lint --check` exits 0 on develop and a planted em dash in `docs/agents/exec/RULINGS.md` fails the check that CI runs.
+- Source: stream 1 follow-ups of 27 Nov 2026 (coordinator brief), checked by running the tool. Not verified: which CI step runs `check.mjs` was not read.
+
+#### BL-2279 BL-373 Done-when test: aliased billing imports, the family folders, and the second home of the allowance bounds (FU-5b)
+- Status: ready. Mode: agent. Owner: payments engineer, qa engineer (stream 5). Milestone: M-JR. Size: S. Depends on: none.
+- Priority: Medium. Gate: none.
+- Satisfies: LEGAL-REQ-050; D-082, D-083; refines BL-373.
+- Problem and evidence: reviews of PR #2069 found regressions `apps/mobile/test/bl373-done-when.test.ts` says it catches but does not: `import { hasPlus as plusNow }` passes because `BILLING_IMPORT` takes the name before `as`; `lib/family` and `components/family` (share, invite create, accept and leave) are not on the surface list, so a `hasPlus` stop in `acceptInvite` passes; a local constant (`const FREE = 2`) or a clamp with a local name passes the literal rule. Also, `packages/analytics/src/registry.ts` lines 221 and 231 write `allowance: int(2, 100)`, a second copy of `DEFAULT_FREE_LETTERS` and `MAX_FREE_LETTERS` (`packages/core/src/plan.ts` lines 68 and 70).
+- Scope: refuse `as` on billing imports in surfaces (or count calls by the local name); add the two family folders; narrow the header or widen the literal rule to the cases above; the registry bounds read the core constants, or a test pins them equal.
+- Done when: each named mutant fails the test and passes on develop's clean code.
+- Source: reviews of PR #2069 (BL-373). Not verified: the mutants were read from the reviews, not rerun.
+
+#### BL-2280 Days file protection: the unit half with a fake module (split from BL-2156)
+- Status: ready. Mode: agent. Owner: mobile engineer, security engineer (stream 10). Milestone: M15. Size: S. Depends on: none.
+- Priority: Medium. Gate: none; the Swift method and the device record stay in BL-2156 (pair).
+- Satisfies: NS-47-R6.
+- Problem and evidence: BL-2156's Done-when has a unit half ("a unit test with a fake module fails on a weaker class") that needs no device, and its Test line names `apps/mobile/test/days-file-protection.test.ts`. BL-1201 (its dependency) is done.
+- Scope: the `fileProtectionClass(uri)` type in `apps/mobile/modules/scribe-files/index.ts`; the days store calls it after a write when the module has it (feature-detected, so a build without the Swift method is unchanged) and treats a missing or weaker class than SEC-R15's as a failure; the unit test with a fake module.
+- Done when: the test fails on a fake module that answers a weaker class and on the old code; a build without the native method behaves as today.
+- Source: split from BL-2156 by the product agent, 27 Nov 2026 (second split note: the unit half could go to stream 10). Not verified: SEC-R15's required class was not reread.
+
+#### BL-2281 Loops stop in Low Power Mode: one shared guard, through the native module gate (CPO-62 FOUNDER 3)
+- Status: ready. Mode: agent. Owner: mobile engineer, design systems (stream 10). Milestone: M15. Size: S. Depends on: BL-878.
+- Priority: Low. Gate: `expo-battery` (a new native dependency) passes the BL-878 checklist first.
+- Satisfies: NFR row 216 (`docs/prd/v2/06-nfr.md`, the Low Power Mode clause); NS-34; CPO-62 FOUNDER 3.
+- Problem and evidence: CPO-62 FOUNDER 3 keeps the Low Power Mode clause, with one shared guard as its own row through BL-878 before `expo-battery`. Row 216 (PR #2048) says no code reads Low Power Mode yet, and `apps/mobile/src/components/ui/lamp.tsx` lines 42 and 43 say so too. No backlog row existed for the guard.
+- Scope: one guard that every loop reads beside focus and Reduce Motion, reading Low Power Mode; the lamp and each other loop use it; a unit test per loop that it does not run in Low Power Mode. Progress indicators and the voice-following light follow the clause too (CPO-62 CONFIRM 2, reading b).
+- Done when: each loop's test fails with the guard removed; run sheet SE3.8 (`docs/qa/run-sheets/NS-34-SE3-SPEED.md`) can record the clause on a device.
+- Source: CPO-62 (`docs/agents/exec/RULINGS.md` line 1290); BL-930. Not verified: the list of loops was not counted.
+
+#### BL-2282 Errata: "Review to the Book after Keep" leaves the 900 ms list (CPO-62 FOUNDER 2)
+- Status: ready. Mode: agent. Owner: product manager. Milestone: M15. Size: XS. Depends on: none.
+- Priority: Low. Gate: none (the ruling is made; the erratum records it).
+- Satisfies: NS-34; CPO-62 FOUNDER 2.
+- Problem and evidence: CPO-62 FOUNDER 2 rules that "Review to the Book after Keep" leaves the 900 ms list and is held to the 2,000 ms save hand-off bound. The card still lists it (`docs/product/prd/11-foundations.md` line 365), and `docs/qa/NS-34-TARGETS.md` line 35 says the errata file records it for the card line and the design's row 5 (`docs/tdd/new-scope/11-foundations.md` line 150). No erratum exists in `docs/product/prd/18-errata-after-lock.md`.
+- Scope: one erratum in `docs/product/prd/18-errata-after-lock.md` with the next free E id, naming the card line and design row 5 and citing CPO-62; no locked card is edited.
+- Done when: the erratum is merged and BL-930 can cite it.
+- Source: CPO-62; `docs/qa/NS-34-TARGETS.md`; BL-930. Not verified: the next free E id was not taken here (open PRs may add ids).
+
+#### BL-2283 Age gate: "I answered by mistake" does not leave the stop screen (screen row for BL-2008)
+- Status: proposed (CR-236 item 1; exec-team read before any change). Mode: pair. Owner: mobile engineer, legal (stream 12 found it). Milestone: M15. Size: S. Depends on: none.
+- Priority: Medium. Gate: the age gate is a legal path: exec-team review (CLO, CCO and Chief Privacy Officer roles; not legal advice), read against BL-561 and BL-426, before any screen or logic change.
+- Satisfies: LEGAL-REQ-002 (cited, not changed); journey J02; refines BL-2008, BL-426, BL-561.
+- Problem and evidence: web journeys run 46016298215 (PR #2180, marker off) failed J02 at `apps/mobile/e2e-web/j02-under-18.flow.ts` line 67: after 25 hours on the page clock the way back stopped waiting, "I answered by mistake" was visible and the click went through, then `gate.stop` stayed (count 1, expected 0). The relaunch test passed, so the stored decision is "ask" as `apps/mobile/test/age-gate.test.ts` says. The flow matches the logic; the screen does not go back to the question. The marker is back.
+- Scope: find why the screen does not re-render to the question after the press (read the gate screen and its state, not the stored decision); propose the fix to the exec team; build only what they approve, with a test that fails on the old screen.
+- Done when: J02's way back passes with its marker removed, after the exec read is recorded.
+- Source: PR #2180 (BL-2008, CR-236 item 1). Not verified: the run's trace and screenshot were not opened (the PR read the job log only).
